@@ -47,7 +47,7 @@ public static class MoverPhysics
     /// The local player's view turns with a rotating platform they stand on (like the body does), so the world
     /// doesn't spin around you. A per-frame camera effect only; the server just receives the turned yaw.
     /// </summary>
-    public const bool TurnViewWithPlatform = true;
+    public static readonly bool TurnViewWithPlatform = true;
 
     /// <summary>Feet within this of a box top count as standing on it.</summary>
     public const float SupportTolerance = 0.06f;
