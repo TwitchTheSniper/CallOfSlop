@@ -120,7 +120,7 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Damage | **Deadeye** (31) | Beyond 30 m | Bullets hit 40% harder |
 | Damage | **Flanker** (47) | Hitting their back | Bullets and melee hit 60% harder |
 
-Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry random perks.
+Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality.
 
 ### Kill streaks
 
@@ -148,6 +148,21 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 ### Melee
 
 Press **V** for a quick rifle-butt. It reaches about 2.4 m and does 55 damage, so two hits kill. A hit **from behind always kills**. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Bots use it when you get right up close.
+
+### Bots
+
+Bots play through exactly the same input commands as people (movement, mantling, stances, shooting, grenades, melee), so they follow the same rules. Difficulty (**Easy, Normal, Hard**) sets reaction time, aim error and turn speed. On top of that every bot has a **personality**, shown after its name, e.g. `[BOT] Brick (Rusher)`. A lobby gets a mix:
+
+| Personality | Plays like |
+|---|---|
+| Rusher | Hunts the nearest enemy and fights up close with SMGs and shotguns; fast, twitchy strafing; barely retreats. |
+| Marksman | Picks an open, preferably high perch, crouches or goes prone and holds long sightlines with DMRs and snipers; moves on after a kill. |
+| Flanker | Takes side routes to get behind people (the path search avoids the direct line); commits to one strafe direction. |
+| Anchor | Holds an open spot (or the objective) with rifles and LMGs, crouch-peeks, uses cover a lot, and only chases nearby. |
+| Tactician | More grenades (including at where you ducked out of sight), pre-aims corners, retreats to cover to reload. |
+| Chaotic | Any gun, any habit. |
+
+Personalities also change engagement range, aggression, retreat health, strafing rhythm, cover use and perks (in Gun Game everyone gets the ladder's gun and the shared perks, so only the habits differ). In King of the Hill and Capture the Flag, each life a bot rolls whether it plays the objective or hunts, by personality: Anchors almost always go for it, Tacticians often, Rushers rarely. Bots navigate with a **waypoint graph** built for each map the first time it's played (a slice per tick, usually within a second or two; until then they steer straight): nodes on every surface you can stand on, linked where a player can really walk, step up, mantle (up to 1.7 m) or drop, checked with the game's own collision. They plan routes with A\*, cut corners when the way ahead is clear, climb ledges, step aside for each other in doorways, and re-plan when they get stuck. In a fight they keep to their weapon's range, strafe, duck behind cover to reload or when hurt, then peek back; out of a fight they chase where they last saw you, investigate gunfire, and glance around corners. They aim at the chest and drag their aim back down under recoil, so headshots are a minority of their kills.
 
 ### Respawning
 
@@ -211,7 +226,7 @@ All maps share the same primitive style: everything is a box, with the grey-and-
 | Highlands | 220 x 220 m | Big terraced hills with outposts on top, pine woods and boulder fields. |
 | Military Base | 200 x 200 m | A walled compound with corner watchtowers, barracks, a vehicle depot, helipad and HQ. |
 
-The lobby groups maps by size. Medium and large maps add distance haze so the far side fades into the sky. Bots on big maps pick waypoints they can walk to in a straight line.
+The lobby groups maps by size. Medium and large maps add distance haze so the far side fades into the sky. Bots find their way around every map with a waypoint graph and A\* (see [Bots](#bots)).
 
 **Maps are data files.** Each map is one `.json` file in a pack folder under `Maps`: its name, size, sky colour and a list of building ops (`Building`, `WallX`/`WallZ` with door and window holes, `Slab` with stairwells, `StairsX`/`StairsZ`, `Container`, `Car`, `Hill`, `Tree`, `Watchtower`, `Hangar`, `Bridge`, `TrainCar`...). To add a map, drop a file into a pack folder (or a whole pack folder into `Maps`) and click **Refresh maps** in the lobby; no restart or recompiling. In single player, **Reload map files** in the Esc menu rebuilds the map you're standing in from its file, for quick edit-and-look map making. Anyone can make one: **[Maps/README.md](Maps/README.md)** is the map makers' guide, with a full example and every op. A file with a mistake is skipped with a message that names the file and the problem (also shown in the lobby), and `CallOfSlop.exe --check-map FILE` checks one without starting the game. Online, servers and clients identify maps by name plus a geometry fingerprint, so a player missing a host's custom map is told which file to get, and the server browser shows maps you don't have in orange.
 
@@ -263,7 +278,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Crouched | 1.2 m | 50% | 75% | ~85% (per gun) | Fits behind low walls and crates. LMGs lose almost all sideways recoil |
 | Prone | 0.6 m | 22% | 50% | ~65% (per gun) | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
 
-You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Hard snipers go prone, and Hard bots crouch-peek in close fights.
+You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Marksmen and Hard snipers go prone, and bots crouch-peek in close fights and duck behind low cover to reload.
 
 ### Progression
 
@@ -296,7 +311,7 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s. Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you as a red silhouette through walls. It beeps once a second, so enemies can hear where it is. |
 
-Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, using a proper ballistic arc. Explosions shake your screen when they're close.
+Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, using a proper ballistic arc; Tacticians throw more, also at where an enemy just ducked out of sight. Explosions shake your screen when they're close.
 
 ### Loadouts and weapons
 
@@ -335,7 +350,7 @@ The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachmen
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks, then checks the bots: a nav graph and A\* routes on every map, a bot walking to a far goal, the headshot share of bot kills and that personalities fight at different ranges. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
   - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow, full ADS through a red dot, a 3x and a 12x (`smoke_ads_*.bmp`), the arms during a reload, a sprint and a melee (`smoke_arms_*.bmp`), the death cam (a bot kills you; `smoke_deathcam.bmp`) and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works
@@ -384,7 +399,8 @@ Attachments/         attachment files (*.json, one subfolder per slot) and the a
 tools/               BuildCheck.bat (build + self-test)
 Source/
   App/               Program (window, input, camera, scene + HUD drawing, smoke test), Settings, Keybinds, SelfTest
-  Game/              World (physics, collision), Game (server/client logic, hitscan), Match, MapVote, Bots,
+  Game/              World (physics, collision), Game (server/client logic, hitscan), Match, MapVote,
+                     Bots (+ BotNav graph/A*, BotMove, BotTactics, BotCombat, BotPersonality, BotStats, BotObjectives),
                      Throwables, Progression, ServerAdvert, Loadouts (slots + loadout.txt), Perks, Melee,
                      KillStreaks (definitions, counting, strikes), StreakEntities (turrets, drones), BotStreaks
   Maps/              Map (geometry + building ops, loader), MapKit (bigger ready-made pieces), MapFile (JSON load/save), MapPack

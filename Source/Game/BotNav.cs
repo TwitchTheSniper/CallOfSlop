@@ -1,0 +1,752 @@
+using System.Diagnostics;
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// A walkable-surface graph for one map, built once (a slice per tick, see <see cref="Pump"/>) the first time bots play on it.
+///
+/// Nodes sit on a grid over every surface a player can stand on (the ground and the tops of boxes), plus the
+/// map's own waypoints and spawns. Edges join nearby nodes when a player could really walk the straight line
+/// between them: every ~0.6 m the ground is found with a downward ray and the body is checked for room with
+/// <see cref="World.Blocked"/>, allowing steps (up to <see cref="World.StepHeight"/>), mantles (up to
+/// <see cref="World.MantleReach"/>, flagged so the bot presses Jump+Forward) and drops (one way). Only the shared
+/// collision queries are used, so whatever geometry the world collides with (boxes today, terrain later) shapes
+/// the graph: a cliff simply gets no edge.
+///
+/// Plain arrays (CSR adjacency) and no allocations after the build, so searches are cheap for many bots.
+/// </summary>
+public sealed class NavGraph
+{
+    public const float SampleStep = 0.6f; // must stay under 2 x PlayerRadius so no wall slips between samples
+    public const float MaxDrop = 6f; // bots won't plan jumps down from higher than this
+    public const byte FlagMantle = 1, FlagDrop = 2;
+
+    public string MapName = "";
+    public uint MapHash;
+    public float Spacing;
+
+    /// <summary>Feet positions of the nodes.</summary>
+    public Vector3[] Nodes = [];
+
+    /// <summary>How open the view is from each node (0..8 directions with a long sightline), for marksmen and anchors.</summary>
+    public byte[] Openness = [];
+
+    /// <summary>Edges of node i are EdgeTo[EdgeStart[i] .. EdgeStart[i+1]).</summary>
+    public int[] EdgeStart = [0];
+
+    public int[] EdgeTo = [];
+    public float[] EdgeCost = [];
+    public byte[] EdgeFlags = [];
+
+    /// <summary>For mantle edges: where the climb is (the first spot on the higher surface).</summary>
+    public Vector3[] EdgeLedge = [];
+
+    /// <summary>Connected group of each node (edges treated as two-way) and the biggest group.</summary>
+    public int[] Component = [];
+
+    public int MainComponent;
+
+    /// <summary>Nodes in the biggest connected group: where bots pick roaming goals.</summary>
+    public int[] MainNodes = [];
+
+    public double BuildMs;
+    public int EdgeCount => EdgeTo.Length;
+    public int MantleEdges { get; private set; }
+
+    // Spatial lookup: nodes bucketed into square cells of size Spacing.
+    private float _minX, _minZ;
+    private int _cols, _rows;
+    private int[] _cellStart = [0];
+    private int[] _cellNodes = [];
+
+    // ---- Cache and incremental building ----------------------------------------------------------
+
+    private static readonly Dictionary<(string, uint), NavGraph> Cache = new();
+    private static Map? _lastMap;
+    private static NavGraph? _last;
+    private static IEnumerator<NavGraph?>? _builder;
+    private static Map? _builderMap;
+
+    /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
+    public static readonly NavGraph Empty = CreateEmpty();
+
+    private static NavGraph CreateEmpty()
+    {
+        var g = new NavGraph { Spacing = 1 };
+        g._cols = g._rows = 1;
+        g._cellStart = [0, 0];
+        return g;
+    }
+
+    /// <summary>
+    /// The graph for the map being played (<see cref="World.Map"/>), or <see cref="Empty"/> while it's still being
+    /// built (see <see cref="Pump"/>). Graphs are cached per map name + fingerprint.
+    /// </summary>
+    public static NavGraph Current
+    {
+        get
+        {
+            var map = World.Map;
+            if (_last != null && ReferenceEquals(_lastMap, map))
+                return _last;
+            if (!Cache.TryGetValue((map.Name, map.ContentHash), out var cached))
+                return Empty;
+            _lastMap = map;
+            _last = cached;
+            return cached;
+        }
+    }
+
+    /// <summary>
+    /// Builds the current map's graph a slice at a time: call once per server tick with a time budget. The build runs
+    /// on the game thread in small steps (no threads, so it's safe with any collision backend), and bots get the
+    /// graph when it's done, typically within a second or two of a map change; until then they steer straight.
+    /// </summary>
+    public static void Pump(double budgetMs)
+    {
+        var map = World.Map;
+        if (_last != null && ReferenceEquals(_lastMap, map))
+            return;
+        if (Current != Empty)
+            return;
+        if (_builder != null && !ReferenceEquals(_builderMap, map))
+            _builder = null; // the map changed under it
+        if (_builder == null)
+        {
+            _builderMap = map;
+            _builder = BuildSteps(map).GetEnumerator();
+        }
+        var start = Stopwatch.GetTimestamp();
+        try
+        {
+            while (_builder.MoveNext())
+            {
+                if (_builder.Current is { } g)
+                {
+                    Store(map, g);
+                    _builder = null;
+                    return;
+                }
+                if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= budgetMs)
+                    return;
+            }
+            _builder = null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[bots] nav graph for {map.Name} failed: {ex.Message}");
+            Store(map, CreateEmpty()); // don't retry every tick
+            _builder = null;
+        }
+    }
+
+    private static void Store(Map map, NavGraph g)
+    {
+        Cache[(map.Name, map.ContentHash)] = g;
+        Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
+            + $"{g.MainNodes.Length} in the main area, {g.BuildMs:0} ms of work");
+    }
+
+    /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
+    public static NavGraph Build(Map map)
+    {
+        foreach (var g in BuildSteps(map))
+            if (g != null)
+                return g;
+        throw new InvalidOperationException("nav graph build ended without a result");
+    }
+
+    // ---- Building -------------------------------------------------------------------------------
+
+    /// <summary>
+    /// The build as a sequence of small steps: yields null after each slice of work and the finished graph last.
+    /// The map must stay <see cref="World.Map"/> throughout (the collision queries use it); <see cref="Pump"/> drops
+    /// the build if it changes. <see cref="BuildMs"/> counts only the time spent working.
+    /// </summary>
+    private static IEnumerable<NavGraph?> BuildSteps(Map map)
+    {
+        if (!ReferenceEquals(World.Map, map))
+            throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        var work = 0.0;
+        var t0 = Stopwatch.GetTimestamp();
+        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
+        var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
+        g.Spacing = s;
+
+        var top = 2f;
+        foreach (var b in map.Solid)
+            top = MathF.Max(top, b.Max.Y);
+        top = MathF.Min(top + 1f, 59f);
+
+        // ---- Nodes: every standable surface at each grid point, plus the map's waypoints and spawns ----
+        var nodes = new List<Vector3>();
+        for (var x = -map.HalfX + s / 2; x < map.HalfX; x += s)
+        {
+            for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
+            {
+                AddColumn(map, nodes, x, z, s, top);
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
+        var gridCount = nodes.Count;
+        var extra = 0;
+        foreach (var w in map.Waypoints.Concat(map.Spawns))
+        {
+            var y = Ground(w.X, w.Z, w.Y + 1f, 3f);
+            if (float.IsFinite(y) && Place(map, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
+                nodes.Add(p);
+            if (++extra % 16 == 0)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
+
+        // ---- Edges between nearby nodes ----
+        g.Nodes = nodes.ToArray();
+        g.BuildCells(map);
+        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
+        var radius = s * 1.5f;
+        var near = new List<int>();
+        for (var i = 0; i < g.Nodes.Length; i++)
+        {
+            var a = g.Nodes[i];
+            var r = i < gridCount ? radius : s * 2.1f;
+            near.Clear();
+            g.Within(a, r, near);
+            foreach (var j in near)
+            {
+                // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
+                var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
+                if (link)
+                    TryLink(g, i, j, edges);
+            }
+            work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            yield return null;
+            t0 = Stopwatch.GetTimestamp();
+        }
+
+        // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
+        var degree = new int[g.Nodes.Length];
+        foreach (var e in edges)
+        {
+            degree[e.From]++;
+            degree[e.To]++;
+        }
+        var remap = new int[g.Nodes.Length];
+        var kept = new List<Vector3>();
+        for (var i = 0; i < g.Nodes.Length; i++)
+        {
+            remap[i] = degree[i] > 0 ? kept.Count : -1;
+            if (degree[i] > 0)
+                kept.Add(g.Nodes[i]);
+        }
+        g.Nodes = kept.ToArray();
+        var count = g.Nodes.Length;
+        edges.Sort((p, q) => remap[p.From].CompareTo(remap[q.From]));
+        g.EdgeStart = new int[count + 1];
+        g.EdgeTo = new int[edges.Count];
+        g.EdgeCost = new float[edges.Count];
+        g.EdgeFlags = new byte[edges.Count];
+        g.EdgeLedge = new Vector3[edges.Count];
+        for (var k = 0; k < edges.Count; k++)
+        {
+            var e = edges[k];
+            g.EdgeStart[remap[e.From] + 1]++;
+            g.EdgeTo[k] = remap[e.To];
+            g.EdgeCost[k] = e.Cost;
+            g.EdgeFlags[k] = e.Flags;
+            g.EdgeLedge[k] = e.Ledge;
+            if ((e.Flags & FlagMantle) != 0)
+                g.MantleEdges++;
+        }
+        for (var i = 0; i < count; i++)
+            g.EdgeStart[i + 1] += g.EdgeStart[i];
+        g.BuildCells(map);
+        g.BuildComponents();
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
+
+        // ---- How open the view is from each node ----
+        g.Openness = new byte[count];
+        for (var i = 0; i < count; i++)
+        {
+            g.Openness[i] = OpennessAt(g.Nodes[i]);
+            if (i % 16 == 15)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
+        g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return g;
+    }
+
+    /// <summary>Adds a node for every surface a player can stand on at grid point (x, z).</summary>
+    private static void AddColumn(Map map, List<Vector3> nodes, float x, float z, float s, float top)
+    {
+        Span<float> heights = stackalloc float[16];
+        var n = 0;
+        var columnStart = nodes.Count;
+        // Whatever the world says is the highest ground here (covers non-box ground too).
+        var t = World.RaycastWorld(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
+        if (t > 0.001f && t < top + 6f)
+            heights[n++] = top - t;
+        foreach (var b in map.Solid)
+        {
+            if (n >= heights.Length)
+                break;
+            if (x > b.Min.X && x < b.Max.X && z > b.Min.Z && z < b.Max.Z && b.Max.Y < top)
+                heights[n++] = b.Max.Y;
+        }
+        for (var i = 0; i < n; i++)
+            if (Place(map, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
+                nodes.Add(p);
+    }
+
+    private static bool NearExisting(List<Vector3> nodes, Vector3 p, int from, float within = 0.5f)
+    {
+        for (var i = Math.Max(0, from); i < nodes.Count; i++)
+            if (MathF.Abs(nodes[i].Y - p.Y) < 0.5f && MathF.Abs(nodes[i].X - p.X) < within && MathF.Abs(nodes[i].Z - p.Z) < within)
+                return true;
+        return false;
+    }
+
+    /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
+    private static Vector3? Place(Map map, Vector3 p, float spread)
+    {
+        ReadOnlySpan<float> offsets = [0f, 0.3f, -0.3f];
+        foreach (var ox in offsets)
+        foreach (var oz in offsets)
+        {
+            var c = new Vector3(p.X + ox * spread, p.Y, p.Z + oz * spread);
+            if (MathF.Abs(c.X) > map.HalfX - 0.5f || MathF.Abs(c.Z) > map.HalfZ - 0.5f)
+                continue;
+            var y = Ground(c.X, c.Z, p.Y + 0.3f, 0.6f);
+            if (!float.IsFinite(y) || MathF.Abs(y - p.Y) > 0.05f)
+                continue;
+            c.Y = y;
+            if (!World.Blocked(c + new Vector3(0, 0.01f, 0)))
+                return c;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Height of the first surface below (x, fromY, z) within <paramref name="depth"/>: NaN if there's none,
+    /// +infinity if the start point is already inside something (a wall too tall to climb).
+    /// </summary>
+    public static float Ground(float x, float z, float fromY, float depth)
+    {
+        var t = World.RaycastWorld(new Vector3(x, fromY, z), -Vector3.UnitY, depth);
+        if (t >= depth)
+            return float.NaN;
+        return t < 0.001f ? float.PositiveInfinity : fromY - t;
+    }
+
+    private static void TryLink(NavGraph g, int i, int j, List<(int, int, float, byte, Vector3)> edges)
+    {
+        var a = g.Nodes[i];
+        var b = g.Nodes[j];
+        if (MathF.Abs(a.Y - b.Y) > MaxDrop)
+            return;
+        Walk(a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
+        var len = Vector3.Distance(a, b);
+        if (fwd)
+            edges.Add((i, j, len + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
+        if (back)
+            edges.Add((j, i, len + ((bFlags & FlagMantle) != 0 ? 2f : 0f), bFlags, bLedge));
+    }
+
+    /// <summary>
+    /// Can a player walk the straight line a -> b (and b -> a)? Samples the ground every <see cref="SampleStep"/>,
+    /// allowing steps, mantles and drops, and checks there's room for the body above the step height.
+    /// </summary>
+    public static void Walk(Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
+        out Vector3 fLedge, out Vector3 bLedge)
+    {
+        forward = backward = false;
+        fFlags = bFlags = 0;
+        fLedge = bLedge = Vector3.Zero;
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        var len = d.Length();
+        var n = Math.Clamp((int)MathF.Ceiling(len / SampleStep), 1, 63);
+        Span<float> h = stackalloc float[n + 1];
+        Span<bool> blocked = stackalloc bool[n + 1];
+        h[0] = a.Y;
+        var y = a.Y;
+        for (var k = 1; k <= n; k++)
+        {
+            var f = k / (float)n;
+            float x = a.X + d.X * f, z = a.Z + d.Y * f;
+            var from = y + World.MantleReach + 0.05f;
+            var g = Ground(x, z, from, World.MantleReach + 0.05f + MaxDrop);
+            if (!float.IsFinite(g))
+                return; // a wall too tall to climb, or a hole
+            h[k] = g;
+            y = g;
+            blocked[k] = World.Blocked(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
+        }
+        if (MathF.Abs(h[n] - b.Y) > 0.35f)
+            return; // ended up on a different floor
+
+        // A blocked sample is fine right next to a ledge (pressed against the face before a mantle, or still
+        // standing on the edge before a drop): the real movement handles those. Anywhere else it's a wall.
+        for (var k = 1; k <= n; k++)
+        {
+            if (!blocked[k])
+                continue;
+            var nearLedge = MathF.Abs(h[k] - h[k - 1]) > World.StepHeight || (k < n && MathF.Abs(h[k + 1] - h[k]) > World.StepHeight);
+            if (!nearLedge)
+                return;
+        }
+
+        forward = true;
+        backward = true;
+        for (var k = 1; k <= n; k++)
+        {
+            var rise = h[k] - h[k - 1];
+            var f = k / (float)n;
+            var at = new Vector3(a.X + d.X * f, h[k], a.Z + d.Y * f);
+            if (rise > World.StepHeight)
+            {
+                if ((fFlags & FlagMantle) == 0)
+                    fLedge = at;
+                fFlags |= FlagMantle;
+                bFlags |= FlagDrop;
+            }
+            else if (rise < -World.StepHeight)
+            {
+                fFlags |= FlagDrop;
+                if (-rise > World.MantleReach - 0.05f)
+                    backward = false; // too high to climb back up
+                bFlags |= FlagMantle;
+            }
+        }
+        // Walking b -> a, the first ledge met is the one nearest b.
+        if ((bFlags & FlagMantle) != 0)
+        {
+            for (var k = n; k >= 1; k--)
+            {
+                if (h[k - 1] - h[k] > World.StepHeight)
+                {
+                    var f = (k - 1) / (float)n;
+                    bLedge = new Vector3(a.X + d.X * f, h[k - 1], a.Z + d.Y * f);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void BuildCells(Map map)
+    {
+        _minX = map.HalfX * -1 - 1;
+        _minZ = map.HalfZ * -1 - 1;
+        _cols = Math.Max(1, (int)MathF.Ceiling((map.HalfX * 2 + 2) / Spacing));
+        _rows = Math.Max(1, (int)MathF.Ceiling((map.HalfZ * 2 + 2) / Spacing));
+        var counts = new int[_cols * _rows + 1];
+        foreach (var p in Nodes)
+            counts[CellOf(p) + 1]++;
+        for (var i = 0; i < _cols * _rows; i++)
+            counts[i + 1] += counts[i];
+        _cellStart = (int[])counts.Clone();
+        _cellNodes = new int[Nodes.Length];
+        var fill = (int[])counts.Clone();
+        for (var i = 0; i < Nodes.Length; i++)
+            _cellNodes[fill[CellOf(Nodes[i])]++] = i;
+    }
+
+    private int CellOf(Vector3 p)
+    {
+        var cx = Math.Clamp((int)((p.X - _minX) / Spacing), 0, _cols - 1);
+        var cz = Math.Clamp((int)((p.Z - _minZ) / Spacing), 0, _rows - 1);
+        return cz * _cols + cx;
+    }
+
+    /// <summary>Adds every node within horizontal distance <paramref name="r"/> of <paramref name="p"/> to <paramref name="into"/>.</summary>
+    public void Within(Vector3 p, float r, List<int> into)
+    {
+        var c0 = Math.Clamp((int)((p.X - r - _minX) / Spacing), 0, _cols - 1);
+        var c1 = Math.Clamp((int)((p.X + r - _minX) / Spacing), 0, _cols - 1);
+        var r0 = Math.Clamp((int)((p.Z - r - _minZ) / Spacing), 0, _rows - 1);
+        var r1 = Math.Clamp((int)((p.Z + r - _minZ) / Spacing), 0, _rows - 1);
+        for (var cz = r0; cz <= r1; cz++)
+        for (var cx = c0; cx <= c1; cx++)
+        {
+            var cell = cz * _cols + cx;
+            for (var k = _cellStart[cell]; k < _cellStart[cell + 1]; k++)
+            {
+                var i = _cellNodes[k];
+                var q = Nodes[i];
+                var dx = q.X - p.X;
+                var dz = q.Z - p.Z;
+                if (dx * dx + dz * dz <= r * r)
+                    into.Add(i);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The best node to start from or head for near <paramref name="p"/>: close, on about the same level, and (when
+    /// <paramref name="needSight"/>) in plain view at knee height. -1 if none within a couple of cells.
+    /// </summary>
+    public int Nearest(Vector3 p, bool needSight = true)
+    {
+        for (var ring = 1; ring <= 3; ring++)
+        {
+            var r = Spacing * ring;
+            int best = -1, second = -1;
+            float bestScore = float.MaxValue, secondScore = float.MaxValue;
+            var c0 = Math.Clamp((int)((p.X - r - _minX) / Spacing), 0, _cols - 1);
+            var c1 = Math.Clamp((int)((p.X + r - _minX) / Spacing), 0, _cols - 1);
+            var r0 = Math.Clamp((int)((p.Z - r - _minZ) / Spacing), 0, _rows - 1);
+            var r1 = Math.Clamp((int)((p.Z + r - _minZ) / Spacing), 0, _rows - 1);
+            for (var cz = r0; cz <= r1; cz++)
+            for (var cx = c0; cx <= c1; cx++)
+            {
+                var cell = cz * _cols + cx;
+                for (var k = _cellStart[cell]; k < _cellStart[cell + 1]; k++)
+                {
+                    var i = _cellNodes[k];
+                    var q = Nodes[i];
+                    var dy = q.Y - p.Y;
+                    if (dy > World.MantleReach || dy < -MaxDrop)
+                        continue;
+                    var score = (q.X - p.X) * (q.X - p.X) + (q.Z - p.Z) * (q.Z - p.Z) + dy * dy * 9f;
+                    if (score < bestScore)
+                    {
+                        second = best;
+                        secondScore = bestScore;
+                        best = i;
+                        bestScore = score;
+                    }
+                    else if (score < secondScore)
+                    {
+                        second = i;
+                        secondScore = score;
+                    }
+                }
+            }
+            if (best < 0)
+                continue;
+            if (!needSight || Clear(p, Nodes[best]))
+                return best;
+            if (second >= 0 && Clear(p, Nodes[second]))
+                return second;
+            if (ring == 3)
+                return best;
+        }
+        return -1;
+    }
+
+    /// <summary>Straight-line sight at knee and chest height between two feet positions.</summary>
+    public static bool Clear(Vector3 a, Vector3 b)
+    {
+        static bool Ray(Vector3 from, Vector3 to)
+        {
+            var d = to - from;
+            var len = d.Length();
+            return len < 0.01f || World.RaycastWorld(from, d / len, len) >= len - 0.05f;
+        }
+        var knee = new Vector3(0, 0.6f, 0);
+        var chest = new Vector3(0, 1.3f, 0);
+        return Ray(a + knee, b + knee) && Ray(a + chest, b + chest);
+    }
+
+    private void BuildComponents()
+    {
+        var parent = new int[Nodes.Length];
+        for (var i = 0; i < parent.Length; i++)
+            parent[i] = i;
+        int Find(int x)
+        {
+            while (parent[x] != x)
+                x = parent[x] = parent[parent[x]];
+            return x;
+        }
+        for (var i = 0; i < Nodes.Length; i++)
+            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
+            {
+                int ra = Find(i), rb = Find(EdgeTo[e]);
+                if (ra != rb)
+                    parent[ra] = rb;
+            }
+        Component = new int[Nodes.Length];
+        var size = new Dictionary<int, int>();
+        for (var i = 0; i < Nodes.Length; i++)
+        {
+            Component[i] = Find(i);
+            size[Component[i]] = size.GetValueOrDefault(Component[i]) + 1;
+        }
+        MainComponent = size.Count == 0 ? -1 : size.MaxBy(kv => kv.Value).Key;
+        MainNodes = Enumerable.Range(0, Nodes.Length).Where(i => Component[i] == MainComponent).ToArray();
+    }
+
+    private static byte OpennessAt(Vector3 feet)
+    {
+        var eye = feet + new Vector3(0, World.EyeHeight, 0);
+        var open = 0;
+        for (var k = 0; k < 8; k++)
+        {
+            var a = k * MathF.Tau / 8;
+            if (World.RaycastWorld(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
+                open++;
+        }
+        return (byte)open;
+    }
+}
+
+/// <summary>
+/// A* over a <see cref="NavGraph"/> with reusable buffers (no allocations per search). One per game; searches
+/// are rationed per tick by the caller.
+/// </summary>
+public sealed class NavSearch
+{
+    private float[] _g = [];
+    private int[] _from = [];
+    private int[] _stamp = [];
+    private bool[] _closed = [];
+    private int _gen;
+    private int[] _heapNode = new int[64];
+    private float[] _heapKey = new float[64];
+    private int _heapCount;
+    private int[] _reverse = new int[256];
+
+    /// <summary>Nodes expanded by the last search (for the self-test's cost report).</summary>
+    public int LastExpanded;
+
+    /// <summary>
+    /// Finds a path from node <paramref name="start"/> to node <paramref name="goal"/> and writes it (start first) into
+    /// <paramref name="path"/>, truncated to its length. Returns the node count, or 0 if there's no way.
+    /// <paramref name="cost"/> can add a per-edge penalty (flanking routes, edges a bot got stuck on).
+    /// </summary>
+    public int Find(NavGraph g, int start, int goal, int[] path, Func<int, int, int, float>? cost = null, int maxExpand = 4000)
+    {
+        LastExpanded = 0;
+        if (start < 0 || goal < 0 || start >= g.Nodes.Length || goal >= g.Nodes.Length)
+            return 0;
+        var n = g.Nodes.Length;
+        if (_g.Length < n)
+        {
+            _g = new float[n];
+            _from = new int[n];
+            _stamp = new int[n];
+            _closed = new bool[n];
+            _gen = 0;
+        }
+        if (++_gen == int.MaxValue)
+        {
+            Array.Clear(_stamp);
+            _gen = 1;
+        }
+        _heapCount = 0;
+        Visit(start, 0, -1);
+        Push(start, H(g, start, goal));
+        var found = false;
+        while (_heapCount > 0)
+        {
+            var cur = Pop();
+            if (_closed[cur])
+                continue;
+            _closed[cur] = true;
+            if (cur == goal)
+            {
+                found = true;
+                break;
+            }
+            if (++LastExpanded > maxExpand)
+                break;
+            var gc = _g[cur];
+            for (var e = g.EdgeStart[cur]; e < g.EdgeStart[cur + 1]; e++)
+            {
+                var to = g.EdgeTo[e];
+                var extra = cost?.Invoke(cur, to, e) ?? 0f;
+                if (float.IsPositiveInfinity(extra))
+                    continue;
+                var ng = gc + g.EdgeCost[e] + extra;
+                if (_stamp[to] == _gen && (ng >= _g[to] || _closed[to]))
+                    continue;
+                Visit(to, ng, cur);
+                Push(to, ng + H(g, to, goal));
+            }
+        }
+        if (!found)
+            return 0;
+
+        var len = 0;
+        for (var c = goal; c >= 0; c = _from[c])
+        {
+            if (len == _reverse.Length)
+                Array.Resize(ref _reverse, len * 2);
+            _reverse[len++] = c;
+        }
+        var count = Math.Min(len, path.Length);
+        for (var i = 0; i < count; i++)
+            path[i] = _reverse[len - 1 - i];
+        return count;
+    }
+
+    private static float H(NavGraph g, int a, int b) => Vector3.Distance(g.Nodes[a], g.Nodes[b]);
+
+    private void Visit(int node, float gScore, int from)
+    {
+        _stamp[node] = _gen;
+        _g[node] = gScore;
+        _from[node] = from;
+        _closed[node] = false;
+    }
+
+    private void Push(int node, float key)
+    {
+        if (_heapCount == _heapNode.Length)
+        {
+            Array.Resize(ref _heapNode, _heapCount * 2);
+            Array.Resize(ref _heapKey, _heapCount * 2);
+        }
+        var i = _heapCount++;
+        while (i > 0)
+        {
+            var parent = (i - 1) / 2;
+            if (_heapKey[parent] <= key)
+                break;
+            _heapNode[i] = _heapNode[parent];
+            _heapKey[i] = _heapKey[parent];
+            i = parent;
+        }
+        _heapNode[i] = node;
+        _heapKey[i] = key;
+    }
+
+    private int Pop()
+    {
+        var top = _heapNode[0];
+        var lastNode = _heapNode[--_heapCount];
+        var lastKey = _heapKey[_heapCount];
+        var i = 0;
+        while (true)
+        {
+            var c = i * 2 + 1;
+            if (c >= _heapCount)
+                break;
+            if (c + 1 < _heapCount && _heapKey[c + 1] < _heapKey[c])
+                c++;
+            if (_heapKey[c] >= lastKey)
+                break;
+            _heapNode[i] = _heapNode[c];
+            _heapKey[i] = _heapKey[c];
+            i = c;
+        }
+        if (_heapCount > 0)
+        {
+            _heapNode[i] = lastNode;
+            _heapKey[i] = lastKey;
+        }
+        return top;
+    }
+}

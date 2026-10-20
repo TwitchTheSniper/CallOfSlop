@@ -1048,6 +1048,7 @@ public sealed partial class Game : IDisposable
         LogKill(attacker.Id, victim.Id, head, killId);
         RecordKill(kill);
         OnModeKill(attacker, victim, killId, now);
+        BotNoteKill(attacker, victim, head, killId, now);
         return true;
     }
 

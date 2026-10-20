@@ -19,17 +19,23 @@ public sealed partial class Game
     private bool IsEnemy(Player bot, Player other) => AreEnemies(bot, other);
 
     /// <summary>Where this bot should be heading for the current mode's objective (hill, flag, carrier...), or null for normal roaming/fighting.</summary>
-    private Vector3? ObjectiveGoal(Player bot, double now)
+    private Vector3? ObjectiveGoal(Player bot, double now) =>
+        ObjectiveSpot(bot) is { } g ? Route(bot, g, now) : null;
+
+    /// <summary>
+    /// The objective point itself, without the straight-line waypoint routing in <see cref="ObjectiveGoal"/>: bots
+    /// that path-find on the nav graph (BotTactics) head straight for this and let A* find the way.
+    /// </summary>
+    private Vector3? ObjectiveSpot(Player bot)
     {
         if (Phase != MatchPhase.Playing)
             return null;
-        Vector3? goal = Mode switch
+        return Mode switch
         {
             GameMode.KingOfTheHill => HillGoal(bot),
             GameMode.CaptureTheFlag => FlagGoal(bot),
             _ => null,
         };
-        return goal is { } g ? Route(bot, g, now) : null;
     }
 
     private Vector3? HillGoal(Player bot)
