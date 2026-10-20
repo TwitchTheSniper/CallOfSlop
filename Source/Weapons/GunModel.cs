@@ -7,10 +7,16 @@ namespace CallOfSlop;
 /// folding stock and stick mag, AR with handguard and curved mag, DMR with long barrel and cheek
 /// stock, wooden bolt-action sniper with bipod, pump shotgun with tube, chunky LMG with box mag and
 /// carry handle, and oddballs for the specials), plus a small library of attachment models that is
-/// shared between all guns: 5 optics, 4 muzzle devices, 3 barrels, 3 underbarrel parts, 3 magazine
+/// shared between all guns: 10 optics, 4 muzzle devices, 3 barrels, 3 underbarrel parts, 3 magazine
 /// types and 3 stocks. Attachments are drawn in lighter metal so they stand out from the dark body.
 ///
 /// Model space: origin at the grip, -Z towards the muzzle, +Y up, metres.
+///
+/// Optics are see-through at full ADS: Program sets <see cref="AdsCutaway"/> before drawing the
+/// viewmodel, and the optic's housing, tubes and mounts fade out with it (reflex sights keep their
+/// thin window frame). The lens, tint and reticle are then drawn flat in the HUD pass by
+/// <see cref="ScopeOverlay"/> from <see cref="Look"/>, centred on the screen where the sight line is.
+/// Fitting any optic removes the parts it would clash with (iron sights, LMG carry handles).
 /// </summary>
 public static class GunModel
 {
@@ -23,6 +29,120 @@ public static class GunModel
     private static readonly Vector3 Olive = new(0.33f, 0.36f, 0.24f);
     private static readonly Vector3 RedGlow = new(1f, 0.15f, 0.1f);
     private static readonly Vector3 CyanGlow = new(0.35f, 0.95f, 1f);
+    private static readonly Vector3 GreenGlow = new(0.3f, 1f, 0.35f);
+    private static readonly Vector3 Rubber = new(0.12f, 0.12f, 0.13f);
+
+    // ---- See-through optics ---------------------------------------------------------
+
+    /// <summary>
+    /// 0..1: how much of the optic's housing, tube and mount is cut away (faded out). Program sets it
+    /// from <see cref="CutawayFor"/> right before drawing the first-person gun and back to 0 after,
+    /// so third-person guns and the gunsmith preview always draw the whole optic. It never moves the
+    /// sight line: <see cref="SightHeight"/> and <see cref="AdsZ"/> don't read it.
+    /// </summary>
+    public static float AdsCutaway;
+
+    /// <summary>The cut-away for an aim-down-sights blend: none at the hip, complete by 85% aimed.</summary>
+    public static float CutawayFor(float aimT) => SmoothStep(0.5f, 0.85f, aimT);
+
+    /// <summary>Optics at this zoom or more get the full scope view (black surround, round lens, no viewmodel).</summary>
+    public const float FullScopeZoom = 4f;
+
+    /// <summary>True when aiming this gun shows the full scope view instead of the see-through lens.</summary>
+    public static bool FullScope(WeaponDef d) => d.AdsZoom >= FullScopeZoom;
+
+    /// <summary>The reticle styles drawn by <see cref="ScopeOverlay"/>.</summary>
+    public enum Reticle : byte
+    {
+        None,
+        Dot,
+        HoloRing,
+        Chevron,
+        Horseshoe,
+        CircleDot,
+        Duplex,
+        FineCross,
+        Stadia,
+        MilDot,
+    }
+
+    /// <summary>
+    /// What you see through an optic at full ADS. <paramref name="LensRadius"/> is the eyepiece radius as a
+    /// fraction of the screen height (0 = an open reflex window: reticle only). <paramref name="Size"/> scales
+    /// the reticle (1 = its design size at 1080p). <paramref name="Tint"/> is the faint lens colour.
+    /// </summary>
+    public readonly record struct OpticLook(float LensRadius, Reticle Reticle, Vector3 Color, float Size, Vector3 Tint);
+
+    private static readonly Vector3 AmberTint = new(1f, 0.82f, 0.55f);
+    private static readonly Vector3 CoolTint = new(0.65f, 0.82f, 1f);
+
+    /// <summary>The see-through view for the gun's sight (Reticle.None for plain iron sights).</summary>
+    public static OpticLook Look(WeaponDef d) => d.Optic switch
+    {
+        OpticKind.RedDot => new(0, Reticle.Dot, RedGlow, 1f, Vector3.Zero),
+        OpticKind.MiniDot => new(0, Reticle.Dot, GreenGlow, 0.8f, Vector3.Zero),
+        OpticKind.Holo => new(0, Reticle.HoloRing, CyanGlow, 1f, Vector3.Zero),
+        OpticKind.Prism2 => new(0.42f, Reticle.Horseshoe, new Vector3(1f, 0.32f, 0.1f), 1f, AmberTint),
+        OpticKind.Acog => new(0.46f, Reticle.Chevron, RedGlow, 1f, AmberTint),
+        OpticKind.Hybrid3 => new(0.44f, Reticle.CircleDot, RedGlow, 1f, AmberTint),
+        OpticKind.Scope4 => new(0.47f, Reticle.Duplex, RedGlow, 1f, CoolTint),
+        OpticKind.Lpvo6 => new(0.47f, Reticle.Stadia, RedGlow, 1f, CoolTint),
+        OpticKind.Scope8 => new(0.47f, Reticle.FineCross, RedGlow, 1f, CoolTint),
+        OpticKind.Scope12 => new(0.47f, Reticle.MilDot, RedGlow, 1f, CoolTint),
+        _ => HasBuiltInScope(d) ? new OpticLook(0.46f, Reticle.Duplex, RedGlow, 1f, CoolTint) : new OpticLook(0, Reticle.None, Vector3.Zero, 1f, Vector3.Zero),
+    };
+
+    private static float SmoothStep(float a, float b, float x)
+    {
+        var t = Math.Clamp((x - a) / (b - a), 0f, 1f);
+        return t * t * (3 - 2 * t);
+    }
+
+    // ---- Part recording (self-test) ---------------------------------------------------
+
+    /// <summary>One box of a recorded model, in model space. Optic = part of the optic or its rail; Clear = glass, glow or faded.</summary>
+    public readonly record struct Part(Vector3 Min, Vector3 Max, bool Optic, bool Clear);
+
+    private static List<Part>? _record;
+    private static bool _inOptic;
+
+    /// <summary>
+    /// Builds the gun's box list without drawing anything (for the self-test): every box's model-space
+    /// bounds, with the optic's parts flagged. <paramref name="cutaway"/> is the <see cref="AdsCutaway"/> to build with.
+    /// </summary>
+    public static List<Part> RecordParts(WeaponDef d, float cutaway)
+    {
+        var keep = AdsCutaway;
+        var list = new List<Part>();
+        _record = list;
+        AdsCutaway = cutaway;
+        try
+        {
+            Draw(null!, d, Matrix4x4.Identity, false);
+        }
+        finally
+        {
+            _record = null;
+            _inOptic = false;
+            AdsCutaway = keep;
+        }
+        return list;
+    }
+
+    /// <summary>
+    /// The top of the receiver, where an optic's rail or base sits. On the round sniper receiver and on
+    /// revolvers (over the cylinder) that is above the round part's corners.
+    /// </summary>
+    private static float MountTop(WeaponDef d, Frame f) => d.Class switch
+    {
+        WeaponClass.Sniper => f.RecvH * (0.12f + 0.42f * 1.7f * 0.70711f) + 0.001f,
+        WeaponClass.Pistol when d.Mag <= 6 => f.RecvH * (0.08f + 0.42f * 1.7f * 0.70711f) + 0.001f, // revolver (see DrawPistol)
+        _ => f.RecvH * 0.5f,
+    };
+
+    /// <summary>A cheek rest's top: with an optic fitted it drops to just above the rail, under any scope's eyepiece.</summary>
+    private static float CheekTop(WeaponDef d, Frame f, float natural) =>
+        d.Optic == OpticKind.Iron ? natural : MathF.Min(natural, MountTop(d, f) + 0.012f);
 
     /// <summary>The proportions a class is built from.</summary>
     private readonly record struct Frame(float RecvLen, float RecvH, float RecvW, float BarrelLen, float BarrelW, float GuardLen, float GuardH, Vector3 Furniture);
@@ -49,17 +169,26 @@ public static class GunModel
     /// <summary>Has a scope built into the gun itself (long-range rifles with no optic attachment).</summary>
     private static bool BuiltInScope(WeaponDef d) => d.Optic == OpticKind.Iron && d.AdsZoom >= 1.8f && d.Class != WeaponClass.Pistol;
 
+    /// <summary>Has a scope built into the gun itself (long-range rifles with no optic attachment).</summary>
+    public static bool HasBuiltInScope(WeaponDef d) => BuiltInScope(d);
+
     /// <summary>Height of the sight line above the grip: the viewmodel puts this at the centre of the screen when aiming.</summary>
     public static float SightHeight(WeaponDef d)
     {
         var f = FrameFor(d);
         var top = f.RecvH * 0.5f;
+        var mount = MountTop(d, f);
         return d.Optic switch
         {
-            OpticKind.RedDot => top + 0.035f,
-            OpticKind.Holo => top + 0.04f,
-            OpticKind.Acog => top + 0.045f,
-            OpticKind.Scope4 or OpticKind.Scope8 => top + 0.055f,
+            OpticKind.RedDot => mount + 0.035f,
+            OpticKind.MiniDot => mount + 0.026f,
+            OpticKind.Holo => mount + 0.04f,
+            OpticKind.Prism2 => mount + 0.042f,
+            OpticKind.Acog => mount + 0.045f,
+            OpticKind.Hybrid3 => mount + 0.045f,
+            OpticKind.Lpvo6 => mount + 0.05f,
+            OpticKind.Scope4 or OpticKind.Scope8 => mount + 0.055f,
+            OpticKind.Scope12 => mount + 0.062f,
             _ => BuiltInScope(d) ? top + 0.05f : top + 0.02f,
         };
     }
@@ -74,7 +203,8 @@ public static class GunModel
     /// <summary>
     /// How far in front of the eye the gun's grip sits when fully aimed (viewmodel Z, negative = forward).
     /// Iron sights stay at arm's length; optics are brought up so their rear end is a set distance from
-    /// the eye: a red dot or holo fills a good part of the view, the 2.5x ACOG nearly fills it.
+    /// the eye. Magnified optics come close, but their housing is cut away at full ADS (see <see cref="AdsCutaway"/>),
+    /// so what you see is the HUD lens, not the inside of a tube.
     /// </summary>
     public static float AdsZ(WeaponDef d)
     {
@@ -86,9 +216,29 @@ public static class GunModel
                 rear = z - 0.012f;
                 relief = 0.15f;
                 break;
+            case OpticKind.MiniDot:
+                rear = z - 0.004f;
+                relief = 0.12f;
+                break;
             case OpticKind.Holo:
                 rear = z - 0.0005f;
                 relief = 0.13f;
+                break;
+            case OpticKind.Prism2:
+                rear = z + 0.045f;
+                relief = 0.06f;
+                break;
+            case OpticKind.Hybrid3:
+                rear = z + 0.071f;
+                relief = 0.055f;
+                break;
+            case OpticKind.Lpvo6:
+                rear = z + 0.16f;
+                relief = 0.05f;
+                break;
+            case OpticKind.Scope12:
+                rear = z + 0.24f;
+                relief = 0.05f;
                 break;
             case OpticKind.Acog:
                 rear = z + 0.05f;
@@ -123,7 +273,70 @@ public static class GunModel
             m *= Matrix4x4.CreateRotationZ(rotZ);
         if (rotX != 0)
             m *= Matrix4x4.CreateRotationX(rotX);
-        _g.Draw(m * Matrix4x4.CreateTranslation(x, y, z) * _pose, c, alpha, mode);
+        m *= Matrix4x4.CreateTranslation(x, y, z);
+        if (_record != null)
+        {
+            Record(m, mode == 2 || alpha < 0.999f);
+            return;
+        }
+        _g.Draw(m * _pose, c, alpha, mode);
+    }
+
+    private static void Record(in Matrix4x4 m, bool clear)
+    {
+        var min = new Vector3(float.MaxValue);
+        var max = new Vector3(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var p = Vector3.Transform(new Vector3((i & 1) - 0.5f, ((i >> 1) & 1) - 0.5f, ((i >> 2) & 1) - 0.5f), m);
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+        }
+        _record!.Add(new Part(min, max, _inOptic, clear));
+    }
+
+    private static void Blend(bool on)
+    {
+        if (_record == null)
+            _g.SetBlend(on);
+    }
+
+    /// <summary>An optic housing box: fades out as <see cref="AdsCutaway"/> rises (gone when fully aimed).</summary>
+    private static void Shell(float sx, float sy, float sz, float x, float y, float z, Vector3 c, float rotZ = 0, int mode = 0, float alpha = 1f)
+    {
+        var a = alpha * (1f - AdsCutaway);
+        if (a <= 0.02f)
+            return;
+        if (a >= 0.999f)
+        {
+            Box(sx, sy, sz, x, y, z, c, rotZ: rotZ, mode: mode);
+            return;
+        }
+        Blend(true);
+        if (_record == null)
+            _g.SetDepthWrite(false);
+        Box(sx, sy, sz, x, y, z, c, rotZ: rotZ, mode: mode, alpha: a);
+        if (_record == null)
+            _g.SetDepthWrite(true);
+        Blend(false);
+    }
+
+    /// <summary><see cref="Cyl"/> made of <see cref="Shell"/> boxes.</summary>
+    private static void ShellCyl(float r, float len, float x, float y, float z, Vector3 c)
+    {
+        Shell(r * 1.7f, r * 1.7f, len, x, y, z, c);
+        Shell(r * 1.7f, r * 1.7f, len, x, y, z, c * 0.93f, rotZ: MathF.PI / 4);
+    }
+
+    /// <summary><see cref="Tube"/> made of <see cref="Shell"/> boxes.</summary>
+    private static void ShellTube(float halfInner, float wall, float len, float x, float y, float z, Vector3 c)
+    {
+        var o = halfInner + wall / 2;
+        var w = halfInner * 2 + wall * 2;
+        Shell(w, wall, len, x, y + o, z, c);
+        Shell(w, wall, len, x, y - o, z, c * 0.9f);
+        Shell(wall, w, len, x - o, y, z, c * 0.95f);
+        Shell(wall, w, len, x + o, y, z, c * 0.95f);
     }
 
     /// <summary>A rough cylinder along Z: two boxes, one turned 45 degrees (reads as an octagon).</summary>
@@ -229,15 +442,15 @@ public static class GunModel
                 Box(0.035f, 0.035f, 0.07f, 0, ubY - 0.02f, ubZ, Metal * 0.7f);
                 Box(0.014f, 0.014f, 0.004f, 0, ubY - 0.02f, ubZ - 0.037f, RedGlow, mode: 2);
                 // The beam: a long, faint emissive sliver.
-                _g.SetBlend(true);
+                Blend(true);
                 Box(0.004f, 0.004f, 6f, 0, ubY - 0.02f, ubZ - 3.04f, RedGlow, mode: 2, alpha: 0.35f);
-                _g.SetBlend(false);
+                Blend(false);
                 break;
             }
         }
 
         // ---- Muzzle flash ------------------------------------------------------------------
-        if (flash)
+        if (flash && _record == null)
         {
             _g.SetBlend(true);
             var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
@@ -264,7 +477,8 @@ public static class GunModel
             // Cylinder and a long round barrel
             Cyl(f.RecvH * 0.42f, 0.05f, 0, f.RecvH * 0.08f, back - f.RecvLen * 0.45f, Metal * 0.7f);
             Box(f.RecvW * 0.7f, f.RecvH * 0.5f, f.RecvLen * 0.75f, 0, f.RecvH * 0.2f, front + f.RecvLen * 0.3f, Dark * 1.2f);
-            Box(0.01f, 0.016f, 0.012f, 0, top - 0.01f, front + 0.01f, d.Accent); // front sight
+            if (d.Optic == OpticKind.Iron)
+                Box(0.01f, 0.016f, 0.012f, 0, top - 0.01f, front + 0.01f, d.Accent); // front sight (off when an optic is fitted)
         }
         else
         {
@@ -273,8 +487,11 @@ public static class GunModel
             Box(f.RecvW * 1.02f, f.RecvH * 0.1f, f.RecvLen * 0.7f, 0, f.RecvH * 0.32f, (front + back) / 2 - 0.01f, d.Accent);
             for (var i = 0; i < 4; i++)
                 Box(f.RecvW * 1.03f, f.RecvH * 0.35f, 0.004f, 0, f.RecvH * 0.2f, back - 0.012f - i * 0.01f, Dark);
-            Box(0.012f, 0.012f, 0.01f, 0, top + 0.004f, front + 0.012f, Dark); // front sight
-            Box(0.03f, 0.012f, 0.01f, 0, top + 0.004f, back - 0.01f, Dark); // rear sight
+            if (d.Optic == OpticKind.Iron) // optics-ready slide: the iron sights come off with a sight fitted
+            {
+                Box(0.012f, 0.012f, 0.01f, 0, top + 0.004f, front + 0.012f, Dark); // front sight
+                Box(0.03f, 0.012f, 0.01f, 0, top + 0.004f, back - 0.01f, Dark); // rear sight
+            }
         }
         // Magazine
         var mag = Att(d, AttachSlot.Magazine);
@@ -347,12 +564,15 @@ public static class GunModel
             Box(0.03f, 0.016f, 0.012f, 0, top + 0.008f, back - 0.02f, Dark); // rear notch
         }
 
-        // Carry handle on LMGs
+        // Carry handle on LMGs (it comes off when an optic is fitted, leaving the rail)
         if (cls == WeaponClass.LMG)
         {
-            Box(0.014f, 0.035f, 0.012f, 0, top + 0.015f, front + 0.03f, Dark);
-            Box(0.014f, 0.035f, 0.012f, 0, top + 0.015f, front + 0.12f, Dark);
-            Box(0.018f, 0.012f, 0.11f, 0, top + 0.035f, front + 0.075f, Dark);
+            if (d.Optic == OpticKind.Iron)
+            {
+                Box(0.014f, 0.035f, 0.012f, 0, top + 0.015f, front + 0.03f, Dark);
+                Box(0.014f, 0.035f, 0.012f, 0, top + 0.015f, front + 0.12f, Dark);
+                Box(0.018f, 0.012f, 0.11f, 0, top + 0.035f, front + 0.075f, Dark);
+            }
             // Bipod (folded back unless something's mounted there)
             if (Att(d, AttachSlot.Underbarrel) == null)
             {
@@ -511,7 +731,7 @@ public static class GunModel
                 return;
             case "Heavy Stock":
                 Box(f.RecvW * 1.1f, f.RecvH * 1.05f, len, 0, y - 0.005f, back + len / 2, Metal * 0.7f);
-                Box(f.RecvW * 0.9f, f.RecvH * 0.3f, len * 0.6f, 0, y + f.RecvH * 0.55f, back + len * 0.55f, Metal * 0.6f); // cheek rest
+                Box(f.RecvW * 0.9f, f.RecvH * 0.3f, len * 0.6f, 0, CheekTop(d, f, y + f.RecvH * 0.7f) - f.RecvH * 0.15f, back + len * 0.55f, Metal * 0.6f); // cheek rest
                 Box(f.RecvW * 1.15f, f.RecvH * 1.15f, 0.03f, 0, y - 0.005f, back + len, new Vector3(0.35f, 0.12f, 0.1f)); // rubber pad
                 return;
         }
@@ -524,7 +744,7 @@ public static class GunModel
                 break;
             case StockStyle.Cheek:
                 Box(f.RecvW * 0.85f, f.RecvH * 0.9f, len, 0, y - 0.01f, back + len / 2, f.Furniture);
-                Box(f.RecvW * 0.7f, f.RecvH * 0.25f, len * 0.5f, 0, y + f.RecvH * 0.55f, back + len * 0.5f, f.Furniture * 0.85f);
+                Box(f.RecvW * 0.7f, f.RecvH * 0.25f, len * 0.5f, 0, CheekTop(d, f, y + f.RecvH * 0.675f) - f.RecvH * 0.125f, back + len * 0.5f, f.Furniture * 0.85f);
                 break;
             case StockStyle.Skeleton:
                 Box(0.015f, 0.015f, len, 0, y + f.RecvH * 0.25f, back + len / 2, Dark * 1.3f);
@@ -548,69 +768,145 @@ public static class GunModel
 
     private static void DrawOptic(WeaponDef d, Frame f, float top, float front, float back)
     {
+        _inOptic = true;
         var z = OpticZ(d);
         var hasOptic = d.Optic != OpticKind.Iron;
+        var mount = hasOptic ? MountTop(d, f) : top;
         if (hasOptic && d.Class != WeaponClass.Pistol)
-            Box(f.RecvW * 0.5f, 0.008f, f.RecvLen * 0.8f, 0, top + 0.004f, (front + back) / 2, Dark * 1.5f); // rail
+            Box(f.RecvW * 0.5f, 0.008f, f.RecvLen * 0.8f, 0, mount + 0.004f, (front + back) / 2, Dark * 1.5f); // rail
         var sight = SightHeight(d);
+        var cut = AdsCutaway;
         switch (d.Optic)
         {
             case OpticKind.RedDot:
             {
-                // Open hoop with a glowing dot on the glass
-                Box(0.034f, 0.012f, 0.05f, 0, top + 0.008f, z, OpticBody);
+                // Open hoop with a glowing dot on the glass (the hoop is already a thin rim, so it stays)
+                Box(0.034f, 0.012f, 0.05f, 0, mount + 0.008f, z, OpticBody);
                 Box(0.006f, 0.04f, 0.012f, -0.017f, sight - 0.002f, z - 0.018f, OpticBody);
                 Box(0.006f, 0.04f, 0.012f, 0.017f, sight - 0.002f, z - 0.018f, OpticBody);
                 Box(0.04f, 0.006f, 0.012f, 0, sight + 0.019f, z - 0.018f, OpticBody);
-                _g.SetBlend(true);
+                Blend(true);
                 Box(0.028f, 0.028f, 0.002f, 0, sight, z - 0.018f, new Vector3(0.6f, 0.9f, 0.7f), mode: 2, alpha: 0.12f); // glass
-                _g.SetBlend(false);
-                Box(0.004f, 0.004f, 0.002f, 0, sight, z - 0.019f, RedGlow, mode: 2);
+                Blend(false);
+                Shell(0.004f, 0.004f, 0.002f, 0, sight, z - 0.019f, RedGlow, mode: 2); // the HUD draws the dot at full ADS
+                break;
+            }
+            case OpticKind.MiniDot:
+            {
+                // Micro reflex: a low plate, a thin square hood and a tiny green dot
+                Box(0.03f, 0.012f, 0.03f, 0, mount + 0.006f, z, OpticBody * 0.9f);
+                Box(0.004f, 0.028f, 0.008f, -0.013f, sight - 0.001f, z - 0.008f, OpticBody);
+                Box(0.004f, 0.028f, 0.008f, 0.013f, sight - 0.001f, z - 0.008f, OpticBody);
+                Box(0.03f, 0.004f, 0.008f, 0, sight + 0.013f, z - 0.008f, OpticBody);
+                Box(0.006f, 0.004f, 0.008f, 0.012f, mount + 0.014f, z + 0.008f, Metal * 0.7f); // brightness button
+                Blend(true);
+                Box(0.022f, 0.022f, 0.0015f, 0, sight, z - 0.008f, new Vector3(0.6f, 0.9f, 0.7f), mode: 2, alpha: 0.1f); // glass
+                Blend(false);
+                Shell(0.003f, 0.003f, 0.002f, 0, sight, z - 0.009f, GreenGlow, mode: 2);
                 break;
             }
             case OpticKind.Holo:
             {
-                // Boxy housing with a big rectangular window (hollow frame)
-                Box(0.05f, 0.018f, 0.075f, 0, top + 0.01f, z, OpticBody);
-                Tube(0.022f, 0.006f, 0.035f, 0, sight, z - 0.018f, OpticBody * 1.1f);
-                Box(0.012f, 0.014f, 0.02f, 0.03f, top + 0.015f, z + 0.02f, OpticBody * 0.8f); // battery cap
-                _g.SetBlend(true);
+                // Boxy housing with a big rectangular window; the window's hood thins to a rim when aiming
+                Box(0.05f, 0.018f, 0.075f, 0, mount + 0.01f, z, OpticBody);
+                var hood = float.Lerp(0.035f, 0.008f, cut);
+                Tube(0.022f, 0.006f, hood, 0, sight, z - 0.0355f + hood / 2, OpticBody * 1.1f);
+                Box(0.012f, 0.014f, 0.02f, 0.03f, mount + 0.015f, z + 0.02f, OpticBody * 0.8f); // battery cap
+                Blend(true);
                 Box(0.042f, 0.042f, 0.002f, 0, sight, z - 0.034f, CyanGlow * 0.6f, mode: 2, alpha: 0.12f);
-                _g.SetBlend(false);
+                Blend(false);
+                break;
+            }
+            case OpticKind.Prism2:
+            {
+                // Stubby square prism: riser, short hollow body, front lip, rubber eyecup, illumination knob
+                Shell(0.036f, 0.014f, 0.06f, 0, mount + 0.007f, z, OpticBody * 0.85f);
+                Shell(0.028f, 0.006f, 0.05f, 0, mount + 0.016f, z, OpticBody * 0.8f);
+                ShellTube(0.017f, 0.007f, 0.07f, 0, sight, z, OpticBody);
+                ShellTube(0.019f, 0.004f, 0.012f, 0, sight, z - 0.041f, OpticBody * 1.1f);
+                ShellTube(0.018f, 0.005f, 0.01f, 0, sight, z + 0.04f, Rubber);
+                Shell(0.02f, 0.008f, 0.03f, 0, sight + 0.028f, z, OpticBody * 0.9f);
+                Shell(0.01f, 0.016f, 0.016f, 0.029f, sight, z + 0.005f, Metal * 0.7f);
+                Shell(0.034f, 0.034f, 0.002f, 0, sight, z - 0.046f, new Vector3(1f, 0.8f, 0.5f) * 0.5f, mode: 2, alpha: 0.25f); // amber glass
                 break;
             }
             case OpticKind.Acog:
             {
                 // Short prism scope: hollow tube with a wider objective, a top housing and a red fibre
-                Box(0.026f, 0.03f, 0.05f, 0, top + 0.015f, z, OpticBody * 0.9f);
-                Tube(0.016f, 0.006f, 0.12f, 0, sight, z - 0.01f, OpticBody);
-                Tube(0.021f, 0.006f, 0.03f, 0, sight, z - 0.075f, OpticBody * 0.9f);
-                Box(0.006f, 0.006f, 0.06f, 0, sight + 0.024f, z, RedGlow, mode: 2);
+                Shell(0.026f, 0.03f, 0.05f, 0, mount + 0.015f, z, OpticBody * 0.9f);
+                ShellTube(0.016f, 0.006f, 0.12f, 0, sight, z - 0.01f, OpticBody);
+                ShellTube(0.021f, 0.006f, 0.03f, 0, sight, z - 0.075f, OpticBody * 0.9f);
+                Shell(0.006f, 0.006f, 0.06f, 0, sight + 0.024f, z, RedGlow, mode: 2);
+                break;
+            }
+            case OpticKind.Hybrid3:
+            {
+                // Tall reflex up front, a 3x magnifier on a flip mount behind it
+                Shell(0.03f, 0.024f, 0.04f, 0, mount + 0.012f, z - 0.04f, OpticBody * 0.85f);
+                ShellTube(0.016f, 0.005f, 0.03f, 0, sight, z - 0.045f, OpticBody);
+                Shell(0.004f, 0.004f, 0.002f, 0, sight, z - 0.05f, RedGlow, mode: 2);
+                Shell(0.03f, 0.02f, 0.03f, 0, mount + 0.01f, z + 0.03f, OpticBody * 0.8f); // magnifier mount
+                Shell(0.008f, 0.026f, 0.026f, 0.022f, sight - 0.008f, z + 0.03f, Metal * 0.65f); // flip hinge
+                ShellTube(0.014f, 0.005f, 0.06f, 0, sight, z + 0.03f, OpticBody * 0.95f);
+                ShellTube(0.016f, 0.004f, 0.012f, 0, sight, z + 0.065f, Rubber);
+                break;
+            }
+            case OpticKind.Lpvo6:
+            {
+                // Slim variable scope: small objective, big eyepiece with a throw lever, low capped turrets
+                const float len = 0.22f, r = 0.017f;
+                Shell(0.02f, sight - mount, 0.014f, 0, (mount + sight) / 2, z - len * 0.22f, OpticBody * 0.8f); // rings
+                Shell(0.02f, sight - mount, 0.014f, 0, (mount + sight) / 2, z + len * 0.22f, OpticBody * 0.8f);
+                ShellCyl(r, len, 0, sight, z, OpticBody * 0.85f);
+                ShellCyl(r * 1.25f, len * 0.12f, 0, sight, z - len * 0.5f, OpticBody * 0.8f); // objective
+                ShellCyl(r * 1.45f, 0.05f, 0, sight, z + len * 0.5f + 0.025f, OpticBody * 0.78f); // eyepiece
+                Shell(0.008f, 0.03f, 0.008f, r * 1.4f, sight + 0.018f, z + len * 0.5f + 0.01f, Metal * 0.75f); // throw lever
+                Shell(0.016f, 0.012f, 0.016f, 0, sight + r * 1.35f, z, Metal * 0.65f); // capped turrets
+                Shell(0.012f, 0.016f, 0.016f, r * 1.35f, sight, z, Metal * 0.65f);
+                Shell(0.012f, 0.018f, 0.018f, -r * 1.35f, sight, z + 0.01f, d.Accent); // illumination dial
+                Shell(r * 2.4f, r * 2.4f, 0.002f, 0, sight, z - len * 0.56f, CyanGlow * 0.4f, mode: 2); // lens glint
+                break;
+            }
+            case OpticKind.Scope12:
+            {
+                // Long-range scope: huge objective bell, long tube, tall target turrets, side focus wheel, three rings
+                const float len = 0.36f, r = 0.02f;
+                for (var i = -1; i <= 1; i++)
+                    Shell(0.022f, sight - mount, 0.016f, 0, (mount + sight) / 2, z + i * len * 0.24f, OpticBody * 0.8f);
+                ShellCyl(r, len, 0, sight, z, OpticBody * 0.85f);
+                ShellCyl(r * 1.4f, 0.03f, 0, sight, z - len * 0.5f - 0.015f, OpticBody * 0.82f); // bell taper
+                ShellCyl(r * 1.8f, 0.09f, 0, sight, z - len * 0.5f - 0.075f, OpticBody * 0.8f); // objective bell
+                ShellCyl(r * 1.3f, 0.06f, 0, sight, z + len * 0.5f + 0.03f, OpticBody * 0.8f); // eyepiece
+                Shell(0.026f, 0.034f, 0.026f, 0, sight + r * 1.6f, z, Metal * 0.7f); // elevation turret
+                Shell(0.03f, 0.026f, 0.026f, r * 1.6f, sight, z, Metal * 0.7f); // windage turret
+                Shell(0.006f, 0.05f, 0.05f, -r * 1.7f, sight, z - 0.01f, Metal * 0.6f); // side focus wheel
+                Shell(r * 3.2f, r * 3.2f, 0.002f, 0, sight, z - len * 0.5f - 0.121f, CyanGlow * 0.4f, mode: 2); // lens glint
                 break;
             }
             case OpticKind.Scope4:
             case OpticKind.Scope8:
-                DrawScope(d.Optic == OpticKind.Scope8 ? 1.25f : 1f, top, sight, z);
+                DrawScope(d.Optic == OpticKind.Scope8 ? 1.25f : 1f, mount, sight, z);
                 break;
             default:
                 if (BuiltInScope(d))
                     DrawScope(0.85f, top, sight, z);
                 break;
         }
+        _inOptic = false;
     }
 
-    /// <summary>Full scope: rings, long tube, objective bell, eyepiece and turrets.</summary>
+    /// <summary>Full scope: rings, long tube, objective bell, eyepiece and turrets (all cut away when fully aimed).</summary>
     private static void DrawScope(float k, float top, float sight, float z)
     {
         var len = 0.26f * k;
         var r = 0.02f * k;
-        Box(0.02f, sight - top, 0.016f, 0, (top + sight) / 2, z - len * 0.25f, OpticBody * 0.8f); // rings
-        Box(0.02f, sight - top, 0.016f, 0, (top + sight) / 2, z + len * 0.25f, OpticBody * 0.8f);
-        Cyl(r, len, 0, sight, z, OpticBody * 0.85f);
-        Cyl(r * 1.6f, len * 0.22f, 0, sight, z - len * 0.55f, OpticBody * 0.8f); // objective bell
-        Cyl(r * 1.35f, len * 0.16f, 0, sight, z + len * 0.55f, OpticBody * 0.8f); // eyepiece
-        Box(0.018f * k, 0.022f * k, 0.018f * k, 0, sight + r * 1.5f, z, Metal * 0.7f); // elevation turret
-        Box(0.022f * k, 0.018f * k, 0.018f * k, r * 1.5f, sight, z, Metal * 0.7f); // windage turret
-        Box(r * 2.2f, r * 2.2f, 0.002f, 0, sight, z - len * 0.66f, CyanGlow * 0.4f, mode: 2); // lens glint
+        Shell(0.02f, sight - top, 0.016f, 0, (top + sight) / 2, z - len * 0.25f, OpticBody * 0.8f); // rings
+        Shell(0.02f, sight - top, 0.016f, 0, (top + sight) / 2, z + len * 0.25f, OpticBody * 0.8f);
+        ShellCyl(r, len, 0, sight, z, OpticBody * 0.85f);
+        ShellCyl(r * 1.6f, len * 0.22f, 0, sight, z - len * 0.55f, OpticBody * 0.8f); // objective bell
+        ShellCyl(r * 1.35f, len * 0.16f, 0, sight, z + len * 0.55f, OpticBody * 0.8f); // eyepiece
+        Shell(0.018f * k, 0.022f * k, 0.018f * k, 0, sight + r * 1.5f, z, Metal * 0.7f); // elevation turret
+        Shell(0.022f * k, 0.018f * k, 0.018f * k, r * 1.5f, sight, z, Metal * 0.7f); // windage turret
+        Shell(r * 2.2f, r * 2.2f, 0.002f, 0, sight, z - len * 0.66f, CyanGlow * 0.4f, mode: 2); // lens glint
     }
 }

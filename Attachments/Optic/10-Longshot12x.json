@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Longshot 12x",
+  "slot": "Optic",
+  "order": 10,
+  "unlockOrder": 23,
+  "blurb": "Big-bell 12x glass with a mil-dot reticle, for the far side of the biggest maps.",
+  "pros": ["12x zoom", "Mil-dot reticle", "-70% aimed spread"],
+  "cons": ["Slowest to aim", "Very narrow view", "-6% speed"],
+  "fits": { "classes": ["Sniper"] },
+  "effects": [
+    { "stat": "optic", "set": "Scope12" },
+    { "stat": "adsZoom", "set": 12 },
+    { "stat": "adsSpreadMult", "mul": 0.3 },
+    { "stat": "adsTime", "add": 0.18 },
+    { "stat": "mobility", "add": -0.06 }
+  ]
+}

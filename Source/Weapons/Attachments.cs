@@ -10,7 +10,10 @@ public enum AttachSlot : byte
     Stock,
 }
 
-/// <summary>What you look through when aiming. Iron = the gun's own sights (or built-in scope on snipers).</summary>
+/// <summary>
+/// What you look through when aiming. Iron = the gun's own sights (or built-in scope on snipers).
+/// New kinds go at the end: optic files name them, and the order here is never relied on elsewhere.
+/// </summary>
 public enum OpticKind : byte
 {
     Iron,
@@ -19,6 +22,21 @@ public enum OpticKind : byte
     Acog,
     Scope4,
     Scope8,
+
+    /// <summary>Tiny open reflex sight (fastest to aim).</summary>
+    MiniDot,
+
+    /// <summary>Compact 2x prism with a horseshoe reticle.</summary>
+    Prism2,
+
+    /// <summary>Reflex sight with a 3x magnifier behind it.</summary>
+    Hybrid3,
+
+    /// <summary>Low-power variable optic set to 6x.</summary>
+    Lpvo6,
+
+    /// <summary>Long-range 12x sniper scope with a mil-dot reticle.</summary>
+    Scope12,
 }
 
 /// <summary>One attachment: where it goes, what it fits, and how it changes the gun. Loaded from the Attachments folder.</summary>
@@ -160,9 +178,9 @@ public static class Attachments
 
     /// <summary>
     /// Weapon XP to unlock everything on this gun. A typical match earns ~1,000 weapon XP for the gun
-    /// you use, so 3 attachments = ~3 matches and 19 attachments = ~7 matches.
+    /// you use, so 3 attachments = ~2.7 matches and 23 attachments (a sniper with every optic) = ~7 matches.
     /// </summary>
-    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (2000 + 260 * For(w).Count) / 50 * 50; // multiple of 50
+    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (2000 + 220 * For(w).Count) / 50 * 50; // multiple of 50
 
     /// <summary>
     /// Weapon XP for the k-th attachment (in unlock order) on a gentle curve: the first few come fast,
