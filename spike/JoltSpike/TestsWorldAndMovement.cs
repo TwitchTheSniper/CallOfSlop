@@ -24,7 +24,8 @@ public static class TestsWorldAndMovement
 
         var y = HitY(-90, 0, out var b);
         var expect = TestWorld.TerrainHeight(-90, 0);
-        Check("ray hits terrain", b == w.TerrainBody && MathF.Abs(y - expect) < 0.15f, $"y={F(y)} expected~{F(expect)}");
+        Check("ray hits terrain", w.TerrainBodies.Contains(b) && MathF.Abs(y - expect) < 0.15f, $"y={F(y)} expected~{F(expect)} ({(w.HeightField ? "HeightFieldShape" : "triangle-compound fallback")})");
+        Result("a.heightfield", w.HeightField ? "yes" : "no");
         y = HitY(0, TestWorld.LaneShapes, out b);
         Check("ray hits cylinder", b == w.CylinderBody && MathF.Abs(y - 3) < 0.01f, $"y={F(y)}");
         y = HitY(6, TestWorld.LaneShapes, out b);

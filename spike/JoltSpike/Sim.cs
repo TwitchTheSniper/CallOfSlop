@@ -75,9 +75,9 @@ public static class StanceShapes
                 var st = (Stance)i;
                 var h = Sim.HeightOf(st);
                 Shape inner = st == Stance.Prone
-                    ? CylinderShape.Create(h / 2, Sim.PlayerRadius, 0.05f)
-                    : CapsuleShape.Create(h / 2 - Sim.PlayerRadius, Sim.PlayerRadius);
-                _shapes[i] = Phys.Keep(RotatedTranslatedShape.Create(new float3(0, h / 2, 0), floatQuat.Identity, inner));
+                    ? Phys.Cylinder(h / 2, Sim.PlayerRadius, 0.05f)
+                    : Phys.Capsule(h / 2 - Sim.PlayerRadius, Sim.PlayerRadius);
+                _shapes[i] = Phys.Keep(Phys.Offset(new float3(0, h / 2, 0), floatQuat.Identity, Phys.Keep(inner)));
             }
         }
         return _shapes[(int)s];
@@ -282,7 +282,7 @@ public sealed class Mover
     }
 
     static Shape? _probe;
-    static Shape Probe => _probe ??= Phys.Keep(SphereShape.Create(0.15f));
+    static Shape Probe => _probe ??= Phys.Keep(Phys.Sphere(0.15f));
     static ShapeCastSettings? _castSettings;
     static ShapeCastSettings CastSettings => _castSettings ??= ShapeCastSettings.Create();
 }

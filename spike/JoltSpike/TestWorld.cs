@@ -13,7 +13,9 @@ public sealed class TestWorld
     public readonly Phys P;
     public readonly List<(float3 Min, float3 Max)> Aabbs = new(); // axis-aligned boxes, for the brute-force baseline
     public uint MovingPlatform, RotatingPlatform;
-    public uint CylinderBody, HullBody, MeshBody, TerrainBody;
+    public uint CylinderBody, HullBody, MeshBody;
+    public List<uint> TerrainBodies = new();
+    public bool HeightField;
     public int BodyCount;
 
     // Fixture lanes (z) - each movement test runs in its own lane.
@@ -31,7 +33,7 @@ public sealed class TestWorld
         var adds = new List<Action>();
 
         // ---- Terrain: flat in the middle (where the fixtures are), hills outside ----
-        adds.Add(() => TerrainBody = AddTerrain(terrainSamples));
+        adds.Add(() => AddTerrain(terrainSamples));
 
         // ---- Movement fixtures ----
         for (var i = 0; i < 4; i++) // 0.4 m stairs, 1 m deep each, the top one 6 m long; top at 1.6 m
@@ -51,17 +53,20 @@ public sealed class TestWorld
         adds.Add(() => AddAabb(new float3(4, 1.5f, LaneWall), new float3(1, 1.5f, 2))); // 3 m wall
         adds.Add(() =>
         {
-            MovingPlatform = P.AddKinematic(Phys.Keep(BoxShape.Create(new float3(2, 0.25f, 2))), MoverStart, floatQuat.Identity);
-            RotatingPlatform = P.AddKinematic(Phys.Keep(BoxShape.Create(new float3(4, 0.25f, 4))), SpinnerCenter, floatQuat.Identity);
+            MovingPlatform = P.AddKinematic(Phys.Keep(Phys.Box(new float3(2, 0.25f, 2))), MoverStart, floatQuat.Identity);
+            RotatingPlatform = P.AddKinematic(Phys.Keep(Phys.Box(new float3(4, 0.25f, 4))), SpinnerCenter, floatQuat.Identity);
         });
 
         // ---- Non-box shapes: cylinder, convex hull, triangle mesh ----
         adds.Add(() =>
         {
-            CylinderBody = P.AddStatic(CylinderShape.Create(1.5f, 0.6f), new float3(0, 1.5f, LaneShapes), floatQuat.Identity); // 3 m pillar
+            CylinderBody = P.AddStatic(Phys.Cylinder(1.5f, 0.6f), new float3(0, 1.5f, LaneShapes), floatQuat.Identity); // 3 m pillar
             // A pyramid as a convex hull (stand-in for a rock or a sandbag pile): apex 2 m up.
             ReadOnlySpan<float3> pyr = [new(-1.5f, 0, -1.5f), new(1.5f, 0, -1.5f), new(1.5f, 0, 1.5f), new(-1.5f, 0, 1.5f), new(0, 2, 0)];
-            HullBody = P.AddStatic(Phys.MakeHull(pyr, 0.05f), new float3(6, 0, LaneShapes), floatQuat.Identity);
+            float3[] pv = [pyr[0], pyr[1], pyr[2], pyr[3], pyr[4]];
+            IndexedTriangle[] pt = [IndexedTriangle.Create(0, 1, 2, 0), IndexedTriangle.Create(0, 2, 3, 0), // base (faces down)
+                IndexedTriangle.Create(0, 4, 1, 0), IndexedTriangle.Create(1, 4, 2, 0), IndexedTriangle.Create(2, 4, 3, 0), IndexedTriangle.Create(3, 4, 0, 0)];
+            HullBody = P.AddStatic(Phys.MakeHull(pyr, 0.05f, pv, pt), new float3(6, 0, LaneShapes), floatQuat.Identity);
             // An arch as a triangle mesh: two legs and a top beam, 4 m wide, 3 m tall (top surface at y = 3).
             var tris = new List<Triangle>();
             AddMeshBox(tris, new float3(-1.75f, 1.25f, 0), new float3(0.25f, 1.25f, 0.5f));
@@ -104,14 +109,14 @@ public sealed class TestWorld
         return t * (2.5f + 2.5f * DMath.Sin(x * 0.07f) * DMath.Cos(z * 0.05f));
     }
 
-    uint AddTerrain(int n)
+    void AddTerrain(int n)
     {
         var samples = new float[n * n];
         var half = n / 2f;
         for (var z = 0; z < n; z++)
             for (var x = 0; x < n; x++)
                 samples[z * n + x] = TerrainHeight(x - half, z - half);
-        return P.AddStatic(Phys.MakeHeightField(samples, n, new float3(-half, 0, -half), new float3(1, 1, 1)), float3.Zero, floatQuat.Identity);
+        TerrainBodies = P.AddTerrain(samples, n, new float3(-half, 0, -half), out HeightField);
     }
 
     void AddAabb(float3 c, float3 half)

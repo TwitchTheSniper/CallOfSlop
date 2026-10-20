@@ -62,7 +62,7 @@ public static class TestsPerfAndLagComp
         for (var i = 0; i < 5000; i++)
         {
             var half = new float3(crng.Range(0.3f, 3f), crng.Range(0.2f, 2.5f), crng.Range(0.3f, 3f));
-            compound.AddShape(new float3(crng.Range(-250, 250), half.Y, crng.Range(-250, 250)), floatQuat.Identity, BoxShape.Create(half, 0.05f));
+            compound.AddShape(new float3(crng.Range(-250, 250), half.Y, crng.Range(-250, 250)), floatQuat.Identity, Phys.Box(half, 0.05f));
         }
         var cp = new Phys();
         cp.AddStatic(compound.CreateShape(cp.Temp), float3.Zero, floatQuat.Identity);
@@ -80,9 +80,8 @@ public static class TestsPerfAndLagComp
                 samples[z * n + x] = TestWorld.TerrainHeight(x - 512, z - 512) + (x % 7) * 0.05f;
         var genMs = Clock.MsSince(t);
         t = Clock.Now;
-        var hShape = Phys.MakeHeightField(samples, n, new float3(-512, 0, -512), new float3(1, 1, 1));
-        Metric("build: 1024^2 heightfield shape ms (excl. sample generation)", $"{F(Clock.MsSince(t), 1)} (gen {F(genMs, 1)})");
-        _ = hShape;
+        var hf = Phys.MakeHeightField(samples, n, new float3(-512, 0, -512), new float3(1, 1, 1));
+        Metric("build: 1024^2 heightfield ms", hf != null ? $"{F(Clock.MsSince(t), 1)} (sample gen {F(genMs, 1)})" : "unavailable in this binding (see section a for the fallback's cost)");
 
         t = Clock.Now;
         var tris = new Triangle[20000];
@@ -209,7 +208,7 @@ public static class TestsPerfAndLagComp
         }
 
         // Option B: hitbox capsules as kinematic bodies on a query-only layer, moved to the historic pose per shot.
-        var capsule = Phys.Keep(RotatedTranslatedShape.Create(new float3(0, 0.9f, 0), floatQuat.Identity, CapsuleShape.Create(0.5f, 0.4f)));
+        var capsule = Phys.Keep(Phys.Offset(new float3(0, 0.9f, 0), floatQuat.Identity, Phys.Keep(Phys.Capsule(0.5f, 0.4f))));
         var bodies = new uint[Players];
         for (var p = 0; p < Players; p++)
             bodies[p] = w.P.AddKinematic(capsule, hist[p, History - 1], floatQuat.Identity, Layers.Hitbox);

@@ -54,10 +54,10 @@ public static class TestsAssets
         var receiver = root.Find("Receiver")!;
         var worldVerts = positions.Select(v => ToF3(SN.Vector3.Transform(new SN.Vector3(v.X, v.Y, v.Z), receiver.World))).ToArray();
         var phys = new Phys();
-        var hull = Phys.MakeHull(worldVerts, 0.01f);
         var tris = new IndexedTriangle[indices.Length / 3];
         for (var i = 0; i < tris.Length; i++)
             tris[i] = IndexedTriangle.Create(indices[i * 3], indices[i * 3 + 1], indices[i * 3 + 2], 0);
+        var hull = Phys.MakeHull(worldVerts, 0.01f, worldVerts, tris);
         var mesh = Phys.MakeMesh(worldVerts, tris);
         var hullBody = phys.AddStatic(hull, float3.Zero, floatQuat.Identity);
         var meshBody = phys.AddStatic(mesh, new float3(0, 0, 5), floatQuat.Identity);
@@ -78,7 +78,11 @@ public static class TestsAssets
             var pts = pos.AsSpan<float3>().ToArray();
             var minY = pts.Min(p => p.Y);
             var maxY = pts.Max(p => p.Y);
-            var cylHull = Phys.MakeHull(pts, 0.02f);
+            var cidx = idx.AsSpan<uint>().ToArray();
+            var ctris = new IndexedTriangle[cidx.Length / 3];
+            for (var i = 0; i < ctris.Length; i++)
+                ctris[i] = IndexedTriangle.Create(cidx[i * 3], cidx[i * 3 + 1], cidx[i * 3 + 2], 0);
+            var cylHull = Phys.MakeHull(pts, 0.02f, pts, ctris);
             var cylBody = phys.AddStatic(cylHull, new float3(-10, 0, 0), floatQuat.Identity);
             var cylTop = 10 - phys.Raycast(new float3(-10, 10, 0), new float3(0, -1, 0), 20, out var cb);
             Check("ProcGenMesh cylinder -> convex hull collider", cb == cylBody && MathF.Abs(cylTop - maxY) < 0.03f,

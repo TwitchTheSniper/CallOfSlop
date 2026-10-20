@@ -83,6 +83,7 @@ public sealed class Phys
         AnyBody = BodyFilter.Create();
         AnyShape = ShapeFilter.Create();
         RaySettings = RayCastSettings.Create();
+        RaySettings.SetBackFaceMode(BackFaceMode.CollideWithBackFaces); // also hit triangle back faces (thin meshes)
     }
 
     /// <summary>Keeps a shape alive for as long as the process runs (Jolt shapes are ref counted).</summary>
@@ -104,43 +105,130 @@ public sealed class Phys
         }
     }
 
-    /// <summary>Convex hull from points, robust against the 2026.10.2 overload mix-up (see the design doc).</summary>
-    public static Shape MakeHull(ReadOnlySpan<float3> points, float convexRadius)
+    // ---- Shape construction with fallbacks --------------------------------------------------------------
+    // Ahwoo.BRUTAL.Jolt 2026.10.2 ships natives that lack (or number differently) some overloaded exports the
+    // managed binding calls, so every constructor here tries the direct call and falls back to an equivalent
+    // that works, recording what happened in BindingNotes (reported by the spike, see the design doc).
+
+    static bool Missing(Exception e) => e is EntryPointNotFoundException or JoltException;
+
+    public static Shape Box(float3 half, float convexRadius = 0.05f)
     {
-        var s = ConvexHullShapeSettings.Create(points, convexRadius);
-        try
+        try { return BoxShape.Create(half, convexRadius); }
+        catch (Exception e) when (Missing(e))
         {
-            return s.CreateShape();
-        }
-        catch (JoltException e)
-        {
-            Note($"ConvexHullShapeSettings.Create(points) -> '{e.Message}'; fixed with SetPoints()");
-            s.SetPoints(points);
-            s.SetMaxConvexRadius(convexRadius);
-            s.ClearCachedResult();
-            return s.CreateShape();
+            Note($"BoxShape.Create(half, r): {e.GetType().Name}; used BoxShapeSettings");
+            return BoxShapeSettings.Create(half, convexRadius).CreateShape();
         }
     }
 
-    /// <summary>Triangle mesh from indexed triangles, with a setter-based fallback.</summary>
+    public static Shape Capsule(float halfHeight, float radius)
+    {
+        try { return CapsuleShape.Create(halfHeight, radius); }
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"CapsuleShape.Create(h, r): {e.GetType().Name}; used CapsuleShapeSettings");
+            return CapsuleShapeSettings.Create(halfHeight, radius).CreateShape();
+        }
+    }
+
+    public static Shape Cylinder(float halfHeight, float radius, float convexRadius = 0.05f)
+    {
+        try { return CylinderShape.Create(halfHeight, radius, convexRadius); }
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"CylinderShape.Create(h, r): {e.GetType().Name}; used CylinderShapeSettings");
+            return CylinderShapeSettings.Create(halfHeight, radius, convexRadius).CreateShape();
+        }
+    }
+
+    public static Shape Sphere(float radius)
+    {
+        try { return SphereShape.Create(radius); }
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"SphereShape.Create(r): {e.GetType().Name}; used SphereShapeSettings");
+            return SphereShapeSettings.Create(radius).CreateShape();
+        }
+    }
+
+    public static Shape Offset(float3 pos, floatQuat rot, Shape inner)
+    {
+        try { return RotatedTranslatedShape.Create(pos, rot, inner); }
+        catch (Exception e) when (Missing(e))
+        {
+            try
+            {
+                var shape = RotatedTranslatedShapeSettings.Create(pos, rot, inner).CreateShape();
+                Note($"RotatedTranslatedShape.Create: {e.GetType().Name}; used RotatedTranslatedShapeSettings");
+                return shape;
+            }
+            catch (Exception e2) when (Missing(e2))
+            {
+                Note($"RotatedTranslatedShape(+Settings).Create: {e2.GetType().Name}; used a one-child StaticCompoundShape");
+                var c = StaticCompoundShapeSettings.Create();
+                c.AddShape(pos, rot, inner);
+                return c.CreateShape();
+            }
+        }
+    }
+
+    public static Shape Tri(float3 a, float3 b, float3 c)
+    {
+        try { return TriangleShape.Create(a, b, c, 0f); }
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"TriangleShape.Create(v1, v2, v3): {e.GetType().Name}; used TriangleShapeSettings");
+            return TriangleShapeSettings.Create(a, b, c, 0f).CreateShape();
+        }
+    }
+
+    /// <summary>Fallback for meshes/hulls/terrain: a static compound of single-triangle shapes.</summary>
+    public static Shape TriangleCompound(float3[] verts, IndexedTriangle[] tris)
+    {
+        var c = StaticCompoundShapeSettings.Create();
+        foreach (var t in tris)
+            c.AddShape(float3.Zero, floatQuat.Identity, Tri(verts[t.Idx[0]], verts[t.Idx[1]], verts[t.Idx[2]]));
+        return c.CreateShape();
+    }
+
+    /// <summary>Convex hull from points; falls back to the given surface triangles as a triangle compound.</summary>
+    public static Shape MakeHull(ReadOnlySpan<float3> points, float convexRadius, float3[] fbVerts, IndexedTriangle[] fbTris)
+    {
+        try
+        {
+            return ConvexHullShapeSettings.Create(points, convexRadius).CreateShape();
+        }
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"ConvexHullShapeSettings.Create(points): {e.GetType().Name} '{e.Message}'; NO WORKING HULL CONSTRUCTOR, used a triangle compound of the surface");
+            return TriangleCompound(fbVerts, fbTris);
+        }
+    }
+
+    /// <summary>Triangle mesh from indexed triangles, with fallbacks.</summary>
     public static Shape MakeMesh(float3[] verts, IndexedTriangle[] tris)
     {
         try
         {
             return MeshShapeSettings.Create(verts, tris, ReadOnlySpan<PhysicsMaterial>.Empty).CreateShape();
         }
-        catch (Exception e) when (e is JoltException or EntryPointNotFoundException)
+        catch (Exception e) when (Missing(e))
         {
-            Note($"MeshShapeSettings.Create(verts, tris) -> {e.GetType().Name} '{e.Message}'; fixed with setters");
-            var flat = new Triangle[tris.Length];
-            for (var i = 0; i < tris.Length; i++)
-                flat[i] = Triangle.Create(verts[tris[i].Idx[0]], verts[tris[i].Idx[1]], verts[tris[i].Idx[2]]);
-            var s = MeshShapeSettings.Create(flat, ReadOnlySpan<PhysicsMaterial>.Empty);
-            s.SetTriangleVertices(verts);
-            s.SetIndexedTriangles(tris);
-            s.Sanitize();
-            s.ClearCachedResult();
-            return s.CreateShape();
+            try
+            {
+                var flat = new Triangle[tris.Length];
+                for (var i = 0; i < tris.Length; i++)
+                    flat[i] = Triangle.Create(verts[tris[i].Idx[0]], verts[tris[i].Idx[1]], verts[tris[i].Idx[2]]);
+                var shape = MeshShapeSettings.Create(flat, ReadOnlySpan<PhysicsMaterial>.Empty).CreateShape();
+                Note($"MeshShapeSettings.Create(verts, tris): {e.GetType().Name}; Create(triangles) worked");
+                return shape;
+            }
+            catch (Exception e2) when (Missing(e2))
+            {
+                Note($"MeshShapeSettings.Create: {e.GetType().Name} / {e2.GetType().Name} '{e2.Message}'; NO WORKING MESH CONSTRUCTOR, used a triangle compound");
+                return TriangleCompound(verts, tris);
+            }
         }
     }
 
@@ -159,26 +247,54 @@ public sealed class Phys
         return MakeMesh(verts, tris);
     }
 
-    /// <summary>Heightfield n x n with 1 sample per scale unit. The parameterless Create() is missing from the 2026.10.2 natives.</summary>
-    public static unsafe Shape MakeHeightField(float[] samples, int n, float3 offset, float3 scale)
+    /// <summary>Heightfield n x n; returns null when the binding can't build one (caller falls back).</summary>
+    public static unsafe Shape? MakeHeightField(float[] samples, int n, float3 offset, float3 scale)
     {
-        HeightFieldShapeSettings hs;
         try
         {
-            hs = HeightFieldShapeSettings.Create();
-        }
-        catch (EntryPointNotFoundException)
-        {
-            Note("HeightFieldShapeSettings.Create() has no native export (HeightFieldShapeSettings_Create_2); used the full Create(samples, ...) + setters");
+            HeightFieldShapeSettings hs;
             fixed (float* p = samples)
                 hs = HeightFieldShapeSettings.Create(p, offset, scale, (uint)n, default, ReadOnlySpan<PhysicsMaterial>.Empty);
+            return hs.CreateShape();
         }
-        hs.SetOffset(offset);
-        hs.SetScale(scale);
-        hs.SetSampleCount((uint)n);
-        hs.SetHeightSamples(samples);
-        hs.ClearCachedResult();
-        return hs.CreateShape();
+        catch (Exception e) when (Missing(e))
+        {
+            Note($"HeightFieldShapeSettings.Create(samples, ...): {e.GetType().Name} '{e.Message}'; NO WORKING HEIGHTFIELD, terrain built from triangle compounds");
+            return null;
+        }
+    }
+
+    /// <summary>Terrain as heightfield, or as 32x32-cell chunks of triangle compounds when that's unavailable.</summary>
+    public List<uint> AddTerrain(float[] samples, int n, float3 offset, out bool heightfield)
+    {
+        var ids = new List<uint>();
+        var hf = MakeHeightField(samples, n, offset, new float3(1, 1, 1));
+        heightfield = hf != null;
+        if (hf is { } shape)
+        {
+            ids.Add(AddStatic(shape, float3.Zero, floatQuat.Identity));
+            return ids;
+        }
+        const int Chunk = 32;
+        for (var cz = 0; cz < n - 1; cz += Chunk)
+            for (var cx = 0; cx < n - 1; cx += Chunk)
+            {
+                var verts = new List<float3>();
+                var tris = new List<IndexedTriangle>();
+                for (var z = cz; z < Math.Min(cz + Chunk, n - 1); z++)
+                    for (var x = cx; x < Math.Min(cx + Chunk, n - 1); x++)
+                    {
+                        var b = (uint)verts.Count;
+                        verts.Add(offset + new float3(x, samples[z * n + x], z));
+                        verts.Add(offset + new float3(x + 1, samples[z * n + x + 1], z));
+                        verts.Add(offset + new float3(x, samples[(z + 1) * n + x], z + 1));
+                        verts.Add(offset + new float3(x + 1, samples[(z + 1) * n + x + 1], z + 1));
+                        tris.Add(IndexedTriangle.Create(b, b + 2, b + 1, 0)); // counter-clockwise seen from above
+                        tris.Add(IndexedTriangle.Create(b + 1, b + 2, b + 3, 0));
+                    }
+                ids.Add(AddStatic(MakeMesh(verts.ToArray(), tris.ToArray()), float3.Zero, floatQuat.Identity));
+            }
+        return ids;
     }
 
     public uint AddStatic(Shape shape, float3 pos, floatQuat rot)
@@ -198,7 +314,7 @@ public sealed class Phys
     }
 
     public uint AddBox(float3 center, float3 half, floatQuat rot) =>
-        AddStatic(BoxShape.Create(half, MathF.Min(0.05f, MathF.Min(half.X, MathF.Min(half.Y, half.Z)) * 0.5f)), center, rot);
+        AddStatic(Box(half, MathF.Min(0.05f, MathF.Min(half.X, MathF.Min(half.Y, half.Z)) * 0.5f)), center, rot);
 
     public uint AddBox(float3 center, float3 half) => AddBox(center, half, floatQuat.Identity);
 
