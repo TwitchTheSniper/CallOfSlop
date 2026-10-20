@@ -133,8 +133,8 @@ public static partial class SelfTest
         var expectSlope = MathF.Atan(6f / 30f) * 180f / MathF.PI;
         if (MathF.Abs(a.GroundSlope(10, 15) - expectSlope) > 1.5f || n0.Z <= 0)
             Fail($"ramp slope {a.GroundSlope(10, 15):0.0} deg (expected about {expectSlope:0.0}) or its normal {n0} points the wrong way");
-        if (a.GroundSlope(30, 25) > 2f)
-            Fail($"plateau top isn't flat ({a.GroundSlope(30, 25):0.0} deg)");
+        if (a.GroundSlope(25, 25) > 2f)
+            Fail($"plateau top isn't flat ({a.GroundSlope(25, 25):0.0} deg)");
 
         // Materials: the painted ridge is rock, the painted path is dirt, the valley floor is sand, flat grass is grass.
         TerrainMaterial Mat(float x, float z)
@@ -160,10 +160,10 @@ public static partial class SelfTest
         var down = World.RaycastWorld(new Vector3(5.3f, 20, -7.7f), -Vector3.UnitY, 100);
         if (MathF.Abs(down - (20 - m.GroundHeight(5.3f, -7.7f))) > 1e-3f)
             Fail($"downward ray hit at {down:0.000}, ground is {20 - m.GroundHeight(5.3f, -7.7f):0.000} below");
-        // Into the hill's west flank at 3 m: the flank is 3 m high about 7 m from the centre.
-        var hill = World.RaycastWorld(new Vector3(-40, 3, -20), Vector3.UnitX, 100);
-        if (MathF.Abs(hill - 13f) > 0.4f)
-            Fail($"ray into the hill hit at {hill:0.00} m (expected about 13)");
+        // Into the hill's west flank at 3 m: the flank is 3 m high about 7 m from the centre (from inside the perimeter wall).
+        var hill = World.RaycastWorld(new Vector3(-38, 3, -20), Vector3.UnitX, 100);
+        if (MathF.Abs(hill - 11f) > 0.4f)
+            Fail($"ray into the hill hit at {hill:0.00} m (expected about 11)");
         // Along the valley floor, below the rim but above the floor: no hit. Across the valley: hits its side.
         var along = World.RaycastWorld(new Vector3(24, -2.0f, -30), Vector3.UnitX, 10);
         var across = World.RaycastWorld(new Vector3(29, -2.0f, -30), Vector3.UnitZ, 10);
@@ -191,6 +191,8 @@ public static partial class SelfTest
             for (var s = 0.02f; s <= max; s += 0.02f)
             {
                 var p = o + d * s;
+                if (p.X < t.Data.OriginX || p.X > t.Data.MaxX || p.Z < t.Data.OriginZ || p.Z > t.Data.MaxZ)
+                    break; // the terrain ends at the grid's edge
                 if (p.Y <= t.HeightAt(p.X, p.Z))
                 {
                     want = s;
@@ -198,12 +200,12 @@ public static partial class SelfTest
                 }
             }
             var err = MathF.Abs(got - want);
-            if (err > 0.05f)
-                mismatches++;
+            if (err > 0.05f && mismatches++ == 0)
+                Line($"  ray mismatch: from {o} dir {d}: cast {got:0.000}, march {want:0.000}");
             worst = MathF.Max(worst, err);
         }
         if (mismatches > 0)
-            Fail($"{mismatches} of 400 terrain ray casts disagree with a brute-force march (worst {worst:0.000} m)");
+            Fail($"{mismatches} of 400 terrain ray casts disagree with a brute-force march (worst {worst:0.000} m); first: see the log");
 
         // Cost: bullets, bot sight lines and explosions all use this.
         var sw = Stopwatch.StartNew();
@@ -321,7 +323,7 @@ public static partial class SelfTest
         var overHill = Can(-36, -20, -4, -20);
         Line($"walkable: across the cliff {acrossCliff}, flat {flat}, up the ramp {upRamp}, over the causeway side {overBank}, over the hill {overHill}");
         if (acrossCliff || !flat || !upRamp || overBank || !overHill)
-            Fail("CanWalkStraight got a terrain case wrong");
+            Fail($"CanWalkStraight got a terrain case wrong: across the cliff {acrossCliff} (want False), flat {flat}, up the ramp {upRamp}, over the causeway side {overBank} (want False), over the hill {overHill}");
     }
 
     // ---- Throwables -----------------------------------------------------------------------
@@ -352,7 +354,7 @@ public static partial class SelfTest
             Fail("the grenade rolled all the way off the slope");
 
         // Thrown hard into a slope: bounces off it (now moving away from the surface, and slower).
-        var q = new Projectile { Pos = new Vector3(-40, 4, -20), Vel = new Vector3(15, -3, 0) };
+        var q = new Projectile { Pos = new Vector3(-37, 4, -20), Vel = new Vector3(15, -3, 0) };
         var bounced = false;
         for (var i = 0; i < 120 && !bounced; i++)
         {
@@ -361,7 +363,7 @@ public static partial class SelfTest
                 bounced = Vector3.Dot(q.Vel, m.GroundNormal(q.Pos.X, q.Pos.Z)) > 0.5f && q.Vel.Length() < before;
         }
         if (!bounced)
-            Fail("a grenade thrown at a hillside didn't bounce off it");
+            Fail($"a grenade thrown at a hillside didn't bounce off it (ended at {q.Pos}, velocity {q.Vel})");
     }
 
     // ---- Boxes and spawns on terrain ------------------------------------------------------
