@@ -6,7 +6,7 @@
   "unlockOrder": 19,
   "blurb": "Thick, stable barrel.",
   "pros": ["+22% range", "-15% recoil"],
-  "cons": ["-6% speed", "Slower draw"],
+  "cons": ["-6% speed", "15% slower draw"],
   "fits": { "classes": ["AssaultRifle", "LMG", "DMR", "Sniper", "SMG"] },
   "effects": [
     { "stat": "rangeM", "mul": 1.22 },

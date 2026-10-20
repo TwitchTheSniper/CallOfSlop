@@ -37,7 +37,7 @@ public static class Throwables
     public static readonly ThrowableDef[] All =
     [
         new() { Kind = ThrowableKind.None, Name = "None", Blurb = "Nothing in this slot." },
-        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.2 s fuse, bounces off walls. Kills within 3 m, hurts out to 7 m.",
+        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.2 s fuse, bounces off walls. Kills within about 1.5 m, hurts out to 7 m.",
             Fuse = 2.2f, Radius = 7f, MaxDamage = 150, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
         new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast.",
             Fuse = 6f, Radius = 4.5f, MaxDamage = 110, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },

@@ -118,7 +118,7 @@ public static class World
     public static float SpreadOf(Stance s) => s switch { Stance.Crouch => 0.75f, Stance.Prone => 0.5f, _ => 1f };
     public static float RecoilOf(Stance s) => s switch { Stance.Crouch => 0.85f, Stance.Prone => 0.6f, _ => 1f };
     public const float WalkSpeed = 6f;
-    public const float SprintSpeed = 9f;
+    public const float SprintSpeed = 13.5f; // 2.25x walking (was 9 m/s before protocol 10)
     public const float JumpSpeed = 6f;
     public const float Gravity = 18f;
     public const int MaxHealth = 100;

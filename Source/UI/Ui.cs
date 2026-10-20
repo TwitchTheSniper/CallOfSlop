@@ -141,15 +141,15 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##info"u8, Overlay))
         {
             ImGui.TextColored(Orange, "CALL OF SLOP"u8);
-            ImGui.TextColored(Dim, $"Map: {World.Map.Name}");
+            ImGuiSafe.TextColored(Dim, $"Map: {World.Map.Name}");
             if (game.Net.IsOffline)
-                ImGui.TextColored(Dim, $"Single player - {game.Players.Count - 1} bots");
+                ImGuiSafe.TextColored(Dim, $"Single player - {game.Players.Count - 1} bots");
             else if (game.IsServer)
-                ImGui.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
+                ImGuiSafe.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
             else if (showNetStats)
-                ImGui.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
+                ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
-            ImGui.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
+            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
             ImGui.PopTextWrapPos();
         }
         ImGui.End();
@@ -159,7 +159,7 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##feed"u8, Overlay))
         {
             foreach (var f in game.Feed)
-                ImGui.TextColored(f.Mine ? Orange : new float4(1, 1, 1, 0.9f), f.Text);
+                ImGuiSafe.TextColored(f.Mine ? Orange : new float4(1, 1, 1, 0.9f), f.Text);
         }
         ImGui.End();
 
@@ -187,19 +187,19 @@ public sealed partial class Ui : IDisposable
             ImGui.PushFont(default, 28);
             var reload = game.ReloadProgress(now);
             if (reload >= 0)
-                ImGui.TextColored(Orange, $"RELOADING {reload * 100:0}%");
+                ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
             else
-                ImGui.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), $"{w.Ammo} / {w.Def.Mag}");
+                ImGuiSafe.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), $"{w.Ammo} / {w.Def.Mag}");
             ImGui.PopFont();
             ImGui.Text($"{w.Def.Name}");
-            ImGui.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{(game.ActiveSlot == 0 ? "1" : "2")}]");
+            ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{(game.ActiveSlot == 0 ? "1" : "2")}]");
             var other = game.Slots[1 - game.ActiveSlot];
-            ImGui.TextColored(Dim, $"[{(game.ActiveSlot == 0 ? "2" : "1")}] {other.Def.Name}  {other.Ammo}/{other.Def.Mag}");
+            ImGuiSafe.TextColored(Dim, $"[{(game.ActiveSlot == 0 ? "2" : "1")}] {other.Def.Name}  {other.Ammo}/{other.Def.Mag}");
             if (game.LocalGrenade != ThrowableKind.None)
-                ImGui.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
+                ImGuiSafe.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
                     $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
             if (game.LocalEquipment != ThrowableKind.None)
-                ImGui.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
+                ImGuiSafe.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
                     $"[{K(GameAction.Equipment)}] {Throwables.Get(game.LocalEquipment).Name} x{game.EquipmentLeft}");
         }
         ImGui.End();
@@ -209,17 +209,17 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##hp"u8, Overlay))
         {
             ImGui.PushFont(default, 24);
-            ImGui.TextColored(local.Health > 35 ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
+            ImGuiSafe.TextColored(local.Health > 35 ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
             ImGui.PopFont();
-            ImGui.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
+            ImGuiSafe.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
             ImGui.ProgressBar(Progress.LevelFraction, new float2(220 * _scale, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
-            ImGui.TextColored(Dim, Progress.Level >= CallOfSlop.Progress.MaxLevel
+            ImGuiSafe.TextColored(Dim, Progress.Level >= CallOfSlop.Progress.MaxLevel
                 ? $"Level {Progress.Level} (max)"
                 : $"Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
             if (local.Alive)
-                ImGui.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
+                ImGuiSafe.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
                 {
                     Stance.Crouch => "CROUCHED",
                     Stance.Prone => "PRONE",
@@ -235,7 +235,7 @@ public sealed partial class Ui : IDisposable
                         continue;
                     var c = Perks.Color(cat);
                     var active = PerkActive(local, id);
-                    ImGui.TextColored(active ? new float4(c.X, c.Y, c.Z, 1f) : new float4(c.X, c.Y, c.Z, 0.45f),
+                    ImGuiSafe.TextColored(active ? new float4(c.X, c.Y, c.Z, 1f) : new float4(c.X, c.Y, c.Z, 0.45f),
                         active ? $"{Perks.Get(id).Name}  ACTIVE" : Perks.Get(id).Name);
                 }
             }
@@ -248,7 +248,7 @@ public sealed partial class Ui : IDisposable
             if (ImGui.Begin("##perkbanner"u8, Overlay))
             {
                 ImGui.PushFont(default, 24);
-                ImGui.TextColored(new float4(0.4f, 0.95f, 0.5f, (float)Math.Clamp(3 - (now - game.PerkBannerTime), 0, 1)), game.PerkBanner);
+                ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 0.5f, (float)Math.Clamp(3 - (now - game.PerkBannerTime), 0, 1)), game.PerkBanner);
                 ImGui.PopFont();
             }
             ImGui.End();
@@ -267,7 +267,7 @@ public sealed partial class Ui : IDisposable
                 if (age > 2.2)
                     continue;
                 var alpha = (float)Math.Clamp(2.2 - age, 0, 1);
-                ImGui.TextColored(new float4(1f, 0.85f, 0.3f, alpha), $"+{x.Amount} {x.Text}");
+                ImGuiSafe.TextColored(new float4(1f, 0.85f, 0.3f, alpha), $"+{x.Amount} {x.Text}");
             }
         }
         ImGui.End();
@@ -277,7 +277,7 @@ public sealed partial class Ui : IDisposable
             if (ImGui.Begin("##levelup"u8, Overlay))
             {
                 ImGui.PushFont(default, 26);
-                ImGui.TextColored(Orange, prog.LevelUpBanner);
+                ImGuiSafe.TextColored(Orange, prog.LevelUpBanner);
                 ImGui.PopFont();
             }
             ImGui.End();
@@ -287,7 +287,7 @@ public sealed partial class Ui : IDisposable
         {
             ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.24f), ImGuiCond.Always, new float2(0.5f, 0.5f));
             if (ImGui.Begin("##attachunlock"u8, Overlay))
-                ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"NEW ATTACHMENT  -  {prog.AttachmentBanner}");
+                ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"NEW ATTACHMENT  -  {prog.AttachmentBanner}");
             ImGui.End();
         }
 
@@ -324,7 +324,7 @@ public sealed partial class Ui : IDisposable
             var clock = $"{t / 60}:{t % 60:00}";
             if (game.Phase == MatchPhase.Ended)
             {
-                ImGui.TextColored(Dim, $"Next match in {clock}");
+                ImGuiSafe.TextColored(Dim, $"Next match in {clock}");
             }
             else if (game.Phase == MatchPhase.Warmup)
             {
@@ -334,10 +334,10 @@ public sealed partial class Ui : IDisposable
             {
                 var text = t > 0 ? $"MATCH STARTS IN {t}" : "GO!";
                 ImGui.PushFont(default, 40);
-                ImGui.TextColored(Orange, text);
+                ImGuiSafe.TextColored(Orange, text);
                 ImGui.PopFont();
                 ImGui.TextColored(Dim, MenuOpen ? "Pick your loadout - it deploys automatically at GO."u8 : "Get ready..."u8);
-                ImGui.TextColored(Dim, game.ModeGoalText);
+                ImGuiSafe.TextColored(Dim, game.ModeGoalText);
             }
             else if (DrawModeScoreBar(game, clock, t))
             {
@@ -350,18 +350,18 @@ public sealed partial class Ui : IDisposable
                 var leaderOther = game.Players.Values.Where(p => p.Id != game.LocalId).OrderByDescending(p => p.Kills).FirstOrDefault();
 
                 ImGui.PushFont(default, 24);
-                ImGui.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
+                ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
                 ImGui.SameLine(0, 24 * _scale);
-                ImGui.TextColored(mine >= bestOther ? Green : new float4(1, 1, 1, 1), $"YOU {mine}");
+                ImGuiSafe.TextColored(mine >= bestOther ? Green : new float4(1, 1, 1, 1), $"YOU {mine}");
                 ImGui.SameLine();
                 ImGui.TextColored(Dim, "-"u8);
                 ImGui.SameLine();
-                ImGui.TextColored(bestOther > mine ? Red : new float4(1, 1, 1, 1), $"{bestOther} {(leaderOther != null ? game.NameOf(leaderOther.Id) : "")}");
+                ImGuiSafe.TextColored(bestOther > mine ? Red : new float4(1, 1, 1, 1), $"{bestOther} {(leaderOther != null ? game.NameOf(leaderOther.Id) : "")}");
                 ImGui.PopFont();
 
                 var top = Math.Max(mine, bestOther);
                 var deuce = top >= WinKillsMinusOne && Math.Abs(mine - bestOther) < Game.WinMargin;
-                ImGui.TextColored(deuce ? Orange : Dim, deuce
+                ImGuiSafe.TextColored(deuce ? Orange : Dim, deuce
                     ? $"Win by {Game.WinMargin}!  ({Math.Max(Game.WinKills, top + 1)}+ kills and {Game.WinMargin} clear)"
                     : $"First to {Game.WinKills} kills, win by {Game.WinMargin}");
             }
@@ -382,7 +382,7 @@ public sealed partial class Ui : IDisposable
             var won = game.LocalWon;
             var draw = game.Winner == Game.NoWinner;
             ImGui.PushFont(default, 48);
-            ImGui.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
+            ImGuiSafe.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
             ImGui.PopFont();
             ImGui.Text(game.MatchResult.Length > 0 ? game.MatchResult : draw ? "No winner" : $"{game.NameOf(game.Winner)} wins");
             DrawModeResultsLine(game);
@@ -402,7 +402,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(new float4(c.X, c.Y, c.Z, 1), p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -434,11 +434,11 @@ public sealed partial class Ui : IDisposable
                     if (mine)
                         ImGui.PopStyleColor();
                 }
-                ImGui.TextColored(Dim, $"Click a map or press 1-{n}. Voting closes in {Math.Ceiling(game.TimeLeft):0} s; ties are broken at random.");
+                ImGuiSafe.TextColored(Dim, $"Click a map or press 1-{n}. Voting closes in {Math.Ceiling(game.TimeLeft):0} s; ties are broken at random.");
             }
             else
             {
-                ImGui.TextColored(Dim, $"Next match starts in {Math.Ceiling(game.TimeLeft):0} s on {World.Map.Name}.  Esc for the menu.");
+                ImGuiSafe.TextColored(Dim, $"Next match starts in {Math.Ceiling(game.TimeLeft):0} s on {World.Map.Name}.  Esc for the menu.");
             }
         }
         ImGui.End();
@@ -475,7 +475,7 @@ public sealed partial class Ui : IDisposable
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(col, p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGuiSafe.TextColored(col, p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -483,7 +483,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text(p.WeaponDef.Name);
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health} HP" : "dead");
+                    ImGuiSafe.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health} HP" : "dead");
                 }
                 ImGui.EndTable();
             }
@@ -504,8 +504,8 @@ public sealed partial class Ui : IDisposable
         var maxXp = Attachments.MaxXp(w);
         var kit = KitOf(w);
         var options = Attachments.For(w);
-        ImGui.TextColored(Orange, w.Name);
-        ImGui.TextColored(Dim, options.Count == 0
+        ImGuiSafe.TextColored(Orange, w.Name);
+        ImGuiSafe.TextColored(Dim, options.Count == 0
             ? "This weapon takes no attachments."
             : $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}  -  {options.Count(a => wxp >= Attachments.UnlockXp(w, a))} / {options.Count} attachments unlocked");
         if (options.Count > 0)
@@ -513,7 +513,7 @@ public sealed partial class Ui : IDisposable
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
             ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(-1, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
-            ImGui.TextColored(Dim, "Earn weapon XP with kills using this gun (+100, headshot +50) and +150 per match you carry it."u8);
+            ImGui.TextColored(Dim, "Earn weapon XP with kills using this gun (+100, headshot +50), plus +150 per match as your primary (+75 as your secondary)."u8);
         }
         AttachmentDef? hovered = null;
         for (var si = 0; si < Attachments.SlotCount; si++)
@@ -555,24 +555,24 @@ public sealed partial class Ui : IDisposable
         if (_hoverAttachment is { } a)
         {
             ImGui.PushFont(default, 22);
-            ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), a.Name);
+            ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 1f, 1f), a.Name);
             ImGui.PopFont();
-            ImGui.TextColored(Dim, Attachments.SlotName(a.Slot));
-            ImGui.TextWrapped(a.Blurb);
+            ImGuiSafe.TextColored(Dim, Attachments.SlotName(a.Slot));
+            ImGuiSafe.TextWrapped(a.Blurb);
             foreach (var pro in a.Pros)
-                ImGui.TextColored(Green, $"+ {pro}");
+                ImGuiSafe.TextColored(Green, $"+ {pro}");
             foreach (var con in a.Cons)
-                ImGui.TextColored(Red, $"- {con}");
+                ImGuiSafe.TextColored(Red, $"- {con}");
             var need = Attachments.UnlockXp(w, a);
             if (prog.WeaponXp(w.Id) < need)
-                ImGui.TextColored(Red, $"Locked - needs {need:N0} weapon XP on the {w.Name} ({prog.WeaponXp(w.Id):N0} so far, about {MathF.Ceiling((need - prog.WeaponXp(w.Id)) / 1000f)} more match(es)).");
+                ImGuiSafe.TextColored(Red, $"Locked - needs {need:N0} weapon XP on the {w.Name} ({prog.WeaponXp(w.Id):N0} so far, about {MathF.Ceiling((need - prog.WeaponXp(w.Id)) / 1000f)} more match(es)).");
             ImGui.Separator();
             ImGui.TextColored(Dim, "With this attachment:"u8);
             DrawStats(audio, Attachments.Apply(w, Attachments.With(kit, a.Slot, a.Index)));
         }
         else
         {
-            ImGui.TextColored(Dim, $"Equipped: {Attachments.Describe(kit)}");
+            ImGuiSafe.TextColored(Dim, $"Equipped: {Attachments.Describe(kit)}");
             ImGui.Separator();
             DrawStats(audio, Attachments.Apply(w, kit));
         }
@@ -581,15 +581,15 @@ public sealed partial class Ui : IDisposable
     private void DrawThrowable(ThrowableDef t)
     {
         ImGui.PushFont(default, 22);
-        ImGui.TextColored(Orange, t.Name);
+        ImGuiSafe.TextColored(Orange, t.Name);
         ImGui.PopFont();
         if (t.Kind == ThrowableKind.None)
         {
             ImGui.TextWrapped("Leave this slot empty."u8);
             return;
         }
-        ImGui.TextColored(Dim, t.IsEquipment ? "Equipment" : "Grenade");
-        ImGui.TextWrapped(t.Blurb);
+        ImGuiSafe.TextColored(Dim, t.IsEquipment ? "Equipment" : "Grenade");
+        ImGuiSafe.TextWrapped(t.Blurb);
         ImGui.Spacing();
         ImGui.Text($"Per life: {t.PerLife}");
         if (t.MaxDamage > 0)
@@ -602,18 +602,18 @@ public sealed partial class Ui : IDisposable
             ImGui.Text($"Radius: {t.Radius:0} m");
         }
         if (!Progress.IsUnlocked(t.Kind))
-            ImGui.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(t.Kind)}.");
+            ImGuiSafe.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(t.Kind)}.");
         ImGui.Spacing();
-        ImGui.TextColored(Dim, t.IsEquipment ? "Use with F (rebindable)." : "Throw with G (rebindable).");
+        ImGuiSafe.TextColored(Dim, t.IsEquipment ? "Use it with your Use equipment key (F by default)." : "Throw it with your Throw grenade key (G by default).");
     }
 
     private void DrawStats(Audio audio, WeaponDef w)
     {
         ImGui.PushFont(default, 22);
-        ImGui.TextColored(Orange, w.Name);
+        ImGuiSafe.TextColored(Orange, w.Name);
         ImGui.PopFont();
-        ImGui.TextColored(Dim, $"{w.ClassName} - {w.ModeName}{(w.Pellets > 1 ? $" - {w.Pellets} pellets" : "")}");
-        ImGui.TextWrapped(w.Blurb);
+        ImGuiSafe.TextColored(Dim, $"{w.ClassName} - {w.ModeName}{(w.Pellets > 1 ? $" - {w.Pellets} pellets" : "")}");
+        ImGuiSafe.TextWrapped(w.Blurb);
         ImGui.Spacing();
 
         Bar("Damage", (w.Damage * w.Pellets) / 140f, w.Pellets > 1 ? $"{w.Damage} x {w.Pellets}" : $"{w.Damage}");
@@ -628,12 +628,12 @@ public sealed partial class Ui : IDisposable
         Bar("Handling", 1f - Math.Clamp(w.EquipTime / 1.2f, 0f, 1f), $"{w.EquipTime:0.00} s draw");
         Bar("Aim speed", 1f - Math.Clamp(w.AdsTime / 0.45f, 0f, 1f), $"{w.AdsTime:0.00} s to aim, {w.AdsZoom:0.0}x zoom");
         if (w.Kit != 0)
-            ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"Attachments: {Attachments.Describe(w.Kit)}");
+            ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"Attachments: {Attachments.Describe(w.Kit)}");
 
         ImGui.Spacing();
         ImGui.SeparatorText("Shots to kill"u8);
         ImGui.Text($"Body {w.ShotsToKill(false)}   Head {w.ShotsToKill(true)}   (x{w.HeadMult:0.0} headshot)");
-        ImGui.TextColored(Dim, $"Damage per shot at 10 m: {w.Damage * w.Pellets * w.DamageMultAt(10):0}   25 m: {w.Damage * w.Pellets * w.DamageMultAt(25):0}   45 m: {w.Damage * w.Pellets * w.DamageMultAt(45):0}");
+        ImGuiSafe.TextColored(Dim, $"Damage per shot at 10 m: {w.Damage * w.Pellets * w.DamageMultAt(10):0}   25 m: {w.Damage * w.Pellets * w.DamageMultAt(25):0}   45 m: {w.Damage * w.Pellets * w.DamageMultAt(45):0}");
 
         ImGui.Spacing();
         if (ImGui.Button("Test fire"u8))

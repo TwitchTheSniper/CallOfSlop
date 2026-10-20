@@ -59,7 +59,7 @@ public sealed partial class Ui
             if (!MenuOpen && cam.Running(now))
             {
                 ImGui.Spacing();
-                ImGui.TextColored(Dim, $"Click to skip   {Keybinds.Name(settings.Bind(GameAction.Loadout))}: loadout");
+                ImGuiSafe.TextColored(Dim, $"Click to skip   {Keybinds.Name(settings.Bind(GameAction.Loadout))}: loadout");
             }
         }
         ImGui.End();
@@ -77,12 +77,12 @@ public sealed partial class Ui
             ImGui.PushFont(default, 26);
             ImGui.TextColored(KillCardRed, "YOU KILLED YOURSELF"u8);
             ImGui.PopFont();
-            ImGui.TextColored(Dim, $"with your own {info.WeaponName}");
+            ImGuiSafe.TextColored(Dim, $"with your own {info.WeaponName}");
             return;
         }
         ImGui.TextColored(Dim, info.Kind == KillKind.Streak ? "KILLED BY A KILL STREAK FROM"u8 : "KILLED BY"u8);
         ImGui.PushFont(default, 28);
-        ImGui.TextColored(killerCol, info.KillerName);
+        ImGuiSafe.TextColored(killerCol, info.KillerName);
         ImGui.PopFont();
         if (info.Headshot)
         {
@@ -105,17 +105,17 @@ public sealed partial class Ui
             ImGui.Text(def.Name);
             ImGui.PopFont();
             ImGui.SameLine();
-            ImGui.TextColored(Dim, def.ClassName);
+            ImGuiSafe.TextColored(Dim, def.ClassName);
 
             var any = false;
             foreach (var a in Attachments.InKit(info.Kit))
             {
                 any = true;
                 var optic = a.Slot == AttachSlot.Optic;
-                ImGui.TextColored(optic ? KillCardCyan : Dim, optic ? "OPTIC" : Attachments.SlotName(a.Slot));
+                ImGuiSafe.TextColored(optic ? KillCardCyan : Dim, optic ? "OPTIC" : Attachments.SlotName(a.Slot));
                 ImGui.SameLine(110 * _scale);
                 if (optic)
-                    ImGui.TextColored(KillCardCyan, a.Name);
+                    ImGuiSafe.TextColored(KillCardCyan, a.Name);
                 else
                     ImGui.Text(a.Name);
             }
@@ -126,7 +126,7 @@ public sealed partial class Ui
         {
             // Melee, grenades and streak rewards: the name, big.
             ImGui.PushFont(default, 24);
-            ImGui.TextColored(Orange, info.WeaponName.ToUpperInvariant());
+            ImGuiSafe.TextColored(Orange, info.WeaponName.ToUpperInvariant());
             ImGui.PopFont();
             if (info.Kind == KillKind.Melee)
                 ImGui.TextColored(Dim, "Close quarters"u8);
@@ -146,15 +146,15 @@ public sealed partial class Ui
         {
             var hp = info.KillerHp;
             var hpCol = hp <= 0 ? Dim : hp > 60 ? Green : hp > 30 ? Orange : KillCardRed;
-            ImGui.TextColored(hpCol, hp <= 0 ? "   killer is dead too" : $"   killer has {hp} HP");
+            ImGuiSafe.TextColored(hpCol, hp <= 0 ? "   killer is dead too" : $"   killer has {hp} HP");
         }
         else
         {
             ImGui.NewLine();
         }
         if (info.KillerStreak > 1)
-            ImGui.TextColored(Orange, $"{info.KillerStreak} kill streak" + (info.KillerKills > 0 ? $"   ({info.KillerKills} kills)" : ""));
+            ImGuiSafe.TextColored(Orange, $"{info.KillerStreak} kill streak" + (info.KillerKills > 0 ? $"   ({info.KillerKills} kills)" : ""));
         else if (info.KillerKills > 0)
-            ImGui.TextColored(Dim, $"{info.KillerKills} kill{(info.KillerKills == 1 ? "" : "s")} this match");
+            ImGuiSafe.TextColored(Dim, $"{info.KillerKills} kill{(info.KillerKills == 1 ? "" : "s")} this match");
     }
 }
