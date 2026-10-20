@@ -31,7 +31,7 @@ public static partial class SelfTest
             Fail($"maps with movers: {string.Join(", ", withMovers)} (expected only {PhysicsTestMap})");
         if (Maps.All.Any(m => m.Movers.Count == 0 && m.MoverHash != 0))
             Fail("a map without movers has a non-zero mover hash (its fingerprint would change)");
-        var json = File.ReadAllText(map.SourceFile);
+        var json = File.ReadAllText(Path.IsPathRooted(map.SourceFile) ? map.SourceFile : Path.Combine(Maps.Folder, map.SourceFile));
         var stripped = MapFile.Load(json[..json.IndexOf(",\n  \"movers\"", StringComparison.Ordinal)] + "\n}\n", "Physics Test (no movers)");
         if (stripped.Movers.Count != 0 || stripped.ContentHash == map.ContentHash)
             Fail("removing the movers section didn't change the fingerprint");
