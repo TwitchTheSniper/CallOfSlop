@@ -1023,6 +1023,7 @@ public sealed partial class Game : IDisposable
         _w.Begin(Msg.Kill).U8(attacker.Id).U8(victim.Id).U8(head ? (byte)1 : (byte)0).U8(killId);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
+        BotNoteKill(attacker, victim, head, killId, now);
         return true;
     }
 

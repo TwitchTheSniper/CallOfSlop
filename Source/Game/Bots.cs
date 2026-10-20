@@ -400,6 +400,19 @@ public sealed partial class Game
         Net.Broadcast(ReloadFx(p.Id, def.Id), PacketReliability.Unreliable);
     }
 
+    /// <summary>Bot fighting statistics for this session (server only; read by the self-test).</summary>
+    public readonly BotStats BotStats = new();
+
+    /// <summary>Called by DamagePlayer for every kill: bookkeeping and reactions.</summary>
+    private void BotNoteKill(Player killer, Player victim, bool head, byte killId, double now)
+    {
+        if (killer.Bot == null || killer == victim || killId >= MeleeKillId)
+            return;
+        BotStats.GunKills++;
+        if (head)
+            BotStats.GunHeadshots++;
+    }
+
     // ---- Names / roster ------------------------------------------------------------
 
     /// <summary>Sends everyone the id -> name table (server only).</summary>

@@ -367,6 +367,7 @@ public static class SelfTest
 
     private static void CheckMatches()
     {
+        var botStats = new BotStats();
         foreach (var m in Maps.All)
         {
             var sw = Stopwatch.StartNew();
@@ -424,6 +425,7 @@ public static class SelfTest
                 continue;
             }
 
+            botStats.Add(game.BotStats);
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
             var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < -0.5f);
@@ -447,6 +449,7 @@ public static class SelfTest
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
+        Line($"BOTSTAT headshots: {botStats.GunHeadshots} of {botStats.GunKills} bot gun kills ({botStats.HeadshotRatio:P1})");
     }
 
     // ---- 2b. Map vote ---------------------------------------------------------------------
