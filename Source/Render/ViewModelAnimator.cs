@@ -299,7 +299,7 @@ public sealed class ViewModelAnimator
         _sprintW = want ? MathF.Min(_sprintW + step, 1f) : MathF.Max(_sprintW - step, 0f);
         var s = Ease(_sprintW) * (1 - a);
         var move = i.Grounded ? MathF.Min(speed / Walk, 1.5f) : 0f;
-        _bobPhase = (_bobPhase + dt * (10 + 3 * s)) % (MathF.Tau * 2);
+        _bobPhase = (_bobPhase + dt * (10 + 6 * s)) % (MathF.Tau * 2); // stride rate grows with about the square root of speed: 13.5 m/s sprint ~1.6x the walk cadence
 
         if (_prevGrounded && !i.Grounded && vel.Y > 0.5f)
             _landVel += 0.9f; // takeoff: the gun lifts

@@ -281,6 +281,8 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Crouched | 1.2 m | 50% | 75% | ~85% (per gun) | Fits behind low walls and crates. LMGs lose almost all sideways recoil |
 | Prone | 0.6 m | 22% | 50% | ~65% (per gun) | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
 
+Standing speed is 6 m/s walking and **13.5 m/s sprinting** (before your weapon's mobility, aiming and perks); stance percentages are of the walking speed.
+
 You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Marksmen and Hard snipers go prone, and bots crouch-peek in close fights and duck behind low cover to reload.
 
 ### Progression
