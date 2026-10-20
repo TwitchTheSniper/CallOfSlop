@@ -1,18 +1,19 @@
 # Jolt physics, scene graph and mesh pipeline: design and spike results
 
-Status: proposal, backed by a working spike (`spike/JoltSpike`, CI workflow `.github/workflows/spike.yml`).
-Branch `spike/jolt-scene`. Nothing here changes the game yet.
+Status: design reference, backed by a working spike (`spike/JoltSpike`, CI workflow `.github/workflows/spike.yml`).
+Branch `spike/jolt-scene`. Nothing here changes the game yet. **The decision, port plan, risks and the questions for
+the user are in [jolt-recommendation.md](jolt-recommendation.md)**; where the two differ, the recommendation is newer.
 
 ## 0. TL;DR
 
 | Question | Answer (measured) |
 |---|---|
-| Does Jolt's `CharacterVirtual` reproduce our movement? | **Yes, mostly.** Walk/sprint distances match the game formula exactly; stairs, 30° ramps, jump apex (0.950 m vs the game's 0.95), crouch under a ceiling with the stand-up refused, prone, moving and spinning platforms all work. **One tuning gap:** a single 0.55 m step (see 4.3). |
-| Is it deterministic enough for prediction and reconciliation? | **Yes, on Windows.** Two runs in one process, a separately built world and a world built in shuffled order all give bit-identical hashes. Rewinding 8, 60 or 240 ticks from snapshot-only state (position, velocity, stance) and replaying gives **bit-identical** results. Two different Windows runner images give the same hash. **Linux gives a different hash**: its native library is compiled differently. |
-| Is it fast enough? | **Yes on box/heightfield-class geometry:** 8 characters cost about 17 µs per tick in total, about 2 µs per character. Replaying 240 ticks for one character costs about 0.5 ms. On the triangle-compound fallback terrain (see below) it's about 10x slower: 188 µs per tick for 8 characters, 5.6 ms to replay 240 ticks. |
-| Can Jolt do our ray casts? | **Not with the published package.** `Ahwoo.BRUTAL.Jolt 2026.10.2` ships a native library that's missing **every** `NarrowPhaseQuery` query (ray, shape cast, collide), plus the heightfield, mesh and convex hull constructors, `CharacterVirtual.SaveState/RestoreState/CheckCollision` and more. In total, 1,691 of the 4,087 entry points the managed binding calls have no native export. |
+| Does Jolt's `CharacterVirtual` reproduce our movement? | **Yes, 16/16 checks.** Walk/sprint distances match the game formula exactly; stairs, a single 0.55 m step (blocks 0.70), 30° ramps, 50° slides, jump apex (0.950 m vs the game's 0.95), crouch under a ceiling with the stand-up refused, prone, moving and spinning platforms all work. The step needed tuning: minimum forward step 0.3, step-up 0.5 (see 4.3). |
+| Is it deterministic enough for prediction and reconciliation? | **Yes, on Windows.** Two runs in one process, a separately built world and a world built in shuffled order all give bit-identical hashes. Rewinding 8, 60 or 240 ticks from snapshot-only state (position, velocity, stance) and replaying gives **bit-identical** results. Two different Windows runner images on different CPU generations (EPYC 7763 and 9V45) give the same hash, also for 32 characters and across separate CI runs. **Linux gives a different hash**: its native library is compiled differently. |
+| Is it fast enough? | **Yes.** 32 characters on box geometry cost 57-97 µs per tick (about 2-3 µs each). On the triangle-compound fallback terrain (see below) it's 6-12x slower: 400-790 µs per tick for 32 characters, 3-5.4 ms to replay 240 ticks for one. Both are small against the 16.7 ms tick. |
+| Can Jolt do our ray casts? | **Not with the published package.** `Ahwoo.BRUTAL.Jolt 2026.10.2` (still the only version on nuget.org) ships natives with no ray or shape query on **any** route: `NarrowPhaseQuery_*`, `TransformedShape_Cast*`, `BroadPhaseQuery_Cast*`, `CollisionDispatch_*`, `CharacterVirtual_CheckCollision*` are missing from both `jolt.dll` and `libjolt.so`. The heightfield, mesh and convex hull data setters and `CharacterVirtual.SaveState/RestoreState` are missing too: 1,691 of the 4,087 entry points the managed binding calls have no native export. A C# BVH answers the same rays 3-25x faster than today's loop. |
 | Does glTF loading work? | **Yes.** `Brutal.Gltf` loads a .glb with a node hierarchy, and positions/indices go straight into Jolt colliders. The first load costs about 180 ms because of JIT and JSON warm-up. |
-| Recommendation | **Go with changes** for CharacterVirtual. **Blocked** for Jolt queries and terrain/mesh colliders until BRUTAL publishes matching natives. Start the mesh pipeline and scene graph now (no dependency on the physics package), put ray casts behind a `WorldQuery` interface with a C# BVH implementation, and only switch movement once the natives are fixed. |
+| Recommendation | See [jolt-recommendation.md](jolt-recommendation.md): go for the design, no-go for merging Jolt with today's package; start the BVH query, scene graph and mesh pipeline now. |
 
 ## 1. What the spike is
 
@@ -49,7 +50,7 @@ best or median of several reps after warm-up. Treat them as relative: a gaming P
 | Sprint 1 s (9 m/s) | 8.801 m ✔ |
 | 0.4 m stairs | Reaches the top (y = 1.600) ✔ |
 | 0.70 m step | Blocks ✔ |
-| Single 0.55 m step | **Blocks** ✘. WalkStairs needs a step-up setting above the step height; see the sweep in 4.3. |
+| Single 0.55 m step | ✔ with min forward step 0.3 and step-up 0.5 (Jolt's default 0.02 m forward step blocks everything above 0.4 m; see 4.3) |
 | Stand still on a 30° ramp | Drift 0.000 m in 2 s, OnGround ✔ |
 | Walk up a 30° ramp | ✔ |
 | 50° ramp | OnSteepGround, slides 4.3 m in 2 s, can't be walked up ✔ |
@@ -58,7 +59,7 @@ best or median of several reps after warm-up. Treat them as relative: a gaming P
 | Prone and back | ✔ |
 | Moving platform (2 m/s) | Carried 3.314 m in 100 ticks (platform moved 3.333 m) ✔ |
 | Spinning platform (1 rad/s) | Radius 2.72 (started at 2.5), turned 1.457 rad (platform 1.5) ✔ |
-| Mantle ledge probe | **Not testable**: needs `CastShape`/`CheckCollision`, which have no native export |
+| Mantle ledge probe | **Blocked**: needs `CastShape`/`CheckCollision`, which have no native export (reported as a warning, not a failure) |
 | Stance shape swap | 4-9 µs |
 
 ### 2.2 Determinism (section c)
@@ -70,7 +71,9 @@ best or median of several reps after warm-up. Treat them as relative: a gaming P
 | World built in shuffled order (different body IDs) | identical | identical |
 | Rewind 8 / 60 / 240 ticks from **snapshot state only** (pos, vel, stance) + `RefreshContacts`, replay | **bit-identical** | **bit-identical** |
 | Rewind from full Jolt character state | not testable (`SaveState`/`RestoreState` missing natively) | same |
-| windows-latest vs windows-2022 | **IDENTICAL** (all keys) | |
+| 32 bots x 600 ticks, two separately built worlds | identical | identical |
+| windows-latest vs windows-2022 (EPYC 9V45 vs 7763) | **IDENTICAL** (all keys) | |
+| Separate CI runs | identical hashes run to run | identical |
 | windows-latest vs ubuntu-latest | | **different** (all hashes) |
 
 Why Linux differs: the Jolt build strings are
@@ -87,37 +90,40 @@ rebuilds it identically.
 
 ### 2.3 Performance
 
-| Measurement | windows-latest | ubuntu-latest |
-|---|---|---|
-| 8 chars, `ExtendedUpdate`, per tick, box ground (mean / p99) | 17.0 / 35.3 µs | 14.5 / 32.7 µs |
-| 8 chars per tick, triangle-compound terrain (mean / p99) | 188 / 339 µs | 124 / 204 µs |
-| Per character per tick (triangle terrain) | 23.5 µs | 15.5 µs |
-| Client reconcile: restore + replay 240 ticks, 1 char (triangle terrain) | 5.6 ms (23 µs/tick) | 3.2 ms (13 µs/tick) |
-| 8 chars × 240 ticks (server-side worst case, triangle terrain) | 41 ms | 25 ms |
-| CharacterVirtual create | 21-39 µs | 10-14 µs |
-| 1000 rays, today's C# loop over every box (609 boxes) | 21.6 ms (21.6 µs per ray) | 21.2 ms |
-| 1000 rays via Jolt | **unavailable** | |
-| World build: 600 boxes + 256² terrain (fallback) + shapes | 189 ms | 104-154 ms |
-| 5000 boxes as separate bodies (+ terrain) | 227 ms | 147 ms |
-| 5000 boxes as one StaticCompoundShape | 89 ms | 54 ms |
-| 20k-triangle "mesh" (triangle-compound fallback) | 16 ms | 18 ms |
-| 1024² heightfield | **unavailable** | |
-| Lag comp, 8 historic capsules by hand, per shot | 1.9 µs | 1.7 µs |
-| glTF load + read (first, cold) | 176-200 ms | 190 ms |
-| Scene graph, 10k nodes: walk clean / 1 prop dirty / root dirty | 174 µs / 311 µs / 2.2 ms | 172 / 275 µs / 2.3 ms |
+Latest numbers (Jolt spike run 39396724142). Sections c and d of each OS job print them.
+
+| Measurement | windows-latest | windows-2022 | ubuntu-latest |
+|---|---|---|---|
+| 32 chars per tick, box ground (mean / p99) | 68 / 98 µs | 97 / 172 µs | 57 / 78 µs |
+| 32 chars per tick, triangle-compound terrain (mean / p99) | 591 / 1010 µs | 790 / 1529 µs | 403 / 647 µs |
+| 8 chars per tick, box ground / triangle terrain (mean) | 12 / 155 µs | 18 / 264 µs | 12 / 103 µs |
+| Client reconcile: restore + replay 240 ticks, 1 char (triangle terrain) | 5.3 ms | 5.4 ms | 3.0 ms |
+| 8 chars x 240 ticks (server-side worst case, triangle terrain) | 31 ms | 37 ms | 20 ms |
+| CharacterVirtual create | 13 µs | 15 µs | 8 µs |
+| Ray, today's C# loop, 609 / 5009 boxes | 13.1 / 18.4 µs | 16.7 / 31.4 µs | 12.0 / 16.7 µs |
+| Ray, C# BVH (`Bvh.cs`), 609 / 5009 boxes | 1.9 / 0.7 µs | 4.0 / 1.0 µs | 2.0 / 1.2 µs |
+| Ray via Jolt | **unavailable** | | |
+| World build: 600 boxes + 256² terrain (fallback) + shapes | 138 ms | 178 ms | 93 ms |
+| 5000 boxes as separate bodies (+ terrain) / as one StaticCompoundShape | 142 / 54 ms | 194 / 70 ms | 85 / 38 ms |
+| 20k-triangle "mesh" (triangle-compound fallback) | 14 ms | 13 ms | 11 ms |
+| 1024² heightfield | **unavailable** | | |
+| Lag comp, 8 historic capsules by hand, per shot | 1.0 µs | 2.4 µs | 1.1 µs |
+| glTF load + read (first, cold) | 131 ms | 164 ms | 86 ms |
+| Scene graph, 10k nodes: walk clean / 1 prop dirty / root dirty | 160 / 240 µs / 7.2 ms | 175 / 331 µs / 4.1 ms | 111 / 181 µs / 5.5 ms |
 
 What the numbers say:
 
-* **CharacterVirtual is cheap when the geometry is good:** about 2 µs per character per tick. The 10x
-  penalty comes entirely from the stop-gap terrain built from 130k individual `TriangleShape`s. A real
+* **CharacterVirtual is cheap when the geometry is good:** about 2-3 µs per character per tick, so 32 players
+  cost under 0.1 ms. The 6-12x penalty comes entirely from the stop-gap terrain built from 130k individual
+  `TriangleShape`s. A real
   `HeightFieldShape` (or `MeshShape`) is expected to cost about the same as boxes.
 * **Reconciliation is affordable:** typical replays are 6-15 ticks (100-250 ms RTT), so 15-350 µs
   even on the fallback terrain. The 240-tick worst case needs a cap (see 4.4).
-* **Today's ray cast is O(boxes):** 21 µs per ray at 609 boxes. A BVH (Jolt's or ours) would make it about 1 µs,
-  which matters for shotguns, bots' line-of-sight checks and bigger maps.
+* **Today's ray cast is O(boxes):** 12-17 µs per ray at 609 boxes, 17-31 µs at 5009. The spike's C# BVH gives the
+  same answer on 1000 of 1000 rays at 0.7-4 µs, which matters for shotguns, bots' line-of-sight checks and bigger maps.
 * **Static compounds build 2.5x faster** than separate bodies. Use one compound per map chunk for static props.
-* **The scene graph must not walk everything every frame:** walking 10k class nodes costs 174 µs and recomputing
-  them all costs 2.2 ms. Static nodes get flattened at load time (see 3.1).
+* **The scene graph must not walk everything every frame:** walking 10k class nodes costs 110-175 µs and recomputing
+  them all costs 4-7 ms. Static nodes get flattened at load time (see 3.1).
 
 ### 2.4 The binding problem (blocker)
 
@@ -130,7 +136,8 @@ overload**:
 
 | API | What happens |
 |---|---|
-| `NarrowPhaseQuery.CastRay/CastRayClosest/CastShape/CollideShape/...` | `EntryPointNotFoundException`. **No Jolt queries at all.** Only `NarrowPhaseQuery_Init` exists. |
+| `NarrowPhaseQuery.CastRay/CastRayClosest/CastShape/CollideShape/...` | `EntryPointNotFoundException`. **No Jolt queries at all.** Only `NarrowPhaseQuery_Init` exists. The other routes are missing too: `TransformedShape_CastRay/CastShape/CollideShape/CollidePoint`, `BroadPhaseQuery_CastRay/CollidePoint`, every `CollisionDispatch_*` query and `Shape_CollidePoint` (audit step, both natives). |
+| `HeightFieldShapeSettings.SetHeightSamples`, `MeshShapeSettings.SetTriangleVertices/SetIndexedTriangles`, `ConvexHullShapeSettings.SetPoints` | missing, so the default-constructed settings can't be filled in either |
 | `CharacterVirtual.SaveState/RestoreState/CheckCollision*`, `CharacterBaseSettings.SetSupportingVolume` | missing |
 | `ConvexHullShapeSettings.Create(points)` | binds to the native **default constructor**: "Need at least 3 points" |
 | `MeshShapeSettings.Create(triangles)` | default constructor: "Need triangles"; the indexed overload is missing |
@@ -277,8 +284,8 @@ oriented boxes.
 | Game (World.cs) | Jolt |
 |---|---|
 | `PlayerRadius 0.4`, `HeightOf(Stand/Crouch/Prone) 1.8 / 1.2 / 0.6` | Stand/crouch: capsules r 0.4, offset up so the feet sit at the origin. Prone: a 0.6 m cylinder of r 0.4 (a lying capsule would have to turn with the view and snag when turning; the long prone body stays a hitbox only). Swap with `SetShape(shape, maxPenetration: 0)` when standing up (Jolt refuses the swap if there's no headroom, replacing `Blocked()`), or `float.MaxValue` when going down. |
-| `StepHeight 0.55` | `ExtendedUpdateSettings.WalkStairsStepUp`. It needs a margin; see the sweep in 4.3. `StickToFloorStepDown = -0.5`, `WalkStairsMinStepForward 0.02`, `StepForwardTest 0.15`, `CosAngleForwardContact cos 75°`. |
-| (implicit) 45° max slope | `MaxSlopeAngle 45°`; `CancelVelocityTowardsSteepSlopes` on the wish velocity |
+| `StepHeight 0.55` | `ExtendedUpdateSettings.WalkStairsStepUp = 0.5` with `WalkStairsMinStepForward = 0.3` (measured: climbs up to 0.60, blocks 0.70; see 4.3). `StickToFloorStepDown = -0.5`, `StepForwardTest 0.15`, `CosAngleForwardContact cos 75°`. The native `ExtendedUpdate` works with these. |
+| `MaxSlopeDeg 42` (terrain branch) | `MaxSlopeAngle 42°` (the spike used 45°). Don't call `CancelVelocityTowardsSteepSlopes` on the wish velocity before the update: it removes the push into a step face that `WalkStairs` needs; `ExtendedUpdate` handles steep slopes itself. |
 | `WalkSpeed 6, SprintSpeed 9`, stance speed factors, the 14/3 accel blend | unchanged C# (applied to velocity relative to `GetGroundVelocity()`, so platforms carry you) |
 | `JumpSpeed 6, Gravity 18` | unchanged C#: on ground `vy = ground.vy (+ 6 − 18·dt on jump)`, in air `vy −= 18·dt`. No gravity while grounded, so nobody creeps down slopes. |
 | `MantleReach 1.7`, `TryMantle` | ledge probe = sphere cast down in front + capsule overlap at the target. **Needs Jolt queries**; until then, use the C# `WorldQuery` (3.3.4). The 10-28-tick mantle glide stays as is (memoryless, already in snapshots). |
@@ -302,10 +309,11 @@ oriented boxes.
    already snaps above 2 m of correction).
 
 **Lag compensation.** Keep hitboxes **out of Jolt** and test rays against historic capsules by
-hand (option A). It costs 1.9 µs per shot for 8 players including interpolation (measured), never touches
+hand (option A). It costs 1.0-2.4 µs per shot for 8 players including interpolation (measured), never touches
 physics state (no broadphase churn, safe for fractional ticks and future threading), and our C# ray-capsule test
-matches `Jolt.RayCapsule` on 999 of 1000 random rays. The world ray (where the bullet stops) comes from `WorldQuery`. Hitbox
-set per stance: body capsule + head sphere (stand/crouch), a horizontal capsule along the yaw + head sphere (prone).
+matches `Jolt.RayCapsule` on 999 of 1000 random rays. The world ray (where the bullet stops) comes from `WorldQuery`.
+The port keeps today's `World.Hitbox` boxes unchanged; capsule hitboxes (body capsule + head sphere for stand/crouch,
+a horizontal capsule along the yaw + head sphere for prone) are an optional later change.
 `Player.History` keeps storing feet/stance/yaw. Option B (kinematic hitbox bodies moved per shot) couldn't be
 timed (no queries); it would also mutate the broadphase per shot, so it isn't recommended either way.
 
@@ -347,11 +355,22 @@ tunnel. Until fixed natives exist, the fallback is a triangle compound per 16x16
 10x the character cost).
 
 ### 4.3 Step height
-`WalkStairs` climbs the 0.4 m stairs but not a single 0.55 m box with `WalkStairsStepUp = 0.55 + 0.05`. The
-step-sweep metric in section b (`WalkStairs sweep`) lists which heights each setting climbs. Pick the
-smallest setting that climbs 0.55 and still blocks 0.70; if none exists, accept 0.5 as the new step height
-(maps use 0.4 m stairs).
-<!-- SWEEP RESULT -->
+Jolt's `WalkStairs` moves the character forward by at least `WalkStairsMinStepForward` after stepping up. With the
+default 0.02 m the capsule's round bottom lands on the step's edge, the contact there is steeper than the max slope,
+and the step is undone: only 4 of 139 attempts succeed, and nothing above 0.4 m climbs (0.4 m steps are climbed by the
+round bottom sliding over the edge, without `WalkStairs`). Section b's sweep (single steps of 0.30-0.70 m):
+
+| Settings | Climbs |
+|---|---|
+| default (min forward 0.02, step-up 0.6), native or C# `ExtendedUpdate` | 0.30 0.40 |
+| **min forward 0.3, step-up 0.5** (native `ExtendedUpdate`) | **0.30-0.60, blocks 0.70** (chosen) |
+| min forward 0.3, step-up 0.6 | all, including 0.70 |
+| min forward 0.3, step-up 0.45 / 0.40 | up to 0.55 / up to 0.50 |
+| own C# step (sweep up, sweep forward 0.25, snap down, undo unless higher and on walkable ground), 0.55 or 0.6 | 0.30-0.60, blocks 0.70 |
+
+The capsule rolls over the last few centimetres, so the effective step is about 0.6 m against today's exact 0.55 m.
+The spike's own step (`Mover.OwnStepUp`) is kept as a fallback; it needed a walkable-ground check after landing, or
+players "stepped" up the 50° ramp.
 
 ### 4.4 Reconciliation cap
 Replays above 60 ticks snap instead (see 3.3, rule 6). On good colliders 60 ticks cost about 0.12 ms.
@@ -436,7 +455,8 @@ pose (Chest/Head nodes), so the drawn body and the damage shapes agree.
 
 ## 6. Migration plan
 
-Each phase keeps the game playable and CI green. "Owner" files are where the work lands.
+**Superseded by the ordered port plan in [jolt-recommendation.md](jolt-recommendation.md), section 3.** Kept for the
+effort and file estimates. Each phase keeps the game playable and CI green.
 
 | Phase | What | Touches | Effort | Risk | Depends on |
 |---|---|---|---|---|---|
@@ -467,6 +487,9 @@ either fixed natives or the 10x-slower triangle-compound fallback.
 | glTF assets heavy or slow to load | low | Load once at startup (about 180 ms cold, mostly JIT/JSON); MeshOptimizer at import; optional binary cache later. |
 
 ## 8. Open questions for the user
+
+**Superseded by the short decision list in [jolt-recommendation.md](jolt-recommendation.md), section 6.** The step
+height (question 3) is answered by the sweep in 4.3.
 
 1. **Wait for a fixed BRUTAL.Jolt, or build the C# `BvhWorldQuery` now?** *Recommendation: build it now (P2).* It speeds
    up bullets today, unblocks mantle/grenades/bots, and stays as the fallback and test oracle.
@@ -506,4 +529,5 @@ Locally: `dotnet run --project spike/JoltSpike -c Release -- <a|b|c|d|e|f>` (nee
 | `TestsPerfAndLagComp.cs` | sections d and e (incl. C# ray-capsule) |
 | `TestsAssets.cs` | section f (GLB writer, glTF → scene graph → colliders, ProcGenMesh) |
 | `Scene.cs` | the scene graph node prototype |
+| `Bvh.cs` | the C# AABB BVH (the `BvhWorldQuery` prototype), checked against today's ray loop |
 | `Report.cs` | annotations, results files, timing |
