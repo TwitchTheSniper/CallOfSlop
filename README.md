@@ -163,6 +163,8 @@ The lobby groups maps by size. Medium and large maps add distance haze so the fa
 
 **Maps are data files.** Each map is one `.json` file in a pack folder under `Maps`: its name, size, sky colour and a list of building ops (`Building`, `WallX`/`WallZ` with door and window holes, `Slab` with stairwells, `StairsX`/`StairsZ`, `Container`, `Car`, `Hill`, `Tree`, `Watchtower`, `Hangar`, `Bridge`, `TrainCar`...). To add a map, drop a file into a pack folder (or a whole pack folder into `Maps`) and click **Refresh maps** in the lobby; no restart or recompiling. In single player, **Reload map files** in the Esc menu rebuilds the map you're standing in from its file, for quick edit-and-look map making. Anyone can make one: **[Maps/README.md](Maps/README.md)** is the map makers' guide, with a full example and every op. A file with a mistake is skipped with a message that names the file and the problem (also shown in the lobby), and `CallOfSlop.exe --check-map FILE` checks one without starting the game. Online, servers and clients identify maps by name plus a geometry fingerprint, so a player missing a host's custom map is told which file to get, and the server browser shows maps you don't have in orange.
 
+**Foliage.** A map file can also have a `"foliage"` section: grass, bushes, shrubs and trees scattered over areas, or placed one by one (see [Maps/README.md](Maps/README.md#foliage)). Only tree trunks are solid. The rest is drawn with instancing, culled in 16 m chunks, thinned out with distance through a dither (no popping) and sways in the wind. The **Dev** pack's **Foliage Test** map is a flat 100 m meadow for trying it out. Lighting (sun, sky and ground ambient, fog) is shared by boxes and plants (`Source/Render/Lighting.cs`).
+
 Movement handles any stack of boxes: you stand on anything, walk up steps up to 0.55 m, and bump your head on ceilings.
 
 
@@ -196,6 +198,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 - **Borderless fullscreen:** a frameless window covering the monitor at its native resolution. Alt-tab is instant.
 - **Fullscreen:** exclusive fullscreen at the resolution you choose.
 - **UI scale:** menus and HUD scale with the window height automatically (about 1.2x at 1080p, 1.6x at 1440p). The slider adjusts on top of that, from 0.6x to 2x, and applies when you let go.
+- **Foliage:** **Off / Low / Medium** (default) **/ High**. How much grass, how many bushes and shrubs, and how far away they're drawn, on maps that have foliage (try the **Dev** pack's **Foliage Test** map). Off draws none of it and costs nothing. Tree trunks are always there, because they're solid: they stop players and bullets. Grass, bushes and tree tops never do. The game logs a `[foliage]` line every 5 seconds on foliage maps (plants drawn, draw calls, CPU and GPU time) in callofslop.log.
 - **HUD width:** on ultra-wide monitors the in-match HUD (session info, kill feed, health, ammo, match bar, banners, scoreboard) stays inside a centred area so it's easy to read. **16:9** (default) keeps it 2560 px wide on a 3440x1440 or 5120x1440 screen; **21:9** allows 3360 px; **Full width** uses the screen edges. On 16:9 or narrower screens all three are the same. The crosshair is always centred, and the scope and damage effects always cover the whole screen.
 
 ### Stances

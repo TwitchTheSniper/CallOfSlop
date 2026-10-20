@@ -86,6 +86,14 @@ public sealed partial class Map
             {
                 Mix(s.X); Mix(s.Y); Mix(s.Z);
             }
+            if (FoliageHash != 0) // maps without a "foliage" section keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (FoliageHash >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             return h;
         }
     }

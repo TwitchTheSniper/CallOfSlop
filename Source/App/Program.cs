@@ -18,7 +18,7 @@ namespace CallOfSlop;
 ///   --no-upnp                      don't touch the router when hosting
 /// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
 /// </summary>
-public static unsafe class Program
+public static unsafe partial class Program
 {
     public const ushort DefaultPort = 60000;
     public static double FrameDt;
@@ -155,6 +155,11 @@ public static unsafe class Program
         _smokeFrames++;
         _smokeWorstDt = Math.Max(_smokeWorstDt, FrameDt);
         var t = now - _smokeStepStart;
+        if (FoliageSmokeActive)
+        {
+            FoliageSmokeTick(now);
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -198,7 +203,7 @@ public static unsafe class Program
             {
                 _smokeGallery = 0;
                 Ui.LobbyLoadouts = false;
-                SmokeNextMap(now);
+                StartFoliageSmoke(now); // then on to the maps
             }
             return;
         }
@@ -673,6 +678,8 @@ public static unsafe class Program
                 Render(now);
             else if (_smokeGallery is 1 or 2)
                 DrawGunGallery(_smokeGallery);
+            else if (FoliageSmokeActive)
+                DrawFoliageSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -704,7 +711,7 @@ public static unsafe class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2)) // no lobby menu over the smoke-test gun gallery
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -771,6 +778,7 @@ public static unsafe class Program
         var map = World.Map;
         for (var i = 0; i < map.Solid.Count; i++)
             Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
     }
 
     // =====================================================================

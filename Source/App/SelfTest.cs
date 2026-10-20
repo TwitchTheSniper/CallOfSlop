@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
 /// </summary>
-public static class SelfTest
+public static partial class SelfTest
 {
     private static StreamWriter _log = null!;
     private static int _failures;
@@ -46,6 +46,7 @@ public static class SelfTest
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
+            Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Attachments", CheckAttachments);
             Section("Packets", CheckPackets);

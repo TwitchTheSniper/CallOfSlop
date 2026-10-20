@@ -34,7 +34,7 @@ public static unsafe class Lighting
     /// <summary>Ambient bounced off the ground (faces pointing down), a little warm.</summary>
     public static readonly Vector3 GroundAmbient = new(0.40f, 0.38f, 0.34f);
 
-    /// <summary>How far the sky ambient leans towards the map's sky colour (0 = not at all).</summary>
+    /// <summary>How far the sky ambient leans towards the hue of the map's sky colour (0 = not at all).</summary>
     public const float SkyTint = 0.2f;
 
     /// <summary>Fog never fully hides things: at the fog end distance colours are this much sky.</summary>
@@ -58,7 +58,9 @@ public static unsafe class Lighting
         // wrap: 0 = plain Lambert (solid surfaces), ~0.5 = leaves (light leaks round the edges)
         vec3 ApplyLight(vec3 albedo, vec3 n, float wrap)
         {
-            vec3 sky = mix(uAmbSky, uFog * 1.15, uSkyTint);
+            // Lean the sky light towards the sky's hue (not its brightness, so dark skies don't darken everything).
+            float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
+            vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5);
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0);
             return albedo * (amb + uSunColor * diff);
@@ -89,5 +91,10 @@ public static unsafe class Lighting
         Native.glUniform3f(Loc("uAmbGround\0"u8), GroundAmbient.X, GroundAmbient.Y, GroundAmbient.Z);
         Native.glUniform1f(Loc("uSkyTint\0"u8), SkyTint);
         Native.glUniform1f(Loc("uFogMax\0"u8), FogMax);
+        // A neutral sky until the first SetFog, so menus drawn before any map (gun previews) aren't tinted.
+        Native.glUniform3f(Loc("uFog\0"u8), DefaultSky.X, DefaultSky.Y, DefaultSky.Z);
     }
+
+    /// <summary>The sky colour assumed before a map sets its own (the same as <see cref="Map.Sky"/>'s default).</summary>
+    public static readonly Vector3 DefaultSky = new(0.36f, 0.42f, 0.50f);
 }

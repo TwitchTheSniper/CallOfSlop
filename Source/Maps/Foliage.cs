@@ -205,10 +205,16 @@ public static class Foliage
     }
 
     // Per quality (Low, Medium, High), in metres.
-    private static readonly float[] FadeGrass = [22f, 38f, 60f], FadeShrub = [45f, 70f, 110f], FadeBush = [60f, 95f, 150f], FadeTree = [130f, 220f, 400f];
+    private static readonly float[] FadeGrass = [22f, 38f, 60f], FadeShrub = [45f, 70f, 110f], FadeBush = [60f, 95f, 150f];
     private static readonly float[] LodGrass = [10f, 16f, 25f], LodShrub = [20f, 30f, 45f], LodBush = [25f, 40f, 60f], LodTree = [40f, 60f, 90f];
 
-    /// <summary>Distance (metres) at which a type has completely thinned out; it starts thinning at 45% of this.</summary>
+    /// <summary>Trees never thin out with distance (their trunks are solid boxes that are always drawn).</summary>
+    public const float NoFade = 1e6f;
+
+    /// <summary>
+    /// Distance (metres) at which a type has completely thinned out; it starts thinning at <see cref="FadeStartFraction"/>
+    /// of this. Each plant gets its own cutoff in between and fades out with a dither, so nothing pops.
+    /// </summary>
     public static float FadeDistance(FoliageType t, FoliageQuality q)
     {
         var i = Math.Clamp((int)q - 1, 0, 2);
@@ -217,9 +223,12 @@ public static class Foliage
             FoliageType.Grass => FadeGrass[i],
             FoliageType.Shrub => FadeShrub[i],
             FoliageType.Bush => FadeBush[i],
-            _ => FadeTree[i],
+            _ => NoFade,
         };
     }
+
+    /// <summary>Where distance thinning starts, as a fraction of <see cref="FadeDistance"/>.</summary>
+    public const float FadeStartFraction = 0.45f;
 
     /// <summary>Beyond this distance a type is drawn with its low-detail mesh.</summary>
     public static float LodDistance(FoliageType t, FoliageQuality q)
@@ -360,7 +369,18 @@ public sealed partial class Map
         }
 
         FoliageInstances = list.ToArray();
-        // Trunks go straight into Solid (not through Block, which would record them as ops and write them back out).
+        FoliageHash = HashFoliage(FoliageInstances);
+        AddTrunkColliders(trunks);
+    }
+
+    /// <summary>
+    /// The one place foliage touches collision: every tree trunk becomes a solid box, so movement, bullets and bot
+    /// sight treat it like any other box. (When the game moves to Jolt, this is where trunks become static bodies.)
+    /// Trunks go straight into <see cref="Solid"/>, not through Block, which would record them as ops and write them
+    /// back out to the file.
+    /// </summary>
+    private void AddTrunkColliders(List<Box> trunks)
+    {
         TrunkStart = Solid.Count;
         TrunkCount = trunks.Count;
         foreach (var b in trunks)
@@ -369,6 +389,36 @@ public sealed partial class Map
             Colors.Add(TrunkBrown);
         }
         _materials = null;
+    }
+
+    /// <summary>A fingerprint of every placed plant (0 when there are none), mixed into <see cref="ContentHash"/>.</summary>
+    public uint FoliageHash;
+
+    private static uint HashFoliage(FoliageInstance[] all)
+    {
+        if (all.Length == 0)
+            return 0;
+        var h = 2166136261u;
+        void Mix(uint v)
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                h ^= (v >> (i * 8)) & 0xFF;
+                h *= 16777619u;
+            }
+        }
+        Mix((uint)all.Length);
+        foreach (var f in all)
+        {
+            Mix((uint)f.Type);
+            Mix(BitConverter.SingleToUInt32Bits(f.Position.X));
+            Mix(BitConverter.SingleToUInt32Bits(f.Position.Y));
+            Mix(BitConverter.SingleToUInt32Bits(f.Position.Z));
+            Mix(BitConverter.SingleToUInt32Bits(f.Scale));
+            Mix(BitConverter.SingleToUInt32Bits(f.Yaw01));
+            Mix(BitConverter.SingleToUInt32Bits(f.Rand));
+        }
+        return h == 0 ? 1u : h;
     }
 
     private void Scatter(FoliageSpec spec, FoliageRegion reg, List<FoliageInstance> list, List<Box> trunks, BoxGrid grid)
