@@ -94,12 +94,15 @@ public static partial class SelfTest
         if (evtLen != KillStreaks.EventBytes || evt != (1, 3, StreakId.SentryTurret, new Vector3(4, 5, 6), -1f, 0xDEADBEEF, 7))
             Fail("StreakEvent round trip broke");
         var st = new StreakState { Count = 9, Ready = 0b1010, Slots = pick };
+        st.Progress[(int)StreakId.StrafeRun] = 7;
+        st.Progress[(int)StreakId.CounterSweep] = 2;
         KillStreaks.WriteState(w, st);
         var stLen = w.Length - 1;
         r = new PacketReader(w.Span[1..]);
         var st2 = new StreakState();
         KillStreaks.ReadState(ref r, st2);
-        if (stLen != KillStreaks.StateBytes || st2.Count != 9 || st2.Ready != 0b1010 || st2.Slots != pick)
+        if (stLen != KillStreaks.StateBytes || st2.Count != 9 || st2.Ready != 0b1010 || st2.Slots != pick
+            || st2.ProgressOf(StreakId.StrafeRun) != 7 || st2.ProgressOf(StreakId.CounterSweep) != 2 || st2.ProgressOf(StreakId.SentryTurret) != 0)
             Fail("StreakState round trip broke");
         var ent = new StreakEntity { Id = 4, Kind = StreakId.AttackDrone, Owner = 2, Pos = new Vector3(-3, 20, 7), Yaw = 2.5f, Pitch = -0.4f, Health = 150, Target = 5, Firing = true };
         w.Begin(Msg.StreakEnts).U32(1).U8(16);
@@ -166,6 +169,21 @@ public static partial class SelfTest
         Line($"Recon Sweep: used {sweep}, used twice {again}, enemy revealed {revealed}, after it ends {revealedLater}");
         if (!sweep || again || !revealed || revealedLater || me.Streak.IsReady(StreakId.ReconSweep))
             Fail("Recon Sweep activation / reveal is wrong");
+
+        // Using a streak empties its stored kills; fresh kills fill it again (the others keep their own count).
+        var reconCost = KillStreaks.Get(StreakId.ReconSweep).Kills;
+        var afterUse = me.Streak.ProgressOf(StreakId.ReconSweep);
+        var refilled = new List<int>();
+        for (var k = 0; k < reconCost; k++)
+        {
+            game.SelfTestPlace(b1, new Vector3(8, 0, 8), 0);
+            game.SelfTestKill(me, b1, weapon, 7.2 + k * 0.01);
+            refilled.Add(me.Streak.ProgressOf(StreakId.ReconSweep));
+        }
+        game.SelfTestPlace(b1, new Vector3(-10, 0, -10), 0);
+        Line($"after using Recon Sweep: stored kills {afterUse}, refilled {string.Join(" -> ", refilled)}, ready again {me.Streak.IsReady(StreakId.ReconSweep)}");
+        if (afterUse != 0 || !me.Streak.IsReady(StreakId.ReconSweep) || refilled[^1] != reconCost || refilled[0] != Math.Min(1, reconCost))
+            Fail("a used streak must empty and be earned again by fresh kills");
 
         b2.Streak.Slots = new StreakSet(StreakId.CounterSweep, StreakId.None, StreakId.None);
         b2.Streak.Ready = StreakState.Bit(StreakId.CounterSweep);
