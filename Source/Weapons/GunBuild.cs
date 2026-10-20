@@ -1107,6 +1107,9 @@ public sealed class GunBuilder
             Box(0.02f, 0.012f, hz1 - hz0 + 0.012f, 0, top + h, (hz0 + hz1) / 2, Dark * 1.1f, flags: T);
             iron = top + h + 0.012f;
         }
+        // The sight line must clear everything permanent along the middle of the gun (a top-mounted magazine, a tall
+        // receiver hump...): otherwise aiming looks straight into a block. Posts and notches grow to the raised line.
+        iron = MathF.Max(iron, LineOfSightFloor() + 0.008f);
         if (s == "none")
             return iron;
         // The front sight sits at the end of the handguard or near the muzzle
@@ -1154,6 +1157,21 @@ public sealed class GunBuilder
         else
             Box(!pistol ? 0.03f : 0.026f, iron - top, 0.012f, 0, (iron + top) / 2, rz, Dark * 1.1f, flags: T); // rear notch
         return iron;
+    }
+
+    /// <summary>The top of the highest permanent part across the middle of the gun (where the eye looks along it).</summary>
+    private float LineOfSightFloor()
+    {
+        var m = float.NegativeInfinity;
+        foreach (var pt in _parts)
+        {
+            if ((pt.Flags & (GunPartFlags.Top | GunPartFlags.Blend)) != 0)
+                continue;
+            var (lo, hi) = pt.Bounds();
+            if (hi.X > -0.012f && lo.X < 0.012f)
+                m = MathF.Max(m, hi.Y);
+        }
+        return m;
     }
 
     // ---- Optic mount ----------------------------------------------------------------------------
