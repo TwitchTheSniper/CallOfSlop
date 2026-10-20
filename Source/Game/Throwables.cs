@@ -59,6 +59,8 @@ public static class Throwables
     private static bool InsideSolid(Vector3 p)
     {
         var r = ProjectileRadius;
+        if (World.UseGrid)
+            return World.Grid.PointInside(p, r); // the boxes nearby only (same answer)
         foreach (var b in World.Map.Solid)
             if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
                 return true;

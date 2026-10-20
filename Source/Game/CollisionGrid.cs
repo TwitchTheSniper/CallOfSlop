@@ -3,17 +3,18 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A read-only snapshot of a map's collision for building its <see cref="NavGraph"/>: the boxes filed into a grid of
-/// square columns, so each of the build's many ground probes, body checks and sight rays tests the few boxes nearby
-/// instead of every box on the map (big maps have well over a thousand). It gives exactly the answers of
-/// <see cref="World.RaycastWorld"/> and <see cref="World.Blocked"/> (same box tests, same terrain), only faster;
-/// the self-test compares the two on every map.
+/// A read-only snapshot of a map's collision: the boxes filed into a grid of square columns, so a ray cast, body check
+/// or movement step tests the few boxes nearby instead of every box on the map (big maps have well over a thousand).
+/// <see cref="World"/> keeps one for the current map (<see cref="World.Grid"/>) and the nav graph build uses it too.
+/// It gives exactly the answers of the every-box scans it replaces (same box tests, same terrain, and boxes visited in
+/// map order where the order matters); the self-test compares the two on every map.
 /// </summary>
-public sealed class NavCollision
+public sealed class CollisionGrid
 {
     public const float Cell = 4f;
     private const float Pad = 0.05f; // boxes are filed into every column they come within this distance of
 
+    private readonly Map _map;
     private readonly Box[] _boxes;
     private readonly ITerrainCollision? _terrain;
     private readonly float _minX, _minZ, _maxX, _maxZ;
@@ -22,11 +23,16 @@ public sealed class NavCollision
     private readonly int[] _cellBoxes;
     private readonly int[] _stamp; // per box: the ray that last tested it (each box once per ray)
     private int _ray;
+    private int[] _near = new int[64]; // Near's answer
 
     public int BoxCount => _boxes.Length;
 
-    public NavCollision(Map map)
+    /// <summary>The boxes, in map order (indices from <see cref="Near"/> point into this).</summary>
+    public ReadOnlySpan<Box> Boxes => _boxes;
+
+    public CollisionGrid(Map map)
     {
+        _map = map;
         _boxes = map.Solid.ToArray();
         _terrain = map.TerrainCollision;
         _stamp = new int[_boxes.Length];
@@ -50,7 +56,12 @@ public sealed class NavCollision
         // Two passes (count, then fill) so each column's list is one slice of a single array, in box order.
         var counts = new int[_cols * _rows + 1];
         foreach (var b in _boxes)
-            ForCells(b, c => counts[c + 1]++);
+        {
+            CellRange(b, out var c0, out var c1, out var r0, out var r1);
+            for (var r = r0; r <= r1; r++)
+                for (var c = c0; c <= c1; c++)
+                    counts[r * _cols + c + 1]++;
+        }
         for (var c = 0; c < _cols * _rows; c++)
             counts[c + 1] += counts[c];
         _cellStart = counts;
@@ -58,17 +69,22 @@ public sealed class NavCollision
         var fill = (int[])counts.Clone();
         for (var i = 0; i < _boxes.Length; i++)
         {
-            var index = i;
-            ForCells(_boxes[i], c => _cellBoxes[fill[c]++] = index);
+            CellRange(_boxes[i], out var c0, out var c1, out var r0, out var r1);
+            for (var r = r0; r <= r1; r++)
+                for (var c = c0; c <= c1; c++)
+                    _cellBoxes[fill[r * _cols + c]++] = i;
         }
     }
 
-    private void ForCells(Box b, Action<int> action)
+    /// <summary>Is this a snapshot of <paramref name="map"/> as it is now? (Maps don't change once built; the count is a cheap guard.)</summary>
+    public bool IsFor(Map map) => ReferenceEquals(map, _map) && map.Solid.Count == _boxes.Length && ReferenceEquals(map.TerrainCollision, _terrain);
+
+    private void CellRange(Box b, out int c0, out int c1, out int r0, out int r1)
     {
-        int c0 = Col(b.Min.X - Pad), c1 = Col(b.Max.X + Pad), r0 = Row(b.Min.Z - Pad), r1 = Row(b.Max.Z + Pad);
-        for (var r = r0; r <= r1; r++)
-            for (var c = c0; c <= c1; c++)
-                action(r * _cols + c);
+        c0 = Col(b.Min.X - Pad);
+        c1 = Col(b.Max.X + Pad);
+        r0 = Row(b.Min.Z - Pad);
+        r1 = Row(b.Max.Z + Pad);
     }
 
     private int Col(float x) => Math.Clamp((int)MathF.Floor((x - _minX) / Cell), 0, _cols - 1);
@@ -165,6 +181,12 @@ public sealed class NavCollision
     {
         if (_terrain != null && _terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
             return true;
+        return BlockedByBoxes(feet, height);
+    }
+
+    /// <summary>Same as <see cref="World.BlockedByBoxes"/>: would a player standing at <paramref name="feet"/> overlap a box?</summary>
+    public bool BlockedByBoxes(Vector3 feet, float height = World.PlayerHeight)
+    {
         const float r = World.PlayerRadius;
         int c0 = Col(feet.X - r), c1 = Col(feet.X + r), r0 = Row(feet.Z - r), r1 = Row(feet.Z + r);
         for (var row = r0; row <= r1; row++)
@@ -180,6 +202,58 @@ public sealed class NavCollision
                 }
             }
         return false;
+    }
+
+    /// <summary>Is point <paramref name="p"/> inside a box grown by <paramref name="r"/> on every side (the projectile test)?</summary>
+    public bool PointInside(Vector3 p, float r)
+    {
+        int c0 = Col(p.X - r), c1 = Col(p.X + r), r0 = Row(p.Z - r), r1 = Row(p.Z + r);
+        for (var row = r0; row <= r1; row++)
+            for (var col = c0; col <= c1; col++)
+            {
+                var cell = row * _cols + col;
+                for (var k = _cellStart[cell]; k < _cellStart[cell + 1]; k++)
+                {
+                    var b = _boxes[_cellBoxes[k]];
+                    if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
+                        return true;
+                }
+            }
+        return false;
+    }
+
+    /// <summary>
+    /// Every box that could touch the rectangle x0..x1, z0..z1 (in the ground plane), as indices into
+    /// <see cref="Boxes"/> in map order with no repeats: a superset of the boxes really touching it, so a loop over
+    /// these visits the boxes that matter in the same order as a loop over the whole map. The answer lives in a buffer
+    /// that the next call reuses: finish with it before calling again.
+    /// </summary>
+    public ReadOnlySpan<int> Near(float x0, float z0, float x1, float z1)
+    {
+        int c0 = Col(x0), c1 = Col(x1), r0 = Row(z0), r1 = Row(z1);
+        if (c0 == c1 && r0 == r1)
+        {
+            var cell = r0 * _cols + c0;
+            return _cellBoxes.AsSpan(_cellStart[cell], _cellStart[cell + 1] - _cellStart[cell]); // one column: already in order
+        }
+        var n = 0;
+        for (var row = r0; row <= r1; row++)
+            for (var col = c0; col <= c1; col++)
+            {
+                var cell = row * _cols + col;
+                var count = _cellStart[cell + 1] - _cellStart[cell];
+                if (n + count > _near.Length)
+                    Array.Resize(ref _near, Math.Max(_near.Length * 2, n + count));
+                _cellBoxes.AsSpan(_cellStart[cell], count).CopyTo(_near.AsSpan(n));
+                n += count;
+            }
+        var all = _near.AsSpan(0, n);
+        all.Sort();
+        var unique = 0;
+        for (var k = 0; k < all.Length; k++)
+            if (unique == 0 || all[k] != all[unique - 1])
+                all[unique++] = all[k];
+        return all[..unique];
     }
 
     /// <summary>

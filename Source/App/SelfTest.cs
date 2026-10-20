@@ -62,7 +62,7 @@ public static partial class SelfTest
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
-            Section("Nav collision", CheckNavCollision); // SelfTestNav.cs
+            Section("Collision grid", CheckCollisionGrid); // SelfTestNav.cs
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
