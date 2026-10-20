@@ -210,8 +210,8 @@ public static class PropFile
             {
                 case "size":
                     part.Size = Vec(p.Value, w);
-                    if (part.Size.X < 0.004f || part.Size.Y < 0.004f || part.Size.Z < 0.004f || part.Size.X > MaxSize || part.Size.Y > MaxSize || part.Size.Z > MaxSize)
-                        throw new PropFileException($"{w}: each size is 0.004 to {MaxSize} m");
+                    if (part.Size.X < 0.001f || part.Size.Y < 0.001f || part.Size.Z < 0.001f || part.Size.X > MaxSize || part.Size.Y > MaxSize || part.Size.Z > MaxSize)
+                        throw new PropFileException($"{w}: each size is 0.001 to {MaxSize} m");
                     hasSize = true;
                     break;
                 case "offset":

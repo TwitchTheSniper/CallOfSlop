@@ -59,7 +59,7 @@ Unknown keys, numbers out of range and missing parts are errors with a message s
 
 | Field | Meaning |
 |---|---|
-| `size` | `[w, h, d]`, each 0.004 to 12 m. |
+| `size` | `[w, h, d]`, each 0.001 to 12 m. |
 | `offset` | `[x, y, z]`, the box centre. Default `[0, h/2, 0]`: centred, standing on the ground. |
 | `rotation` | `[pitch, yaw, roll]` in degrees: about X, Y (turning it on the ground) and Z. Or give any of `pitch`, `yaw`, `roll` on their own. |
 | `color` | A name (below), `[r, g, b]` with values 0-1, or `"#rrggbb"`. Default grey. |

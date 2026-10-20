@@ -89,7 +89,7 @@ public static partial class SelfTest
             ("{ \"parts\": [ { \"size\": [1, 1, 1] } ] }", "missing \"name\""),
             ("{ \"name\": \"X\", \"collision\": \"bouncy\", \"parts\": [ { \"size\": [1, 1, 1] } ] }", "\"solid\" or \"cosmetic\""),
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1] } ], \"breakable\": { \"breakBy\": [\"lasers\"] } }", "unknown damage"),
-            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [20, 1, 1] } ] }", "0.004 to 12"),
+            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [20, 1, 1] } ] }", "0.001 to 12"),
             ("{ \"name\": \"X\", \"format\": \"call-of-slop-prop/9\", \"parts\": [ { \"size\": [1, 1, 1] } ] }", "different version"),
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"material\": \"cheese\" } ] }", "unknown material"),
         ];
@@ -298,7 +298,10 @@ public static partial class SelfTest
     private static void CheckBreakables()
     {
         if (Maps.Find("Prop Gallery") is not { } map)
+        {
+            Fail("Maps/Dev/PropGallery.json ('Prop Gallery') didn't load");
             return;
+        }
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id);
         var me = game.Players[0];
         var hash = map.ContentHash;
@@ -424,7 +427,10 @@ public static partial class SelfTest
     private static void CheckDebris()
     {
         if (Maps.Find("Prop Gallery") is not { } map)
+        {
+            Fail("Maps/Dev/PropGallery.json ('Prop Gallery') didn't load");
             return;
+        }
         World.SetMap(map);
         PropDebris.Clear();
         var before = PropDebris.Spawned;
