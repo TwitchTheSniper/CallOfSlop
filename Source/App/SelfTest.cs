@@ -450,6 +450,21 @@ public static class SelfTest
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
         Line($"BOTSTAT headshots: {botStats.GunHeadshots} of {botStats.GunKills} bot gun kills ({botStats.HeadshotRatio:P1})");
+        var hard = new BotStats();
+        foreach (var m in Maps.All.Where((_, i) => i % 3 == 0))
+        {
+            using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+                bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Hard, mapId: m.Id);
+            game.MapVoteEnabled = false;
+            var now = 0.0;
+            for (var i = 0; i < 90 * World.TickRate; i++)
+            {
+                now += 1.0 / World.TickRate;
+                game.Update(now, 1.0 / World.TickRate);
+            }
+            hard.Add(game.BotStats);
+        }
+        Line($"BOTSTAT hard headshots: {hard.GunHeadshots} of {hard.GunKills} bot gun kills ({hard.HeadshotRatio:P1})");
     }
 
     // ---- 2b. Map vote ---------------------------------------------------------------------
