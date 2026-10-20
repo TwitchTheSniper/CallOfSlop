@@ -31,7 +31,7 @@ public sealed partial class Map
     private readonly Dictionary<int, Box> _propOriginal = new();
     private readonly List<ClutterRequest> _clutter = new();
 
-    private sealed record ClutterRequest(string[] Props, float X0, float Z0, float X1, float Z1, int Count, int Seed, float Width, bool Align, float Gap, int OpIndex);
+    private sealed record ClutterRequest(string[] Props, float X0, float Z0, float X1, float Z1, int Count, int Seed, float Width, bool Align, float Gap, bool Mirror, int OpIndex);
 
     /// <summary>Is <see cref="Solid"/>[i] a prop's collider box? (Those are drawn by the prop renderer, not as boxes.)</summary>
     public bool IsPropCollider(int i) => (uint)i < (uint)_propMask.Length && _propMask[i];
@@ -72,12 +72,14 @@ public sealed partial class Map
     /// more common) over the rectangle between (x0, z0) and (x1, z1), or with <paramref name="width"/> &gt; 0 along a strip
     /// that wide from (x0, z0) to (x1, z1). Deterministic for a seed. Runs after every op, the foliage and the objectives
     /// are known, so it keeps solid props clear of spawns, waypoints and the routes between them, hills, flags, movers and
-    /// gaps between walls (see Maps/README.md).
+    /// gaps between walls (see Maps/README.md). With <paramref name="mirror"/> every prop also gets its twin turned 180
+    /// degrees about the map's centre (at -x, -z, facing the other way), placed only when both fit, so the two halves of a
+    /// point-symmetric map get the same props (count is then per half).
     /// </summary>
     [MapOp]
-    public void Clutter(string[] props, float x0, float z0, float x1, float z1, int count, int seed = 0, float width = 0, bool align = false, float gap = 0.15f)
+    public void Clutter(string[] props, float x0, float z0, float x1, float z1, int count, int seed = 0, float width = 0, bool align = false, float gap = 0.15f, bool mirror = false)
     {
-        using var __ = Op([props, x0, z0, x1, z1, count, seed, width, align, gap]);
+        using var __ = Op([props, x0, z0, x1, z1, count, seed, width, align, gap, mirror]);
         if (props.Length == 0)
             throw new InvalidOperationException("\"props\" needs at least one prop or category name");
         foreach (var n in props)
@@ -87,7 +89,7 @@ public sealed partial class Map
             throw new InvalidOperationException("count is 0 to 2000");
         if (width < 0 || gap is < 0 or > 10)
             throw new InvalidOperationException("width must be 0 or more, gap 0 to 10");
-        _clutter.Add(new ClutterRequest(props, x0, z0, x1, z1, count, seed, width, align, gap, Ops.Count - 1));
+        _clutter.Add(new ClutterRequest(props, x0, z0, x1, z1, count, seed, width, align, gap, mirror, Ops.Count - 1));
     }
 
     // ---- Adding a prop -------------------------------------------------------------------------------------
@@ -343,16 +345,35 @@ public sealed partial class Map
             else
                 yaw = (r4 - 0.5f) * 2 * def.YawJitter * (MathF.PI / 180f);
             var scale = def.ScaleMin + (def.ScaleMax - def.ScaleMin) * r5;
-            if (TryClutterSpot(def, p, yaw, scale, req.Gap, space, ctx, out var pos))
+            if (!TryClutterSpot(def, p, yaw, scale, req.Gap, space, ctx, out var pos))
+                continue;
+            if (req.Mirror)
             {
-                AddProp(def, pos, yaw, scale, space);
-                var fb = WorldBounds(def.Bounds, pos, yaw, scale);
-                ctx.Placed.Add((new Vector2(fb.Min.X, fb.Min.Z), new Vector2(fb.Max.X, fb.Max.Z)));
-                placed++;
+                // The twin at -p, turned 180 degrees: both or neither. They mustn't meet each other (near the centre).
+                var twinYaw = yaw + MathF.PI;
+                if (!TryClutterSpot(def, -p, twinYaw, scale, req.Gap, space, ctx, out var twin))
+                    continue;
+                var fa = WorldBounds(def.Bounds, pos, yaw, scale);
+                var ft = WorldBounds(def.Bounds, twin, twinYaw, scale);
+                var keep = req.Gap + (def.IsSolid ? ClutterClearance : 0f);
+                if (fa.Min.X - keep < ft.Max.X && fa.Max.X + keep > ft.Min.X && fa.Min.Z - keep < ft.Max.Z && fa.Max.Z + keep > ft.Min.Z)
+                    continue;
+                PlaceClutterProp(def, pos, yaw, scale, space, ctx);
+                PlaceClutterProp(def, twin, twinYaw, scale, space, ctx);
             }
+            else
+                PlaceClutterProp(def, pos, yaw, scale, space, ctx);
+            placed++;
         }
         if (placed < req.Count)
-            Console.WriteLine($"Map '{Name}': Clutter (op #{req.OpIndex + 1}) placed {placed} of {req.Count} props; there was no clear room for the rest");
+            Console.WriteLine($"Map '{Name}': Clutter (op #{req.OpIndex + 1}) placed {placed} of {req.Count} props{(req.Mirror ? " (each with its mirrored twin)" : "")}; there was no clear room for the rest");
+    }
+
+    private void PlaceClutterProp(PropDef def, Vector3 pos, float yaw, float scale, BoxSpace space, ClutterContext ctx)
+    {
+        AddProp(def, pos, yaw, scale, space);
+        var fb = WorldBounds(def.Bounds, pos, yaw, scale);
+        ctx.Placed.Add((new Vector2(fb.Min.X, fb.Min.Z), new Vector2(fb.Max.X, fb.Max.Z)));
     }
 
     private bool TryClutterSpot(PropDef def, Vector2 p, float yaw, float scale, float gap, BoxSpace space, ClutterContext ctx, out Vector3 pos)
