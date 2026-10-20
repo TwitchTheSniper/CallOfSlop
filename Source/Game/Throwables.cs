@@ -55,23 +55,9 @@ public static class Throwables
         killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
         : KillStreaks.IsStreakKill(killId) ? KillStreaks.Get(KillStreaks.FromKillId(killId)).Name : Weapons.Get(killId).Name;
 
-    /// <summary>Point-vs-box test for a small projectile.</summary>
-    private static bool InsideSolid(Vector3 p)
-    {
-        var r = ProjectileRadius;
-        if (World.UseGrid)
-        {
-            if (World.Grid.PointInside(p, r)) // the boxes nearby only (same answer)
-                return true;
-        }
-        else
-        {
-            foreach (var b in World.Map.Solid)
-                if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
-                    return true;
-        }
-        return World.Map.Movers.Count > 0 && MoverPhysics.PointInside(p, r, MoverPhysics.Clock); // moving platforms at their current pose
-    }
+    /// <summary>Point-vs-box test for a small projectile: static colliders, then movers at their current pose (the terrain is handled by <see cref="TerrainContact"/>).</summary>
+    private static bool InsideSolid(Vector3 p) =>
+        World.Query.PointInside(p, ProjectileRadius, new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers));
 
     /// <summary>One tick of ballistic flight with bounces. Returns true if it touched geometry.</summary>
     public static bool Step(Projectile p, float dt)
@@ -255,7 +241,7 @@ public sealed partial class Game
 
         if (Vector3.Distance(origin, p.Eye) > 3f || !float.IsFinite(origin.X + origin.Y + origin.Z))
             origin = p.Eye;
-        if (World.Blocked(origin - new Vector3(0, 0.05f, 0), 0.1f))
+        if (World.Query.OverlapBody(origin - new Vector3(0, 0.05f, 0), 0.1f, QueryFilter.StaticOnly))
             origin = p.Eye; // don't spawn it inside a wall
         dir = dir.LengthSquared() > 0.5f ? Vector3.Normalize(dir) : World.Forward(p.Yaw, p.Pitch);
 
@@ -326,7 +312,7 @@ public sealed partial class Game
                 if (dist > def.Radius)
                     continue;
                 // Walls shield you from the blast.
-                if (dist > 0.3f && World.RaycastWorld(center, to / dist, dist) < dist - 0.05f)
+                if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
                     continue;
                 var dmg = def.MaxDamage * MathF.Pow(1f - dist / def.Radius, 1.4f);
                 if (victim == owner)

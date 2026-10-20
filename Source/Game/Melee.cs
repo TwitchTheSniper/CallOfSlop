@@ -91,7 +91,7 @@ public sealed partial class Game
             if (!aimed)
                 continue;
             // No hitting through walls.
-            if (toCenter.Length() > 0.3f && World.RaycastWorld(origin, Vector3.Normalize(toCenter), toCenter.Length()) < toCenter.Length() - 0.35f)
+            if (toCenter.Length() > 0.3f && World.Query.Raycast(origin, Vector3.Normalize(toCenter), toCenter.Length(), QueryFilter.All) < toCenter.Length() - 0.35f)
                 continue;
             if (dist < best)
             {

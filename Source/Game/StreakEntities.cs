@@ -73,11 +73,11 @@ public sealed partial class Game
         var fwd = World.FlatForward(yaw);
         var spot = p.Position + fwd * 1.3f;
         // Land it on whatever is under that spot (no lower than the player's feet minus a step, never inside a wall).
-        var down = World.RaycastWorld(spot + new Vector3(0, 1.2f, 0), -Vector3.UnitY, 2.5f);
+        var down = World.Query.Raycast(spot + new Vector3(0, 1.2f, 0), -Vector3.UnitY, 2.5f, QueryFilter.All);
         spot.Y = spot.Y + 1.2f - down;
         var look = spot + Vector3.UnitY - p.Eye;
         var lookLen = look.Length();
-        if (down >= 2.49f || World.Blocked(spot, 1.1f) || World.RaycastWorld(p.Eye, look / lookLen, lookLen) < lookLen - 0.05f)
+        if (down >= 2.49f || World.Query.OverlapBody(spot, 1.1f, QueryFilter.StaticOnly) || World.Query.Raycast(p.Eye, look / lookLen, lookLen, QueryFilter.All) < lookLen - 0.05f)
             spot = p.Position; // no room in front (or it's through a wall): at their feet
         var e = NewEntity(p, StreakId.SentryTurret, spot, now, KillStreaks.TurretSeconds);
         e.BaseYaw = e.Yaw = e.RenderYaw = yaw;
@@ -171,7 +171,7 @@ public sealed partial class Game
                 if (flat.LengthSquared() > 0.01f && Vector3.Dot(Vector3.Normalize(flat), World.FlatForward(coneYaw)) < coneCos)
                     continue;
             }
-            if (World.RaycastWorld(from, to / dist, dist) < dist - 0.05f || SmokeBlocks(from, o.Chest, Brutal.GlfwApi.Glfw.Time))
+            if (World.Query.Raycast(from, to / dist, dist, QueryFilter.All) < dist - 0.05f || SmokeBlocks(from, o.Chest, Brutal.GlfwApi.Glfw.Time))
                 continue;
             var score = dist - (o.Id == current ? 4f : 0f);
             if (score < bestScore)
@@ -270,7 +270,7 @@ public sealed partial class Game
         e.LastShot = now;
         var origin = e.Muzzle(e.Pos, e.Yaw, e.Pitch);
         var d = Weapons.SpreadDirection(aim, spread, e.Seed++, 0);
-        var dist = World.RaycastWorld(origin, d, KillStreaks.DroneRange + 10);
+        var dist = World.Query.Raycast(origin, d, KillStreaks.DroneRange + 10, QueryFilter.All);
         Player? hit = null;
         foreach (var o in Players.Values)
         {

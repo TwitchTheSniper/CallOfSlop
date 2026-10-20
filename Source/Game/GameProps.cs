@@ -62,7 +62,7 @@ public sealed partial class Game
                 continue;
             var b = map.PropInstances[i].Bounds;
             var grown = b with { Half = b.Half + new Vector3(0.12f) }; // a little forgiving: small props are hard to aim at
-            if (grown.Raycast(origin, dir, bestT) is { } t && t < bestT && World.RaycastWorld(origin, dir, t) >= t - 0.25f)
+            if (grown.Raycast(origin, dir, bestT) is { } t && t < bestT && World.Query.Raycast(origin, dir, t, QueryFilter.All) >= t - 0.25f)
             {
                 bestT = t;
                 best = i;
@@ -88,7 +88,7 @@ public sealed partial class Game
             var dist = to.Length();
             if (dist > radius)
                 continue;
-            if (dist > 0.3f && World.RaycastWorld(center, to / dist, dist) < dist - 0.2f)
+            if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.2f)
                 continue; // something else in between (the prop's own surface is at dist)
             var dmg = MathF.Max(1f, maxDamage * MathF.Pow(1f - dist / radius, 1.4f));
             DamageProp(owner, i, dmg, kind, center, now);
@@ -131,7 +131,7 @@ public sealed partial class Game
                     continue;
                 var to = victim.Chest - center;
                 var dist = to.Length();
-                if (dist > br.ExplodeRadius || (dist > 0.3f && World.RaycastWorld(center, to / dist, dist) < dist - 0.05f))
+                if (dist > br.ExplodeRadius || (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f))
                     continue;
                 var dmg = br.ExplodeDamage * MathF.Pow(1f - dist / br.ExplodeRadius, 1.4f);
                 if (victim.Sim.Stance == Stance.Prone)
