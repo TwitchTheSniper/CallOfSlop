@@ -31,6 +31,8 @@ public sealed partial class Game
     private readonly List<PacketWriter> _snapParts = new();
     private readonly SnapSlow[] _lastSlow = new SnapSlow[256];
     private readonly uint[] _slowChangedTick = new uint[256];
+    private readonly bool[] _lastAlive = new bool[256];
+    private readonly uint[] _aliveChangedTick = new uint[256];
     private uint _lastPresent;
     private uint _snapCounter;
 
@@ -76,6 +78,11 @@ public sealed partial class Game
         foreach (var p in Players.Values)
         {
             _snapFast.Add(FastOf(p));
+            if (_lastAlive[p.Id] != p.Alive)
+            {
+                _lastAlive[p.Id] = p.Alive;
+                _aliveChangedTick[p.Id] = ServerTick; // a death or a respawn (teleport) goes to everyone at once
+            }
             present |= 1u << (p.Id & 31);
             var slow = SlowOf(p);
             var isNew = (_lastPresent & (1u << (p.Id & 31))) == 0;
@@ -105,7 +112,7 @@ public sealed partial class Game
         _snapMine.Clear();
         foreach (var f in _snapFast)
             if (!SnapshotRelevance || f.Id == p.Id || (f.Alive && System.Numerics.Vector3.DistanceSquared(f.Position, p.Position) < NearDistance * NearDistance)
-                || (_snapCounter + f.Id) % 2 == 0)
+                || (_snapCounter + f.Id) % 2 == 0 || ServerTick - _aliveChangedTick[f.Id] <= World.SnapshotEvery * 2)
                 _snapMine.Add(f);
         var ownIndex = _snapMine.FindIndex(f => f.Id == p.Id);
         var n = Snapshot.Build(header, own, _snapMine, ownIndex, _snapSlow, _snapParts);

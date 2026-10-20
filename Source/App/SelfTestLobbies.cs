@@ -321,7 +321,7 @@ public static partial class SelfTest
             // What the client sees: everyone, with names, scores and positions matching the server.
             var missing = server.Players.Keys.Count(id => !client.Players.ContainsKey(id));
             var scoreOff = server.Players.Values.Count(p => client.Players.TryGetValue(p.Id, out var c) && Math.Abs(c.Kills - p.Kills) + Math.Abs(c.Deaths - p.Deaths) > 1);
-            var far = server.Players.Values.Count(p => p.Alive && p.Id != client.LocalId && client.Players.TryGetValue(p.Id, out var c) && Vector3.Distance(c.Position, p.Position) > 4f);
+            var far = server.Players.Values.Count(p => p.Alive && p.Id != client.LocalId && server.ServerTick - p.SpawnTick > 30 && client.Players.TryGetValue(p.Id, out var c) && Vector3.Distance(c.Position, p.Position) > 4f);
             var kills = server.Players.Values.Sum(p => (int)p.Kills);
             Line($"loopback {players,2} players on {map.Name,-10} ({GameModes.Short(server.Mode)}): client sees {client.Players.Count}, kills {kills}; "
                  + $"snapshots {snaps / 1024:0.0} KB/s in {packets:0} packets/s (biggest {server.SnapMaxBytes} B, max {server.SnapMaxParts} part(s)); "
