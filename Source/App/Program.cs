@@ -49,6 +49,7 @@ public static unsafe class Program
     private static bool _wasDeadUi, _wasVoting;
     private static readonly bool[] _voteKeyDown = new bool[3];
     private static double _deathMenuAt;
+    private static readonly DeathCam _deathCam = new(); // the camera after you die (DeathCam.cs)
     private const string LoadoutLockedText = "You can only change your loadout when you're dead";
     private static bool _quit;
     private static bool _vsync;
@@ -210,6 +211,11 @@ public static unsafe class Program
         }
 
         var game = _session;
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
+        {
+            SmokeDeathCam(now, t);
+            return;
+        }
         switch (_smokeStage)
         {
             case 0 when t > 0.8:
@@ -273,6 +279,36 @@ public static unsafe class Program
                     Console.WriteLine($"[smoke] vote screen: options {string.Join(", ", game.VoteNames)}, "
                         + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
                 SmokeNextMap(now);
+                break;
+        }
+    }
+
+    private static int _smokeDeathCam;
+
+    /// <summary>
+    /// Smoke step on the first map, after the play screenshot: the nearest bot kills you, and 2.2 s later
+    /// (the death cam has turned to face it, the kill card is up) a screenshot. Then the usual steps go on.
+    /// </summary>
+    private static void SmokeDeathCam(double now, double t)
+    {
+        var game = _session;
+        switch (_smokeDeathCam)
+        {
+            case 0 when t > 6.5:
+                var bot = game?.DebugKillLocalByBot(now);
+                Console.WriteLine(bot != null ? $"[smoke] death cam: killed by {game!.NameOf(bot.Id)} ({bot.WeaponDef.Name})" : "[smoke] death cam: no bot could kill you (skipped)");
+                _smokeDeathCam = bot != null ? 1 : 3;
+                break;
+            case 1 when t > 8.7:
+                SmokeShot("deathcam");
+                var info = _deathCam.Info;
+                Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
+                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                _smokeDeathCam++;
+                break;
+            case 2 when t > 8.9:
+                _smokeDeathCam++;
+                _smokeStepStart += 2.5; // the usual steps carry on where they were
                 break;
         }
     }
@@ -623,6 +659,7 @@ public static unsafe class Program
         _upnp = null;
         Ui.MenuOpen = false;
         Ui.PauseOpen = false;
+        _deathCam.Stop();
         Ui.ResetLobby();
         if (_window != null)
             SetMouseCaptured(false);
@@ -687,6 +724,7 @@ public static unsafe class Program
                     SetMouseCaptured(true);
                     _swallowClick = true; // the Deploy click mustn't also fire the gun
                 }
+                Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -929,14 +967,30 @@ public static unsafe class Program
             }
         }
 
-        // Death screen: shortly after you die, the loadout menu opens with a Respawn button.
-        // Nobody is respawned automatically (and not over the results screen).
+        // Death screen: the death cam turns to your killer, then the loadout menu opens with a Respawn button.
+        // Nobody is respawned automatically (and not over the results screen). A click skips the death cam.
         var deadNow = _game.Local is not { Alive: true };
         if (deadNow && !_wasDeadUi)
-            _deathMenuAt = now + 1.2;
+        {
+            _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
+            if (_game.Local is { } me)
+                _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, World.RaycastWorld);
+        }
         if (!deadNow)
+        {
             _deathMenuAt = 0;
+            if (_deathCam.Active)
+            {
+                _deathCam.Stop();
+                _game.LastDeath = null;
+            }
+        }
         _wasDeadUi = deadNow;
+        if (_deathMenuAt > now && _deathCam.Running(now) && _mouseCaptured && !_swallowClick && Pressed(GameAction.Fire))
+        {
+            _deathMenuAt = now;
+            _swallowClick = true;
+        }
         if (_deathMenuAt > 0 && now >= _deathMenuAt)
         {
             _deathMenuAt = 0;
@@ -960,6 +1014,7 @@ public static unsafe class Program
             {
                 Ui.OpenMenu(_game);
                 SetMouseCaptured(false);
+                _deathMenuAt = 0; // opened early over the death cam: don't reopen it later
             }
             else
             {
@@ -1171,6 +1226,12 @@ public static unsafe class Program
         {
             eye = local.Alive ? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0);
             fwd = local.Alive ? World.Forward(_game.LookYaw, _game.LookPitch) : World.Forward(_game.LookYaw, -1.2f);
+            if (!local.Alive && _deathCam.Active)
+            {
+                _deathCam.Track(_game, now, (float)FrameDt); // eases round to face your killer (DeathCam.cs)
+                eye = _deathCam.Eye;
+                fwd = _deathCam.Forward;
+            }
         }
         else
         {
@@ -1186,7 +1247,7 @@ public static unsafe class Program
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
 
-        var fov = local is { Alive: true } ? CurrentFov() : BaseFov;
+        var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
         var camUp = Vector3.UnitY;
         if (local is { Alive: true })
         {

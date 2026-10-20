@@ -291,7 +291,7 @@ public sealed partial class Game
                 if (amount <= 0)
                     continue;
                 flags |= 1;
-                if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive) && victim != owner)
+                if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive, center) && victim != owner)
                     flags |= 4;
             }
         }

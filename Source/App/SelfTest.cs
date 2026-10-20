@@ -58,6 +58,7 @@ public static class SelfTest
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Recoil", CheckRecoil);
+            Section("Death cam", CheckDeathCam);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -1146,6 +1147,197 @@ public static class SelfTest
         var a = xs.ToArray();
         var m = a.Average();
         return a.Sum(x => (x - m) * (x - m)) / a.Length;
+    }
+
+    // ---- Death cam and kill card ------------------------------------------------------------
+
+    private static void CheckDeathCam()
+    {
+        static bool Finite(Vector3 v) => float.IsFinite(v.X + v.Y + v.Z);
+        static float Open(Vector3 o, Vector3 d, float max) => max;
+        var eye = new Vector3(0, 1.6f, 0);
+
+        // 1. Easing: ends pinned, monotonic, NaN-safe.
+        if (DeathCam.EaseInOut(0) != 0 || MathF.Abs(DeathCam.EaseInOut(1) - 1) > 1e-6f || MathF.Abs(DeathCam.EaseInOut(0.5f) - 0.5f) > 1e-4f
+            || DeathCam.EaseOut(float.NaN) != 0 || DeathCam.EaseInOut(-3) != 0 || DeathCam.EaseInOut(9) != 1)
+            Fail("death cam easing isn't pinned to 0..1");
+        for (var i = 1; i <= 100; i++)
+            if (DeathCam.EaseInOut(i / 100f) < DeathCam.EaseInOut((i - 1) / 100f) || DeathCam.EaseOut(i / 100f) < DeathCam.EaseOut((i - 1) / 100f))
+                Fail($"death cam easing isn't monotonic at {i / 100f}");
+
+        // 2. Turns to face a killer 12 m east (start facing north), smoothly, and zooms a little.
+        var cam = new DeathCam();
+        cam.Begin(eye, 0, 0, 100, Open);
+        var killer = new Vector3(12, 1.6f, 0);
+        var lastYaw = 0f;
+        var maxStep = 0f;
+        var heldStill = true;
+        for (var f = 0; f <= 180; f++)
+        {
+            var now = 100 + f / 60.0;
+            cam.Update(now, 1 / 60f, killer);
+            if (!Finite(cam.Eye) || !float.IsFinite(cam.Yaw + cam.Pitch + cam.FovMul))
+            {
+                Fail($"death cam went non-finite at frame {f}");
+                break;
+            }
+            if (now - 100 < DeathCam.HoldTime - 0.02 && MathF.Abs(cam.Yaw) > 1e-4f)
+                heldStill = false;
+            maxStep = MathF.Max(maxStep, MathF.Abs(World.WrapAngle(cam.Yaw - lastYaw)));
+            lastYaw = cam.Yaw;
+        }
+        var toKiller = Vector3.Normalize(killer - cam.Eye);
+        var facing = Vector3.Dot(cam.Forward, toKiller);
+        Line($"turned to the killer: facing dot {facing:0.0000}, biggest per-frame turn {maxStep * 180 / MathF.PI:0.0} deg, fov x{cam.FovMul:0.00}, camera at {cam.Eye.X:0.00},{cam.Eye.Y:0.00},{cam.Eye.Z:0.00}");
+        if (facing < 0.999f)
+            Fail($"death cam doesn't end facing the killer (dot {facing})");
+        if (!heldStill)
+            Fail("death cam turned during its hold");
+        if (maxStep > 0.12f)
+            Fail($"death cam turn isn't smooth ({maxStep} rad in one frame)");
+        if (cam.FovMul is < 0.6f or > 0.95f)
+            Fail($"death cam zoom out of range (x{cam.FovMul})");
+        if (cam.Eye.Y <= eye.Y + 0.5f || cam.Eye.Z <= 0.5f)
+            Fail("death cam didn't rise and pull back in open space");
+
+        // It keeps tracking a moving killer.
+        for (var f = 0; f < 60; f++)
+            cam.Update(103 + f / 60.0, 1 / 60f, killer + new Vector3(0, 0, -8 * f / 60f));
+        var moved = killer + new Vector3(0, 0, -8 * 59 / 60f);
+        if (Vector3.Dot(cam.Forward, Vector3.Normalize(moved - cam.Eye)) < 0.98f)
+            Fail("death cam doesn't track a moving killer");
+
+        // 3. Walls: the rest point stays clear of geometry (ray hits at 0.5 m in every direction).
+        var rest = DeathCam.RestPoint(eye, 0, (o, d, max) => MathF.Min(max, 0.5f));
+        if (Vector3.Distance(rest, eye) > 0.45f)
+            Fail($"death cam pulled back into a wall ({Vector3.Distance(rest, eye)} m)");
+        var nanRest = DeathCam.RestPoint(eye, float.NaN, (o, d, max) => float.NaN);
+        if (!Finite(nanRest))
+            Fail("death cam rest point went NaN");
+        World.SetMap(Maps.All[0]);
+        foreach (var sp in World.Map.Spawns.Take(6))
+        {
+            var e = sp + new Vector3(0, World.EyeHeight, 0);
+            for (var y = 0; y < 8; y++)
+            {
+                // The camera rises, then pulls back: both legs must be clear, and it mustn't end inside a box.
+                var r = DeathCam.RestPoint(e, y * MathF.Tau / 8, World.RaycastWorld);
+                var raised = new Vector3(e.X, r.Y, e.Z);
+                var up = r.Y - e.Y;
+                var backLeg = r - raised;
+                var blocked = (up > 1e-3f && World.RaycastWorld(e, Vector3.UnitY, up) < up - 1e-3f)
+                              || (backLeg.Length() > 1e-3f && World.RaycastWorld(raised, Vector3.Normalize(backLeg), backLeg.Length()) < backLeg.Length() - 1e-3f)
+                              || World.Map.Solid.Any(b => r.X > b.Min.X && r.X < b.Max.X && r.Y > b.Min.Y && r.Y < b.Max.Y && r.Z > b.Min.Z && r.Z < b.Max.Z);
+                if (blocked)
+                    Fail($"death cam rest point goes through a wall on {World.Map.Name} at spawn {sp}");
+            }
+        }
+
+        // 4. No killer to look at: self-kill (drifts down, never NaN), killer = victim position, killer missing, NaN target.
+        var self = new DeathCam();
+        self.Begin(eye, 1, 0.2f, 0, Open);
+        for (var f = 0; f <= 180; f++)
+            self.Update(f / 60.0, 1 / 60f, null, drift: true);
+        if (DeathCam.LookAt(eye, eye) != null)
+            Fail("LookAt from a point to itself should be null");
+        var same = new DeathCam();
+        same.Begin(eye, 1, 0.2f, 0, (o, d, max) => 0); // boxed in, so the camera stays at the eye
+        for (var f = 0; f <= 180; f++)
+            same.Update(f / 60.0, 1 / 60f, eye); // the "killer" is exactly where the camera is
+        var missing = new DeathCam();
+        missing.Begin(eye, 1, 0.2f, 0, Open);
+        for (var f = 0; f <= 180; f++)
+            missing.Update(f / 60.0, f == 0 ? 0 : 1 / 60f, f % 2 == 0 ? null : new Vector3(float.NaN, 0, 0));
+        foreach (var (name, c) in new[] { ("self-kill", self), ("killer = victim", same), ("killer missing", missing) })
+            if (!Finite(c.Eye) || !float.IsFinite(c.Yaw + c.Pitch + c.FovMul) || MathF.Abs(World.WrapAngle(c.Yaw - 1)) > 1e-3f)
+                Fail($"death cam with {name}: yaw {c.Yaw}, pitch {c.Pitch}, fov {c.FovMul}");
+        if (self.Pitch > -0.3f)
+            Fail("self-kill death cam doesn't tilt down to the body");
+        Line($"self-kill pitch {self.Pitch:0.00}, killer = victim pitch {same.Pitch:0.00}, killer missing yaw {missing.Yaw:0.00}");
+
+        // A target that only shows up late still eases in (no snap).
+        var late = new DeathCam();
+        late.Begin(eye, 0, 0, 0, Open);
+        var lateStep = 0f;
+        var prev = 0f;
+        for (var f = 0; f <= 240; f++)
+        {
+            late.Update(f / 60.0, 1 / 60f, f < 90 ? null : new Vector3(-10, 1.6f, 5));
+            lateStep = MathF.Max(lateStep, MathF.Abs(World.WrapAngle(late.Yaw - prev)));
+            prev = late.Yaw;
+        }
+        if (lateStep > 0.12f)
+            Fail($"death cam snapped when the kill message arrived late ({lateStep} rad in one frame)");
+
+        // 5. Packets: round trip with the extras, and an old 4-byte packet still reads.
+        var w = new PacketWriter();
+        var pk = new KillPacket(3, 0, true, Weapons.DefaultPrimary.Id, 0x0A0B0C, 77, new Vector3(1, 2, 3));
+        pk.Write(w);
+        var rd = new PacketReader(w.Span[1..]);
+        var back = KillPacket.Read(ref rd);
+        if (w.Span[0] != (byte)Msg.Kill || w.Length != 1 + KillPacket.Size || back != pk)
+            Fail($"kill packet round trip: {back} ({w.Length} bytes)");
+        w.Begin(Msg.Kill).U8(3).U8(0).U8(0).U8(Game.MeleeKillId);
+        var oldRd = new PacketReader(w.Span[1..]);
+        var old = KillPacket.Read(ref oldRd);
+        if (old.HasExtras || old.Kit != 0 || old.Source != null || old.KillId != Game.MeleeKillId)
+            Fail($"old-style kill packet read wrong: {old}");
+        Line($"kill packet: {w.Length} bytes old, {1 + KillPacket.Size} bytes now (protocol {ServerInfo.ProtocolVersion})");
+
+        // 6. Kill info: a bot shoots the local player through the real damage path.
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
+        var me = game.Players[game.LocalId];
+        var bot = game.Players.Values.First(p => p.Id != game.LocalId);
+        game.SelfTestPerks(me, PerkSet.Empty);
+        game.SelfTestPerks(bot, PerkSet.Empty);
+        game.SelfTestPlace(me, new Vector3(5, 0, 5), 0);
+        game.SelfTestPlace(bot, new Vector3(5, 0, 15), MathF.PI);
+        var gun = Weapons.All.First(x => Attachments.For(x).Any(a => a.Slot == AttachSlot.Optic));
+        var optic = Attachments.For(gun).First(a => a.Slot == AttachSlot.Optic);
+        bot.Primary = gun.Id;
+        bot.PrimaryKit = Attachments.With(0, AttachSlot.Optic, optic.Index);
+        bot.Health = 63;
+        var killed = game.DebugKill(bot, me, gun.Id, head: true, 10);
+        var info = game.LastDeath;
+        if (!killed || info == null)
+        {
+            Fail($"a bot kill on the local player wasn't recorded (killed {killed})");
+            return;
+        }
+        Line($"recorded: {info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], headshot {info.Headshot}, {info.Distance:0.0} m, killer HP {info.KillerHp}, streak {info.KillerStreak}");
+        if (info.Kind != KillKind.Gun || info.KillerId != bot.Id || !info.Headshot || info.KillerHp != 63 || info.Weapon?.Id != gun.Id
+            || Attachments.Slot(info.Kit, AttachSlot.Optic) != optic.Index || info.KillerStreak != 1)
+            Fail("kill info recorded wrong");
+        if (MathF.Abs(info.Distance - 10) > 0.5f)
+            Fail($"kill distance {info.Distance} (expected ~10 m)");
+
+        // The camera picks the killer, their body once they die, and holds there if they respawn.
+        var down = false;
+        var tgt = DeathCam.PickTarget(info, bot, ref down, false);
+        if (tgt is not { } t0 || Vector3.Distance(t0, bot.RenderEye) > 1e-3f)
+            Fail("death cam doesn't target the living killer");
+        bot.Alive = false;
+        if (DeathCam.PickTarget(info, bot, ref down, true) is not { } t1 || t1.Y > bot.RenderPosition.Y + 1 || !down)
+            Fail("death cam doesn't target the dead killer's body");
+        bot.Alive = true;
+        if (DeathCam.PickTarget(info, bot, ref down, true) != null)
+            Fail("death cam followed the killer to their respawn");
+        var gone = false;
+        if (DeathCam.PickTarget(info, null, ref gone, false) == null || DeathCam.PickTarget(info, null, ref gone, true) != null)
+            Fail("death cam with a disconnected killer: wrong target");
+
+        // Other kinds: melee, throwables, self-kills, kill-streak ids this build may not know.
+        var melee = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, Game.MeleeKillId), bot, me, "Bot", 2, 0);
+        var frag = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag), 0, 10, new Vector3(5, 0.2f, 7)), bot, me, "Bot", 1, 0);
+        var selfKill = KillInfo.Create(new KillPacket(me.Id, me.Id, false, (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag), 0, 0, me.Eye), me, me, "You", -1, 0);
+        var streak = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, 233, 0, 100, null), null, me, "Player 9", -1, 0);
+        Line($"melee '{melee.WeaponName}' {melee.Kind}, frag '{frag.WeaponName}' {frag.Kind} from {frag.Distance:0} m, self '{selfKill.WeaponName}' {selfKill.Kind}, id 233 '{streak.WeaponName}' {streak.Kind}");
+        if (melee.Kind != KillKind.Melee || melee.Weapon != null || frag.Kind != KillKind.Throwable || frag.Weapon != null
+            || selfKill.Kind != KillKind.Self || selfKill.Distance >= 0 || streak.Kind != KillKind.Streak || streak.Weapon != null || streak.WeaponName.Length == 0)
+            Fail("kill kinds classified wrong");
+        var selfDown = false;
+        if (DeathCam.PickTarget(selfKill, me, ref selfDown, false) != null)
+            Fail("self-kill death cam tries to turn");
     }
 
     private static void CheckRecoil()
