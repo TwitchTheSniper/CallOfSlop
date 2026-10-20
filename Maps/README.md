@@ -406,6 +406,49 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **Fingerprint:** props count towards the map's fingerprint, so host and players need the same map file and the same Props folder. Maps without props keep their old fingerprint.
 - **Cost:** props are drawn instanced, a few hundred on a map cost well under a millisecond. Hand-placed solid props are best for cover you design around; Clutter is best for litter and dressing.
 
+## Meshes and models
+
+Maps aren't limited to boxes: the `Mesh` op places procedural shapes (cylinders, cones, spheres, capsules, rings, ramps, pipes, rounded boxes) and the `Model` op places glTF 2.0 models (`.glb` or `.gltf` files in the `Models` folder; see [Models/README.md](../Models/README.md)). The **Mesh Test** map in the Dev pack shows every shape, a LOD line and the test models.
+
+**They are cosmetic for now:** players, bullets, grenades and bots pass through them, and they don't count towards the map's fingerprint. Where players need cover, put a `Block` or a solid `Prop` under or inside the mesh (a `Block` the size of a pillar inside a `cylinder`, say). Collision for meshes comes with the physics work.
+
+| Op | Parameters | What it makes |
+| --- | --- | --- |
+| `Mesh` | mesh, x, z, color, y = 0, width = 1, height = 1, depth = 1, radius = 0, inner = 0, segments = 0, detail = 0, yaw = 0, pitch = 0, roll = 0, scale = 1, material = "" | A procedural shape standing at (x, z), on the ground (or terrain) raised by `y`. |
+| `Model` | file, x, z, y = 0, yaw = 0, pitch = 0, roll = 0, scale = 1 | A glTF model (`"Models/barrel.glb"`) standing at (x, z), with its own materials. |
+
+Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (x, z). `yaw` turns it about the vertical axis like a prop's yaw, `pitch` tips it forward about x and `roll` about z (degrees, applied roll, then pitch, then yaw), and `scale` grows it evenly. Zero for `radius`, `inner`, `segments` and `detail` means "the default":
+
+| `mesh` | Shaped by | Defaults |
+| --- | --- | --- |
+| `box` (`cube`) | width (x), height (y), depth (z) | |
+| `roundedbox` | width, height, depth; `radius` = edge rounding; `segments` = steps per rounded edge | radius 0.1, segments 3 |
+| `cylinder` | width and depth = diameters, height; `segments` around | segments 24 |
+| `cone` | as cylinder, coming to a point at the top | segments 24 |
+| `sphere` | width, height, depth = diameters (ellipsoids are fine); `segments` around, `detail` = rings | 24 around, 12 rings |
+| `icosphere` | as sphere; `detail` = subdivisions 0-5 (an even, geodesic sphere) | detail 2 |
+| `capsule` | `radius` (or width / 2), height = total height; `segments`; `detail` = rings per cap | 24, 6 |
+| `torus` (`ring`) | `radius` = ring radius, `inner` = tube radius, lying flat; `segments` around, `detail` round the tube | radius 0.4, inner 0.1, 24, 12 |
+| `wedge` (`ramp`) | width, height, depth: a ramp rising towards +z (turn it with yaw) | |
+| `tube` (`pipe`) | `radius` (or width / 2) = outer radius, `inner` radius, height; `segments` | inner 0.8 x radius, 24 |
+
+`material` gives untextured meshes one of the box textures (`Concrete`, `Brick`, `Wood`, `Metal`, `Tiles`, `Dirt`, `Grid`), mapped in world space exactly like a box's, tinted by `color`. Leave it out for a plain colour.
+
+```
+{ "op": "Mesh", "mesh": "cylinder", "x": -6, "z": 4, "color": [0.7, 0.42, 0.35], "width": 1, "height": 3, "segments": 24, "material": "Brick" },
+{ "op": "Block", "x0": -6.35, "y0": 0, "z0": 3.65, "x1": -5.65, "y1": 3, "z1": 4.35, "color": [0.7, 0.42, 0.35] },
+{ "op": "Mesh", "mesh": "torus", "x": 0, "z": 0, "color": "#e07a5f", "radius": 0.7, "inner": 0.2, "pitch": 90, "y": 0.9 },
+{ "op": "Mesh", "mesh": "ramp", "x": 3, "z": 0, "color": [0.7, 0.7, 0.68], "width": 2, "height": 1, "depth": 3, "yaw": 90, "material": "Tiles" },
+{ "op": "Model", "file": "Models/barrel.glb", "x": 6, "z": 2, "yaw": 40 },
+{ "op": "Model", "file": "Models/lamp_post.gltf", "x": 9, "z": -3, "yaw": 90 }
+```
+
+(The `Block` in the example is the solid core of the brick pillar: the mesh gives the look, the block the collision. A cylinder 1 m across fits a 0.7 m block inside without it showing.)
+
+- **Turned meshes:** a shape is turned about its own base point, so tipping one over (`"pitch": 90`) puts half of it under the ground: raise it with `y` (by its radius for a lying capsule or pipe, by `radius + inner` for a standing ring).
+- **Mistakes** give a readable message: an unknown shape suggests the closest name (`"cilinder"`: did you mean "cylinder"?), a missing model file lists the models that exist, and a broken model file says what's wrong with it.
+- **Cost:** every copy of the same shape (same name and parameters) shares one mesh and is drawn instanced, culled outside the view and simplified with distance. Thousands of meshes cost a handful of draw calls; the game log shows a `[mesh]` line every 5 seconds on maps with meshes (parts drawn, draw calls, LODs, CPU and GPU time).
+
 ## Map packs
 
 Each folder directly inside `Maps` is a pack. In the lobby, players first pick a pack, then play a random map from it or choose one of its maps, and the end-of-match vote offers maps from the same pack.
