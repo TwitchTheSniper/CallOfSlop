@@ -16,6 +16,8 @@ public enum LoadoutPage : byte
     Attachments,
     /// <summary>Level, XP and every unlock by level.</summary>
     Progression,
+    /// <summary>The kill streak picker.</summary>
+    Streaks,
 }
 
 /// <summary>One page on the loadout screen's stack, with an optional argument (the weapon id for <see cref="LoadoutPage.Attachments"/>).</summary>

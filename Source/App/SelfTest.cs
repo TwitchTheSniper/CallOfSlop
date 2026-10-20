@@ -14,12 +14,14 @@ namespace CallOfSlop;
 ///   3. Mantling: through a Courtyard window and onto a crate.
 ///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
+///      Optics: every optic loads and fits sensibly, the full scope view is 4x+ only, sights stay aligned,
+///      the cut-away leaves a clear view, and no gun part clashes with a fitted optic.
 ///   5. Packet sizes: a full 8-player snapshot fits in one packet.
 ///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
 ///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
 /// </summary>
-public static class SelfTest
+public static partial class SelfTest
 {
     private static StreamWriter _log = null!;
     private static int _failures;
@@ -48,11 +50,14 @@ public static class SelfTest
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
+            Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Attachments", CheckAttachments);
+            Section("Optics", CheckOptics);
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
+            Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
             Section("Map vote", CheckMapVote);
@@ -61,6 +66,15 @@ public static class SelfTest
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Recoil", CheckRecoil);
+            Section("Death cam", CheckDeathCam);
+            Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
+            Section("Ready-up", CheckReadyUp);
+            Section("Team Deathmatch", CheckTeamDeathmatch);
+            Section("King of the Hill", CheckKingOfTheHill);
+            Section("Capture the Flag", CheckCaptureTheFlag);
+            Section("Gun Game", CheckGunGame);
+            Section("Mode state and matches", CheckModeMatches);
+            Section("Arms", CheckArms);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -1030,6 +1044,168 @@ public static class SelfTest
             Fail($"level cost vs 60%-of-a-gun ratio {ratio:0.00} is off target");
     }
 
+    // ---- 4b. Optics ------------------------------------------------------------------------
+
+    private static void CheckOptics()
+    {
+        var optics = Attachments.BySlot[(int)AttachSlot.Optic];
+        Line($"{optics.Length} optics: {string.Join(", ", optics.Select(o => $"{o.Index}={o.Name}"))}");
+        if (optics.Length < 10)
+            Fail($"only {optics.Length} optics loaded (10 ship with the game)");
+        if (optics.Select(o => o.Index).Distinct().Count() != optics.Length || optics.Any(o => o.Index is < 1 or > Attachments.MaxPerSlot))
+            Fail("optic indices are not unique values in 1-15");
+        if (optics.Select(o => o.Name.ToLowerInvariant()).Distinct().Count() != optics.Length)
+            Fail("two optics share a name");
+        // The shipped optics keep their network indices (kits send indices; saves use names).
+        string[] shipped = ["Red Dot", "Holographic", "2.5x ACOG", "4x Scope", "8x Sniper Scope", "Pinhole Reflex", "Brick 2x Prism", "Tandem 3x Hybrid", "Variant 6x LPVO", "Longshot 12x"];
+        for (var i = 0; i < shipped.Length; i++)
+            if (Attachments.Find(shipped[i]) is not { Slot: AttachSlot.Optic } o || o.Index != i + 1)
+                Fail($"optic '{shipped[i]}' should be optic #{i + 1} (found {(Attachments.Find(shipped[i]) is { } f ? "#" + f.Index : "nothing")})");
+
+        // What each optic does on every weapon, fitting or not (so the sight maths never breaks for a modded file).
+        var kinds = new HashSet<OpticKind>();
+        var combos = 0;
+        foreach (var w in Weapons.All)
+        {
+            var sh0 = GunModel.SightHeight(w);
+            var z0 = GunModel.AdsZ(w);
+            if (!float.IsFinite(sh0) || !float.IsFinite(z0))
+                Fail($"{w.Name} irons: sight height {sh0}, ADS z {z0}");
+            foreach (var o in optics)
+            {
+                var d = w.Clone();
+                o.Apply(d);
+                kinds.Add(d.Optic);
+                combos++;
+                var sh = GunModel.SightHeight(d);
+                var z = GunModel.AdsZ(d);
+                if (!float.IsFinite(sh) || !float.IsFinite(z) || sh <= 0 || sh > 0.2f || z is > -0.02f or < -0.7f)
+                    Fail($"{w.Name} + {o.Name}: sight height {sh}, ADS z {z}");
+                if (GunModel.FullScope(d) != d.AdsZoom >= 4f)
+                    Fail($"{w.Name} + {o.Name}: full scope view at {d.AdsZoom}x");
+                var look = GunModel.Look(d);
+                if (d.Optic != OpticKind.Iron && look.Reticle == GunModel.Reticle.None)
+                    Fail($"{o.Name}: no reticle");
+                if (d.AdsZoom >= 1.8f && d.Optic != OpticKind.Iron && look.LensRadius is < 0.3f or > 0.5f)
+                    Fail($"{o.Name}: magnified optic with lens radius {look.LensRadius} of the screen height");
+                // The cut-away is drawing only: it must never move the sight line.
+                GunModel.AdsCutaway = 1f;
+                var moved = GunModel.SightHeight(d) != sh || GunModel.AdsZ(d) != z;
+                GunModel.AdsCutaway = 0f;
+                if (moved)
+                    Fail($"{w.Name} + {o.Name}: the cut-away moves the sight line");
+            }
+        }
+        foreach (var k in Enum.GetValues<OpticKind>())
+            if (k != OpticKind.Iron && !kinds.Contains(k))
+                Fail($"no optic file uses optic kind {k}");
+        Line($"{combos} weapon x optic sight lines checked; kinds used: {string.Join(", ", kinds.Order())}");
+
+        // Scope view only from 4x, and the lens stays round on any screen shape.
+        foreach (var (zoom, scoped) in new[] { (1.5f, false), (2.5f, false), (3f, false), (3.99f, false), (4f, true), (6f, true), (12f, true) })
+        {
+            var t = Weapons.DefaultPrimary.Clone();
+            t.AdsZoom = zoom;
+            if (GunModel.FullScope(t) != scoped)
+                Fail($"full scope view at {zoom}x should be {scoped}");
+        }
+        if (ScopeOverlay.SurroundAlpha(Attachments.Apply(Weapons.DefaultPrimary, 0), 1f) != 0f)
+            Fail("iron sights draw a scope surround");
+
+        // Fits: every class gets a sensible optic, nothing big on small guns.
+        foreach (var cls in Enum.GetValues<WeaponClass>())
+        {
+            var guns = Weapons.All.Where(w => w.Class == cls).ToArray();
+            foreach (var w in guns)
+            {
+                var fit = Attachments.For(w).Where(a => a.Slot == AttachSlot.Optic).Select(a => Attachments.Apply(w, Attachments.With(0, AttachSlot.Optic, a.Index))).ToArray();
+                if (fit.Length == 0)
+                    Fail($"{w.Name}: no optic fits");
+                if (cls == WeaponClass.Pistol && fit.Any(d => d.AdsZoom > 2f))
+                    Fail($"{w.Name}: a pistol takes a {fit.Max(d => d.AdsZoom)}x optic");
+                if (cls is WeaponClass.Pistol or WeaponClass.SMG or WeaponClass.Shotgun && fit.Any(d => GunModel.FullScope(d)))
+                    Fail($"{w.Name}: a {cls} takes a full scope");
+                if (cls is not (WeaponClass.Sniper or WeaponClass.DMR) && fit.Any(d => d.AdsZoom > 8f))
+                    Fail($"{w.Name}: a {cls} takes a {fit.Max(d => d.AdsZoom)}x scope");
+            }
+            if (guns.Length > 0)
+                Line($"{cls}: optics {string.Join(", ", Attachments.For(guns[0]).Where(a => a.Slot == AttachSlot.Optic).Select(a => a.Name))}");
+        }
+
+        // Model checks, from the gun's box list: the cut-away leaves a clear view down the sight line, it only
+        // touches the optic, and no gun part clashes with a fitted optic (alone, or with one other attachment).
+        var built = 0;
+        foreach (var w in Weapons.All)
+        {
+            var list = Attachments.For(w);
+            foreach (var o in list.Where(a => a.Slot == AttachSlot.Optic))
+            {
+                var kit = Attachments.With(0, AttachSlot.Optic, o.Index);
+                var d = Attachments.Apply(w, kit);
+                var sight = GunModel.SightHeight(d);
+                var eyeZ = -GunModel.AdsZ(d); // the eye in model space at full ADS (pose = translation (0, -sight, AdsZ))
+                var open = GunModel.RecordParts(d, 1f);
+                foreach (var (dx, dy) in new[] { (0f, 0f), (0.004f, 0f), (-0.004f, 0f), (0f, 0.004f), (0f, -0.004f) })
+                {
+                    var hit = open.FirstOrDefault(p => !p.Clear && p.Min.X < dx && p.Max.X > dx && p.Min.Y < sight + dy && p.Max.Y > sight + dy && p.Min.Z < eyeZ);
+                    if (hit != default)
+                    {
+                        Fail($"{w.Name} + {o.Name}: at full ADS a {(hit.Optic ? "optic" : "gun")} part blocks the sight line ({dx}, {dy}) at z {hit.Min.Z:0.000}..{hit.Max.Z:0.000}");
+                        break;
+                    }
+                }
+                var closed = GunModel.RecordParts(d, 0f);
+                if (!closed.Where(p => !p.Optic).SequenceEqual(open.Where(p => !p.Optic)))
+                    Fail($"{w.Name} + {o.Name}: the cut-away changes non-optic parts");
+
+                var others = list.Where(a => a.Slot != AttachSlot.Optic).Select(a => Attachments.With(kit, a.Slot, a.Index)).Prepend(kit);
+                foreach (var k in others)
+                {
+                    built++;
+                    var parts = k == kit ? closed : GunModel.RecordParts(Attachments.Apply(w, k), 0f);
+                    if (Clash(parts) is { } why)
+                    {
+                        Fail($"{w.Name} [{Attachments.Describe(k)}]: {why}");
+                        break;
+                    }
+                }
+            }
+            // The LMG carry handle is there with iron sights and comes off with an optic.
+            if (w.Class == WeaponClass.LMG)
+            {
+                var ironTop = GunModel.RecordParts(w, 0f).Max(p => p.Max.Y);
+                var dotTop = GunModel.RecordParts(Attachments.Apply(w, Attachments.With(0, AttachSlot.Optic, 1)), 0f).Where(p => !p.Optic).Max(p => p.Max.Y);
+                if (!(ironTop > dotTop + 0.01f))
+                    Fail($"{w.Name}: carry handle top {ironTop:0.000} m with irons vs {dotTop:0.000} m with a red dot (it should come off)");
+            }
+        }
+        Line($"{built} kitted models checked for optic clashes and a clear sight line");
+        if (GunModel.AdsCutaway != 0)
+            Fail("RecordParts left the cut-away knob set");
+    }
+
+    /// <summary>Why a gun part clashes with the fitted optic (null if nothing does).</summary>
+    private static string? Clash(List<GunModel.Part> parts)
+    {
+        var optic = parts.Where(p => p.Optic).ToArray();
+        if (optic.Length == 0)
+            return null;
+        var mountBase = optic.Min(p => p.Min.Y);
+        var feet = optic.Where(p => p.Min.Y <= mountBase + 0.004f).ToArray(); // rail, base plates, rings
+        const float e = 0.0005f;
+        foreach (var g in parts.Where(p => !p.Optic && !p.Clear))
+        {
+            foreach (var f in feet)
+                if (g.Max.X > f.Min.X + e && g.Min.X < f.Max.X - e && g.Max.Z > f.Min.Z + e && g.Min.Z < f.Max.Z - e && g.Max.Y > mountBase + 0.0015f)
+                    return $"a gun part rises to {g.Max.Y:0.000} m over the optic mount (base at {mountBase:0.000} m), z {g.Min.Z:0.000}..{g.Max.Z:0.000}";
+            foreach (var o in optic)
+                if (o.Min.Y > mountBase + 0.004f && g.Max.X > o.Min.X + 0.001f && g.Min.X < o.Max.X - 0.001f && g.Max.Y > o.Min.Y + 0.001f && g.Min.Y < o.Max.Y - 0.001f
+                    && g.Max.Z > o.Min.Z + 0.001f && g.Min.Z < o.Max.Z - 0.001f)
+                    return $"a gun part (y {g.Min.Y:0.000}..{g.Max.Y:0.000}, z {g.Min.Z:0.000}..{g.Max.Z:0.000}) runs into the optic (y {o.Min.Y:0.000}..{o.Max.Y:0.000})";
+        }
+        return null;
+    }
+
     // ---- 4a. Weapon and attachment files -------------------------------------------------------
 
     /// <summary>Every public field that differs between two weapons, as "Field: a vs b".</summary>
@@ -1303,6 +1479,197 @@ public static class SelfTest
         var a = xs.ToArray();
         var m = a.Average();
         return a.Sum(x => (x - m) * (x - m)) / a.Length;
+    }
+
+    // ---- Death cam and kill card ------------------------------------------------------------
+
+    private static void CheckDeathCam()
+    {
+        static bool Finite(Vector3 v) => float.IsFinite(v.X + v.Y + v.Z);
+        static float Open(Vector3 o, Vector3 d, float max) => max;
+        var eye = new Vector3(0, 1.6f, 0);
+
+        // 1. Easing: ends pinned, monotonic, NaN-safe.
+        if (DeathCam.EaseInOut(0) != 0 || MathF.Abs(DeathCam.EaseInOut(1) - 1) > 1e-6f || MathF.Abs(DeathCam.EaseInOut(0.5f) - 0.5f) > 1e-4f
+            || DeathCam.EaseOut(float.NaN) != 0 || DeathCam.EaseInOut(-3) != 0 || DeathCam.EaseInOut(9) != 1)
+            Fail("death cam easing isn't pinned to 0..1");
+        for (var i = 1; i <= 100; i++)
+            if (DeathCam.EaseInOut(i / 100f) < DeathCam.EaseInOut((i - 1) / 100f) || DeathCam.EaseOut(i / 100f) < DeathCam.EaseOut((i - 1) / 100f))
+                Fail($"death cam easing isn't monotonic at {i / 100f}");
+
+        // 2. Turns to face a killer 12 m east (start facing north), smoothly, and zooms a little.
+        var cam = new DeathCam();
+        cam.Begin(eye, 0, 0, 100, Open);
+        var killer = new Vector3(12, 1.6f, 0);
+        var lastYaw = 0f;
+        var maxStep = 0f;
+        var heldStill = true;
+        for (var f = 0; f <= 180; f++)
+        {
+            var now = 100 + f / 60.0;
+            cam.Update(now, 1 / 60f, killer);
+            if (!Finite(cam.Eye) || !float.IsFinite(cam.Yaw + cam.Pitch + cam.FovMul))
+            {
+                Fail($"death cam went non-finite at frame {f}");
+                break;
+            }
+            if (now - 100 < DeathCam.HoldTime - 0.02 && MathF.Abs(cam.Yaw) > 1e-4f)
+                heldStill = false;
+            maxStep = MathF.Max(maxStep, MathF.Abs(World.WrapAngle(cam.Yaw - lastYaw)));
+            lastYaw = cam.Yaw;
+        }
+        var toKiller = Vector3.Normalize(killer - cam.Eye);
+        var facing = Vector3.Dot(cam.Forward, toKiller);
+        Line($"turned to the killer: facing dot {facing:0.0000}, biggest per-frame turn {maxStep * 180 / MathF.PI:0.0} deg, fov x{cam.FovMul:0.00}, camera at {cam.Eye.X:0.00},{cam.Eye.Y:0.00},{cam.Eye.Z:0.00}");
+        if (facing < 0.999f)
+            Fail($"death cam doesn't end facing the killer (dot {facing})");
+        if (!heldStill)
+            Fail("death cam turned during its hold");
+        if (maxStep > 0.12f)
+            Fail($"death cam turn isn't smooth ({maxStep} rad in one frame)");
+        if (cam.FovMul is < 0.6f or > 0.95f)
+            Fail($"death cam zoom out of range (x{cam.FovMul})");
+        if (cam.Eye.Y <= eye.Y + 0.5f || cam.Eye.Z <= 0.5f)
+            Fail("death cam didn't rise and pull back in open space");
+
+        // It keeps tracking a moving killer.
+        for (var f = 0; f < 60; f++)
+            cam.Update(103 + f / 60.0, 1 / 60f, killer + new Vector3(0, 0, -8 * f / 60f));
+        var moved = killer + new Vector3(0, 0, -8 * 59 / 60f);
+        if (Vector3.Dot(cam.Forward, Vector3.Normalize(moved - cam.Eye)) < 0.98f)
+            Fail("death cam doesn't track a moving killer");
+
+        // 3. Walls: the rest point stays clear of geometry (ray hits at 0.5 m in every direction).
+        var rest = DeathCam.RestPoint(eye, 0, (o, d, max) => MathF.Min(max, 0.5f));
+        if (Vector3.Distance(rest, eye) > 0.45f)
+            Fail($"death cam pulled back into a wall ({Vector3.Distance(rest, eye)} m)");
+        var nanRest = DeathCam.RestPoint(eye, float.NaN, (o, d, max) => float.NaN);
+        if (!Finite(nanRest))
+            Fail("death cam rest point went NaN");
+        World.SetMap(Maps.All[0]);
+        foreach (var sp in World.Map.Spawns.Take(6))
+        {
+            var e = sp + new Vector3(0, World.EyeHeight, 0);
+            for (var y = 0; y < 8; y++)
+            {
+                // The camera rises, then pulls back: both legs must be clear, and it mustn't end inside a box.
+                var r = DeathCam.RestPoint(e, y * MathF.Tau / 8, World.RaycastWorld);
+                var raised = new Vector3(e.X, r.Y, e.Z);
+                var up = r.Y - e.Y;
+                var backLeg = r - raised;
+                var blocked = (up > 1e-3f && World.RaycastWorld(e, Vector3.UnitY, up) < up - 1e-3f)
+                              || (backLeg.Length() > 1e-3f && World.RaycastWorld(raised, Vector3.Normalize(backLeg), backLeg.Length()) < backLeg.Length() - 1e-3f)
+                              || World.Map.Solid.Any(b => r.X > b.Min.X && r.X < b.Max.X && r.Y > b.Min.Y && r.Y < b.Max.Y && r.Z > b.Min.Z && r.Z < b.Max.Z);
+                if (blocked)
+                    Fail($"death cam rest point goes through a wall on {World.Map.Name} at spawn {sp}");
+            }
+        }
+
+        // 4. No killer to look at: self-kill (drifts down, never NaN), killer = victim position, killer missing, NaN target.
+        var self = new DeathCam();
+        self.Begin(eye, 1, 0.2f, 0, Open);
+        for (var f = 0; f <= 180; f++)
+            self.Update(f / 60.0, 1 / 60f, null, drift: true);
+        if (DeathCam.LookAt(eye, eye) != null)
+            Fail("LookAt from a point to itself should be null");
+        var same = new DeathCam();
+        same.Begin(eye, 1, 0.2f, 0, (o, d, max) => 0); // boxed in, so the camera stays at the eye
+        for (var f = 0; f <= 180; f++)
+            same.Update(f / 60.0, 1 / 60f, eye); // the "killer" is exactly where the camera is
+        var missing = new DeathCam();
+        missing.Begin(eye, 1, 0.2f, 0, Open);
+        for (var f = 0; f <= 180; f++)
+            missing.Update(f / 60.0, f == 0 ? 0 : 1 / 60f, f % 2 == 0 ? null : new Vector3(float.NaN, 0, 0));
+        foreach (var (name, c) in new[] { ("self-kill", self), ("killer = victim", same), ("killer missing", missing) })
+            if (!Finite(c.Eye) || !float.IsFinite(c.Yaw + c.Pitch + c.FovMul) || MathF.Abs(World.WrapAngle(c.Yaw - 1)) > 1e-3f)
+                Fail($"death cam with {name}: yaw {c.Yaw}, pitch {c.Pitch}, fov {c.FovMul}");
+        if (self.Pitch > -0.3f)
+            Fail("self-kill death cam doesn't tilt down to the body");
+        Line($"self-kill pitch {self.Pitch:0.00}, killer = victim pitch {same.Pitch:0.00}, killer missing yaw {missing.Yaw:0.00}");
+
+        // A target that only shows up late still eases in (no snap).
+        var late = new DeathCam();
+        late.Begin(eye, 0, 0, 0, Open);
+        var lateStep = 0f;
+        var prev = 0f;
+        for (var f = 0; f <= 240; f++)
+        {
+            late.Update(f / 60.0, 1 / 60f, f < 90 ? null : new Vector3(-10, 1.6f, 5));
+            lateStep = MathF.Max(lateStep, MathF.Abs(World.WrapAngle(late.Yaw - prev)));
+            prev = late.Yaw;
+        }
+        if (lateStep > 0.12f)
+            Fail($"death cam snapped when the kill message arrived late ({lateStep} rad in one frame)");
+
+        // 5. Packets: round trip with the extras, and an old 4-byte packet still reads.
+        var w = new PacketWriter();
+        var pk = new KillPacket(3, 0, true, Weapons.DefaultPrimary.Id, 0x0A0B0C, 77, new Vector3(1, 2, 3));
+        pk.Write(w);
+        var rd = new PacketReader(w.Span[1..]);
+        var back = KillPacket.Read(ref rd);
+        if (w.Span[0] != (byte)Msg.Kill || w.Length != 1 + KillPacket.Size || back != pk)
+            Fail($"kill packet round trip: {back} ({w.Length} bytes)");
+        w.Begin(Msg.Kill).U8(3).U8(0).U8(0).U8(Game.MeleeKillId);
+        var oldRd = new PacketReader(w.Span[1..]);
+        var old = KillPacket.Read(ref oldRd);
+        if (old.HasExtras || old.Kit != 0 || old.Source != null || old.KillId != Game.MeleeKillId)
+            Fail($"old-style kill packet read wrong: {old}");
+        Line($"kill packet: {w.Length} bytes old, {1 + KillPacket.Size} bytes now (protocol {ServerInfo.ProtocolVersion})");
+
+        // 6. Kill info: a bot shoots the local player through the real damage path.
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
+        var me = game.Players[game.LocalId];
+        var bot = game.Players.Values.First(p => p.Id != game.LocalId);
+        game.SelfTestPerks(me, PerkSet.Empty);
+        game.SelfTestPerks(bot, PerkSet.Empty);
+        game.SelfTestPlace(me, new Vector3(5, 0, 5), 0);
+        game.SelfTestPlace(bot, new Vector3(5, 0, 15), MathF.PI);
+        var gun = Weapons.All.First(x => Attachments.For(x).Any(a => a.Slot == AttachSlot.Optic));
+        var optic = Attachments.For(gun).First(a => a.Slot == AttachSlot.Optic);
+        bot.Primary = gun.Id;
+        bot.PrimaryKit = Attachments.With(0, AttachSlot.Optic, optic.Index);
+        bot.Health = 63;
+        var killed = game.DebugKill(bot, me, gun.Id, head: true, 10);
+        var info = game.LastDeath;
+        if (!killed || info == null)
+        {
+            Fail($"a bot kill on the local player wasn't recorded (killed {killed})");
+            return;
+        }
+        Line($"recorded: {info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], headshot {info.Headshot}, {info.Distance:0.0} m, killer HP {info.KillerHp}, streak {info.KillerStreak}");
+        if (info.Kind != KillKind.Gun || info.KillerId != bot.Id || !info.Headshot || info.KillerHp != 63 || info.Weapon?.Id != gun.Id
+            || Attachments.Slot(info.Kit, AttachSlot.Optic) != optic.Index || info.KillerStreak != 1)
+            Fail("kill info recorded wrong");
+        if (MathF.Abs(info.Distance - 10) > 0.5f)
+            Fail($"kill distance {info.Distance} (expected ~10 m)");
+
+        // The camera picks the killer, their body once they die, and holds there if they respawn.
+        var down = false;
+        var tgt = DeathCam.PickTarget(info, bot, ref down, false);
+        if (tgt is not { } t0 || Vector3.Distance(t0, bot.RenderEye) > 1e-3f)
+            Fail("death cam doesn't target the living killer");
+        bot.Alive = false;
+        if (DeathCam.PickTarget(info, bot, ref down, true) is not { } t1 || t1.Y > bot.RenderPosition.Y + 1 || !down)
+            Fail("death cam doesn't target the dead killer's body");
+        bot.Alive = true;
+        if (DeathCam.PickTarget(info, bot, ref down, true) != null)
+            Fail("death cam followed the killer to their respawn");
+        var gone = false;
+        if (DeathCam.PickTarget(info, null, ref gone, false) == null || DeathCam.PickTarget(info, null, ref gone, true) != null)
+            Fail("death cam with a disconnected killer: wrong target");
+
+        // Other kinds: melee, throwables, self-kills, kill-streak ids this build may not know.
+        var melee = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, Game.MeleeKillId), bot, me, "Bot", 2, 0);
+        var frag = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag), 0, 10, new Vector3(5, 0.2f, 7)), bot, me, "Bot", 1, 0);
+        var selfKill = KillInfo.Create(new KillPacket(me.Id, me.Id, false, (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag), 0, 0, me.Eye), me, me, "You", -1, 0);
+        var streak = KillInfo.Create(new KillPacket(bot.Id, me.Id, false, 233, 0, 100, null), null, me, "Player 9", -1, 0);
+        Line($"melee '{melee.WeaponName}' {melee.Kind}, frag '{frag.WeaponName}' {frag.Kind} from {frag.Distance:0} m, self '{selfKill.WeaponName}' {selfKill.Kind}, id 233 '{streak.WeaponName}' {streak.Kind}");
+        if (melee.Kind != KillKind.Melee || melee.Weapon != null || frag.Kind != KillKind.Throwable || frag.Weapon != null
+            || selfKill.Kind != KillKind.Self || selfKill.Distance >= 0 || streak.Kind != KillKind.Streak || streak.Weapon != null || streak.WeaponName.Length == 0)
+            Fail("kill kinds classified wrong");
+        var selfDown = false;
+        if (DeathCam.PickTarget(selfKill, me, ref selfDown, false) != null)
+            Fail("self-kill death cam tries to turn");
     }
 
     private static void CheckRecoil()

@@ -182,6 +182,7 @@ public sealed partial class Game : IDisposable
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateThrowableEffects(now, (float)frameDt);
+        UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
 
         _accumulator += frameDt;
@@ -336,6 +337,8 @@ public sealed partial class Game : IDisposable
             _burstLeft = 0;
             return;
         }
+        if (StreakTrigger(now, held, pressed))
+            return; // targeting a streak: fire calls it in
         var w = Active;
         var def = w.Def;
         if (now < EquipUntil || IsReloading(now))
@@ -445,7 +448,7 @@ public sealed partial class Game : IDisposable
         if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true })
             return;
         w.ReloadStarted = now;
-        w.ReloadUntil = now + w.Def.Reload;
+        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now); // Overdrive halves it
         _burstLeft = 0;
         Audio.Reload(w.Def, null);
 
@@ -470,7 +473,7 @@ public sealed partial class Game : IDisposable
         var w = Active;
         if (w.ReloadUntil <= now)
             return -1;
-        return (float)Math.Clamp((now - w.ReloadStarted) / w.Def.Reload, 0, 1);
+        return (float)Math.Clamp((now - w.ReloadStarted) / Math.Max(w.ReloadUntil - w.ReloadStarted, 0.01), 0, 1);
     }
 
     public void SwitchTo(int slot, double now)
@@ -486,8 +489,11 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Called by the loadout menu with the loadout slot to play.</summary>
-    public void ChooseLoadout(Loadout l, double now) =>
+    public void ChooseLoadout(Loadout l, double now)
+    {
+        ChosenStreaks = l.Streaks.Sanitized();
         ChooseLoadout(l.Primary, l.Secondary, l.Grenade, l.Equipment, l.PrimaryKit, l.SecondaryKit, now, l.Perks);
+    }
 
     public void ChooseLoadout(byte primary, byte secondary, ThrowableKind grenade, ThrowableKind equipment, uint primaryKit, uint secondaryKit, double now,
         PerkSet? perks = null)
@@ -499,10 +505,15 @@ public sealed partial class Game : IDisposable
         ChosenEquipment = equipment;
         ChosenPrimaryKit = primaryKit;
         ChosenSecondaryKit = secondaryKit;
+        if (Net.IsOffline)
+            SetReady(true); // single player: Deploy during the warmup starts the countdown
         if (IsServer)
         {
             if (Local is { } me)
+            {
                 ServerRequestLoadout(me, primary, secondary, grenade, equipment, primaryKit, secondaryKit, ChosenPerks, now);
+                StreakRequest(me, ChosenStreaks);
+            }
         }
         else
         {
@@ -515,18 +526,21 @@ public sealed partial class Game : IDisposable
     {
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
             .U24(ChosenPrimaryKit).U24(ChosenSecondaryKit)
-            .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage);
+            .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
+            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C);
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
     /// <summary>Loadouts can only be changed while dead (or in the pre-match countdown).</summary>
-    public bool CanChangeLoadout => Local is not { Alive: true } || Phase == MatchPhase.Countdown;
+    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
 
     /// <summary>The Respawn button: spawn with the chosen loadout as soon as the respawn timer allows.</summary>
     public void RequestRespawn()
     {
         if (Local is { Alive: true })
             return;
+        if (Net.IsOffline)
+            SetReady(true); // single player: Respawn during the warmup starts the countdown
         if (IsServer)
         {
             if (Local is { } me)
@@ -764,6 +778,7 @@ public sealed partial class Game : IDisposable
         ServerTick++;
         ServerTickMatch(now);
         ServerTickProjectiles(now);
+        ServerTickStreaks(now);
 
         foreach (var p in Players.Values)
         {
@@ -870,14 +885,14 @@ public sealed partial class Game : IDisposable
 
     private void Spawn(Player p, uint tick, double now)
     {
-        var spawns = World.Map.Spawns;
+        var spawns = SpawnPointsFor(p); // the team's own spawns in team modes
         var best = spawns[_rng.Next(spawns.Count)];
         var bestScore = -1f;
         foreach (var sp in spawns)
         {
             var nearest = float.MaxValue;
             foreach (var o in Players.Values)
-                if (o != p && o.Alive)
+                if (o != p && o.Alive && AreEnemies(p, o))
                     nearest = MathF.Min(nearest, Vector3.Distance(o.Position, sp));
             var score = nearest + (float)_rng.NextDouble() * 2f;
             if (score > bestScore)
@@ -903,12 +918,14 @@ public sealed partial class Game : IDisposable
         p.PrimaryKit = p.WantPrimaryKit;
         p.SecondaryKit = p.WantSecondaryKit;
         ApplyPerks(p, p.WantPerks);
+        StreakOnSpawn(p);
         p.WantsRespawn = false;
         p.Weapon = p.Primary;
         p.Grenade = p.WantGrenade;
         p.Equipment = p.WantEquipment;
         p.GrenadesLeft = Throwables.Get(p.Grenade).PerLife;
         p.EquipmentLeft = Throwables.Get(p.Equipment).PerLife;
+        ApplyModeLoadout(p); // Gun Game: the server picks the gun
         if (p.Bot is { } brain)
         {
             brain.Ammo = p.DefFor(p.Primary).Mag;
@@ -941,8 +958,8 @@ public sealed partial class Game : IDisposable
 
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
         // already standing in the map, frozen, and can still swap.
-        var instant = !p.Alive || Phase == MatchPhase.Countdown;
-        if (instant && p.Alive)
+        var instant = !p.Alive || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
+        if (instant && p.Alive && Mode != GameMode.GunGame)
         {
             p.Primary = pw.Id;
             p.Secondary = sw.Id;
@@ -987,10 +1004,13 @@ public sealed partial class Game : IDisposable
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
     /// <paramref name="killId"/> is a weapon id, 240+ for throwables, or <see cref="MeleeKillId"/>.
     /// </summary>
-    private bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet)
+    private bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet,
+        Vector3? from = null)
     {
         if (!victim.Alive || amount <= 0 || !DamageEnabled || now < victim.ImmuneUntil)
             return false;
+        if (!CanDamage(attacker, victim))
+            return false; // no friendly fire in team modes (your own grenade still hurts you)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
         if (kind == DamageKind.Explosive && victim.Perks.Has(PerkId.FlakJacket))
@@ -1012,6 +1032,7 @@ public sealed partial class Game : IDisposable
         victim.Alive = false;
         victim.Deaths++;
         victim.RespawnAt = now + World.RespawnDelay;
+        StreakOnKill(attacker, victim, killId, now);
         if (attacker != victim)
         {
             attacker.Kills++;
@@ -1020,9 +1041,13 @@ public sealed partial class Game : IDisposable
             if (attacker.Alive && attacker.Perks.Has(PerkId.Afterburner))
                 attacker.Sim.BoostTicks = Perks.BoostTicks;
         }
-        _w.Begin(Msg.Kill).U8(attacker.Id).U8(victim.Id).U8(head ? (byte)1 : (byte)0).U8(killId);
+        var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
+        kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
+        RecordKill(kill);
+        OnModeKill(attacker, victim, killId, now);
         BotNoteKill(attacker, victim, head, killId, now);
         return true;
     }
@@ -1060,12 +1085,14 @@ public sealed partial class Game : IDisposable
 
         var damage = new Dictionary<Player, float>();
         var headshotOn = new HashSet<Player>();
+        byte flags = 0;
         var ends = new List<Vector3>(def.Pellets);
 
         for (var i = 0; i < def.Pellets; i++)
         {
             var d = Weapons.SpreadDirection(dir, spread, seed, i);
             var dist = World.RaycastWorld(origin, d, World.Range);
+            var turret = StreakRaycast(origin, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
@@ -1073,10 +1100,15 @@ public sealed partial class Game : IDisposable
                 {
                     dist = td;
                     hit = t;
+                    turret = null;
                 }
             }
             var end = origin + d * dist;
             ends.Add(end);
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(def.Damage * def.DamageMultAt(dist)), now))
+                flags |= 4;
+            else if (turret != null)
+                flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
@@ -1088,7 +1120,6 @@ public sealed partial class Game : IDisposable
             }
         }
 
-        byte flags = 0;
         foreach (var (victim, dmg) in damage)
         {
             flags |= 1;
@@ -1291,6 +1322,7 @@ public sealed partial class Game : IDisposable
                     var (lp, ls, lg, le, lpk, lsk) = (r.U8(), r.U8(), (ThrowableKind)r.U8(), (ThrowableKind)r.U8(), r.U24(), r.U24());
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
+                    ReadLoadoutStreaks(p, ref r);
                 }
                 break;
             }
@@ -1309,6 +1341,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.Explode:
                 OnThrowablePacket(id, ref r, sender, now);
                 break;
+            case (byte)Msg.StreakUse:
+            case (byte)Msg.StreakEvent:
+            case (byte)Msg.StreakState:
+            case (byte)Msg.StreakEnts:
+                OnStreakPacket(id, ref r, sender, now);
+                break;
             case (byte)Msg.Reload when IsServer && r.Has(1):
             {
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
@@ -1317,6 +1355,7 @@ public sealed partial class Game : IDisposable
                 if (!p.Owns(weapon))
                     break;
                 Audio.Reload(Weapons.Get(weapon), p.RenderEye);
+                ThirdPersonArms.OnReload(p.Id, p.DefFor(weapon).Reload, now);
                 Net.Broadcast(ReloadFx(p.Id, weapon), PacketReliability.Unreliable);
                 break;
             }
@@ -1367,6 +1406,11 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.MatchStart:
                 OnMatchPacket(id, ref r);
                 break;
+            case (byte)Msg.Ready:
+            case (byte)Msg.ModeState:
+            case (byte)Msg.ModeEvent:
+                OnModePacket(id, ref r, sender);
+                break;
             case (byte)Msg.MapVote:
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
@@ -1398,12 +1442,19 @@ public sealed partial class Game : IDisposable
                 var who = r.U8();
                 var weapon = r.U8();
                 if (who != LocalId && Players.TryGetValue(who, out var p))
+                {
                     Audio.Reload(Weapons.Get(weapon), p.RenderEye);
+                    ThirdPersonArms.OnReload(who, p.DefFor(weapon).Reload, now);
+                }
                 break;
             }
             case (byte)Msg.Kill when !IsServer && r.Has(4):
-                LogKill(r.U8(), r.U8(), r.U8() != 0, r.U8());
+            {
+                var kill = KillPacket.Read(ref r); // the protocol 5 extras are read only if present
+                LogKill(kill.Killer, kill.Victim, kill.Headshot, kill.KillId);
+                RecordKill(kill);
                 break;
+            }
         }
     }
 
@@ -1417,6 +1468,8 @@ public sealed partial class Game : IDisposable
         if (tick <= ServerTick && _clockStarted)
             return;
         var wasCountdown = Phase == MatchPhase.Countdown;
+        if (Phase == MatchPhase.Warmup && phase == MatchPhase.Countdown)
+            _countdownStartedFlag = true; // everyone's ready: the countdown opens the loadout screen
         Phase = phase;
         TimeLeft = timeLeft;
         if (wasCountdown && phase == MatchPhase.Playing)

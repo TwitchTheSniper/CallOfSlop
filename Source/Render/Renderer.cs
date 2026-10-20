@@ -29,17 +29,15 @@ public sealed unsafe class Renderer
         """;
 
     // uMode: 0 = lit, 1 = lit + world-space texture (layer uLayer of uTex), 2 = unlit (HUD, tracers, muzzle flash)
-    private const string FragmentSrc = """
-        #version 330 core
+    // Sun, ambient and fog come from Lighting.Glsl (shared with the foliage renderer).
+    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+
         in vec3 vWorld;
         in vec3 vNormal;
         uniform vec4 uColor;
         uniform float uMode;
         uniform float uLayer;
         uniform sampler2DArray uTex;
-        uniform vec3 uCam;
-        uniform vec3 uFog;
-        uniform vec2 uFogRange; // start, end (metres); end <= start turns fog off
         out vec4 FragColor;
 
         void main()
@@ -60,17 +58,11 @@ public sealed unsafe class Renderer
                 col *= t * 1.25;
             }
 
-            vec3 lightDir = normalize(vec3(0.35, 1.0, 0.25));
-            float diff = max(dot(n, lightDir), 0.0);
+            // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
-            col *= 0.45 + 0.55 * diff + rim;
-            if (uFogRange.y > uFogRange.x)
-            {
-                // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
-                float f = clamp((distance(vWorld, uCam) - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);
-                col = mix(col, uFog, f * 0.85);
-            }
-            FragColor = vec4(col, uColor.a);
+            col = ApplyLight(col, n, 0.0) + col * rim;
+            // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
+            FragColor = vec4(ApplyFog(col, vWorld), uColor.a);
         }
         """;
 
@@ -106,6 +98,7 @@ public sealed unsafe class Renderer
         }
         vs.Dispose();
         fs.Dispose();
+        Lighting.Upload(_program);
 
         _locMvp = Uniform("uMVP\0"u8);
         _locModel = Uniform("uModel\0"u8);
@@ -162,14 +155,42 @@ public sealed unsafe class Renderer
     {
         _viewProj = view * proj;
         if (Matrix4x4.Invert(view, out var inv))
+        {
+            CameraPosition = new Vector3(inv.M41, inv.M42, inv.M43);
             Native.glUniform3f(_locCam, inv.M41, inv.M42, inv.M43);
+        }
     }
 
     /// <summary>Distance fog towards <paramref name="color"/> between start and end metres (end &lt;= start: off).</summary>
     public void SetFog(Vector3 color, float start, float end)
     {
+        FogColor = color;
+        FogRange = new Vector2(start, end);
         Native.glUniform3f(_locFog, color.X, color.Y, color.Z);
         Native.glUniform2f(_locFogRange, start, end);
+    }
+
+    // ---- State other renderers (foliage) share ----------------------------------------------
+
+    /// <summary>The current view * projection matrix (row-vector convention, as uploaded).</summary>
+    public Matrix4x4 ViewProj => _viewProj;
+
+    /// <summary>The camera position from the last <see cref="SetCamera"/>.</summary>
+    public Vector3 CameraPosition { get; private set; }
+
+    /// <summary>The fog colour and (start, end) range from the last <see cref="SetFog"/>.</summary>
+    public Vector3 FogColor { get; private set; }
+
+    public Vector2 FogRange { get; private set; }
+
+    /// <summary>The surface texture array (see <see cref="Textures"/>), bound to texture unit 0 while drawing.</summary>
+    public uint TextureArray => _texture;
+
+    /// <summary>Re-binds this renderer's shader and cube mesh after another renderer used its own.</summary>
+    public void Rebind()
+    {
+        _program.Use();
+        _vao.Bind();
     }
 
     public void ClearDepthBuffer() => Clear(GlClearBit.Depth);

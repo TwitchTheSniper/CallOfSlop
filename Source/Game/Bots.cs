@@ -226,6 +226,7 @@ public sealed partial class Game
             return;
         }
 
+        BotUseStreaks(p, now); // kill streaks (BotStreaks.cs)
         var def = p.WeaponDef;
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
         {
@@ -248,7 +249,6 @@ public sealed partial class Game
         var aim = BotAim(p, b, target, visible, def, steer, now);
         BotShoot(p, b, target, visible, def, aim, now);
         BotGrenade(p, b, target, visible, aim.Distance, now);
-        // (Kill streaks: the bot streak logic gets called here.)
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
 
         var cmd = new InputCmd
@@ -267,7 +267,7 @@ public sealed partial class Game
     private void BotReload(Player p, WeaponDef def, double now)
     {
         var b = p.Bot!;
-        b.ReloadUntil = now + def.Reload;
+        b.ReloadUntil = now + def.Reload * StreakReloadMult(p, now);
         b.BurstLeft = 0;
         Audio.Reload(def, p.RenderEye);
         Net.Broadcast(ReloadFx(p.Id, def.Id), PacketReliability.Unreliable);
