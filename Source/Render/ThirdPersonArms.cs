@@ -112,7 +112,8 @@ public static class ThirdPersonArms
         var grip = inBody.Translation;
         var anim = Matrix4x4.CreateTranslation(-grip) * Matrix4x4.CreateRotationX(pitch) * Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateRotationZ(roll)
             * Matrix4x4.CreateTranslation(grip + off);
-        var pose = inBody * anim * body;
+        LastGunLocal = inBody * anim; // the gun relative to the body (the scene graph's gun node)
+        var pose = LastGunLocal * body;
         var gunRot = RotationOf(pose);
 
         // Hands
@@ -141,6 +142,12 @@ public static class ThirdPersonArms
         _colors = ArmColors.For(p.Color * 0.75f);
         return pose;
     }
+
+    /// <summary>The gun's pose relative to the body from the last <see cref="Animate"/> (its pose = this * body).</summary>
+    public static Matrix4x4 LastGunLocal { get; private set; }
+
+    /// <summary>The arm colours chosen by the last <see cref="Animate"/>.</summary>
+    public static ArmColors Colors => _colors;
 
     /// <summary>The two rigs as posed by the last <see cref="Animate"/> (for the self-test).</summary>
     public static (ArmRig Right, ArmRig Left) Rigs => (Right, Left);

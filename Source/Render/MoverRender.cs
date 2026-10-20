@@ -16,6 +16,15 @@ public static class MoverRender
     /// <summary>Draws every mover of <paramref name="map"/> at the (fractional) server tick <paramref name="tick"/>.</summary>
     public static void Draw(Renderer gfx, Map map, double tick)
     {
+        if (ScenePresentation.Enabled) // mover frame -> part boxes (Source/Scene/Rigs/MoverRig.cs)
+            LastBoxes = ScenePresentation.DrawMovers(gfx, map, tick);
+        else
+            DrawImmediate(gfx, map, tick);
+    }
+
+    /// <summary>The old immediate drawing (the scene graph's reference in the self-test, and its fallback).</summary>
+    public static void DrawImmediate(Renderer gfx, Map map, double tick)
+    {
         var n = 0;
         foreach (var m in map.Movers)
         {

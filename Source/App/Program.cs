@@ -324,6 +324,7 @@ public static unsafe partial class Program
             case 8 when t > 8.5:
                 if (World.Map.HasTerrain)
                     Console.WriteLine($"[smoke] terrain: {TerrainGfx.LastFrame.Chunks} chunks, {TerrainGfx.LastFrame.DrawCalls} draw call(s), {TerrainGfx.LastFrame.Triangles} triangles");
+                Console.WriteLine($"[smoke] scene graph: {ScenePresentation.Stats}");
                 Console.WriteLine($"[smoke] {World.Map.Name}: alive {game?.Local?.Alive}, weapon {game?.Active.Def.Name} [{Attachments.Describe(game?.Active.Def.Kit ?? 0)}], phase {game?.Phase}, players {game?.Players.Count}, "
                     + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
                 game?.DebugEndMatch(now); // show the results screen and map vote
@@ -1560,6 +1561,7 @@ public static unsafe partial class Program
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
 
         // ---- Arena ----------------------------------------------------------
+        ScenePresentation.BeginFrame();
         DrawArena();
 
         // ---- Players --------------------------------------------------------
@@ -1783,68 +1785,13 @@ public static unsafe partial class Program
     /// <summary>Box gun model shared by the viewmodel, other players and the gunsmith preview (see GunModel.cs).</summary>
     private static void DrawGun(WeaponDef def, in Matrix4x4 pose, bool flash) => GunModel.Draw(Gfx, def, pose, flash, (float)Glfw.Time);
 
-    /// <summary>Another player's gun with arms holding it (Source/Render/ThirdPersonArms.cs).</summary>
-    private static void DrawArmed(Player p, in Matrix4x4 gunPose, in Matrix4x4 body)
-    {
-        var def = p.WeaponDef;
-        DrawGun(def, ThirdPersonArms.Animate(p, def, gunPose, body, Glfw.Time), false);
-        ThirdPersonArms.Draw(Gfx);
-    }
-
+    /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
-        var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
-        var at = Matrix4x4.CreateTranslation(p.RenderPosition);
-        var color = p.Color;
-
-        if (!p.Alive)
-        {
-            Gfx.Draw(Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0) * rot * at, color * 0.4f);
-            return;
-        }
-
-        var visorColor = new Vector3(0.05f, 0.05f, 0.08f);
-        float barY;
-        switch (p.RenderStance)
-        {
-            case Stance.Prone:
-            {
-                // Lying flat along their facing: body behind, head and gun out front.
-                Gfx.Draw(Matrix4x4.CreateScale(0.6f, 0.4f, 1.3f) * Matrix4x4.CreateTranslation(0, 0.2f, 0.15f) * rot * at, color);
-                Gfx.Draw(Matrix4x4.CreateScale(0.4f, 0.38f, 0.4f) * Matrix4x4.CreateTranslation(0, 0.3f, -0.75f) * rot * at, color * 1.1f);
-                Gfx.Draw(Matrix4x4.CreateScale(0.34f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 0.36f, -0.96f) * rot * at, visorColor);
-                var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.25f, 0.3f, -0.9f) * rot * at;
-                DrawArmed(p, gunPose, rot * at);
-                barY = 0.9f;
-                break;
-            }
-            case Stance.Crouch:
-            {
-                const float body = 0.85f, top = 1.2f;
-                Gfx.Draw(Matrix4x4.CreateScale(0.8f, body, 0.6f) * Matrix4x4.CreateTranslation(0, body / 2, 0) * rot * at, color);
-                Gfx.Draw(Matrix4x4.CreateScale(0.45f, top - body, 0.45f) * Matrix4x4.CreateTranslation(0, (body + top) / 2, -0.05f) * rot * at, color * 1.1f);
-                Gfx.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.07f, -0.29f) * rot * at, visorColor);
-                var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 0.82f, -0.3f) * rot * at;
-                DrawArmed(p, gunPose, rot * at);
-                barY = 1.45f;
-                break;
-            }
-            default:
-            {
-                Gfx.Draw(Matrix4x4.CreateScale(0.8f, World.HeadStart, 0.5f) * Matrix4x4.CreateTranslation(0, World.HeadStart / 2, 0) * rot * at, color);
-                var headH = World.PlayerHeight - World.HeadStart;
-                Gfx.Draw(Matrix4x4.CreateScale(0.45f, headH, 0.45f) * Matrix4x4.CreateTranslation(0, World.HeadStart + headH / 2, 0) * rot * at, color * 1.1f);
-                Gfx.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.63f, -0.24f) * rot * at, visorColor);
-                var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * rot * at;
-                DrawArmed(p, gunPose, rot * at);
-                barY = 2.05f;
-                break;
-            }
-        }
-
-        var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
-        Gfx.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
-            Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
+        if (ScenePresentation.Enabled)
+            ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);
+        else
+            PlayerRender.DrawImmediate(Gfx, p, Glfw.Time);
     }
 
     private static readonly ViewModelAnimator _vmAnim = new();
@@ -1869,10 +1816,16 @@ public static unsafe partial class Program
         });
         var pose = _vmAnim.GunPose;
 
+        var armColors = ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f));
+        if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
+        {
+            ScenePresentation.DrawViewModel(Gfx, _vmAnim, def, GunModel.AdsCutaway, now < _game.MuzzleFlashUntil, (float)Glfw.Time, armColors);
+            return;
+        }
         (GunModel.MagOffset, GunModel.MagHidden) = (_vmAnim.MagOffset, _vmAnim.MagHidden); // the magazine comes out during a reload
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
         (GunModel.MagOffset, GunModel.MagHidden) = (Vector3.Zero, false);
-        _vmAnim.DrawArms(Gfx, ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f)));
+        _vmAnim.DrawArms(Gfx, armColors);
     }
 
     private static void DrawHud(double now, float w, float h, Player? local, float fov)

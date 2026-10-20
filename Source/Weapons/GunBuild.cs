@@ -8,6 +8,12 @@ public enum GunPartFlags : byte
 {
     None = 0,
 
+    /// <summary>Part of the muzzle attachment (scene graph grouping only; see GunRig).</summary>
+    Muzzle = 1,
+
+    /// <summary>Part of the underbarrel attachment (scene graph grouping only; see GunRig).</summary>
+    Underbarrel = 2,
+
     /// <summary>Drawn with alpha blending (the laser beam).</summary>
     Blend = 4,
 
@@ -235,7 +241,9 @@ public sealed class GunBuilder
         var muzzleAtt = Att(AttachSlot.Muzzle);
         if (muzzleAtt == null || p.Muzzle is "bell" or "tip")
             muzzleZ = MuzzlePart(muzzleZ);
+        _flags = GunPartFlags.Muzzle;
         muzzleZ = MuzzleAttachment(muzzleAtt, muzzleZ);
+        _flags = 0;
 
         // ---- Grip, magazine, stock, receiver extras, underbarrel, sights ----
         _gripPt = GripPart(_gripZ);
@@ -245,7 +253,9 @@ public sealed class GunBuilder
         _flags = 0;
         StockPart(style);
         ReceiverExtras(style, top);
+        _flags = GunPartFlags.Underbarrel;
         var support = UnderbarrelPart(ubZ, ubY, bstart);
+        _flags = 0;
         var iron = SightsPart(top, bstart);
 
         // ---- Where an optic goes ----
