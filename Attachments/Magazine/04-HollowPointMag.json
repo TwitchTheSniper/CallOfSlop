@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Hollow Point Mag",
+  "slot": "Magazine",
+  "order": 4,
+  "unlockOrder": 24,
+  "blurb": "A short magazine of heavy hollow-point rounds. Fewer shots, every one hits harder.",
+  "pros": ["+25% damage"],
+  "cons": ["-35% magazine"],
+  "fits": { "minMag": 3 },
+  "effects": [
+    { "stat": "damage", "mul": 1.25 },
+    { "stat": "mag", "mul": 0.65, "min": 2 }
+  ]
+}

@@ -175,32 +175,89 @@ public sealed class ViewModelAnimator
             _ => (0.4f, 0.73f),
         };
 
-    /// <summary>
-    /// The gun's magazine through a reload: pulled a little, dropped out (falling away), gone while the fresh one is carried
-    /// (see <see cref="CarryWindow"/>), then pushed up into the well and seated. Other styles keep their magazine.
-    /// </summary>
-    public static (Vector3 Offset, bool Hidden) MagState(ReloadStyle s, float r)
+    /// <summary>Where the gun's magazine is during a magazine reload.</summary>
+    public enum MagPhase : byte
     {
-        // pull start, drop end (= hidden from), seated by
-        var (pull, gone, seat) = s switch
+        /// <summary>In the gun (before and after the swap, and for reloads that don't swap a magazine).</summary>
+        Seated,
+        /// <summary>The old magazine, pulled out and held in the off hand.</summary>
+        OldInHand,
+        /// <summary>The old magazine, let go and falling away.</summary>
+        Falling,
+        /// <summary>Gone: the off hand is reaching for the fresh one.</summary>
+        Gone,
+        /// <summary>The fresh magazine in the off hand, on its way into the gun.</summary>
+        NewInHand,
+    }
+
+    /// <summary>
+    /// Reload times (0..1) of a magazine swap: grabbed (the hand takes the old magazine; -1 = it drops free on a button
+    /// press, as on pistols), let go, fresh one in hand, seated. Matched to the off-hand keys above. Null for the other styles.
+    /// </summary>
+    public static (float Grab, float Release, float Fresh, float Seat)? MagTiming(ReloadStyle s) =>
+        s switch
         {
-            ReloadStyle.BoxMag => (0.25f, 0.4f, 0.73f),
-            ReloadStyle.PistolMag => (0.04f, 0.2f, 0.52f),
-            ReloadStyle.LmgBox => (0.24f, 0.42f, 0.7f),
-            _ => (-1f, -1f, -1f),
+            ReloadStyle.BoxMag => (0.3f, 0.39f, 0.45f, 0.73f),
+            ReloadStyle.PistolMag => (-1f, 0.04f, 0.2f, 0.52f),
+            ReloadStyle.LmgBox => (0.18f, 0.32f, 0.38f, 0.7f),
+            _ => null,
         };
-        if (pull < 0 || r < pull)
-            return (Vector3.Zero, false);
-        if (r < gone)
+
+    /// <summary>How long a let-go magazine is drawn falling before it's gone (seconds).</summary>
+    public const float MagFallSeconds = 0.35f;
+
+    /// <summary>The magazine's phase at reload time <paramref name="r"/> of a reload lasting <paramref name="reloadSeconds"/>.</summary>
+    public static MagPhase PhaseAt(ReloadStyle s, float r, float reloadSeconds)
+    {
+        if (MagTiming(s) is not { } m || r < 0)
+            return MagPhase.Seated;
+        if (r >= m.Seat)
+            return MagPhase.Seated;
+        if (r >= m.Fresh)
+            return MagPhase.NewInHand;
+        if (r >= m.Release)
+            return (r - m.Release) * MathF.Max(reloadSeconds, 0.1f) < MagFallSeconds ? MagPhase.Falling : MagPhase.Gone;
+        if (m.Grab >= 0 && r >= m.Grab)
+            return MagPhase.OldInHand;
+        return MagPhase.Seated;
+    }
+
+    /// <summary>The magazine's phase this frame (set by <see cref="Update"/>).</summary>
+    public MagPhase Mag;
+
+    private Vector3 _magLast; // last in-hand offset (where a let-go magazine starts falling from)
+
+    /// <summary>
+    /// Moves the gun's magazine with the off hand: the old one comes out in the hand and is let go to fall, the fresh one
+    /// rides in the hand up into the well. Uses the solved hand (so it stays in the hand even if the arm can't quite reach).
+    /// </summary>
+    private void UpdateMag(in ViewModelInput i, bool reloading)
+    {
+        Mag = reloading ? PhaseAt(Anchors.Style, i.Reload, i.Def.Reload) : MagPhase.Seated;
+        MagOffset = Vector3.Zero;
+        MagHidden = false;
+        switch (Mag)
         {
-            var t = (r - pull) / (gone - pull);
-            var side = s == ReloadStyle.LmgBox ? -0.12f * t : 0f; // the box comes off to the left
-            return (new Vector3(side, -0.02f - 0.28f * t * t, 0.02f * t), false);
+            case MagPhase.OldInHand:
+            case MagPhase.NewInHand:
+                if (Matrix4x4.Invert(GunPose, out var inv))
+                    MagOffset = Vector3.Transform(Left.HandWorld.Translation, inv) - Anchors.MagWell;
+                _magLast = MagOffset;
+                break;
+            case MagPhase.Falling:
+            {
+                var m = MagTiming(Anchors.Style)!.Value;
+                var t = (i.Reload - m.Release) * MathF.Max(i.Def.Reload, 0.1f);
+                MagOffset = _magLast + new Vector3(0, -4.9f * t * t - 0.4f * t, 0.15f * t); // drops away, a little towards you
+                break;
+            }
+            case MagPhase.Gone:
+                MagHidden = true;
+                break;
+            default:
+                _magLast = Vector3.Zero; // a pistol mag drops straight out of the well
+                break;
         }
-        if (r < seat)
-            return (Vector3.Zero, true);
-        var u = Math.Clamp((r - seat) / 0.06f, 0f, 1f);
-        return (new Vector3(0, -0.035f * (1 - Ease(u)), 0), false);
     }
 
     // ---- Curves -------------------------------------------------------------------------
@@ -459,10 +516,6 @@ public sealed class ViewModelAnimator
             left = HandTarget.Blend(left, ads, E(a, 0.3f, 0.9f));
         }
         Carrying = false;
-        MagOffset = Vector3.Zero;
-        MagHidden = false;
-        if (reloading)
-            (MagOffset, MagHidden) = MagState(A.Style, i.Reload);
         if (reloading)
         {
             var r = i.Reload;
@@ -486,7 +539,7 @@ public sealed class ViewModelAnimator
             {
                 left = EvalKeys(KeysFor(A.Style), r, gunRot);
                 var (c0, c1) = CarryWindow(A.Style);
-                Carrying = r >= c0 && r < c1;
+                Carrying = r >= c0 && r < c1 && MagTiming(A.Style) == null; // magazine swaps carry the gun's own magazine
             }
             if (A.Style == ReloadStyle.BoltAction)
                 right = EvalKeys(BoltGripKeys, r, gunRot);
@@ -506,6 +559,7 @@ public sealed class ViewModelAnimator
         var rootKick = new Vector3(0, 0, k.Back * 0.6f); // the shoulders soak up some of the kick: the elbows flex
         Right.Solve(right, Matrix4x4.Identity, rootKick);
         Left.Solve(left, Matrix4x4.Identity, rootKick);
+        UpdateMag(i, reloading);
     }
 
     /// <summary>A hand on one of the gun's anchors (offset in gun space, then in camera space).</summary>

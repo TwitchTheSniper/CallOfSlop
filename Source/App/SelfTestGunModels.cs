@@ -183,28 +183,43 @@ public static partial class SelfTest
             magChecked++;
             if (GunModel.Mesh(w) is { } mm && !mm.Parts.Any(x => (x.Flags & GunPartFlags.Mag) != 0))
                 Fail($"{w.Name}: {style} reload but the model has no removable magazine");
-            var (c0, c1) = ViewModelAnimator.CarryWindow(style);
-            for (var k = 0; k <= 10; k++)
-                if (!ViewModelAnimator.MagState(style, float.Lerp(c0, c1 - 0.001f, k / 10f)).Hidden)
-                {
-                    Fail($"{w.Name}: the gun's magazine is still in at reload {float.Lerp(c0, c1, k / 10f):0.00} while the off hand carries the new one");
-                    break;
-                }
-            if (ViewModelAnimator.MagState(style, 0).Offset != Vector3.Zero || ViewModelAnimator.MagState(style, 1).Offset != Vector3.Zero || ViewModelAnimator.MagState(style, 1).Hidden)
+            var timing = ViewModelAnimator.MagTiming(style)!.Value;
+            if (ViewModelAnimator.PhaseAt(style, 0, w.Reload) != ViewModelAnimator.MagPhase.Seated
+                || ViewModelAnimator.PhaseAt(style, 0.999f, w.Reload) != ViewModelAnimator.MagPhase.Seated)
                 Fail($"{w.Name}: the magazine isn't seated before and after a reload");
+            // Play the reload frame by frame: the magazine must ride in the off hand (old one out, fresh one in),
+            // never be drawn twice (no separate carried box), and be back in the well at the end.
             var anim = new ViewModelAnimator();
             var vin = new ViewModelInput { Def = w, Now = 10, Dt = 1f / 60, Reload = -1, Melee = -1, Grounded = true, Eye = new Vector3(0, 1.6f, 0) };
             anim.Update(vin);
-            vin.Reload = (c0 + c1) / 2;
-            vin.Now += 1.0 / 60;
-            anim.Update(vin);
-            if (!anim.MagHidden || !anim.Carrying)
-                Fail($"{w.Name}: at mid-reload the magazine is {(anim.MagHidden ? "out" : "still in the gun")} and the off hand {(anim.Carrying ? "carries" : "doesn't carry")} a new one");
+            var frames = Math.Max(30, (int)(w.Reload * 60));
+            var worstGap = 0f;
+            var sawOld = timing.Grab < 0;
+            bool sawNew = false, sawGone = false, doubled = false;
+            for (var f = 0; f <= frames; f++)
+            {
+                vin.Reload = f / (float)frames * 0.999f;
+                vin.Now += 1.0 / 60;
+                anim.Update(vin);
+                doubled |= anim.Carrying;
+                if (anim.Mag is ViewModelAnimator.MagPhase.OldInHand or ViewModelAnimator.MagPhase.NewInHand)
+                {
+                    sawOld |= anim.Mag == ViewModelAnimator.MagPhase.OldInHand;
+                    sawNew |= anim.Mag == ViewModelAnimator.MagPhase.NewInHand;
+                    Matrix4x4.Invert(anim.GunPose, out var inv);
+                    var hand = Vector3.Transform(anim.Left.HandWorld.Translation, inv);
+                    worstGap = MathF.Max(worstGap, Vector3.Distance(hand, anim.Anchors.MagWell + anim.MagOffset));
+                }
+                sawGone |= anim.MagHidden;
+            }
+            if (!sawOld || !sawNew || !sawGone || doubled || worstGap > 0.01f || anim.MagOffset != Vector3.Zero || anim.MagHidden)
+                Fail($"{w.Name}: magazine reload wrong (old in hand {sawOld}, fresh in hand {sawNew}, dropped {sawGone}, drawn twice {doubled}, "
+                     + $"hand to magazine {worstGap * 100:0.0} cm, seated at the end {anim.MagOffset == Vector3.Zero && !anim.MagHidden})");
         }
-        Line($"{magChecked} box-magazine reloads take the magazine out of the gun");
+        Line($"{magChecked} box-magazine reloads: the old magazine comes out in the off hand and the fresh one rides it in");
         foreach (var style in new[] { ReloadStyle.TubeShells, ReloadStyle.Revolver, ReloadStyle.BreakOpen, ReloadStyle.BoltAction, ReloadStyle.MuzzleLoad })
             for (var k = 0; k <= 20; k++)
-                if (ViewModelAnimator.MagState(style, k / 20f) != (Vector3.Zero, false))
+                if (ViewModelAnimator.PhaseAt(style, k / 20f, 2f) != ViewModelAnimator.MagPhase.Seated)
                     Fail($"{style} reloads move the magazine (they keep their own logic)");
 
         // Cost: building is cheap, and drawing uses the cache.

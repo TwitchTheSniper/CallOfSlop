@@ -831,7 +831,7 @@ public static class GunModel
                 Box(f.RecvW * 1.25f, 0.02f, 0.045f, 0, magY - 0.06f, magZ, Metal); // clamp
                 return;
         }
-        var ext = mag == "Extended Mag" ? 1.55f : 1f;
+        var ext = mag == "Extended Mag" ? 1.55f : mag == "Hollow Point Mag" ? 0.7f : 1f; // hollow points: a short magazine
         if (d.Class == WeaponClass.AssaultRifle)
         {
             // Curved: two segments

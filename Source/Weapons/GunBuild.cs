@@ -712,7 +712,7 @@ public sealed class GunBuilder
         var my = -RH * 0.5f;
         var ang = p.MagAngle * PI / 180;
         var (sa, ca) = MathF.SinCos(ang);
-        var ext = att == "Extended Mag" ? 1.5f : 1f;
+        var ext = att == "Extended Mag" ? 1.5f : att == "Hollow Point Mag" ? 0.68f : 1f; // hollow points: a short magazine
         var ln = p.MagLength;
         if (att == "Drum Mag" && mt is "box" or "curved" or "stick" or "beltbox" or "side" or "cell" or "topbox" or "pan" or "helical")
             mt = "drum";
