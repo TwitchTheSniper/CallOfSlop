@@ -25,6 +25,18 @@ public static class TestsPerfAndLagComp
             rays[i] = new RRayCast { Origin = origins[i], Direction = dirs[i] * 200f };
         }
 
+        w.P.Raycast(origins[0], dirs[0], 200, out _);
+        if (!Phys.RaysAvailable)
+        {
+            Check("Jolt ray casts available", false, "no native ray cast export; only the C# baseline is measured");
+            var tb = Clock.Now;
+            for (var i = 0; i < N; i++)
+                BruteForce(w, origins[i], dirs[i], 200);
+            var tbUs = Clock.UsSince(tb);
+            Metric("1000 rays, today's C# loop over every AABB, us total / per ray", $"{F(tbUs, 0)} / {F(tbUs / N, 2)} over {w.Aabbs.Count} boxes");
+            BuildTimes();
+            return;
+        }
         // Warm up (JIT, caches), then best of 5.
         double single = double.MaxValue, batch = double.MaxValue, brute = double.MaxValue;
         var dist = new float[N];
@@ -51,7 +63,11 @@ public static class TestsPerfAndLagComp
         Metric("1000 rays, batched CastRaysClosest, us total / per ray", $"{F(batch, 0)} / {F(batch / N, 2)} (returned {hits})");
         Metric("1000 rays, today's C# loop over every AABB (boxes only), us total / per ray", $"{F(brute, 0)} / {F(brute / N, 2)} over {w.Aabbs.Count} boxes");
         Check("rays hit things", hitCount > N / 2, $"{hitCount}/{N} rays hit within 200 m");
+        BuildTimes(origins, dirs);
+    }
 
+    static void BuildTimes(float3[]? origins = null, float3[]? dirs = null)
+    {
         // Static world build times.
         var t = Clock.Now;
         var big = new TestWorld(randomBoxes: 5000);
@@ -68,9 +84,12 @@ public static class TestsPerfAndLagComp
         cp.AddStatic(compound.CreateShape(cp.Temp), float3.Zero, floatQuat.Identity);
         cp.System.OptimizeBroadPhase();
         Metric("build: 5000 boxes as one StaticCompoundShape ms", F(Clock.MsSince(t), 1));
-        var cmpUs = TimeRays(cp, origins, dirs);
-        var bigUs = TimeRays(big.P, origins, dirs);
-        Metric("1000 rays vs 5000 boxes (separate bodies / one compound) us", $"{F(bigUs, 0)} / {F(cmpUs, 0)}");
+        if (origins != null && dirs != null)
+        {
+            var cmpUs = TimeRays(cp, origins, dirs);
+            var bigUs = TimeRays(big.P, origins, dirs);
+            Metric("1000 rays vs 5000 boxes (separate bodies / one compound) us", $"{F(bigUs, 0)} / {F(cmpUs, 0)}");
+        }
 
         t = Clock.Now;
         var n = 1024;
@@ -195,6 +214,8 @@ public static class TestsPerfAndLagComp
         var w = new TestWorld();
         w.SetMovers(0);
         var rng = new Rng(31337);
+        w.P.Raycast(new float3(0, 50, 0), new float3(0, -1, 0), 100, out _);
+        var joltRays = Phys.RaysAvailable;
         // Ring buffers of feet positions per player, like Player.History (random walks in the open arena).
         var hist = new float3[Players, History];
         for (var p = 0; p < Players; p++)
@@ -237,7 +258,7 @@ public static class TestsPerfAndLagComp
             for (var i = 0; i < Shots; i++)
             {
                 var (o, d, tick) = shots[i];
-                var best = w.P.Raycast(o, d, 200, out _);
+                var best = joltRays ? w.P.Raycast(o, d, 200, out _) : 200f;
                 var who = -1;
                 for (var p = 0; p < Players; p++)
                 {
@@ -254,6 +275,8 @@ public static class TestsPerfAndLagComp
             if (rep > 0) usA = Math.Min(usA, Clock.UsSince(t0));
 
             // Option B: move hitbox bodies to the historic pose, one filtered ray, move them back.
+            if (!joltRays)
+                continue;
             t0 = Clock.Now;
             for (var i = 0; i < Shots; i++)
             {
@@ -282,8 +305,13 @@ public static class TestsPerfAndLagComp
                 agree++;
         }
         Metric("lag comp A (manual historic capsules) us per shot", F(usA / Shots, 2));
-        Metric("lag comp B (Jolt hitbox layer, move bodies per shot) us per shot", F(usB / Shots, 2));
-        Check("A and B agree on who was hit and where", agree >= Shots * 0.99, $"{agree}/{Shots} agree, {hitsA} player hits");
+        if (joltRays)
+        {
+            Metric("lag comp B (Jolt hitbox layer, move bodies per shot) us per shot", F(usB / Shots, 2));
+            Check("A and B agree on who was hit and where", agree >= Shots * 0.99, $"{agree}/{Shots} agree, {hitsA} player hits");
+        }
+        else
+            Metric("lag comp A note", $"world ray skipped (no Jolt ray casts), capsules only; {hitsA}/{Shots} shots hit a player; option B not testable");
 
         // Our C# ray-capsule against Jolt's own RayCapsule helper (local space, capsule centred at the origin).
         var mismatch = 0;

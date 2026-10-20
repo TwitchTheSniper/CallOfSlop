@@ -318,17 +318,58 @@ public sealed class Phys
 
     public uint AddBox(float3 center, float3 half) => AddBox(center, half, floatQuat.Identity);
 
-    /// <summary>Closest hit along a ray against world geometry. Returns the distance or maxDist.</summary>
+    /// <summary>0 = CastRayClosest, 1 = CastRay(ref hit), 2 = no ray cast export in this package.</summary>
+    public static int RayPath;
+    public static bool RaysAvailable => RayPath < 2;
+
+    /// <summary>Closest hit along a ray against world geometry. Returns the distance, maxDist on a miss, NaN if unsupported.</summary>
     public float Raycast(float3 origin, float3 dir, float maxDist, out uint body)
     {
-        var ray = new RRayCast { Origin = origin, Direction = dir * maxDist };
-        if (Query.CastRayClosest(in ray, RaySettings, out var hit, WorldBp, WorldObj, AnyBody, AnyShape))
-        {
-            body = hit.BodyID;
-            return hit.Fraction * maxDist;
-        }
         body = uint.MaxValue;
-        return maxDist;
+        var ray = new RRayCast { Origin = origin, Direction = dir * maxDist };
+        if (RayPath == 0)
+        {
+            try
+            {
+                if (Query.CastRayClosest(in ray, RaySettings, out var hit, WorldBp, WorldObj, AnyBody, AnyShape))
+                {
+                    body = hit.BodyID;
+                    return hit.Fraction * maxDist;
+                }
+                return maxDist;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                Note("NarrowPhaseQuery.CastRayClosest has no native export");
+                RayPath = 1;
+            }
+        }
+        if (RayPath == 1)
+        {
+            try
+            {
+                var hit = new RayCastResult { BodyID = uint.MaxValue, Fraction = 1.0001f };
+                if (Query.CastRay(in ray, ref hit, WorldBp, WorldObj, AnyBody))
+                {
+                    body = hit.BodyID;
+                    return hit.Fraction * maxDist;
+                }
+                return maxDist;
+            }
+            catch (EntryPointNotFoundException)
+            {
+                Note("NarrowPhaseQuery.CastRay has no native export either: NO JOLT RAY CASTS in this package");
+                RayPath = 2;
+            }
+        }
+        return float.NaN;
+    }
+
+    /// <summary>Runs a setter that may be missing from the natives; records it if so.</summary>
+    public static void Try(Action a, string what)
+    {
+        try { a(); }
+        catch (EntryPointNotFoundException) { Note($"{what}: no native export (skipped)"); }
     }
 }
 

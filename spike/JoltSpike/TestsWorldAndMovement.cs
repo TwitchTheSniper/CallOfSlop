@@ -20,6 +20,14 @@ public static class TestsWorldAndMovement
         w.SetMovers(0);
 
         var down = new float3(0, -1, 0);
+        w.P.Raycast(new float3(0, 50, 0), down, 100, out _);
+        Result("a.rays", Phys.RaysAvailable ? "yes" : "no");
+        if (!Phys.RaysAvailable)
+        {
+            Check("Jolt ray casts available", false, "NarrowPhaseQuery ray casts have no native export in Ahwoo.BRUTAL.Jolt 2026.10.2");
+            Metric("jolt config", Jolt.GetConfigurationString().ToString16().Trim());
+            return;
+        }
         float HitY(float x, float z, out uint body) => 50 - w.P.Raycast(new float3(x, 50, z), down, 100, out body);
 
         var y = HitY(-90, 0, out var b);
@@ -171,7 +179,8 @@ public static class TestsWorldAndMovement
         var tProbe = Clock.Now;
         var ledge = m.ProbeLedge(East, out var fits);
         var probeUs = Clock.UsSince(tProbe);
-        Check("mantle: 1.5 m ledge found and player fits on top", MathF.Abs(ledge - 1.5f) < 0.05f && fits, $"ledge {F(ledge)} m above feet, fits={fits}");
+        Check("mantle: 1.5 m ledge found and player fits on top", MathF.Abs(ledge - 1.5f) < 0.05f && fits,
+            Mover.LedgeProbeAvailable ? $"ledge {F(ledge)} m above feet, fits={fits}" : "shape cast / overlap queries have no native export");
         if (fits)
         {
             var at = m.Ch.GetPosition();
@@ -185,7 +194,8 @@ public static class TestsWorldAndMovement
         Metric("mantle probe us (sphere cast + overlap)", F(Clock.UsSince(tProbe) / 100, 1));
         m = Spawn(w, new float3(2.2f, 0.05f, TestWorld.LaneWall));
         var wall = m.ProbeLedge(East, out _);
-        Check("mantle: 3 m wall is not a ledge", float.IsNaN(wall), $"result {F(wall)} (first probe took {F(probeUs, 0)} us incl. JIT)");
+        if (Mover.LedgeProbeAvailable)
+            Check("mantle: 3 m wall is not a ledge", float.IsNaN(wall), $"result {F(wall)} (first probe took {F(probeUs, 0)} us incl. JIT)");
 
         // Moving platform (2 m/s along +X) and a spinning one (1 rad/s).
         var tick = 0;

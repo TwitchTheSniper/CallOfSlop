@@ -109,17 +109,17 @@ public sealed class Mover
         _p = p;
         var s = CharacterVirtualSettings.Create();
         s.SetShape(StanceShapes.Get(Stance.Stand));
-        s.SetUp(new float3(0, 1, 0));
-        s.SetMaxSlopeAngle(Sim.MaxSlopeDeg * MathF.PI / 180f);
+        Phys.Try(() => s.SetUp(new float3(0, 1, 0)), "CharacterVirtualSettings.SetUp");
+        Phys.Try(() => s.SetMaxSlopeAngle(Sim.MaxSlopeDeg * MathF.PI / 180f), "CharacterVirtualSettings.SetMaxSlopeAngle");
         // Only the bottom hemisphere supports the player (so a wall touching the capsule's side isn't "ground").
-        s.SetSupportingVolume(Plane.Create(new float3(0, 1, 0), -Sim.PlayerRadius));
-        s.SetMass(80);
-        s.SetMaxStrength(100);
-        s.SetCharacterPadding(0.02f);
-        s.SetPenetrationRecoverySpeed(1f);
-        s.SetPredictiveContactDistance(0.1f);
-        s.SetBackFaceMode(BackFaceMode.CollideWithBackFaces);
-        s.SetEnhancedInternalEdgeRemoval(true);
+        Phys.Try(() => s.SetSupportingVolume(Plane.Create(new float3(0, 1, 0), -Sim.PlayerRadius)), "CharacterVirtualSettings.SetSupportingVolume");
+        Phys.Try(() => s.SetMass(80), "CharacterVirtualSettings.SetMass");
+        Phys.Try(() => s.SetMaxStrength(100), "CharacterVirtualSettings.SetMaxStrength");
+        Phys.Try(() => s.SetCharacterPadding(0.02f), "CharacterVirtualSettings.SetCharacterPadding");
+        Phys.Try(() => s.SetPenetrationRecoverySpeed(1f), "CharacterVirtualSettings.SetPenetrationRecoverySpeed");
+        Phys.Try(() => s.SetPredictiveContactDistance(0.1f), "CharacterVirtualSettings.SetPredictiveContactDistance");
+        Phys.Try(() => s.SetBackFaceMode(BackFaceMode.CollideWithBackFaces), "CharacterVirtualSettings.SetBackFaceMode");
+        Phys.Try(() => s.SetEnhancedInternalEdgeRemoval(true), "CharacterVirtualSettings.SetEnhancedInternalEdgeRemoval");
         Ch = CharacterVirtual.Create(s, feet, floatQuat.Identity, 0, p.System);
     }
 
@@ -208,10 +208,20 @@ public sealed class Mover
     }
 
     /// <summary>Full Jolt character state (contacts, ground info) as bytes.</summary>
-    public byte[] SaveFull(StateRecorderImpl rec)
+    public static bool FullStateAvailable = true;
+
+    public byte[]? SaveFull(StateRecorderImpl rec)
     {
+        if (!FullStateAvailable)
+            return null;
         rec.Clear();
-        Ch.SaveState(rec);
+        try { Ch.SaveState(rec); }
+        catch (EntryPointNotFoundException)
+        {
+            FullStateAvailable = false;
+            Phys.Try(() => throw new EntryPointNotFoundException(), "CharacterVirtual.SaveState/RestoreState");
+            return null;
+        }
         var bytes = new byte[(int)rec.GetDataSize() + 1];
         bytes[0] = (byte)Stance;
         rec.GetData(bytes.AsSpan(1));
@@ -237,6 +247,22 @@ public sealed class Mover
     /// overlap test checks the player fits on it. Returns the ledge top height above the feet, or NaN.
     /// </summary>
     public float ProbeLedge(float yaw, out bool fits)
+    {
+        fits = false;
+        if (!LedgeProbeAvailable)
+            return float.NaN;
+        try { return ProbeLedgeCore(yaw, out fits); }
+        catch (EntryPointNotFoundException e)
+        {
+            LedgeProbeAvailable = false;
+            Phys.Try(() => throw e, "NarrowPhaseQuery.CastShapeClosest / CharacterVirtual.CheckCollisionClosest (mantle probe)");
+            return float.NaN;
+        }
+    }
+
+    public static bool LedgeProbeAvailable = true;
+
+    float ProbeLedgeCore(float yaw, out bool fits)
     {
         fits = false;
         var feet = Ch.GetPosition();

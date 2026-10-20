@@ -64,7 +64,10 @@ public static class TestsAssets
         phys.System.OptimizeBroadPhase();
         var top = 10 - phys.Raycast(new float3(10, 10, 0), new float3(0, -1, 0), 20, out var hb);
         var top2 = 10 - phys.Raycast(new float3(10, 10, 5), new float3(0, -1, 0), 20, out var mb);
-        Check("glTF mesh as convex hull and as MeshShape, ray hits both", hb == hullBody && mb == meshBody && MathF.Abs(top - 1.56f) < 0.02f && MathF.Abs(top2 - 1.56f) < 0.02f,
+        if (!Phys.RaysAvailable)
+            Metric("collider check", "glTF mesh turned into Jolt bodies, but no ray casts to verify them (no native export)");
+        else
+            Check("glTF mesh as convex hull and as MeshShape, ray hits both", hb == hullBody && mb == meshBody && MathF.Abs(top - 1.56f) < 0.02f && MathF.Abs(top2 - 1.56f) < 0.02f,
             $"hull top y={F(top)}, mesh top y={F(top2)} (receiver top 1.56)");
 
         // ---- Brutal.Render.Mesh procedural primitive -> convex hull ----
@@ -85,6 +88,9 @@ public static class TestsAssets
             var cylHull = Phys.MakeHull(pts, 0.02f, pts, ctris);
             var cylBody = phys.AddStatic(cylHull, new float3(-10, 0, 0), floatQuat.Identity);
             var cylTop = 10 - phys.Raycast(new float3(-10, 10, 0), new float3(0, -1, 0), 20, out var cb);
+            if (!Phys.RaysAvailable)
+                Metric("procgen", $"ProcGenMesh cylinder: {pg.VertexCount} verts, {pg.IndexCount} indices -> Jolt body {cylBody}");
+            else
             Check("ProcGenMesh cylinder -> convex hull collider", cb == cylBody && MathF.Abs(cylTop - maxY) < 0.03f,
                 $"{pg.VertexCount} verts, {pg.IndexCount} indices, y {F(minY)}..{F(maxY)}, ray top {F(cylTop)}");
         }

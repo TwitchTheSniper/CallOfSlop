@@ -53,7 +53,7 @@ public static class TestsDeterminism
         public string Hash = "";
         public List<double> TickUs = new();
         public ulong[] Bot0Hash = []; // char 0's state after each tick
-        public byte[][] Bot0Full = []; // char 0's full Jolt state before each tick
+        public byte[]?[] Bot0Full = []; // char 0's full Jolt state before each tick
         public NetState[] Bot0Net = []; // char 0's snapshot state before each tick
         public Mover? Bot0;
         public string Final = "";
@@ -113,7 +113,7 @@ public static class TestsDeterminism
         var rec = StateRecorderImpl.Create();
         var t0 = Clock.Now;
         if (full)
-            m.RestoreFull(rec, r.Bot0Full[s]);
+            m.RestoreFull(rec, r.Bot0Full[s]!);
         else
             m.RestoreNet(r.Bot0Net[s]);
         var firstBad = -1;
@@ -148,13 +148,17 @@ public static class TestsDeterminism
         // Reconciliation from the full Jolt character state and from snapshot-only state (pos, vel, stance).
         foreach (var k in new[] { 8, 60, 240 })
         {
-            var (badFull, errFull, _) = Replay(w, a, inputs[0], k, full: true);
-            Check($"rewind {k} ticks from full Jolt state, replay", badFull < 0, badFull < 0 ? "bit-identical" : $"diverged after {badFull} ticks, max err {F(errFull * 1000, 3)} mm");
+            var (badFull, errFull) = (-2, 0f);
+            if (Mover.FullStateAvailable)
+            {
+                (badFull, errFull, _) = Replay(w, a, inputs[0], k, full: true);
+                Check($"rewind {k} ticks from full Jolt state, replay", badFull < 0, badFull < 0 ? "bit-identical" : $"diverged after {badFull} ticks, max err {F(errFull * 1000, 3)} mm");
+            }
             var (badNet, errNet, _) = Replay(w, a, inputs[0], k, full: false);
             // Snapshot-only restore is the game's model; bit-exactness is the goal, sub-mm is acceptable.
             Check($"rewind {k} ticks from snapshot (pos/vel/stance), replay", badNet < 0 || errNet < 0.001f,
                 badNet < 0 ? "bit-identical" : $"diverged after {badNet} ticks, max err {F(errNet * 1000, 3)} mm");
-            Result($"c.recon{k}.full", badFull < 0 ? "exact" : $"diverged@{badFull}");
+            Result($"c.recon{k}.full", badFull == -2 ? "unavailable" : badFull < 0 ? "exact" : $"diverged@{badFull}");
             Result($"c.recon{k}.net", badNet < 0 ? "exact" : $"diverged@{badNet}_err{F(errNet * 1000, 3)}mm");
         }
 
