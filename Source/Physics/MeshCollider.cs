@@ -71,6 +71,19 @@ public sealed class TriangleMeshCollider : IMeshCollider
         c = _vertices[_indices[index * 3 + 2]];
     }
 
+    /// <summary>
+    /// A collider from the mesh pipeline's collision data (welded triangles, see <see cref="MeshCollision"/>), placed in the
+    /// world by <paramref name="world"/> (the node's transform). Not used by gameplay yet: map meshes stay cosmetic until a
+    /// later step adds them to the physics world with <see cref="PhysicsWorld.AddMesh"/>.
+    /// </summary>
+    public static TriangleMeshCollider FromMesh(MeshCollision mesh, Matrix4x4 world)
+    {
+        var v = new Vector3[mesh.Positions.Length];
+        for (var i = 0; i < v.Length; i++)
+            v[i] = Vector3.Transform(mesh.Positions[i], world);
+        return new TriangleMeshCollider(v, (int[])mesh.Triangles.Clone());
+    }
+
     /// <summary>A box as 12 triangles (tests, and a stand-in until real meshes arrive).</summary>
     public static TriangleMeshCollider FromObb(in Obb box)
     {
