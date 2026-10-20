@@ -171,48 +171,49 @@ public static partial class SelfTest
     /// <summary>TEMP diagnostics: the cost of each instrument on its own, in ms per second of audio.</summary>
     private static void MusicVoiceCosts()
     {
-        const int n = Audio.SampleRate * 2;
+        const int blocks = 2 * Audio.SampleRate / 1024;
         var rng = new MusicRng(5);
         var sb = new System.Text.StringBuilder("voice costs (ms per s):");
-        float sink = 0;
-        void Time(string name, Func<int, float> step)
+        var a = new float[1024];
+        var b = new float[1024];
+        void Time(string name, Action<int> block)
         {
-            for (var i = 0; i < 20000; i++)
-                sink += step(i);
+            for (var i = 0; i < 20; i++)
+                block(i);
             var t0 = Stopwatch.GetTimestamp();
-            for (var i = 0; i < n; i++)
-                sink += step(i);
+            for (var i = 0; i < blocks; i++)
+                block(i);
             sb.Append($" {name} {(Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / 2:0.00};");
         }
-        Time("empty", i => i * 1e-9f);
-        Time("sin", i => MathF.Sin(i * 0.001f));
-        Time("tanh", i => Dsp.Tanh(i * 1e-5f));
         var kick = new KickVoice { Hold = 0.1f, Drive = 5f };
         kick.Configure(0.2f);
-        Time("kick", i => { if (i % 8000 == 0) kick.Trigger(1f); return kick.Next(ref rng); });
+        Time("kick", i => { if (i % 8 == 0) kick.Trigger(1f); kick.Render(a, b, ref rng); });
         var sn = new SnareVoice { Clap = true };
         sn.Configure();
-        Time("snare", i => { if (i % 8000 == 0) sn.Trigger(1f); return sn.Next(ref rng); });
+        Time("snare", i => { if (i % 8 == 0) sn.Trigger(1f); sn.Render(a, ref rng); });
         var bass = new BassVoice { Sustain = 0.9f };
         bass.Configure();
         bass.NoteOn(55f, 1f);
-        Time("bass", i => bass.Next());
-        foreach (var (name, saws, harm, notes, half) in new[] { ("lead7+3+3", 7, 3, 3, false), ("lead7x3", 7, 7, 3, false), ("lead7", 7, 7, 1, false), ("pad4x4half", 4, 4, 4, true), ("pad4x4full", 4, 4, 4, false), ("saw1", 1, 1, 1, false) })
+        Time("bass", i => bass.Render(a));
+        foreach (var (name, saws, harm, notes, half) in new[] { ("lead7+3+3", 7, 3, 3, false), ("lead7", 7, 7, 1, false), ("pad4x4half", 4, 4, 4, true), ("saw1", 1, 1, 1, false) })
         {
             var syn = new SawSynth { Saws = saws, HarmonySaws = harm, HalfRate = half, Sustain = 0.8f };
             syn.Configure();
             for (var k = 0; k < notes; k++)
                 syn.NoteOn(k, 220f * (1 + k * 0.25f), 1f);
-            Time(name, i => { syn.Next(out var l, out var r); return l + r; });
+            Time(name, i => syn.Render(a, b));
         }
         var fx = new FxVoices { RiserLevel = 0.3f, RiserHz = 1000 };
         fx.Configure();
-        Time("fx", i => { if (i % 20000 == 0) fx.Crash(1f); fx.Next(ref rng, out var l, out var r); return l + r; });
+        Time("fx", i => { if (i % 20 == 0) fx.Crash(1f); fx.Render(a, b, ref rng); });
+        var input = new float[1024];
+        for (var i = 0; i < input.Length; i++)
+            input[i] = MathF.Sin(i * 0.01f);
         var delay = new PingPongDelay();
-        Time("delay", i => { delay.Process(MathF.Sin(i * 0.01f), out var l, out var r); return l + r; });
+        Time("delay", i => delay.Render(input, a, b));
         var verb = new RoomReverb();
-        Time("reverb", i => { verb.Process(MathF.Sin(i * 0.01f), out var l, out var r); return l + r; });
-        Line(sb.ToString() + (sink == 12345f ? "!" : ""));
+        Time("reverb", i => verb.Render(input, a, b));
+        Line(sb.ToString());
     }
 
     private static MusicPart? PartAt(MusicTrack t, int bar)

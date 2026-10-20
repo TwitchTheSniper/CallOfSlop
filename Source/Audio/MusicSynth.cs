@@ -1,7 +1,7 @@
 namespace CallOfSlop;
 
 // The instruments of the procedural music engine (see MusicRenderer.cs). Every voice keeps its state in fields and
-// fixed arrays allocated once, so rendering never allocates. All voices run at 44.1 kHz, one sample at a time.
+// fixed arrays allocated once, so rendering never allocates. All voices run at 44.1 kHz and render a block at a time.
 
 /// <summary>Small allocation-free DSP helpers for the music synth.</summary>
 internal static class Dsp
@@ -93,12 +93,17 @@ internal struct Svf
     private float _ic1, _ic2;
     public float Low, Band, High;
 
-    /// <summary>g from <see cref="Dsp.SvfG"/>; k = 2 - 2*resonance (2 = no resonance, small = sharp peak).</summary>
-    public void Process(float x, float g, float k)
+    /// <summary>The per-sample coefficients for g (from <see cref="Dsp.SvfG"/>) and k; compute them only when g changes.</summary>
+    public static void Coefs(float g, float k, out float a1, out float a2, out float a3)
     {
-        var a1 = 1f / (1f + g * (g + k));
-        var a2 = g * a1;
-        var a3 = g * a2;
+        a1 = 1f / (1f + g * (g + k));
+        a2 = g * a1;
+        a3 = g * a2;
+    }
+
+    /// <summary>One sample. k = 2 - 2*resonance (2 = no resonance, small = sharp peak); a1..a3 from <see cref="Coefs"/>.</summary>
+    public void Process(float x, float k, float a1, float a2, float a3)
+    {
         var v3 = x - _ic2;
         var v1 = a1 * _ic1 + a2 * v3;
         var v2 = _ic2 + a2 * _ic1 + a3 * v3;
@@ -117,6 +122,9 @@ internal struct Svf
     public void Reset() => this = default;
 }
 
+// Every voice renders a whole block at once (Render), with its state in locals during the loop: much cheaper than a
+// call per sample per voice. The sequencer only changes notes between blocks (MusicRenderer cuts blocks at steps).
+
 /// <summary>
 /// Kick drum: a sine with a fast downward pitch sweep, held then decaying, driven into a soft clipper. With a long hold,
 /// heavy drive and the end pitch tuned to the key, it becomes the distorted, tonal hardstyle / gabber kick.
@@ -125,10 +133,7 @@ internal sealed class KickVoice
 {
     public float StartHz = 200, EndHz = 50, PitchTime = 0.03f, Hold = 0.02f, DecayTime = 0.15f, Drive = 2f, ToneHz = 3000, Click = 0.3f;
 
-    /// <summary>Sidechain envelope: jumps to 1 on every kick and falls back; the bass and synths duck under it.</summary>
-    public float Duck;
-
-    private float _phase, _pitch, _amp, _ampCoef, _pitchCoef, _click, _lpA, _lp, _duckCoef;
+    private float _phase, _pitch, _amp, _ampCoef, _pitchCoef, _click, _lpA, _lp, _duck, _duckCoef;
     private int _hold;
 
     public void Configure(float duckTime)
@@ -141,7 +146,7 @@ internal sealed class KickVoice
 
     public void Reset()
     {
-        _phase = _pitch = _amp = _click = _lp = Duck = 0;
+        _phase = _pitch = _amp = _click = _lp = _duck = 0;
         _hold = 0;
         _lpA = Dsp.OnePole(ToneHz);
     }
@@ -155,41 +160,63 @@ internal sealed class KickVoice
         _hold = (int)(Hold * Dsp.Sr);
         _click = Click * vel * muffle;
         _lpA = Dsp.OnePole(ToneHz * muffle);
-        Duck = 1;
+        _duck = 1;
     }
 
-    public float Next(ref MusicRng rng)
+    /// <summary>Renders the kick into dst and its sidechain envelope (1 on every hit, falling back) into duck.</summary>
+    public void Render(Span<float> dst, Span<float> duck, ref MusicRng rng)
     {
-        Duck *= _duckCoef;
-        if (Duck < 1e-4f)
-            Duck = 0;
-        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f)
-            return 0;
-        var hz = EndHz + (StartHz - EndHz) * _pitch;
-        _pitch *= _pitchCoef;
-        _phase += hz * Dsp.InvSr;
-        if (_phase >= 1f)
-            _phase -= 1f;
-        var s = MathF.Sin(_phase * Dsp.TwoPi) * _amp;
-        if (_hold > 0)
+        var n = dst.Length;
+        var d = _duck;
+        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f && _click <= 1e-4f)
         {
-            _hold--;
+            // Silent: only the sidechain envelope moves.
+            for (var i = 0; i < n; i++)
+            {
+                d *= _duckCoef;
+                duck[i] = d;
+            }
+            dst.Clear();
+            _duck = d < 1e-4f ? 0 : d;
+            _lp = 0;
+            return;
         }
-        else
+        float phase = _phase, pitch = _pitch, amp = _amp, click = _click, lp = _lp;
+        float lpA = _lpA, startHz = StartHz, endHz = EndHz, drive = Drive, ampCoef = _ampCoef, pitchCoef = _pitchCoef, duckCoef = _duckCoef;
+        var hold = _hold;
+        for (var i = 0; i < n; i++)
         {
-            _amp *= _ampCoef;
-            if (_amp < 1e-4f)
-                _amp = 0;
+            d *= duckCoef;
+            duck[i] = d;
+            var hz = endHz + (startHz - endHz) * pitch;
+            pitch = pitch < 1e-12f ? 0 : pitch * pitchCoef;
+            phase += hz * Dsp.InvSr;
+            if (phase >= 1f)
+                phase -= 1f;
+            var s = MathF.Sin(phase * Dsp.TwoPi) * amp;
+            if (hold > 0)
+                hold--;
+            else if ((amp *= ampCoef) < 1e-4f)
+                amp = 0;
+            s = Dsp.Tanh(s * drive);
+            lp += lpA * (s - lp);
+            if (MathF.Abs(lp) < 1e-15f)
+                lp = 0; // no denormals in the tail
+            var c = 0f;
+            if (click > 1e-4f)
+            {
+                c = rng.Noise() * click;
+                click *= 0.95f;
+            }
+            dst[i] = lp + c;
         }
-        s = Dsp.Tanh(s * Drive);
-        _lp += _lpA * (s - _lp);
-        var c = 0f;
-        if (_click > 1e-4f)
-        {
-            c = rng.Noise() * _click;
-            _click *= 0.95f;
-        }
-        return _lp + c;
+        _phase = phase;
+        _pitch = pitch;
+        _amp = amp < 1e-4f ? 0 : amp;
+        _click = click;
+        _lp = MathF.Abs(lp) < 1e-15f ? 0 : lp;
+        _hold = hold;
+        _duck = d < 1e-4f ? 0 : d;
     }
 }
 
@@ -203,7 +230,8 @@ internal sealed class SnareVoice
     public float PitchMul = 1f;
 
     private const int ClapGap = 441; // 10 ms between slaps
-    private float _env, _tone, _phase, _vel, _nCoef, _tCoef, _g, _toneHz;
+    private const float K = 1.1f;
+    private float _env, _tone, _phase, _vel, _nCoef, _tCoef, _toneHz, _a1, _a2, _a3;
     private int _t;
     private Svf _f;
 
@@ -227,37 +255,54 @@ internal sealed class SnareVoice
         _tone = vel * ToneLevel;
         _phase = 0;
         _t = 0;
-        _g = Dsp.SvfG(NoiseHz * PitchMul);
+        Svf.Coefs(Dsp.SvfG(NoiseHz * PitchMul), K, out _a1, out _a2, out _a3);
         _toneHz = ToneHz * PitchMul;
     }
 
-    public float Next(ref MusicRng rng)
+    public void Render(Span<float> dst, ref MusicRng rng)
     {
         if (_env <= 0 && _tone <= 0)
-            return 0;
-        _f.Process(rng.Noise(), _g, 1.1f);
-        var envN = _env;
-        if (Clap && _t < ClapGap * 3)
-            envN = _vel * (1f - (_t % ClapGap) / (float)ClapGap);
-        _t++;
-        var s = (_f.Band * 1.6f + _f.High * 0.5f) * envN;
-        if (_tone > 0)
         {
-            _phase += _toneHz * Dsp.InvSr;
-            if (_phase >= 1f)
-                _phase -= 1f;
-            s += MathF.Sin(_phase * Dsp.TwoPi) * _tone;
-            _tone *= _tCoef;
-            if (_tone < 1e-4f)
-                _tone = 0;
+            dst.Clear();
+            return;
         }
-        if (!Clap || _t >= ClapGap * 3)
+        var f = _f;
+        float env = _env, tone = _tone, phase = _phase, vel = _vel, a1 = _a1, a2 = _a2, a3 = _a3, nCoef = _nCoef, tCoef = _tCoef, drive = Drive;
+        var dphase = _toneHz * Dsp.InvSr;
+        var t = _t;
+        var clap = Clap;
+        for (var i = 0; i < dst.Length; i++)
         {
-            _env *= _nCoef;
-            if (_env < 1e-4f)
-                _env = 0;
+            f.Process(rng.Noise(), K, a1, a2, a3);
+            var envN = env;
+            var slapping = clap && t < ClapGap * 3;
+            if (slapping)
+                envN = vel * (1f - (t % ClapGap) / (float)ClapGap);
+            t++;
+            var s = (f.Band * 1.6f + f.High * 0.5f) * envN;
+            if (tone > 0)
+            {
+                phase += dphase;
+                if (phase >= 1f)
+                    phase -= 1f;
+                s += MathF.Sin(phase * Dsp.TwoPi) * tone;
+                tone *= tCoef;
+                if (tone < 1e-4f)
+                    tone = 0;
+            }
+            if (!slapping)
+            {
+                env *= nCoef;
+                if (env < 1e-4f)
+                    env = 0;
+            }
+            dst[i] = Dsp.Tanh(s * drive);
         }
-        return Dsp.Tanh(s * Drive);
+        _f = f;
+        _env = env;
+        _tone = tone;
+        _phase = phase;
+        _t = t;
     }
 }
 
@@ -285,19 +330,26 @@ internal sealed class HatVoice
         _coef = open ? _open : _closed;
     }
 
-    public float Next(ref MusicRng rng)
+    public void Render(Span<float> dst, ref MusicRng rng)
     {
         if (_env <= 0)
-            return 0;
-        var n = rng.Noise();
-        _lp += 0.62f * (n - _lp); // ~7 kHz
-        var h = n - _lp;
-        _lp2 += 0.85f * (h - _lp2); // tame the very top
-        var s = _lp2 * _env;
-        _env *= _coef;
-        if (_env < 1e-4f)
-            _env = 0;
-        return s;
+        {
+            dst.Clear();
+            return;
+        }
+        float env = _env, coef = _coef, lp = _lp, lp2 = _lp2;
+        for (var i = 0; i < dst.Length; i++)
+        {
+            var n = rng.Noise();
+            lp += 0.62f * (n - lp); // ~7 kHz
+            var h = n - lp;
+            lp2 += 0.85f * (h - lp2); // tame the very top
+            dst[i] = lp2 * env;
+            env *= coef;
+        }
+        _env = env < 1e-4f ? 0 : env;
+        _lp = lp;
+        _lp2 = lp2;
     }
 }
 
@@ -309,6 +361,9 @@ internal sealed class HatVoice
 internal sealed class SawSynth
 {
     public const int MaxNotes = 4, MaxSaws = 7;
+
+    /// <summary>The longest block <see cref="Render"/> takes.</summary>
+    public const int MaxBlock = 1024;
 
     public int Saws = 5;
 
@@ -330,7 +385,9 @@ internal sealed class SawSynth
     private readonly byte[] _stage = new byte[MaxNotes]; // 0 off, 1 attack, 2 decay/sustain, 3 release
     private readonly float[] _spread = new float[MaxSaws], _panL = new float[MaxSaws], _panR = new float[MaxSaws];
     private readonly float[] _hSpread = new float[MaxSaws], _hPanL = new float[MaxSaws], _hPanR = new float[MaxSaws];
-    private float _fenv, _fCoef, _aInc, _dCoef, _rCoef, _gCoef, _g, _k, _norm, _hNorm, _dtMul = 1f, _cutMul = 1f, _curL, _curR;
+    private readonly float[] _amp = new float[MaxBlock], _dt = new float[MaxBlock];
+    private readonly float[] _rawL = new float[MaxBlock], _rawR = new float[MaxBlock], _outL = new float[MaxBlock], _outR = new float[MaxBlock];
+    private float _fenv, _fCoef, _aInc, _dCoef, _rCoef, _gCoef, _g, _k, _norm, _hNorm, _dtMul = 1f, _curL, _curR;
     private int _ctl;
     private bool _odd;
     private Svf _l, _r;
@@ -343,10 +400,9 @@ internal sealed class SawSynth
         Spread(HarmonySaws, _hSpread, _hPanL, _hPanR);
         _norm = 1f / MathF.Sqrt(Saws);
         _hNorm = 1f / MathF.Sqrt(HarmonySaws);
-        // At half rate every per-sample step covers two output samples.
+        // At half rate every internal sample covers two output samples.
         var t = HalfRate ? 0.5f : 1f;
         _dtMul = HalfRate ? 2f : 1f;
-        _cutMul = _dtMul;
         _fCoef = Dsp.Decay(FilterTime * t);
         _aInc = 1f / MathF.Max(1f, Attack * Dsp.Sr * t);
         _dCoef = Dsp.Decay(DecayTime * t);
@@ -411,98 +467,169 @@ internal sealed class SawSynth
             NoteOff(n);
     }
 
-    public void Next(out float left, out float right)
+    /// <summary>Renders a block (at most <see cref="MaxBlock"/> samples) into left and right (overwrites them).</summary>
+    public void Render(Span<float> left, Span<float> right)
     {
+        var n = left.Length;
         if (!HalfRate)
         {
-            Compute(out left, out right);
+            Compute(n);
+            _outL.AsSpan(0, n).CopyTo(left);
+            _outR.AsSpan(0, n).CopyTo(right);
             return;
         }
-        // Half rate: a new value every other sample, linearly interpolated in between.
-        if (_odd)
+        // Half rate: a new value every other output sample, linearly interpolated in between.
+        var m = _odd ? n / 2 : (n + 1) / 2;
+        Compute(m);
+        float cl = _curL, cr = _curR;
+        var odd = _odd;
+        var k = 0;
+        for (var i = 0; i < n; i++)
         {
-            _odd = false;
-            left = _curL;
-            right = _curR;
-            return;
-        }
-        _odd = true;
-        float pl = _curL, pr = _curR;
-        Compute(out _curL, out _curR);
-        left = 0.5f * (pl + _curL);
-        right = 0.5f * (pr + _curR);
-    }
-
-    private void Compute(out float left, out float right)
-    {
-        float sl = 0, sr = 0;
-        var any = false;
-        for (var n = 0; n < MaxNotes; n++)
-        {
-            var st = _stage[n];
-            if (st == 0)
-                continue;
-            any = true;
-            var e = _env[n];
-            if (st == 1)
+            if (odd)
             {
-                e += _aInc;
-                if (e >= 1f)
-                {
-                    e = 1f;
-                    _stage[n] = 2;
-                }
-            }
-            else if (st == 2)
-            {
-                e = Sustain + (e - Sustain) * _dCoef;
+                left[i] = cl;
+                right[i] = cr;
+                odd = false;
             }
             else
             {
-                e *= _rCoef;
-                if (e < 1e-3f) // -60 dB: inaudible, and the oscillators stop costing anything
-                {
-                    e = 0;
-                    _stage[n] = 0;
-                }
+                float pl = cl, pr = cr;
+                cl = _outL[k];
+                cr = _outR[k];
+                k++;
+                left[i] = 0.5f * (pl + cl);
+                right[i] = 0.5f * (pr + cr);
+                odd = true;
             }
-            _env[n] = e;
-            if (Glide > 0)
-                _hz[n] += (_target[n] - _hz[n]) * _gCoef;
-            var harmony = n > 0;
+        }
+        _curL = cl;
+        _curR = cr;
+        _odd = odd;
+    }
+
+    /// <summary>m internal samples into _outL/_outR.</summary>
+    private void Compute(int m)
+    {
+        var rawL = _rawL.AsSpan(0, m);
+        var rawR = _rawR.AsSpan(0, m);
+        var outL = _outL.AsSpan(0, m);
+        var outR = _outR.AsSpan(0, m);
+        rawL.Clear();
+        rawR.Clear();
+        var any = false;
+        var amps = _amp.AsSpan(0, m);
+        var dts = _dt.AsSpan(0, m);
+        for (var note = 0; note < MaxNotes; note++)
+        {
+            var stage = _stage[note];
+            if (stage == 0)
+                continue;
+            any = true;
+            var harmony = note > 0;
+            var vel = _vel[note] * (harmony ? _hNorm : _norm);
+            float e = _env[note], hz = _hz[note], target = _target[note];
+            float aInc = _aInc, dCoef = _dCoef, rCoef = _rCoef, gCoef = _gCoef, sustain = Sustain, dtScale = Dsp.InvSr * _dtMul;
+            for (var i = 0; i < m; i++)
+            {
+                if (stage == 1)
+                {
+                    e += aInc;
+                    if (e >= 1f)
+                    {
+                        e = 1f;
+                        stage = 2;
+                    }
+                }
+                else if (stage == 2)
+                {
+                    e = sustain + (e - sustain) * dCoef;
+                }
+                else if (stage == 3)
+                {
+                    e *= rCoef;
+                    if (e < 1e-3f) // -60 dB: inaudible, and the oscillators stop costing anything
+                    {
+                        e = 0;
+                        stage = 0;
+                    }
+                }
+                hz += (target - hz) * gCoef;
+                amps[i] = e * vel;
+                dts[i] = hz * dtScale;
+            }
+            _env[note] = e;
+            _hz[note] = hz;
+            _stage[note] = stage;
+
             var saws = harmony ? HarmonySaws : Saws;
             var spread = harmony ? _hSpread : _spread;
             var panL = harmony ? _hPanL : _panL;
             var panR = harmony ? _hPanR : _panR;
-            var amp = e * _vel[n] * (harmony ? _hNorm : _norm);
-            var baseDt = _hz[n] * Dsp.InvSr * _dtMul;
-            var off = n * MaxSaws;
+            var off = note * MaxSaws;
             for (var j = 0; j < saws; j++)
             {
-                var dt = baseDt * spread[j];
-                var ph = _phase[off + j] + dt;
-                if (ph >= 1f)
-                    ph -= 1f;
+                var ph = _phase[off + j];
+                float sp = spread[j], gl = panL[j], gr = panR[j];
+                if (Square)
+                {
+                    for (var i = 0; i < m; i++)
+                    {
+                        var dt = dts[i] * sp;
+                        ph += dt;
+                        if (ph >= 1f)
+                            ph -= 1f;
+                        var v = Dsp.Square(ph, dt) * 0.5f * amps[i];
+                        rawL[i] += v * gl;
+                        rawR[i] += v * gr;
+                    }
+                }
+                else
+                {
+                    for (var i = 0; i < m; i++)
+                    {
+                        var dt = dts[i] * sp;
+                        ph += dt;
+                        if (ph >= 1f)
+                            ph -= 1f;
+                        var v = Dsp.Saw(ph, dt) * amps[i];
+                        rawL[i] += v * gl;
+                        rawR[i] += v * gr;
+                    }
+                }
                 _phase[off + j] = ph;
-                var v = (Square ? Dsp.Square(ph, dt) * 0.5f : Dsp.Saw(ph, dt)) * amp;
-                sl += v * panL[j];
-                sr += v * panR[j];
             }
         }
         if (!any && MathF.Abs(_l.Low) + MathF.Abs(_r.Low) < 1e-6f)
         {
-            left = right = 0;
+            outL.Clear();
+            outR.Clear();
             return;
         }
-        if ((_ctl++ & 15) == 0) // filter coefficients at control rate (every 16 samples)
-            _g = Dsp.SvfG(Cutoff * CutoffMul * (1f + EnvAmount * _fenv) * _cutMul);
-        _fenv *= _fCoef;
-        if (_fenv < 1e-5f)
-            _fenv = 0;
-        _l.Process(Dsp.Tanh(sl * Drive), _g, _k);
-        _r.Process(Dsp.Tanh(sr * Drive), _g, _k);
-        left = _l.Low;
-        right = _r.Low;
+
+        // Drive and the stereo filter; its coefficients update at control rate (every 16 samples).
+        Svf l = _l, r = _r;
+        float g = _g, fenv = _fenv, fCoef = _fCoef, k = _k, drive = Drive, cutoff = Cutoff * CutoffMul * _dtMul, envAmount = EnvAmount;
+        Svf.Coefs(g, k, out var a1, out var a2, out var a3);
+        var ctl = _ctl;
+        for (var i = 0; i < m; i++)
+        {
+            if ((ctl++ & 15) == 0)
+            {
+                g = Dsp.SvfG(cutoff * (1f + envAmount * fenv));
+                Svf.Coefs(g, k, out a1, out a2, out a3);
+            }
+            fenv *= fCoef;
+            l.Process(Dsp.Tanh(rawL[i] * drive), k, a1, a2, a3);
+            r.Process(Dsp.Tanh(rawR[i] * drive), k, a1, a2, a3);
+            outL[i] = l.Low;
+            outR[i] = r.Low;
+        }
+        _l = l;
+        _r = r;
+        _g = g;
+        _fenv = fenv < 1e-5f ? 0 : fenv;
+        _ctl = ctl;
     }
 }
 
@@ -557,64 +684,86 @@ internal sealed class BassVoice
             _stage = 3;
     }
 
-    public float Next()
+    public void Render(Span<float> dst)
     {
         if (_stage == 0 && MathF.Abs(_f.Low) < 1e-6f)
-            return 0;
-        if (_stage == 1)
         {
-            _env += 1f / 88f; // 2 ms attack
-            if (_env >= 1f)
+            dst.Clear();
+            return;
+        }
+        var f = _f;
+        var stage = _stage;
+        float env = _env, p1 = _p1, p2 = _p2, ps = _ps, hz = _hz, target = _target, vel = _vel, fenv = _fenv, lfo = _lfo, g = _g;
+        float dCoef = _dCoef, rCoef = _rCoef, fCoef = _fCoef, gCoef = _gCoef, k = _k, sustain = Sustain, detune = Detune, drive = Drive, sub = Sub;
+        float cutoff = Cutoff * CutoffMul, envAmount = EnvAmount, wobble = Wobble;
+        Svf.Coefs(g, k, out var a1, out var a2, out var a3);
+        var ctl = _ctl;
+        for (var i = 0; i < dst.Length; i++)
+        {
+            if (stage == 1)
             {
-                _env = 1f;
-                _stage = 2;
+                env += 1f / 88f; // 2 ms attack
+                if (env >= 1f)
+                {
+                    env = 1f;
+                    stage = 2;
+                }
             }
-        }
-        else if (_stage == 2)
-        {
-            _env = Sustain + (_env - Sustain) * _dCoef;
-        }
-        else if (_stage == 3)
-        {
-            _env *= _rCoef;
-            if (_env < 1e-4f)
+            else if (stage == 2)
             {
-                _env = 0;
-                _stage = 0;
+                env = sustain + (env - sustain) * dCoef;
             }
-        }
-        _hz += (_target - _hz) * _gCoef;
-        var dt = _hz * Dsp.InvSr;
-        var dt1 = dt * (1f + Detune);
-        var dt2 = dt * (1f - Detune);
-        _p1 += dt1;
-        if (_p1 >= 1f)
-            _p1 -= 1f;
-        _p2 += dt2;
-        if (_p2 >= 1f)
-            _p2 -= 1f;
-        _ps += dt * 0.5f;
-        if (_ps >= 1f)
-            _ps -= 1f;
-        var raw = (Dsp.Saw(_p1, dt1) + Dsp.Saw(_p2, dt2)) * 0.5f;
-        if ((_ctl++ & 15) == 0)
-        {
-            var lfo = 1f;
-            if (Wobble > 0)
+            else if (stage == 3)
             {
-                _lfo += 16f * 0.23f * Dsp.InvSr; // slow sweep, ~4 s per cycle
-                if (_lfo >= 1f)
-                    _lfo -= 1f;
-                lfo = 1f + Wobble * MathF.Sin(_lfo * Dsp.TwoPi);
+                env *= rCoef;
+                if (env < 1e-4f)
+                {
+                    env = 0;
+                    stage = 0;
+                }
             }
-            _g = Dsp.SvfG(Cutoff * CutoffMul * lfo * (1f + EnvAmount * _fenv));
+            hz += (target - hz) * gCoef;
+            var dt = hz * Dsp.InvSr;
+            var dt1 = dt * (1f + detune);
+            var dt2 = dt * (1f - detune);
+            p1 += dt1;
+            if (p1 >= 1f)
+                p1 -= 1f;
+            p2 += dt2;
+            if (p2 >= 1f)
+                p2 -= 1f;
+            ps += dt * 0.5f;
+            if (ps >= 1f)
+                ps -= 1f;
+            var raw = (Dsp.Saw(p1, dt1) + Dsp.Saw(p2, dt2)) * 0.5f;
+            if ((ctl++ & 15) == 0)
+            {
+                var mod = 1f;
+                if (wobble > 0)
+                {
+                    lfo += 16f * 0.23f * Dsp.InvSr; // slow sweep, ~4 s per cycle
+                    if (lfo >= 1f)
+                        lfo -= 1f;
+                    mod = 1f + wobble * MathF.Sin(lfo * Dsp.TwoPi);
+                }
+                g = Dsp.SvfG(cutoff * mod * (1f + envAmount * fenv));
+                Svf.Coefs(g, k, out a1, out a2, out a3);
+            }
+            fenv *= fCoef;
+            f.Process(Dsp.Tanh(raw * drive), k, a1, a2, a3);
+            dst[i] = (f.Low + MathF.Sin(ps * Dsp.TwoPi) * sub) * env * vel;
         }
-        _fenv *= _fCoef;
-        if (_fenv < 1e-5f)
-            _fenv = 0;
-        _f.Process(Dsp.Tanh(raw * Drive), _g, _k);
-        var amp = _env * _vel;
-        return (_f.Low + MathF.Sin(_ps * Dsp.TwoPi) * Sub) * amp;
+        _f = f;
+        _stage = stage;
+        _env = env;
+        _p1 = p1;
+        _p2 = p2;
+        _ps = ps;
+        _hz = hz;
+        _fenv = fenv < 1e-5f ? 0 : fenv;
+        _lfo = lfo;
+        _g = g;
+        _ctl = ctl;
     }
 }
 
@@ -624,8 +773,8 @@ internal sealed class FxVoices
     /// <summary>Riser level (0..1) and centre frequency, set by the arrangement every step.</summary>
     public float RiserLevel, RiserHz = 400;
 
-    private float _crash, _crashCoef, _lpL, _lpR, _subAmp, _subPitch, _subPhase, _subCoef, _subPitchCoef, _riserLevel, _g;
-    private int _ctl;
+    private const float RiserK = 0.5f;
+    private float _crash, _crashCoef, _lpL, _lpR, _subAmp, _subPitch, _subPhase, _subCoef, _subPitchCoef, _riserLevel;
     private Svf _riser;
 
     public void Configure()
@@ -637,9 +786,8 @@ internal sealed class FxVoices
 
     public void Reset()
     {
-        _crash = _subAmp = RiserLevel = _riserLevel = _lpL = _lpR = _subPitch = _subPhase = _g = 0;
+        _crash = _subAmp = RiserLevel = _riserLevel = _lpL = _lpR = _subPitch = _subPhase = 0;
         RiserHz = 400;
-        _ctl = 0;
         _riser.Reset();
     }
 
@@ -652,47 +800,70 @@ internal sealed class FxVoices
         _subPhase = 0;
     }
 
-    public void Next(ref MusicRng rng, out float left, out float right)
+    /// <summary>Renders a block into left and right (overwrites them).</summary>
+    public void Render(Span<float> left, Span<float> right, ref MusicRng rng)
     {
-        float l = 0, r = 0;
+        var n = left.Length;
+        left.Clear();
+        right.Clear();
         if (_crash > 0)
         {
-            var nl = rng.Noise();
-            var nr = rng.Noise();
-            _lpL += 0.55f * (nl - _lpL);
-            _lpR += 0.55f * (nr - _lpR);
-            l += (nl - _lpL) * _crash;
-            r += (nr - _lpR) * _crash;
-            _crash *= _crashCoef;
-            if (_crash < 1e-4f)
-                _crash = 0;
+            float crash = _crash, lpL = _lpL, lpR = _lpR, coef = _crashCoef;
+            for (var i = 0; i < n; i++)
+            {
+                var nl = rng.Noise();
+                var nr = rng.Noise();
+                lpL += 0.55f * (nl - lpL);
+                lpR += 0.55f * (nr - lpR);
+                left[i] = (nl - lpL) * crash;
+                right[i] = (nr - lpR) * crash;
+                crash *= coef;
+            }
+            _crash = crash < 1e-3f ? 0 : crash;
+            _lpL = lpL;
+            _lpR = lpR;
         }
-        _riserLevel += (RiserLevel - _riserLevel) * 0.001f; // smooth the per-step changes
-        if (_riserLevel > 1e-4f)
+        var target = RiserLevel;
+        if (_riserLevel > 1e-4f || target > 1e-4f)
         {
-            if ((_ctl++ & 15) == 0)
-                _g = Dsp.SvfG(RiserHz);
-            _riser.Process(rng.Noise(), _g, 0.5f);
-            var v = _riser.Band * _riserLevel;
-            l += v;
-            r += v;
+            // The centre frequency only changes per step, so one set of coefficients covers the block.
+            Svf.Coefs(Dsp.SvfG(RiserHz), RiserK, out var a1, out var a2, out var a3);
+            var f = _riser;
+            var level = _riserLevel;
+            for (var i = 0; i < n; i++)
+            {
+                level += (target - level) * 0.001f; // smooth the per-step changes
+                f.Process(rng.Noise(), RiserK, a1, a2, a3);
+                var v = f.Band * level;
+                left[i] += v;
+                right[i] += v;
+            }
+            _riser = f;
+            _riserLevel = level;
+        }
+        else
+        {
+            _riserLevel = 0;
         }
         if (_subAmp > 0)
         {
-            var hz = 32f + 70f * _subPitch;
-            _subPitch *= _subPitchCoef;
-            _subPhase += hz * Dsp.InvSr;
-            if (_subPhase >= 1f)
-                _subPhase -= 1f;
-            var v = MathF.Sin(_subPhase * Dsp.TwoPi) * _subAmp;
-            _subAmp *= _subCoef;
-            if (_subAmp < 1e-4f)
-                _subAmp = 0;
-            l += v;
-            r += v;
+            float amp = _subAmp, pitch = _subPitch, phase = _subPhase, coef = _subCoef, pitchCoef = _subPitchCoef;
+            for (var i = 0; i < n; i++)
+            {
+                var hz = 32f + 70f * pitch;
+                pitch *= pitchCoef;
+                phase += hz * Dsp.InvSr;
+                if (phase >= 1f)
+                    phase -= 1f;
+                var v = MathF.Sin(phase * Dsp.TwoPi) * amp;
+                amp *= coef;
+                left[i] += v;
+                right[i] += v;
+            }
+            _subAmp = amp < 1e-4f ? 0 : amp;
+            _subPitch = pitch;
+            _subPhase = phase;
         }
-        left = l;
-        right = r;
     }
 }
 
@@ -714,22 +885,33 @@ internal sealed class PingPongDelay
         _lpL = _lpR = 0;
     }
 
-    public void Process(float input, out float left, out float right)
+    /// <summary>Processes a block: input in, the wet left and right out.</summary>
+    public void Render(ReadOnlySpan<float> input, Span<float> left, Span<float> right)
     {
-        var dl = _l[_pos];
-        var dr = _r[_pos];
-        _lpL += 0.4f * (dl - _lpL);
-        _lpR += 0.4f * (dr - _lpR);
-        if (MathF.Abs(_lpL) < 1e-15f)
-            _lpL = 0;
-        if (MathF.Abs(_lpR) < 1e-15f)
-            _lpR = 0;
-        _l[_pos] = input + _lpR * Feedback;
-        _r[_pos] = _lpL * Feedback;
-        if (++_pos >= _len)
-            _pos = 0;
-        left = dl;
-        right = dr;
+        var bl = _l;
+        var br = _r;
+        int pos = _pos, len = _len;
+        float lpL = _lpL, lpR = _lpR, fb = Feedback;
+        for (var i = 0; i < input.Length; i++)
+        {
+            var dl = bl[pos];
+            var dr = br[pos];
+            lpL += 0.4f * (dl - lpL);
+            lpR += 0.4f * (dr - lpR);
+            if (MathF.Abs(lpL) < 1e-15f)
+                lpL = 0; // no denormals circulating in silence
+            if (MathF.Abs(lpR) < 1e-15f)
+                lpR = 0;
+            bl[pos] = input[i] + lpR * fb;
+            br[pos] = lpL * fb;
+            if (++pos >= len)
+                pos = 0;
+            left[i] = dl;
+            right[i] = dr;
+        }
+        _pos = pos;
+        _lpL = MathF.Abs(lpL) < 1e-15f ? 0 : lpL;
+        _lpR = MathF.Abs(lpR) < 1e-15f ? 0 : lpR;
     }
 }
 
@@ -774,44 +956,58 @@ internal sealed class RoomReverb
         Array.Clear(_aiR);
     }
 
-    public void Process(float input, out float left, out float right)
+    /// <summary>
+    /// Processes a block: input in, the wet left and right out. Each comb and all-pass runs over the whole block in
+    /// turn (they're independent filters in parallel, then in series), which keeps every loop small and fast.
+    /// </summary>
+    public void Render(ReadOnlySpan<float> input, Span<float> left, Span<float> right)
     {
-        var x = input * 0.03f;
-        float l = 0, r = 0;
-        for (var i = 0; i < 4; i++)
+        left.Clear();
+        right.Clear();
+        for (var c = 0; c < 4; c++)
         {
-            l += Comb(_combL[i], ref _ciL[i], ref _storeL[i], x);
-            r += Comb(_combR[i], ref _ciR[i], ref _storeR[i], x);
+            Comb(_combL[c], ref _ciL[c], ref _storeL[c], input, left);
+            Comb(_combR[c], ref _ciR[c], ref _storeR[c], input, right);
         }
-        for (var i = 0; i < 2; i++)
+        for (var a = 0; a < 2; a++)
         {
-            l = Allpass(_apL[i], ref _aiL[i], l);
-            r = Allpass(_apR[i], ref _aiR[i], r);
+            Allpass(_apL[a], ref _aiL[a], left);
+            Allpass(_apR[a], ref _aiR[a], right);
         }
-        left = l;
-        right = r;
     }
 
-    private float Comb(float[] buf, ref int idx, ref float store, float x)
+    private void Comb(float[] buf, ref int index, ref float store, ReadOnlySpan<float> input, Span<float> sum)
     {
-        var y = buf[idx];
-        store = y * (1f - Damp) + store * Damp;
-        if (MathF.Abs(store) < 1e-15f)
-            store = 0;
-        buf[idx] = x + store * Feedback;
-        if (++idx >= buf.Length)
-            idx = 0;
-        return y;
+        int idx = index, len = buf.Length;
+        float s = store, damp = Damp, keep = 1f - Damp, fb = Feedback;
+        for (var i = 0; i < input.Length; i++)
+        {
+            var y = buf[idx];
+            s = y * keep + s * damp;
+            if (MathF.Abs(s) < 1e-15f)
+                s = 0; // no denormals circulating in silence
+            buf[idx] = input[i] * 0.03f + s * fb;
+            if (++idx >= len)
+                idx = 0;
+            sum[i] += y;
+        }
+        index = idx;
+        store = MathF.Abs(s) < 1e-15f ? 0 : s;
     }
 
-    private static float Allpass(float[] buf, ref int idx, float x)
+    private static void Allpass(float[] buf, ref int index, Span<float> io)
     {
-        var b = buf[idx];
-        var y = b - x;
-        var w = x + b * 0.5f;
-        buf[idx] = MathF.Abs(w) < 1e-15f ? 0f : w;
-        if (++idx >= buf.Length)
-            idx = 0;
-        return y;
+        int idx = index, len = buf.Length;
+        for (var i = 0; i < io.Length; i++)
+        {
+            var b = buf[idx];
+            var x = io[i];
+            var w = x + b * 0.5f;
+            buf[idx] = MathF.Abs(w) < 1e-15f ? 0f : w;
+            if (++idx >= len)
+                idx = 0;
+            io[i] = b - x;
+        }
+        index = idx;
     }
 }

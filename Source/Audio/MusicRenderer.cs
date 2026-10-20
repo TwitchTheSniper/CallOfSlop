@@ -53,6 +53,14 @@ public sealed class MusicRenderer
     // Master
     private float _dcInL, _dcInR, _dcOutL, _dcOutR;
 
+    // Per-block work buffers, one per instrument and send (rendering goes instrument by instrument, a block at a time).
+    private const int MaxChunk = SawSynth.MaxBlock;
+    private readonly float[] _bKick = new float[MaxChunk], _bDuck = new float[MaxChunk], _bSnare = new float[MaxChunk], _bHat = new float[MaxChunk], _bBass = new float[MaxChunk];
+    private readonly float[] _bLeadL = new float[MaxChunk], _bLeadR = new float[MaxChunk], _bPadL = new float[MaxChunk], _bPadR = new float[MaxChunk];
+    private readonly float[] _bArpL = new float[MaxChunk], _bArpR = new float[MaxChunk], _bFxL = new float[MaxChunk], _bFxR = new float[MaxChunk];
+    private readonly float[] _bDelayIn = new float[MaxChunk], _bVerbIn = new float[MaxChunk];
+    private readonly float[] _bDelayL = new float[MaxChunk], _bDelayR = new float[MaxChunk], _bVerbL = new float[MaxChunk], _bVerbR = new float[MaxChunk];
+
     public MusicRenderer()
     {
         Load(MusicTracks.All[0], 1);
@@ -874,7 +882,7 @@ public sealed class MusicRenderer
                 OnStep();
                 _toNextStep += _samplesPerStep;
             }
-            var n = Math.Min(frames - i, Math.Max(1, (int)Math.Ceiling(_toNextStep)));
+            var n = Math.Min(Math.Min(frames - i, MaxChunk), Math.Max(1, (int)Math.Ceiling(_toNextStep)));
             RenderSamples(stereo.Slice(i * 2, n * 2));
             i += n;
             _toNextStep -= n;
@@ -884,45 +892,85 @@ public sealed class MusicRenderer
 
     private void RenderSamples(Span<float> stereo)
     {
-        var frames = stereo.Length / 2;
-        for (var i = 0; i < frames; i++)
+        var n = stereo.Length / 2;
+        var kick = _bKick.AsSpan(0, n);
+        var duck = _bDuck.AsSpan(0, n);
+        var snare = _bSnare.AsSpan(0, n);
+        var hat = _bHat.AsSpan(0, n);
+        var bass = _bBass.AsSpan(0, n);
+        var leadL = _bLeadL.AsSpan(0, n);
+        var leadR = _bLeadR.AsSpan(0, n);
+        var padL = _bPadL.AsSpan(0, n);
+        var padR = _bPadR.AsSpan(0, n);
+        var arpL = _bArpL.AsSpan(0, n);
+        var arpR = _bArpR.AsSpan(0, n);
+        var fxL = _bFxL.AsSpan(0, n);
+        var fxR = _bFxR.AsSpan(0, n);
+        var delayIn = _bDelayIn.AsSpan(0, n);
+        var verbIn = _bVerbIn.AsSpan(0, n);
+        var delayL = _bDelayL.AsSpan(0, n);
+        var delayR = _bDelayR.AsSpan(0, n);
+        var verbL = _bVerbL.AsSpan(0, n);
+        var verbR = _bVerbR.AsSpan(0, n);
+
+        _kick.Render(kick, duck, ref _noise);
+        _snare.Render(snare, ref _noise);
+        _hat.Render(hat, ref _noise);
+        _bass.Render(bass);
+        _lead.Render(leadL, leadR);
+        _pad.Render(padL, padR);
+        _arp.Render(arpL, arpR);
+        _fx.Render(fxL, fxR, ref _noise);
+
+        // Levels, then the delay and reverb sends.
+        float gKick = _gKick, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
+        float leadDelay = _leadDelay, leadVerb = _leadVerb;
+        for (var i = 0; i < n; i++)
         {
-            var k = _kick.Next(ref _noise) * _gKick;
-            var duck = 1f - _duckDepth * _kick.Duck;
-            var sn = _snare.Next(ref _noise) * _gSnare;
-            var ht = _hat.Next(ref _noise) * _gHat;
-            var bs = _bass.Next() * _gBass;
-            _lead.Next(out var ll, out var lr);
-            _pad.Next(out var pl, out var pr);
-            _arp.Next(out var al, out var ar);
-            _fx.Next(ref _noise, out var fl, out var fr);
+            kick[i] *= gKick;
+            var sn = snare[i] *= gSnare;
+            var ht = hat[i] *= gHat;
+            bass[i] *= gBass;
+            var ll = leadL[i] *= gLead;
+            var lr = leadR[i] *= gLead;
+            var pl = padL[i] *= gPad;
+            var pr = padR[i] *= gPad;
+            var al = arpL[i] *= gArp;
+            var ar = arpR[i] *= gArp;
+            delayIn[i] = (ll + lr) * leadDelay + (al + ar) * 0.4f;
+            verbIn[i] = sn * 0.5f + (pl + pr) * 0.5f + (ll + lr) * leadVerb + (al + ar) * 0.2f + ht * 0.2f;
+        }
+        _delay.Render(delayIn, delayL, delayR);
+        _verb.Render(verbIn, verbL, verbR);
 
-            ll *= _gLead;
-            lr *= _gLead;
-            pl *= _gPad;
-            pr *= _gPad;
-            al *= _gArp;
-            ar *= _gArp;
+        // Sidechain ducking, the mix, a DC blocker and the soft limiter.
+        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth;
+        for (var i = 0; i < n; i++)
+        {
+            var d = 1f - duckDepth * duck[i];
+            var bs = bass[i];
+            var synthL = (bs + leadL[i] + padL[i] + arpL[i] + delayL[i] * 0.5f) * d;
+            var synthR = (bs + leadR[i] + padR[i] + arpR[i] + delayR[i] * 0.5f) * d;
+            var k = kick[i];
+            var sn = snare[i];
+            var ht = hat[i];
+            var l = k + sn + ht * 0.8f + synthL + fxL[i] * 0.22f + verbL[i];
+            var r = k + sn + ht + synthR + fxR[i] * 0.22f + verbR[i];
 
-            _delay.Process((ll + lr) * _leadDelay + (al + ar) * 0.4f, out var dl, out var dr);
-            _verb.Process(sn * 0.5f + (pl + pr) * 0.5f + (ll + lr) * _leadVerb + (al + ar) * 0.2f + ht * 0.2f, out var vl, out var vr);
-
-            var synthL = (bs + ll + pl + al + dl * 0.5f) * duck;
-            var synthR = (bs + lr + pr + ar + dr * 0.5f) * duck;
-            var l = k + sn + ht * 0.8f + synthL + fl * 0.22f + vl;
-            var r = k + sn + ht + synthR + fr * 0.22f + vr;
-
-            // DC blocker, then the soft limiter.
-            var hl = l - _dcInL + 0.9985f * _dcOutL;
-            _dcInL = l;
-            _dcOutL = hl;
-            var hr = r - _dcInR + 0.9985f * _dcOutR;
-            _dcInR = r;
-            _dcOutR = hr;
+            var hl = l - dcInL + 0.9985f * dcOutL;
+            dcInL = l;
+            dcOutL = hl;
+            var hr = r - dcInR + 0.9985f * dcOutR;
+            dcInR = r;
+            dcOutR = hr;
             if (MathF.Abs(hl) + MathF.Abs(hr) < 1e-15f)
-                _dcOutL = _dcOutR = 0; // no denormals in silence
+                dcOutL = dcOutR = 0; // no denormals in silence
             stereo[i * 2] = Dsp.Tanh(hl * 0.9f);
             stereo[i * 2 + 1] = Dsp.Tanh(hr * 0.9f);
         }
+        _dcInL = dcInL;
+        _dcInR = dcInR;
+        _dcOutL = dcOutL;
+        _dcOutR = dcOutR;
     }
 }
