@@ -177,6 +177,9 @@ public static class TestsDeterminism
         Metric("8 chars ExtendedUpdate per tick us (mean/p50/p99/max)",
             $"{F(warm.Average(), 1)}/{F(Clock.Percentile(warm, 0.5), 1)}/{F(Clock.Percentile(warm, 0.99), 1)}/{F(warm.Max(), 1)}");
         Metric("per character per tick us (mean)", F(warm.Average() / Bots, 1));
+        var wb = new TestWorld(boxGround: true);
+        var flat = RunBots(wb, inputs, record: false).TickUs.Skip(30).ToList();
+        Metric("same, ground = one box instead of triangle-compound terrain: 8 chars us/tick (mean/p99)", $"{F(flat.Average(), 1)}/{F(Clock.Percentile(flat, 0.99), 1)}");
         var reps = new List<double>();
         for (var i = 0; i < 10; i++)
             reps.Add(Replay(w, a, inputs[0], 240, full: false).Us);

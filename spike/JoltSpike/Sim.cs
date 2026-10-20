@@ -97,7 +97,8 @@ public sealed class Mover
     public static CharacterVirtual.ExtendedUpdateSettings Ext = new()
     {
         StickToFloorStepDown = new float3(0, -0.5f, 0),
-        WalkStairsStepUp = new float3(0, Sim.StepHeight, 0),
+        // Jolt needs a little more than the step itself (character padding + convex radius): 0.55 + 0.05.
+        WalkStairsStepUp = new float3(0, Sim.StepHeight + 0.05f, 0),
         WalkStairsMinStepForward = 0.02f,
         WalkStairsStepForwardTest = 0.15f,
         WalkStairsCosAngleForwardContact = 0.258819f, // cos(75 deg)

@@ -27,13 +27,16 @@ public sealed class TestWorld
 
     public const int TerrainSamples = 256; // 1 m spacing -> 256 x 256 m
 
-    public TestWorld(int randomBoxes = 600, bool shuffled = false, int terrainSamples = TerrainSamples)
+    public TestWorld(int randomBoxes = 600, bool shuffled = false, int terrainSamples = TerrainSamples, bool boxGround = false)
     {
         P = new Phys();
         var adds = new List<Action>();
 
         // ---- Terrain: flat in the middle (where the fixtures are), hills outside ----
-        adds.Add(() => AddTerrain(terrainSamples));
+        if (boxGround)
+            adds.Add(() => TerrainBodies = [P.AddBox(new float3(0, -0.5f, 0), new float3(128, 0.5f, 128))]); // flat, for cost comparison
+        else
+            adds.Add(() => AddTerrain(terrainSamples));
 
         // ---- Movement fixtures ----
         for (var i = 0; i < 4; i++) // 0.4 m stairs, 1 m deep each, the top one 6 m long; top at 1.6 m
