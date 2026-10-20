@@ -232,6 +232,9 @@ public static class Attachments
                     a.Apply(def);
             def.Mobility = Math.Clamp(def.Mobility, 0.6f, 1.25f);
             def.AdsTime = Math.Clamp(def.AdsTime, 0.08f, 0.5f);
+            // However much is stacked, a kitted gun keeps at least half its hip spread and 40% of its recoil.
+            def.HipSpreadDeg = MathF.Max(def.HipSpreadDeg, baseDef.HipSpreadDeg * 0.5f);
+            Recoil.ClampKit(baseDef, def);
             _applied[(baseDef.Id, kit)] = def;
             return def;
         }

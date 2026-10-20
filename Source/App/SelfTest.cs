@@ -13,6 +13,8 @@ namespace CallOfSlop;
 ///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
 ///   5. Packet sizes: a full 8-player snapshot fits in one packet.
+///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
+///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
 /// </summary>
 public static class SelfTest
@@ -53,6 +55,9 @@ public static class SelfTest
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
+            Section("Weapon select", CheckWeaponSelect);
+            Section("Loadout navigation", CheckLoadoutNav);
+            Section("Recoil", CheckRecoil);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -969,6 +974,8 @@ public static class SelfTest
             }
         }
         Line($"{roundTrips} weapon and attachment files written and re-read identically");
+        if (!WeaponFile.ToJson(Weapons.All[0]).Contains("\"recoil\": {", StringComparison.Ordinal))
+            Fail("a written weapon file has no \"recoil\" block");
 
         // ---- The built-in fallback weapons (used when the folder is missing) ----
         var fallback = Weapons.Fallback();
@@ -1062,6 +1069,9 @@ public static class SelfTest
                      ("{ " + ok.Replace("\"SMG\"", "\"Laser\"") + " }", "isn't one of", true),
                      ("{ " + ok.Replace("\"X\"", "\"A=B\"") + " }", "name", true),
                      ("{ " + ok + ", }", "", true), // trailing commas are allowed
+                     ("{ " + ok + ", \"recoil\": { \"vertcal\": 1 } }", "unknown recoil field", true),
+                     ("{ " + ok + ", \"recoil\": { \"vertical\": 9 } }", "between", true),
+                     ("{ " + ok + ", \"recoil\": 2 }", "expected", true),
                      ("{ \"name\": \"X\", \"slot\": \"Muzzle\", \"effects\": [ { \"stat\": \"recoil\", \"mul\": 0.8 } ] }", "unknown stat", false),
                      ("{ \"name\": \"X\", \"slot\": \"Muzzle\", \"effects\": [ { \"stat\": \"recoilDeg\", \"mul\": 0.8, \"add\": 1 } ] }", "only one", false),
                      ("{ \"name\": \"X\", \"slot\": \"Magazine\", \"effects\": [ { \"stat\": \"reload\", \"grow\": 2 } ] }", "grow", false),
@@ -1086,6 +1096,288 @@ public static class SelfTest
                 Fail($"{(weapon ? "weapon" : "attachment")} file gave the wrong error (expected '{expectText}'): {ex.Message}");
             }
         }
+    }
+
+    // ---- 6. Recoil ---------------------------------------------------------------------------
+
+    /// <summary>Result of a simulated spray: the aim kicks per shot, the highest climb, and the aim after letting go.</summary>
+    private sealed record SprayResult(List<(float Pitch, float Yaw)> Kicks, float Peak, float FinalPitch, float FinalYaw, bool Finite);
+
+    /// <summary>
+    /// Holds the trigger for <paramref name="shots"/> rounds (semi guns at their max rate, bursts with their pause) with a
+    /// fixed frame time, then waits <paramref name="hold"/> seconds. Starts aiming at pitch 0, yaw 0.
+    /// </summary>
+    private static SprayResult SimulateSpray(WeaponDef d, Stance stance, float aimT, int shots, float dt, float hold = 2f, RecoilState? state = null)
+    {
+        var r = state ?? new RecoilState();
+        float pitch = 0, yaw = 0, peak = 0;
+        var finite = true;
+        var kicks = new List<(float, float)>();
+        double t = 10, next = t;
+        var fired = 0;
+        while (fired < shots)
+        {
+            while (fired < shots && t >= next)
+            {
+                var (kp, ky) = r.Shot(d, stance, aimT, t, pitch, yaw);
+                kicks.Add((kp, ky));
+                pitch += kp;
+                yaw += ky;
+                fired++;
+                next += d.FireInterval;
+                if (d.Mode == FireMode.Burst && fired % d.BurstCount == 0)
+                    next += d.BurstDelay;
+            }
+            r.Update(dt, t, ref pitch, ref yaw);
+            peak = MathF.Max(peak, pitch);
+            t += dt;
+        }
+        for (var e = 0f; e < hold; e += dt, t += dt)
+        {
+            r.Update(dt, t, ref pitch, ref yaw);
+            finite &= float.IsFinite(r.Camera.Pitch + r.Camera.Yaw + r.Camera.Roll + r.Camera.Fov + r.Kick.Back + r.Kick.Up + r.Kick.Roll + r.Kick.Side);
+        }
+        finite &= float.IsFinite(pitch) && float.IsFinite(yaw) && float.IsFinite(peak);
+        return new SprayResult(kicks, peak, pitch, yaw, finite);
+    }
+
+    private static float Variance(IEnumerable<float> xs)
+    {
+        var a = xs.ToArray();
+        var m = a.Average();
+        return a.Sum(x => (x - m) * (x - m)) / a.Length;
+    }
+
+    private static void CheckRecoil()
+    {
+        const float dt = 1f / 240f;
+        var all = Weapons.All;
+
+        // ---- Every weapon has a valid profile (the shipped files spell theirs out) ----
+        foreach (var w in all)
+        {
+            try
+            {
+                Recoil.Validate(w, w.Name);
+            }
+            catch (WeaponFileException ex)
+            {
+                Fail(ex.Message);
+            }
+            if (w.SourceFile != null && Weapons.LegacyNames.Contains(w.Name)
+                && !File.ReadAllText(Path.Combine(Weapons.Folder, w.SourceFile)).Contains("\"recoil\"", StringComparison.Ordinal))
+                Fail($"{w.Name}: the shipped file has no \"recoil\" block");
+            if (w.RecoilDeg > 0 && Recoil.EffectiveKickDeg(w) <= 0)
+                Fail($"{w.Name}: recoil profile has no kick at all");
+        }
+        // A file without a block gets its class's character (an LMG barely moves sideways when crouched).
+        var bare = WeaponFile.Load("{ \"name\": \"X\", \"class\": \"LMG\", \"damage\": 20, \"rangeM\": 10, \"rpm\": 600, \"mag\": 100, \"reload\": 5, \"hipSpreadDeg\": 2 }", "bare.json");
+        if (bare.RecoilCrouchHorizontal > 0.2f || bare.RecoilVertical < 1f)
+            Fail($"an LMG file without a recoil block didn't get LMG defaults (crouch horizontal {bare.RecoilCrouchHorizontal})");
+        var partial = WeaponFile.Load("{ \"name\": \"X\", \"class\": \"SMG\", \"damage\": 20, \"rangeM\": 10, \"rpm\": 600, \"mag\": 30, \"reload\": 2, \"hipSpreadDeg\": 2, \"recoil\": { \"vertical\": 0.5 } }", "partial.json");
+        var bareSmg = WeaponFile.Load("{ \"name\": \"X\", \"class\": \"SMG\", \"damage\": 20, \"rangeM\": 10, \"rpm\": 600, \"mag\": 30, \"reload\": 2, \"hipSpreadDeg\": 2 }", "bare.json");
+        if (partial.RecoilVertical != 0.5f || partial.RecoilJitter != bareSmg.RecoilJitter || partial.RecoilHorizontal != bareSmg.RecoilHorizontal)
+            Fail("a partial recoil block didn't keep the class defaults for the fields it leaves out");
+
+        // ---- Patterns are deterministic per seed ----
+        foreach (var w in all)
+        {
+            for (var i = 0; i < 40; i++)
+                if (Recoil.PatternDeg(w, i, 3) != Recoil.PatternDeg(w, i, 3))
+                    Fail($"{w.Name}: shot {i} isn't deterministic");
+            var calm = w.Clone();
+            calm.RecoilJitter = 0;
+            for (var i = 0; i < 40; i++)
+                if (Recoil.PatternDeg(calm, i, 1) != Recoil.PatternDeg(calm, i, 7))
+                {
+                    Fail($"{w.Name}: the pattern (without jitter) changes between sprays at shot {i}");
+                    break;
+                }
+            var a = SimulateSpray(w, Stance.Stand, 1, 30, dt);
+            var b = SimulateSpray(w, Stance.Stand, 1, 30, dt);
+            if (!a.Kicks.SequenceEqual(b.Kicks) || a.FinalPitch != b.FinalPitch)
+                Fail($"{w.Name}: two identical sprays came out differently");
+            if (!a.Finite)
+                Fail($"{w.Name}: spray produced NaN or infinity");
+        }
+        if (Weapons.Find("Vanguard AR") is { } van)
+        {
+            var other = van.Clone();
+            other.RecoilSeed = van.RecoilSeed + 1;
+            if (Enumerable.Range(0, 20).All(i => Recoil.PatternDeg(van, i, 1) == Recoil.PatternDeg(other, i, 1)))
+                Fail("a different seed gave the same pattern");
+        }
+
+        // ---- LMGs: crouched sideways movement is far below standing ----
+        foreach (var w in all.Where(w => w.Class == WeaponClass.LMG))
+        {
+            var stand = SimulateSpray(w, Stance.Stand, 1, 30, dt).Kicks.Sum(k => MathF.Abs(k.Yaw));
+            var crouch = SimulateSpray(w, Stance.Crouch, 1, 30, dt).Kicks.Sum(k => MathF.Abs(k.Yaw));
+            var prone = SimulateSpray(w, Stance.Prone, 1, 30, dt).Kicks.Sum(k => MathF.Abs(k.Yaw));
+            Line($"{w.Name}: sideways travel over 30 rounds aimed: standing {stand * 180 / MathF.PI:0.0} deg, crouched {crouch * 180 / MathF.PI:0.00}, prone {prone * 180 / MathF.PI:0.00}");
+            if (!(crouch < stand * 0.25f && prone < stand * 0.15f))
+                Fail($"{w.Name}: crouched/prone horizontal recoil isn't far below standing");
+        }
+
+        // ---- SMGs jump around sideways more than assault rifles ----
+        float ClassHorizontalVariance(WeaponClass c) =>
+            all.Where(w => w.Class == c).Select(w => Variance(SimulateSpray(w, Stance.Stand, 0, 30, dt).Kicks.Select(k => k.Yaw * 180 / MathF.PI)))
+                .DefaultIfEmpty(0).Average();
+        float ClassJitterRatio(WeaponClass c) =>
+            all.Where(w => w.Class == c).Select(w =>
+            {
+                var k = SimulateSpray(w, Stance.Stand, 0, 30, dt).Kicks;
+                return MathF.Sqrt(Variance(k.Select(x => x.Yaw))) / MathF.Max(1e-6f, k.Average(x => x.Pitch));
+            }).DefaultIfEmpty(0).Average();
+        var smgVar = ClassHorizontalVariance(WeaponClass.SMG);
+        var arVar = ClassHorizontalVariance(WeaponClass.AssaultRifle);
+        var smgRatio = ClassJitterRatio(WeaponClass.SMG);
+        var arRatio = ClassJitterRatio(WeaponClass.AssaultRifle);
+        Line($"per-shot sideways variance: SMGs {smgVar:0.000} deg^2, rifles {arVar:0.000} deg^2; sideways/up ratio SMGs {smgRatio:0.00}, rifles {arRatio:0.00}");
+        if (!(smgVar > arVar && smgRatio > arRatio * 2))
+            Fail("SMG horizontal recoil isn't more erratic than assault rifles'");
+
+        // ---- Recovery returns most of the climb, never past where you started ----
+        foreach (var w in all)
+        {
+            // One spray: guns too slow to chain shots into a spray (snipers, the musket) recover each shot on its own.
+            var shots = w.FireInterval < Recoil.ResetTime(w) ? Math.Min(20, Math.Max(w.Mag, 3)) : 1;
+            var sp = SimulateSpray(w, Stance.Stand, 1, shots, dt);
+            // Of everything the gun kicked you up, how much came back (semi guns recover between shots too).
+            var kicked = sp.Kicks.Sum(k => k.Pitch);
+            var returned = kicked > 0 ? (kicked - sp.FinalPitch) / kicked : 1;
+            if (w.RecoilRecoveryAmount >= 0.5f && returned < 0.5f)
+                Fail($"{w.Name}: recovery only returned {returned:P0} of the climb");
+            if (sp.FinalPitch < -1e-4f)
+                Fail($"{w.Name}: recovery pulled the aim below where the spray started ({sp.FinalPitch})");
+        }
+        if (Weapons.Find("Vanguard AR") is { } ar)
+        {
+            // The player pulls down against the climb: recovery must not drag the aim further down.
+            var st = new RecoilState();
+            float pitch = 0, yaw = 0;
+            for (var i = 0; i < 10; i++)
+            {
+                var (kp, ky) = st.Shot(ar, Stance.Stand, 1, 10 + i * ar.FireInterval, pitch, yaw);
+                pitch += kp;
+                yaw += ky;
+            }
+            pitch = 0; // pulled all the way back down by hand
+            for (var t = 0f; t < 2; t += dt)
+                st.Update(dt, 11 + t, ref pitch, ref yaw);
+            if (pitch < -1e-4f)
+                Fail($"recovery overshot after the player had already pulled down ({pitch})");
+            // Frame-rate independence: the same spray at 30 and 300 fps ends up in the same place.
+            var slow = SimulateSpray(ar, Stance.Stand, 1, 20, 1 / 30f);
+            var fast = SimulateSpray(ar, Stance.Stand, 1, 20, 1 / 300f);
+            if (MathF.Abs(slow.FinalPitch - fast.FinalPitch) > 0.05f * MathF.Max(slow.Peak, 1e-3f))
+                Fail($"recovery depends on frame rate: {slow.FinalPitch:0.0000} at 30 fps vs {fast.FinalPitch:0.0000} at 300 fps");
+            var hip = SimulateSpray(ar, Stance.Stand, 0, 30, dt);
+            Line($"Vanguard AR, 30 rounds from the hip: climb {hip.Peak * 180 / MathF.PI:0.0} deg, back to {hip.FinalPitch * 180 / MathF.PI:0.0} deg 2 s after letting go");
+        }
+
+        // ---- The visual shake and punch never move the actual aim ----
+        foreach (var w in all)
+        {
+            var still = w.Clone();
+            still.RecoilRecoveryAmount = 0; // no recovery: any change to the aim after firing would come from the visuals
+            var st = new RecoilState();
+            float pitch = 0, yaw = 0;
+            var (kp, ky) = st.Shot(still, Stance.Stand, 0, 10, pitch, yaw);
+            pitch += kp;
+            yaw += ky;
+            float p0 = pitch, y0 = yaw;
+            var moved = 0f;
+            for (var t = 0f; t < 0.3f; t += dt)
+            {
+                st.Update(dt, 10 + t, ref pitch, ref yaw);
+                moved = MathF.Max(moved, MathF.Abs(st.Camera.Pitch) + MathF.Abs(st.Camera.Yaw) + MathF.Abs(st.Camera.Roll));
+            }
+            if (pitch != p0 || yaw != y0)
+                Fail($"{w.Name}: the camera shake changed the actual aim");
+            if (w.RecoilDeg > 0 && (w.RecoilShake > 0 || w.RecoilPunch > 0) && moved <= 0)
+                Fail($"{w.Name}: the gun has shake/punch but the camera never moved");
+        }
+
+        // ---- Attachments cut the axes they're meant to ----
+        void Expect(string attachment, Func<WeaponDef, float> stat, bool lower, string what)
+        {
+            if (Attachments.Find(attachment) is not { } a)
+            {
+                Fail($"'{attachment}' isn't loaded");
+                return;
+            }
+            var n = 0;
+            foreach (var w in all.Where(a.Fits))
+            {
+                var k = Attachments.Apply(w, Attachments.With(0, a.Slot, a.Index));
+                if (lower ? !(stat(k) < stat(w)) : !(stat(k) > stat(w)))
+                    Fail($"{attachment} on {w.Name} doesn't {(lower ? "reduce" : "raise")} {what} ({stat(w):0.###} -> {stat(k):0.###})");
+                n++;
+            }
+            if (n == 0)
+                Fail($"'{attachment}' fits no weapon");
+        }
+        Expect("Compensator", Recoil.VerticalDeg, true, "vertical recoil");
+        Expect("Vertical Grip", Recoil.VerticalDeg, true, "vertical recoil");
+        Expect("Angled Grip", w => w.RecoilFirstShot, true, "first-shot kick");
+        Expect("Muzzle Brake", Recoil.HorizontalDeg, true, "horizontal recoil");
+        Expect("Muzzle Brake", w => w.RecoilShake, true, "camera shake");
+        Expect("Heavy Stock", w => w.RecoilRecovery, false, "recovery speed");
+        Expect("Heavy Stock", Recoil.EffectiveKickDeg, true, "recoil");
+        Expect("Suppressor", w => w.RecoilShake, true, "camera shake");
+        if (Attachments.Find("Compensator") is { } comp && Weapons.Find("Vanguard AR") is { } v2
+            && Attachments.Apply(v2, Attachments.With(0, comp.Slot, comp.Index)) is var vc && Recoil.HorizontalDeg(vc) != Recoil.HorizontalDeg(v2))
+            Fail("the Compensator changed horizontal recoil (it should only fight the climb)");
+
+        // ---- Fully stacked kits stay sane: >= 40% recoil, >= 50% hip spread, mobility in bounds ----
+        foreach (var w in all)
+        {
+            var list = Attachments.For(w);
+            uint Greedy(Func<WeaponDef, float> score)
+            {
+                uint kit = 0;
+                for (var sl = 0; sl < Attachments.SlotCount; sl++)
+                {
+                    var best = list.Where(a => (int)a.Slot == sl).OrderBy(a => score(Attachments.Apply(w, Attachments.With(0, a.Slot, a.Index)))).FirstOrDefault();
+                    if (best != null && score(Attachments.Apply(w, Attachments.With(0, best.Slot, best.Index))) < score(w))
+                        kit = Attachments.With(kit, best.Slot, best.Index);
+                }
+                return kit;
+            }
+            var lowRecoil = Attachments.Apply(w, Greedy(Recoil.EffectiveKickDeg));
+            var lowSpread = Attachments.Apply(w, Greedy(x => x.HipSpreadDeg));
+            var fast = Attachments.Apply(w, Greedy(x => -x.Mobility));
+            var slow = Attachments.Apply(w, Greedy(x => x.Mobility));
+            if (Recoil.VerticalDeg(lowRecoil) < Recoil.VerticalDeg(w) * 0.399f || Recoil.HorizontalDeg(lowRecoil) < Recoil.HorizontalDeg(w) * 0.399f)
+                Fail($"{w.Name}: a fully kitted gun has under 40% of the stock recoil ({Attachments.Describe(lowRecoil.Kit)})");
+            if (lowSpread.HipSpreadDeg < w.HipSpreadDeg * 0.499f)
+                Fail($"{w.Name}: a fully kitted gun has under 50% of the stock hip spread ({Attachments.Describe(lowSpread.Kit)})");
+            if (fast.Mobility > 1.25f || slow.Mobility < 0.6f)
+                Fail($"{w.Name}: kitted mobility {slow.Mobility:0.00}-{fast.Mobility:0.00} is outside 0.6-1.25");
+            if (StatBars.Control(lowRecoil) >= 1f || StatBars.Accuracy(lowSpread) >= 1f && StatBars.Accuracy(w) < 1f)
+                Fail($"{w.Name}: a kitted extreme pins a stat bar at full, hiding the difference");
+        }
+
+        // ---- No NaNs anywhere, even with odd frame times ----
+        foreach (var w in all)
+            foreach (var stance in new[] { Stance.Stand, Stance.Crouch, Stance.Prone })
+                foreach (var aim in new[] { 0f, 0.5f, 1f })
+                {
+                    var st = new RecoilState();
+                    float pitch = 0.3f, yaw = 3.1f;
+                    for (var i = 0; i < 60; i++)
+                    {
+                        var (kp, ky) = st.Shot(w, stance, aim, 10 + i * 0.05, pitch, yaw);
+                        pitch += kp;
+                        yaw = World.WrapAngle(yaw + ky);
+                        st.Update(i % 7 == 0 ? 0f : i % 11 == 0 ? 0.5f : 0.004f, 10 + i * 0.05 + 0.01, ref pitch, ref yaw);
+                    }
+                    var (bp, by) = Recoil.BotKick(w, new Random(1));
+                    if (!float.IsFinite(pitch + yaw + bp + by + st.Camera.Pitch + st.Camera.Yaw + st.Camera.Roll + st.Camera.Fov + st.Kick.Back + st.Kick.Up + st.Kick.Roll + st.Kick.Side))
+                        Fail($"{w.Name}: NaN or infinity in recoil ({stance}, aim {aim})");
+                }
+        Line($"{all.Length} recoil profiles checked");
     }
 
     // ---- 5. Packets ----------------------------------------------------------------------
@@ -1161,5 +1453,166 @@ public static class SelfTest
         // Default (settings files from before this option have no hud_width line, so they keep it).
         if (new Settings().HudWidth != HudWidth.Wide16x9)
             Fail("HUD width should default to 16:9");
+    }
+
+    // ---- Weapon select ---------------------------------------------------------------------
+
+    /// <summary>The weapon-select screen's tabs hold every weapon exactly once, and its stat comparison points the right way.</summary>
+    /// <summary>The loadout screen's page stack: Back goes back one page, and from the overview it signals "close".</summary>
+    private static void CheckLoadoutNav()
+    {
+        var nav = new LoadoutNav();
+        void Expect(LoadoutPage page, int depth, string what)
+        {
+            if (nav.Current != page || nav.Depth != depth)
+                Fail($"{what}: expected {page} at depth {depth}, got {nav.Current} at depth {nav.Depth}");
+        }
+        Expect(LoadoutPage.Overview, 1, "new stack");
+        if (!nav.Back())
+            Fail("Back on the overview should signal close");
+        Expect(LoadoutPage.Overview, 1, "after Back on the overview");
+
+        // Overview > weapon select > attachments: Back returns to the weapon select, then the overview, then closes.
+        nav.Open(LoadoutPage.Primary);
+        nav.Open(LoadoutPage.Attachments, 7);
+        Expect(LoadoutPage.Attachments, 3, "weapon select > attachments");
+        if (nav.Arg != 7)
+            Fail($"attachments page lost its weapon id (got {nav.Arg})");
+        if (nav.Back())
+            Fail("Back from attachments closed the screen");
+        Expect(LoadoutPage.Primary, 2, "Back from attachments opened via the weapon select");
+        nav.Back();
+        Expect(LoadoutPage.Overview, 1, "Back from the weapon select");
+        if (!nav.Back())
+            Fail("Back on the overview (after a round trip) should signal close");
+
+        // Overview card's "Edit attachments": Back returns straight to the overview.
+        nav.Open(LoadoutPage.Attachments, 3);
+        nav.Back();
+        Expect(LoadoutPage.Overview, 1, "Back from attachments opened from a card");
+
+        // Progression returns to whatever was before it.
+        nav.Open(LoadoutPage.Secondary);
+        nav.Open(LoadoutPage.Attachments, 2);
+        nav.Open(LoadoutPage.Progression);
+        Expect(LoadoutPage.Progression, 4, "progression over attachments");
+        nav.Back();
+        Expect(LoadoutPage.Attachments, 3, "Back from progression");
+        if (nav.Arg != 2)
+            Fail("the attachments page under progression lost its weapon id");
+
+        // Re-opening a page already on the stack goes back down to it (no loops, bounded depth).
+        nav.Open(LoadoutPage.Progression);
+        nav.Open(LoadoutPage.Progression);
+        Expect(LoadoutPage.Progression, 4, "progression opened twice");
+        nav.Open(LoadoutPage.Secondary);
+        Expect(LoadoutPage.Secondary, 2, "re-opening the weapon select");
+        for (var i = 0; i < 50; i++)
+            nav.Open(i % 2 == 0 ? LoadoutPage.Attachments : LoadoutPage.Progression, i);
+        if (nav.Depth > 4)
+            Fail($"stack grew to {nav.Depth} pages after alternating opens");
+
+        // Opening the overview (or Reset) clears everything.
+        nav.Open(LoadoutPage.Overview);
+        Expect(LoadoutPage.Overview, 1, "opening the overview");
+        nav.Open(LoadoutPage.Perks);
+        nav.Reset();
+        Expect(LoadoutPage.Overview, 1, "Reset");
+        Line("  push/pop order, attachments > weapon select > overview > close, progression > previous page: ok");
+    }
+
+    private static void CheckWeaponSelect()
+    {
+        var seen = new int[Weapons.All.Length];
+        foreach (var slot in new[] { Slot.Primary, Slot.Secondary })
+        {
+            var tabs = WeaponSelect.Tabs(slot);
+            Line($"  {slot}: {string.Join(", ", tabs.Select(c => $"{WeaponSelect.TabName(c)} {WeaponSelect.InTab(c).Length} ({WeaponSelect.LockedCount(c, 1)} locked at level 1)"))}");
+            if (tabs.Length == 0)
+                Fail($"{slot} slot has no tabs");
+            if (tabs.Distinct().Count() != tabs.Length)
+                Fail($"{slot} slot has a tab twice");
+            foreach (var c in tabs)
+            {
+                var guns = WeaponSelect.InTab(c);
+                if (guns.Length == 0)
+                    Fail($"empty tab {WeaponSelect.TabName(c)}");
+                for (var i = 0; i < guns.Length; i++)
+                {
+                    var w = guns[i];
+                    seen[w.Id]++;
+                    if (w.Class != c || w.Slot != slot)
+                        Fail($"{w.Name} ({w.ClassName}, {w.Slot}) is in the {slot} tab {WeaponSelect.TabName(c)}");
+                    if (i > 0 && WeaponSelect.UnlockLevel(guns[i - 1]) > WeaponSelect.UnlockLevel(w))
+                        Fail($"tab {WeaponSelect.TabName(c)} isn't sorted by unlock level ({guns[i - 1].Name} before {w.Name})");
+                    if (WeaponSelect.UnlockLevel(w) != Progress.UnlockLevel(w))
+                        Fail($"{w.Name}: cached unlock level {WeaponSelect.UnlockLevel(w)} != {Progress.UnlockLevel(w)}");
+                }
+            }
+        }
+        if (WeaponSelect.Tabs(Slot.Secondary) is not [WeaponClass.Pistol])
+            Fail("the secondary slot should have just the Pistols tab");
+        if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Pistol))
+            Fail("pistols showing in the primary tabs");
+        for (var id = 0; id < seen.Length; id++)
+            if (seen[id] != 1)
+                Fail($"{Weapons.All[id].Name} appears in {seen[id]} tabs (should be exactly 1)");
+
+        // Scores stay in 0-1; comparing a gun with itself shows no change.
+        foreach (var w in Weapons.All)
+            for (var i = 0; i < WeaponSelect.StatCount; i++)
+            {
+                var s = (SelectStat)i;
+                var v = WeaponSelect.Score(w, s);
+                if (!(v >= 0 && v <= 1))
+                    Fail($"{w.Name}: {WeaponSelect.StatName(s)} score {v} outside 0-1");
+                if (WeaponSelect.Delta(w, w, s) != 0)
+                    Fail($"{w.Name}: {WeaponSelect.StatName(s)} differs from itself");
+            }
+
+        // Deltas point the right way: better is positive whichever way the raw number goes.
+        var baseGun = Weapons.DefaultPrimary.Clone();
+        baseGun.Damage = 25;
+        baseGun.Pellets = 1;
+        baseGun.Rpm = 600;
+        baseGun.RangeM = 30;
+        baseGun.HipSpreadDeg = 3f;
+        baseGun.RecoilDeg = 2f;
+        baseGun.Mobility = 0.95f;
+        baseGun.EquipTime = 0.5f;
+        baseGun.AdsTime = 0.2f;
+        void Expect(string what, Action<WeaponDef> change, SelectStat s, int sign)
+        {
+            var other = baseGun.Clone();
+            change(other);
+            var d = WeaponSelect.Delta(baseGun, other, s);
+            Line($"  {what}: {WeaponSelect.StatName(s)} {(d > 0 ? "+" : "")}{d}");
+            if (Math.Sign(d) != sign)
+                Fail($"{what}: {WeaponSelect.StatName(s)} delta {d}, expected sign {sign}");
+        }
+        Expect("more damage", w => w.Damage = 35, SelectStat.Damage, 1);
+        Expect("8 pellets", w => w.Pellets = 8, SelectStat.Damage, 1);
+        Expect("slower fire", w => w.Rpm = 400, SelectStat.FireRate, -1);
+        Expect("longer range", w => w.RangeM = 45, SelectStat.Range, 1);
+        Expect("wider spread", w => w.HipSpreadDeg = 5f, SelectStat.Accuracy, -1);
+        Expect("less recoil", w => w.RecoilDeg = 1f, SelectStat.Control, 1);
+        Expect("faster movement", w => w.Mobility = 1.1f, SelectStat.Mobility, 1);
+        Expect("slower aim", w => w.AdsTime = 0.35f, SelectStat.Handling, -1);
+        Expect("quicker draw", w => w.EquipTime = 0.3f, SelectStat.Handling, 1);
+        Expect("same gun", _ => { }, SelectStat.Range, 0);
+
+        // Weapon "level" = attachments unlocked by weapon XP.
+        var kitGun = Weapons.All.FirstOrDefault(w => Attachments.For(w).Count > 1);
+        if (kitGun != null)
+        {
+            var max = Attachments.MaxXp(kitGun);
+            var n = Attachments.For(kitGun).Count;
+            if (WeaponSelect.UnlockedAttachments(kitGun, 0) != 0 || WeaponSelect.UnlockedAttachments(kitGun, max) != n)
+                Fail($"{kitGun.Name}: unlocked attachments at 0 / max XP are {WeaponSelect.UnlockedAttachments(kitGun, 0)} / {WeaponSelect.UnlockedAttachments(kitGun, max)}, expected 0 / {n}");
+            var mid = WeaponSelect.UnlockedAttachments(kitGun, max / 2);
+            if (mid <= 0 || mid >= n)
+                Fail($"{kitGun.Name}: {mid}/{n} attachments at half XP");
+            Line($"  {kitGun.Name}: {mid}/{n} attachments at {max / 2} of {max} weapon XP");
+        }
     }
 }

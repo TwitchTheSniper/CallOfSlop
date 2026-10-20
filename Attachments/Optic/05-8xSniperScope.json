@@ -5,13 +5,13 @@
   "order": 5,
   "unlockOrder": 21,
   "blurb": "High-power glass for map-length shots.",
-  "pros": ["8x zoom", "Pinpoint aimed spread"],
+  "pros": ["8x zoom", "-65% aimed spread"],
   "cons": ["Slowest to aim", "-5% speed"],
   "fits": { "classes": ["DMR", "Sniper"] },
   "effects": [
     { "stat": "optic", "set": "Scope8" },
     { "stat": "adsZoom", "set": 8 },
-    { "stat": "adsSpreadMult", "mul": 0.5 },
+    { "stat": "adsSpreadMult", "mul": 0.35 },
     { "stat": "adsTime", "add": 0.15 },
     { "stat": "mobility", "add": -0.05 }
   ]

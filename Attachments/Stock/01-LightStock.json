@@ -5,11 +5,11 @@
   "order": 1,
   "unlockOrder": 10,
   "blurb": "Skeletonised for speed.",
-  "pros": ["+6% speed"],
+  "pros": ["+9% speed"],
   "cons": ["+10% recoil"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
-    { "stat": "mobility", "add": 0.06 },
+    { "stat": "mobility", "add": 0.09 },
     { "stat": "recoilDeg", "mul": 1.1 }
   ]
 }

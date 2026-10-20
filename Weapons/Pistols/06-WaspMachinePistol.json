@@ -18,6 +18,14 @@
   "hipSpreadDeg": 2.4,
   "adsSpreadMult": 0.3,
   "recoilDeg": 0.45,
+  "recoil": {
+    "vertical": 0.8, "horizontal": 1, "bias": 0, "jitter": 1.6, "firstShot": 0.9,
+    "seed": 1222, "patternShots": 10, "rampVertical": 1.1, "rampHorizontal": 1.5, "sway": 0.4, "swayPeriod": 3,
+    "recovery": 16, "recoveryDelay": 0.06, "recoveryAmount": 0.85, "resetTime": 0.15,
+    "crouchVertical": 0.9, "crouchHorizontal": 0.9, "proneVertical": 0.8, "proneHorizontal": 0.8, "adsVertical": 0.8, "adsHorizontal": 0.8,
+    "shake": 0.2, "shakeFreq": 35, "shakeTime": 0.06, "punch": 0.2, "punchFov": 1, "punchRoll": 1.5, "punchTime": 0.06,
+    "kickBack": 0.02, "kickUp": 4, "kickRoll": 3, "kickSide": 0.004, "kickTime": 0.04
+  },
   "mobility": 1.05,
   "adsZoom": 1.35,
   "equipTime": 0.3,

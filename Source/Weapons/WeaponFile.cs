@@ -23,6 +23,7 @@ public static class WeaponFile
     /// <summary>The stat fields a weapon file holds, in declaration order (everything except per-copy attachment state).</summary>
     public static readonly FieldInfo[] Fields = typeof(WeaponDef).GetFields(BindingFlags.Public | BindingFlags.Instance)
         .Where(f => f.Name is not (nameof(WeaponDef.Id) or nameof(WeaponDef.Optic) or nameof(WeaponDef.Suppressor) or nameof(WeaponDef.Kit)))
+        .Where(f => !f.IsDefined(typeof(RecoilKeyAttribute))) // these live in the "recoil" block (see Recoil.cs)
         .OrderBy(f => f.MetadataToken)
         .ToArray();
 
@@ -74,8 +75,12 @@ public static class WeaponFile
         if (w.UnlockLevel is { } ul)
             Add("unlockLevel", ul.ToString(CultureInfo.InvariantCulture));
         foreach (var f in Fields)
+        {
             if (f.Name != nameof(WeaponDef.Name))
                 Add(Key(f), Fmt(f.GetValue(w)));
+            if (f.Name == nameof(WeaponDef.RecoilDeg))
+                Add("recoil", Recoil.BlockJson(w));
+        }
         sb.Length -= 2;
         sb.Append("\n}\n");
         return sb.ToString();
@@ -109,6 +114,7 @@ public static class WeaponFile
             throw new WeaponFileException($"{source}: a weapon file is one JSON object {{ \"name\": ..., \"class\": ..., ... }}");
         var w = WeaponDef.Blank();
         var given = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        JsonElement? recoil = null;
         foreach (var p in root.EnumerateObject())
         {
             var where = $"{source} (\"{p.Name}\")";
@@ -118,6 +124,9 @@ public static class WeaponFile
             {
                 case "format":
                     CheckFormat(p.Value, "call-of-slop-weapon/", Format, where);
+                    break;
+                case "recoil":
+                    recoil = p.Value; // read after the loop, over the defaults of the weapon's class
                     break;
                 case "order":
                     w.Order = Int(p.Value, where);
@@ -130,7 +139,7 @@ public static class WeaponFile
                     break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }
@@ -138,6 +147,9 @@ public static class WeaponFile
         var missing = RequiredFields.Where(f => !given.Contains(Key(f))).Select(Key).ToArray();
         if (missing.Length > 0)
             throw new WeaponFileException($"{source}: missing {string.Join(", ", missing.Select(m => $"\"{m}\""))} (every weapon needs {string.Join(", ", RequiredFields.Select(Key))})");
+        Recoil.ApplyClassDefaults(w);
+        if (recoil is { } r)
+            Recoil.ReadBlock(w, r, $"{source} (\"recoil\")");
         Validate(w, source);
         w.SourceFile = source;
         return w;
@@ -156,6 +168,7 @@ public static class WeaponFile
         }
         if (w.Accent.X is < 0 or > 1 || w.Accent.Y is < 0 or > 1 || w.Accent.Z is < 0 or > 1)
             throw new WeaponFileException($"{source}: \"accent\" colour values must be between 0 and 1");
+        Recoil.Validate(w, source);
     }
 
     /// <summary>Names end up in save files and loadout.txt ("name=value" lines), so a few characters are off limits.</summary>

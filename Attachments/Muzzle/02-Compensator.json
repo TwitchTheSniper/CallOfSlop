@@ -5,10 +5,11 @@
   "order": 2,
   "unlockOrder": 3,
   "blurb": "Vents gas upward to fight muzzle climb.",
-  "pros": ["-20% recoil"],
+  "pros": ["-30% vertical recoil", "-20% view punch"],
   "cons": [],
   "fits": { "notClasses": ["Shotgun", "Special"] },
   "effects": [
-    { "stat": "recoilDeg", "mul": 0.8 }
+    { "stat": "recoilVertical", "mul": 0.7 },
+    { "stat": "recoilPunch", "mul": 0.8 }
   ]
 }

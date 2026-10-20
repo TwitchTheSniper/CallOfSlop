@@ -74,9 +74,21 @@ Add `"min"` and/or `"max"` to `add`, `mul` or `grow` to clamp the result, e.g. `
 Any weapon number can be changed, plus these extras that only attachments use:
 
 - `optic`: the sight drawn when aiming: `Iron`, `RedDot`, `Holo`, `Acog`, `Scope4` or `Scope8`. Pair it with an `adsZoom`.
-- `suppressor`: `true` draws a suppressor and dims the muzzle flash and tracers. Pair it with `"sound": "Suppressed"`.
+- `suppressor`: `true` draws a suppressor, makes the gunshot much quieter and dims the muzzle flash and tracers. Pair it with `"sound": "Suppressed"`.
 
-You can't change `name`, `class` or `blurb`. After all attachments are applied, `mobility` is clamped to 0.6-1.25 and `adsTime` to 0.08-0.5.
+Recoil fields from a weapon's `recoil` block are changed by their names with a `recoil` prefix: `recoilVertical`, `recoilHorizontal`, `recoilBias`, `recoilJitter`, `recoilFirstShot`, `recoilRecovery`, `recoilRecoveryDelay`, `recoilShake`, `recoilPunch`, `recoilKickUp` and so on (every field in [Weapons/README.md](../Weapons/README.md#recoil)). `recoilDeg` scales all of the gun's recoil at once. The shipped attachments use them like this:
+
+| Attachment | Recoil effect |
+| --- | --- |
+| Compensator | -30% vertical kick, -20% view punch |
+| Muzzle Brake | -30% sideways kick, -40% camera shake |
+| Suppressor | -25% camera shake |
+| Vertical Grip | -30% vertical kick, steadier viewmodel |
+| Angled Grip | -40% first-shot kick |
+| Heavy Stock / Heavy Barrel | -20% / -15% overall recoil; the Heavy Stock also recovers 40% faster |
+| Light Stock / No Stock | +10% / +25% overall recoil; No Stock also recovers 20% slower |
+
+You can't change `name`, `class` or `blurb`. After all attachments are applied, `mobility` is clamped to 0.6-1.25 and `adsTime` to 0.08-0.5, and however much is stacked a gun keeps at least half its `hipSpreadDeg` and 40% of its recoil (vertical and sideways).
 
 The gun model shows the shipped attachments by name (a "Drum Mag" draws a drum, for example). A new attachment changes the stats but is drawn as the plain gun, apart from `optic` and `suppressor`.
 

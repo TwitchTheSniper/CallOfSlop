@@ -50,12 +50,13 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 
 ### Attachments (gunsmith)
 
-Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarrel, Magazine, Stock**. In the loadout menu, the **Primary** and **Secondary** tabs each have two sub-tabs: *Choose primary/secondary* and *<your selected gun> attachments*. The attachments sub-tab always shows the gun currently picked in that slot, with how many attachments are unlocked and what's equipped. Hover an attachment to see its pros, cons and the resulting stats.
+Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarrel, Magazine, Stock**. Open a gun's attachments from the loadout screen: the **Edit attachments** button on the Primary or Secondary card, or **Attachments** (top right) on the weapon select. The attachments page shows the gun large, with how many attachments are unlocked and what's equipped; click a slot card to pick from it. Hover an attachment to see its pros, cons and the resulting stats.
 
 - **Optics:** Red Dot, Holographic, 2.5x ACOG, 4x Scope, 8x Sniper Scope. Each has its own reticle and zoom, and the bigger the optic, the slower you aim.
-- **Muzzle:** Suppressor (quiet shots, -15% range), Compensator, Muzzle Brake, Choke (shotguns).
-- **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip, Angled Grip, Laser.
-- **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy, No Stock.
+- **Muzzle:** Suppressor (much quieter shots, faint tracers, -15% range), Compensator (cuts the climb), Muzzle Brake (cuts sideways recoil and shake), Choke (shotguns).
+- **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip (cuts the climb), Angled Grip (faster aim, softer first shot), Laser.
+- **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy (less recoil, faster recovery), No Stock.
+- The gunsmith's stat bars show each change in green or red with the percentage. However much you stack, a gun keeps at least 40% of its recoil and half its hip spread.
 - Which attachments fit depends on the weapon class (pistols take few, snipers take the 8x, shotguns get the Choke).
 - **Unlocks are per weapon** with weapon XP (see Progression): 3-7 matches with a gun to unlock everything on it. Weapon XP is saved in `progress.txt`, and Reset level clears it.
 - The server applies the same attachments to the same stats, so they're fully networked. Other players hear your suppressor and see your optic and grip.
@@ -65,7 +66,12 @@ Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarre
 Open **LOADOUTS** from the main menu, or press **B** in a match. The screen lists your loadout slots on the left. Pick one to make it the loadout you spawn with; it's marked with an orange star. The selected loadout is shown on the right as cards: **Primary Weapon**, **Secondary Weapon**, **Perks**, **Lethal** and **Tactical**. Click a card to change that part, and **Rename** to name the loadout. Each loadout keeps its own attachments, and a gun you move into another loadout starts with the build you last used on it. Everything saves to `loadout.txt`. An older single-loadout file becomes slot 1.
 
 - **More slots unlock as you level up.** Level 1 gets one slot, and the tenth arrives at max level, evenly spaced: levels 1, 6, 11, 17, 22, 27, 32, 38, 43 and 48. Locked slots show the level they unlock at.
-- **Your progression lives on the second tab** of this screen: level, XP, stats and every unlock by level.
+- **Back goes back one page.** The screen is a stack of pages: the footer's **BACK** button (and **Esc**) returns from the attachments to the weapon select (or to the overview, if you came from a card's Edit attachments), from the weapon select, lethal, tactical and perks pages to the overview, and from the progression page to whatever was open before. On the overview, BACK returns to the main menu (in a match it's **CLOSE** and closes the menu). A line at the top shows where you are, e.g. *Custom Loadout 1 / Primary weapon / Kestrel PDW attachments*.
+- **Your progression is the bar at the bottom right:** LEVEL, XP into the level and the next unlock. Click it (*ALL UNLOCKS*) for the progression page: level, XP, stats and every unlock by level.
+- **Edit attachments:** the Primary and Secondary cards have an **Edit attachments** button beside the gun's name, which opens that gun's attachments directly. Clicking anywhere else on the card opens the weapon select.
+- **Picking a gun:** clicking the Primary or Secondary card opens the weapon select. Class tabs run across the top (each shows how many guns it has and how many are still locked). Below, a column of tiles shows each gun with this loadout's attachments on it, its level (attachments unlocked) and weapon XP bar, and an EQUIPPED, SELECTED or LOCKED tag (with the level it unlocks at). **Click a tile to select it**: the gun is shown big on the right (hovering a tile previews it too), with its stats compared to the gun you have equipped (green = better, red = worse), its magazine, reload time and shots to kill. The selected tile has a blue outline; hover is orange, and the equipped gun has an orange bar and the EQUIPPED tag. **EQUIP** (bottom right) puts the shown gun in the loadout; it reads EQUIPPED for your current gun and is greyed out for a locked one. **Double-clicking a tile does exactly the same as EQUIP** (the tile flashes, then shows EQUIPPED); on a locked gun it just shakes.
+- **Attachments on the weapon select** (top right) opens the attachments of the gun shown. For a gun you haven't equipped yet, the page opens as a preview, and picking your first attachment equips the gun into this loadout with that attachment. It's greyed out for locked guns.
+- **Double-click always means "pick it"** across the loadout screen (lethal and tactical lists, perks, attachment lists), and the second click of a double-click never also clicks whatever the page change put under the mouse. Clicking something locked gives a dry click.
 
 ### Perks
 
@@ -197,8 +203,8 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Stance | Height | Speed | Spread | Recoil | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Standing | 1.8 m | 100% | 100% | 100% | Can jump and sprint |
-| Crouched | 1.2 m | 50% | 75% | 85% | Fits behind low walls and crates |
-| Prone | 0.6 m | 22% | 50% | 60% | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
+| Crouched | 1.2 m | 50% | 75% | ~85% (per gun) | Fits behind low walls and crates. LMGs lose almost all sideways recoil |
+| Prone | 0.6 m | 22% | 50% | ~65% (per gun) | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
 
 You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Hard snipers go prone, and Hard bots crouch-peek in close fights.
 
@@ -214,7 +220,7 @@ The pacing is a rough target rather than a hard rule. A typical match is around 
 - **A gun is fully kitted out in 3-7 matches.** Guns with few attachment options (pistols) are on the short end, and guns with lots (rifles, DMRs) on the long end.
 - **A new level, and with it a new weapon, comes at about the point your current gun is ~60% kitted.** That works out to roughly every 2-3 matches, so you get time with each gun before the next one shows up.
 
-The lobby shows your level and next unlock, and the **Progression** tab of the loadout screen lists every level. In a match, XP pops up by the crosshair, and banners announce level-ups and new attachments. Progress is saved to `progress.txt`, with weapon XP stored by weapon name (`wx.<name>=...`). Older saves carry over: their numbered weapon XP is converted to names, and old per-weapon kill counts become weapon XP.
+The lobby shows your level and next unlock, and the level bar at the bottom of the loadout screen opens the progression page, which lists every level. In a match, XP pops up by the crosshair, and banners announce level-ups and new attachments. Progress is saved to `progress.txt`, with weapon XP stored by weapon name (`wx.<name>=...`). Older saves carry over: their numbered weapon XP is converted to names, and old per-weapon kill counts become weapon XP.
 
 - **Level 1:** BR-1 Prototype, Vanguard AR, Hornet SMG, Breacher Pump, Marksman M14, P9 Sidearm, Mk.23 Tactical.
 - **Levels 2-48:** the other 43 weapons plus the Frag Grenade (level 4), Recon Pulse (8), Impact Grenade (13) and Smoke Grenade (20), in a fixed order. The fun ones come last: Grinder Rotary, Railspike, Toy Blaster.
@@ -251,6 +257,8 @@ The **loadout menu** opens when a match starts (and any time with **B**, or from
 | Special (4) | Nailgun, Arc Carbine, Old Faithful Musket, Toy Blaster |
 
 Every weapon has its own stats: damage and headshot multiplier, pellets, fire rate and mode (semi/burst/auto), magazine, reload, hip and aimed spread, recoil, damage falloff, movement speed, zoom and draw time.
+
+**Recoil is per weapon.** Each gun has its own seeded spray pattern, so holding the trigger always traces the same learnable shape, plus jitter, a first-shot kick and stance and aim multipliers. Assault rifles climb steadily with a gentle drift. SMGs kick little per shot but jump around. LMGs climb hard, but crouched or prone they barely move sideways. DMRs snap once and settle fast, snipers and shotguns punch the camera, pistols flip, and the specials each have their own feel (the Arc Carbine snakes, the Grinder spins up). When you stop firing, the aim drifts most of the way back to where you started. The camera shake and punch are only visual and never move your aim. Each weapon file's `recoil` block holds the numbers (see [Weapons/README.md](Weapons/README.md)).
 
 **Weapons and attachments are data files.** Each weapon is one `.json` file in the `Weapons` folder (one subfolder per class), and each attachment is one file in `Attachments`, holding its slot, which weapons it fits and the stat changes it makes. To add a weapon, drop a file in and restart. Its model and sounds are generated from its stats, and it picks its own unlock level with `unlockLevel`. **[Weapons/README.md](Weapons/README.md)** and **[Attachments/README.md](Attachments/README.md)** are the guides, with an example and every field. A broken file is skipped with a message in the lobby, and `CallOfSlop.exe --check-weapon FILE` checks one without starting the game. Weapon XP and loadouts are saved by weapon name. In multiplayer everyone needs identical `Weapons` and `Attachments` folders: a client whose set differs from the host's is told which folder differs and disconnected.
 The server checks everything: you can only fire weapons you own, at their real fire rate and spread, and you can't move faster than your fastest weapon allows.
@@ -316,7 +324,7 @@ Source/
   Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
                      fingerprint, --check-weapon), GunModel (procedural weapon models)
   Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array)
-  UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), UiGunsmith
+  UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith
   Audio/             Audio (OpenAL playback + procedural sound synthesis)
 ```
 
