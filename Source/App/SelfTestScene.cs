@@ -393,6 +393,71 @@ public static partial class SelfTest
             }
         }
         Line("  glTF-style builder (out-of-order parents, sockets, mesh ids, cycle check), gravity frames, vehicle seats and mover riders OK");
+        CheckSceneGltf();
+    }
+
+    private sealed class MeshRecorder : IMeshDrawer
+    {
+        public readonly List<(int Id, Matrix4x4 World)> Items = new();
+        public int Flushes;
+
+        public void DrawMesh(int meshId, in Matrix4x4 world, Vector3 color, float alpha, int mode, Material material) => Items.Add((meshId, world));
+        public void Flush(Renderer gfx) => Flushes++;
+    }
+
+    /// <summary>A real glTF file through the mesh pipeline's loader into a scene-node tree, drawn through a mesh drawer.</summary>
+    private static void CheckSceneGltf()
+    {
+        ModelAsset model;
+        try
+        {
+            model = MeshLibrary.Model("Models/lamp_post.gltf");
+        }
+        catch (ModelException ex)
+        {
+            Fail("scene graph: Models/lamp_post.gltf didn't load: " + ex.Message);
+            return;
+        }
+        var scene = new Scene();
+        var root = scene.CreateRoot("lamp");
+        var place = Matrix4x4.CreateRotationY(0.6f) * Matrix4x4.CreateTranslation(4, 0, -9);
+        root.SetLocalMatrix(place);
+        var nodes = SceneMeshes.BuildModel(model, root, Vector3.One);
+        scene.UpdateTransforms();
+        var worst = 0f;
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            var n = model.Nodes[i];
+            if (nodes[i].Name != n.Name || (n.Parent >= 0 ? nodes[i].Parent != nodes[n.Parent] : nodes[i].Parent != root))
+                Fail($"lamp_post.gltf node {i} ({n.Name}): wrong name or parent in the scene tree");
+            worst = MathF.Max(worst, MatDiff(nodes[i].World, n.World * place));
+            if ((n.Mesh >= 0) != (nodes[i].Renderable.Kind == RenderKind.Mesh) || n.Mesh >= 0 && SceneMeshes.Get(nodes[i].Renderable.MeshId) != model.Meshes[n.Mesh])
+                Fail($"lamp_post.gltf node {n.Name}: mesh renderable doesn't point at its mesh");
+        }
+        if (worst > 1e-5f)
+            Fail($"lamp_post.gltf: scene node world matrices differ from the loader's by {worst:0.0e0}");
+        var list = new DrawList();
+        list.Flatten(root);
+        var meshes = new MeshRecorder();
+        var g = new Renderer { Recorder = new DrawRecorder() };
+        list.Submit(g, meshes);
+        var partWorst = 0f;
+        if (meshes.Items.Count != model.Parts.Length || meshes.Flushes != 1)
+            Fail($"lamp_post.gltf: {meshes.Items.Count} mesh draws (flushed {meshes.Flushes}x), the model has {model.Parts.Length} parts");
+        else
+            for (var i = 0; i < model.Parts.Length; i++)
+            {
+                var part = model.Parts[i];
+                if (meshes.Items[i].Id != model.Meshes[part.Mesh].Id)
+                    Fail($"lamp_post.gltf part {i}: drawn with the wrong mesh");
+                partWorst = MathF.Max(partWorst, MatDiff(meshes.Items[i].World, part.Transform * place));
+            }
+        if (partWorst > 1e-5f)
+            Fail($"lamp_post.gltf: mesh instances are {partWorst:0.0e0} off the loader's part transforms");
+        var head = root.Find("Head");
+        Line($"  glTF: lamp_post.gltf -> {nodes.Length} scene nodes ({model.Parts.Length} with meshes), worlds match the loader within {worst:0.0e0}, "
+             + $"parts within {partWorst:0.0e0}; Head at {head?.WorldPosition}");
+        Line($"[scene] glTF lamp_post: {nodes.Length} nodes, {model.Parts.Length} mesh parts, world diff {worst:0.0e0}, part diff {partWorst:0.0e0}");
     }
 
     // ---- Parity with the old immediate-mode code ----------------------------------------------------

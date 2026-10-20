@@ -18,6 +18,9 @@ public static class ScenePresentation
     public static bool Enabled = Environment.GetEnvironmentVariable("CALLOFSLOP_SCENEGRAPH") != "0";
 
     public static readonly Scene Scene = new();
+
+    /// <summary>Draws the mesh renderables (the game's <see cref="MeshRenderer"/>; set by <see cref="BeginFrame"/>).</summary>
+    public static IMeshDrawer? Meshes;
     private static readonly DrawList List = new();
     private static ViewModelRig? _vm;
     private static readonly PlayerRig?[] Players = new PlayerRig?[256];
@@ -30,8 +33,9 @@ public static class ScenePresentation
     private static int _frames, _nodes, _draws, _frameNodes, _frameDraws, _peakDraws;
 
     /// <summary>Call once at the start of each rendered 3D frame (closes the previous frame's stats).</summary>
-    public static void BeginFrame()
+    public static void BeginFrame(IMeshDrawer? meshes)
     {
+        Meshes = meshes;
         if (_frameDraws > 0 || _frameTicks > 0)
         {
             _frames++;
@@ -67,7 +71,7 @@ public static class ScenePresentation
         _frameNodes += List.UpdateAndFlatten(root);
         _frameTicks += Stopwatch.GetTimestamp() - t0;
         _frameDraws += List.Count;
-        List.Submit(g);
+        List.Submit(g, Meshes);
     }
 
     /// <summary>The first-person gun and arms, in camera space (the caller has set the viewmodel camera).</summary>

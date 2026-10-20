@@ -228,6 +228,7 @@ public sealed class DrawList
             g.SetDepthWrite(true);
         if (blend)
             g.SetBlend(false);
+        meshes?.Flush(g); // meshes are opaque: drawing the batch after the boxes gives the same pixels
         SkippedMeshes = skipped;
     }
 }

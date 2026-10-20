@@ -24,7 +24,7 @@ namespace CallOfSlop;
 /// GPU time comes from GL_TIME_ELAPSED queries read a few frames later (never stalling); a "[mesh]" stat line is
 /// logged every few seconds.
 /// </summary>
-public sealed unsafe class MeshRenderer
+public sealed unsafe partial class MeshRenderer : IMeshDrawer
 {
     private const string VertexSrc = """
         #version 330 core

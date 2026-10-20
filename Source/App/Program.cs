@@ -1569,7 +1569,7 @@ public static unsafe partial class Program
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
 
         // ---- Arena ----------------------------------------------------------
-        ScenePresentation.BeginFrame();
+        ScenePresentation.BeginFrame(MeshGfx);
         DrawArena();
 
         // ---- Players --------------------------------------------------------

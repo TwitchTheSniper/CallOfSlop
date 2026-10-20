@@ -68,12 +68,17 @@ public interface IRenderable
 }
 
 /// <summary>
-/// Draws meshes for <see cref="DrawList.Submit"/>: the mesh pipeline implements this. Boxes keep going through the
-/// existing <see cref="Renderer"/>; without a mesh drawer, mesh items are skipped (and counted).
+/// Draws meshes for <see cref="DrawList.Submit"/>: <see cref="MeshRenderer"/> implements this (mesh ids are
+/// <see cref="SceneMeshes"/> handles). Boxes keep going through the existing <see cref="Renderer"/>; without a mesh drawer,
+/// mesh items are skipped (and counted).
 /// </summary>
 public interface IMeshDrawer
 {
+    /// <summary>Queues one mesh instance (a drawer may batch them until <see cref="Flush"/>).</summary>
     void DrawMesh(int meshId, in Matrix4x4 world, Vector3 color, float alpha, int mode, Material material);
+
+    /// <summary>Draws whatever was queued, with the camera and fog <paramref name="gfx"/> has set (end of each submit).</summary>
+    void Flush(Renderer gfx);
 }
 
 /// <summary>
