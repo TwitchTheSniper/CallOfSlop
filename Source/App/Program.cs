@@ -65,6 +65,9 @@ public static unsafe partial class Program
     public static int Main(string[] args)
     {
         SetUpLogFile();
+        // No full blocking garbage collections mid-match (one took 34 ms in the self-test): gen 2 is collected in the
+        // background instead, unless memory runs low. Server ticks and frames only see the short gen 0/1 pauses.
+        System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
         if (args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
