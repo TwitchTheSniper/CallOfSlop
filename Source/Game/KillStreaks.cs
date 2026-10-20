@@ -156,7 +156,7 @@ public static class KillStreaks
     public const float OverdriveReloadMult = 0.5f;
 
     public const int MortarShells = 7;
-    public const float MortarDelay = 2.4f, MortarInterval = 0.32f, MortarSpread = 6f, MortarRadius = 5.5f, MortarDamage = 140f;
+    public const float MortarDelay = 2.4f, MortarInterval = 0.32f, MortarSpread = 5f, MortarRadius = 6.5f, MortarDamage = 160f;
     public const float WhistleLead = 1.1f; // the incoming whistle starts this long before each shell lands
 
     public const int StrafeHits = 12;

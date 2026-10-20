@@ -106,7 +106,7 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 | **Recon Sweep** | 3 | start | Every enemy on the map shows to you as a red silhouette through walls for 10 s (Low Profile still hides people who are crouched or prone). |
 | **Counter Sweep** | 4 | level 5 | Jams your enemies for 15 s: their Recon Pulses and Recon Sweeps show nothing, and their HUD fills with static. |
 | **Overdrive** | 4 | start | 12 s of moving 35% faster and reloading twice as fast. Ends if you die. |
-| **Mortar Barrage** | 5 | start | Look at a spot and fire. After 2.4 s, 7 shells land within 6 m of it, each whistling on the way in. Up to 140 damage each, falling off over 5.5 m; walls and roofs shield you, going prone helps, Flak Jacket works. |
+| **Mortar Barrage** | 5 | start | Look at a spot and fire. After 2.4 s, 7 shells land within 5 m of it, each whistling on the way in. Up to 160 damage each, falling off over 6.5 m; walls and roofs shield you, going prone helps, Flak Jacket works. |
 | **Sentry Turret** | 6 | level 19 | Drops an auto-turret just in front of you, facing where you look. It covers a 150-degree arc out to 40 m, warms up for half a second on a new target, and fires 12-damage rounds. 45 s, 260 HP. |
 | **Attack Drone** | 8 | level 32 | A drone circles the map above the rooftops for 40 s, firing 3-round bursts (26 damage each) at any enemy it can see. 200 HP. |
 | **Strafe Run** | 11 | level 46 | Look at a spot and fire: 2.6 s later a jet strafes a 50 m line through it, along the way you're facing (12 hits, up to 110 damage each). Roofs shield you. |
