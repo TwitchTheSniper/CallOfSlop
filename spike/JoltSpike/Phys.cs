@@ -259,41 +259,31 @@ public sealed class Phys
     {
         var p = new Phys(1024);
         var results = new List<string>();
-        // A 16 x 16 m patch of terrain-like triangles (512 of them) with a gentle slope, like a terrain chunk.
-        const int N = 16;
-        var verts = new List<float3>();
-        var tris = new List<(int, int, int)>();
-        for (var z = 0; z < N; z++)
-            for (var x = 0; x < N; x++)
-            {
-                var b = verts.Count;
-                float H(int xx, int zz) => (xx + zz) * 0.05f;
-                verts.Add(new float3(x, H(x, z), z));
-                verts.Add(new float3(x + 1, H(x + 1, z), z));
-                verts.Add(new float3(x, H(x, z + 1), z + 1));
-                verts.Add(new float3(x + 1, H(x + 1, z + 1), z + 1));
-                tris.Add((b, b + 2, b + 1));
-                tris.Add((b + 1, b + 2, b + 3));
-            }
-        float Drop(Shape s, float x)
+        var slot = 0;
+        // Terrain-like patches: cells x cells quads, optional slope, vertices offset by 'shift' with the body at -shift.
+        float Patch(int mode, int cells, float slope, float shift)
         {
-            p.AddStatic(s, new float3(x, 20, 0), floatQuat.Identity);
+            var c = StaticCompoundShapeSettings.Create();
+            for (var z = 0; z < cells; z++)
+                for (var x = 0; x < cells; x++)
+                {
+                    float3 V(int xx, int zz) => new(xx + shift, (xx + zz) * slope, zz + shift);
+                    AddTriangle(c, V(x, z), V(x, z + 1), V(x + 1, z), mode);
+                    AddTriangle(c, V(x + 1, z), V(x, z + 1), V(x + 1, z + 1), mode);
+                }
+            var baseX = (slot++) * 80f;
+            p.AddStatic(c.CreateShape(), new float3(baseX - shift, 20, -shift), floatQuat.Identity);
             p.System.OptimizeBroadPhase();
-            var m = new Mover(p, new float3(x + 8, 22, 8));
+            var m = new Mover(p, new float3(baseX + cells / 2f, 22 + cells * slope, cells / 2f));
             for (var i = 0; i < 90; i++)
                 m.Step(default);
-            return m.Ch.GetPosition().Y - (20 + 16 * 0.05f);
+            return m.Ch.GetPosition().Y - (20 + cells * slope);
         }
-        var box = Drop(Box(new float3(3, 0.5f, 3)), -40) + 0.8f - 0.5f;
-        results.Add($"box {Report.F(box)}");
         var heldBy = new bool[3];
         for (var mode = 0; mode < 3; mode++)
         {
-            var c = StaticCompoundShapeSettings.Create();
-            foreach (var (a, b, d) in tris)
-                AddTriangle(c, verts[a], verts[b], verts[d], mode);
             float y;
-            try { y = Drop(c.CreateShape(), mode * 40); }
+            try { y = Patch(mode, 16, 0.05f, 0); }
             catch (Exception e) { results.Add($"{TriModeNames[mode]}: {e.GetType().Name} {e.Message}"); continue; }
             heldBy[mode] = MathF.Abs(y) < 0.2f;
             results.Add($"{TriModeNames[mode]} {Report.F(y)}");
@@ -301,7 +291,12 @@ public sealed class Phys
         TriMode = Array.IndexOf(heldBy, true);
         if (TriMode < 0)
             TriMode = 2;
-        ProbeReport = $"drop test on a 512-triangle patch (feet y above surface after 1.5 s, ~0 = held): {string.Join(", ", results)} -> using {TriModeNames[TriMode]}";
+        // Which property of a real terrain chunk matters? (mode chosen above)
+        results.Add($"[{TriModeNames[TriMode]}] 32x32 sloped {Report.F(Patch(TriMode, 32, 0.05f, 0))}");
+        results.Add($"16x16 flat {Report.F(Patch(TriMode, 16, 0f, 0))}");
+        results.Add($"16x16 sloped, verts offset 100 m {Report.F(Patch(TriMode, 16, 0.05f, 100))}");
+        results.Add($"16x16 flat, verts offset 100 m {Report.F(Patch(TriMode, 16, 0f, 100))}");
+        ProbeReport = $"drop test on triangle patches (feet y above surface after 1.5 s, ~0 = held): {string.Join(", ", results)} -> using {TriModeNames[TriMode]}";
         Note("triangle fallback: " + ProbeReport);
     }
 
@@ -388,7 +383,7 @@ public sealed class Phys
             ids.Add(AddStatic(shape, float3.Zero, floatQuat.Identity));
             return ids;
         }
-        const int Chunk = 32;
+        const int Chunk = 16;
         for (var cz = 0; cz < n - 1; cz += Chunk)
             for (var cx = 0; cx < n - 1; cx += Chunk)
             {
