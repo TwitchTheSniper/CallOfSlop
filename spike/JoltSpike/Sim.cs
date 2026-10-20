@@ -186,8 +186,56 @@ public sealed class Mover
         else
             vy = v.Y - Sim.Gravity * Sim.Dt;
 
-        Ch.SetLinearVelocity(new float3(ground.X + rx, vy, ground.Z + rz));
-        Ch.ExtendedUpdate(Sim.Dt, new float3(0, -Sim.Gravity, 0), in Ext, _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+        var vel = new float3(ground.X + rx, vy, ground.Z + rz);
+        Ch.SetLinearVelocity(vel);
+        if (ManualExtended)
+            ManualExtendedUpdate(vel);
+        else
+            Ch.ExtendedUpdate(Sim.Dt, new float3(0, -Sim.Gravity, 0), in Ext, _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+    }
+
+    /// <summary>
+    /// true: our C# copy of Jolt's ExtendedUpdate (Update + StickToFloor + WalkStairs, all exported natively).
+    /// The native ExtendedUpdate in 2026.10.2 seems to ignore the settings struct (it climbs exactly Jolt's
+    /// default 0.4 m whatever WalkStairsStepUp says), so the spike measures both.
+    /// </summary>
+    public static bool ManualExtended = true;
+
+    void ManualExtendedUpdate(float3 desired)
+    {
+        var up = new float3(0, 1, 0);
+        var oldPos = Ch.GetPosition();
+        var wasSupported = Ch.IsSupported();
+        Ch.Update(Sim.Dt, new float3(0, -Sim.Gravity, 0), _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+
+        // Walking off a ledge or down a slope: snap down instead of flying off (only if we weren't moving up).
+        if (wasSupported && !Ch.IsSupported())
+        {
+            var vUp = (Ch.GetPosition().Y - oldPos.Y) / Sim.Dt;
+            if (vUp <= 1e-6f)
+                Ch.StickToFloor(Ext.StickToFloorStepDown, _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+        }
+
+        // Blocked by something steep while trying to move: try stepping up onto it.
+        if (Ch.CanWalkStairs(desired))
+        {
+            var step = new float3(desired.X, 0, desired.Z) * Sim.Dt;
+            var stepLen = step.Length();
+            if (stepLen > 0)
+            {
+                var dir = step / stepLen;
+                var moved = Ch.GetPosition() - oldPos;
+                var achieved = MathF.Max(0, float3.Dot(new float3(moved.X, 0, moved.Z), dir));
+                if (achieved + 1e-4f < stepLen)
+                {
+                    var forward = dir * MathF.Max(Ext.WalkStairsMinStepForward, stepLen - achieved);
+                    var forwardTest = dir * Ext.WalkStairsStepForwardTest;
+                    Ch.WalkStairs(Sim.Dt, Ext.WalkStairsStepUp, forward, forwardTest, Ext.WalkStairsStepDownExtra,
+                        _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+                }
+            }
+        }
+        _ = up;
     }
 
     public NetState Net => new() { Position = Ch.GetPosition(), Velocity = Ch.GetLinearVelocity(), Stance = Stance };

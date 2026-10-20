@@ -135,8 +135,10 @@ public static class TestsWorldAndMovement
         // Step-height sweep: which steps does CharacterVirtual's WalkStairs climb for a given step-up setting?
         var sweep = new List<string>();
         var savedUp = Mover.Ext.WalkStairsStepUp;
-        foreach (var up in new[] { 0.55f, 0.6f, 0.65f, 0.7f, 0.8f })
+        var savedManual = Mover.ManualExtended;
+        foreach (var (manual, up) in new[] { (false, 0.6f), (false, 0.8f), (true, 0.55f), (true, 0.6f), (true, 0.65f), (true, 0.7f) })
         {
+            Mover.ManualExtended = manual;
             Mover.Ext.WalkStairsStepUp = new float3(0, up, 0);
             var climbed = new List<string>();
             foreach (var h in new[] { 0.3f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.7f })
@@ -151,9 +153,10 @@ public static class TestsWorldAndMovement
                 if (sm.Ch.GetPosition().Y > h - 0.05f)
                     climbed.Add(F(h, 2));
             }
-            sweep.Add($"stepUp {F(up, 2)}: climbs [{string.Join(" ", climbed)}]");
+            sweep.Add($"{(manual ? "C# ExtendedUpdate" : "native ExtendedUpdate")} stepUp {F(up, 2)}: climbs [{string.Join(" ", climbed)}]");
         }
         Mover.Ext.WalkStairsStepUp = savedUp;
+        Mover.ManualExtended = savedManual;
         Metric("WalkStairs sweep (step heights climbed)", string.Join("; ", sweep));
 
         // Ramps: 30 deg walkable (stand still on it, walk up it), 50 deg too steep (slide, can't climb).
