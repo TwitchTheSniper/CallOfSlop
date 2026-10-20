@@ -1,5 +1,6 @@
-# Jolt / scene-graph spike: builds and runs spike/JoltSpike on Windows and Linux.
-# Only runs on the spike branch (or by hand); it never touches the game build.
+# Jolt / scene-graph / glTF spike: builds spike/JoltSpike and runs each section on two Windows images and
+# Linux, then compares the determinism hashes across machines. Only runs on spike branches (or by hand);
+# it never touches the game build. Results are printed as annotations (see docs/design/jolt-scene-mesh.md).
 name: Jolt spike
 
 on:
@@ -12,15 +13,99 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, ubuntu-latest ]
+        os: [ windows-latest, windows-2022, ubuntu-latest ]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
 
-      - name: Package versions
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build spike/JoltSpike/JoltSpike.csproj -c Release -nologo
+
+      - name: Machine
+        run: |
+          mkdir -p spike/out
+          cpu=$( (lscpu 2>/dev/null | grep 'Model name' | sed 's/.*: *//') || true)
+          [ -z "$cpu" ] && cpu=$(powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name" 2>/dev/null)
+          echo "::notice title=machine ${{ matrix.os }}::$cpu, $(nproc 2>/dev/null || echo $NUMBER_OF_PROCESSORS) cpus"
+
+      - name: a - basic world and ray casts
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll a
+
+      - name: b - CharacterVirtual movement
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll b
+
+      - name: c - determinism and reconciliation
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll c
+
+      - name: d - ray and build performance
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll d
+
+      - name: e - lag compensation
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll e
+
+      - name: f - glTF and scene graph
+        continue-on-error: true
+        working-directory: spike/out
+        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll f
+
+      - name: Collect
+        if: always()
+        working-directory: spike/out
+        run: |
+          cat results-*.txt > results-${{ matrix.os }}.txt 2>/dev/null || true
+          echo "::notice title=hashes ${{ matrix.os }}::$(grep '^c\.' results-${{ matrix.os }}.txt | tr '\n' ' ')"
+
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: spike-${{ matrix.os }}
+          path: spike/out/
+          if-no-files-found: ignore
+
+  compare:
+    needs: spike
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: spike-*
+          path: all
+      - name: Compare determinism across machines
         shell: bash
         run: |
-          for p in ahwoo.brutal.jolt ahwoo.brutal.gltf ahwoo.brutal.render.mesh ahwoo.brutal.stb ahwoo.brutal.numerics ahwoo.brutal.meshoptimizer; do
-            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | jq -r '.versions[-8:] | join(" ")')
-            echo "::notice title=nuget $p::$v"
+          ref=all/spike-windows-latest/results-windows-latest.txt
+          for other in windows-2022 ubuntu-latest; do
+            f=all/spike-$other/results-$other.txt
+            if [ ! -f "$ref" ] || [ ! -f "$f" ]; then echo "::error title=compare $other::missing results"; continue; fi
+            same=0; diff=0; detail=""
+            while IFS='=' read -r k v; do
+              case "$k" in c.*) ;; *) continue ;; esac
+              o=$(grep "^$k=" "$f" | head -1 | cut -d= -f2-)
+              if [ "$v" = "$o" ]; then same=$((same+1)); else diff=$((diff+1)); detail="$detail $k: windows-latest=$v $other=$o;"; fi
+            done < "$ref"
+            if [ $diff -eq 0 ]; then
+              echo "::notice title=determinism windows-latest vs $other::IDENTICAL ($same keys)"
+            else
+              echo "::warning title=determinism windows-latest vs $other::$diff of $((same+diff)) differ:$detail"
+            fi
           done
+          cfgw=$(grep '^a.config=' $ref | cut -d= -f2-); cfgl=$(grep '^a.config=' all/spike-ubuntu-latest/results-ubuntu-latest.txt 2>/dev/null | cut -d= -f2-)
+          echo "::notice title=jolt build config::windows: $cfgw | linux: $cfgl"

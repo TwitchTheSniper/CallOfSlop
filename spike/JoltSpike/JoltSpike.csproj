@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Standalone spike: answers the risky questions for moving Call of Slop to Jolt physics,
+       a scene graph and a glTF mesh pipeline. Not part of the game build. See docs/design/jolt-scene-mesh.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>JoltSpike</RootNamespace>
+    <PlatformTarget>x64</PlatformTarget>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Ahwoo.BRUTAL.Jolt" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.Gltf" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.Render.Mesh" Version="2026.10.1" />
+  </ItemGroup>
+
+</Project>
