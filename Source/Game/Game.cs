@@ -148,6 +148,7 @@ public sealed partial class Game : IDisposable
             // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
             _ = World.Map.Objectives;
             _ = World.Grid;
+            NavSearch.Prepare();
         }
         Net = net;
         Audio = audio;
@@ -175,6 +176,19 @@ public sealed partial class Game : IDisposable
         {
             Status = "Connecting...";
         }
+    }
+
+    /// <summary>
+    /// Call once a session is set up, while the loadout screen opens (not in a tick): a full garbage collection now
+    /// clears whatever the last game or the menus left and moves everything this game built out of the young
+    /// generations, so the collections that happen during the match have little to do (the bot-match self-test saw
+    /// 6-34 ms collection pauses inside ticks without this).
+    /// </summary>
+    public static void SettleMemory()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
     }
 
     // =====================================================================

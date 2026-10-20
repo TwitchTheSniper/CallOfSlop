@@ -16,18 +16,40 @@ public static partial class SelfTest
     {
         private ulong _start;
         private double _calCycles, _calMs, _worstCycles;
+        private TimeSpan _jit0, _pause0;
+        private long _methods0;
+        private int _gc0, _gc2;
+
+        /// <summary>What happened during the busiest tick: JIT compiling and GC (they run on the game thread too).</summary>
+        public string WorstDetail { get; private set; } = "";
 
         public static bool Available => OperatingSystem.IsWindows();
 
-        public void Start() => _start = Cycles();
+        public void Start()
+        {
+            _jit0 = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
+            _methods0 = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true);
+            _pause0 = GC.GetTotalPauseDuration();
+            _gc0 = GC.CollectionCount(0);
+            _gc2 = GC.CollectionCount(2);
+            _start = Cycles();
+        }
 
         /// <param name="wallMs">The tick's wall-clock time.</param>
         /// <param name="count">Whether this tick counts towards the worst (the first second is warm-up).</param>
-        public void Stop(double wallMs, bool count)
+        public void Stop(double wallMs, bool count, Func<string>? context = null)
         {
             if (!Available)
                 return;
             var c = Cycles() - _start;
+            if (count && c > _worstCycles)
+            {
+                var jit = System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - _jit0;
+                var methods = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true) - _methods0;
+                var pause = GC.GetTotalPauseDuration() - _pause0;
+                WorstDetail = $"wall {wallMs:0.0} ms, JIT {jit.TotalMilliseconds:0.0} ms ({methods} methods), GC pause {pause.TotalMilliseconds:0.0} ms "
+                    + $"({GC.CollectionCount(0) - _gc0} collections, {GC.CollectionCount(2) - _gc2} full)" + (context != null ? ", " + context() : "");
+            }
             if (wallMs > 0 && wallMs < 5)
             {
                 _calCycles += c; // ordinary ticks calibrate cycles per ms (a pause in one only makes the estimate cautious)

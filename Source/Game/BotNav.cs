@@ -673,11 +673,18 @@ public sealed class NavSearch
     /// <summary>Nodes expanded by the last search (for the self-test's cost report).</summary>
     public int LastExpanded;
 
+    /// <summary>JIT-compiles <see cref="Find"/> now (a loading moment), not in the first tick that searches.</summary>
+    public static void Prepare() =>
+        System.Runtime.CompilerServices.RuntimeHelpers.PrepareMethod(typeof(NavSearch).GetMethod(nameof(Find))!.MethodHandle);
+
     /// <summary>
     /// Finds a path from node <paramref name="start"/> to node <paramref name="goal"/> and writes it (start first) into
     /// <paramref name="path"/>, truncated to its length. Returns the node count, or 0 if there's no way.
     /// <paramref name="cost"/> can add a per-edge penalty (flanking routes, edges a bot got stuck on).
     /// </summary>
+    // Fully optimized from the first call: left to tiering, a long search on the game thread compiled an
+    // on-stack-replacement copy of this loop mid-tick (5-8 ms of JIT each time). Prepare() compiles it up front.
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization)]
     public int Find(NavGraph g, int start, int goal, int[] path, Func<int, int, int, float>? cost = null, int maxExpand = 4000)
     {
         LastExpanded = 0;
