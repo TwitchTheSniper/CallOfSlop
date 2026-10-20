@@ -229,7 +229,7 @@ public static partial class SelfTest
         root.Add("b", Matrix4x4.Identity, Renderable.Box(new Vector3(3, 0, 0)));
         scene.UpdateTransforms();
         list.Flatten(root);
-        if (list.Count != 3 || list.Items[0].Color.X != 1 || list.Items[1].Color.X != 2 || list.Items[2].Color.X != 3)
+        if (list.Count != 3 || list.Item(0).Color.X != 1 || list.Item(1).Color.X != 2 || list.Item(2).Color.X != 3)
             Fail("flatten isn't depth first in child order");
         a.Visible = false;
         list.Clear();
@@ -325,7 +325,7 @@ public static partial class SelfTest
         var rec = new DrawRecorder();
         var g = new Renderer { Recorder = rec };
         list.Submit(g);
-        if (list.Count != 1 || list.Items[0].MeshId != 7 || rec.Count != 0 || list.SkippedMeshes != 1)
+        if (list.Count != 1 || list.Item(0).MeshId != 7 || rec.Count != 0 || list.SkippedMeshes != 1)
             Fail("a mesh renderable wasn't flattened as a mesh item (or was drawn as a box without a mesh drawer)");
         var cyc = new SceneBuilder();
         cyc.Add("a", 1, Vector3.Zero, Quaternion.Identity, Vector3.One);
@@ -600,13 +600,24 @@ public static partial class SelfTest
         var colors = ArmColors.For(Vector3.One * 0.5f);
 
         var draws = 0;
+        var parts = new long[6]; // bytes allocated by: animation, viewmodel pose, players, movers + turret, update, flatten
+        long Mark(int part, long since)
+        {
+            var now = GC.GetAllocatedBytesForCurrentThread();
+            parts[part] += now - since;
+            return now;
+        }
+
         void Frame(int f)
         {
+            var t = GC.GetAllocatedBytesForCurrentThread();
             input.Now += 1.0 / 240;
             input.Aim = (f / 60) % 2 == 0 ? 0 : 1;
             input.Reload = f % 240 < 120 ? f % 240 / 120f : -1;
             anim.Update(input);
+            t = Mark(0, t);
             vm.Pose(anim, def, GunModel.CutawayFor(input.Aim), (f & 3) == 0, (float)input.Now, colors);
+            t = Mark(1, t);
             for (var k = 0; k < players.Length; k++)
             {
                 var pl = players[k];
@@ -615,10 +626,13 @@ public static partial class SelfTest
                 pl.RenderStance = (Stance)((f / 50 + k) % 3);
                 rigs[k].Pose(pl, input.Now);
             }
+            t = Mark(2, t);
             movers?.Pose(f * 0.5);
             ent.RenderYaw = f * 0.02f;
             turret.Pose(ent, Vector3.One, true, input.Now);
+            t = Mark(3, t);
             scene.UpdateTransforms();
+            t = Mark(4, t);
             list.Clear();
             list.Flatten(vm.Camera);
             for (var k = 0; k < rigs.Length; k++)
@@ -627,10 +641,12 @@ public static partial class SelfTest
                 list.Flatten(movers.Root);
             list.Flatten(turret.Base);
             draws = list.Count;
+            Mark(5, t);
         }
 
-        for (var f = 0; f < 600; f++)
-            Frame(f); // warm up: every stance, reload phase and cutaway seen once
+        for (var f = 0; f < 1200; f++)
+            Frame(f); // warm up: every stance, reload phase and cutaway seen (twice, so the JIT has settled)
+        Array.Clear(parts);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var sw = Stopwatch.StartNew();
         const int frames = 600;
@@ -639,7 +655,8 @@ public static partial class SelfTest
         sw.Stop();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         if (allocated > 0)
-            Fail($"scene graph frames allocate: {allocated} bytes over {frames} frames (viewmodel + 8 players + movers + turret)");
+            Fail($"scene graph frames allocate: {allocated} bytes over {frames} frames (animation {parts[0]}, viewmodel pose {parts[1]}, players {parts[2]}, "
+                 + $"movers + turret {parts[3]}, update {parts[4]}, flatten {parts[5]})");
         var gameUs = sw.Elapsed.TotalMilliseconds * 1000 / frames;
         Line($"  game-like frame (viewmodel, 8 players, {movers?.Rigs.Length ?? 0} movers, a turret: {scene.CountNodes()} nodes, {draws} draws): "
              + $"{gameUs:0} us per frame for animation + pose + update + flatten, {allocated} bytes allocated over {frames} frames");
@@ -661,22 +678,29 @@ public static partial class SelfTest
         var nodes = big.CountNodes();
         var bigList = new DrawList();
         var updated = 0;
+        long updTicks = 0, flatTicks = 0;
         void BigFrame(int f, bool move)
         {
+            var t0 = Stopwatch.GetTimestamp();
             if (move)
                 for (var r = 0; r < roots.Length; r++)
                     roots[r].SetLocal(new Vector3(r, 0, f * 0.01f), Quaternion.CreateFromAxisAngle(Vector3.UnitY, f * 0.01f + r), Vector3.One);
             updated = big.UpdateTransforms();
+            var t1 = Stopwatch.GetTimestamp();
             bigList.Clear();
             for (var r = 0; r < roots.Length; r++)
                 bigList.Flatten(roots[r]);
+            var t2 = Stopwatch.GetTimestamp();
+            updTicks += t1 - t0;
+            flatTicks += t2 - t1;
         }
 
-        for (var f = 0; f < 50; f++)
+        for (var f = 0; f < 100; f++)
             BigFrame(f, true);
-        double Median(bool move)
+        var samples = new double[15];
+        (double Total, double Update, double Flatten) Median(bool move)
         {
-            var samples = new double[15];
+            updTicks = flatTicks = 0;
             for (var s = 0; s < samples.Length; s++)
             {
                 var t0 = Stopwatch.GetTimestamp();
@@ -685,7 +709,8 @@ public static partial class SelfTest
                 samples[s] = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / 20;
             }
             Array.Sort(samples);
-            return samples[samples.Length / 2];
+            var n = samples.Length * 20.0;
+            return (samples[samples.Length / 2], updTicks * 1000.0 / Stopwatch.Frequency / n, flatTicks * 1000.0 / Stopwatch.Frequency / n);
         }
 
         var bigBefore = GC.GetAllocatedBytesForCurrentThread();
@@ -699,10 +724,11 @@ public static partial class SelfTest
             Fail($"10k benchmark: {updated} nodes updated with nothing moving");
         if (bigAlloc > 0)
             Fail($"10k benchmark allocates {bigAlloc} bytes");
-        if (moving > 0.3)
-            Fail($"10k nodes update + flatten takes {moving:0.000} ms per frame (budget 0.3 ms)");
-        Line($"  {nodes} nodes ({bigList.Count} boxes): update + flatten {moving * 1000:0} us per frame with everything moving, flatten only {still * 1000:0} us when nothing moved");
-        Line($"[scene] perf: {nodes} nodes update+flatten {moving * 1000:0} us (all moving) / {still * 1000:0} us (static); game-like frame {gameUs:0} us "
-             + $"({scene.CountNodes()} nodes, {draws} draws); allocations {allocated + bigAlloc} B");
+        if (moving.Total > 0.3)
+            Fail($"10k nodes update + flatten takes {moving.Total:0.000} ms per frame (budget 0.3 ms)");
+        Line($"  {nodes} nodes ({bigList.Count} boxes): update + flatten {moving.Total * 1000:0} us per frame with everything moving "
+             + $"(update {moving.Update * 1000:0}, flatten {moving.Flatten * 1000:0}), {still.Total * 1000:0} us when nothing moved");
+        Line($"[scene] perf: {nodes} nodes update+flatten {moving.Total * 1000:0} us all moving (update {moving.Update * 1000:0} + flatten {moving.Flatten * 1000:0}), "
+             + $"{still.Total * 1000:0} us static; game-like frame {gameUs:0} us ({scene.CountNodes()} nodes, {draws} draws); allocations {allocated} + {bigAlloc} B");
     }
 }

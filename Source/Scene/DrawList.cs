@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>One flattened draw: a world matrix and what to draw with it.</summary>
+/// <summary>One draw: a world matrix and what to draw with it.</summary>
 public struct DrawItem
 {
     public Matrix4x4 World;
@@ -18,15 +18,19 @@ public struct DrawItem
 }
 
 /// <summary>
-/// Flattens visible scene nodes into a flat array of <see cref="DrawItem"/>s (depth first, children in order, so the draw
-/// order is exactly the order the parts were built in) and submits them to the existing <see cref="Renderer"/>.
-/// The array only grows (doubling) and is reused, so a warmed-up list never allocates.
+/// Flattens visible scene nodes into a draw list (depth first, children in order, so the draw order is exactly the order
+/// the parts were built in) and submits it to the existing <see cref="Renderer"/>.
 ///
-/// Today every item is one <see cref="Renderer.Draw"/>; the list is also the natural input for instanced batching
-/// (sort by mesh and state, upload the matrices) once the mesh pipeline lands.
+/// A node's entry is just a reference to the node: its world matrix and <see cref="Renderable"/> are read at
+/// <see cref="Submit"/> time, so flattening copies 8 bytes per visible node instead of a whole matrix. That means a list
+/// is valid until the next <see cref="Scene.UpdateTransforms"/> or renderable change (flatten, then submit). Custom
+/// <see cref="IRenderable"/>s add self-contained items (<see cref="Add(in Matrix4x4, in Renderable)"/>). The arrays only grow
+/// and are reused, so a warmed-up list never allocates. Today every entry is one <see cref="Renderer.Draw"/>; the list is
+/// also the natural input for instanced batching once the mesh pipeline lands.
 /// </summary>
 public sealed class DrawList
 {
+    private SceneNode?[] _nodes = new SceneNode?[256]; // the node to draw, or null for a self-contained item in _items
     private DrawItem[] _items = new DrawItem[256];
 
     public int Count { get; private set; }
@@ -34,19 +38,24 @@ public sealed class DrawList
     /// <summary>Mesh items skipped by the last <see cref="Submit"/> because no mesh drawer was given.</summary>
     public int SkippedMeshes { get; private set; }
 
-    public Span<DrawItem> Items => _items.AsSpan(0, Count);
-
     public void Clear() => Count = 0;
 
-    /// <summary>Appends an item and returns it to fill in.</summary>
+    private void Grow()
+    {
+        Array.Resize(ref _nodes, _nodes.Length * 2);
+        Array.Resize(ref _items, _nodes.Length);
+    }
+
+    /// <summary>Appends a self-contained item and returns it to fill in (for <see cref="IRenderable"/>s).</summary>
     public ref DrawItem Add()
     {
-        if (Count == _items.Length)
-            Array.Resize(ref _items, _items.Length * 2);
+        if (Count == _nodes.Length)
+            Grow();
+        _nodes[Count] = null;
         return ref _items[Count++];
     }
 
-    /// <summary>Appends a box (or mesh) item.</summary>
+    /// <summary>Appends a self-contained box (or mesh) item.</summary>
     public void Add(in Matrix4x4 world, in Renderable r)
     {
         ref var it = ref Add();
@@ -59,6 +68,21 @@ public sealed class DrawList
         it.Flags = r.Flags;
     }
 
+    /// <summary>The i-th entry as a self-contained item (copies; for tests and tools).</summary>
+    public DrawItem Item(int i)
+    {
+        if ((uint)i >= (uint)Count)
+            throw new ArgumentOutOfRangeException(nameof(i));
+        if (_nodes[i] is not { } n)
+            return _items[i];
+        ref readonly var r = ref n.Renderable;
+        return new DrawItem
+        {
+            World = n._world, Color = r.Color, Alpha = r.Alpha, MeshId = r.Kind == RenderKind.Mesh ? r.MeshId : -1, Mode = r.Mode, Material = r.Material,
+            Flags = r.Flags,
+        };
+    }
+
     /// <summary>
     /// Appends every visible drawable in <paramref name="root"/>'s subtree. World matrices must be up to date
     /// (<see cref="Scene.UpdateTransforms"/>). Hidden nodes skip their whole subtree.
@@ -68,7 +92,11 @@ public sealed class DrawList
         if ((root.Flags & NodeFlags.Hidden) != 0)
             return;
         if (root.Renderable.Kind != RenderKind.None)
-            Add(root._world, root.Renderable);
+        {
+            if (Count == _nodes.Length)
+                Grow();
+            _nodes[Count++] = root;
+        }
         root.Custom?.Emit(this, root);
         var kids = root._kids;
         for (var i = 0; i < root._kidCount; i++)
@@ -76,20 +104,32 @@ public sealed class DrawList
     }
 
     /// <summary>
-    /// Draws every item in order. Assumes (and leaves) blending off and depth writes on, the state the opaque passes run
-    /// in; switches only when an item needs something else.
+    /// Draws every entry in order. Assumes (and leaves) blending off and depth writes on, the state the opaque passes run
+    /// in; switches only when an entry needs something else.
     /// </summary>
     public void Submit(Renderer g, IMeshDrawer? meshes = null)
     {
         var blend = false;
         var depthWrite = true;
         var skipped = 0;
-        var items = _items;
+        var nodes = _nodes;
         for (var i = 0; i < Count; i++)
         {
-            ref readonly var it = ref items[i];
-            var wantBlend = (it.Flags & RenderFlags.Blend) != 0;
-            var wantDepth = (it.Flags & RenderFlags.NoDepthWrite) == 0;
+            var n = nodes[i];
+            RenderFlags flags;
+            int mesh;
+            if (n != null)
+            {
+                flags = n.Renderable.Flags;
+                mesh = n.Renderable.Kind == RenderKind.Mesh ? n.Renderable.MeshId : -1;
+            }
+            else
+            {
+                flags = _items[i].Flags;
+                mesh = _items[i].MeshId;
+            }
+            var wantBlend = (flags & RenderFlags.Blend) != 0;
+            var wantDepth = (flags & RenderFlags.NoDepthWrite) == 0;
             if (wantBlend != blend)
             {
                 g.SetBlend(wantBlend);
@@ -100,12 +140,27 @@ public sealed class DrawList
                 g.SetDepthWrite(wantDepth);
                 depthWrite = wantDepth;
             }
-            if (it.MeshId < 0)
-                g.Draw(it.World, it.Color, it.Alpha, it.Mode, it.Material);
-            else if (meshes != null)
-                meshes.DrawMesh(it.MeshId, it.World, it.Color, it.Alpha, it.Mode, it.Material);
-            else
+            if (mesh >= 0 && meshes == null)
+            {
                 skipped++;
+                continue;
+            }
+            if (n != null)
+            {
+                ref readonly var r = ref n.Renderable;
+                if (mesh < 0)
+                    g.Draw(n._world, r.Color, r.Alpha, r.Mode, r.Material);
+                else
+                    meshes!.DrawMesh(mesh, n._world, r.Color, r.Alpha, r.Mode, r.Material);
+            }
+            else
+            {
+                ref readonly var it = ref _items[i];
+                if (mesh < 0)
+                    g.Draw(it.World, it.Color, it.Alpha, it.Mode, it.Material);
+                else
+                    meshes!.DrawMesh(mesh, it.World, it.Color, it.Alpha, it.Mode, it.Material);
+            }
         }
         if (!depthWrite)
             g.SetDepthWrite(true);

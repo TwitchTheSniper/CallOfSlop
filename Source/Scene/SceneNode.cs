@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CallOfSlop;
 
@@ -360,7 +361,7 @@ public sealed class SceneNode
     {
         if (_localStale)
             ComposeLocal();
-        _world = _local * parentWorld;
+        Multiply(_local, parentWorld, ref _world);
         _dirty = false;
         WorldVersion++;
         var n = 1;
@@ -447,6 +448,22 @@ public sealed class SceneNode
     }
 
     public override string ToString() => $"{Name} ({_kidCount} children)";
+
+    /// <summary>
+    /// <paramref name="r"/> = <paramref name="a"/> * <paramref name="b"/> (row vectors), one SIMD row at a time, written in
+    /// place (no 64-byte temporaries): the hot loop of a transform update.
+    /// </summary>
+    internal static void Multiply(in Matrix4x4 a, in Matrix4x4 b, ref Matrix4x4 r)
+    {
+        ref readonly var b1 = ref Unsafe.As<float, Vector4>(ref Unsafe.AsRef(in b.M11));
+        ref readonly var b2 = ref Unsafe.As<float, Vector4>(ref Unsafe.AsRef(in b.M21));
+        ref readonly var b3 = ref Unsafe.As<float, Vector4>(ref Unsafe.AsRef(in b.M31));
+        ref readonly var b4 = ref Unsafe.As<float, Vector4>(ref Unsafe.AsRef(in b.M41));
+        Unsafe.As<float, Vector4>(ref r.M11) = b1 * a.M11 + b2 * a.M12 + b3 * a.M13 + b4 * a.M14;
+        Unsafe.As<float, Vector4>(ref r.M21) = b1 * a.M21 + b2 * a.M22 + b3 * a.M23 + b4 * a.M24;
+        Unsafe.As<float, Vector4>(ref r.M31) = b1 * a.M31 + b2 * a.M32 + b3 * a.M33 + b4 * a.M34;
+        Unsafe.As<float, Vector4>(ref r.M41) = b1 * a.M41 + b2 * a.M42 + b3 * a.M43 + b4 * a.M44;
+    }
 
     internal static Vector3 SafeNormalize(Vector3 v, Vector3 fallback)
     {
