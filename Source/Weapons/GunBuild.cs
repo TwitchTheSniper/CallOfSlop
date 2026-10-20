@@ -16,6 +16,9 @@ public enum GunPartFlags : byte
 
     /// <summary>A stock comb or cheek rest (trimmed down under an optic like everything else near it).</summary>
     Comb = 64,
+
+    /// <summary>Part of a removable magazine (it drops out and goes back in during a reload; see GunModel.MagOffset).</summary>
+    Mag = 128,
 }
 
 /// <summary>One box of a built gun, in model space (origin at the grip, -Z towards the muzzle, +Y up, metres).</summary>
@@ -106,6 +109,7 @@ public sealed class GunBuilder
     private readonly GunSpec p;
     private readonly List<GunPart> _parts = new(64);
     private readonly GunMesh _mesh = new();
+    private GunPartFlags _flags;
 
     private Vector3 M, F, D, A, _magc;
     private float RL, RH, RW, _front, _back, _mid, _bore, _gripZ, BL, BW, HL, HH, _hgBottom, _cylZ;
@@ -142,7 +146,7 @@ public sealed class GunBuilder
 
     private void Box(float sx, float sy, float sz, float x, float y, float z, Vector3 c, float rx = 0, float rz = 0, float ry = 0, int mode = 0, float alpha = 1f,
         GunPartFlags flags = 0) =>
-        _parts.Add(new GunPart { Sx = sx, Sy = sy, Sz = sz, X = x, Y = y, Z = z, Color = c, Rx = rx, Rz = rz, Ry = ry, Mode = mode, Alpha = alpha, Flags = flags });
+        _parts.Add(new GunPart { Sx = sx, Sy = sy, Sz = sz, X = x, Y = y, Z = z, Color = c, Rx = rx, Rz = rz, Ry = ry, Mode = mode, Alpha = alpha, Flags = flags | _flags });
 
     /// <summary>A round-ish rod along Z: two boxes, one turned 45 degrees (reads as an octagon).</summary>
     private void Rod(float wd, float len, float x, float y, float z, Vector3 c, GunPartFlags flags = 0)
@@ -235,7 +239,10 @@ public sealed class GunBuilder
 
         // ---- Grip, magazine, stock, receiver extras, underbarrel, sights ----
         _gripPt = GripPart(_gripZ);
+        // Detachable magazines are tagged so a reload can take them out (tubes, internal and helical ones stay put).
+        _flags = p.Mag is "tube" or "internal" or "helical" or "none" ? 0 : GunPartFlags.Mag;
         var magPt = Magazine(bstart);
+        _flags = 0;
         StockPart(style);
         ReceiverExtras(style, top);
         var support = UnderbarrelPart(ubZ, ubY, bstart);

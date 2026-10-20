@@ -172,6 +172,41 @@ public static partial class SelfTest
             }
         }
 
+        // Reloads take the magazine out: box-magazine, pistol and LMG styles drop it before the fresh one is carried in, the
+        // carried one is never drawn twice (the gun's is hidden all through the carry), and it's back in its seat at the end.
+        var magChecked = 0;
+        foreach (var w in Weapons.All)
+        {
+            var style = ArmAnchors.StyleOf(w);
+            if (style is not (ReloadStyle.BoxMag or ReloadStyle.PistolMag or ReloadStyle.LmgBox))
+                continue;
+            magChecked++;
+            if (GunModel.Mesh(w) is { } mm && !mm.Parts.Any(x => (x.Flags & GunPartFlags.Mag) != 0))
+                Fail($"{w.Name}: {style} reload but the model has no removable magazine");
+            var (c0, c1) = ViewModelAnimator.CarryWindow(style);
+            for (var k = 0; k <= 10; k++)
+                if (!ViewModelAnimator.MagState(style, float.Lerp(c0, c1 - 0.001f, k / 10f)).Hidden)
+                {
+                    Fail($"{w.Name}: the gun's magazine is still in at reload {float.Lerp(c0, c1, k / 10f):0.00} while the off hand carries the new one");
+                    break;
+                }
+            if (ViewModelAnimator.MagState(style, 0).Offset != Vector3.Zero || ViewModelAnimator.MagState(style, 1).Offset != Vector3.Zero || ViewModelAnimator.MagState(style, 1).Hidden)
+                Fail($"{w.Name}: the magazine isn't seated before and after a reload");
+            var anim = new ViewModelAnimator();
+            var vin = new ViewModelInput { Def = w, Now = 10, Dt = 1f / 60, Reload = -1, Melee = -1, Grounded = true, Eye = new Vector3(0, 1.6f, 0) };
+            anim.Update(vin);
+            vin.Reload = (c0 + c1) / 2;
+            vin.Now += 1.0 / 60;
+            anim.Update(vin);
+            if (!anim.MagHidden || !anim.Carrying)
+                Fail($"{w.Name}: at mid-reload the magazine is {(anim.MagHidden ? "out" : "still in the gun")} and the off hand {(anim.Carrying ? "carries" : "doesn't carry")} a new one");
+        }
+        Line($"{magChecked} box-magazine reloads take the magazine out of the gun");
+        foreach (var style in new[] { ReloadStyle.TubeShells, ReloadStyle.Revolver, ReloadStyle.BreakOpen, ReloadStyle.BoltAction, ReloadStyle.MuzzleLoad })
+            for (var k = 0; k <= 20; k++)
+                if (ViewModelAnimator.MagState(style, k / 20f) != (Vector3.Zero, false))
+                    Fail($"{style} reloads move the magazine (they keep their own logic)");
+
         // Cost: building is cheap, and drawing uses the cache.
         var sw = Stopwatch.StartNew();
         var builds = 0;

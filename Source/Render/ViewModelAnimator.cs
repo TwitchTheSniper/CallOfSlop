@@ -54,6 +54,16 @@ public sealed class ViewModelAnimator
     /// <summary>The off hand is carrying a magazine / shell / speedloader (drawn by <see cref="DrawArms"/>).</summary>
     public bool Carrying;
 
+    /// <summary>
+    /// Where the gun's own magazine is during a reload (gun space offset from its seat), and whether it's out of the gun
+    /// altogether: box-magazine, pistol and LMG reloads drop the old one, the off hand brings the new one and seats it.
+    /// Program copies these to <see cref="GunModel.MagOffset"/> / <see cref="GunModel.MagHidden"/> for the first-person draw.
+    /// </summary>
+    public Vector3 MagOffset;
+
+    /// <inheritdoc cref="MagOffset"/>
+    public bool MagHidden;
+
     public ArmAnchorSet Anchors;
     private WeaponDef? _anchorDef;
 
@@ -153,7 +163,7 @@ public sealed class ViewModelAnimator
         };
 
     /// <summary>When the off hand holds the new magazine / ammo during each style's reload.</summary>
-    private static (float From, float To) CarryWindow(ReloadStyle s) =>
+    internal static (float From, float To) CarryWindow(ReloadStyle s) =>
         s switch
         {
             ReloadStyle.PistolMag => (0.22f, 0.52f),
@@ -164,6 +174,34 @@ public sealed class ViewModelAnimator
             ReloadStyle.MuzzleLoad => (0.18f, 0.76f),
             _ => (0.4f, 0.73f),
         };
+
+    /// <summary>
+    /// The gun's magazine through a reload: pulled a little, dropped out (falling away), gone while the fresh one is carried
+    /// (see <see cref="CarryWindow"/>), then pushed up into the well and seated. Other styles keep their magazine.
+    /// </summary>
+    public static (Vector3 Offset, bool Hidden) MagState(ReloadStyle s, float r)
+    {
+        // pull start, drop end (= hidden from), seated by
+        var (pull, gone, seat) = s switch
+        {
+            ReloadStyle.BoxMag => (0.25f, 0.4f, 0.73f),
+            ReloadStyle.PistolMag => (0.04f, 0.2f, 0.52f),
+            ReloadStyle.LmgBox => (0.24f, 0.42f, 0.7f),
+            _ => (-1f, -1f, -1f),
+        };
+        if (pull < 0 || r < pull)
+            return (Vector3.Zero, false);
+        if (r < gone)
+        {
+            var t = (r - pull) / (gone - pull);
+            var side = s == ReloadStyle.LmgBox ? -0.12f * t : 0f; // the box comes off to the left
+            return (new Vector3(side, -0.02f - 0.28f * t * t, 0.02f * t), false);
+        }
+        if (r < seat)
+            return (Vector3.Zero, true);
+        var u = Math.Clamp((r - seat) / 0.06f, 0f, 1f);
+        return (new Vector3(0, -0.035f * (1 - Ease(u)), 0), false);
+    }
 
     // ---- Curves -------------------------------------------------------------------------
     public static float Ease(float x)
@@ -421,6 +459,10 @@ public sealed class ViewModelAnimator
             left = HandTarget.Blend(left, ads, E(a, 0.3f, 0.9f));
         }
         Carrying = false;
+        MagOffset = Vector3.Zero;
+        MagHidden = false;
+        if (reloading)
+            (MagOffset, MagHidden) = MagState(A.Style, i.Reload);
         if (reloading)
         {
             var r = i.Reload;

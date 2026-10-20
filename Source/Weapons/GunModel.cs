@@ -47,6 +47,18 @@ public static class GunModel
     /// </summary>
     public static float AdsCutaway;
 
+    /// <summary>
+    /// Reload animation of the first-person gun: the detachable magazine is drawn moved by this much (gun space), or not at
+    /// all when <see cref="MagHidden"/> (it's out of the gun while the off hand brings the fresh one). Program sets both from
+    /// the <see cref="ViewModelAnimator"/> around the first-person draw and clears them after. Never used when recording parts.
+    /// </summary>
+    public static Vector3 MagOffset;
+
+    /// <inheritdoc cref="MagOffset"/>
+    public static bool MagHidden;
+
+    private static bool _inMag;
+
     /// <summary>The cut-away for an aim-down-sights blend: none at the hip, complete by 85% aimed.</summary>
     public static float CutawayFor(float aimT) => SmoothStep(0.5f, 0.85f, aimT);
 
@@ -342,6 +354,12 @@ public static class GunModel
             Record(m, mode == 2 || alpha < 0.999f);
             return;
         }
+        if (_inMag)
+        {
+            if (MagHidden)
+                return;
+            m *= Matrix4x4.CreateTranslation(MagOffset);
+        }
         _g.Draw(m * _pose, c, alpha, mode);
     }
 
@@ -550,9 +568,16 @@ public static class GunModel
                 continue;
             }
             var blend = (pt.Flags & GunPartFlags.Blend) != 0;
+            var model = m.Matrices[i];
+            if ((pt.Flags & GunPartFlags.Mag) != 0)
+            {
+                if (MagHidden)
+                    continue;
+                model.Translation += MagOffset;
+            }
             if (blend)
                 _g.SetBlend(true);
-            _g.Draw(m.Matrices[i] * _pose, pt.Color, pt.Alpha, pt.Mode);
+            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode);
             if (blend)
                 _g.SetBlend(false);
         }
@@ -602,6 +627,7 @@ public static class GunModel
             }
         }
         // Magazine
+        _inMag = !revolver;
         var mag = Att(d, AttachSlot.Magazine);
         var baseY = -f.RecvH * 0.5f - 0.11f;
         if (mag == "Extended Mag")
@@ -610,6 +636,7 @@ public static class GunModel
             Box(f.RecvW * 1.1f, 0.025f, 0.06f, 0, baseY, back - 0.005f, d.Accent, rotX: -0.25f);
         else
             Box(f.RecvW, 0.016f, 0.058f, 0, baseY + 0.005f, back - 0.005f, d.Accent * 0.9f, rotX: -0.25f);
+        _inMag = false;
         return front - (revolver ? 0.05f : 0.01f);
     }
 
@@ -689,7 +716,9 @@ public static class GunModel
             }
         }
 
+        _inMag = true;
         DrawMagazine(d, f, front, back);
+        _inMag = false;
         DrawStock(d, f, back, cls switch
         {
             WeaponClass.SMG => StockStyle.Folding,
@@ -721,8 +750,10 @@ public static class GunModel
             var tubeLen = barrelLen * (mag == "Extended Mag" ? 0.95f : 0.75f);
             if (d.Mag >= 10 && mag != "Extended Mag")
             {
+                _inMag = true;
                 Box(0.07f, 0.13f, 0.13f, 0, -f.RecvH * 0.5f - 0.06f, front + 0.04f, d.Accent * 0.8f); // drum (Street Sweeper)
                 Box(0.07f, 0.13f, 0.13f, 0, -f.RecvH * 0.5f - 0.06f, front + 0.04f, d.Accent * 0.72f, rotX: MathF.PI / 4);
+                _inMag = false;
             }
             else
                 Cyl(barrelW * 0.4f, tubeLen, 0, barrelY - barrelW * 0.95f, front - tubeLen / 2, Dark * 0.9f); // magazine tube
@@ -757,7 +788,11 @@ public static class GunModel
             Box(0.008f, 0.008f, 0.14f, -0.022f, -f.RecvH * 0.48f, front - barrelLen * 0.35f, Metal * 0.6f);
         }
         if (d.Mag > 1)
+        {
+            _inMag = true;
             DrawMagazine(d, f, front, back);
+            _inMag = false;
+        }
         DrawStock(d, f, back, StockStyle.Wood);
         return front - barrelLen;
     }
