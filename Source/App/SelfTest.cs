@@ -492,7 +492,7 @@ public static class SelfTest
             }
             var perSearch = sw.Elapsed.TotalMilliseconds / Math.Max(1, pairs);
             var mainPct = g.Nodes.Length == 0 ? 0 : 100f * g.MainNodes.Length / g.Nodes.Length;
-            Line($"BOTSTAT nav {m.Name,-14} spacing {g.Spacing:0.0}  nodes {g.Nodes.Length,5}  edges {g.EdgeCount,6}  mantles {g.MantleEdges,4}  main {mainPct,3:0}%  "
+            Line($"nav {m.Name,-14} spacing {g.Spacing:0.0}  nodes {g.Nodes.Length,5}  edges {g.EdgeCount,6}  mantles {g.MantleEdges,4}  main {mainPct,3:0}%  "
                 + $"build {g.BuildMs,5:0} ms  A* {perSearch:0.00} ms  unreachable {unreachable.Count}/{pairs}"
                 + (unreachable.Count > 0 ? "  " + string.Join(" ", unreachable.Take(3)) : ""));
             if (g.Nodes.Length < 20 || g.EdgeCount < g.Nodes.Length)
@@ -583,10 +583,10 @@ public static class SelfTest
                     worst = Math.Max(worst, Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             }
             hard.Add(game.BotStats);
-            Line($"hardmatch {m.Name}: {game.BotStats.GunKills} gun kills, worst tick {worst:0.00} ms");
+            Line($"Hard match on {m.Name}: {game.BotStats.GunKills} gun kills, worst tick {worst:0.00} ms");
         }
         var normal = _matchBotStats;
-        Line($"BOTSTAT headshots: normal {normal.GunHeadshots}/{normal.GunKills} ({normal.HeadshotRatio:P1}), hard {hard.GunHeadshots}/{hard.GunKills} ({hard.HeadshotRatio:P1})"
+        Line($"headshots: normal {normal.GunHeadshots}/{normal.GunKills} ({normal.HeadshotRatio:P1}), hard {hard.GunHeadshots}/{hard.GunKills} ({hard.HeadshotRatio:P1})"
              + " (before this change: normal 51.4%, hard 51.0%)");
         foreach (var (stats, label) in new[] { (normal, "Normal"), (hard, "Hard") })
             if (stats.GunKills < 40)
@@ -598,7 +598,7 @@ public static class SelfTest
         var all = new BotStats();
         all.Add(normal);
         all.Add(hard);
-        Line("BOTSTAT range: " + string.Join("  ", BotPersonalities.All.Select(p => $"{p.Name} {all.AverageRange(p.Kind):0.0} m ({all.Shots[(int)p.Kind]})")));
+        Line("engagement range: " + string.Join("  ", BotPersonalities.All.Select(p => $"{p.Name} {all.AverageRange(p.Kind):0.0} m ({all.Shots[(int)p.Kind]})")));
         if (all.AverageRange(BotPersonality.Rusher) >= all.AverageRange(BotPersonality.Marksman) * 0.8f)
             Fail($"Rushers fight at {all.AverageRange(BotPersonality.Rusher):0.0} m, Marksmen at {all.AverageRange(BotPersonality.Marksman):0.0} m: not different enough");
         if (BotPersonalities.All.Any(p => all.Shots[(int)p.Kind] == 0))
