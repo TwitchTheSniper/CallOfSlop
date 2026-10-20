@@ -85,9 +85,15 @@ public static partial class SelfTest
             var missing = new List<string>();
             void Reach(string what, Vector3 p)
             {
-                var n = g.Nearest(p, needSight: false);
-                if (n < 0 || g.Component[n] != g.MainComponent)
-                    missing.Add($"{what} ({p.X:0},{p.Z:0})");
+                // Some node of the main area close by on the same level (Nearest alone may pick a crate top next to it).
+                var reach = MathF.Max(3f, g.Spacing * 1.5f);
+                for (var i = 0; i < g.Nodes.Length; i++)
+                {
+                    var q = g.Nodes[i];
+                    if (g.Component[i] == g.MainComponent && MathF.Abs(q.Y - p.Y) < 1.2f && (q.X - p.X) * (q.X - p.X) + (q.Z - p.Z) * (q.Z - p.Z) < reach * reach)
+                        return;
+                }
+                missing.Add($"{what} ({p.X:0},{p.Z:0})");
             }
             foreach (var s in m.Spawns)
                 Reach("spawn", s);
