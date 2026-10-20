@@ -129,9 +129,20 @@ public static class GunModel
         return list;
     }
 
-    /// <summary>The top of the receiver, where an optic's rail or base sits (on the round sniper receiver: above its corners).</summary>
-    private static float MountTop(WeaponDef d, Frame f) =>
-        d.Class == WeaponClass.Sniper ? f.RecvH * (0.12f + 0.42f * 1.7f * 0.70711f) + 0.001f : f.RecvH * 0.5f;
+    /// <summary>
+    /// The top of the receiver, where an optic's rail or base sits. On the round sniper receiver and on
+    /// revolvers (over the cylinder) that is above the round part's corners.
+    /// </summary>
+    private static float MountTop(WeaponDef d, Frame f) => d.Class switch
+    {
+        WeaponClass.Sniper => f.RecvH * (0.12f + 0.42f * 1.7f * 0.70711f) + 0.001f,
+        WeaponClass.Pistol when d.Mag <= 6 => f.RecvH * (0.08f + 0.42f * 1.7f * 0.70711f) + 0.001f, // revolver (see DrawPistol)
+        _ => f.RecvH * 0.5f,
+    };
+
+    /// <summary>A cheek rest's top: with an optic fitted it drops to just above the rail, under any scope's eyepiece.</summary>
+    private static float CheekTop(WeaponDef d, Frame f, float natural) =>
+        d.Optic == OpticKind.Iron ? natural : MathF.Min(natural, MountTop(d, f) + 0.012f);
 
     /// <summary>The proportions a class is built from.</summary>
     private readonly record struct Frame(float RecvLen, float RecvH, float RecvW, float BarrelLen, float BarrelW, float GuardLen, float GuardH, Vector3 Furniture);
@@ -720,7 +731,7 @@ public static class GunModel
                 return;
             case "Heavy Stock":
                 Box(f.RecvW * 1.1f, f.RecvH * 1.05f, len, 0, y - 0.005f, back + len / 2, Metal * 0.7f);
-                Box(f.RecvW * 0.9f, f.RecvH * 0.3f, len * 0.6f, 0, y + f.RecvH * 0.55f, back + len * 0.55f, Metal * 0.6f); // cheek rest
+                Box(f.RecvW * 0.9f, f.RecvH * 0.3f, len * 0.6f, 0, CheekTop(d, f, y + f.RecvH * 0.7f) - f.RecvH * 0.15f, back + len * 0.55f, Metal * 0.6f); // cheek rest
                 Box(f.RecvW * 1.15f, f.RecvH * 1.15f, 0.03f, 0, y - 0.005f, back + len, new Vector3(0.35f, 0.12f, 0.1f)); // rubber pad
                 return;
         }
@@ -733,7 +744,7 @@ public static class GunModel
                 break;
             case StockStyle.Cheek:
                 Box(f.RecvW * 0.85f, f.RecvH * 0.9f, len, 0, y - 0.01f, back + len / 2, f.Furniture);
-                Box(f.RecvW * 0.7f, f.RecvH * 0.25f, len * 0.5f, 0, y + f.RecvH * 0.55f, back + len * 0.5f, f.Furniture * 0.85f);
+                Box(f.RecvW * 0.7f, f.RecvH * 0.25f, len * 0.5f, 0, CheekTop(d, f, y + f.RecvH * 0.675f) - f.RecvH * 0.125f, back + len * 0.5f, f.Furniture * 0.85f);
                 break;
             case StockStyle.Skeleton:
                 Box(0.015f, 0.015f, len, 0, y + f.RecvH * 0.25f, back + len / 2, Dark * 1.3f);
