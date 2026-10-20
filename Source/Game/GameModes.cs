@@ -18,8 +18,11 @@ public static class GameModes
 {
     public static readonly GameMode[] All = [GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame];
 
-    /// <summary>Team Deathmatch: team kills to win (4 v 4 on a full server, so about 10 kills each).</summary>
+    /// <summary>Team Deathmatch: team kills to win with up to 8 players (4 v 4, so about 10 kills each).</summary>
     public const int TdmScoreLimit = 40;
+
+    /// <summary>Team Deathmatch: bigger lobbies play to more kills: 5 per player, from 40 (8 players) up to 100 (20+).</summary>
+    public static int TdmLimitFor(int players) => Math.Clamp(players * 5, TdmScoreLimit, 100);
 
     /// <summary>King of the Hill: points to win (1 point per second of holding the hill alone).</summary>
     public const int HillScoreLimit = 150;
@@ -64,7 +67,7 @@ public static class GameModes
     /// <summary>One line of rules for the lobby and the countdown.</summary>
     public static string Rules(GameMode m) => m switch
     {
-        GameMode.TeamDeathmatch => $"Two teams. First team to {TdmScoreLimit} kills. No friendly fire.",
+        GameMode.TeamDeathmatch => $"Two teams. First team to {TdmScoreLimit} kills (5 per player in bigger lobbies, up to 100). No friendly fire.",
         GameMode.KingOfTheHill => $"Two teams. Hold the hill alone for 1 point a second (contested: nobody scores). It moves every {HillMoveSeconds:0} s. First to {HillScoreLimit}.",
         GameMode.CaptureTheFlag => $"Two teams. Grab the enemy flag and bring it to yours while yours is home. First to {CtfCaptureLimit} captures.",
         GameMode.GunGame => $"Everyone gets the same gun. Each kill moves you up a weapon ({GunGame.Ladder.Length} in all); a melee kill also sets the victim back one. Win with a kill using the last gun. No loadouts: everyone has the same perks (Afterburner, Bloodthirst) and no grenades or equipment.",
@@ -171,6 +174,9 @@ public sealed partial class Game
 
     /// <summary>Gun Game: no loadout screen at all; you spawn straight in with the ladder's gun and the shared perks.</summary>
     public bool SkipsLoadout => Mode == GameMode.GunGame;
+
+    /// <summary>Team Deathmatch kills to win this match (set from the player count when play starts; replicated).</summary>
+    public int TdmLimit = GameModes.TdmScoreLimit;
 
     /// <summary>Team score: kills (TDM), hill points (KotH) or captures (CTF).</summary>
     public readonly int[] TeamScore = new int[2];
@@ -281,6 +287,7 @@ public sealed partial class Game
         _gunWinner = null;
         foreach (var p in Players.Values)
             p.GunLevel = 0;
+        TdmLimit = GameModes.TdmLimitFor(Players.Count);
         AssignTeams();
         if (!respawn)
             return;
@@ -321,7 +328,7 @@ public sealed partial class Game
                     EnsureTeam(p);
             BalanceTeams(now);
         }
-        if (ServerTick % World.SnapshotEvery == 0 && !Net.IsOffline)
+        if (ServerTick % (World.SnapshotEvery * 3) == 0 && !Net.IsOffline) // 10 Hz
         {
             WriteModeState(_w);
             Net.Broadcast(_w.Span, PacketReliability.Unreliable);
@@ -343,7 +350,7 @@ public sealed partial class Game
 
         var limit = Mode switch
         {
-            GameMode.TeamDeathmatch => GameModes.TdmScoreLimit,
+            GameMode.TeamDeathmatch => TdmLimit,
             GameMode.KingOfTheHill => GameModes.HillScoreLimit,
             GameMode.CaptureTheFlag => GameModes.CtfCaptureLimit,
             _ => int.MaxValue,
@@ -610,6 +617,7 @@ public sealed partial class Game
         w.U8((byte)HillIndex).U8(HillOwner).U8(HillContested ? (byte)1 : (byte)0).F32((float)HillMoveIn);
         foreach (var f in Flags)
             w.Vec(f.Position).U8(f.Carrier).U8(f.Home ? (byte)1 : (byte)0).F32((float)f.ReturnIn);
+        w.U16((ushort)TdmLimit); // protocol 11
     }
 
     /// <summary>Client: applies a mode state (the message id already read). Stale packets are ignored.</summary>
@@ -654,6 +662,8 @@ public sealed partial class Game
             f.Home = r.U8() != 0;
             f.ReturnIn = r.F32();
         }
+        if (r.Has(2))
+            TdmLimit = r.U16();
     }
 
     private void OnModePacket(byte id, ref PacketReader r, RakNetGUID sender)

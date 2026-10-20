@@ -15,8 +15,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 5: kill packet carries the weapon kit, killer HP and damage source; 6: kill streaks (loadout packet + streak messages);
     // 7: game modes and ready-up (mode state, ready and mode event packets, warmup phase, mode in the server info);
     // 8: per-streak stored kills in the streak state packet (using a streak empties it); 9: suicide request message;
-    // 10: sprint speed 9 -> 13.5 m/s (shared movement sim)
-    public const byte ProtocolVersion = 10;
+    // 10: sprint speed 9 -> 13.5 m/s (shared movement sim);
+    // 11: up to 32 players: quantised, split snapshots with a presence mask (Snapshot.cs), server-full message,
+    //     per-map player limits (max players in this info is the map's), TDM kill limit in the mode state
+    public const byte ProtocolVersion = 11;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

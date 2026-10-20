@@ -51,6 +51,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `author` | no | Shown as "(by ...)" in the map list. |
 | `order` | no | Sort position in the list (the shipped maps use 1–24). Ties sort by name. Default 0. |
 | `halfX`, `halfZ` | **yes** | Half the map's width (X) and depth (Z) in metres. The playable area runs from `-halfX..halfX` and `-halfZ..halfZ`. The size class is worked out from these: Small up to ~75 m across, Medium up to ~135 m, Large beyond that. Large and Medium maps get distance fog. |
+| `maxPlayers` | no | The most players (people + bots) the map takes, 2-32. Leave it out to get the default for the map's size (see [Player limits](#player-limits)). |
 | `sky` | no | Sky and fog colour. |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
@@ -410,6 +411,18 @@ Map names must still be unique across **all** packs, because that's how servers 
 ## Multiplayer
 
 Servers and clients match maps by **name plus a fingerprint of the geometry**. When you host on your own map, everyone who joins needs the identical file. A player who doesn't have it, or has a different version, is told which map to get. In the server browser, a map you don't have is shown in orange. If you change a published map, give it a new name (for example "Bunker v2") so old and new copies don't clash.
+
+## Player limits
+
+Servers hold up to 32 players, but every map has its own limit: the lobby's bot slider stops there, people can't join past it (a bot makes room if there is one), and the map vote only offers maps big enough for the people playing (extra bots leave a smaller map and come back on a bigger one). Without `maxPlayers` the limit comes from the playable area:
+
+| Size | Area | Limit |
+|---|---|---|
+| Small (up to ~75 m across) | under 2,500 m² / above | 8 / 10 |
+| Medium (up to ~135 m) | under 9,000 m² / above | 12 / 16 |
+| Large (beyond) | under 30,000 m² / above | 24 / 32 |
+
+A map needs **one spawn per player**. If it has fewer, the game adds spawns when it loads the map (your file isn't changed): free spots on rings 3-11 m around your spawns, on the same floor, in sight of the spawn they grow from, clear of walls, other spawns and moving platforms. The result is the same on every PC and doesn't change the map's fingerprint. If even that can't fit enough, the limit drops to the spawn count. `--check-map` prints how many were generated; place your own `Spawn` ops if you'd rather choose the spots.
 
 ## Tips
 

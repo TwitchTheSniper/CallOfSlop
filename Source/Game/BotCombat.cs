@@ -61,8 +61,10 @@ public sealed partial class Game
         var hurt = p.Health < b.LastHealth;
         if (hurt)
             b.HurtTime = now;
+        if (hurt && target == null)
+            b.NextScan = Math.Min(b.NextScan, now); // look around now (or next tick, if this tick's scans are used up)
 
-        if (now >= b.NextScan || (hurt && target == null))
+        if ((now >= b.NextScan || (hurt && target == null)) && TakeBotScan()) // rationed per tick (BotMove.cs)
         {
             b.NextScan = now + 0.2 + _rng.NextDouble() * 0.1;
             var fwd = World.FlatForward(p.Yaw);

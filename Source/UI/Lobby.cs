@@ -171,8 +171,11 @@ public sealed partial class Ui
                     Title("Single player - you against bots");
                     ModePicker(s);
                     MapPicker(s);
+                    var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
+                    s.Bots = Math.Clamp(s.Bots, 0, spMax - 1);
                     ImGui.SetNextItemWidth(260 * _scale);
-                    ImGui.SliderInt("Bots"u8, ref s.Bots, 0, Game.MaxPlayers - 1);
+                    ImGui.SliderInt("Bots"u8, ref s.Bots, 0, spMax - 1);
+                    ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.Bots + 1, spMax));
                     if (s.Bots == 0)
                         TestModeHint();
                     else
@@ -196,7 +199,7 @@ public sealed partial class Ui
                     break;
 
                 case Page.Multiplayer:
-                    Title("Multiplayer - up to 8 players over LAN or the internet");
+                    Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
                     ImGui.TextColored(Dim, "The host picks the game mode. Each match starts once everyone has readied up in the warmup."u8);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
@@ -244,8 +247,11 @@ public sealed partial class Ui
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
                     ImGui.Checkbox("Open the port on my router automatically (UPnP)"u8, ref s.UseUpnp);
+                    var hostMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All);
+                    s.HostBots = Math.Clamp(s.HostBots, 0, Math.Max(0, hostMax - 2)); // room for at least one friend (people replace bots anyway)
                     ImGui.SetNextItemWidth(260 * _scale);
-                    ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Game.MaxPlayers - 2);
+                    ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Math.Max(0, hostMax - 2));
+                    ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.HostBots + 1, hostMax) + ". People who join take a bot's place.");
                     if (s.HostBots > 0)
                         DifficultyPicker(ref s.Difficulty);
                     else
@@ -290,6 +296,17 @@ public sealed partial class Ui
             _browser = null;
         }
         return action;
+    }
+
+    /// <summary>"8 / 16 players on Quarry" (or, random from a pack, how many of its maps take that many).</summary>
+    private static string PlayerCountLine(Settings s, int players, int max)
+    {
+        if (!s.MapRandom)
+            return $"{players} / {max} players on {s.MapName}";
+        var pack = Maps.FindPack(s.MapPack);
+        var pool = pack?.Maps ?? Maps.All.ToList();
+        var fit = pool.Count(m => m.MaxPlayers >= players);
+        return $"{players} / {max} players - random from the {fit} of {pool.Count} maps that take {players}";
     }
 
     /// <summary>The server browser tab. Returns true if it already handled the rest of the page.</summary>
@@ -456,9 +473,9 @@ public sealed partial class Ui
                     ImGui.TableNextColumn();
                     ImGuiSafe.TextColored(Dim, m.Size switch
                     {
-                        MapSize.Small => "Up to ~75 m. Fast and close, 2-6 players.",
-                        MapSize.Medium => "80-120 m. Mixed ranges, 4-8 players.",
-                        _ => "160-240 m. Long sightlines, bring a scope. 6-8 players.",
+                        MapSize.Small => "Up to ~75 m. Fast and close, up to 8-10 players.",
+                        MapSize.Medium => "80-135 m. Mixed ranges, up to 12-16 players.",
+                        _ => "150-240 m. Long sightlines, bring a scope. Up to 24-32 players.",
                     });
                 }
                 ImGui.TableNextRow();
@@ -470,7 +487,7 @@ public sealed partial class Ui
                 }
                 ImGui.TableNextColumn();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGuiSafe.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel} - {m.Description} (by {m.Author})" : $"{m.SizeLabel} - {m.Description}");
+                ImGuiSafe.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel}, {m.MaxPlayers} players - {m.Description} (by {m.Author})" : $"{m.SizeLabel}, {m.MaxPlayers} players - {m.Description}");
                 ImGui.PopStyleColor();
             }
             ImGui.EndTable();

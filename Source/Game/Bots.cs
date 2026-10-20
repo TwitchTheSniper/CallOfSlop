@@ -156,7 +156,7 @@ public sealed partial class Game
         ["Ace", "Brick", "Cinder", "Dozer", "Echo", "Fang", "Grit", "Havoc", "Ion", "Jinx", "Knox", "Lynx", "Moss", "Nova"];
 
     /// <summary>Adds a bot (server only). Returns false if the server is full. Without a personality, the lobby gets a mix.</summary>
-    public bool AddBot(BotDifficulty skill, BotPersonality? personality = null)
+    public bool AddBot(BotDifficulty skill, BotPersonality? personality = null, bool quiet = false)
     {
         if (!IsServer || FreeId() is not { } id)
             return false;
@@ -168,7 +168,10 @@ public sealed partial class Game
         var bot = new Player { Id = id, Name = name, Bot = new BotBrain(skill, kind, _rng.Next()) };
         Players[id] = bot;
         Spawn(bot, ServerTick, Brutal.GlfwApi.Glfw.Time);
-        Log($"{name} joined ({skill})");
+        if (quiet)
+            Console.WriteLine($"{name} joined ({skill})");
+        else
+            LogJoin(name, $" ({skill})");
         BroadcastRoster();
         return true;
     }
