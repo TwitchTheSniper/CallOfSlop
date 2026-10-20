@@ -163,7 +163,7 @@ public sealed partial class Ui
     // Smoke-test hooks (see Program.SmokeTick)
     /// <summary>
     /// Smoke test: 4/5 = primary/secondary attachments (opened through the weapon select, so Back would
-    /// return there), 6 = perks, 7 = the progression page, 0 = back to the overview.
+    /// return there), 6 = perks, 7 = the progression page, 8 = kill streaks, 0 = back to the overview.
     /// </summary>
     public void SmokeTab(int tab)
     {
@@ -182,6 +182,9 @@ public sealed partial class Ui
                 break;
             case 7:
                 OpenPage(LoadoutPage.Progression);
+                break;
+            case 8:
+                OpenPage(LoadoutPage.Streaks);
                 break;
         }
     }
@@ -356,6 +359,7 @@ public sealed partial class Ui
                 LoadoutPage.Tactical => "Tactical",
                 LoadoutPage.Perks => "Perks",
                 LoadoutPage.Attachments => $"{Weapons.Get((byte)Math.Clamp(e.Arg, 0, 255)).Name} attachments",
+                LoadoutPage.Streaks => "Kill streaks",
                 _ => "Progression",
             };
             if (i == _nav.Depth - 1)
@@ -553,6 +557,8 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ThrowableCard(4, "Tactical", eff.Equipment, half, 70 * _scale, ref hot))
                 OpenPage(LoadoutPage.Tactical);
+            if (StreaksCard(eff.Streaks, w, 76 * _scale, ref hot))
+                OpenPage(LoadoutPage.Streaks);
 
             if (!SameAsStored(l, eff))
                 ImGui.TextColored(Orange, "Some items in this loadout are locked at your level, so defaults stand in for them."u8);
@@ -564,7 +570,8 @@ public sealed partial class Ui
     private static string DefaultLockedName(int slot) => $"Loadout slot {slot + 1}";
 
     private static bool SameAsStored(Loadout l, Loadout eff) =>
-        l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks;
+        l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks
+        && l.Streaks.Sanitized() == eff.Streaks;
 
     private enum CardClick
     {
@@ -737,6 +744,11 @@ public sealed partial class Ui
         if (page == LoadoutPage.Perks)
         {
             DrawPerkPicker(audio, area);
+            return;
+        }
+        if (page == LoadoutPage.Streaks)
+        {
+            DrawStreakPicker(audio, area);
             return;
         }
         if (page is LoadoutPage.Primary or LoadoutPage.Secondary)

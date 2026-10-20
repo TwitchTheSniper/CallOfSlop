@@ -21,6 +21,11 @@ public enum Sfx
     LevelUp,
     MeleeSwing,
     MeleeHit,
+    StreakReady, // a kill streak earned
+    StreakCall, // a kill streak called in (radio blip)
+    MortarWhistle, // incoming shell
+    TurretShot, // sentry turret / drone / jet cannon
+    JetFlyby, // strafe run jet passing over
     COUNT,
 }
 
@@ -569,6 +574,40 @@ public static class Synth
                 Noise(b, rng, 0, 0.8f, 0.001f, 0.03f, 900);
                 Click(b, rng, 0, 0.4f, 0.8f);
                 return Finish(b, 0.65f);
+            case Sfx.StreakReady:
+            {
+                b = new Buf(0.8f);
+                float[] chime = [660, 880, 1320];
+                for (var i = 0; i < chime.Length; i++)
+                    Tone(b, i * 0.08f, 0.55f, chime[i], chime[i], 1, 0.002f, i == chime.Length - 1 ? 0.25f : 0.06f, harmonics: 0.35f);
+                Echo(b, 0.25f, 0.8f);
+                return Finish(b, 0.55f);
+            }
+            case Sfx.StreakCall:
+                b = new Buf(0.55f);
+                Noise(b, rng, 0, 0.35f, 0.002f, 0.05f, 5000, highpass: true); // radio key-up hiss
+                Tone(b, 0.06f, 0.6f, 1050, 1050, 1, 0.002f, 0.05f, harmonics: 0.5f, length: 0.09f);
+                Tone(b, 0.2f, 0.6f, 1400, 1400, 1, 0.002f, 0.05f, harmonics: 0.5f, length: 0.09f);
+                Noise(b, rng, 0.32f, 0.25f, 0.002f, 0.05f, 5000, highpass: true);
+                return Finish(b, 0.5f);
+            case Sfx.MortarWhistle:
+                b = new Buf(1.2f);
+                Tone(b, 0, 0.7f, 2100, 650, 0.75f, 0.35f, 0.5f, length: 1.15f); // falling whistle
+                Noise(b, rng, 0, 0.12f, 0.4f, 0.4f, 3000, highpass: true, length: 1.15f); // air rush
+                return Finish(b, 0.6f);
+            case Sfx.TurretShot:
+                b = new Buf(0.3f);
+                Noise(b, rng, 0, 1.0f, 0.0005f, 0.02f, 4500); // crack
+                Tone(b, 0, 0.8f, 240, 90, 0.02f, 0.001f, 0.05f); // thump
+                Click(b, rng, 0.002f, 0.5f, 1.2f); // mechanical action
+                Echo(b, 0.3f, 0.7f);
+                return Finish(b, 0.7f);
+            case Sfx.JetFlyby:
+                b = new Buf(2.8f);
+                Noise(b, rng, 0, 0.9f, 0.9f, 0.6f, 1400, length: 2.7f); // roar swelling as it passes
+                Noise(b, rng, 0.2f, 0.4f, 0.7f, 0.5f, 6000, highpass: true, length: 2.4f); // turbine whine
+                Tone(b, 0, 0.35f, 420, 190, 1.2f, 0.8f, 0.6f, harmonics: 0.3f, length: 2.6f); // doppler drop
+                return Finish(b, 0.85f);
             default:
                 return new short[1];
         }

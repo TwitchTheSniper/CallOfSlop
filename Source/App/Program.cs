@@ -211,6 +211,12 @@ public static unsafe class Program
         }
 
         var game = _session;
+        // Map 0, after the play screenshot: kill streaks first (needs you alive), then the death cam (gets you killed).
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeStreakStep < 4)
+        {
+            SmokeStreaks(now);
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -315,6 +321,41 @@ public static unsafe class Program
 
     private static int _smokeWeaponSelect;
     private static string? _smokeLockedGun;
+    private static int _smokeStreakStep, _smokeStreakFrames;
+    private static double _smokeStreakStart;
+
+    /// <summary>
+    /// Smoke step on the first map, after the first play screenshot: calls in a Sentry Turret, a Mortar Barrage and a
+    /// Recon Sweep and screenshots the turret and the shells landing. Keeps its own clock, then hands the usual one back.
+    /// </summary>
+    private static void SmokeStreaks(double now)
+    {
+        var t = now - _smokeStreakStart;
+        switch (_smokeStreakStep)
+        {
+            case 0:
+                _smokeStreakStart = now;
+                _smokeStreakFrames = _smokeFrames;
+                Console.WriteLine($"[smoke] kill streaks: {_game.SmokeCallStreaks(now)}");
+                _smokeStreakStep++;
+                break;
+            case 1 when t > 0.9:
+                SmokeShot("streak_turret");
+                _smokeStreakStep++;
+                break;
+            case 2 when t > KillStreaks.MortarDelay + 0.45:
+                SmokeShot("streak_mortar");
+                _smokeStreakStep++;
+                break;
+            case 3 when t > KillStreaks.MortarDelay + 0.7:
+                Console.WriteLine($"[smoke] kill streaks: {(_smokeFrames - _smokeStreakFrames) / Math.Max(t, 0.001):0} fps avg, entities {_game.StreakEntities.Count}, "
+                    + $"strikes left {_game.Strikes.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                _smokeStepStart += t; // give the usual steps their clock back
+                _smokeFrames = _smokeStreakFrames;
+                _smokeStreakStep++;
+                break;
+        }
+    }
 
     /// <summary>
     /// Smoke step on the first map: the weapon-select screen ("Choose primary"), screenshotted as is and
@@ -1105,6 +1146,9 @@ public static unsafe class Program
                 _game.TryThrow(equipment: true, now);
             if (Pressed(GameAction.Melee))
                 _game.TryMelee(now);
+            for (var i = 0; i < 3; i++)
+                if (Pressed(GameAction.Streak1 + i))
+                    _game.StreakKey(i, now); // kill streaks (cheapest first)
 
             // Held actions
             if (Down(GameAction.MoveForward)) buttons |= Buttons.Forward;
@@ -1286,6 +1330,8 @@ public static unsafe class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.18f, 0.12f, 0.18f) * Matrix4x4.CreateTranslation(s.Pos), Throwables.Get(ThrowableKind.Recon).Color * (blink ? 1.4f : 0.6f), 1f, mode: blink ? 2 : 0);
             Gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.5f, 0.03f) * Matrix4x4.CreateTranslation(s.Pos + new Vector3(0, 0.3f, 0)), new Vector3(0.2f, 0.2f, 0.2f)); // antenna
         }
+
+        StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
 
         // ---- Tracers --------------------------------------------------------
         Gfx.SetBlend(true);

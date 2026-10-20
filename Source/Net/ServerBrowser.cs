@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// </summary>
 public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version)
 {
-    public const byte ProtocolVersion = 5; // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome); 5: kill packet carries the weapon kit, killer HP and damage source
+    public const byte ProtocolVersion = 6; // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome); 5: kill packet carries the weapon kit, killer HP and damage source; 6: kill streaks (loadout packet + streak messages)
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
