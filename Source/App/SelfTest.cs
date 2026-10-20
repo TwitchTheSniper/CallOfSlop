@@ -71,6 +71,7 @@ public static partial class SelfTest
             Section("Capture the Flag", CheckCaptureTheFlag);
             Section("Gun Game", CheckGunGame);
             Section("Mode state and matches", CheckModeMatches);
+            Section("Arms", CheckArms);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");

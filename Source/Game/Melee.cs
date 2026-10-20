@@ -117,7 +117,7 @@ public sealed partial class Game
         if (attacker.Id == LocalId)
             OnOwnMelee(flags, now);
         else
-            PlayMeleeFx(attacker, flags);
+            PlayMeleeFx(attacker, flags, now);
         _w.Begin(Msg.MeleeFx).U8(attacker.Id).U8(flags);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
     }
@@ -130,8 +130,9 @@ public sealed partial class Game
         OnOwnShotConfirmed(flags, now);
     }
 
-    private void PlayMeleeFx(Player attacker, byte flags)
+    private void PlayMeleeFx(Player attacker, byte flags, double now)
     {
+        ThirdPersonArms.OnMelee(attacker.Id, now);
         Audio.Effect3D(Sfx.MeleeSwing, attacker.RenderEye, 0.6f);
         if ((flags & 1) != 0)
             Audio.Effect3D(Sfx.MeleeHit, attacker.RenderEye, 0.8f);
@@ -159,7 +160,7 @@ public sealed partial class Game
                 if (who == LocalId)
                     OnOwnMelee(flags, now); // we already heard our own swing
                 else if (Players.TryGetValue(who, out var p))
-                    PlayMeleeFx(p, flags);
+                    PlayMeleeFx(p, flags, now);
                 break;
             }
         }

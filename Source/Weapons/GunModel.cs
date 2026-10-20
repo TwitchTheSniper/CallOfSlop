@@ -164,6 +164,13 @@ public static class GunModel
         };
     }
 
+    /// <summary>Read-only: the proportions the gun is built from (for ArmAnchors, which puts the hands on the model).</summary>
+    internal static (float RecvLen, float RecvH, float RecvW, float BarrelLen, float BarrelW, float GuardLen, float GuardH) Dims(WeaponDef d)
+    {
+        var f = FrameFor(d);
+        return (f.RecvLen, f.RecvH, f.RecvW, f.BarrelLen, f.BarrelW, f.GuardLen, f.GuardH);
+    }
+
     private static string? Att(WeaponDef d, AttachSlot slot) => Attachments.Get(slot, Attachments.Slot(d.Kit, slot))?.Name;
 
     /// <summary>Has a scope built into the gun itself (long-range rifles with no optic attachment).</summary>
