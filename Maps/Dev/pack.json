@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-pack/1",
   "name": "Dev",
-  "description": "Test maps for developers: features and performance, not balanced for play.",
+  "description": "Test maps for developers: engine features (terrain, foliage) and performance, not balanced for play.",
   "author": "Call of Slop",
   "order": 900
 }

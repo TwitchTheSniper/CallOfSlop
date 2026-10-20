@@ -126,6 +126,8 @@ public sealed partial class Game
 
     private static bool Clear(Vector3 from, Vector3 to)
     {
+        if (World.Map.HasTerrain) // terrain: a walkable line (no cliffs), not just a clear one; callers pass eye height (1 m)
+            return World.CanWalkStraight(from - Vector3.UnitY, to - Vector3.UnitY);
         var d = to - from;
         var dist = d.Length();
         return dist < 0.01f || World.RaycastWorld(from, d / dist, dist) >= dist - 0.05f;

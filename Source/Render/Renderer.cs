@@ -186,11 +186,13 @@ public sealed unsafe class Renderer
     /// <summary>The surface texture array (see <see cref="Textures"/>), bound to texture unit 0 while drawing.</summary>
     public uint TextureArray => _texture;
 
-    /// <summary>Re-binds this renderer's shader and cube mesh after another renderer used its own.</summary>
+    /// <summary>Re-binds this renderer's shader, cube mesh and texture array after another renderer used its own.</summary>
     public void Rebind()
     {
         _program.Use();
         _vao.Bind();
+        Native.glActiveTexture(GL_TEXTURE0);
+        Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _texture);
     }
 
     public void ClearDepthBuffer() => Clear(GlClearBit.Depth);

@@ -1,0 +1,47 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Terrain Test",
+  "description": "Terrain demo: a hill with a hut, a cliff with a ramp around it, a sandy valley and a walled plateau.",
+  "author": "Call of Slop",
+  "order": 901,
+  "halfX": 60,
+  "halfZ": 60,
+  "sky": [0.55, 0.66, 0.78],
+  "terrain": {
+    "cell": 1,
+    "margin": 20,
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#7b7770", "sand": "#b5a577", "dirtSlope": 22, "rockSlope": 36, "sandBelow": -3.2 },
+    "features": [
+      { "type": "noise", "amplitude": 0.7, "scale": 20, "octaves": 4, "seed": 7 },
+      { "type": "hill", "x": -28, "z": -26, "radius": 24, "height": 9 },
+      { "type": "flatten", "x": -28, "z": -26, "radius": 8, "height": 6.5, "edge": 4, "mode": "cut" },
+      { "type": "cliff", "points": [[-90, 10], [-14, 10]], "height": 7, "face": 2, "back": 40, "side": "right", "taper": 26 },
+      { "type": "ramp", "points": [[-54, -2], [-40, 16]], "width": 4, "edge": 2, "material": "dirt" },
+      { "type": "valley", "points": [[-4, 40], [26, 30], [80, 38]], "width": 24, "depth": 5 },
+      { "type": "plateau", "x": 30, "z": -26, "radius": 13, "height": 7, "edge": 4 },
+      { "type": "ramp", "points": [[14, -4], [23.5, -17, 7]], "width": 4, "edge": 2, "material": "dirt" },
+      { "type": "flatten", "x": 0, "z": 2, "w": 16, "d": 14, "edge": 5 }
+    ]
+  },
+  "ops": [
+    { "op": "Ground", "color": [0.36, 0.5, 0.25] },
+    { "op": "Perimeter", "height": 5, "color": "#8f8a80" },
+    { "op": "Building", "cx": 0, "cz": 2, "w": 12, "d": 10, "stories": 1, "wall": [0.62, 0.58, 0.52], "floor": [0.45, 0.42, 0.4], "doors": "NS", "roofAccess": true },
+    { "op": "Building", "cx": -28, "cz": -26, "w": 10, "d": 10, "stories": 1, "wall": [0.55, 0.45, 0.35], "floor": [0.42, 0.4, 0.38], "doors": "SE", "roofAccess": false },
+    { "op": "Watchtower", "x": 32, "z": -30, "height": 3, "color": [0.45, 0.36, 0.26] },
+    { "op": "CoverLine", "x0": 8, "z0": 32, "x1": 40, "z1": 32, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "Rocks", "x": -40, "z": 30, "size": 3, "color": [0.5, 0.48, 0.45], "seed": 3 },
+    { "op": "Rocks", "x": 40, "z": 8, "size": 2.5, "color": [0.5, 0.48, 0.45], "seed": 5 },
+    { "op": "Container", "x": 22, "z": 10, "alongX": true, "color": [0.3, 0.45, 0.6] },
+    { "op": "Container", "x": -6, "z": -30, "alongX": false, "color": [0.6, 0.3, 0.25] },
+    { "op": "Container", "x": -36, "z": 34, "alongX": true, "color": [0.35, 0.5, 0.35], "open": true },
+    { "op": "Rocks", "x": 20, "z": 48, "size": 3, "color": [0.5, 0.48, 0.45], "seed": 9 },
+    { "op": "Rocks", "x": -14, "z": -46, "size": 2.5, "color": [0.5, 0.48, 0.45], "seed": 11 },
+    { "op": "Prop", "x": 44, "z": 22, "w": 2, "h": 1.2, "d": 6, "color": "#7a6a50" },
+    { "op": "TreeIfClear", "x": -44, "z": 44 },
+    { "op": "TreeIfClear", "x": -30, "z": 50 },
+    { "op": "TreeIfClear", "x": 48, "z": -48 },
+    { "op": "RingSpawns", "count": 10, "frac": 0.8 },
+    { "op": "AutoWaypoints", "spacing": 7 }
+  ]
+}

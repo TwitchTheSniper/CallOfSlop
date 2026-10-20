@@ -243,7 +243,7 @@ public sealed partial class Map
 
 /// <summary>
 /// The optional objective fields of a map file:
-///   "teamSpawns": [ [ [x, y, z], ... ], [ ... ] ]   two lists of spawn points (y may be left out: [x, z])
+///   "teamSpawns": [ [ [x, y, z], ... ], [ ... ] ]   two lists of spawn points (y may be left out: [x, z] sits on the ground)
 ///   "hills":      [ { "x": 0, "z": 0, "y": 0, "radius": 4.5 }, ... ]   in rotation order (y and radius optional)
 ///   "flags":      [ [x, y, z], [x, y, z] ]   team 1's flag, then team 2's
 /// </summary>
@@ -281,7 +281,10 @@ public static class MapObjectiveJson
         {
             if (e.ValueKind != System.Text.Json.JsonValueKind.Array || e.GetArrayLength() is not (2 or 3))
                 throw new MapFileException($"{source}: {where}: a point is [x, y, z] or [x, z]");
-            return e.GetArrayLength() == 2 ? new Vector3(Num(e[0], where), 0, Num(e[1], where)) : new Vector3(Num(e[0], where), Num(e[1], where), Num(e[2], where));
+            if (e.GetArrayLength() == 3)
+                return new Vector3(Num(e[0], where), Num(e[1], where), Num(e[2], where));
+            float px = Num(e[0], where), pz = Num(e[1], where);
+            return new Vector3(px, map.GroundHeight(px, pz), pz); // [x, z]: on the floor (the terrain, on terrain maps)
         }
 
         if (Prop(root, "teamSpawns") is { } ts)
@@ -305,9 +308,10 @@ public static class MapObjectiveJson
             {
                 if (Prop(h, "x") is not { } x || Prop(h, "z") is not { } z)
                     throw new MapFileException($"{source}: each hill needs \"x\" and \"z\"");
-                var y = Prop(h, "y") is { } ye ? Num(ye, "hill y") : 0f;
+                float hx = Num(x, "hill x"), hz = Num(z, "hill z");
+                var y = Prop(h, "y") is { } ye ? Num(ye, "hill y") : map.GroundHeight(hx, hz); // no y: on the floor (or the terrain)
                 var r = Prop(h, "radius") is { } re ? Math.Clamp(Num(re, "hill radius"), 1.5f, 30f) : MapObjectives.HillRadius(map);
-                list.Add(new HillZone(new Vector3(Num(x, "hill x"), y, Num(z, "hill z")), r));
+                list.Add(new HillZone(new Vector3(hx, y, hz), r));
             }
             map.HillData = list;
         }

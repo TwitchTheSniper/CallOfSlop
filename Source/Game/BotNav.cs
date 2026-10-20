@@ -178,6 +178,8 @@ public sealed class NavGraph
         foreach (var b in map.Solid)
             top = MathF.Max(top, b.Max.Y);
         top = MathF.Min(top + 1f, 59f);
+        if (map.TerrainCollision is { } terrain)
+            top = MathF.Max(top, terrain.Data.MaxHeight + 2f); // hills can rise above every box
 
         // ---- Nodes: every standable surface at each grid point, plus the map's waypoints and spawns ----
         var nodes = new List<Vector3>();
@@ -356,12 +358,42 @@ public sealed class NavGraph
         var b = g.Nodes[j];
         if (MathF.Abs(a.Y - b.Y) > MaxDrop)
             return;
+        if (TooSteep(a, b))
+            return;
         Walk(a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
         var len = Vector3.Distance(a, b);
         if (fwd)
             edges.Add((i, j, len + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
         if (back)
             edges.Add((j, i, len + ((bFlags & FlagMantle) != 0 ? 2f : 0f), bFlags, bLedge));
+    }
+
+    /// <summary>
+    /// Terrain maps: a link that runs along the ground over a slope steeper than <see cref="World.MaxSlopeDeg"/>
+    /// (players slide off those) is no use to a bot. Box steps and ledges are left to <see cref="Walk"/>.
+    /// </summary>
+    private static bool TooSteep(Vector3 a, Vector3 b)
+    {
+        if (World.Map.TerrainCollision is not { } t)
+            return false;
+        var maxRise = MathF.Tan(World.MaxSlopeDeg * MathF.PI / 180f);
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        var len = d.Length();
+        var n = Math.Clamp((int)MathF.Ceiling(len / 1f), 1, 64);
+        var run = len / n;
+        var prev = t.HeightAt(a.X, a.Z);
+        for (var k = 1; k <= n; k++)
+        {
+            var f = k / (float)n;
+            float x = a.X + d.X * f, z = a.Z + d.Y * f;
+            var h = t.HeightAt(x, z);
+            // Only where the line is actually on the terrain (not on a box floor above it).
+            var y = a.Y + (b.Y - a.Y) * f;
+            if (MathF.Abs(y - h) < 1.5f && MathF.Abs(h - prev) > maxRise * run + 0.05f)
+                return true;
+            prev = h;
+        }
+        return false;
     }
 
     /// <summary>

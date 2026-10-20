@@ -459,7 +459,10 @@ public sealed partial class Game
     public static bool InHill(Vector3 feet, HillZone hill)
     {
         var d = new Vector2(feet.X - hill.Center.X, feet.Z - hill.Center.Z);
-        return d.LengthSquared() <= hill.Radius * hill.Radius && feet.Y > hill.Center.Y - 1f && feet.Y < hill.Center.Y + 3f;
+        // Height window measured from the ground, so a zone on a slope covers the whole slope (flat maps: ground = 0).
+        var m = World.Map;
+        var y = feet.Y - m.GroundHeight(feet.X, feet.Z) - (hill.Center.Y - m.GroundHeight(hill.Center.X, hill.Center.Z));
+        return d.LengthSquared() <= hill.Radius * hill.Radius && y > -1f && y < 3f;
     }
 
     private void TickHill(double now)
