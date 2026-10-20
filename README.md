@@ -246,7 +246,9 @@ The **loadout menu** opens when a match starts (and any time with **B**, or from
 | LMGs (5) | Anvil LMG, Hailstorm, Bastille, Grinder Rotary, Torrent |
 | Special (4) | Nailgun, Arc Carbine, Old Faithful Musket, Toy Blaster |
 
-Every weapon has its own stats: damage and headshot multiplier, pellets, fire rate and mode (semi/burst/auto), magazine, reload, hip and aimed spread, recoil, damage falloff, movement speed, zoom and draw time. All tuning lives in `Weapons.cs`.
+Every weapon has its own stats: damage and headshot multiplier, pellets, fire rate and mode (semi/burst/auto), magazine, reload, hip and aimed spread, recoil, damage falloff, movement speed, zoom and draw time.
+
+**Weapons and attachments are data files.** Each weapon is one `.json` file in the `Weapons` folder (one subfolder per class), and each attachment is one file in `Attachments`, holding its slot, which weapons it fits and the stat changes it makes. To add a weapon, drop a file in and restart. Its model and sounds are generated from its stats, and it picks its own unlock level with `unlockLevel`. **[Weapons/README.md](Weapons/README.md)** and **[Attachments/README.md](Attachments/README.md)** are the guides, with an example and every field. A broken file is skipped with a message in the lobby, and `CallOfSlop.exe --check-weapon FILE` checks one without starting the game. Weapon XP and loadouts are saved by weapon name. In multiplayer everyone needs identical `Weapons` and `Attachments` folders: a client whose set differs from the host's is told which folder differs and disconnected.
 The server checks everything: you can only fire weapons you own, at their real fire rate and spread, and you can't move faster than your fastest weapon allows.
 
 ### Sound
@@ -255,7 +257,7 @@ Every weapon has its own **gunshot, reload and equip sound**, synthesised when t
 
 ## Development and version control
 
-The repository holds only the source: `Source/`, `Maps/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.
+The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.
 
 - **Get started:** clone the repo, then run `Start.bat` (or `dotnet build -c Release`). NuGet fetches the BRUTAL packages on the first build.
 - **Automatic checks:** with `.github/workflows/build.yml` in the repo, every push runs **Build and self-test** on GitHub Actions. It builds on Windows, runs `CallOfSlop.exe --selftest` and attaches the logs to the run. A red X on a commit means it didn't build or a check failed; open the run to see which.
@@ -264,7 +266,7 @@ The repository holds only the source: `Source/`, `Maps/`, `tools/`, the project 
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, checks mantling through a window and onto a crate, every attachment on every weapon, and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
   - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works
@@ -298,6 +300,8 @@ On clients, the window title shows ping, the current interpolation delay, and th
 ```
 CallOfSlop.csproj   Start.bat   README.md   NOTICE.txt
 Maps/                map files (*.json) and the map makers' guide - copied next to the game on build
+Weapons/             weapon files (*.json, one subfolder per class) and the weapon guide - copied next to the game
+Attachments/         attachment files (*.json, one subfolder per slot) and the attachment guide - copied next to the game
 tools/               BuildCheck.bat (build + self-test)
 Source/
   App/               Program (window, input, camera, scene + HUD drawing, smoke test), Settings, Keybinds, SelfTest
@@ -305,13 +309,14 @@ Source/
                      Throwables, Progression, ServerAdvert, Loadouts (slots + loadout.txt), Perks, Melee
   Maps/              Map (geometry + building ops), MapKit (bigger ready-made pieces), MapFile (JSON load/save)
   Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
-  Weapons/           Weapons (catalogue + stats), Attachments, GunModel (procedural weapon models)
+  Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
+                     fingerprint, --check-weapon), GunModel (procedural weapon models)
   Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array)
   UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), UiGunsmith
   Audio/             Audio (OpenAL playback + procedural sound synthesis)
 ```
 
-**Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout).
+**Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).
 
 All tuning values (damage, fire rate, speeds, arena size) live at the top of `World.cs`.
 

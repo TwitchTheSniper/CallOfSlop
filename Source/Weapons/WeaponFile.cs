@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Linq.Expressions;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -260,25 +261,75 @@ public sealed class AttachmentEffect
     public required object Value; // the field's type for "set", a float for the others
     public float? Min, Max;
 
+    // Typed field accessors, compiled once per field when the file loads, so applying a kit mid-match
+    // never goes through reflection.
+    private Func<WeaponDef, float>? _getF;
+    private Action<WeaponDef, float>? _setF;
+    private Func<WeaponDef, int>? _getI;
+    private Action<WeaponDef, int>? _setI;
+    private Action<WeaponDef, object>? _set;
+
+    private static readonly Dictionary<FieldInfo, Delegate[]> Accessors = new();
+
+    /// <summary>Builds the accessors this effect needs (call once after creating it).</summary>
+    public AttachmentEffect Prepare()
+    {
+        Delegate[]? acc;
+        lock (Accessors)
+        {
+            if (!Accessors.TryGetValue(Field, out acc))
+            {
+                var w = Expression.Parameter(typeof(WeaponDef), "w");
+                var field = Expression.Field(w, Field);
+                var obj = Expression.Parameter(typeof(object), "v");
+                var setObj = Expression.Lambda<Action<WeaponDef, object>>(Expression.Assign(field, Expression.Convert(obj, Field.FieldType)), w, obj).Compile();
+                acc = [setObj];
+                if (Field.FieldType == typeof(float) || Field.FieldType == typeof(int))
+                {
+                    var v = Expression.Parameter(Field.FieldType, "x");
+                    var getter = Expression.Lambda(field, w).Compile();
+                    var setter = Expression.Lambda(Expression.Assign(field, v), w, v).Compile();
+                    acc = [setObj, getter, setter];
+                }
+                Accessors[Field] = acc;
+            }
+        }
+        _set = (Action<WeaponDef, object>)acc[0];
+        if (acc.Length > 1 && Field.FieldType == typeof(float))
+        {
+            _getF = (Func<WeaponDef, float>)acc[1];
+            _setF = (Action<WeaponDef, float>)acc[2];
+        }
+        else if (acc.Length > 1)
+        {
+            _getI = (Func<WeaponDef, int>)acc[1];
+            _setI = (Action<WeaponDef, int>)acc[2];
+        }
+        return this;
+    }
+
     public void ApplyTo(WeaponDef w)
     {
-        object result;
+        if (_set == null)
+            Prepare();
         if (Op == "set")
-            result = Value;
-        else if (Field.FieldType == typeof(float))
         {
-            var cur = (float)Field.GetValue(w)!;
+            _set!(w, Value);
+        }
+        else if (_getF != null)
+        {
+            var cur = _getF(w);
             var x = (float)Value;
             var r = Op == "add" ? cur + x : cur * x;
             if (Min is { } mn)
                 r = MathF.Max(mn, r);
             if (Max is { } mx)
                 r = MathF.Min(mx, r);
-            result = r;
+            _setF!(w, r);
         }
         else
         {
-            var cur = (int)Field.GetValue(w)!;
+            var cur = _getI!(w);
             var x = (float)Value;
             var r = Op switch
             {
@@ -290,9 +341,8 @@ public sealed class AttachmentEffect
                 r = Math.Max((int)mn, r);
             if (Max is { } mx)
                 r = Math.Min((int)mx, r);
-            result = r;
+            _setI!(w, r);
         }
-        Field.SetValue(w, result);
     }
 }
 
@@ -451,7 +501,7 @@ public static class AttachmentFile
         }
         if ((min != null || max != null) && (!numeric || op == "set"))
             throw new WeaponFileException($"{where}: min/max only go with add, mul or grow on a number");
-        return new AttachmentEffect { Field = field, Op = op, Value = v, Min = min, Max = max };
+        return new AttachmentEffect { Field = field, Op = op, Value = v, Min = min, Max = max }.Prepare();
     }
 
     /// <summary>The attachment as an attachment file (only for attachments loaded from files: code-built ones have no rules to write).</summary>
