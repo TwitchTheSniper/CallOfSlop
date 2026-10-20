@@ -681,8 +681,9 @@ public static unsafe class Program
         if (fb.X <= 0 || fb.Y <= 0)
             return;
         // Preview the map currently picked in the lobby.
-        // (with "random map" picked, the background tours a different map every 12 seconds)
-        var preview = _settings.MapRandom ? Maps.All[(int)(now / 12) % Maps.All.Length] : Maps.Find(_settings.MapName);
+        // (with "random from pack" picked, the background tours the pack's maps, a different one every 12 seconds)
+        var tour = Maps.FindPack(_settings.MapPack) is { Maps.Count: > 0 } pack ? pack.Maps : (IReadOnlyList<Map>)Maps.All;
+        var preview = _settings.MapRandom ? tour[(int)(now / 12) % tour.Count] : Maps.Find(_settings.MapName);
         if (preview != null && preview != World.Map)
             World.SetMap(preview);
         var map = World.Map;

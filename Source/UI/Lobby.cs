@@ -329,16 +329,13 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    /// <summary>Map list with size and description. The lobby background previews the selection.</summary>
+    /// <summary>
+    /// Map pack list, then "random from pack" or a map from that pack. The lobby background previews the selection
+    /// (it tours the pack when random).
+    /// </summary>
     private void MapPicker(Settings s)
     {
-        ImGui.Text("Map"u8);
-        ImGui.SameLine(0, 20 * _scale);
-        if (ImGui.RadioButton("Random map"u8, s.MapRandom))
-            s.MapRandom = true;
-        ImGui.SameLine();
-        if (ImGui.RadioButton("Select map"u8, !s.MapRandom))
-            s.MapRandom = false;
+        ImGui.Text("Map pack"u8);
         ImGui.SameLine(0, 20 * _scale);
         if (ImGui.Button("Refresh maps"u8))
             _mapReloadMsg = (Maps.Reload().Summary, (Environment.TickCount64 / 1000.0) + 8);
@@ -347,18 +344,63 @@ public sealed partial class Ui
         if (Maps.LoadErrors.Count > 0)
             ImGui.TextColored(Red,
                 $"{Maps.LoadErrors.Count} map file(s) in the Maps folder didn't load: {Maps.LoadErrors[0]}{(Maps.LoadErrors.Count > 1 ? " (more in callofslop.log)" : "")}");
+
+        // The saved pack may be gone (folder removed or renamed): show the first one, but only change the
+        // setting when the player clicks, so the pack comes back if its folder does.
+        var saved = Maps.FindPack(s.MapPack);
+        var pack = saved ?? Maps.Packs[0];
+        var rows = Math.Min(Maps.Packs.Length, 4);
+        if (ImGui.BeginTable("##packs"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY,
+                new float2(720 * _scale, rows * 46 * _scale + 6 * _scale)))
+        {
+            ImGui.TableSetupColumn("Pack"u8, ImGuiTableColumnFlags.WidthFixed, 200 * _scale);
+            ImGui.TableSetupColumn("About"u8, ImGuiTableColumnFlags.WidthStretch);
+            foreach (var p in Maps.Packs)
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                if (ImGui.Selectable($"{p.Name}##pack{p.Name}", p == saved, ImGuiSelectableFlags.SpanAllColumns))
+                {
+                    s.MapPack = p.Name;
+                    if (!p.Maps.Any(m => m.Name.Equals(s.MapName, StringComparison.OrdinalIgnoreCase)))
+                        s.MapName = p.Maps[0].Name; // "Choose map" starts on a map of the new pack
+                }
+                ImGui.TableNextColumn();
+                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                ImGui.TextWrapped($"{p.Maps.Count} maps: {p.SizeSummary}{(p.Author.Length > 0 ? $" (by {p.Author})" : "")}");
+                if (p.Description.Length > 0)
+                    ImGui.TextWrapped(p.Description);
+                ImGui.PopStyleColor();
+            }
+            ImGui.EndTable();
+        }
+
+        ImGui.Text("Play"u8);
+        ImGui.SameLine(0, 20 * _scale);
+        if (ImGui.RadioButton("Random from pack"u8, s.MapRandom))
+            s.MapRandom = true;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Choose map"u8, !s.MapRandom))
+        {
+            s.MapRandom = false;
+            s.MapPack = pack.Name;
+            if (!pack.Maps.Any(m => m.Name.Equals(s.MapName, StringComparison.OrdinalIgnoreCase)))
+                s.MapName = pack.Maps[0].Name;
+        }
         if (s.MapRandom)
         {
-            ImGui.TextColored(Dim, $"A random one of the {Maps.All.Length} maps each time. After a match, players vote on the next one.");
+            ImGui.TextColored(Dim, saved != null
+                ? $"A random one of the {saved.Maps.Count} maps in {saved.Name} each time. After a match, players vote on the next one from the same pack."
+                : $"The pack '{s.MapPack}' isn't in the Maps folder, so it's a random one of all {Maps.All.Length} maps. Pick a pack above.");
             ImGui.Spacing();
             return;
         }
-        if (ImGui.BeginTable("##maps"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(720 * _scale, 330 * _scale)))
+        if (ImGui.BeginTable("##maps"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(720 * _scale, 260 * _scale)))
         {
             ImGui.TableSetupColumn("Map"u8, ImGuiTableColumnFlags.WidthFixed, 200 * _scale);
             ImGui.TableSetupColumn("About"u8, ImGuiTableColumnFlags.WidthStretch);
             MapSize? group = null;
-            foreach (var m in Maps.All.OrderBy(x => x.Size).ThenBy(x => x.Id))
+            foreach (var m in pack.Maps.OrderBy(x => x.Size).ThenBy(x => x.Id))
             {
                 if (m.Size != group)
                 {
@@ -382,7 +424,10 @@ public sealed partial class Ui
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
                 if (ImGui.Selectable($"{m.Name}##map{m.Id}", m.Name == s.MapName, ImGuiSelectableFlags.SpanAllColumns))
+                {
                     s.MapName = m.Name;
+                    s.MapPack = pack.Name;
+                }
                 ImGui.TableNextColumn();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
                 ImGui.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel} - {m.Description} (by {m.Author})" : $"{m.SizeLabel} - {m.Description}");

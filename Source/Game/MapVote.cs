@@ -5,8 +5,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// End-of-match map vote (server-authoritative).
-///   - When a match ends the server picks 3 maps (one small, one medium, one large when possible,
-///     never the map just played) and broadcasts them.
+///   - When a match ends the server picks 3 maps from the pack of the map just played (one small, one
+///     medium, one large when possible, never the map just played) and broadcasts them.
 ///   - Everyone votes during the 12 s results screen (click, or press 1/2/3). Bots vote too, after a
 ///     random delay. You can change your vote until the timer runs out.
 ///   - The next match starts on the map with the most votes (ties and no votes: random among the top).
@@ -43,8 +43,9 @@ public sealed partial class Game
         _botVotes.Clear();
         MyVote = -1;
 
-        var current = World.Map.Name; // by name: after a map reload the playing map isn't in the list as the same object
-        var pool = Maps.All.Where(m => !m.Name.Equals(current, StringComparison.OrdinalIgnoreCase)).ToList();
+        // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
+        var pack = (Maps.Find(World.Map.Name) ?? World.Map).Pack is { } playedPack ? Maps.FindPack(playedPack.Name) : null;
+        var pool = VotePool(World.Map.Name, pack, Maps.All);
         var picks = new List<Map>();
         // One of each size first, so there's always a choice of pace...
         foreach (var size in new[] { MapSize.Small, MapSize.Medium, MapSize.Large })
@@ -69,6 +70,17 @@ public sealed partial class Game
             _botVotes.Add((p.Id, now + 1.5 + _rng.NextDouble() * 6.5));
 
         BroadcastVoteState();
+    }
+
+    /// <summary>
+    /// The maps a ballot may offer: the other maps of the pack just played, or every other map when that pack
+    /// has fewer than 2 others (or the map has no pack).
+    /// </summary>
+    public static List<Map> VotePool(string current, MapPack? pack, IReadOnlyList<Map> all)
+    {
+        bool Other(Map m) => !m.Name.Equals(current, StringComparison.OrdinalIgnoreCase);
+        var inPack = pack?.Maps.Where(Other).ToList();
+        return inPack is { Count: >= 2 } ? inPack : all.Where(Other).ToList();
     }
 
     private void ServerTickVotes(double now)

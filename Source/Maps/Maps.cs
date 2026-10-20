@@ -392,12 +392,27 @@ public static partial class Maps
     // Built on first use (not as a field initialiser), so the palette colours above are guaranteed to be
     // set first. A field initialiser here once turned half the maps black.
     private static Map[]? _all;
+    private static MapPack[]? _packs;
     public static Map[] All => _all ??= LoadAll();
+
+    /// <summary>Every map pack (one per top-level folder in Maps, plus "Other" for loose files), sorted by order then name.</summary>
+    public static MapPack[] Packs
+    {
+        get
+        {
+            _ = All; // loads the maps (and with them the packs) on first use
+            return _packs!;
+        }
+    }
+
+    /// <summary>The pack with this name, or null.</summary>
+    public static MapPack? FindPack(string name) => Packs.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Re-reads the Maps folder without restarting ("Refresh maps" in the lobby, "Reload map files" in the pause menu).
     /// The list is swapped in one go. Map objects already in use (the map being played) stay valid; they're
     /// just no longer in the list. Ids are positions in the new list, which is why votes and the network go by name.
+    /// Packs are rebuilt too.
     /// </summary>
     public static MapReload Reload()
     {
@@ -425,45 +440,123 @@ public static partial class Maps
     public static string Folder => Path.Combine(AppContext.BaseDirectory, "Maps");
 
     /// <summary>
-    /// Every *.json in the Maps folder (and its subfolders, so a map pack can be dropped in as a folder),
-    /// sorted by "order" then name. The shipped maps are ordinary map files too.
+    /// Every map in the Maps folder, sorted by "order" then name, and the packs they belong to.
+    /// The shipped maps are ordinary map files too (in Maps/Classic).
     /// Ids are positions in this list (local only: the network refers to maps by name + fingerprint).
     /// </summary>
     private static Map[] LoadAll()
     {
-        var maps = new List<Map>();
-        if (Directory.Exists(Folder))
+        var (maps, packs) = LoadFolder(Folder, LoadErrors);
+        if (maps.Length == 0)
         {
-            foreach (var file in Directory.GetFiles(Folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+            // No map files (or none valid): fall back to the one map built into the code so the game still starts.
+            Console.WriteLine($"[maps] no map files in {Folder}; using the built-in fallback map");
+            var pack = new MapPack { Name = "Built-in", Description = "The Maps folder is missing or empty, so only the built-in test map is available." };
+            foreach (var m in Fallback())
             {
+                m.Id = 0;
+                m.Validate();
+                m.Pack = pack;
+                pack.Maps.Add(m);
+            }
+            maps = pack.Maps.ToArray();
+            packs = [pack];
+        }
+        _packs = packs;
+        Console.WriteLine($"[maps] {maps.Length} map(s) in {packs.Length} pack(s): "
+            + string.Join("; ", packs.Select(p => $"{p.Name}: {string.Join(", ", p.Maps.Select(m => m.Name))}")));
+        return maps;
+    }
+
+    /// <summary>
+    /// Loads a maps folder: each top-level subfolder is a pack (all its *.json files, nested folders included,
+    /// except pack.json, which describes the pack), and *.json files directly in the folder form the "Other" pack.
+    /// Map names must be unique across all packs. Bad files are skipped and described in <paramref name="errors"/>.
+    /// Returns the maps sorted by order then name (ids assigned, validated; at most 255) and the non-empty packs.
+    /// </summary>
+    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors)
+    {
+        var maps = new List<Map>();
+        var packs = new List<MapPack>();
+        if (!Directory.Exists(folder))
+            return ([], []);
+        static bool IsMapFile(string f) => !Path.GetFileName(f).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase);
+        void LoadInto(MapPack pack, IEnumerable<string> files, bool loose)
+        {
+            foreach (var file in files.Where(IsMapFile).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+            {
+                var rel = Path.GetRelativePath(folder, file);
                 try
                 {
-                    var m = MapFile.Load(File.ReadAllText(file), Path.GetRelativePath(Folder, file));
-                    if (maps.Any(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)))
-                        throw new MapFileException($"{Path.GetRelativePath(Folder, file)}: another map is already called '{m.Name}'");
+                    var m = MapFile.Load(File.ReadAllText(file), rel);
+                    if (maps.FirstOrDefault(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)) is { } other)
+                    {
+                        // A loose copy identical to a map in a pack: most likely a file left over from before the
+                        // maps moved into pack folders (builds don't delete old files). Skip it quietly.
+                        if (loose && MapFile.ToJson(other) == MapFile.ToJson(m))
+                        {
+                            Console.WriteLine($"[maps] ignored {rel}: same map as {other.SourceFile}");
+                            continue;
+                        }
+                        throw new MapFileException($"{rel}: another map is already called '{m.Name}' ({other.SourceFile})");
+                    }
+                    m.Pack = pack;
                     maps.Add(m);
                 }
                 catch (Exception ex) when (ex is MapFileException or IOException)
                 {
-                    LoadErrors.Add(ex.Message);
+                    errors.Add(ex.Message);
                     Console.WriteLine($"[maps] skipped: {ex.Message}");
                 }
             }
+            packs.Add(pack);
         }
-        if (maps.Count == 0)
+
+        // Pack folders first, so a stray loose duplicate never pushes a pack's own map out.
+        foreach (var dir in Directory.GetDirectories(folder).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
         {
-            // No map files (or none valid): fall back to the one map built into the code so the game still starts.
-            Console.WriteLine($"[maps] no map files in {Folder}; using the built-in fallback map");
-            maps.AddRange(Fallback());
+            var name = Path.GetFileName(dir);
+            if (name.StartsWith('.'))
+                continue; // .git and friends
+            var pack = new MapPack { Name = name, Folder = name };
+            var meta = Path.Combine(dir, MapPack.FileName);
+            if (File.Exists(meta))
+            {
+                try
+                {
+                    pack = MapPack.Load(File.ReadAllText(meta), name, Path.Combine(name, MapPack.FileName));
+                }
+                catch (Exception ex) when (ex is MapFileException or IOException)
+                {
+                    errors.Add(ex.Message);
+                    Console.WriteLine($"[maps] pack info skipped: {ex.Message}");
+                }
+            }
+            if (packs.Any(p => p.Name.Equals(pack.Name, StringComparison.OrdinalIgnoreCase)))
+                pack.Name = $"{pack.Name} ({name})"; // two folders claiming the same pack name: keep them apart
+            LoadInto(pack, Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories), false);
         }
+        LoadInto(new MapPack { Name = MapPack.LooseName, Description = "Map files placed directly in the Maps folder.", Order = int.MaxValue },
+            Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly), true);
+
         var sorted = maps.OrderBy(m => m.Order).ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase).ToArray();
-        for (var i = 0; i < sorted.Length && i < 255; i++)
+        if (sorted.Length > 255)
+        {
+            errors.Add($"{sorted.Length} maps found; only the first 255 are used");
+            sorted = sorted[..255];
+        }
+        for (var i = 0; i < sorted.Length; i++)
         {
             sorted[i].Id = (byte)i;
             sorted[i].Validate();
         }
-        Console.WriteLine($"[maps] {sorted.Length} map(s): {string.Join(", ", sorted.Select(m => m.Name))}");
-        return sorted.Length > 255 ? sorted[..255] : sorted;
+        foreach (var p in packs)
+        {
+            p.Maps.Clear();
+            p.Maps.AddRange(sorted.Where(m => m.Pack == p));
+        }
+        var usedPacks = packs.Where(p => p.Maps.Count > 0).OrderBy(p => p.Order).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        return (sorted, usedPacks);
     }
 
     /// <summary>The only map defined in code: used when the Maps folder is missing or empty.</summary>
@@ -484,7 +577,9 @@ public static partial class Maps
         foreach (var m in All)
         {
             var slug = new string(m.Name.Where(char.IsLetterOrDigit).ToArray());
-            File.WriteAllText(Path.Combine(dir, $"{m.Order:00}-{slug}.json"), MapFile.ToJson(m));
+            var packDir = Path.Combine(dir, m.Pack?.Folder ?? ""); // keep the pack folders
+            Directory.CreateDirectory(packDir);
+            File.WriteAllText(Path.Combine(packDir, $"{m.Order:00}-{slug}.json"), MapFile.ToJson(m));
         }
         Console.WriteLine($"[maps] wrote {All.Length} map file(s) to {Path.GetFullPath(dir)}");
         return 0;
