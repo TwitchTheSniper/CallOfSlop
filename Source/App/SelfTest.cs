@@ -44,7 +44,6 @@ public static class SelfTest
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
             Section("Mantling", CheckMantle);
-            Section("Weapon files", CheckWeaponFiles);
             Section("Attachments", CheckAttachments);
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
@@ -52,6 +51,7 @@ public static class SelfTest
             Section("Matches", CheckMatches);
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
+            Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
