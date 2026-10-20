@@ -258,6 +258,8 @@ public static class ArmAnchors
         if (a.MagShape == HandShape.Wrap && cls is not (WeaponClass.LMG or WeaponClass.Shotgun) && a.MagWell.Y < -recvH * 0.3f)
         {
             a.SupportAds = a.MagWell; // a "mag grip": the hand drops below the lens
+            if (built != null)
+                a.SupportAds.Y -= 0.04f; // built models give the top of the magazine: hold it lower down
             a.SupportAdsShape = HandShape.Wrap;
         }
         else
