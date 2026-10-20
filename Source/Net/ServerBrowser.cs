@@ -8,9 +8,12 @@ namespace CallOfSlop;
 /// What a hosted game tells the world, answered automatically by RakNet to unconnected pings
 /// (the "offline ping response"). Starts with a magic tag so it can be found inside RakNet's pong.
 /// </summary>
-public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version)
+public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
+    GameMode Mode = GameMode.FreeForAll)
 {
-    public const byte ProtocolVersion = 4; // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome)
+    // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome);
+    // 5: game modes and ready-up (mode state, ready and mode event packets, warmup phase, mode in the server info)
+    public const byte ProtocolVersion = 5;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -18,7 +21,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var name = Encoding.ASCII.GetBytes(Name.Length > 32 ? Name[..32] : Name);
         var map = Encoding.UTF8.GetBytes(MapName.Length > 40 ? MapName[..40] : MapName);
         var b = new List<byte>(Magic);
-        b.AddRange([Version, 0, Players, MaxPlayers, Bots, (byte)Phase, (byte)Port, (byte)(Port >> 8), (byte)name.Length]);
+        b.AddRange([Version, (byte)Mode, Players, MaxPlayers, Bots, (byte)Phase, (byte)Port, (byte)(Port >> 8), (byte)name.Length]);
         b.AddRange(name);
         b.Add((byte)map.Length);
         b.AddRange(map);
@@ -37,7 +40,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var name = Encoding.ASCII.GetString(d.Slice(9, d[8]));
         var rest = d[(9 + d[8])..];
         var map = rest.Length >= 1 && rest.Length >= 1 + rest[0] ? Encoding.UTF8.GetString(rest.Slice(1, rest[0])) : "?";
-        return new ServerInfo(name, map, d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0]);
+        return new ServerInfo(name, map, d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0], (GameMode)d[1]);
     }
 }
 

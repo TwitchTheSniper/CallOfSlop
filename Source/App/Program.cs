@@ -585,6 +585,9 @@ public static unsafe class Program
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
+            _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
+            _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
+            _session.Mode = _settings.Mode; // clients learn the host's mode from the server
             if (kind == LobbyAction.Host)
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
@@ -968,6 +971,8 @@ public static unsafe class Program
             }
         }
         Ui.ShowScoreboard = _mouseCaptured && Down(GameAction.Scoreboard);
+        if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
+            _game.ToggleReady();
 
         // Mouse look is applied every frame (never waits for a tick or the network).
         if (_mouseCaptured)
@@ -1277,6 +1282,7 @@ public static unsafe class Program
                     new Vector3(shade, shade, shade + 0.02f), 0.55f * fade, mode: 2);
             }
         }
+        ObjectiveRender.Draw(Gfx, _game, now); // hill zone, flags, carrier beacons (game modes)
         // Enemies near your Recon Pulse show through walls.
         Gfx.SetDepthTest(false);
         foreach (var p in _game.Players.Values)

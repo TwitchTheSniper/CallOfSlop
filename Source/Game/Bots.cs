@@ -166,7 +166,7 @@ public sealed partial class Game
             var bestScore = float.MaxValue;
             foreach (var o in Players.Values)
             {
-                if (o == p || !o.Alive)
+                if (o == p || !o.Alive || !IsEnemy(p, o))
                     continue;
                 var to = o.Position - p.Position;
                 var dist = to.Length();
@@ -231,7 +231,7 @@ public sealed partial class Game
         {
             if (Vector3.Distance(p.Position, b.Waypoint) < 2.5f || b.Waypoint == Vector3.Zero)
                 b.Waypoint = NextWaypoint(p.Position);
-            var d = b.Waypoint - p.Position;
+            var d = (ObjectiveGoal(p, now) ?? b.Waypoint) - p.Position;
             wantYaw = MathF.Atan2(d.X, -d.Z);
         }
 
@@ -318,7 +318,7 @@ public sealed partial class Game
         }
         else
         {
-            var goal = now - b.LastSeenTime < 3 ? b.LastSeenAt : b.Waypoint;
+            var goal = now - b.LastSeenTime < 3 ? b.LastSeenAt : ObjectiveGoal(p, now) ?? b.Waypoint;
             var to = goal - p.Position;
             to.Y = 0;
             if (to.LengthSquared() > 1)

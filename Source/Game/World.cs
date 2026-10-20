@@ -446,6 +446,9 @@ public sealed class Player
     public bool Alive = true;
     public ushort Kills;
     public ushort Deaths;
+    public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
+    public byte GunLevel; // Gun Game: step on the weapon ladder (replicated)
+    public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
 
     // Loadout and the weapon in hand (replicated so others see and hear the right gun)
     public byte Primary = Weapons.DefaultPrimary.Id;
@@ -533,5 +536,5 @@ public sealed class Player
         new(1.00f, 1.00f, 1.00f), // white
     ];
 
-    public Vector3 Color => Palette[Id % Palette.Length];
+    public Vector3 Color => Team < 2 ? GameModes.TeamColors[Team] : Palette[Id % Palette.Length];
 }

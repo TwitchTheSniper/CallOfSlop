@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
 /// </summary>
-public static class SelfTest
+public static partial class SelfTest
 {
     private static StreamWriter _log = null!;
     private static int _failures;
@@ -58,6 +58,13 @@ public static class SelfTest
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Recoil", CheckRecoil);
+            Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
+            Section("Ready-up", CheckReadyUp);
+            Section("Team Deathmatch", CheckTeamDeathmatch);
+            Section("King of the Hill", CheckKingOfTheHill);
+            Section("Capture the Flag", CheckCaptureTheFlag);
+            Section("Gun Game", CheckGunGame);
+            Section("Mode state and matches", CheckModeMatches);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");

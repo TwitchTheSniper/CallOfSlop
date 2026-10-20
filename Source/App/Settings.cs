@@ -59,6 +59,10 @@ public sealed class Settings
     public string ServerName = ""; // empty: "<name>'s game"
     public string MasterServer = ""; // host[:port] of a master server for the public list (empty: LAN only)
 
+    // Matches (single player and hosting)
+    public GameMode Mode = GameMode.FreeForAll;
+    public int AutoStart; // hosting: start N seconds after the first person readies up (0: wait for everyone)
+
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
 
     /// <summary>The master server as (host, port), or null if none is set.</summary>
@@ -146,6 +150,8 @@ public sealed class Settings
                     case "advertise": s.Advertise = v == "1"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
                     case "master": s.MasterServer = v.Trim(); break;
+                    case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
+                    case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
@@ -192,6 +198,8 @@ public sealed class Settings
                     $"advertise={(Advertise ? 1 : 0)}",
                     $"server_name={ServerName}",
                     $"master={MasterServer}",
+                    $"mode={Mode}",
+                    $"auto_start={AutoStart}",
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",

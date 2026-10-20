@@ -26,6 +26,7 @@ public enum GameAction
     Grenade,
     Equipment,
     Melee,
+    Ready,
     COUNT,
 }
 
@@ -63,6 +64,7 @@ public static class Keybinds
         Key(GlfwKey.G),
         Key(GlfwKey.F),
         Key(GlfwKey.V),
+        Key(GlfwKey.F3),
     ];
 
     public static string Label(GameAction a) =>
@@ -88,6 +90,7 @@ public static class Keybinds
             GameAction.Grenade => "Throw grenade",
             GameAction.Equipment => "Use equipment",
             GameAction.Melee => "Melee",
+            GameAction.Ready => "Ready up (warmup)",
             _ => a.ToString(),
         };
 

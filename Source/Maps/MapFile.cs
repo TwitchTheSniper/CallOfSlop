@@ -86,6 +86,7 @@ public sealed partial class Map
             {
                 Mix(s.X); Mix(s.Y); Mix(s.Z);
             }
+            MixObjectiveData(Mix); // waypoints and hand-placed objectives (game-mode objectives are built from them)
             return h;
         }
     }
@@ -125,6 +126,7 @@ public static class MapFile
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
         sb.Append($"  \"halfZ\": {Num(m.HalfZ)},\n");
         sb.Append($"  \"sky\": {Col(m.Sky)},\n");
+        MapObjectiveJson.Write(sb, m);
         sb.Append("  \"ops\": [\n");
         for (var i = 0; i < m.Ops.Count; i++)
         {
@@ -241,6 +243,7 @@ public static class MapFile
             }
             if (map.Spawns.Count == 0)
                 throw new MapFileException($"{source}: no spawn points (add Spawn or RingSpawns ops)");
+            MapObjectiveJson.Read(root, map, source);
             return map;
         }
     }

@@ -499,6 +499,8 @@ public sealed partial class Game : IDisposable
         ChosenEquipment = equipment;
         ChosenPrimaryKit = primaryKit;
         ChosenSecondaryKit = secondaryKit;
+        if (Net.IsOffline)
+            SetReady(true); // single player: Deploy during the warmup starts the countdown
         if (IsServer)
         {
             if (Local is { } me)
@@ -520,13 +522,15 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Loadouts can only be changed while dead (or in the pre-match countdown).</summary>
-    public bool CanChangeLoadout => Local is not { Alive: true } || Phase == MatchPhase.Countdown;
+    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
 
     /// <summary>The Respawn button: spawn with the chosen loadout as soon as the respawn timer allows.</summary>
     public void RequestRespawn()
     {
         if (Local is { Alive: true })
             return;
+        if (Net.IsOffline)
+            SetReady(true); // single player: Respawn during the warmup starts the countdown
         if (IsServer)
         {
             if (Local is { } me)
@@ -870,14 +874,14 @@ public sealed partial class Game : IDisposable
 
     private void Spawn(Player p, uint tick, double now)
     {
-        var spawns = World.Map.Spawns;
+        var spawns = SpawnPointsFor(p); // the team's own spawns in team modes
         var best = spawns[_rng.Next(spawns.Count)];
         var bestScore = -1f;
         foreach (var sp in spawns)
         {
             var nearest = float.MaxValue;
             foreach (var o in Players.Values)
-                if (o != p && o.Alive)
+                if (o != p && o.Alive && AreEnemies(p, o))
                     nearest = MathF.Min(nearest, Vector3.Distance(o.Position, sp));
             var score = nearest + (float)_rng.NextDouble() * 2f;
             if (score > bestScore)
@@ -909,6 +913,7 @@ public sealed partial class Game : IDisposable
         p.Equipment = p.WantEquipment;
         p.GrenadesLeft = Throwables.Get(p.Grenade).PerLife;
         p.EquipmentLeft = Throwables.Get(p.Equipment).PerLife;
+        ApplyModeLoadout(p); // Gun Game: the server picks the gun
         if (p.Bot is { } brain)
         {
             brain.Ammo = p.DefFor(p.Primary).Mag;
@@ -941,8 +946,8 @@ public sealed partial class Game : IDisposable
 
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
         // already standing in the map, frozen, and can still swap.
-        var instant = !p.Alive || Phase == MatchPhase.Countdown;
-        if (instant && p.Alive)
+        var instant = !p.Alive || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
+        if (instant && p.Alive && Mode != GameMode.GunGame)
         {
             p.Primary = pw.Id;
             p.Secondary = sw.Id;
@@ -991,6 +996,8 @@ public sealed partial class Game : IDisposable
     {
         if (!victim.Alive || amount <= 0 || !DamageEnabled || now < victim.ImmuneUntil)
             return false;
+        if (!CanDamage(attacker, victim))
+            return false; // no friendly fire in team modes (your own grenade still hurts you)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
         if (kind == DamageKind.Explosive && victim.Perks.Has(PerkId.FlakJacket))
@@ -1023,6 +1030,7 @@ public sealed partial class Game : IDisposable
         _w.Begin(Msg.Kill).U8(attacker.Id).U8(victim.Id).U8(head ? (byte)1 : (byte)0).U8(killId);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
+        OnModeKill(attacker, victim, killId, now);
         return true;
     }
 
@@ -1366,6 +1374,11 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.MatchStart:
                 OnMatchPacket(id, ref r);
                 break;
+            case (byte)Msg.Ready:
+            case (byte)Msg.ModeState:
+            case (byte)Msg.ModeEvent:
+                OnModePacket(id, ref r, sender);
+                break;
             case (byte)Msg.MapVote:
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
@@ -1416,6 +1429,8 @@ public sealed partial class Game : IDisposable
         if (tick <= ServerTick && _clockStarted)
             return;
         var wasCountdown = Phase == MatchPhase.Countdown;
+        if (Phase == MatchPhase.Warmup && phase == MatchPhase.Countdown)
+            _countdownStartedFlag = true; // everyone's ready: the countdown opens the loadout screen
         Phase = phase;
         TimeLeft = timeLeft;
         if (wasCountdown && phase == MatchPhase.Playing)

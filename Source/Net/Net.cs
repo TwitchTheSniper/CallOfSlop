@@ -29,6 +29,9 @@ public enum Msg : byte
     VoteState, // server -> all: the ballot (map ids) and the current tally
     Melee, // client -> server: I swung (yaw, pitch, the tick I was seeing)
     MeleeFx, // server -> all: player X swung (hit / kill / backstab flags, victim)
+    Ready, // client -> server: I'm ready / not ready (warmup)
+    ModeState, // server -> all: game mode, teams, ready flags, gun levels, scores, hill and flags (unreliable, ~10 Hz)
+    ModeEvent, // server -> all: a game-mode line for the kill feed + a sound (flag taken, hill moved...)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
