@@ -63,15 +63,16 @@ Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarre
 
 ### Loadouts
 
-Open **LOADOUTS** from the main menu, or press **B** in a match. The screen lists your loadout slots on the left. Pick one to make it the loadout you spawn with; it's marked with an orange star. The selected loadout is shown on the right as cards: **Primary Weapon**, **Secondary Weapon**, **Perks**, **Lethal** and **Tactical**. Click a card to change that part, and **Rename** to name the loadout. Each loadout keeps its own attachments, and a gun you move into another loadout starts with the build you last used on it. Everything saves to `loadout.txt`. An older single-loadout file becomes slot 1.
+Open **LOADOUTS** from the main menu, or press **B** in a match. The screen lists your loadout slots on the left. Pick one to make it the loadout you spawn with; it's marked with an orange star. The selected loadout is shown on the right as cards: **Primary Weapon**, **Secondary Weapon**, **Perks**, **Lethal**, **Tactical** and **Kill Streaks**. Click a card to change that part, and **Rename** to name the loadout. Each loadout keeps its own attachments, and a gun you move into another loadout starts with the build you last used on it. Everything saves to `loadout.txt`. An older single-loadout file becomes slot 1.
 
 - **More slots unlock as you level up.** Level 1 gets one slot, and the tenth arrives at max level, evenly spaced: levels 1, 6, 11, 17, 22, 27, 32, 38, 43 and 48. Locked slots show the level they unlock at.
-- **Back goes back one page.** The screen is a stack of pages: the footer's **BACK** button (and **Esc**) returns from the attachments to the weapon select (or to the overview, if you came from a card's Edit attachments), from the weapon select, lethal, tactical and perks pages to the overview, and from the progression page to whatever was open before. On the overview, BACK returns to the main menu (in a match it's **CLOSE** and closes the menu). A line at the top shows where you are, e.g. *Custom Loadout 1 / Primary weapon / Kestrel PDW attachments*.
+- **Back goes back one page.** The screen is a stack of pages: the footer's **BACK** button (and **Esc**) returns from the attachments to the weapon select (or to the overview, if you came from a card's Edit attachments), from the weapon select, lethal, tactical, perks and kill streak pages to the overview, and from the progression page to whatever was open before. On the overview, BACK returns to the main menu (in a match it's **CLOSE** and closes the menu). A line at the top shows where you are, e.g. *Custom Loadout 1 / Primary weapon / Kestrel PDW attachments*.
 - **Your progression is the bar at the bottom right:** LEVEL, XP into the level and the next unlock. Click it (*ALL UNLOCKS*) for the progression page: level, XP, stats and every unlock by level.
 - **Edit attachments:** the Primary and Secondary cards have an **Edit attachments** button beside the gun's name, which opens that gun's attachments directly. Clicking anywhere else on the card opens the weapon select.
 - **Picking a gun:** clicking the Primary or Secondary card opens the weapon select. Class tabs run across the top (each shows how many guns it has and how many are still locked). Below, a column of tiles shows each gun with this loadout's attachments on it, its level (attachments unlocked) and weapon XP bar, and an EQUIPPED, SELECTED or LOCKED tag (with the level it unlocks at). **Click a tile to select it**: the gun is shown big on the right (hovering a tile previews it too), with its stats compared to the gun you have equipped (green = better, red = worse), its magazine, reload time and shots to kill. The selected tile has a blue outline; hover is orange, and the equipped gun has an orange bar and the EQUIPPED tag. **EQUIP** (bottom right) puts the shown gun in the loadout; it reads EQUIPPED for your current gun and is greyed out for a locked one. **Double-clicking a tile does exactly the same as EQUIP** (the tile flashes, then shows EQUIPPED); on a locked gun it just shakes.
 - **Attachments on the weapon select** (top right) opens the attachments of the gun shown. For a gun you haven't equipped yet, the page opens as a preview, and picking your first attachment equips the gun into this loadout with that attachment. It's greyed out for locked guns.
-- **Double-click always means "pick it"** across the loadout screen (lethal and tactical lists, perks, attachment lists), and the second click of a double-click never also clicks whatever the page change put under the mouse. Clicking something locked gives a dry click.
+- **Kill streaks:** the Kill Streaks card opens the streak page. Your three slots are along the top, and every streak is below with its kill cost, what it does, and the level it unlocks at if it's still locked. Click a streak to carry it; when all three slots are full, it replaces the highlighted slot (click a slot to choose which). Click a streak you carry to drop it. See [Kill streaks](#kill-streaks).
+- **Double-click always means "pick it"** across the loadout screen (lethal and tactical lists, perks, kill streaks, attachment lists), and the second click of a double-click never also clicks whatever the page change put under the mouse. Clicking something locked gives a dry click.
 
 ### Perks
 
@@ -93,6 +94,29 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Damage | **Flanker** (47) | Hitting their back | Bullets and melee hit 60% harder |
 
 Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry random perks.
+
+### Kill streaks
+
+Each loadout carries **three kill streaks**. Kills in one life count up; reaching a streak's cost earns it, and an earned streak is **kept (even through death) until you use it**. Dying resets the count. Kills made *by* streaks never count toward the next one, and neither do kills after you've died (a grenade going off later, say). A streak kill gives normal kill XP.
+
+Use an earned streak with its key: **4**, **5** and **6** by default, cheapest streak first (rebind them as *Kill streak 1-3*). Instant streaks go at once. The **Mortar Barrage** and **Strafe Run** start targeting: a marker shows where they'll land, **fire** calls them in, and aim or the streak key again cancels.
+
+| Streak | Kills | Unlock | What it does |
+| --- | --- | --- | --- |
+| **Recon Sweep** | 3 | start | Every enemy on the map shows to you as a red silhouette through walls for 10 s (Low Profile still hides people who are crouched or prone). |
+| **Counter Sweep** | 4 | level 5 | Jams your enemies for 15 s: their Recon Pulses and Recon Sweeps show nothing, and their HUD fills with static. |
+| **Overdrive** | 4 | start | 12 s of moving 35% faster and reloading twice as fast. Ends if you die. |
+| **Mortar Barrage** | 5 | start | Look at a spot and fire. After 2.4 s, 7 shells land within 6 m of it, each whistling on the way in. Up to 140 damage each, falling off over 5.5 m; walls and roofs shield you, going prone helps, Flak Jacket works. |
+| **Sentry Turret** | 6 | level 19 | Drops an auto-turret just in front of you, facing where you look. It covers a 150-degree arc out to 40 m, warms up for half a second on a new target, and fires 12-damage rounds. 45 s, 260 HP. |
+| **Attack Drone** | 8 | level 32 | A drone circles the map above the rooftops for 40 s, firing 3-round bursts (26 damage each) at any enemy it can see. 200 HP. |
+| **Strafe Run** | 11 | level 46 | Look at a spot and fire: 2.6 s later a jet strafes a 50 m line through it, along the way you're facing (12 hits, up to 110 damage each). Roofs shield you. |
+
+- **Everyone sees it coming.** A banner names whoever called in what ("Brick called in a Mortar Barrage", red when it's an enemy's), strikes put a red flare and danger marks where they'll land, and the turret and drone carry a light: green for yours, red for an enemy's.
+- **Turrets and drones can be destroyed** with bullets, grenades and enemy strikes. Your own bullets pass through yours. The kill feed shows who destroyed what.
+- **The HUD** shows your three streaks at the bottom centre: key, kill cost, a pip per kill and a glow when it's ready, plus your current streak count. A banner announces each one you earn.
+- **Bots** carry three random streaks and use them: mortars and strafe runs on the last enemy they saw or the biggest group, turrets facing where the enemies are.
+- Streaks unlock with your level like perks: three to start, the others spread evenly. They're saved in `loadout.txt` (`loadout1.streaks=Recon Sweep, Mortar Barrage, Sentry Turret`); older files get the three starters, and a locked streak is swapped for a starter.
+- Everything is decided on the server (counts, activation, damage). Strikes are planned from one random seed, so clients draw the shells and impacts without extra messages; turrets and drones send ~22 bytes each with every snapshot.
 
 ### Melee
 
@@ -186,6 +210,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | G | Throw grenade |
 | F | Use equipment (Recon Pulse) |
 | V | Melee |
+| 4 / 5 / 6 | Use a kill streak (cheapest first); for aimed ones, then fire to call it in |
 | B | Loadout menu |
 | Tab (hold) | Scoreboard |
 | Esc | Close the menu / release the mouse (click to recapture) |
@@ -212,7 +237,7 @@ You can't stand up where there's no headroom (for example under a container roof
 
 You earn XP in **single player and multiplayer** alike. There are two tracks, both filled by the same play:
 
-- **Account XP (levels):** +100 per kill, +50 more for a headshot, +25 more for a grenade kill, **+150 for finishing a match** and **+250 for winning it**. **Each level unlocks a weapon, grenade or equipment**, 48 levels in all. Perks and loadout slots unlock on top of that, spread evenly over the same levels. A level costs ~2,400-3,800 XP.
+- **Account XP (levels):** +100 per kill, +50 more for a headshot, +25 more for a grenade kill, **+150 for finishing a match** and **+250 for winning it**. **Each level unlocks a weapon, grenade or equipment**, 48 levels in all. Perks, kill streaks and loadout slots unlock on top of that, spread evenly over the same levels. A level costs ~2,400-3,800 XP.
 - **Weapon XP (attachments):** each gun earns its own XP: +100 per kill with it, +50 for a headshot, plus +150 per match for the primary you carried (+75 for the secondary). Its attachments unlock along a curve, with the first few quickly and the last ones slower.
 
 The pacing is a rough target rather than a hard rule. A typical match is around 7 kills, which is ~1,000 XP on each track. So:
@@ -318,13 +343,15 @@ tools/               BuildCheck.bat (build + self-test)
 Source/
   App/               Program (window, input, camera, scene + HUD drawing, smoke test), Settings, Keybinds, SelfTest
   Game/              World (physics, collision), Game (server/client logic, hitscan), Match, MapVote, Bots,
-                     Throwables, Progression, ServerAdvert, Loadouts (slots + loadout.txt), Perks, Melee
+                     Throwables, Progression, ServerAdvert, Loadouts (slots + loadout.txt), Perks, Melee,
+                     KillStreaks (definitions, counting, strikes), StreakEntities (turrets, drones), BotStreaks
   Maps/              Map (geometry + building ops, loader), MapKit (bigger ready-made pieces), MapFile (JSON load/save), MapPack
   Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
   Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
                      fingerprint, --check-weapon), GunModel (procedural weapon models)
-  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array)
-  UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith
+  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array), StreakRender (turrets, drones, strikes)
+  UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith,
+                     UiStreaks (streak card, picker, icons and HUD)
   Audio/             Audio (OpenAL playback + procedural sound synthesis)
 ```
 
