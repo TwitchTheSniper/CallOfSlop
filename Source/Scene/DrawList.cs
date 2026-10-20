@@ -105,6 +105,7 @@ public sealed class DrawList
             Flatten(kids[i]);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void AddNode(SceneNode n)
     {
         if (Count == _nodes.Length)
