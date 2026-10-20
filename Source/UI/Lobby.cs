@@ -96,6 +96,25 @@ public sealed partial class Ui
         ImGui.End();
     }
 
+    private string? _nowPlayingName, _nowPlayingText;
+
+    /// <summary>A subtle "Now playing" line in the bottom-left corner of the main menu.</summary>
+    private void NowPlaying(Audio audio)
+    {
+        if (audio.Music.NowPlaying is not { } name || audio.Music.Volume <= 0f)
+            return;
+        if (!ReferenceEquals(name, _nowPlayingName))
+        {
+            _nowPlayingName = name;
+            _nowPlayingText = $"Now playing: {name}";
+        }
+        var vp = ImGui.GetMainViewport();
+        ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + 16 * _scale, vp.WorkPos.Y + vp.WorkSize.Y - 44 * _scale), ImGuiCond.Always, new float2(0f, 1f)); // just above the credits line
+        if (ImGui.Begin("##nowplaying"u8, Overlay))
+            ImGuiSafe.TextColored(Dim, _nowPlayingText!); // track names are plain text, never formats
+        ImGui.End();
+    }
+
     // =====================================================================
     // Lobby
     // =====================================================================
@@ -111,6 +130,8 @@ public sealed partial class Ui
             _browser = null;
         }
         Footer();
+        if (_page == Page.Main)
+            NowPlaying(audio);
 
         CenterNext();
         ImGui.SetNextWindowBgAlpha(0.88f);
@@ -726,6 +747,10 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.Button("Test"u8))
                 audio.Shot(Weapons.DefaultPrimary, null);
+            ImGui.SetNextItemWidth(w);
+            if (ImGui.SliderFloat("Music volume"u8, ref s.MusicVolume, 0f, 1f, "%.2f"u8))
+                audio.Music.Volume = s.MusicVolume;
+            ImGui.TextColored(Dim, "Generated hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
