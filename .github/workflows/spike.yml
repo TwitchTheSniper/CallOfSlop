@@ -34,7 +34,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           for p in ahwoo.brutal.jolt ahwoo.brutal.gltf ahwoo.brutal.render.mesh; do
-            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | tr -d '\n ' | grep -o '"versions":\[[^]]*\]' | tail -c 300)
+            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | tr -d '\r\n "' | sed 's/{versions:\[//; s/\]}//' | tr ',' ' ' | tail -c 300)
             echo "::notice title=nuget $p::$v"
           done
 

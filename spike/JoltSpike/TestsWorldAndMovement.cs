@@ -141,10 +141,11 @@ public static class TestsWorldAndMovement
         {
             ("native ExtendedUpdate", false, false, 0.6f, 0.02f, 0.15f),
             ("C# ExtendedUpdate + Jolt WalkStairs", true, false, 0.6f, 0.02f, 0.15f),
-            ("same, min forward 0.3", true, false, 0.6f, 0.3f, 0.15f),
-            ("same, forward test 0.5", true, false, 0.6f, 0.02f, 0.5f),
-            ("same, both", true, false, 0.6f, 0.3f, 0.5f),
-            ("own step (Update+StickToFloor) up 0.6", true, true, 0.6f, 0.02f, 0.15f),
+            ("WalkStairs min forward 0.3, up 0.6", true, false, 0.6f, 0.3f, 0.15f),
+            ("same, up 0.5", true, false, 0.5f, 0.3f, 0.15f),
+            ("same, up 0.45", true, false, 0.45f, 0.3f, 0.15f),
+            ("same, up 0.4", true, false, 0.4f, 0.3f, 0.15f),
+            ("own step up 0.6", true, true, 0.6f, 0.02f, 0.15f),
             ("own step up 0.55", true, true, 0.55f, 0.02f, 0.15f),
         };
         foreach (var cfg in configs)
@@ -156,8 +157,10 @@ public static class TestsWorldAndMovement
             Mover.Ext.WalkStairsStepForwardTest = cfg.FwdTest;
             Mover.StairCalls = Mover.StairOk = 0;
             var climbed = new List<string>();
+            var diag = "";
             foreach (var h in new[] { 0.3f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.7f })
             {
+                Mover.LastStep = "";
                 var sp = new Phys(64);
                 sp.AddBox(new float3(0, -0.5f, 0), new float3(20, 0.5f, 20));
                 sp.AddBox(new float3(15, h / 2, 0), new float3(12, h / 2, 2)); // a long step from x = 3 to 27
@@ -167,8 +170,10 @@ public static class TestsWorldAndMovement
                     sm.Step(new Input { Buttons = Btn.Forward, Yaw = East });
                 if (sm.Ch.GetPosition().Y > h - 0.05f && sm.Ch.GetPosition().X > 3.5f)
                     climbed.Add(F(h, 2));
+                if (cfg.Own && h > 0.55f && Mover.LastStep != "")
+                    diag += $" {F(h, 2)}: {Mover.LastStep};";
             }
-            var tries = cfg.Manual ? $" ({Mover.StairOk}/{Mover.StairCalls})" : "";
+            var tries = (cfg.Manual ? $" ({Mover.StairOk}/{Mover.StairCalls})" : "") + diag;
             sweep.Add($"{cfg.Name}: [{string.Join(" ", climbed)}]{tries}");
             Result($"b.sweep.{sweep.Count}", string.Join("_", climbed));
         }

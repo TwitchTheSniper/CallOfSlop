@@ -250,6 +250,9 @@ public sealed class Mover
     /// <summary>WalkStairs attempts and successes (for the step sweep's diagnostics).</summary>
     public static int StairCalls, StairOk;
 
+    /// <summary>The last successful own step's numbers (diagnostics).</summary>
+    public static string LastStep = "";
+
     /// <summary>
     /// false: Jolt's CharacterVirtual.WalkStairs. true: our own step-up built from Update + StickToFloor
     /// (sweep up, sweep forward, snap down; undo if nothing was gained), like a classic FPS step.
@@ -280,8 +283,10 @@ public sealed class Mover
                 // 3. Snap down onto whatever is below; keep the result only if we really ended up higher, on something.
                 var landed = Ch.StickToFloor(new float3(0, -(rise + 0.05f), 0), _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
                 var gain = Ch.GetPosition().Y - basePos.Y;
-                if (landed && gain > 0.02f && gain <= Ext.WalkStairsStepUp.Y)
+                // Landing on steep ground (a 50 deg ramp) doesn't count, or players could "step" up any slope.
+                if (landed && gain > 0.02f && gain <= Ext.WalkStairsStepUp.Y && Ch.GetGroundState() == CharacterBase.GroundState.OnGround)
                 {
+                    LastStep = $"rise {Report.F(rise, 2)} fwdY {Report.F(moved.Y, 2)} gain {Report.F(gain, 2)}";
                     Ch.SetLinearVelocity(new float3(baseVel.X, 0, baseVel.Z));
                     return true;
                 }
