@@ -278,7 +278,7 @@ The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachmen
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
   - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works
@@ -307,6 +307,16 @@ Start.bat --lag=150 --loss=3
 
 On clients, the window title shows ping, the current interpolation delay, and the size of the last prediction correction ("fix ... cm").
 
+**Arms and gun animation**
+
+Your gun is held by box arms (sleeves in your player colour, tan gloves). Everything is procedural, with no animation files:
+- `Render/ArmAnchors.cs` knows where the hands go on each gun model (grip, handguard or pump, magazine well, bolt or slide, muzzle), including foregrips, lasers and magazine attachments, and picks the reload style: box magazine, pistol mag drop, revolver speedloader, shell-by-shell tube, break-open, bolt action, LMG box or muzzle loader.
+- `Render/ViewModelAnimator.cs` moves the gun (hip and ADS, breathing sway, walk bob, sprint, jump and landing dip, equip, a rifle-butt or pistol-whip melee, the reload of each style timed to the weapon's reload time, the ledge plant while mantling, recoil kick) and works out where both hands are.
+- `Render/Arms.cs` solves each arm with two-bone IK (shoulder, elbow pole, wrist) as a small hierarchy: shoulder, upper arm, forearm, hand.
+- `Render/ThirdPersonArms.cs` gives other players the same arms, with simple reload, sprint and melee poses from the game's reload and melee events.
+
+The shoulders are fixed to the camera, not the screen edges, so on wide and ultrawide screens the arms come in from the bottom and aren't stretched. When you aim through a magnified optic, the off hand moves back onto the magazine so it stays out of the lens.
+
 **Project layout**
 
 ```
@@ -323,7 +333,8 @@ Source/
   Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
   Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
                      fingerprint, --check-weapon), GunModel (procedural weapon models)
-  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array)
+  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array), Arms + ArmAnchors +
+                     ViewModelAnimator + ThirdPersonArms (arms, IK and gun animation)
   UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith
   Audio/             Audio (OpenAL playback + procedural sound synthesis)
 ```

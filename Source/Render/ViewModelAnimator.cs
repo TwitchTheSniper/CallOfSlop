@@ -390,9 +390,9 @@ public sealed class ViewModelAnimator
                 {
                     var up = Hump(r, 0, 0.15f, 0.8f, 0.95f);
                     pitch += 1.35f * up; // stood up in front of you, muzzle at chest height
-                    y += -0.55f * up;
+                    y += -0.47f * up;
                     x += -0.1f * up;
-                    z += 0.05f * up;
+                    z += 0.02f * up;
                     roll += 0.15f * up;
                     break;
                 }
