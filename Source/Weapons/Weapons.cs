@@ -140,6 +140,9 @@ public sealed class WeaponDef
     /// <summary>The file it was loaded from, relative to the Weapons folder (null for the built-in fallback weapons).</summary>
     public string? SourceFile { get; set; }
 
+    /// <summary>The gun's model (the file's "model" block; see GunSpec and Weapons/README.md). Null: drawn by the per-class model.</summary>
+    public GunSpec? Model { get; set; }
+
     // ---- Look ----------------------------------------------------------------
     public float Length = 0.42f;
     public float Bulk = 1f;

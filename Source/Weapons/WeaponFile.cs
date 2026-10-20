@@ -81,6 +81,8 @@ public static class WeaponFile
             if (f.Name == nameof(WeaponDef.RecoilDeg))
                 Add("recoil", Recoil.BlockJson(w));
         }
+        if (w.Model != null)
+            Add("model", w.Model.ToJson());
         sb.Length -= 2;
         sb.Append("\n}\n");
         return sb.ToString();
@@ -115,6 +117,7 @@ public static class WeaponFile
         var w = WeaponDef.Blank();
         var given = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         JsonElement? recoil = null;
+        JsonElement? model = null;
         foreach (var p in root.EnumerateObject())
         {
             var where = $"{source} (\"{p.Name}\")";
@@ -128,6 +131,9 @@ public static class WeaponFile
                 case "recoil":
                     recoil = p.Value; // read after the loop, over the defaults of the weapon's class
                     break;
+                case "model":
+                    model = p.Value; // read after the loop: its sizes scale with the weapon's length and bulk
+                    break;
                 case "order":
                     w.Order = Int(p.Value, where);
                     break;
@@ -139,7 +145,7 @@ public static class WeaponFile
                     break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, model, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }
@@ -150,6 +156,8 @@ public static class WeaponFile
         Recoil.ApplyClassDefaults(w);
         if (recoil is { } r)
             Recoil.ReadBlock(w, r, $"{source} (\"recoil\")");
+        if (model is { } m)
+            w.Model = GunSpec.Read(m, w, $"{source} (\"model\")");
         Validate(w, source);
         w.SourceFile = source;
         return w;
