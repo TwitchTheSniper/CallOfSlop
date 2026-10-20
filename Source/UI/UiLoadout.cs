@@ -30,6 +30,7 @@ public sealed partial class Ui
     private bool _renaming;
     private int _hotCard = -1; // card under the mouse last frame (highlight)
     private bool _loadoutDrawn; // was the loadout screen on screen this frame?
+    private (float2 Min, float2 Max) _loadoutRect; // where the loadout window was this frame
     private double _actTime = -10; // ImGui time of the last click that picked something or changed page (see SecondClick)
 
     /// <summary>Gun pictures for the cards this frame (drawn by Program after the UI).</summary>
@@ -241,6 +242,7 @@ public sealed partial class Ui
         {
             var winPos = ImGui.GetWindowPos();
             var winSize = ImGui.GetWindowSize();
+            _loadoutRect = (winPos, winPos + winSize); // the kill card sits beside it if there's room
             var style = ImGui.GetStyle();
             var contentMin = winPos + style.WindowPadding;
             var contentMax = winPos + winSize - style.WindowPadding;
