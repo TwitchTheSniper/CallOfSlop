@@ -82,7 +82,7 @@ public static partial class SelfTest
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
-            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, worst log write {TickProfile.TimedWriter.MaxMs:0.0} ms, tiered {AppContext.TryGetSwitch("System.Runtime.TieredCompilation", out var tc) && tc}");
+            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, worst log write {TickProfile.TimedWriter.MaxMs:0.0} ms, cpus {Environment.ProcessorCount}, tiered {AppContext.TryGetSwitch("System.Runtime.TieredCompilation", out var tc) && tc}");
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -421,6 +421,9 @@ public static partial class SelfTest
             var alloc0 = GC.GetAllocatedBytesForCurrentThread();
             var navReadyAt = -1.0;
             var slowWithGc = 0;
+            double normCycles = 0, normMs = 0, worstCyc = 0;
+            var slowCyc = new List<double>();
+            var desched = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
@@ -429,9 +432,16 @@ public static partial class SelfTest
                     TickProfile.Reset();
                     int c0 = GC.CollectionCount(0), c1 = GC.CollectionCount(1), c2 = GC.CollectionCount(2);
                     var pz = GC.GetTotalPauseDuration();
+                    var cy0 = TickProfile.Cycles();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    var cyc = TickProfile.Cycles() - cy0;
+                    if (ms < 5)
+                    {
+                        normCycles += cyc;
+                        normMs += ms;
+                    }
                     var pauseMs = (GC.GetTotalPauseDuration() - pz).TotalMilliseconds;
                     var gcs = $"g{GC.CollectionCount(0) - c0}/{GC.CollectionCount(1) - c1}/{GC.CollectionCount(2) - c2} pause {pauseMs:0.0}";
                     for (var k = 0; k < phaseTotals.Length; k++)
@@ -441,11 +451,14 @@ public static partial class SelfTest
                     if (i > 60)
                     {
                         if (ms > maxTickMs)
+                            worstCyc = cyc;
+                        if (ms > maxTickMs)
                             worstInfo = $"{ms:0.0} ms at t={i / 60.0:0.00}s phase {game.Phase} match {game.MatchNumber} nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")} {gcs} | {TickProfile.Breakdown()}";
                         maxTickMs = Math.Max(maxTickMs, ms);
                         if (ms > 16)
                         {
                             slowTicks++;
+                            slowCyc.Add(cyc);
                             if (pauseMs > 1)
                                 slowWithGc++;
                             if (slowList.Count < 6)
@@ -482,6 +495,11 @@ public static partial class SelfTest
             botStats.Add(game.BotStats);
             {
                 var ticks = 90.0 * World.TickRate;
+                var cpm = normMs > 0 ? normCycles / normMs : 0; // cycles per ms of real work on this machine
+                string Cpu(double c) => cpm > 0 ? $"{c / cpm:0.0}" : "?";
+                desched = slowCyc.Count(c => cpm > 0 && c / cpm < 8);
+                worstInfo = $"cpu {Cpu(worstCyc)} ms of " + worstInfo;
+                slowList.Add($"slow cpu ms: {string.Join("/", slowCyc.Take(8).Select(Cpu))} desched {desched}");
                 var avg = string.Join(" ", Enumerable.Range(0, phaseTotals.Length).Where(k => phaseTotals[k] / ticks >= 0.01).Select(k => $"{TickProfile.Names[k]} {phaseTotals[k] / ticks:0.00}"));
                 Line($"PERF: {m.Name} total {sw.Elapsed.TotalSeconds:0.0}s navReady {navReadyAt:0.0}s worst [{worstInfo}] slow {slowTicks} (gc {slowWithGc}) [{string.Join(" ", slowList)}] "
                      + $"GC g{GC.CollectionCount(0) - gc0}/{GC.CollectionCount(1) - gc1}/{GC.CollectionCount(2) - gc2} pause {(GC.GetTotalPauseDuration() - pause0).TotalMilliseconds:0} ms "

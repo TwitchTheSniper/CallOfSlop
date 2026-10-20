@@ -8,11 +8,11 @@ public static class TickProfile
     public static readonly string[] Names =
     [
         "pre", "match", "proj", "streaks", "bstreak", "pump", "perceive", "decide", "steer", "nearest", "astar",
-        "aim", "shoot", "nade", "buttons", "physics", "spawn", "hist", "snap", "post", "log",
+        "aim", "shoot", "nade", "buttons", "physics", "spawn", "hist", "snap", "post", "log", "nmspawn", "nmmode", "nmstart", "nmsend",
     ];
 
     public const int Pre = 0, Match = 1, Proj = 2, Streaks = 3, BStreak = 4, Pump = 5, Perceive = 6, Decide = 7, Steer = 8,
-        Nearest = 9, AStar = 10, Aim = 11, Shoot = 12, Nade = 13, Buttons = 14, Physics = 15, Spawn = 16, Hist = 17, Snap = 18, Post = 19, Log = 20;
+        Nearest = 9, AStar = 10, Aim = 11, Shoot = 12, Nade = 13, Buttons = 14, Physics = 15, Spawn = 16, Hist = 17, Snap = 18, Post = 19, Log = 20, NmSpawn = 21, NmMode = 22, NmStart = 23, NmSend = 24;
 
     public static readonly double[] Ms = new double[Names.Length];
     public static int Searches, Expanded, MaxExpanded;
@@ -29,6 +29,21 @@ public static class TickProfile
     }
 
     public static long Now() => Stopwatch.GetTimestamp();
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern bool QueryThreadCycleTime(IntPtr thread, out ulong cycles);
+
+    [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+    private static extern IntPtr GetCurrentThread();
+
+    /// <summary>CPU cycles this thread has actually run (Windows), to tell real work from time spent descheduled.</summary>
+    public static ulong Cycles()
+    {
+        if (!OperatingSystem.IsWindows())
+            return 0;
+        QueryThreadCycleTime(GetCurrentThread(), out var c);
+        return c;
+    }
 
     public static void Add(int phase, long t0) => Ms[phase] += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
 
