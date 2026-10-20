@@ -53,6 +53,7 @@ public sealed class Settings
     public string JoinAddress = "127.0.0.1";
     public string MapName = "Proto Box"; // map for single player and hosting (when not random)
     public bool MapRandom = true; // default: a random map each time you start
+    public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists)
     public bool Advertise; // list my hosted game on the public server list
     public string ServerName = ""; // empty: "<name>'s game"
     public string MasterServer = ""; // host[:port] of a master server for the public list (empty: LAN only)
@@ -74,8 +75,20 @@ public sealed class Settings
         }
     }
 
-    /// <summary>The map to start: the chosen one, or a random one.</summary>
-    public Map PickMap() => MapRandom || Maps.Find(MapName) is not { } m ? Maps.All[Random.Shared.Next(Maps.All.Length)] : m;
+    /// <summary>The map to start: the chosen one, or a random one from the selected pack.</summary>
+    public Map PickMap() => PickMap(Maps.Packs, Maps.All, Random.Shared);
+
+    /// <summary>
+    /// <see cref="PickMap()"/> over a given set of packs and maps (the self-test uses its own). A pack that's gone
+    /// falls back to all maps, and so does a chosen map that's gone.
+    /// </summary>
+    public Map PickMap(IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all, Random rng)
+    {
+        if (!MapRandom && all.FirstOrDefault(m => m.Name.Equals(MapName, StringComparison.OrdinalIgnoreCase)) is { } chosen)
+            return chosen;
+        var pack = packs.FirstOrDefault(p => p.Name.Equals(MapPack, StringComparison.OrdinalIgnoreCase) && p.Maps.Count > 0);
+        return pack != null ? pack.PickRandom(rng) : all[rng.Next(all.Count)];
+    }
 
     private static string FilePath => Path.Combine(AppContext.BaseDirectory, "settings.txt");
 
@@ -128,6 +141,7 @@ public sealed class Settings
                     case "join_address": s.JoinAddress = v; break;
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
+                    case "map_pack" when v.Length > 0: s.MapPack = v; break; // kept even if the pack is missing now (it may come back)
                     case "advertise": s.Advertise = v == "1"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
                     case "master": s.MasterServer = v.Trim(); break;
@@ -172,6 +186,7 @@ public sealed class Settings
                     $"join_address={JoinAddress}",
                     $"map={MapName}",
                     $"map_random={(MapRandom ? 1 : 0)}",
+                    $"map_pack={MapPack}",
                     $"advertise={(Advertise ? 1 : 0)}",
                     $"server_name={ServerName}",
                     $"master={MasterServer}",

@@ -1,0 +1,7 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Classic",
+  "description": "The 24 maps that ship with the game, from the Proto Box dev room to Military Base.",
+  "author": "Call of Slop",
+  "order": 1
+}

@@ -1,8 +1,8 @@
 # Making maps for Call of Slop
 
-Every map is a single `.json` file in this folder. The 24 maps that ship with the game are ordinary map files too. Open any of them to see how a real map is put together.
+Every map is a single `.json` file, kept in a **map pack**: a folder in this `Maps` folder. The 24 maps that ship with the game are ordinary map files in the `Classic` pack (`Maps/Classic`). Open any of them to see how a real map is put together.
 
-To add a map, drop its file in here, or in a subfolder for a map pack such as `Maps/MyPack/Bunker.json`, then click **Refresh maps** above the map list in the lobby. You don't need to restart or recompile.
+To add a map, drop its file into a pack folder, for example your own `Maps/MyPack/Bunker.json`, then click **Refresh maps** in the lobby. You don't need to restart or recompile. See [Map packs](#map-packs) below.
 
 **Editing a map while you play:** start a single-player game on it, edit and save the file, then press Esc and choose **Reload map files**. The map is rebuilt around you straight away. Anyone left inside a new wall is moved to the nearest open spot. When you're hosting, an edited map takes effect from the next match, because the people connected loaded the old version.
 
@@ -36,7 +36,7 @@ To add a map, drop its file in here, or in a subfolder for a map pack such as `M
 Check a file without starting the game:
 
 ```
-CallOfSlop.exe --check-map Maps\Bunker.json
+CallOfSlop.exe --check-map Maps\MyPack\Bunker.json
 ```
 
 This prints `OK` with the box, spawn and waypoint counts, or the exact problem, for example `op #4: Building needs "doors"`. Files that fail to load are skipped, and the lobby shows a red line naming the file. Fix the file and refresh. `CallOfSlop.exe --map-ops` lists every op with its parameters, straight from the game.
@@ -114,13 +114,55 @@ Wall openings are written as `"holes": [ { "center": 4, "width": 1.5, "bottom": 
 
 A map must have at least one spawn.
 
+## Map packs
+
+Each folder directly inside `Maps` is a pack. In the lobby, players first pick a pack, then play a random map from it or choose one of its maps, and the end-of-match vote offers maps from the same pack.
+
+```
+Maps/
+  README.md            this guide
+  Classic/             the shipped pack
+    pack.json
+    01-ProtoBox.json
+    ...
+  MyPack/              your pack
+    pack.json          optional
+    Bunker.json
+    night/Bunker2.json subfolders are fine: they still belong to MyPack
+  Stray.json           a file straight in Maps goes in the "Other" pack
+```
+
+`pack.json` is optional. It describes the pack and is never loaded as a map:
+
+```
+{
+  "format": "call-of-slop-pack/1",
+  "name": "My Pack",
+  "description": "Six close-quarters maps built around one bunker.",
+  "author": "YourName",
+  "order": 10
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `format` | `"call-of-slop-pack/1"`. Recommended. |
+| `name` | Shown in the lobby's pack list. Without it (or without a pack.json at all) the folder name is used. |
+| `description` | One line, shown under the pack's map count. |
+| `author` | Shown as "(by …)". |
+| `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
+
+Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps; they don't matter online.
+
+**Sharing a pack:** zip the pack folder (for example `MyPack.zip` containing `MyPack/pack.json` and the maps). To install one, unzip it into `Maps` so it becomes `Maps/MyPack/`, then click **Refresh maps**.
+
 ## Multiplayer
 
 Servers and clients match maps by **name plus a fingerprint of the geometry**. When you host on your own map, everyone who joins needs the identical file. A player who doesn't have it, or has a different version, is told which map to get. In the server browser, a map you don't have is shown in orange. If you change a published map, give it a new name (for example "Bunker v2") so old and new copies don't clash.
 
 ## Tips
 
-- Start from the shipped map closest to what you want: copy its file, rename it, and change `name` and `order`.
-- `CallOfSlop.exe --export-maps SomeFolder` rewrites every loaded map in the standard tidy layout, which is handy after hand-editing.
+- Start from the shipped map closest to what you want: copy its file into your pack folder, rename it, and change `name` and `order`.
+- `CallOfSlop.exe --export-maps SomeFolder` rewrites every loaded map in the standard tidy layout, in its pack folder, which is handy after hand-editing.
 - Keep cover near spawns, and leave sightlines under ~60 m on Small maps.
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.

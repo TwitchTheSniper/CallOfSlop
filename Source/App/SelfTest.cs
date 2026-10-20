@@ -42,6 +42,7 @@ public static class SelfTest
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
+            Section("Map packs", CheckMapPacks);
             Section("Mantling", CheckMantle);
             Section("Attachments", CheckAttachments);
             Section("Packets", CheckPackets);
@@ -231,6 +232,129 @@ public static class SelfTest
         World.SetMap(Maps.All[0]);
     }
 
+    // ---- 1d. Map packs -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Pack folders: the shipped Classic pack, pack.json never loading as a map, folders without pack.json, loose files
+    /// forming "Other", random picks and vote options staying inside the pack. Uses a throwaway folder in the temp
+    /// directory (deleted afterwards), never the game's own Maps folder.
+    /// </summary>
+    private static void CheckMapPacks()
+    {
+        // The real Maps folder
+        var classic = Maps.FindPack("Classic");
+        if (Directory.Exists(Maps.Folder))
+        {
+            if (classic == null)
+                Fail("no Classic pack (Maps/Classic)");
+            else if (classic.Maps.Count != 24)
+                Fail($"Classic has {classic.Maps.Count} maps (24 ship with the game)");
+            else if (classic.Description.Length == 0 || classic.Order != 1)
+                Fail("Classic/pack.json wasn't read (no description or order)");
+        }
+        if (Maps.All.Any(m => m.Pack == null || !m.Pack.Maps.Contains(m)))
+            Fail("a loaded map has no pack");
+        if (Maps.Packs.Sum(p => p.Maps.Count) != Maps.All.Length)
+            Fail("the packs don't add up to the map list");
+        if (Maps.All.Any(m => m.SourceFile != null && Path.GetFileName(m.SourceFile).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase)))
+            Fail("a pack.json was loaded as a map");
+        Line("packs: " + string.Join("; ", Maps.Packs.Select(p => $"{p.Name} ({p.SizeSummary}){(p.Folder != null ? "" : " [loose files]")}")));
+
+        // A made-up Maps folder
+        var dir = Path.Combine(Path.GetTempPath(), "callofslop-packtest-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            static string MapJson(string name, float half) => $$"""
+                { "name": "{{name}}", "halfX": {{half}}, "halfZ": {{half}}, "ops": [
+                  { "op": "Ground", "color": [0.4, 0.4, 0.4] },
+                  { "op": "Prop", "x": 0, "z": 0, "w": 2, "h": 1, "d": 2, "color": "#f28026" },
+                  { "op": "RingSpawns", "count": 8, "frac": 0.8 }, { "op": "AutoWaypoints", "spacing": 6 } ] }
+                """;
+            void Write(string rel, string text)
+            {
+                var path = Path.Combine(dir, rel);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, text);
+            }
+            Write("Alpha/pack.json", """{ "format": "call-of-slop-pack/1", "name": "Alpha Pack", "description": "Test pack.", "author": "Self-test", "order": 5 }""");
+            Write("Alpha/a1.json", MapJson("Test A1", 20));
+            Write("Alpha/deeper/a2.json", MapJson("Test A2", 50)); // nested: still Alpha
+            Write("Alpha/a3.json", MapJson("Test A3", 100));
+            Write("Beta/b1.json", MapJson("Test B1", 20)); // no pack.json: named after the folder
+            Write("Gamma/pack.json", "{ this is not json");      // broken pack.json: still a pack, with an error
+            Write("Gamma/g1.json", MapJson("Test G1", 20));
+            Write("loose.json", MapJson("Test Loose", 20));      // loose file: the Other pack
+            Write("b1-leftover.json", MapJson("Test B1", 20));   // identical loose copy (old build output): ignored quietly
+
+            var errors = new List<string>();
+            var (all, packs) = Maps.LoadFolder(dir, errors);
+            Line($"test folder: {all.Length} maps; packs {string.Join(", ", packs.Select(p => $"{p.Name} [{string.Join(", ", p.Maps.Select(m => m.Name))}]"))}; errors: {string.Join(" | ", errors)}");
+            var names = packs.Select(p => p.Name).ToArray();
+            if (!names.SequenceEqual(["Alpha Pack", "Beta", "Gamma", MapPack.LooseName]))
+                Fail($"test packs came out as {string.Join(", ", names)} (expected Alpha Pack, Beta, Gamma, {MapPack.LooseName})");
+            if (all.Length != 6)
+                Fail($"test folder loaded {all.Length} maps (expected 6: pack.json files and the leftover copy aren't maps)");
+            if (errors.Count != 1 || !errors[0].Contains("Gamma", StringComparison.Ordinal))
+                Fail($"expected exactly one error, for Gamma/pack.json; got {errors.Count}");
+            var alpha = packs.FirstOrDefault(p => p.Name == "Alpha Pack");
+            var beta = packs.FirstOrDefault(p => p.Name == "Beta");
+            var loose = packs.FirstOrDefault(p => p.Name == MapPack.LooseName);
+            if (alpha is not { Maps.Count: 3, Order: 5, Author: "Self-test", Folder: "Alpha" })
+                Fail("Alpha's pack.json fields or its nested map didn't load");
+            if (loose == null || loose.Maps.Count != 1 || loose.Maps[0].Name != "Test Loose" || loose.Folder != null)
+                Fail("the loose map file didn't become the Other pack");
+            if (beta == null || beta.Maps.Count != 1 || all.Any(m => m.Pack == null || !m.Pack.Maps.Contains(m)))
+                Fail("maps and packs don't point at each other");
+
+            if (alpha != null && beta != null)
+            {
+                // Random picks stay inside the selected pack; a pack that's gone falls back to every map.
+                var rng = new Random(1);
+                var s = new Settings { MapRandom = true, MapPack = "alpha pack" };
+                var picks = Enumerable.Range(0, 200).Select(_ => s.PickMap(packs, all, rng)).ToList();
+                if (picks.Any(m => m.Pack != alpha) || picks.Distinct().Count() != 3)
+                    Fail("random map picked outside the pack (or never picked some of its maps)");
+                s.MapPack = "No Such Pack";
+                if (Enumerable.Range(0, 200).Select(_ => s.PickMap(packs, all, rng)).Distinct().Count() != all.Length)
+                    Fail("a missing pack didn't fall back to all maps");
+                s.MapRandom = false;
+                s.MapName = "Test B1";
+                if (s.PickMap(packs, all, rng).Name != "Test B1")
+                    Fail("a chosen map wasn't the one started");
+
+                // Vote options: the pack just played; a pack without 2 other maps falls back to everything.
+                var pool = Game.VotePool("Test A1", alpha, all);
+                if (pool.Count != 2 || pool.Any(m => m.Pack != alpha || m.Name == "Test A1"))
+                    Fail($"vote options left the pack: {string.Join(", ", pool.Select(m => m.Name))}");
+                if (Game.VotePool("Test B1", beta, all).Count != all.Length - 1)
+                    Fail("a one-map pack didn't fall back to all maps for the vote");
+            }
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch (IOException)
+            {
+            }
+        }
+
+        // The same with the real packs
+        if (classic != null)
+        {
+            var s = new Settings { MapRandom = true, MapPack = classic.Name };
+            if (Enumerable.Range(0, 200).Any(_ => s.PickMap().Pack != classic))
+                Fail("PickMap left the Classic pack");
+            var played = classic.Maps[0];
+            var pool = Game.VotePool(played.Name, classic, Maps.All);
+            if (pool.Count != classic.Maps.Count - 1 || pool.Any(m => m.Pack != classic))
+                Fail("Classic vote options left the pack");
+            Line($"PickMap and vote options stay inside {classic.Name} ({pool.Count} vote candidates after {played.Name})");
+        }
+    }
+
     // ---- 2. Matches ----------------------------------------------------------------------
 
     private static void CheckMatches()
@@ -348,6 +472,8 @@ public static class SelfTest
                 Fail($"ballot has {ballot.Length} maps");
             if (ballot.Contains(start.Id))
                 Fail("the map just played was on the ballot");
+            if (start.Pack is { Maps.Count: >= 3 } pack && ballot.Any(id => Maps.Get(id).Pack != pack))
+                Fail($"the ballot offered maps from outside the {pack.Name} pack");
             if (ballot.Select(id => Maps.Get(id).Size).Distinct().Count() < 3)
                 Fail("ballot doesn't offer one map of each size");
             if (tally.Sum(t => t) != Game.MaxPlayers)

@@ -107,20 +107,22 @@ Hold **forward + jump** at a ledge up to 1.7 m high (crates, low walls, window s
 **Multiplayer** has three tabs:
 
 - **Server browser:** lists games to join with name, map, players (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds.
-- **Host a game:** map (random by default, or *Select map* to pick from the full list), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
+- **Host a game:** map pack and map (random from the pack by default, or *Choose map* to pick one of the pack's maps), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
 - **Join by address:** type an IP and port directly.
 
 **About public listing:** a public list needs something always online that hosts can report to and browsers can ask. That's the **master server**, built into the game: run `CallOfSlop.exe --master` (optionally followed by a port; the default is UDP 27050) on any always-on PC with that UDP port reachable. It tries UPnP itself. Then everyone enters that PC's address under **Settings > Player > Master server**. The master only stores addresses: names, maps, players and pings come straight from each game. Without a master server, the browser still finds every game on your LAN.
 
-Single player also defaults to **Random map**, with *Select map* to choose. With random picked, the lobby background tours the maps.
+Single player works the same way: pick a **map pack**, then **Random from pack** (the default) or *Choose map*. With random picked, the lobby background tours the pack's maps.
 
 ### Map vote
 
-At the end of every match the results screen shows **three maps to vote on**: one small, one medium and one large, never the map you just played. Click one or press **1 / 2 / 3**. You can change your vote until the 12-second timer runs out, and the live tally shows which map is leading. Bots vote too, leaning towards smaller maps when there are few players. The next match starts on the map with the most votes, with ties broken at random. Players who join during the results screen see the ballot and can vote.
+At the end of every match the results screen shows **three maps to vote on**, taken from the pack of the map you just played (or from every map if that pack is too small): one small, one medium and one large where possible, never the map you just played. Click one or press **1 / 2 / 3**. You can change your vote until the 12-second timer runs out, and the live tally shows which map is leading. Bots vote too, leaning towards smaller maps when there are few players. The next match starts on the map with the most votes, with ties broken at random. Players who join during the results screen see the ballot and can vote.
 
 ### Maps
 
 All maps share the same primitive style: everything is a box, with the grey-and-orange dev grid. Buildings are walk-in, with doors, windows to shoot through, internal stairs between floors and, on many, a staircase onto the roof. Pick the map in the lobby (Single player or Host); the background previews your choice.
+
+**Map packs.** Each folder in `Maps` is a map pack, and in the lobby you first pick a pack (shown with its map count by size, for example "7 small, 9 medium, 8 large", and its description), then play a random map from it or choose one. The 24 shipped maps are the **Classic** pack (`Maps/Classic`). Map files placed straight in `Maps` form a pack called **Other**. A folder can hold a `pack.json` with the pack's name, description, author and sort order; without one the folder name is used. To share a pack, zip its folder; to install one, unzip it into `Maps` and click **Refresh maps**. The Classic maps:
 
 | Map | Size | What it is |
 | --- | --- | --- |
@@ -153,7 +155,7 @@ All maps share the same primitive style: everything is a box, with the grey-and-
 
 The lobby groups maps by size. Medium and large maps add distance haze so the far side fades into the sky. Bots on big maps pick waypoints they can walk to in a straight line.
 
-**Maps are data files.** Each map is one `.json` file in the `Maps` folder: its name, size, sky colour and a list of building ops (`Building`, `WallX`/`WallZ` with door and window holes, `Slab` with stairwells, `StairsX`/`StairsZ`, `Container`, `Car`, `Hill`, `Tree`, `Watchtower`, `Hangar`, `Bridge`, `TrainCar`...). To add a map, drop a file (or a folder of them) into `Maps` and click **Refresh maps** in the lobby; no restart or recompiling. In single player, **Reload map files** in the Esc menu rebuilds the map you're standing in from its file, for quick edit-and-look map making. Anyone can make one: **[Maps/README.md](Maps/README.md)** is the map makers' guide, with a full example and every op. A file with a mistake is skipped with a message that names the file and the problem (also shown in the lobby), and `CallOfSlop.exe --check-map FILE` checks one without starting the game. Online, servers and clients identify maps by name plus a geometry fingerprint, so a player missing a host's custom map is told which file to get, and the server browser shows maps you don't have in orange.
+**Maps are data files.** Each map is one `.json` file in a pack folder under `Maps`: its name, size, sky colour and a list of building ops (`Building`, `WallX`/`WallZ` with door and window holes, `Slab` with stairwells, `StairsX`/`StairsZ`, `Container`, `Car`, `Hill`, `Tree`, `Watchtower`, `Hangar`, `Bridge`, `TrainCar`...). To add a map, drop a file into a pack folder (or a whole pack folder into `Maps`) and click **Refresh maps** in the lobby; no restart or recompiling. In single player, **Reload map files** in the Esc menu rebuilds the map you're standing in from its file, for quick edit-and-look map making. Anyone can make one: **[Maps/README.md](Maps/README.md)** is the map makers' guide, with a full example and every op. A file with a mistake is skipped with a message that names the file and the problem (also shown in the lobby), and `CallOfSlop.exe --check-map FILE` checks one without starting the game. Online, servers and clients identify maps by name plus a geometry fingerprint, so a player missing a host's custom map is told which file to get, and the server browser shows maps you don't have in orange.
 
 Movement handles any stack of boxes: you stand on anything, walk up steps up to 0.55 m, and bump your head on ceilings.
 
@@ -297,13 +299,13 @@ On clients, the window title shows ping, the current interpolation delay, and th
 
 ```
 CallOfSlop.csproj   Start.bat   README.md   NOTICE.txt
-Maps/                map files (*.json) and the map makers' guide - copied next to the game on build
+Maps/                map packs (one folder each, e.g. Maps/Classic: *.json maps + pack.json) and the map makers' guide - copied next to the game on build
 tools/               BuildCheck.bat (build + self-test)
 Source/
   App/               Program (window, input, camera, scene + HUD drawing, smoke test), Settings, Keybinds, SelfTest
   Game/              World (physics, collision), Game (server/client logic, hitscan), Match, MapVote, Bots,
                      Throwables, Progression, ServerAdvert, Loadouts (slots + loadout.txt), Perks, Melee
-  Maps/              Map (geometry + building ops), MapKit (bigger ready-made pieces), MapFile (JSON load/save)
+  Maps/              Map (geometry + building ops, loader), MapKit (bigger ready-made pieces), MapFile (JSON load/save), MapPack
   Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
   Weapons/           Weapons (catalogue + stats), Attachments, GunModel (procedural weapon models)
   Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array)
