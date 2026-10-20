@@ -40,11 +40,10 @@ jobs:
           strings -a "$dll" | grep -E '^[A-Z][A-Za-z0-9]+_[A-Za-z0-9_]+$' | sort -u > managed.txt
           comm -23 managed.txt native.txt > missing.txt
           echo "::notice title=binding totals::managed entry points $(wc -l < managed.txt), native exports $(wc -l < native.txt), managed-but-not-native $(wc -l < missing.txt)"
-          for t in 'HeightFieldShape|ConvexHullShape|MeshShape' 'BoxShape|CylinderShape|CapsuleShape|SphereShape' 'RotatedTranslatedShape|StaticCompoundShape|MutableCompoundShape|ScaledShape' 'CharacterVirtual|BodyCreationSettings|BodyInterface|NarrowPhaseQuery|PhysicsSystem' 'Plane_|Triangle_|IndexedTriangle_|AABox_|StateRecorder|TempAllocator'; do
-            echo "::notice title=missing natively ($t)::$(grep -E "^($t)" missing.txt | tr '\n' ' ' | cut -c1-3000)"
+          for t in NarrowPhaseQuery_ CharacterVirtual_ 'CharacterBase_|CharacterBaseSettings_|CharacterVirtualSettings_' BodyInterface_ 'PhysicsSystem_|StateRecorderImpl_|StateRecorder_|TempAllocatorImpl_' 'StaticCompoundShapeSettings_|TriangleShapeSettings_|TriangleShape_|Shape_|ShapeSettings_' 'RayCastSettings_|ShapeCastSettings_|CollideShapeSettings_|BodyFilter_|ShapeFilter_|Default|Specified|IgnoreSingle' 'Jolt_|^[A-Z][a-zA-Z]+$|RegisterTypes|Factory_|Plane_|Triangle_|IndexedTriangle_'; do
+            echo "::notice title=native ($t)::$(grep -E "^($t)" native.txt | grep -v '^_Z' | tr '\n' ' ' | cut -c1-6000)"
           done
-          echo "::notice title=native overloads::$(grep -E '^(HeightFieldShapeSettings|ConvexHullShapeSettings|MeshShapeSettings|BoxShapeSettings|CapsuleShapeSettings|CylinderShapeSettings|SphereShapeSettings|RotatedTranslatedShapeSettings|BoxShape|CapsuleShape|CylinderShape|SphereShape|RotatedTranslatedShape)_(Create|Set)' native.txt | tr '\n' ' ' | cut -c1-3000)"
-          echo "::notice title=native ObjectStream/Restore::$(grep -iE 'ObjectStream|sRestore|RestoreFrom|LoadShape' native.txt | head -40 | tr '\n' ' ')"
+          cp native.txt managed.txt missing.txt spike/out/ || true
 
       - name: Machine
         run: |
