@@ -45,7 +45,7 @@ public sealed class Settings
     public int Bind(GameAction a) => Binds[(int)a];
 
     // Single player
-    public int Bots = 3;
+    public int Bots = 3; // 0 = "No bots (test mode)": you alone, the match never ends on its own
     public BotDifficulty Difficulty = BotDifficulty.Normal;
 
     // Multiplayer
@@ -115,14 +115,17 @@ public sealed class Settings
     /// <summary>Server names: printable ASCII, up to 32 characters (may be empty).</summary>
     public static string CleanServerName(string name) => new string(name.Where(c => c >= 32 && c < 127).Take(32).ToArray()).Trim();
 
-    public static Settings Load()
+    public static Settings Load() => Load(FilePath);
+
+    /// <summary>Loads a settings file from <paramref name="path"/> (the self-test uses a temporary one).</summary>
+    public static Settings Load(string path)
     {
         var s = new Settings();
         try
         {
-            if (!File.Exists(FilePath))
+            if (!File.Exists(path))
                 return s;
-            foreach (var line in File.ReadAllLines(FilePath))
+            foreach (var line in File.ReadAllLines(path))
             {
                 var kv = line.Split('=', 2);
                 if (kv.Length != 2)
@@ -139,7 +142,7 @@ public sealed class Settings
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
-                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 1, Game.MaxPlayers - 1); break;
+                    case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
                     case "port" when ushort.TryParse(v, out var p) && p > 0: s.Port = p; break;
                     case "upnp": s.UseUpnp = v == "1"; break;
