@@ -33,6 +33,13 @@ jobs:
           if (Test-Path $log) {
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
+            # TEMP (big-lobbies): show the Big lobbies and Packets sections as notices
+            $in = $false
+            foreach ($l in Get-Content $log) {
+              if ($l -match "^== (Big lobbies|Packets) ==") { $in = $true; continue }
+              elseif ($l -match "^== ") { $in = $false }
+              if ($in -and $l.Trim().Length -gt 0) { Write-Output "::notice title=BL::$($l.Trim())" }
+            }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
           } else {
