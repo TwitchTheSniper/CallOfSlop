@@ -319,9 +319,10 @@ public sealed partial class Map
     public bool IsTrunk(int i) => TrunkCount > 0 && i >= TrunkStart && i < TrunkStart + TrunkCount;
 
     /// <summary>
-    /// Ground height under (x, z) for foliage placement. Everything that sits on the ground goes through here.
+    /// Ground height under (x, z) for foliage placement. Everything that sits on the ground goes through here:
+    /// the terrain on terrain maps, y = 0 on flat ones (so their plants and fingerprints don't change).
     /// </summary>
-    private float FoliageGround(float x, float z) => 0f; // TODO(lead): use Map.GroundHeight once terrain is merged
+    private float FoliageGround(float x, float z) => GroundHeight(x, z);
 
     /// <summary>
     /// Places the plants described by <see cref="Foliage"/> (after the ops have built the map, so they can keep out
@@ -474,6 +475,8 @@ public sealed partial class Map
             if (reg.AvoidPaths && NearPath(spec, x, z, margin))
                 continue;
             var g = FoliageGround(x, z);
+            if (HasTerrain && GroundNormal(x, z).Y < World.MinWalkNormalY)
+                continue; // nothing grows on cliff faces
             var s = reg.SizeMin + (reg.SizeMax - reg.SizeMin) * size;
             var top = tree ? s : 1.6f * s;
             if (reg.AvoidSolid && grid.Blocks(x, z, margin + (tree ? Foliage.TrunkWidth(s) / 2 : 0f), g + 0.05f, g + top))

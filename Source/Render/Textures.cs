@@ -156,7 +156,7 @@ public static class Textures
             return Material.Grid; // Proto Box stays a prototype
 
         var size = box.Half * 2;
-        var bottom = box.Center.Y - box.Half.Y;
+        var bottom = box.Center.Y - box.Half.Y - map.GroundHeight(box.Center.X, box.Center.Z); // height above the ground (terrain maps)
         var warm = color.X > color.Z + 0.08f; // reds, oranges, sand
         var sandy = color.X > color.Z + 0.12f && color.Y > color.Z + 0.04f;
         var bluish = color.Z >= color.X - 0.01f && color.Z > 0.3f;

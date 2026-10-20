@@ -19,17 +19,23 @@ public sealed partial class Game
     private bool IsEnemy(Player bot, Player other) => AreEnemies(bot, other);
 
     /// <summary>Where this bot should be heading for the current mode's objective (hill, flag, carrier...), or null for normal roaming/fighting.</summary>
-    private Vector3? ObjectiveGoal(Player bot, double now)
+    private Vector3? ObjectiveGoal(Player bot, double now) =>
+        ObjectiveSpot(bot) is { } g ? Route(bot, g, now) : null;
+
+    /// <summary>
+    /// The objective point itself, without the straight-line waypoint routing in <see cref="ObjectiveGoal"/>: bots
+    /// that path-find on the nav graph (BotTactics) head straight for this and let A* find the way.
+    /// </summary>
+    private Vector3? ObjectiveSpot(Player bot)
     {
         if (Phase != MatchPhase.Playing)
             return null;
-        Vector3? goal = Mode switch
+        return Mode switch
         {
             GameMode.KingOfTheHill => HillGoal(bot),
             GameMode.CaptureTheFlag => FlagGoal(bot),
             _ => null,
         };
-        return goal is { } g ? Route(bot, g, now) : null;
     }
 
     private Vector3? HillGoal(Player bot)
@@ -120,6 +126,8 @@ public sealed partial class Game
 
     private static bool Clear(Vector3 from, Vector3 to)
     {
+        if (World.Map.HasTerrain) // terrain: a walkable line (no cliffs), not just a clear one; callers pass eye height (1 m)
+            return World.CanWalkStraight(from - Vector3.UnitY, to - Vector3.UnitY);
         var d = to - from;
         var dist = d.Length();
         return dist < 0.01f || World.RaycastWorld(from, d / dist, dist) >= dist - 0.05f;

@@ -60,10 +60,13 @@ public sealed partial class Map
         Block(x - w / 2, y, z - d / 2, x + w / 2, y + h, z + d / 2, color);
     }
 
+    /// <summary>The floor slab under the whole map. On terrain maps the terrain is the floor, so this adds nothing.</summary>
     [MapOp]
     public void Ground(Vector3 color)
     {
         using var __ = Op([color]);
+        if (HasTerrain)
+            return;
         GroundIndex = Solid.Count;
         Block(-HalfX - 2, -1, -HalfZ - 2, HalfX + 2, 0, HalfZ + 2, color);
     }
@@ -79,6 +82,11 @@ public sealed partial class Map
     public void Perimeter(float height, Vector3 color, float t = 1f)
     {
         using var __ = Op([height, color, t]);
+        if (HasTerrain)
+        {
+            TerrainPerimeter(height, color, t);
+            return;
+        }
         Block(-HalfX - t, 0, -HalfZ - t, HalfX + t, height, -HalfZ, color);
         Block(-HalfX - t, 0, HalfZ, HalfX + t, height, HalfZ + t, color);
         Block(-HalfX - t, 0, -HalfZ, -HalfX, height, HalfZ, color);
@@ -279,23 +287,26 @@ public sealed partial class Map
     public void Spawn(float x, float z, float y = 0)
     {
         using var __ = Op([x, z, y]);
-        Spawns.Add(new Vector3(x, y, z));
+        var g = PointGround(x, z); // terrain maps: y is measured from the ground (unless the op's anchor is "world")
+        Spawns.Add(new Vector3(x, y + g, z));
         if (y == 0)
-            Waypoints.Add(new Vector3(x, 0, z));
+            Waypoints.Add(new Vector3(x, g, z));
     }
 
     [MapOp]
     public void Waypoint(float x, float z) 
     {
         using var __ = Op([x, z]);
-        Waypoints.Add(new Vector3(x, 0, z));
+        Waypoints.Add(new Vector3(x, PointGround(x, z), z));
     }
 
-    /// <summary>Would a standing player at <paramref name="feet"/> overlap a box (or be outside the map)?</summary>
+    /// <summary>Would a standing player at <paramref name="feet"/> overlap a box, be under the terrain, or be outside the map?</summary>
     public bool IsBlocked(Vector3 feet)
     {
         const float r = World.PlayerRadius + 0.05f;
         if (MathF.Abs(feet.X) > HalfX - r || MathF.Abs(feet.Z) > HalfZ - r)
+            return true;
+        if (HasTerrain && GroundHeight(feet.X, feet.Z) > feet.Y + 0.05f)
             return true;
         foreach (var b in Solid)
         {
@@ -308,19 +319,23 @@ public sealed partial class Map
 
     /// <summary>
     /// The closest spot to <paramref name="feet"/> (same height, searching outwards in rings) where a standing
-    /// player fits, or null if there's none within <paramref name="maxRadius"/>.
+    /// player fits, or null if there's none within <paramref name="maxRadius"/>. On terrain, a spot on the ground
+    /// follows the ground (and skips slopes too steep to stand on).
     /// </summary>
     public Vector3? NearestFree(Vector3 feet, float maxRadius = 12f)
     {
-        if (!IsBlocked(feet))
+        if (!BadSpot(feet))
             return feet;
+        var onGround = HasTerrain && feet.Y - GroundHeight(feet.X, feet.Z) < 0.3f;
         for (var radius = 0.5f; radius < maxRadius; radius += 0.5f)
         {
             for (var k = 0; k < 16; k++)
             {
                 var a = k * MathF.Tau / 16;
                 var c = feet + new Vector3(MathF.Cos(a) * radius, 0, MathF.Sin(a) * radius);
-                if (!IsBlocked(c))
+                if (HasTerrain)
+                    c.Y = onGround ? GroundHeight(c.X, c.Z) : MathF.Max(c.Y, GroundHeight(c.X, c.Z));
+                if (!BadSpot(c))
                     return c;
             }
         }
@@ -330,6 +345,8 @@ public sealed partial class Map
     /// <summary>Moves any spawn or waypoint that ended up inside geometry to the nearest free spot.</summary>
     public void Validate()
     {
+        SnapToGround(Spawns);
+        SnapToGround(Waypoints);
         Fix(Spawns, "spawn");
         Fix(Waypoints, "waypoint");
 
@@ -337,7 +354,7 @@ public sealed partial class Map
         {
             for (var i = 0; i < points.Count; i++)
             {
-                if (!IsBlocked(points[i]))
+                if (!BadSpot(points[i]))
                     continue;
                 var original = points[i];
                 var fixedPoint = NearestFree(original);
@@ -598,6 +615,9 @@ public static partial class Maps
             m.Validate();
             var moved = spawnsBefore.Where((p, i) => p != m.Spawns[i]).Count();
             Console.WriteLine($"OK: '{m.Name}' ({m.Size}, {m.HalfX * 2:0} x {m.HalfZ * 2:0} m): {m.Solid.Count} boxes, {m.Spawns.Count} spawns, {m.Waypoints.Count} waypoints, fingerprint {m.ContentHash:x8}");
+            if (m.Terrain is { } t)
+                Console.WriteLine($"terrain: {t.CountX} x {t.CountZ} samples every {t.Cell:0.##} m, heights {t.MinHeight:0.0} to {t.MaxHeight:0.0} m, {m.TerrainSpec!.Features.Count} features, "
+                                  + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");
             if (moved > 0)
                 Console.WriteLine($"note: {moved} spawn(s) were inside geometry and get moved to the nearest free spot");
             if (m.Spawns.Count < 8)

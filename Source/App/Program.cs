@@ -30,6 +30,7 @@ public static unsafe partial class Program
 
     private static GlfwWindow _window = null!;
     private static readonly Renderer Gfx = new();
+    private static readonly TerrainRenderer TerrainGfx = new();
     private static readonly Ui Ui = new();
     private static readonly Audio AudioSystem = new();
     private static Settings _settings = new();
@@ -150,7 +151,7 @@ public static unsafe partial class Program
     private static int _smokeStage;
     private static int _smokeFrames;
     private static double _smokeWorstDt;
-    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base"];
+    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test"];
 
     private static void SmokeTick(double now)
     {
@@ -281,11 +282,13 @@ public static unsafe partial class Program
                 break;
             case 7 when t > 6.2:
                 game?.TryMelee(now);
-                if (_smokeMap < 4 && game?.Local is { Alive: true })
-                    SmokeShot($"play_{_smokeMap}");
+                if ((_smokeMap < 4 || SmokeMaps[_smokeMap] == "Terrain Test") && game?.Local is { Alive: true })
+                    SmokeShot(SmokeMaps[_smokeMap] == "Terrain Test" ? "play_terrain" : $"play_{_smokeMap}");
                 _smokeStage++;
                 break;
             case 8 when t > 8.5:
+                if (World.Map.HasTerrain)
+                    Console.WriteLine($"[smoke] terrain: {TerrainGfx.LastFrame.Chunks} chunks, {TerrainGfx.LastFrame.DrawCalls} draw call(s), {TerrainGfx.LastFrame.Triangles} triangles");
                 Console.WriteLine($"[smoke] {World.Map.Name}: alive {game?.Local?.Alive}, weapon {game?.Active.Def.Name} [{Attachments.Describe(game?.Active.Def.Kit ?? 0)}], phase {game?.Phase}, players {game?.Players.Count}, "
                     + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
                 game?.DebugEndMatch(now); // show the results screen and map vote
@@ -988,6 +991,7 @@ public static unsafe partial class Program
         var map = World.Map;
         for (var i = 0; i < map.Solid.Count; i++)
             Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
     }
 

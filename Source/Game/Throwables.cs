@@ -109,9 +109,44 @@ public static class Throwables
             }
             pos.X = Math.Clamp(pos.X, -World.Map.HalfX, World.Map.HalfX);
             pos.Z = Math.Clamp(pos.Z, -World.Map.HalfZ, World.Map.HalfZ);
+            if (World.Map.TerrainCollision is { } terrain && TerrainContact(p, ref pos, terrain, h))
+                touched = true;
             p.Pos = pos;
         }
         return touched;
+    }
+
+    /// <summary>Rolling friction on terrain (deceleration = this x gravity x cos(slope)): grenades stop on slopes up to about 38 degrees.</summary>
+    public const float RollFriction = 0.8f;
+
+    /// <summary>
+    /// Bounce off and roll along the terrain using its surface normal: hard hits bounce (losing speed), soft
+    /// contact keeps it on the surface, and friction brings it to rest unless the slope is too steep.
+    /// </summary>
+    private static bool TerrainContact(Projectile p, ref Vector3 pos, ITerrainCollision terrain, float h)
+    {
+        var ground = terrain.HeightAt(pos.X, pos.Z) + ProjectileRadius;
+        if (pos.Y >= ground)
+            return false;
+        pos.Y = ground;
+        var n = terrain.NormalAt(pos.X, pos.Z);
+        var vn = Vector3.Dot(p.Vel, n);
+        if (vn >= 0)
+            return false; // already leaving the surface
+        if (vn < -1.2f)
+        {
+            var tangent = p.Vel - vn * n;
+            p.Vel = tangent * 0.7f - vn * Restitution * n; // bounce, with the same ground friction as boxes
+        }
+        else
+        {
+            p.Vel -= vn * n; // resting contact: lose the into-the-ground part
+            var tangent = p.Vel;
+            var speed = tangent.Length();
+            var slow = RollFriction * World.Gravity * n.Y * h;
+            p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
+        }
+        return true;
     }
 }
 
