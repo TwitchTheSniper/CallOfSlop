@@ -153,6 +153,7 @@ public static unsafe partial class Program
     private static bool _smoke;
     private static int _smokeMap = -1;
     private static double _smokeStepStart;
+    private static double _smokeHoldStart;
     private static int _smokeStage;
     private static int _smokeFrames;
     private static double _smokeWorstDt;
@@ -230,6 +231,9 @@ public static unsafe partial class Program
         var game = _session;
         // Map 0, after the play screenshot: scoped ADS shots (on their own clock, 6.3-8.4 s), then the arms
         // (reload, sprint, melee; own clock), then kill streaks (needs you alive), then the death cam (gets you killed).
+        // Map 0: the bots mustn't kill you before the ADS, arms and streak shots (the death cam step kills you on purpose).
+        if (_smokeMap == 0 && _smokeStage is 7 or 8 && _smokeDeathCam == 0 && game is { IsServer: true, Local: { Alive: true } me })
+            me.ImmuneUntil = now + 0.5;
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeAdsStep <= SmokeAdsOptics.Length * 2)
         {
             SmokeAds(t);
@@ -248,6 +252,21 @@ public static unsafe partial class Program
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
+            return;
+        }
+        // After asking to spawn: wait out the ready-up warmup and the countdown (which reopens the loadout screen), and
+        // the respawn itself, so the play / ADS / arms shots show the live match and not the menu. At most 15 s.
+        if (game != null && _smokeStage == 7 && now - _smokeHoldStart < 15
+            && (game.Phase is MatchPhase.Warmup or MatchPhase.Countdown || Ui.MenuOpen || game.Local is not { Alive: true }))
+        {
+            if (game.Phase == MatchPhase.Playing && Ui.MenuOpen && game.Local is { Alive: true })
+            {
+                Ui.AutoDeploy(game, now);
+                SetMouseCaptured(true);
+            }
+            else if (game.Phase == MatchPhase.Playing && game.Local is not { Alive: true } && !game.RespawnRequested)
+                game.RequestRespawn();
+            _smokeStepStart = now - 3.4; // the stage clock waits too
             return;
         }
         switch (_smokeStage)
@@ -286,6 +305,7 @@ public static unsafe partial class Program
                 if (game != null)
                 {
                     Ui.SmokeRespawn(game, now);
+                    _smokeHoldStart = now;
                     Console.WriteLine($"[smoke] respawn requested (phase {game.Phase}, alive {game.Local?.Alive}, perks {game.ChosenPerks})");
                 }
                 _smokeStage++;
