@@ -33,7 +33,6 @@ jobs:
           if (Test-Path $log) {
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
-            Select-String -Path $log -Pattern "^Foliage Test|^  note:|^reload:|guide example" | ForEach-Object { Write-Output "::notice title=Dbg::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
           } else {
