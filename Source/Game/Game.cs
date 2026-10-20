@@ -210,6 +210,7 @@ public sealed partial class Game : IDisposable
             ClientTickMatch(frameDt);
         }
 
+        FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
         UpdateRenderStates((float)frameDt);
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
@@ -252,6 +253,7 @@ public sealed partial class Game : IDisposable
             else
             {
                 SampleSnapshots(p, RenderTick);
+                CarryRemoteRender(p); // standing on a moving platform: keep them on it as it's drawn
             }
 
             if (p.Id == LocalId || IsServer)
@@ -643,6 +645,7 @@ public sealed partial class Game : IDisposable
             return;
 
         var cmd = FreezeFilter(SampleLocalInput(_nextSeq++));
+        cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)
         _pendingInputs.Add(cmd);
         if (_pendingInputs.Count > 240)
             _pendingInputs.RemoveAt(0);
@@ -658,6 +661,8 @@ public sealed partial class Game : IDisposable
             var c = _pendingInputs[i];
             _w.U32(c.Seq).U8((byte)c.Buttons).F32(c.Yaw).F32(c.Pitch).U8(c.Weapon).U8(c.SpeedPct);
         }
+        for (var i = _pendingInputs.Count - count; i < _pendingInputs.Count; i++)
+            _w.U32(_pendingInputs[i].Tick); // trailer: mover ticks (older servers ignore it)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -781,6 +786,7 @@ public sealed partial class Game : IDisposable
     private void ServerTickStep(double now)
     {
         ServerTick++;
+        MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         ServerTickMatch(now);
         ServerTickProjectiles(now);
         ServerTickStreaks(now);
@@ -833,6 +839,7 @@ public sealed partial class Game : IDisposable
     private void ApplyCmd(Player p, InputCmd cmd)
     {
         cmd = FreezeFilter(cmd);
+        cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
         p.Yaw = cmd.Yaw;
@@ -1085,6 +1092,7 @@ public sealed partial class Game : IDisposable
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
                 continue;
             var at = HistoricState(p, rewindTo);
+            at.Position = CarryRewound(at.Position, rewindTo, ref at.Yaw); // on a moving platform: where the shooter saw it
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
@@ -1280,11 +1288,13 @@ public sealed partial class Game : IDisposable
             {
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
-                int count = r.U8();
+                int count = Math.Min((int)r.U8(), 16);
                 var maxSpeed = (byte)Math.Clamp((int)MathF.Round(MathF.Max(p.DefFor(p.Primary).Mobility, p.DefFor(p.Secondary).Mobility) * 100), 1, 200);
-                for (var i = 0; i < count && r.Has(15); i++)
+                Span<InputCmd> cmds = stackalloc InputCmd[count];
+                var read = 0;
+                for (; read < count && r.Has(15); read++)
                 {
-                    var cmd = new InputCmd
+                    cmds[read] = new InputCmd
                     {
                         Seq = r.U32(),
                         Buttons = (Buttons)r.U8(),
@@ -1293,6 +1303,13 @@ public sealed partial class Game : IDisposable
                         Weapon = r.U8(),
                         SpeedPct = r.U8(),
                     };
+                }
+                if (r.Has(4 * read)) // mover ticks trailer (GameMovers.cs); missing from older clients
+                    for (var i = 0; i < read; i++)
+                        cmds[i].Tick = r.U32();
+                for (var i = 0; i < read; i++)
+                {
+                    var cmd = cmds[i];
                     if (cmd.Seq <= p.HighestQueuedSeq || cmd.Seq <= p.LastProcessedSeq || !float.IsFinite(cmd.Yaw + cmd.Pitch))
                         continue;
                     cmd.Yaw = World.WrapAngle(cmd.Yaw);
@@ -1545,6 +1562,7 @@ public sealed partial class Game : IDisposable
                 {
                     SyncLocalSlots(p, refill: false); // loadout applied mid-life (out of combat)
                 }
+                SteerMoverClock(tick, ackSeq);
                 Reconcile(p, ackSeq, new MoveState
                 {
                     Position = pos, Velocity = vel, Grounded = grounded, Stance = stance, MantleTicks = mantleTicks, MantleTo = mantleTo,

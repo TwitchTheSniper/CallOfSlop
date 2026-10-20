@@ -53,6 +53,7 @@ public static partial class SelfTest
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
+            Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Packets", CheckPackets);

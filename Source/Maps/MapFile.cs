@@ -111,6 +111,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (MoverHash is var movers and not 0) // maps without a "movers" section keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (movers >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (Terrain != null) // terrain maps only, so flat maps keep the fingerprint they always had
             {
                 for (var i = 0; i < 4; i++)
@@ -185,6 +193,8 @@ public static partial class MapFile
         sb.Append("  ]");
         if (m.FoliageSection is { } foliage)
             sb.Append(",\n  \"foliage\": ").Append(FoliageToJson(foliage));
+        if (m.Movers.Count > 0)
+            sb.Append(",\n  \"movers\": ").Append(MoversToJson(m.Movers));
         sb.Append("\n}\n");
         return sb.ToString();
     }
@@ -295,6 +305,11 @@ public static partial class MapFile
             }
             if (map.Spawns.Count == 0)
                 throw new MapFileException($"{source}: no spawn points (add Spawn or RingSpawns ops)");
+            if (Prop(root, "movers") is { ValueKind: not JsonValueKind.Null } movers)
+            {
+                map.Movers.AddRange(ReadMovers(movers, source));
+                CheckMoverSweeps(map, source); // before the objectives: automatic hills are picked from the waypoints
+            }
             MapObjectiveJson.Read(root, map, source);
             return map;
         }
