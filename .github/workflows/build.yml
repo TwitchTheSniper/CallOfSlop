@@ -1,0 +1,41 @@
+# Builds the game and runs the headless self-test on every push and pull request.
+# The self-test (CallOfSlop.exe --selftest) checks maps, map files, movement, perks, melee,
+# attachments, packets, full bot matches, the map vote and the server browser. See Source/App/SelfTest.cs.
+name: Build and self-test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build CallOfSlop.csproj -c Release -nologo
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
+          $exe = "bin/Release/net10.0/CallOfSlop.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          Get-Content "bin/Release/net10.0/selftest.log"
+          if ($p.ExitCode -ne 0) { Write-Error "Self-test reported $($p.ExitCode) failure(s)"; exit 1 }
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selftest-logs
+          path: |
+            bin/Release/net10.0/selftest.log
+            bin/Release/net10.0/callofslop.log
+          if-no-files-found: ignore
