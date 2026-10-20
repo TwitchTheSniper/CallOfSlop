@@ -160,7 +160,7 @@ public sealed partial class Game
 
     public bool IsTeamMode => GameModes.IsTeam(Mode);
 
-    /// <summary>Kill streaks are off in Gun Game (the lead wires this to the kill-streak system's StreaksEnabled).</summary>
+    /// <summary>Kill streaks are off in Gun Game (<see cref="StreaksEnabled"/> follows it).</summary>
     public bool ModeAllowsStreaks => Mode != GameMode.GunGame;
 
     /// <summary>Team score: kills (TDM), hill points (KotH) or captures (CTF).</summary>

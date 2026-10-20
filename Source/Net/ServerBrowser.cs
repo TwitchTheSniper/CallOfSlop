@@ -12,8 +12,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     GameMode Mode = GameMode.FreeForAll)
 {
     // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome);
-    // 5: game modes and ready-up (mode state, ready and mode event packets, warmup phase, mode in the server info)
-    public const byte ProtocolVersion = 5;
+    // 5: kill packet carries the weapon kit, killer HP and damage source; 6: kill streaks (loadout packet + streak messages);
+    // 7: game modes and ready-up (mode state, ready and mode event packets, warmup phase, mode in the server info)
+    public const byte ProtocolVersion = 7;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

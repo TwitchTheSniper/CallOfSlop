@@ -1,8 +1,8 @@
 namespace CallOfSlop;
 
-/// <summary>Something you can unlock: a weapon, a grenade, a piece of equipment, a perk or a loadout slot.</summary>
+/// <summary>Something you can unlock: a weapon, a grenade, a piece of equipment, a perk, a kill streak or a loadout slot.</summary>
 public readonly record struct Unlock(int Level, string Name, string Kind, WeaponDef? Weapon = null, ThrowableKind? Throwable = null,
-    PerkId? Perk = null, int LoadoutSlot = -1);
+    PerkId? Perk = null, int LoadoutSlot = -1, StreakId? Streak = null);
 
 public readonly record struct XpPopup(double Time, string Text, int Amount);
 
@@ -137,6 +137,9 @@ public sealed class Progress
 
     public bool IsUnlocked(PerkId id) => Level >= PerkLevel(id);
 
+    /// <summary>Kill streaks: three starters, the rest spread evenly (see <see cref="KillStreaks.UnlockLevel"/>).</summary>
+    public bool IsUnlocked(StreakId id) => Level >= KillStreaks.UnlockLevel(id);
+
     public static readonly Unlock[] All = BuildTable();
 
     /// <summary>True if the weapon is one of the hand-placed ones in the built-in unlock table.</summary>
@@ -176,6 +179,8 @@ public sealed class Progress
                 list.Add(new Unlock(Math.Clamp(w.UnlockLevel ?? MaxLevel, 1, MaxLevel), w.Name, "Weapon", w));
         foreach (var perk in Perks.All.Where(pk => pk.Id != PerkId.None))
             list.Add(new Unlock(PerkLevel(perk.Id), perk.Name, $"{Perks.CategoryName(perk.Category)} perk", Perk: perk.Id));
+        foreach (var streak in KillStreaks.All.Where(s => s.Id != StreakId.None))
+            list.Add(new Unlock(KillStreaks.UnlockLevel(streak.Id), streak.Name, "Kill streak", Streak: streak.Id));
         for (var slot = 0; slot < MaxLoadoutSlots; slot++)
             list.Add(new Unlock(LoadoutSlotLevel(slot), $"Loadout slot {slot + 1}", "Loadout", LoadoutSlot: slot));
         return list.OrderBy(u => u.Level).ToArray();

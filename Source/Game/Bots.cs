@@ -148,6 +148,7 @@ public sealed partial class Game
             return;
         }
 
+        BotUseStreaks(p, now); // kill streaks (BotStreaks.cs)
         var def = p.WeaponDef;
         var dt = World.TickDt;
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
@@ -394,7 +395,7 @@ public sealed partial class Game
     private void BotReload(Player p, WeaponDef def, double now)
     {
         var b = p.Bot!;
-        b.ReloadUntil = now + def.Reload;
+        b.ReloadUntil = now + def.Reload * StreakReloadMult(p, now);
         b.BurstLeft = 0;
         Audio.Reload(def, p.RenderEye);
         Net.Broadcast(ReloadFx(p.Id, def.Id), PacketReliability.Unreliable);

@@ -502,6 +502,7 @@ public sealed class Player
     public double NextMelee;
     public bool WantsRespawn; // people respawn when they click Respawn; bots respawn on their own
     public uint SpawnTick;
+    public StreakState Streak = new(); // kill streaks (server-owned; a client gets its own copy)
     public const int HistorySize = 128;
     public readonly HistoryEntry[] History = new HistoryEntry[HistorySize]; // per tick, for lag compensation
 
