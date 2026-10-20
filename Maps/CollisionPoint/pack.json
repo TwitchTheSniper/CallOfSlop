@@ -1,0 +1,7 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Collision Point",
+  "description": "Six maps built on Guttler & Johansson's spatial level-design principles: planned collision points, balanced routes, no dominant spots.",
+  "author": "Call of Slop",
+  "order": 2
+}
