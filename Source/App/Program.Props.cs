@@ -35,7 +35,7 @@ public static unsafe partial class Program
         if (Maps.Find("Prop Gallery") == null && Maps.Find("Prop Yard") == null)
         {
             Console.WriteLine("[smoke] props: maps 'Prop Gallery' and 'Prop Yard' not found, step skipped");
-            SmokeNextMap(now);
+            StartMeshSmoke(now); // then the mesh step (Program.Meshes.cs), then on to the maps
             return;
         }
         _propsSmokeSavedVSync = _settings.VSync;
@@ -89,7 +89,7 @@ public static unsafe partial class Program
                 _propsSmoke = -1;
                 _settings.VSync = _propsSmokeSavedVSync;
                 PropDebris.Clear();
-                SmokeNextMap(now);
+                StartMeshSmoke(now); // then the mesh step (Program.Meshes.cs), then on to the maps
                 return;
             }
             BeginPropsSmokeView(now);

@@ -87,6 +87,7 @@ public static partial class SelfTest
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
+            Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");

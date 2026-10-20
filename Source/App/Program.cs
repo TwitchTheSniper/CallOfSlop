@@ -179,6 +179,11 @@ public static unsafe partial class Program
             PropsSmokeTick(now); // Program.Props.cs
             return;
         }
+        if (MeshSmokeActive)
+        {
+            MeshSmokeTick(now); // Program.Meshes.cs
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -937,6 +942,8 @@ public static unsafe partial class Program
                 DrawMoversSmoke();
             else if (PropsSmokeActive)
                 DrawPropsSmoke();
+            else if (MeshSmokeActive)
+                DrawMeshSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -977,7 +984,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -1077,6 +1084,7 @@ public static unsafe partial class Program
         DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
+        MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
         FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
     }
 
