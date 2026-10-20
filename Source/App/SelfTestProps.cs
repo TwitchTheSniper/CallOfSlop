@@ -15,7 +15,15 @@ public static partial class SelfTest
     /// <summary>The starter library ships at least this many props.</summary>
     private const int StarterProps = 30;
 
+    private static readonly List<string> _plines = new();
+    private static void PLine(string x) { _plines.Add(x); Line(x); }
+
     private static void CheckProps()
+    {
+        try { CheckPropsInner(); } finally { for (var i = 0; i < _plines.Count; i += 4) Fail("PROBE " + string.Join(" || ", _plines.Skip(i).Take(4))); }
+    }
+
+    private static void CheckPropsInner()
     {
         CheckPropLibrary();
         CheckPropFileErrors();
@@ -31,7 +39,7 @@ public static partial class SelfTest
         var all = Props.All;
         foreach (var e in Props.LoadErrors)
             Fail("prop file problem: " + e);
-        Line($"{all.Length} props in {Props.Categories.Count()} categories ({string.Join(", ", Props.Categories)}) from {Props.Folder}: "
+        PLine($"{all.Length} props in {Props.Categories.Count()} categories ({string.Join(", ", Props.Categories)}) from {Props.Folder}: "
              + $"{all.Count(p => p.IsSolid)} solid, {all.Count(p => !p.IsSolid)} cosmetic, {all.Count(p => p.Breakable != null)} breakable "
              + $"({all.Count(p => p.Breakable is { ExplodeRadius: > 0 })} explosive)");
         if (all.Length < StarterProps)
@@ -70,7 +78,7 @@ public static partial class SelfTest
         var meshes = PropMeshes.Build(all);
         var parts = all.Sum(p => p.Parts.Count);
         var bad = meshes.Indices.Count(i => i >= meshes.Vertices.Length / PropMeshes.FloatsPerVertex);
-        Line($"prop meshes: {meshes.Vertices.Length / PropMeshes.FloatsPerVertex} vertices, {meshes.Triangles} triangles for {parts} parts "
+        PLine($"prop meshes: {meshes.Vertices.Length / PropMeshes.FloatsPerVertex} vertices, {meshes.Triangles} triangles for {parts} parts "
              + $"(largest prop {all.Max(p => p.Parts.Count)} parts, {all.Max(p => p.Parts.Count) * 12} triangles)");
         if (meshes.Vertices.Length / PropMeshes.FloatsPerVertex != parts * 24 || meshes.Indices.Length != parts * 36 || bad > 0 || meshes.Ranges.Length != all.Length)
             Fail($"prop meshes don't add up ({bad} indices out of range)");
@@ -120,7 +128,7 @@ public static partial class SelfTest
         {
             ok++;
         }
-        Line($"{ok} of {cases.Length + 1} broken prop and map files rejected with the right message");
+        PLine($"{ok} of {cases.Length + 1} broken prop and map files rejected with the right message");
     }
 
     /// <summary>A small flat test map (20 x 20 m) with the given extra ops.</summary>
@@ -149,7 +157,7 @@ public static partial class SelfTest
         var paper = World.RaycastWorld(new Vector3(3, 0.01f, 0.05f), Vector3.UnitX, 6);
         var blockedSolid = World.Blocked(new Vector3(0, 0, 0));
         var blockedPaper = World.Blocked(new Vector3(6, 0, 0));
-        Line($"crate: a ray stops at {hit:0.00} m (its face is at {6 - crate.Def.Bounds.Half.X:0.00}), standing in it blocked {blockedSolid}; "
+        PLine($"crate: a ray stops at {hit:0.00} m (its face is at {6 - crate.Def.Bounds.Half.X:0.00}), standing in it blocked {blockedSolid}; "
              + $"newspaper: ray goes {paper:0.00} of 6 m, standing on it blocked {blockedPaper}");
         if (MathF.Abs(hit - (6 - 0.45f)) > 0.06f)
             Fail($"a solid prop doesn't stop a ray at its face ({hit:0.00} m)");
@@ -160,7 +168,7 @@ public static partial class SelfTest
         // Turned 45 degrees: several boxes following the diamond outline, so the empty corners of its square bounds are open.
         var turned = m.PropInstances[2];
         var centre = World.RaycastWorld(new Vector3(0, 0.4f, 2), Vector3.UnitZ, 10);
-        Line($"crate turned 45 deg: {turned.SolidCount} collider boxes, a ray at it stops at {2 + centre:0.00} (the diamond's tip is at {8 - 0.45f * MathF.Sqrt(2):0.00})");
+        PLine($"crate turned 45 deg: {turned.SolidCount} collider boxes, a ray at it stops at {2 + centre:0.00} (the diamond's tip is at {8 - 0.45f * MathF.Sqrt(2):0.00})");
         if (turned.SolidCount < 2 || MathF.Abs(2 + centre - (8 - 0.45f * MathF.Sqrt(2))) > 0.3f)
             Fail("a turned solid prop doesn't follow its turned outline");
         // Ground snap: the trash can stands on the 0.15 m kerb under it.
@@ -181,7 +189,7 @@ public static partial class SelfTest
         var withoutProps = Maps.All.Where(x => x.PropInstances.Count == 0).ToList();
         if (withoutProps.Any(x => x.PropHash != 0 || Enumerable.Range(0, x.Solid.Count).Any(x.IsPropCollider)))
             Fail("a map without props has a prop fingerprint or prop boxes");
-        Line($"fingerprints: {withoutProps.Count} of {Maps.All.Length} maps have no props and keep their fingerprints; a moved newspaper changes it "
+        PLine($"fingerprints: {withoutProps.Count} of {Maps.All.Length} maps have no props and keep their fingerprints; a moved newspaper changes it "
              + $"({paperOnly.ContentHash:x8} -> {moved.ContentHash:x8})");
     }
 
@@ -201,7 +209,7 @@ public static partial class SelfTest
         var reseeded = MapFile.Load(json.Replace("\"seed\": 5", "\"seed\": 55"), "yard c");
         var changed = reseeded.PropInstances.Skip(reseeded.ClutterStart).Select(p => p.Position).SequenceEqual(a.PropInstances.Skip(a.ClutterStart).Select(p => p.Position));
         var clutter = a.PropInstances.Skip(a.ClutterStart).ToList();
-        Line($"Prop Yard clutter: {clutter.Count} props scattered ({clutter.Count(p => p.Def.IsSolid)} solid) after {a.ClutterStart} placed by hand; "
+        PLine($"Prop Yard clutter: {clutter.Count} props scattered ({clutter.Count(p => p.Def.IsSolid)} solid) after {a.ClutterStart} placed by hand; "
              + $"same file twice gives the same props {same}, another seed moves them {!changed}");
         if (!same)
             Fail("Clutter isn't deterministic: the same map file gave different props");
@@ -248,7 +256,7 @@ public static partial class SelfTest
             && s.Max.X > p.Bounds.Min.X + 0.05f && s.Min.X < p.Bounds.Max.X - 0.05f && s.Max.Z > p.Bounds.Min.Z + 0.05f && s.Min.Z < p.Bounds.Max.Z - 0.05f));
         if (inside > 0)
             Fail($"Prop Yard: {inside} clutter props overlap a wall or box");
-        Line($"solid clutter keeps clear of spawns, waypoints and routes, hills, flags and walls: {(problems == 0 ? "yes" : $"{problems} problem(s)")}; {inside} inside boxes");
+        PLine($"solid clutter keeps clear of spawns, waypoints and routes, hills, flags and walls: {(problems == 0 ? "yes" : $"{problems} problem(s)")}; {inside} inside boxes");
     }
 
     private static void CheckPropMapsAndNav()
@@ -281,7 +289,7 @@ public static partial class SelfTest
                         unreachable++;
                 }
             var batches = PropBatches.Build(map, PropMeshes.Build(Props.All));
-            Line($"{name}: {map.PropInstances.Count} props ({map.PropInstances.Count(p => p.Def.IsSolid)} solid, {map.PropInstances.Sum(p => p.SolidCount)} collider boxes), "
+            PLine($"{name}: {map.PropInstances.Count} props ({map.PropInstances.Count(p => p.Def.IsSolid)} solid, {map.PropInstances.Sum(p => p.SolidCount)} collider boxes), "
                  + $"{batches.Chunks.Length} render chunks of {batches.Types} types; nav graph {g.Nodes.Length} nodes, {inside} inside a prop, {unreachable} of {pairs} spawn pairs unreachable");
             if (inside > 0)
                 Fail($"{name}: {inside} nav nodes inside solid props");
@@ -292,7 +300,7 @@ public static partial class SelfTest
             if (name == "Prop Gallery" && map.PropInstances.Count != Props.All.Length)
                 Fail($"Prop Gallery shows {map.PropInstances.Count} props but the library has {Props.All.Length}");
         }
-        Line("(both maps also play the full bot match in \"Matches\" above, like every map)");
+        PLine("(both maps also play the full bot match in \"Matches\" above, like every map)");
     }
 
     private static void CheckBreakables()
@@ -330,7 +338,7 @@ public static partial class SelfTest
         }
         var afterDist = World.RaycastWorld(from, Vector3.Normalize(Centre(crate) - from), 30);
         var standIn = World.Blocked(new Vector3(Centre(crate).X, map.PropInstances[crate].Position.Y + 0.01f, Centre(crate).Z));
-        Line($"bullets: the {map.PropInstances[crate].Def.Name} ({health} hp) broke on shot {shots} of 10 damage; the bullet stopped at {firstDist:0.00} m before, "
+        PLine($"bullets: the {map.PropInstances[crate].Def.Name} ({health} hp) broke on shot {shots} of 10 damage; the bullet stopped at {firstDist:0.00} m before, "
              + $"goes {afterDist:0.00} m after; blocked where it stood {standIn}");
         if (shots != (health + 9) / 10)
             Fail($"a {health} hp crate broke after {shots} shots of 10");
@@ -357,7 +365,7 @@ public static partial class SelfTest
         var bfrom = Centre(bottle) + new Vector3(0, 0, -3f);
         var bdist = World.RaycastWorld(bfrom, Vector3.UnitZ, 6);
         game.ShotProps(me, bfrom, Vector3.UnitZ, bdist, 5, 0);
-        Line($"melee breaks the small crate {map.IsPropBroken(small)}; brick pile after 20 bullets {bricksAfterBullets}, after a grenade {map.IsPropBroken(bricks)}; "
+        PLine($"melee breaks the small crate {map.IsPropBroken(small)}; brick pile after 20 bullets {bricksAfterBullets}, after a grenade {map.IsPropBroken(bricks)}; "
              + $"newspaper stack after a strike {map.IsPropBroken(papers)}; bottle shot through {map.IsPropBroken(bottle)} (the bullet went {bdist:0.0} of 6 m)");
         if (!map.IsPropBroken(small))
             Fail("a melee swing didn't break a small crate");
@@ -373,7 +381,7 @@ public static partial class SelfTest
         var nearBefore = map.BrokenProps.Count;
         game.Blasts.Clear();
         Shoot(barrel, 50, Centre(barrel) + new Vector3(0, 0, 5));
-        Line($"explosive barrel: broken {map.IsPropBroken(barrel)}, blast effects {game.Blasts.Count}, {map.BrokenProps.Count - nearBefore - 1} more props broken by it");
+        PLine($"explosive barrel: broken {map.IsPropBroken(barrel)}, blast effects {game.Blasts.Count}, {map.BrokenProps.Count - nearBefore - 1} more props broken by it");
         if (!map.IsPropBroken(barrel) || game.Blasts.Count == 0)
             Fail("an explosive barrel didn't break and go off");
 
@@ -391,7 +399,7 @@ public static partial class SelfTest
             Game.ReadPropState(copy, ref pr);
         });
         var sameSet = copy.BrokenProps.OrderBy(x => x).SequenceEqual(map.BrokenProps.OrderBy(x => x));
-        Line($"break event {1 + 2 + 1 + 12} bytes round-trips {ok}; the broken set ({map.BrokenProps.Count} props) reaches a joining client in {packets} packet(s): {sameSet}");
+        PLine($"break event {1 + 2 + 1 + 12} bytes round-trips {ok}; the broken set ({map.BrokenProps.Count} props) reaches a joining client in {packets} packet(s): {sameSet}");
         if (!ok || !sameSet)
             Fail("the prop break event or the broken set doesn't round-trip");
         // Hundreds of broken props still fit (several packets), and a later "first" packet resets the client.
@@ -417,7 +425,7 @@ public static partial class SelfTest
         var onMatchStarted = typeof(Game).GetMethod("OnMatchStarted", BindingFlags.NonPublic | BindingFlags.Instance);
         onMatchStarted?.Invoke(game, null);
         var restoredRay = World.RaycastWorld(from, Vector3.Normalize(Centre(crate) - from), 30);
-        Line($"new match: {map.BrokenProps.Count} props still broken, crate blocks the shot again at {restoredRay:0.00} m, debris {PropDebris.Count}");
+        PLine($"new match: {map.BrokenProps.Count} props still broken, crate blocks the shot again at {restoredRay:0.00} m, debris {PropDebris.Count}");
         if (onMatchStarted == null || map.BrokenProps.Count != 0 || MathF.Abs(restoredRay - firstDist) > 0.01f || map.PropHealth(crate) != health)
             Fail("a new match didn't restore the broken props");
         if (map.ContentHash != hash)
@@ -453,7 +461,7 @@ public static partial class SelfTest
         for (var f = 0; f < 60 * 6; f++)
             PropDebris.Update(dt);
         var buffer = new float[PropDebris.Capacity * PropDebris.FloatsPerPiece];
-        Line($"debris: {spawned} pieces spawned, {capped} alive at most (cap {PropDebris.Capacity}); after 3 s {at3} alive, {resting} resting, lowest {lowest:0.000} m above its floor; "
+        PLine($"debris: {spawned} pieces spawned, {capped} alive at most (cap {PropDebris.Capacity}); after 3 s {at3} alive, {resting} resting, lowest {lowest:0.000} m above its floor; "
              + $"after 9 s {PropDebris.Count} alive; {alloc} bytes allocated per second of updates");
         if (capped > PropDebris.Capacity || capped == 0)
             Fail($"debris count {capped} is over the cap or nothing spawned");
