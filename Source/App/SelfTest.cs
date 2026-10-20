@@ -1241,7 +1241,9 @@ public static class SelfTest
             // One spray: guns too slow to chain shots into a spray (snipers, the musket) recover each shot on its own.
             var shots = w.FireInterval < Recoil.ResetTime(w) ? Math.Min(20, Math.Max(w.Mag, 3)) : 1;
             var sp = SimulateSpray(w, Stance.Stand, 1, shots, dt);
-            var returned = sp.Peak > 0 ? (sp.Peak - sp.FinalPitch) / sp.Peak : 1;
+            // Of everything the gun kicked you up, how much came back (semi guns recover between shots too).
+            var kicked = sp.Kicks.Sum(k => k.Pitch);
+            var returned = kicked > 0 ? (kicked - sp.FinalPitch) / kicked : 1;
             if (w.RecoilRecoveryAmount >= 0.5f && returned < 0.5f)
                 Fail($"{w.Name}: recovery only returned {returned:P0} of the climb");
             if (sp.FinalPitch < -1e-4f)
