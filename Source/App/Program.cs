@@ -203,6 +203,12 @@ public static unsafe class Program
             return;
         }
 
+        if (_smokeMap == 0 && _smokeWeaponSelect < 5)
+        {
+            SmokeWeaponSelect(now, t);
+            return;
+        }
+
         var game = _session;
         switch (_smokeStage)
         {
@@ -267,6 +273,45 @@ public static unsafe class Program
                     Console.WriteLine($"[smoke] vote screen: options {string.Join(", ", game.VoteNames)}, "
                         + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
                 SmokeNextMap(now);
+                break;
+        }
+    }
+
+    private static int _smokeWeaponSelect;
+    private static string? _smokeLockedGun;
+
+    /// <summary>
+    /// Smoke step on the first map: the weapon-select screen ("Choose primary"), screenshotted as is and
+    /// with a locked gun shown as if hovered. Then the usual steps start (their clock restarts).
+    /// </summary>
+    private static void SmokeWeaponSelect(double now, double t)
+    {
+        switch (_smokeWeaponSelect)
+        {
+            case 0 when t > 0.8:
+                Ui.SmokeChoose(false);
+                _smokeWeaponSelect++;
+                break;
+            case 1 when t > 1.6:
+                SmokeShot("weapon_select");
+                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                _smokeWeaponSelect++;
+                break;
+            case 2 when t > 1.8: // a frame after the shot
+                _smokeLockedGun = Ui.SmokeChoose(true);
+                _smokeWeaponSelect++;
+                break;
+            case 3 when t > 2.5:
+                SmokeShot("weapon_select_locked");
+                Console.WriteLine($"[smoke] weapon select, locked gun shown: {_smokeLockedGun ?? "none (everything is unlocked at this level)"}, {Ui.Thumbs.Count} thumbnail(s)");
+                _smokeWeaponSelect++;
+                break;
+            case 4 when t > 2.7:
+                Ui.SmokeTab(0); // back to the overview, then the usual steps
+                _smokeWeaponSelect++;
+                _smokeStepStart = now;
+                _smokeFrames = 0;
+                _smokeWorstDt = 0;
                 break;
         }
     }
@@ -1287,11 +1332,33 @@ public static unsafe class Program
         if (fb.X <= 0 || fb.Y <= 0 || ws.X <= 0 || ws.Y <= 0)
             return;
         float sx = fb.X / (float)ws.X, sy = fb.Y / (float)ws.Y;
+        var scissor = false;
         foreach (var th in Ui.Thumbs)
         {
             float vx = th.Min.X * sx, vy = fb.Y - th.Max.Y * sy, vw = (th.Max.X - th.Min.X) * sx, vh = (th.Max.Y - th.Min.Y) * sy;
             if (vw < 8 || vh < 8)
                 continue;
+            if (th.Clipped)
+            {
+                // Cut the picture to its scrolling list (ImGui's clipping doesn't reach these); skip it if it's scrolled out.
+                var x0 = MathF.Max(vx, th.ClipMin.X * sx);
+                var x1 = MathF.Min(vx + vw, th.ClipMax.X * sx);
+                var y0 = MathF.Max(vy, fb.Y - th.ClipMax.Y * sy);
+                var y1 = MathF.Min(vy + vh, fb.Y - th.ClipMin.Y * sy);
+                if (x1 - x0 < 1 || y1 - y0 < 1)
+                    continue;
+                OpenGl.Scissor((int)x0, (int)y0, (int)MathF.Ceiling(x1 - x0), (int)MathF.Ceiling(y1 - y0));
+                if (!scissor)
+                {
+                    OpenGl.Enable(GlCapability.ScissorTest);
+                    scissor = true;
+                }
+            }
+            else if (scissor)
+            {
+                OpenGl.Native.glDisable(GlCapability.ScissorTest);
+                scissor = false;
+            }
             Gfx.SetViewport((int)vx, (int)vy, (int)vw, (int)vh);
             Gfx.ClearDepthBuffer();
             Gfx.SetDepthTest(true);
@@ -1308,7 +1375,18 @@ public static unsafe class Program
             Gfx.SetCamera(view, Matrix4x4.CreatePerspectiveFieldOfView(fov, aspect, 0.05f, 50f));
             var pose = Matrix4x4.CreateTranslation(0, 0, -(front + backEnd) / 2) * Matrix4x4.CreateRotationY(0.12f) * Matrix4x4.CreateRotationX(0.05f);
             DrawGun(def, pose, false);
+            if (th.Dim > 0)
+            {
+                // Locked: a dark veil over the picture
+                Gfx.SetCamera(Matrix4x4.Identity, Matrix4x4.CreateOrthographicOffCenter(0, vw, 0, vh, -1, 1));
+                Gfx.SetDepthTest(false);
+                Gfx.SetBlend(true);
+                Gfx.Rect(0, 0, vw, vh, new Vector3(0.045f, 0.047f, 0.06f), Math.Clamp(th.Dim, 0f, 1f));
+                Gfx.SetBlend(false);
+            }
         }
+        if (scissor)
+            OpenGl.Native.glDisable(GlCapability.ScissorTest);
         Gfx.SetViewport(0, 0, fb.X, fb.Y);
     }
 

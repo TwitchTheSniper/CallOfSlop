@@ -53,6 +53,7 @@ public static class SelfTest
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
+            Section("Weapon select", CheckWeaponSelect);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -1161,5 +1162,103 @@ public static class SelfTest
         // Default (settings files from before this option have no hud_width line, so they keep it).
         if (new Settings().HudWidth != HudWidth.Wide16x9)
             Fail("HUD width should default to 16:9");
+    }
+
+    // ---- Weapon select ---------------------------------------------------------------------
+
+    /// <summary>The weapon-select screen's tabs hold every weapon exactly once, and its stat comparison points the right way.</summary>
+    private static void CheckWeaponSelect()
+    {
+        var seen = new int[Weapons.All.Length];
+        foreach (var slot in new[] { Slot.Primary, Slot.Secondary })
+        {
+            var tabs = WeaponSelect.Tabs(slot);
+            Line($"  {slot}: {string.Join(", ", tabs.Select(c => $"{WeaponSelect.TabName(c)} {WeaponSelect.InTab(c).Length} ({WeaponSelect.LockedCount(c, 1)} locked at level 1)"))}");
+            if (tabs.Length == 0)
+                Fail($"{slot} slot has no tabs");
+            if (tabs.Distinct().Count() != tabs.Length)
+                Fail($"{slot} slot has a tab twice");
+            foreach (var c in tabs)
+            {
+                var guns = WeaponSelect.InTab(c);
+                if (guns.Length == 0)
+                    Fail($"empty tab {WeaponSelect.TabName(c)}");
+                for (var i = 0; i < guns.Length; i++)
+                {
+                    var w = guns[i];
+                    seen[w.Id]++;
+                    if (w.Class != c || w.Slot != slot)
+                        Fail($"{w.Name} ({w.ClassName}, {w.Slot}) is in the {slot} tab {WeaponSelect.TabName(c)}");
+                    if (i > 0 && WeaponSelect.UnlockLevel(guns[i - 1]) > WeaponSelect.UnlockLevel(w))
+                        Fail($"tab {WeaponSelect.TabName(c)} isn't sorted by unlock level ({guns[i - 1].Name} before {w.Name})");
+                    if (WeaponSelect.UnlockLevel(w) != Progress.UnlockLevel(w))
+                        Fail($"{w.Name}: cached unlock level {WeaponSelect.UnlockLevel(w)} != {Progress.UnlockLevel(w)}");
+                }
+            }
+        }
+        if (WeaponSelect.Tabs(Slot.Secondary) is not [WeaponClass.Pistol])
+            Fail("the secondary slot should have just the Pistols tab");
+        if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Pistol))
+            Fail("pistols showing in the primary tabs");
+        for (var id = 0; id < seen.Length; id++)
+            if (seen[id] != 1)
+                Fail($"{Weapons.All[id].Name} appears in {seen[id]} tabs (should be exactly 1)");
+
+        // Scores stay in 0-1; comparing a gun with itself shows no change.
+        foreach (var w in Weapons.All)
+            for (var i = 0; i < WeaponSelect.StatCount; i++)
+            {
+                var s = (SelectStat)i;
+                var v = WeaponSelect.Score(w, s);
+                if (!(v >= 0 && v <= 1))
+                    Fail($"{w.Name}: {WeaponSelect.StatName(s)} score {v} outside 0-1");
+                if (WeaponSelect.Delta(w, w, s) != 0)
+                    Fail($"{w.Name}: {WeaponSelect.StatName(s)} differs from itself");
+            }
+
+        // Deltas point the right way: better is positive whichever way the raw number goes.
+        var baseGun = Weapons.DefaultPrimary.Clone();
+        baseGun.Damage = 25;
+        baseGun.Pellets = 1;
+        baseGun.Rpm = 600;
+        baseGun.RangeM = 30;
+        baseGun.HipSpreadDeg = 3f;
+        baseGun.RecoilDeg = 2f;
+        baseGun.Mobility = 0.95f;
+        baseGun.EquipTime = 0.5f;
+        baseGun.AdsTime = 0.2f;
+        void Expect(string what, Action<WeaponDef> change, SelectStat s, int sign)
+        {
+            var other = baseGun.Clone();
+            change(other);
+            var d = WeaponSelect.Delta(baseGun, other, s);
+            Line($"  {what}: {WeaponSelect.StatName(s)} {(d > 0 ? "+" : "")}{d}");
+            if (Math.Sign(d) != sign)
+                Fail($"{what}: {WeaponSelect.StatName(s)} delta {d}, expected sign {sign}");
+        }
+        Expect("more damage", w => w.Damage = 35, SelectStat.Damage, 1);
+        Expect("8 pellets", w => w.Pellets = 8, SelectStat.Damage, 1);
+        Expect("slower fire", w => w.Rpm = 400, SelectStat.FireRate, -1);
+        Expect("longer range", w => w.RangeM = 45, SelectStat.Range, 1);
+        Expect("wider spread", w => w.HipSpreadDeg = 5f, SelectStat.Accuracy, -1);
+        Expect("less recoil", w => w.RecoilDeg = 1f, SelectStat.Control, 1);
+        Expect("faster movement", w => w.Mobility = 1.1f, SelectStat.Mobility, 1);
+        Expect("slower aim", w => w.AdsTime = 0.35f, SelectStat.Handling, -1);
+        Expect("quicker draw", w => w.EquipTime = 0.3f, SelectStat.Handling, 1);
+        Expect("same gun", _ => { }, SelectStat.Range, 0);
+
+        // Weapon "level" = attachments unlocked by weapon XP.
+        var kitGun = Weapons.All.FirstOrDefault(w => Attachments.For(w).Count > 1);
+        if (kitGun != null)
+        {
+            var max = Attachments.MaxXp(kitGun);
+            var n = Attachments.For(kitGun).Count;
+            if (WeaponSelect.UnlockedAttachments(kitGun, 0) != 0 || WeaponSelect.UnlockedAttachments(kitGun, max) != n)
+                Fail($"{kitGun.Name}: unlocked attachments at 0 / max XP are {WeaponSelect.UnlockedAttachments(kitGun, 0)} / {WeaponSelect.UnlockedAttachments(kitGun, max)}, expected 0 / {n}");
+            var mid = WeaponSelect.UnlockedAttachments(kitGun, max / 2);
+            if (mid <= 0 || mid >= n)
+                Fail($"{kitGun.Name}: {mid}/{n} attachments at half XP");
+            Line($"  {kitGun.Name}: {mid}/{n} attachments at {max / 2} of {max} weapon XP");
+        }
     }
 }
