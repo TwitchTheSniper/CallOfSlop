@@ -210,7 +210,7 @@ public static partial class SelfTest
                     var hand = Vector3.Transform(anim.Left.HandWorld.Translation, inv);
                     worstGap = MathF.Max(worstGap, Vector3.Distance(hand, anim.Anchors.MagWell + anim.MagOffset));
                 }
-                sawGone |= anim.MagHidden;
+                sawGone |= anim.Mag is ViewModelAnimator.MagPhase.Falling or ViewModelAnimator.MagPhase.Gone; // let go (quick reloads swap before it's fallen far)
             }
             if (!sawOld || !sawNew || !sawGone || doubled || worstGap > 0.01f || anim.MagOffset != Vector3.Zero || anim.MagHidden)
                 Fail($"{w.Name}: magazine reload wrong (old in hand {sawOld}, fresh in hand {sawNew}, dropped {sawGone}, drawn twice {doubled}, "
