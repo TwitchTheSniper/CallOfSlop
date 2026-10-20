@@ -129,6 +129,30 @@ public static class TestsWorldAndMovement
         p = m.Ch.GetPosition();
         Check("0.70 m step blocks", p.Y < 0.1f && p.X < 2.7f, $"feet at x={F(p.X)} y={F(p.Y)}");
 
+        // Step-height sweep: which steps does CharacterVirtual's WalkStairs climb for a given step-up setting?
+        var sweep = new List<string>();
+        var savedUp = Mover.Ext.WalkStairsStepUp;
+        foreach (var up in new[] { 0.55f, 0.6f, 0.65f, 0.7f, 0.8f })
+        {
+            Mover.Ext.WalkStairsStepUp = new float3(0, up, 0);
+            var climbed = new List<string>();
+            foreach (var h in new[] { 0.3f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.7f })
+            {
+                var sp = new Phys(64);
+                sp.AddBox(new float3(0, -0.5f, 0), new float3(20, 0.5f, 20));
+                sp.AddBox(new float3(5, h / 2, 0), new float3(2, h / 2, 2));
+                sp.System.OptimizeBroadPhase();
+                var sm = new Mover(sp, new float3(0, 0.05f, 0));
+                for (var i = 0; i < 80; i++)
+                    sm.Step(new Input { Buttons = Btn.Forward, Yaw = East });
+                if (sm.Ch.GetPosition().Y > h - 0.05f)
+                    climbed.Add(F(h, 2));
+            }
+            sweep.Add($"stepUp {F(up, 2)}: climbs [{string.Join(" ", climbed)}]");
+        }
+        Mover.Ext.WalkStairsStepUp = savedUp;
+        Metric("WalkStairs sweep (step heights climbed)", string.Join("; ", sweep));
+
         // Ramps: 30 deg walkable (stand still on it, walk up it), 50 deg too steep (slide, can't climb).
         foreach (var (lane, deg) in new[] { (TestWorld.LaneRamp30, 30f), (TestWorld.LaneRamp50, 50f) })
         {
