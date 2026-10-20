@@ -364,7 +364,9 @@ public static partial class SelfTest
         game.SelfTestSpawn(a);
         game.SelfTestSpawn(v);
         var startOk = a.Primary == ladder[0].Id && a.Secondary == ladder[0].Id && a.Grenade == ThrowableKind.None && a.GrenadesLeft == 0
-                      && a.Perks.Equals(PerkSet.Empty) && v.Primary == ladder[0].Id;
+                      && a.Equipment == ThrowableKind.None && a.EquipmentLeft == 0 && a.Perks.Equals(GunGame.Perks)
+                      && v.Perks.Equals(GunGame.Perks) && v.Grenade == ThrowableKind.None && v.Equipment == ThrowableKind.None
+                      && v.Primary == ladder[0].Id && game.SkipsLoadout;
         game.SelfTestPlace(a, new Vector3(5, 0, 5), 0);
         game.SelfTestPlace(v, new Vector3(7, 0, 5), 0);
         var now = 1.0;

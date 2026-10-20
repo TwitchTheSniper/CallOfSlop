@@ -295,7 +295,7 @@ public sealed partial class Ui : IDisposable
         if (!local.Alive && !MenuOpen)
         {
             var wait = game.RespawnWait(now);
-            CenterText(size, pos, game.RespawnRequested
+            CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout
                 ? wait > 0 ? $"Respawning in {wait:0.0} s..." : "Respawning..."
                 : $"Press {K(GameAction.Loadout)} to pick your loadout and respawn", 0.38f);
         }
