@@ -94,6 +94,10 @@ public static partial class SelfTest
                         return;
                 }
                 missing.Add($"{what} ({p.X:0},{p.Z:0})");
+                // TEMP debug: the nodes round it
+                var near = Enumerable.Range(0, g.Nodes.Length).Where(i => Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(p.X, p.Z)) < 7f)
+                    .Select(i => $"({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}) c{g.Component[i]} e{g.EdgeStart[i + 1] - g.EdgeStart[i]}");
+                Line($"  {m.Name} {what} at y {p.Y:0.0}, main c{g.MainComponent}: " + string.Join(" ", near));
             }
             foreach (var s in m.Spawns)
                 Reach("spawn", s);
