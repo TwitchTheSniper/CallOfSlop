@@ -26,10 +26,10 @@ public struct BotView
 public sealed partial class Game
 {
     // ---- Aim tuning (see the self-test's headshot band) ----
-    private const float BotAimHeight = 0.5f; // fraction of the target's height: mid-chest, well below the head
+    private const float BotAimHeight = 0.48f; // fraction of the target's height: mid-chest, well below the head
     private const float BotHeadHeight = 0.88f; // where a deliberate head shot aims
     private const double BotHeadChance = 0.004; // per tick, Hard only
-    private const float BotKickPitchScale = 0.7f; // bots soak up some of the climb
+    private const float BotKickPitchScale = 0.6f; // bots soak up some of the climb
     private const float BotPullDown = 1.8f; // high aim error settles this much faster (bots drag back down to the chest)
 
     /// <summary>Picks and keeps track of a target; hears gunfire; notices being hit. Scans a few times a second.</summary>
