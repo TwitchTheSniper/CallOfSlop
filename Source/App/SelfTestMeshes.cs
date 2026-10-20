@@ -63,7 +63,7 @@ public static partial class SelfTest
         yield return new(new(PrimitiveKind.Torus, Radius: 0.5f, Inner: 0.15f, Segments: 24, Detail: 12), 13 * 25, 2 * 24 * 12, 2 * pi * pi * 0.5f * 0.0225f, new(-0.65f, 0, -0.65f), new(0.65f, 0.3f, 0.65f), false, 3, 0.08f);
         yield return new(new(PrimitiveKind.Tube, 1f, 2f, 1f, Radius: 0.5f, Inner: 0.4f, Segments: 24), 8 * 25, 8 * 24, pi * (0.25f - 0.16f) * 2f, new(-0.5f, 0, -0.5f), new(0.5f, 2, 0.5f), false, 3, 0.03f);
         yield return new(new(PrimitiveKind.RoundedBox, 1f, 1f, 2f, Radius: 0.2f, Segments: 3), 6 * 64, 12 * 49, 1f * 1f * 2f - (8 - 4f / 3 * pi) * 0.008f - (4 - pi) * 0.04f * (0.6f + 0.6f + 1.6f), new(-0.5f, 0, -1), new(0.5f, 1, 1), true, 2, 0.01f);
-        yield return new(new(PrimitiveKind.IcoSphere, 1f, 1f, 1f, Detail: 2), -1, 20 * 16, pi / 6, new(-0.5f, 0, -0.5f), new(0.5f, 1, 0.5f), true, 3, 0.07f);
+        yield return new(new(PrimitiveKind.IcoSphere, 1f, 1f, 1f, Detail: 2), -1, 20 * 16, pi / 6, new(-0.5f, 0, -0.5f), new(0.5f, 1, 0.5f), true, 2, 0.07f);
         // scaled (ellipsoid / elliptic cylinder): normals must still be right
         yield return new(new(PrimitiveKind.Sphere, 2f, 1f, 0.5f, Segments: 32, Detail: 16), 17 * 33, 2 * 32 * 15, pi / 6 * 2f * 1f * 0.5f, new(-1, 0, -0.25f), new(1, 1, 0.25f), true, 3, 0.04f);
     }

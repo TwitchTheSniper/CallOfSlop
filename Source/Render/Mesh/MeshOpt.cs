@@ -71,8 +71,8 @@ public static unsafe class MeshOpt
             float scale;
             fixed (MeshVertex* v = grid.Vertices)
                 scale = MO.SimplifyScale((float*)v, grid.Vertices.Length, new ByteSize64(MeshVertex.SizeInBytes));
-            if (!(scale > 0.5f && scale < 2f))
-                return Report(false, $"simplifyScale gave {scale}");
+            if (MathF.Abs(scale - 6f) > 0.01f) // the grid's largest extent
+                return Report(false, $"simplifyScale gave {scale} for a 6 m grid");
 
             var simple = new uint[idx.Length];
             ulong count;

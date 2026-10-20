@@ -140,7 +140,7 @@ public readonly record struct PrimitiveSpec(PrimitiveKind Kind, float Width = 1,
             PrimitiveKind.Sphere => this with { Segments = Less(Segments, lod, 8), Detail = Less(Detail, lod, 4) },
             PrimitiveKind.Capsule => this with { Segments = Less(Segments, lod, 8), Detail = Less(Detail, lod, 2) },
             PrimitiveKind.Torus => this with { Segments = Less(Segments, lod, 8), Detail = Less(Detail, lod, 4) },
-            PrimitiveKind.IcoSphere => this with { Detail = Math.Max(0, Detail - lod) },
+            PrimitiveKind.IcoSphere => this with { Detail = Math.Max(1, Detail - lod) }, // (0 would read as "default")
             PrimitiveKind.RoundedBox => this with { Segments = Less(Segments, lod, 1) },
             _ => this,
         };
