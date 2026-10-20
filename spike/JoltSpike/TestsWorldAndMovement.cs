@@ -140,10 +140,10 @@ public static class TestsWorldAndMovement
             {
                 var sp = new Phys(64);
                 sp.AddBox(new float3(0, -0.5f, 0), new float3(20, 0.5f, 20));
-                sp.AddBox(new float3(5, h / 2, 0), new float3(2, h / 2, 2));
+                sp.AddBox(new float3(15, h / 2, 0), new float3(12, h / 2, 2)); // a long step from x = 3 to 27
                 sp.System.OptimizeBroadPhase();
                 var sm = new Mover(sp, new float3(0, 0.05f, 0));
-                for (var i = 0; i < 80; i++)
+                for (var i = 0; i < 60; i++)
                     sm.Step(new Input { Buttons = Btn.Forward, Yaw = East });
                 if (sm.Ch.GetPosition().Y > h - 0.05f)
                     climbed.Add(F(h, 2));
