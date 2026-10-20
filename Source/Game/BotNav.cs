@@ -189,7 +189,7 @@ public sealed class NavGraph
         // ---- Edges between nearby nodes ----
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
-        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>();
+        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 12);
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)

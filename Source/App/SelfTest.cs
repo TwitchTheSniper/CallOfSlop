@@ -572,12 +572,17 @@ public static class SelfTest
                 bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Hard, mapId: m.Id);
             game.MapVoteEnabled = false;
             var now = 0.0;
+            var worst = 0.0;
             for (var i = 0; i < 90 * World.TickRate; i++)
             {
                 now += 1.0 / World.TickRate;
+                var t0 = Stopwatch.GetTimestamp();
                 game.Update(now, 1.0 / World.TickRate);
+                if (i > 60)
+                    worst = Math.Max(worst, Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
             }
             hard.Add(game.BotStats);
+            Line($"hardmatch {m.Name}: {game.BotStats.GunKills} gun kills, worst tick {worst:0.00} ms");
         }
         var normal = _matchBotStats;
         Line($"BOTSTAT headshots: normal {normal.GunHeadshots}/{normal.GunKills} ({normal.HeadshotRatio:P1}), hard {hard.GunHeadshots}/{hard.GunKills} ({hard.HeadshotRatio:P1})"
