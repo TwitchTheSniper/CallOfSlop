@@ -183,13 +183,113 @@ public sealed class Phys
         }
     }
 
-    /// <summary>Fallback for meshes/hulls/terrain: a static compound of single-triangle shapes.</summary>
+    /// <summary>How triangle soups are built when MeshShape is unavailable (picked by ProbeTriangles).</summary>
+    public static int TriMode = -1; // 0 = compound of TriangleShapeSettings, 1 = compound of TriangleShapes, 2 = oriented thin boxes
+    public static readonly string[] TriModeNames = ["compound of TriangleShapeSettings", "compound of TriangleShape", "thin oriented boxes"];
+    public static string ProbeReport = "";
+
+    /// <summary>Fallback for meshes/hulls/terrain: a static compound of single triangles (or thin boxes).</summary>
     public static Shape TriangleCompound(float3[] verts, IndexedTriangle[] tris)
     {
+        if (TriMode < 0)
+            ProbeTriangles();
         var c = StaticCompoundShapeSettings.Create();
         foreach (var t in tris)
-            c.AddShape(float3.Zero, floatQuat.Identity, Tri(verts[t.Idx[0]], verts[t.Idx[1]], verts[t.Idx[2]]));
+        {
+            var a = verts[t.Idx[0]];
+            var b = verts[t.Idx[1]];
+            var d = verts[t.Idx[2]];
+            AddTriangle(c, a, b, d, TriMode);
+        }
         return c.CreateShape();
+    }
+
+    static void AddTriangle(StaticCompoundShapeSettings c, float3 a, float3 b, float3 d, int mode)
+    {
+        if (mode == 0)
+            c.AddShape(float3.Zero, floatQuat.Identity, (ShapeSettings)TriangleShapeSettings.Create(a, b, d, 0f));
+        else if (mode == 1)
+            c.AddShape(float3.Zero, floatQuat.Identity, Tri(a, b, d));
+        else
+        {
+            // A thin box in the triangle's plane covering the triangle (overlaps neighbours a little; fine for terrain).
+            var n = float3.Cross(b - a, d - a);
+            var len = n.Length();
+            if (len < 1e-8f)
+                return;
+            n /= len;
+            var center = (a + b + d) / 3f;
+            var e1 = b - a;
+            e1 /= e1.Length();
+            var e2 = float3.Cross(n, e1);
+            var r = MathF.Max((a - center).Length(), MathF.Max((b - center).Length(), (d - center).Length()));
+            var rot = QuatFromBasis(e1, n, e2);
+            c.AddShape(center - n * 0.05f, rot, (ShapeSettings)BoxShapeSettings.Create(new float3(r, 0.05f, r * 0.75f), 0.01f));
+        }
+    }
+
+    /// <summary>Rotation whose X, Y, Z axes are the given orthonormal vectors.</summary>
+    static floatQuat QuatFromBasis(float3 x, float3 y, float3 z)
+    {
+        float m00 = x.X, m11 = y.Y, m22 = z.Z, tr = m00 + m11 + m22;
+        if (tr > 0)
+        {
+            var s = MathF.Sqrt(tr + 1) * 2;
+            return floatQuat.Normalize(new floatQuat((y.Z - z.Y) / s, (z.X - x.Z) / s, (x.Y - y.X) / s, 0.25f * s));
+        }
+        if (m00 > m11 && m00 > m22)
+        {
+            var s = MathF.Sqrt(1 + m00 - m11 - m22) * 2;
+            return floatQuat.Normalize(new floatQuat(0.25f * s, (y.X + x.Y) / s, (z.X + x.Z) / s, (y.Z - z.Y) / s));
+        }
+        if (m11 > m22)
+        {
+            var s = MathF.Sqrt(1 + m11 - m00 - m22) * 2;
+            return floatQuat.Normalize(new floatQuat((y.X + x.Y) / s, 0.25f * s, (z.Y + y.Z) / s, (z.X - x.Z) / s));
+        }
+        var s2 = MathF.Sqrt(1 + m22 - m00 - m11) * 2;
+        return floatQuat.Normalize(new floatQuat((z.X + x.Z) / s2, (z.Y + y.Z) / s2, 0.25f * s2, (x.Y - y.X) / s2));
+    }
+
+    /// <summary>
+    /// With no ray casts, the only way to know whether a shape really collides is to drop a character on it.
+    /// Tries each way of building a triangle floor (plus control cases) and picks the first that holds a player.
+    /// </summary>
+    public static void ProbeTriangles()
+    {
+        var p = new Phys(1024);
+        var results = new List<string>();
+        float Drop(Shape s, float x)
+        {
+            p.AddStatic(s, new float3(x, 20, 0), floatQuat.Identity);
+            p.System.OptimizeBroadPhase();
+            var m = new Mover(p, new float3(x, 21, 0));
+            for (var i = 0; i < 90; i++)
+                m.Step(default);
+            return m.Ch.GetPosition().Y - 20;
+        }
+        bool Held(float y) => MathF.Abs(y) < 0.1f;
+        float3 v0 = new(-5, 0, -5), v1 = new(-5, 0, 5), v2 = new(5, 0, -5); // counter-clockwise seen from above
+        var box = Drop(Box(new float3(3, 0.5f, 3)) , 0) - 0.5f;
+        results.Add($"box {Report.F(box)}");
+        var tri = Drop(Tri(v0, v1, v2), 40);
+        results.Add($"single TriangleShape {Report.F(tri)}");
+        var heldBy = new bool[3];
+        for (var mode = 0; mode < 3; mode++)
+        {
+            var c = StaticCompoundShapeSettings.Create();
+            AddTriangle(c, v0, v1, v2, mode);
+            float y;
+            try { y = Drop(c.CreateShape(), 80 + mode * 40); }
+            catch (Exception e) { results.Add($"{TriModeNames[mode]}: {e.GetType().Name}"); continue; }
+            heldBy[mode] = Held(y) || (mode == 2 && MathF.Abs(y) < 0.15f);
+            results.Add($"{TriModeNames[mode]} {Report.F(y)}");
+        }
+        TriMode = Array.IndexOf(heldBy, true);
+        if (TriMode < 0)
+            TriMode = 2;
+        ProbeReport = $"drop test (feet y above surface after 1.5 s, 0 = held): {string.Join(", ", results)} -> using {TriModeNames[TriMode]}";
+        Note("triangle fallback: " + ProbeReport);
     }
 
     /// <summary>Convex hull from points; falls back to the given surface triangles as a triangle compound.</summary>

@@ -17,6 +17,18 @@ public static class TestsWorldAndMovement
         var buildMs = Clock.MsSince(t0);
         Metric("world bodies", w.BodyCount.ToString());
         Metric("world build ms (600 boxes + 256^2 terrain + shapes, incl. OptimizeBroadPhase)", F(buildMs, 1));
+        if (Phys.ProbeReport != "")
+            Metric("triangle fallback", Phys.ProbeReport);
+        // Without ray casts, check the terrain by standing on it: flat part and a hill.
+        foreach (var (x, z) in new[] { (-30f, 0f), (-90f, 0f) })
+        {
+            var ground = TestWorld.TerrainHeight(x, z);
+            var m = new Mover(w.P, new float3(x, ground + 1, z));
+            for (var i = 0; i < 90; i++)
+                m.Step(default);
+            var y = m.Ch.GetPosition().Y;
+            Check($"player stands on terrain at x={x}", MathF.Abs(y - ground) < 0.3f, $"feet y={F(y)}, terrain {F(ground)} ({(w.HeightField ? "HeightFieldShape" : Phys.TriModeNames[Math.Max(0, Phys.TriMode)])})");
+        }
         w.SetMovers(0);
 
         var down = new float3(0, -1, 0);
