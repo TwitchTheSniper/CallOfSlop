@@ -26,6 +26,10 @@ public enum Sfx
     MortarWhistle, // incoming shell
     TurretShot, // sentry turret / drone / jet cannon
     JetFlyby, // strafe run jet passing over
+    BreakWood, // a breakable prop breaking (crate, pallet, chair)
+    BreakGlass, // bottles
+    BreakMetal, // bins, barrels, cones
+    BreakSoft, // cardboard, plastic, paper
     COUNT,
 }
 
@@ -620,6 +624,31 @@ public static class Synth
                 Noise(b, rng, 0.2f, 0.4f, 0.7f, 0.5f, 6000, highpass: true, length: 2.4f); // turbine whine
                 Tone(b, 0, 0.35f, 420, 190, 1.2f, 0.8f, 0.6f, harmonics: 0.3f, length: 2.6f); // doppler drop
                 return Finish(b, 0.85f);
+            case Sfx.BreakWood:
+                b = new Buf(0.6f);
+                Noise(b, rng, 0, 0.9f, 0.001f, 0.05f, 1800); // crack
+                Tone(b, 0, 0.6f, 190, 110, 0.06f, 0.001f, 0.08f); // thud
+                for (var i = 0; i < 7; i++) // splinters and planks landing
+                    Click(b, rng, 0.03f + (float)rng.NextDouble() * 0.45f, 0.35f, 0.7f + (float)rng.NextDouble() * 0.5f);
+                return Finish(b, 0.6f);
+            case Sfx.BreakGlass:
+                b = new Buf(0.6f);
+                Noise(b, rng, 0, 0.7f, 0.0005f, 0.03f, 6000, highpass: true); // shatter
+                for (var i = 0; i < 9; i++) // tinkling shards
+                    Tone(b, 0.01f + (float)rng.NextDouble() * 0.4f, 0.25f, 3000 + (float)rng.NextDouble() * 3000, 2800 + (float)rng.NextDouble() * 2500, 1, 0.0005f, 0.03f);
+                return Finish(b, 0.5f);
+            case Sfx.BreakMetal:
+                b = new Buf(0.7f);
+                Tone(b, 0, 0.7f, 420, 380, 1, 0.001f, 0.25f, harmonics: 0.6f); // clang
+                Tone(b, 0, 0.35f, 1130, 1090, 1, 0.001f, 0.15f);
+                Noise(b, rng, 0, 0.5f, 0.001f, 0.04f, 2500);
+                Click(b, rng, 0.25f, 0.3f, 0.8f);
+                return Finish(b, 0.55f);
+            case Sfx.BreakSoft:
+                b = new Buf(0.35f);
+                Noise(b, rng, 0, 0.7f, 0.004f, 0.1f, 1200); // crumple
+                Noise(b, rng, 0.04f, 0.35f, 0.01f, 0.1f, 3500, highpass: true); // rustle
+                return Finish(b, 0.45f);
             default:
                 return new short[1];
         }

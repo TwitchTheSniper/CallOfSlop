@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Trash Bag",
+  "category": "Debris",
+  "description": "A stuffed black bin bag.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.85, 1.15]},
+  "breakable": {"health": 5, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.04, 0.12], "speed": 3, "colors": ["black", "paper", "newsprint", "cardboard", "red"]}},
+  "parts": [
+    {"size": [0.5, 0.32, 0.42], "offset": [0.0, 0.16, 0.0], "rotation": [0.0, 4.0, 0.0], "color": "black"},
+    {"size": [0.42, 0.18, 0.36], "offset": [0.02, 0.39, 0.0], "rotation": [0.0, -10.0, 0.0], "color": "black"},
+    {"size": [0.3, 0.1, 0.26], "offset": [0.0, 0.51, 0.02], "rotation": [0.0, 20.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.1, 0.08], "offset": [0.0, 0.6, 0.02], "color": "black"},
+    {"size": [0.46, 0.2, 0.46], "offset": [0.0, 0.16, 0.0], "rotation": [0.0, 40.0, 0.0], "color": "#1a1a1c"},
+    {"size": [0.03, 0.08, 0.1], "offset": [-0.02, 0.68, 0.02], "rotation": [0.0, 15.0, 0.0], "color": "black"}
+  ]
+}

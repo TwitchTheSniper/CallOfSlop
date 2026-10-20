@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pipe Stack",
+  "category": "Industrial",
+  "description": "Three rusty steel pipes stacked on timber.",
+  "collision": "solid",
+  "collider": [{"size": [3.0, 0.62, 0.68]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "parts": [
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, -0.17], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, -0.17], "rotation": [45.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, -0.17], "rotation": [90.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, -0.17], "rotation": [135.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [0.02, 0.2, 0.2], "offset": [1.505, 0.16, -0.17], "color": "black"},
+    {"size": [0.02, 0.2, 0.2], "offset": [-1.505, 0.16, -0.17], "color": "black"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, 0.17], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, 0.17], "rotation": [45.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, 0.17], "rotation": [90.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.16, 0.17], "rotation": [135.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [0.02, 0.2, 0.2], "offset": [1.505, 0.16, 0.17], "color": "black"},
+    {"size": [0.02, 0.2, 0.2], "offset": [-1.505, 0.16, 0.17], "color": "black"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.45, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.45, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.45, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [3.0, 0.34, 0.141], "offset": [0.0, 0.45, 0.0], "rotation": [135.0, 0.0, 0.0], "color": "rust", "material": "metal"},
+    {"size": [0.02, 0.2, 0.2], "offset": [1.505, 0.45, 0.0], "color": "black"},
+    {"size": [0.02, 0.2, 0.2], "offset": [-1.505, 0.45, 0.0], "color": "black"},
+    {"size": [0.12, 0.08, 0.7], "offset": [-1.0, 0.04, 0.0], "color": "wood"},
+    {"size": [0.12, 0.08, 0.7], "offset": [1.0, 0.04, 0.0], "color": "wood"}
+  ]
+}

@@ -1130,6 +1130,8 @@ public sealed partial class Game : IDisposable
                     turret = null;
                 }
             }
+            if (hit == null && turret == null)
+                ShotProps(shooter, origin, d, dist, def.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
             var end = origin + d * dist;
             ends.Add(end);
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(def.Damage * def.DamageMultAt(dist)), now))
@@ -1259,6 +1261,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length));
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
+                SendPropState(sender); // props broken so far this match (GameProps.cs)
                 if (VoteOpen)
                     SendVoteState(sender); // joined during the results screen: show the ballot
                 Log($"Player {newId} connected ({Net.ConnectionCount} connected)");
@@ -1444,6 +1447,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.MatchEnd:
             case (byte)Msg.MatchStart:
                 OnMatchPacket(id, ref r);
+                break;
+            case (byte)Msg.PropBreak:
+            case (byte)Msg.PropState:
+                OnPropPacket(id, ref r); // breakable props (GameProps.cs)
                 break;
             case (byte)Msg.Ready:
             case (byte)Msg.ModeState:

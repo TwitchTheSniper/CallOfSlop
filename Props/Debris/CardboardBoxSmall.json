@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cardboard Box Small",
+  "category": "Debris",
+  "description": "A small taped cardboard box.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "yawJitter": 15, "scale": [0.92, 1.08]},
+  "breakable": {"health": 8, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.144], "speed": 3, "colors": ["cardboard", "#8a6a44"]}},
+  "parts": [
+    {"size": [0.36, 0.26, 0.3], "offset": [0.0, 0.13, 0.0], "color": "cardboard"},
+    {"size": [0.364, 0.006, 0.05], "offset": [0.0, 0.263, 0.0], "color": "tape"},
+    {"size": [0.04, 0.003, 0.304], "offset": [0.0, 0.262, 0.0], "color": "#8a6a44"},
+    {"size": [0.362, 0.05, 0.004], "offset": [0.0, 0.168, 0.15], "color": "#5a4430"},
+    {"size": [0.108, 0.065, 0.003], "offset": [-0.072, 0.098, 0.152], "color": "white"}
+  ]
+}

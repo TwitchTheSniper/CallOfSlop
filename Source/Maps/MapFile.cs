@@ -93,8 +93,9 @@ public sealed partial class Map
             }
             Mix(HalfX);
             Mix(HalfZ);
-            foreach (var b in Solid)
+            for (var i = 0; i < Solid.Count; i++)
             {
+                var b = HashBox(i); // a broken prop's collider counts as it was: breaking never changes the fingerprint
                 Mix(b.Center.X); Mix(b.Center.Y); Mix(b.Center.Z);
                 Mix(b.Half.X); Mix(b.Half.Y); Mix(b.Half.Z);
             }
@@ -116,6 +117,14 @@ public sealed partial class Map
                 for (var i = 0; i < 4; i++)
                 {
                     h ^= (movers >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
+            if (PropHash != 0) // maps without props keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (PropHash >> (i * 8)) & 0xFF;
                     h *= 16777619u;
                 }
             }
@@ -147,7 +156,7 @@ public static partial class MapFile
             $"{m.Name}({string.Join(", ", m.GetParameters().Select(p => $"{TypeName(p.ParameterType)} {p.Name}{(p.HasDefaultValue ? $" = {Fmt(p.DefaultValue)}" : p.IsDefined(typeof(ParamArrayAttribute)) ? " = []" : "")}"))})");
 
     private static string TypeName(Type t) => t == typeof(float) ? "number" : t == typeof(int) ? "integer" : t == typeof(bool) ? "true/false"
-        : t == typeof(string) ? "text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
+        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
 
     // ---- Writing --------------------------------------------------------------------------
 
@@ -212,6 +221,7 @@ public static partial class MapFile
         int i => i.ToString(CultureInfo.InvariantCulture),
         bool b => b ? "true" : "false",
         string s => Str(s),
+        string[] list => "[" + string.Join(", ", list.Select(Str)) + "]",
         Vector3 c => Col(c),
         Map.Hole[] holes => "[" + string.Join(", ", holes.Select(h => $"{{ \"center\": {Num(h.Center)}, \"width\": {Num(h.Width)}, \"bottom\": {Num(h.Bottom)}, \"top\": {Num(h.Top)} }}")) + "]",
         ValueTuple<float, float, float, float> r => $"{{ \"x0\": {Num(r.Item1)}, \"z0\": {Num(r.Item2)}, \"x1\": {Num(r.Item3)}, \"z1\": {Num(r.Item4)} }}",
@@ -266,6 +276,8 @@ public static partial class MapFile
                 var where = $"{source}, op #{index}";
                 if (Prop(op, "op") is not { ValueKind: JsonValueKind.String } nameEl || !Builders.TryGetValue(nameEl.GetString()!, out var method))
                     throw new MapFileException($"{where}: unknown \"op\" {(Prop(op, "op") is { } n ? n.ToString() : "(missing)")}. Known: {string.Join(", ", Builders.Keys.OrderBy(k => k))}");
+                if (method.Name == nameof(Map.Prop) && Prop(op, "name") != null)
+                    method = Builders[nameof(Map.PlaceProp)]; // { "op": "Prop", "name": "Trash Can", ... } is a prop from the Props folder
                 var ps = method.GetParameters();
                 var args = new object?[ps.Length];
                 for (var k = 0; k < ps.Length; k++)
@@ -311,6 +323,7 @@ public static partial class MapFile
                 CheckMoverSweeps(map, source); // before the objectives: automatic hills are picked from the waypoints
             }
             MapObjectiveJson.Read(root, map, source);
+            map.FinishProps(); // last: Clutter keeps clear of the spawns, waypoints, objectives and movers above
             return map;
         }
     }
@@ -338,6 +351,9 @@ public static partial class MapFile
             return e.ValueKind is JsonValueKind.True or JsonValueKind.False ? e.GetBoolean() : throw new MapFileException($"{where}: expected true or false, got {e}");
         if (t == typeof(string))
             return e.ValueKind == JsonValueKind.String ? e.GetString() : throw new MapFileException($"{where}: expected text, got {e}");
+        if (t == typeof(string[]))
+            return e.ValueKind == JsonValueKind.Array ? e.EnumerateArray().Select(x => x.ValueKind == JsonValueKind.String ? x.GetString()! : throw new MapFileException($"{where}: expected a list of names, got {x}")).ToArray()
+                : e.ValueKind == JsonValueKind.String ? new[] { e.GetString()! } : throw new MapFileException($"{where}: expected a list of names, got {e}");
         if (t == typeof(Vector3))
             return ToColour(e, where, "");
         if (t == typeof(Map.Hole[]))

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cardboard Box",
+  "category": "Debris",
+  "description": "A taped cardboard box.",
+  "collision": "solid",
+  "collider": [{"size": [0.55, 0.42, 0.45]}],
+  "scatter": {"randomYaw": true, "yawJitter": 15, "scale": [0.92, 1.08]},
+  "breakable": {"health": 15, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.22000000000000003], "speed": 3, "colors": ["cardboard", "#8a6a44"]}},
+  "parts": [
+    {"size": [0.55, 0.42, 0.45], "offset": [0.0, 0.21, 0.0], "color": "cardboard"},
+    {"size": [0.554, 0.006, 0.05], "offset": [0.0, 0.423, 0.0], "color": "tape"},
+    {"size": [0.04, 0.003, 0.454], "offset": [0.0, 0.421, 0.0], "color": "#8a6a44"},
+    {"size": [0.552, 0.05, 0.004], "offset": [0.0, 0.256, 0.225], "color": "#5a4430"},
+    {"size": [0.165, 0.105, 0.003], "offset": [-0.11, 0.158, 0.227], "color": "white"}
+  ]
+}

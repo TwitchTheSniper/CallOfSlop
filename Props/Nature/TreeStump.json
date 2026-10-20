@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Tree Stump",
+  "category": "Nature",
+  "description": "An old tree stump with roots.",
+  "collision": "solid",
+  "collider": [{"size": [0.62, 0.44, 0.62]}],
+  "scatter": {"randomYaw": true, "scale": [0.85, 1.2]},
+  "parts": [
+    {"size": [0.62, 0.42, 0.257], "offset": [0.0, 0.21, 0.0], "color": "#5b4129", "material": "wood"},
+    {"size": [0.62, 0.42, 0.257], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#5b4129", "material": "wood"},
+    {"size": [0.62, 0.42, 0.257], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#5b4129", "material": "wood"},
+    {"size": [0.62, 0.42, 0.257], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#5b4129", "material": "wood"},
+    {"size": [0.56, 0.01, 0.232], "offset": [0.0, 0.425, 0.0], "color": "#b08a5a"},
+    {"size": [0.56, 0.01, 0.232], "offset": [0.0, 0.425, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.56, 0.01, 0.232], "offset": [0.0, 0.425, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.56, 0.01, 0.232], "offset": [0.0, 0.425, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.4, 0.12, 0.12], "offset": [0.35, 0.05, -0.0], "rotation": [0.0, 0.0, -15.0], "color": "#5b4129"},
+    {"size": [0.4, 0.12, 0.12], "offset": [-0.175, 0.05, -0.303], "rotation": [0.0, 120.0, -15.0], "color": "#5b4129"},
+    {"size": [0.4, 0.12, 0.12], "offset": [-0.175, 0.05, 0.303], "rotation": [0.0, 240.0, -15.0], "color": "#5b4129"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Flattened Cardboard",
+  "category": "Debris",
+  "description": "Flattened boxes left on the ground.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "parts": [
+    {"size": [1.0, 0.008, 0.7], "offset": [0.0, 0.004, 0.0], "rotation": [0.0, 5.0, 0.0], "color": "cardboard"},
+    {"size": [0.9, 0.008, 0.6], "offset": [0.1, 0.012, 0.08], "rotation": [0.0, -12.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.6, 0.008, 0.45], "offset": [-0.12, 0.02, -0.05], "rotation": [0.0, 30.0, 0.0], "color": "cardboard"},
+    {"size": [0.5, 0.004, 0.03], "offset": [0.1, 0.018, 0.08], "rotation": [0.0, -12.0, 0.0], "color": "#5a4430"}
+  ]
+}
