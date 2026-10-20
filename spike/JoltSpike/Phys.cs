@@ -92,6 +92,95 @@ public sealed class Phys
         return s;
     }
 
+    /// <summary>Binding problems found at run time and the workaround used (reported by the spike).</summary>
+    public static readonly List<string> BindingNotes = new();
+
+    static void Note(string s)
+    {
+        if (!BindingNotes.Contains(s))
+        {
+            BindingNotes.Add(s);
+            Report.Log("BINDING " + s);
+        }
+    }
+
+    /// <summary>Convex hull from points, robust against the 2026.10.2 overload mix-up (see the design doc).</summary>
+    public static Shape MakeHull(ReadOnlySpan<float3> points, float convexRadius)
+    {
+        var s = ConvexHullShapeSettings.Create(points, convexRadius);
+        try
+        {
+            return s.CreateShape();
+        }
+        catch (JoltException e)
+        {
+            Note($"ConvexHullShapeSettings.Create(points) -> '{e.Message}'; fixed with SetPoints()");
+            s.SetPoints(points);
+            s.SetMaxConvexRadius(convexRadius);
+            s.ClearCachedResult();
+            return s.CreateShape();
+        }
+    }
+
+    /// <summary>Triangle mesh from indexed triangles, with a setter-based fallback.</summary>
+    public static Shape MakeMesh(float3[] verts, IndexedTriangle[] tris)
+    {
+        try
+        {
+            return MeshShapeSettings.Create(verts, tris, ReadOnlySpan<PhysicsMaterial>.Empty).CreateShape();
+        }
+        catch (Exception e) when (e is JoltException or EntryPointNotFoundException)
+        {
+            Note($"MeshShapeSettings.Create(verts, tris) -> {e.GetType().Name} '{e.Message}'; fixed with setters");
+            var flat = new Triangle[tris.Length];
+            for (var i = 0; i < tris.Length; i++)
+                flat[i] = Triangle.Create(verts[tris[i].Idx[0]], verts[tris[i].Idx[1]], verts[tris[i].Idx[2]]);
+            var s = MeshShapeSettings.Create(flat, ReadOnlySpan<PhysicsMaterial>.Empty);
+            s.SetTriangleVertices(verts);
+            s.SetIndexedTriangles(tris);
+            s.Sanitize();
+            s.ClearCachedResult();
+            return s.CreateShape();
+        }
+    }
+
+    /// <summary>Converts a triangle soup into indexed form (3 vertices per triangle; fine for a spike).</summary>
+    public static Shape MakeMesh(IReadOnlyList<Triangle> soup)
+    {
+        var verts = new float3[soup.Count * 3];
+        var tris = new IndexedTriangle[soup.Count];
+        for (var i = 0; i < soup.Count; i++)
+        {
+            verts[i * 3] = soup[i].V[0];
+            verts[i * 3 + 1] = soup[i].V[1];
+            verts[i * 3 + 2] = soup[i].V[2];
+            tris[i] = IndexedTriangle.Create((uint)(i * 3), (uint)(i * 3 + 1), (uint)(i * 3 + 2), 0);
+        }
+        return MakeMesh(verts, tris);
+    }
+
+    /// <summary>Heightfield n x n with 1 sample per scale unit. The parameterless Create() is missing from the 2026.10.2 natives.</summary>
+    public static unsafe Shape MakeHeightField(float[] samples, int n, float3 offset, float3 scale)
+    {
+        HeightFieldShapeSettings hs;
+        try
+        {
+            hs = HeightFieldShapeSettings.Create();
+        }
+        catch (EntryPointNotFoundException)
+        {
+            Note("HeightFieldShapeSettings.Create() has no native export (HeightFieldShapeSettings_Create_2); used the full Create(samples, ...) + setters");
+            fixed (float* p = samples)
+                hs = HeightFieldShapeSettings.Create(p, offset, scale, (uint)n, default, ReadOnlySpan<PhysicsMaterial>.Empty);
+        }
+        hs.SetOffset(offset);
+        hs.SetScale(scale);
+        hs.SetSampleCount((uint)n);
+        hs.SetHeightSamples(samples);
+        hs.ClearCachedResult();
+        return hs.CreateShape();
+    }
+
     public uint AddStatic(Shape shape, float3 pos, floatQuat rot)
     {
         var bcs = BodyCreationSettings.Create(shape, pos, rot, MotionType.Static, Layers.Static);

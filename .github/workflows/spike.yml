@@ -30,6 +30,18 @@ jobs:
           mkdir -p spike/out
           dotnet build spike/JoltSpike/JoltSpike.csproj -c Release -nologo
 
+      - name: Jolt native exports (binding check)
+        if: runner.os == 'Linux'
+        run: |
+          pkg=$(ls -d ~/.nuget/packages/ahwoo.brutal.jolt/*/ | tail -1)
+          so=$(find "$pkg" -name '*.so' | head -1)
+          echo "native: $so"
+          for t in HeightFieldShapeSettings ConvexHullShapeSettings MeshShapeSettings BoxShape CapsuleShape RotatedTranslatedShape BodyCreationSettings CharacterVirtual; do
+            e=$(nm -D --defined-only "$so" | awk '{print $3}' | grep -E "^${t}_Create(_[0-9]+)?$" | tr '\n' ' ')
+            echo "::notice title=exports $t::$e"
+          done
+          echo "::notice title=jolt package::$(ls $pkg) $(find "$pkg" -name '*.so' -o -name '*.dll' | sed "s|$pkg||" | tr '\n' ' ')"
+
       - name: Machine
         run: |
           cpu=$( (lscpu 2>/dev/null | grep 'Model name' | sed 's/.*: *//') || true)

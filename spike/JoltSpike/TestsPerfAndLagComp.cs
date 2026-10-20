@@ -73,7 +73,6 @@ public static class TestsPerfAndLagComp
         Metric("1000 rays vs 5000 boxes (separate bodies / one compound) us", $"{F(bigUs, 0)} / {F(cmpUs, 0)}");
 
         t = Clock.Now;
-        var hs = HeightFieldShapeSettings.Create();
         var n = 1024;
         var samples = new float[n * n];
         for (var z = 0; z < n; z++)
@@ -81,11 +80,7 @@ public static class TestsPerfAndLagComp
                 samples[z * n + x] = TestWorld.TerrainHeight(x - 512, z - 512) + (x % 7) * 0.05f;
         var genMs = Clock.MsSince(t);
         t = Clock.Now;
-        hs.SetOffset(new float3(-512, 0, -512));
-        hs.SetScale(new float3(1, 1, 1));
-        hs.SetSampleCount((uint)n);
-        hs.SetHeightSamples(samples);
-        var hShape = hs.CreateShape();
+        var hShape = Phys.MakeHeightField(samples, n, new float3(-512, 0, -512), new float3(1, 1, 1));
         Metric("build: 1024^2 heightfield shape ms (excl. sample generation)", $"{F(Clock.MsSince(t), 1)} (gen {F(genMs, 1)})");
         _ = hShape;
 
@@ -100,8 +95,7 @@ public static class TestsPerfAndLagComp
                 ? Triangle.Create(p0, p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 0))
                 : Triangle.Create(p0 + new float3(1, 0, 0), p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 1));
         }
-        var ms = MeshShapeSettings.Create(tris, ReadOnlySpan<PhysicsMaterial>.Empty);
-        var meshShape = ms.CreateShape();
+        var meshShape = Phys.MakeMesh(tris);
         Metric("build: 20k-triangle MeshShape ms", F(Clock.MsSince(t), 1));
         _ = meshShape;
     }

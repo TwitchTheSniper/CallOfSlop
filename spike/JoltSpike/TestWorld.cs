@@ -61,15 +61,13 @@ public sealed class TestWorld
             CylinderBody = P.AddStatic(CylinderShape.Create(1.5f, 0.6f), new float3(0, 1.5f, LaneShapes), floatQuat.Identity); // 3 m pillar
             // A pyramid as a convex hull (stand-in for a rock or a sandbag pile): apex 2 m up.
             ReadOnlySpan<float3> pyr = [new(-1.5f, 0, -1.5f), new(1.5f, 0, -1.5f), new(1.5f, 0, 1.5f), new(-1.5f, 0, 1.5f), new(0, 2, 0)];
-            var hullSettings = ConvexHullShapeSettings.Create(pyr, 0.05f);
-            HullBody = P.AddStatic(hullSettings.CreateShape(), new float3(6, 0, LaneShapes), floatQuat.Identity);
+            HullBody = P.AddStatic(Phys.MakeHull(pyr, 0.05f), new float3(6, 0, LaneShapes), floatQuat.Identity);
             // An arch as a triangle mesh: two legs and a top beam, 4 m wide, 3 m tall (top surface at y = 3).
             var tris = new List<Triangle>();
             AddMeshBox(tris, new float3(-1.75f, 1.25f, 0), new float3(0.25f, 1.25f, 0.5f));
             AddMeshBox(tris, new float3(1.75f, 1.25f, 0), new float3(0.25f, 1.25f, 0.5f));
             AddMeshBox(tris, new float3(0, 2.75f, 0), new float3(2f, 0.25f, 0.5f));
-            var meshSettings = MeshShapeSettings.Create(tris.ToArray(), ReadOnlySpan<PhysicsMaterial>.Empty);
-            MeshBody = P.AddStatic(meshSettings.CreateShape(), new float3(14, 0, LaneShapes), floatQuat.Identity);
+            MeshBody = P.AddStatic(Phys.MakeMesh(tris), new float3(14, 0, LaneShapes), floatQuat.Identity);
         });
 
         // ---- Random boxes like a big map: houses, crates, cover, some stacked ----
@@ -113,12 +111,7 @@ public sealed class TestWorld
         for (var z = 0; z < n; z++)
             for (var x = 0; x < n; x++)
                 samples[z * n + x] = TerrainHeight(x - half, z - half);
-        var hs = HeightFieldShapeSettings.Create();
-        hs.SetOffset(new float3(-half, 0, -half));
-        hs.SetScale(new float3(1, 1, 1));
-        hs.SetSampleCount((uint)n);
-        hs.SetHeightSamples(samples);
-        return P.AddStatic(hs.CreateShape(), float3.Zero, floatQuat.Identity);
+        return P.AddStatic(Phys.MakeHeightField(samples, n, new float3(-half, 0, -half), new float3(1, 1, 1)), float3.Zero, floatQuat.Identity);
     }
 
     void AddAabb(float3 c, float3 half)

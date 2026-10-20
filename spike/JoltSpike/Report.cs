@@ -62,6 +62,8 @@ public static class Report
 
     public static void Close()
     {
+        if (Phys.BindingNotes.Count > 0)
+            Notice("binding issues", string.Join(" | ", Phys.BindingNotes));
         Notice($"checks {Passed.Count}/{Passed.Count + Failures} passed", string.Join(" | ", Passed));
         // Metrics in chunks so no single annotation gets huge.
         for (var i = 0; i < Metrics.Count; i += 8)
