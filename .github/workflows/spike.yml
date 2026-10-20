@@ -1,0 +1,26 @@
+# Jolt / scene-graph spike: builds and runs spike/JoltSpike on Windows and Linux.
+# Only runs on the spike branch (or by hand); it never touches the game build.
+name: Jolt spike
+
+on:
+  push:
+    branches: [ 'spike/**' ]
+  workflow_dispatch:
+
+jobs:
+  spike:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ windows-latest, ubuntu-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Package versions
+        shell: bash
+        run: |
+          for p in ahwoo.brutal.jolt ahwoo.brutal.gltf ahwoo.brutal.render.mesh ahwoo.brutal.stb ahwoo.brutal.numerics ahwoo.brutal.meshoptimizer; do
+            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | tr -d '\n ' | grep -o '"versions":\[[^]]*\]' | tail -c 200)
+            echo "::notice title=nuget $p::$v"
+          done
