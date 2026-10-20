@@ -62,7 +62,7 @@ public static class Throwables
         foreach (var b in World.Map.Solid)
             if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
                 return true;
-        return false;
+        return World.Map.Movers.Count > 0 && MoverPhysics.PointInside(p, r, MoverPhysics.Clock); // moving platforms at their current pose
     }
 
     /// <summary>One tick of ballistic flight with bounces. Returns true if it touched geometry.</summary>

@@ -66,6 +66,7 @@ public struct InputCmd
     public float Pitch;
     public byte Weapon; // weapon id currently held
     public byte SpeedPct; // movement speed in % (weapon mobility, aiming); the server clamps it
+    public uint Tick; // server tick this command is simulated at, for mover poses (0 = MoverPhysics.Clock; see Movers.cs)
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -141,6 +142,11 @@ public static class World
     public static void Simulate(ref MoveState s, in InputCmd cmd)
     {
         var b = cmd.Buttons;
+        // Movers (moving platforms): posed at the command's tick, so prediction, replay and the server agree.
+        var movers = Map.Movers.Count > 0;
+        _moverTick = cmd.Tick != 0 ? cmd.Tick : MoverPhysics.Clock;
+        var platformVel = Vector3.Zero;
+        var carried = movers ? MoverPhysics.BeginTick(ref s, _moverTick, HeightOf(s.Stance), out platformVel) : -1;
         if (s.BoostTicks > 0)
             s.BoostTicks--;
 
@@ -177,9 +183,9 @@ public static class World
             want = Stance.Crouch; // can't go prone in mid-air
         if (want != s.Stance)
         {
-            if (HeightOf(want) <= HeightOf(s.Stance) || !Blocked(s.Position, HeightOf(want)))
+            if (HeightOf(want) <= HeightOf(s.Stance) || !MoverPhysics.BlockedAll(s.Position, HeightOf(want), _moverTick))
                 s.Stance = want;
-            else if (want == Stance.Stand && s.Stance == Stance.Prone && !Blocked(s.Position, HeightOf(Stance.Crouch)))
+            else if (want == Stance.Stand && s.Stance == Stance.Prone && !MoverPhysics.BlockedAll(s.Position, HeightOf(Stance.Crouch), _moverTick))
                 s.Stance = Stance.Crouch; // only room to get halfway up
         }
 
@@ -202,7 +208,12 @@ public static class World
             s.Velocity.Y = JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f);
 
         s.Position = Move(s.Position, ref s.Velocity, ref s.Grounded, TickDt, HeightOf(s.Stance));
+        if (movers)
+            MoverPhysics.EndTick(ref s, _moverTick, carried, platformVel);
     }
+
+    /// <summary>The mover tick of the command being simulated (read by <see cref="Move"/>).</summary>
+    private static uint _moverTick;
 
     private static readonly Stance[] CrouchOnly = [Stance.Crouch];
     private static readonly Stance[] StandOrCrouch = [Stance.Stand, Stance.Crouch];
@@ -300,12 +311,28 @@ public static class World
         };
     }
 
-    /// <summary>Nearest distance at which a ray hits static geometry, boxes or terrain (or maxDist if nothing).</summary>
+    /// <summary>Nearest distance at which a ray hits static geometry, boxes, terrain or a mover at its current pose (or maxDist if nothing).</summary>
     public static float RaycastWorld(Vector3 origin, Vector3 dir, float maxDist)
     {
         var best = RaycastBoxes(origin, dir, maxDist);
         if (Map.TerrainCollision is { } terrain && best > 0)
             best = MathF.Min(best, terrain.Raycast(origin, dir, best));
+        if (Map.Movers.Count > 0 && best > 0)
+            best = MoverPhysics.Raycast(origin, dir, best, MoverPhysics.Clock);
+        return best;
+    }
+
+    /// <summary>
+    /// Ray cast for bot navigation: static geometry, with each mover's whole sweep as a solid pillar (so nav graphs
+    /// never route through moving platforms and don't depend on where they happen to be).
+    /// </summary>
+    public static float RaycastNav(Vector3 origin, Vector3 dir, float maxDist)
+    {
+        var best = RaycastBoxes(origin, dir, maxDist);
+        if (Map.TerrainCollision is { } terrain && best > 0)
+            best = MathF.Min(best, terrain.Raycast(origin, dir, best));
+        if (Map.Movers.Count > 0 && best > 0)
+            best = MoverPhysics.RaycastSweeps(origin, dir, best);
         return best;
     }
 
@@ -331,6 +358,8 @@ public static class World
         var knee = new Vector3(0, 0.5f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         var terrain = Map.TerrainCollision;
+        if (Map.Movers.Count > 0 && !ClearOfMovers(from + knee, to + knee))
+            return false; // bots keep out of moving platforms' paths
         if (terrain == null)
             return Clear(from + knee, to + knee) && Clear(from + chest, to + chest);
         // Off the ground (on a roof, a bridge): straight lines only, terrain included in the ray casts.
@@ -369,6 +398,13 @@ public static class World
             var d = b - a;
             var dist = d.Length();
             return dist < 0.01f || RaycastBoxes(a, d / dist, dist) >= dist - 0.05f;
+        }
+
+        static bool ClearOfMovers(Vector3 a, Vector3 b)
+        {
+            var d = b - a;
+            var dist = d.Length();
+            return dist < 0.01f || MoverPhysics.RaycastSweeps(a, d / dist, dist) >= dist;
         }
 
         static bool ClearAll(Vector3 a, Vector3 b)
@@ -412,6 +448,8 @@ public static class World
                 velocity.Y = 0;
             }
         }
+        if (Map.Movers.Count > 0)
+            MoverPhysics.Vertical(feet, prevY, ref newY, ref velocity, ref grounded, H, _moverTick);
         feet.Y = newY;
         if (Map.TerrainCollision is { } terrain)
             TerrainVertical(terrain, ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
@@ -419,6 +457,8 @@ public static class World
         // ---- Horizontal, X then Z ----
         feet = MoveAxis(feet, velocity.X * dt, true, ref velocity, grounded, H);
         feet = MoveAxis(feet, velocity.Z * dt, false, ref velocity, grounded, H);
+        if (Map.Movers.Count > 0)
+            feet = MoverPhysics.PushOut(feet, ref velocity, ref grounded, H, _moverTick); // pushed by (or stepping onto) moving platforms
 
         return ClampToArena(feet);
     }
