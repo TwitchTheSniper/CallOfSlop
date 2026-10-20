@@ -64,8 +64,8 @@ public sealed class TestWorld
             // A pyramid as a convex hull (stand-in for a rock or a sandbag pile): apex 2 m up.
             ReadOnlySpan<float3> pyr = [new(-1.5f, 0, -1.5f), new(1.5f, 0, -1.5f), new(1.5f, 0, 1.5f), new(-1.5f, 0, 1.5f), new(0, 2, 0)];
             float3[] pv = [pyr[0], pyr[1], pyr[2], pyr[3], pyr[4]];
-            IndexedTriangle[] pt = [IndexedTriangle.Create(0, 1, 2, 0), IndexedTriangle.Create(0, 2, 3, 0), // base (faces down)
-                IndexedTriangle.Create(0, 4, 1, 0), IndexedTriangle.Create(1, 4, 2, 0), IndexedTriangle.Create(2, 4, 3, 0), IndexedTriangle.Create(3, 4, 0, 0)];
+            IndexedTriangle[] pt = [Phys.IT(0, 1, 2), Phys.IT(0, 2, 3), // base (faces down)
+                Phys.IT(0, 4, 1), Phys.IT(1, 4, 2), Phys.IT(2, 4, 3), Phys.IT(3, 4, 0)];
             HullBody = P.AddStatic(Phys.MakeHull(pyr, 0.05f, pv, pt), new float3(6, 0, LaneShapes), floatQuat.Identity);
             // An arch as a triangle mesh: two legs and a top beam, 4 m wide, 3 m tall (top surface at y = 3).
             var tris = new List<Triangle>();
@@ -146,8 +146,8 @@ public sealed class TestWorld
         for (var q = 0; q < 6; q++)
         {
             int a = f[q * 4], b = f[q * 4 + 1], cc = f[q * 4 + 2], d = f[q * 4 + 3];
-            tris.Add(Triangle.Create(v[a], v[b], v[cc]));
-            tris.Add(Triangle.Create(v[a], v[cc], v[d]));
+            tris.Add(Phys.T(v[a], v[b], v[cc]));
+            tris.Add(Phys.T(v[a], v[cc], v[d]));
         }
     }
 

@@ -183,6 +183,28 @@ public sealed class Phys
         }
     }
 
+    /// <summary>IndexedTriangle built in C#: the native IndexedTriangle_Create in 2026.10.2 doesn't take the indices.</summary>
+    public static IndexedTriangle IT(uint a, uint b, uint c)
+    {
+        var t = default(IndexedTriangle);
+        t.Idx[0] = a;
+        t.Idx[1] = b;
+        t.Idx[2] = c;
+        return t;
+    }
+
+    public static IndexedTriangle IT(int a, int b, int c) => IT((uint)a, (uint)b, (uint)c);
+
+    /// <summary>Triangle built in C# (same reason as <see cref="IT(uint, uint, uint)"/>).</summary>
+    public static Triangle T(float3 a, float3 b, float3 c)
+    {
+        var t = default(Triangle);
+        t.V[0] = a;
+        t.V[1] = b;
+        t.V[2] = c;
+        return t;
+    }
+
     /// <summary>How triangle soups are built when MeshShape is unavailable (picked by ProbeTriangles).</summary>
     public static int TriMode = -1; // 0 = compound of TriangleShapeSettings, 1 = compound of TriangleShapes, 2 = oriented thin boxes
     public static readonly string[] TriModeNames = ["compound of TriangleShapeSettings", "compound of TriangleShape", "thin oriented boxes"];
@@ -327,7 +349,7 @@ public sealed class Phys
             {
                 var flat = new Triangle[tris.Length];
                 for (var i = 0; i < tris.Length; i++)
-                    flat[i] = Triangle.Create(verts[tris[i].Idx[0]], verts[tris[i].Idx[1]], verts[tris[i].Idx[2]]);
+                    flat[i] = Phys.T(verts[tris[i].Idx[0]], verts[tris[i].Idx[1]], verts[tris[i].Idx[2]]);
                 var shape = MeshShapeSettings.Create(flat, ReadOnlySpan<PhysicsMaterial>.Empty).CreateShape();
                 Note($"MeshShapeSettings.Create(verts, tris): {e.GetType().Name}; Create(triangles) worked");
                 return shape;
@@ -350,7 +372,7 @@ public sealed class Phys
             verts[i * 3] = soup[i].V[0];
             verts[i * 3 + 1] = soup[i].V[1];
             verts[i * 3 + 2] = soup[i].V[2];
-            tris[i] = IndexedTriangle.Create((uint)(i * 3), (uint)(i * 3 + 1), (uint)(i * 3 + 2), 0);
+            tris[i] = Phys.IT((uint)(i * 3), (uint)(i * 3 + 1), (uint)(i * 3 + 2));
         }
         return MakeMesh(verts, tris);
     }
@@ -397,8 +419,8 @@ public sealed class Phys
                         verts.Add(offset + new float3(x + 1, samples[z * n + x + 1], z));
                         verts.Add(offset + new float3(x, samples[(z + 1) * n + x], z + 1));
                         verts.Add(offset + new float3(x + 1, samples[(z + 1) * n + x + 1], z + 1));
-                        tris.Add(IndexedTriangle.Create(b, b + 2, b + 1, 0)); // counter-clockwise seen from above
-                        tris.Add(IndexedTriangle.Create(b + 1, b + 2, b + 3, 0));
+                        tris.Add(Phys.IT(b, b + 2, b + 1)); // counter-clockwise seen from above
+                        tris.Add(Phys.IT(b + 1, b + 2, b + 3));
                     }
                 ids.Add(AddStatic(MakeMesh(verts.ToArray(), tris.ToArray()), float3.Zero, floatQuat.Identity));
             }

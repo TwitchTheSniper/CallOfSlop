@@ -110,8 +110,8 @@ public static class TestsPerfAndLagComp
             var gz = (i / 2) / 100;
             var p0 = new float3(gx, (gx * gz % 5) * 0.1f, gz);
             tris[i] = i % 2 == 0
-                ? Triangle.Create(p0, p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 0))
-                : Triangle.Create(p0 + new float3(1, 0, 0), p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 1));
+                ? Phys.T(p0, p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 0))
+                : Phys.T(p0 + new float3(1, 0, 0), p0 + new float3(0, 0, 1), p0 + new float3(1, 0, 1));
         }
         var meshShape = Phys.MakeMesh(tris);
         Metric("build: 20k-triangle MeshShape ms", F(Clock.MsSince(t), 1));
