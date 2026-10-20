@@ -223,7 +223,7 @@ public sealed partial class Ui
             var team = game.Local?.Team ?? Game.NoTeam;
             var limit = game.Mode switch
             {
-                GameMode.TeamDeathmatch => $"first to {GameModes.TdmScoreLimit} kills",
+                GameMode.TeamDeathmatch => $"first to {game.TdmLimit} kills",
                 GameMode.KingOfTheHill => $"first to {GameModes.HillScoreLimit} points",
                 _ => $"first to {GameModes.CtfCaptureLimit} captures",
             };

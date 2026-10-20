@@ -454,6 +454,11 @@ public sealed partial class Ui : IDisposable
 
     private void DrawScoreboard(Game game, float2 size, float2 pos)
     {
+        if (game.Players.Count > BigScoreboardFrom)
+        {
+            DrawBigScoreboard(game, size, pos); // two compact columns for big lobbies (UiScoreboard.cs)
+            return;
+        }
         if (DrawModeScoreboard(game, size, pos))
             return; // team modes and Gun Game (UiModes.cs)
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));

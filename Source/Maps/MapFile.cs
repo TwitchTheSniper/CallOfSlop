@@ -98,8 +98,9 @@ public sealed partial class Map
                 Mix(b.Center.X); Mix(b.Center.Y); Mix(b.Center.Z);
                 Mix(b.Half.X); Mix(b.Half.Y); Mix(b.Half.Z);
             }
-            foreach (var s in Spawns)
+            for (var i = 0; i < (AuthoredSpawns >= 0 ? AuthoredSpawns : Spawns.Count); i++) // generated spawns follow from these (MapPlayers.cs)
             {
+                var s = Spawns[i];
                 Mix(s.X); Mix(s.Y); Mix(s.Z);
             }
             MixObjectiveData(Mix); // waypoints and hand-placed objectives (game-mode objectives are built from them)
@@ -165,6 +166,8 @@ public static partial class MapFile
             sb.Append("  \"prototypeGrid\": true,\n");
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
         sb.Append($"  \"halfZ\": {Num(m.HalfZ)},\n");
+        if (m.MaxPlayersSetting > 0)
+            sb.Append($"  \"maxPlayers\": {m.MaxPlayersSetting},\n");
         sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
@@ -250,6 +253,9 @@ public static partial class MapFile
                 map.Author = a.GetString()!;
             if (Prop(root, "order") is { ValueKind: JsonValueKind.Number } o)
                 map.Order = o.GetInt32();
+            if (Prop(root, "maxPlayers") is { ValueKind: JsonValueKind.Number } mp)
+                map.MaxPlayersSetting = mp.TryGetInt32(out var mpi) && mpi is >= 2 and <= Map.HardMaxPlayers
+                    ? mpi : throw new MapFileException($"{source}: \"maxPlayers\" is a whole number from 2 to {Map.HardMaxPlayers}");
             if (Prop(root, "prototypeGrid") is { ValueKind: JsonValueKind.True })
                 map.PrototypeGrid = true;
             if (Prop(root, "sky") is { } sky)

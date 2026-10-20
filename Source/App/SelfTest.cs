@@ -16,7 +16,7 @@ namespace CallOfSlop;
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
 ///      Optics: every optic loads and fits sensibly, the full scope view is 4x+ only, sights stay aligned,
 ///      the cut-away leaves a clear view, and no gun part clashes with a fitted optic.
-///   5. Packet sizes: a full 8-player snapshot fits in one packet.
+///   5. Packet sizes: a full 32-player snapshot fits in one packet (more in SelfTestLobbies.cs).
 ///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
 ///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
@@ -64,6 +64,7 @@ public static partial class SelfTest
             Section("Bots", CheckBots);
             Section("Collision grid", CheckCollisionGrid); // SelfTestNav.cs
             Section("Map vote", CheckMapVote);
+            Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
@@ -118,8 +119,8 @@ public static partial class SelfTest
             var blocked = m.Spawns.Count(s => m.IsBlocked(s));
             var groundSpawns = m.Spawns.Count(s => s.Y == 0);
             Line($"{m.Id,2} {m.Name,-14} {m.Size,-6} {m.HalfX * 2:0}x{m.HalfZ * 2:0} m  boxes {m.Solid.Count,5}  spawns {m.Spawns.Count,2}  waypoints {m.Waypoints.Count,4}  materials {string.Join(",", mats.GroupBy(x => x).Select(g => $"{g.Key}:{g.Count()}"))}");
-            if (m.Spawns.Count < 8)
-                Fail($"{m.Name}: only {m.Spawns.Count} spawns (need 8 for a full server)");
+            if (m.Spawns.Count < m.WantedMaxPlayers)
+                Fail($"{m.Name}: only {m.Spawns.Count} spawns (need {m.WantedMaxPlayers} for a full server)");
             if (blocked > 0)
                 Fail($"{m.Name}: {blocked} spawn(s) still inside geometry");
             if (m.Waypoints.Count < 6)
@@ -397,7 +398,7 @@ public static partial class SelfTest
         {
             var sw = Stopwatch.StartNew();
             using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-                bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
+                bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
             game.MapVoteEnabled = false; // stay on this map for the whole test
             Game.SettleMemory(); // as the game does when a session starts (the 31 games before this one left garbage)
             const double dt = 1.0 / World.TickRate;
@@ -462,8 +463,8 @@ public static partial class SelfTest
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
-            if (bots.Count != Game.MaxPlayers - 1)
-                Fail($"{m.Name}: expected {Game.MaxPlayers - 1} bots, got {bots.Count}");
+            if (bots.Count != Game.ClassicPlayers - 1)
+                Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
                 Fail($"{m.Name}: no kills in 90 s with 7 bots");
             if (fallen > 0)
@@ -601,7 +602,7 @@ public static partial class SelfTest
         foreach (var m in Maps.All.Where((_, i) => i % 3 == 0))
         {
             using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-                bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Hard, mapId: m.Id);
+                bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Hard, mapId: m.Id);
             game.MapVoteEnabled = false;
             var now = 0.0;
             var worst = 0.0;
@@ -645,7 +646,7 @@ public static partial class SelfTest
         {
             var start = Maps.All[round == 0 ? 0 : round * 7];
             using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-                bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Hard, mapId: start.Id);
+                bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Hard, mapId: start.Id);
             const double dt = 1.0 / World.TickRate;
             var now = 0.0;
             byte[] ballot = [];
@@ -681,8 +682,8 @@ public static partial class SelfTest
                 Fail($"the ballot offered maps from outside the {pack.Name} pack");
             if (ballot.Select(id => Maps.Get(id).Size).Distinct().Count() < 3)
                 Fail("ballot doesn't offer one map of each size");
-            if (tally.Sum(t => t) != Game.MaxPlayers)
-                Fail($"expected {Game.MaxPlayers} votes (7 bots + host), got {tally.Sum(t => t)}");
+            if (tally.Sum(t => t) != Game.ClassicPlayers)
+                Fail($"expected {Game.ClassicPlayers} votes (7 bots + host), got {tally.Sum(t => t)}");
             if (!ballot.Contains(World.Map.Id))
                 Fail("next map wasn't one of the options");
             else if (tally[Array.IndexOf(ballot, World.Map.Id)] != tally.Max())
@@ -1935,37 +1936,21 @@ public static partial class SelfTest
 
     private static void CheckPackets()
     {
-        var w = new PacketWriter();
-        w.Begin(Msg.State).U32(1).U32(1).U8(0).F32(1).U8(0).U8(8);
-        for (var i = 0; i < 8; i++)
-        {
-            w.U8((byte)i).Vec(Vector3.One).Vec(Vector3.One).F32(0).F32(0).U8(100).U8(1).U16(0).U16(0).U8(0).U8(0).U8(0)
-                .U24(0xABCDEF).U24(0x123456).U8(3).Vec(Vector3.One).U8(1).U8(2).U8(3).U8(4);
-        }
-        var r = new PacketReader(w.Span[1..]);
-        r.U32();
-        r.U32();
-        r.U8();
-        r.F32();
-        r.U8();
-        r.U8();
-        for (var i = 0; i < 8; i++)
-        {
-            r.U8(); r.Vec(); r.Vec(); r.F32(); r.F32(); r.U8(); r.U8(); r.U16(); r.U16(); r.U8(); r.U8(); r.U8();
-            var k1 = r.U24();
-            var k2 = r.U24();
-            r.U8();
-            r.Vec();
-            r.U8(); r.U8(); r.U8(); r.U8();
-            if (k1 != 0xABCDEF || k2 != 0x123456)
-                Fail($"U24 round trip broke: {k1:X} {k2:X}");
-        }
-        var perPlayer = (w.Length - 16) / 8;
-        Line($"full 8-player snapshot: {w.Length} bytes (limit ~1400), {perPlayer} per player");
-        if (perPlayer != Game.SnapPlayerBytes)
-            Fail($"snapshot writes {perPlayer} bytes per player but the reader expects {Game.SnapPlayerBytes}");
-        if (w.Length > 1200)
-            Fail("snapshot too big for one packet");
+        // A full 32-player snapshot as the server builds it (everyone's fast entry, an eighth of the slow ones).
+        var fast = Enumerable.Range(0, Game.MaxPlayers).Select(i => new SnapPlayer { Id = (byte)i, Position = Vector3.One * i, Alive = true }).ToList();
+        var slow = fast.Where(f => f.Id % Game.SlowRefreshEvery == 0).Select(f => new SnapSlow { Id = f.Id, PrimaryKit = 0xABCDEF, SecondaryKit = 0x123456 }).ToList();
+        var parts = new List<PacketWriter>();
+        var n = Snapshot.Build(new SnapHeader { Present = uint.MaxValue }, new SnapOwn(), fast, 0, slow, parts);
+        var into = new Snapshot.Packet();
+        var r = new PacketReader(parts[0].Span[1..]);
+        Snapshot.Read(ref r, into);
+        if (into.Slow.Any(x => x.PrimaryKit != 0xABCDEF || x.SecondaryKit != 0x123456))
+            Fail("U24 round trip broke in the slow fields");
+        Line($"full {Game.MaxPlayers}-player snapshot: {parts[0].Length} bytes in {n} packet(s) (limit {PacketWriter.Mtu}), {Snapshot.FastBytes} per player + {Snapshot.SlowBytes} per slow entry");
+        if (n != 1 || parts[0].Length > PacketWriter.Mtu)
+            Fail("a 32-player snapshot doesn't fit one packet");
+        if (into.Fast.Count != Game.MaxPlayers)
+            Fail($"snapshot decoded {into.Fast.Count} players");
     }
 
     // ---- HUD layout ------------------------------------------------------------------------

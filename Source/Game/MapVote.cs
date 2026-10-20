@@ -45,7 +45,7 @@ public sealed partial class Game
 
         // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
         var pack = (Maps.Find(World.Map.Name) ?? World.Map).Pack is { } playedPack ? Maps.FindPack(playedPack.Name) : null;
-        var pool = VotePool(World.Map.Name, pack, Maps.All);
+        var pool = FitForPeople(VotePool(World.Map.Name, pack, Maps.All), HumanCount); // never a map too small for the people here
         var picks = new List<Map>();
         // One of each size first, so there's always a choice of pace...
         foreach (var size in new[] { MapSize.Small, MapSize.Medium, MapSize.Large })
@@ -95,14 +95,14 @@ public sealed partial class Game
             _botVotes.RemoveAt(i);
             if (!Players.ContainsKey(id))
                 continue;
-            // Few players: favour smaller maps. Full lobby: anything goes.
+            // Few players: favour smaller maps. Full lobby: anything goes. A map too small for everyone (bots would leave) rarely.
             var crowd = Players.Count;
             var weights = VoteOptions.Select(mid => Maps.Get(mid).Size switch
             {
                 MapSize.Small => crowd <= 4 ? 3.0 : 1.5,
                 MapSize.Medium => 2.0,
                 _ => crowd >= 6 ? 2.0 : 0.7,
-            }).ToArray();
+            } * (Maps.Get(mid).MaxPlayers >= crowd ? 1.0 : 0.3)).ToArray();
             var roll = _rng.NextDouble() * weights.Sum();
             var choice = 0;
             for (; choice < weights.Length - 1; choice++)
@@ -307,5 +307,6 @@ public sealed partial class Game
             if (p.Bot != null)
                 p.Bot.Waypoint = Vector3.Zero; // old map's waypoints are meaningless now
         }
+        FitPlayersToMap(); // server: bots leave a smaller map, or come back on a bigger one (GameLobby.cs)
     }
 }
