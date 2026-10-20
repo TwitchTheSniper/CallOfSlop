@@ -149,6 +149,8 @@ public static class World
         if (s.MantleTicks > 0)
         {
             s.Position += (s.MantleTo - s.Position) / s.MantleTicks;
+            if (Map.TerrainCollision is { } ground)
+                s.Position.Y = MathF.Max(s.Position.Y, ground.HeightAt(s.Position.X, s.Position.Z)); // don't cut through a bank's edge
             s.MantleTicks--;
             s.Velocity = Vector3.Zero;
             if (s.MantleTicks == 0)

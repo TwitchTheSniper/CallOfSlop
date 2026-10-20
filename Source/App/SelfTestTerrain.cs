@@ -320,7 +320,7 @@ public static partial class SelfTest
         var flat = Can(20, 32, 32, 36);
         var upRamp = Can(10, 28, 10, 4);
         var overBank = Can(2, 15, 18, 15);
-        var overHill = Can(-36, -20, -4, -20);
+        var overHill = Can(-36, -24, -4, -24); // over the hill's shoulder (the flattened top's rim is too steep)
         Line($"walkable: across the cliff {acrossCliff}, flat {flat}, up the ramp {upRamp}, over the causeway side {overBank}, over the hill {overHill}");
         if (acrossCliff || !flat || !upRamp || overBank || !overHill)
             Fail($"CanWalkStraight got a terrain case wrong: across the cliff {acrossCliff} (want False), flat {flat}, up the ramp {upRamp}, over the causeway side {overBank} (want False), over the hill {overHill}");
