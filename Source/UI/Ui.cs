@@ -119,13 +119,23 @@ public sealed partial class Ui : IDisposable
     // HUD
     // =====================================================================
 
+    /// <summary>
+    /// The HUD safe area in ImGui coordinates: centred on the screen, full height, and no wider than
+    /// the HUD width setting allows (see <see cref="HudLayout.Span"/>). Everything in the in-match HUD
+    /// that anchors to a screen edge anchors to this instead, so it stays readable on ultra-wide monitors.
+    /// </summary>
+    public static (float2 Pos, float2 Size) HudArea(HudWidth mode)
+    {
+        var vp = ImGui.GetMainViewport();
+        var (left, width) = HudLayout.Span(vp.WorkSize.X, vp.WorkSize.Y, mode);
+        return (new float2(vp.WorkPos.X + left, vp.WorkPos.Y), new float2(width, vp.WorkSize.Y));
+    }
+
     public void DrawHud(Game game, double now, string joinInfo, Settings settings)
     {
         var showNetStats = settings.ShowNetStats;
         string K(GameAction a) => Keybinds.Name(settings.Bind(a));
-        var vp = ImGui.GetMainViewport();
-        var pos = vp.WorkPos;
-        var size = vp.WorkSize;
+        var (pos, size) = HudArea(settings.HudWidth);
         var pad = 24 * _scale;
         var local = game.Local;
 
@@ -141,7 +151,9 @@ public sealed partial class Ui : IDisposable
                 ImGui.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
             else if (showNetStats)
                 ImGui.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
+            ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
             ImGui.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
+            ImGui.PopTextWrapPos();
         }
         ImGui.End();
 
@@ -355,7 +367,7 @@ public sealed partial class Ui : IDisposable
     private void DrawResults(Game game, float2 pos, float2 size)
     {
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.42f), ImGuiCond.Always, new float2(0.5f, 0.5f));
-        ImGui.SetNextWindowSize(new float2(640 * _scale, 0));
+        ImGui.SetNextWindowSize(new float2(MathF.Min(640 * _scale, size.X - 16 * _scale), 0));
         ImGui.SetNextWindowBgAlpha(0.9f);
         if (ImGui.Begin("##results"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove))
         {
@@ -434,7 +446,7 @@ public sealed partial class Ui : IDisposable
     private void DrawScoreboard(Game game, float2 size, float2 pos)
     {
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
-        ImGui.SetNextWindowSize(new float2(620 * _scale, 0));
+        ImGui.SetNextWindowSize(new float2(MathF.Min(620 * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
         {
             ImGui.TextColored(Orange, "SCOREBOARD"u8);

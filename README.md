@@ -26,7 +26,7 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | **Single player** | You against 1-7 bots (Easy, Normal or Hard). Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, VSync. **Audio:** master volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, VSync. **Audio:** master volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -190,6 +190,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 - **Borderless fullscreen:** a frameless window covering the monitor at its native resolution. Alt-tab is instant.
 - **Fullscreen:** exclusive fullscreen at the resolution you choose.
 - **UI scale:** menus and HUD scale with the window height automatically (about 1.2x at 1080p, 1.6x at 1440p). The slider adjusts on top of that, from 0.6x to 2x, and applies when you let go.
+- **HUD width:** on ultra-wide monitors the in-match HUD (session info, kill feed, health, ammo, match bar, banners, scoreboard) stays inside a centred area so it's easy to read. **16:9** (default) keeps it 2560 px wide on a 3440x1440 or 5120x1440 screen; **21:9** allows 3360 px; **Full width** uses the screen edges. On 16:9 or narrower screens all three are the same. The crosshair is always centred, and the scope and damage effects always cover the whole screen.
 
 ### Stances
 
