@@ -172,8 +172,9 @@ public sealed class Mover
         var blend = grounded ? 0.20839f : 0.04877f; // 1 - exp(-14/60), 1 - exp(-3/60), precomputed (no CRT exp)
         var rx = v.X - ground.X;
         var rz = v.Z - ground.Z;
-        // Don't let input push us up slopes steeper than 45 degrees (gravity still slides us down them).
-        var desired = Ch.CancelVelocityTowardsSteepSlopes(wish * speed);
+        // Note: no CancelVelocityTowardsSteepSlopes here. ExtendedUpdate does it itself, and cancelling first
+        // removes the push into a step face that WalkStairs needs (steps above the capsule radius stop working).
+        var desired = wish * speed;
         rx += (desired.X - rx) * blend;
         rz += (desired.Z - rz) * blend;
 
