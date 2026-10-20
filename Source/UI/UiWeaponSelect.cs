@@ -292,7 +292,7 @@ public sealed partial class Ui
         else
             DlText(dl, new float2(lx, statsTop + 7 * _scale), Dim8, $"STATS COMPARED TO {WeaponSelect.UpperName(equipped)}");
         var bx0 = pos.X + 120 * _scale;
-        var bx1 = pos.X + statsW - 118 * _scale;
+        var bx1 = pos.X + statsW - 128 * _scale;
         var fh = ImGui.GetFontSize();
         for (var i = 0; i < WeaponSelect.StatCount; i++)
         {
