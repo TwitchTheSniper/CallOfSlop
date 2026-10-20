@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType> <!-- no console window; output goes to callofslop.log -->
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>CallOfSlop</RootNamespace>
+    <AssemblyName>CallOfSlop</AssemblyName>
+    <!-- The BRUTAL natives ship for win-x64 and linux-x64. -->
+    <PlatformTarget>x64</PlatformTarget>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Windowing + input -->
+    <PackageReference Include="Ahwoo.BRUTAL.Glfw" Version="2026.10.4" />
+    <!-- Rendering (OpenGL 4.1 core via GLAD) -->
+    <PackageReference Include="Ahwoo.BRUTAL.OpenGl" Version="2026.10.1" />
+    <!-- Networking -->
+    <PackageReference Include="Ahwoo.BRUTAL.RakNet" Version="2026.10.2" />
+    <!-- Loadout menu + HUD text (Dear ImGui with GLFW/OpenGL backends) -->
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui.Backends" Version="2026.10.2" />
+    <!-- 3D weapon audio (OpenAL Soft) -->
+    <PackageReference Include="Ahwoo.BRUTAL.OpenAl" Version="2026.10.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- BRUTAL licence section 2.3: ship NOTICE.txt alongside the product. -->
+    <None Include="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Maps are data files: everything in Maps\ is copied next to the game and loaded at startup. -->
+    <None Update="Maps\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

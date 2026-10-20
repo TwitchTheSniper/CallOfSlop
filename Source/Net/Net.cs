@@ -1,0 +1,315 @@
+using System.Buffers.Binary;
+using System.Numerics;
+using System.Text;
+using Brutal.RakNetApi;
+
+namespace CallOfSlop;
+
+/// <summary>Game message ids. RakNet reserves everything below ID_USER_PACKET_ENUM.</summary>
+public enum Msg : byte
+{
+    Welcome = (byte)DefaultMessageIDTypes.UserPacketEnum, // server -> client: your player id
+    Input, // client -> server: the last few input commands, redundantly (unreliable sequenced)
+    Fire, // client -> server: shot origin + direction + the tick the shooter was seeing (reliable)
+    State, // server -> each client: snapshot of every player + input ack (unreliable sequenced)
+    Shot, // server -> all: tracer + hit result (reliable)
+    Kill, // server -> all: killer / victim / weapon (reliable)
+    Loadout, // client -> server: chosen primary + secondary (reliable)
+    Reload, // client -> server: started reloading (for others to hear)
+    ReloadFx, // server -> all: player X is reloading weapon Y
+    Throw, // client -> server: throw grenade/equipment (kind, origin, direction)
+    ProjSpawn, // server -> all: a projectile was thrown (id, kind, owner, position, velocity)
+    Explode, // server -> all: a projectile went off (id, kind, owner, position, hit flags for the owner)
+    MatchEnd, // server -> all: winner id + result text (reliable)
+    MatchStart, // server -> all: a fresh match began (reliable)
+    Hello, // client -> server: my name (reliable)
+    Roster, // server -> all: id / bot flag / name for every player (reliable)
+    Respawn, // client -> server: I'm done picking my loadout, spawn me (reliable)
+    MapVote, // client -> server: my vote for the next map (option index)
+    VoteState, // server -> all: the ballot (map ids) and the current tally
+    Melee, // client -> server: I swung (yaw, pitch, the tick I was seeing)
+    MeleeFx, // server -> all: player X swung (hit / kill / backstab flags, victim)
+}
+
+/// <summary>Tiny little-endian packet writer.</summary>
+public sealed class PacketWriter
+{
+    private readonly byte[] _buf = new byte[1400];
+    public int Length { get; private set; }
+
+    public PacketWriter Begin(Msg id)
+    {
+        Length = 0;
+        return U8((byte)id);
+    }
+
+    public PacketWriter U8(byte v)
+    {
+        _buf[Length++] = v;
+        return this;
+    }
+
+    /// <summary>Short text: a length byte then up to 255 UTF-8 bytes.</summary>
+    public PacketWriter Str(string s)
+    {
+        var bytes = Encoding.UTF8.GetBytes(s);
+        var n = Math.Min(bytes.Length, 255);
+        U8((byte)n);
+        for (var i = 0; i < n; i++)
+            U8(bytes[i]);
+        return this;
+    }
+
+    /// <summary>Low 24 bits (attachment kits).</summary>
+    public PacketWriter U24(uint v) => U8((byte)v).U8((byte)(v >> 8)).U8((byte)(v >> 16));
+
+    public PacketWriter U16(ushort v)
+    {
+        BinaryPrimitives.WriteUInt16LittleEndian(_buf.AsSpan(Length), v);
+        Length += 2;
+        return this;
+    }
+
+    public PacketWriter U32(uint v)
+    {
+        BinaryPrimitives.WriteUInt32LittleEndian(_buf.AsSpan(Length), v);
+        Length += 4;
+        return this;
+    }
+
+    public PacketWriter F32(float v)
+    {
+        BinaryPrimitives.WriteSingleLittleEndian(_buf.AsSpan(Length), v);
+        Length += 4;
+        return this;
+    }
+
+    public PacketWriter Vec(Vector3 v) => F32(v.X).F32(v.Y).F32(v.Z);
+
+    public ReadOnlySpan<byte> Span => _buf.AsSpan(0, Length);
+}
+
+/// <summary>Tiny little-endian packet reader.</summary>
+public ref struct PacketReader(ReadOnlySpan<byte> data)
+{
+    private readonly ReadOnlySpan<byte> _data = data;
+    private int _pos = 0;
+
+    public bool Has(int bytes) => _pos + bytes <= _data.Length;
+
+    public byte U8() => _data[_pos++];
+
+    public string Str()
+    {
+        int n = U8();
+        n = Math.Min(n, _data.Length - _pos);
+        var s = Encoding.UTF8.GetString(_data.Slice(_pos, n));
+        _pos += n;
+        return s;
+    }
+
+    public uint U24()
+    {
+        uint a = U8(), b = U8(), c = U8();
+        return a | (b << 8) | (c << 16);
+    }
+
+    public ushort U16()
+    {
+        var v = BinaryPrimitives.ReadUInt16LittleEndian(_data[_pos..]);
+        _pos += 2;
+        return v;
+    }
+
+    public uint U32()
+    {
+        var v = BinaryPrimitives.ReadUInt32LittleEndian(_data[_pos..]);
+        _pos += 4;
+        return v;
+    }
+
+    public float F32()
+    {
+        var v = BinaryPrimitives.ReadSingleLittleEndian(_data[_pos..]);
+        _pos += 4;
+        return v;
+    }
+
+    public Vector3 Vec() => new(F32(), F32(), F32());
+}
+
+/// <summary>
+/// Thin wrapper around a BRUTAL RakNet peer. One instance acts either as the listen-server (host)
+/// or as a client connected to it.
+/// </summary>
+public sealed unsafe class NetPeer : IDisposable
+{
+    public delegate void PacketHandler(RakNetGUID sender, ReadOnlySpan<byte> data);
+
+    private RakPeerInstance _peer;
+    public bool IsServer { get; }
+
+    /// <summary>Single player: a server with no sockets. Every send is a no-op.</summary>
+    public bool IsOffline { get; }
+
+    public RakNetGUID ServerGuid { get; private set; } = RakNetGUID.UNASSIGNED_RAKNET_GUID;
+
+    private NetPeer(bool isServer, bool offline = false)
+    {
+        IsServer = isServer;
+        IsOffline = offline;
+        if (offline)
+            return;
+        _peer = RakNetLibrary.CreateInstance();
+        if (_peer.IsNull())
+            throw new InvalidOperationException("RakNet: CreateInstance returned null.");
+    }
+
+    public static NetPeer Offline() => new(true, offline: true);
+
+    public static NetPeer Host(ushort port, ushort maxClients)
+    {
+        var net = new NetPeer(true);
+        SocketDescriptor[] sockets = [new SocketDescriptor(port)];
+        var result = net._peer.Startup(maxClients, sockets);
+        if (result != StartupResult.RaknetStarted)
+            throw new InvalidOperationException($"RakNet: failed to start server on port {port}: {result}");
+        net._peer.SetMaximumIncomingConnections(maxClients);
+        net._peer.SetOccasionalPing(true);
+        return net;
+    }
+
+    public static NetPeer Join(string host, ushort port)
+    {
+        var net = new NetPeer(false);
+        SocketDescriptor[] sockets = [new SocketDescriptor()];
+        var result = net._peer.Startup(1, sockets);
+        if (result != StartupResult.RaknetStarted)
+            throw new InvalidOperationException($"RakNet: failed to start client: {result}");
+
+        var hostBytes = Encoding.ASCII.GetBytes(host + "\0"); // native side expects a C string
+        var attempt = net._peer.Connect(hostBytes, port, ReadOnlySpan<byte>.Empty, null);
+        if (attempt != ConnectionAttemptResult.ConnectionAttemptStarted)
+            throw new InvalidOperationException($"RakNet: could not connect to {host}:{port}: {attempt}");
+        return net;
+    }
+
+    /// <summary>Drains every packet RakNet has queued and hands it to <paramref name="handler"/>.</summary>
+    public void Poll(PacketHandler handler)
+    {
+        if (IsOffline)
+            return;
+        for (var packet = _peer.Receive(); packet != null; packet = _peer.Receive())
+        {
+            try
+            {
+                if (packet->Length > 0)
+                {
+                    var data = new ReadOnlySpan<byte>(packet->Data, (int)packet->Length);
+                    if (!IsServer && data[0] == (byte)DefaultMessageIDTypes.ConnectionRequestAccepted)
+                        ServerGuid = packet->Guid;
+                    handler(packet->Guid, data);
+                }
+            }
+            finally
+            {
+                _peer.DeallocatePacket(packet);
+            }
+        }
+    }
+
+    // ---- Discovery (server browser, LAN broadcast, master server) ---------------------------
+
+    public delegate void RawPacketHandler(SystemAddress from, ReadOnlySpan<byte> data);
+
+    /// <summary>A socket-only peer for the server browser: no connections, just pings and adverts.</summary>
+    public static NetPeer Discovery()
+    {
+        var net = new NetPeer(false);
+        SocketDescriptor[] sockets = [new SocketDescriptor()];
+        var result = net._peer.Startup(4, sockets);
+        if (result != StartupResult.RaknetStarted)
+            throw new InvalidOperationException($"RakNet: failed to start discovery socket: {result}");
+        return net;
+    }
+
+    /// <summary>Like <see cref="Poll"/>, but hands over the sender's address (for unconnected messages).</summary>
+    public void PollRaw(RawPacketHandler handler)
+    {
+        if (IsOffline)
+            return;
+        for (var packet = _peer.Receive(); packet != null; packet = _peer.Receive())
+        {
+            try
+            {
+                if (packet->Length > 0)
+                    handler(packet->SystemAddress, new ReadOnlySpan<byte>(packet->Data, (int)packet->Length));
+            }
+            finally
+            {
+                _peer.DeallocatePacket(packet);
+            }
+        }
+    }
+
+    /// <summary>Unconnected ping; the reply (ID_UNCONNECTED_PONG) carries the target's offline ping response. Use 255.255.255.255 for the LAN.</summary>
+    public void PingHost(string host, ushort port)
+    {
+        if (IsOffline)
+            return;
+        var hostBytes = Encoding.ASCII.GetBytes(host + "\0");
+        _peer.Ping(hostBytes, port, false, 0);
+    }
+
+    /// <summary>Sends an unconnected ID_ADVERTISE_SYSTEM message carrying <paramref name="data"/>.</summary>
+    public void Advertise(string host, ushort port, ReadOnlySpan<byte> data)
+    {
+        if (IsOffline)
+            return;
+        var hostBytes = Encoding.ASCII.GetBytes(host + "\0");
+        _peer.AdvertiseSystem(hostBytes, port, data, 0);
+    }
+
+    /// <summary>What this peer answers to unconnected pings (server name, map, player count...).</summary>
+    public void SetOfflineInfo(ReadOnlySpan<byte> data)
+    {
+        if (!IsOffline)
+            _peer.SetOfflinePingResponse(data);
+    }
+
+    public void SendTo(RakNetGUID target, ReadOnlySpan<byte> data, PacketReliability reliability)
+    {
+        if (!IsOffline)
+            _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.From(target), false);
+    }
+
+    public void Broadcast(ReadOnlySpan<byte> data, PacketReliability reliability)
+    {
+        if (!IsOffline)
+            _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.UnassignedGuid, true);
+    }
+
+    public void SendToServer(ReadOnlySpan<byte> data, PacketReliability reliability) =>
+        SendTo(ServerGuid, data, reliability);
+
+    public int PingTo(RakNetGUID target) => IsOffline ? 0 : _peer.GetAveragePing(AddressOrGUID.From(target));
+
+    public int ConnectionCount => IsOffline ? 0 : _peer.NumberOfConnections();
+
+    /// <summary>Adds fake latency/loss to everything this peer sends (testing only). Returns false if RakNet was built without it.</summary>
+    public bool SimulateBadNetwork(int extraPingMs, int jitterMs, float lossPercent)
+    {
+        if (IsOffline)
+            return false;
+        _peer.ApplyNetworkSimulator(lossPercent / 100f, (ushort)Math.Clamp(extraPingMs, 0, 2000), (ushort)Math.Clamp(jitterMs, 0, 2000));
+        return _peer.IsNetworkSimulatorActive();
+    }
+
+    public void Dispose()
+    {
+        if (IsOffline || _peer.IsNull())
+            return;
+        _peer.Shutdown(300);
+        _peer.Dispose();
+    }
+}

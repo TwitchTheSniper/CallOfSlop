@@ -1,2 +1,21 @@
-# Auto detect text files and perform LF normalization
+# Store text with LF in the repository; Git converts to your platform's line endings on checkout.
 * text=auto
+
+# Windows batch files must keep CRLF or cmd.exe misreads them.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Source, data and docs
+*.cs     text diff=csharp
+*.csproj text
+*.json   text
+*.md     text
+*.txt    text
+
+# Binary files (never touch line endings, no text diffs)
+*.png binary
+*.jpg binary
+*.bmp binary
+*.zip binary
+*.dll binary
+*.exe binary

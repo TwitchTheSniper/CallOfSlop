@@ -1,0 +1,640 @@
+using Brutal.GlfwApi;
+using Brutal.ImGuiApi;
+using Brutal.ImGuiApi.Backends;
+using Brutal.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// Dear ImGui (Brutal.ImGui + its GLFW/OpenGL backends) for the loadout menu and HUD text.
+/// </summary>
+public sealed partial class Ui : IDisposable
+{
+    private GlfwBackend? _platform;
+    private OpenGlBackend? _renderer;
+    private float _scale = 1f;
+    private GlfwWindow? _window;
+    private ImGuiStyle _baseStyle; // unscaled style, so rescaling never compounds
+
+    /// <summary>The player's UI scale setting (multiplies the automatic, resolution-based scale).</summary>
+    public float UserScale = 1f;
+
+    /// <summary>Total scale currently applied (also used for HUD bars drawn outside ImGui).</summary>
+    public float Scale => _scale;
+
+    public bool MenuOpen = true; // open on launch so you pick a loadout first
+    public bool ShowScoreboard;
+
+    private AttachmentDef? _hoverAttachment;
+    private WeaponDef? _hover;
+    private string _lastNotice = "";
+    private double _noticeTime;
+
+    private static readonly float4 Orange = new(0.95f, 0.55f, 0.18f, 1f);
+    private static readonly float4 Dim = new(0.65f, 0.65f, 0.7f, 1f);
+    private static readonly float4 Red = new(1f, 0.35f, 0.35f, 1f);
+    private static readonly float4 Green = new(0.4f, 1f, 0.5f, 1f);
+
+    private const ImGuiWindowFlags Overlay =
+        ImGuiWindowFlags.NoDecoration
+        | ImGuiWindowFlags.NoInputs
+        | ImGuiWindowFlags.NoBackground
+        | ImGuiWindowFlags.AlwaysAutoResize
+        | ImGuiWindowFlags.NoSavedSettings
+        | ImGuiWindowFlags.NoFocusOnAppearing
+        | ImGuiWindowFlags.NoNav
+        | ImGuiWindowFlags.NoMove;
+
+    public unsafe void Init(GlfwWindow window)
+    {
+        _window = window;
+        ImGui.CreateContext();
+        var io = ImGui.GetIO();
+        io.IniFilename = default; // don't write imgui.ini next to the game
+
+        ImGui.StyleColorsDark();
+        _baseStyle = *ImGui.GetStyle().Ptr;
+        _scale = 0; // forces the first ApplyScale
+
+        _platform = new GlfwBackend(window, GlfwBackend.ClientApi.OpenGL);
+        _renderer = new OpenGlBackend();
+    }
+
+    /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
+    private float TargetScale()
+    {
+        var h = _window?.FramebufferSize.Y ?? 900;
+        var auto = Math.Clamp(h / 900f, 0.8f, 3f);
+        return Math.Clamp(auto * UserScale, 0.6f, 5f);
+    }
+
+    private unsafe void ApplyScale(float scale)
+    {
+        var style = ImGui.GetStyle();
+        *style.Ptr = _baseStyle;
+        style.ScaleAllSizes(scale);
+        style.FontScaleMain = scale;
+        _scale = scale;
+    }
+
+    public bool WantsMouse => ImGui.GetIO().WantCaptureMouse;
+
+    public bool WantsTextInput => ImGui.GetIO().WantTextInput;
+
+    public void BeginFrame()
+    {
+        var target = TargetScale();
+        if (MathF.Abs(target - _scale) > 0.01f)
+            ApplyScale(target); // between frames, so ImGui never sees a half-changed style
+        _platform!.NewFrame();
+        _renderer!.NewFrame();
+        ImGui.NewFrame();
+        _loadoutDrawn = false;
+    }
+
+    public void EndFrame()
+    {
+        if (!_loadoutDrawn)
+        {
+            Preview = null; // the loadout screen closed: no gun previews to draw
+            Thumbs.Clear();
+        }
+        ImGui.Render();
+        _renderer!.RenderDrawData(ImGui.GetDrawData());
+        ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
+    }
+
+    /// <summary>The local player's progression (set by Program).</summary>
+    public Progress Progress = new();
+    private ThrowableDef? _hoverThrowable;
+
+    /// <summary>Opens the loadout screen in a match (on the overview of the loadout you're using).</summary>
+    public void OpenMenu(Game game)
+    {
+        MenuOpen = true;
+        ResetLoadoutScreen();
+    }
+
+    // =====================================================================
+    // HUD
+    // =====================================================================
+
+    public void DrawHud(Game game, double now, string joinInfo, Settings settings)
+    {
+        var showNetStats = settings.ShowNetStats;
+        string K(GameAction a) => Keybinds.Name(settings.Bind(a));
+        var vp = ImGui.GetMainViewport();
+        var pos = vp.WorkPos;
+        var size = vp.WorkSize;
+        var pad = 24 * _scale;
+        var local = game.Local;
+
+        // ---- Top-left: session info -------------------------------------------------
+        ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + pad));
+        if (ImGui.Begin("##info"u8, Overlay))
+        {
+            ImGui.TextColored(Orange, "CALL OF SLOP"u8);
+            ImGui.TextColored(Dim, $"Map: {World.Map.Name}");
+            if (game.Net.IsOffline)
+                ImGui.TextColored(Dim, $"Single player - {game.Players.Count - 1} bots");
+            else if (game.IsServer)
+                ImGui.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
+            else if (showNetStats)
+                ImGui.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
+            ImGui.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
+        }
+        ImGui.End();
+
+        // ---- Top-right: kill feed -----------------------------------------------------
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + pad), ImGuiCond.Always, new float2(1, 0));
+        if (ImGui.Begin("##feed"u8, Overlay))
+        {
+            foreach (var f in game.Feed)
+                ImGui.TextColored(f.Mine ? Orange : new float4(1, 1, 1, 0.9f), f.Text);
+        }
+        ImGui.End();
+
+        DrawMatchBar(game, pos, size);
+        if (game.Phase == MatchPhase.Ended)
+        {
+            DrawResults(game, pos, size);
+            return;
+        }
+
+        if (local == null)
+        {
+            CenterText(size, pos, game.Status, 0.5f);
+            CenterText(size, pos, "Press Esc to cancel", 0.56f);
+            return;
+        }
+
+        // ---- Bottom-right: weapon + ammo ---------------------------------------------------
+        var w = game.Active;
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 40 * _scale), ImGuiCond.Always, new float2(1, 1));
+        if (ImGui.Begin("##ammo"u8, Overlay))
+        {
+            ImGui.PushFont(default, 28);
+            var reload = game.ReloadProgress(now);
+            if (reload >= 0)
+                ImGui.TextColored(Orange, $"RELOADING {reload * 100:0}%");
+            else
+                ImGui.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), $"{w.Ammo} / {w.Def.Mag}");
+            ImGui.PopFont();
+            ImGui.Text($"{w.Def.Name}");
+            ImGui.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{(game.ActiveSlot == 0 ? "1" : "2")}]");
+            var other = game.Slots[1 - game.ActiveSlot];
+            ImGui.TextColored(Dim, $"[{(game.ActiveSlot == 0 ? "2" : "1")}] {other.Def.Name}  {other.Ammo}/{other.Def.Mag}");
+            if (game.LocalGrenade != ThrowableKind.None)
+                ImGui.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
+                    $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
+            if (game.LocalEquipment != ThrowableKind.None)
+                ImGui.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
+                    $"[{K(GameAction.Equipment)}] {Throwables.Get(game.LocalEquipment).Name} x{game.EquipmentLeft}");
+        }
+        ImGui.End();
+
+        // ---- Bottom-left: health number ---------------------------------------------
+        ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + size.Y - pad - 46 * _scale), ImGuiCond.Always, new float2(0, 1));
+        if (ImGui.Begin("##hp"u8, Overlay))
+        {
+            ImGui.PushFont(default, 24);
+            ImGui.TextColored(local.Health > 35 ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
+            ImGui.PopFont();
+            ImGui.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
+            ImGui.ProgressBar(Progress.LevelFraction, new float2(220 * _scale, 6 * _scale), ""u8);
+            ImGui.PopStyleColor();
+            ImGui.TextColored(Dim, Progress.Level >= CallOfSlop.Progress.MaxLevel
+                ? $"Level {Progress.Level} (max)"
+                : $"Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
+            if (local.Alive)
+                ImGui.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
+                {
+                    Stance.Crouch => "CROUCHED",
+                    Stance.Prone => "PRONE",
+                    _ => "STANDING",
+                });
+            // Perks: lit up while their situation is happening.
+            if (local.Alive)
+            {
+                foreach (var cat in new[] { PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage })
+                {
+                    var id = local.Perks[cat];
+                    if (id == PerkId.None)
+                        continue;
+                    var c = Perks.Color(cat);
+                    var active = PerkActive(local, id);
+                    ImGui.TextColored(active ? new float4(c.X, c.Y, c.Z, 1f) : new float4(c.X, c.Y, c.Z, 0.45f),
+                        active ? $"{Perks.Get(id).Name}  ACTIVE" : Perks.Get(id).Name);
+                }
+            }
+        }
+        ImGui.End();
+
+        if (now - game.PerkBannerTime < 3 && game.PerkBanner.Length > 0)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+            if (ImGui.Begin("##perkbanner"u8, Overlay))
+            {
+                ImGui.PushFont(default, 24);
+                ImGui.TextColored(new float4(0.4f, 0.95f, 0.5f, (float)Math.Clamp(3 - (now - game.PerkBannerTime), 0, 1)), game.PerkBanner);
+                ImGui.PopFont();
+            }
+            ImGui.End();
+        }
+
+        // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
+        var prog = Progress;
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2 + 60 * _scale, pos.Y + size.Y / 2 - 20 * _scale), ImGuiCond.Always, new float2(0, 0.5f));
+        if (ImGui.Begin("##xp"u8, Overlay))
+        {
+            foreach (var x in prog.Popups)
+            {
+                var age = now - x.Time;
+                if (age > 2.2)
+                    continue;
+                var alpha = (float)Math.Clamp(2.2 - age, 0, 1);
+                ImGui.TextColored(new float4(1f, 0.85f, 0.3f, alpha), $"+{x.Amount} {x.Text}");
+            }
+        }
+        ImGui.End();
+        if (now - prog.LevelUpTime < 5)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.18f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+            if (ImGui.Begin("##levelup"u8, Overlay))
+            {
+                ImGui.PushFont(default, 26);
+                ImGui.TextColored(Orange, prog.LevelUpBanner);
+                ImGui.PopFont();
+            }
+            ImGui.End();
+        }
+
+        if (now - prog.AttachmentBannerTime < 4)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.24f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+            if (ImGui.Begin("##attachunlock"u8, Overlay))
+                ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"NEW ATTACHMENT  -  {prog.AttachmentBanner}");
+            ImGui.End();
+        }
+
+        // ---- Centre messages --------------------------------------------------------
+        if (!local.Alive && !MenuOpen)
+        {
+            var wait = game.RespawnWait(now);
+            CenterText(size, pos, game.RespawnRequested
+                ? wait > 0 ? $"Respawning in {wait:0.0} s..." : "Respawning..."
+                : $"Press {K(GameAction.Loadout)} to pick your loadout and respawn", 0.38f);
+        }
+
+        if (game.LoadoutNotice != _lastNotice)
+        {
+            _lastNotice = game.LoadoutNotice;
+            _noticeTime = now;
+        }
+        if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
+            CenterText(size, pos, _lastNotice, 0.75f);
+
+        if (ShowScoreboard)
+            DrawScoreboard(game, size, pos);
+    }
+
+    /// <summary>Top-centre: clock, your score vs the best other score, and the win condition.</summary>
+    private void DrawMatchBar(Game game, float2 pos, float2 size)
+    {
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + 12 * _scale), ImGuiCond.Always, new float2(0.5f, 0));
+        ImGui.SetNextWindowBgAlpha(0.45f);
+        if (ImGui.Begin("##match"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize
+                                    | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav))
+        {
+            var t = Math.Max(0, (int)Math.Ceiling(game.TimeLeft));
+            var clock = $"{t / 60}:{t % 60:00}";
+            if (game.Phase == MatchPhase.Ended)
+            {
+                ImGui.TextColored(Dim, $"Next match in {clock}");
+            }
+            else if (game.Phase == MatchPhase.Countdown)
+            {
+                var text = t > 0 ? $"MATCH STARTS IN {t}" : "GO!";
+                ImGui.PushFont(default, 40);
+                ImGui.TextColored(Orange, text);
+                ImGui.PopFont();
+                ImGui.TextColored(Dim, MenuOpen ? "Pick your loadout - it deploys automatically at GO."u8 : "Get ready..."u8);
+                ImGui.TextColored(Dim, $"First to {Game.WinKills} kills, win by {Game.WinMargin}, {Game.MatchSeconds / 60:0} minutes max");
+            }
+            else
+            {
+                var me = game.Local;
+                var mine = me?.Kills ?? 0;
+                var bestOther = game.Players.Values.Where(p => p.Id != game.LocalId).Select(p => (int)p.Kills).DefaultIfEmpty(0).Max();
+                var leaderOther = game.Players.Values.Where(p => p.Id != game.LocalId).OrderByDescending(p => p.Kills).FirstOrDefault();
+
+                ImGui.PushFont(default, 24);
+                ImGui.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
+                ImGui.SameLine(0, 24 * _scale);
+                ImGui.TextColored(mine >= bestOther ? Green : new float4(1, 1, 1, 1), $"YOU {mine}");
+                ImGui.SameLine();
+                ImGui.TextColored(Dim, "-"u8);
+                ImGui.SameLine();
+                ImGui.TextColored(bestOther > mine ? Red : new float4(1, 1, 1, 1), $"{bestOther} {(leaderOther != null ? game.NameOf(leaderOther.Id) : "")}");
+                ImGui.PopFont();
+
+                var top = Math.Max(mine, bestOther);
+                var deuce = top >= WinKillsMinusOne && Math.Abs(mine - bestOther) < Game.WinMargin;
+                ImGui.TextColored(deuce ? Orange : Dim, deuce
+                    ? $"Win by {Game.WinMargin}!  ({Math.Max(Game.WinKills, top + 1)}+ kills and {Game.WinMargin} clear)"
+                    : $"First to {Game.WinKills} kills, win by {Game.WinMargin}");
+            }
+        }
+        ImGui.End();
+    }
+
+    private const int WinKillsMinusOne = Game.WinKills - 1;
+
+    /// <summary>End-of-match screen: who won, final scores, countdown to the next match.</summary>
+    private void DrawResults(Game game, float2 pos, float2 size)
+    {
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.42f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+        ImGui.SetNextWindowSize(new float2(640 * _scale, 0));
+        ImGui.SetNextWindowBgAlpha(0.9f);
+        if (ImGui.Begin("##results"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove))
+        {
+            var won = game.Winner == game.LocalId;
+            var draw = game.Winner == Game.NoWinner;
+            ImGui.PushFont(default, 48);
+            ImGui.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
+            ImGui.PopFont();
+            ImGui.Text(game.MatchResult.Length > 0 ? game.MatchResult : draw ? "No winner" : $"{game.NameOf(game.Winner)} wins");
+            ImGui.Spacing();
+            if (ImGui.BeginTable("##final"u8, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+            {
+                ImGui.TableSetupColumn("#"u8, ImGuiTableColumnFlags.WidthFixed, 30 * _scale);
+                ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("Kills"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableSetupColumn("Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableHeadersRow();
+                var rank = 1;
+                foreach (var p in game.Players.Values.OrderByDescending(q => q.Kills).ThenBy(q => q.Deaths))
+                {
+                    var c = p.Color;
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{rank++}");
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(new float4(c.X, c.Y, c.Z, 1), p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{p.Kills}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{p.Deaths}");
+                }
+                ImGui.EndTable();
+            }
+            ImGui.Spacing();
+            if (game.VoteOptions.Length > 0)
+            {
+                ImGui.SeparatorText("VOTE FOR THE NEXT MAP"u8);
+                var n = game.VoteOptions.Length;
+                var gap = ImGui.GetStyle().ItemSpacing.X;
+                var bw = (ImGui.GetContentRegionAvail().X - gap * (n - 1)) / n;
+                var lead = game.VoteTally.Length > 0 ? game.VoteTally.Max() : (byte)0;
+                for (var i = 0; i < n; i++)
+                {
+                    if (i > 0)
+                        ImGui.SameLine();
+                    var m = Maps.Find(game.VoteNames[i]);
+                    var votes = i < game.VoteTally.Length ? game.VoteTally[i] : 0;
+                    var mine = game.MyVote == i;
+                    if (mine)
+                        ImGui.PushStyleColor(ImGuiCol.Button, new float4(0.85f, 0.45f, 0.12f, 1f));
+                    var about = m != null ? $"{m.Size} - {m.SizeLabel}" : "(you don't have this map)";
+                    var label = $"[{i + 1}] {game.VoteNames[i]}\n{about}\n{votes} vote{(votes == 1 ? "" : "s")}{(votes > 0 && votes == lead ? "  (leading)" : "")}###vote{i}";
+                    if (ImGui.Button(label, new float2(bw, 78 * _scale)))
+                        game.CastVote(i);
+                    if (mine)
+                        ImGui.PopStyleColor();
+                }
+                ImGui.TextColored(Dim, $"Click a map or press 1-{n}. Voting closes in {Math.Ceiling(game.TimeLeft):0} s; ties are broken at random.");
+            }
+            else
+            {
+                ImGui.TextColored(Dim, $"Next match starts in {Math.Ceiling(game.TimeLeft):0} s on {World.Map.Name}.  Esc for the menu.");
+            }
+        }
+        ImGui.End();
+    }
+
+    private static void CenterText(float2 size, float2 pos, string text, float yFrac)
+    {
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * yFrac), ImGuiCond.Always, new float2(0.5f, 0.5f));
+        if (ImGui.Begin("##center" + yFrac, Overlay))
+            ImGui.Text(text);
+        ImGui.End();
+    }
+
+    private void DrawScoreboard(Game game, float2 size, float2 pos)
+    {
+        ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
+        ImGui.SetNextWindowSize(new float2(620 * _scale, 0));
+        if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.TextColored(Orange, "SCOREBOARD"u8);
+            if (ImGui.BeginTable("##scores"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+            {
+                ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("Kills"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableSetupColumn("Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableSetupColumn("Weapon"u8, ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("Status"u8, ImGuiTableColumnFlags.WidthFixed, 80 * _scale);
+                ImGui.TableHeadersRow();
+                foreach (var p in game.Players.Values.OrderByDescending(q => q.Kills).ThenBy(q => q.Deaths))
+                {
+                    var c = p.Color;
+                    var col = new float4(c.X, c.Y, c.Z, 1);
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(col, p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{p.Kills}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{p.Deaths}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text(p.WeaponDef.Name);
+                    ImGui.TableNextColumn();
+                    ImGui.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health} HP" : "dead");
+                }
+                ImGui.EndTable();
+            }
+        }
+        ImGui.End();
+    }
+
+    // =====================================================================
+    // Loadout menu
+    // =====================================================================
+
+    // ---- Gunsmith ---------------------------------------------------------------------
+
+    private void DrawGunsmithList(Audio audio, WeaponDef w)
+    {
+        var prog = Progress;
+        var wxp = prog.WeaponXp(w.Id);
+        var maxXp = Attachments.MaxXp(w);
+        var kit = KitOf(w);
+        var options = Attachments.For(w);
+        ImGui.TextColored(Orange, w.Name);
+        ImGui.TextColored(Dim, options.Count == 0
+            ? "This weapon takes no attachments."
+            : $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}  -  {options.Count(a => wxp >= Attachments.UnlockXp(w, a))} / {options.Count} attachments unlocked");
+        if (options.Count > 0)
+        {
+            ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
+            ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(-1, 6 * _scale), ""u8);
+            ImGui.PopStyleColor();
+            ImGui.TextColored(Dim, "Earn weapon XP with kills using this gun (+100, headshot +50) and +150 per match you carry it."u8);
+        }
+        AttachmentDef? hovered = null;
+        for (var si = 0; si < Attachments.SlotCount; si++)
+        {
+            var slot = (AttachSlot)si;
+            var inSlot = options.Where(a => a.Slot == slot).ToArray();
+            if (inSlot.Length == 0)
+                continue;
+            ImGui.SeparatorText(Attachments.SlotName(slot));
+            var current = Attachments.Slot(kit, slot);
+            if (ImGui.Selectable($"{(slot == AttachSlot.Optic ? "Iron sights" : "None")}##none{si}", current == 0))
+                SetKitOf(w, Attachments.With(kit, slot, 0));
+            foreach (var a in inSlot)
+            {
+                var need = Attachments.UnlockXp(w, a);
+                var unlocked = wxp >= need;
+                var label = unlocked ? $"{a.Name}##a{si}_{a.Index}" : $"[LOCKED] {a.Name}  -  {need:N0} weapon XP##a{si}_{a.Index}";
+                if (!unlocked)
+                    ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                if (ImGui.Selectable(label, current == a.Index) && unlocked)
+                {
+                    kit = Attachments.With(kit, slot, a.Index);
+                    SetKitOf(w, kit);
+                    audio.Effect(Sfx.HitTick, 0.4f);
+                }
+                if (!unlocked)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    hovered = a;
+            }
+        }
+        _hoverAttachment = hovered;
+    }
+
+    private void DrawGunsmithDetails(Audio audio, WeaponDef w)
+    {
+        var prog = Progress;
+        var kit = KitOf(w);
+        if (_hoverAttachment is { } a)
+        {
+            ImGui.PushFont(default, 22);
+            ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), a.Name);
+            ImGui.PopFont();
+            ImGui.TextColored(Dim, Attachments.SlotName(a.Slot));
+            ImGui.TextWrapped(a.Blurb);
+            foreach (var pro in a.Pros)
+                ImGui.TextColored(Green, $"+ {pro}");
+            foreach (var con in a.Cons)
+                ImGui.TextColored(Red, $"- {con}");
+            var need = Attachments.UnlockXp(w, a);
+            if (prog.WeaponXp(w.Id) < need)
+                ImGui.TextColored(Red, $"Locked - needs {need:N0} weapon XP on the {w.Name} ({prog.WeaponXp(w.Id):N0} so far, about {MathF.Ceiling((need - prog.WeaponXp(w.Id)) / 1000f)} more match(es)).");
+            ImGui.Separator();
+            ImGui.TextColored(Dim, "With this attachment:"u8);
+            DrawStats(audio, Attachments.Apply(w, Attachments.With(kit, a.Slot, a.Index)));
+        }
+        else
+        {
+            ImGui.TextColored(Dim, $"Equipped: {Attachments.Describe(kit)}");
+            ImGui.Separator();
+            DrawStats(audio, Attachments.Apply(w, kit));
+        }
+    }
+
+    private void DrawThrowable(ThrowableDef t)
+    {
+        ImGui.PushFont(default, 22);
+        ImGui.TextColored(Orange, t.Name);
+        ImGui.PopFont();
+        if (t.Kind == ThrowableKind.None)
+        {
+            ImGui.TextWrapped("Leave this slot empty."u8);
+            return;
+        }
+        ImGui.TextColored(Dim, t.IsEquipment ? "Equipment" : "Grenade");
+        ImGui.TextWrapped(t.Blurb);
+        ImGui.Spacing();
+        ImGui.Text($"Per life: {t.PerLife}");
+        if (t.MaxDamage > 0)
+        {
+            ImGui.Text($"Damage: up to {t.MaxDamage:0} (falls off to 0 at {t.Radius:0} m; walls block it)");
+            ImGui.Text($"Fuse: {(t.Kind == ThrowableKind.Impact ? "on impact" : $"{t.Fuse:0.0} s")}");
+        }
+        else
+        {
+            ImGui.Text($"Radius: {t.Radius:0} m");
+        }
+        if (!Progress.IsUnlocked(t.Kind))
+            ImGui.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(t.Kind)}.");
+        ImGui.Spacing();
+        ImGui.TextColored(Dim, t.IsEquipment ? "Use with F (rebindable)." : "Throw with G (rebindable).");
+    }
+
+    private void DrawStats(Audio audio, WeaponDef w)
+    {
+        ImGui.PushFont(default, 22);
+        ImGui.TextColored(Orange, w.Name);
+        ImGui.PopFont();
+        ImGui.TextColored(Dim, $"{w.ClassName} - {w.ModeName}{(w.Pellets > 1 ? $" - {w.Pellets} pellets" : "")}");
+        ImGui.TextWrapped(w.Blurb);
+        ImGui.Spacing();
+
+        Bar("Damage", (w.Damage * w.Pellets) / 140f, w.Pellets > 1 ? $"{w.Damage} x {w.Pellets}" : $"{w.Damage}");
+        Bar("Fire rate", w.Rpm / 1500f, $"{w.Rpm} rpm");
+        Bar("Damage / sec", w.Dps / 1100f, $"{w.Dps:0}");
+        Bar("Range", w.RangeM / 60f, $"{w.RangeM:0} m full damage");
+        Bar("Accuracy", 1f - Math.Clamp(w.HipSpreadDeg / 7.5f, 0f, 1f), $"{w.HipSpreadDeg:0.0} deg hip, {w.HipSpreadDeg * w.AdsSpreadMult:0.00} aimed");
+        Bar("Control", 1f - Math.Clamp(w.RecoilDeg / 5.5f, 0f, 1f), $"{w.RecoilDeg:0.0} deg kick");
+        Bar("Mobility", (w.Mobility - 0.7f) / 0.45f, $"{w.Mobility * 100:0}% speed");
+        Bar("Magazine", MathF.Min(w.Mag / 60f, 1f), $"{w.Mag} rounds");
+        Bar("Reload speed", 1f - Math.Clamp(w.Reload / 7.5f, 0f, 1f), $"{w.Reload:0.0} s");
+        Bar("Handling", 1f - Math.Clamp(w.EquipTime / 1.2f, 0f, 1f), $"{w.EquipTime:0.00} s draw");
+        Bar("Aim speed", 1f - Math.Clamp(w.AdsTime / 0.45f, 0f, 1f), $"{w.AdsTime:0.00} s to aim, {w.AdsZoom:0.0}x zoom");
+        if (w.Kit != 0)
+            ImGui.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"Attachments: {Attachments.Describe(w.Kit)}");
+
+        ImGui.Spacing();
+        ImGui.SeparatorText("Shots to kill"u8);
+        ImGui.Text($"Body {w.ShotsToKill(false)}   Head {w.ShotsToKill(true)}   (x{w.HeadMult:0.0} headshot)");
+        ImGui.TextColored(Dim, $"Damage per shot at 10 m: {w.Damage * w.Pellets * w.DamageMultAt(10):0}   25 m: {w.Damage * w.Pellets * w.DamageMultAt(25):0}   45 m: {w.Damage * w.Pellets * w.DamageMultAt(45):0}");
+
+        ImGui.Spacing();
+        if (ImGui.Button("Test fire"u8))
+            audio.Shot(w, null);
+        ImGui.SameLine();
+        if (ImGui.Button("Test reload"u8))
+            audio.Reload(w, null);
+        ImGui.SameLine();
+        if (ImGui.Button("Test equip"u8))
+            audio.Equip(w);
+    }
+
+    private void Bar(string label, float fraction, string value)
+    {
+        ImGui.Text(label);
+        ImGui.SameLine(130 * _scale);
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
+        ImGui.ProgressBar(Math.Clamp(fraction, 0.02f, 1f), new float2(-1, 0), value);
+        ImGui.PopStyleColor();
+    }
+
+    public void Dispose()
+    {
+        _renderer?.Dispose();
+        _platform?.Dispose();
+    }
+}

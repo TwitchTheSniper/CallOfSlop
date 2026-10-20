@@ -1,0 +1,260 @@
+namespace CallOfSlop;
+
+/// <summary>One loadout slot: two guns with their attachments, a grenade, a piece of equipment and three perks.</summary>
+public sealed class Loadout
+{
+    public string Name = "";
+    public byte Primary = Weapons.DefaultPrimary.Id;
+    public byte Secondary = Weapons.DefaultSecondary.Id;
+    public uint PrimaryKit, SecondaryKit;
+    public ThrowableKind Grenade, Equipment;
+    public PerkSet Perks = PerkSet.Empty;
+
+    public Loadout Clone() => (Loadout)MemberwiseClone();
+
+    public uint KitFor(int slot) => slot == 0 ? PrimaryKit : SecondaryKit;
+
+    public byte WeaponIn(int slot) => slot == 0 ? Primary : Secondary;
+}
+
+/// <summary>
+/// Your loadout slots, saved to loadout.txt next to the game. Slots unlock with level (see
+/// <see cref="Progress.LoadoutSlotLevel"/>); locked slots keep their contents for later.
+/// Each slot has its own attachments; the last build used on each gun is remembered too, so
+/// putting a gun into another slot starts with the attachments you like on it.
+/// </summary>
+public static class LoadoutStore
+{
+    private static string PathName => Path.Combine(AppContext.BaseDirectory, "loadout.txt");
+
+    public static readonly Loadout[] Slots = Enumerable.Range(0, Progress.MaxLoadoutSlots).Select(DefaultLoadout).ToArray();
+
+    /// <summary>The slot you spawn with.</summary>
+    public static int Selected;
+
+    /// <summary>Last attachments used on each weapon (the starting kit when a gun goes into a slot).</summary>
+    private static readonly Dictionary<byte, uint> LastKit = new();
+
+    /// <summary>Smoke test only: hands out full kits regardless of progress (nothing is saved).</summary>
+    public static Func<byte, uint>? SmokeKit;
+
+    /// <summary>The smoke test sets this so it never writes your loadout.txt.</summary>
+    public static bool ReadOnly;
+
+    public static string DefaultName(int slot) => $"Custom Loadout {slot + 1}";
+
+    private static Loadout DefaultLoadout(int slot) => new()
+    {
+        Name = DefaultName(slot),
+        Perks = new PerkSet(Perks.Starters[0], Perks.Starters[1], Perks.Starters[2]),
+    };
+
+    /// <summary>The selected slot as you'd actually spawn with it (locked items swapped for defaults).</summary>
+    public static Loadout Active(Progress progress)
+    {
+        Selected = Math.Clamp(Selected, 0, Math.Max(0, progress.LoadoutSlots - 1));
+        return Effective(Slots[Selected], progress);
+    }
+
+    /// <summary>A copy of <paramref name="l"/> with anything still locked replaced (after a level reset, say).</summary>
+    public static Loadout Effective(Loadout l, Progress progress)
+    {
+        var e = l.Clone();
+        var p = Weapons.Get(l.Primary);
+        var s = Weapons.Get(l.Secondary);
+        if (p.Slot != Slot.Primary || !progress.IsUnlocked(p))
+            p = Weapons.DefaultPrimary;
+        if (s.Slot != Slot.Secondary || !progress.IsUnlocked(s))
+            s = Weapons.DefaultSecondary;
+        e.Primary = p.Id;
+        e.Secondary = s.Id;
+        e.PrimaryKit = SmokeKit?.Invoke(p.Id) ?? Attachments.Sanitize(p, p.Id == l.Primary ? l.PrimaryKit : KitMemory(p.Id), progress);
+        e.SecondaryKit = SmokeKit?.Invoke(s.Id) ?? Attachments.Sanitize(s, s.Id == l.Secondary ? l.SecondaryKit : KitMemory(s.Id), progress);
+        if (!progress.IsUnlocked(e.Grenade) || Throwables.Get(e.Grenade).IsEquipment)
+            e.Grenade = ThrowableKind.None;
+        if (!progress.IsUnlocked(e.Equipment) || (e.Equipment != ThrowableKind.None && !Throwables.Get(e.Equipment).IsEquipment))
+            e.Equipment = ThrowableKind.None;
+        var perks = l.Perks.Sanitized();
+        foreach (var c in new[] { PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage })
+            if (!progress.IsUnlocked(perks[c]))
+                perks = perks.With(c, PerkId.None);
+        e.Perks = perks;
+        return e;
+    }
+
+    /// <summary>The attachments last used on a weapon.</summary>
+    public static uint KitMemory(byte weaponId) => LastKit.GetValueOrDefault(weaponId);
+
+    /// <summary>Puts a gun into a slot of a loadout, with the attachments last used on it.</summary>
+    public static void SetWeapon(Loadout l, int slot, byte weaponId, Progress progress)
+    {
+        var kit = Attachments.Sanitize(Weapons.Get(weaponId), KitMemory(weaponId), progress);
+        if (slot == 0)
+        {
+            l.Primary = weaponId;
+            l.PrimaryKit = kit;
+        }
+        else
+        {
+            l.Secondary = weaponId;
+            l.SecondaryKit = kit;
+        }
+    }
+
+    /// <summary>Changes the attachments on one of a loadout's guns (and remembers them for that gun).</summary>
+    public static void SetKit(Loadout l, int slot, uint kit)
+    {
+        if (slot == 0)
+            l.PrimaryKit = kit;
+        else
+            l.SecondaryKit = kit;
+        LastKit[l.WeaponIn(slot)] = kit;
+    }
+
+    // ---- Save file -----------------------------------------------------------------------
+    //
+    //   selected=2
+    //   loadout1.name=Rusher
+    //   loadout1.primary=Hornet SMG
+    //   loadout1.primary.kit=Red Dot, Suppressor
+    //   loadout1.secondary=P9 Sidearm
+    //   loadout1.secondary.kit=
+    //   loadout1.grenade=Frag
+    //   loadout1.equipment=None
+    //   loadout1.perks=Low Profile, Bloodthirst, Point Blank
+    //   kit.Hornet SMG=Red Dot, Suppressor      (last build per gun)
+    //
+    // Older files had one loadout (primary=..., secondary=..., grenade=..., equipment=...): it becomes slot 1.
+
+    public static void Load()
+    {
+        for (var i = 0; i < Slots.Length; i++)
+            Slots[i] = DefaultLoadout(i);
+        Selected = 0;
+        LastKit.Clear();
+        var fresh = !File.Exists(PathName);
+        try
+        {
+            if (!fresh)
+            {
+                foreach (var line in File.ReadAllLines(PathName))
+                {
+                    var parts = line.Split('=', 2);
+                    if (parts.Length != 2)
+                        continue;
+                    var key = parts[0].Trim();
+                    var value = parts[1].Trim();
+                    if (key == "selected" && int.TryParse(value, out var sel))
+                        Selected = Math.Clamp(sel, 0, Slots.Length - 1);
+                    else if (key.StartsWith("kit.") && Weapons.Find(key[4..]) is { } kw)
+                        LastKit[kw.Id] = Attachments.Sanitize(kw, ParseKit(value));
+                    else if (key.StartsWith("loadout") && key.IndexOf('.') is var dot and > 7
+                             && int.TryParse(key[7..dot], out var n) && n >= 1 && n <= Slots.Length)
+                        Apply(Slots[n - 1], key[(dot + 1)..], value);
+                    else
+                        Apply(Slots[0], key, value); // old single-loadout file
+                }
+            }
+        }
+        catch
+        {
+            // Unreadable file: defaults.
+        }
+        // Old files kept attachments per gun only: give each slot its gun's remembered build.
+        foreach (var l in Slots)
+        {
+            if (l.PrimaryKit == 0)
+                l.PrimaryKit = KitMemory(l.Primary);
+            if (l.SecondaryKit == 0)
+                l.SecondaryKit = KitMemory(l.Secondary);
+        }
+        // Brand-new players get the frag as soon as it unlocks.
+        if (fresh)
+            foreach (var l in Slots)
+                l.Grenade = ThrowableKind.Frag;
+    }
+
+    private static uint ParseKit(string value)
+    {
+        uint kit = 0;
+        foreach (var name in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            if (Attachments.Find(name) is { } a)
+                kit = Attachments.With(kit, a.Slot, a.Index);
+        return kit;
+    }
+
+    private static void Apply(Loadout l, string key, string value)
+    {
+        switch (key)
+        {
+            case "name":
+                l.Name = CleanName(value);
+                break;
+            case "primary" when Weapons.Find(value) is { Slot: Slot.Primary } w:
+                l.Primary = w.Id;
+                break;
+            case "secondary" when Weapons.Find(value) is { Slot: Slot.Secondary } w:
+                l.Secondary = w.Id;
+                break;
+            case "primary.kit":
+                l.PrimaryKit = Attachments.Sanitize(Weapons.Get(l.Primary), ParseKit(value));
+                break;
+            case "secondary.kit":
+                l.SecondaryKit = Attachments.Sanitize(Weapons.Get(l.Secondary), ParseKit(value));
+                break;
+            case "grenade" when Enum.TryParse<ThrowableKind>(value, out var g) && !Throwables.Get(g).IsEquipment:
+                l.Grenade = g;
+                break;
+            case "equipment" when Enum.TryParse<ThrowableKind>(value, out var e) && (e == ThrowableKind.None || Throwables.Get(e).IsEquipment):
+                l.Equipment = e;
+                break;
+            case "perks":
+            {
+                var set = PerkSet.Empty;
+                foreach (var name in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                    if (Perks.Find(name) is { } perk)
+                        set = set.With(perk.Category, perk.Id);
+                l.Perks = set;
+                break;
+            }
+        }
+    }
+
+    public static string CleanName(string name)
+    {
+        var clean = new string(name.Where(c => !char.IsControl(c) && c != '=').ToArray()).Trim();
+        return clean.Length == 0 ? "Loadout" : clean.Length > 24 ? clean[..24] : clean;
+    }
+
+    private static string KitText(uint kit) => string.Join(", ", Attachments.InKit(kit).Select(a => a.Name));
+
+    public static void Save()
+    {
+        if (ReadOnly)
+            return;
+        try
+        {
+            var lines = new List<string> { $"selected={Selected}" };
+            for (var i = 0; i < Slots.Length; i++)
+            {
+                var l = Slots[i];
+                var k = $"loadout{i + 1}.";
+                string PerkName(PerkId id) => id == PerkId.None ? "" : Perks.Get(id).Name;
+                lines.Add($"{k}name={l.Name}");
+                lines.Add($"{k}primary={Weapons.Get(l.Primary).Name}");
+                lines.Add($"{k}primary.kit={KitText(l.PrimaryKit)}");
+                lines.Add($"{k}secondary={Weapons.Get(l.Secondary).Name}");
+                lines.Add($"{k}secondary.kit={KitText(l.SecondaryKit)}");
+                lines.Add($"{k}grenade={l.Grenade}");
+                lines.Add($"{k}equipment={l.Equipment}");
+                lines.Add($"{k}perks={string.Join(", ", new[] { l.Perks.Movement, l.Perks.Survival, l.Perks.Damage }.Where(p => p != PerkId.None).Select(PerkName))}");
+            }
+            lines.AddRange(LastKit.Where(kv => kv.Value != 0).Select(kv => $"kit.{Weapons.Get(kv.Key).Name}={KitText(kv.Value)}"));
+            File.WriteAllLines(PathName, lines);
+        }
+        catch
+        {
+            // Read-only folder: not worth bothering the player about.
+        }
+    }
+}
