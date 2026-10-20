@@ -165,7 +165,9 @@ public static partial class SelfTest
         if (blocked.Count > 0)
             Fail($"{m.Name}: {blocked.Count} solid prop(s) in the way: {string.Join("; ", blocked.Take(4))}");
 
-        // Mirrored: every prop has its twin turned 180 degrees about the centre (same kind and size).
+        // Mirrored: every prop has its twin turned 180 degrees about the centre (same kind and size, the same height above
+        // the ground: the terrain's fine noise isn't mirrored, so absolute heights differ a little).
+        float Above(PropInstance p) => p.Position.Y - m.GroundHeight(p.Position.X, p.Position.Z);
         var unmatched = new List<string>();
         var used = new bool[props.Count];
         for (var i = 0; i < props.Count; i++)
@@ -181,7 +183,7 @@ public static partial class SelfTest
                 var b = props[j];
                 var turn = MathF.Abs(MathF.IEEERemainder(b.Yaw - a.Yaw - MathF.PI, MathF.Tau));
                 if (b.Def == a.Def && MathF.Abs(b.Position.X + a.Position.X) < 0.05f && MathF.Abs(b.Position.Z + a.Position.Z) < 0.05f
-                    && MathF.Abs(b.Position.Y - a.Position.Y) < 1f && turn < 0.02f && MathF.Abs(b.Scale - a.Scale) < 0.01f)
+                    && MathF.Abs(Above(b) - Above(a)) < 0.5f && turn < 0.02f && MathF.Abs(b.Scale - a.Scale) < 0.01f)
                     found = j;
             }
             if (found < 0)
