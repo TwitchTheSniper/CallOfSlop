@@ -474,6 +474,13 @@ public static class MoverPhysics
         }
     }
 
+    /// <summary>Bot navigation's ray cast: the grid's static boxes and terrain, plus every mover's sweep as a solid pillar.</summary>
+    public static float NavRaycast(CollisionGrid grid, Vector3 origin, Vector3 dir, float maxDist)
+    {
+        var t = grid.Raycast(origin, dir, maxDist);
+        return World.Map.Movers.Count == 0 || t <= 0 ? t : RaycastSweeps(origin, dir, t);
+    }
+
     /// <summary>Nearest sweep pillar along a ray, or <paramref name="maxDist"/>.</summary>
     public static float RaycastSweeps(Vector3 origin, Vector3 dir, float maxDist)
     {

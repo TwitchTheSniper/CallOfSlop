@@ -120,7 +120,20 @@ public static partial class SelfTest
             CheckMoverPushes(map);
             CheckMoverMomentum(map);
             CheckMoverRays(map);
-            CheckMoverPrediction(map);
+            var withGrid = CheckMoverPrediction(map);
+            World.UseGrid = false; // the collision grid is for static boxes; movers are queried separately either way
+            try
+            {
+                var noGrid = CheckMoverPrediction(map);
+                if (noGrid != withGrid)
+                    Fail($"movement on a mover differs without the collision grid: {withGrid} vs {noGrid}");
+                CheckMoverGrenade(map);
+            }
+            finally
+            {
+                World.UseGrid = true;
+            }
+            CheckMoverGrenade(map);
             CheckMoverNav(map);
         }
         finally
@@ -172,7 +185,7 @@ public static partial class SelfTest
             }
             var spin = m.Spin * n * World.TickDt;
             var turnErr = MathF.Abs(World.WrapAngle(turned - spin));
-            Line($"ride {name,-13} {n} ticks: travelled {travelled,6:0.00} m, off the platform's spot by {worst:0.0000} m (lowest {lowest:+0.000;-0.000}), "
+            Line($"ride {name,-13} {n} ticks: travelled {travelled,6:0.00} m, off the platform's spot by {worst:0.0000} m (lowest {lowest:+0.000;-0.000;0.000}), "
                 + $"turned {turned * 180 / MathF.PI:0.0} deg (platform {spin * 180 / MathF.PI:0.0}), airborne {notGrounded} ticks");
             if (worst > 0.05f)
                 Fail($"{name}: a player standing on it drifted {worst:0.000} m from their spot");
@@ -363,7 +376,7 @@ public static partial class SelfTest
     }
 
     /// <summary>Prediction: replaying stamped commands from a snapshot gives exactly the server's result.</summary>
-    private static void CheckMoverPrediction(Map map)
+    private static Vector3 CheckMoverPrediction(Map map)
     {
         var disc = Mover(map, "Slow disc");
         const uint t0 = 200_000;
@@ -402,6 +415,28 @@ public static partial class SelfTest
             + $"{mismatches} replay mismatches; ends at ({server.Position.X:0.00}, {server.Position.Y:0.00}, {server.Position.Z:0.00})");
         if (client.Position != server.Position || mismatches > 0)
             Fail("predicted movement on a mover doesn't replay exactly");
+        return server.Position;
+    }
+
+    /// <summary>A grenade dropped onto the elevator deck while it's parked at the bottom comes to rest on it, not inside it.</summary>
+    private static void CheckMoverGrenade(Map map)
+    {
+        var lift = Mover(map, "Elevator");
+        uint parked = 0;
+        for (uint t = 300_000; t < 300_000 + 1200 && parked == 0; t++)
+            if (lift.PoseAt(t).Origin.Y < lift.Points[0].Y + 0.001f && lift.PoseAt(t + 60).Origin.Y < lift.Points[0].Y + 0.001f)
+                parked = t;
+        var top = lift.Points[0];
+        var g = new Projectile { Pos = top + new Vector3(0.3f, 1.5f, 0.2f) };
+        for (var i = 0; i < 60; i++)
+        {
+            MoverPhysics.Clock = parked + (uint)i;
+            Throwables.Step(g, World.TickDt);
+        }
+        MoverPhysics.Clock = 0;
+        Line($"grenade on the parked elevator (grid {(World.UseGrid ? "on" : "off")}): rests at y {g.Pos.Y:0.00} (deck top {top.Y:0.00})");
+        if (g.Pos.Y < top.Y || g.Pos.Y > top.Y + 0.3f)
+            Fail($"a grenade dropped on the elevator ended at y {g.Pos.Y:0.00} (deck top {top.Y:0.00}, grid {(World.UseGrid ? "on" : "off")})");
     }
 
     /// <summary>The nav graph keeps out of every mover's sweep, and bots can still get between the spawns.</summary>

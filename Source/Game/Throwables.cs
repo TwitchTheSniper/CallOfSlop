@@ -59,9 +59,17 @@ public static class Throwables
     private static bool InsideSolid(Vector3 p)
     {
         var r = ProjectileRadius;
-        foreach (var b in World.Map.Solid)
-            if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
+        if (World.UseGrid)
+        {
+            if (World.Grid.PointInside(p, r)) // the boxes nearby only (same answer)
                 return true;
+        }
+        else
+        {
+            foreach (var b in World.Map.Solid)
+                if (p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r)
+                    return true;
+        }
         return World.Map.Movers.Count > 0 && MoverPhysics.PointInside(p, r, MoverPhysics.Clock); // moving platforms at their current pose
     }
 

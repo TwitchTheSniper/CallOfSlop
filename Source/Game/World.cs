@@ -95,7 +95,22 @@ public static class World
     /// <summary>The map being played. Client and server always load the same one (sent in the Welcome).</summary>
     public static Map Map { get; private set; } = Maps.All[0];
 
-    public static void SetMap(Map map) => Map = map;
+    public static void SetMap(Map map)
+    {
+        Map = map;
+        _grid = null;
+    }
+
+    private static CollisionGrid? _grid;
+
+    /// <summary>
+    /// The current map's boxes in a grid (built on first use): collision queries test the boxes nearby instead of
+    /// every box on the map, with exactly the same answers.
+    /// </summary>
+    public static CollisionGrid Grid => _grid is { } g && g.IsFor(Map) ? g : _grid = new CollisionGrid(Map);
+
+    /// <summary>Self-test only: false makes every query scan all the boxes again, to compare against the grid.</summary>
+    public static bool UseGrid = true;
 
     public const float StepHeight = 0.55f; // walk up anything this tall (stairs are 0.4 m)
 
@@ -249,14 +264,20 @@ public static class World
                 if (g > feet.Y + StepHeight && g <= feet.Y + maxReach && terrain.NormalAt(probe.X, probe.Z).Y >= MinWalkNormalY)
                     top = g;
             }
-            for (var i = 0; i < boxes.Count && d <= 1.05f; i++)
+            if (d <= 1.05f)
             {
-                var bx = boxes[i];
-                if (probe.X < bx.Min.X || probe.X > bx.Max.X || probe.Z < bx.Min.Z || probe.Z > bx.Max.Z)
-                    continue;
-                var t = bx.Max.Y;
-                if (t > feet.Y + StepHeight && t <= feet.Y + maxReach && t > top)
-                    top = t;
+                // The highest top wins, so the order the boxes are looked at doesn't matter.
+                if (UseGrid)
+                {
+                    var grid = Grid;
+                    foreach (var i in grid.Near(probe.X, probe.Z, probe.X, probe.Z))
+                        top = MantleTop(grid.Boxes[i], probe, feet, maxReach, top);
+                }
+                else
+                {
+                    for (var i = 0; i < boxes.Count; i++)
+                        top = MantleTop(boxes[i], probe, feet, maxReach, top);
+                }
             }
             if (float.IsNegativeInfinity(top))
                 continue;
@@ -281,6 +302,14 @@ public static class World
             }
         }
         return false;
+    }
+
+    private static float MantleTop(in Box bx, Vector3 probe, Vector3 feet, float maxReach, float top)
+    {
+        if (probe.X < bx.Min.X || probe.X > bx.Max.X || probe.Z < bx.Min.Z || probe.Z > bx.Max.Z)
+            return top;
+        var t = bx.Max.Y;
+        return t > feet.Y + StepHeight && t <= feet.Y + maxReach && t > top ? t : top;
     }
 
     public static Box Hitbox(Vector3 feet) => Hitbox(feet, Stance.Stand, 0);
@@ -339,6 +368,8 @@ public static class World
     /// <summary>Nearest distance at which a ray hits a box (terrain ignored), or maxDist.</summary>
     public static float RaycastBoxes(Vector3 origin, Vector3 dir, float maxDist)
     {
+        if (UseGrid)
+            return Grid.RaycastBoxes(origin, dir, maxDist);
         var best = maxDist;
         var boxes = Map.Solid;
         for (var i = 0; i < boxes.Count; i++)
@@ -431,9 +462,13 @@ public static class World
         var prevY = feet.Y;
         var newY = feet.Y + velocity.Y * dt;
         grounded = false;
-        for (var i = 0; i < boxes.Count; i++)
+        // The boxes under and over the player, in map order (the grid's short list, or all of them).
+        var grid = UseGrid ? Grid : null;
+        var near = grid != null ? grid.Near(feet.X - PlayerRadius, feet.Z - PlayerRadius, feet.X + PlayerRadius, feet.Z + PlayerRadius) : default;
+        var count = grid != null ? near.Length : boxes.Count;
+        for (var k = 0; k < count; k++)
         {
-            var b = boxes[i];
+            var b = grid != null ? grid.Boxes[near[k]] : boxes[k];
             if (!OverlapsXZ(feet, b))
                 continue;
             if (velocity.Y <= 0 && prevY >= b.Max.Y - 0.02f && newY < b.Max.Y)
@@ -474,8 +509,28 @@ public static class World
         else
             p.Z += delta;
 
-        for (var i = 0; i < boxes.Count; i++)
+        // Only boxes that reach the strip swept by this move can stop it, so walk the grid's short list of those, in
+        // map order. If a wall pushes us back out of the strip (we started inside a box), carry on with every box
+        // after the current one, exactly as a scan over the whole map would.
+        float x0 = MathF.Min(feet.X, p.X) - PlayerRadius, x1 = MathF.Max(feet.X, p.X) + PlayerRadius;
+        float z0 = MathF.Min(feet.Z, p.Z) - PlayerRadius, z1 = MathF.Max(feet.Z, p.Z) + PlayerRadius;
+        var grid = UseGrid ? Grid : null;
+        var near = grid != null ? grid.Near(x0, z0, x1, z1) : default;
+        var k = 0;
+        var i = -1;
+        while (true)
         {
+            if (grid == null)
+            {
+                if (++i >= boxes.Count)
+                    break;
+            }
+            else
+            {
+                if (k >= near.Length)
+                    break;
+                i = near[k++];
+            }
             var b = boxes[i];
             if (p.Y >= b.Max.Y - 0.001f || p.Y + height <= b.Min.Y + 0.001f || !OverlapsXZ(p, b))
                 continue;
@@ -499,6 +554,8 @@ public static class World
                 p.Z = delta > 0 ? b.Min.Z - PlayerRadius - 0.001f : b.Max.Z + PlayerRadius + 0.001f;
                 velocity.Z = 0;
             }
+            if (grid != null && (p.X - PlayerRadius < x0 || p.X + PlayerRadius > x1 || p.Z - PlayerRadius < z0 || p.Z + PlayerRadius > z1))
+                grid = null; // out of the strip: every remaining box from here on
         }
 
         // Terrain rising in front: walk up it if it's gentle (and there's headroom), otherwise it's a wall.
@@ -565,6 +622,8 @@ public static class World
     /// <summary>Would a player standing at <paramref name="feet"/> overlap any box (terrain ignored)?</summary>
     public static bool BlockedByBoxes(Vector3 feet, float height = PlayerHeight)
     {
+        if (UseGrid)
+            return Grid.BlockedByBoxes(feet, height);
         var boxes = Map.Solid;
         for (var i = 0; i < boxes.Count; i++)
         {

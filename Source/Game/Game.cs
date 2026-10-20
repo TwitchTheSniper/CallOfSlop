@@ -143,7 +143,12 @@ public sealed partial class Game : IDisposable
         ChosenGrenade = grenade;
         ChosenEquipment = equipment;
         if (net.IsServer)
+        {
             World.SetMap(Maps.Get(mapId)); // clients get the map from the server's Welcome
+            // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
+            _ = World.Map.Objectives;
+            _ = World.Grid;
+        }
         Net = net;
         Audio = audio;
         LocalName = Settings.Clean(playerName);
