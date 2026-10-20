@@ -81,6 +81,8 @@ public static partial class SelfTest
                     }
                 }
 
+            CheckHighGroundProps(m, o);
+
             // The nav graph reaches every spawn, hill and flag (all in the main connected area).
             World.SetMap(m);
             for (var wait = 0; wait < 2000 && NavGraph.Current == NavGraph.Empty; wait++)
@@ -109,5 +111,87 @@ public static partial class SelfTest
                 Fail($"{m.Name}: the nav graph doesn't reach {string.Join(", ", missing.Take(5))}{(missing.Count > 5 ? $" and {missing.Count - 5} more" : "")}");
         }
         World.SetMap(Maps.All[0]);
+    }
+
+    /// <summary>
+    /// The pack's props: every map is dressed with hand-placed props and clutter, no solid prop stands on a spawn, a hill
+    /// zone or a flag, explosive barrels are few and away from spawns, and the props are mirrored like the map (each one has
+    /// a twin of the same kind at (-x, -z), turned 180 degrees), so both teams get the same cover.
+    /// </summary>
+    private static void CheckHighGroundProps(Map m, MapObjectives o)
+    {
+        var props = m.PropInstances;
+        var placedByHand = m.ClutterStart;
+        var clutter = props.Count - m.ClutterStart;
+        var explosive = props.Where(p => p.Def.Breakable is { ExplodeRadius: > 0 }).ToList();
+        Line($"  props {props.Count}: {placedByHand} placed by hand ({props.Take(placedByHand).Count(p => p.Def.IsSolid)} solid), {clutter} clutter "
+             + $"({props.Skip(placedByHand).Count(p => p.Def.IsSolid)} solid), {props.Count(p => p.IsBreakable)} breakable, {explosive.Count} explosive");
+        if (placedByHand < 10 || clutter < 10)
+            Fail($"{m.Name}: barely dressed ({placedByHand} hand-placed props, {clutter} clutter; expected at least 10 of each)");
+        if (explosive.Count > 2)
+            Fail($"{m.Name}: {explosive.Count} explosive props (at most 2)");
+        foreach (var e in explosive)
+            if (m.Spawns.Any(s => Vector2.Distance(new Vector2(s.X, s.Z), new Vector2(e.Position.X, e.Position.Z)) < 10f))
+                Fail($"{m.Name}: explosive {e.Def.Name} at ({e.Position.X:0.0},{e.Position.Z:0.0}) is within 10 m of a spawn");
+
+        // Solid props keep off spawns (a player's standing room), hill zones (their floor band) and flags.
+        static float Dist(Box b, Vector3 p)
+        {
+            var dx = MathF.Max(0, MathF.Max(b.Min.X - p.X, p.X - b.Max.X));
+            var dz = MathF.Max(0, MathF.Max(b.Min.Z - p.Z, p.Z - b.Max.Z));
+            return MathF.Sqrt(dx * dx + dz * dz);
+        }
+        var blocked = new List<string>();
+        foreach (var p in props.Where(p => p.Def.IsSolid))
+            for (var k = p.SolidStart; k < p.SolidStart + p.SolidCount; k++)
+            {
+                var b = m.Solid[k];
+                string? why = null;
+                foreach (var sp in m.Spawns)
+                    if (why == null && Dist(b, sp) < 1f && b.Max.Y > sp.Y + 0.05f && b.Min.Y < sp.Y + World.PlayerHeight)
+                        why = $"spawn ({sp.X:0.0},{sp.Z:0.0})";
+                foreach (var h in o.Hills)
+                    if (why == null && Dist(b, h.Center) < h.Radius && b.Max.Y > h.Center.Y - 1f && b.Min.Y < h.Center.Y + 3f)
+                        why = $"hill zone ({h.Center.X:0},{h.Center.Z:0})";
+                foreach (var f in o.Flags)
+                    if (why == null && Dist(b, f) < 2f)
+                        why = $"flag ({f.X:0},{f.Z:0})";
+                if (why != null)
+                {
+                    blocked.Add($"{p.Def.Name} ({p.Position.X:0.0},{p.Position.Z:0.0}) on the {why}");
+                    break;
+                }
+            }
+        if (blocked.Count > 0)
+            Fail($"{m.Name}: {blocked.Count} solid prop(s) in the way: {string.Join("; ", blocked.Take(4))}");
+
+        // Mirrored: every prop has its twin turned 180 degrees about the centre (same kind and size, the same height above
+        // the ground: the terrain's fine noise isn't mirrored, so absolute heights differ a little).
+        float Above(PropInstance p) => p.Position.Y - m.GroundHeight(p.Position.X, p.Position.Z);
+        var unmatched = new List<string>();
+        var used = new bool[props.Count];
+        for (var i = 0; i < props.Count; i++)
+        {
+            if (used[i])
+                continue;
+            var a = props[i];
+            var found = -1;
+            for (var j = 0; j < props.Count && found < 0; j++)
+            {
+                if (j == i || used[j])
+                    continue;
+                var b = props[j];
+                var turn = MathF.Abs(MathF.IEEERemainder(b.Yaw - a.Yaw - MathF.PI, MathF.Tau));
+                if (b.Def == a.Def && MathF.Abs(b.Position.X + a.Position.X) < 0.05f && MathF.Abs(b.Position.Z + a.Position.Z) < 0.05f
+                    && MathF.Abs(Above(b) - Above(a)) < 0.5f && turn < 0.02f && MathF.Abs(b.Scale - a.Scale) < 0.01f)
+                    found = j;
+            }
+            if (found < 0)
+                unmatched.Add($"{a.Def.Name} ({a.Position.X:0.0},{a.Position.Z:0.0})");
+            else
+                used[i] = used[found] = true;
+        }
+        if (unmatched.Count > 0)
+            Fail($"{m.Name}: {unmatched.Count} prop(s) without a mirrored twin: {string.Join(", ", unmatched.Take(5))}");
     }
 }

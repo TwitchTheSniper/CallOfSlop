@@ -249,6 +249,15 @@ public static partial class SelfTest
         if (inside > 0)
             Fail($"Prop Yard: {inside} clutter props overlap a wall or box");
         Line($"solid clutter keeps clear of spawns, waypoints and routes, hills, flags and walls: {(problems == 0 ? "yes" : $"{problems} problem(s)")}; {inside} inside boxes");
+
+        // "mirror": every scattered prop gets its twin at (-x, -z), turned 180 degrees (count is per half).
+        var mirrored = MapFile.Load(PropTestMap("""{ "op": "Clutter", "props": ["Wooden Crate", "Newspaper", "Traffic Cone"], "x0": -17, "z0": -17, "x1": -2, "z1": 17, "count": 12, "seed": 3, "mirror": true }"""), "mirror");
+        var mc = mirrored.PropInstances.Skip(mirrored.ClutterStart).ToList();
+        var twins = mc.Count(p => mc.Any(q => q.Def == p.Def && MathF.Abs(q.Position.X + p.Position.X) < 0.001f && MathF.Abs(q.Position.Z + p.Position.Z) < 0.001f
+            && MathF.Abs(MathF.IEEERemainder(q.Yaw - p.Yaw - MathF.PI, MathF.Tau)) < 0.001f));
+        Line($"mirrored clutter: {mc.Count} props ({mc.Count(p => p.Position.X < 0)} in the area, {mc.Count(p => p.Position.X > 0)} twins), {twins} with a twin");
+        if (mc.Count < 16 || mc.Count % 2 != 0 || twins != mc.Count || mc.Count(p => p.Position.X < 0) != mc.Count / 2)
+            Fail($"Clutter with \"mirror\": {mc.Count} props, {twins} with a mirrored twin");
     }
 
     private static void CheckPropMapsAndNav()

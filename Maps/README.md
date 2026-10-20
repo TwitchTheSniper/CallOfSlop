@@ -386,7 +386,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 | Op | Parameters | What it makes |
 |---|---|---|
 | `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0 | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. |
-| `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15 | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). |
+| `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15, mirror = false | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). With `"mirror": true` every prop also gets a twin turned 180 degrees about the map's centre (see below). |
 
 ```
 { "op": "Prop", "name": "Dumpster", "x": -15, "z": -11.9 },
@@ -399,6 +399,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **`props`** in Clutter is a list of prop names and category names (`"Debris"` means every prop in the Debris folder). Repeat a name to make it more common; each prop's own `weight` counts too.
 - **Clutter turns and sizes** each prop the way its file says (random angle, square to the walls, a size range). With `"align": true` on a strip, props turn to follow it (benches along a pavement).
 - **Deterministic:** the same file and `seed` give the same props on every PC. Change the seed to reshuffle.
+- **Mirrored maps:** on a map built as one half plus the same half turned 180 degrees (like the High Ground pack), give Clutter the area in one team's half and `"mirror": true`. Each prop then also goes at (-x, -z), facing the other way, and a pair is only placed when both spots are free, so both teams get exactly the same props. `count` is per half. Place hand-placed props in pairs the same way: (x, z, yaw) and (-x, -z, yaw + 180).
 - **Clutter runs last**, after every op, the foliage and the objectives, whatever its place in the list, so it can keep out of their way. Every prop stays out of walls, boxes and other clutter. **Solid** props also keep clear of spawns (2.5 m), waypoints (1.2 m), the routes between neighbouring waypoints, hills, flags and movers, and stay 1.1 m from any wall or box they can't step over, so they never close a doorway or a gap a player fits through. If there's no room for all of them, fewer are placed (the log says how many).
 - **Collision:** solid props (bins, crates, barriers) block movement, bullets and sight like any box, and bots walk round them. Cosmetic ones (litter, newspapers, bottles) are looks only.
 - **Breakable props** (crates, boxes, bottles, bins, chairs...) break when shot, hit or blown up, and every match starts with them whole again. See [Props/README.md](../Props/README.md#breakable-props).
