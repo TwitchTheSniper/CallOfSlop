@@ -70,6 +70,14 @@ public sealed partial class Ui
             ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(area.X * 0.17f, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
         }
+        if (!InEdit(w))
+        {
+            // Opened from the weapon select on a gun that isn't equipped: a preview until you change something.
+            ImGui.SetCursorScreenPos(titlePos + new float2(0, 92 * _scale));
+            ImGui.PushTextWrapPos(titlePos.X - ImGui.GetWindowPos().X + area.X * 0.19f);
+            ImGui.TextColored(Orange, $"Preview - picking an attachment equips this gun in {Edit.Name}.");
+            ImGui.PopTextWrapPos();
+        }
 
         // ---- Slot cards ------------------------------------------------------------------
         var cardSize = new float2(area.X * 0.235f, 62 * _scale);
@@ -105,7 +113,7 @@ public sealed partial class Ui
             ImGui.PopStyleColor();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None) && inSlot.Length > 0)
                 hoveredCard = slot;
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && inSlot.Length > 0)
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && inSlot.Length > 0 && !SecondClick)
             {
                 _openSlot = slot;
                 ImGui.OpenPopup("##attpick"u8, ImGuiPopupFlags.None);
@@ -173,9 +181,11 @@ public sealed partial class Ui
             ImGui.TextColored(SlotBlue, Attachments.SlotName(slot).ToUpperInvariant());
             ImGui.Separator();
             var current = Attachments.Slot(kit, slot);
+            // A click picks and closes the list; a double-click's second click is swallowed (see SecondClick).
             if (ImGui.Selectable(slot == AttachSlot.Optic ? "Iron sights##none"u8 : "Empty##none"u8, current == 0))
             {
-                SetKitOf(w, Attachments.With(kit, slot, 0));
+                SetKitOf(audio, w, Attachments.With(kit, slot, 0));
+                Acted();
                 ImGui.CloseCurrentPopup();
             }
             foreach (var a in Attachments.For(w).Where(a => a.Slot == slot).OrderBy(a => Attachments.UnlockXp(w, a)))
@@ -184,11 +194,20 @@ public sealed partial class Ui
                 var unlocked = wxp >= need;
                 if (!unlocked)
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                if (ImGui.Selectable(unlocked ? $"{a.Name}##p{a.Index}" : $"{a.Name}   [LOCKED - {need:N0} weapon XP]##p{a.Index}", current == a.Index) && unlocked)
+                if (ImGui.Selectable(unlocked ? $"{a.Name}##p{a.Index}" : $"{a.Name}   [LOCKED - {need:N0} weapon XP]##p{a.Index}", current == a.Index,
+                        unlocked ? ImGuiSelectableFlags.None : ImGuiSelectableFlags.NoAutoClosePopups))
                 {
-                    SetKitOf(w, Attachments.With(kit, slot, a.Index));
-                    audio.Effect(Sfx.HitTick, 0.4f);
-                    ImGui.CloseCurrentPopup();
+                    if (!unlocked)
+                    {
+                        LockedFeedback(audio);
+                    }
+                    else
+                    {
+                        SetKitOf(audio, w, Attachments.With(kit, slot, a.Index));
+                        audio.Effect(Sfx.HitTick, 0.4f);
+                        Acted();
+                        ImGui.CloseCurrentPopup();
+                    }
                 }
                 if (!unlocked)
                     ImGui.PopStyleColor();

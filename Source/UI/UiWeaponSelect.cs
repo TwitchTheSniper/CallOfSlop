@@ -6,16 +6,23 @@ namespace CallOfSlop;
 /// <summary>
 /// The weapon picker on the loadout screen ("Choose primary" / "Choose secondary"): class tabs across
 /// the top, a scrolling column of gun tiles on the left (3D thumbnail with this loadout's attachments,
-/// name, weapon level and XP, EQUIPPED / LOCKED), and on the right the hovered gun (or the equipped one)
-/// rendered large with its stats compared against the gun you have equipped. Click a tile to equip it.
+/// name, weapon level and XP, EQUIPPED / LOCKED), and on the right the selected (or hovered) gun
+/// rendered large with its stats compared against the gun you have equipped. Click a tile to select it
+/// (preview), then EQUIP; double-clicking a tile does exactly what EQUIP does. ATTACHMENTS (top right)
+/// opens the shown gun's attachments.
 /// </summary>
 public sealed partial class Ui
 {
     private WeaponClass _wsTab; // open class tab
     private int _wsSlot = -1; // the slot the picker was last drawn for
-    private int _wsLastFrame = -10; // ImGui frame the picker was last drawn (to notice it opening)
-    private bool _wsScrollToEquipped; // scroll the equipped gun's tile into view this frame
-    private WeaponDef? _wsForceHover; // smoke test: show this gun as if hovered
+    private bool _wsFresh; // the page was just opened: start on the equipped gun
+    private bool _wsScrollToEquipped; // scroll the selected (or equipped) gun's tile into view this frame
+    private WeaponDef? _wsSelected; // the tile you clicked (shown in the hero); null = the equipped gun
+    private int _wsClickedId = -1; // the tile the last single click landed on (a double-click must start on the same tile)
+    private int _wsFlashId = -1; // tile flashing after an equip (or a refused locked one)
+    private double _wsFlashTime = -10;
+    private bool _wsFlashLocked;
+    private bool _wsSmoke; // smoke test: ignore the real mouse's hover
 
     private static readonly ImColor8 Orange8 = new(240, 150, 40, 255);
     private static readonly ImColor8 White8 = new(236, 238, 242, 255);
@@ -26,24 +33,55 @@ public sealed partial class Ui
     private static readonly ImColor8 Hover8 = new(38, 43, 53, 242);
     private static readonly ImColor8 Panel8 = new(13, 14, 18, 215);
     private static readonly ImColor8 XpBar8 = new(100, 242, 255, 255);
+    private static readonly ImColor8 Select8 = new(110, 200, 255, 255); // the selected tile's outline (hover is orange)
 
-    /// <summary>Smoke test: opens "Choose primary". With <paramref name="hoverLocked"/>, the first locked primary is shown as if hovered; returns its name (null if none is locked).</summary>
+    /// <summary>Smoke test: opens "Choose primary". With <paramref name="hoverLocked"/>, the first locked primary is selected (previewed); returns its name (null if none is locked).</summary>
     public string? SmokeChoose(bool hoverLocked)
     {
-        _forceView = (int)LoadoutView.Primary;
-        _forceGunTab = 0;
-        _wsForceHover = null;
+        if (_nav.Current != LoadoutPage.Primary)
+        {
+            _nav.Reset();
+            OpenPage(LoadoutPage.Primary);
+        }
+        _wsSmoke = true;
         if (!hoverLocked)
             return null;
         foreach (var c in WeaponSelect.Tabs(Slot.Primary))
             foreach (var w in WeaponSelect.InTab(c))
                 if (WeaponSelect.UnlockLevel(w) > Progress.Level)
                 {
-                    _wsForceHover = w;
+                    _wsFresh = false;
+                    _wsSlot = 0;
+                    _wsSelected = w;
                     _wsTab = c;
+                    _wsScrollToEquipped = true;
                     return w.Name;
                 }
         return null;
+    }
+
+    /// <summary>
+    /// EQUIP (or a double-click on a tile): puts the gun in this loadout's slot, saves, plays its equip
+    /// sound and flashes the tile. A locked gun only gets a short "locked" shake and click.
+    /// </summary>
+    private void EquipFromSelect(Audio audio, int gunSlot, WeaponDef w, WeaponDef equipped)
+    {
+        _wsFlashId = w.Id;
+        _wsFlashTime = ImGui.GetTime();
+        if (WeaponSelect.UnlockLevel(w) > Progress.Level)
+        {
+            _wsFlashLocked = true;
+            LockedFeedback(audio);
+            return;
+        }
+        _wsFlashLocked = false;
+        _wsSelected = w;
+        Acted();
+        if (w.Id == equipped.Id)
+            return;
+        LoadoutStore.SetWeapon(Edit, gunSlot, w.Id, Progress);
+        LoadoutStore.Save();
+        audio.Equip(w);
     }
 
     private void DrawWeaponSelect(Audio audio, int gunSlot, WeaponDef gun, float2 area, float2 winPos, float2 winSize)
@@ -52,19 +90,21 @@ public sealed partial class Ui
         var tabs = WeaponSelect.Tabs(gunSlot == 0 ? Slot.Primary : Slot.Secondary);
         if (tabs.Length == 0)
             return;
-        var frame = ImGui.GetFrameCount();
-        if (frame - _wsLastFrame > 1 || _wsSlot != gunSlot)
+        if (_wsFresh || _wsSlot != gunSlot)
         {
-            // Just opened: start on the equipped gun's class, scrolled to it.
+            // Just opened: start on the equipped gun's class, scrolled to it, nothing else selected.
+            _wsSelected = null;
+            _wsClickedId = -1;
             _wsTab = Array.IndexOf(tabs, gun.Class) >= 0 ? gun.Class : tabs[0];
             _wsScrollToEquipped = true;
+            _wsFresh = false;
         }
-        _wsLastFrame = frame;
         _wsSlot = gunSlot;
+        if (_wsSelected != null && (int)_wsSelected.Slot != gunSlot)
+            _wsSelected = null;
         if (Array.IndexOf(tabs, _wsTab) < 0)
             _wsTab = tabs[0];
-        if (_forceView < 0)
-            _wsForceHover = null;
+        var selected = _wsSelected ?? gun;
 
         var origin = ImGui.GetCursorScreenPos();
         var dl = ImGui.GetWindowDrawList();
@@ -79,7 +119,7 @@ public sealed partial class Ui
             var p0 = origin + new float2(i * (tabW + gap), 0);
             var p1 = p0 + new float2(tabW, tabH);
             ImGui.SetCursorScreenPos(p0);
-            if (ImGui.InvisibleButton($"##wstab{i}", new float2(tabW, tabH)) && c != _wsTab)
+            if (ImGui.InvisibleButton($"##wstab{i}", new float2(tabW, tabH)) && c != _wsTab && !SecondClick)
             {
                 _wsTab = c;
                 _wsScrollToEquipped = true;
@@ -127,48 +167,83 @@ public sealed partial class Ui
             {
                 var p0 = ImGui.GetCursorScreenPos();
                 var equipped = w.Id == gun.Id;
+                var isTarget = w.Id == selected.Id;
                 if (p0.Y + tileH < clipMin.Y || p0.Y > clipMax.Y)
                 {
                     // Scrolled out of view: just reserve the space (no drawing, no thumbnail).
                     ImGui.Dummy(new float2(tw, tileH));
-                    if (equipped && _wsScrollToEquipped)
+                    if (isTarget && _wsScrollToEquipped)
                         ImGui.SetScrollHereY(0.5f);
                     continue;
                 }
-                var clicked = ImGui.InvisibleButton($"##wst{w.Id}", new float2(tw, tileH));
-                if (equipped && _wsScrollToEquipped)
+                var clicked = ImGui.InvisibleButton($"##wst{w.Id}", new float2(tw, tileH)) && !SecondClick;
+                var hovering = ImGui.IsItemHovered() && !_wsSmoke;
+                // Double-click = EQUIP. It must start on this tile (not on a card of the page before).
+                var doubleClicked = hovering && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && _wsClickedId == w.Id && !SecondClick;
+                if (isTarget && _wsScrollToEquipped)
                     ImGui.SetScrollHereY(0.5f);
-                var hot = ImGui.IsItemHovered() || _wsForceHover == w;
-                if (hot)
+                if (hovering)
                     hovered = w;
                 var unlocked = WeaponSelect.UnlockLevel(w) <= prog.Level;
-                if (clicked && unlocked && !equipped)
+                if (doubleClicked)
                 {
-                    LoadoutStore.SetWeapon(Edit, gunSlot, w.Id, prog);
-                    LoadoutStore.Save();
-                    audio.Equip(w);
+                    EquipFromSelect(audio, gunSlot, w, gun);
                 }
-                DrawWeaponTile(tdl, w, p0, new float2(tw, tileH), unlocked, equipped, hot, clipMin, clipMax);
+                else if (clicked)
+                {
+                    // A single click selects (previews) the gun, locked or not; the second click of a double-click lands here again and changes nothing.
+                    if (_wsSelected != w)
+                        audio.Effect(Sfx.HitTick, 0.3f);
+                    _wsSelected = w;
+                    _wsClickedId = w.Id;
+                }
+                DrawWeaponTile(tdl, w, p0, new float2(tw, tileH), unlocked, equipped, hovering, (_wsSelected ?? gun).Id == w.Id, clipMin, clipMax);
             }
         }
         ImGui.EndChild();
         _wsScrollToEquipped = false;
 
-        DrawWeaponHero(audio, hovered ?? gun, gun, new float2(origin.X + listW + 14 * _scale, bodyTop), new float2(area.X - listW - 14 * _scale, bodyH), winPos, winSize);
+        var shown = _wsSmoke ? selected : hovered ?? _wsSelected ?? gun;
+        DrawWeaponHero(audio, gunSlot, shown, gun, new float2(origin.X + listW + 14 * _scale, bodyTop), new float2(area.X - listW - 14 * _scale, bodyH), winPos, winSize);
     }
 
-    /// <summary>One tile: gun picture on the left, name / level / XP / status on the right.</summary>
-    private void DrawWeaponTile(ImDrawListPtr dl, WeaponDef w, float2 p0, float2 size, bool unlocked, bool equipped, bool hot, float2 clipMin, float2 clipMax)
+    /// <summary>
+    /// One tile: gun picture on the left, name / level / XP / status on the right. Hover = orange outline,
+    /// selected = blue outline and tint, equipped = orange bar on the left and the EQUIPPED tag.
+    /// </summary>
+    private void DrawWeaponTile(ImDrawListPtr dl, WeaponDef w, float2 p0, float2 size, bool unlocked, bool equipped, bool hot, bool selected, float2 clipMin, float2 clipMax)
     {
+        // Equip flash (orange pulse) or the locked shake.
+        var flash = 0f;
+        if (w.Id == _wsFlashId)
+        {
+            var age = (float)(ImGui.GetTime() - _wsFlashTime);
+            flash = Math.Clamp(1f - age / 0.55f, 0f, 1f);
+            if (_wsFlashLocked && flash > 0)
+                p0.X += MathF.Sin(age * 55f) * 5f * _scale * flash;
+        }
         var p1 = p0 + size;
         var r = 4 * _scale;
-        dl.AddRectFilled(p0, p1, !unlocked ? new ImColor8(15, 15, 18, hot ? (byte)240 : (byte)215) : hot ? Hover8 : Card8, r);
+        var bg = !unlocked
+            ? selected ? new ImColor8(26, 30, 38, 240) : new ImColor8(15, 15, 18, hot ? (byte)240 : (byte)215)
+            : selected
+                ? hot ? new ImColor8(38, 54, 74, 245) : new ImColor8(30, 43, 60, 245)
+                : hot ? Hover8 : Card8;
+        dl.AddRectFilled(p0, p1, bg, r);
         if (equipped)
             dl.AddRectFilled(p0, new float2(p0.X + 4 * _scale, p1.Y), Orange8, r, ImDrawFlags.RoundCornersLeft);
-        if (hot)
+        if (selected)
+            dl.AddRect(p0, p1, Select8, r, ImDrawFlags.None, 2.2f * _scale);
+        else if (hot)
             dl.AddRect(p0, p1, unlocked ? Orange8 : Dim8, r, ImDrawFlags.None, 1.5f * _scale);
         else if (equipped)
             dl.AddRect(p0, p1, new ImColor8(240, 150, 40, 110), r, ImDrawFlags.None, 1f * _scale);
+        if (flash > 0)
+        {
+            var fc = _wsFlashLocked ? new ImColor8(240, 92, 80, (byte)(110 * flash)) : new ImColor8(240, 150, 40, (byte)(120 * flash));
+            dl.AddRectFilled(p0, p1, fc, r);
+            dl.AddRect(p0, p1, _wsFlashLocked ? Red8 : Orange8, r, ImDrawFlags.None, (1.5f + 2.5f * flash) * _scale);
+        }
 
         // Gun picture (Program draws it over the UI, clipped to the list and dimmed when locked).
         var pad = 8 * _scale;
@@ -215,14 +290,24 @@ public sealed partial class Ui
             dl.AddRectFilled(a, a + new float2(ts.X + 12 * _scale, ts.Y + 4 * _scale), Orange8, 2 * _scale);
             DlText(dl, new float2(x + 6 * _scale, sy), new ImColor8(22, 16, 8, 255), "EQUIPPED"u8, clip);
         }
+        else if (selected)
+        {
+            var ts = ImGui.CalcTextSize("SELECTED"u8);
+            var a = new float2(x, sy - 2 * _scale);
+            dl.AddRect(a, a + new float2(ts.X + 12 * _scale, ts.Y + 4 * _scale), Select8, 2 * _scale, ImDrawFlags.None, 1.2f * _scale);
+            DlText(dl, new float2(x + 6 * _scale, sy), Select8, "SELECTED"u8, clip);
+        }
         else if (hot)
         {
-            DlText(dl, new float2(x, sy), Dim8, "Click to equip"u8, clip);
+            DlText(dl, new float2(x, sy), Dim8, "Click to preview"u8, clip);
         }
     }
 
-    /// <summary>The big picture on the right: name, class, blurb, the 3D gun, and stats against the equipped gun.</summary>
-    private void DrawWeaponHero(Audio audio, WeaponDef shownBase, WeaponDef gunBase, float2 pos, float2 size, float2 winPos, float2 winSize)
+    /// <summary>
+    /// The big picture on the right: name, class, blurb, the 3D gun, and stats against the equipped gun.
+    /// ATTACHMENTS sits top right, EQUIP bottom right; both act on the gun shown.
+    /// </summary>
+    private void DrawWeaponHero(Audio audio, int gunSlot, WeaponDef shownBase, WeaponDef gunBase, float2 pos, float2 size, float2 winPos, float2 winSize)
     {
         var prog = Progress;
         var dl = ImGui.GetWindowDrawList();
@@ -265,7 +350,7 @@ public sealed partial class Ui
         else if (isEquipped)
             ImGui.TextColored(Orange, $"EQUIPPED in {Edit.Name}");
         else
-            ImGui.TextColored(Dim, "Click the tile to equip"u8);
+            ImGui.TextColored(Dim, "EQUIP it (or double-click its tile) to use it in this loadout"u8);
         ImGui.PushTextWrapPos(pos.X - ImGui.GetWindowPos().X + size.X * 0.62f);
         ImGui.PushStyleColor(ImGuiCol.Text, new float4(0.78f, 0.79f, 0.83f, 1f));
         ImGui.TextWrapped(shown.Blurb);
@@ -273,6 +358,41 @@ public sealed partial class Ui
         ImGui.PopTextWrapPos();
         ImGui.EndGroup();
         var textBottom = ImGui.GetItemRectMax().Y;
+
+        // ---- Attachments button + sound tests (top right) ------------------------------------
+        {
+            var options = Attachments.For(shownBase);
+            var bw = 210 * _scale;
+            var bh = 34 * _scale;
+            var right = pos.X + size.X;
+            ImGui.SetCursorScreenPos(new float2(right - bw, pos.Y));
+            var label = !unlocked
+                ? "Attachments###wsatt"
+                : options.Count == 0
+                    ? "No attachments###wsatt"
+                    : $"Attachments  {WeaponSelect.UnlockedAttachments(shownBase, prog.WeaponXp(shownBase.Id))}/{options.Count}###wsatt";
+            ImGui.BeginDisabled(!unlocked || options.Count == 0);
+            if (ImGui.Button(label, new float2(bw, bh)) && !SecondClick)
+                OpenPage(LoadoutPage.Attachments, shownBase.Id); // a gun that isn't equipped opens as a preview
+            ImGui.EndDisabled();
+            if (unlocked && !isEquipped && options.Count > 0)
+                ImGui.SetItemTooltip("Preview its attachments. Picking one equips this gun."u8);
+
+            var style = ImGui.GetStyle();
+            var rowW = ImGui.CalcTextSize("Sound:"u8).X + ImGui.CalcTextSize("Fire"u8).X + ImGui.CalcTextSize("Reload"u8).X + ImGui.CalcTextSize("Equip"u8).X
+                       + 6 * style.FramePadding.X + 3 * style.ItemSpacing.X;
+            ImGui.SetCursorScreenPos(new float2(right - rowW, pos.Y + bh + 6 * _scale));
+            ImGui.TextColored(Dim, "Sound:"u8);
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Fire##wsfire"u8))
+                audio.Shot(shown, null);
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Reload##wsreload"u8))
+                audio.Reload(shown, null);
+            ImGui.SameLine();
+            if (ImGui.SmallButton("Equip##wsequip"u8))
+                audio.Equip(shown);
+        }
 
         // ---- Stats panel (bottom) ------------------------------------------------------------
         var rowH = 21 * _scale;
@@ -333,7 +453,7 @@ public sealed partial class Ui
             DlText(dl, new float2(rx + magW + 8 * _scale, ry + 27 * _scale), Green8, $"+{dm}");
         else if (dm < 0)
             DlText(dl, new float2(rx + magW + 8 * _scale, ry + 27 * _scale), Red8, $"{dm}");
-        ry += 52 * _scale;
+        ry += 46 * _scale;
         DlText(dl, new float2(rx, ry), Dim8, "RELOAD"u8);
         ImGui.PushFont(default, 28);
         DlText(dl, new float2(rx, ry + 15 * _scale), White8, $"{shown.Reload:0.0}s");
@@ -344,22 +464,24 @@ public sealed partial class Ui
             DlText(dl, new float2(rx + relW + 8 * _scale, ry + 27 * _scale), Red8, $"+{dr:0.0}s");
         else if (dr <= -0.05f)
             DlText(dl, new float2(rx + relW + 8 * _scale, ry + 27 * _scale), Green8, $"{dr:0.0}s");
-        ry += 52 * _scale;
+        ry += 46 * _scale;
         DlText(dl, new float2(rx, ry), Dim8, "SHOTS TO KILL"u8);
         DlText(dl, new float2(rx, ry + 16 * _scale), White8, $"{shown.ShotsToKill(false)} body  /  {shown.ShotsToKill(true)} head");
 
-        // Sound tests, small, in the corner
-        ImGui.SetCursorScreenPos(new float2(rx, rMax.Y - 26 * _scale));
-        ImGui.TextColored(Dim, "Sound:"u8);
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Fire##wsfire"u8))
-            audio.Shot(shown, null);
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Reload##wsreload"u8))
-            audio.Reload(shown, null);
-        ImGui.SameLine();
-        if (ImGui.SmallButton("Equip##wsequip"u8))
-            audio.Equip(shown);
+        // ---- EQUIP, bottom right: greyed out for a locked gun, "EQUIPPED" for the current one ----
+        var eh = 34 * _scale;
+        ImGui.SetCursorScreenPos(new float2(rx, rMax.Y - eh - 6 * _scale));
+        var canEquip = unlocked && !isEquipped;
+        ImGui.BeginDisabled(!canEquip);
+        ImGui.PushStyleColor(ImGuiCol.Button, canEquip ? new float4(0.94f, 0.59f, 0.16f, 0.92f) : new float4(0.2f, 0.21f, 0.24f, 0.9f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new float4(1f, 0.68f, 0.28f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.ButtonActive, new float4(0.85f, 0.5f, 0.1f, 1f));
+        ImGui.PushStyleColor(ImGuiCol.Text, canEquip ? new float4(0.09f, 0.06f, 0.03f, 1f) : Dim);
+        var equipLabel = !unlocked ? $"LOCKED - LEVEL {level}###wsequipbtn" : isEquipped ? "EQUIPPED###wsequipbtn" : "EQUIP###wsequipbtn";
+        if (ImGui.Button(equipLabel, new float2(MathF.Max(60 * _scale, rMax.X - 8 * _scale - rx), eh)) && !SecondClick)
+            EquipFromSelect(audio, gunSlot, shownBase, gunBase);
+        ImGui.PopStyleColor(4);
+        ImGui.EndDisabled();
     }
 
     /// <summary>The raw number beside a stat bar.</summary>
