@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CallOfSlop;
 
@@ -87,6 +88,7 @@ public sealed class DrawList
     /// Appends every visible drawable in <paramref name="root"/>'s subtree. World matrices must be up to date
     /// (<see cref="Scene.UpdateTransforms"/>). Hidden nodes skip their whole subtree.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Flatten(SceneNode root)
     {
         if ((root.Flags & NodeFlags.Hidden) != 0)
@@ -107,6 +109,7 @@ public sealed class DrawList
     /// Draws every entry in order. Assumes (and leaves) blending off and depth writes on, the state the opaque passes run
     /// in; switches only when an entry needs something else.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Submit(Renderer g, IMeshDrawer? meshes = null)
     {
         var blend = false;

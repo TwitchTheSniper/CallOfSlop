@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace CallOfSlop;
 
 /// <summary>
@@ -54,6 +56,7 @@ public sealed class Scene
     }
 
     /// <summary>Recomputes the world matrices of every dirty subtree. Returns the number of nodes updated.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public int UpdateTransforms()
     {
         var total = 0;

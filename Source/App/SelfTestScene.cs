@@ -647,8 +647,8 @@ public static partial class SelfTest
         for (var f = 0; f < 1200; f++)
             Frame(f); // warm up: every stance, reload phase and cutaway seen (twice, so the JIT has settled)
         Array.Clear(parts);
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var sw = Stopwatch.StartNew();
+        var before = GC.GetAllocatedBytesForCurrentThread();
         const int frames = 600;
         for (var f = 0; f < frames; f++)
             Frame(f);

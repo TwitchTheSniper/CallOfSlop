@@ -264,6 +264,7 @@ public sealed class SceneNode
     }
 
     /// <summary>S * R * T without the three matrix products (bit-identical to them: the rows are only scaled).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
     private void ComposeLocal()
     {
         var m = Matrix4x4.CreateFromQuaternion(_rot);
@@ -340,6 +341,7 @@ public sealed class SceneNode
     /// Recomputes this node's and all its descendants' world matrices from the parent's current world matrix. Returns the
     /// number of nodes updated. <see cref="Scene.UpdateTransforms"/> calls this for each dirty subtree.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
     public int UpdateWorld()
     {
         if (_parent == null)
@@ -357,6 +359,7 @@ public sealed class SceneNode
         return UpdateFrom(_parent._world);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
     private int UpdateFrom(in Matrix4x4 parentWorld)
     {
         if (_localStale)
@@ -453,6 +456,7 @@ public sealed class SceneNode
     /// <paramref name="r"/> = <paramref name="a"/> * <paramref name="b"/> (row vectors), one SIMD row at a time, written in
     /// place (no 64-byte temporaries): the hot loop of a transform update.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void Multiply(in Matrix4x4 a, in Matrix4x4 b, ref Matrix4x4 r)
     {
         ref readonly var b1 = ref Unsafe.As<float, Vector4>(ref Unsafe.AsRef(in b.M11));
