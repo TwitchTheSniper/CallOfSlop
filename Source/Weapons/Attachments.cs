@@ -129,6 +129,12 @@ public static class Attachments
             for (var i = 0; i < bySlot[s].Length; i++)
                 bySlot[s][i].Index = (byte)(i + 1);
         }
+        // Run every attachment on every weapon it fits once now, so the stat code is compiled at startup
+        // instead of in the middle of a match the first time someone spawns with a new kit.
+        foreach (var a in bySlot.SelectMany(x => x))
+            foreach (var w in Weapons.All)
+                if (a.Fits(w))
+                    a.Apply(w.Clone());
         var count = bySlot.Sum(x => x.Length);
         Console.WriteLine(count == 0 ? $"[attachments] no attachment files in {Folder}; guns have no attachments" : $"[attachments] {count} attachment(s) from {Folder}");
         return bySlot;
