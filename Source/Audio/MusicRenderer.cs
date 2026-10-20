@@ -342,7 +342,9 @@ public sealed class MusicRenderer
         _hat.OpenTime = 0.18f;
 
         // Pad and arp are the same recipe for every style.
-        _pad.Saws = 5;
+        _pad.Saws = 4;
+        _pad.HarmonySaws = 4; // every pad note is a full voice
+        _pad.HalfRate = true; // a dark, filtered sound: half-rate synthesis halves its cost
         _pad.Detune = 0.01f;
         _pad.Attack = 0.6f;
         _pad.DecayTime = 1f;
@@ -353,6 +355,7 @@ public sealed class MusicRenderer
         _pad.FilterTime = 1f;
         _pad.Drive = 1f;
         _arp.Saws = 1;
+        _arp.HarmonySaws = 1;
         _arp.Square = true;
         _arp.Detune = 0;
         _arp.Attack = 0.001f;
@@ -410,6 +413,7 @@ public sealed class MusicRenderer
     private void Lead(int saws, float detune, float attack, float decay, float sustain, float release, float cutoff, float envAmount, float filterTime, float drive)
     {
         _lead.Saws = saws;
+        _lead.HarmonySaws = Math.Min(saws, 3); // the quieter harmony voices get a thinner unison (CPU)
         _lead.Detune = detune;
         _lead.Attack = attack;
         _lead.DecayTime = decay;
@@ -773,7 +777,7 @@ public sealed class MusicRenderer
     {
         var kickMask = variant == 0 ? _kickA : _kickB;
         if (kick && On(kickMask, s))
-            _kick.Trigger(s % 4 == 0 ? 1f : 0.85f, _kickMuffle);
+            _kick.Trigger((s % 4 == 0 ? 1f : 0.85f) * (_kickMuffle < 1f ? 0.6f : 1f), _kickMuffle);
         if (snare && On(variant == 0 ? _snareA : _snareB, s))
             _snare.Trigger(s % 4 == 0 ? 1f : 0.6f);
         if (open && On(variant == 0 ? _openA : _openB, s))

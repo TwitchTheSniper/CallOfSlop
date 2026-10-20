@@ -143,6 +143,7 @@ internal sealed class KickVoice
     {
         _phase = _pitch = _amp = _click = _lp = Duck = 0;
         _hold = 0;
+        _lpA = Dsp.OnePole(ToneHz);
     }
 
     /// <summary>muffle &lt; 1 darkens this hit (the filtered kick of an intro).</summary>
@@ -214,7 +215,8 @@ internal sealed class SnareVoice
 
     public void Reset()
     {
-        _env = _tone = _phase = 0;
+        _env = _tone = _phase = _vel = 0;
+        _t = 0;
         _f.Reset();
     }
 
@@ -271,7 +273,11 @@ internal sealed class HatVoice
         _open = Dsp.Decay(OpenTime);
     }
 
-    public void Reset() => _env = _lp = _lp2 = 0;
+    public void Reset()
+    {
+        _env = _lp = _lp2 = 0;
+        _coef = _closed;
+    }
 
     public void Trigger(float vel, bool open)
     {
@@ -305,6 +311,13 @@ internal sealed class SawSynth
     public const int MaxNotes = 4, MaxSaws = 7;
 
     public int Saws = 5;
+
+    /// <summary>Oscillators for notes in slots 1+ (the quieter harmony voices); fewer than <see cref="Saws"/> saves CPU.</summary>
+    public int HarmonySaws = 5;
+
+    /// <summary>Runs the oscillators, envelopes and filter at half the sample rate and interpolates: half the cost, for dark sounds (pads).</summary>
+    public bool HalfRate;
+
     public float Detune = 0.012f, Attack = 0.003f, DecayTime = 0.3f, Sustain = 0.7f, Release = 0.08f;
     public float Cutoff = 3000, EnvAmount = 2f, FilterTime = 0.2f, Resonance = 0.15f, Drive = 1.5f, Glide;
     public bool Square;
@@ -316,36 +329,56 @@ internal sealed class SawSynth
     private readonly float[] _hz = new float[MaxNotes], _target = new float[MaxNotes], _env = new float[MaxNotes], _vel = new float[MaxNotes];
     private readonly byte[] _stage = new byte[MaxNotes]; // 0 off, 1 attack, 2 decay/sustain, 3 release
     private readonly float[] _spread = new float[MaxSaws], _panL = new float[MaxSaws], _panR = new float[MaxSaws];
-    private float _fenv, _fCoef, _aInc, _dCoef, _rCoef, _gCoef, _g, _k, _norm;
+    private readonly float[] _hSpread = new float[MaxSaws], _hPanL = new float[MaxSaws], _hPanR = new float[MaxSaws];
+    private float _fenv, _fCoef, _aInc, _dCoef, _rCoef, _gCoef, _g, _k, _norm, _hNorm, _dtMul = 1f, _cutMul = 1f, _curL, _curR;
     private int _ctl;
+    private bool _odd;
     private Svf _l, _r;
 
     public void Configure()
     {
         Saws = Math.Clamp(Saws, 1, MaxSaws);
-        for (var j = 0; j < Saws; j++)
-        {
-            var x = Saws == 1 ? 0f : j / (float)(Saws - 1) * 2f - 1f; // -1..1
-            _spread[j] = 1f + Detune * x * (0.6f + 0.4f * MathF.Abs(x)); // outer saws spread a bit more
-            var pan = Saws == 1 ? 0f : (j % 2 == 0 ? -1f : 1f) * (0.3f + 0.7f * MathF.Abs(x));
-            _panL[j] = MathF.Sqrt(0.5f * (1f - pan));
-            _panR[j] = MathF.Sqrt(0.5f * (1f + pan));
-        }
+        HarmonySaws = Math.Clamp(HarmonySaws, 1, Saws);
+        Spread(Saws, _spread, _panL, _panR);
+        Spread(HarmonySaws, _hSpread, _hPanL, _hPanR);
         _norm = 1f / MathF.Sqrt(Saws);
-        _fCoef = Dsp.Decay(FilterTime);
-        _aInc = 1f / MathF.Max(1f, Attack * Dsp.Sr);
-        _dCoef = Dsp.Decay(DecayTime);
-        _rCoef = Dsp.Decay(Release);
-        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide) : 1f;
+        _hNorm = 1f / MathF.Sqrt(HarmonySaws);
+        // At half rate every per-sample step covers two output samples.
+        var t = HalfRate ? 0.5f : 1f;
+        _dtMul = HalfRate ? 2f : 1f;
+        _cutMul = _dtMul;
+        _fCoef = Dsp.Decay(FilterTime * t);
+        _aInc = 1f / MathF.Max(1f, Attack * Dsp.Sr * t);
+        _dCoef = Dsp.Decay(DecayTime * t);
+        _rCoef = Dsp.Decay(Release * t);
+        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide * t) : 1f;
         _k = 2f - 2f * Math.Clamp(Resonance, 0f, 0.95f);
         _ctl = 0;
+    }
+
+    private void Spread(int saws, float[] spread, float[] panL, float[] panR)
+    {
+        for (var j = 0; j < saws; j++)
+        {
+            var x = saws == 1 ? 0f : j / (float)(saws - 1) * 2f - 1f; // -1..1
+            spread[j] = 1f + Detune * x * (0.6f + 0.4f * MathF.Abs(x)); // outer saws spread a bit more
+            var pan = saws == 1 ? 0f : (j % 2 == 0 ? -1f : 1f) * (0.3f + 0.7f * MathF.Abs(x));
+            panL[j] = MathF.Sqrt(0.5f * (1f - pan));
+            panR[j] = MathF.Sqrt(0.5f * (1f + pan));
+        }
     }
 
     public void Reset()
     {
         Array.Clear(_stage);
         Array.Clear(_env);
-        _fenv = 0;
+        Array.Clear(_phase);
+        Array.Clear(_hz);
+        Array.Clear(_target);
+        Array.Clear(_vel);
+        _fenv = _g = _curL = _curR = 0;
+        _ctl = 0;
+        _odd = false;
         _l.Reset();
         _r.Reset();
         CutoffMul = 1f;
@@ -380,6 +413,28 @@ internal sealed class SawSynth
 
     public void Next(out float left, out float right)
     {
+        if (!HalfRate)
+        {
+            Compute(out left, out right);
+            return;
+        }
+        // Half rate: a new value every other sample, linearly interpolated in between.
+        if (_odd)
+        {
+            _odd = false;
+            left = _curL;
+            right = _curR;
+            return;
+        }
+        _odd = true;
+        float pl = _curL, pr = _curR;
+        Compute(out _curL, out _curR);
+        left = 0.5f * (pl + _curL);
+        right = 0.5f * (pr + _curR);
+    }
+
+    private void Compute(out float left, out float right)
+    {
         float sl = 0, sr = 0;
         var any = false;
         for (var n = 0; n < MaxNotes; n++)
@@ -405,7 +460,7 @@ internal sealed class SawSynth
             else
             {
                 e *= _rCoef;
-                if (e < 1e-4f)
+                if (e < 1e-3f) // -60 dB: inaudible, and the oscillators stop costing anything
                 {
                     e = 0;
                     _stage[n] = 0;
@@ -414,19 +469,24 @@ internal sealed class SawSynth
             _env[n] = e;
             if (Glide > 0)
                 _hz[n] += (_target[n] - _hz[n]) * _gCoef;
-            var amp = e * _vel[n] * _norm;
-            var baseDt = _hz[n] * Dsp.InvSr;
+            var harmony = n > 0;
+            var saws = harmony ? HarmonySaws : Saws;
+            var spread = harmony ? _hSpread : _spread;
+            var panL = harmony ? _hPanL : _panL;
+            var panR = harmony ? _hPanR : _panR;
+            var amp = e * _vel[n] * (harmony ? _hNorm : _norm);
+            var baseDt = _hz[n] * Dsp.InvSr * _dtMul;
             var off = n * MaxSaws;
-            for (var j = 0; j < Saws; j++)
+            for (var j = 0; j < saws; j++)
             {
-                var dt = baseDt * _spread[j];
+                var dt = baseDt * spread[j];
                 var ph = _phase[off + j] + dt;
                 if (ph >= 1f)
                     ph -= 1f;
                 _phase[off + j] = ph;
                 var v = (Square ? Dsp.Square(ph, dt) * 0.5f : Dsp.Saw(ph, dt)) * amp;
-                sl += v * _panL[j];
-                sr += v * _panR[j];
+                sl += v * panL[j];
+                sr += v * panR[j];
             }
         }
         if (!any && MathF.Abs(_l.Low) + MathF.Abs(_r.Low) < 1e-6f)
@@ -435,7 +495,7 @@ internal sealed class SawSynth
             return;
         }
         if ((_ctl++ & 15) == 0) // filter coefficients at control rate (every 16 samples)
-            _g = Dsp.SvfG(Cutoff * CutoffMul * (1f + EnvAmount * _fenv));
+            _g = Dsp.SvfG(Cutoff * CutoffMul * (1f + EnvAmount * _fenv) * _cutMul);
         _fenv *= _fCoef;
         if (_fenv < 1e-5f)
             _fenv = 0;
@@ -475,7 +535,8 @@ internal sealed class BassVoice
     public void Reset()
     {
         _stage = 0;
-        _env = _fenv = _lfo = 0;
+        _env = _fenv = _lfo = _p1 = _p2 = _ps = _hz = _target = _vel = _g = 0;
+        _ctl = 0;
         _f.Reset();
         CutoffMul = 1f;
     }
@@ -576,7 +637,9 @@ internal sealed class FxVoices
 
     public void Reset()
     {
-        _crash = _subAmp = RiserLevel = _riserLevel = 0;
+        _crash = _subAmp = RiserLevel = _riserLevel = _lpL = _lpR = _subPitch = _subPhase = _g = 0;
+        RiserHz = 400;
+        _ctl = 0;
         _riser.Reset();
     }
 
@@ -692,10 +755,23 @@ internal sealed class RoomReverb
 
     public void Reset()
     {
-        foreach (var b in _combL.Concat(_combR).Concat(_apL).Concat(_apR))
-            Array.Clear(b);
+        // Plain loops: Load() runs on the streaming thread and must not allocate.
+        for (var i = 0; i < 4; i++)
+        {
+            Array.Clear(_combL[i]);
+            Array.Clear(_combR[i]);
+        }
+        for (var i = 0; i < 2; i++)
+        {
+            Array.Clear(_apL[i]);
+            Array.Clear(_apR[i]);
+        }
         Array.Clear(_storeL);
         Array.Clear(_storeR);
+        Array.Clear(_ciL);
+        Array.Clear(_ciR);
+        Array.Clear(_aiL);
+        Array.Clear(_aiR);
     }
 
     public void Process(float input, out float left, out float right)

@@ -50,6 +50,7 @@ public static partial class SelfTest
 
         var dropWindows = new float[all.Length][];
         double renderMs = 0, renderSeconds = 0;
+        var costs = new System.Text.StringBuilder();
         for (var ti = 0; ti < all.Length; ti++)
         {
             var t = all[ti];
@@ -62,11 +63,13 @@ public static partial class SelfTest
             dropWindows[ti] = drop;
             var frame = 0L;
             r.Load(t, 1234);
-            var sw = Stopwatch.StartNew();
+            long ticks = 0; // only the rendering is timed, not the analysis below
             var guard = (long)((t.Seconds + 10) * sr);
             while (!r.Finished && frame < guard)
             {
+                var t0 = Stopwatch.GetTimestamp();
                 r.Render(block);
+                ticks += Stopwatch.GetTimestamp() - t0;
                 var bar = (int)(frame / (t.SecondsPerBar * sr));
                 var part = PartAt(t, bar);
                 for (var i = 0; i < block.Length; i += 2)
@@ -93,15 +96,16 @@ public static partial class SelfTest
                 }
                 frame += block.Length / 2;
             }
-            sw.Stop();
+            var ms = ticks * 1000.0 / Stopwatch.Frequency;
             var seconds = frame / (double)sr;
-            renderMs += sw.Elapsed.TotalMilliseconds;
+            renderMs += ms;
             renderSeconds += seconds;
+            costs.Append($" {t.Name} {ms / seconds:0.0} (rms intro {Rms(MusicPart.Intro):0.00} drop {Rms(MusicPart.Drop):0.00} break {Rms(MusicPart.Break):0.00});");
             double Rms(MusicPart p) => partCount[(int)p] == 0 ? 0 : Math.Sqrt(partSum[(int)p] / partCount[(int)p]);
             var clipPct = samples == 0 ? 0 : 100.0 * clipped / samples;
             Line($"{t.Name,-24} {t.Set,-5} {t.Style,-11} {t.Bpm,3:0} BPM  {t.Key,-21} {seconds,4:0} s  rms intro {Rms(MusicPart.Intro):0.000} "
                  + $"build {Rms(MusicPart.Build):0.000} drop {Rms(MusicPart.Drop):0.000} break {Rms(MusicPart.Break):0.000} outro {Rms(MusicPart.Outro):0.000}  "
-                 + $"peak {peak:0.000} clipped {clipPct:0.000}%  {sw.Elapsed.TotalMilliseconds / seconds:0.0} ms per s");
+                 + $"peak {peak:0.000} clipped {clipPct:0.000}%  {ms / seconds:0.0} ms per s");
             if (!r.Finished)
                 Fail($"{t.Name}: never finished (rendered {seconds:0} s of {t.Seconds:0} s)");
             else if (Math.Abs(seconds - t.Seconds) > 1.0)
@@ -118,9 +122,12 @@ public static partial class SelfTest
                 Fail($"{t.Name}: intro is (nearly) silent");
             if (Rms(MusicPart.Break) > 0 && Rms(MusicPart.Drop) < Rms(MusicPart.Break) * 1.2)
                 Fail($"{t.Name}: drops ({Rms(MusicPart.Drop):0.000}) aren't clearly louder than the breakdown ({Rms(MusicPart.Break):0.000})");
+            if (Rms(MusicPart.Drop) < Rms(MusicPart.Intro))
+                Fail($"{t.Name}: the intro ({Rms(MusicPart.Intro):0.000}) is louder than the drops ({Rms(MusicPart.Drop):0.000})");
             if (Rms(MusicPart.Drop) > 0.6)
                 Fail($"{t.Name}: drops are crushed (rms {Rms(MusicPart.Drop):0.000})");
         }
+        Line($"track costs (ms per s of audio):{costs}");
         var msPerSecond = renderMs / renderSeconds;
         Line($"rendering cost: {msPerSecond:0.00} ms per second of music ({msPerSecond / 10:0.00} ms per 10 ms, {msPerSecond / 10:0.00}% of a core); budget {MusicBudgetMsPerSecond} ms");
         if (msPerSecond > MusicBudgetMsPerSecond)
