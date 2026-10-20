@@ -41,9 +41,6 @@ jobs:
           comm -23 managed.txt native.txt > missing.txt
           echo "::notice title=binding totals::managed entry points $(wc -l < managed.txt), native exports $(wc -l < native.txt), managed-but-not-native $(wc -l < missing.txt)"
           echo "::notice title=native queries::$(grep -E 'CastRay|CastShape|CollideShape|CollidePoint|NarrowPhase|BroadPhaseQuery|TransformedShape_' native.txt | grep -v '^_Z' | tr '\n' ' ' | cut -c1-6000) "
-          for t in CharacterVirtual_ 'CharacterBase_|CharacterBaseSettings_|CharacterVirtualSettings_' BodyInterface_ 'PhysicsSystem_|StateRecorderImpl_|StateRecorder_|TempAllocatorImpl_' 'StaticCompoundShapeSettings_|TriangleShapeSettings_|TriangleShape_|Shape_|ShapeSettings_' 'RayCastSettings_|ShapeCastSettings_|CollideShapeSettings_|BodyFilter_|ShapeFilter_|Default|Specified|IgnoreSingle' 'Jolt_|^[A-Z][a-zA-Z]+$|RegisterTypes|Factory_|Plane_|Triangle_|IndexedTriangle_'; do
-            echo "::notice title=native ($t)::$(grep -E "^($t)" native.txt | grep -v '^_Z' | tr '\n' ' ' | cut -c1-6000)"
-          done
           cp native.txt managed.txt missing.txt spike/out/ || true
 
       - name: Machine

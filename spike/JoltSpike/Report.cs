@@ -11,6 +11,7 @@ namespace JoltSpike;
 public static class Report
 {
     static readonly List<string> Passed = new();
+    static readonly List<string> Failed = new();
     static readonly List<string> Metrics = new();
     public static int Failures;
     static string _section = "";
@@ -40,7 +41,7 @@ public static class Report
         else
         {
             Failures++;
-            Console.WriteLine($"::error title={_section} {name}::{Clean(detail)}");
+            Failed.Add($"{name} ({detail})");
         }
     }
 
@@ -62,9 +63,12 @@ public static class Report
 
     public static void Close()
     {
-        if (Phys.BindingNotes.Count > 0)
+        if (Phys.BindingNotes.Count > 0 && _section == "a")
             Notice("binding issues", string.Join(" | ", Phys.BindingNotes));
-        Notice($"checks {Passed.Count}/{Passed.Count + Failures} passed", string.Join(" | ", Passed));
+        if (Passed.Count > 0)
+            Notice($"checks passed {Passed.Count}/{Passed.Count + Failures}", string.Join(" | ", Passed));
+        if (Failed.Count > 0)
+            Console.WriteLine($"::error title={_section} checks FAILED {Failures}/{Passed.Count + Failures}::{Clean(string.Join(" | ", Failed))}");
         // Metrics in chunks so no single annotation gets huge.
         for (var i = 0; i < Metrics.Count; i += 8)
             Notice($"metrics {i / 8 + 1}", string.Join(" | ", Metrics.Skip(i).Take(8)));

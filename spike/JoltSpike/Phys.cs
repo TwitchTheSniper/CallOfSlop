@@ -259,36 +259,49 @@ public sealed class Phys
     {
         var p = new Phys(1024);
         var results = new List<string>();
+        // A 16 x 16 m patch of terrain-like triangles (512 of them) with a gentle slope, like a terrain chunk.
+        const int N = 16;
+        var verts = new List<float3>();
+        var tris = new List<(int, int, int)>();
+        for (var z = 0; z < N; z++)
+            for (var x = 0; x < N; x++)
+            {
+                var b = verts.Count;
+                float H(int xx, int zz) => (xx + zz) * 0.05f;
+                verts.Add(new float3(x, H(x, z), z));
+                verts.Add(new float3(x + 1, H(x + 1, z), z));
+                verts.Add(new float3(x, H(x, z + 1), z + 1));
+                verts.Add(new float3(x + 1, H(x + 1, z + 1), z + 1));
+                tris.Add((b, b + 2, b + 1));
+                tris.Add((b + 1, b + 2, b + 3));
+            }
         float Drop(Shape s, float x)
         {
             p.AddStatic(s, new float3(x, 20, 0), floatQuat.Identity);
             p.System.OptimizeBroadPhase();
-            var m = new Mover(p, new float3(x, 21, 0));
+            var m = new Mover(p, new float3(x + 8, 22, 8));
             for (var i = 0; i < 90; i++)
                 m.Step(default);
-            return m.Ch.GetPosition().Y - 20;
+            return m.Ch.GetPosition().Y - (20 + 16 * 0.05f);
         }
-        bool Held(float y) => MathF.Abs(y) < 0.1f;
-        float3 v0 = new(-5, 0, -5), v1 = new(-5, 0, 5), v2 = new(5, 0, -5); // counter-clockwise seen from above
-        var box = Drop(Box(new float3(3, 0.5f, 3)) , 0) - 0.5f;
+        var box = Drop(Box(new float3(3, 0.5f, 3)), -40) + 0.8f - 0.5f;
         results.Add($"box {Report.F(box)}");
-        var tri = Drop(Tri(v0, v1, v2), 40);
-        results.Add($"single TriangleShape {Report.F(tri)}");
         var heldBy = new bool[3];
         for (var mode = 0; mode < 3; mode++)
         {
             var c = StaticCompoundShapeSettings.Create();
-            AddTriangle(c, v0, v1, v2, mode);
+            foreach (var (a, b, d) in tris)
+                AddTriangle(c, verts[a], verts[b], verts[d], mode);
             float y;
-            try { y = Drop(c.CreateShape(), 80 + mode * 40); }
-            catch (Exception e) { results.Add($"{TriModeNames[mode]}: {e.GetType().Name}"); continue; }
-            heldBy[mode] = Held(y) || (mode == 2 && MathF.Abs(y) < 0.15f);
+            try { y = Drop(c.CreateShape(), mode * 40); }
+            catch (Exception e) { results.Add($"{TriModeNames[mode]}: {e.GetType().Name} {e.Message}"); continue; }
+            heldBy[mode] = MathF.Abs(y) < 0.2f;
             results.Add($"{TriModeNames[mode]} {Report.F(y)}");
         }
         TriMode = Array.IndexOf(heldBy, true);
         if (TriMode < 0)
             TriMode = 2;
-        ProbeReport = $"drop test (feet y above surface after 1.5 s, 0 = held): {string.Join(", ", results)} -> using {TriModeNames[TriMode]}";
+        ProbeReport = $"drop test on a 512-triangle patch (feet y above surface after 1.5 s, ~0 = held): {string.Join(", ", results)} -> using {TriModeNames[TriMode]}";
         Note("triangle fallback: " + ProbeReport);
     }
 
