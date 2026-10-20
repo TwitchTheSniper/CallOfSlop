@@ -27,6 +27,7 @@ public sealed class Settings
 
     // Audio / video
     public float Volume = 0.8f;
+    public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
     public bool VSync = true;
     public bool ShowNetStats = true;
     public DisplayMode Display = DisplayMode.Windowed;
@@ -115,14 +116,17 @@ public sealed class Settings
     /// <summary>Server names: printable ASCII, up to 32 characters (may be empty).</summary>
     public static string CleanServerName(string name) => new string(name.Where(c => c >= 32 && c < 127).Take(32).ToArray()).Trim();
 
-    public static Settings Load()
+    public static Settings Load() => Load(FilePath);
+
+    /// <summary>Loads settings from a file (the self-test uses a temporary one, never the real settings.txt).</summary>
+    internal static Settings Load(string path)
     {
         var s = new Settings();
         try
         {
-            if (!File.Exists(FilePath))
+            if (!File.Exists(path))
                 return s;
-            foreach (var line in File.ReadAllLines(FilePath))
+            foreach (var line in File.ReadAllLines(path))
             {
                 var kv = line.Split('=', 2);
                 if (kv.Length != 2)
@@ -137,6 +141,7 @@ public sealed class Settings
                     case "fov" when float.TryParse(v, inv, out var f): s.Fov = Math.Clamp(f, 60f, 110f); break;
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
+                    case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
                     case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 1, Game.MaxPlayers - 1); break;
@@ -173,19 +178,22 @@ public sealed class Settings
         return s;
     }
 
-    public void Save()
+    public void Save() => Save(FilePath);
+
+    internal void Save(string path)
     {
         var inv = CultureInfo.InvariantCulture;
         try
         {
             File.WriteAllLines(
-                FilePath,
+                path,
                 [
                     $"name={Name}",
                     $"sensitivity={Sensitivity.ToString(inv)}",
                     $"fov={Fov.ToString(inv)}",
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"volume={Volume.ToString(inv)}",
+                    $"music_volume={MusicVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
                     $"bots={Bots}",
