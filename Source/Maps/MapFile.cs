@@ -261,8 +261,8 @@ public static class MapFile
                 map.NextAnchor = Prop(op, "anchor") switch
                 {
                     null => OpAnchor.Auto,
-                    { ValueKind: JsonValueKind.String } a when Enum.TryParse<OpAnchor>(a.GetString(), true, out var parsed) && Enum.IsDefined(parsed) => parsed,
-                    var a => throw new MapFileException($"{where}: \"anchor\" is \"ground\", \"drape\", \"world\" or \"auto\", got {a}"),
+                    { ValueKind: JsonValueKind.String } an when Enum.TryParse<OpAnchor>(an.GetString(), true, out var parsed) && Enum.IsDefined(parsed) => parsed,
+                    var an => throw new MapFileException($"{where}: \"anchor\" is \"ground\", \"drape\", \"world\" or \"auto\", got {an}"),
                 };
                 foreach (var prop in op.EnumerateObject())
                     if (prop.Name != "op" && !prop.Name.Equals("anchor", StringComparison.OrdinalIgnoreCase) && !ps.Any(p => string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase)))

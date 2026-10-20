@@ -423,7 +423,7 @@ public static partial class SelfTest
 
         var changed = MapFile.Load(TerrainLabJson.Replace("\"height\": 1.4", "\"height\": 1.5"), "lab changed");
         Line($"fingerprints: lab {m.ContentHash:x8}, round trip {copy.ContentHash:x8}, one plateau 10 cm higher {changed.ContentHash:x8}");
-        if (changed.ContentHash == m.ContentHash || changed.Terrain!.Hash == m.Terrain.Hash)
+        if (changed.ContentHash == m.ContentHash || changed.Terrain!.Hash == m.Terrain!.Hash)
             Fail("changing the terrain didn't change the map's fingerprint");
 
         // Flat maps: identical with "terrain": null, so old maps keep their fingerprints.
