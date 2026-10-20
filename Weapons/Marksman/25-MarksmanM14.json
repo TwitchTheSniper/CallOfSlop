@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.65,
   "bright": 0.5,
-  "tail": 0.7
+  "tail": 0.7,
+  "model": {
+    "base": "dmr", "receiverLength": 0.2, "handguard": "stock", "handguardLength": 0.27, "handguardHeight": 0.06,
+    "stock": "wood", "stockLength": 0.26, "cheekRest": false, "mag": "box", "magLength": 0.09, "gasBlock": true,
+    "muzzle": "flash", "finish": "gunmetal", "furniture": "wood", "bolt": "side", "accentStyle": "none"
+  }
 }

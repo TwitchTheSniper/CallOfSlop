@@ -36,5 +36,9 @@
   "sound": "Gun",
   "caliber": 0.4,
   "bright": 0.6,
-  "tail": 0.4
+  "tail": 0.4,
+  "model": {
+    "base": "pistol", "receiverLength": 0.19, "receiverHeight": 0.07, "finish": "chrome", "furniture": "darkwood",
+    "grip": "wood", "hammer": true, "gripAngle": 20, "accentStyle": "none", "sights": "post"
+  }
 }

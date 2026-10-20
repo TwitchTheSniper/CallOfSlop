@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.62,
   "bright": 0.45,
-  "tail": 0.65
+  "tail": 0.65,
+  "model": {
+    "base": "rifle", "receiverLength": 0.24, "receiverHeight": 0.115, "receiverWidth": 0.078, "barrelLength": 0.25,
+    "handguard": "slim", "handguardLength": 0.12, "handguardHeight": 0.085, "muzzle": "brake", "stock": "wire",
+    "mag": "box", "magLength": 0.13, "magAngle": 6, "gasBlock": true, "sights": "tall", "finish": "gunmetal",
+    "furniture": "black", "accentStyle": "mag"
+  }
 }

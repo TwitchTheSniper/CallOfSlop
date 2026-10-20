@@ -36,5 +36,8 @@
   "sound": "Boom",
   "caliber": 0.95,
   "bright": 0.35,
-  "tail": 1
+  "tail": 1,
+  "model": {
+    "base": "musket"
+  }
 }

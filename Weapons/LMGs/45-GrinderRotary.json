@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.35,
   "bright": 0.7,
-  "tail": 0.5
+  "tail": 0.5,
+  "model": {
+    "base": "rotary"
+  }
 }

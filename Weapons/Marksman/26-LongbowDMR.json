@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.72,
   "bright": 0.45,
-  "tail": 0.75
+  "tail": 0.75,
+  "model": {
+    "base": "dmr", "handguard": "tube", "handguardLength": 0.3, "handguardHeight": 0.065, "barrelStyle": "fluted",
+    "barrelWidth": 0.034, "stock": "chassis", "stockLength": 0.25, "bipod": "folded", "topRail": true,
+    "muzzle": "brake", "finish": "black", "furniture": "black", "accentStyle": "mag", "mag": "box",
+    "magLength": 0.08
+  }
 }

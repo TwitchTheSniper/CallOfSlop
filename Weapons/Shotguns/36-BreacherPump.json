@@ -36,5 +36,9 @@
   "sound": "Gun",
   "caliber": 0.8,
   "bright": 0.45,
-  "tail": 0.7
+  "tail": 0.7,
+  "model": {
+    "base": "pump_shotgun", "barrelLength": 0.24, "handguardLength": 0.13, "stock": "crane", "stockLength": 0.22,
+    "furniture": "black", "muzzle": "breacher", "sideSaddle": true, "sights": "ghost", "finish": "black"
+  }
 }

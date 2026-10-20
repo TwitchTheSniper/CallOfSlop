@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.7,
   "bright": 0.45,
-  "tail": 0.75
+  "tail": 0.75,
+  "model": {
+    "base": "lmg", "barrelStyle": "fluted", "barrelWidth": 0.044, "handguard": "none", "shroud": "none",
+    "stock": "thumbhole", "stockLength": 0.26, "furniture": "wood", "finish": "black", "carryHandle": true,
+    "mag": "beltbox", "bipod": "folded"
+  }
 }

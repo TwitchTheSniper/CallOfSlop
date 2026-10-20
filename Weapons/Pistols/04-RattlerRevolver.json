@@ -36,5 +36,9 @@
   "sound": "Gun",
   "caliber": 0.6,
   "bright": 0.5,
-  "tail": 0.6
+  "tail": 0.6,
+  "model": {
+    "base": "revolver", "barrelLength": 0.16, "barrelStyle": "square", "finish": "steel", "furniture": "wood",
+    "gripAngle": 24, "grip": "birdshead"
+  }
 }

@@ -36,5 +36,12 @@
   "sound": "Boom",
   "caliber": 1,
   "bright": 0.4,
-  "tail": 1
+  "tail": 1,
+  "model": {
+    "base": "bolt_sniper", "receiver": "slab", "receiverLength": 0.34, "receiverHeight": 0.12,
+    "receiverWidth": 0.075, "barrelWidth": 0.04, "barrelLength": 0.5, "handguard": "quad", "handguardLength": 0.22,
+    "handguardHeight": 0.09, "muzzle": "brake", "bipod": "deployed", "stock": "chassis", "stockLength": 0.24,
+    "mag": "box", "magLength": 0.09, "bolt": "charging", "finish": "black", "furniture": "black", "topRail": true,
+    "accentStyle": "mag"
+  }
 }

@@ -36,5 +36,9 @@
   "sound": "Gun",
   "caliber": 0.2,
   "bright": 0.7,
-  "tail": 0.35
+  "tail": 0.35,
+  "model": {
+    "base": "pdw", "finish": "black", "furniture": "olive", "magColor": "tan", "accentStyle": "none",
+    "sights": "none"
+  }
 }

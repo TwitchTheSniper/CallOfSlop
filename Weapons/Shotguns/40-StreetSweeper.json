@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.65,
   "bright": 0.5,
-  "tail": 0.6
+  "tail": 0.6,
+  "model": {
+    "base": "drum_shotgun", "finish": "black", "magColor": "accent"
+  }
 }

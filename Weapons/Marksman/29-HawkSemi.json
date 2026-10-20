@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.6,
   "bright": 0.55,
-  "tail": 0.65
+  "tail": 0.65,
+  "model": {
+    "base": "dmr", "receiverLength": 0.19, "receiverHeight": 0.085, "barrelWidth": 0.022, "handguard": "slim",
+    "handguardLength": 0.18, "handguardHeight": 0.06, "stock": "thumbhole", "stockLength": 0.24, "mag": "box",
+    "magLength": 0.06, "finish": "steel", "furniture": "lightwood", "accentStyle": "none"
+  }
 }

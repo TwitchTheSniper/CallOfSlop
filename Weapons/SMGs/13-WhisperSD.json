@@ -36,5 +36,10 @@
   "sound": "Suppressed",
   "caliber": 0.25,
   "bright": 0.3,
-  "tail": 0.2
+  "tail": 0.2,
+  "model": {
+    "base": "smg", "receiver": "round", "receiverHeight": 0.08, "barrelLength": 0.25, "shroud": "suppressor",
+    "shroudLength": 0.95, "barrelWidth": 0.032, "handguard": "none", "mag": "curved", "magLength": 0.13,
+    "stock": "folding", "sights": "aperture", "finish": "black", "accentStyle": "none"
+  }
 }

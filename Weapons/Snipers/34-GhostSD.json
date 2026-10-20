@@ -36,5 +36,11 @@
   "sound": "Suppressed",
   "caliber": 0.7,
   "bright": 0.3,
-  "tail": 0.3
+  "tail": 0.3,
+  "model": {
+    "base": "bolt_sniper", "receiver": "box", "receiverLength": 0.26, "barrelLength": 0.62, "shroud": "suppressor",
+    "shroudLength": 0.45, "barrelWidth": 0.026, "handguard": "tube", "handguardLength": 0.28,
+    "handguardHeight": 0.06, "stock": "folding", "stockLength": 0.26, "mag": "box", "magLength": 0.07,
+    "finish": "black", "furniture": "olive", "bipod": "folded", "accentStyle": "none"
+  }
 }

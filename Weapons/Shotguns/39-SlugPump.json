@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.85,
   "bright": 0.4,
-  "tail": 0.75
+  "tail": 0.75,
+  "model": {
+    "base": "pump_shotgun", "barrelLength": 0.36, "barrelWidth": 0.036, "handguardLength": 0.15, "stock": "wood",
+    "stockLength": 0.27, "furniture": "lightwood", "finish": "gunmetal", "topRail": true, "sights": "post",
+    "muzzle": "ported", "shroud": "heatshield", "shroudLength": 0.5
+  }
 }

@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.55,
   "bright": 0.5,
-  "tail": 0.65
+  "tail": 0.65,
+  "model": {
+    "base": "lmg", "finish": "olive", "furniture": "black"
+  }
 }
