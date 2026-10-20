@@ -30,7 +30,7 @@ public static partial class SelfTest
                 else if (rgba[i] > 230 && rgba[i + 1] > 230 && rgba[i + 2] > 230)
                     white++;
             }
-            Line($"BRUTAL logo {w}x{h}: {yellow} yellow, {white} white, {clear} transparent pixels; splash {Splash.Total:0.0} s (skippable after {Splash.MinSeconds:0.0} s)");
+            Line($"BRUTAL logo {w}x{h}: {yellow} yellow, {white} white, {clear} transparent pixels; splash {Splash.Total:0.0} s (skippable {(Splash.MinSeconds > 0 ? $"after {Splash.MinSeconds:0.0} s" : "at once")})");
             if (w != 712 || h != 168 || yellow < 5000 || white < 2000 || clear < 20000)
                 Fail("the BRUTAL logo didn't decode as expected");
         }
@@ -38,7 +38,7 @@ public static partial class SelfTest
         {
             Fail($"the BRUTAL logo didn't decode: {ex.Message}");
         }
-        if (Splash.MinSeconds < 1.0 || Splash.Total < 2.0)
+        if (Splash.Total < 2.0)
             Fail("the splash must stay up long enough to be legible");
 
         // The PNG reader on a hand-made image: every row filter type, RGB and grey + alpha.

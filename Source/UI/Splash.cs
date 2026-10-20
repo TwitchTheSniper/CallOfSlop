@@ -9,8 +9,7 @@ namespace CallOfSlop;
 /// The BRUTAL logo shown at launch, before the menus. The BRUTAL licence (section 2.2) asks for the official logo,
 /// unaltered except for scaling, before gameplay, for long enough to be legible and no less prominent than any other
 /// logo. The file in Branding/ is the official LOGO_BRUTAL_WHT.png, byte for byte (the self-test checks its hash).
-/// It fades in on a dark screen, holds, and fades out; a click or key skips it once it has been up for
-/// <see cref="MinSeconds"/>.
+/// It fades in on a dark screen, holds, and fades out; a click or key skips it at any time (it then fades out quickly).
 /// </summary>
 public static unsafe class Splash
 {
@@ -19,11 +18,11 @@ public static unsafe class Splash
     /// <summary>SHA-256 of the official logo file, so a changed or re-saved copy is caught.</summary>
     public const string LogoSha256 = "6e259ecd95b6e0cbc52744b59ffeee3646be9ba4d8b640d9864938c49fdb9556";
 
-    public const double FadeIn = 0.35, Hold = 2.2, FadeOut = 0.45;
+    public const double FadeIn = 0.35, Hold = 2.2, FadeOut = 0.45, SkipFade = 0.2;
     public const double Total = FadeIn + Hold + FadeOut;
 
-    /// <summary>The logo is always up at least this long (legible) before a click or key can skip it.</summary>
-    public const double MinSeconds = 1.5;
+    /// <summary>How long the logo is up before a click or key can skip it (0 = straight away). A skip still fades the logo out.</summary>
+    public const double MinSeconds = 0;
 
     private static double _start = -1, _skipAt = -1;
     private static uint _texture;
@@ -40,7 +39,7 @@ public static unsafe class Splash
             return false;
         if (_start < 0)
             _start = now;
-        var end = _skipAt >= 0 ? _skipAt + FadeOut : _start + Total;
+        var end = _skipAt >= 0 ? _skipAt + SkipFade : _start + Total;
         if (now >= end)
         {
             _done = true;
@@ -59,9 +58,9 @@ public static unsafe class Splash
         if (allowSkip && _skipAt < 0 && t >= MinSeconds
             && (ImGui.IsMouseClicked(ImGuiMouseButton.Left) || ImGui.IsKeyPressed(ImGuiKey.Escape, false)
                 || ImGui.IsKeyPressed(ImGuiKey.Space, false) || ImGui.IsKeyPressed(ImGuiKey.Enter, false)))
-            _skipAt = Math.Max(now, _start + FadeIn + 0.01);
+            _skipAt = now;
         var fadeOutStart = _skipAt >= 0 ? _skipAt : _start + FadeIn + Hold;
-        var a = (float)Math.Clamp(Math.Min(t / FadeIn, 1 - (now - fadeOutStart) / FadeOut), 0, 1);
+        var a = (float)Math.Clamp(Math.Min(t / FadeIn, 1 - (now - fadeOutStart) / (_skipAt >= 0 ? SkipFade : FadeOut)), 0, 1);
 
         var size = ImGui.GetIO().DisplaySize;
         var dl = ImGui.GetForegroundDrawList();
