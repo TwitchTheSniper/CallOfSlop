@@ -10,7 +10,8 @@ namespace CallOfSlop;
 ///   1. Every map: geometry, spawns and waypoints, nothing spawning inside walls.
 ///   2. Every map: a full offline match with 7 bots for 90 simulated seconds (crashes, kills, stuck bots, tick cost).
 ///   3. Mantling: through a Courtyard window and onto a crate.
-///   4. Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
+///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
+///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
 ///   5. Packet sizes: a full 8-player snapshot fits in one packet.
 /// It never touches settings, progress or loadout files.
 /// </summary>
@@ -52,6 +53,7 @@ public static class SelfTest
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
+            Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -864,6 +866,226 @@ public static class SelfTest
         var ratio = levelCosts.Average() / sixty.Average();
         if (ratio < 0.7 || ratio > 1.4)
             Fail($"level cost vs 60%-of-a-gun ratio {ratio:0.00} is off target");
+    }
+
+    // ---- 4a. Weapon and attachment files -------------------------------------------------------
+
+    /// <summary>Every public field that differs between two weapons, as "Field: a vs b".</summary>
+    private static List<string> WeaponDiffs(WeaponDef a, WeaponDef b, bool includeId)
+    {
+        var diffs = new List<string>();
+        foreach (var f in typeof(WeaponDef).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
+        {
+            if (!includeId && f.Name == nameof(WeaponDef.Id))
+                continue;
+            var x = f.GetValue(a);
+            var y = f.GetValue(b);
+            if (!Equals(x, y))
+                diffs.Add($"{f.Name}: {x} vs {y}");
+        }
+        return diffs;
+    }
+
+    /// <summary>The first ```json block of a guide, or null.</summary>
+    private static string? GuideExample(string path)
+    {
+        if (!File.Exists(path))
+            return null;
+        var text = File.ReadAllText(path);
+        var start = text.IndexOf("```json", StringComparison.Ordinal);
+        var end = start < 0 ? -1 : text.IndexOf("```", start + 7, StringComparison.Ordinal);
+        return start < 0 || end < 0 ? "" : text[(start + 7)..end];
+    }
+
+    private static void CheckWeaponFiles()
+    {
+        // ---- The shipped files all load ----
+        foreach (var e in Weapons.LoadErrors.Concat(Attachments.LoadErrors))
+            Fail("weapon/attachment file problem: " + e);
+        var weaponFiles = Weapons.All.Count(w => w.SourceFile != null);
+        var attachments = Attachments.BySlot.SelectMany(x => x).ToArray();
+        Line($"{weaponFiles} of {Weapons.All.Length} weapons loaded from {Weapons.Folder}, {attachments.Length} attachments from {Attachments.Folder}");
+        Line($"weapon set fingerprint {WeaponSet.Fingerprint:x8} (weapons {WeaponSet.WeaponsHash:x8}, attachments {WeaponSet.AttachmentsHash:x8})");
+        if (weaponFiles < Weapons.LegacyNames.Length)
+            Fail($"only {weaponFiles} weapons loaded from files ({Weapons.LegacyNames.Length} ship with the game)");
+        if (attachments.Length < 21)
+            Fail($"only {attachments.Length} attachments loaded from files (21 ship with the game)");
+        if (attachments.Any(a => a.Index is < 1 or > Attachments.MaxPerSlot))
+            Fail("an attachment index is outside 1-15 (kits pack 4 bits per slot)");
+
+        // ---- The original 50 weapons keep their ids (old saves and anything else that stored an id) ----
+        for (var i = 0; i < Weapons.LegacyNames.Length; i++)
+        {
+            if (Weapons.Find(Weapons.LegacyNames[i]) is not { } w)
+                Fail($"'{Weapons.LegacyNames[i]}' (legacy id {i}) isn't loaded");
+            else if (w.Id != i)
+                Fail($"'{w.Name}' has id {w.Id}, but it was {i} before weapons were files");
+        }
+        if (Weapons.DefaultPrimary.Name != "BR-1 Prototype" || Weapons.DefaultSecondary.Name != "P9 Sidearm")
+            Fail($"default weapons are {Weapons.DefaultPrimary.Name} / {Weapons.DefaultSecondary.Name}");
+
+        // ---- Round trip: written out and read back, nothing changes ----
+        var roundTrips = 0;
+        foreach (var w in Weapons.All)
+        {
+            try
+            {
+                var copy = WeaponFile.Load(WeaponFile.ToJson(w), w.Name + " (round trip)");
+                var diffs = WeaponDiffs(w, copy, includeId: false);
+                if (copy.Order != w.Order || copy.UnlockLevel != w.UnlockLevel || copy.Author != w.Author)
+                    diffs.Add("order/unlockLevel/author");
+                foreach (var d in diffs)
+                    Fail($"{w.Name}: weapon file round trip changed {d}");
+                roundTrips++;
+            }
+            catch (WeaponFileException ex)
+            {
+                Fail(ex.Message);
+            }
+        }
+        foreach (var a in attachments.Where(a => a.Rule != null))
+        {
+            try
+            {
+                var copy = AttachmentFile.Load(AttachmentFile.ToJson(a), a.Name + " (round trip)");
+                if (AttachmentFile.ToJson(copy) != AttachmentFile.ToJson(a))
+                    Fail($"{a.Name}: attachment file round trip changed it");
+                foreach (var w in Weapons.All)
+                {
+                    if (copy.Fits(w) != a.Fits(w))
+                        Fail($"{a.Name}: round trip changed whether it fits the {w.Name}");
+                    var x = w.Clone();
+                    var y = w.Clone();
+                    a.Apply(x);
+                    copy.Apply(y);
+                    foreach (var d in WeaponDiffs(x, y, includeId: true))
+                        Fail($"{a.Name} on {w.Name}: round trip changed {d}");
+                }
+                roundTrips++;
+            }
+            catch (WeaponFileException ex)
+            {
+                Fail(ex.Message);
+            }
+        }
+        Line($"{roundTrips} weapon and attachment files written and re-read identically");
+
+        // ---- The built-in fallback weapons (used when the folder is missing) ----
+        var fallback = Weapons.Fallback();
+        if (fallback.Count(w => w.Slot == Slot.Primary) != 1 || fallback.Count(w => w.Slot == Slot.Secondary) != 1)
+            Fail("there must be exactly one built-in fallback weapon per slot");
+        foreach (var fb in fallback)
+        {
+            try
+            {
+                WeaponFile.Validate(fb, fb.Name + " (fallback)");
+            }
+            catch (WeaponFileException ex)
+            {
+                Fail(ex.Message);
+            }
+            if (Weapons.Find(fb.Name) is { } file && WeaponDiffs(fb, file, includeId: false) is { Count: > 0 } d)
+                Line($"note: the built-in fallback {fb.Name} differs from its file ({string.Join("; ", d)})");
+        }
+
+        // ---- Unlocks: the hand-tuned table still applies by name ----
+        if (Weapons.Find("Courier") is { } courier && Progress.UnlockLevel(courier) != 2)
+            Fail($"Courier unlocks at level {Progress.UnlockLevel(courier)} (should be 2)");
+        if (Progress.UnlockLevel(Weapons.DefaultPrimary) != 1 || Progress.UnlockLevel(Weapons.DefaultSecondary) != 1)
+            Fail("the default weapons aren't unlocked at level 1");
+        if (Weapons.Find("Toy Blaster") is { } toy && Progress.UnlockLevel(toy) != Progress.MaxLevel)
+            Fail($"Toy Blaster unlocks at level {Progress.UnlockLevel(toy)} (should be the max, {Progress.MaxLevel})");
+        foreach (var w in Weapons.All)
+            if (Progress.All.Count(u => u.Weapon == w) != 1)
+                Fail($"{w.Name} appears {Progress.All.Count(u => u.Weapon == w)} times in the unlock table");
+
+        // ---- progress.txt: old id-based weapon XP becomes name-based ----
+        var old = Progress.Parse(["xp=5000", "wx16=1234", "wk9=3", "wx9=50", "wk17=2", "wx99=7", "wx.Courier=10", "wx11=999"]);
+        var expect = new (string Name, int Xp)[] { ("BR-1 Prototype", 1234), ("Hornet SMG", 50), ("Vanguard AR", 200), ("Courier", 10) };
+        foreach (var (name, xp) in expect)
+            if (old.WeaponXp(name) != xp)
+                Fail($"old save: {name} has {old.WeaponXp(name)} weapon XP (expected {xp})");
+        if (Weapons.Find("BR-1 Prototype") is { } br && old.WeaponXp(br.Id) != 1234)
+            Fail("weapon XP by id doesn't find the name-based entry");
+        var saved = old.ToLines().ToArray();
+        if (!saved.Contains("wx.BR-1 Prototype=1234") || saved.Any(l => l.Length > 2 && (l.StartsWith("wx", StringComparison.Ordinal) || l.StartsWith("wk", StringComparison.Ordinal)) && char.IsDigit(l[2])))
+            Fail($"progress isn't saved with name keys: {string.Join(" | ", saved)}");
+        var reread = Progress.Parse(saved);
+        if (expect.Any(e => reread.WeaponXp(e.Name) != e.Xp) || reread.Xp != 5000)
+            Fail("progress didn't survive a save and reload");
+        if (!Progress.Parse(["wx.Some Modded Gun=77"]).ToLines().Contains("wx.Some Modded Gun=77"))
+            Fail("weapon XP for a weapon that isn't loaded was dropped");
+        Line($"old save migrated: {string.Join(", ", expect.Select(e => $"{e.Name} {old.WeaponXp(e.Name)}"))}");
+
+        // ---- Multiplayer fingerprint ----
+        if (WeaponSet.Mismatch(WeaponSet.WeaponsHash, (byte)Weapons.All.Length, WeaponSet.AttachmentsHash, (byte)attachments.Length) != null)
+            Fail("our own weapon set doesn't match itself");
+        var tweaked = Weapons.All[0].Clone();
+        tweaked.Damage++;
+        if (WeaponSet.Fnv([WeaponFile.ToJson(tweaked)]) == WeaponSet.Fnv([WeaponFile.ToJson(Weapons.All[0])]))
+            Fail("changing a stat didn't change the fingerprint");
+        var mismatch = WeaponSet.Mismatch(WeaponSet.WeaponsHash ^ 1, (byte)(Weapons.All.Length + 1), WeaponSet.AttachmentsHash, (byte)attachments.Length);
+        if (mismatch == null || !mismatch.Contains("Weapons folder"))
+            Fail($"a different weapon set wasn't reported clearly: {mismatch}");
+        else
+            Line($"mismatch message: {mismatch}");
+
+        // ---- The examples in the guides load ----
+        foreach (var (guide, isWeapon) in new[] { (Path.Combine(Weapons.Folder, "README.md"), true), (Path.Combine(Attachments.Folder, "README.md"), false) })
+        {
+            var json = GuideExample(guide);
+            if (json == null)
+                Fail($"{guide} (the modders' guide) wasn't copied next to the game");
+            else if (json.Length == 0)
+                Fail($"{guide} has no ```json example");
+            else
+            {
+                try
+                {
+                    var name = isWeapon ? WeaponFile.Load(json, "README example").Name : AttachmentFile.Load(json, "README example").Name;
+                    Line($"guide example '{name}' loads");
+                }
+                catch (WeaponFileException ex)
+                {
+                    Fail($"the example in {guide} doesn't load: {ex.Message}");
+                }
+            }
+        }
+
+        // ---- Broken files give useful messages ----
+        const string ok = "\"name\": \"X\", \"class\": \"SMG\", \"damage\": 20, \"rangeM\": 10, \"rpm\": 600, \"mag\": 30, \"reload\": 2, \"hipSpreadDeg\": 2";
+        foreach (var (bad, expectText, weapon) in new[]
+                 {
+                     ("{ \"name\": \"X\", \"class\": \"SMG\" }", "missing", true),
+                     ("{ " + ok + ", \"damgae\": 5 }", "unknown field", true),
+                     ("{ " + ok.Replace("\"rpm\": 600", "\"rpm\": 0") + " }", "between", true),
+                     ("{ " + ok.Replace("\"SMG\"", "\"Laser\"") + " }", "isn't one of", true),
+                     ("{ " + ok.Replace("\"X\"", "\"A=B\"") + " }", "name", true),
+                     ("{ " + ok + ", }", "", true), // trailing commas are allowed
+                     ("{ \"name\": \"X\", \"slot\": \"Muzzle\", \"effects\": [ { \"stat\": \"recoil\", \"mul\": 0.8 } ] }", "unknown stat", false),
+                     ("{ \"name\": \"X\", \"slot\": \"Muzzle\", \"effects\": [ { \"stat\": \"recoilDeg\", \"mul\": 0.8, \"add\": 1 } ] }", "only one", false),
+                     ("{ \"name\": \"X\", \"slot\": \"Magazine\", \"effects\": [ { \"stat\": \"reload\", \"grow\": 2 } ] }", "grow", false),
+                     ("{ \"name\": \"X\", \"slot\": \"Hat\" }", "isn't one of", false),
+                     ("{ \"name\": \"X\", \"slot\": \"Stock\", \"fits\": { \"clases\": [\"SMG\"] } }", "unknown rule", false),
+                 })
+        {
+            try
+            {
+                if (weapon)
+                    WeaponFile.Load(bad, "bad.json");
+                else
+                    AttachmentFile.Load(bad, "bad.json");
+                if (expectText.Length > 0)
+                    Fail($"a broken {(weapon ? "weapon" : "attachment")} file loaded without complaint (expected '{expectText}')");
+            }
+            catch (WeaponFileException ex) when (expectText.Length > 0 && ex.Message.Contains(expectText, StringComparison.OrdinalIgnoreCase))
+            {
+            }
+            catch (Exception ex)
+            {
+                Fail($"{(weapon ? "weapon" : "attachment")} file gave the wrong error (expected '{expectText}'): {ex.Message}");
+            }
+        }
     }
 
     // ---- 5. Packets ----------------------------------------------------------------------

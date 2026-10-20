@@ -40,9 +40,13 @@ public sealed class Progress
 
     /// <summary>A scratch copy that never writes progress.txt (used by the automatic smoke test).</summary>
     public bool ReadOnly;
-    private readonly Dictionary<int, int> _weaponXp = new(); // weapon id -> weapon XP (unlocks attachments)
+    // Weapon name -> weapon XP (unlocks attachments). Keyed by name, not id: ids are positions in the loaded
+    // weapon list and shift when weapon files are added. Entries for weapons that aren't loaded are kept and saved.
+    private readonly Dictionary<string, int> _weaponXp = new(StringComparer.OrdinalIgnoreCase);
 
-    public int WeaponXp(byte weaponId) => _weaponXp.GetValueOrDefault(weaponId);
+    public int WeaponXp(byte weaponId) => weaponId < Weapons.All.Length ? WeaponXp(Weapons.Get(weaponId).Name) : 0;
+
+    public int WeaponXp(string weaponName) => _weaponXp.GetValueOrDefault(weaponName);
     public readonly List<XpPopup> Popups = new();
     public string LevelUpBanner = "";
     public double LevelUpTime = -100;
@@ -135,11 +139,22 @@ public sealed class Progress
 
     public static readonly Unlock[] All = BuildTable();
 
+    /// <summary>True if the weapon is one of the hand-placed ones in the built-in unlock table.</summary>
+    public static bool HasBuiltInUnlock(string weaponName) =>
+        Starters.Contains(weaponName, StringComparer.OrdinalIgnoreCase) || Order.Contains(weaponName, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The unlock table. Shipped weapons unlock in the hand-tuned order above (by name). A weapon file can set
+    /// "unlockLevel" to choose its own level; weapons with neither unlock at the max level.
+    /// </summary>
     private static Unlock[] BuildTable()
     {
         var list = new List<Unlock>();
+        // A weapon in the table by name, unless it isn't loaded or its file picks its own level.
+        WeaponDef? Tabled(string name) => Weapons.Find(name) is { UnlockLevel: null } w ? w : null;
         foreach (var n in Starters)
-            list.Add(new Unlock(1, n, "Weapon", Weapons.Find(n)));
+            if (Tabled(n) is { } w)
+                list.Add(new Unlock(1, w.Name, "Weapon", w));
         for (var i = 0; i < Order.Length; i++)
         {
             var level = 2 + i; // one unlock per level
@@ -150,15 +165,15 @@ public sealed class Progress
                 var def = Throwables.Get(kind);
                 list.Add(new Unlock(level, def.Name, kind == ThrowableKind.Recon ? "Equipment" : "Grenade", Throwable: kind));
             }
-            else
+            else if (Tabled(name) is { } w)
             {
-                list.Add(new Unlock(level, name, "Weapon", Weapons.Find(name)));
+                list.Add(new Unlock(level, w.Name, "Weapon", w));
             }
         }
-        // Anything not listed (e.g. a weapon added later) unlocks at the end.
+        // Anything else (a third-party weapon file) unlocks at its "unlockLevel", or at the end.
         foreach (var w in Weapons.All)
             if (list.All(u => u.Weapon != w))
-                list.Add(new Unlock(MaxLevel, w.Name, "Weapon", w));
+                list.Add(new Unlock(Math.Clamp(w.UnlockLevel ?? MaxLevel, 1, MaxLevel), w.Name, "Weapon", w));
         foreach (var perk in Perks.All.Where(pk => pk.Id != PerkId.None))
             list.Add(new Unlock(PerkLevel(perk.Id), perk.Name, $"{Perks.CategoryName(perk.Category)} perk", Perk: perk.Id));
         for (var slot = 0; slot < MaxLoadoutSlots; slot++)
@@ -224,8 +239,8 @@ public sealed class Progress
         if (weaponId >= Weapons.All.Length)
             return;
         var w = Weapons.Get(weaponId);
-        var before = WeaponXp(weaponId);
-        var after = _weaponXp[weaponId] = before + amount;
+        var before = WeaponXp(w.Name);
+        var after = _weaponXp[w.Name] = before + amount;
         var unlocked = Attachments.For(w).Where(a => Attachments.UnlockXp(w, a) is var need && need > before && need <= after).Select(a => a.Name).ToArray();
         if (unlocked.Length > 0)
         {
@@ -274,36 +289,57 @@ public sealed class Progress
 
     public static Progress Load()
     {
-        var p = new Progress();
         try
         {
             if (File.Exists(FilePath))
-            {
-                foreach (var line in File.ReadAllLines(FilePath))
-                {
-                    var kv = line.Split('=', 2);
-                    if (kv.Length != 2 || !int.TryParse(kv[1].Trim(), out var v))
-                        continue;
-                    switch (kv[0].Trim())
-                    {
-                        case "xp": p.Xp = Math.Max(0, v); break;
-                        case "kills": p.Kills = v; break;
-                        case "headshots": p.Headshots = v; break;
-                        case "matches": p.Matches = v; break;
-                        case "wins": p.Wins = v; break;
-                        case var key when key.StartsWith("wx") && int.TryParse(key[2..], out var wid): p._weaponXp[wid] = Math.Max(0, v); break;
-                        // Older saves counted weapon kills: carry them over as weapon XP.
-                        case var key when key.StartsWith("wk") && int.TryParse(key[2..], out var kid): p._weaponXp.TryAdd(kid, Math.Max(0, v) * KillXp); break;
-                    }
-                }
-            }
+                return Parse(File.ReadAllLines(FilePath));
         }
         catch
         {
             // Unreadable: start fresh.
         }
+        return new Progress();
+    }
+
+    /// <summary>
+    /// Reads progress.txt lines. Weapon XP is "wx.&lt;weapon name&gt;=xp". Older saves used weapon ids ("wx&lt;id&gt;",
+    /// and before that kill counts as "wk&lt;id&gt;"); those are mapped to names with <see cref="Weapons.LegacyNames"/>.
+    /// If a weapon appears more than once, the name key wins over "wx", which wins over "wk".
+    /// </summary>
+    public static Progress Parse(IEnumerable<string> lines)
+    {
+        var p = new Progress();
+        var legacyXp = new Dictionary<string, int>();
+        var legacyKills = new Dictionary<string, int>();
+        string? Legacy(string digits) => int.TryParse(digits, out var id) && id >= 0 && id < Weapons.LegacyNames.Length ? Weapons.LegacyNames[id] : null;
+        foreach (var line in lines)
+        {
+            var kv = line.Split('=', 2);
+            if (kv.Length != 2 || !int.TryParse(kv[1].Trim(), out var v))
+                continue;
+            switch (kv[0].Trim())
+            {
+                case "xp": p.Xp = Math.Max(0, v); break;
+                case "kills": p.Kills = v; break;
+                case "headshots": p.Headshots = v; break;
+                case "matches": p.Matches = v; break;
+                case "wins": p.Wins = v; break;
+                case var key when key.StartsWith("wx.") && key.Length > 3: p._weaponXp[key[3..]] = Math.Max(0, v); break;
+                case var key when key.StartsWith("wx") && Legacy(key[2..]) is { } name: legacyXp[name] = Math.Max(0, v); break;
+                // Older saves counted weapon kills: carry them over as weapon XP.
+                case var key when key.StartsWith("wk") && Legacy(key[2..]) is { } name: legacyKills[name] = Math.Max(0, v) * KillXp; break;
+            }
+        }
+        foreach (var (name, xp) in legacyXp)
+            p._weaponXp.TryAdd(name, xp);
+        foreach (var (name, xp) in legacyKills)
+            p._weaponXp.TryAdd(name, xp);
         return p;
     }
+
+    /// <summary>The lines progress.txt is saved as.</summary>
+    public IEnumerable<string> ToLines() =>
+        [$"xp={Xp}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx.{kv.Key}={kv.Value}")];
 
     public void Save()
     {
@@ -311,7 +347,7 @@ public sealed class Progress
             return;
         try
         {
-            File.WriteAllLines(FilePath, [$"xp={Xp}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx{kv.Key}={kv.Value}")]);
+            File.WriteAllLines(FilePath, ToLines());
         }
         catch
         {

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Muzzle Brake",
+  "slot": "Muzzle",
+  "order": 3,
+  "unlockOrder": 15,
+  "blurb": "Balances recoil and keeps hip fire steady.",
+  "pros": ["-10% recoil", "-10% hip spread"],
+  "cons": [],
+  "fits": { "notClasses": ["Shotgun", "Special", "Pistol"] },
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.9 },
+    { "stat": "hipSpreadDeg", "mul": 0.9 }
+  ]
+}

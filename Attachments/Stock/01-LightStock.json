@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Light Stock",
+  "slot": "Stock",
+  "order": 1,
+  "unlockOrder": 10,
+  "blurb": "Skeletonised for speed.",
+  "pros": ["+6% speed"],
+  "cons": ["+10% recoil"],
+  "fits": { "notClasses": ["Pistol", "Special"] },
+  "effects": [
+    { "stat": "mobility", "add": 0.06 },
+    { "stat": "recoilDeg", "mul": 1.1 }
+  ]
+}

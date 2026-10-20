@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Fast Mag",
+  "slot": "Magazine",
+  "order": 2,
+  "unlockOrder": 5,
+  "blurb": "Clipped together for quick swaps.",
+  "pros": ["30% faster reload"],
+  "cons": [],
+  "fits": { "minMag": 3 },
+  "effects": [
+    { "stat": "reload", "mul": 0.7 }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Angled Grip",
+  "slot": "Underbarrel",
+  "order": 2,
+  "unlockOrder": 13,
+  "blurb": "Snappier shouldering.",
+  "pros": ["25% faster to aim", "-5% recoil"],
+  "cons": [],
+  "fits": { "notClasses": ["Pistol", "Special"] },
+  "effects": [
+    { "stat": "adsTime", "mul": 0.75 },
+    { "stat": "recoilDeg", "mul": 0.95 }
+  ]
+}

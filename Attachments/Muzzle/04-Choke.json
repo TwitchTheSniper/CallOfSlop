@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Choke",
+  "slot": "Muzzle",
+  "order": 4,
+  "unlockOrder": 4,
+  "blurb": "Tightens the pellet pattern.",
+  "pros": ["-30% pellet spread", "+15% range"],
+  "cons": [],
+  "fits": { "classes": ["Shotgun"] },
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.7 },
+    { "stat": "rangeM", "mul": 1.15 }
+  ]
+}

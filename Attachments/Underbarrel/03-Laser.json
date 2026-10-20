@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Laser",
+  "slot": "Underbarrel",
+  "order": 3,
+  "unlockOrder": 2,
+  "blurb": "Points where the hip-fire cone is centred.",
+  "pros": ["-30% hip spread"],
+  "cons": [],
+  "fits": {},
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.7 }
+  ]
+}

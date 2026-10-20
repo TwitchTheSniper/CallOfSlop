@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Heavy Stock",
+  "slot": "Stock",
+  "order": 2,
+  "unlockOrder": 16,
+  "blurb": "Padded and weighted.",
+  "pros": ["-15% recoil"],
+  "cons": ["-4% speed", "Slightly slower to aim"],
+  "fits": { "notClasses": ["Pistol", "Special"] },
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.85 },
+    { "stat": "mobility", "add": -0.04 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

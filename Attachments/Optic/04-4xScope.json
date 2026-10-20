@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "4x Scope",
+  "slot": "Optic",
+  "order": 4,
+  "unlockOrder": 17,
+  "blurb": "Full scope for long sightlines.",
+  "pros": ["4x zoom", "Very tight aimed spread"],
+  "cons": ["Much slower to aim", "Tunnel vision", "-3% speed"],
+  "fits": { "classes": ["AssaultRifle", "LMG", "DMR", "Sniper"] },
+  "effects": [
+    { "stat": "optic", "set": "Scope4" },
+    { "stat": "adsZoom", "set": 4 },
+    { "stat": "adsSpreadMult", "mul": 0.6 },
+    { "stat": "adsTime", "add": 0.1 },
+    { "stat": "mobility", "add": -0.03 }
+  ]
+}

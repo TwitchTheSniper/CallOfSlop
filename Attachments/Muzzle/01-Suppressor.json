@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Suppressor",
+  "slot": "Muzzle",
+  "order": 1,
+  "unlockOrder": 11,
+  "blurb": "Quiet shots and a dim muzzle flash. Bullets lose a bit of punch at range.",
+  "pros": ["Quiet, muffled gunshot", "Dim flash and tracers"],
+  "cons": ["-15% range"],
+  "fits": { "sounds": ["Gun", "Boom"], "notClasses": ["Special"] },
+  "effects": [
+    { "stat": "suppressor", "set": true },
+    { "stat": "sound", "set": "Suppressed" },
+    { "stat": "rangeM", "mul": 0.85 }
+  ]
+}
