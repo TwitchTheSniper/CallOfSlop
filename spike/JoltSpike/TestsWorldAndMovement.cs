@@ -132,14 +132,29 @@ public static class TestsWorldAndMovement
         p = m.Ch.GetPosition();
         Check("0.70 m step blocks", p.Y < 0.1f && p.X < 2.7f, $"feet at x={F(p.X)} y={F(p.Y)}");
 
-        // Step-height sweep: which steps does CharacterVirtual's WalkStairs climb for a given step-up setting?
+        // Step-height sweep: which single steps does each step-up method climb? (WalkStairs tries / successes in brackets.)
         var sweep = new List<string>();
-        var savedUp = Mover.Ext.WalkStairsStepUp;
+        var savedExt = Mover.Ext;
         var savedManual = Mover.ManualExtended;
-        foreach (var (manual, up) in new[] { (false, 0.6f), (false, 0.8f), (true, 0.55f), (true, 0.6f), (true, 0.65f), (true, 0.7f) })
+        var savedOwn = Mover.OwnStep;
+        var configs = new (string Name, bool Manual, bool Own, float Up, float MinFwd, float FwdTest)[]
         {
-            Mover.ManualExtended = manual;
-            Mover.Ext.WalkStairsStepUp = new float3(0, up, 0);
+            ("native ExtendedUpdate", false, false, 0.6f, 0.02f, 0.15f),
+            ("C# ExtendedUpdate + Jolt WalkStairs", true, false, 0.6f, 0.02f, 0.15f),
+            ("same, min forward 0.3", true, false, 0.6f, 0.3f, 0.15f),
+            ("same, forward test 0.5", true, false, 0.6f, 0.02f, 0.5f),
+            ("same, both", true, false, 0.6f, 0.3f, 0.5f),
+            ("own step (Update+StickToFloor) up 0.6", true, true, 0.6f, 0.02f, 0.15f),
+            ("own step up 0.55", true, true, 0.55f, 0.02f, 0.15f),
+        };
+        foreach (var cfg in configs)
+        {
+            Mover.ManualExtended = cfg.Manual;
+            Mover.OwnStep = cfg.Own;
+            Mover.Ext.WalkStairsStepUp = new float3(0, cfg.Up, 0);
+            Mover.Ext.WalkStairsMinStepForward = cfg.MinFwd;
+            Mover.Ext.WalkStairsStepForwardTest = cfg.FwdTest;
+            Mover.StairCalls = Mover.StairOk = 0;
             var climbed = new List<string>();
             foreach (var h in new[] { 0.3f, 0.4f, 0.45f, 0.5f, 0.55f, 0.6f, 0.7f })
             {
@@ -150,14 +165,17 @@ public static class TestsWorldAndMovement
                 var sm = new Mover(sp, new float3(0, 0.05f, 0));
                 for (var i = 0; i < 60; i++)
                     sm.Step(new Input { Buttons = Btn.Forward, Yaw = East });
-                if (sm.Ch.GetPosition().Y > h - 0.05f)
+                if (sm.Ch.GetPosition().Y > h - 0.05f && sm.Ch.GetPosition().X > 3.5f)
                     climbed.Add(F(h, 2));
             }
-            sweep.Add($"{(manual ? "C# ExtendedUpdate" : "native ExtendedUpdate")} stepUp {F(up, 2)}: climbs [{string.Join(" ", climbed)}]");
+            var tries = cfg.Manual ? $" ({Mover.StairOk}/{Mover.StairCalls})" : "";
+            sweep.Add($"{cfg.Name}: [{string.Join(" ", climbed)}]{tries}");
+            Result($"b.sweep.{sweep.Count}", string.Join("_", climbed));
         }
-        Mover.Ext.WalkStairsStepUp = savedUp;
+        Mover.Ext = savedExt;
         Mover.ManualExtended = savedManual;
-        Metric("WalkStairs sweep (step heights climbed)", string.Join("; ", sweep));
+        Mover.OwnStep = savedOwn;
+        Metric("step sweep, heights climbed of 0.30-0.70 (tries ok/total)", string.Join("; ", sweep));
 
         // Ramps: 30 deg walkable (stand still on it, walk up it), 50 deg too steep (slide, can't climb).
         foreach (var (lane, deg) in new[] { (TestWorld.LaneRamp30, 30f), (TestWorld.LaneRamp50, 50f) })

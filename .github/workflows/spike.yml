@@ -30,18 +30,37 @@ jobs:
           mkdir -p spike/out
           dotnet build spike/JoltSpike/JoltSpike.csproj -c Release -nologo
 
+      - name: Package versions on nuget.org
+        if: runner.os == 'Linux'
+        run: |
+          for p in ahwoo.brutal.jolt ahwoo.brutal.gltf ahwoo.brutal.render.mesh; do
+            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | tr -d '\n ' | grep -o '"versions":\[[^]]*\]' | tail -c 300)
+            echo "::notice title=nuget $p::$v"
+          done
+
       - name: Jolt binding vs native exports
         if: runner.os == 'Linux'
         run: |
           pkg=$(ls -d ~/.nuget/packages/ahwoo.brutal.jolt/*/ | tail -1)
           so=$(find "$pkg" -name '*.so' | head -1)
+          win=$(find "$pkg" -iname '*jolt*.dll' -path '*win*' | head -1)
           dll=$(find "$pkg" -name 'Brutal.Jolt.dll' | head -1)
+          echo "::notice title=package files::$(cd $pkg && find . -type f | grep -v -E '\.xml$' | tr '\n' ' ')"
           nm -D --defined-only "$so" | awk '{print $3}' | sort -u > native.txt
           strings -a "$dll" | grep -E '^[A-Z][A-Za-z0-9]+_[A-Za-z0-9_]+$' | sort -u > managed.txt
           comm -23 managed.txt native.txt > missing.txt
           echo "::notice title=binding totals::managed entry points $(wc -l < managed.txt), native exports $(wc -l < native.txt), managed-but-not-native $(wc -l < missing.txt)"
-          echo "::notice title=native queries::$(grep -E 'CastRay|CastShape|CollideShape|CollidePoint|NarrowPhase|BroadPhaseQuery|TransformedShape_' native.txt | grep -v '^_Z' | tr '\n' ' ' | cut -c1-6000) "
-          cp native.txt managed.txt missing.txt spike/out/ || true
+          # Every query-shaped entry point: is it in the managed binding (M), the Linux .so (L), the Windows .dll (W)?
+          if [ -n "$win" ]; then objdump -p "$win" | awk '/\[Ordinal\/Name Pointer\] Table/{f=1;next} f&&/\]/{print $NF}' | sort -u > nativewin.txt; else : > nativewin.txt; fi
+          echo "::notice title=windows dll::$win exports $(wc -l < nativewin.txt)"
+          cat managed.txt native.txt nativewin.txt | grep -v '^_Z' | grep -E 'CastRay|CollidePoint|CastShape|CollideShape|CollisionDispatch|RayCast|TransformedShape_|BodyLockInterface|GetNarrowPhaseQuery|GetBroadPhaseQuery|HeightFieldShapeSettings_|MeshShapeSettings_|ConvexHullShapeSettings_|IndexedTriangle_|CharacterVirtual_(Save|Restore|Check)' | sort -u > q.txt
+          out=""
+          while read -r n; do
+            m=$(grep -qx "$n" managed.txt && echo M || echo -); l=$(grep -qx "$n" native.txt && echo L || echo -); w=$(grep -qx "$n" nativewin.txt && echo W || echo -)
+            out="$out $n:$m$l$w"
+          done < q.txt
+          i=0; while [ -n "$out" ] && [ $i -lt 6 ]; do i=$((i+1)); echo "::notice title=query exports $i (M=managed L=linux W=windows)::${out:0:3900}"; out="${out:3900}"; done
+          cp native.txt nativewin.txt managed.txt missing.txt q.txt spike/out/ || true
 
       - name: Machine
         run: |
@@ -112,7 +131,8 @@ jobs:
             same=0; diff=0; detail=""
             while IFS='=' read -r k v; do
               case "$k" in c.*) ;; *) continue ;; esac
-              o=$(grep "^$k=" "$f" | head -1 | cut -d= -f2-)
+              v=${v%$'\r'}
+              o=$(grep "^$k=" "$f" | head -1 | cut -d= -f2- | tr -d '\r' || true)
               if [ "$v" = "$o" ]; then same=$((same+1)); else diff=$((diff+1)); detail="$detail $k: windows-latest=$v $other=$o;"; fi
             done < "$ref"
             if [ $diff -eq 0 ]; then
@@ -121,5 +141,6 @@ jobs:
               echo "::warning title=determinism windows-latest vs $other::$diff of $((same+diff)) differ:$detail"
             fi
           done
-          cfgw=$(grep '^a.config=' $ref | cut -d= -f2-); cfgl=$(grep '^a.config=' all/spike-ubuntu-latest/results-ubuntu-latest.txt 2>/dev/null | cut -d= -f2-)
+          cfgw=$(grep '^a.config=' $ref | cut -d= -f2- || true); cfgl=$(grep '^a.config=' all/spike-ubuntu-latest/results-ubuntu-latest.txt 2>/dev/null | cut -d= -f2- || true)
           echo "::notice title=jolt build config::windows: $cfgw | linux: $cfgl"
+          exit 0

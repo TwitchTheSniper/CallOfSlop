@@ -37,6 +37,7 @@ public static class TestsPerfAndLagComp
                 BruteForce(w, origins[i], dirs[i], 200);
             var tbUs = Clock.UsSince(tb);
             Metric("1000 rays, today's C# loop over every AABB, us total / per ray", $"{F(tbUs, 0)} / {F(tbUs / N, 2)} over {w.Aabbs.Count} boxes");
+            BvhRays(w, origins, dirs);
             BuildTimes();
             return;
         }
@@ -66,7 +67,50 @@ public static class TestsPerfAndLagComp
         Metric("1000 rays, batched CastRaysClosest, us total / per ray", $"{F(batch, 0)} / {F(batch / N, 2)} (returned {hits})");
         Metric("1000 rays, today's C# loop over every AABB (boxes only), us total / per ray", $"{F(brute, 0)} / {F(brute / N, 2)} over {w.Aabbs.Count} boxes");
         Check("rays hit things", hitCount > N / 2, $"{hitCount}/{N} rays hit within 200 m");
+        BvhRays(w, origins, dirs);
         BuildTimes(origins, dirs);
+    }
+
+    /// <summary>The C# fallback query (design doc "BvhWorldQuery"): same answers as today's loop, timed at 609 and 5000 boxes.</summary>
+    static void BvhRays(TestWorld w, float3[] origins, float3[] dirs)
+    {
+        var N = origins.Length;
+        var tb = Clock.Now;
+        var bvh = new AabbBvh(w.Aabbs);
+        var buildUs = Clock.UsSince(tb);
+        var mismatch = 0;
+        for (var i = 0; i < N; i++)
+            if (MathF.Abs(bvh.Raycast(origins[i], dirs[i], 200) - BruteForce(w, origins[i], dirs[i], 200)) > 1e-3f)
+                mismatch++;
+        Check("C# BVH ray cast = today's brute-force loop", mismatch == 0, $"{mismatch}/{N} differ");
+        double bvhUs = double.MaxValue, bruteUs = double.MaxValue;
+        for (var rep = 0; rep < 6; rep++)
+        {
+            var t0 = Clock.Now;
+            for (var i = 0; i < N; i++)
+                bvh.Raycast(origins[i], dirs[i], 200);
+            if (rep > 0) bvhUs = Math.Min(bvhUs, Clock.UsSince(t0));
+            t0 = Clock.Now;
+            for (var i = 0; i < N; i++)
+                BruteForce(w, origins[i], dirs[i], 200);
+            if (rep > 0) bruteUs = Math.Min(bruteUs, Clock.UsSince(t0));
+        }
+        Metric($"ray us per ray at {w.Aabbs.Count} boxes: brute force / C# BVH", $"{F(bruteUs / N, 2)} / {F(bvhUs / N, 3)} (BVH build {F(buildUs, 0)} us, {bvh.NodeCount} nodes)");
+        var big = new TestWorld(randomBoxes: 5000);
+        var bigBvh = new AabbBvh(big.Aabbs);
+        double bigBvhUs = double.MaxValue, bigBruteUs = double.MaxValue;
+        for (var rep = 0; rep < 4; rep++)
+        {
+            var t0 = Clock.Now;
+            for (var i = 0; i < N; i++)
+                bigBvh.Raycast(origins[i], dirs[i], 200);
+            if (rep > 0) bigBvhUs = Math.Min(bigBvhUs, Clock.UsSince(t0));
+            t0 = Clock.Now;
+            for (var i = 0; i < N; i++)
+                BruteForce(big, origins[i], dirs[i], 200);
+            if (rep > 0) bigBruteUs = Math.Min(bigBruteUs, Clock.UsSince(t0));
+        }
+        Metric($"ray us per ray at {big.Aabbs.Count} boxes: brute force / C# BVH", $"{F(bigBruteUs / N, 2)} / {F(bigBvhUs / N, 3)}");
     }
 
     static void BuildTimes(float3[]? origins = null, float3[]? dirs = null)

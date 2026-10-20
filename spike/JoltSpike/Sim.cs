@@ -228,14 +228,69 @@ public sealed class Mover
                 var achieved = MathF.Max(0, float3.Dot(new float3(moved.X, 0, moved.Z), dir));
                 if (achieved + 1e-4f < stepLen)
                 {
-                    var forward = dir * MathF.Max(Ext.WalkStairsMinStepForward, stepLen - achieved);
-                    var forwardTest = dir * Ext.WalkStairsStepForwardTest;
-                    Ch.WalkStairs(Sim.Dt, Ext.WalkStairsStepUp, forward, forwardTest, Ext.WalkStairsStepDownExtra,
-                        _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+                    StairCalls++;
+                    bool ok;
+                    if (OwnStep)
+                        ok = OwnStepUp(dir, MathF.Max(OwnStepForward, stepLen - achieved));
+                    else
+                    {
+                        var forward = dir * MathF.Max(Ext.WalkStairsMinStepForward, stepLen - achieved);
+                        var forwardTest = dir * Ext.WalkStairsStepForwardTest;
+                        ok = Ch.WalkStairs(Sim.Dt, Ext.WalkStairsStepUp, forward, forwardTest, Ext.WalkStairsStepDownExtra,
+                            _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+                    }
+                    if (ok)
+                        StairOk++;
                 }
             }
         }
         _ = up;
+    }
+
+    /// <summary>WalkStairs attempts and successes (for the step sweep's diagnostics).</summary>
+    public static int StairCalls, StairOk;
+
+    /// <summary>
+    /// false: Jolt's CharacterVirtual.WalkStairs. true: our own step-up built from Update + StickToFloor
+    /// (sweep up, sweep forward, snap down; undo if nothing was gained), like a classic FPS step.
+    /// </summary>
+    public static bool OwnStep = true;
+
+    /// <summary>Minimum forward move of the own step, so the capsule's round bottom lands on top of the step, not on its edge.</summary>
+    public static float OwnStepForward = 0.25f;
+
+    bool OwnStepUp(float3 dir, float forward)
+    {
+        var basePos = Ch.GetPosition();
+        var baseVel = Ch.GetLinearVelocity();
+        var noGravity = float3.Zero;
+        // 1. Sweep up by the step height (a low ceiling stops it).
+        Ch.SetLinearVelocity(new float3(0, Ext.WalkStairsStepUp.Y / Sim.Dt, 0));
+        Ch.Update(Sim.Dt, noGravity, _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+        var rise = Ch.GetPosition().Y - basePos.Y;
+        if (rise > 0.05f)
+        {
+            // 2. Sweep forward at the raised height.
+            Ch.SetLinearVelocity(dir * (forward / Sim.Dt));
+            Ch.Update(Sim.Dt, noGravity, _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+            var moved = Ch.GetPosition() - basePos;
+            // Sliding up over an edge during the forward sweep means the obstacle is taller than the step.
+            if (float3.Dot(new float3(moved.X, 0, moved.Z), dir) > 0.05f && moved.Y <= rise + 0.01f)
+            {
+                // 3. Snap down onto whatever is below; keep the result only if we really ended up higher, on something.
+                var landed = Ch.StickToFloor(new float3(0, -(rise + 0.05f), 0), _p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+                var gain = Ch.GetPosition().Y - basePos.Y;
+                if (landed && gain > 0.02f && gain <= Ext.WalkStairsStepUp.Y)
+                {
+                    Ch.SetLinearVelocity(new float3(baseVel.X, 0, baseVel.Z));
+                    return true;
+                }
+            }
+        }
+        Ch.SetPosition(basePos);
+        Ch.SetLinearVelocity(baseVel);
+        Ch.RefreshContacts(_p.WorldBp, _p.WorldObj, _p.AnyBody, _p.AnyShape, _p.Temp);
+        return false;
     }
 
     public NetState Net => new() { Position = Ch.GetPosition(), Velocity = Ch.GetLinearVelocity(), Stance = Stance };

@@ -18,6 +18,9 @@ public static class TestsDeterminism
         new(0, 1.2f, TestWorld.LaneMover), new(4, 1.2f, TestWorld.LaneSpinner), new(50, 10, 0), new(70, 10, 12), new(90, 10, -20),
     ];
 
+    /// <summary>The first 8 bots start on the fixtures; more (the 32-player test) drop onto the box field.</summary>
+    static float3 SpawnOf(int i) => i < Spawns.Length ? Spawns[i] : new float3(40 + (i % 8) * 10, 10, -50 + (i / 8) * 25);
+
     /// <summary>Recorded random inputs: each bot changes its mind every 20-40 ticks, like a twitchy player.</summary>
     public static Input[][] MakeInputs(int bots, int ticks, uint seed = 77)
     {
@@ -68,7 +71,7 @@ public static class TestsDeterminism
         var r = new RunResult();
         var movers = new Mover[inputs.Length];
         for (var i = 0; i < movers.Length; i++)
-            movers[i] = new Mover(w.P, Spawns[i % Spawns.Length]);
+            movers[i] = new Mover(w.P, SpawnOf(i));
         var h = new Hasher();
         var ticks = inputs[0].Length;
         var rec = StateRecorderImpl.Create();
@@ -183,6 +186,18 @@ public static class TestsDeterminism
         var wb = new TestWorld(boxGround: true);
         var flat = RunBots(wb, inputs, record: false).TickUs.Skip(30).ToList();
         Metric("same, ground = one box instead of triangle-compound terrain: 8 chars us/tick (mean/p99)", $"{F(flat.Average(), 1)}/{F(Clock.Percentile(flat, 0.99), 1)}");
+        // A full 32-player server: every character steps every tick.
+        var inputs32 = MakeInputs(32, Ticks, seed: 99);
+        var r32 = RunBots(w, inputs32, record: false);
+        var r32b = RunBots(w2, inputs32, record: false);
+        Check("32 chars x 600 ticks: identical in a separately built world", r32.Hash == r32b.Hash, $"{r32.Hash} vs {r32b.Hash}");
+        Result("c.bots32x600", r32.Hash);
+        var t32 = r32.TickUs.Skip(30).ToList();
+        Metric("32 chars per tick us, triangle-compound terrain (mean/p50/p99/max)",
+            $"{F(t32.Average(), 1)}/{F(Clock.Percentile(t32, 0.5), 1)}/{F(Clock.Percentile(t32, 0.99), 1)}/{F(t32.Max(), 1)} = {F(t32.Average() / 32, 1)} per char");
+        var t32b = RunBots(wb, inputs32, record: false).TickUs.Skip(30).ToList();
+        Metric("32 chars per tick us, box ground (mean/p99)", $"{F(t32b.Average(), 1)}/{F(Clock.Percentile(t32b, 0.99), 1)} = {F(t32b.Average() / 32, 1)} per char; budget at 60 Hz is 16667 us");
+
         var reps = new List<double>();
         for (var i = 0; i < 10; i++)
             reps.Add(Replay(w, a, inputs[0], 240, full: false).Us);
