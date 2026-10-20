@@ -56,15 +56,15 @@ public sealed partial class Ui
         var titlePos = origin + new float2(area.X * 0.02f, area.Y * 0.2f);
         ImGui.SetCursorScreenPos(titlePos);
         ImGui.PushFont(default, 30);
-        ImGui.TextColored(Orange, w.Name.ToUpperInvariant());
+        ImGuiSafe.TextColored(Orange, w.Name.ToUpperInvariant());
         ImGui.PopFont();
         ImGui.SetCursorScreenPos(titlePos + new float2(0, 36 * _scale));
-        ImGui.TextColored(Dim, $"{w.ClassName}  -  {w.ModeName}");
+        ImGuiSafe.TextColored(Dim, $"{w.ClassName}  -  {w.ModeName}");
         if (options.Count > 0)
         {
             var maxXp = Attachments.MaxXp(w);
             ImGui.SetCursorScreenPos(titlePos + new float2(0, 58 * _scale));
-            ImGui.TextColored(Dim, $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}");
+            ImGuiSafe.TextColored(Dim, $"Weapon XP {Math.Min(wxp, maxXp):N0} / {maxXp:N0}");
             ImGui.SetCursorScreenPos(titlePos + new float2(0, 78 * _scale));
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new float4(0.4f, 0.95f, 1f, 1f));
             ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(area.X * 0.17f, 6 * _scale), ""u8);
@@ -75,7 +75,7 @@ public sealed partial class Ui
             // Opened from the weapon select on a gun that isn't equipped: a preview until you change something.
             ImGui.SetCursorScreenPos(titlePos + new float2(0, 92 * _scale));
             ImGui.PushTextWrapPos(titlePos.X - ImGui.GetWindowPos().X + area.X * 0.19f);
-            ImGui.TextColored(Orange, $"Preview - picking an attachment equips this gun in {Edit.Name}.");
+            ImGuiSafe.TextColored(Orange, $"Preview - picking an attachment equips this gun in {Edit.Name}.");
             ImGui.PopTextWrapPos();
         }
 
@@ -93,11 +93,11 @@ public sealed partial class Ui
             if (ImGui.BeginChild($"##card{(int)slot}", cardSize, ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
                 var unlocked = inSlot.Count(a => wxp >= Attachments.UnlockXp(w, a));
-                ImGui.TextColored(inSlot.Length > 0 ? SlotBlue : Dim, Attachments.SlotName(slot));
+                ImGuiSafe.TextColored(inSlot.Length > 0 ? SlotBlue : Dim, Attachments.SlotName(slot));
                 if (inSlot.Length > 0)
                 {
                     ImGui.SameLine();
-                    ImGui.TextColored(Dim, $"  {unlocked}/{inSlot.Length}");
+                    ImGuiSafe.TextColored(Dim, $"  {unlocked}/{inSlot.Length}");
                 }
                 ImGui.Text(inSlot.Length == 0 ? "-" : equipped?.Name ?? (slot == AttachSlot.Optic ? "Iron sights" : "Empty"));
                 // Orange dot in the corner when something is fitted
@@ -132,7 +132,7 @@ public sealed partial class Ui
         {
             var fitted = Attachments.InKit(kit).Count();
             var slots = Enumerable.Range(0, Attachments.SlotCount).Count(sl => options.Any(a => (int)a.Slot == sl));
-            ImGui.TextColored(SlotBlue, $"Equipped {fitted}/{slots}:");
+            ImGuiSafe.TextColored(SlotBlue, $"Equipped {fitted}/{slots}:");
             var dots = ImGui.GetWindowDrawList();
             var basePos = ImGui.GetItemRectMax() + new float2(10 * _scale, -9 * _scale);
             for (var i = 0; i < slots; i++)
@@ -154,7 +154,7 @@ public sealed partial class Ui
             StatRow("Aim speed", StatBars.AimSpeed(reference), StatBars.AimSpeed(preview), StatBars.Change(reference.AdsTime, preview.AdsTime));
             StatRow("Magazine", StatBars.Magazine(reference), StatBars.Magazine(preview), StatBars.Change(reference.Mag, preview.Mag));
             StatRow("Reload", StatBars.Reload(reference), StatBars.Reload(preview), StatBars.Change(reference.Reload, preview.Reload));
-            ImGui.TextColored(Dim, $"{preview.Mag} rounds, {preview.RangeM:0} m range, {preview.AdsTime:0.00} s to aim, {preview.AdsZoom:0.0}x");
+            ImGuiSafe.TextColored(Dim, $"{preview.Mag} rounds, {preview.RangeM:0} m range, {preview.AdsTime:0.00} s to aim, {preview.AdsZoom:0.0}x");
         }
         ImGui.EndChild();
         ImGui.PopStyleColor();
@@ -178,7 +178,7 @@ public sealed partial class Ui
         ImGui.SetNextWindowSize(new float2(420 * _scale, 0));
         if (_openSlot is { } slot && ImGui.BeginPopup("##attpick"u8, ImGuiWindowFlags.None))
         {
-            ImGui.TextColored(SlotBlue, Attachments.SlotName(slot).ToUpperInvariant());
+            ImGuiSafe.TextColored(SlotBlue, Attachments.SlotName(slot).ToUpperInvariant());
             ImGui.Separator();
             var current = Attachments.Slot(kit, slot);
             // A click picks and closes the list; a double-click's second click is swallowed (see SecondClick).
@@ -219,11 +219,11 @@ public sealed partial class Ui
             if (show != null)
             {
                 ImGui.Separator();
-                ImGui.TextWrapped(show.Blurb);
+                ImGuiSafe.TextWrapped(show.Blurb);
                 foreach (var pro in show.Pros)
-                    ImGui.TextColored(Green, $"+ {pro}");
+                    ImGuiSafe.TextColored(Green, $"+ {pro}");
                 foreach (var con in show.Cons)
-                    ImGui.TextColored(Red, $"- {con}");
+                    ImGuiSafe.TextColored(Red, $"- {con}");
             }
             ImGui.EndPopup();
         }
@@ -240,7 +240,7 @@ public sealed partial class Ui
     {
         before = Math.Clamp(before, 0.02f, 1f);
         after = Math.Clamp(after, 0.02f, 1f);
-        ImGui.TextColored(Dim, label);
+        ImGuiSafe.TextColored(Dim, label);
         ImGui.SameLine(100 * _scale);
         var p0 = ImGui.GetCursorScreenPos() + new float2(0, 5 * _scale);
         var width = ImGui.GetContentRegionAvail().X - 50 * _scale; // room for the "+25%" on the right
@@ -262,7 +262,7 @@ public sealed partial class Ui
         if (change.Length > 0)
         {
             ImGui.SameLine(0, 6 * _scale);
-            ImGui.TextColored(after >= before ? new float4(0.35f, 0.86f, 0.43f, 1f) : new float4(0.9f, 0.27f, 0.24f, 1f), change);
+            ImGuiSafe.TextColored(after >= before ? new float4(0.35f, 0.86f, 0.43f, 1f) : new float4(0.9f, 0.27f, 0.24f, 1f), change);
         }
     }
 }

@@ -3,7 +3,7 @@
   "name": "Tri-Shot",
   "order": 22,
   "class": "AssaultRifle",
-  "blurb": "3-round burst rifle. Four bursts, four kills.",
+  "blurb": "3-round burst rifle. Two bursts kill, or one with a head shot in it.",
   "damage": 30,
   "headMult": 2,
   "pellets": 1,

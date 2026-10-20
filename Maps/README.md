@@ -47,8 +47,8 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 |---|---|---|
 | `format` | no | `"call-of-slop-map/1"`. Recommended, so future versions can recognise old files. |
 | `name` | **yes** | Shown in menus, and it's how servers and clients identify the map. It must be unique. |
-| `description` | no | One line, shown in the map list. |
-| `author` | no | Shown as "(by …)" in the map list. |
+| `description` | no | One line, shown in the map list. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. |
+| `author` | no | Shown as "(by ...)" in the map list. |
 | `order` | no | Sort position in the list (the shipped maps use 1–24). Ties sort by name. Default 0. |
 | `halfX`, `halfZ` | **yes** | Half the map's width (X) and depth (Z) in metres. The playable area runs from `-halfX..halfX` and `-halfZ..halfZ`. The size class is worked out from these: Small up to ~75 m across, Medium up to ~135 m, Large beyond that. Large and Medium maps get distance fog. |
 | `sky` | no | Sky and fog colour. |
@@ -346,8 +346,8 @@ Maps/
 |---|---|
 | `format` | `"call-of-slop-pack/1"`. Recommended. |
 | `name` | Shown in the lobby's pack list. Without it (or without a pack.json at all) the folder name is used. |
-| `description` | One line, shown under the pack's map count. |
-| `author` | Shown as "(by …)". |
+| `description` | One line, shown under the pack's map count. Plain ASCII only, like map descriptions. |
+| `author` | Shown as "(by ...)". |
 | `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 
 Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps; they don't matter online.
