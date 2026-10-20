@@ -12,7 +12,6 @@ public sealed partial class Ui
 {
     private Settings? _hudSettings; // for key names in the match bar
 
-    private static float4 Rgba(System.Numerics.Vector3 c, float a = 1f) => new(c.X, c.Y, c.Z, a);
 
     private static float4 TeamRgba(byte team) => Rgba(GameModes.TeamColor(team));
 

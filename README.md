@@ -41,12 +41,38 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 
 ### Matches
 
+- These are the **Free-for-all** rules (the default). The host can pick another game mode; see *Game modes*.
 - **First to 11 kills wins, but you must be 2 kills clear** of the next player (like tennis). At 11-10 the match carries on until someone leads by two.
-- **5-second countdown** at the start of every match: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
+- **Warmup and ready-up** before every match (the first one and each one after the map vote): see *Ready-up* below.
+- **5-second countdown** once everyone is ready: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
 - **10 minutes max.** When the clock runs out, the kill leader wins; a tie at the top is a draw.
 - The clock and the score (you vs. the best other player) sit at the top of the screen. It turns orange with "Win by 2!" when the match goes to deuce.
 - At the end you get VICTORY / DEFEAT / DRAW and the final scoreboard. Nobody can be hurt on that screen, and a new match starts on the same map after 12 seconds.
 - Same rules in single player and multiplayer; the host's game decides when a match ends.
+
+### Ready-up
+
+- Every match opens with a **warmup**. The loadout screen opens; you can pick a loadout, respawn and walk around, but nobody can be hurt or shoot. A panel on the left lists everyone with a tick for who's ready.
+- Press **F3** (rebindable: *Ready up*) or click **READY UP** in the loadout screen footer or the panel. The 5-second countdown starts as soon as **every person** is ready. Bots are always ready.
+- **Single player:** Ready, Deploy or Respawn starts the countdown straight away.
+- **Hosting:** the panel has a **FORCE START** button. The Host screen also has *Auto-start the match once someone is ready* (off by default): when it's on, the match starts that many seconds after the first person readies up, even if others haven't.
+- When the countdown starts, everyone is put back at a spawn point. People who join during the warmup start not ready. People who join mid-match, or who leave, never hold anyone up.
+
+### Game modes
+
+Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode has the same 10-minute limit.
+
+| Mode | Rules |
+| --- | --- |
+| **Free-for-all** | First to 11 kills, win by 2 (above). |
+| **Team Deathmatch** | Two teams (Blue and Red), auto-balanced, bots included. First team to **40 kills**. No friendly fire, grenades and streaks included (your own grenade can still hurt you). You spawn on your team's side of the map. |
+| **King of the Hill** | Two teams. A glowing ring marks the hill. Hold it with **only your team** inside for **1 point a second**; while both teams are in it (contested) nobody scores. The hill moves to the next zone every **60 s**. First to **150 points**. |
+| **Capture the Flag** | Two teams, a flag at each base. Touch the enemy flag to take it; bring it to **your own flag** to capture, which only works while your flag is at home. A carrier who dies drops it; a teammate touching a dropped flag sends it home, otherwise it returns by itself after **20 s**. Carriers keep their guns, and a light beam over them (and over a dropped flag) shows through walls. First to **3 captures**. |
+| **Gun Game** | Everyone starts with the same gun, the first one in the unlock order, whatever they've unlocked. Each kill moves you to the next gun; a **melee kill also sets the victim back one gun**. The first kill with the last gun wins (a melee kill on the last gun doesn't count). Loadouts, grenades, perks and kill streaks are off. The ladder is 20 guns, evenly spaced through the 50-odd weapons in unlock order. |
+
+Team modes colour everyone blue or red (players, scoreboard, kill card). King of the Hill is played by teams. The HUD shows the hill's holder, its distance and direction and when it moves; the state of both flags; or your Gun Game weapon, the next one and the leader. The scoreboard groups players by team (or by gun level). If a player leaves and the teams end up two apart, a bot switches sides.
+
+Maps can place team spawns, hills and flags by hand; otherwise the game works them out from the map (see Maps/README.md).
 
 ### Attachments (gunsmith)
 
@@ -124,7 +150,7 @@ Press **V** for a quick rifle-butt. It reaches about 2.4 m and does 55 damage, s
 
 ### Respawning
 
-- **Loadouts only change between lives.** During a life you can still edit loadouts, and the changes apply the next time you spawn. The one exception is the 5-second pre-match countdown, when changes apply immediately.
+- **Loadouts only change between lives.** During a life you can still edit loadouts, and the changes apply the next time you spawn. The exceptions are the warmup and the 5-second pre-match countdown, when changes apply immediately.
 - **Death cam and kill card.** When you die, the camera rises over your body, then turns to face whoever killed you and zooms in a little, following them for about 3 seconds. A **kill card** shows the killer's name, their gun with its attachments (optic marked), headshot, distance, how much health they had left and their streak (melee, grenades, streak rewards and killing yourself get their own versions). Click, or press the loadout key, to skip straight to the loadout screen. On wide screens the card stays next to the loadout window.
 - **Nobody is force-respawned.** When you die, the loadout screen opens after the death cam. Pick a loadout, then click **RESPAWN**. The button counts down the 3-second respawn delay, and clicking early queues it. You also start every session on this screen.
 - Close the screen to just watch. Press the loadout key to reopen it.
@@ -211,6 +237,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | G | Throw grenade |
 | F | Use equipment (Recon Pulse) |
 | V | Melee |
+| F3 | Ready up (warmup) |
 | 4 / 5 / 6 | Use a kill streak (cheapest first); for aimed ones, then fire to call it in |
 | B | Loadout menu |
 | Tab (hold) | Scoreboard |
