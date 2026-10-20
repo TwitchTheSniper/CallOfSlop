@@ -393,7 +393,6 @@ public static partial class SelfTest
     private static void CheckMatches()
     {
         var botStats = _matchBotStats = new BotStats();
-        using var jitWatch = new JitWatch(); // TEMP
         foreach (var m in Maps.All)
         {
             var sw = Stopwatch.StartNew();
@@ -422,7 +421,7 @@ public static partial class SelfTest
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                     var tick = i;
-                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, feed: {string.Join(" / ", game.Feed.TakeLast(3).Select(f => f.Text))}"); // TEMP context
+                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}"); // said only if the check fails
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -477,7 +476,6 @@ public static partial class SelfTest
             // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
             if (cpu.WorstMs > MaxTickWorkMs)
                 Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
-            Line($"  WORK {m.Name}: {cpu.WorstMs:0.00} ms | {cpu.WorstDetail} | jit: {(cpu.WorstMs > 2 ? jitWatch.During(cpu.WorstFrom, cpu.WorstTo) : "")}"); // TEMP
             if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)

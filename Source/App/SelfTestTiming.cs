@@ -1,4 +1,3 @@
-using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
 namespace CallOfSlop;
@@ -26,12 +25,8 @@ public static partial class SelfTest
 
         public static bool Available => OperatingSystem.IsWindows();
 
-        private DateTime _t0;
-        public DateTime WorstFrom, WorstTo;
-
         public void Start()
         {
-            _t0 = DateTime.UtcNow;
             _jit0 = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             _methods0 = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true);
             _pause0 = GC.GetTotalPauseDuration();
@@ -52,8 +47,6 @@ public static partial class SelfTest
                 var jit = System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - _jit0;
                 var methods = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true) - _methods0;
                 var pause = GC.GetTotalPauseDuration() - _pause0;
-                WorstFrom = _t0;
-                WorstTo = DateTime.UtcNow;
                 WorstDetail = $"wall {wallMs:0.0} ms, JIT {jit.TotalMilliseconds:0.0} ms ({methods} methods), GC pause {pause.TotalMilliseconds:0.0} ms "
                     + $"({GC.CollectionCount(0) - _gc0} collections, {GC.CollectionCount(2) - _gc2} full)" + (context != null ? ", " + context() : "");
             }
@@ -79,33 +72,5 @@ public static partial class SelfTest
 
         [DllImport("kernel32.dll")]
         private static extern nint GetCurrentThread();
-    }
-
-    /// <summary>TEMP: names of methods the JIT compiled, with times, to see what a busy tick compiled.</summary>
-    private sealed class JitWatch : EventListener
-    {
-        public readonly List<(DateTime At, string Name)> Loads = new();
-
-        protected override void OnEventSourceCreated(EventSource source)
-        {
-            if (source.Name == "Microsoft-Windows-DotNETRuntime")
-                EnableEvents(source, EventLevel.Verbose, (EventKeywords)0x10);
-        }
-
-        protected override void OnEventWritten(EventWrittenEventArgs e)
-        {
-            if (e.EventName == null || !e.EventName.StartsWith("MethodLoadVerbose") || e.Payload == null || e.PayloadNames == null)
-                return;
-            string P(string n) => e.PayloadNames.IndexOf(n) is var i and >= 0 ? e.Payload[i]?.ToString() ?? "" : "";
-            lock (Loads)
-                Loads.Add((e.TimeStamp.ToUniversalTime(), $"{P("MethodNamespace")}::{P("MethodName")} size {P("MethodSize")} flags {P("MethodFlags")}"));
-        }
-
-        public string During(DateTime from, DateTime to)
-        {
-            Thread.Sleep(300); // events arrive a little late
-            lock (Loads)
-                return string.Join(" ; ", Loads.Where(l => l.At >= from.AddMilliseconds(-2) && l.At <= to.AddMilliseconds(2)).Select(l => l.Name));
-        }
     }
 }
