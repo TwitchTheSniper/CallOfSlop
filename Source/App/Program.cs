@@ -101,6 +101,7 @@ public static unsafe partial class Program
         {
             AudioSystem.Init();
             AudioSystem.MasterVolume = _settings.Volume;
+            AudioSystem.Music.Volume = _settings.MusicVolume;
             CreateWindow();
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
@@ -167,6 +168,11 @@ public static unsafe partial class Program
             FoliageSmokeTick(now);
             return;
         }
+        if (MoversSmokeActive)
+        {
+            MoversSmokeTick(now); // Program.Movers.cs
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -210,7 +216,7 @@ public static unsafe partial class Program
             {
                 _smokeGallery = 0;
                 Ui.LobbyLoadouts = false;
-                StartFoliageSmoke(now); // then on to the maps
+                StartMoversSmoke(now); // then foliage, then on to the maps
             }
             return;
         }
@@ -888,12 +894,18 @@ public static unsafe partial class Program
                 }
             }
 
+            // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
+            AudioSystem.Music.Volume = _settings.MusicVolume;
+            AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
+
             if (_session != null)
                 Render(now);
             else if (_smokeGallery is 1 or 2)
                 DrawGunGallery(_smokeGallery);
             else if (FoliageSmokeActive)
                 DrawFoliageSmoke();
+            else if (MoversSmokeActive)
+                DrawMoversSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -934,7 +946,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -1030,6 +1042,7 @@ public static unsafe partial class Program
         var map = World.Map;
         for (var i = 0; i < map.Solid.Count; i++)
             Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
     }

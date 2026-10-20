@@ -321,7 +321,7 @@ public sealed class NavGraph
         var n = 0;
         var columnStart = nodes.Count;
         // Whatever the world says is the highest ground here (covers non-box ground too).
-        var t = c.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
+        var t = MoverPhysics.NavRaycast(c, new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
         if (t > 0.001f && t < top + 6f)
             heights[n++] = top - t;
         n += c.TopsAt(x, z, top, heights[n..]); // the top of every box over this point
@@ -364,7 +364,7 @@ public sealed class NavGraph
     /// </summary>
     private static float Ground(CollisionGrid c, float x, float z, float fromY, float depth)
     {
-        var t = c.Raycast(new Vector3(x, fromY, z), -Vector3.UnitY, depth);
+        var t = MoverPhysics.NavRaycast(c, new Vector3(x, fromY, z), -Vector3.UnitY, depth);
         if (t >= depth)
             return float.NaN;
         return t < 0.001f ? float.PositiveInfinity : fromY - t;
@@ -604,7 +604,7 @@ public sealed class NavGraph
         {
             var d = to - from;
             var len = d.Length();
-            return len < 0.01f || World.RaycastWorld(from, d / len, len) >= len - 0.05f;
+            return len < 0.01f || World.RaycastNav(from, d / len, len) >= len - 0.05f;
         }
         var knee = new Vector3(0, 0.6f, 0);
         var chest = new Vector3(0, 1.3f, 0);
@@ -647,7 +647,7 @@ public sealed class NavGraph
         for (var k = 0; k < 8; k++)
         {
             var a = k * MathF.Tau / 8;
-            if (c.Raycast(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
+            if (MoverPhysics.NavRaycast(c, eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
                 open++;
         }
         return (byte)open;

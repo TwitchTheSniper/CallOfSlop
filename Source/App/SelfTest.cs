@@ -53,6 +53,7 @@ public static partial class SelfTest
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
+            Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Packets", CheckPackets);
@@ -80,6 +81,7 @@ public static partial class SelfTest
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
+            Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
