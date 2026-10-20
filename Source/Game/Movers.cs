@@ -261,20 +261,20 @@ public static class MoverPhysics
             return -1;
         var mover = boxes[i].Mover;
         var m = World.Map.Movers[mover];
-        var from = s.Position;
+        var start = s.Position;
         var p0 = m.PoseAt(tick - 1);
         var p1 = m.PoseAt(tick);
-        var to = p1.ToWorld(p0.ToLocal(from));
+        var to = p1.ToWorld(p0.ToLocal(start));
         // Velocity on a platform is relative to it, so it turns with the platform too.
         var (sn, cs) = MathF.SinCos(World.WrapAngle(p1.Yaw - p0.Yaw));
         s.Velocity = new Vector3(s.Velocity.X * cs - s.Velocity.Z * sn, s.Velocity.Y, s.Velocity.X * sn + s.Velocity.Z * cs);
-        platformVel = (to - from) / World.TickDt;
+        platformVel = (to - start) / World.TickDt;
         // A wall the platform slides past holds the player back (the platform moves on under them).
         if (World.BlockedByBoxes(to, height))
         {
-            to = from with { Y = to.Y };
+            to = start with { Y = to.Y };
             if (World.BlockedByBoxes(to, height))
-                to = from;
+                to = start;
         }
         s.Position = to;
         return mover;

@@ -50,6 +50,33 @@ public static partial class SelfTest
         {
             Line($"spawn inside a mover's path refused: {ex.Message}");
         }
+        // The example in the map guide's Movers section loads.
+        var guide = Path.Combine(Maps.Folder, "README.md");
+        if (File.Exists(guide))
+        {
+            var text = File.ReadAllText(guide);
+            var at = text.IndexOf("## Movers", StringComparison.Ordinal);
+            var start = at < 0 ? -1 : text.IndexOf("```json", at, StringComparison.Ordinal);
+            var end = start < 0 ? -1 : text.IndexOf("```", start + 7, StringComparison.Ordinal);
+            if (end < 0)
+                Fail("Maps/README.md has no movers example");
+            else
+            {
+                try
+                {
+                    var ex = MapFile.Load("{ \"name\": \"Movers example\", \"halfX\": 40, \"halfZ\": 40, \"ops\": [ { \"op\": \"Ground\", \"color\": [0.5, 0.5, 0.5] }, "
+                        + "{ \"op\": \"Spawn\", \"x\": -5, \"z\": 38 } ],\n" + text[(start + 7)..end] + "}", "README movers example");
+                    Line($"guide movers example loads: {ex.Movers.Count} movers");
+                    if (ex.Movers.Count != 4)
+                        Fail($"the guide's movers example has {ex.Movers.Count} movers (expected 4)");
+                }
+                catch (MapFileException e)
+                {
+                    Fail("the guide's movers example doesn't load: " + e.Message);
+                }
+            }
+        }
+
         foreach (var w in map.Waypoints)
             if (map.InMoverSweep(w))
                 Fail($"waypoint ({w.X:0.#}, {w.Z:0.#}) is inside a mover's sweep");
@@ -303,11 +330,11 @@ public static partial class SelfTest
     {
         var spinner = Mover(map, "Fast spinner"); // 3 x 3 m, 90 degrees per second: 45 degrees at tick 30
         var pivot = spinner.Points[0];
-        var from = new Vector3(pivot.X + 1.9f, 5, pivot.Z); // inside the corner of the turned square only
+        var probe = new Vector3(pivot.X + 1.9f, 5, pivot.Z); // inside the corner of the turned square only
         MoverPhysics.Clock = 30;
-        var hitTurned = World.RaycastWorld(from, -Vector3.UnitY, 10);
+        var hitTurned = World.RaycastWorld(probe, -Vector3.UnitY, 10);
         MoverPhysics.Clock = 0;
-        var hitSquare = World.RaycastWorld(from, -Vector3.UnitY, 10);
+        var hitSquare = World.RaycastWorld(probe, -Vector3.UnitY, 10);
         Line($"ray down 1.9 m from the spinner's pivot: {hitTurned:0.00} m at 45 degrees (platform top at {5 - pivot.Y:0.00}), {hitSquare:0.00} m at 0 degrees (floor at 5.00)");
         if (MathF.Abs(hitTurned - (5 - pivot.Y)) > 0.01f || MathF.Abs(hitSquare - 5) > 0.01f)
             Fail("ray casts don't follow the rotated platform");

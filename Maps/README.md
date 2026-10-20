@@ -56,6 +56,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
+| `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
 
 ## Game mode objectives (optional)
 
@@ -311,6 +312,58 @@ Players pick **Off / Low / Medium / High** in Settings > Video. Lower settings d
 ```
 
 The older `Tree` and `TreeIfClear` ops still work: they build a blocky tree out of solid boxes (trunk and leaves both solid), as in the Classic maps.
+
+## Movers
+
+A map can have moving solids in an optional top-level `"movers"` list next to `"ops"`: **rotating platforms**, **sliding platforms** and **elevators**. Each one is a few boxes that move together on a constant loop. `Maps/Dev/PhysicsTest.json` shows every kind.
+
+Players standing on a mover ride it: a turning platform carries them round and turns them (and their view) with it, they walk on it as on any floor, and when they step or jump off they keep its speed. A mover pushes players out of its way instead of passing through them; a low mover (a step, 0.55 m or less) scoops them up onto it instead. Nobody is ever crushed: a player who'd be squeezed into a wall is put on top of the mover or nudged up. Bullets, grenades and sight lines hit movers where they are at that moment.
+
+```json
+"movers": [
+  { "type": "rotate", "name": "Disc", "at": [-20, 0.4, 0], "speed": 20,
+    "boxes": [
+      { "size": [10, 0.4, 10], "color": "#eb8c26" },
+      { "size": [10, 0.4, 10], "yaw": 45, "color": "#eb8c26" },
+      { "size": [0.4, 1, 0.4], "offset": [4.5, 0.5, 0], "color": "#26262e" }
+    ] },
+  { "type": "slide", "name": "Ferry", "points": [[11.6, 2, 12], [22.4, 2, 12]], "speed": 2.5, "dwell": 1.5,
+    "boxes": [ { "size": [3, 0.4, 3] } ] },
+  { "type": "slide", "name": "Loop", "points": [[8, 0.4, -22], [28, 0.4, -22], [28, 0.4, -34], [8, 0.4, -34]], "loop": true, "speed": 3,
+    "boxes": [ { "size": [3, 0.4, 3], "color": [0.62, 0.35, 0.85] } ] },
+  { "type": "elevator", "name": "Lift", "at": [20, 0.3, 28], "rise": 3.7, "speed": 1.5, "dwell": 2.5,
+    "boxes": [ { "size": [3, 0.3, 3], "color": [0.35, 0.8, 0.35] } ] }
+]
+```
+
+| Field | Meaning |
+|---|---|
+| `type` | `rotate` (spins in place about a vertical axis), `slide` (travels along `points`) or `elevator` (goes up `rise` metres and back down). |
+| `name` | Optional label (shown in logs and tests). |
+| `at` | `rotate`: the pivot. `elevator`: where the platform is at the bottom. A point `[x, y, z]`; with the default box `offset` it's the middle of the platform's **top** surface. |
+| `points` | `slide` only: two or more points `[x, y, z]` the mover travels through (its origin, so again the top centre with the default offset). |
+| `loop` | `slide` only: `true` goes from the last point straight back to the first; the default goes back and forth. |
+| `rise` | `elevator` only: how far up it goes, in metres. |
+| `speed` | `rotate`: degrees per second (negative turns the other way). `slide` / `elevator`: average metres per second (0.05 to 30). Default 30 deg/s or 2 m/s. |
+| `dwell` | Seconds it waits at each point (`slide`, default 1) or at the top and bottom (`elevator`, default 2). |
+| `spin` | `slide` / `elevator`: also turn while travelling, in degrees per second. |
+| `yaw` | Starting angle in degrees. |
+| `phase` | Seconds to offset the timing, so movers sharing a route don't move in step. |
+| `color` | Default colour for its boxes. |
+| `boxes` | 1 to 16 boxes in the mover's own frame: `size` `[w, h, d]`, optional `offset` `[x, y, z]` (the box's centre relative to `at`; default `[0, -h/2, 0]`, so the box's top is at `at`), optional `yaw` in degrees (turn a box within the mover, e.g. two squares at 0 and 45 make a near-round disc) and `color`. |
+
+Movement eases into and out of every point (no jolts), and a map may have up to 32 movers.
+
+**Timing is shared by everyone.** A mover's position is worked out from the server's clock, so every PC sees it in the same place without sending anything over the network. Movers count towards the map's fingerprint (maps without them keep theirs).
+
+**Bots** never plan routes through the area a mover sweeps over (its whole path and turning circle): to them it's a pillar they walk around. Waypoints inside that area are dropped, and a spawn inside it is an error. So give bots another way to everything a mover reaches: the Physics Test's elevator deck and gap decks have ramps.
+
+**Design tips**
+
+- Keep a mover's path clear of walls and other movers, and don't put a ceiling over an elevator.
+- A platform top 0.3 to 0.5 m above the floor can simply be stepped onto. Parts that stick up more than 0.55 m (a bar on a disc) are walls that sweep players along; players can jump 0.95 m.
+- Overlapping boxes with the same top look fine when they're the same colour. Different colours on the same top surface flicker, so make markers stick up (posts) instead.
+- Movers are drawn lit but without the surface texture (a texture would slide over a moving surface), so use colours and posts to make the motion visible.
 
 ## Map packs
 
