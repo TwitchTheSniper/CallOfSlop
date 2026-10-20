@@ -148,6 +148,7 @@ public sealed partial class Game : IDisposable
             // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
             _ = World.Map.Objectives;
             _ = World.Grid;
+            NavSearch.Prepare();
         }
         Net = net;
         Audio = audio;
