@@ -1,0 +1,8 @@
+<Project>
+  <!-- Build output goes to spike/.build (a dot folder), so the game project's **/*.cs glob never picks up
+       the spike's generated files (obj/*.g.cs) when both are built in the same checkout. -->
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)../.build/obj/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(MSBuildThisFileDirectory)../.build/bin/</BaseOutputPath>
+  </PropertyGroup>
+</Project>

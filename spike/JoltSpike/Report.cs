@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using System.Diagnostics;
 using System.Globalization;
 
@@ -95,3 +98,4 @@ public static class Clock
         return s[Math.Clamp((int)Math.Round(p * (s.Count - 1)), 0, s.Count - 1)];
     }
 }
+#endif

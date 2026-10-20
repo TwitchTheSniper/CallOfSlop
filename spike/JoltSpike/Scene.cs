@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using System.Numerics;
 
 namespace JoltSpike;
@@ -60,3 +63,4 @@ public sealed class Node(string name)
 
     public Vector3 WorldPosition => World.Translation;
 }
+#endif

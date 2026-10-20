@@ -12,6 +12,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <InvariantGlobalization>true</InvariantGlobalization>
     <TieredPGO>false</TieredPGO>
+    <DefineConstants>$(DefineConstants);JOLT_SPIKE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>

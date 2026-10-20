@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using JoltSpike;
 
 // Usage: JoltSpike <section>   (a = basic world, b = character, c = determinism + movement perf,
@@ -27,3 +30,4 @@ catch (Exception e)
 }
 Report.Close();
 return Report.Failures;
+#endif

@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using Brutal.JoltApi;
 using Brutal.Numerics;
 
@@ -574,3 +577,4 @@ public struct Hasher
 
     public override readonly string ToString() => Value.ToString("x16");
 }
+#endif

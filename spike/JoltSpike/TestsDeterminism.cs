@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using Brutal.JoltApi;
 using Brutal.Numerics;
 using static JoltSpike.Report;
@@ -193,3 +196,4 @@ public static class TestsDeterminism
         Metric("CharacterVirtual create us", F(Clock.UsSince(tc) / 100, 1));
     }
 }
+#endif

@@ -52,32 +52,32 @@ jobs:
       - name: a - basic world and ray casts
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll a
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll a
 
       - name: b - CharacterVirtual movement
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll b
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll b
 
       - name: c - determinism and reconciliation
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll c
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll c
 
       - name: d - ray and build performance
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll d
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll d
 
       - name: e - lag compensation
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll e
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll e
 
       - name: f - glTF and scene graph
         continue-on-error: true
         working-directory: spike/out
-        run: dotnet ../JoltSpike/bin/Release/net10.0/JoltSpike.dll f
+        run: dotnet ../.build/bin/Release/net10.0/JoltSpike.dll f
 
       - name: Collect
         if: always()

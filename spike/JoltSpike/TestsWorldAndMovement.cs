@@ -1,3 +1,6 @@
+// The game project (CallOfSlop.csproj) compiles every .cs under the repo, so the spike's code only exists
+// when JOLT_SPIKE is defined (JoltSpike.csproj defines it).
+#if JOLT_SPIKE
 using Brutal.JoltApi;
 using Brutal.Numerics;
 using static JoltSpike.Report;
@@ -253,3 +256,4 @@ public static class TestsWorldAndMovement
         Check("rides spinning platform", MathF.Abs(r1 - 2.5f) < 0.35f && MathF.Abs(turned - 1.5f) < 0.3f, $"radius {F(r1)} (2.5), turned {F(turned)} rad (platform 1.5)");
     }
 }
+#endif
