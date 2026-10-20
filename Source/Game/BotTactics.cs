@@ -14,7 +14,8 @@ public sealed partial class Game
         if (now >= b.NextObjectiveCheck)
         {
             b.NextObjectiveCheck = now + 1 + _rng.NextDouble() * 0.5;
-            b.Objective = ObjectiveGoal(p, now);
+            // With a nav graph, A* finds the way to the objective itself; while it's still building, use the waypoint routing.
+            b.Objective = NavGraph.Current.Nodes.Length > 0 ? ObjectiveSpot(p) : ObjectiveGoal(p, now);
         }
 
         var low = p.Health <= prof.RetreatHealth;
