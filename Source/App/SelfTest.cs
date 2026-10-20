@@ -510,7 +510,12 @@ public static class SelfTest
             game.MapVoteEnabled = false;
             var bot = game.Players.Values.First(p => p.Bot != null);
             World.SetMap(m);
-            var g = NavGraph.Current;
+            var g = NavGraph.Current; // built in the background: wait for it
+            for (var wait = 0; wait < 400 && g == NavGraph.Empty; wait++)
+            {
+                Thread.Sleep(25);
+                g = NavGraph.Current;
+            }
             if (g.MainNodes.Length < 2)
             {
                 Fail($"{name}: no main nav area");

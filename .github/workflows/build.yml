@@ -33,7 +33,7 @@ jobs:
           if (Test-Path $log) {
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
-            $bs = @(Select-String -Path $log -Pattern "BOTSTAT|^\s+FAIL|walk " | ForEach-Object { $_.Line.Trim() })
+            $bs = @(Select-String -Path $log -Pattern "BOTSTAT|^\s+FAIL|walk |stuck bots" | ForEach-Object { $_.Line.Trim() })
             for ($i = 0; $i -lt $bs.Count; $i += 6) { $chunk = ($bs[$i..([Math]::Min($i + 5, $bs.Count - 1))] -join " ## "); Write-Output "::notice title=Bots::$chunk" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }

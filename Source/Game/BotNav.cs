@@ -63,8 +63,27 @@ public sealed class NavGraph
     // ---- Cache --------------------------------------------------------------------------------
 
     private static readonly Dictionary<(string, uint), NavGraph> Cache = new();
+    private static Map? _lastMap;
+    private static NavGraph? _last;
+    private static Task<NavGraph?>? _pending;
+    private static Map? _pendingMap;
 
-    /// <summary>The graph for the map being played (<see cref="World.Map"/>), building it on first use.</summary>
+    /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
+    public static readonly NavGraph Empty = CreateEmpty();
+
+    private static NavGraph CreateEmpty()
+    {
+        var g = new NavGraph { Spacing = 1 };
+        g._cols = g._rows = 1;
+        g._cellStart = [0, 0];
+        return g;
+    }
+
+    /// <summary>
+    /// The graph for the map being played (<see cref="World.Map"/>). The first time a map is played it's built on a
+    /// background thread (up to a second or two on big maps) and <see cref="Empty"/> is returned until it's ready, so
+    /// a map change never stalls the server. Graphs are cached per map name + fingerprint.
+    /// </summary>
     public static NavGraph Current
     {
         get
@@ -73,21 +92,51 @@ public sealed class NavGraph
             if (_last != null && ReferenceEquals(_lastMap, map))
                 return _last;
             var key = (map.Name, map.ContentHash);
-            if (!Cache.TryGetValue(key, out var g))
+            if (Cache.TryGetValue(key, out var cached))
             {
-                g = Build(map);
-                Cache[key] = g;
-                Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
-                    + $"{g.MainNodes.Length} in the main area, built in {g.BuildMs:0} ms");
+                _lastMap = map;
+                _last = cached;
+                return cached;
             }
+            if (_pending != null && !ReferenceEquals(_pendingMap, map))
+                _pending = null; // built for a map we've left: it notices and stops by itself
+            if (_pending == null)
+            {
+                _pendingMap = map;
+                _pending = Task.Run(() => TryBuild(map));
+            }
+            if (!_pending.IsCompleted)
+                return Empty;
+            var g = _pending.Result;
+            _pending = null;
+            if (g == null)
+                return Empty; // the map changed under it: try again
+            Cache[key] = g;
+            Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
+                + $"{g.MainNodes.Length} in the main area, built in {g.BuildMs:0} ms");
             _lastMap = map;
             _last = g;
             return g;
         }
     }
 
-    private static Map? _lastMap;
-    private static NavGraph? _last;
+    /// <summary>Builds on a worker thread; null if the map changed meanwhile. A real error gives an empty graph (logged once).</summary>
+    private static NavGraph? TryBuild(Map map)
+    {
+        try
+        {
+            return Build(map);
+        }
+        catch (OperationCanceledException)
+        {
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[bots] nav graph for {map.Name} failed: {ex.Message}");
+            return CreateEmpty();
+        }
+    }
 
     // ---- Building -------------------------------------------------------------------------------
 
@@ -95,7 +144,7 @@ public sealed class NavGraph
     public static NavGraph Build(Map map)
     {
         if (!ReferenceEquals(World.Map, map))
-            throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+            throw new OperationCanceledException("NavGraph.Build needs the map to be the current World.Map");
         var sw = Stopwatch.StartNew();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
@@ -139,12 +188,14 @@ public sealed class NavGraph
 
         // ---- Edges between nearby nodes ----
         g.Nodes = nodes.ToArray();
-        g.BuildCells();
+        g.BuildCells(map);
         var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>();
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)
         {
+            if (!ReferenceEquals(World.Map, map))
+                throw new OperationCanceledException(); // the server moved on to another map: these queries are no good
             var a = g.Nodes[i];
             var r = i < gridCount ? radius : s * 2.1f;
             near.Clear();
@@ -194,9 +245,11 @@ public sealed class NavGraph
         }
         for (var i = 0; i < count; i++)
             g.EdgeStart[i + 1] += g.EdgeStart[i];
-        g.BuildCells();
+        g.BuildCells(map);
         g.BuildComponents();
         g.BuildOpenness();
+        if (!ReferenceEquals(World.Map, map))
+            throw new OperationCanceledException();
         g.BuildMs = sw.Elapsed.TotalMilliseconds;
         return g;
     }
@@ -335,12 +388,12 @@ public sealed class NavGraph
         }
     }
 
-    private void BuildCells()
+    private void BuildCells(Map map)
     {
-        _minX = World.Map.HalfX * -1 - 1;
-        _minZ = World.Map.HalfZ * -1 - 1;
-        _cols = Math.Max(1, (int)MathF.Ceiling((World.Map.HalfX * 2 + 2) / Spacing));
-        _rows = Math.Max(1, (int)MathF.Ceiling((World.Map.HalfZ * 2 + 2) / Spacing));
+        _minX = map.HalfX * -1 - 1;
+        _minZ = map.HalfZ * -1 - 1;
+        _cols = Math.Max(1, (int)MathF.Ceiling((map.HalfX * 2 + 2) / Spacing));
+        _rows = Math.Max(1, (int)MathF.Ceiling((map.HalfZ * 2 + 2) / Spacing));
         var counts = new int[_cols * _rows + 1];
         foreach (var p in Nodes)
             counts[CellOf(p) + 1]++;
