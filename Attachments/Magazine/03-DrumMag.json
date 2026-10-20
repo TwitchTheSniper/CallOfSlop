@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Drum Mag",
+  "slot": "Magazine",
+  "order": 3,
+  "unlockOrder": 18,
+  "blurb": "Huge capacity, huge weight.",
+  "pros": ["Double magazine"],
+  "cons": ["40% slower reload", "-5% speed"],
+  "fits": { "classes": ["AssaultRifle", "SMG", "LMG"] },
+  "effects": [
+    { "stat": "mag", "grow": 2 },
+    { "stat": "reload", "mul": 1.4 },
+    { "stat": "mobility", "add": -0.05 }
+  ]
+}

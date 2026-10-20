@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Heavy Barrel",
+  "slot": "Barrel",
+  "order": 3,
+  "unlockOrder": 19,
+  "blurb": "Thick, stable barrel.",
+  "pros": ["+15% range", "-10% recoil"],
+  "cons": ["-6% speed", "Slower draw"],
+  "fits": { "classes": ["AssaultRifle", "LMG", "DMR", "Sniper", "SMG"] },
+  "effects": [
+    { "stat": "rangeM", "mul": 1.15 },
+    { "stat": "recoilDeg", "mul": 0.9 },
+    { "stat": "mobility", "add": -0.06 },
+    { "stat": "equipTime", "mul": 1.15 }
+  ]
+}

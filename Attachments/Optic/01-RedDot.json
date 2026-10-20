@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Red Dot",
+  "slot": "Optic",
+  "order": 1,
+  "unlockOrder": 1,
+  "blurb": "Small reflex sight. A clean dot instead of iron sights.",
+  "pros": ["Clear sight picture", "Slightly tighter aimed spread"],
+  "cons": ["Low 1.5x zoom"],
+  "fits": {},
+  "effects": [
+    { "stat": "optic", "set": "RedDot" },
+    { "stat": "adsZoom", "set": 1.5 },
+    { "stat": "adsSpreadMult", "mul": 0.9 }
+  ]
+}

@@ -21,17 +21,33 @@ public enum OpticKind : byte
     Scope8,
 }
 
-/// <summary>One attachment: where it goes, what it fits, and how it changes the gun.</summary>
+/// <summary>One attachment: where it goes, what it fits, and how it changes the gun. Loaded from the Attachments folder.</summary>
 public sealed class AttachmentDef
 {
     public required AttachSlot Slot;
-    public byte Index; // 1..15 inside its slot (0 = empty slot); assigned by the table below
+    public byte Index; // 1..15 inside its slot (0 = empty slot); assigned from "order" when the files load
     public required string Name;
-    public required string Blurb;
-    public required string[] Pros;
+    public string Blurb = "";
+    public string[] Pros = [];
     public string[] Cons = [];
-    public required Func<WeaponDef, bool> Fits;
-    public required Action<WeaponDef> Apply;
+    public Func<WeaponDef, bool> Fits = _ => true;
+    public Action<WeaponDef> Apply = _ => { };
+
+    /// <summary>Sort order inside its slot (decides <see cref="Index"/>); files without one get 1000.</summary>
+    public int Order = 1000;
+
+    /// <summary>Where it comes in each weapon's unlock sequence (lower unlocks earlier); files without one get 1000.</summary>
+    public int UnlockOrder = 1000;
+
+    public string Author = "";
+
+    /// <summary>The "fits" rules and stat changes from its file (null/empty for code-built attachments).</summary>
+    public AttachmentFits? Rule;
+
+    public AttachmentEffect[] Effects = [];
+
+    /// <summary>The file it was loaded from, relative to the Attachments folder.</summary>
+    public string? SourceFile;
 }
 
 /// <summary>
@@ -44,6 +60,80 @@ public static class Attachments
 {
     public const int SlotCount = 6;
 
+    /// <summary>Kits pack 4 bits per slot and 0 means empty, so a slot holds at most 15 attachments.</summary>
+    public const int MaxPerSlot = 15;
+
+    private static readonly object LoadLock = new();
+    private static AttachmentDef[][]? _bySlot;
+    private static AttachmentDef[]? _unlockSequence;
+
+    /// <summary>All attachments per slot, in slot-index order (index 1 first). Loaded from the Attachments folder on first use.</summary>
+    public static AttachmentDef[][] BySlot
+    {
+        get
+        {
+            var b = _bySlot;
+            if (b != null)
+                return b;
+            lock (LoadLock)
+                return _bySlot ??= LoadAll();
+        }
+    }
+
+    /// <summary>Every attachment in unlock order ("unlockOrder", then name).</summary>
+    private static AttachmentDef[] UnlockSequence =>
+        _unlockSequence ??= BySlot.SelectMany(s => s).OrderBy(a => a.UnlockOrder).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+
+    /// <summary>Problems found while loading attachment files (bad files are skipped). Shown in the lobby and the log.</summary>
+    public static readonly List<string> LoadErrors = new();
+
+    /// <summary>The folder attachment files are loaded from (next to the game).</summary>
+    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Attachments");
+
+    /// <summary>
+    /// Every *.json in the Attachments folder and its subfolders. Indices inside a slot follow "order" then name.
+    /// No files means no attachments (the game still works).
+    /// </summary>
+    private static AttachmentDef[][] LoadAll()
+    {
+        var loaded = new List<AttachmentDef>();
+        if (Directory.Exists(Folder))
+        {
+            foreach (var file in Directory.GetFiles(Folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+            {
+                var rel = Path.GetRelativePath(Folder, file);
+                try
+                {
+                    var a = AttachmentFile.Load(File.ReadAllText(file), rel);
+                    if (loaded.FirstOrDefault(x => x.Name.Equals(a.Name, StringComparison.OrdinalIgnoreCase)) is { } dup)
+                        throw new WeaponFileException($"{rel}: another attachment is already called '{a.Name}' ({dup.SourceFile})");
+                    loaded.Add(a);
+                }
+                catch (Exception ex) when (ex is WeaponFileException or IOException or UnauthorizedAccessException)
+                {
+                    LoadErrors.Add(ex.Message);
+                    Console.WriteLine($"[attachments] skipped: {ex.Message}");
+                }
+            }
+        }
+        var bySlot = new AttachmentDef[SlotCount][];
+        for (var s = 0; s < SlotCount; s++)
+        {
+            var inSlot = loaded.Where(a => (int)a.Slot == s).OrderBy(a => a.Order).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).ToList();
+            foreach (var extra in inSlot.Skip(MaxPerSlot))
+            {
+                LoadErrors.Add($"{extra.SourceFile}: the {SlotName((AttachSlot)s)} slot is full (at most {MaxPerSlot} attachments per slot); skipped");
+                Console.WriteLine($"[attachments] skipped {extra.SourceFile}: slot full");
+            }
+            bySlot[s] = inSlot.Take(MaxPerSlot).ToArray();
+            for (var i = 0; i < bySlot[s].Length; i++)
+                bySlot[s][i].Index = (byte)(i + 1);
+        }
+        var count = bySlot.Sum(x => x.Length);
+        Console.WriteLine(count == 0 ? $"[attachments] no attachment files in {Folder}; guns have no attachments" : $"[attachments] {count} attachment(s) from {Folder}");
+        return bySlot;
+    }
+
     // ---- Who fits what ------------------------------------------------------------------
     private static bool IsLong(WeaponDef w) => w.Class is WeaponClass.AssaultRifle or WeaponClass.LMG or WeaponClass.DMR or WeaponClass.Sniper;
     private static bool HasStock(WeaponDef w) => w.Class is not (WeaponClass.Pistol or WeaponClass.Special);
@@ -53,10 +143,11 @@ public static class Attachments
 
     private static int Grow(int mag, float mult) => Math.Max(mag + 1, (int)MathF.Round(mag * mult));
 
-    /// <summary>All attachments per slot, in slot-index order (index 1 first).</summary>
-    public static readonly AttachmentDef[][] BySlot = Build();
-
-    private static AttachmentDef[][] Build()
+    /// <summary>
+    /// TEMPORARY: the attachments as they were in code before they became files (with Index and UnlockOrder set
+    /// the old way). Only the self-test uses it, to prove the files behave identically. Deleted once confirmed.
+    /// </summary>
+    internal static AttachmentDef[] BuiltInCatalogue()
     {
         AttachmentDef[] all =
         [
@@ -220,17 +311,18 @@ public static class Attachments
             },
         ];
 
-        var bySlot = new AttachmentDef[SlotCount][];
         for (var s = 0; s < SlotCount; s++)
         {
-            bySlot[s] = all.Where(a => (int)a.Slot == s).ToArray();
-            for (var i = 0; i < bySlot[s].Length; i++)
-                bySlot[s][i].Index = (byte)(i + 1);
+            var inSlot = all.Where(a => (int)a.Slot == s).ToArray();
+            for (var i = 0; i < inSlot.Length; i++)
+                inSlot[i].Index = (byte)(i + 1);
         }
-        return bySlot;
+        foreach (var a in all)
+            a.UnlockOrder = Array.IndexOf(UnlockOrder, a.Name) + 1;
+        return all;
     }
 
-    /// <summary>The order attachments unlock in (per weapon, skipping ones that don't fit).</summary>
+    /// <summary>TEMPORARY (see <see cref="BuiltInCatalogue"/>): the order attachments unlocked in.</summary>
     private static readonly string[] UnlockOrder =
     [
         "Red Dot", "Laser", "Compensator", "Choke", "Fast Mag", "Holographic", "Vertical Grip", "Extended Mag", "Short Barrel",
@@ -241,7 +333,7 @@ public static class Attachments
     public static AttachmentDef? Get(AttachSlot slot, int index) =>
         index <= 0 || index > BySlot[(int)slot].Length ? null : BySlot[(int)slot][index - 1];
 
-    public static AttachmentDef? Find(string name) => BySlot.SelectMany(s => s).FirstOrDefault(a => a.Name == name);
+    public static AttachmentDef? Find(string name) => BySlot.SelectMany(s => s).FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Attachments that fit this weapon, in unlock order.</summary>
     public static IReadOnlyList<AttachmentDef> For(WeaponDef w)
@@ -249,7 +341,7 @@ public static class Attachments
         if (_forCache.TryGetValue(w.Id, out var list))
             return list;
         var baseDef = Weapons.Get(w.Id);
-        list = UnlockOrder.Select(Find).Where(a => a != null && a.Fits(baseDef)).Select(a => a!).ToArray();
+        list = UnlockSequence.Where(a => a.Fits(baseDef)).ToArray();
         _forCache[w.Id] = list;
         return list;
     }

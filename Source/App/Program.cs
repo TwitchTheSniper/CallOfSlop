@@ -16,6 +16,7 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
 /// </summary>
 public static unsafe class Program
 {
@@ -71,6 +72,10 @@ public static unsafe class Program
             return Maps.Check(checkFile); // for map makers: does this file load?
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
+        if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)
+            return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
+        if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)
+            return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
 
@@ -384,7 +389,7 @@ public static unsafe class Program
         if (_session != null)
         {
             var (pn, sn) = SmokeGuns[_smokeMap % SmokeGuns.Length];
-            Ui.SmokeSelect(Weapons.Find(pn)!.Id, Weapons.Find(sn)!.Id);
+            Ui.SmokeSelect((Weapons.Find(pn) ?? Weapons.DefaultPrimary).Id, (Weapons.Find(sn) ?? Weapons.DefaultSecondary).Id);
         }
         Console.WriteLine($"[smoke] started {_settings.MapName}: session {(_session != null ? "ok" : "FAILED")}, menu open {Ui.MenuOpen}");
         _smokeStepStart = now;

@@ -124,6 +124,13 @@ public sealed partial class Ui
                         ImGui.TextColored(Red, message);
                         ImGui.Spacing();
                     }
+                    if (WeaponSet.ErrorSummary is { } weaponErrors)
+                    {
+                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 560 * _scale); // long file paths: wrap instead of widening the panel
+                        ImGui.TextColored(Red, weaponErrors);
+                        ImGui.PopTextWrapPos();
+                        ImGui.Spacing();
+                    }
                     LevelSummary();
                     if (BigButton("SINGLE PLAYER"))
                         _page = Page.SinglePlayer;

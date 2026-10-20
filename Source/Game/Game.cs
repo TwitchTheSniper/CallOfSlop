@@ -1179,7 +1179,8 @@ public sealed partial class Game : IDisposable
                 Players[newId] = p;
                 PlaceWaiting(p, now);
                 _clients[sender.G] = (sender, newId);
-                _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash);
+                _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
+                    .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length));
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 if (VoteOpen)
                     SendVoteState(sender); // joined during the results screen: show the ballot
@@ -1306,6 +1307,14 @@ public sealed partial class Game : IDisposable
                 LocalId = r.U8();
                 if (r.Has(1) && !UseHostMap(r.Str(), r.Has(4) ? r.U32() : 0, initial: true))
                     break;
+                // Weapons and attachments are data files: both sides must have the same set (ids, stats and kits must agree).
+                if (r.Has(10) && WeaponSet.Mismatch(r.U32(), r.U8(), r.U32(), r.U8()) is { } weaponProblem)
+                {
+                    Status = weaponProblem;
+                    Log(Status, true);
+                    Disconnected = true;
+                    break;
+                }
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.

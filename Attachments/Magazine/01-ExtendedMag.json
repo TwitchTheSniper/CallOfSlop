@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Extended Mag",
+  "slot": "Magazine",
+  "order": 1,
+  "unlockOrder": 8,
+  "blurb": "More rounds before you reload.",
+  "pros": ["+50% magazine"],
+  "cons": ["12% slower reload"],
+  "fits": { "minMag": 3 },
+  "effects": [
+    { "stat": "mag", "grow": 1.5 },
+    { "stat": "reload", "mul": 1.12 }
+  ]
+}

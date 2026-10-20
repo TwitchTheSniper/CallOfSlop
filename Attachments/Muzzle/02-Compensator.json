@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Compensator",
+  "slot": "Muzzle",
+  "order": 2,
+  "unlockOrder": 3,
+  "blurb": "Vents gas upward to fight muzzle climb.",
+  "pros": ["-20% recoil"],
+  "cons": [],
+  "fits": { "notClasses": ["Shotgun", "Special"] },
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.8 }
+  ]
+}

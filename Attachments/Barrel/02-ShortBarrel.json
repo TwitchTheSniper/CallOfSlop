@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Short Barrel",
+  "slot": "Barrel",
+  "order": 2,
+  "unlockOrder": 9,
+  "blurb": "Chopped down for close quarters.",
+  "pros": ["+4% speed", "-15% hip spread", "Faster to aim"],
+  "cons": ["-20% range"],
+  "fits": { "notClasses": ["Pistol", "Special"] },
+  "effects": [
+    { "stat": "rangeM", "mul": 0.8 },
+    { "stat": "mobility", "add": 0.04 },
+    { "stat": "hipSpreadDeg", "mul": 0.85 },
+    { "stat": "adsTime", "add": -0.02, "min": 0.08 },
+    { "stat": "length", "add": -0.06 }
+  ]
+}
