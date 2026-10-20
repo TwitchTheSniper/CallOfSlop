@@ -98,6 +98,7 @@ public static unsafe partial class Program
         {
             AudioSystem.Init();
             AudioSystem.MasterVolume = _settings.Volume;
+            AudioSystem.Music.Volume = _settings.MusicVolume;
             CreateWindow();
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
@@ -888,6 +889,10 @@ public static unsafe partial class Program
                         game.Update(now, FrameDt);
                 }
             }
+
+            // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
+            AudioSystem.Music.Volume = _settings.MusicVolume;
+            AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
 
             if (_session != null)
                 Render(now);

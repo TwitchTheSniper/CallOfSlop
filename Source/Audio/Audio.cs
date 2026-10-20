@@ -50,6 +50,9 @@ public sealed class Audio : IDisposable
     public bool Enabled { get; private set; }
     public float MasterVolume = 0.8f;
 
+    /// <summary>Procedural background music for the menus and lobbies (Music.cs); streams only once OpenAL is up.</summary>
+    public readonly MusicPlayer Music = new();
+
     public void Init()
     {
         try
@@ -90,6 +93,14 @@ public sealed class Audio : IDisposable
 
             Enabled = true;
             Console.WriteLine($"Audio: OpenAL ready, synthesised {defs.Length * 4 + (int)Sfx.COUNT} sounds in {sw.ElapsedMilliseconds} ms.");
+            try
+            {
+                Music.Start();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Music disabled: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
@@ -199,6 +210,7 @@ public sealed class Audio : IDisposable
     {
         if (_context == null)
             return; // never initialised (no audio device): nothing to release
+        Music.Dispose(); // stops the streaming thread before the context goes
         if (_sources.Length > 0)
         {
             foreach (var s in _sources)
