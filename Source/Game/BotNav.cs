@@ -120,8 +120,16 @@ public sealed class NavGraph
         var start = Stopwatch.GetTimestamp();
         try
         {
+            var stepStart = Stopwatch.GetTimestamp();
             while (_builder.MoveNext())
             {
+                var stepMs = Stopwatch.GetElapsedTime(stepStart).TotalMilliseconds;
+                if (stepMs > TickProfile.PumpMaxStep)
+                {
+                    TickProfile.PumpMaxStep = stepMs;
+                    TickProfile.PumpMaxStage = TickProfile.Stage;
+                }
+                stepStart = Stopwatch.GetTimestamp();
                 if (_builder.Current is { } g)
                 {
                     Store(map, g);
@@ -183,6 +191,7 @@ public sealed class NavGraph
 
         // ---- Nodes: every standable surface at each grid point, plus the map's waypoints and spawns ----
         var nodes = new List<Vector3>();
+        TickProfile.Stage = "columns";
         for (var x = -map.HalfX + s / 2; x < map.HalfX; x += s)
         {
             for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
@@ -194,6 +203,7 @@ public sealed class NavGraph
             }
         }
         var gridCount = nodes.Count;
+        TickProfile.Stage = "waypoints";
         var extra = 0;
         foreach (var w in map.Waypoints.Concat(map.Spawns))
         {
@@ -214,9 +224,11 @@ public sealed class NavGraph
         var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
         var radius = s * 1.5f;
         var near = new List<int>();
+        TickProfile.Stage = "edges";
         for (var i = 0; i < g.Nodes.Length; i++)
         {
             var a = g.Nodes[i];
+            TickProfile.Stage = i < gridCount ? "edges" : "wpedges";
             var r = i < gridCount ? radius : s * 2.1f;
             near.Clear();
             g.Within(a, r, near);
@@ -233,6 +245,7 @@ public sealed class NavGraph
         }
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
+        TickProfile.Stage = "pack";
         var degree = new int[g.Nodes.Length];
         foreach (var e in edges)
         {
@@ -276,6 +289,7 @@ public sealed class NavGraph
 
         // ---- How open the view is from each node ----
         g.Openness = new byte[count];
+        TickProfile.Stage = "openness";
         for (var i = 0; i < count; i++)
         {
             g.Openness[i] = OpennessAt(g.Nodes[i]);

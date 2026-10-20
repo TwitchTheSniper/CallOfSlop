@@ -19,7 +19,9 @@ public sealed partial class Game
             return;
         _botBudgetTick = ServerTick;
         _botPathBudget = BotSearchesPerTick;
+        var tp = TickProfile.Now();
         NavGraph.Pump(BotNavBuildMs);
+        TickProfile.Add(TickProfile.Pump, tp);
     }
 
     /// <summary>Where the bot wants to move this tick, and what to look at, for its current mode.</summary>
@@ -210,15 +212,22 @@ public sealed partial class Game
         b.PathLen = 0;
         b.PathIdx = 0;
         b.CurEdge = -1;
+        var tp = TickProfile.Now();
         var start = nav.Nearest(p.Position);
         var end = nav.Nearest(goal, needSight: false);
+        TickProfile.Add(TickProfile.Nearest, tp);
         if (start < 0 || end < 0)
             return;
         b.SearchGraph = nav;
         b.SearchNow = now;
         if (b.Mode != BotMode.Roam)
             b.FlankWidth = 0; // flank routes only while sneaking around, not when chasing or retreating
+        tp = TickProfile.Now();
         b.PathLen = _botSearch.Find(nav, start, end, b.Path, b.EdgePenaltyFn);
+        TickProfile.Add(TickProfile.AStar, tp);
+        TickProfile.Searches++;
+        TickProfile.Expanded += _botSearch.LastExpanded;
+        TickProfile.MaxExpanded = Math.Max(TickProfile.MaxExpanded, _botSearch.LastExpanded);
         // Already past the first node (it's behind us on the way)? Start with the second.
         if (b.PathLen >= 2)
         {

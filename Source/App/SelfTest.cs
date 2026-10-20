@@ -78,6 +78,7 @@ public static partial class SelfTest
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
+            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}");
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -89,6 +90,7 @@ public static partial class SelfTest
     {
         Line("");
         Line($"== {name} ==");
+        var perf = Stopwatch.StartNew();
         try
         {
             body();
@@ -97,7 +99,10 @@ public static partial class SelfTest
         {
             Fail($"{name} threw: {ex}");
         }
+        _perfSections.Add($"{name} {perf.Elapsed.TotalSeconds:0.0}");
     }
+
+    private static readonly List<string> _perfSections = new(); // PERF (temporary)
 
     // ---- 1. Maps -------------------------------------------------------------------------
 
@@ -403,19 +408,45 @@ public static partial class SelfTest
             var killsDone = 0;
             var lastKillSum = 0;
             var lastMatch = game.MatchNumber;
+            // PERF (temporary): where the time goes, per phase and around the worst tick.
+            var phaseTotals = new double[TickProfile.Names.Length];
+            var worstInfo = "";
+            var slowList = new List<string>();
+            int gc0 = GC.CollectionCount(0), gc1 = GC.CollectionCount(1), gc2 = GC.CollectionCount(2);
+            var pause0 = GC.GetTotalPauseDuration();
+            var alloc0 = GC.GetAllocatedBytesForCurrentThread();
+            var navReadyAt = -1.0;
+            var slowWithGc = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
+                    TickProfile.Reset();
+                    int c0 = GC.CollectionCount(0), c1 = GC.CollectionCount(1), c2 = GC.CollectionCount(2);
+                    var pz = GC.GetTotalPauseDuration();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    var pauseMs = (GC.GetTotalPauseDuration() - pz).TotalMilliseconds;
+                    var gcs = $"g{GC.CollectionCount(0) - c0}/{GC.CollectionCount(1) - c1}/{GC.CollectionCount(2) - c2} pause {pauseMs:0.0}";
+                    for (var k = 0; k < phaseTotals.Length; k++)
+                        phaseTotals[k] += TickProfile.Ms[k];
+                    if (navReadyAt < 0 && NavGraph.Current.Nodes.Length > 0)
+                        navReadyAt = i / 60.0;
                     if (i > 60)
                     {
+                        if (ms > maxTickMs)
+                            worstInfo = $"{ms:0.0} ms at t={i / 60.0:0.00}s phase {game.Phase} match {game.MatchNumber} nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")} {gcs} | {TickProfile.Breakdown()}";
                         maxTickMs = Math.Max(maxTickMs, ms);
                         if (ms > 16)
+                        {
                             slowTicks++;
+                            if (pauseMs > 1)
+                                slowWithGc++;
+                            if (slowList.Count < 6)
+                                slowList.Add($"{ms:0}@{i / 60.0:0.0}s({gcs})");
+                        }
                     }
                     phasesSeen.Add(game.Phase);
                     if (game.MatchNumber != lastMatch)
@@ -445,6 +476,13 @@ public static partial class SelfTest
             }
 
             botStats.Add(game.BotStats);
+            {
+                var ticks = 90.0 * World.TickRate;
+                var avg = string.Join(" ", Enumerable.Range(0, phaseTotals.Length).Where(k => phaseTotals[k] / ticks >= 0.01).Select(k => $"{TickProfile.Names[k]} {phaseTotals[k] / ticks:0.00}"));
+                Line($"PERF: {m.Name} total {sw.Elapsed.TotalSeconds:0.0}s navReady {navReadyAt:0.0}s worst [{worstInfo}] slow {slowTicks} (gc {slowWithGc}) [{string.Join(" ", slowList)}] "
+                     + $"GC g{GC.CollectionCount(0) - gc0}/{GC.CollectionCount(1) - gc1}/{GC.CollectionCount(2) - gc2} pause {(GC.GetTotalPauseDuration() - pause0).TotalMilliseconds:0} ms "
+                     + $"alloc {(GC.GetAllocatedBytesForCurrentThread() - alloc0) / ticks / 1024:0.0} KB/tick heap {GC.GetTotalMemory(false) / 1048576} MB | avg ms/tick: {avg}");
+            }
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
             var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z) - 0.5f); // below the floor (or the terrain)
