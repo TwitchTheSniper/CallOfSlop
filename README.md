@@ -109,7 +109,7 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | --- | --- | --- | --- |
 | Movement | **Low Profile** (start) | Crouched or prone | Move 80% faster; Recon Pulses can't reveal you while you're low |
 | Movement | **Head Start** (level 3) | Just spawned | 35% faster for the first 4 s of every life |
-| Movement | **Parkour** (19) | Walls, windows, roofs | Reach ledges 0.6 m higher, climb twice as fast, jump 25% higher |
+| Movement | **Parkour** (19) | Walls, windows, roofs | Reach ledges 0.6 m higher, climb twice as fast, jump about 55% higher |
 | Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after each kill |
 | Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own |
 | Survival | **Bloodthirst** (9) | Just got a kill | Each kill heals you to full |
@@ -306,7 +306,7 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 
 | Item | Unlock | What it does |
 | --- | --- | --- |
-| Frag Grenade | Level 3 | 2.2 s fuse, bounces. Up to 150 damage, kills within about 3 m, hurts out to 7 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
+| Frag Grenade | Level 3 | 2.2 s fuse, bounces. Up to 150 damage, kills within about 1.5 m, hurts out to 7 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
 | Impact Grenade | Level 8 | Explodes on first contact. Up to 110 damage within 4.5 m. |
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s. Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you as a red silhouette through walls. It beeps once a second, so enemies can hear where it is. |

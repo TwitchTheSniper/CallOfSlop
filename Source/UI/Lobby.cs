@@ -75,7 +75,7 @@ public sealed partial class Ui
         ImGui.PushFont(default, 44);
         ImGui.TextColored(Orange, "CALL OF SLOP"u8);
         ImGui.PopFont();
-        ImGui.TextColored(Dim, subtitle);
+        ImGuiSafe.TextColored(Dim, subtitle);
         ImGui.Spacing();
         ImGui.Spacing();
     }
@@ -118,16 +118,16 @@ public sealed partial class Ui
             switch (_page)
             {
                 case Page.Main:
-                    Title($"{Weapons.All.Length} weapons. One prototype box. No mercy.");
+                    Title($"{Weapons.All.Length} weapons. {Maps.All.Length} maps. No mercy.");
                     if (message.Length > 0)
                     {
-                        ImGui.TextColored(Red, message);
+                        ImGuiSafe.TextColored(Red, message);
                         ImGui.Spacing();
                     }
                     if (WeaponSet.ErrorSummary is { } weaponErrors)
                     {
                         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 560 * _scale); // long file paths: wrap instead of widening the panel
-                        ImGui.TextColored(Red, weaponErrors);
+                        ImGuiSafe.TextColored(Red, weaponErrors);
                         ImGui.PopTextWrapPos();
                         ImGui.Spacing();
                     }
@@ -152,7 +152,7 @@ public sealed partial class Ui
                     ImGui.SetNextItemWidth(260 * _scale);
                     ImGui.SliderInt("Bots"u8, ref s.Bots, 1, Game.MaxPlayers - 1);
                     DifficultyPicker(ref s.Difficulty);
-                    ImGui.TextColored(Dim, s.Difficulty switch
+                    ImGuiSafe.TextColored(Dim, s.Difficulty switch
                     {
                         BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
                         BotDifficulty.Normal => "A fair fight.",
@@ -228,7 +228,7 @@ public sealed partial class Ui
                     if (s.Advertise && s.Master == null)
                         ImGui.TextColored(Orange, "No master server set (Settings > Player), so only people on your network will see it."u8);
                     else
-                        ImGui.TextColored(Dim, s.Advertise
+                        ImGuiSafe.TextColored(Dim, s.Advertise
                             ? "Listed publicly through your master server; people on your network always see it too."
                             : "Not listed publicly. People on your network still see it in their browser.");
                     if (BigButton("HOST GAME"))
@@ -273,8 +273,8 @@ public sealed partial class Ui
         if (ImGui.Button("Refresh"u8))
             _browser.Refresh(s);
         ImGui.SameLine();
-        ImGui.TextColored(Dim, _browser.Searching ? "Searching your network..." : $"{list.Count} game(s) found");
-        ImGui.TextColored(Dim, s.Master is { } m
+        ImGuiSafe.TextColored(Dim, _browser.Searching ? "Searching your network..." : $"{list.Count} game(s) found");
+        ImGuiSafe.TextColored(Dim, s.Master is { } m
             ? $"Public list: {(_browser.MasterStatus.Length > 0 ? _browser.MasterStatus : $"master server {m.Host}:{m.Port}")}"
             : "Showing games on your network. To see public internet games, set a master server in Settings > Player.");
 
@@ -295,15 +295,15 @@ public sealed partial class Ui
                 ImGui.TableNextColumn();
                 ImGui.Text(i.Name.Length > 0 ? i.Name : "(unnamed)");
                 ImGui.SameLine();
-                ImGui.TextColored(Dim, e.FromMaster ? "  public" : "  LAN");
+                ImGuiSafe.TextColored(Dim, e.FromMaster ? "  public" : "  LAN");
                 ImGui.TableNextColumn();
-                ImGui.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
+                ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
-                ImGui.TextColored(Dim, GameModes.Short(i.Mode));
+                ImGuiSafe.TextColored(Dim, GameModes.Short(i.Mode));
                 ImGui.TableNextColumn();
-                ImGui.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
+                ImGuiSafe.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
                 ImGui.TableNextColumn();
-                ImGui.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
+                ImGuiSafe.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
                 ImGui.TableNextColumn();
                 if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
                 {
@@ -351,9 +351,9 @@ public sealed partial class Ui
         if (ImGui.Button("Refresh maps"u8))
             _mapReloadMsg = (Maps.Reload().Summary, (Environment.TickCount64 / 1000.0) + 8);
         if (_mapReloadMsg is { } rm && (Environment.TickCount64 / 1000.0) < rm.Until)
-            ImGui.TextColored(Dim, rm.Text);
+            ImGuiSafe.TextColored(Dim, rm.Text);
         if (Maps.LoadErrors.Count > 0)
-            ImGui.TextColored(Red,
+            ImGuiSafe.TextColored(Red,
                 $"{Maps.LoadErrors.Count} map file(s) in the Maps folder didn't load: {Maps.LoadErrors[0]}{(Maps.LoadErrors.Count > 1 ? " (more in callofslop.log)" : "")}");
 
         // The saved pack may be gone (folder removed or renamed): show the first one, but only change the
@@ -378,9 +378,9 @@ public sealed partial class Ui
                 }
                 ImGui.TableNextColumn();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGui.TextWrapped($"{p.Maps.Count} maps: {p.SizeSummary}{(p.Author.Length > 0 ? $" (by {p.Author})" : "")}");
+                ImGuiSafe.TextWrapped($"{p.Maps.Count} maps: {p.SizeSummary}{(p.Author.Length > 0 ? $" (by {p.Author})" : "")}");
                 if (p.Description.Length > 0)
-                    ImGui.TextWrapped(p.Description);
+                    ImGuiSafe.TextWrapped(p.Description);
                 ImGui.PopStyleColor();
             }
             ImGui.EndTable();
@@ -400,7 +400,7 @@ public sealed partial class Ui
         }
         if (s.MapRandom)
         {
-            ImGui.TextColored(Dim, saved != null
+            ImGuiSafe.TextColored(Dim, saved != null
                 ? $"A random one of the {saved.Maps.Count} maps in {saved.Name} each time. After a match, players vote on the next one from the same pack."
                 : $"The pack '{s.MapPack}' isn't in the Maps folder, so it's a random one of all {Maps.All.Length} maps. Pick a pack above.");
             ImGui.Spacing();
@@ -418,14 +418,14 @@ public sealed partial class Ui
                     group = m.Size;
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(Orange, m.Size switch
+                    ImGuiSafe.TextColored(Orange, m.Size switch
                     {
                         MapSize.Small => "SMALL",
                         MapSize.Medium => "MEDIUM",
                         _ => "LARGE",
                     });
                     ImGui.TableNextColumn();
-                    ImGui.TextColored(Dim, m.Size switch
+                    ImGuiSafe.TextColored(Dim, m.Size switch
                     {
                         MapSize.Small => "Up to ~75 m. Fast and close, 2-6 players.",
                         MapSize.Medium => "80-120 m. Mixed ranges, 4-8 players.",
@@ -441,7 +441,7 @@ public sealed partial class Ui
                 }
                 ImGui.TableNextColumn();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGui.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel} - {m.Description} (by {m.Author})" : $"{m.SizeLabel} - {m.Description}");
+                ImGuiSafe.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel} - {m.Description} (by {m.Author})" : $"{m.SizeLabel} - {m.Description}");
                 ImGui.PopStyleColor();
             }
             ImGui.EndTable();
@@ -453,19 +453,19 @@ public sealed partial class Ui
     {
         var p = Progress;
         ImGui.PushFont(default, 22);
-        ImGui.TextColored(Orange, $"LEVEL {p.Level}");
+        ImGuiSafe.TextColored(Orange, $"LEVEL {p.Level}");
         ImGui.PopFont();
         ImGui.SameLine();
-        ImGui.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
+        ImGuiSafe.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
             ? $"  max level - {p.Xp} XP, {p.Kills} kills, {p.Headshots} headshots"
             : $"  {p.XpIntoLevel} / {CallOfSlop.Progress.XpForNext(p.Level)} XP to level {p.Level + 1}");
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
         ImGui.ProgressBar(p.LevelFraction, new float2(360 * _scale, 10 * _scale), ""u8);
         ImGui.PopStyleColor();
         if (p.NextUnlock is { } next)
-            ImGui.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
-        ImGui.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
-        ImGui.TextColored(Dim, $"Every level unlocks something: weapons, grenades, perks and up to {CallOfSlop.Progress.MaxLoadoutSlots} loadout slots. Each gun also earns its own weapon XP for attachments (3-7 matches to max one out).");
+            ImGuiSafe.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
+        ImGuiSafe.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
+        ImGuiSafe.TextColored(Dim, $"Every level unlocks something: weapons, grenades, perks and up to {CallOfSlop.Progress.MaxLoadoutSlots} loadout slots. Each gun also earns its own weapon XP for attachments (3-7 matches to max one out).");
         ImGui.Spacing();
     }
 
@@ -485,12 +485,12 @@ public sealed partial class Ui
             var unlocks = string.Join(", ", p.UnlocksAt(level).Select(CallOfSlop.Progress.Describe));
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
-            ImGui.TextColored(reached ? Green : Dim, $"{level}");
+            ImGuiSafe.TextColored(reached ? Green : Dim, $"{level}");
             ImGui.TableNextColumn();
-            ImGui.TextColored(Dim, $"{CallOfSlop.Progress.TotalFor(level)}");
+            ImGuiSafe.TextColored(Dim, $"{CallOfSlop.Progress.TotalFor(level)}");
             ImGui.TableNextColumn();
             ImGui.PushStyleColor(ImGuiCol.Text, reached ? new float4(1, 1, 1, 1) : Dim);
-            ImGui.TextWrapped(unlocks.Length > 0 ? unlocks : "-");
+            ImGuiSafe.TextWrapped(unlocks.Length > 0 ? unlocks : "-");
             ImGui.PopStyleColor();
         }
         ImGui.EndTable();
@@ -651,7 +651,7 @@ public sealed partial class Ui
                 ImGui.EndCombo();
             }
             ImGui.EndDisabled();
-            ImGui.TextColored(Dim, s.Display switch
+            ImGuiSafe.TextColored(Dim, s.Display switch
             {
                 DisplayMode.Borderless => "Borderless always uses your monitor's native resolution.",
                 DisplayMode.Fullscreen => "Exclusive fullscreen switches your monitor to this resolution.",
@@ -781,7 +781,7 @@ public sealed partial class Ui
                 if (_mapReloadMsg is { } rm && (Environment.TickCount64 / 1000.0) < rm.Until)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                    ImGui.TextWrapped(rm.Text);
+                    ImGuiSafe.TextWrapped(rm.Text);
                     ImGui.PopStyleColor();
                 }
                 ImGui.Spacing();

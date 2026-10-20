@@ -3,7 +3,7 @@
   "name": "Rattler Revolver",
   "order": 4,
   "class": "Pistol",
-  "blurb": "Six shots, two to the head is a kill.",
+  "blurb": "Six shots. Two to the body, or one to the head.",
   "damage": 52,
   "headMult": 2,
   "pellets": 1,

@@ -58,7 +58,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `order` | Position in the weapon list. Lower comes first, ties sort by name. See "Ids and order" below. | `1000` | any whole number |
 | `unlockLevel` | Account level that unlocks it. See "Unlocking" below. | max level | 1 or more |
 | `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG` or `Special`. Pistols go in the **secondary** slot, everything else in the **primary**. The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
-| `blurb` | One line shown in the loadout menu. | `""` | |
+| `blurb` | One line shown in the loadout menu. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `""` | |
 
 ### Damage
 

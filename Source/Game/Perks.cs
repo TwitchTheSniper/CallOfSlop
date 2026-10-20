@@ -96,7 +96,7 @@ public static class Perks
         new() { Id = PerkId.HeadStart, Category = PerkCategory.Movement, Name = "Head Start", When = "Right after you spawn",
             Effect = "Move 35% faster for the first 4 seconds of every life. Get back into the fight first." },
         new() { Id = PerkId.Parkour, Category = PerkCategory.Movement, Name = "Parkour", When = "Around walls, windows and roofs",
-            Effect = "Reach ledges 0.6 m higher, climb twice as fast and jump 25% higher: get onto walls and roofs nobody else can." },
+            Effect = "Reach ledges 0.6 m higher, climb twice as fast and jump about 55% higher: get onto walls and roofs nobody else can." },
         new() { Id = PerkId.Afterburner, Category = PerkCategory.Movement, Name = "Afterburner", When = "Right after a kill",
             Effect = "Every kill gives you 35% more speed for 4 seconds. Chain your kills together." },
 
