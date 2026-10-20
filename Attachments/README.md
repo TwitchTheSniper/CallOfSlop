@@ -40,7 +40,7 @@ Check it with `CallOfSlop.exe --check-weapon Attachments\Muzzle\OilCan.json`. Th
 | `unlockOrder` | Where it comes in each weapon's unlock sequence. Lower unlocks earlier. The shipped ones use 1-23. | `1000` |
 | `author` | Your name. Optional. | `""` |
 | `blurb` | One line describing it. | `""` |
-| `pros`, `cons` | Short lines shown in green and red in the gunsmith. | `[]` |
+| `pros`, `cons` | Short lines shown in green and red in the gunsmith, no full stop at the end (e.g. `"+45% range"`). Like `name` and `blurb`, these are plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `[]` |
 | `fits` | Which weapons take it (below). | fits everything |
 | `effects` | What it changes (below). | no change |
 

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Blueprint",
-  "description": "Example C built for real: L-blocks shield every start, and two raised plinths split the fight so there is never just one centre.",
+  "description": "L-blocks shield every start, and two raised plinths split the fight so there is never just one centre.",
   "author": "Call of Slop",
   "order": 101,
   "halfX": 30,

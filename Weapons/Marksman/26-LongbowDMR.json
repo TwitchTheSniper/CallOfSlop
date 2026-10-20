@@ -3,7 +3,7 @@
   "name": "Longbow DMR",
   "order": 26,
   "class": "DMR",
-  "blurb": "Slow, precise, three body shots.",
+  "blurb": "Slow and precise. Two body shots, or one to the head.",
   "damage": 55,
   "headMult": 2,
   "pellets": 1,

@@ -320,18 +320,18 @@ public sealed partial class Ui
         // ---- Title block -----------------------------------------------------------------
         ImGui.SetCursorScreenPos(pos);
         ImGui.BeginGroup();
-        ImGui.TextColored(Orange, WeaponSelect.ClassLabel(shown.Class));
+        ImGuiSafe.TextColored(Orange, WeaponSelect.ClassLabel(shown.Class));
         ImGui.SameLine();
         ImGui.TextColored(Dim, "/"u8);
         ImGui.SameLine();
         if (shown.Mode == FireMode.Burst)
-            ImGui.TextColored(Dim, $"{shown.BurstCount}-ROUND BURST");
+            ImGuiSafe.TextColored(Dim, $"{shown.BurstCount}-ROUND BURST");
         else
             ImGui.TextColored(Dim, shown.Mode == FireMode.Auto ? "FULL AUTO"u8 : "SEMI AUTO"u8);
         if (shown.Pellets > 1)
         {
             ImGui.SameLine();
-            ImGui.TextColored(Dim, $"/  {shown.Pellets} PELLETS");
+            ImGuiSafe.TextColored(Dim, $"/  {shown.Pellets} PELLETS");
         }
         var namePos = ImGui.GetCursorScreenPos();
         if (!unlocked)
@@ -340,20 +340,20 @@ public sealed partial class Ui
             ImGui.SetCursorScreenPos(namePos + new float2(34 * _scale, 0));
         }
         ImGui.PushFont(default, 40);
-        ImGui.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, WeaponSelect.UpperName(shown));
+        ImGuiSafe.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, WeaponSelect.UpperName(shown));
         ImGui.PopFont();
         if (!unlocked)
         {
             ImGui.SetCursorScreenPos(new float2(pos.X, ImGui.GetCursorScreenPos().Y));
-            ImGui.TextColored(Red, $"LOCKED  -  reach level {level} to unlock (you're level {prog.Level})");
+            ImGuiSafe.TextColored(Red, $"LOCKED  -  reach level {level} to unlock (you're level {prog.Level})");
         }
         else if (isEquipped)
-            ImGui.TextColored(Orange, $"EQUIPPED in {Edit.Name}");
+            ImGuiSafe.TextColored(Orange, $"EQUIPPED in {Edit.Name}");
         else
             ImGui.TextColored(Dim, "EQUIP it (or double-click its tile) to use it in this loadout"u8);
         ImGui.PushTextWrapPos(pos.X - ImGui.GetWindowPos().X + size.X * 0.62f);
         ImGui.PushStyleColor(ImGuiCol.Text, new float4(0.78f, 0.79f, 0.83f, 1f));
-        ImGui.TextWrapped(shown.Blurb);
+        ImGuiSafe.TextWrapped(shown.Blurb);
         ImGui.PopStyleColor();
         ImGui.PopTextWrapPos();
         ImGui.EndGroup();
