@@ -222,7 +222,7 @@ def sawhorse():
     for i in range(6):
         parts.append(At([0.25, 0.18, 0.03], 0.82, -0.625 + 0.25 * i, 0, color="orange" if i % 2 == 0 else "white"))
     for x in (-0.55, 0.55):
-        parts += [B([0.05, 0.92, 0.05], [x, 0.45, 0.13], color="lightwood", pitch=14), B([0.05, 0.92, 0.05], [x, 0.45, -0.13], color="lightwood", pitch=-14),
+        parts += [B([0.05, 0.92, 0.05], [x, 0.45, 0.13], color="lightwood", pitch=-14), B([0.05, 0.92, 0.05], [x, 0.45, -0.13], color="lightwood", pitch=14),
                   At([0.05, 0.05, 0.3], 0.35, x, 0, color="lightwood")]
     parts.append(At([1.2, 0.04, 0.06], 0.78, 0, 0, color="lightwood"))
     prop("Sawhorse Barricade", "Street", "A wooden road barricade with a striped board.", parts, collider=[C([1.3, 1.0, 0.36])],
