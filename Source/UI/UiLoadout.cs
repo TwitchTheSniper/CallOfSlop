@@ -333,7 +333,7 @@ public sealed partial class Ui
                         ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoBackground))
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                    ImGui.TextWrapped(hint);
+                    ImGuiSafe.TextWrapped(hint);
                     ImGui.PopStyleColor();
                 }
                 ImGui.EndChild();
@@ -347,7 +347,7 @@ public sealed partial class Ui
     /// <summary>Where you are: "Loadout name / Primary weapon / Kestrel PDW attachments".</summary>
     private void Breadcrumb()
     {
-        ImGui.TextColored(Dim, Edit.Name);
+        ImGuiSafe.TextColored(Dim, Edit.Name);
         for (var i = 1; i < _nav.Depth; i++)
         {
             var e = _nav[i];
@@ -368,7 +368,7 @@ public sealed partial class Ui
             if (i == _nav.Depth - 1)
                 ImGui.Text(label);
             else
-                ImGui.TextColored(Dim, label);
+                ImGuiSafe.TextColored(Dim, label);
         }
         ImGui.Spacing();
     }
@@ -380,7 +380,7 @@ public sealed partial class Ui
         if (ImGui.BeginChild("##progression"u8, size, ImGuiChildFlags.None))
         {
             LevelSummary();
-            ImGui.TextColored(Dim, $"Kills {prog.Kills}   Headshots {prog.Headshots}   Matches {prog.Matches}   Wins {prog.Wins}   Loadout slots {prog.LoadoutSlots}/{CallOfSlop.Progress.MaxLoadoutSlots}");
+            ImGuiSafe.TextColored(Dim, $"Kills {prog.Kills}   Headshots {prog.Headshots}   Matches {prog.Matches}   Wins {prog.Wins}   Loadout slots {prog.LoadoutSlots}/{CallOfSlop.Progress.MaxLoadoutSlots}");
             ImGui.Spacing();
             ProgressionTable();
         }
@@ -466,10 +466,10 @@ public sealed partial class Ui
                         ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     ImGui.PushFont(default, 18);
-                    ImGui.TextColored(!unlocked ? Dim : selected ? new float4(0.55f, 0.85f, 1f, 1f) : new float4(1, 1, 1, 1), unlocked ? l.Name : DefaultLockedName(i));
+                    ImGuiSafe.TextColored(!unlocked ? Dim : selected ? new float4(0.55f, 0.85f, 1f, 1f) : new float4(1, 1, 1, 1), unlocked ? l.Name : DefaultLockedName(i));
                     ImGui.PopFont();
                     var eff = LoadoutStore.Effective(l, prog);
-                    ImGui.TextColored(Dim, unlocked
+                    ImGuiSafe.TextColored(Dim, unlocked
                         ? $"{Weapons.Get(eff.Primary).Name} + {Weapons.Get(eff.Secondary).Name}"
                         : $"Unlocks at level {level}");
                     if (selected)
@@ -507,7 +507,7 @@ public sealed partial class Ui
 
             // Name + rename
             ImGui.PushFont(default, 26);
-            ImGui.TextColored(new float4(0.55f, 0.85f, 1f, 1f), l.Name);
+            ImGuiSafe.TextColored(new float4(0.55f, 0.85f, 1f, 1f), l.Name);
             ImGui.PopFont();
             ImGui.SameLine(0, 16 * _scale);
             if (!_renaming)
@@ -602,7 +602,7 @@ public sealed partial class Ui
             ImGui.Text(def.Name);
             var nameW = ImGui.GetItemRectSize().X;
             ImGui.PopFont();
-            ImGui.TextColored(Dim, $"{def.ClassName} - {def.ModeName}");
+            ImGuiSafe.TextColored(Dim, $"{def.ClassName} - {def.ModeName}");
             var textW = MathF.Max(nameW, ImGui.GetItemRectSize().X);
             var after = ImGui.GetCursorScreenPos();
 
@@ -620,7 +620,7 @@ public sealed partial class Ui
             var fitted = Attachments.InKit(kit).ToArray();
             ImGui.PushTextWrapPos(width * 0.5f); // keep clear of the gun picture on the right
             ImGui.PushStyleColor(ImGuiCol.Text, SlotBlue);
-            ImGui.TextWrapped(fitted.Length == 0 ? "No attachments" : string.Join(", ", fitted.Select(a => a.Name)));
+            ImGuiSafe.TextWrapped(fitted.Length == 0 ? "No attachments" : string.Join(", ", fitted.Select(a => a.Name)));
             ImGui.PopStyleColor();
             ImGui.PopTextWrapPos();
 
@@ -628,7 +628,7 @@ public sealed partial class Ui
             var wxp = Progress.WeaponXp(def.Id);
             var max = Attachments.MaxXp(def);
             ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, height - 30 * _scale));
-            ImGui.TextColored(Dim, options.Count == 0
+            ImGuiSafe.TextColored(Dim, options.Count == 0
                 ? "Takes no attachments"
                 : $"Weapon XP {Math.Min(wxp, max):N0} / {max:N0}  -  {options.Count(a => wxp >= Attachments.UnlockXp(def, a))}/{options.Count} unlocked");
             ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, height - 10 * _scale));
@@ -678,11 +678,11 @@ public sealed partial class Ui
                 DrawPerkIcon(dl, perks[cat], cat, iconC, 20 * _scale);
                 ImGui.SetCursorScreenPos(new float2(x0 + 52 * _scale, pos.Y + 36 * _scale));
                 var col = Perks.Color(cat);
-                ImGui.TextColored(new float4(col.X, col.Y, col.Z, 1f), Perks.CategoryName(cat).ToUpperInvariant());
+                ImGuiSafe.TextColored(new float4(col.X, col.Y, col.Z, 1f), Perks.CategoryName(cat).ToUpperInvariant());
                 ImGui.SetCursorScreenPos(new float2(x0 + 52 * _scale, pos.Y + 54 * _scale));
                 ImGui.Text(def.Id == PerkId.None ? "Empty" : def.Name);
                 ImGui.SetCursorScreenPos(new float2(x0 + 52 * _scale, pos.Y + 72 * _scale));
-                ImGui.TextColored(Dim, def.Id == PerkId.None ? "-" : def.When);
+                ImGuiSafe.TextColored(Dim, def.Id == PerkId.None ? "-" : def.When);
             }
         }
         ImGui.EndChild();
@@ -704,9 +704,9 @@ public sealed partial class Ui
         ImGui.PushStyleColor(ImGuiCol.ChildBg, _hotCard == key ? CardHover : CardBg);
         if (ImGui.BeginChild($"##throw{key}", new float2(width, height), ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
-            ImGui.TextColored(Orange, title);
+            ImGuiSafe.TextColored(Orange, title);
             ImGui.Text(def.Kind == ThrowableKind.None ? "Empty" : def.Name);
-            ImGui.TextColored(Dim, def.Kind == ThrowableKind.None ? "-" : $"{def.PerLife} per life");
+            ImGuiSafe.TextColored(Dim, def.Kind == ThrowableKind.None ? "-" : $"{def.PerLife} per life");
             if (def.Kind != ThrowableKind.None)
             {
                 // Simple grenade icon in the card's colour
@@ -855,9 +855,9 @@ public sealed partial class Ui
             if (ImGui.BeginChild($"##perkcol{c}", new float2(colW, area.Y), ImGuiChildFlags.Borders))
             {
                 ImGui.PushFont(default, 20);
-                ImGui.TextColored(col4, Perks.CategoryName(cat).ToUpperInvariant());
+                ImGuiSafe.TextColored(col4, Perks.CategoryName(cat).ToUpperInvariant());
                 ImGui.PopFont();
-                ImGui.TextColored(Dim, cat switch
+                ImGuiSafe.TextColored(Dim, cat switch
                 {
                     PerkCategory.Movement => "How you get around."u8,
                     PerkCategory.Survival => "Staying alive."u8,
@@ -884,13 +884,13 @@ public sealed partial class Ui
                             DrawPerkIcon(dl, def.Id, cat, pos + new float2(26 * _scale, 30 * _scale), 18 * _scale, !unlocked);
                             ImGui.SetCursorScreenPos(pos + new float2(52 * _scale, 8 * _scale));
                             ImGui.PushFont(default, 18);
-                            ImGui.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
+                            ImGuiSafe.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
                             ImGui.PopFont();
                             ImGui.SetCursorScreenPos(pos + new float2(52 * _scale, 30 * _scale));
-                            ImGui.TextColored(unlocked ? col4 : Dim, def.When);
+                            ImGuiSafe.TextColored(unlocked ? col4 : Dim, def.When);
                             ImGui.SetCursorScreenPos(pos + new float2(8 * _scale, 54 * _scale));
                             ImGui.PushStyleColor(ImGuiCol.Text, unlocked ? new float4(0.8f, 0.8f, 0.84f, 1f) : Dim);
-                            ImGui.TextWrapped(unlocked ? def.Effect : $"Unlocks at level {CallOfSlop.Progress.PerkLevel(def.Id)}. {def.Effect}");
+                            ImGuiSafe.TextWrapped(unlocked ? def.Effect : $"Unlocks at level {CallOfSlop.Progress.PerkLevel(def.Id)}. {def.Effect}");
                             ImGui.PopStyleColor();
                             if (selected)
                             {

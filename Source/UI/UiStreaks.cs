@@ -43,7 +43,7 @@ public sealed partial class Ui
                 ImGui.SetCursorScreenPos(new float2(x0 + 48 * _scale, cy - 18 * _scale));
                 ImGui.Text(id == StreakId.None ? "Empty" : def.Name);
                 ImGui.SetCursorScreenPos(new float2(x0 + 48 * _scale, cy + 1 * _scale));
-                ImGui.TextColored(id == StreakId.None ? Dim : Rgba(def.Color), id == StreakId.None ? "-" : $"{def.Kills} kills");
+                ImGuiSafe.TextColored(id == StreakId.None ? Dim : Rgba(def.Color), id == StreakId.None ? "-" : $"{def.Kills} kills");
             }
         }
         ImGui.EndChild();
@@ -87,10 +87,10 @@ public sealed partial class Ui
                 DrawStreakIcon(dl, id, pos + new float2(30 * _scale, slotH / 2), 20 * _scale);
                 ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 10 * _scale));
                 ImGui.PushFont(default, 18);
-                ImGui.TextColored(id == StreakId.None ? Dim : new float4(1, 1, 1, 1), id == StreakId.None ? "Empty slot" : def.Name);
+                ImGuiSafe.TextColored(id == StreakId.None ? Dim : new float4(1, 1, 1, 1), id == StreakId.None ? "Empty slot" : def.Name);
                 ImGui.PopFont();
                 ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 34 * _scale));
-                ImGui.TextColored(id == StreakId.None ? Dim : Rgba(def.Color), id == StreakId.None ? "Pick a streak below" : $"{def.Kills} kills  -  streak key {i + 1}");
+                ImGuiSafe.TextColored(id == StreakId.None ? Dim : Rgba(def.Color), id == StreakId.None ? "Pick a streak below" : $"{def.Kills} kills  -  streak key {i + 1}");
                 if (focus && set.Count == 3)
                 {
                     var a = pos;
@@ -133,10 +133,10 @@ public sealed partial class Ui
                     DrawStreakIcon(dl, def.Id, pos + new float2(30 * _scale, 32 * _scale), 21 * _scale, !unlocked);
                     ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 8 * _scale));
                     ImGui.PushFont(default, 19);
-                    ImGui.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
+                    ImGuiSafe.TextColored(unlocked ? new float4(1, 1, 1, 1) : Dim, def.Name);
                     ImGui.PopFont();
                     ImGui.SetCursorScreenPos(pos + new float2(60 * _scale, 32 * _scale));
-                    ImGui.TextColored(unlocked ? Rgba(def.Color) : Dim, unlocked ? def.Short : $"LOCKED  -  unlocks at level {KillStreaks.UnlockLevel(def.Id)}");
+                    ImGuiSafe.TextColored(unlocked ? Rgba(def.Color) : Dim, unlocked ? def.Short : $"LOCKED  -  unlocks at level {KillStreaks.UnlockLevel(def.Id)}");
                     // Cost badge, top right
                     var badge = $"{def.Kills} KILLS";
                     var bw = ImGui.CalcTextSize(badge).X + 14 * _scale;
@@ -149,7 +149,7 @@ public sealed partial class Ui
                     ImGui.SetCursorScreenPos(pos + new float2(10 * _scale, 58 * _scale));
                     ImGui.PushTextWrapPos(ImGui.GetCursorPos().X + cw - 20 * _scale);
                     ImGui.PushStyleColor(ImGuiCol.Text, unlocked ? new float4(0.8f, 0.8f, 0.84f, 1f) : Dim);
-                    ImGui.TextWrapped(def.Effect);
+                    ImGuiSafe.TextWrapped(def.Effect);
                     ImGui.PopStyleColor();
                     ImGui.PopTextWrapPos();
                 }
