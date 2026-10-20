@@ -5,12 +5,13 @@
   "order": 1,
   "unlockOrder": 11,
   "blurb": "Quiet shots and a dim muzzle flash. Bullets lose a bit of punch at range.",
-  "pros": ["Quiet, muffled gunshot", "Dim flash and tracers"],
+  "pros": ["Much quieter, muffled gunshot", "Faint flash and thin, dim tracers", "-25% camera shake"],
   "cons": ["-15% range"],
   "fits": { "sounds": ["Gun", "Boom"], "notClasses": ["Special"] },
   "effects": [
     { "stat": "suppressor", "set": true },
     { "stat": "sound", "set": "Suppressed" },
-    { "stat": "rangeM", "mul": 0.85 }
+    { "stat": "rangeM", "mul": 0.85 },
+    { "stat": "recoilShake", "mul": 0.75 }
   ]
 }

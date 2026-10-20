@@ -138,14 +138,14 @@ public sealed partial class Ui
             ImGui.Spacing();
             // Compare against the stock gun normally, or against your current build while hovering a pick.
             var reference = _hoverAttachment != null ? current : w;
-            StatRow("Accuracy", 1f - Math.Clamp(reference.HipSpreadDeg / 7.5f, 0f, 1f), 1f - Math.Clamp(preview.HipSpreadDeg / 7.5f, 0f, 1f));
-            StatRow("Range", reference.RangeM / 70f, preview.RangeM / 70f);
-            StatRow("Fire rate", reference.Rpm / 1500f, preview.Rpm / 1500f);
-            StatRow("Mobility", (reference.Mobility - 0.6f) / 0.6f, (preview.Mobility - 0.6f) / 0.6f);
-            StatRow("Control", 1f - Math.Clamp(reference.RecoilDeg / 6f, 0f, 1f), 1f - Math.Clamp(preview.RecoilDeg / 6f, 0f, 1f));
-            StatRow("Aim speed", 1f - Math.Clamp(reference.AdsTime / 0.45f, 0f, 1f), 1f - Math.Clamp(preview.AdsTime / 0.45f, 0f, 1f));
-            StatRow("Magazine", MathF.Min(reference.Mag / 80f, 1f), MathF.Min(preview.Mag / 80f, 1f));
-            StatRow("Reload", 1f - Math.Clamp(reference.Reload / 7.5f, 0f, 1f), 1f - Math.Clamp(preview.Reload / 7.5f, 0f, 1f));
+            StatRow("Accuracy", StatBars.Accuracy(reference), StatBars.Accuracy(preview), StatBars.Change(reference.HipSpreadDeg, preview.HipSpreadDeg));
+            StatRow("Range", StatBars.Range(reference), StatBars.Range(preview), StatBars.Change(reference.RangeM, preview.RangeM));
+            StatRow("Fire rate", StatBars.FireRate(reference), StatBars.FireRate(preview), StatBars.Change(reference.Rpm, preview.Rpm));
+            StatRow("Mobility", StatBars.Mobility(reference), StatBars.Mobility(preview), StatBars.Change(reference.Mobility, preview.Mobility));
+            StatRow("Control", StatBars.Control(reference), StatBars.Control(preview), StatBars.Change(Recoil.EffectiveKickDeg(reference), Recoil.EffectiveKickDeg(preview)));
+            StatRow("Aim speed", StatBars.AimSpeed(reference), StatBars.AimSpeed(preview), StatBars.Change(reference.AdsTime, preview.AdsTime));
+            StatRow("Magazine", StatBars.Magazine(reference), StatBars.Magazine(preview), StatBars.Change(reference.Mag, preview.Mag));
+            StatRow("Reload", StatBars.Reload(reference), StatBars.Reload(preview), StatBars.Change(reference.Reload, preview.Reload));
             ImGui.TextColored(Dim, $"{preview.Mag} rounds, {preview.RangeM:0} m range, {preview.AdsTime:0.00} s to aim, {preview.AdsZoom:0.0}x");
         }
         ImGui.EndChild();
@@ -216,14 +216,15 @@ public sealed partial class Ui
     }
 
     /// <summary>A stat bar: white up to the smaller value, then green (better) or red (worse) for the change.</summary>
-    private void StatRow(string label, float before, float after)
+    /// <summary>One stat bar: the common part in grey, a gain in green or a loss in red, and the change in the stat itself as a percentage.</summary>
+    private void StatRow(string label, float before, float after, string change = "")
     {
         before = Math.Clamp(before, 0.02f, 1f);
         after = Math.Clamp(after, 0.02f, 1f);
         ImGui.TextColored(Dim, label);
         ImGui.SameLine(100 * _scale);
         var p0 = ImGui.GetCursorScreenPos() + new float2(0, 5 * _scale);
-        var width = ImGui.GetContentRegionAvail().X - 6 * _scale;
+        var width = ImGui.GetContentRegionAvail().X - 50 * _scale; // room for the "+25%" on the right
         var h = 5 * _scale;
         var dl = ImGui.GetWindowDrawList();
         var bgMax = p0 + new float2(width, h);
@@ -239,5 +240,10 @@ public sealed partial class Ui
             ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 0, default);
         }
         ImGui.Dummy(new float2(width, 14 * _scale));
+        if (change.Length > 0)
+        {
+            ImGui.SameLine(0, 6 * _scale);
+            ImGui.TextColored(after >= before ? new float4(0.35f, 0.86f, 0.43f, 1f) : new float4(0.9f, 0.27f, 0.24f, 1f), change);
+        }
     }
 }

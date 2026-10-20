@@ -5,13 +5,13 @@
   "order": 3,
   "unlockOrder": 12,
   "blurb": "Mid-range prism scope with a chevron reticle.",
-  "pros": ["2.5x zoom", "Much tighter aimed spread"],
+  "pros": ["2.5x zoom", "-35% aimed spread"],
   "cons": ["Slower to aim", "Narrow view"],
   "fits": { "notClasses": ["Pistol", "Shotgun", "Special"] },
   "effects": [
     { "stat": "optic", "set": "Acog" },
     { "stat": "adsZoom", "set": 2.5 },
-    { "stat": "adsSpreadMult", "mul": 0.75 },
+    { "stat": "adsSpreadMult", "mul": 0.65 },
     { "stat": "adsTime", "add": 0.05 }
   ]
 }

@@ -53,9 +53,10 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarrel, Magazine, Stock**. In the loadout menu, the **Primary** and **Secondary** tabs each have two sub-tabs: *Choose primary/secondary* and *<your selected gun> attachments*. The attachments sub-tab always shows the gun currently picked in that slot, with how many attachments are unlocked and what's equipped. Hover an attachment to see its pros, cons and the resulting stats.
 
 - **Optics:** Red Dot, Holographic, 2.5x ACOG, 4x Scope, 8x Sniper Scope. Each has its own reticle and zoom, and the bigger the optic, the slower you aim.
-- **Muzzle:** Suppressor (quiet shots, -15% range), Compensator, Muzzle Brake, Choke (shotguns).
-- **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip, Angled Grip, Laser.
-- **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy, No Stock.
+- **Muzzle:** Suppressor (much quieter shots, faint tracers, -15% range), Compensator (cuts the climb), Muzzle Brake (cuts sideways recoil and shake), Choke (shotguns).
+- **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip (cuts the climb), Angled Grip (faster aim, softer first shot), Laser.
+- **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy (less recoil, faster recovery), No Stock.
+- The gunsmith's stat bars show each change in green or red with the percentage. However much you stack, a gun keeps at least 40% of its recoil and half its hip spread.
 - Which attachments fit depends on the weapon class (pistols take few, snipers take the 8x, shotguns get the Choke).
 - **Unlocks are per weapon** with weapon XP (see Progression): 3-7 matches with a gun to unlock everything on it. Weapon XP is saved in `progress.txt`, and Reset level clears it.
 - The server applies the same attachments to the same stats, so they're fully networked. Other players hear your suppressor and see your optic and grip.
@@ -198,8 +199,8 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Stance | Height | Speed | Spread | Recoil | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Standing | 1.8 m | 100% | 100% | 100% | Can jump and sprint |
-| Crouched | 1.2 m | 50% | 75% | 85% | Fits behind low walls and crates |
-| Prone | 0.6 m | 22% | 50% | 60% | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
+| Crouched | 1.2 m | 50% | 75% | ~85% (per gun) | Fits behind low walls and crates. LMGs lose almost all sideways recoil |
+| Prone | 0.6 m | 22% | 50% | ~65% (per gun) | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
 
 You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Hard snipers go prone, and Hard bots crouch-peek in close fights.
 
@@ -252,6 +253,8 @@ The **loadout menu** opens when a match starts (and any time with **B**, or from
 | Special (4) | Nailgun, Arc Carbine, Old Faithful Musket, Toy Blaster |
 
 Every weapon has its own stats: damage and headshot multiplier, pellets, fire rate and mode (semi/burst/auto), magazine, reload, hip and aimed spread, recoil, damage falloff, movement speed, zoom and draw time.
+
+**Recoil is per weapon.** Each gun has its own seeded spray pattern, so holding the trigger always traces the same learnable shape, plus jitter, a first-shot kick and stance and aim multipliers. Assault rifles climb steadily with a gentle drift. SMGs kick little per shot but jump around. LMGs climb hard, but crouched or prone they barely move sideways. DMRs snap once and settle fast, snipers and shotguns punch the camera, pistols flip, and the specials each have their own feel (the Arc Carbine snakes, the Grinder spins up). When you stop firing, the aim drifts most of the way back to where you started. The camera shake and punch are only visual and never move your aim. Each weapon file's `recoil` block holds the numbers (see [Weapons/README.md](Weapons/README.md)).
 
 **Weapons and attachments are data files.** Each weapon is one `.json` file in the `Weapons` folder (one subfolder per class), and each attachment is one file in `Attachments`, holding its slot, which weapons it fits and the stat changes it makes. To add a weapon, drop a file in and restart. Its model and sounds are generated from its stats, and it picks its own unlock level with `unlockLevel`. **[Weapons/README.md](Weapons/README.md)** and **[Attachments/README.md](Attachments/README.md)** are the guides, with an example and every field. A broken file is skipped with a message in the lobby, and `CallOfSlop.exe --check-weapon FILE` checks one without starting the game. Weapon XP and loadouts are saved by weapon name. In multiplayer everyone needs identical `Weapons` and `Attachments` folders: a client whose set differs from the host's is told which folder differs and disconnected.
 The server checks everything: you can only fire weapons you own, at their real fire rate and spread, and you can't move faster than your fastest weapon allows.

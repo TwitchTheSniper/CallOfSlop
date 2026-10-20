@@ -607,12 +607,12 @@ public sealed partial class Ui : IDisposable
         Bar("Damage", (w.Damage * w.Pellets) / 140f, w.Pellets > 1 ? $"{w.Damage} x {w.Pellets}" : $"{w.Damage}");
         Bar("Fire rate", w.Rpm / 1500f, $"{w.Rpm} rpm");
         Bar("Damage / sec", w.Dps / 1100f, $"{w.Dps:0}");
-        Bar("Range", w.RangeM / 60f, $"{w.RangeM:0} m full damage");
-        Bar("Accuracy", 1f - Math.Clamp(w.HipSpreadDeg / 7.5f, 0f, 1f), $"{w.HipSpreadDeg:0.0} deg hip, {w.HipSpreadDeg * w.AdsSpreadMult:0.00} aimed");
-        Bar("Control", 1f - Math.Clamp(w.RecoilDeg / 5.5f, 0f, 1f), $"{w.RecoilDeg:0.0} deg kick");
+        Bar("Range", StatBars.Range(w), $"{w.RangeM:0} m full damage");
+        Bar("Accuracy", StatBars.Accuracy(w), $"{w.HipSpreadDeg:0.0} deg hip, {w.HipSpreadDeg * w.AdsSpreadMult:0.00} aimed");
+        Bar("Control", StatBars.Control(w), $"{Recoil.ControlText(w)} deg kick");
         Bar("Mobility", (w.Mobility - 0.7f) / 0.45f, $"{w.Mobility * 100:0}% speed");
-        Bar("Magazine", MathF.Min(w.Mag / 60f, 1f), $"{w.Mag} rounds");
-        Bar("Reload speed", 1f - Math.Clamp(w.Reload / 7.5f, 0f, 1f), $"{w.Reload:0.0} s");
+        Bar("Magazine", StatBars.Magazine(w), $"{w.Mag} rounds");
+        Bar("Reload speed", StatBars.Reload(w), $"{w.Reload:0.0} s");
         Bar("Handling", 1f - Math.Clamp(w.EquipTime / 1.2f, 0f, 1f), $"{w.EquipTime:0.00} s draw");
         Bar("Aim speed", 1f - Math.Clamp(w.AdsTime / 0.45f, 0f, 1f), $"{w.AdsTime:0.00} s to aim, {w.AdsZoom:0.0}x zoom");
         if (w.Kit != 0)

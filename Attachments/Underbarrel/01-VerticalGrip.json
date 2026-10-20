@@ -5,11 +5,12 @@
   "order": 1,
   "unlockOrder": 7,
   "blurb": "Something solid to hold on to.",
-  "pros": ["-20% recoil"],
+  "pros": ["-30% vertical recoil", "Steadier gun"],
   "cons": ["Slightly slower to aim"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
-    { "stat": "recoilDeg", "mul": 0.8 },
+    { "stat": "recoilVertical", "mul": 0.7 },
+    { "stat": "recoilKickUp", "mul": 0.7 },
     { "stat": "adsTime", "add": 0.01 }
   ]
 }

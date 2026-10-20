@@ -5,13 +5,13 @@
   "order": 4,
   "unlockOrder": 17,
   "blurb": "Full scope for long sightlines.",
-  "pros": ["4x zoom", "Very tight aimed spread"],
+  "pros": ["4x zoom", "-52% aimed spread"],
   "cons": ["Much slower to aim", "Tunnel vision", "-3% speed"],
   "fits": { "classes": ["AssaultRifle", "LMG", "DMR", "Sniper"] },
   "effects": [
     { "stat": "optic", "set": "Scope4" },
     { "stat": "adsZoom", "set": 4 },
-    { "stat": "adsSpreadMult", "mul": 0.6 },
+    { "stat": "adsSpreadMult", "mul": 0.48 },
     { "stat": "adsTime", "add": 0.1 },
     { "stat": "mobility", "add": -0.03 }
   ]

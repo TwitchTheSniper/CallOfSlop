@@ -273,9 +273,9 @@ public sealed partial class Game
                     break;
             }
             // Recoil nudges their aim off target; they have to pull it back.
-            var kick = def.RecoilDeg * MathF.PI / 180f;
-            b.AimErrPitch += kick * 0.6f;
-            b.AimErrYaw += ((float)_rng.NextDouble() - 0.5f) * kick * 0.5f;
+            var (kickPitch, kickYaw) = Recoil.BotKick(def, _rng);
+            b.AimErrPitch += kickPitch;
+            b.AimErrYaw += kickYaw;
         }
 
         // ---- Grenades -------------------------------------------------------------------
