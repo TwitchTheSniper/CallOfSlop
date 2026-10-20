@@ -287,8 +287,8 @@ public sealed class AttachmentEffect
                 if (Field.FieldType == typeof(float) || Field.FieldType == typeof(int))
                 {
                     var v = Expression.Parameter(Field.FieldType, "x");
-                    var getter = Expression.Lambda(field, w).Compile();
-                    var setter = Expression.Lambda(Expression.Assign(field, v), w, v).Compile();
+                    var getter = Expression.Lambda(Expression.GetFuncType(typeof(WeaponDef), Field.FieldType), field, w).Compile();
+                    var setter = Expression.Lambda(Expression.GetActionType(typeof(WeaponDef), Field.FieldType), Expression.Assign(field, v), w, v).Compile();
                     acc = [setObj, getter, setter];
                 }
                 Accessors[Field] = acc;
