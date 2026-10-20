@@ -38,6 +38,34 @@ public static class Geometry
         return Axis(axis, dir[axis] > 0 ? -1 : 1);
     }
 
+    /// <summary>
+    /// <see cref="Box.Raycast"/> on a box given by its corners: the same operations in the same order, so the same answer bit
+    /// for bit (Box.Min/Max are Center -/+ Half, which is how the corners are made), without rebuilding the corners per axis.
+    /// </summary>
+    public static float? RayAabb(in Vector3 min, in Vector3 max, Vector3 origin, Vector3 dir, float maxDist)
+    {
+        float tMin = 0f, tMax = maxDist;
+        if (!RayAxis(origin.X, dir.X, min.X, max.X, ref tMin, ref tMax)
+            || !RayAxis(origin.Y, dir.Y, min.Y, max.Y, ref tMin, ref tMax)
+            || !RayAxis(origin.Z, dir.Z, min.Z, max.Z, ref tMin, ref tMax))
+            return null;
+        return tMin;
+    }
+
+    private static bool RayAxis(float o, float d, float lo, float hi, ref float tMin, ref float tMax)
+    {
+        if (MathF.Abs(d) < 1e-6f)
+            return !(o < lo || o > hi);
+        var inv = 1f / d;
+        var t1 = (lo - o) * inv;
+        var t2 = (hi - o) * inv;
+        if (t1 > t2)
+            (t1, t2) = (t2, t1);
+        tMin = MathF.Max(tMin, t1);
+        tMax = MathF.Min(tMax, t2);
+        return !(tMin > tMax);
+    }
+
     /// <summary>Ray against an oriented box: distance along the unit ray or null (the axis-aligned test in box coordinates).</summary>
     public static float? RayObb(in Obb b, Vector3 origin, Vector3 dir, float maxDist) =>
         new Box(Vector3.Zero, b.Half).Raycast(b.ToLocal(origin), b.DirToLocal(dir), maxDist);

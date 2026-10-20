@@ -368,9 +368,30 @@ public sealed class SweptMover : IMover
     /// </summary>
     private bool Snap(ref Vector3 feet, Stance stance, float dist)
     {
-        if (!Cast(feet, stance, -_up, dist, out var t, out var n) || Vector3.Dot(n, _up) < World.MinWalkNormalY)
+        if (!Cast(feet, stance, -_up, dist, out var t, out var n))
             return false;
-        feet -= _up * t;
+        if (Vector3.Dot(n, _up) >= World.MinWalkNormalY)
+        {
+            feet -= _up * t;
+            return true;
+        }
+        // Resting on an edge (walking off a stair) or a steep bit: slide the rest of the way down along it, then look for
+        // walkable ground once more, never further down than dist in all.
+        var p = feet - _up * t;
+        var rest = dist - t;
+        var along = -_up - n * Vector3.Dot(-_up, n);
+        var len = along.Length();
+        if (rest < 0.02f || len < 0.1f)
+            return false;
+        along /= len;
+        var step = rest;
+        if (Cast(p, stance, along, step, out var t2, out _))
+            step = t2;
+        var q = p + along * step;
+        var left = dist - Vector3.Dot(feet - q, _up);
+        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3) || Vector3.Dot(n3, _up) < World.MinWalkNormalY)
+            return false;
+        feet = q - _up * t3;
         return true;
     }
 

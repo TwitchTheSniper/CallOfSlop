@@ -184,8 +184,8 @@ public static partial class SelfTest
             {
                 World.Simulate(ref mt, new InputCmd { Buttons = Buttons.Forward | Buttons.Jump, Yaw = 0, SpeedPct = 100 });
                 mantled |= mt.MantleTicks > 0;
-                if (mt.Position.Z < -3.6f && mt.MantleTicks == 0)
-                    break;
+                if (mantled && mt.MantleTicks == 0)
+                    break; // on top (don't keep jumping about up there)
             }
             notes.Add($"mantle onto 1.2 m: {mantled}, ends at y {mt.Position.Y:0.00}");
             if (swept && (!mantled || mt.Position.Y < 1.15f))

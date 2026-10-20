@@ -23,6 +23,7 @@ public sealed class PhysicsWorld : IWorldQuery
 {
     private readonly Map? _map;
     private readonly Box[] _boxes;
+    private readonly Vector3[] _bmin, _bmax; // each box's corners (Box.Min / Box.Max), computed once
     private readonly bool[] _isProp;
     private readonly bool[] _enabled;
     private readonly int _boxCount;
@@ -88,11 +89,15 @@ public sealed class PhysicsWorld : IWorldQuery
         _map = map;
         _boxCount = boxes.Count;
         _boxes = new Box[_boxCount];
+        _bmin = new Vector3[_boxCount];
+        _bmax = new Vector3[_boxCount];
         _isProp = new bool[_boxCount];
         _enabled = new bool[_boxCount];
         for (var i = 0; i < _boxCount; i++)
         {
             _boxes[i] = boxes[i];
+            _bmin[i] = boxes[i].Min;
+            _bmax[i] = boxes[i].Max;
             _isProp[i] = map != null && map.IsPropCollider(i);
             _enabled[i] = !Parked(boxes[i]);
         }
@@ -128,8 +133,8 @@ public sealed class PhysicsWorld : IWorldQuery
     {
         if (item < _boxCount)
         {
-            min = _boxes[item].Min;
-            max = _boxes[item].Max;
+            min = _bmin[item];
+            max = _bmax[item];
         }
         else if (item < _boxCount + _obbs.Count)
             _obbs[item - _boxCount].Bounds(out min, out max);
@@ -147,13 +152,12 @@ public sealed class PhysicsWorld : IWorldQuery
     public void UpdateBox(int index, Box box)
     {
         _boxes[index] = box;
+        _bmin[index] = box.Min;
+        _bmax[index] = box.Max;
         var on = !Parked(box);
-        var wasOn = _enabled[index];
         _enabled[index] = on;
         if (on)
             Refit(); // a box that really moved: node bounds follow it
-        else if (!wasOn)
-            return;
     }
 
     /// <summary>Reads every box from the map again (broken props restored) and switches them back on.</summary>
@@ -164,6 +168,8 @@ public sealed class PhysicsWorld : IWorldQuery
         for (var i = 0; i < _boxCount && i < _map.Solid.Count; i++)
         {
             _boxes[i] = _map.Solid[i];
+            _bmin[i] = _boxes[i].Min;
+            _bmax[i] = _boxes[i].Max;
             _enabled[i] = !Parked(_boxes[i]);
         }
         Refit();
@@ -244,7 +250,7 @@ public sealed class PhysicsWorld : IWorldQuery
             {
                 if (!w.BoxWanted(item, Layers, Ignore))
                     return best;
-                hit = w._boxes[item].Raycast(O, D, best);
+                hit = Geometry.RayAabb(w._bmin[item], w._bmax[item], O, D, best); // = Box.Raycast, bit for bit
             }
             else if (item < w._boxCount + w._obbs.Count)
             {
@@ -376,7 +382,7 @@ public sealed class PhysicsWorld : IWorldQuery
             hit.Shape = new ShapeId(kind, index, sub);
             hit.Normal = kind switch
             {
-                ShapeKind.Box or ShapeKind.Prop => Geometry.BoxEntryNormal(_boxes[index].Min, _boxes[index].Max, o, d, best),
+                ShapeKind.Box or ShapeKind.Prop => Geometry.BoxEntryNormal(_bmin[index], _bmax[index], o, d, best),
                 ShapeKind.Obb => Geometry.ObbEntryNormal(_obbs[index], o, d, best),
                 ShapeKind.Mesh => TriangleHitNormal(_meshes[index], sub, d),
                 ShapeKind.Terrain => best <= 0 ? -d : Terrain!.NormalAt(hit.Point.X, hit.Point.Z),
@@ -437,10 +443,11 @@ public sealed class PhysicsWorld : IWorldQuery
             {
                 if (!w.BoxWanted(item, Layers, Ignore))
                     return false;
-                var b = w._boxes[item];
+                ref readonly var lo = ref w._bmin[item];
+                ref readonly var hi = ref w._bmax[item];
                 // Exactly the classic body test (World.BlockedByBoxes before the physics module).
-                return Feet.Y < b.Max.Y - 0.001f && Feet.Y + Height > b.Min.Y + 0.001f
-                    && Feet.X + r > b.Min.X && Feet.X - r < b.Max.X && Feet.Z + r > b.Min.Z && Feet.Z - r < b.Max.Z;
+                return Feet.Y < hi.Y - 0.001f && Feet.Y + Height > lo.Y + 0.001f
+                    && Feet.X + r > lo.X && Feet.X - r < hi.X && Feet.Z + r > lo.Z && Feet.Z - r < hi.Z;
             }
             var body = new Obb(Feet + new Vector3(0, Height / 2, 0), new Vector3(r, Height / 2 - 0.001f, r), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
             return w.StaticItemOverlapsObb(item, body, Layers, Ignore);
@@ -527,9 +534,10 @@ public sealed class PhysicsWorld : IWorldQuery
             {
                 if (!w.BoxWanted(item, Layers, Ignore))
                     return false;
-                var b = w._boxes[item];
+                ref readonly var lo = ref w._bmin[item];
+                ref readonly var hi = ref w._bmax[item];
                 // Exactly the grenade test from before the physics module.
-                return p.X > b.Min.X - r && p.X < b.Max.X + r && p.Y > b.Min.Y - r && p.Y < b.Max.Y + r && p.Z > b.Min.Z - r && p.Z < b.Max.Z + r;
+                return p.X > lo.X - r && p.X < hi.X + r && p.Y > lo.Y - r && p.Y < hi.Y + r && p.Z > lo.Z - r && p.Z < hi.Z + r;
             }
             if (item < w._boxCount + w._obbs.Count)
             {

@@ -239,11 +239,16 @@ public static partial class SelfTest
                 if (ca != cb)
                     disagree++;
                 else if (ca)
-                    worstCast = MathF.Max(worstCast, MathF.Abs(sa.Distance - sb.Distance));
+                {
+                    // A cast stops between half a skin and a skin short of contact, measured across the surface: along the
+                    // direction that's up to skin / cos(angle of approach), so compare in those units.
+                    var cos = MathF.Max(0.1f, MathF.Abs(Vector3.Dot(dir, sa.Normal)));
+                    worstCast = MathF.Max(worstCast, MathF.Abs(sa.Distance - sb.Distance) * cos);
+                }
             }
         }
-        Line($"oriented boxes vs the same boxes as triangle meshes: {tests} rays, {disagree} disagreements, distances within {worst:0e0} m (rays) and {worstCast:0e0} m (sphere casts)");
-        if (disagree > tests / 100 || worst > 1e-3f || worstCast > 5e-3f)
+        Line($"oriented boxes vs the same boxes as triangle meshes: {tests} rays, {disagree} disagreements, distances within {worst:0e0} m (rays) and {worstCast:0e0} m across the surface (sphere casts)");
+        if (disagree > tests / 100 || worst > 1e-3f || worstCast > CapsuleContact.Skin * 0.6f)
             Fail($"oriented box and mesh colliders disagree ({disagree} of {tests}, ray {worst} m, cast {worstCast} m)");
 
         // A ray straight down onto a 30 degree ramp hits it where the geometry says, with the ramp's normal.
