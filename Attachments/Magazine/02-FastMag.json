@@ -5,10 +5,10 @@
   "order": 2,
   "unlockOrder": 5,
   "blurb": "Clipped together for quick swaps.",
-  "pros": ["30% faster reload"],
+  "pros": ["42% faster reload"],
   "cons": [],
   "fits": { "minMag": 3 },
   "effects": [
-    { "stat": "reload", "mul": 0.7 }
+    { "stat": "reload", "mul": 0.58 }
   ]
 }

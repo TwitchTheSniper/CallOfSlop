@@ -5,13 +5,13 @@
   "order": 2,
   "unlockOrder": 6,
   "blurb": "Wide window with a ring reticle. Great for tracking moving targets.",
-  "pros": ["Ring + dot reticle", "1.6x zoom", "Tighter aimed spread"],
+  "pros": ["Ring + dot reticle", "1.6x zoom", "-22% aimed spread"],
   "cons": ["Slightly slower to aim"],
   "fits": { "notClasses": ["Pistol"] },
   "effects": [
     { "stat": "optic", "set": "Holo" },
     { "stat": "adsZoom", "set": 1.6 },
-    { "stat": "adsSpreadMult", "mul": 0.85 },
+    { "stat": "adsSpreadMult", "mul": 0.78 },
     { "stat": "adsTime", "add": 0.02 }
   ]
 }

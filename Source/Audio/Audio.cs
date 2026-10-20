@@ -162,7 +162,7 @@ public sealed class Audio : IDisposable
     public void Shot(WeaponDef w, Vector3? position)
     {
         if (Enabled)
-            Play(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id], position, (position == null ? 0.75f : 1f) * (w.Suppressor ? 0.7f : 1f), Jitter(0.04f));
+            Play(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id], position, (position == null ? 0.75f : 1f) * (w.Suppressor ? 0.5f : 1f), Jitter(0.04f));
     }
 
     public void Reload(WeaponDef w, Vector3? position)

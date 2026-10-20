@@ -1126,7 +1126,16 @@ public static unsafe class Program
         }
 
         var fov = local is { Alive: true } ? CurrentFov() : BaseFov;
-        var view = Matrix4x4.CreateLookAt(eye, eye + fwd, Vector3.UnitY);
+        var camUp = Vector3.UnitY;
+        if (local is { Alive: true })
+        {
+            // Recoil shake and view punch move only the rendered camera, never the aim.
+            var rk = _game.RecoilCamera;
+            fwd = World.Forward(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
+            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -rk.Roll));
+            fov *= 1f + rk.Fov;
+        }
+        var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         Gfx.SetCamera(view, proj);
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
@@ -1381,7 +1390,7 @@ public static unsafe class Program
 
         var def = _game.Active.Def;
         var sinceShot = (float)(now - _game.LastShotTime);
-        var kick = MathF.Max(0, 1 - sinceShot / 0.1f) * (0.03f + def.RecoilDeg * 0.015f);
+        var kick = _game.WeaponKick.Back; // recoil kick from the gun's profile (Game.WeaponKick: Back/Up/Roll/Side)
 
         var reload = 0f;
         var rp = _game.ReloadProgress(now);
@@ -1409,7 +1418,7 @@ public static unsafe class Program
         }
 
         var pose =
-            Matrix4x4.CreateRotationX(-reload * 0.9f - equip * 1.2f + jab * 0.35f)
+            Matrix4x4.CreateRotationX(-reload * 0.9f - equip * 1.2f + jab * 0.35f + _game.WeaponKick.Up)
             * Matrix4x4.CreateRotationY(jab * 0.9f)
             * Matrix4x4.CreateRotationZ(jab * 0.5f)
             * Matrix4x4.CreateTranslation(x, y - reload * 0.15f - equip * 0.25f + bob, z);

@@ -5,11 +5,11 @@
   "order": 1,
   "unlockOrder": 14,
   "blurb": "More velocity, more reach.",
-  "pros": ["+30% range"],
+  "pros": ["+45% range"],
   "cons": ["-4% speed", "Slower to aim"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
-    { "stat": "rangeM", "mul": 1.3 },
+    { "stat": "rangeM", "mul": 1.45 },
     { "stat": "mobility", "add": -0.04 },
     { "stat": "adsTime", "add": 0.03 },
     { "stat": "length", "add": 0.08 }

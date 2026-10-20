@@ -5,11 +5,12 @@
   "order": 3,
   "unlockOrder": 15,
   "blurb": "Balances recoil and keeps hip fire steady.",
-  "pros": ["-10% recoil", "-10% hip spread"],
+  "pros": ["-30% horizontal recoil", "-40% camera shake", "-14% hip spread"],
   "cons": [],
   "fits": { "notClasses": ["Shotgun", "Special", "Pistol"] },
   "effects": [
-    { "stat": "recoilDeg", "mul": 0.9 },
-    { "stat": "hipSpreadDeg", "mul": 0.9 }
+    { "stat": "recoilHorizontal", "mul": 0.7 },
+    { "stat": "recoilShake", "mul": 0.6 },
+    { "stat": "hipSpreadDeg", "mul": 0.86 }
   ]
 }

@@ -5,11 +5,12 @@
   "order": 2,
   "unlockOrder": 16,
   "blurb": "Padded and weighted.",
-  "pros": ["-15% recoil"],
+  "pros": ["-20% recoil", "Recovers from recoil 40% faster"],
   "cons": ["-4% speed", "Slightly slower to aim"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
-    { "stat": "recoilDeg", "mul": 0.85 },
+    { "stat": "recoilDeg", "mul": 0.8 },
+    { "stat": "recoilRecovery", "mul": 1.4 },
     { "stat": "mobility", "add": -0.04 },
     { "stat": "adsTime", "add": 0.02 }
   ]
