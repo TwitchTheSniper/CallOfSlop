@@ -510,12 +510,9 @@ public static class SelfTest
             game.MapVoteEnabled = false;
             var bot = game.Players.Values.First(p => p.Bot != null);
             World.SetMap(m);
-            var g = NavGraph.Current; // built in the background: wait for it
-            for (var wait = 0; wait < 400 && g == NavGraph.Empty; wait++)
-            {
-                Thread.Sleep(25);
-                g = NavGraph.Current;
-            }
+            for (var wait = 0; wait < 1000 && NavGraph.Current == NavGraph.Empty; wait++)
+                NavGraph.Pump(50); // normally a slice per tick; here, just finish it
+            var g = NavGraph.Current;
             if (g.MainNodes.Length < 2)
             {
                 Fail($"{name}: no main nav area");

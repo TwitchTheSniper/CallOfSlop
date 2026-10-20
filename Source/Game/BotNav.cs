@@ -4,7 +4,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A walkable-surface graph for one map, built once (lazily) the first time bots play on it.
+/// A walkable-surface graph for one map, built once (a slice per tick, see <see cref="Pump"/>) the first time bots play on it.
 ///
 /// Nodes sit on a grid over every surface a player can stand on (the ground and the tops of boxes), plus the
 /// map's own waypoints and spawns. Edges join nearby nodes when a player could really walk the straight line
@@ -60,13 +60,13 @@ public sealed class NavGraph
     private int[] _cellStart = [0];
     private int[] _cellNodes = [];
 
-    // ---- Cache --------------------------------------------------------------------------------
+    // ---- Cache and incremental building ----------------------------------------------------------
 
     private static readonly Dictionary<(string, uint), NavGraph> Cache = new();
     private static Map? _lastMap;
     private static NavGraph? _last;
-    private static Task<NavGraph?>? _pending;
-    private static Map? _pendingMap;
+    private static IEnumerator<NavGraph?>? _builder;
+    private static Map? _builderMap;
 
     /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
     public static readonly NavGraph Empty = CreateEmpty();
@@ -80,9 +80,8 @@ public sealed class NavGraph
     }
 
     /// <summary>
-    /// The graph for the map being played (<see cref="World.Map"/>). The first time a map is played it's built on a
-    /// background thread (up to a second or two on big maps) and <see cref="Empty"/> is returned until it's ready, so
-    /// a map change never stalls the server. Graphs are cached per map name + fingerprint.
+    /// The graph for the map being played (<see cref="World.Map"/>), or <see cref="Empty"/> while it's still being
+    /// built (see <see cref="Pump"/>). Graphs are cached per map name + fingerprint.
     /// </summary>
     public static NavGraph Current
     {
@@ -91,61 +90,86 @@ public sealed class NavGraph
             var map = World.Map;
             if (_last != null && ReferenceEquals(_lastMap, map))
                 return _last;
-            var key = (map.Name, map.ContentHash);
-            if (Cache.TryGetValue(key, out var cached))
-            {
-                _lastMap = map;
-                _last = cached;
-                return cached;
-            }
-            if (_pending != null && !ReferenceEquals(_pendingMap, map))
-                _pending = null; // built for a map we've left: it notices and stops by itself
-            if (_pending == null)
-            {
-                _pendingMap = map;
-                _pending = Task.Run(() => TryBuild(map));
-            }
-            if (!_pending.IsCompleted)
+            if (!Cache.TryGetValue((map.Name, map.ContentHash), out var cached))
                 return Empty;
-            var g = _pending.Result;
-            _pending = null;
-            if (g == null)
-                return Empty; // the map changed under it: try again
-            Cache[key] = g;
-            Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
-                + $"{g.MainNodes.Length} in the main area, built in {g.BuildMs:0} ms");
             _lastMap = map;
-            _last = g;
-            return g;
+            _last = cached;
+            return cached;
         }
     }
 
-    /// <summary>Builds on a worker thread; null if the map changed meanwhile. A real error gives an empty graph (logged once).</summary>
-    private static NavGraph? TryBuild(Map map)
+    /// <summary>
+    /// Builds the current map's graph a slice at a time: call once per server tick with a time budget. The build runs
+    /// on the game thread in small steps (no threads, so it's safe with any collision backend), and bots get the
+    /// graph when it's done, typically within a second or two of a map change; until then they steer straight.
+    /// </summary>
+    public static void Pump(double budgetMs)
     {
+        var map = World.Map;
+        if (_last != null && ReferenceEquals(_lastMap, map))
+            return;
+        if (Current != Empty)
+            return;
+        if (_builder != null && !ReferenceEquals(_builderMap, map))
+            _builder = null; // the map changed under it
+        if (_builder == null)
+        {
+            _builderMap = map;
+            _builder = BuildSteps(map).GetEnumerator();
+        }
+        var start = Stopwatch.GetTimestamp();
         try
         {
-            return Build(map);
-        }
-        catch (OperationCanceledException)
-        {
-            return null;
+            while (_builder.MoveNext())
+            {
+                if (_builder.Current is { } g)
+                {
+                    Store(map, g);
+                    _builder = null;
+                    return;
+                }
+                if (Stopwatch.GetElapsedTime(start).TotalMilliseconds >= budgetMs)
+                    return;
+            }
+            _builder = null;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[bots] nav graph for {map.Name} failed: {ex.Message}");
-            return CreateEmpty();
+            Store(map, CreateEmpty()); // don't retry every tick
+            _builder = null;
         }
+    }
+
+    private static void Store(Map map, NavGraph g)
+    {
+        Cache[(map.Name, map.ContentHash)] = g;
+        Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
+            + $"{g.MainNodes.Length} in the main area, {g.BuildMs:0} ms of work");
+    }
+
+    /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
+    public static NavGraph Build(Map map)
+    {
+        foreach (var g in BuildSteps(map))
+            if (g != null)
+                return g;
+        throw new InvalidOperationException("nav graph build ended without a result");
     }
 
     // ---- Building -------------------------------------------------------------------------------
 
-    /// <summary>Builds the graph for <paramref name="map"/>, which must be <see cref="World.Map"/> (the collision queries use it).</summary>
-    public static NavGraph Build(Map map)
+    /// <summary>
+    /// The build as a sequence of small steps: yields null after each slice of work and the finished graph last.
+    /// The map must stay <see cref="World.Map"/> throughout (the collision queries use it); <see cref="Pump"/> drops
+    /// the build if it changes. <see cref="BuildMs"/> counts only the time spent working.
+    /// </summary>
+    private static IEnumerable<NavGraph?> BuildSteps(Map map)
     {
         if (!ReferenceEquals(World.Map, map))
-            throw new OperationCanceledException("NavGraph.Build needs the map to be the current World.Map");
-        var sw = Stopwatch.StartNew();
+            throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        var work = 0.0;
+        var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
@@ -157,26 +181,15 @@ public sealed class NavGraph
 
         // ---- Nodes: every standable surface at each grid point, plus the map's waypoints and spawns ----
         var nodes = new List<Vector3>();
-        Span<float> heights = stackalloc float[16];
         for (var x = -map.HalfX + s / 2; x < map.HalfX; x += s)
-        for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
         {
-            var n = 0;
-            var columnStart = nodes.Count;
-            // Whatever the world says is the highest ground here (covers non-box ground too).
-            var t = World.RaycastWorld(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
-            if (t > 0.001f && t < top + 6f)
-                heights[n++] = top - t;
-            foreach (var b in map.Solid)
+            for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
             {
-                if (n >= heights.Length)
-                    break;
-                if (x > b.Min.X && x < b.Max.X && z > b.Min.Z && z < b.Max.Z && b.Max.Y < top)
-                    heights[n++] = b.Max.Y;
+                AddColumn(map, nodes, x, z, s, top);
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
             }
-            for (var i = 0; i < n; i++)
-                if (Place(map, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
-                    nodes.Add(p);
         }
         var gridCount = nodes.Count;
         foreach (var w in map.Waypoints.Concat(map.Spawns))
@@ -189,13 +202,11 @@ public sealed class NavGraph
         // ---- Edges between nearby nodes ----
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
-        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 12);
+        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>();
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)
         {
-            if (!ReferenceEquals(World.Map, map))
-                throw new OperationCanceledException(); // the server moved on to another map: these queries are no good
             var a = g.Nodes[i];
             var r = i < gridCount ? radius : s * 2.1f;
             near.Clear();
@@ -207,6 +218,9 @@ public sealed class NavGraph
                 if (link)
                     TryLink(g, i, j, edges);
             }
+            work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            yield return null;
+            t0 = Stopwatch.GetTimestamp();
         }
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
@@ -247,11 +261,46 @@ public sealed class NavGraph
             g.EdgeStart[i + 1] += g.EdgeStart[i];
         g.BuildCells(map);
         g.BuildComponents();
-        g.BuildOpenness();
-        if (!ReferenceEquals(World.Map, map))
-            throw new OperationCanceledException();
-        g.BuildMs = sw.Elapsed.TotalMilliseconds;
-        return g;
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
+
+        // ---- How open the view is from each node ----
+        g.Openness = new byte[count];
+        for (var i = 0; i < count; i++)
+        {
+            g.Openness[i] = OpennessAt(g.Nodes[i]);
+            if (i % 16 == 15)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
+        g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return g;
+    }
+
+    /// <summary>Adds a node for every surface a player can stand on at grid point (x, z).</summary>
+    private static void AddColumn(Map map, List<Vector3> nodes, float x, float z, float s, float top)
+    {
+        Span<float> heights = stackalloc float[16];
+        var n = 0;
+        var columnStart = nodes.Count;
+        // Whatever the world says is the highest ground here (covers non-box ground too).
+        var t = World.RaycastWorld(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
+        if (t > 0.001f && t < top + 6f)
+            heights[n++] = top - t;
+        foreach (var b in map.Solid)
+        {
+            if (n >= heights.Length)
+                break;
+            if (x > b.Min.X && x < b.Max.X && z > b.Min.Z && z < b.Max.Z && b.Max.Y < top)
+                heights[n++] = b.Max.Y;
+        }
+        for (var i = 0; i < n; i++)
+            if (Place(map, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
+                nodes.Add(p);
     }
 
     private static bool NearExisting(List<Vector3> nodes, Vector3 p, int from, float within = 0.5f)
@@ -532,21 +581,17 @@ public sealed class NavGraph
         MainNodes = Enumerable.Range(0, Nodes.Length).Where(i => Component[i] == MainComponent).ToArray();
     }
 
-    private void BuildOpenness()
+    private static byte OpennessAt(Vector3 feet)
     {
-        Openness = new byte[Nodes.Length];
-        for (var i = 0; i < Nodes.Length; i++)
+        var eye = feet + new Vector3(0, World.EyeHeight, 0);
+        var open = 0;
+        for (var k = 0; k < 8; k++)
         {
-            var eye = Nodes[i] + new Vector3(0, World.EyeHeight, 0);
-            var open = 0;
-            for (var k = 0; k < 8; k++)
-            {
-                var a = k * MathF.Tau / 8;
-                if (World.RaycastWorld(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
-                    open++;
-            }
-            Openness[i] = (byte)open;
+            var a = k * MathF.Tau / 8;
+            if (World.RaycastWorld(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
+                open++;
         }
+        return (byte)open;
     }
 }
 

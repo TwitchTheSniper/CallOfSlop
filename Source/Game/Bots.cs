@@ -233,6 +233,7 @@ public sealed partial class Game
             b.ReloadUntil = 0;
             b.CoverReload = false;
         }
+        BotTickShared();
         var nav = NavGraph.Current;
         if (b.PathGraph != nav)
         {

@@ -6,19 +6,25 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     private const int BotSearchesPerTick = 3; // A* searches allowed per server tick, shared by all bots
+    private const double BotNavBuildMs = 3; // per server tick, while a new map's nav graph is being built
 
     private readonly NavSearch _botSearch = new();
     private int _botPathBudget;
     private uint _botBudgetTick = uint.MaxValue;
 
+    /// <summary>Once per server tick (from the first bot's tick): refill the search budget, advance a nav graph build.</summary>
+    private void BotTickShared()
+    {
+        if (_botBudgetTick == ServerTick)
+            return;
+        _botBudgetTick = ServerTick;
+        _botPathBudget = BotSearchesPerTick;
+        NavGraph.Pump(BotNavBuildMs);
+    }
+
     /// <summary>Where the bot wants to move this tick, and what to look at, for its current mode.</summary>
     private BotIntent BotSteer(Player p, BotBrain b, Player? target, bool visible, WeaponDef def, double now)
     {
-        if (_botBudgetTick != ServerTick)
-        {
-            _botBudgetTick = ServerTick;
-            _botPathBudget = BotSearchesPerTick;
-        }
         var nav = b.PathGraph!;
         var prof = b.Profile;
         var s = new BotIntent();
