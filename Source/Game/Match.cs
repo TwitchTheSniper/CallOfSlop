@@ -116,12 +116,14 @@ public sealed partial class Game
             {
                 Phase = MatchPhase.Playing;
                 _matchStart = now;
+                _soloElapsed = 0;
                 TimeLeft = MatchSeconds;
                 OnPlayStarted();
             }
         }
         else if (Phase == MatchPhase.Playing)
         {
+            SoloHoldClock(now); // alone in the match (no bots, nobody joined): the clock stops (TestTools.cs)
             TimeLeft = Math.Max(0, MatchSeconds - (now - _matchStart));
             var (leader, best, second) = Standings();
             if (Mode != GameMode.FreeForAll)

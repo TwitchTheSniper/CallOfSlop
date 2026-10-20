@@ -99,6 +99,7 @@ public static unsafe partial class Program
             AudioSystem.Init();
             AudioSystem.MasterVolume = _settings.Volume;
             CreateWindow();
+            RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
             // Command-line shortcuts skip the lobby.
             if (plain.Length > 0 && plain[0].Equals("host", StringComparison.OrdinalIgnoreCase))
@@ -916,6 +917,11 @@ public static unsafe partial class Program
                         else
                             Ui.OpenMenu(g);
                         break;
+                    case PauseAction.Suicide:
+                        g.RequestSuicide(); // normal death flow follows (death cam, then loadout or Gun Game respawn)
+                        SetMouseCaptured(true);
+                        _swallowClick = true;
+                        break;
                     case PauseAction.Leave:
                         EndSession("");
                         break;
@@ -947,6 +953,35 @@ public static unsafe partial class Program
             {
                 SaveScreenshot(_shotName);
                 _shotName = null;
+            }
+            _window.SwapBuffers();
+        }
+    }
+
+    /// <summary>
+    /// Shows the BRUTAL logo splash (see <see cref="Splash"/>) in its own little loop before the lobby or any session.
+    /// The smoke test watches it in full (no skipping) and screenshots it once (smoke_splash.bmp).
+    /// </summary>
+    private static void RunSplash()
+    {
+        var shot = false;
+        while (!_window.ShouldClose && !_quit)
+        {
+            Glfw.PollEvents();
+            var now = Glfw.Time;
+            if (!Splash.Active(now))
+                break;
+            var fb = _window.FramebufferSize;
+            if (fb.X > 0 && fb.Y > 0)
+                Gfx.BeginFrame(fb.X, fb.Y, new Vector3(0.04f, 0.04f, 0.05f));
+            Ui.BeginFrame();
+            Splash.Draw(now, allowSkip: !_smoke);
+            Ui.EndFrame();
+            if (_smoke && !shot && Splash.Elapsed(now) > 1.2)
+            {
+                SaveScreenshot("splash");
+                shot = true;
+                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
             }
             _window.SwapBuffers();
         }

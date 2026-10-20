@@ -1127,6 +1127,8 @@ class B:
             self.box(0.014, h, 0.012, 0, top + h / 2, hz1, mul(DARK, 1.1), flags=T)
             self.box(0.02, 0.012, hz1 - hz0 + 0.012, 0, top + h, (hz0 + hz1) / 2, mul(DARK, 1.1), flags=T)
             iron = top + h + 0.012
+        # the sight line must clear everything permanent along the middle of the gun (top magazines, humps)
+        iron = max(iron, self.line_of_sight_floor() + 0.008)
         if s == "none":
             return iron
         # front sight sits at the end of the handguard or near the muzzle
@@ -1169,6 +1171,17 @@ class B:
         return iron
 
     # ---- Optic mount ----------------------------------------------------------------------------
+
+    def line_of_sight_floor(self):
+        """The top of the highest permanent part across the middle of the gun (where the eye looks along it)."""
+        m = float("-inf")
+        for pt in self.mesh.parts:
+            if pt.flags & (F_TOP | F_BLEND):
+                continue
+            lo, hi = pt.bounds()
+            if hi[0] > -0.012 and lo[0] < 0.012:
+                m = max(m, hi[1])
+        return m
 
     def mount_height(self, rw, rf, rb):
         """The highest permanent part under the rail: the optic's rail sits on it."""
