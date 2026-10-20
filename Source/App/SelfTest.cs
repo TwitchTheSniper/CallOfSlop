@@ -834,9 +834,6 @@ public static class SelfTest
         }
         Line($"{roundTrips} weapon and attachment files written and re-read identically");
 
-        // ---- TEMPORARY: the files hold exactly what the old code catalogue held ----
-        CompareWithBuiltInCatalogue();
-
         // ---- The built-in fallback weapons (used when the folder is missing) ----
         var fallback = Weapons.Fallback();
         if (fallback.Count(w => w.Slot == Slot.Primary) != 1 || fallback.Count(w => w.Slot == Slot.Secondary) != 1)
@@ -953,81 +950,6 @@ public static class SelfTest
                 Fail($"{(weapon ? "weapon" : "attachment")} file gave the wrong error (expected '{expectText}'): {ex.Message}");
             }
         }
-    }
-
-    /// <summary>
-    /// TEMPORARY: compares every field of every weapon file with the old code catalogue, and every attachment's
-    /// text, slot, index, unlock order, fit and effect on every weapon with the old code version.
-    /// </summary>
-    private static void CompareWithBuiltInCatalogue()
-    {
-        var differences = 0;
-        void Diff(string s)
-        {
-            differences++;
-            Fail(s);
-        }
-        var code = Weapons.BuiltInCatalogue();
-        if (code.Length != Weapons.LegacyNames.Length)
-            Diff($"the code catalogue has {code.Length} weapons but the legacy id table has {Weapons.LegacyNames.Length}");
-        foreach (var c in code)
-        {
-            if (c.Id >= Weapons.LegacyNames.Length || Weapons.LegacyNames[c.Id] != c.Name)
-                Diff($"legacy id table: id {c.Id} should be '{c.Name}'");
-            if (Weapons.Find(c.Name) is not { } f)
-            {
-                Diff($"no weapon file for '{c.Name}'");
-                continue;
-            }
-            foreach (var d in WeaponDiffs(c, f, includeId: true))
-                Diff($"{c.Name}: file differs from code: {d}");
-        }
-        var codeAtt = Attachments.BuiltInCatalogue();
-        foreach (var ca in codeAtt)
-        {
-            if (Attachments.Find(ca.Name) is not { } fa)
-            {
-                Diff($"no attachment file for '{ca.Name}'");
-                continue;
-            }
-            if (fa.Slot != ca.Slot || fa.Index != ca.Index || fa.UnlockOrder != ca.UnlockOrder || fa.Blurb != ca.Blurb
-                || !fa.Pros.SequenceEqual(ca.Pros) || !fa.Cons.SequenceEqual(ca.Cons))
-                Diff($"{ca.Name}: slot/index/unlock order/text differ from code ({fa.Slot} {fa.Index} {fa.UnlockOrder} vs {ca.Slot} {ca.Index} {ca.UnlockOrder})");
-            foreach (var w in code)
-            {
-                if (fa.Fits(w) != ca.Fits(w))
-                {
-                    Diff($"{ca.Name}: fits the {w.Name} is {fa.Fits(w)} in the file but {ca.Fits(w)} in code");
-                    continue;
-                }
-                if (!ca.Fits(w))
-                    continue;
-                var x = w.Clone();
-                var y = w.Clone();
-                ca.Apply(x);
-                fa.Apply(y);
-                foreach (var d in WeaponDiffs(x, y, includeId: true))
-                    Diff($"{ca.Name} on {w.Name}: file effect differs from code: {d}");
-            }
-        }
-        if (Attachments.BySlot.Sum(x => x.Length) != codeAtt.Length)
-            Diff($"{Attachments.BySlot.Sum(x => x.Length)} attachment files but {codeAtt.Length} attachments in code");
-        // Each weapon's unlock sequence (and so MaxXp and every UnlockXp) is the same.
-        var oldOrder = codeAtt.OrderBy(a => a.UnlockOrder).ToArray();
-        foreach (var w in code)
-        {
-            var before = oldOrder.Where(a => a.Fits(w)).Select(a => a.Name).ToArray();
-            var f = Weapons.Find(w.Name);
-            if (f == null)
-                continue;
-            var after = Attachments.For(f).Select(a => a.Name).ToArray();
-            if (!before.SequenceEqual(after))
-                Diff($"{w.Name}: attachment unlock order changed: {string.Join(", ", after)}");
-            var oldMax = before.Length == 0 ? 0 : (2000 + 260 * before.Length) / 50 * 50;
-            if (Attachments.MaxXp(f) != oldMax)
-                Diff($"{w.Name}: MaxXp {Attachments.MaxXp(f)} (was {oldMax})");
-        }
-        Line($"files vs the old code catalogue: {code.Length} weapons, {codeAtt.Length} attachments, {differences} difference(s)");
     }
 
     // ---- 5. Packets ----------------------------------------------------------------------
