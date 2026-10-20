@@ -232,7 +232,9 @@ public sealed partial class Ui
         ImGui.SetNextWindowSize(new float2(MathF.Min(1150 * _scale, vp.WorkSize.X - 40), MathF.Min(760 * _scale, vp.WorkSize.Y - 40)));
 
         // In the attachment showcase the window background is painted by Program (behind the 3D gun) instead.
+        // No scrollbar: the footer is pinned to the bottom edge and every page sizes itself to the body area.
         var winFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings
+                       | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse
                        | (_showcaseLastFrame ? ImGuiWindowFlags.NoBackground : ImGuiWindowFlags.None);
         _showcaseLastFrame = false;
         if (ImGui.Begin("LOADOUTS"u8, winFlags))
