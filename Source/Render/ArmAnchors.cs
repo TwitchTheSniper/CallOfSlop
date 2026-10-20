@@ -87,7 +87,8 @@ public static class ArmAnchors
 
     /// <summary>The reload animation a weapon uses.</summary>
     public static ReloadStyle StyleOf(WeaponDef d) =>
-        d.Class switch
+        d.Model?.Mag == "tube" && d.Class != WeaponClass.Shotgun ? ReloadStyle.TubeShells // a tube-fed lever rifle loads round by round
+        : d.Class switch
         {
             WeaponClass.Pistol => d.Mag <= 6 ? ReloadStyle.Revolver : ReloadStyle.PistolMag,
             WeaponClass.Shotgun when d.Name.Contains("Double") => ReloadStyle.BreakOpen,
