@@ -4,6 +4,7 @@
   "description": "A river winds through farmland in an S: an old stone bridge in the middle, a ford at each end and a cliff bank on the outside of each bend.",
   "author": "Call of Slop",
   "order": 303,
+  "maxPlayers": 16,
   "halfX": 60,
   "halfZ": 50,
   "sky": "#9fb8cc",

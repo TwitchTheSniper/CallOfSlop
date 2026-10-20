@@ -4,6 +4,7 @@
   "description": "A red-rock canyon with a pueblo on a mesa in the middle: ramps and lifts up its cliffs, buttes, a dry arroyo and two villages.",
   "author": "Call of Slop",
   "order": 304,
+  "maxPlayers": 16,
   "halfX": 60,
   "halfZ": 48,
   "sky": "#e0c9a6",

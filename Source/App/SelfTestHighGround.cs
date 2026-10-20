@@ -46,20 +46,24 @@ public static partial class SelfTest
                 lo = MathF.Min(lo, h);
                 hi = MathF.Max(hi, h);
             }
-            var need = m.Size switch { MapSize.Small => 12, MapSize.Medium => 16, _ => 24 };
+            // Hand-placed spawns for the size class (12 / 16 / 24) and for the map's player limit, none generated.
+            var need = Math.Max(m.Size switch { MapSize.Small => 12, MapSize.Medium => 16, _ => 24 }, m.MaxPlayers);
             var steepSpawns = m.Spawns.Count(s => MathF.Abs(s.Y - m.GroundHeight(s.X, s.Z)) < 0.2f && m.IsSteep(s.X, s.Z));
             var o = m.Objectives;
-            Line($"{m.Name,-12} {m.Size,-6} relief {lo:0.0}..{hi:0.0} m  spawns {m.Spawns.Count} (teams {o.TeamSpawns[0].Count}+{o.TeamSpawns[1].Count})  "
+            Line($"{m.Name,-12} {m.Size,-6} relief {lo:0.0}..{hi:0.0} m  max {m.MaxPlayers}  spawns {m.Spawns.Count} (teams {o.TeamSpawns[0].Count}+{o.TeamSpawns[1].Count})  "
                  + $"hills {o.Hills.Count}  movers {m.Movers.Count}  foliage {(m.FoliageSection != null ? "yes" : "no")}  boxes {m.Solid.Count}");
             if (hi - lo < 6f)
                 Fail($"{m.Name}: only {hi - lo:0.0} m of relief in the playable area (expected at least 6)");
-            if (m.Spawns.Count < need)
-                Fail($"{m.Name}: {m.Spawns.Count} spawns (a {m.Size} map needs {need})");
+            var authored = m.AuthoredSpawns >= 0 ? m.AuthoredSpawns : m.Spawns.Count;
+            if (authored < need)
+                Fail($"{m.Name}: {authored} hand-placed spawns (a {m.Size} map for {m.MaxPlayers} players needs {need})");
+            if (m.MaxPlayersSetting == 0)
+                Fail($"{m.Name}: no \"maxPlayers\" in the file");
             if (steepSpawns > 0)
                 Fail($"{m.Name}: {steepSpawns} spawn(s) on ground too steep to stand on");
             if (o.TeamSpawnsGenerated || o.HillsGenerated || o.FlagsGenerated)
                 Fail($"{m.Name}: objectives should be hand-placed (team spawns {!o.TeamSpawnsGenerated}, hills {!o.HillsGenerated}, flags {!o.FlagsGenerated})");
-            if (o.TeamSpawns[0].Count < need / 2 - 2 || o.TeamSpawns[1].Count < need / 2 - 2)
+            if (o.TeamSpawns[0].Count < m.MaxPlayers / 2 - 2 || o.TeamSpawns[1].Count < m.MaxPlayers / 2 - 2)
                 Fail($"{m.Name}: team spawn lists are short ({o.TeamSpawns[0].Count} + {o.TeamSpawns[1].Count})");
             if (o.Hills.Count < (m.Size == MapSize.Small ? 2 : 3))
                 Fail($"{m.Name}: only {o.Hills.Count} hill zone(s)");
@@ -94,10 +98,6 @@ public static partial class SelfTest
                         return;
                 }
                 missing.Add($"{what} ({p.X:0},{p.Z:0})");
-                // TEMP debug: the nodes round it
-                var near = Enumerable.Range(0, g.Nodes.Length).Where(i => Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(p.X, p.Z)) < 7f)
-                    .Select(i => $"({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}) c{g.Component[i]} e{g.EdgeStart[i + 1] - g.EdgeStart[i]}");
-                Line($"  {m.Name} {what} at y {p.Y:0.0}, main c{g.MainComponent}: " + string.Join(" ", near));
             }
             foreach (var s in m.Spawns)
                 Reach("spawn", s);

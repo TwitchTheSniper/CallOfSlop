@@ -4,6 +4,7 @@
   "description": "An Iron Age hillfort: a ruined keep on a round summit, a ditch and rampart all round it, two gates and a breach for each side.",
   "author": "Call of Slop",
   "order": 302,
+  "maxPlayers": 10,
   "halfX": 34,
   "halfZ": 34,
   "sky": "#a9b7c0",
