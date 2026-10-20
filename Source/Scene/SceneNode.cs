@@ -344,70 +344,38 @@ public sealed class SceneNode
     [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
     public int UpdateWorld()
     {
-        if (_parent == null)
+        // An explicit stack instead of recursion: no call (and SIMD register save) per node.
+        var st = t_walk ??= new WalkStack();
+        var bottom = st.Count;
+        st.Push(this, true, false);
+        var n = 0;
+        while (st.Count > bottom)
         {
-            if (_localStale)
-                ComposeLocal();
-            _world = _local;
-            _dirty = false;
-            WorldVersion++;
-            var n = 1;
-            for (var i = 0; i < _kidCount; i++)
-                n += _kids[i].UpdateFrom(_world);
-            return n;
+            var node = st.Items[--st.Count].Node;
+            node.Recompute();
+            n++;
+            var kids = node._kids;
+            for (var i = node._kidCount - 1; i >= 0; i--)
+                st.Push(kids[i], true, false);
         }
-        return UpdateFrom(_parent._world);
+        return n;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
-    private int UpdateFrom(in Matrix4x4 parentWorld)
+    [ThreadStatic]
+    private static WalkStack? t_walk;
+
+    /// <summary>World = local * parent world (local composed first if its TRS changed); clears the dirty flag.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void Recompute()
     {
         if (_localStale)
             ComposeLocal();
-        Multiply(_local, parentWorld, ref _world);
+        if (_parent == null)
+            _world = _local;
+        else
+            Multiply(_local, _parent._world, ref _world);
         _dirty = false;
         WorldVersion++;
-        var n = 1;
-        var kids = _kids;
-        for (var i = 0; i < _kidCount; i++)
-            n += kids[i].UpdateFrom(_world);
-        return n;
-    }
-
-    /// <summary>
-    /// Update and flatten in one walk (see <see cref="DrawList.UpdateAndFlatten"/>): recomputes this node if it or an
-    /// ancestor on the way down was dirty, and appends it to <paramref name="list"/> if it's visible and draws something.
-    /// The parent's world matrix must be current.
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    internal int UpdateFlatten(DrawList list, bool force, bool visible)
-    {
-        var n = 0;
-        if (force || _dirty)
-        {
-            if (_localStale)
-                ComposeLocal();
-            if (_parent == null)
-                _world = _local;
-            else
-                Multiply(_local, _parent._world, ref _world);
-            _dirty = false;
-            WorldVersion++;
-            force = true;
-            n = 1;
-        }
-        if ((Flags & NodeFlags.Hidden) != 0)
-            visible = false;
-        if (visible)
-        {
-            if (Renderable.Kind != RenderKind.None)
-                list.AddNode(this);
-            Custom?.Emit(list, this);
-        }
-        var kids = _kids;
-        for (var i = 0; i < _kidCount; i++)
-            n += kids[i].UpdateFlatten(list, force, visible);
-        return n;
     }
 
     // ---- Lookup and traversal ------------------------------------------------------------------

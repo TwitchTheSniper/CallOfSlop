@@ -91,19 +91,24 @@ public sealed class DrawList
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Flatten(SceneNode root)
     {
-        if ((root.Flags & NodeFlags.Hidden) != 0)
-            return;
-        if (root.Renderable.Kind != RenderKind.None)
+        var st = _walk;
+        var bottom = st.Count;
+        st.Push(root, false, true);
+        while (st.Count > bottom)
         {
-            if (Count == _nodes.Length)
-                Grow();
-            _nodes[Count++] = root;
+            var n = st.Items[--st.Count].Node;
+            if ((n.Flags & NodeFlags.Hidden) != 0)
+                continue;
+            if (n.Renderable.Kind != RenderKind.None)
+                AddNode(n);
+            n.Custom?.Emit(this, n);
+            var kids = n._kids;
+            for (var i = n._kidCount - 1; i >= 0; i--)
+                st.Push(kids[i], false, true);
         }
-        root.Custom?.Emit(this, root);
-        var kids = root._kids;
-        for (var i = 0; i < root._kidCount; i++)
-            Flatten(kids[i]);
     }
+
+    private readonly WalkStack _walk = new();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void AddNode(SceneNode n)
@@ -126,8 +131,37 @@ public sealed class DrawList
         for (var a = root._parent; a != null; a = a._parent)
             if (a._dirty)
                 top = a;
-        var n = top?.UpdateWorld() ?? 0;
-        return n + root.UpdateFlatten(this, false, true);
+        var updated = top?.UpdateWorld() ?? 0;
+
+        // One depth-first walk with an explicit stack (children pushed in reverse, so they come out in order).
+        var st = _walk;
+        var bottom = st.Count;
+        st.Push(root, false, true);
+        while (st.Count > bottom)
+        {
+            ref readonly var e = ref st.Items[--st.Count];
+            var n = e.Node;
+            var force = e.Force;
+            var visible = e.Visible;
+            if (force || n._dirty)
+            {
+                n.Recompute();
+                force = true;
+                updated++;
+            }
+            if ((n.Flags & NodeFlags.Hidden) != 0)
+                visible = false;
+            if (visible)
+            {
+                if (n.Renderable.Kind != RenderKind.None)
+                    AddNode(n);
+                n.Custom?.Emit(this, n); // may flatten more into this list (the stack is re-entrant)
+            }
+            var kids = n._kids;
+            for (var i = n._kidCount - 1; i >= 0; i--)
+                st.Push(kids[i], force, visible);
+        }
+        return updated;
     }
 
     /// <summary>
