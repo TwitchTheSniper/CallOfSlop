@@ -917,6 +917,11 @@ public static unsafe partial class Program
                         else
                             Ui.OpenMenu(g);
                         break;
+                    case PauseAction.Suicide:
+                        g.RequestSuicide(); // normal death flow follows (death cam, then loadout or Gun Game respawn)
+                        SetMouseCaptured(true);
+                        _swallowClick = true;
+                        break;
                     case PauseAction.Leave:
                         EndSession("");
                         break;

@@ -75,6 +75,7 @@ public static partial class SelfTest
             Section("Capture the Flag", CheckCaptureTheFlag);
             Section("Gun Game", CheckGunGame);
             Section("Mode state and matches", CheckModeMatches);
+            Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash

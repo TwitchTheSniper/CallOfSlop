@@ -348,6 +348,8 @@ public sealed partial class Game
             GameMode.CaptureTheFlag => GameModes.CtfCaptureLimit,
             _ => int.MaxValue,
         };
+        if (SoloMatch && IsTeamMode)
+            SoloCapScores(limit); // alone: objectives still score, but never win (TestTools.cs)
         for (var t = 0; t < 2 && IsTeamMode; t++)
         {
             if (TeamScore[t] >= limit)
