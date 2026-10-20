@@ -51,6 +51,7 @@ public static unsafe partial class Program
     private static double _deathMenuAt;
     private static readonly DeathCam _deathCam = new(); // the camera after you die (DeathCam.cs)
     private const string LoadoutLockedText = "You can only change your loadout when you're dead";
+    private const string GunGameLoadoutText = "Gun Game: everyone gets the same gun and perks, so there's no loadout this match.";
     private static bool _quit;
     private static bool _vsync;
 
@@ -801,7 +802,8 @@ public static unsafe partial class Program
                 if (_settings.Advertise && _settings.Master is { } m)
                     Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
             }
-            Ui.OpenMenu(_session); // pick a loadout before the first spawn
+            if (!_session.SkipsLoadout)
+                Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
         }
@@ -906,7 +908,10 @@ public static unsafe partial class Program
                         _swallowClick = true;
                         break;
                     case PauseAction.Loadout:
-                        Ui.OpenMenu(g);
+                        if (g.SkipsLoadout)
+                            g.LoadoutNotice = GunGameLoadoutText;
+                        else
+                            Ui.OpenMenu(g);
                         break;
                     case PauseAction.Leave:
                         EndSession("");
@@ -1110,7 +1115,7 @@ public static unsafe partial class Program
         }
 
         // Match countdown: open the loadout menu while everyone loads in, deploy it at GO.
-        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen)
+        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout)
         {
             Ui.OpenMenu(_game);
             SetMouseCaptured(false);
@@ -1148,6 +1153,8 @@ public static unsafe partial class Program
         if (deadNow && !_wasDeadUi)
         {
             _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
+            if (_game.SkipsLoadout && _game.Local is not { Deaths: > 0 })
+                _deathMenuAt = now; // Gun Game, just joined: no death to show, straight in
             if (_game.Local is { } me)
                 _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, World.RaycastWorld);
         }
@@ -1169,11 +1176,28 @@ public static unsafe partial class Program
         if (_deathMenuAt > 0 && now >= _deathMenuAt)
         {
             _deathMenuAt = 0;
-            if (!Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
+            if (_game.SkipsLoadout)
+            {
+                // Gun Game: no loadout screen, the death cam goes straight to a respawn.
+            }
+            else if (!Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
             {
                 Ui.OpenMenu(_game);
                 SetMouseCaptured(false);
             }
+        }
+        if (_game.SkipsLoadout)
+        {
+            // Gun Game: never a loadout screen (a client learns the mode after joining, so close one already open),
+            // and once the death cam is over you respawn on your own.
+            if (Ui.MenuOpen)
+            {
+                Ui.MenuOpen = false;
+                if (!Ui.PauseOpen)
+                    SetMouseCaptured(true);
+            }
+            if (deadNow && _deathMenuAt == 0 && _game.Local != null && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
+                _game.RequestRespawn();
         }
 
         // Loadout menu toggle works with the mouse free too (but not over the pause menu).
@@ -1184,6 +1208,10 @@ public static unsafe partial class Program
                 Ui.MenuOpen = false;
                 if (!deadNow)
                     SetMouseCaptured(true);
+            }
+            else if (_game.SkipsLoadout)
+            {
+                _game.LoadoutNotice = _game.LoadoutNotice == GunGameLoadoutText ? GunGameLoadoutText + " " : GunGameLoadoutText;
             }
             else if (_game.CanChangeLoadout)
             {

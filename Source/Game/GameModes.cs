@@ -67,7 +67,7 @@ public static class GameModes
         GameMode.TeamDeathmatch => $"Two teams. First team to {TdmScoreLimit} kills. No friendly fire.",
         GameMode.KingOfTheHill => $"Two teams. Hold the hill alone for 1 point a second (contested: nobody scores). It moves every {HillMoveSeconds:0} s. First to {HillScoreLimit}.",
         GameMode.CaptureTheFlag => $"Two teams. Grab the enemy flag and bring it to yours while yours is home. First to {CtfCaptureLimit} captures.",
-        GameMode.GunGame => $"Everyone gets the same gun. Each kill moves you up a weapon ({GunGame.Ladder.Length} in all); a melee kill also sets the victim back one. Win with a kill using the last gun.",
+        GameMode.GunGame => $"Everyone gets the same gun. Each kill moves you up a weapon ({GunGame.Ladder.Length} in all); a melee kill also sets the victim back one. Win with a kill using the last gun. No loadouts: everyone has the same perks (Afterburner, Bloodthirst) and no grenades or equipment.",
         _ => $"First to {Game.WinKills} kills, win by {Game.WinMargin}.",
     };
 
@@ -84,6 +84,12 @@ public static class GameModes
 public static class GunGame
 {
     public const int Steps = 20;
+
+    /// <summary>
+    /// Everyone carries the same perks in Gun Game: speed and a full heal after every kill, to keep the climb moving.
+    /// No damage perk, so every gun on the ladder hits exactly as hard as it normally does.
+    /// </summary>
+    public static readonly PerkSet Perks = new(PerkId.Afterburner, PerkId.Bloodthirst, PerkId.None);
 
     private static WeaponDef[]? _ladder;
     private static WeaponDef[]? _builtFrom;
@@ -162,6 +168,9 @@ public sealed partial class Game
 
     /// <summary>Kill streaks are off in Gun Game (<see cref="StreaksEnabled"/> follows it).</summary>
     public bool ModeAllowsStreaks => Mode != GameMode.GunGame;
+
+    /// <summary>Gun Game: no loadout screen at all; you spawn straight in with the ladder's gun and the shared perks.</summary>
+    public bool SkipsLoadout => Mode == GameMode.GunGame;
 
     /// <summary>Team score: kills (TDM), hill points (KotH) or captures (CTF).</summary>
     public readonly int[] TeamScore = new int[2];
@@ -405,7 +414,7 @@ public sealed partial class Game
 
     // ---- Gun Game ------------------------------------------------------------------------------
 
-    /// <summary>Gun Game: the server hands out the gun; loadouts, grenades and perks don't apply.</summary>
+    /// <summary>Gun Game: the server hands out the gun and the shared perks; loadouts, grenades and equipment don't apply.</summary>
     private void ApplyModeLoadout(Player p)
     {
         if (Mode != GameMode.GunGame)
@@ -413,7 +422,7 @@ public sealed partial class Game
         GiveGunGameWeapon(p);
         p.Grenade = p.Equipment = ThrowableKind.None;
         p.GrenadesLeft = p.EquipmentLeft = 0;
-        ApplyPerks(p, PerkSet.Empty);
+        ApplyPerks(p, GunGame.Perks); // the same for everyone
     }
 
     private void GiveGunGameWeapon(Player p)
