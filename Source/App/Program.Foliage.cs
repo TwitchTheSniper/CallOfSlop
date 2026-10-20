@@ -4,7 +4,7 @@ using Brutal.OpenGlApi;
 namespace CallOfSlop;
 
 /// <summary>Foliage drawing (see <see cref="FoliageRenderer"/>) and its smoke-test step.</summary>
-public static partial class Program
+public static unsafe partial class Program
 {
     private static readonly FoliageRenderer FoliageGfx = new();
 
