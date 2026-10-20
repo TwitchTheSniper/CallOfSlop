@@ -76,6 +76,15 @@ public sealed partial class Game : IDisposable
     public bool Aiming;
     public float AimT; // 0..1 aim-down-sights blend
     public float Bloom; // extra spread from sustained fire (radians)
+
+    /// <summary>The local player's recoil: spray pattern, recovery, and the visual shake/punch/kick (see Recoil.cs).</summary>
+    public readonly RecoilState LocalRecoil = new();
+
+    /// <summary>Viewmodel kick from recoil right now (decays to zero). For Program.DrawViewModel.</summary>
+    public WeaponKick WeaponKick => LocalRecoil.Kick;
+
+    /// <summary>Render-only camera offset from recoil (shake and punch). Never changes the actual aim.</summary>
+    public CameraKick RecoilCamera => LocalRecoil.Camera;
     private int _burstLeft;
     public string LoadoutNotice = "";
 
@@ -294,6 +303,11 @@ public sealed partial class Game : IDisposable
         Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil;
         AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime, 0f, 1f); // optics and grips change aim speed
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
+        if (alive)
+        {
+            LocalRecoil.Update(dt, now, ref LookPitch, ref LookYaw);
+            LookPitch = Math.Clamp(LookPitch, -1.55f, 1.55f);
+        }
     }
 
     /// <summary>Current cone half-angle (radians) for the next shot.</summary>
@@ -386,10 +400,11 @@ public sealed partial class Game : IDisposable
         var spread = CurrentSpread();
         var seed = _shotSeed++;
 
-        // Recoil + bloom
+        // Recoil (the gun's pattern, see Recoil.cs) + bloom
+        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw);
+        LookPitch = Math.Clamp(LookPitch + kickPitch, -1.5f, 1.5f);
+        LookYaw = World.WrapAngle(LookYaw + kickYaw);
         var kick = def.RecoilDeg * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
-        LookPitch = Math.Clamp(LookPitch + kick, -1.5f, 1.5f);
-        LookYaw = World.WrapAngle(LookYaw + ((float)_rng.NextDouble() - 0.5f) * kick * 0.6f);
         Bloom = MathF.Min(Bloom + kick * 0.25f, 0.06f);
 
         if (IsServer)
@@ -547,6 +562,7 @@ public sealed partial class Game : IDisposable
             ActiveSlot = 0;
             _burstLeft = 0;
             Bloom = 0;
+            LocalRecoil.Reset();
             if (changed)
             {
                 RefillThrowables();
@@ -571,10 +587,12 @@ public sealed partial class Game : IDisposable
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
             SoundStyle.Toy => new Vector3(1f, 0.45f, 0.85f),
-            SoundStyle.Suppressed => new Vector3(0.7f, 0.7f, 0.7f),
+            SoundStyle.Suppressed => new Vector3(0.45f, 0.45f, 0.45f),
             _ => new Vector3(1f, 0.85f, 0.5f),
         };
         var width = def.Sound == SoundStyle.Zap ? 0.06f : def.Pellets > 1 ? 0.015f : 0.02f + def.Caliber * 0.02f;
+        if (def.Sound == SoundStyle.Suppressed)
+            width *= 0.6f; // suppressed shots leave faint, thin tracers
         Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now });
     }
 

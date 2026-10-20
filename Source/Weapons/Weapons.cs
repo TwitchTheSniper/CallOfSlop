@@ -42,7 +42,7 @@ public enum Slot : byte
 /// <summary>
 /// Stats, look and sound recipe for one weapon. Shared by client and server.
 /// Weapons are loaded from files in the Weapons folder (see <see cref="WeaponFile"/> and Weapons/README.md):
-/// every public field below except Id, Optic, Suppressor and Kit is a key in a weapon file.
+/// every public field below except Id, Optic, Suppressor and Kit is a key in a weapon file (the Recoil* fields sit in its "recoil" block).
 /// </summary>
 public sealed class WeaponDef
 {
@@ -83,6 +83,42 @@ public sealed class WeaponDef
     public float AdsZoom = 1.35f; // FOV divisor when aiming
     public float EquipTime = 0.45f;
     public float AdsTime = 0.16f; // seconds to fully aim down sights
+
+    // ---- Recoil profile (the "recoil" block of a weapon file; see Recoil.cs and Weapons/README.md) ----
+    // Kicks are fractions of RecoilDeg, so RecoilDeg stays the overall scale. Missing values get class defaults.
+    [RecoilKey("vertical", 0, 5)] public float RecoilVertical = 1f;
+    [RecoilKey("horizontal", 0, 5)] public float RecoilHorizontal = 0.35f;
+    [RecoilKey("bias", -1, 1)] public float RecoilBias = 0.25f;
+    [RecoilKey("jitter", 0, 3)] public float RecoilJitter = 0.25f;
+    [RecoilKey("firstShot", 0, 5)] public float RecoilFirstShot = 1.15f;
+    [RecoilKey("seed", 0, 1000000)] public int RecoilSeed;
+    [RecoilKey("patternShots", 1, 100)] public int RecoilPatternShots = 12;
+    [RecoilKey("rampVertical", 0, 5)] public float RecoilRampVertical = 1.2f;
+    [RecoilKey("rampHorizontal", 0, 5)] public float RecoilRampHorizontal = 1.3f;
+    [RecoilKey("sway", 0, 3)] public float RecoilSway = 0.7f;
+    [RecoilKey("swayPeriod", 2, 100)] public float RecoilSwayPeriod = 14f;
+    [RecoilKey("recovery", 0, 40)] public float RecoilRecovery = 9f;
+    [RecoilKey("recoveryDelay", 0, 2)] public float RecoilRecoveryDelay = 0.1f;
+    [RecoilKey("recoveryAmount", 0, 1)] public float RecoilRecoveryAmount = 0.7f;
+    [RecoilKey("resetTime", 0.05f, 3)] public float RecoilResetTime = 0.3f;
+    [RecoilKey("crouchVertical", 0, 3)] public float RecoilCrouchVertical = 0.85f;
+    [RecoilKey("crouchHorizontal", 0, 3)] public float RecoilCrouchHorizontal = 0.75f;
+    [RecoilKey("proneVertical", 0, 3)] public float RecoilProneVertical = 0.7f;
+    [RecoilKey("proneHorizontal", 0, 3)] public float RecoilProneHorizontal = 0.55f;
+    [RecoilKey("adsVertical", 0, 3)] public float RecoilAdsVertical = 0.75f;
+    [RecoilKey("adsHorizontal", 0, 3)] public float RecoilAdsHorizontal = 0.6f;
+    [RecoilKey("shake", 0, 10)] public float RecoilShake = 0.12f;
+    [RecoilKey("shakeFreq", 0, 80)] public float RecoilShakeFreq = 18f;
+    [RecoilKey("shakeTime", 0.01f, 2)] public float RecoilShakeTime = 0.12f;
+    [RecoilKey("punch", 0, 10)] public float RecoilPunch = 0.35f;
+    [RecoilKey("punchFov", 0, 20)] public float RecoilPunchFov = 1.2f;
+    [RecoilKey("punchRoll", 0, 20)] public float RecoilPunchRoll = 0.8f;
+    [RecoilKey("punchTime", 0.01f, 2)] public float RecoilPunchTime = 0.1f;
+    [RecoilKey("kickBack", 0, 0.3f)] public float RecoilKickBack = 0.04f;
+    [RecoilKey("kickUp", 0, 30)] public float RecoilKickUp = 2.5f;
+    [RecoilKey("kickRoll", 0, 30)] public float RecoilKickRoll = 1.5f;
+    [RecoilKey("kickSide", 0, 0.1f)] public float RecoilKickSide = 0.004f;
+    [RecoilKey("kickTime", 0.01f, 2)] public float RecoilKickTime = 0.08f;
 
     // ---- Attachments (set on kitted copies, see Attachments.Apply) -------------
     public OpticKind Optic = OpticKind.Iron;
@@ -261,7 +297,15 @@ public static class Weapons
     }
 
     /// <summary>The only weapons defined in code, one per slot: used when the Weapons folder is missing or has none for a slot.</summary>
-    public static WeaponDef[] Fallback() =>
+    public static WeaponDef[] Fallback()
+    {
+        WeaponDef[] list = FallbackStats();
+        foreach (var w in list)
+            Recoil.ApplyClassDefaults(w);
+        return list;
+    }
+
+    private static WeaponDef[] FallbackStats() =>
     [
         new()
         {

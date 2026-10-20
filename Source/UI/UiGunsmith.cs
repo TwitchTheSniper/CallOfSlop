@@ -70,6 +70,14 @@ public sealed partial class Ui
             ImGui.ProgressBar(Math.Clamp(wxp / (float)maxXp, 0f, 1f), new float2(area.X * 0.17f, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
         }
+        if (!InEdit(w))
+        {
+            // Opened from the weapon select on a gun that isn't equipped: a preview until you change something.
+            ImGui.SetCursorScreenPos(titlePos + new float2(0, 92 * _scale));
+            ImGui.PushTextWrapPos(titlePos.X - ImGui.GetWindowPos().X + area.X * 0.19f);
+            ImGui.TextColored(Orange, $"Preview - picking an attachment equips this gun in {Edit.Name}.");
+            ImGui.PopTextWrapPos();
+        }
 
         // ---- Slot cards ------------------------------------------------------------------
         var cardSize = new float2(area.X * 0.235f, 62 * _scale);
@@ -105,7 +113,7 @@ public sealed partial class Ui
             ImGui.PopStyleColor();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.None) && inSlot.Length > 0)
                 hoveredCard = slot;
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && inSlot.Length > 0)
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && inSlot.Length > 0 && !SecondClick)
             {
                 _openSlot = slot;
                 ImGui.OpenPopup("##attpick"u8, ImGuiPopupFlags.None);
@@ -138,14 +146,14 @@ public sealed partial class Ui
             ImGui.Spacing();
             // Compare against the stock gun normally, or against your current build while hovering a pick.
             var reference = _hoverAttachment != null ? current : w;
-            StatRow("Accuracy", 1f - Math.Clamp(reference.HipSpreadDeg / 7.5f, 0f, 1f), 1f - Math.Clamp(preview.HipSpreadDeg / 7.5f, 0f, 1f));
-            StatRow("Range", reference.RangeM / 70f, preview.RangeM / 70f);
-            StatRow("Fire rate", reference.Rpm / 1500f, preview.Rpm / 1500f);
-            StatRow("Mobility", (reference.Mobility - 0.6f) / 0.6f, (preview.Mobility - 0.6f) / 0.6f);
-            StatRow("Control", 1f - Math.Clamp(reference.RecoilDeg / 6f, 0f, 1f), 1f - Math.Clamp(preview.RecoilDeg / 6f, 0f, 1f));
-            StatRow("Aim speed", 1f - Math.Clamp(reference.AdsTime / 0.45f, 0f, 1f), 1f - Math.Clamp(preview.AdsTime / 0.45f, 0f, 1f));
-            StatRow("Magazine", MathF.Min(reference.Mag / 80f, 1f), MathF.Min(preview.Mag / 80f, 1f));
-            StatRow("Reload", 1f - Math.Clamp(reference.Reload / 7.5f, 0f, 1f), 1f - Math.Clamp(preview.Reload / 7.5f, 0f, 1f));
+            StatRow("Accuracy", StatBars.Accuracy(reference), StatBars.Accuracy(preview), StatBars.Change(reference.HipSpreadDeg, preview.HipSpreadDeg));
+            StatRow("Range", StatBars.Range(reference), StatBars.Range(preview), StatBars.Change(reference.RangeM, preview.RangeM));
+            StatRow("Fire rate", StatBars.FireRate(reference), StatBars.FireRate(preview), StatBars.Change(reference.Rpm, preview.Rpm));
+            StatRow("Mobility", StatBars.Mobility(reference), StatBars.Mobility(preview), StatBars.Change(reference.Mobility, preview.Mobility));
+            StatRow("Control", StatBars.Control(reference), StatBars.Control(preview), StatBars.Change(Recoil.EffectiveKickDeg(reference), Recoil.EffectiveKickDeg(preview)));
+            StatRow("Aim speed", StatBars.AimSpeed(reference), StatBars.AimSpeed(preview), StatBars.Change(reference.AdsTime, preview.AdsTime));
+            StatRow("Magazine", StatBars.Magazine(reference), StatBars.Magazine(preview), StatBars.Change(reference.Mag, preview.Mag));
+            StatRow("Reload", StatBars.Reload(reference), StatBars.Reload(preview), StatBars.Change(reference.Reload, preview.Reload));
             ImGui.TextColored(Dim, $"{preview.Mag} rounds, {preview.RangeM:0} m range, {preview.AdsTime:0.00} s to aim, {preview.AdsZoom:0.0}x");
         }
         ImGui.EndChild();
@@ -173,9 +181,11 @@ public sealed partial class Ui
             ImGui.TextColored(SlotBlue, Attachments.SlotName(slot).ToUpperInvariant());
             ImGui.Separator();
             var current = Attachments.Slot(kit, slot);
+            // A click picks and closes the list; a double-click's second click is swallowed (see SecondClick).
             if (ImGui.Selectable(slot == AttachSlot.Optic ? "Iron sights##none"u8 : "Empty##none"u8, current == 0))
             {
-                SetKitOf(w, Attachments.With(kit, slot, 0));
+                SetKitOf(audio, w, Attachments.With(kit, slot, 0));
+                Acted();
                 ImGui.CloseCurrentPopup();
             }
             foreach (var a in Attachments.For(w).Where(a => a.Slot == slot).OrderBy(a => Attachments.UnlockXp(w, a)))
@@ -184,11 +194,20 @@ public sealed partial class Ui
                 var unlocked = wxp >= need;
                 if (!unlocked)
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                if (ImGui.Selectable(unlocked ? $"{a.Name}##p{a.Index}" : $"{a.Name}   [LOCKED - {need:N0} weapon XP]##p{a.Index}", current == a.Index) && unlocked)
+                if (ImGui.Selectable(unlocked ? $"{a.Name}##p{a.Index}" : $"{a.Name}   [LOCKED - {need:N0} weapon XP]##p{a.Index}", current == a.Index,
+                        unlocked ? ImGuiSelectableFlags.None : ImGuiSelectableFlags.NoAutoClosePopups))
                 {
-                    SetKitOf(w, Attachments.With(kit, slot, a.Index));
-                    audio.Effect(Sfx.HitTick, 0.4f);
-                    ImGui.CloseCurrentPopup();
+                    if (!unlocked)
+                    {
+                        LockedFeedback(audio);
+                    }
+                    else
+                    {
+                        SetKitOf(audio, w, Attachments.With(kit, slot, a.Index));
+                        audio.Effect(Sfx.HitTick, 0.4f);
+                        Acted();
+                        ImGui.CloseCurrentPopup();
+                    }
                 }
                 if (!unlocked)
                     ImGui.PopStyleColor();
@@ -216,14 +235,15 @@ public sealed partial class Ui
     }
 
     /// <summary>A stat bar: white up to the smaller value, then green (better) or red (worse) for the change.</summary>
-    private void StatRow(string label, float before, float after)
+    /// <summary>One stat bar: the common part in grey, a gain in green or a loss in red, and the change in the stat itself as a percentage.</summary>
+    private void StatRow(string label, float before, float after, string change = "")
     {
         before = Math.Clamp(before, 0.02f, 1f);
         after = Math.Clamp(after, 0.02f, 1f);
         ImGui.TextColored(Dim, label);
         ImGui.SameLine(100 * _scale);
         var p0 = ImGui.GetCursorScreenPos() + new float2(0, 5 * _scale);
-        var width = ImGui.GetContentRegionAvail().X - 6 * _scale;
+        var width = ImGui.GetContentRegionAvail().X - 50 * _scale; // room for the "+25%" on the right
         var h = 5 * _scale;
         var dl = ImGui.GetWindowDrawList();
         var bgMax = p0 + new float2(width, h);
@@ -239,5 +259,10 @@ public sealed partial class Ui
             ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 0, default);
         }
         ImGui.Dummy(new float2(width, 14 * _scale));
+        if (change.Length > 0)
+        {
+            ImGui.SameLine(0, 6 * _scale);
+            ImGui.TextColored(after >= before ? new float4(0.35f, 0.86f, 0.43f, 1f) : new float4(0.9f, 0.27f, 0.24f, 1f), change);
+        }
     }
 }

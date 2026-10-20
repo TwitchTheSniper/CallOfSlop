@@ -5,11 +5,11 @@
   "order": 4,
   "unlockOrder": 4,
   "blurb": "Tightens the pellet pattern.",
-  "pros": ["-30% pellet spread", "+15% range"],
+  "pros": ["-40% pellet spread", "+22% range"],
   "cons": [],
   "fits": { "classes": ["Shotgun"] },
   "effects": [
-    { "stat": "hipSpreadDeg", "mul": 0.7 },
-    { "stat": "rangeM", "mul": 1.15 }
+    { "stat": "hipSpreadDeg", "mul": 0.6 },
+    { "stat": "rangeM", "mul": 1.22 }
   ]
 }

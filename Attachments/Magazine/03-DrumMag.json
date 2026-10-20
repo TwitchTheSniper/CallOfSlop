@@ -5,11 +5,11 @@
   "order": 3,
   "unlockOrder": 18,
   "blurb": "Huge capacity, huge weight.",
-  "pros": ["Double magazine"],
+  "pros": ["2.4x magazine"],
   "cons": ["40% slower reload", "-5% speed"],
   "fits": { "classes": ["AssaultRifle", "SMG", "LMG"] },
   "effects": [
-    { "stat": "mag", "grow": 2 },
+    { "stat": "mag", "grow": 2.4 },
     { "stat": "reload", "mul": 1.4 },
     { "stat": "mobility", "add": -0.05 }
   ]

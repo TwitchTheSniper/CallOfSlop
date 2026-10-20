@@ -5,11 +5,11 @@
   "order": 1,
   "unlockOrder": 8,
   "blurb": "More rounds before you reload.",
-  "pros": ["+50% magazine"],
-  "cons": ["12% slower reload"],
+  "pros": ["+75% magazine"],
+  "cons": ["15% slower reload"],
   "fits": { "minMag": 3 },
   "effects": [
-    { "stat": "mag", "grow": 1.5 },
-    { "stat": "reload", "mul": 1.12 }
+    { "stat": "mag", "grow": 1.75 },
+    { "stat": "reload", "mul": 1.15 }
   ]
 }

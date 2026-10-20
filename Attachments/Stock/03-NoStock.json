@@ -5,13 +5,14 @@
   "order": 3,
   "unlockOrder": 20,
   "blurb": "Run and gun.",
-  "pros": ["+10% speed", "15% faster to aim"],
-  "cons": ["+25% recoil", "+10% hip spread"],
+  "pros": ["+13% speed", "20% faster to aim"],
+  "cons": ["+25% recoil", "+10% hip spread", "Slower recoil recovery"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
-    { "stat": "mobility", "add": 0.1 },
-    { "stat": "adsTime", "mul": 0.85 },
+    { "stat": "mobility", "add": 0.13 },
+    { "stat": "adsTime", "mul": 0.8 },
     { "stat": "recoilDeg", "mul": 1.25 },
-    { "stat": "hipSpreadDeg", "mul": 1.1 }
+    { "stat": "hipSpreadDeg", "mul": 1.1 },
+    { "stat": "recoilRecovery", "mul": 0.8 }
   ]
 }
