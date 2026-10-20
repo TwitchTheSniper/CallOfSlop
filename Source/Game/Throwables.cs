@@ -52,7 +52,8 @@ public static class Throwables
     public static IEnumerable<ThrowableDef> Grenades => All.Where(d => d.Kind is ThrowableKind.Frag or ThrowableKind.Impact or ThrowableKind.Smoke);
 
     public static string KillName(byte killId) =>
-        killId == Game.MeleeKillId ? "Melee" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name : Weapons.Get(killId).Name;
+        killId == Game.MeleeKillId ? "Melee" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
+        : KillStreaks.IsStreakKill(killId) ? KillStreaks.Get(KillStreaks.FromKillId(killId)).Name : Weapons.Get(killId).Name;
 
     /// <summary>Point-vs-box test for a small projectile.</summary>
     private static bool InsideSolid(Vector3 p)
@@ -294,6 +295,7 @@ public sealed partial class Game
                 if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive) && victim != owner)
                     flags |= 4;
             }
+            StreakBlastEntities(owner, center, def.Radius, def.MaxDamage, now); // enemy turrets and drones too
         }
 
         _w.Begin(Msg.Explode).U16(proj.Id).U8((byte)proj.Kind).U8(proj.Owner).Vec(proj.Pos).U8(flags);
@@ -386,6 +388,10 @@ public sealed partial class Game
             return false; // Low Profile: hidden from Recon while low
         if (p.Id == LocalId || !p.Alive)
             return false;
+        if (StreakJammed(Local, now))
+            return false; // an enemy Counter Sweep blinds your recon
+        if (StreakSweepReveals(p, now))
+            return true;
         foreach (var s in Sensors)
             if (s.Owner == LocalId && now <= s.Until && Vector3.Distance(s.Pos, p.RenderPosition) <= Throwables.Get(ThrowableKind.Recon).Radius)
                 return true;

@@ -182,6 +182,7 @@ public sealed partial class Game : IDisposable
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateThrowableEffects(now, (float)frameDt);
+        UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
 
         _accumulator += frameDt;
@@ -336,6 +337,8 @@ public sealed partial class Game : IDisposable
             _burstLeft = 0;
             return;
         }
+        if (StreakTrigger(now, held, pressed))
+            return; // targeting a streak: fire calls it in
         var w = Active;
         var def = w.Def;
         if (now < EquipUntil || IsReloading(now))
@@ -445,7 +448,7 @@ public sealed partial class Game : IDisposable
         if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true })
             return;
         w.ReloadStarted = now;
-        w.ReloadUntil = now + w.Def.Reload;
+        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now); // Overdrive halves it
         _burstLeft = 0;
         Audio.Reload(w.Def, null);
 
@@ -470,7 +473,7 @@ public sealed partial class Game : IDisposable
         var w = Active;
         if (w.ReloadUntil <= now)
             return -1;
-        return (float)Math.Clamp((now - w.ReloadStarted) / w.Def.Reload, 0, 1);
+        return (float)Math.Clamp((now - w.ReloadStarted) / Math.Max(w.ReloadUntil - w.ReloadStarted, 0.01), 0, 1);
     }
 
     public void SwitchTo(int slot, double now)
@@ -486,8 +489,11 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Called by the loadout menu with the loadout slot to play.</summary>
-    public void ChooseLoadout(Loadout l, double now) =>
+    public void ChooseLoadout(Loadout l, double now)
+    {
+        ChosenStreaks = l.Streaks.Sanitized();
         ChooseLoadout(l.Primary, l.Secondary, l.Grenade, l.Equipment, l.PrimaryKit, l.SecondaryKit, now, l.Perks);
+    }
 
     public void ChooseLoadout(byte primary, byte secondary, ThrowableKind grenade, ThrowableKind equipment, uint primaryKit, uint secondaryKit, double now,
         PerkSet? perks = null)
@@ -502,7 +508,10 @@ public sealed partial class Game : IDisposable
         if (IsServer)
         {
             if (Local is { } me)
+            {
                 ServerRequestLoadout(me, primary, secondary, grenade, equipment, primaryKit, secondaryKit, ChosenPerks, now);
+                StreakRequest(me, ChosenStreaks);
+            }
         }
         else
         {
@@ -515,7 +524,8 @@ public sealed partial class Game : IDisposable
     {
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
             .U24(ChosenPrimaryKit).U24(ChosenSecondaryKit)
-            .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage);
+            .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
+            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C);
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -764,6 +774,7 @@ public sealed partial class Game : IDisposable
         ServerTick++;
         ServerTickMatch(now);
         ServerTickProjectiles(now);
+        ServerTickStreaks(now);
 
         foreach (var p in Players.Values)
         {
@@ -903,6 +914,7 @@ public sealed partial class Game : IDisposable
         p.PrimaryKit = p.WantPrimaryKit;
         p.SecondaryKit = p.WantSecondaryKit;
         ApplyPerks(p, p.WantPerks);
+        StreakOnSpawn(p);
         p.WantsRespawn = false;
         p.Weapon = p.Primary;
         p.Grenade = p.WantGrenade;
@@ -1012,6 +1024,7 @@ public sealed partial class Game : IDisposable
         victim.Alive = false;
         victim.Deaths++;
         victim.RespawnAt = now + World.RespawnDelay;
+        StreakOnKill(attacker, victim, killId, now);
         if (attacker != victim)
         {
             attacker.Kills++;
@@ -1059,12 +1072,14 @@ public sealed partial class Game : IDisposable
 
         var damage = new Dictionary<Player, float>();
         var headshotOn = new HashSet<Player>();
+        byte flags = 0;
         var ends = new List<Vector3>(def.Pellets);
 
         for (var i = 0; i < def.Pellets; i++)
         {
             var d = Weapons.SpreadDirection(dir, spread, seed, i);
             var dist = World.RaycastWorld(origin, d, World.Range);
+            var turret = StreakRaycast(origin, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
@@ -1072,10 +1087,15 @@ public sealed partial class Game : IDisposable
                 {
                     dist = td;
                     hit = t;
+                    turret = null;
                 }
             }
             var end = origin + d * dist;
             ends.Add(end);
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(def.Damage * def.DamageMultAt(dist)), now))
+                flags |= 4;
+            else if (turret != null)
+                flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
@@ -1087,7 +1107,6 @@ public sealed partial class Game : IDisposable
             }
         }
 
-        byte flags = 0;
         foreach (var (victim, dmg) in damage)
         {
             flags |= 1;
@@ -1290,6 +1309,7 @@ public sealed partial class Game : IDisposable
                     var (lp, ls, lg, le, lpk, lsk) = (r.U8(), r.U8(), (ThrowableKind)r.U8(), (ThrowableKind)r.U8(), r.U24(), r.U24());
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
+                    ReadLoadoutStreaks(p, ref r);
                 }
                 break;
             }
@@ -1307,6 +1327,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ProjSpawn:
             case (byte)Msg.Explode:
                 OnThrowablePacket(id, ref r, sender, now);
+                break;
+            case (byte)Msg.StreakUse:
+            case (byte)Msg.StreakEvent:
+            case (byte)Msg.StreakState:
+            case (byte)Msg.StreakEnts:
+                OnStreakPacket(id, ref r, sender, now);
                 break;
             case (byte)Msg.Reload when IsServer && r.Has(1):
             {

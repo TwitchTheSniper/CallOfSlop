@@ -254,6 +254,8 @@ public sealed partial class Ui : IDisposable
             ImGui.End();
         }
 
+        DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
+
         // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
         var prog = Progress;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2 + 60 * _scale, pos.Y + size.Y / 2 - 20 * _scale), ImGuiCond.Always, new float2(0, 0.5f));
