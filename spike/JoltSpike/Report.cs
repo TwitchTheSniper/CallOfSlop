@@ -16,6 +16,7 @@ public static class Report
     static readonly List<string> Passed = new();
     static readonly List<string> Failed = new();
     static readonly List<string> Metrics = new();
+    static readonly List<string> BlockedList = new();
     public static int Failures;
     static string _section = "";
     static StreamWriter? _results, _log;
@@ -48,6 +49,16 @@ public static class Report
         }
     }
 
+    /// <summary>
+    /// A check that can't run because the published natives lack the API (a known binding gap, not a spike failure).
+    /// Reported as one warning per section and in results.txt, but not counted in the exit code.
+    /// </summary>
+    public static void Blocked(string name, string why)
+    {
+        Log($"BLOCKED {name}: {why}");
+        BlockedList.Add($"{name} ({why})");
+    }
+
     /// <summary>A measured value, collected into the section's metric notices.</summary>
     public static void Metric(string name, string value)
     {
@@ -70,6 +81,8 @@ public static class Report
             Notice("binding issues", string.Join(" | ", Phys.BindingNotes));
         if (Passed.Count > 0)
             Notice($"checks passed {Passed.Count}/{Passed.Count + Failures}", string.Join(" | ", Passed));
+        if (BlockedList.Count > 0)
+            Console.WriteLine($"::warning title={_section} blocked by the binding {BlockedList.Count}::{Clean(string.Join(" | ", BlockedList))}");
         if (Failed.Count > 0)
             Console.WriteLine($"::error title={_section} checks FAILED {Failures}/{Passed.Count + Failures}::{Clean(string.Join(" | ", Failed))}");
         // Metrics in chunks so no single annotation gets huge.

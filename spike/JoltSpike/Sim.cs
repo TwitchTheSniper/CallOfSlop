@@ -100,9 +100,11 @@ public sealed class Mover
     public static CharacterVirtual.ExtendedUpdateSettings Ext = new()
     {
         StickToFloorStepDown = new float3(0, -0.5f, 0),
-        // Jolt needs a little more than the step itself (character padding + convex radius): 0.55 + 0.05.
-        WalkStairsStepUp = new float3(0, Sim.StepHeight + 0.05f, 0),
-        WalkStairsMinStepForward = 0.02f,
+        // Measured (step sweep): with a 0.3 m minimum forward step, step-up 0.5 climbs 0.55 and 0.60 steps and
+        // blocks 0.70 (the capsule's round bottom rolls over the last few cm). Jolt's default 0.02 m forward step
+        // lands the round bottom on the step's edge, which counts as too steep, so WalkStairs fails above 0.4 m.
+        WalkStairsStepUp = new float3(0, 0.5f, 0),
+        WalkStairsMinStepForward = 0.3f,
         WalkStairsStepForwardTest = 0.15f,
         WalkStairsCosAngleForwardContact = 0.258819f, // cos(75 deg)
         WalkStairsStepDownExtra = float3.Zero,
@@ -257,7 +259,7 @@ public sealed class Mover
     /// false: Jolt's CharacterVirtual.WalkStairs. true: our own step-up built from Update + StickToFloor
     /// (sweep up, sweep forward, snap down; undo if nothing was gained), like a classic FPS step.
     /// </summary>
-    public static bool OwnStep = true;
+    public static bool OwnStep;
 
     /// <summary>Minimum forward move of the own step, so the capsule's round bottom lands on top of the step, not on its edge.</summary>
     public static float OwnStepForward = 0.25f;

@@ -39,7 +39,7 @@ public static class TestsWorldAndMovement
         Result("a.rays", Phys.RaysAvailable ? "yes" : "no");
         if (!Phys.RaysAvailable)
         {
-            Check("Jolt ray casts available", false, "NarrowPhaseQuery ray casts have no native export in Ahwoo.BRUTAL.Jolt 2026.10.2");
+            Blocked("Jolt ray casts", "NarrowPhaseQuery/TransformedShape/BroadPhaseQuery ray casts have no native export in Ahwoo.BRUTAL.Jolt 2026.10.2");
             Metric("jolt config", Jolt.GetConfigurationString().ToString16().Trim());
             return;
         }
@@ -244,8 +244,10 @@ public static class TestsWorldAndMovement
         var tProbe = Clock.Now;
         var ledge = m.ProbeLedge(East, out var fits);
         var probeUs = Clock.UsSince(tProbe);
-        Check("mantle: 1.5 m ledge found and player fits on top", MathF.Abs(ledge - 1.5f) < 0.05f && fits,
-            Mover.LedgeProbeAvailable ? $"ledge {F(ledge)} m above feet, fits={fits}" : "shape cast / overlap queries have no native export");
+        if (Mover.LedgeProbeAvailable)
+            Check("mantle: 1.5 m ledge found and player fits on top", MathF.Abs(ledge - 1.5f) < 0.05f && fits, $"ledge {F(ledge)} m above feet, fits={fits}");
+        else
+            Blocked("mantle ledge probe", "CastShape / CheckCollision have no native export");
         if (fits)
         {
             var at = m.Ch.GetPosition();

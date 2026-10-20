@@ -31,7 +31,7 @@ public static class TestsPerfAndLagComp
         w.P.Raycast(origins[0], dirs[0], 200, out _);
         if (!Phys.RaysAvailable)
         {
-            Check("Jolt ray casts available", false, "no native ray cast export; only the C# baseline is measured");
+            Blocked("Jolt ray casts", "no native ray cast export; only the C# loop and the C# BVH are measured");
             var tb = Clock.Now;
             for (var i = 0; i < N; i++)
                 BruteForce(w, origins[i], dirs[i], 200);
