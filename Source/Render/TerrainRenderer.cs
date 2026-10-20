@@ -15,9 +15,6 @@ namespace CallOfSlop;
 /// </summary>
 public sealed unsafe class TerrainRenderer
 {
-    // Shared lighting (the lead will move these into Render/Lighting.cs).
-    private static readonly Vector3 SunDir = Vector3.Normalize(new Vector3(-0.4f, 0.8f, -0.3f));
-    private const float Ambient = 0.45f;
     private const int ChunkCells = 32;
 
     private const string VertexSrc = """
@@ -38,19 +35,15 @@ public sealed unsafe class TerrainRenderer
         }
         """;
 
-    private const string FragmentSrc = """
-        #version 330 core
+    // Sun, ambient and fog come from Lighting.Glsl (shared with the box and foliage renderers).
+    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+
         in vec3 vWorld;
         in vec3 vNormal;
         in vec4 vColor;
         uniform sampler2DArray uTex;
         uniform float uGroundLayer;
         uniform float uRockLayer;
-        uniform vec3 uSun;
-        uniform float uAmbient;
-        uniform vec3 uCam;
-        uniform vec3 uFog;
-        uniform vec2 uFogRange;
         out vec4 FragColor;
 
         void main()
@@ -68,13 +61,7 @@ public sealed unsafe class TerrainRenderer
                      + texture(uTex, vec3(vWorld.xy * 0.25, uRockLayer)).r * w.z;
             }
             vec3 col = vColor.rgb * mix(ground, rock, vColor.a) * 1.25;
-            col *= uAmbient + (1.0 - uAmbient) * max(dot(n, uSun), 0.0);
-            if (uFogRange.y > uFogRange.x)
-            {
-                float f = clamp((distance(vWorld, uCam) - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);
-                col = mix(col, uFog, f * 0.85);
-            }
-            FragColor = vec4(col, 1.0);
+            FragColor = vec4(ApplyFog(ApplyLight(col, n, 0.0), vWorld), 1.0);
         }
         """;
 
@@ -90,7 +77,7 @@ public sealed unsafe class TerrainRenderer
 
     private bool _ready, _failed;
     private GlProgram _program;
-    private int _locViewProj, _locTex, _locGround, _locRock, _locSun, _locAmbient, _locCam, _locFog, _locFogRange;
+    private int _locViewProj, _locTex, _locGround, _locRock, _locCam, _locFog, _locFogRange;
     private GlVertexArray _vao;
     private GlBuffer _vbo, _ibo;
     private bool _hasBuffers;
@@ -166,11 +153,10 @@ public sealed unsafe class TerrainRenderer
         _locTex = Uniform("uTex\0"u8);
         _locGround = Uniform("uGroundLayer\0"u8);
         _locRock = Uniform("uRockLayer\0"u8);
-        _locSun = Uniform("uSun\0"u8);
-        _locAmbient = Uniform("uAmbient\0"u8);
         _locCam = Uniform("uCam\0"u8);
         _locFog = Uniform("uFog\0"u8);
         _locFogRange = Uniform("uFogRange\0"u8);
+        Lighting.Upload(_program); // sun and ambient (constants); camera and fog are set every frame
         GlQuery q = default;
         Native.glGenQueries(1, &q);
         _query = q;
@@ -298,8 +284,6 @@ public sealed unsafe class TerrainRenderer
         Native.glUniform1i(_locTex, 0); // the box renderer's texture array is already bound to unit 0
         Native.glUniform1f(_locGround, (float)Material.Dirt);
         Native.glUniform1f(_locRock, (float)Material.Concrete);
-        Native.glUniform3f(_locSun, SunDir.X, SunDir.Y, SunDir.Z);
-        Native.glUniform1f(_locAmbient, Ambient);
         var cam = gfx.CameraPosition;
         Native.glUniform3f(_locCam, cam.X, cam.Y, cam.Z);
         var fog = gfx.FogColor;

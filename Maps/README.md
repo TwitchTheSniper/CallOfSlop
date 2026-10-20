@@ -55,6 +55,31 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
+| `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
+
+## Game mode objectives (optional)
+
+Team modes need two teams' spawn points, King of the Hill needs hill zones, and Capture the Flag needs two flags. You can place them with three optional top-level fields. Anything you leave out is worked out automatically, the same way on every PC:
+
+- **Team spawns:** the two spawns furthest apart anchor the teams, and every spawn joins the side it's closer to, split evenly.
+- **Hills:** waypoints on open ground that lie on the routes between the two teams' spawns, central and equally far from both teams. Two hills on small maps, three on bigger ones, spread apart. Radius 3.5 m (small), 4.5 m (medium) or 6 m (large).
+- **Flags:** on each team's spawn that's deepest in its own half.
+
+| Field | Meaning |
+|---|---|
+| `teamSpawns` | Two lists of points, Blue's then Red's: `[[[x, y, z], ...], [[x, y, z], ...]]`. A point is `[x, y, z]` or `[x, z]` (on the floor: y = 0, or on the ground on [terrain](#terrain) maps). Each list needs at least one point. |
+| `hills` | Hill zones in rotation order: `[{ "x": 0, "z": 10 }, { "x": -20, "z": -5, "y": 3.2, "radius": 5 }]`. `y` (default: the floor, y = 0, or the ground on terrain maps) is the floor height, `radius` defaults to the size-based value. |
+| `flags` | Exactly two points, Blue's flag then Red's: `[[-24, 0, 0], [24, 0, 0]]` (or `[x, z]`, on the floor). |
+
+On terrain maps a `y` you give here is a world height, not a height above the ground: leave it out and the point sits on the ground.
+
+```json
+  "teamSpawns": [[[-24, -8], [-24, 8], [-20, 0]], [[24, -8], [24, 8], [20, 0]]],
+  "hills": [{ "x": 0, "z": 10 }, { "x": 0, "z": -10, "radius": 4 }],
+  "flags": [[-26, 0, 0], [26, 0, 0]],
+```
+
+These fields (and the waypoints, which the automatic hills use) are part of the map's fingerprint, so host and players must have the same version. Put spawns, hills and flags on open floor: something standing on them shouldn't be inside a wall.
 
 ## Units and directions
 
@@ -233,6 +258,59 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 ### For tools
 
 The game builds the heightfield in double precision, in exactly the order above, and rounds every height to a multiple of 1/1024 m. The surface between samples is bilinear. The heightfield (sample heights, surface ids and grid size) is part of the map's multiplayer fingerprint. The map designer's Python tools carry a line-by-line port of the generator (`terrain.py`). Its fingerprint matches the game's (`TerrainData.Hash`), and the self-test checks that against a lab terrain that uses every feature.
+
+## Foliage
+
+A map can have grass, bushes, shrubs and trees, described in an optional top-level `"foliage"` section next to `"ops"`. Plants are scattered over areas you mark out, or placed one by one. `Maps/Dev/FoliageTest.json` shows every feature. On [terrain](#terrain) maps every plant sits on the ground, and scattered plants skip slopes too steep to walk up (cliff faces).
+
+**Only tree trunks are solid.** Each tree (`tree` or `pine`) gets a box for its trunk, which blocks movement, bullets and bot sight like any other box. Grass, bushes, shrubs and the leafy tops of trees are purely for looks: you can walk and shoot straight through them, and bots see through them. (Plants still hide players visually, so a thicket is real concealment, but never cover.)
+
+| Field | Meaning |
+|---|---|
+| `seed` | Whole number that reshuffles every region at once. Default 0. |
+| `paths` | Lines that scattered plants keep clear of: `{ "points": [[x, z], [x, z], ...], "width": 3 }`. |
+| `regions` | Scatter areas (below). |
+| `items` | Single plants: `{ "type": "tree", "x": 4, "z": -8, "height": 7 }`. They're always drawn, at every quality setting. |
+
+**Regions**
+
+| Field | Meaning |
+|---|---|
+| `type` | `grass`, `bush`, `shrub`, `tree` (broadleaf) or `pine`. |
+| `density` | Plants per square metre at High quality, 0 to 20. Grass 2–6, bushes 0.2–0.6, shrubs 0.5–1.5, trees 0.02–0.05 (one tree per 20–50 m²) are good starting points. |
+| `rect` / `circle` / `polygon` | The area, exactly one of them: `"rect": [x0, z0, x1, z1]`, `"circle": [x, z, radius]` or `"polygon": [[x, z], [x, z], [x, z], ...]`. |
+| `seed` | Reshuffles this region only. Default: the region's position in the list. |
+| `scale` | Size multiplier for grass, bushes and shrubs: a number or `[min, max]`. Default `[0.8, 1.25]`. |
+| `height` | Height in metres for trees, a number or `[min, max]` (2–30). Default `[5, 8]` for trees and `[6, 10]` for pines. |
+| `color` | Base colour; each plant varies a little around it. Default: a natural green per type. |
+| `patchiness` | 0 = even cover, 1 = strongly clumped into patches with bare ground between. Default 0.35 for grass, 0.25 for bushes and shrubs, 0 for trees. |
+| `avoidSolid` | `false` lets plants grow into boxes. Default `true`: they keep out of walls, crates and trunks. |
+| `avoidPaths` | `false` lets plants grow on paths. Default `true`. |
+
+Placement is deterministic: the same file gives exactly the same plants and trunks on every PC, so multiplayer collision matches. The foliage counts towards the map's fingerprint, so changing it is a new version of the map online. Scattered trees also keep 1.5 m away from spawn points. Plants are placed after the ops, so they see everything the ops built.
+
+**Cost.** Foliage is drawn in big instanced batches, so tens of thousands of plants are cheap, but not free. As a guide, a 100 x 100 m map with 4 grass clumps per m² everywhere (about 30,000 plants) plus a few hundred bushes and a grove of 40 trees is fine on any recent GPU at High. Grass is by far the most numerous: put dense grass where players look (meadows, along paths) rather than everywhere on a huge map. Trees cost one box each, so keep a map's trees in the hundreds, not thousands. A map may have at most 400,000 plants in total.
+
+Players pick **Off / Low / Medium / High** in Settings > Video. Lower settings draw fewer grass blades, bushes and shrubs and thin them out sooner with distance; trees and their trunks are always there.
+
+```json
+"foliage": {
+  "seed": 7,
+  "paths": [ { "points": [[0, -50], [0, 50]], "width": 3 } ],
+  "regions": [
+    { "type": "grass", "density": 4, "rect": [-49, -49, 49, 49] },
+    { "type": "bush", "density": 0.5, "circle": [26, 28, 9], "scale": [0.9, 1.5] },
+    { "type": "shrub", "density": 1, "polygon": [[-44, -42], [-14, -44], [-10, -26], [-42, -16]] },
+    { "type": "tree", "density": 0.035, "rect": [10, -44, 44, -14], "height": [5.5, 8.5] }
+  ],
+  "items": [
+    { "type": "tree", "x": -12, "z": 20, "height": 9 },
+    { "type": "pine", "x": 24, "z": 16 }
+  ]
+}
+```
+
+The older `Tree` and `TreeIfClear` ops still work: they build a blocky tree out of solid boxes (trunk and leaves both solid), as in the Classic maps.
 
 ## Map packs
 

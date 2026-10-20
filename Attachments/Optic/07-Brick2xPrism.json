@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Brick 2x Prism",
+  "slot": "Optic",
+  "order": 7,
+  "unlockOrder": 9,
+  "blurb": "Stubby fixed 2x prism with a horseshoe reticle. A little reach without the tunnel.",
+  "pros": ["2x zoom", "Horseshoe + dot reticle", "-28% aimed spread"],
+  "cons": ["Slightly slower to aim"],
+  "fits": { "notClasses": ["Pistol"] },
+  "effects": [
+    { "stat": "optic", "set": "Prism2" },
+    { "stat": "adsZoom", "set": 2 },
+    { "stat": "adsSpreadMult", "mul": 0.72 },
+    { "stat": "adsTime", "add": 0.035 }
+  ]
+}

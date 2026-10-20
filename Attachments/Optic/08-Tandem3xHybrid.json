@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Tandem 3x Hybrid",
+  "slot": "Optic",
+  "order": 8,
+  "unlockOrder": 14,
+  "blurb": "Reflex sight with a 3x magnifier behind it. Circle-dot reticle with holdover ticks.",
+  "pros": ["3x zoom", "Circle-dot with drop ticks", "-42% aimed spread"],
+  "cons": ["Slower to aim", "-1% speed"],
+  "fits": { "notClasses": ["Pistol", "Shotgun", "Special"] },
+  "effects": [
+    { "stat": "optic", "set": "Hybrid3" },
+    { "stat": "adsZoom", "set": 3 },
+    { "stat": "adsSpreadMult", "mul": 0.58 },
+    { "stat": "adsTime", "add": 0.07 },
+    { "stat": "mobility", "add": -0.01 }
+  ]
+}

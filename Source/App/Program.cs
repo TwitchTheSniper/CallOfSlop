@@ -18,7 +18,7 @@ namespace CallOfSlop;
 ///   --no-upnp                      don't touch the router when hosting
 /// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
 /// </summary>
-public static unsafe class Program
+public static unsafe partial class Program
 {
     public const ushort DefaultPort = 60000;
     public static double FrameDt;
@@ -50,7 +50,9 @@ public static unsafe class Program
     private static bool _wasDeadUi, _wasVoting;
     private static readonly bool[] _voteKeyDown = new bool[3];
     private static double _deathMenuAt;
+    private static readonly DeathCam _deathCam = new(); // the camera after you die (DeathCam.cs)
     private const string LoadoutLockedText = "You can only change your loadout when you're dead";
+    private const string GunGameLoadoutText = "Gun Game: everyone gets the same gun and perks, so there's no loadout this match.";
     private static bool _quit;
     private static bool _vsync;
 
@@ -156,6 +158,11 @@ public static unsafe class Program
         _smokeFrames++;
         _smokeWorstDt = Math.Max(_smokeWorstDt, FrameDt);
         var t = now - _smokeStepStart;
+        if (FoliageSmokeActive)
+        {
+            FoliageSmokeTick(now);
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -199,7 +206,7 @@ public static unsafe class Program
             {
                 _smokeGallery = 0;
                 Ui.LobbyLoadouts = false;
-                SmokeNextMap(now);
+                StartFoliageSmoke(now); // then on to the maps
             }
             return;
         }
@@ -211,6 +218,28 @@ public static unsafe class Program
         }
 
         var game = _session;
+        // Map 0, after the play screenshot: scoped ADS shots (on their own clock, 6.3-8.4 s), then the arms
+        // (reload, sprint, melee; own clock), then kill streaks (needs you alive), then the death cam (gets you killed).
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeAdsStep <= SmokeAdsOptics.Length * 2)
+        {
+            SmokeAds(t);
+            return;
+        }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeArms < 7)
+        {
+            SmokeArms(game, now, t);
+            return;
+        }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeStreakStep < 4)
+        {
+            SmokeStreaks(now);
+            return;
+        }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
+        {
+            SmokeDeathCam(now, t);
+            return;
+        }
         switch (_smokeStage)
         {
             case 0 when t > 0.8:
@@ -280,8 +309,131 @@ public static unsafe class Program
         }
     }
 
+    private static int _smokeDeathCam;
+
+    /// <summary>
+    /// Smoke step on the first map, after the play screenshot: the nearest bot kills you, and 2.2 s later
+    /// (the death cam has turned to face it, the kill card is up) a screenshot. Then the usual steps go on.
+    /// </summary>
+    private static void SmokeDeathCam(double now, double t)
+    {
+        var game = _session;
+        switch (_smokeDeathCam)
+        {
+            case 0 when t > 6.5:
+                var bot = game?.DebugKillLocalByBot(now);
+                Console.WriteLine(bot != null ? $"[smoke] death cam: killed by {game!.NameOf(bot.Id)} ({bot.WeaponDef.Name})" : "[smoke] death cam: no bot could kill you (skipped)");
+                _smokeDeathCam = bot != null ? 1 : 3;
+                break;
+            case 1 when t > 8.7:
+                SmokeShot("deathcam");
+                var info = _deathCam.Info;
+                Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
+                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                _smokeDeathCam++;
+                break;
+            case 2 when t > 8.9:
+                _smokeDeathCam++;
+                _smokeStepStart += 2.5; // the usual steps carry on where they were
+                break;
+        }
+    }
+
+    private static int _smokeArms;
+    private static double _smokeArmsAt;
+    private static Buttons _smokeButtons;
+    private static double _smokeArmsStart;
+
+    /// <summary>
+    /// Smoke step on the first map: the first-person arms during a reload, a sprint and a melee swing, screenshotted
+    /// (smoke_arms_reload / smoke_arms_sprint / smoke_arms_melee), with one log line on the rig.
+    /// </summary>
+    private static void SmokeArms(Game? game, double now, double t)
+    {
+        if (game?.Local is not { Alive: true })
+        {
+            _smokeArms = 7;
+            return;
+        }
+        var reload = game.Active.Def.Reload;
+        switch (_smokeArms)
+        {
+            case 0:
+                _smokeArmsStart = now;
+                game.Active.Ammo = Math.Max(0, game.Active.Ammo - 1);
+                game.StartReload(now);
+                _smokeArmsAt = now;
+                _smokeArms++;
+                break;
+            case 1 when now - _smokeArmsAt > reload * 0.45:
+                SmokeShot("arms_reload");
+                Console.WriteLine($"[smoke] arms: {game.Active.Def.Name} reload style {_vmAnim.Anchors.Style}, hands reached {_vmAnim.Right.Reached}/{_vmAnim.Left.Reached}, carrying {_vmAnim.Carrying}");
+                _smokeArms++;
+                break;
+            case 2 when now - _smokeArmsAt > reload + 0.3:
+                _smokeButtons = Buttons.Forward | Buttons.Sprint;
+                _smokeArmsAt = now;
+                _smokeArms++;
+                break;
+            case 3 when now - _smokeArmsAt > 0.9:
+                SmokeShot("arms_sprint");
+                Console.WriteLine($"[smoke] arms: sprinting at {new Vector2(game.Local.Sim.Velocity.X, game.Local.Sim.Velocity.Z).Length():0.0} m/s");
+                _smokeArms++;
+                break;
+            case 4 when now - _smokeArmsAt > 1.0:
+                _smokeButtons = Buttons.None;
+                game.TryMelee(now);
+                _smokeArmsAt = now;
+                _smokeArms++;
+                break;
+            case 5 when now - _smokeArmsAt > 0.12:
+                SmokeShot("arms_melee");
+                _smokeArms++;
+                break;
+            case 6 when now - _smokeArmsAt > 0.5:
+                _smokeArms++;
+                _smokeStepStart += now - _smokeArmsStart; // give the usual steps their clock back
+                break;
+        }
+    }
+
     private static int _smokeWeaponSelect;
     private static string? _smokeLockedGun;
+    private static int _smokeStreakStep, _smokeStreakFrames;
+    private static double _smokeStreakStart;
+
+    /// <summary>
+    /// Smoke step on the first map, after the first play screenshot: calls in a Sentry Turret, a Mortar Barrage and a
+    /// Recon Sweep and screenshots the turret and the shells landing. Keeps its own clock, then hands the usual one back.
+    /// </summary>
+    private static void SmokeStreaks(double now)
+    {
+        var t = now - _smokeStreakStart;
+        switch (_smokeStreakStep)
+        {
+            case 0:
+                _smokeStreakStart = now;
+                _smokeStreakFrames = _smokeFrames;
+                Console.WriteLine($"[smoke] kill streaks: {_game.SmokeCallStreaks(now)}");
+                _smokeStreakStep++;
+                break;
+            case 1 when t > 0.9:
+                SmokeShot("streak_turret");
+                _smokeStreakStep++;
+                break;
+            case 2 when t > KillStreaks.MortarDelay + 0.45:
+                SmokeShot("streak_mortar");
+                _smokeStreakStep++;
+                break;
+            case 3 when t > KillStreaks.MortarDelay + 0.7:
+                Console.WriteLine($"[smoke] kill streaks: {(_smokeFrames - _smokeStreakFrames) / Math.Max(t, 0.001):0} fps avg, entities {_game.StreakEntities.Count}, "
+                    + $"strikes left {_game.Strikes.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                _smokeStepStart += t; // give the usual steps their clock back
+                _smokeFrames = _smokeStreakFrames;
+                _smokeStreakStep++;
+                break;
+        }
+    }
 
     /// <summary>
     /// Smoke step on the first map: the weapon-select screen ("Choose primary"), screenshotted as is and
@@ -324,6 +476,60 @@ public static unsafe class Program
                 _smokeFrames = 0;
                 _smokeWorstDt = 0;
                 break;
+        }
+    }
+
+    private static int _smokeAdsStep;
+    private static bool _smokeAimHeld;
+    private static WeaponDef? _smokeAdsKeep;
+    private static readonly (OpticKind Kind, string Shot)[] SmokeAdsOptics = [(OpticKind.RedDot, "ads_reddot"), (OpticKind.Hybrid3, "ads_3x"), (OpticKind.Scope12, "ads_12x")];
+
+    /// <summary>
+    /// Smoke step on the first map: a sniper rifle with a red dot, then the 3x hybrid, then the 12x scope,
+    /// each held at full ADS and screenshotted (smoke_ads_reddot/ads_3x/ads_12x.bmp). Runs inside the
+    /// usual play window, then puts the real weapon back.
+    /// </summary>
+    private static void SmokeAds(double t)
+    {
+        var game = _session;
+        if (game == null || _smokeAdsStep > SmokeAdsOptics.Length * 2)
+            return;
+        var i = _smokeAdsStep / 2;
+        var at = 6.3 + i * 0.7;
+        if (_smokeAdsStep % 2 == 0)
+        {
+            if (t < at)
+                return;
+            _smokeAdsStep++;
+            if (i == SmokeAdsOptics.Length)
+            {
+                _smokeAimHeld = false;
+                if (_smokeAdsKeep != null)
+                    game.Active.Def = _smokeAdsKeep;
+                return;
+            }
+            var gun = Weapons.Find("Needle Bolt-Action") ?? Weapons.All.First(w => w.Class == WeaponClass.Sniper);
+            var def = Attachments.For(gun).Where(a => a.Slot == AttachSlot.Optic)
+                .Select(a => Attachments.Apply(gun, Attachments.With(0, AttachSlot.Optic, a.Index)))
+                .FirstOrDefault(d => d.Optic == SmokeAdsOptics[i].Kind);
+            if (def == null)
+            {
+                Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: no {SmokeAdsOptics[i].Kind} optic fits {gun.Name}");
+                _smokeAdsStep++;
+                return;
+            }
+            _smokeAdsKeep ??= game.Active.Def;
+            game.Active.Def = def;
+            game.AimT = 0;
+            _smokeAimHeld = true;
+        }
+        else if (t >= at + 0.55)
+        {
+            _smokeAdsStep++;
+            var d = game.Active.Def;
+            SmokeShot(SmokeAdsOptics[i].Shot);
+            Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
+                + $"full scope view {Scoped}, lens {GunModel.Look(d).LensRadius:0.00} of screen height, reticle {GunModel.Look(d).Reticle}, alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
         }
     }
 
@@ -588,6 +794,9 @@ public static unsafe class Program
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
+            _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
+            _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
+            _session.Mode = _settings.Mode; // clients learn the host's mode from the server
             if (kind == LobbyAction.Host)
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
@@ -596,7 +805,8 @@ public static unsafe class Program
                 if (_settings.Advertise && _settings.Master is { } m)
                     Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
             }
-            Ui.OpenMenu(_session); // pick a loadout before the first spawn
+            if (!_session.SkipsLoadout)
+                Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
         }
@@ -626,6 +836,7 @@ public static unsafe class Program
         _upnp = null;
         Ui.MenuOpen = false;
         Ui.PauseOpen = false;
+        _deathCam.Stop();
         Ui.ResetLobby();
         if (_window != null)
             SetMouseCaptured(false);
@@ -676,6 +887,8 @@ public static unsafe class Program
                 Render(now);
             else if (_smokeGallery is 1 or 2)
                 DrawGunGallery(_smokeGallery);
+            else if (FoliageSmokeActive)
+                DrawFoliageSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -690,6 +903,7 @@ public static unsafe class Program
                     SetMouseCaptured(true);
                     _swallowClick = true; // the Deploy click mustn't also fire the gun
                 }
+                Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -697,7 +911,10 @@ public static unsafe class Program
                         _swallowClick = true;
                         break;
                     case PauseAction.Loadout:
-                        Ui.OpenMenu(g);
+                        if (g.SkipsLoadout)
+                            g.LoadoutNotice = GunGameLoadoutText;
+                        else
+                            Ui.OpenMenu(g);
                         break;
                     case PauseAction.Leave:
                         EndSession("");
@@ -707,7 +924,7 @@ public static unsafe class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2)) // no lobby menu over the smoke-test gun gallery
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -775,6 +992,7 @@ public static unsafe class Program
         for (var i = 0; i < map.Solid.Count; i++)
             Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
+        FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
     }
 
     // =====================================================================
@@ -901,7 +1119,7 @@ public static unsafe class Program
         }
 
         // Match countdown: open the loadout menu while everyone loads in, deploy it at GO.
-        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen)
+        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout)
         {
             Ui.OpenMenu(_game);
             SetMouseCaptured(false);
@@ -933,22 +1151,57 @@ public static unsafe class Program
             }
         }
 
-        // Death screen: shortly after you die, the loadout menu opens with a Respawn button.
-        // Nobody is respawned automatically (and not over the results screen).
+        // Death screen: the death cam turns to your killer, then the loadout menu opens with a Respawn button.
+        // Nobody is respawned automatically (and not over the results screen). A click skips the death cam.
         var deadNow = _game.Local is not { Alive: true };
         if (deadNow && !_wasDeadUi)
-            _deathMenuAt = now + 1.2;
+        {
+            _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
+            if (_game.SkipsLoadout && _game.Local is not { Deaths: > 0 })
+                _deathMenuAt = now; // Gun Game, just joined: no death to show, straight in
+            if (_game.Local is { } me)
+                _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, World.RaycastWorld);
+        }
         if (!deadNow)
+        {
             _deathMenuAt = 0;
+            if (_deathCam.Active)
+            {
+                _deathCam.Stop();
+                _game.LastDeath = null;
+            }
+        }
         _wasDeadUi = deadNow;
+        if (_deathMenuAt > now && _deathCam.Running(now) && _mouseCaptured && !_swallowClick && Pressed(GameAction.Fire))
+        {
+            _deathMenuAt = now;
+            _swallowClick = true;
+        }
         if (_deathMenuAt > 0 && now >= _deathMenuAt)
         {
             _deathMenuAt = 0;
-            if (!Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
+            if (_game.SkipsLoadout)
+            {
+                // Gun Game: no loadout screen, the death cam goes straight to a respawn.
+            }
+            else if (!Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
             {
                 Ui.OpenMenu(_game);
                 SetMouseCaptured(false);
             }
+        }
+        if (_game.SkipsLoadout)
+        {
+            // Gun Game: never a loadout screen (a client learns the mode after joining, so close one already open),
+            // and once the death cam is over you respawn on your own.
+            if (Ui.MenuOpen)
+            {
+                Ui.MenuOpen = false;
+                if (!Ui.PauseOpen)
+                    SetMouseCaptured(true);
+            }
+            if (deadNow && _deathMenuAt == 0 && _game.Local != null && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
+                _game.RequestRespawn();
         }
 
         // Loadout menu toggle works with the mouse free too (but not over the pause menu).
@@ -960,10 +1213,15 @@ public static unsafe class Program
                 if (!deadNow)
                     SetMouseCaptured(true);
             }
+            else if (_game.SkipsLoadout)
+            {
+                _game.LoadoutNotice = _game.LoadoutNotice == GunGameLoadoutText ? GunGameLoadoutText + " " : GunGameLoadoutText;
+            }
             else if (_game.CanChangeLoadout)
             {
                 Ui.OpenMenu(_game);
                 SetMouseCaptured(false);
+                _deathMenuAt = 0; // opened early over the death cam: don't reopen it later
             }
             else
             {
@@ -972,6 +1230,8 @@ public static unsafe class Program
             }
         }
         Ui.ShowScoreboard = _mouseCaptured && Down(GameAction.Scoreboard);
+        if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
+            _game.ToggleReady();
 
         // Mouse look is applied every frame (never waits for a tick or the network).
         if (_mouseCaptured)
@@ -1054,6 +1314,9 @@ public static unsafe class Program
                 _game.TryThrow(equipment: true, now);
             if (Pressed(GameAction.Melee))
                 _game.TryMelee(now);
+            for (var i = 0; i < 3; i++)
+                if (Pressed(GameAction.Streak1 + i))
+                    _game.StreakKey(i, now); // kill streaks (cheapest first)
 
             // Held actions
             if (Down(GameAction.MoveForward)) buttons |= Buttons.Forward;
@@ -1078,8 +1341,8 @@ public static unsafe class Program
             else if (_crouchToggle)
                 buttons |= Buttons.Crouch;
         }
-        _game.HeldButtons = buttons;
-        _game.AimHeld = _mouseCaptured && Down(GameAction.Aim);
+        _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's arms step only)
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim)) || _smokeAimHeld;
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
         var down = _mouseCaptured && Down(GameAction.Fire);
@@ -1157,7 +1420,8 @@ public static unsafe class Program
 
     private static float CurrentFov() => BaseFov / float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
 
-    private static bool Scoped => _game.Active.Def.AdsZoom >= 3f && _game.AimT > 0.85f;
+    /// <summary>Full scope view (black surround, no viewmodel): only optics of 4x and up (GunModel.FullScope), once mostly aimed.</summary>
+    private static bool Scoped => GunModel.FullScope(_game.Active.Def) && _game.AimT > 0.85f;
 
     private static void Render(double now)
     {
@@ -1175,6 +1439,12 @@ public static unsafe class Program
         {
             eye = local.Alive ? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0);
             fwd = local.Alive ? World.Forward(_game.LookYaw, _game.LookPitch) : World.Forward(_game.LookYaw, -1.2f);
+            if (!local.Alive && _deathCam.Active)
+            {
+                _deathCam.Track(_game, now, (float)FrameDt); // eases round to face your killer (DeathCam.cs)
+                eye = _deathCam.Eye;
+                fwd = _deathCam.Forward;
+            }
         }
         else
         {
@@ -1190,7 +1460,7 @@ public static unsafe class Program
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
 
-        var fov = local is { Alive: true } ? CurrentFov() : BaseFov;
+        var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
         var camUp = Vector3.UnitY;
         if (local is { Alive: true })
         {
@@ -1229,6 +1499,8 @@ public static unsafe class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.18f, 0.12f, 0.18f) * Matrix4x4.CreateTranslation(s.Pos), Throwables.Get(ThrowableKind.Recon).Color * (blink ? 1.4f : 0.6f), 1f, mode: blink ? 2 : 0);
             Gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.5f, 0.03f) * Matrix4x4.CreateTranslation(s.Pos + new Vector3(0, 0.3f, 0)), new Vector3(0.2f, 0.2f, 0.2f)); // antenna
         }
+
+        StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
 
         // ---- Tracers --------------------------------------------------------
         Gfx.SetBlend(true);
@@ -1281,6 +1553,7 @@ public static unsafe class Program
                     new Vector3(shade, shade, shade + 0.02f), 0.55f * fade, mode: 2);
             }
         }
+        ObjectiveRender.Draw(Gfx, _game, now); // hill zone, flags, carrier beacons (game modes)
         // Enemies near your Recon Pulse show through walls.
         Gfx.SetDepthTest(false);
         foreach (var p in _game.Players.Values)
@@ -1300,7 +1573,11 @@ public static unsafe class Program
 
         // ---- First-person gun -----------------------------------------------
         if (local is { Alive: true } && !Scoped)
+        {
+            GunModel.AdsCutaway = GunModel.CutawayFor(_game.AimT); // see-through optics: housing fades out as you aim
             DrawViewModel(now, proj);
+            GunModel.AdsCutaway = 0;
+        }
 
         // ---- HUD ------------------------------------------------------------
         DrawHud(now, w, h, local, fov);
@@ -1422,6 +1699,14 @@ public static unsafe class Program
     /// <summary>Box gun model shared by the viewmodel, other players and the gunsmith preview (see GunModel.cs).</summary>
     private static void DrawGun(WeaponDef def, in Matrix4x4 pose, bool flash) => GunModel.Draw(Gfx, def, pose, flash, (float)Glfw.Time);
 
+    /// <summary>Another player's gun with arms holding it (Source/Render/ThirdPersonArms.cs).</summary>
+    private static void DrawArmed(Player p, in Matrix4x4 gunPose, in Matrix4x4 body)
+    {
+        var def = p.WeaponDef;
+        DrawGun(def, ThirdPersonArms.Animate(p, def, gunPose, body, Glfw.Time), false);
+        ThirdPersonArms.Draw(Gfx);
+    }
+
     private static void DrawPlayer(Player p)
     {
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
@@ -1445,7 +1730,7 @@ public static unsafe class Program
                 Gfx.Draw(Matrix4x4.CreateScale(0.4f, 0.38f, 0.4f) * Matrix4x4.CreateTranslation(0, 0.3f, -0.75f) * rot * at, color * 1.1f);
                 Gfx.Draw(Matrix4x4.CreateScale(0.34f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 0.36f, -0.96f) * rot * at, visorColor);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.25f, 0.3f, -0.9f) * rot * at;
-                DrawGun(p.WeaponDef, gunPose, false);
+                DrawArmed(p, gunPose, rot * at);
                 barY = 0.9f;
                 break;
             }
@@ -1456,7 +1741,7 @@ public static unsafe class Program
                 Gfx.Draw(Matrix4x4.CreateScale(0.45f, top - body, 0.45f) * Matrix4x4.CreateTranslation(0, (body + top) / 2, -0.05f) * rot * at, color * 1.1f);
                 Gfx.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.07f, -0.29f) * rot * at, visorColor);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 0.82f, -0.3f) * rot * at;
-                DrawGun(p.WeaponDef, gunPose, false);
+                DrawArmed(p, gunPose, rot * at);
                 barY = 1.45f;
                 break;
             }
@@ -1467,7 +1752,7 @@ public static unsafe class Program
                 Gfx.Draw(Matrix4x4.CreateScale(0.45f, headH, 0.45f) * Matrix4x4.CreateTranslation(0, World.HeadStart + headH / 2, 0) * rot * at, color * 1.1f);
                 Gfx.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.63f, -0.24f) * rot * at, visorColor);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * rot * at;
-                DrawGun(p.WeaponDef, gunPose, false);
+                DrawArmed(p, gunPose, rot * at);
                 barY = 2.05f;
                 break;
             }
@@ -1478,6 +1763,8 @@ public static unsafe class Program
             Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
     }
 
+    private static readonly ViewModelAnimator _vmAnim = new();
+
     private static void DrawViewModel(double now, Matrix4x4 proj)
     {
         Gfx.ClearDepthBuffer();
@@ -1487,41 +1774,19 @@ public static unsafe class Program
         Gfx.SetCamera(Matrix4x4.Identity, vmProj); // camera space: -Z forward, +X right, +Y up
 
         var def = _game.Active.Def;
-        var sinceShot = (float)(now - _game.LastShotTime);
-        var kick = _game.WeaponKick.Back; // recoil kick from the gun's profile (Game.WeaponKick: Back/Up/Roll/Side)
-
-        var reload = 0f;
-        var rp = _game.ReloadProgress(now);
-        if (rp >= 0)
-            reload = MathF.Sin(rp * MathF.PI);
-        var equip = now < _game.EquipUntil ? (float)((_game.EquipUntil - now) / def.EquipTime) : 0f;
-
-        var sim = _game.Local!.Sim;
-        var speed = new Vector2(sim.Velocity.X, sim.Velocity.Z).Length();
-        var bob = sim.Grounded ? MathF.Sin((float)now * 10f) * 0.012f * MathF.Min(speed / World.WalkSpeed, 1.5f) * (1 - _game.AimT * 0.8f) : 0f;
-
-        // Hip position -> centred aim position
-        var a = _game.AimT;
-        var x = float.Lerp(0.24f, 0f, a);
-        var y = float.Lerp(-0.22f, -GunModel.SightHeight(def), a); // aimed: the sight line sits on the centre of the screen
-        var z = float.Lerp(-0.42f, GunModel.AdsZ(def), a) + kick; // optics come right up to the eye (closest for the ACOG)
-
-        // Melee: the gun swings across and jabs forward, then comes back.
-        var mp = _game.MeleeProgress(now);
-        var jab = mp >= 0 ? MathF.Sin(mp * MathF.PI) : 0f;
-        if (mp >= 0)
+        // Arms and gun animation (Source/Render/ViewModelAnimator.cs): hip/ADS, sway, bob, sprint, jump, equip, melee, reloads, mantle, kick.
+        var me = _game.Local!;
+        _vmAnim.Update(new ViewModelInput
         {
-            x -= jab * 0.18f;
-            z -= jab * 0.22f;
-        }
-
-        var pose =
-            Matrix4x4.CreateRotationX(-reload * 0.9f - equip * 1.2f + jab * 0.35f + _game.WeaponKick.Up)
-            * Matrix4x4.CreateRotationY(jab * 0.9f)
-            * Matrix4x4.CreateRotationZ(jab * 0.5f)
-            * Matrix4x4.CreateTranslation(x, y - reload * 0.15f - equip * 0.25f + bob, z);
+            Def = def, Now = now, Dt = (float)FrameDt, Aim = _game.AimT, Reload = _game.ReloadProgress(now), Melee = _game.MeleeProgress(now),
+            Equip = now < _game.EquipUntil ? Math.Clamp((float)((_game.EquipUntil - now) / def.EquipTime), 0f, 1f) : 0f,
+            Kick = _game.WeaponKick, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded, MantleTicks = me.Sim.MantleTicks, MantleTo = me.Sim.MantleTo,
+            Eye = me.RenderEye, Yaw = _game.LookYaw, Pitch = _game.LookPitch, SprintHeld = (_game.HeldButtons & Buttons.Sprint) != 0,
+        });
+        var pose = _vmAnim.GunPose;
 
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
+        _vmAnim.DrawArms(Gfx, ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f)));
     }
 
     private static void DrawHud(double now, float w, float h, Player? local, float fov)
@@ -1537,51 +1802,8 @@ public static unsafe class Program
 
         if (local is { Alive: true })
         {
-            if (Scoped)
-            {
-                // Sniper scope: black surround with a square window and fine crosshair.
-                var r = h * 0.42f;
-                Gfx.Rect(0, 0, cx - r, h, black);
-                Gfx.Rect(cx + r, 0, w - (cx + r), h, black);
-                Gfx.Rect(cx - r, 0, 2 * r, cy - r, black);
-                Gfx.Rect(cx - r, cy + r, 2 * r, h - (cy + r), black);
-                Gfx.Rect(cx - r, cy - 1, 2 * r, 2, black, 0.9f);
-                Gfx.Rect(cx - 1, cy - r, 2, 2 * r, black, 0.9f);
-                Gfx.Rect(cx - 2, cy - 2, 4, 4, new Vector3(1, 0.2f, 0.2f));
-            }
-            else if (_game.Active.Def.Optic is OpticKind.RedDot or OpticKind.Holo or OpticKind.Acog && _game.AimT > 0.6f)
-            {
-                // Optic reticle while aiming down sights.
-                var opt = _game.Active.Def.Optic;
-                var a = Math.Clamp((_game.AimT - 0.6f) / 0.4f, 0f, 1f);
-                var red = new Vector3(1f, 0.15f, 0.1f);
-                var dot = MathF.Max(3, MathF.Round(3 * k));
-                Gfx.Rect(cx - dot / 2, cy - dot / 2, dot, dot, opt == OpticKind.Holo ? new Vector3(0.3f, 0.9f, 1f) : red, a);
-                if (opt == OpticKind.Holo)
-                {
-                    var r = 22 * k;
-                    for (var i = 0; i < 24; i++)
-                    {
-                        var ang = i / 24f * MathF.Tau;
-                        Gfx.Rect(cx + MathF.Cos(ang) * r - 1.5f, cy + MathF.Sin(ang) * r - 1.5f, 3, 3, new Vector3(0.3f, 0.9f, 1f), a * 0.9f);
-                    }
-                }
-                else if (opt == OpticKind.Acog)
-                {
-                    // Chevron with a drop line, inside a soft dark ring.
-                    for (var i = 1; i <= 7; i++)
-                    {
-                        var step = i * 2.2f * k;
-                        Gfx.Rect(cx - step - 1.5f, cy - step - 1.5f, 3, 3, red, a);
-                        Gfx.Rect(cx + step - 1.5f, cy - step - 1.5f, 3, 3, red, a);
-                    }
-                    Gfx.Rect(cx - 1, cy - 70 * k, 2, 50 * k, black, a * 0.8f);
-                    var ring = h * 0.46f;
-                    Gfx.Rect(0, 0, cx - ring, h, black, a * 0.55f);
-                    Gfx.Rect(cx + ring, 0, w - (cx + ring), h, black, a * 0.55f);
-                }
-            }
-            else
+            // Optic view (lens, reticle, and the black surround at 4x+): see Source/Render/ScopeOverlay.cs.
+            if (!ScopeOverlay.Draw(Gfx, _game.Active.Def, _game.AimT, w, h))
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
