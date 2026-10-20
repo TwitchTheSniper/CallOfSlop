@@ -82,8 +82,9 @@ public static partial class SelfTest
             var climbed = new List<string>();
             for (var i = 0; i < LabSteps.Length; i++)
             {
-                var s = Walk(Stand(-54 + i * 6, 0, 0), Buttons.Forward, 0, 90, ref maxY);
-                var up = s.Position.Y > LabSteps[i] - 0.05f && s.Position.Z < -3.4f;
+                maxY = 0;
+                var s = Walk(Stand(-54 + i * 6, 0, 0), Buttons.Forward, 0, 60, ref maxY);
+                var up = maxY > LabSteps[i] - 0.05f; // climbed it (and may have walked off the far end since)
                 climbed.Add($"{LabSteps[i]:0.00}{(up ? "+" : "-")}");
                 if (swept && (LabSteps[i] <= World.StepHeight) != up && LabSteps[i] != 0.60f)
                     Fail($"swept mover: a {LabSteps[i]:0.00} m step was {(up ? "climbed" : "not climbed")} (ends at y {s.Position.Y:0.00}, z {s.Position.Z:0.00})");
