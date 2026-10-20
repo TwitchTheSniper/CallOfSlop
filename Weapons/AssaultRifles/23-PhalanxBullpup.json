@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.4,
   "bright": 0.6,
-  "tail": 0.5
+  "tail": 0.5,
+  "model": {
+    "base": "bullpup", "foregrip": "vertical", "handguard": "slim", "furniture": "olive", "finish": "black",
+    "mag": "box", "magLength": 0.12, "magColor": "white", "accentStyle": "none", "muzzle": "flash",
+    "sights": "none", "carryHandle": false, "topRail": true
+  }
 }

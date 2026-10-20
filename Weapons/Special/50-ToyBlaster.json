@@ -36,5 +36,8 @@
   "sound": "Toy",
   "caliber": 0.1,
   "bright": 0.9,
-  "tail": 0.1
+  "tail": 0.1,
+  "model": {
+    "base": "toy"
+  }
 }

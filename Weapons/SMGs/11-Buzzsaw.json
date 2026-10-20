@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.18,
   "bright": 0.75,
-  "tail": 0.3
+  "tail": 0.3,
+  "model": {
+    "base": "smg", "receiver": "slab", "receiverLength": 0.17, "receiverHeight": 0.1, "receiverWidth": 0.058,
+    "handguard": "none", "barrelLength": 0.07, "mag": "grip", "magLength": 0.09, "stock": "wire",
+    "stockLength": 0.2, "foregrip": "strap", "bolt": "top", "finish": "gunmetal", "accentStyle": "mag"
+  }
 }

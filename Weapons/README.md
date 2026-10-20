@@ -166,13 +166,32 @@ Bots don't follow the pattern, but their aim is knocked by each shot from the sa
 
 ### Look
 
-The model is built procedurally from the class and these numbers (plus a few name hints: a name containing "Rotary", "Double", "Lever" or "Musket" gets those details).
+Without a `model` block the gun is built from its class and these numbers (plus a few name hints: a name containing "Rotary", "Double", "Lever" or "Musket" gets those details). Every shipped weapon has a `model` block instead (below), so each one has its own silhouette.
 
 | Field | Meaning | Default | Usual | Allowed |
 | --- | --- | --- | --- | --- |
 | `length` | Overall length in metres. | `0.42` | 0.15-0.86 | 0.1-1.5 |
 | `bulk` | Thickness multiplier for the receiver and furniture. | `1` | 0.75-1.7 | 0.3-3 |
 | `accent` | Accent colour: `[r, g, b]` with values 0-1, or `"#rrggbb"`. | `[0.95, 0.5, 0.15]` | | each 0-1 |
+
+#### The `model` block
+
+An optional object that says what the gun is made of. It starts from an archetype (`"base"`) and changes any part of it:
+
+```
+"model": { "base": "pump_shotgun", "barrelLength": 0.24, "stock": "crane", "muzzle": "breacher", "sideSaddle": true, "finish": "black" }
+```
+
+- **Archetypes** (`base`, default `rifle`): `pistol`, `revolver`, `derringer`, `smg`, `pdw`, `rifle`, `battle_rifle`, `bullpup`, `dmr`, `lever_rifle`, `bolt_sniper`, `pump_shotgun`, `semi_shotgun`, `double_barrel`, `drum_shotgun`, `lever_shotgun`, `lmg`, `rotary`, `musket`, `coil_rifle`, `energy`, `tool`, `toy`. An archetype's sizes follow the weapon's `length` and `bulk`; sizes you write yourself are metres, angles are degrees.
+- **Receiver:** `receiver` (box, slab, round, slide, revolver, bullpup, lever, break, tool, toy, sci), `receiverLength`, `receiverHeight`, `receiverWidth`, `topRail`, `bolt` (none, side, rear, charging, top), `hammer`, `lever`, `canister`, `sideSaddle`.
+- **Barrel:** `barrels` (1-8), `barrelLayout` (single, side, over, rotary), `barrelStyle` (round, square, fluted), `barrelLength`, `barrelWidth`, `shroud` (none, jacket, perforated, heatshield, suppressor, coils, rails) with `shroudLength` (fraction of the barrel), `gasBlock`, `ramrod`, `coils` (0-10), `muzzle` (none, crown, flash, brake, bell, comp, tip, breacher, ported; a muzzle attachment replaces it).
+- **Handguard:** `handguard` (none, rail, slim, ribbed, wood, quad, tube, forend, pump, stock), `handguardLength`, `handguardHeight`, `foregrip` (none, vertical, stub, folding, strap), `bipod` (none, folded, deployed).
+- **Stock and grip:** `stock` (none, fixed, crane, skeleton, folding, wire, wood, straight, thumbhole, chassis, bullpup, toy, spade), `stockLength`, `stockDrop`, `cheekRest`, `grip` (pistol, wood, straight, birdshead, none), `gripAngle`.
+- **Magazine:** `mag` (box, curved, stick, drum, tube, pan, topbox, side, internal, beltbox, helical, grip, cell, strip, striker, none), `magLength` (0 = from the magazine size), `magOffset`, `magAngle`.
+- **Sights:** `sights` (post, tall, bead, aperture, ghost, none), `carryHandle`. Iron sights and carry handles come off when an optic is fitted, and anything that would reach into the optic is trimmed to the rail.
+- **Colours:** `finish`, `furniture`, `magColor`: `accent`, a name (black, gunmetal, steel, chrome, brass, copper, polymer, tan, olive, wood, darkwood, lightwood, white, rust, orange, yellow), `[r, g, b]` or `"#rrggbb"`; `accentStyle` (none, stripe, mag, panel, glow, tips, bands) says where the accent colour shows.
+
+The hands follow the model (grip, handguard or pump, magazine). `tools/gunviz/viz.py` (Python + Pillow) draws contact sheets of every gun from these blocks, side and top views, to design with.
 
 ### Sound
 

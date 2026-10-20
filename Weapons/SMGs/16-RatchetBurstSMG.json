@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.28,
   "bright": 0.7,
-  "tail": 0.35
+  "tail": 0.35,
+  "model": {
+    "base": "smg", "receiver": "slab", "receiverLength": 0.2, "receiverHeight": 0.14, "receiverWidth": 0.06,
+    "barrelLength": 0.12, "handguard": "rail", "handguardLength": 0.07, "mag": "stick", "magOffset": -0.03,
+    "magAngle": -12, "stock": "folding", "topRail": true, "finish": "white", "furniture": "black",
+    "accentStyle": "stripe"
+  }
 }

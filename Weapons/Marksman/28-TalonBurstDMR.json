@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.6,
   "bright": 0.55,
-  "tail": 0.7
+  "tail": 0.7,
+  "model": {
+    "base": "bullpup", "receiverLength": 0.45, "receiverHeight": 0.115, "barrelLength": 0.28, "handguard": "slim",
+    "handguardLength": 0.12, "finish": "white", "furniture": "gunmetal", "mag": "cell", "magLength": 0.09,
+    "accentStyle": "glow", "muzzle": "comp", "cheekRest": true
+  }
 }

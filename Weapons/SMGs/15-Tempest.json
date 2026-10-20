@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.38,
   "bright": 0.55,
-  "tail": 0.4
+  "tail": 0.4,
+  "model": {
+    "base": "smg", "receiverLength": 0.2, "receiverHeight": 0.095, "handguard": "none", "barrelLength": 0.15,
+    "shroud": "perforated", "shroudLength": 0.55, "foregrip": "vertical", "stock": "wood", "stockLength": 0.24,
+    "mag": "drum", "magOffset": 0.01, "finish": "steel", "furniture": "wood", "muzzle": "comp", "bolt": "top",
+    "accentStyle": "none"
+  }
 }

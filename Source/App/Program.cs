@@ -1785,7 +1785,9 @@ public static unsafe partial class Program
         });
         var pose = _vmAnim.GunPose;
 
+        (GunModel.MagOffset, GunModel.MagHidden) = (_vmAnim.MagOffset, _vmAnim.MagHidden); // the magazine comes out during a reload
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
+        (GunModel.MagOffset, GunModel.MagHidden) = (Vector3.Zero, false);
         _vmAnim.DrawArms(Gfx, ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f)));
     }
 

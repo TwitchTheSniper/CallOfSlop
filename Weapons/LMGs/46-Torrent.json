@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.5,
   "bright": 0.55,
-  "tail": 0.6
+  "tail": 0.6,
+  "model": {
+    "base": "lmg", "receiver": "box", "receiverHeight": 0.11, "receiverWidth": 0.072, "handguard": "rail",
+    "handguardLength": 0.2, "shroud": "none", "mag": "drum", "stock": "crane", "carryHandle": false,
+    "sights": "tall", "topRail": false, "bipod": "folded", "finish": "black", "furniture": "olive",
+    "accentStyle": "mag"
+  }
 }

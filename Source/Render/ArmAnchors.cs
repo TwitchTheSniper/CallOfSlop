@@ -77,8 +77,9 @@ public struct ArmAnchorSet
 
 /// <summary>
 /// Where the hands go on today's box guns (<see cref="GunModel"/>), for every class including the specials and the
-/// attachments that change the shape (foregrips, laser, magazines, heavy barrel). Positions follow the same
-/// proportions GunModel draws with, so they stay right when weapon files change length or bulk.
+/// attachments that change the shape (foregrips, laser, magazines, heavy barrel). Guns built from a "model" block
+/// take their grip, support and magazine spots straight from the built model (<see cref="GunModel.HandPoints"/>);
+/// the rest follow the same proportions the per-class models are drawn with.
 /// </summary>
 public static class ArmAnchors
 {
@@ -86,7 +87,8 @@ public static class ArmAnchors
 
     /// <summary>The reload animation a weapon uses.</summary>
     public static ReloadStyle StyleOf(WeaponDef d) =>
-        d.Class switch
+        d.Model?.Mag == "tube" && d.Class != WeaponClass.Shotgun ? ReloadStyle.TubeShells // a tube-fed lever rifle loads round by round
+        : d.Class switch
         {
             WeaponClass.Pistol => d.Mag <= 6 ? ReloadStyle.Revolver : ReloadStyle.PistolMag,
             WeaponClass.Shotgun when d.Name.Contains("Double") => ReloadStyle.BreakOpen,
@@ -100,7 +102,7 @@ public static class ArmAnchors
 
     /// <summary>Angle of the pistol grip (radians about X), which the grip hand follows.</summary>
     public static float GripAngle(WeaponDef d) =>
-        d.Class switch
+        GunModel.Mesh(d) is { } m ? -m.GripAngle : d.Class switch
         {
             WeaponClass.Pistol => -0.25f,
             WeaponClass.Shotgun => -0.35f,
@@ -116,6 +118,8 @@ public static class ArmAnchors
     /// </summary>
     public static (Vector3 Grip, Vector3 Support, Vector3 MagWell) HandPoints(WeaponDef d)
     {
+        if (GunModel.HandPoints(d) is { } built)
+            return built;
         var (recvLen, recvH, recvW, barrelLen, barrelW0, guardLen, guardH) = GunModel.Dims(d);
         var front = -recvLen * 0.62f;
         var back = recvLen * 0.38f;
@@ -215,14 +219,22 @@ public static class ArmAnchors
         var top = recvH * 0.5f;
         var front = -recvLen * 0.62f;
         var back = recvLen * 0.38f;
+        var built = GunModel.Mesh(d);
+        if (built != null)
+            (recvLen, recvH, recvW, top, front, back) = (built.RecvLen, built.RecvH, built.RecvW, built.Top, built.Front, built.Back);
         var cls = d.Class;
         a.Style = StyleOf(d);
         a.GripRot = Quaternion.CreateFromAxisAngle(Vector3.UnitX, GripAngle(d));
-        a.SupportShape = cls == WeaponClass.Pistol ? HandShape.Cup : Att(d, AttachSlot.Underbarrel) == "Vertical Grip" ? HandShape.Wrap : HandShape.Under;
-        a.SupportRot = cls == WeaponClass.Pistol ? a.GripRot : Quaternion.Identity;
+        // A handgun's off hand cups the grip, unless the model gives it a foregrip of its own.
+        var cup = cls == WeaponClass.Pistol && (a.Support - a.Grip).Length() < 0.04f;
+        a.SupportShape = cup ? HandShape.Cup : Att(d, AttachSlot.Underbarrel) == "Vertical Grip" || (built != null && cls == WeaponClass.Pistol) ? HandShape.Wrap : HandShape.Under;
+        a.SupportRot = cup ? a.GripRot : Quaternion.Identity;
         a.Action = cls switch
         {
             WeaponClass.Pistol => new Vector3(0, top + 0.004f, back - 0.015f), // slide rear / hammer
+            WeaponClass.Sniper when built != null => built.Spec!.Bolt == "side"
+                ? new Vector3(recvW * 0.5f + 0.055f, built.Bore - 0.006f, back - 0.03f) // bolt knob
+                : new Vector3(0, top + 0.01f, back - 0.03f), // charging handle
             WeaponClass.Sniper => new Vector3(recvW * 0.7f + 0.035f, recvH * 0.08f + 0.012f, back - 0.03f), // bolt knob
             WeaponClass.LMG => new Vector3(0, top + 0.01f, front + recvLen * 0.35f), // feed cover
             WeaponClass.Shotgun => a.Support, // pump
@@ -235,7 +247,7 @@ public static class ArmAnchors
             WeaponClass.Shotgun or WeaponClass.Sniper => front - barrelLen,
             _ => front - guardLen - barrelLen,
         };
-        a.Muzzle = new Vector3(0, barrelY, muzzleZ);
+        a.Muzzle = built != null ? new Vector3(0, built.Bore, built.MuzzleZ) : new Vector3(0, barrelY, muzzleZ);
         a.MagShape = a.Style switch
         {
             ReloadStyle.PistolMag or ReloadStyle.TubeShells => HandShape.Under,
@@ -244,9 +256,11 @@ public static class ArmAnchors
         };
         a.MagRot = a.Style == ReloadStyle.Revolver ? Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2) : Quaternion.Identity;
         a.ActionRot = cls == WeaponClass.Sniper ? Quaternion.CreateFromAxisAngle(Vector3.UnitZ, -0.5f) : Quaternion.Identity;
-        if (a.MagShape == HandShape.Wrap && cls is not (WeaponClass.LMG or WeaponClass.Shotgun))
+        if (a.MagShape == HandShape.Wrap && cls is not (WeaponClass.LMG or WeaponClass.Shotgun) && a.MagWell.Y < -recvH * 0.3f)
         {
             a.SupportAds = a.MagWell; // a "mag grip": the hand drops below the lens
+            if (built != null)
+                a.SupportAds.Y -= 0.04f; // built models give the top of the magazine: hold it lower down
             a.SupportAdsShape = HandShape.Wrap;
         }
         else

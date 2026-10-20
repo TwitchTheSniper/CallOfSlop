@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CallOfSlop;
 
@@ -17,6 +18,10 @@ namespace CallOfSlop;
 /// thin window frame). The lens, tint and reticle are then drawn flat in the HUD pass by
 /// <see cref="ScopeOverlay"/> from <see cref="Look"/>, centred on the screen where the sight line is.
 /// Fitting any optic removes the parts it would clash with (iron sights, LMG carry handles).
+///
+/// Weapons whose file has a "model" block (all the shipped ones) are built by <see cref="GunBuilder"/> instead of the
+/// per-class code below: their receiver, barrels, handguard, magazine, stock and grip come from the block, so every gun
+/// has its own silhouette. The optics, the muzzle flash and the sight maths are shared by both paths.
 /// </summary>
 public static class GunModel
 {
@@ -41,6 +46,18 @@ public static class GunModel
     /// sight line: <see cref="SightHeight"/> and <see cref="AdsZ"/> don't read it.
     /// </summary>
     public static float AdsCutaway;
+
+    /// <summary>
+    /// Reload animation of the first-person gun: the detachable magazine is drawn moved by this much (gun space), or not at
+    /// all when <see cref="MagHidden"/> (it's out of the gun while the off hand brings the fresh one). Program sets both from
+    /// the <see cref="ViewModelAnimator"/> around the first-person draw and clears them after. Never used when recording parts.
+    /// </summary>
+    public static Vector3 MagOffset;
+
+    /// <inheritdoc cref="MagOffset"/>
+    public static bool MagHidden;
+
+    private static bool _inMag;
 
     /// <summary>The cut-away for an aim-down-sights blend: none at the hip, complete by 85% aimed.</summary>
     public static float CutawayFor(float aimT) => SmoothStep(0.5f, 0.85f, aimT);
@@ -129,6 +146,35 @@ public static class GunModel
         return list;
     }
 
+    // ---- Built models (weapons with a "model" block) ----------------------------------------
+
+    private static readonly ConditionalWeakTable<WeaponDef, GunMesh> Meshes = new();
+
+    /// <summary>
+    /// The gun's built body (cached per weapon copy, rebuilt if its kit or optic changes), or null for a weapon
+    /// without a "model" block, which is drawn by the per-class code.
+    /// </summary>
+    public static GunMesh? Mesh(WeaponDef d)
+    {
+        if (d.Model == null)
+            return null;
+        if (Meshes.TryGetValue(d, out var m) && m.Spec == d.Model && m.Kit == d.Kit && m.Optic == d.Optic && m.AdsZoom == d.AdsZoom)
+            return m;
+        m = GunBuilder.Build(d);
+        Meshes.AddOrUpdate(d, m);
+        return m;
+    }
+
+    /// <summary>Any scope or sight on top: an optic attachment or a built-in scope (iron sights and carry handles come off).</summary>
+    public static bool HasScope(WeaponDef d) => d.Optic != OpticKind.Iron || BuiltInScope(d);
+
+    /// <summary>
+    /// Where the hands go on a built model, in gun-local space: the pistol grip (or the stock's wrist), the off hand's spot
+    /// (handguard, pump, forend or foregrip; cupping the grip on a handgun) and the magazine (or the loading port, breech or
+    /// cylinder). Null for a weapon without a "model" block (<see cref="ArmAnchors"/> works those out from the class).
+    /// </summary>
+    public static (Vector3 Grip, Vector3 Support, Vector3 MagWell)? HandPoints(WeaponDef d) => Mesh(d) is { } m ? (m.Grip, m.Support, m.MagWell) : null;
+
     /// <summary>
     /// The top of the receiver, where an optic's rail or base sits. On the round sniper receiver and on
     /// revolvers (over the cylinder) that is above the round part's corners.
@@ -182,6 +228,11 @@ public static class GunModel
     /// <summary>Height of the sight line above the grip: the viewmodel puts this at the centre of the screen when aiming.</summary>
     public static float SightHeight(WeaponDef d)
     {
+        if (Mesh(d) is { } gm)
+        {
+            var o = OpticRise(d.Optic);
+            return o > 0 ? gm.Mount + o : BuiltInScope(d) ? gm.Mount + 0.05f : gm.Iron;
+        }
         var f = FrameFor(d);
         var top = f.RecvH * 0.5f;
         var mount = MountTop(d, f);
@@ -200,9 +251,26 @@ public static class GunModel
         };
     }
 
+    /// <summary>How far each optic's sight line sits above the mount (0 = no optic).</summary>
+    private static float OpticRise(OpticKind k) => k switch
+    {
+        OpticKind.RedDot => 0.035f,
+        OpticKind.MiniDot => 0.026f,
+        OpticKind.Holo => 0.04f,
+        OpticKind.Prism2 => 0.042f,
+        OpticKind.Acog => 0.045f,
+        OpticKind.Hybrid3 => 0.045f,
+        OpticKind.Lpvo6 => 0.05f,
+        OpticKind.Scope4 or OpticKind.Scope8 => 0.055f,
+        OpticKind.Scope12 => 0.062f,
+        _ => 0f,
+    };
+
     /// <summary>Where the optic sits along the gun (model Z), shared by drawing and the aim distance.</summary>
     private static float OpticZ(WeaponDef d)
     {
+        if (Mesh(d) is { } gm)
+            return gm.OpticZ;
         var f = FrameFor(d);
         return d.Class == WeaponClass.Pistol ? f.RecvLen * 0.38f - f.RecvLen * 0.35f : -f.RecvLen * 0.12f + 0.01f;
     }
@@ -285,6 +353,12 @@ public static class GunModel
         {
             Record(m, mode == 2 || alpha < 0.999f);
             return;
+        }
+        if (_inMag)
+        {
+            if (MagHidden)
+                return;
+            m *= Matrix4x4.CreateTranslation(MagOffset);
         }
         _g.Draw(m * _pose, c, alpha, mode);
     }
@@ -370,6 +444,11 @@ public static class GunModel
     {
         _g = g;
         _pose = pose;
+        if (Mesh(d) is { } built)
+        {
+            DrawBuilt(d, built, flash, time);
+            return;
+        }
         var f = FrameFor(d);
         var top = f.RecvH * 0.5f;
         var recvFront = -f.RecvLen * 0.62f;
@@ -430,7 +509,10 @@ public static class GunModel
         }
 
         // ---- Optics --------------------------------------------------------------------
-        DrawOptic(d, f, top, recvFront, recvBack);
+        var mountTop = d.Optic != OpticKind.Iron ? MountTop(d, f) : top;
+        if (d.Optic != OpticKind.Iron && d.Class != WeaponClass.Pistol)
+            DrawRail(f.RecvW * 0.5f, mountTop, recvFront + f.RecvLen * 0.1f, recvBack - f.RecvLen * 0.1f);
+        DrawOptic(d, mountTop, OpticZ(d));
 
         // ---- Underbarrel -----------------------------------------------------------------
         var ubZ = d.Class == WeaponClass.Pistol ? recvFront + 0.04f : recvFront - f.GuardLen * 0.45f;
@@ -458,16 +540,60 @@ public static class GunModel
 
         // ---- Muzzle flash ------------------------------------------------------------------
         if (flash && _record == null)
+            DrawFlash(d, barrelY, muzzleZ, time);
+    }
+
+    private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time)
+    {
+        _g.SetBlend(true);
+        var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
+        if (d.Suppressor)
+            size *= 0.4f;
+        var color = d.Sound == SoundStyle.Zap ? CyanGlow : new Vector3(1f, 0.85f, 0.3f);
+        _g.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, barrelY, muzzleZ - size * 0.4f) * _pose, color,
+            d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f, mode: 2);
+        _g.SetBlend(false);
+    }
+
+    /// <summary>A gun built from its "model" block: the cached body boxes, then the optic and the flash.</summary>
+    private static void DrawBuilt(WeaponDef d, GunMesh m, bool flash, float time)
+    {
+        var parts = m.Parts;
+        for (var i = 0; i < parts.Length; i++)
         {
-            _g.SetBlend(true);
-            var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
-            if (d.Suppressor)
-                size *= 0.4f;
-            var color = d.Sound == SoundStyle.Zap ? CyanGlow : new Vector3(1f, 0.85f, 0.3f);
-            _g.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, barrelY, muzzleZ - size * 0.4f) * _pose, color,
-                d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f, mode: 2);
-            _g.SetBlend(false);
+            ref readonly var pt = ref parts[i];
+            if (_record != null)
+            {
+                Record(m.Matrices[i], pt.Mode == 2 || pt.Alpha < 0.999f);
+                continue;
+            }
+            var blend = (pt.Flags & GunPartFlags.Blend) != 0;
+            var model = m.Matrices[i];
+            if ((pt.Flags & GunPartFlags.Mag) != 0)
+            {
+                if (MagHidden)
+                    continue;
+                model.Translation += MagOffset;
+            }
+            if (blend)
+                _g.SetBlend(true);
+            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode);
+            if (blend)
+                _g.SetBlend(false);
         }
+        if (d.Optic != OpticKind.Iron)
+            DrawRail(m.RailWidth, m.Mount, m.RailFront, m.RailBack);
+        DrawOptic(d, m.Mount, m.OpticZ);
+        if (flash && _record == null)
+            DrawFlash(d, m.Bore, m.MuzzleZ, time);
+    }
+
+    /// <summary>The optic's rail (part of the optic: it only appears with one fitted).</summary>
+    private static void DrawRail(float width, float mount, float front, float back)
+    {
+        _inOptic = true;
+        Box(width, 0.008f, back - front, 0, mount + 0.004f, (front + back) / 2, Dark * 1.5f);
+        _inOptic = false;
     }
 
     // ---- Classes ------------------------------------------------------------------------
@@ -501,6 +627,7 @@ public static class GunModel
             }
         }
         // Magazine
+        _inMag = !revolver;
         var mag = Att(d, AttachSlot.Magazine);
         var baseY = -f.RecvH * 0.5f - 0.11f;
         if (mag == "Extended Mag")
@@ -509,6 +636,7 @@ public static class GunModel
             Box(f.RecvW * 1.1f, 0.025f, 0.06f, 0, baseY, back - 0.005f, d.Accent, rotX: -0.25f);
         else
             Box(f.RecvW, 0.016f, 0.058f, 0, baseY + 0.005f, back - 0.005f, d.Accent * 0.9f, rotX: -0.25f);
+        _inMag = false;
         return front - (revolver ? 0.05f : 0.01f);
     }
 
@@ -588,7 +716,9 @@ public static class GunModel
             }
         }
 
+        _inMag = true;
         DrawMagazine(d, f, front, back);
+        _inMag = false;
         DrawStock(d, f, back, cls switch
         {
             WeaponClass.SMG => StockStyle.Folding,
@@ -620,8 +750,10 @@ public static class GunModel
             var tubeLen = barrelLen * (mag == "Extended Mag" ? 0.95f : 0.75f);
             if (d.Mag >= 10 && mag != "Extended Mag")
             {
+                _inMag = true;
                 Box(0.07f, 0.13f, 0.13f, 0, -f.RecvH * 0.5f - 0.06f, front + 0.04f, d.Accent * 0.8f); // drum (Street Sweeper)
                 Box(0.07f, 0.13f, 0.13f, 0, -f.RecvH * 0.5f - 0.06f, front + 0.04f, d.Accent * 0.72f, rotX: MathF.PI / 4);
+                _inMag = false;
             }
             else
                 Cyl(barrelW * 0.4f, tubeLen, 0, barrelY - barrelW * 0.95f, front - tubeLen / 2, Dark * 0.9f); // magazine tube
@@ -656,7 +788,11 @@ public static class GunModel
             Box(0.008f, 0.008f, 0.14f, -0.022f, -f.RecvH * 0.48f, front - barrelLen * 0.35f, Metal * 0.6f);
         }
         if (d.Mag > 1)
+        {
+            _inMag = true;
             DrawMagazine(d, f, front, back);
+            _inMag = false;
+        }
         DrawStock(d, f, back, StockStyle.Wood);
         return front - barrelLen;
     }
@@ -773,14 +909,10 @@ public static class GunModel
         }
     }
 
-    private static void DrawOptic(WeaponDef d, Frame f, float top, float front, float back)
+    /// <summary>The optic (or built-in scope) on its mount at height <paramref name="mount"/>, centred at <paramref name="z"/>.</summary>
+    private static void DrawOptic(WeaponDef d, float mount, float z)
     {
         _inOptic = true;
-        var z = OpticZ(d);
-        var hasOptic = d.Optic != OpticKind.Iron;
-        var mount = hasOptic ? MountTop(d, f) : top;
-        if (hasOptic && d.Class != WeaponClass.Pistol)
-            Box(f.RecvW * 0.5f, 0.008f, f.RecvLen * 0.8f, 0, mount + 0.004f, (front + back) / 2, Dark * 1.5f); // rail
         var sight = SightHeight(d);
         var cut = AdsCutaway;
         switch (d.Optic)
@@ -896,7 +1028,7 @@ public static class GunModel
                 break;
             default:
                 if (BuiltInScope(d))
-                    DrawScope(0.85f, top, sight, z);
+                    DrawScope(0.85f, mount, sight, z);
                 break;
         }
         _inOptic = false;

@@ -36,5 +36,8 @@
   "sound": "Pneumatic",
   "caliber": 0.3,
   "bright": 0.5,
-  "tail": 0.2
+  "tail": 0.2,
+  "model": {
+    "base": "tool"
+  }
 }

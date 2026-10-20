@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.9,
   "bright": 0.4,
-  "tail": 0.8
+  "tail": 0.8,
+  "model": {
+    "base": "double_barrel", "furniture": "darkwood", "finish": "steel"
+  }
 }

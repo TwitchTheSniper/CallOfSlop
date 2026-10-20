@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.85,
   "bright": 0.5,
-  "tail": 1
+  "tail": 1,
+  "model": {
+    "base": "bolt_sniper"
+  }
 }

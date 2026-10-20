@@ -36,5 +36,8 @@
   "sound": "Zap",
   "caliber": 0.9,
   "bright": 0.8,
-  "tail": 0.8
+  "tail": 0.8,
+  "model": {
+    "base": "coil_rifle"
+  }
 }

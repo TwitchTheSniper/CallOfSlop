@@ -36,5 +36,11 @@
   "sound": "Suppressed",
   "caliber": 0.4,
   "bright": 0.3,
-  "tail": 0.25
+  "tail": 0.25,
+  "model": {
+    "base": "rifle", "receiverLength": 0.22, "barrelLength": 0.4, "barrelWidth": 0.031, "shroud": "suppressor",
+    "shroudLength": 0.9, "handguard": "wood", "handguardLength": 0.15, "handguardHeight": 0.075,
+    "stock": "thumbhole", "stockLength": 0.24, "mag": "stick", "magLength": 0.1, "finish": "black",
+    "furniture": "darkwood", "accentStyle": "none", "sights": "tall"
+  }
 }

@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.66,
   "bright": 0.5,
-  "tail": 0.7
+  "tail": 0.7,
+  "model": {
+    "base": "battle_rifle", "carryHandle": true, "handguard": "slim", "handguardLength": 0.2, "furniture": "black",
+    "finish": "gunmetal", "stock": "fixed", "stockLength": 0.25, "mag": "box", "magLength": 0.12, "magAngle": 5,
+    "sights": "post", "gasBlock": false, "accentStyle": "mag"
+  }
 }

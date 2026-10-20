@@ -36,5 +36,8 @@
   "sound": "Gun",
   "caliber": 0.25,
   "bright": 0.65,
-  "tail": 0.35
+  "tail": 0.35,
+  "model": {
+    "base": "pistol", "finish": "black", "furniture": "polymer", "accentStyle": "none", "sights": "post"
+  }
 }

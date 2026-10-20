@@ -36,5 +36,10 @@
   "sound": "Gun",
   "caliber": 0.35,
   "bright": 0.55,
-  "tail": 0.4
+  "tail": 0.4,
+  "model": {
+    "base": "pistol", "receiverLength": 0.25, "receiverHeight": 0.082, "receiverWidth": 0.054,
+    "barrelLength": 0.035, "barrelWidth": 0.024, "muzzle": "crown", "topRail": true, "finish": "gunmetal",
+    "furniture": "tan", "accentStyle": "none", "gripAngle": 12
+  }
 }

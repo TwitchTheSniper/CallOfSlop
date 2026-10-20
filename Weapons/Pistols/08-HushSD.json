@@ -36,5 +36,9 @@
   "sound": "Suppressed",
   "caliber": 0.25,
   "bright": 0.3,
-  "tail": 0.2
+  "tail": 0.2,
+  "model": {
+    "base": "pistol", "receiverLength": 0.19, "barrelLength": 0.15, "barrelWidth": 0.02, "shroud": "suppressor",
+    "shroudLength": 1.0, "finish": "black", "furniture": "polymer", "accentStyle": "none", "sights": "none"
+  }
 }

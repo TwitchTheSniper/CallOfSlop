@@ -36,5 +36,9 @@
   "sound": "Gun",
   "caliber": 0.15,
   "bright": 0.75,
-  "tail": 0.25
+  "tail": 0.25,
+  "model": {
+    "base": "pistol", "receiverLength": 0.2, "magLength": 0.07, "muzzle": "comp", "foregrip": "stub",
+    "finish": "black", "furniture": "polymer", "accentStyle": "stripe"
+  }
 }

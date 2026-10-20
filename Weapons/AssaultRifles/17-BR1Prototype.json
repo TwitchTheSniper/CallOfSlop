@@ -36,5 +36,11 @@
   "sound": "Gun",
   "caliber": 0.45,
   "bright": 0.55,
-  "tail": 0.5
+  "tail": 0.5,
+  "model": {
+    "base": "rifle", "receiverLength": 0.18, "handguard": "wood", "handguardLength": 0.17, "handguardHeight": 0.06,
+    "stock": "straight", "grip": "straight", "stockLength": 0.25, "stockDrop": 6, "mag": "box", "magLength": 0.07,
+    "barrelLength": 0.3, "finish": "gunmetal", "furniture": "wood", "sights": "aperture", "bolt": "side",
+    "accentStyle": "mag"
+  }
 }
