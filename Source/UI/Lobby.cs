@@ -151,19 +151,13 @@ public sealed partial class Ui
                     ModePicker(s);
                     MapPicker(s);
                     ImGui.SetNextItemWidth(260 * _scale);
-<<<<<<< HEAD
                     ImGui.SliderInt("Bots"u8, ref s.Bots, 0, Game.MaxPlayers - 1);
                     if (s.Bots == 0)
                         TestModeHint();
                     else
-=======
-                    ImGui.SliderInt("Bots"u8, ref s.Bots, 1, Game.MaxPlayers - 1);
-                    DifficultyPicker(ref s.Difficulty);
-                    ImGuiSafe.TextColored(Dim, s.Difficulty switch
->>>>>>> fix/text-cleanup
                     {
                         DifficultyPicker(ref s.Difficulty);
-                        ImGui.TextColored(Dim, s.Difficulty switch
+                        ImGuiSafe.TextColored(Dim, s.Difficulty switch
                         {
                             BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
                             BotDifficulty.Normal => "A fair fight.",
