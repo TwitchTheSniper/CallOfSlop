@@ -345,6 +345,8 @@ public static unsafe partial class Program
     /// Smoke step on the first map, after the play screenshot: the nearest bot kills you, and 2.2 s later
     /// (the death cam has turned to face it, the kill card is up) a screenshot. Then the usual steps go on.
     /// </summary>
+    private static double _smokeDeathAt;
+
     private static void SmokeDeathCam(double now, double t)
     {
         var game = _session;
@@ -354,15 +356,16 @@ public static unsafe partial class Program
                 var bot = game?.DebugKillLocalByBot(now);
                 Console.WriteLine(bot != null ? $"[smoke] death cam: killed by {game!.NameOf(bot.Id)} ({bot.WeaponDef.Name})" : "[smoke] death cam: no bot could kill you (skipped)");
                 _smokeDeathCam = bot != null ? 1 : 3;
+                _smokeDeathAt = now;
                 break;
-            case 1 when t > 8.7:
+            case 1 when now - _smokeDeathAt > 2.2: // the camera has turned to the killer and the kill card is up
                 SmokeShot("deathcam");
                 var info = _deathCam.Info;
                 Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
                     + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
                 _smokeDeathCam++;
                 break;
-            case 2 when t > 8.9:
+            case 2 when now - _smokeDeathAt > 2.4:
                 _smokeDeathCam++;
                 _smokeStepStart += 2.5; // the usual steps carry on where they were
                 break;
