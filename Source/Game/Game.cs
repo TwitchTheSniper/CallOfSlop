@@ -539,8 +539,8 @@ public sealed partial class Game : IDisposable
     {
         if (Local is { Alive: true })
             return;
-        if (Net.IsOffline)
-            SetReady(true); // single player: Respawn during the warmup starts the countdown
+        if (Net.IsOffline || SoloMatch)
+            SetReady(true); // single player (or hosting alone): Respawn during the warmup starts the countdown
         if (IsServer)
         {
             if (Local is { } me)
@@ -1326,6 +1326,9 @@ public sealed partial class Game : IDisposable
                 }
                 break;
             }
+            case (byte)Msg.Suicide when IsServer:
+                OnSuicidePacket(sender, now);
+                break;
             case (byte)Msg.Respawn when IsServer:
             {
                 if (_clients.TryGetValue(sender.G, out var c) && Players.TryGetValue(c.Id, out var p) && !p.Alive)
