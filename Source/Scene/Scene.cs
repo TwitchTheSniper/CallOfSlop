@@ -51,7 +51,18 @@ public sealed class Scene
     internal void Enqueue(SceneNode n)
     {
         if (_dirtyCount == _dirty.Length)
-            Array.Resize(ref _dirty, _dirty.Length * 2);
+        {
+            // Drop entries already cleaned by DrawList.UpdateAndFlatten before growing, so the queue stays as small as
+            // the number of dirty nodes even if UpdateTransforms is called rarely.
+            var k = 0;
+            for (var i = 0; i < _dirtyCount; i++)
+                if (_dirty[i]._dirty && ReferenceEquals(_dirty[i]._scene, this))
+                    _dirty[k++] = _dirty[i];
+            Array.Clear(_dirty, k, _dirtyCount - k);
+            _dirtyCount = k;
+            if (_dirtyCount > _dirty.Length / 2)
+                Array.Resize(ref _dirty, _dirty.Length * 2);
+        }
         _dirty[_dirtyCount++] = n;
     }
 

@@ -631,17 +631,17 @@ public static partial class SelfTest
             ent.RenderYaw = f * 0.02f;
             turret.Pose(ent, Vector3.One, true, input.Now);
             t = Mark(3, t);
-            scene.UpdateTransforms();
-            t = Mark(4, t);
-            list.Clear();
-            list.Flatten(vm.Camera);
+            list.Clear(); // as the game does it: one update + flatten walk per rig, then drain the queue
+            list.UpdateAndFlatten(vm.Camera);
             for (var k = 0; k < rigs.Length; k++)
-                list.Flatten(rigs[k].Root);
+                list.UpdateAndFlatten(rigs[k].Root);
             if (movers != null)
-                list.Flatten(movers.Root);
-            list.Flatten(turret.Base);
+                list.UpdateAndFlatten(movers.Root);
+            list.UpdateAndFlatten(turret.Base);
             draws = list.Count;
-            Mark(5, t);
+            t = Mark(5, t);
+            scene.UpdateTransforms();
+            Mark(4, t);
         }
 
         for (var f = 0; f < 1200; f++)
@@ -679,15 +679,24 @@ public static partial class SelfTest
         var bigList = new DrawList();
         var updated = 0;
         long updTicks = 0, flatTicks = 0;
-        void BigFrame(int f, bool move)
+        void BigFrame(int f, bool move, bool fused)
         {
             var t0 = Stopwatch.GetTimestamp();
             if (move)
                 for (var r = 0; r < roots.Length; r++)
                     roots[r].SetLocal(new Vector3(r, 0, f * 0.01f), Quaternion.CreateFromAxisAngle(Vector3.UnitY, f * 0.01f + r), Vector3.One);
+            bigList.Clear();
+            if (fused)
+            {
+                updated = 0;
+                for (var r = 0; r < roots.Length; r++)
+                    updated += bigList.UpdateAndFlatten(roots[r]);
+                big.UpdateTransforms(); // drains the (already clean) queue
+                updTicks += Stopwatch.GetTimestamp() - t0;
+                return;
+            }
             updated = big.UpdateTransforms();
             var t1 = Stopwatch.GetTimestamp();
-            bigList.Clear();
             for (var r = 0; r < roots.Length; r++)
                 bigList.Flatten(roots[r]);
             var t2 = Stopwatch.GetTimestamp();
@@ -696,16 +705,19 @@ public static partial class SelfTest
         }
 
         for (var f = 0; f < 100; f++)
-            BigFrame(f, true);
+        {
+            BigFrame(f, true, false);
+            BigFrame(f, true, true);
+        }
         var samples = new double[15];
-        (double Total, double Update, double Flatten) Median(bool move)
+        (double Total, double Update, double Flatten) Median(bool move, bool fused)
         {
             updTicks = flatTicks = 0;
             for (var s = 0; s < samples.Length; s++)
             {
                 var t0 = Stopwatch.GetTimestamp();
                 for (var f = 0; f < 20; f++)
-                    BigFrame(s * 20 + f, move);
+                    BigFrame(s * 20 + f, move, fused);
                 samples[s] = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / 20;
             }
             Array.Sort(samples);
@@ -714,21 +726,23 @@ public static partial class SelfTest
         }
 
         var bigBefore = GC.GetAllocatedBytesForCurrentThread();
-        var moving = Median(true);
+        var separate = Median(true, false);
+        var sepUpdated = updated;
+        var moving = Median(true, true);
         var movingUpdated = updated;
-        var still = Median(false);
+        var still = Median(false, true);
         var bigAlloc = GC.GetAllocatedBytesForCurrentThread() - bigBefore;
-        if (movingUpdated != nodes)
-            Fail($"10k benchmark: {movingUpdated} of {nodes} nodes updated with every root moving");
+        if (movingUpdated != nodes || sepUpdated != nodes)
+            Fail($"10k benchmark: {movingUpdated} (fused) / {sepUpdated} (separate) of {nodes} nodes updated with every root moving");
         if (updated != 0)
             Fail($"10k benchmark: {updated} nodes updated with nothing moving");
         if (bigAlloc > 0)
             Fail($"10k benchmark allocates {bigAlloc} bytes");
         if (moving.Total > 0.3)
             Fail($"10k nodes update + flatten takes {moving.Total:0.000} ms per frame (budget 0.3 ms)");
-        Line($"  {nodes} nodes ({bigList.Count} boxes): update + flatten {moving.Total * 1000:0} us per frame with everything moving "
-             + $"(update {moving.Update * 1000:0}, flatten {moving.Flatten * 1000:0}), {still.Total * 1000:0} us when nothing moved");
-        Line($"[scene] perf: {nodes} nodes update+flatten {moving.Total * 1000:0} us all moving (update {moving.Update * 1000:0} + flatten {moving.Flatten * 1000:0}), "
+        Line($"  {nodes} nodes ({bigList.Count} boxes): update + flatten {moving.Total * 1000:0} us per frame with everything moving (one walk; as two passes "
+             + $"{separate.Total * 1000:0} us = update {separate.Update * 1000:0} + flatten {separate.Flatten * 1000:0}), {still.Total * 1000:0} us when nothing moved");
+        Line($"[scene] perf: {nodes} nodes update+flatten {moving.Total * 1000:0} us all moving (two passes {separate.Total * 1000:0} = {separate.Update * 1000:0} + {separate.Flatten * 1000:0}), "
              + $"{still.Total * 1000:0} us static; game-like frame {gameUs:0} us ({scene.CountNodes()} nodes, {draws} draws); allocations {allocated} + {bigAlloc} B");
     }
 }

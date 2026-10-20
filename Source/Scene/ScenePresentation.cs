@@ -43,6 +43,7 @@ public static class ScenePresentation
         }
         _frameTicks = 0;
         _frameNodes = _frameDraws = 0;
+        Scene.UpdateTransforms(); // anything posed but not drawn last frame (the draws already updated the rest)
     }
 
     /// <summary>One line for the smoke log: average nodes updated, draws and CPU per frame since the last read.</summary>
@@ -62,9 +63,8 @@ public static class ScenePresentation
 
     private static void Draw(Renderer g, SceneNode root, long t0)
     {
-        _frameNodes += Scene.UpdateTransforms();
         List.Clear();
-        List.Flatten(root);
+        _frameNodes += List.UpdateAndFlatten(root);
         _frameTicks += Stopwatch.GetTimestamp() - t0;
         _frameDraws += List.Count;
         List.Submit(g);

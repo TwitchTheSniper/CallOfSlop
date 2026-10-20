@@ -374,6 +374,42 @@ public sealed class SceneNode
         return n;
     }
 
+    /// <summary>
+    /// Update and flatten in one walk (see <see cref="DrawList.UpdateAndFlatten"/>): recomputes this node if it or an
+    /// ancestor on the way down was dirty, and appends it to <paramref name="list"/> if it's visible and draws something.
+    /// The parent's world matrix must be current.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    internal int UpdateFlatten(DrawList list, bool force, bool visible)
+    {
+        var n = 0;
+        if (force || _dirty)
+        {
+            if (_localStale)
+                ComposeLocal();
+            if (_parent == null)
+                _world = _local;
+            else
+                Multiply(_local, _parent._world, ref _world);
+            _dirty = false;
+            WorldVersion++;
+            force = true;
+            n = 1;
+        }
+        if ((Flags & NodeFlags.Hidden) != 0)
+            visible = false;
+        if (visible)
+        {
+            if (Renderable.Kind != RenderKind.None)
+                list.AddNode(this);
+            Custom?.Emit(list, this);
+        }
+        var kids = _kids;
+        for (var i = 0; i < _kidCount; i++)
+            n += kids[i].UpdateFlatten(list, force, visible);
+        return n;
+    }
+
     // ---- Lookup and traversal ------------------------------------------------------------------
 
     /// <summary>The first direct child called <paramref name="name"/>, or null.</summary>

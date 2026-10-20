@@ -105,6 +105,30 @@ public sealed class DrawList
             Flatten(kids[i]);
     }
 
+    internal void AddNode(SceneNode n)
+    {
+        if (Count == _nodes.Length)
+            Grow();
+        _nodes[Count++] = n;
+    }
+
+    /// <summary>
+    /// <see cref="Scene.UpdateTransforms"/> for <paramref name="root"/>'s subtree and <see cref="Flatten"/> in a single walk
+    /// (each node is touched once, which is what a frame costs: memory, not maths). Dirty ancestors above the root are
+    /// brought up to date first. Their queue entries are skipped by the next <see cref="Scene.UpdateTransforms"/>.
+    /// Returns the number of nodes whose world matrix was recomputed.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+    public int UpdateAndFlatten(SceneNode root)
+    {
+        SceneNode? top = null;
+        for (var a = root._parent; a != null; a = a._parent)
+            if (a._dirty)
+                top = a;
+        var n = top?.UpdateWorld() ?? 0;
+        return n + root.UpdateFlatten(this, false, true);
+    }
+
     /// <summary>
     /// Draws every entry in order. Assumes (and leaves) blending off and depth writes on, the state the opaque passes run
     /// in; switches only when an entry needs something else.
