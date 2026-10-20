@@ -87,12 +87,20 @@ public sealed partial class Map
                 Mix(s.X); Mix(s.Y); Mix(s.Z);
             }
             MixObjectiveData(Mix); // waypoints and hand-placed objectives (game-mode objectives are built from them)
+            if (FoliageHash != 0) // maps without a "foliage" section keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (FoliageHash >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             return h;
         }
     }
 }
 
-public static class MapFile
+public static partial class MapFile
 {
     public const string Format = "call-of-slop-map/1";
 
@@ -146,7 +154,10 @@ public static class MapFile
             }
             sb.Append("    { ").Append(string.Join(", ", parts)).Append(" }").Append(i < m.Ops.Count - 1 ? ",\n" : "\n");
         }
-        sb.Append("  ]\n}\n");
+        sb.Append("  ]");
+        if (m.FoliageSection is { } foliage)
+            sb.Append(",\n  \"foliage\": ").Append(FoliageToJson(foliage));
+        sb.Append("\n}\n");
         return sb.ToString();
     }
 
@@ -240,6 +251,11 @@ public static class MapFile
                 {
                     throw new MapFileException($"{where}: {method.Name} failed: {ex.InnerException?.Message}");
                 }
+            }
+            if (Prop(root, "foliage") is { ValueKind: not JsonValueKind.Null } foliage)
+            {
+                map.FoliageSection = ReadFoliage(foliage, source);
+                map.PlantFoliage(); // after the ops, so plants can keep out of what they built
             }
             if (map.Spawns.Count == 0)
                 throw new MapFileException($"{source}: no spawn points (add Spawn or RingSpawns ops)");

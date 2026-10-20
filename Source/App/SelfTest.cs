@@ -48,6 +48,7 @@ public static partial class SelfTest
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
+            Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);

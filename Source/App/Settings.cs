@@ -34,6 +34,7 @@ public sealed class Settings
     public int Height = 900;
     public float UiScale = 1f; // multiplier on the automatic scale (which follows window height)
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
+    public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
 
     /// <summary>Set by the settings screen when display options change; Program applies them.</summary>
     [NonSerialized] public bool DisplayDirty;
@@ -157,6 +158,7 @@ public sealed class Settings
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
                     case "ui_scale" when float.TryParse(v, inv, out var f): s.UiScale = Math.Clamp(f, 0.6f, 2.5f); break;
                     case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
+                    case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
@@ -205,6 +207,7 @@ public sealed class Settings
                     $"height={Height}",
                     $"ui_scale={UiScale.ToString(inv)}",
                     $"hud_width={HudWidth}",
+                    $"foliage={FoliageQuality}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
             );
