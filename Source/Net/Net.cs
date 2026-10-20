@@ -37,6 +37,7 @@ public enum Msg : byte
     ModeState, // server -> all: game mode, teams, ready flags, gun levels, scores, hill and flags (unreliable, ~10 Hz)
     ModeEvent, // server -> all: a game-mode line for the kill feed + a sound (flag taken, hill moved...)
     Suicide, // client -> server: kill me (pause menu "Kill yourself"; rate-limited, server decides)
+    Full, // server -> one client: the server (this map's player limit) is full; the connection is closed after it
     PropBreak, // server -> all: a breakable prop broke (index, damage kind, where the hit came from) (reliable)
     PropState, // server -> joining client: the props broken so far this match (reliable)
 }
@@ -44,7 +45,14 @@ public enum Msg : byte
 /// <summary>Tiny little-endian packet writer.</summary>
 public sealed class PacketWriter
 {
-    private readonly byte[] _buf = new byte[1400];
+    /// <summary>
+    /// The buffer is roomy so a big message (a 32-player roster, many kill-streak entities) can never overflow it;
+    /// RakNet splits anything over the MTU. Messages sent many times a second keep under <see cref="Mtu"/> themselves.
+    /// </summary>
+    private readonly byte[] _buf = new byte[8192];
+
+    /// <summary>The payload budget for one unsplit datagram (RakNet's MTU is ~1400 with headers; this leaves room).</summary>
+    public const int Mtu = 1200;
     public int Length { get; private set; }
 
     public PacketWriter Begin(Msg id)
@@ -97,6 +105,17 @@ public sealed class PacketWriter
     public PacketWriter Vec(Vector3 v) => F32(v.X).F32(v.Y).F32(v.Z);
 
     public ReadOnlySpan<byte> Span => _buf.AsSpan(0, Length);
+
+    /// <summary>Appends raw bytes.</summary>
+    public PacketWriter Bytes(ReadOnlySpan<byte> data)
+    {
+        data.CopyTo(_buf.AsSpan(Length));
+        Length += data.Length;
+        return this;
+    }
+
+    /// <summary>Overwrites one byte already written (for counts filled in afterwards).</summary>
+    public void PatchU8(int at, byte v) => _buf[at] = v;
 }
 
 /// <summary>Tiny little-endian packet reader.</summary>
@@ -215,6 +234,7 @@ public sealed unsafe class NetPeer : IDisposable
             {
                 if (packet->Length > 0)
                 {
+                    BytesReceived += packet->Length;
                     var data = new ReadOnlySpan<byte>(packet->Data, (int)packet->Length);
                     if (!IsServer && data[0] == (byte)DefaultMessageIDTypes.ConnectionRequestAccepted)
                         ServerGuid = packet->Guid;
@@ -287,16 +307,30 @@ public sealed unsafe class NetPeer : IDisposable
             _peer.SetOfflinePingResponse(data);
     }
 
+    /// <summary>Game payload bytes received / sent so far (no RakNet or UDP headers; a broadcast counts once per connection).</summary>
+    public long BytesReceived, BytesSent;
+
     public void SendTo(RakNetGUID target, ReadOnlySpan<byte> data, PacketReliability reliability)
     {
-        if (!IsOffline)
-            _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.From(target), false);
+        if (IsOffline)
+            return;
+        BytesSent += data.Length;
+        _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.From(target), false);
     }
 
     public void Broadcast(ReadOnlySpan<byte> data, PacketReliability reliability)
     {
+        if (IsOffline)
+            return;
+        BytesSent += (long)data.Length * ConnectionCount;
+        _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.UnassignedGuid, true);
+    }
+
+    /// <summary>Server: drops a client (they get a disconnection notice once what was already sent to them arrives).</summary>
+    public void Kick(RakNetGUID target)
+    {
         if (!IsOffline)
-            _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.UnassignedGuid, true);
+            _peer.CloseConnection(AddressOrGUID.From(target), true);
     }
 
     public void SendToServer(ReadOnlySpan<byte> data, PacketReliability reliability) =>

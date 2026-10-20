@@ -38,7 +38,8 @@ public readonly record struct FeedEntry(double Time, string Text, bool Mine);
 /// </summary>
 public sealed partial class Game : IDisposable
 {
-    public const int MaxPlayers = 8;
+    /// <summary>The most players (people + bots) a server holds; each map has its own limit up to this (GameLobby.cs).</summary>
+    public const int MaxPlayers = Map.HardMaxPlayers;
     private const int InputRedundancy = 4;
     private const int JitterBufferTarget = 2;
     private const int MaxStarvedTicks = 4;
@@ -168,7 +169,9 @@ public sealed partial class Game : IDisposable
             Players[0] = host;
             PlaceWaiting(host, 0); // you pick a loadout and click Respawn to drop in
             OnLocalSpawn(host);
-            for (var i = 0; i < bots; i++)
+            WantedBots = Math.Clamp(bots, 0, MaxPlayers - 1);
+            _botSkill = botSkill;
+            for (var i = 0; i < bots && FreeId() != null; i++) // the map's limit caps it (GameLobby.cs)
                 AddBot(botSkill);
             Status = net.IsOffline ? "Single player" : "Hosting";
         }
@@ -921,6 +924,12 @@ public sealed partial class Game : IDisposable
                 if (o != p && o.Alive && AreEnemies(p, o))
                     nearest = MathF.Min(nearest, Vector3.Distance(o.Position, sp));
             var score = nearest + (float)_rng.NextDouble() * 2f;
+            foreach (var o in Players.Values) // never on top of someone (anyone) already standing there
+                if (o != p && o.Alive && Vector3.DistanceSquared(o.Position, sp) < 1.5f * 1.5f)
+                {
+                    score -= 1000f;
+                    break;
+                }
             if (score > bestScore)
             {
                 bestScore = score;
@@ -1187,47 +1196,10 @@ public sealed partial class Game : IDisposable
             Audio.Effect(Sfx.HitTick, 0.6f);
     }
 
-    private void SendSnapshots()
-    {
-        _body.Begin(Msg.State).U8((byte)Players.Count);
-        foreach (var p in Players.Values)
-        {
-            _body.U8(p.Id)
-                .Vec(p.Position)
-                .Vec(p.Sim.Velocity)
-                .F32(p.Yaw)
-                .F32(p.Pitch)
-                .U8((byte)Math.Clamp(p.Health, 0, 255))
-                .U8((byte)((p.Alive ? 1 : 0) | (p.Sim.Grounded ? 2 : 0) | ((int)p.Sim.Stance << 2)))
-                .U16(p.Kills)
-                .U16(p.Deaths)
-                .U8(p.Weapon)
-                .U8(p.Primary)
-                .U8(p.Secondary)
-                .U24(p.PrimaryKit)
-                .U24(p.SecondaryKit)
-                .U8(p.Sim.MantleTicks)
-                .Vec(p.Sim.MantleTo)
-                .U8((byte)p.Perks.Movement)
-                .U8((byte)p.Perks.Survival)
-                .U8((byte)p.Perks.Damage)
-                .U8(p.Sim.BoostTicks);
-        }
-        var body = _body.Span[1..];
-
-        foreach (var (guid, id) in _clients.Values)
-        {
-            if (!Players.TryGetValue(id, out var p))
-                continue;
-            _w.Begin(Msg.State).U32(ServerTick).U32(p.LastProcessedSeq).U8((byte)Phase).F32((float)TimeLeft).U8(Winner);
-            foreach (var b in body)
-                _w.U8(b);
-            Net.SendTo(guid, _w.Span, PacketReliability.UnreliableSequenced);
-        }
-    }
-
     private byte? FreeId()
     {
+        if (Players.Count >= MapMaxPlayers)
+            return null; // the map is full
         for (byte id = 1; id < MaxPlayers; id++)
             if (!Players.ContainsKey(id))
                 return id;
@@ -1237,8 +1209,6 @@ public sealed partial class Game : IDisposable
     // =====================================================================
     // Packets
     // =====================================================================
-
-    public const int SnapPlayerBytes = 65;
 
     private void OnPacket(RakNetGUID sender, ReadOnlySpan<byte> data, double now)
     {
@@ -1253,7 +1223,10 @@ public sealed partial class Game : IDisposable
                 if (FreeId() == null)
                     KickOneBot(); // humans take priority over bots
                 if (FreeId() is not { } newId)
+                {
+                    RefuseFull(sender); // only people left and the map is full
                     break;
+                }
                 var p = new Player { Id = newId, Name = $"Player {newId}" };
                 Players[newId] = p;
                 PlaceWaiting(p, now);
@@ -1279,7 +1252,7 @@ public sealed partial class Game : IDisposable
                         BroadcastRoster();
                     }
                 }
-                else
+                else if (!Disconnected) // keep a reason we already have (e.g. "server full")
                 {
                     Disconnected = true;
                     Status = "Disconnected from host";
@@ -1365,6 +1338,9 @@ public sealed partial class Game : IDisposable
                 }
                 break;
             }
+            case (byte)Msg.Full:
+                OnFullPacket(ref r);
+                break;
             case (byte)Msg.Suicide when IsServer:
                 OnSuicidePacket(sender, now);
                 break;
@@ -1440,7 +1416,7 @@ public sealed partial class Game : IDisposable
                 if (Players.Values.Any(o => o != p && o.Name == name))
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
-                Log($"{name} joined");
+                LogJoin(name);
                 BroadcastRoster();
                 break;
             }
@@ -1461,7 +1437,7 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
                 break;
-            case (byte)Msg.State when !IsServer && r.Has(15):
+            case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);
                 break;
             case (byte)Msg.Shot when !IsServer && r.Has(4):
@@ -1502,114 +1478,6 @@ public sealed partial class Game : IDisposable
                 break;
             }
         }
-    }
-
-    private void ReadState(ref PacketReader r, double now)
-    {
-        var tick = r.U32();
-        var ackSeq = r.U32();
-        var phase = (MatchPhase)r.U8();
-        var timeLeft = r.F32();
-        var winner = r.U8();
-        if (tick <= ServerTick && _clockStarted)
-            return;
-        var wasCountdown = Phase == MatchPhase.Countdown;
-        if (Phase == MatchPhase.Warmup && phase == MatchPhase.Countdown)
-            _countdownStartedFlag = true; // everyone's ready: the countdown opens the loadout screen
-        Phase = phase;
-        TimeLeft = timeLeft;
-        if (wasCountdown && phase == MatchPhase.Playing)
-            OnPlayStarted();
-        Winner = winner;
-        ServerTick = tick;
-        OnSnapshotTiming(tick, now);
-
-        int count = r.U8();
-        var seen = new HashSet<byte>();
-        for (var i = 0; i < count && r.Has(SnapPlayerBytes); i++)
-        {
-            var id = r.U8();
-            var pos = r.Vec();
-            var vel = r.Vec();
-            var yaw = r.F32();
-            var pitch = r.F32();
-            var hp = r.U8();
-            var flags = r.U8();
-            var kills = r.U16();
-            var deaths = r.U16();
-            var weapon = r.U8();
-            var primary = r.U8();
-            var secondary = r.U8();
-            var primaryKit = r.U24();
-            var secondaryKit = r.U24();
-            var mantleTicks = r.U8();
-            var mantleTo = r.Vec();
-            var perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8());
-            var boost = r.U8();
-            var alive = (flags & 1) != 0;
-            var grounded = (flags & 2) != 0;
-            var stance = (Stance)((flags >> 2) & 3);
-            seen.Add(id);
-
-            if (!Players.TryGetValue(id, out var p))
-            {
-                p = new Player { Id = id, Yaw = yaw, Pitch = pitch, Name = _names.GetValueOrDefault(id) ?? "" };
-                p.Teleport(pos);
-                Players[id] = p;
-            }
-
-            var wasAlive = p.Alive;
-            p.Health = hp;
-            p.Alive = alive;
-            p.Kills = kills;
-            p.Deaths = deaths;
-            p.Primary = primary;
-            p.Secondary = secondary;
-            p.PrimaryKit = primaryKit;
-            p.SecondaryKit = secondaryKit;
-            p.Perks = perks;
-
-            if (id == LocalId)
-            {
-                var respawned = !_localInitialized || (alive && !wasAlive);
-                _localInitialized = true;
-                if (respawned)
-                {
-                    p.Yaw = yaw;
-                    p.Pitch = pitch;
-                    OnLocalSpawn(p);
-                }
-                else
-                {
-                    SyncLocalSlots(p, refill: false); // loadout applied mid-life (out of combat)
-                }
-                SteerMoverClock(tick, ackSeq);
-                Reconcile(p, ackSeq, new MoveState
-                {
-                    Position = pos, Velocity = vel, Grounded = grounded, Stance = stance, MantleTicks = mantleTicks, MantleTo = mantleTo,
-                    MovePerk = perks.Movement, BoostTicks = boost,
-                }, alive, respawned);
-            }
-            else
-            {
-                p.Weapon = weapon;
-                p.Sim = new MoveState
-                {
-                    Position = pos, Velocity = vel, Grounded = grounded, Stance = stance, MantleTicks = mantleTicks, MantleTo = mantleTo,
-                    MovePerk = perks.Movement, BoostTicks = boost,
-                };
-                p.Yaw = yaw;
-                p.Pitch = pitch;
-                if (alive && !wasAlive)
-                    p.Snaps.Clear();
-                p.Snaps.Add(new Snap { Tick = tick, Position = pos, Velocity = vel, Yaw = yaw, Pitch = pitch, Stance = stance });
-                if (p.Snaps.Count > 64)
-                    p.Snaps.RemoveAt(0);
-            }
-        }
-
-        foreach (var stale in Players.Keys.Where(k => !seen.Contains(k)).ToList())
-            Players.Remove(stale);
     }
 
     private void LogKill(byte killer, byte victim, bool headshot, byte killId)

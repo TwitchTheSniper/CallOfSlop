@@ -828,7 +828,7 @@ public static unsafe partial class Program
                     ? $"[test] simulating {_lagMs} ms latency and {_lossPct}% loss"
                     : "[test] network simulator not available in this RakNet build");
 
-            var map = kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(); // joiners get the host's map
+            var map = kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1); // joiners get the host's map; random picks a map that fits everyone
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save

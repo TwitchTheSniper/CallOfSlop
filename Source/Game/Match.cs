@@ -115,6 +115,7 @@ public sealed partial class Game
             if (now >= _countdownUntil)
             {
                 Phase = MatchPhase.Playing;
+                TdmLimit = GameModes.TdmLimitFor(Players.Count); // everyone who made it to the start counts
                 _matchStart = now;
                 _soloElapsed = 0;
                 TimeLeft = MatchSeconds;

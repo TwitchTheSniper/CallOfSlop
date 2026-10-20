@@ -435,7 +435,7 @@ public static partial class SelfTest
         foreach (var mode in GameModes.All.Where(m => m != GameMode.FreeForAll))
         {
             var sw = Stopwatch.StartNew();
-            using var game = ModeGame(Game.MaxPlayers - 1, mode, map.Id);
+            using var game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
             var now = 0.0;
             var held = 0;
             var maxLevel = 0;

@@ -83,18 +83,36 @@ public sealed class Settings
     }
 
     /// <summary>The map to start: the chosen one, or a random one from the selected pack.</summary>
-    public Map PickMap() => PickMap(Maps.Packs, Maps.All, Random.Shared);
+    public Map PickMap(int players = 0) => PickMap(Maps.Packs, Maps.All, Random.Shared, players);
 
     /// <summary>
     /// <see cref="PickMap()"/> over a given set of packs and maps (the self-test uses its own). A pack that's gone
     /// falls back to all maps, and so does a chosen map that's gone.
     /// </summary>
-    public Map PickMap(IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all, Random rng)
+    /// <remarks>
+    /// "Random from pack" with <paramref name="players"/> (you + bots) picks only among the pack's maps that take that
+    /// many players (the lobby's slider goes up to the biggest map's limit); if none does, the biggest map.
+    /// </remarks>
+    public Map PickMap(IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all, Random rng, int players = 0)
     {
         if (!MapRandom && all.FirstOrDefault(m => m.Name.Equals(MapName, StringComparison.OrdinalIgnoreCase)) is { } chosen)
             return chosen;
         var pack = packs.FirstOrDefault(p => p.Name.Equals(MapPack, StringComparison.OrdinalIgnoreCase) && p.Maps.Count > 0);
-        return pack != null ? pack.PickRandom(rng) : all[rng.Next(all.Count)];
+        if (players <= 0)
+            return pack != null ? pack.PickRandom(rng) : all[rng.Next(all.Count)];
+        var pool = pack != null ? pack.Maps : all;
+        var fit = pool.Where(m => m.MaxPlayers >= players).ToList();
+        return fit.Count > 0 ? fit[rng.Next(fit.Count)] : pool.OrderByDescending(m => m.MaxPlayers).First();
+    }
+
+    /// <summary>The player limit the lobby's sliders use: the chosen map's, or for "random from pack" the biggest in the pack.</summary>
+    public int LobbyMaxPlayers(IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all)
+    {
+        if (!MapRandom && all.FirstOrDefault(m => m.Name.Equals(MapName, StringComparison.OrdinalIgnoreCase)) is { } chosen)
+            return chosen.MaxPlayers;
+        var pack = packs.FirstOrDefault(p => p.Name.Equals(MapPack, StringComparison.OrdinalIgnoreCase) && p.Maps.Count > 0);
+        var pool = pack != null ? (IReadOnlyList<Map>)pack.Maps : all;
+        return pool.Count == 0 ? Game.ClassicPlayers : pool.Max(m => m.MaxPlayers);
     }
 
     private static string FilePath => Path.Combine(AppContext.BaseDirectory, "settings.txt");
