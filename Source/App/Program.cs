@@ -157,7 +157,7 @@ public static unsafe partial class Program
     private static int _smokeStage;
     private static int _smokeFrames;
     private static double _smokeWorstDt;
-    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test"];
+    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test", "Adobe Mesa"]; // Adobe Mesa: the High Ground pack (terrain, foliage, movers)
 
     private static void SmokeTick(double now)
     {
@@ -317,8 +317,8 @@ public static unsafe partial class Program
                 break;
             case 7 when t > 6.2:
                 game?.TryMelee(now);
-                if ((_smokeMap < 4 || SmokeMaps[_smokeMap] == "Terrain Test") && game?.Local is { Alive: true })
-                    SmokeShot(SmokeMaps[_smokeMap] == "Terrain Test" ? "play_terrain" : $"play_{_smokeMap}");
+                if ((_smokeMap < 4 || SmokeMaps[_smokeMap] is "Terrain Test" or "Adobe Mesa") && game?.Local is { Alive: true })
+                    SmokeShot(SmokeMaps[_smokeMap] switch { "Terrain Test" => "play_terrain", "Adobe Mesa" => "play_highground", _ => $"play_{_smokeMap}" });
                 _smokeStage++;
                 break;
             case 8 when t > 8.5:

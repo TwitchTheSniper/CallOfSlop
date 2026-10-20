@@ -259,6 +259,17 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - Keep slopes where people fight below about 25°, so movement feels smooth.
 - `CallOfSlop.exe --check-map` prints the terrain size, height range and how much of it is rock.
 
+**Lessons from the High Ground pack** (`Maps/HighGround`, see its DESIGN.md):
+
+- **Fair terrain:** build one half and turn it 180 degrees about the centre for the other team (negate every x and z, swap N/S and E/W doors, flip stair and ramp `dir`). A cliff's `side` stays the same when you turn it. Keep `noise` small (under about 1 m) so it doesn't tip the balance.
+- **Hill zones need level ground.** Players count as on a hill from 1 m below its centre to 3 m above it, so put a `flatten` pad (radius a little over the zone) under a hill on uneven ground. Hand-place `hills` on the line where both teams have the same walk.
+- **Paint without shaping:** a `ridge` or `hill` with `"height": 0.01` and a `material` paints a strip or patch, for example snow (a white `sand` colour) along a crest, without changing the ground.
+- **Per-point heights replace `height`:** in a `ridge` or `valley` whose points carry heights, the feature's own `height` only applies to points without one.
+- **Pads cut through berms and banks.** A building pad that crosses a berm levels it there and leaves a gap for sightlines. Fill the gap with a wall (taller than eye height, 1.6 m) or move the pad.
+- **Cliffs run on past their end points** until their taper fades them out, so stop the line a taper's length short of anything that has to stay walkable.
+- **Lifts up a cliff:** an `elevator` at the foot of the face, with a thin `Block` landing at the top that reaches over the face to the edge (the face is `face` metres wide). Give bots a ramp to the same place.
+- **Cluttered pockets:** the bots' nav graph samples the ground every few metres. A small space full of cover can end up with too few nodes to join up, so add a couple of `Waypoint` ops there. Each waypoint becomes a nav node.
+
 ### For tools
 
 The game builds the heightfield in double precision, in exactly the order above, and rounds every height to a multiple of 1/1024 m. The surface between samples is bilinear. The heightfield (sample heights, surface ids and grid size) is part of the map's multiplayer fingerprint. The map designer's Python tools carry a line-by-line port of the generator (`terrain.py`). Its fingerprint matches the game's (`TerrainData.Hash`), and the self-test checks that against a lab terrain that uses every feature.

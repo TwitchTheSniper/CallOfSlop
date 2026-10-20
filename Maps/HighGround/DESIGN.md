@@ -1,0 +1,71 @@
+# High Ground: design notes
+
+Six terrain maps (two small, two medium, two large) that show off what the engine can do now: heightfield terrain, foliage, and movers where they fit. Each map is built around one landform and one theme. As in the Collision Point pack, the layouts follow Güttler & Johansson, *Spatial Principles of Level-Design in Multi-Player First-Person Shooters*, and here the **terrain does the work**:
+
+- **Collision points.** These are where the two teams' routes cross. They are planned and built up with cover, height differences and several ways in, so that the fights happen there and not on open ground nobody designed for. This is the mistake the paper made in cs_citymall.
+- **Choke points.** These are narrow, readable places where a route is forced through: a ramp up a cliff, a causeway, a bridge, a cut through a rock band.
+- **Flanking routes.** Valleys, gullies, ditches and ravines are low ground where you can move unseen beside the main route. They are slower, but they are covered.
+- **Sightlines.** Hills, ridges, berms and buttes block the view the way walls do. Hedges, rockfalls and houses break up the long lines across open ground. No spawn can see an enemy team spawn.
+- **High ground with counterplay.** Every high spot (a summit, mesa, cliff bank or ledge) is reached through chokes. It is exposed from more than one side, and there is always low ground it can't see (the convex slope below it, a ditch or gully). It wins fights but doesn't own the map.
+- **Level orientation and architecture.** Each map has one or two big landmarks (the crusher, the keep, the bridge, the mesa, the radio mast, the mountain hut), a colour scheme, and no dead ends or rooms with a single entrance.
+
+Every map has 180-degree point symmetry about its centre: Red's half is Blue's half turned round. Both teams therefore get the same terrain, cover and routes, while the map as a whole still reads as one natural place. Objectives are placed by hand: `teamSpawns` (one cluster per side, plus a few neutral free-for-all spawns on the flanks), `hills` for King of the Hill, and CTF `flags` at the back of each base.
+
+All six were checked with the top-down analysis in the map tools (the Python port of the terrain generator plus a walking graph that respects the 42 degree slope limit and cliffs). The checks were: team-to-team route "flow" (where the routes overlap is a collision point), walking distance from each team to every hill (the hills are balanced to within a few metres, or as a mirrored pair), blue-to-red spawn lines of sight (zero on every map), the longest open sightlines, and reachability of every spawn and objective. The self-test (`High Ground pack` section) checks the pack's sizes, relief, spawn counts, hand-placed objectives, hill zones on level ground, and that the bots' nav graph reaches every spawn, hill and flag. The usual per-map 90-second bot matches also run on these maps: kills on all six, no stuck or fallen bots.
+
+## 01 Gravel Pit (small, 72 x 64 m): quarry
+**Layout.** A working limestone quarry. The middle is a terraced pit: a 3 m bench all the way round, then the floor 3.5 m below that, with every face a rock cliff. A crusher plant stands in the middle: a tall hopper on legs that you can walk under. Teams spawn on the west (Blue) and east (Red) rims, behind a site office and a spoil heap. The two long rims to the north and south are the outer lanes.
+
+**Routes and chokes.** Three lanes. The north and south rim lanes run outside the pit's safety berm. The bench is a ring lane one level down. The floor is the shortest and riskiest route. Haul roads are the chokes: each team has one from its rim to the bench, one from a long rim to the bench, and one from the bench to the floor. A goods lift on each side carries players (not bots) from the floor straight to the bench.
+
+**Collision points.** The route analysis puts the heaviest traffic on the bench ring and on the north and south rims by the haul-road heads, so those have the most cover: an excavator, a tool shed, sandbags on the bench lip, crate stacks, a diagonal sandbag line and blast walls at the road heads. The two hill zones are on the floor either side of the hopper (walking distances 47 and 54 m, a mirrored pair). They form a bowl that the bench overlooks. The counterplay is the plant, the dump truck and the boulders, plus the fact that anyone on the bench lip stands against the sky.
+
+**Sightlines.** The 2 m safety berm round the rim breaks the views from rim to rim across the pit. To look down into the pit you have to climb onto the berm, which exposes you. Where the office pad cuts the berm, jersey barriers fill the gap. The hopper rises higher than the rims and blocks the line across the middle.
+
+## 02 Hillfort (small, 68 x 68 m): hilltop ruins
+**Layout.** An Iron Age hillfort. A round hill rises 8.5 m with a flat summit that carries a ruined keep. Round it run a ditch and a counterscarp bank, and the scarp above the ditch is too steep to climb. Teams spawn at farms on the north (Blue) and south (Red) edges.
+
+**Routes and chokes.** The summit has six ways in and no single entrance: the east and west gates (causeways across the ditch with a hollow way and a gatehouse arch), a steep breach for each team on its own side, and a rubble slope where the rampart collapsed for each team. The ditch is a covered ring lane, a flanking route that the summit can't see into because the convex slope hides it.
+
+**Collision points.** The keep is the main one. It is a roofless ruin with a gap in every wall, and it is the first hill zone (35 m from both teams). The two gates are where the outer routes meet, and they are the other two hill zones (36/27 and 27/36 m, a mirrored pair). The analysis shows three lanes, west gate, summit and east gate, with traffic hottest at the gates.
+
+**High ground with counterplay.** The summit sees across the whole map, but it is exposed from four sides. The broken curtain wall gives cover in stretches only. Attackers reach the foot of the rampart unseen through the ditch. The farms have trees, a byre, field walls and a diagonal hedge, so no spawn can be seen from the summit or from the enemy farm.
+
+## 03 Riverbend (medium, 120 x 100 m): river valley
+**Layout.** A river winds in an S through farmland. Blue farms the west bank and Red the east. An old humped stone bridge with three arches crosses in the middle. There is a sandy ford at each end, and the outside of each bend is a 5 m cliff bank. On the inside of the north bend, under Red's cliff, stands Blue's watermill. The south bend mirrors this.
+
+**Routes and chokes.** The river bed is walkable everywhere, but crossing it means dropping down 4 m of open bank. The bridge is the fast, contested crossing: a choke with a toll-house ruin, a hay cart and quay parapets at each bridgehead. The fords at the ends are the flanking crossings.
+
+**Collision points.** The three hill zones lie on the line where the walk from both teams is equal: in the river bed under the bridge (48/48 m), and on the north and south sand bars (47/48 m). Each sand bar sits under one team's cliff bank and beside the other team's mill. The cliff is high ground over the bar, and the mill is the counter to it. The bridgeheads and both ends of the S carry the most traffic.
+
+**Sightlines.** An orchard hill, a pasture knoll, hedgerows (2.1 m, taller than a player's eye) and a hedge between each farm and its meadows break up the long views across the fields. The river valley itself is sunk below the line of sight from bank to bank.
+
+## 04 Adobe Mesa (medium, 120 x 96 m): canyon pueblo
+**Layout.** A red-rock canyon. Unclimbable 11 to 13 m canyon walls close it in on all sides. In the middle a 7 m mesa carries a pueblo: terraced adobe blocks you can climb, a walk-in house for each side and a kiva plaza. Each team's village sits at one end of the canyon: a trading post with a roof, a chapel with a bell tower and a water tower.
+
+**Routes and chokes.** There are only two ways up the mesa for bots and runners. Each team has an earth ramp up the face on its side of the mesa (the north face from the west end for Blue, the south face from the east end for Red). Each side also has a timber hoist, an elevator, up its end face, which is faster but leaves you exposed at the top and works for players only. Down on the canyon floor, lanes run north and south of the mesa. A dry arroyo winds along the south side as Blue's covered flank, and Red has the same along the north.
+
+**Collision points.** The mesa top is the first hill zone (74/75 m). The other two are level pads on the north and south canyon floor (41/44 and 44/41 m), with corrals, a wagon, a storehouse, a gateway arch and houses round them. Buttes between each village and the mesa are pillars you have to go round, and they break the views from the village to the mesa.
+
+**Sightlines.** The canyon-wall lanes were the problem: from one end of the canyon to the other there was nothing in the way. Rockfalls and adobe houses along both walls fixed it, and no enemy spawns are in view now.
+
+## 05 Ridgeline (large, 176 x 160 m): ridge-line outpost
+**Layout.** A long grassy ridge runs north to south between two valleys. Each team has a forward base in its valley, with a HESCO perimeter, a vehicle shed, a watchtower and stacked containers. On the summit, 11 m above, a HESCO-ringed outpost holds a command bunker and radio masts, the landmark you can see from everywhere. The ridge dips to a pass at each end, and each pass has a checkpoint.
+
+**Routes and chokes.** You can cross the ridge anywhere, but the terrain channels the routes. On each team's flank, north of the summit, a trench line faces the crest, with sandbags on the parapet and a communication trench running back down the hill. South of the summit a rock band forms a cliff step. The gully below the band is a sunken flanking route, and a single cut up through the band onto the summit's shoulder is its choke. The outpost has a chicane entrance on each side.
+
+**Collision points.** The flow analysis puts the main fights on the two shoulders either side of the summit, where one team's trench line meets the other team's rock band. These have tors, boulders and crates. The hill zones are the outpost (88/88 m) and the two pass checkpoints (72/70 and 70/72 m), where the gate arch, barrier walls, a guard hut and a truck give cover.
+
+**Sightlines.** This is a big open map by design, the long-range one in the pack. Knolls, groves of pine and broadleaf trees (solid trunks), a crashed helicopter, ruined farm buildings and stone walls break up the slopes, and a tor on the crest stops the views along it.
+
+## 06 Alpine Pass (large, 160 x 184 m): mountain col
+**Layout.** A high col, 12 m above the valleys, lies between two granite massifs. The massifs rise as snowy walls beyond the long edges, and a rock spur from each pinches the col. Blue's village of chalets, a church tower and barns sits in the north valley, and Red's in the south. On the snowfield at the pass stand the mountain hut (two halves, each with a roof) and a ruined chapel.
+
+**Routes and chokes.** Each team has four ways up. The switchback road is the slow, open route. The cut road through its rock band is the direct choke, and a goods lift beside it carries players only. The ravine is a deep, covered gully up the far side. The cliff ledge is a shelf cut along the massif spur, a high flank that looks over the col but is exposed along its length.
+
+**Collision points.** The flow analysis sends most traffic through the cut roads to the hut. The three hill zones sit on the crest line, all equidistant: the pass between the huts (74/74 m) and the two ends of the col (84/80 and 80/84 m), where the ledge of one team and the ravine of the other come out, with boulders and walls.
+
+**Sightlines.** The valleys are wide, so stone walls, hay huts, pine groves, moraine hummocks and a ruined barn break up the meadows. The col's snowfield is deliberately the most exposed ground on the map, with the huts, the chapel and walls as its cover.
+
+## Theme and look
+Each map sets its sky colour, which drives the fog and tints the ambient light, and its terrain surface colours, painting roads, sand and snow with feature materials. The palettes are a dusty limestone quarry, a cool overcast hillfort, green river farmland, a hot red canyon, a grey-green ridge and a cold alpine col with snow (the `sand` surface painted white). Cliff faces are steeper than the rock slope, so they show rock. Foliage keeps to where players look, along with grass, scrub and a few hundred trees at most, all at the default density. There are six movers: the quarry's two goods lifts, the mesa's two hoists and the two alpine goods lifts. Bots get a ramp or road to everywhere a mover goes.
