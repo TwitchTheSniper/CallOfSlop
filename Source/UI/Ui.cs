@@ -513,7 +513,7 @@ public sealed partial class Ui : IDisposable
             ImGui.SeparatorText(Attachments.SlotName(slot));
             var current = Attachments.Slot(kit, slot);
             if (ImGui.Selectable($"{(slot == AttachSlot.Optic ? "Iron sights" : "None")}##none{si}", current == 0))
-                SetKitOf(w, Attachments.With(kit, slot, 0));
+                SetKitOf(audio, w, Attachments.With(kit, slot, 0));
             foreach (var a in inSlot)
             {
                 var need = Attachments.UnlockXp(w, a);
@@ -524,7 +524,7 @@ public sealed partial class Ui : IDisposable
                 if (ImGui.Selectable(label, current == a.Index) && unlocked)
                 {
                     kit = Attachments.With(kit, slot, a.Index);
-                    SetKitOf(w, kit);
+                    SetKitOf(audio, w, kit);
                     audio.Effect(Sfx.HitTick, 0.4f);
                 }
                 if (!unlocked)

@@ -56,6 +56,7 @@ public static class SelfTest
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
+            Section("Loadout navigation", CheckLoadoutNav);
             Section("Recoil", CheckRecoil);
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
@@ -1457,6 +1458,69 @@ public static class SelfTest
     // ---- Weapon select ---------------------------------------------------------------------
 
     /// <summary>The weapon-select screen's tabs hold every weapon exactly once, and its stat comparison points the right way.</summary>
+    /// <summary>The loadout screen's page stack: Back goes back one page, and from the overview it signals "close".</summary>
+    private static void CheckLoadoutNav()
+    {
+        var nav = new LoadoutNav();
+        void Expect(LoadoutPage page, int depth, string what)
+        {
+            if (nav.Current != page || nav.Depth != depth)
+                Fail($"{what}: expected {page} at depth {depth}, got {nav.Current} at depth {nav.Depth}");
+        }
+        Expect(LoadoutPage.Overview, 1, "new stack");
+        if (!nav.Back())
+            Fail("Back on the overview should signal close");
+        Expect(LoadoutPage.Overview, 1, "after Back on the overview");
+
+        // Overview > weapon select > attachments: Back returns to the weapon select, then the overview, then closes.
+        nav.Open(LoadoutPage.Primary);
+        nav.Open(LoadoutPage.Attachments, 7);
+        Expect(LoadoutPage.Attachments, 3, "weapon select > attachments");
+        if (nav.Arg != 7)
+            Fail($"attachments page lost its weapon id (got {nav.Arg})");
+        if (nav.Back())
+            Fail("Back from attachments closed the screen");
+        Expect(LoadoutPage.Primary, 2, "Back from attachments opened via the weapon select");
+        nav.Back();
+        Expect(LoadoutPage.Overview, 1, "Back from the weapon select");
+        if (!nav.Back())
+            Fail("Back on the overview (after a round trip) should signal close");
+
+        // Overview card's "Edit attachments": Back returns straight to the overview.
+        nav.Open(LoadoutPage.Attachments, 3);
+        nav.Back();
+        Expect(LoadoutPage.Overview, 1, "Back from attachments opened from a card");
+
+        // Progression returns to whatever was before it.
+        nav.Open(LoadoutPage.Secondary);
+        nav.Open(LoadoutPage.Attachments, 2);
+        nav.Open(LoadoutPage.Progression);
+        Expect(LoadoutPage.Progression, 4, "progression over attachments");
+        nav.Back();
+        Expect(LoadoutPage.Attachments, 3, "Back from progression");
+        if (nav.Arg != 2)
+            Fail("the attachments page under progression lost its weapon id");
+
+        // Re-opening a page already on the stack goes back down to it (no loops, bounded depth).
+        nav.Open(LoadoutPage.Progression);
+        nav.Open(LoadoutPage.Progression);
+        Expect(LoadoutPage.Progression, 4, "progression opened twice");
+        nav.Open(LoadoutPage.Secondary);
+        Expect(LoadoutPage.Secondary, 2, "re-opening the weapon select");
+        for (var i = 0; i < 50; i++)
+            nav.Open(i % 2 == 0 ? LoadoutPage.Attachments : LoadoutPage.Progression, i);
+        if (nav.Depth > 4)
+            Fail($"stack grew to {nav.Depth} pages after alternating opens");
+
+        // Opening the overview (or Reset) clears everything.
+        nav.Open(LoadoutPage.Overview);
+        Expect(LoadoutPage.Overview, 1, "opening the overview");
+        nav.Open(LoadoutPage.Perks);
+        nav.Reset();
+        Expect(LoadoutPage.Overview, 1, "Reset");
+        Line("  push/pop order, attachments > weapon select > overview > close, progression > previous page: ok");
+    }
+
     private static void CheckWeaponSelect()
     {
         var seen = new int[Weapons.All.Length];

@@ -17,23 +17,12 @@ public readonly record struct GunThumb(WeaponDef Def, float2 Min, float2 Max, fl
 /// <summary>
 /// The loadout screen, used from the main menu and in matches. Left: your loadout slots (more unlock
 /// as you level up). Right: the selected loadout as cards (primary, secondary, perks, lethal, tactical);
-/// click a card to change that part. A second tab holds your progression.
+/// click a card to change that part. The pages form a stack (<see cref="LoadoutNav"/>): the footer's
+/// Back button and Esc go back one page. A progress bar in the footer opens the progression page.
 /// </summary>
 public sealed partial class Ui
 {
-    private enum LoadoutView
-    {
-        Overview,
-        Primary,
-        Secondary,
-        Lethal,
-        Tactical,
-        Perks,
-    }
-
-    private LoadoutView _view;
-    private int _gunTab; // Primary/Secondary view: 0 = choose the gun, 1 = its attachments
-    private int _screenTab; // 0 = loadouts, 1 = progression
+    private readonly LoadoutNav _nav = new();
     private int _editSlot;
     private PerkCategory _perkFocus;
     private PerkDef? _hoverPerk;
@@ -41,7 +30,7 @@ public sealed partial class Ui
     private bool _renaming;
     private int _hotCard = -1; // card under the mouse last frame (highlight)
     private bool _loadoutDrawn; // was the loadout screen on screen this frame?
-    private int _forceView = -1, _forceGunTab = -1; // smoke test
+    private double _actTime = -10; // ImGui time of the last click that picked something or changed page (see SecondClick)
 
     /// <summary>Gun pictures for the cards this frame (drawn by Program after the UI).</summary>
     public readonly List<GunThumb> Thumbs = new();
@@ -63,8 +52,20 @@ public sealed partial class Ui
         return Attachments.Sanitize(w, kit, Progress);
     }
 
-    private void SetKitOf(WeaponDef w, uint kit)
+    /// <summary>Is the gun in the loadout being edited?</summary>
+    private bool InEdit(WeaponDef w) => w.Id == Edit.Primary || w.Id == Edit.Secondary;
+
+    /// <summary>
+    /// Fits attachments to a gun. A gun that isn't in the loadout yet (its attachments were opened from
+    /// the weapon select as a preview) is equipped into its slot first, with the usual equip sound.
+    /// </summary>
+    private void SetKitOf(Audio audio, WeaponDef w, uint kit)
     {
+        if (!InEdit(w) && WeaponSelect.UnlockLevel(w) <= Progress.Level)
+        {
+            LoadoutStore.SetWeapon(Edit, (int)w.Slot, w.Id, Progress);
+            audio.Equip(w);
+        }
         if (w.Id == Edit.Primary)
             LoadoutStore.SetKit(Edit, 0, kit);
         else if (w.Id == Edit.Secondary)
@@ -72,11 +73,60 @@ public sealed partial class Ui
         LoadoutStore.Save();
     }
 
+    /// <summary>Opens a page of the loadout screen on top of the current one.</summary>
+    private void OpenPage(LoadoutPage page, int arg = -1)
+    {
+        if (page is LoadoutPage.Primary or LoadoutPage.Secondary)
+            _wsFresh = true; // start the weapon select on the equipped gun
+        _nav.Open(page, arg);
+        Acted();
+        _hoverThrowable = null;
+        _hoverAttachment = null;
+        _hoverPerk = null;
+        _openSlot = null;
+    }
+
+    /// <summary>
+    /// Back one page (the footer's Back button and Esc). On the overview it closes the screen: back to the
+    /// main menu, or the menu closes in a match. Returns true when the screen closed.
+    /// </summary>
+    public bool LoadoutBack()
+    {
+        if (_renaming)
+        {
+            _renaming = false; // Esc cancels a rename first
+            return false;
+        }
+        if (_openSlot != null)
+            return false; // an attachment list is open: ImGui closes it on Esc
+        return GoBack();
+    }
+
+    /// <summary>The footer's Back button: one page back, or close the screen from the overview.</summary>
+    private bool GoBack()
+    {
+        _renaming = false;
+        _wsSmoke = false;
+        Acted();
+        if (!_nav.Back())
+        {
+            _hoverThrowable = null;
+            _hoverAttachment = null;
+            _hoverPerk = null;
+            return false;
+        }
+        LoadoutStore.Save();
+        if (LobbyLoadouts)
+            LobbyLoadouts = false;
+        else
+            MenuOpen = false;
+        return true;
+    }
+
     private void ResetLoadoutScreen()
     {
-        _view = LoadoutView.Overview;
-        _screenTab = 0;
-        _gunTab = 0;
+        _nav.Reset();
+        _wsSmoke = false;
         _renaming = false;
         _editSlot = Math.Clamp(LoadoutStore.Selected, 0, Math.Max(0, Progress.LoadoutSlots - 1));
         _hoverThrowable = null;
@@ -110,18 +160,29 @@ public sealed partial class Ui
     }
 
     // Smoke-test hooks (see Program.SmokeTick)
-    /// <summary>Smoke test: 4/5 = primary/secondary attachments, 6 = perks, 0 = back to the overview.</summary>
+    /// <summary>
+    /// Smoke test: 4/5 = primary/secondary attachments (opened through the weapon select, so Back would
+    /// return there), 6 = perks, 7 = the progression page, 0 = back to the overview.
+    /// </summary>
     public void SmokeTab(int tab)
     {
-        (_forceView, _forceGunTab) = tab switch
+        _nav.Reset();
+        _wsSmoke = false;
+        var eff = LoadoutStore.Effective(Edit, Progress);
+        switch (tab)
         {
-            4 => ((int)LoadoutView.Primary, 1),
-            5 => ((int)LoadoutView.Secondary, 1),
-            6 => ((int)LoadoutView.Perks, -1),
-            _ => (-1, -1),
-        };
-        if (tab == 0)
-            _view = LoadoutView.Overview;
+            case 4:
+            case 5:
+                OpenPage(tab == 4 ? LoadoutPage.Primary : LoadoutPage.Secondary);
+                OpenPage(LoadoutPage.Attachments, eff.WeaponIn(tab - 4));
+                break;
+            case 6:
+                OpenPage(LoadoutPage.Perks);
+                break;
+            case 7:
+                OpenPage(LoadoutPage.Progression);
+                break;
+        }
     }
 
     public void SmokeRespawn(Game game, double now)
@@ -159,12 +220,7 @@ public sealed partial class Ui
         Preview = null;
         Thumbs.Clear();
         _loadoutDrawn = true;
-        if (_forceView >= 0)
-        {
-            _view = (LoadoutView)_forceView;
-            if (_forceGunTab >= 0)
-                _gunTab = _forceGunTab;
-        }
+        TrackSecondClick();
 
         var deployed = false;
         var prog = Progress;
@@ -176,103 +232,208 @@ public sealed partial class Ui
         ImGui.SetNextWindowSize(new float2(MathF.Min(1150 * _scale, vp.WorkSize.X - 40), MathF.Min(760 * _scale, vp.WorkSize.Y - 40)));
 
         // In the attachment showcase the window background is painted by Program (behind the 3D gun) instead.
+        // No scrollbar: the footer is pinned to the bottom edge and every page sizes itself to the body area.
         var winFlags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings
+                       | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse
                        | (_showcaseLastFrame ? ImGuiWindowFlags.NoBackground : ImGuiWindowFlags.None);
         _showcaseLastFrame = false;
         if (ImGui.Begin("LOADOUTS"u8, winFlags))
         {
             var winPos = ImGui.GetWindowPos();
             var winSize = ImGui.GetWindowSize();
-            if (ImGui.BeginTabBar("##screen"u8))
-            {
-                if (ImGui.BeginTabItem("Edit loadouts"u8))
-                {
-                    _screenTab = 0;
-                    ImGui.EndTabItem();
-                }
-                if (ImGui.BeginTabItem($"Progression - level {prog.Level}###prog"))
-                {
-                    _screenTab = 1;
-                    ImGui.EndTabItem();
-                }
-                ImGui.EndTabBar();
-            }
+            var style = ImGui.GetStyle();
+            var contentMin = winPos + style.WindowPadding;
+            var contentMax = winPos + winSize - style.WindowPadding;
+            var footerH = 46 * _scale;
+            var footerTop = contentMax.Y - footerH;
 
-            var footer = 52 * _scale;
+            // Breadcrumb on the sub-pages (the one Back is in the footer).
+            if (_nav.Depth > 1)
+                Breadcrumb();
+
             _bodyTopY = ImGui.GetCursorScreenPos().Y;
-            var avail = ImGui.GetContentRegionAvail();
-            var body = new float2(avail.X, avail.Y - footer);
-            if (_screenTab == 1)
+            var body = new float2(ImGui.GetContentRegionAvail().X, MathF.Max(100 * _scale, footerTop - 8 * _scale - _bodyTopY));
+            switch (_nav.Current)
             {
-                if (ImGui.BeginChild("##progression"u8, body, ImGuiChildFlags.None))
-                {
-                    LevelSummary();
-                    ImGui.TextColored(Dim, $"Kills {prog.Kills}   Headshots {prog.Headshots}   Matches {prog.Matches}   Wins {prog.Wins}   Loadout slots {prog.LoadoutSlots}/{CallOfSlop.Progress.MaxLoadoutSlots}");
-                    ImGui.Spacing();
-                    ProgressionTable();
-                }
-                ImGui.EndChild();
-            }
-            else if (_view == LoadoutView.Overview)
-            {
-                DrawOverview(game, body);
-            }
-            else
-            {
-                DrawEditView(audio, body, winPos, winSize);
+                case LoadoutPage.Overview:
+                    DrawOverview(game, body);
+                    break;
+                case LoadoutPage.Progression:
+                    DrawProgressionPage(body);
+                    break;
+                default:
+                    DrawEditView(audio, body, winPos, winSize);
+                    break;
             }
 
-            // ---- Footer ----------------------------------------------------------------
+            // ---- Footer: buttons on the left, the level bar on the right -------------------
+            ImGui.SetCursorScreenPos(new float2(contentMin.X, footerTop + (footerH - 40 * _scale) / 2));
+            var btn = new float2(200 * _scale, 40 * _scale);
+            var backBtn = new float2(150 * _scale, 40 * _scale);
             var name = Edit.Name;
+            string hint;
             if (game != null)
             {
                 var dead = game.Local is not { Alive: true };
                 if (dead)
                 {
                     var wait = game.RespawnWait(now);
-                    if (ImGui.Button(wait > 0 ? $"RESPAWN ({wait:0.0})###respawn" : "RESPAWN###respawn", new float2(220 * _scale, 38 * _scale)))
+                    if (ImGui.Button(wait > 0 ? $"RESPAWN ({wait:0.0})###respawn" : "RESPAWN###respawn", btn))
                     {
                         ApplySelection(game, now);
                         game.RequestRespawn();
                         MenuOpen = false;
                         deployed = true;
                     }
+                    ImGui.SameLine();
                 }
                 else if (game.CanChangeLoadout)
                 {
-                    if (ImGui.Button("DEPLOY"u8, new float2(220 * _scale, 38 * _scale)))
+                    if (ImGui.Button("DEPLOY"u8, btn))
                     {
                         ApplySelection(game, now);
                         MenuOpen = false;
                         deployed = true;
                     }
+                    ImGui.SameLine();
                 }
-                ImGui.SameLine();
-                if (ImGui.Button("Close"u8, new float2(140 * _scale, 38 * _scale)))
-                {
-                    LoadoutStore.Save();
-                    MenuOpen = false;
-                }
-                ImGui.SameLine();
-                ImGui.TextColored(Dim, dead
+                if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
+                    GoBack();
+                hint = dead
                     ? $"Respawn with \"{name}\". Loadouts only change between lives."
                     : game.CanChangeLoadout
                         ? $"Pre-match: \"{name}\" applies right away."
-                        : "Edit freely - the selected loadout is used the next time you spawn.");
+                        : "Edit freely - the selected loadout is used the next time you spawn.";
             }
             else
             {
-                if (ImGui.Button("BACK"u8, new float2(220 * _scale, 38 * _scale)))
-                {
-                    LoadoutStore.Save();
-                    LobbyLoadouts = false;
-                }
-                ImGui.SameLine();
-                ImGui.TextColored(Dim, $"Saved automatically. You'll spawn with \"{name}\" (change it here, or in a match while you're dead).");
+                if (ImGui.Button("< BACK###back"u8, btn))
+                    GoBack();
+                hint = $"Saved automatically. You'll spawn with \"{name}\".";
             }
+
+            // Level bar, right-aligned; the hint text fills the gap (there's room for one more button).
+            var barW = MathF.Min(430 * _scale, (contentMax.X - contentMin.X) * 0.38f);
+            var barMin = new float2(contentMax.X - barW, footerTop);
+            ImGui.SameLine();
+            var hintX = ImGui.GetCursorScreenPos().X + 6 * _scale;
+            var hintW = barMin.X - 14 * _scale - hintX;
+            if (hintW > 90 * _scale)
+            {
+                ImGui.SetCursorScreenPos(new float2(hintX, footerTop + 4 * _scale));
+                if (ImGui.BeginChild("##hint"u8, new float2(hintW, footerH - 4 * _scale), ImGuiChildFlags.None,
+                        ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoBackground))
+                {
+                    ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                    ImGui.TextWrapped(hint);
+                    ImGui.PopStyleColor();
+                }
+                ImGui.EndChild();
+            }
+            LevelBar(barMin, new float2(barW, footerH));
         }
         ImGui.End();
         return deployed;
+    }
+
+    /// <summary>Where you are: "Loadout name / Primary weapon / Kestrel PDW attachments".</summary>
+    private void Breadcrumb()
+    {
+        ImGui.TextColored(Dim, Edit.Name);
+        for (var i = 1; i < _nav.Depth; i++)
+        {
+            var e = _nav[i];
+            ImGui.SameLine();
+            ImGui.TextColored(Dim, " / "u8);
+            ImGui.SameLine();
+            var label = e.Page switch
+            {
+                LoadoutPage.Primary => "Primary weapon",
+                LoadoutPage.Secondary => "Secondary weapon",
+                LoadoutPage.Lethal => "Lethal",
+                LoadoutPage.Tactical => "Tactical",
+                LoadoutPage.Perks => "Perks",
+                LoadoutPage.Attachments => $"{Weapons.Get((byte)Math.Clamp(e.Arg, 0, 255)).Name} attachments",
+                _ => "Progression",
+            };
+            if (i == _nav.Depth - 1)
+                ImGui.Text(label);
+            else
+                ImGui.TextColored(Dim, label);
+        }
+        ImGui.Spacing();
+    }
+
+    /// <summary>The progression page: level, XP, stats and every unlock by level.</summary>
+    private void DrawProgressionPage(float2 size)
+    {
+        var prog = Progress;
+        if (ImGui.BeginChild("##progression"u8, size, ImGuiChildFlags.None))
+        {
+            LevelSummary();
+            ImGui.TextColored(Dim, $"Kills {prog.Kills}   Headshots {prog.Headshots}   Matches {prog.Matches}   Wins {prog.Wins}   Loadout slots {prog.LoadoutSlots}/{CallOfSlop.Progress.MaxLoadoutSlots}");
+            ImGui.Spacing();
+            ProgressionTable();
+        }
+        ImGui.EndChild();
+    }
+
+    /// <summary>
+    /// The level bar in the footer: LEVEL N, XP into the level, the next unlock. Clicking it opens the
+    /// progression page (or goes back from it).
+    /// </summary>
+    private void LevelBar(float2 min, float2 size)
+    {
+        var p = Progress;
+        var open = _nav.Current == LoadoutPage.Progression;
+        ImGui.SetCursorScreenPos(min);
+        if (ImGui.InvisibleButton("##levelbar"u8, size))
+        {
+            if (open)
+                GoBack();
+            else
+                OpenPage(LoadoutPage.Progression);
+        }
+        var hot = ImGui.IsItemHovered();
+        if (hot)
+            ImGui.SetItemTooltip(open ? "Back"u8 : "Show every unlock by level"u8);
+        var dl = ImGui.GetWindowDrawList();
+        var max = min + size;
+        var r = 4 * _scale;
+        dl.AddRectFilled(min, max, open ? new ImColor8(44, 38, 32, 245) : hot ? Hover8 : Card8, r);
+        if (open || hot)
+            dl.AddRect(min, max, Orange8, r, ImDrawFlags.None, 1.5f * _scale);
+        var pad = 10 * _scale;
+        var clip = new float4(min.X, min.Y, max.X, max.Y);
+        var maxed = p.Level >= CallOfSlop.Progress.MaxLevel;
+
+        ImGui.PushFont(default, 18);
+        DlText(dl, new float2(min.X + pad, min.Y + 3 * _scale), Orange8, $"LEVEL {p.Level}", clip);
+        ImGui.PopFont();
+        ImGui.PushFont(default, 14);
+        var link = open ? "< BACK"u8 : "ALL UNLOCKS >"u8;
+        var lw = ImGui.CalcTextSize(link).X;
+        DlText(dl, new float2(max.X - pad - lw, min.Y + 6 * _scale), hot || open ? White8 : new ImColor8(115, 190, 242, 255), link, clip);
+
+        var b0 = new float2(min.X + pad, min.Y + 24 * _scale);
+        var bw = size.X - 2 * pad;
+        dl.AddRectFilled(b0, b0 + new float2(bw, 4 * _scale), new ImColor8(48, 52, 60, 255));
+        var f = maxed ? 1f : Math.Clamp(p.LevelFraction, 0f, 1f);
+        if (f > 0)
+            dl.AddRectFilled(b0, b0 + new float2(bw * f, 4 * _scale), Orange8);
+
+        var cy = min.Y + 30 * _scale;
+        var xp = maxed ? $"MAX LEVEL  -  {p.Xp:N0} XP" : $"{p.XpIntoLevel:N0} / {CallOfSlop.Progress.XpForNext(p.Level):N0} XP";
+        DlText(dl, new float2(min.X + pad, cy), Dim8, xp, clip);
+        if (p.NextUnlock is { } next)
+        {
+            var xw = ImGui.CalcTextSize(xp).X;
+            var text = $"Next: {next.Name} at {next.Level}";
+            var tw = ImGui.CalcTextSize(text).X;
+            var tx = MathF.Max(min.X + pad + xw + 14 * _scale, max.X - pad - tw);
+            DlText(dl, new float2(tx, cy), Dim8, text, new float4(min.X, min.Y, max.X - pad, max.Y));
+        }
+        ImGui.PopFont();
     }
 
     // ---- Overview: slot list + cards ----------------------------------------------------------
@@ -370,22 +531,26 @@ public sealed partial class Ui
 
             var w = ImGui.GetContentRegionAvail().X;
             var gunH = 124 * _scale;
-            if (GunCard(0, eff, w, gunH, ref hot))
-                OpenView(LoadoutView.Primary);
-            if (GunCard(1, eff, w, gunH, ref hot))
-                OpenView(LoadoutView.Secondary);
+            for (var slot = 0; slot < 2; slot++)
+            {
+                var click = GunCard(slot, eff, w, gunH, ref hot);
+                if (click == CardClick.Card)
+                    OpenPage(slot == 0 ? LoadoutPage.Primary : LoadoutPage.Secondary);
+                else if (click == CardClick.Attachments)
+                    OpenPage(LoadoutPage.Attachments, eff.WeaponIn(slot));
+            }
             if (PerksCard(eff.Perks, w, 108 * _scale, ref hot) is { } cat)
             {
                 _perkFocus = cat;
-                OpenView(LoadoutView.Perks);
+                OpenPage(LoadoutPage.Perks);
             }
             var gap = ImGui.GetStyle().ItemSpacing.X;
             var half = (w - gap) / 2;
             if (ThrowableCard(3, "Lethal", eff.Grenade, half, 70 * _scale, ref hot))
-                OpenView(LoadoutView.Lethal);
+                OpenPage(LoadoutPage.Lethal);
             ImGui.SameLine();
             if (ThrowableCard(4, "Tactical", eff.Equipment, half, 70 * _scale, ref hot))
-                OpenView(LoadoutView.Tactical);
+                OpenPage(LoadoutPage.Tactical);
 
             if (!SameAsStored(l, eff))
                 ImGui.TextColored(Orange, "Some items in this loadout are locked at your level, so defaults stand in for them."u8);
@@ -399,29 +564,47 @@ public sealed partial class Ui
     private static bool SameAsStored(Loadout l, Loadout eff) =>
         l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks;
 
-    private void OpenView(LoadoutView v)
+    private enum CardClick
     {
-        _view = v;
-        _gunTab = 0;
-        _hoverThrowable = null;
-        _hoverAttachment = null;
-        _hoverPerk = null;
+        None,
+        Card,
+        Attachments,
     }
 
-    /// <summary>A weapon card: name, class, weapon XP and attachment dots, with the gun drawn on the right.</summary>
-    private bool GunCard(int slot, Loadout eff, float width, float height, ref int hot)
+    /// <summary>
+    /// A weapon card: name, class, weapon XP and attachment dots, with the gun drawn on the right, and an
+    /// "Edit attachments" button beside the name. Says whether the card or the button was clicked.
+    /// </summary>
+    private CardClick GunCard(int slot, Loadout eff, float width, float height, ref int hot)
     {
         var def = Weapons.Get(eff.WeaponIn(slot));
         var kit = eff.KitFor(slot);
         var pos = ImGui.GetCursorScreenPos();
+        bool buttonClicked = false, overButton = false;
         ImGui.PushStyleColor(ImGuiCol.ChildBg, _hotCard == slot ? CardHover : CardBg);
         if (ImGui.BeginChild($"##gun{slot}", new float2(width, height), ImGuiChildFlags.Borders, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
         {
             ImGui.TextColored(Orange, slot == 0 ? "Primary Weapon"u8 : "Secondary Weapon"u8);
+            var nameY = ImGui.GetCursorScreenPos().Y;
             ImGui.PushFont(default, 22);
             ImGui.Text(def.Name);
+            var nameW = ImGui.GetItemRectSize().X;
             ImGui.PopFont();
             ImGui.TextColored(Dim, $"{def.ClassName} - {def.ModeName}");
+            var textW = MathF.Max(nameW, ImGui.GetItemRectSize().X);
+            var after = ImGui.GetCursorScreenPos();
+
+            // "Edit attachments", right of the name and class (the gun picture starts at 52% of the width).
+            var takes = Attachments.For(def).Count > 0;
+            var bw = 150 * _scale;
+            var bx = MathF.Min(pos.X + 10 * _scale + textW + 28 * _scale, pos.X + width * 0.52f - bw - 8 * _scale);
+            ImGui.SetCursorScreenPos(new float2(MathF.Max(bx, pos.X + 10 * _scale), nameY + 2 * _scale));
+            ImGui.BeginDisabled(!takes);
+            if (ImGui.Button(takes ? $"Edit attachments##ea{slot}" : $"No attachments##ea{slot}", new float2(bw, 30 * _scale)))
+                buttonClicked = true;
+            ImGui.EndDisabled();
+            overButton = ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled);
+            ImGui.SetCursorScreenPos(after);
             var fitted = Attachments.InKit(kit).ToArray();
             ImGui.PushTextWrapPos(width * 0.5f); // keep clear of the gun picture on the right
             ImGui.PushStyleColor(ImGuiCol.Text, SlotBlue);
@@ -455,11 +638,12 @@ public sealed partial class Ui
         }
         ImGui.EndChild();
         ImGui.PopStyleColor();
-        if (ImGui.IsItemHovered())
+        if (ImGui.IsItemHovered() && !overButton)
             hot = slot;
-        var clicked = ImGui.IsItemClicked(ImGuiMouseButton.Left);
+        // The button's own click mustn't also open the weapon select.
+        var clicked = !overButton && ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick;
         Thumbs.Add(new GunThumb(Attachments.Apply(def, kit), pos + new float2(width * 0.52f, 22 * _scale), pos + new float2(width - 10 * _scale, height - 6 * _scale)));
-        return clicked;
+        return buttonClicked ? CardClick.Attachments : clicked ? CardClick.Card : CardClick.None;
     }
 
     /// <summary>The three perks with their icons. Returns the category clicked, if any.</summary>
@@ -493,7 +677,7 @@ public sealed partial class Ui
         ImGui.PopStyleColor();
         if (ImGui.IsItemHovered())
             hot = 2;
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
+        if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick)
         {
             var mx = ImGui.GetMousePos().X - pos.X;
             clicked = (PerkCategory)Math.Clamp((int)(mx / (width / 3)), 0, 2);
@@ -530,7 +714,7 @@ public sealed partial class Ui
         ImGui.PopStyleColor();
         if (ImGui.IsItemHovered())
             hot = key;
-        return ImGui.IsItemClicked(ImGuiMouseButton.Left);
+        return ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick;
     }
 
     // ---- Edit views ----------------------------------------------------------------------------
@@ -539,68 +723,24 @@ public sealed partial class Ui
     {
         var prog = Progress;
         var l = Edit;
-        if (ImGui.Button("< Back"u8, new float2(100 * _scale, 0)))
-        {
-            _view = LoadoutView.Overview;
-            _forceView = -1;
-            return;
-        }
-        ImGui.SameLine();
-        var part = _view switch
-        {
-            LoadoutView.Primary => "Primary weapon",
-            LoadoutView.Secondary => "Secondary weapon",
-            LoadoutView.Lethal => "Lethal",
-            LoadoutView.Tactical => "Tactical",
-            _ => "Perks",
-        };
-        ImGui.TextColored(Dim, $"{l.Name}  /  {part}");
+        var page = _nav.Current;
+        var area = new float2(ImGui.GetContentRegionAvail().X, size.Y);
 
-        var gunSlot = _view == LoadoutView.Secondary ? 1 : 0;
-        var gun = Weapons.Get(LoadoutStore.Effective(l, prog).WeaponIn(gunSlot));
-        if (_view is LoadoutView.Primary or LoadoutView.Secondary)
-        {
-            var options = Attachments.For(gun);
-            var wxp = prog.WeaponXp(gun.Id);
-            var open = options.Count(a => wxp >= Attachments.UnlockXp(gun, a));
-            if (ImGui.BeginTabBar(gunSlot == 0 ? "##sub0"u8 : "##sub1"u8))
-            {
-                if (ImGui.BeginTabItem(gunSlot == 0 ? "Choose primary###w"u8 : "Choose secondary###w"u8))
-                {
-                    if (_forceGunTab < 0)
-                        _gunTab = 0;
-                    ImGui.EndTabItem();
-                }
-                var attLabel = options.Count == 0
-                    ? $"{gun.Name}: no attachments###a"
-                    : $"{gun.Name} attachments ({open}/{options.Count})  -  {Attachments.Describe(KitOf(gun))}###a";
-                if (ImGui.BeginTabItem(attLabel))
-                {
-                    _gunTab = 1;
-                    ImGui.EndTabItem();
-                }
-                ImGui.EndTabBar();
-            }
-            if (_forceGunTab >= 0)
-                _gunTab = _forceGunTab;
-        }
-
-        // What's left of the body area under the header and tabs.
-        var area = new float2(ImGui.GetContentRegionAvail().X, MathF.Max(100 * _scale, size.Y - (ImGui.GetCursorScreenPos().Y - _bodyTopY)));
-
-        if (_view is LoadoutView.Primary or LoadoutView.Secondary && _gunTab == 1)
+        if (page == LoadoutPage.Attachments)
         {
             _showcaseLastFrame = true;
-            DrawShowcase(audio, gun, area, winPos, winSize);
+            DrawShowcase(audio, Weapons.Get((byte)Math.Clamp(_nav.Arg, 0, 255)), area, winPos, winSize);
             return;
         }
-        if (_view == LoadoutView.Perks)
+        if (page == LoadoutPage.Perks)
         {
             DrawPerkPicker(audio, area);
             return;
         }
-        if (_view is LoadoutView.Primary or LoadoutView.Secondary)
+        if (page is LoadoutPage.Primary or LoadoutPage.Secondary)
         {
+            var gunSlot = page == LoadoutPage.Secondary ? 1 : 0;
+            var gun = Weapons.Get(LoadoutStore.Effective(l, prog).WeaponIn(gunSlot));
             _showcaseLastFrame = true; // the hero gun is drawn behind the UI, like the showcase
             DrawWeaponSelect(audio, gunSlot, gun, area, winPos, winSize);
             return;
@@ -608,7 +748,7 @@ public sealed partial class Ui
 
         var listWidth = area.X * 0.42f;
         ThrowableDef? hoveredThrowable = null;
-        var equipmentTab = _view == LoadoutView.Tactical;
+        var equipmentTab = page == LoadoutPage.Tactical;
         if (ImGui.BeginChild("##list"u8, new float2(listWidth, area.Y), ImGuiChildFlags.Borders))
         {
             foreach (var t in Throwables.All.Where(t => t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab))
@@ -618,13 +758,20 @@ public sealed partial class Ui
                 var label = unlocked ? $"{t.Name}##t{(int)t.Kind}" : $"[LOCKED] {t.Name}  -  level {CallOfSlop.Progress.UnlockLevel(t.Kind)}##t{(int)t.Kind}";
                 if (!unlocked)
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                if (ImGui.Selectable(label, selected) && unlocked)
+                // A click (or a double-click: its second click lands on the same, now picked, item) picks it.
+                if (ImGui.Selectable(label, selected) && !SecondClick)
                 {
-                    if (equipmentTab)
-                        l.Equipment = t.Kind;
-                    else
-                        l.Grenade = t.Kind;
-                    LoadoutStore.Save();
+                    if (!unlocked)
+                        LockedFeedback(audio);
+                    else if (!selected)
+                    {
+                        if (equipmentTab)
+                            l.Equipment = t.Kind;
+                        else
+                            l.Grenade = t.Kind;
+                        LoadoutStore.Save();
+                        audio.Effect(Sfx.HitTick, 0.4f);
+                    }
                 }
                 if (!unlocked)
                     ImGui.PopStyleColor();
@@ -648,6 +795,29 @@ public sealed partial class Ui
     }
 
     private float _bodyTopY; // screen Y where the body area starts this frame
+
+    /// <summary>
+    /// Is this click the second half of a double-click whose first click just acted (picked something or
+    /// changed page)? Then it mustn't act again on whatever is now under the mouse.
+    /// </summary>
+    private bool SecondClick => _swallowClick;
+
+    private bool _swallowClick;
+
+    /// <summary>Once per frame: notices a double-click whose first click acted, and swallows its second click until the button is released.</summary>
+    private void TrackSecondClick()
+    {
+        if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && ImGui.GetTime() - _actTime < 0.5)
+            _swallowClick = true;
+        else if (_swallowClick && !ImGui.IsMouseDown(ImGuiMouseButton.Left) && !ImGui.IsMouseReleased(ImGuiMouseButton.Left))
+            _swallowClick = false;
+    }
+
+    /// <summary>Remembers that a click just acted (see <see cref="SecondClick"/>).</summary>
+    private void Acted() => _actTime = ImGui.GetTime();
+
+    /// <summary>Clicked something locked: a dry click instead of a pick.</summary>
+    private static void LockedFeedback(Audio audio) => audio.Effect(Sfx.DryFire, 0.5f);
 
     /// <summary>Three columns, one per category: click a perk to carry it in this loadout.</summary>
     private void DrawPerkPicker(Audio audio, float2 area)
@@ -719,11 +889,17 @@ public sealed partial class Ui
                         hovered = def;
                         _perkFocus = cat;
                     }
-                    if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && unlocked && !selected)
+                    // A click picks it (a double-click's second click lands on the picked card and does nothing more).
+                    if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !SecondClick)
                     {
-                        l.Perks = l.Perks.With(cat, def.Id);
-                        LoadoutStore.Save();
-                        audio.Effect(Sfx.HitTick, 0.4f);
+                        if (!unlocked)
+                            LockedFeedback(audio);
+                        else if (!selected)
+                        {
+                            l.Perks = l.Perks.With(cat, def.Id);
+                            LoadoutStore.Save();
+                            audio.Effect(Sfx.HitTick, 0.4f);
+                        }
                     }
                 }
             }

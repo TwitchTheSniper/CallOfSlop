@@ -203,7 +203,7 @@ public static unsafe class Program
             return;
         }
 
-        if (_smokeMap == 0 && _smokeWeaponSelect < 5)
+        if (_smokeMap == 0 && _smokeWeaponSelect < 7)
         {
             SmokeWeaponSelect(now, t);
             return;
@@ -282,7 +282,7 @@ public static unsafe class Program
 
     /// <summary>
     /// Smoke step on the first map: the weapon-select screen ("Choose primary"), screenshotted as is and
-    /// with a locked gun shown as if hovered. Then the usual steps start (their clock restarts).
+    /// with a locked gun selected (previewed, EQUIP greyed out), then the progression page. Then the usual steps start (their clock restarts).
     /// </summary>
     private static void SmokeWeaponSelect(double now, double t)
     {
@@ -307,6 +307,14 @@ public static unsafe class Program
                 _smokeWeaponSelect++;
                 break;
             case 4 when t > 2.7:
+                Ui.SmokeTab(7); // the progression page (opened from the footer's level bar)
+                _smokeWeaponSelect++;
+                break;
+            case 5 when t > 3.3:
+                SmokeShot("loadout_progression");
+                _smokeWeaponSelect++;
+                break;
+            case 6 when t > 3.5:
                 Ui.SmokeTab(0); // back to the overview, then the usual steps
                 _smokeWeaponSelect++;
                 _smokeStepStart = now;
@@ -796,6 +804,13 @@ public static unsafe class Program
             return;
         }
 
+        // Main menu > Loadouts: Esc is the screen's Back (one page back, then out to the menu).
+        if (_session == null && key == GlfwKey.Escape && Ui.LobbyLoadouts)
+        {
+            Ui.LoadoutBack();
+            return;
+        }
+
         if (_session == null || key != GlfwKey.Escape)
             return; // everything else is polled through the keybinds in UpdateLocalPlayer
 
@@ -806,8 +821,9 @@ public static unsafe class Program
         }
         if (Ui.MenuOpen)
         {
-            Ui.MenuOpen = false;
-            SetMouseCaptured(true);
+            // Same as the loadout screen's Back: one page back, and from the overview it closes.
+            if (Ui.LoadoutBack())
+                SetMouseCaptured(true);
         }
         else
         {
