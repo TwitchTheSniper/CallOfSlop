@@ -20,7 +20,7 @@ public static class StreakRender
         foreach (var e in game.StreakEntities.Values)
         {
             var owner = game.Players.GetValueOrDefault(e.Owner);
-            var friendly = local != null && owner != null && !Game.StreakIsEnemy(owner, local);
+            var friendly = local != null && owner != null && !game.StreakIsEnemy(owner, local);
             var stripe = owner?.Color ?? new Vector3(0.6f, 0.6f, 0.6f);
             if (e.Kind == StreakId.SentryTurret)
                 DrawTurret(gfx, e, stripe, friendly, now);

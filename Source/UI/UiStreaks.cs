@@ -308,11 +308,11 @@ public sealed partial class Ui
                 var ready = s.IsReady(id);
                 var targeting = game.StreakTargeting == id;
                 var pulse = ready ? 0.6f + 0.4f * MathF.Sin((float)now * 6f) : 0f;
-                DrawStreakIcon(dl, id, c, r, locked: !ready && s.Count < def.Kills, glow: targeting ? 1f : pulse);
+                DrawStreakIcon(dl, id, c, r, locked: !ready, glow: targeting ? 1f : pulse);
                 // Key above, cost and progress below
                 var key = Keybinds.Name(settings.Bind(GameAction.Streak1 + i));
                 SizedText(dl, new float2(c.X, c.Y - r - font - 4 * _scale), font, ready ? new ImColor8(255, 255, 255, 240) : Dim8, ready ? $"[{key}] READY" : $"[{key}]", 0.5f);
-                var got = Math.Min((int)s.Count, def.Kills);
+                var got = Math.Min(s.ProgressOf(id), def.Kills);
                 var py = c.Y + r + 7 * _scale;
                 if (def.Kills <= 8)
                 {

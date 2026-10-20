@@ -147,7 +147,7 @@ public sealed partial class Ui
 
                 case Page.SinglePlayer:
                     Title("Single player - you against bots");
-                    ImGui.TextColored(Dim, $"Matches: first to {Game.WinKills} kills, win by {Game.WinMargin}, {Game.MatchSeconds / 60:0} minutes max.");
+                    ModePicker(s);
                     MapPicker(s);
                     ImGui.SetNextItemWidth(260 * _scale);
                     ImGui.SliderInt("Bots"u8, ref s.Bots, 1, Game.MaxPlayers - 1);
@@ -170,7 +170,7 @@ public sealed partial class Ui
 
                 case Page.Multiplayer:
                     Title("Multiplayer - up to 8 players over LAN or the internet");
-                    ImGui.TextColored(Dim, $"Matches: first to {Game.WinKills} kills, win by {Game.WinMargin}, {Game.MatchSeconds / 60:0} minutes max.");
+                    ImGui.TextColored(Dim, "The host picks the game mode. Each match starts once everyone has readied up in the warmup."u8);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
@@ -210,7 +210,9 @@ public sealed partial class Ui
                             _page = Page.Main;
                         break;
                     }
+                    ModePicker(s);
                     MapPicker(s);
+                    AutoStartPicker(s);
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
@@ -296,6 +298,8 @@ public sealed partial class Ui
                 ImGui.TextColored(Dim, e.FromMaster ? "  public" : "  LAN");
                 ImGui.TableNextColumn();
                 ImGui.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
+                ImGui.SameLine();
+                ImGui.TextColored(Dim, GameModes.Short(i.Mode));
                 ImGui.TableNextColumn();
                 ImGui.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
                 ImGui.TableNextColumn();
@@ -677,6 +681,18 @@ public sealed partial class Ui
                     s.HudWidth = (HudWidth)hud;
             }
             ImGui.TextColored(Dim, "On ultra-wide monitors, keeps the in-match HUD in a centred area this wide. The crosshair is always centred."u8);
+
+            ImGui.Spacing();
+            ImGui.Text("Foliage"u8);
+            var foliage = (int)s.FoliageQuality;
+            for (var i = 0; i <= (int)FoliageQuality.High; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(FoliageQuality)i}##foliage", ref foliage, i))
+                    s.FoliageQuality = (FoliageQuality)foliage;
+            }
+            ImGui.TextColored(Dim, "Grass, bushes and tree tops on maps that have them. Lower it for more fps. Tree trunks are always there (they stop bullets)."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);

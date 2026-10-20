@@ -111,6 +111,12 @@ public sealed class StreakState
     /// <summary>Earned and not used yet: one bit per <see cref="StreakId"/>. Earned streaks survive death until used.</summary>
     public byte Ready;
 
+    /// <summary>
+    /// Kills stored towards each streak, indexed by <see cref="StreakId"/>. Each streak fills on its own: using one empties
+    /// it so it can be earned again with fresh kills; dying empties the ones not earned yet.
+    /// </summary>
+    public readonly byte[] Progress = new byte[8];
+
     /// <summary>Server: bots pick random streaks once.</summary>
     public bool BotPicked;
 
@@ -118,10 +124,22 @@ public sealed class StreakState
 
     public bool IsReady(StreakId id) => (Ready & Bit(id)) != 0;
 
+    /// <summary>Kills stored towards this streak (its full cost once it's ready).</summary>
+    public int ProgressOf(StreakId id) => id == StreakId.None || (int)id >= Progress.Length ? 0 : Progress[(int)id];
+
+    /// <summary>Empties every streak that isn't earned yet (on death and spawn).</summary>
+    public void ClearUnearned()
+    {
+        for (var i = 1; i < Progress.Length; i++)
+            if ((Ready & Bit((StreakId)i)) == 0)
+                Progress[i] = 0;
+    }
+
     public void Reset()
     {
         Count = 0;
         Ready = 0;
+        Array.Clear(Progress);
     }
 }
 
@@ -300,15 +318,26 @@ public static class KillStreaks
 
     /// <summary>Server -> one client: your streak count, earned streaks and carried slots.</summary>
     public static void WriteState(PacketWriter w, StreakState s) =>
-        w.Begin(Msg.StreakState).U8(s.Count).U8(s.Ready).U8((byte)s.Slots.A).U8((byte)s.Slots.B).U8((byte)s.Slots.C);
+        w.Begin(Msg.StreakState).U8(s.Count).U8(s.Ready).U8((byte)s.Slots.A).U8((byte)s.Slots.B).U8((byte)s.Slots.C)
+            .U8((byte)s.ProgressOf(s.Slots.A)).U8((byte)s.ProgressOf(s.Slots.B)).U8((byte)s.ProgressOf(s.Slots.C));
 
-    public const int StateBytes = 5;
+    public const int StateBytes = 8;
 
     public static void ReadState(ref PacketReader r, StreakState s)
     {
         s.Count = r.U8();
         s.Ready = r.U8();
-        s.Slots = new StreakSet((StreakId)r.U8(), (StreakId)r.U8(), (StreakId)r.U8()).Sanitized();
+        var a = (StreakId)r.U8();
+        var b = (StreakId)r.U8();
+        var c = (StreakId)r.U8();
+        Array.Clear(s.Progress);
+        foreach (var id in new[] { a, b, c })
+        {
+            var got = r.U8();
+            if (id != StreakId.None && (int)id < s.Progress.Length)
+                s.Progress[(int)id] = got;
+        }
+        s.Slots = new StreakSet(a, b, c).Sanitized();
     }
 }
 
@@ -320,13 +349,19 @@ public static class KillStreaks
 public sealed partial class Game
 {
     /// <summary>Kill streaks on or off for this match (the lead wires this to the game mode: Gun Game turns them off).</summary>
-    public bool StreaksEnabled { get; set; } = true;
+    public bool StreaksEnabled
+    {
+        get => _streaksSwitch && ModeAllowsStreaks; // Gun Game: off
+        set => _streaksSwitch = value;
+    }
+
+    private bool _streaksSwitch = true;
 
     /// <summary>
     /// Is <paramref name="other"/> an enemy of a streak's owner? The ONE place streaks decide who they hurt, reveal and jam.
     /// </summary>
-    // TODO(lead): use IsEnemy from game modes
-    public static bool StreakIsEnemy(Player owner, Player other) => other != owner;
+    /// Teams count (game modes): a streak never hurts, reveals or jams its owner's teammates.
+    public bool StreakIsEnemy(Player owner, Player other) => IsEnemy(owner, other);
 
     /// <summary>The streaks picked in the menu (sent with the loadout).</summary>
     public StreakSet ChosenStreaks = StreakSet.Starter;
@@ -366,6 +401,7 @@ public sealed partial class Game
         if (victim.Streak.Count != 0)
         {
             victim.Streak.Count = 0;
+            victim.Streak.ClearUnearned();
             SendStreakState(victim);
         }
         // Classic rules: streak kills don't chain, suicides and kills after your own death don't count.
@@ -374,9 +410,17 @@ public sealed partial class Game
         var s = attacker.Streak;
         if (s.Count < 255)
             s.Count++;
+        // Each streak not yet earned stores the kill; reaching its cost earns it. Ready ones wait until used.
         foreach (var id in s.Slots.Ids)
-            if (s.Count == KillStreaks.Get(id).Kills)
+        {
+            if (s.IsReady(id))
+                continue;
+            var kills = KillStreaks.Get(id).Kills;
+            if (s.Progress[(int)id] < kills)
+                s.Progress[(int)id]++;
+            if (s.Progress[(int)id] >= kills)
                 s.Ready |= StreakState.Bit(id);
+        }
         SendStreakState(attacker);
     }
 
@@ -395,6 +439,7 @@ public sealed partial class Game
         foreach (var id in s.Slots.Ids)
             keep |= StreakState.Bit(id);
         s.Ready &= keep;
+        s.ClearUnearned();
         SendStreakState(p);
     }
 
@@ -511,6 +556,7 @@ public sealed partial class Game
             pos = SpawnDrone(p, now).Pos;
         }
         s.Ready &= (byte)~StreakState.Bit(id);
+        s.Progress[(int)id] = 0; // used: empty it so fresh kills earn it again
         SendStreakState(p);
         p.LastCombatTime = now;
 

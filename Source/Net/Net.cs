@@ -33,6 +33,9 @@ public enum Msg : byte
     StreakEvent, // server -> all: a streak was called in, or a turret/drone was destroyed
     StreakState, // server -> one client: your streak count, earned streaks and carried streaks
     StreakEnts, // server -> all: turrets and drones (with each snapshot while any exist, unreliable)
+    Ready, // client -> server: I'm ready / not ready (warmup)
+    ModeState, // server -> all: game mode, teams, ready flags, gun levels, scores, hill and flags (unreliable, ~10 Hz)
+    ModeEvent, // server -> all: a game-mode line for the kill feed + a sound (flag taken, hill moved...)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

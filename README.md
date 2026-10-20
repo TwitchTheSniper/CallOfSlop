@@ -41,12 +41,38 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 
 ### Matches
 
+- These are the **Free-for-all** rules (the default). The host can pick another game mode; see *Game modes*.
 - **First to 11 kills wins, but you must be 2 kills clear** of the next player (like tennis). At 11-10 the match carries on until someone leads by two.
-- **5-second countdown** at the start of every match: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
+- **Warmup and ready-up** before every match (the first one and each one after the map vote): see *Ready-up* below.
+- **5-second countdown** once everyone is ready: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
 - **10 minutes max.** When the clock runs out, the kill leader wins; a tie at the top is a draw.
 - The clock and the score (you vs. the best other player) sit at the top of the screen. It turns orange with "Win by 2!" when the match goes to deuce.
 - At the end you get VICTORY / DEFEAT / DRAW and the final scoreboard. Nobody can be hurt on that screen, and a new match starts on the same map after 12 seconds.
 - Same rules in single player and multiplayer; the host's game decides when a match ends.
+
+### Ready-up
+
+- Every match opens with a **warmup**. The loadout screen opens; you can pick a loadout, respawn and walk around, but nobody can be hurt or shoot. A panel on the left lists everyone with a tick for who's ready.
+- Press **F3** (rebindable: *Ready up*) or click **READY UP** in the loadout screen footer or the panel. The 5-second countdown starts as soon as **every person** is ready. Bots are always ready.
+- **Single player:** Ready, Deploy or Respawn starts the countdown straight away.
+- **Hosting:** the panel has a **FORCE START** button. The Host screen also has *Auto-start the match once someone is ready* (off by default): when it's on, the match starts that many seconds after the first person readies up, even if others haven't.
+- When the countdown starts, everyone is put back at a spawn point. People who join during the warmup start not ready. People who join mid-match, or who leave, never hold anyone up.
+
+### Game modes
+
+Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode has the same 10-minute limit.
+
+| Mode | Rules |
+| --- | --- |
+| **Free-for-all** | First to 11 kills, win by 2 (above). |
+| **Team Deathmatch** | Two teams (Blue and Red), auto-balanced, bots included. First team to **40 kills**. No friendly fire, grenades and streaks included (your own grenade can still hurt you). You spawn on your team's side of the map. |
+| **King of the Hill** | Two teams. A glowing ring marks the hill. Hold it with **only your team** inside for **1 point a second**; while both teams are in it (contested) nobody scores. The hill moves to the next zone every **60 s**. First to **150 points**. |
+| **Capture the Flag** | Two teams, a flag at each base. Touch the enemy flag to take it; bring it to **your own flag** to capture, which only works while your flag is at home. A carrier who dies drops it; a teammate touching a dropped flag sends it home, otherwise it returns by itself after **20 s**. Carriers keep their guns, and a light beam over them (and over a dropped flag) shows through walls. First to **3 captures**. |
+| **Gun Game** | Everyone starts with the same gun, the first one in the unlock order, whatever they've unlocked. Each kill moves you to the next gun; a **melee kill also sets the victim back one gun**. The first kill with the last gun wins (a melee kill on the last gun doesn't count). Loadouts, grenades, perks and kill streaks are off. The ladder is 20 guns, evenly spaced through the 50-odd weapons in unlock order. |
+
+Team modes colour everyone blue or red (players, scoreboard, kill card). King of the Hill is played by teams. The HUD shows the hill's holder, its distance and direction and when it moves; the state of both flags; or your Gun Game weapon, the next one and the leader. The scoreboard groups players by team (or by gun level). If a player leaves and the teams end up two apart, a bot switches sides.
+
+Maps can place team spawns, hills and flags by hand; otherwise the game works them out from the map (see Maps/README.md).
 
 ### Attachments (gunsmith)
 
@@ -125,7 +151,7 @@ Press **V** for a quick rifle-butt. It reaches about 2.4 m and does 55 damage, s
 
 ### Respawning
 
-- **Loadouts only change between lives.** During a life you can still edit loadouts, and the changes apply the next time you spawn. The one exception is the 5-second pre-match countdown, when changes apply immediately.
+- **Loadouts only change between lives.** During a life you can still edit loadouts, and the changes apply the next time you spawn. The exceptions are the warmup and the 5-second pre-match countdown, when changes apply immediately.
 - **Death cam and kill card.** When you die, the camera rises over your body, then turns to face whoever killed you and zooms in a little, following them for about 3 seconds. A **kill card** shows the killer's name, their gun with its attachments (optic marked), headshot, distance, how much health they had left and their streak (melee, grenades, streak rewards and killing yourself get their own versions). Click, or press the loadout key, to skip straight to the loadout screen. On wide screens the card stays next to the loadout window.
 - **Nobody is force-respawned.** When you die, the loadout screen opens after the death cam. Pick a loadout, then click **RESPAWN**. The button counts down the 3-second respawn delay, and clicking early queues it. You also start every session on this screen.
 - Close the screen to just watch. Press the loadout key to reopen it.
@@ -189,6 +215,8 @@ The lobby groups maps by size. Medium and large maps add distance haze so the fa
 
 **Maps are data files.** Each map is one `.json` file in a pack folder under `Maps`: its name, size, sky colour and a list of building ops (`Building`, `WallX`/`WallZ` with door and window holes, `Slab` with stairwells, `StairsX`/`StairsZ`, `Container`, `Car`, `Hill`, `Tree`, `Watchtower`, `Hangar`, `Bridge`, `TrainCar`...). To add a map, drop a file into a pack folder (or a whole pack folder into `Maps`) and click **Refresh maps** in the lobby; no restart or recompiling. In single player, **Reload map files** in the Esc menu rebuilds the map you're standing in from its file, for quick edit-and-look map making. Anyone can make one: **[Maps/README.md](Maps/README.md)** is the map makers' guide, with a full example and every op. A file with a mistake is skipped with a message that names the file and the problem (also shown in the lobby), and `CallOfSlop.exe --check-map FILE` checks one without starting the game. Online, servers and clients identify maps by name plus a geometry fingerprint, so a player missing a host's custom map is told which file to get, and the server browser shows maps you don't have in orange.
 
+**Foliage.** A map file can also have a `"foliage"` section: grass, bushes, shrubs and trees scattered over areas, or placed one by one (see [Maps/README.md](Maps/README.md#foliage)). Only tree trunks are solid. The rest is drawn with instancing, culled in 16 m chunks, thinned out with distance through a dither (no popping) and sways in the wind. The **Dev** pack's **Foliage Test** map is a flat 100 m meadow for trying it out. Lighting (sun, sky and ground ambient, fog) is shared by boxes and plants (`Source/Render/Lighting.cs`).
+
 Movement handles any stack of boxes: you stand on anything, walk up steps up to 0.55 m, and bump your head on ceilings.
 
 
@@ -212,6 +240,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | G | Throw grenade |
 | F | Use equipment (Recon Pulse) |
 | V | Melee |
+| F3 | Ready up (warmup) |
 | 4 / 5 / 6 | Use a kill streak (cheapest first); for aimed ones, then fire to call it in |
 | B | Loadout menu |
 | Tab (hold) | Scoreboard |
@@ -223,6 +252,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 - **Borderless fullscreen:** a frameless window covering the monitor at its native resolution. Alt-tab is instant.
 - **Fullscreen:** exclusive fullscreen at the resolution you choose.
 - **UI scale:** menus and HUD scale with the window height automatically (about 1.2x at 1080p, 1.6x at 1440p). The slider adjusts on top of that, from 0.6x to 2x, and applies when you let go.
+- **Foliage:** **Off / Low / Medium** (default) **/ High**. How much grass, how many bushes and shrubs, and how far away they're drawn, on maps that have foliage (try the **Dev** pack's **Foliage Test** map). Off draws none of it and costs nothing. Tree trunks are always there, because they're solid: they stop players and bullets. Grass, bushes and tree tops never do. The game logs a `[foliage]` line every 5 seconds on foliage maps (plants drawn, draw calls, CPU and GPU time) in callofslop.log.
 - **HUD width:** on ultra-wide monitors the in-match HUD (session info, kill feed, health, ammo, match bar, banners, scoreboard) stays inside a centred area so it's easy to read. **16:9** (default) keeps it 2560 px wide on a 3440x1440 or 5120x1440 screen; **21:9** allows 3360 px; **Full width** uses the screen edges. On 16:9 or narrower screens all three are the same. The crosshair is always centred, and the scope and damage effects always cover the whole screen.
 
 ### Stances
@@ -305,8 +335,8 @@ The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachmen
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
-  - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow, full ADS through a red dot, a 3x and a 12x (`smoke_ads_*.bmp`), the death cam (a bot kills you; `smoke_deathcam.bmp`) and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow, full ADS through a red dot, a 3x and a 12x (`smoke_ads_*.bmp`), the arms during a reload, a sprint and a melee (`smoke_arms_*.bmp`), the death cam (a bot kills you; `smoke_deathcam.bmp`) and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works
 
@@ -334,6 +364,16 @@ Start.bat --lag=150 --loss=3
 
 On clients, the window title shows ping, the current interpolation delay, and the size of the last prediction correction ("fix ... cm").
 
+**Arms and gun animation**
+
+Your gun is held by box arms (sleeves in your player colour, tan gloves). Everything is procedural, with no animation files:
+- `Render/ArmAnchors.cs` knows where the hands go on each gun model (grip, handguard or pump, magazine well, bolt or slide, muzzle), including foregrips, lasers and magazine attachments, and picks the reload style: box magazine, pistol mag drop, revolver speedloader, shell-by-shell tube, break-open, bolt action, LMG box or muzzle loader.
+- `Render/ViewModelAnimator.cs` moves the gun (hip and ADS, breathing sway, walk bob, sprint, jump and landing dip, equip, a rifle-butt or pistol-whip melee, the reload of each style timed to the weapon's reload time, the ledge plant while mantling, recoil kick) and works out where both hands are.
+- `Render/Arms.cs` solves each arm with two-bone IK (shoulder, elbow pole, wrist) as a small hierarchy: shoulder, upper arm, forearm, hand.
+- `Render/ThirdPersonArms.cs` gives other players the same arms, with simple reload, sprint and melee poses from the game's reload and melee events.
+
+The shoulders are fixed to the camera, not the screen edges, so on wide and ultrawide screens the arms come in from the bottom and aren't stretched. When you aim through a magnified optic, the off hand moves back onto the magazine so it stays out of the lens.
+
 **Project layout**
 
 ```
@@ -351,7 +391,8 @@ Source/
   Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
   Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
                      fingerprint, --check-weapon), GunModel (procedural weapon models)
-  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array), StreakRender (turrets, drones, strikes)
+  Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array), StreakRender (turrets, drones, strikes),
+                     Arms + ArmAnchors + ViewModelAnimator + ThirdPersonArms (arms, IK and gun animation)
   UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith,
                      UiStreaks (streak card, picker, icons and HUD)
   Audio/             Audio (OpenAL playback + procedural sound synthesis)
