@@ -1316,6 +1316,7 @@ public sealed partial class Game : IDisposable
                 if (!p.Owns(weapon))
                     break;
                 Audio.Reload(Weapons.Get(weapon), p.RenderEye);
+                ThirdPersonArms.OnReload(p.Id, p.DefFor(weapon).Reload, now);
                 Net.Broadcast(ReloadFx(p.Id, weapon), PacketReliability.Unreliable);
                 break;
             }
@@ -1397,7 +1398,10 @@ public sealed partial class Game : IDisposable
                 var who = r.U8();
                 var weapon = r.U8();
                 if (who != LocalId && Players.TryGetValue(who, out var p))
+                {
                     Audio.Reload(Weapons.Get(weapon), p.RenderEye);
+                    ThirdPersonArms.OnReload(who, p.DefFor(weapon).Reload, now);
+                }
                 break;
             }
             case (byte)Msg.Kill when !IsServer && r.Has(4):
