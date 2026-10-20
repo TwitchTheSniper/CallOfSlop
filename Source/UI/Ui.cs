@@ -89,15 +89,13 @@ public sealed partial class Ui : IDisposable
         _renderer!.NewFrame();
         ImGui.NewFrame();
         _loadoutDrawn = false;
+        Thumbs.Clear(); // re-added every frame by whatever draws them (loadout cards, the kill card)
     }
 
     public void EndFrame()
     {
         if (!_loadoutDrawn)
-        {
-            Preview = null; // the loadout screen closed: no gun previews to draw
-            Thumbs.Clear();
-        }
+            Preview = null; // the loadout screen closed: no gun preview to draw
         ImGui.Render();
         _renderer!.RenderDrawData(ImGui.GetDrawData());
         ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
@@ -253,6 +251,8 @@ public sealed partial class Ui : IDisposable
             }
             ImGui.End();
         }
+
+        DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
 
         // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
         var prog = Progress;

@@ -30,6 +30,7 @@ public sealed partial class Ui
     private bool _renaming;
     private int _hotCard = -1; // card under the mouse last frame (highlight)
     private bool _loadoutDrawn; // was the loadout screen on screen this frame?
+    private (float2 Min, float2 Max) _loadoutRect; // where the loadout window was this frame
     private double _actTime = -10; // ImGui time of the last click that picked something or changed page (see SecondClick)
 
     /// <summary>Gun pictures for the cards this frame (drawn by Program after the UI).</summary>
@@ -162,7 +163,7 @@ public sealed partial class Ui
     // Smoke-test hooks (see Program.SmokeTick)
     /// <summary>
     /// Smoke test: 4/5 = primary/secondary attachments (opened through the weapon select, so Back would
-    /// return there), 6 = perks, 7 = the progression page, 0 = back to the overview.
+    /// return there), 6 = perks, 7 = the progression page, 8 = kill streaks, 0 = back to the overview.
     /// </summary>
     public void SmokeTab(int tab)
     {
@@ -181,6 +182,9 @@ public sealed partial class Ui
                 break;
             case 7:
                 OpenPage(LoadoutPage.Progression);
+                break;
+            case 8:
+                OpenPage(LoadoutPage.Streaks);
                 break;
         }
     }
@@ -241,6 +245,7 @@ public sealed partial class Ui
         {
             var winPos = ImGui.GetWindowPos();
             var winSize = ImGui.GetWindowSize();
+            _loadoutRect = (winPos, winPos + winSize); // the kill card sits beside it if there's room
             var style = ImGui.GetStyle();
             var contentMin = winPos + style.WindowPadding;
             var contentMax = winPos + winSize - style.WindowPadding;
@@ -354,6 +359,7 @@ public sealed partial class Ui
                 LoadoutPage.Tactical => "Tactical",
                 LoadoutPage.Perks => "Perks",
                 LoadoutPage.Attachments => $"{Weapons.Get((byte)Math.Clamp(e.Arg, 0, 255)).Name} attachments",
+                LoadoutPage.Streaks => "Kill streaks",
                 _ => "Progression",
             };
             if (i == _nav.Depth - 1)
@@ -551,6 +557,8 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ThrowableCard(4, "Tactical", eff.Equipment, half, 70 * _scale, ref hot))
                 OpenPage(LoadoutPage.Tactical);
+            if (StreaksCard(eff.Streaks, w, 76 * _scale, ref hot))
+                OpenPage(LoadoutPage.Streaks);
 
             if (!SameAsStored(l, eff))
                 ImGui.TextColored(Orange, "Some items in this loadout are locked at your level, so defaults stand in for them."u8);
@@ -562,7 +570,8 @@ public sealed partial class Ui
     private static string DefaultLockedName(int slot) => $"Loadout slot {slot + 1}";
 
     private static bool SameAsStored(Loadout l, Loadout eff) =>
-        l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks;
+        l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks
+        && l.Streaks.Sanitized() == eff.Streaks;
 
     private enum CardClick
     {
@@ -735,6 +744,11 @@ public sealed partial class Ui
         if (page == LoadoutPage.Perks)
         {
             DrawPerkPicker(audio, area);
+            return;
+        }
+        if (page == LoadoutPage.Streaks)
+        {
+            DrawStreakPicker(audio, area);
             return;
         }
         if (page is LoadoutPage.Primary or LoadoutPage.Secondary)

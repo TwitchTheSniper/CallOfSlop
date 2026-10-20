@@ -26,6 +26,9 @@ public enum GameAction
     Grenade,
     Equipment,
     Melee,
+    Streak1,
+    Streak2,
+    Streak3,
     COUNT,
 }
 
@@ -63,6 +66,9 @@ public static class Keybinds
         Key(GlfwKey.G),
         Key(GlfwKey.F),
         Key(GlfwKey.V),
+        Key(GlfwKey.Number4),
+        Key(GlfwKey.Number5),
+        Key(GlfwKey.Number6),
     ];
 
     public static string Label(GameAction a) =>
@@ -88,6 +94,9 @@ public static class Keybinds
             GameAction.Grenade => "Throw grenade",
             GameAction.Equipment => "Use equipment",
             GameAction.Melee => "Melee",
+            GameAction.Streak1 => "Kill streak 1 (cheapest)",
+            GameAction.Streak2 => "Kill streak 2",
+            GameAction.Streak3 => "Kill streak 3 (biggest)",
             _ => a.ToString(),
         };
 

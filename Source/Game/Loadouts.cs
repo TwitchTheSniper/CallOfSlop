@@ -1,6 +1,6 @@
 namespace CallOfSlop;
 
-/// <summary>One loadout slot: two guns with their attachments, a grenade, a piece of equipment and three perks.</summary>
+/// <summary>One loadout slot: two guns with their attachments, a grenade, a piece of equipment, three perks and three kill streaks.</summary>
 public sealed class Loadout
 {
     public string Name = "";
@@ -9,6 +9,7 @@ public sealed class Loadout
     public uint PrimaryKit, SecondaryKit;
     public ThrowableKind Grenade, Equipment;
     public PerkSet Perks = PerkSet.Empty;
+    public StreakSet Streaks = StreakSet.Starter;
 
     public Loadout Clone() => (Loadout)MemberwiseClone();
 
@@ -79,7 +80,23 @@ public static class LoadoutStore
             if (!progress.IsUnlocked(perks[c]))
                 perks = perks.With(c, PerkId.None);
         e.Perks = perks;
+        e.Streaks = EffectiveStreaks(l.Streaks, progress);
         return e;
+    }
+
+    /// <summary>Locked streaks swapped for a starter that isn't in the set yet (or left empty).</summary>
+    public static StreakSet EffectiveStreaks(StreakSet set, Progress progress)
+    {
+        var s = set.Sanitized();
+        foreach (var id in s.Ids.ToArray())
+        {
+            if (progress.IsUnlocked(id))
+                continue;
+            s = s.Without(id);
+            if (KillStreaks.Starters.FirstOrDefault(x => !s.Has(x)) is var starter and not StreakId.None)
+                s = s.With(starter);
+        }
+        return s;
     }
 
     /// <summary>The attachments last used on a weapon.</summary>
@@ -122,22 +139,39 @@ public static class LoadoutStore
     //   loadout1.grenade=Frag
     //   loadout1.equipment=None
     //   loadout1.perks=Low Profile, Bloodthirst, Point Blank
+    //   loadout1.streaks=Recon Sweep, Mortar Barrage, Sentry Turret   (files from before kill streaks: the starters)
     //   kit.Hornet SMG=Red Dot, Suppressor      (last build per gun)
     //
     // Older files had one loadout (primary=..., secondary=..., grenade=..., equipment=...): it becomes slot 1.
 
     public static void Load()
     {
+        string[]? lines = null;
+        try
+        {
+            if (File.Exists(PathName))
+                lines = File.ReadAllLines(PathName);
+        }
+        catch
+        {
+            lines = []; // unreadable file: defaults (but not a brand-new player)
+        }
+        LoadLines(lines);
+    }
+
+    /// <summary>Reads loadout.txt lines (null = no file yet: a brand-new player). The self-test uses this directly.</summary>
+    public static void LoadLines(string[]? fileLines)
+    {
         for (var i = 0; i < Slots.Length; i++)
             Slots[i] = DefaultLoadout(i);
         Selected = 0;
         LastKit.Clear();
-        var fresh = !File.Exists(PathName);
+        var fresh = fileLines == null;
         try
         {
             if (!fresh)
             {
-                foreach (var line in File.ReadAllLines(PathName))
+                foreach (var line in fileLines!)
                 {
                     var parts = line.Split('=', 2);
                     if (parts.Length != 2)
@@ -208,6 +242,15 @@ public static class LoadoutStore
             case "equipment" when Enum.TryParse<ThrowableKind>(value, out var e) && (e == ThrowableKind.None || Throwables.Get(e).IsEquipment):
                 l.Equipment = e;
                 break;
+            case "streaks":
+            {
+                var set = StreakSet.Empty;
+                foreach (var name in value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                    if (KillStreaks.Find(name) is { } streak)
+                        set = set.With(streak.Id);
+                l.Streaks = set;
+                break;
+            }
             case "perks":
             {
                 var set = PerkSet.Empty;
@@ -234,27 +277,34 @@ public static class LoadoutStore
             return;
         try
         {
-            var lines = new List<string> { $"selected={Selected}" };
-            for (var i = 0; i < Slots.Length; i++)
-            {
-                var l = Slots[i];
-                var k = $"loadout{i + 1}.";
-                string PerkName(PerkId id) => id == PerkId.None ? "" : Perks.Get(id).Name;
-                lines.Add($"{k}name={l.Name}");
-                lines.Add($"{k}primary={Weapons.Get(l.Primary).Name}");
-                lines.Add($"{k}primary.kit={KitText(l.PrimaryKit)}");
-                lines.Add($"{k}secondary={Weapons.Get(l.Secondary).Name}");
-                lines.Add($"{k}secondary.kit={KitText(l.SecondaryKit)}");
-                lines.Add($"{k}grenade={l.Grenade}");
-                lines.Add($"{k}equipment={l.Equipment}");
-                lines.Add($"{k}perks={string.Join(", ", new[] { l.Perks.Movement, l.Perks.Survival, l.Perks.Damage }.Where(p => p != PerkId.None).Select(PerkName))}");
-            }
-            lines.AddRange(LastKit.Where(kv => kv.Value != 0).Select(kv => $"kit.{Weapons.Get(kv.Key).Name}={KitText(kv.Value)}"));
-            File.WriteAllLines(PathName, lines);
+            File.WriteAllLines(PathName, SaveLines());
         }
         catch
         {
             // Read-only folder: not worth bothering the player about.
         }
+    }
+
+    /// <summary>The lines loadout.txt is saved as.</summary>
+    public static List<string> SaveLines()
+    {
+        var lines = new List<string> { $"selected={Selected}" };
+        for (var i = 0; i < Slots.Length; i++)
+        {
+            var l = Slots[i];
+            var k = $"loadout{i + 1}.";
+            string PerkName(PerkId id) => id == PerkId.None ? "" : Perks.Get(id).Name;
+            lines.Add($"{k}name={l.Name}");
+            lines.Add($"{k}primary={Weapons.Get(l.Primary).Name}");
+            lines.Add($"{k}primary.kit={KitText(l.PrimaryKit)}");
+            lines.Add($"{k}secondary={Weapons.Get(l.Secondary).Name}");
+            lines.Add($"{k}secondary.kit={KitText(l.SecondaryKit)}");
+            lines.Add($"{k}grenade={l.Grenade}");
+            lines.Add($"{k}equipment={l.Equipment}");
+            lines.Add($"{k}perks={string.Join(", ", new[] { l.Perks.Movement, l.Perks.Survival, l.Perks.Damage }.Where(p => p != PerkId.None).Select(PerkName))}");
+            lines.Add($"{k}streaks={l.Streaks}");
+        }
+        lines.AddRange(LastKit.Where(kv => kv.Value != 0).Select(kv => $"kit.{Weapons.Get(kv.Key).Name}={KitText(kv.Value)}"));
+        return lines;
     }
 }

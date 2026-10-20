@@ -29,6 +29,10 @@ public enum Msg : byte
     VoteState, // server -> all: the ballot (map ids) and the current tally
     Melee, // client -> server: I swung (yaw, pitch, the tick I was seeing)
     MeleeFx, // server -> all: player X swung (hit / kill / backstab flags, victim)
+    StreakUse, // client -> server: use an earned kill streak (id, target spot, facing)
+    StreakEvent, // server -> all: a streak was called in, or a turret/drone was destroyed
+    StreakState, // server -> one client: your streak count, earned streaks and carried streaks
+    StreakEnts, // server -> all: turrets and drones (with each snapshot while any exist, unreliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
