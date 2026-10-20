@@ -226,7 +226,7 @@ public static partial class SelfTest
                 why = "on a hill";
             else if (obj.Flags.Any(f => Vector2.Distance(new Vector2(f.X, f.Z), c) < 3f + r - 0.01f))
                 why = "by a flag";
-            else
+            else if (p.Bounds.Max.Y - p.Position.Y > World.StepHeight) // props you can step onto need no clearance
             {
                 var gap = Map.ClutterClearance - 0.02f;
                 for (var i = 0; i < a.Solid.Count && why == null; i++)

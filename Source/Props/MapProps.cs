@@ -409,9 +409,10 @@ public sealed partial class Map
 
         if (def.IsSolid)
         {
-            // Keep corridors open: nothing you can't step over within the clearance around it.
+            // Keep corridors open: nothing you can't step over within the clearance around it (a prop low enough to step
+            // onto never closes a gap, so it needs none).
             var c = ClutterClearance;
-            if (space.Overlaps(new Vector3(min.X - c, rest + World.StepHeight, min.Y - c), new Vector3(max.X + c, rest + World.PlayerHeight, max.Y + c)))
+            if (height > World.StepHeight && space.Overlaps(new Vector3(min.X - c, rest + World.StepHeight, min.Y - c), new Vector3(max.X + c, rest + World.PlayerHeight, max.Y + c)))
                 return false;
             foreach (var s in ctx.Spawns)
                 if (Vector2.Distance(Flat(s), p) < ClutterSpawnClearance + radius)

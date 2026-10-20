@@ -58,6 +58,8 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
 
+Trash cans, crates, litter and other props are placed with ops; see [Props](#props).
+
 ## Game mode objectives (optional)
 
 Team modes need two teams' spawn points, King of the Hill needs hill zones, and Capture the Flag needs two flags. You can place them with three optional top-level fields. Anything you leave out is worked out automatically, the same way on every PC:
@@ -100,7 +102,7 @@ Parameters marked `= value` are optional. Parameter names are case-insensitive, 
 | `Ground` | color | The floor slab under the whole map. |
 | `Perimeter` | height, color, t = 1 | Boundary walls around the edge. |
 | `Block` | x0, y0, z0, x1, y1, z1, color | A box from one corner to the opposite corner. Everything else is built from these. |
-| `Prop` | x, z, w, h, d, color, y = 0 | A box w × h × d standing at (x, z), on the ground or on height `y`. |
+| `Prop` | x, z, w, h, d, color, y = 0 | A box w × h × d standing at (x, z), on the ground or on height `y`. With a `name` instead of a size it places a prop from the Props folder: see [Props](#props). |
 | `WallX` | x0, x1, z, t, y0, y1, color, holes = [] | A wall running along X from x0 to x1, filling z to z+t, with openings. |
 | `WallZ` | z0, z1, x, t, y0, y1, color, holes = [] | The same wall running along Z. |
 | `Slab` | x0, z0, x1, z1, yTop, thick, color, hole = null | A floor or roof, optionally with one rectangular hole. |
@@ -364,6 +366,32 @@ Movement eases into and out of every point (no jolts), and a map may have up to 
 - A platform top 0.3 to 0.5 m above the floor can simply be stepped onto. Parts that stick up more than 0.55 m (a bar on a disc) are walls that sweep players along; players can jump 0.95 m.
 - Overlapping boxes with the same top look fine when they're the same colour. Different colours on the same top surface flicker, so make markers stick up (posts) instead.
 - Movers are drawn lit but without the surface texture (a texture would slide over a moving surface), so use colours and posts to make the motion visible.
+
+## Props
+
+Props are the small things that make a map look lived in: trash cans, dumpsters, crates, pallets, bricks, newspapers, bottles, benches, lamps. Each one is a file in the `Props` folder next to `Maps` (see [Props/README.md](../Props/README.md) for making your own). The **Prop Gallery** map in the Dev pack shows every prop in rows by category; **Prop Yard** is a small dressed street to play on.
+
+| Op | Parameters | What it makes |
+|---|---|---|
+| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0 | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. |
+| `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15 | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). |
+
+```
+{ "op": "Prop", "name": "Dumpster", "x": -15, "z": -11.9 },
+{ "op": "Prop", "name": "Street Lamp", "x": 8, "z": 9.4, "yaw": 180 },
+{ "op": "Clutter", "props": ["Trash Can", "Bench", "Bollard", "Newspaper"], "x0": -38, "z0": 8.5, "x1": 38, "z1": 8.5, "width": 2.4, "count": 16, "seed": 2, "align": true },
+{ "op": "Clutter", "props": ["Debris", "Wooden Crate"], "x0": -38, "z0": 12, "x1": -10, "z1": 30, "count": 40, "seed": 3 }
+```
+
+- **Placing:** a prop stands on the ground, or on a low box under it such as a kerb or a step (up to 0.6 m). Give `y` to put it higher (on a table, a roof: y is the height above the ground). On [terrain](#terrain) it stands on the lowest ground under it; with `"anchor": "world"`, `y` is an absolute height.
+- **`props`** in Clutter is a list of prop names and category names (`"Debris"` means every prop in the Debris folder). Repeat a name to make it more common; each prop's own `weight` counts too.
+- **Clutter turns and sizes** each prop the way its file says (random angle, square to the walls, a size range). With `"align": true` on a strip, props turn to follow it (benches along a pavement).
+- **Deterministic:** the same file and `seed` give the same props on every PC. Change the seed to reshuffle.
+- **Clutter runs last**, after every op, the foliage and the objectives, whatever its place in the list, so it can keep out of their way. Every prop stays out of walls, boxes and other clutter. **Solid** props also keep clear of spawns (2.5 m), waypoints (1.2 m), the routes between neighbouring waypoints, hills, flags and movers, and stay 1.1 m from any wall or box they can't step over, so they never close a doorway or a gap a player fits through. If there's no room for all of them, fewer are placed (the log says how many).
+- **Collision:** solid props (bins, crates, barriers) block movement, bullets and sight like any box, and bots walk round them. Cosmetic ones (litter, newspapers, bottles) are looks only.
+- **Breakable props** (crates, boxes, bottles, bins, chairs...) break when shot, hit or blown up, and every match starts with them whole again. See [Props/README.md](../Props/README.md#breakable-props).
+- **Fingerprint:** props count towards the map's fingerprint, so host and players need the same map file and the same Props folder. Maps without props keep their old fingerprint.
+- **Cost:** props are drawn instanced, a few hundred on a map cost well under a millisecond. Hand-placed solid props are best for cover you design around; Clutter is best for litter and dressing.
 
 ## Map packs
 
