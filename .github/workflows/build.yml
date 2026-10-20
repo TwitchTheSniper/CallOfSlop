@@ -35,6 +35,10 @@ jobs:
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
+            # TEMP (feature/highground-props): High Ground prop and bot-match lines
+            $hg = Select-String -Path $log -Pattern "props \d+:|^(Gravel Pit|Hillfort|Riverbend|Adobe Mesa|Ridgeline|Alpine Pass) +kills|nav (Gravel Pit|Hillfort|Riverbend|Adobe Mesa|Ridgeline|Alpine Pass)|mirrored clutter" | ForEach-Object { $_.Line.Trim() }
+            Write-Output "::notice title=HG::$($hg -join ' || ')"
+            if (Test-Path "$dir/callofslop.log") { $cl = Select-String -Path "$dir/callofslop.log" -Pattern "Clutter \(op" | ForEach-Object { $_.Line.Trim() }; Write-Output "::notice title=Clutter::$($cl -join ' || ')" }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           }
