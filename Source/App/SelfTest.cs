@@ -397,6 +397,7 @@ public static partial class SelfTest
             using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
                 bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
             game.MapVoteEnabled = false; // stay on this map for the whole test
+            Game.SettleMemory(); // as the game does when a session starts (the 31 games before this one left garbage)
             const double dt = 1.0 / World.TickRate;
             var now = 0.0;
             var lastPos = new Dictionary<byte, Vector3>();

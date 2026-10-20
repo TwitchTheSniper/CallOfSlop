@@ -809,6 +809,7 @@ public static unsafe partial class Program
                 if (_settings.Advertise && _settings.Master is { } m)
                     Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
             }
+            Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
             if (!_session.SkipsLoadout)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;

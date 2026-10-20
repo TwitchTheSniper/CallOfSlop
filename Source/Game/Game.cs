@@ -177,6 +177,19 @@ public sealed partial class Game : IDisposable
         }
     }
 
+    /// <summary>
+    /// Call once a session is set up, while the loadout screen opens (not in a tick): a full garbage collection now
+    /// clears whatever the last game or the menus left and moves everything this game built out of the young
+    /// generations, so the collections that happen during the match have little to do (the bot-match self-test saw
+    /// 6-34 ms collection pauses inside ticks without this).
+    /// </summary>
+    public static void SettleMemory()
+    {
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+
     // =====================================================================
     // Per-frame update
     // =====================================================================
