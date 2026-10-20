@@ -26,8 +26,8 @@ public static class TestsWorldAndMovement
             var m = new Mover(w.P, new float3(x, ground + 1, z));
             for (var i = 0; i < 90; i++)
                 m.Step(default);
-            var y = m.Ch.GetPosition().Y;
-            Check($"player stands on terrain at x={x}", MathF.Abs(y - ground) < 0.3f, $"feet y={F(y)}, terrain {F(ground)} ({(w.HeightField ? "HeightFieldShape" : Phys.TriModeNames[Math.Max(0, Phys.TriMode)])})");
+            var fy = m.Ch.GetPosition().Y;
+            Check($"player stands on terrain at x={x}", MathF.Abs(fy - ground) < 0.3f, $"feet y={F(fy)}, terrain {F(ground)} ({(w.HeightField ? "HeightFieldShape" : Phys.TriModeNames[Math.Max(0, Phys.TriMode)])})");
         }
         w.SetMovers(0);
 
