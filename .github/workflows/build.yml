@@ -35,9 +35,6 @@ jobs:
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
-            # TEMP (hill-maps): the High Ground lines, joined into one notice
-            $hg = Select-String -Path $log -Pattern "Gravel Pit|Hillfort|Riverbend|Adobe Mesa|Ridgeline|Alpine Pass" | ForEach-Object { $_.Line.Trim() }
-            if ($hg) { Write-Output "::notice title=HighGround::$($hg -join ' || ')" }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           }
