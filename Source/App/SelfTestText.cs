@@ -87,7 +87,7 @@ public static partial class SelfTest
         }
         foreach (GameAction a in Enum.GetValues<GameAction>())
             Add($"key binding {a}", Keybinds.Label(a), TextKind.Label);
-        Add("default loadout name", Loadout.DefaultName(0), TextKind.Label);
+        Add("default loadout name", LoadoutStore.DefaultName(0), TextKind.Label);
 
         var bad = 0;
         foreach (var (where, text, kind) in texts)
