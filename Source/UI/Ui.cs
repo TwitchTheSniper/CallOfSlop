@@ -26,7 +26,6 @@ public sealed partial class Ui : IDisposable
     public bool ShowScoreboard;
 
     private AttachmentDef? _hoverAttachment;
-    private WeaponDef? _hover;
     private string _lastNotice = "";
     private double _noticeTime;
 

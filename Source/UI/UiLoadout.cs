@@ -3,8 +3,16 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>A gun picture on a loadout card (ImGui pixel coordinates). Program draws these over the UI.</summary>
-public readonly record struct GunThumb(WeaponDef Def, float2 Min, float2 Max);
+/// <summary>
+/// A gun picture on a loadout card (ImGui pixel coordinates). Program draws these over the UI.
+/// Optional: a clip rectangle (e.g. a scrolling list's visible area; the picture is cut to it, and
+/// skipped when it's entirely outside) and a dim amount (0-1, a dark veil over the picture, for locked guns).
+/// </summary>
+public readonly record struct GunThumb(WeaponDef Def, float2 Min, float2 Max, float2 ClipMin = default, float2 ClipMax = default, float Dim = 0f)
+{
+    /// <summary>Has a clip rectangle been given?</summary>
+    public bool Clipped => ClipMax.X > ClipMin.X && ClipMax.Y > ClipMin.Y;
+}
 
 /// <summary>
 /// The loadout screen, used from the main menu and in matches. Left: your loadout slots (more unlock
@@ -71,7 +79,6 @@ public sealed partial class Ui
         _gunTab = 0;
         _renaming = false;
         _editSlot = Math.Clamp(LoadoutStore.Selected, 0, Math.Max(0, Progress.LoadoutSlots - 1));
-        _hover = null;
         _hoverThrowable = null;
         _hoverAttachment = null;
         _hoverPerk = null;
@@ -396,7 +403,6 @@ public sealed partial class Ui
     {
         _view = v;
         _gunTab = 0;
-        _hover = null;
         _hoverThrowable = null;
         _hoverAttachment = null;
         _hoverPerk = null;
@@ -593,61 +599,37 @@ public sealed partial class Ui
             DrawPerkPicker(audio, area);
             return;
         }
+        if (_view is LoadoutView.Primary or LoadoutView.Secondary)
+        {
+            _showcaseLastFrame = true; // the hero gun is drawn behind the UI, like the showcase
+            DrawWeaponSelect(audio, gunSlot, gun, area, winPos, winSize);
+            return;
+        }
 
         var listWidth = area.X * 0.42f;
-        WeaponDef? hovered = null;
         ThrowableDef? hoveredThrowable = null;
+        var equipmentTab = _view == LoadoutView.Tactical;
         if (ImGui.BeginChild("##list"u8, new float2(listWidth, area.Y), ImGuiChildFlags.Borders))
         {
-            if (_view is LoadoutView.Primary or LoadoutView.Secondary)
+            foreach (var t in Throwables.All.Where(t => t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab))
             {
-                var slot = gunSlot == 0 ? Slot.Primary : Slot.Secondary;
-                foreach (var group in Weapons.All.Where(w => w.Slot == slot).GroupBy(w => w.Class))
+                var unlocked = prog.IsUnlocked(t.Kind);
+                var selected = equipmentTab ? l.Equipment == t.Kind : l.Grenade == t.Kind;
+                var label = unlocked ? $"{t.Name}##t{(int)t.Kind}" : $"[LOCKED] {t.Name}  -  level {CallOfSlop.Progress.UnlockLevel(t.Kind)}##t{(int)t.Kind}";
+                if (!unlocked)
+                    ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+                if (ImGui.Selectable(label, selected) && unlocked)
                 {
-                    ImGui.SeparatorText(group.First().ClassName);
-                    foreach (var w in group.OrderBy(x => CallOfSlop.Progress.UnlockLevel(x)))
-                    {
-                        var unlocked = prog.IsUnlocked(w);
-                        var selected = w.Id == gun.Id;
-                        var label = unlocked ? $"{w.Name}##{w.Id}" : $"[LOCKED] {w.Name}  -  level {CallOfSlop.Progress.UnlockLevel(w)}##{w.Id}";
-                        if (!unlocked)
-                            ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                        if (ImGui.Selectable(label, selected) && unlocked)
-                        {
-                            LoadoutStore.SetWeapon(l, gunSlot, w.Id, prog);
-                            LoadoutStore.Save();
-                            audio.Equip(w);
-                        }
-                        if (!unlocked)
-                            ImGui.PopStyleColor();
-                        if (ImGui.IsItemHovered())
-                            hovered = w;
-                    }
+                    if (equipmentTab)
+                        l.Equipment = t.Kind;
+                    else
+                        l.Grenade = t.Kind;
+                    LoadoutStore.Save();
                 }
-            }
-            else
-            {
-                var equipmentTab = _view == LoadoutView.Tactical;
-                foreach (var t in Throwables.All.Where(t => t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab))
-                {
-                    var unlocked = prog.IsUnlocked(t.Kind);
-                    var selected = equipmentTab ? l.Equipment == t.Kind : l.Grenade == t.Kind;
-                    var label = unlocked ? $"{t.Name}##t{(int)t.Kind}" : $"[LOCKED] {t.Name}  -  level {CallOfSlop.Progress.UnlockLevel(t.Kind)}##t{(int)t.Kind}";
-                    if (!unlocked)
-                        ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                    if (ImGui.Selectable(label, selected) && unlocked)
-                    {
-                        if (equipmentTab)
-                            l.Equipment = t.Kind;
-                        else
-                            l.Grenade = t.Kind;
-                        LoadoutStore.Save();
-                    }
-                    if (!unlocked)
-                        ImGui.PopStyleColor();
-                    if (ImGui.IsItemHovered())
-                        hoveredThrowable = t;
-                }
+                if (!unlocked)
+                    ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    hoveredThrowable = t;
             }
         }
         ImGui.EndChild();
@@ -655,25 +637,12 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.BeginChild("##stats"u8, new float2(0, area.Y), ImGuiChildFlags.Borders))
         {
-            if (_view is LoadoutView.Primary or LoadoutView.Secondary)
-            {
-                if (hovered != null)
-                    _hover = hovered;
-                var shown = _hover is { } h && h.Slot == gun.Slot ? h : gun;
-                if (!prog.IsUnlocked(shown))
-                    ImGui.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(shown)} to use this.");
-                DrawStats(audio, Attachments.Apply(shown, KitOf(shown)));
-            }
-            else
-            {
-                if (hoveredThrowable != null)
-                    _hoverThrowable = hoveredThrowable;
-                var equipmentTab = _view == LoadoutView.Tactical;
-                var t = _hoverThrowable is { } h && (h.Kind == ThrowableKind.None || h.IsEquipment == equipmentTab)
-                    ? h
-                    : Throwables.Get(equipmentTab ? l.Equipment : l.Grenade);
-                DrawThrowable(t);
-            }
+            if (hoveredThrowable != null)
+                _hoverThrowable = hoveredThrowable;
+            var t = _hoverThrowable is { } h && (h.Kind == ThrowableKind.None || h.IsEquipment == equipmentTab)
+                ? h
+                : Throwables.Get(equipmentTab ? l.Equipment : l.Grenade);
+            DrawThrowable(t);
         }
         ImGui.EndChild();
     }

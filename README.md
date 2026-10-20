@@ -66,6 +66,7 @@ Open **LOADOUTS** from the main menu, or press **B** in a match. The screen list
 
 - **More slots unlock as you level up.** Level 1 gets one slot, and the tenth arrives at max level, evenly spaced: levels 1, 6, 11, 17, 22, 27, 32, 38, 43 and 48. Locked slots show the level they unlock at.
 - **Your progression lives on the second tab** of this screen: level, XP, stats and every unlock by level.
+- **Picking a gun:** clicking the Primary or Secondary card opens the weapon select. Class tabs run across the top (each shows how many guns it has and how many are still locked). Below, a column of tiles shows each gun with this loadout's attachments on it, its level (attachments unlocked) and weapon XP bar, and an EQUIPPED or LOCKED tag (with the level it unlocks at). Hover a tile to see that gun big on the right, with its stats compared to the gun you have equipped (green = better, red = worse), its magazine, reload time and shots to kill. Click a tile to equip it. The second tab is the gun's attachments, as before.
 
 ### Perks
 
