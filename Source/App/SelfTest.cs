@@ -42,6 +42,7 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
+        Console.SetOut(new TickProfile.TimedWriter(Console.Out)); // PERF (temporary)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -78,7 +79,7 @@ public static partial class SelfTest
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
-            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}");
+            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, worst log write {TickProfile.TimedWriter.MaxMs:0.0} ms, tiered {AppContext.TryGetSwitch("System.Runtime.TieredCompilation", out var tc) && tc}");
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -445,7 +446,7 @@ public static partial class SelfTest
                             if (pauseMs > 1)
                                 slowWithGc++;
                             if (slowList.Count < 6)
-                                slowList.Add($"{ms:0}@{i / 60.0:0.0}s({gcs})");
+                                slowList.Add($"{ms:0}@{i / 60.0:0.0}s({gcs}{(ms > 30 ? " " + game.Phase + " | " + TickProfile.Breakdown() : "")})");
                         }
                     }
                     phasesSeen.Add(game.Phase);

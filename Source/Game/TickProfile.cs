@@ -8,11 +8,11 @@ public static class TickProfile
     public static readonly string[] Names =
     [
         "pre", "match", "proj", "streaks", "bstreak", "pump", "perceive", "decide", "steer", "nearest", "astar",
-        "aim", "shoot", "nade", "buttons", "physics", "spawn", "hist", "snap", "post",
+        "aim", "shoot", "nade", "buttons", "physics", "spawn", "hist", "snap", "post", "log",
     ];
 
     public const int Pre = 0, Match = 1, Proj = 2, Streaks = 3, BStreak = 4, Pump = 5, Perceive = 6, Decide = 7, Steer = 8,
-        Nearest = 9, AStar = 10, Aim = 11, Shoot = 12, Nade = 13, Buttons = 14, Physics = 15, Spawn = 16, Hist = 17, Snap = 18, Post = 19;
+        Nearest = 9, AStar = 10, Aim = 11, Shoot = 12, Nade = 13, Buttons = 14, Physics = 15, Spawn = 16, Hist = 17, Snap = 18, Post = 19, Log = 20;
 
     public static readonly double[] Ms = new double[Names.Length];
     public static int Searches, Expanded, MaxExpanded;
@@ -31,6 +31,43 @@ public static class TickProfile
     public static long Now() => Stopwatch.GetTimestamp();
 
     public static void Add(int phase, long t0) => Ms[phase] += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+
+    /// <summary>Times every console write (the game log file, flushed per line).</summary>
+    public sealed class TimedWriter(TextWriter inner) : TextWriter
+    {
+        public static double MaxMs;
+        public override System.Text.Encoding Encoding => inner.Encoding;
+
+        public override void Write(char value)
+        {
+            var t = Now();
+            inner.Write(value);
+            Done(t);
+        }
+
+        public override void Write(string? value)
+        {
+            var t = Now();
+            inner.Write(value);
+            Done(t);
+        }
+
+        public override void WriteLine(string? value)
+        {
+            var t = Now();
+            inner.WriteLine(value);
+            Done(t);
+        }
+
+        private static void Done(long t)
+        {
+            var ms = Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+            Ms[Log] += ms;
+            MaxMs = Math.Max(MaxMs, ms);
+        }
+
+        public override void Flush() => inner.Flush();
+    }
 
     public static string Breakdown()
     {
