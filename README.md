@@ -52,12 +52,13 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 
 Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarrel, Magazine, Stock**. Open a gun's attachments from the loadout screen: the **Edit attachments** button on the Primary or Secondary card, or **Attachments** (top right) on the weapon select. The attachments page shows the gun large, with how many attachments are unlocked and what's equipped; click a slot card to pick from it. Hover an attachment to see its pros, cons and the resulting stats.
 
-- **Optics:** Red Dot, Holographic, 2.5x ACOG, 4x Scope, 8x Sniper Scope. Each has its own reticle and zoom, and the bigger the optic, the slower you aim.
+- **Optics:** Pinhole Reflex (1.4x), Red Dot (1.5x), Holographic (1.6x), Brick 2x Prism, 2.5x ACOG, Tandem 3x Hybrid, 4x Scope, Variant 6x LPVO, 8x Sniper Scope and Longshot 12x (snipers only). Each has its own model, reticle and zoom, and the bigger the optic, the slower you aim.
+- **Seeing through optics:** as you aim, the optic's housing fades away, so at full ADS you look through a large clear lens with a crisp reticle in the middle of the screen (reflex sights keep their thin window frame; magnified optics show a round eyepiece rim). Only optics of **4x and up** get the full scope view (black surround around a round lens), on any screen shape including 32:9; below 4x there are no side bars or dimming. Fitting an optic removes iron sights and LMG carry handles that would be in its way.
 - **Muzzle:** Suppressor (much quieter shots, faint tracers, -15% range), Compensator (cuts the climb), Muzzle Brake (cuts sideways recoil and shake), Choke (shotguns).
 - **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip (cuts the climb), Angled Grip (faster aim, softer first shot), Laser.
 - **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy (less recoil, faster recovery), No Stock.
 - The gunsmith's stat bars show each change in green or red with the percentage. However much you stack, a gun keeps at least 40% of its recoil and half its hip spread.
-- Which attachments fit depends on the weapon class (pistols take few, snipers take the 8x, shotguns get the Choke).
+- Which attachments fit depends on the weapon class (pistols take only the small reflex sights, DMRs and snipers take the 8x, snipers the 12x, shotguns get the Choke).
 - **Unlocks are per weapon** with weapon XP (see Progression): 3-7 matches with a gun to unlock everything on it. Weapon XP is saved in `progress.txt`, and Reset level clears it.
 - The server applies the same attachments to the same stats, so they're fully networked. Other players hear your suppressor and see your optic and grip.
 
@@ -278,7 +279,7 @@ The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachmen
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, every attachment on every weapon, every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
   - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow and a few seconds of play on six maps. It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works

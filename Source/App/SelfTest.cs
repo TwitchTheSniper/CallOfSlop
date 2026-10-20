@@ -12,6 +12,8 @@ namespace CallOfSlop;
 ///   3. Mantling: through a Courtyard window and onto a crate.
 ///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
+///      Optics: every optic loads and fits sensibly, the full scope view is 4x+ only, sights stay aligned,
+///      the cut-away leaves a clear view, and no gun part clashes with a fitted optic.
 ///   5. Packet sizes: a full 8-player snapshot fits in one packet.
 ///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
 ///      attachments work, and the visual shake never moves the aim.
@@ -48,6 +50,7 @@ public static class SelfTest
             Section("Map packs", CheckMapPacks);
             Section("Mantling", CheckMantle);
             Section("Attachments", CheckAttachments);
+            Section("Optics", CheckOptics);
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
@@ -871,6 +874,168 @@ public static class SelfTest
         var ratio = levelCosts.Average() / sixty.Average();
         if (ratio < 0.7 || ratio > 1.4)
             Fail($"level cost vs 60%-of-a-gun ratio {ratio:0.00} is off target");
+    }
+
+    // ---- 4b. Optics ------------------------------------------------------------------------
+
+    private static void CheckOptics()
+    {
+        var optics = Attachments.BySlot[(int)AttachSlot.Optic];
+        Line($"{optics.Length} optics: {string.Join(", ", optics.Select(o => $"{o.Index}={o.Name}"))}");
+        if (optics.Length < 10)
+            Fail($"only {optics.Length} optics loaded (10 ship with the game)");
+        if (optics.Select(o => o.Index).Distinct().Count() != optics.Length || optics.Any(o => o.Index is < 1 or > Attachments.MaxPerSlot))
+            Fail("optic indices are not unique values in 1-15");
+        if (optics.Select(o => o.Name.ToLowerInvariant()).Distinct().Count() != optics.Length)
+            Fail("two optics share a name");
+        // The shipped optics keep their network indices (kits send indices; saves use names).
+        string[] shipped = ["Red Dot", "Holographic", "2.5x ACOG", "4x Scope", "8x Sniper Scope", "Pinhole Reflex", "Brick 2x Prism", "Tandem 3x Hybrid", "Variant 6x LPVO", "Longshot 12x"];
+        for (var i = 0; i < shipped.Length; i++)
+            if (Attachments.Find(shipped[i]) is not { Slot: AttachSlot.Optic } o || o.Index != i + 1)
+                Fail($"optic '{shipped[i]}' should be optic #{i + 1} (found {(Attachments.Find(shipped[i]) is { } f ? "#" + f.Index : "nothing")})");
+
+        // What each optic does on every weapon, fitting or not (so the sight maths never breaks for a modded file).
+        var kinds = new HashSet<OpticKind>();
+        var combos = 0;
+        foreach (var w in Weapons.All)
+        {
+            var sh0 = GunModel.SightHeight(w);
+            var z0 = GunModel.AdsZ(w);
+            if (!float.IsFinite(sh0) || !float.IsFinite(z0))
+                Fail($"{w.Name} irons: sight height {sh0}, ADS z {z0}");
+            foreach (var o in optics)
+            {
+                var d = w.Clone();
+                o.Apply(d);
+                kinds.Add(d.Optic);
+                combos++;
+                var sh = GunModel.SightHeight(d);
+                var z = GunModel.AdsZ(d);
+                if (!float.IsFinite(sh) || !float.IsFinite(z) || sh <= 0 || sh > 0.2f || z is > -0.02f or < -0.7f)
+                    Fail($"{w.Name} + {o.Name}: sight height {sh}, ADS z {z}");
+                if (GunModel.FullScope(d) != d.AdsZoom >= 4f)
+                    Fail($"{w.Name} + {o.Name}: full scope view at {d.AdsZoom}x");
+                var look = GunModel.Look(d);
+                if (d.Optic != OpticKind.Iron && look.Reticle == GunModel.Reticle.None)
+                    Fail($"{o.Name}: no reticle");
+                if (d.AdsZoom >= 1.8f && d.Optic != OpticKind.Iron && look.LensRadius is < 0.3f or > 0.5f)
+                    Fail($"{o.Name}: magnified optic with lens radius {look.LensRadius} of the screen height");
+                // The cut-away is drawing only: it must never move the sight line.
+                GunModel.AdsCutaway = 1f;
+                var moved = GunModel.SightHeight(d) != sh || GunModel.AdsZ(d) != z;
+                GunModel.AdsCutaway = 0f;
+                if (moved)
+                    Fail($"{w.Name} + {o.Name}: the cut-away moves the sight line");
+            }
+        }
+        foreach (var k in Enum.GetValues<OpticKind>())
+            if (k != OpticKind.Iron && !kinds.Contains(k))
+                Fail($"no optic file uses optic kind {k}");
+        Line($"{combos} weapon x optic sight lines checked; kinds used: {string.Join(", ", kinds.Order())}");
+
+        // Scope view only from 4x, and the lens stays round on any screen shape.
+        foreach (var (zoom, scoped) in new[] { (1.5f, false), (2.5f, false), (3f, false), (3.99f, false), (4f, true), (6f, true), (12f, true) })
+        {
+            var t = Weapons.DefaultPrimary.Clone();
+            t.AdsZoom = zoom;
+            if (GunModel.FullScope(t) != scoped)
+                Fail($"full scope view at {zoom}x should be {scoped}");
+        }
+        if (ScopeOverlay.SurroundAlpha(Attachments.Apply(Weapons.DefaultPrimary, 0), 1f) != 0f)
+            Fail("iron sights draw a scope surround");
+
+        // Fits: every class gets a sensible optic, nothing big on small guns.
+        foreach (var cls in Enum.GetValues<WeaponClass>())
+        {
+            var guns = Weapons.All.Where(w => w.Class == cls).ToArray();
+            foreach (var w in guns)
+            {
+                var fit = Attachments.For(w).Where(a => a.Slot == AttachSlot.Optic).Select(a => Attachments.Apply(w, Attachments.With(0, AttachSlot.Optic, a.Index))).ToArray();
+                if (fit.Length == 0)
+                    Fail($"{w.Name}: no optic fits");
+                if (cls == WeaponClass.Pistol && fit.Any(d => d.AdsZoom > 2f))
+                    Fail($"{w.Name}: a pistol takes a {fit.Max(d => d.AdsZoom)}x optic");
+                if (cls is WeaponClass.Pistol or WeaponClass.SMG or WeaponClass.Shotgun && fit.Any(d => GunModel.FullScope(d)))
+                    Fail($"{w.Name}: a {cls} takes a full scope");
+                if (cls is not (WeaponClass.Sniper or WeaponClass.DMR) && fit.Any(d => d.AdsZoom > 8f))
+                    Fail($"{w.Name}: a {cls} takes a {fit.Max(d => d.AdsZoom)}x scope");
+            }
+            if (guns.Length > 0)
+                Line($"{cls}: optics {string.Join(", ", Attachments.For(guns[0]).Where(a => a.Slot == AttachSlot.Optic).Select(a => a.Name))}");
+        }
+
+        // Model checks, from the gun's box list: the cut-away leaves a clear view down the sight line, it only
+        // touches the optic, and no gun part clashes with a fitted optic (alone, or with one other attachment).
+        var built = 0;
+        foreach (var w in Weapons.All)
+        {
+            var list = Attachments.For(w);
+            foreach (var o in list.Where(a => a.Slot == AttachSlot.Optic))
+            {
+                var kit = Attachments.With(0, AttachSlot.Optic, o.Index);
+                var d = Attachments.Apply(w, kit);
+                var sight = GunModel.SightHeight(d);
+                var eyeZ = -GunModel.AdsZ(d); // the eye in model space at full ADS (pose = translation (0, -sight, AdsZ))
+                var open = GunModel.RecordParts(d, 1f);
+                foreach (var (dx, dy) in new[] { (0f, 0f), (0.004f, 0f), (-0.004f, 0f), (0f, 0.004f), (0f, -0.004f) })
+                {
+                    var hit = open.FirstOrDefault(p => !p.Clear && p.Min.X < dx && p.Max.X > dx && p.Min.Y < sight + dy && p.Max.Y > sight + dy && p.Min.Z < eyeZ);
+                    if (hit != default)
+                    {
+                        Fail($"{w.Name} + {o.Name}: at full ADS a {(hit.Optic ? "optic" : "gun")} part blocks the sight line ({dx}, {dy}) at z {hit.Min.Z:0.000}..{hit.Max.Z:0.000}");
+                        break;
+                    }
+                }
+                var closed = GunModel.RecordParts(d, 0f);
+                if (!closed.Where(p => !p.Optic).SequenceEqual(open.Where(p => !p.Optic)))
+                    Fail($"{w.Name} + {o.Name}: the cut-away changes non-optic parts");
+
+                var others = list.Where(a => a.Slot != AttachSlot.Optic).Select(a => Attachments.With(kit, a.Slot, a.Index)).Prepend(kit);
+                foreach (var k in others)
+                {
+                    built++;
+                    var parts = k == kit ? closed : GunModel.RecordParts(Attachments.Apply(w, k), 0f);
+                    if (Clash(parts) is { } why)
+                    {
+                        Fail($"{w.Name} [{Attachments.Describe(k)}]: {why}");
+                        break;
+                    }
+                }
+            }
+            // The LMG carry handle is there with iron sights and comes off with an optic.
+            if (w.Class == WeaponClass.LMG)
+            {
+                var ironTop = GunModel.RecordParts(w, 0f).Max(p => p.Max.Y);
+                var dotTop = GunModel.RecordParts(Attachments.Apply(w, Attachments.With(0, AttachSlot.Optic, 1)), 0f).Where(p => !p.Optic).Max(p => p.Max.Y);
+                if (!(ironTop > dotTop + 0.01f))
+                    Fail($"{w.Name}: carry handle top {ironTop:0.000} m with irons vs {dotTop:0.000} m with a red dot (it should come off)");
+            }
+        }
+        Line($"{built} kitted models checked for optic clashes and a clear sight line");
+        if (GunModel.AdsCutaway != 0)
+            Fail("RecordParts left the cut-away knob set");
+    }
+
+    /// <summary>Why a gun part clashes with the fitted optic (null if nothing does).</summary>
+    private static string? Clash(List<GunModel.Part> parts)
+    {
+        var optic = parts.Where(p => p.Optic).ToArray();
+        if (optic.Length == 0)
+            return null;
+        var mountBase = optic.Min(p => p.Min.Y);
+        var feet = optic.Where(p => p.Min.Y <= mountBase + 0.004f).ToArray(); // rail, base plates, rings
+        const float e = 0.0005f;
+        foreach (var g in parts.Where(p => !p.Optic && !p.Clear))
+        {
+            foreach (var f in feet)
+                if (g.Max.X > f.Min.X + e && g.Min.X < f.Max.X - e && g.Max.Z > f.Min.Z + e && g.Min.Z < f.Max.Z - e && g.Max.Y > mountBase + 0.0015f)
+                    return $"a gun part rises to {g.Max.Y:0.000} m over the optic mount (base at {mountBase:0.000} m), z {g.Min.Z:0.000}..{g.Max.Z:0.000}";
+            foreach (var o in optic)
+                if (o.Min.Y > mountBase + 0.004f && g.Max.X > o.Min.X + 0.001f && g.Min.X < o.Max.X - 0.001f && g.Max.Y > o.Min.Y + 0.001f && g.Min.Y < o.Max.Y - 0.001f
+                    && g.Max.Z > o.Min.Z + 0.001f && g.Min.Z < o.Max.Z - 0.001f)
+                    return $"a gun part (y {g.Min.Y:0.000}..{g.Max.Y:0.000}, z {g.Min.Z:0.000}..{g.Max.Z:0.000}) runs into the optic (y {o.Min.Y:0.000}..{o.Max.Y:0.000})";
+        }
+        return null;
     }
 
     // ---- 4a. Weapon and attachment files -------------------------------------------------------

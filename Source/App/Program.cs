@@ -210,6 +210,8 @@ public static unsafe class Program
         }
 
         var game = _session;
+        if (_smokeMap == 0 && _smokeStage == 8)
+            SmokeAds(t); // between the play shot (6.2 s) and the stats line (8.5 s)
         switch (_smokeStage)
         {
             case 0 when t > 0.8:
@@ -321,6 +323,60 @@ public static unsafe class Program
                 _smokeFrames = 0;
                 _smokeWorstDt = 0;
                 break;
+        }
+    }
+
+    private static int _smokeAdsStep;
+    private static bool _smokeAimHeld;
+    private static WeaponDef? _smokeAdsKeep;
+    private static readonly (OpticKind Kind, string Shot)[] SmokeAdsOptics = [(OpticKind.RedDot, "ads_reddot"), (OpticKind.Hybrid3, "ads_3x"), (OpticKind.Scope12, "ads_12x")];
+
+    /// <summary>
+    /// Smoke step on the first map: a sniper rifle with a red dot, then the 3x hybrid, then the 12x scope,
+    /// each held at full ADS and screenshotted (smoke_ads_reddot/ads_3x/ads_12x.bmp). Runs inside the
+    /// usual play window, then puts the real weapon back.
+    /// </summary>
+    private static void SmokeAds(double t)
+    {
+        var game = _session;
+        if (game == null || _smokeAdsStep > SmokeAdsOptics.Length * 2)
+            return;
+        var i = _smokeAdsStep / 2;
+        var at = 6.3 + i * 0.7;
+        if (_smokeAdsStep % 2 == 0)
+        {
+            if (t < at)
+                return;
+            _smokeAdsStep++;
+            if (i == SmokeAdsOptics.Length)
+            {
+                _smokeAimHeld = false;
+                if (_smokeAdsKeep != null)
+                    game.Active.Def = _smokeAdsKeep;
+                return;
+            }
+            var gun = Weapons.Find("Needle Bolt-Action") ?? Weapons.All.First(w => w.Class == WeaponClass.Sniper);
+            var def = Attachments.For(gun).Where(a => a.Slot == AttachSlot.Optic)
+                .Select(a => Attachments.Apply(gun, Attachments.With(0, AttachSlot.Optic, a.Index)))
+                .FirstOrDefault(d => d.Optic == SmokeAdsOptics[i].Kind);
+            if (def == null)
+            {
+                Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: no {SmokeAdsOptics[i].Kind} optic fits {gun.Name}");
+                _smokeAdsStep++;
+                return;
+            }
+            _smokeAdsKeep ??= game.Active.Def;
+            game.Active.Def = def;
+            game.AimT = 0;
+            _smokeAimHeld = true;
+        }
+        else if (t >= at + 0.55)
+        {
+            _smokeAdsStep++;
+            var d = game.Active.Def;
+            SmokeShot(SmokeAdsOptics[i].Shot);
+            Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
+                + $"full scope view {Scoped}, lens {GunModel.Look(d).LensRadius:0.00} of screen height, reticle {GunModel.Look(d).Reticle}, alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
         }
     }
 
@@ -1075,7 +1131,7 @@ public static unsafe class Program
                 buttons |= Buttons.Crouch;
         }
         _game.HeldButtons = buttons;
-        _game.AimHeld = _mouseCaptured && Down(GameAction.Aim);
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim)) || _smokeAimHeld;
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
         var down = _mouseCaptured && Down(GameAction.Fire);
@@ -1153,7 +1209,8 @@ public static unsafe class Program
 
     private static float CurrentFov() => BaseFov / float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
 
-    private static bool Scoped => _game.Active.Def.AdsZoom >= 3f && _game.AimT > 0.85f;
+    /// <summary>Full scope view (black surround, no viewmodel): only optics of 4x and up (GunModel.FullScope), once mostly aimed.</summary>
+    private static bool Scoped => GunModel.FullScope(_game.Active.Def) && _game.AimT > 0.85f;
 
     private static void Render(double now)
     {
@@ -1296,7 +1353,11 @@ public static unsafe class Program
 
         // ---- First-person gun -----------------------------------------------
         if (local is { Alive: true } && !Scoped)
+        {
+            GunModel.AdsCutaway = GunModel.CutawayFor(_game.AimT); // see-through optics: housing fades out as you aim
             DrawViewModel(now, proj);
+            GunModel.AdsCutaway = 0;
+        }
 
         // ---- HUD ------------------------------------------------------------
         DrawHud(now, w, h, local, fov);
@@ -1533,51 +1594,8 @@ public static unsafe class Program
 
         if (local is { Alive: true })
         {
-            if (Scoped)
-            {
-                // Sniper scope: black surround with a square window and fine crosshair.
-                var r = h * 0.42f;
-                Gfx.Rect(0, 0, cx - r, h, black);
-                Gfx.Rect(cx + r, 0, w - (cx + r), h, black);
-                Gfx.Rect(cx - r, 0, 2 * r, cy - r, black);
-                Gfx.Rect(cx - r, cy + r, 2 * r, h - (cy + r), black);
-                Gfx.Rect(cx - r, cy - 1, 2 * r, 2, black, 0.9f);
-                Gfx.Rect(cx - 1, cy - r, 2, 2 * r, black, 0.9f);
-                Gfx.Rect(cx - 2, cy - 2, 4, 4, new Vector3(1, 0.2f, 0.2f));
-            }
-            else if (_game.Active.Def.Optic is OpticKind.RedDot or OpticKind.Holo or OpticKind.Acog && _game.AimT > 0.6f)
-            {
-                // Optic reticle while aiming down sights.
-                var opt = _game.Active.Def.Optic;
-                var a = Math.Clamp((_game.AimT - 0.6f) / 0.4f, 0f, 1f);
-                var red = new Vector3(1f, 0.15f, 0.1f);
-                var dot = MathF.Max(3, MathF.Round(3 * k));
-                Gfx.Rect(cx - dot / 2, cy - dot / 2, dot, dot, opt == OpticKind.Holo ? new Vector3(0.3f, 0.9f, 1f) : red, a);
-                if (opt == OpticKind.Holo)
-                {
-                    var r = 22 * k;
-                    for (var i = 0; i < 24; i++)
-                    {
-                        var ang = i / 24f * MathF.Tau;
-                        Gfx.Rect(cx + MathF.Cos(ang) * r - 1.5f, cy + MathF.Sin(ang) * r - 1.5f, 3, 3, new Vector3(0.3f, 0.9f, 1f), a * 0.9f);
-                    }
-                }
-                else if (opt == OpticKind.Acog)
-                {
-                    // Chevron with a drop line, inside a soft dark ring.
-                    for (var i = 1; i <= 7; i++)
-                    {
-                        var step = i * 2.2f * k;
-                        Gfx.Rect(cx - step - 1.5f, cy - step - 1.5f, 3, 3, red, a);
-                        Gfx.Rect(cx + step - 1.5f, cy - step - 1.5f, 3, 3, red, a);
-                    }
-                    Gfx.Rect(cx - 1, cy - 70 * k, 2, 50 * k, black, a * 0.8f);
-                    var ring = h * 0.46f;
-                    Gfx.Rect(0, 0, cx - ring, h, black, a * 0.55f);
-                    Gfx.Rect(cx + ring, 0, w - (cx + ring), h, black, a * 0.55f);
-                }
-            }
-            else
+            // Optic view (lens, reticle, and the black surround at 4x+): see Source/Render/ScopeOverlay.cs.
+            if (!ScopeOverlay.Draw(Gfx, _game.Active.Def, _game.AimT, w, h))
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
