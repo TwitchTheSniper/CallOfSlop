@@ -30,6 +30,7 @@
   <ItemGroup>
     <!-- BRUTAL licence section 2.3: ship NOTICE.txt alongside the product. -->
     <None Include="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Branding\**\*" CopyToOutputDirectory="PreserveNewest" /> <!-- the BRUTAL logo (licence section 2.2) -->
     <!-- Maps are data files: everything in Maps\ is copied next to the game and loaded at startup. -->
     <None Update="Maps\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Weapons and attachments are data files too: one JSON file each, loaded at startup (see Weapons\README.md). -->

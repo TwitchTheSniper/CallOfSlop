@@ -9,7 +9,7 @@ Pick a loadout from 50 weapons and a map from 8 blocky prototype maps, then frag
 | `Ahwoo.BRUTAL.OpenGl` | Rendering (OpenGL 4.1 core, everything is a box) |
 | `Ahwoo.BRUTAL.RakNet` | UDP networking (listen-server + clients) |
 | `Ahwoo.BRUTAL.ImGui` + `.Backends` | Lobby, menus, loadout screen, HUD text, scoreboard |
-| `Ahwoo.BRUTAL.OpenAl` | 3D positional weapon audio |
+| `Ahwoo.BRUTAL.OpenAl` | 3D positional weapon audio, streamed procedural music |
 
 ## Requirements
 
@@ -19,16 +19,19 @@ Pick a loadout from 50 weapons and a map from 8 blocky prototype maps, then frag
 
 ## Play
 
-Double-click **`Start.bat`**. It builds the game if anything changed (the first build downloads the BRUTAL packages), then opens straight into the **lobby**:
+Double-click **`Start.bat`**. It builds the game if anything changed (the first build downloads the BRUTAL packages), then shows the BRUTAL logo for a few seconds (the BRUTAL licence asks for it before gameplay; click or press a key to skip it) and opens the **lobby**:
 
 | Lobby option | What it does |
 | --- | --- |
-| **Single player** | You against 1-7 bots (Easy, Normal or Hard). Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
+| **Single player** | You against 1-7 bots (Easy, Normal or Hard), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, VSync. **Audio:** master volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, VSync. **Audio:** master volume and music volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
 
-In a match, **Esc** opens the menu (Resume, Change loadout, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
+In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
+
+- **Kill yourself (respawn)** closes the menu and kills you through the normal server path, then the usual death flow follows (death cam, then the loadout screen; in Gun Game you respawn on your own). It counts as a **suicide**: a death for you, no kill for anyone, your kill streak resets, and it never scores for a team or changes your Gun Game weapon. It's greyed out while you're dead or the match isn't live (warmup, countdown, results), and the server accepts it at most once a second. Online, clients ask the server, which decides.
+- **No bots (test mode):** set the bot slider to 0 in Single player (or *Fill with bots* to 0 when hosting) to try weapons, attachments, perks and mode objectives on your own. Deploy (or Ready) starts the match straight away. While you're the only one in the match **the match clock stops and nobody can win**: team scores (hill points, flag captures) still count but stop one short of the limit, so the match never ends on its own. In team modes you're simply on a team by yourself. As soon as another person joins a hosted game, the normal rules apply again. The bot count is saved in `settings.txt` as before.
 
 To test on one PC: run `Start.bat` twice. Host in one window and join `127.0.0.1` in the other.
 
@@ -278,6 +281,8 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Crouched | 1.2 m | 50% | 75% | ~85% (per gun) | Fits behind low walls and crates. LMGs lose almost all sideways recoil |
 | Prone | 0.6 m | 22% | 50% | ~65% (per gun) | Can't go prone in mid-air. Your hitbox is long and low, and your head is out front |
 
+Standing speed is 6 m/s walking and **13.5 m/s sprinting** (before your weapon's mobility, aiming and perks); stance percentages are of the walking speed.
+
 You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Marksmen and Hard snipers go prone, and bots crouch-peek in close fights and duck behind low cover to reload.
 
 ### Progression
@@ -339,6 +344,28 @@ The server checks everything: you can only fire weapons you own, at their real f
 
 Every weapon has its own **gunshot, reload and equip sound**, synthesised when the game starts from the weapon's stats: calibre gives depth and thump, there's crack and echo, suppressed guns go *thwip*, and energy, pneumatic and toy guns get their own recipes. Reloads follow the weapon type (mag swap, shell-by-shell plus pump, bolt, belt box). There are also hit, headshot, kill, hurt, death and respawn cues. Other players' shots and reloads are positioned in **3D** with OpenAL, so you can hear where people are.
 
+### Music
+
+The menus and lobbies have **hard electronic background music, generated live in code** (no audio files, nothing licensed): a step sequencer drives synthesised kicks, claps, hats, distorted basses, supersaw and square leads, pads, arps, risers and crashes through each track's arrangement (intro, build with snare roll and riser, drop, breakdown, second build and drop, outro). Every track has its own genre recipe, tempo, key, chord loop, riffs and arrangement:
+
+| Where | Track | Style | Tempo | Key |
+|---|---|---|---|---|
+| Main menu | Slop Protocol | Hardstyle | 150 | F# harmonic minor |
+| Main menu | Grinder | Industrial | 140 | D phrygian |
+| Main menu | Lead Rain | Drum & bass | 174 | E minor |
+| Main menu | Kill Feed Overdrive | Darksynth | 160 | C# phrygian dominant |
+| Main menu | Frag Frenzy | Hardcore (gabber) | 172 | A harmonic minor |
+| Lobby | Ready Up | Hardcore (gabber) | 165 | G minor |
+| Lobby | Warmup Riot | Industrial | 145 | B phrygian |
+| Lobby | Respawn Engine | Drum & bass | 172 | D# dorian |
+| Lobby | Results Screen of Death | Darksynth | 155 | A# harmonic minor |
+
+- **Menu tracks** play on the main menu and its pages; **lobby tracks** play in a session while no match is live: warmup / ready-up, the countdown, and the results screen with the map vote. When a match goes live the music **fades out**, and it comes back on the results screen.
+- Each list is shuffled (every track once per round, never the same track twice in a row), and tracks **crossfade** into each other, as do menu and lobby music.
+- The main menu shows a subtle *Now playing* line in the bottom-left corner.
+- **Settings > Audio > Music volume** (0 = off, default 0.50) sits on top of the master volume. It's saved as `music_volume` in `settings.txt`; older settings files without it load with the default.
+- The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs well under 1% of one CPU core (the self-test measures it).
+
 ## Development and version control
 
 The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.
@@ -350,7 +377,7 @@ The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachmen
 ## Testing without playing
 
 - `tools\BuildCheck.bat` builds the game, then runs the automatic checks and writes `bin\buildcheck.done` when finished (the build output is in `bin\build.log`). The window smoke test only runs if a file called `tools\run_smoke.flag` exists.
-  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks, then checks the bots: a nav graph and A\* routes on every map, a bot walking to a far goal, the headshot share of bot kills and that personalities fight at different ranges. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, terrain (heights matching the map tools, ray casts, walking up slopes and into cliffs, grenades resting on slopes, ops and spawns placed on the ground, a bot match on the terrain demo), every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. Results go to `bin\Release\net10.0\selftest.log`.
+  - **`CallOfSlop.exe --selftest`** runs headless (no window). It checks every map: spawns, waypoints, and a 90-second offline match with 7 bots looking for crashes, stuck bots and slow ticks, a 0-bot test-mode match that must still be running after a simulated minute (and every other mode alone), the pause menu's Kill yourself (offline and through the server handler, with its rate limit), then checks the bots: a nav graph and A\* routes on every map, a bot walking to a far goal, the headshot share of bot kills and that personalities fight at different ranges. It also round-trips every map through the map file format, checks that the example in the map guide loads and that broken files give useful errors, does the same for weapon and attachment files (and checks old saves migrate), checks mantling through a window and onto a crate, terrain (heights matching the map tools, ray casts, walking up slopes and into cliffs, grenades resting on slopes, ops and spawns placed on the ground, a bot match on the terrain demo), every attachment on every weapon, the arms (IK accuracy, and every weapon through every animation: no NaNs, hands on the gun, sights still aligned), every optic's sight line, see-through view and fit (nothing on the gun clashes with it), and snapshot packet sizes. It also renders every music track start to finish headlessly (no NaNs, no heavy clipping, drops louder than breakdowns, tracks distinct from each other, the same output for the same seed, no allocations, CPU cost within budget), checks the menu / lobby / live-match music switching, shuffling and crossfades, and loads the music volume from old and new settings files (temporary files only). Results go to `bin\Release\net10.0\selftest.log`.
   - **`CallOfSlop.exe --smoketest`** opens the real window and steps through the lobby, the loadout and gunsmith screens, the respawn flow, full ADS through a red dot, a 3x and a 12x (`smoke_ads_*.bmp`), the arms during a reload, a sprint and a melee (`smoke_arms_*.bmp`), the death cam (a bot kills you; `smoke_deathcam.bmp`) and a few seconds of play on seven maps (the last is the Dev pack's Terrain Test, `smoke_play_terrain.bmp`, with a `[smoke] terrain:` line giving chunks, draw calls and triangles). It logs fps and GL errors to `callofslop.log`, then quits. It never saves your settings or progress.
 
 ## How it works
@@ -411,7 +438,8 @@ Source/
                      Arms + ArmAnchors + ViewModelAnimator + ThirdPersonArms (arms, IK and gun animation)
   UI/                Lobby (menus, server browser, settings), Ui (HUD, scoreboard), UiLoadout (loadout screen), LoadoutNav (its page stack), UiGunsmith,
                      UiStreaks (streak card, picker, icons and HUD)
-  Audio/             Audio (OpenAL playback + procedural sound synthesis)
+  Audio/             Audio (OpenAL playback + procedural sound synthesis), Music (player, crossfades, streaming thread),
+                     MusicTracks (the track list), MusicRenderer (sequencer + arrangement), MusicSynth (synth voices and effects)
 ```
 
 **Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).

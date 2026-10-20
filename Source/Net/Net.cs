@@ -36,6 +36,7 @@ public enum Msg : byte
     Ready, // client -> server: I'm ready / not ready (warmup)
     ModeState, // server -> all: game mode, teams, ready flags, gun levels, scores, hill and flags (unreliable, ~10 Hz)
     ModeEvent, // server -> all: a game-mode line for the kill feed + a sound (flag taken, hill moved...)
+    Suicide, // client -> server: kill me (pause menu "Kill yourself"; rate-limited, server decides)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

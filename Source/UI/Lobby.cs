@@ -19,6 +19,7 @@ public enum PauseAction
     Loadout,
     Leave,
     Quit,
+    Suicide,
 }
 
 /// <summary>The lobby (main menu), the in-game pause menu and the shared settings panel.</summary>
@@ -171,14 +172,19 @@ public sealed partial class Ui
                     ModePicker(s);
                     MapPicker(s);
                     ImGui.SetNextItemWidth(260 * _scale);
-                    ImGui.SliderInt("Bots"u8, ref s.Bots, 1, Game.MaxPlayers - 1);
-                    DifficultyPicker(ref s.Difficulty);
-                    ImGui.TextColored(Dim, s.Difficulty switch
+                    ImGui.SliderInt("Bots"u8, ref s.Bots, 0, Game.MaxPlayers - 1);
+                    if (s.Bots == 0)
+                        TestModeHint();
+                    else
                     {
-                        BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
-                        BotDifficulty.Normal => "A fair fight.",
-                        _ => "Fast reactions, tight aim, they strafe and go for heads.",
-                    });
+                        DifficultyPicker(ref s.Difficulty);
+                        ImGui.TextColored(Dim, s.Difficulty switch
+                        {
+                            BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
+                            BotDifficulty.Normal => "A fair fight.",
+                            _ => "Fast reactions, tight aim, they strafe and go for heads.",
+                        });
+                    }
                     ImGui.Spacing();
                     if (BigButton("START"))
                     {
@@ -242,6 +248,8 @@ public sealed partial class Ui
                     ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Game.MaxPlayers - 2);
                     if (s.HostBots > 0)
                         DifficultyPicker(ref s.Difficulty);
+                    else
+                        TestModeHint();
                     ImGui.SetNextItemWidth(360 * _scale);
                     if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
                         s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
@@ -515,6 +523,14 @@ public sealed partial class Ui
             ImGui.PopStyleColor();
         }
         ImGui.EndTable();
+    }
+
+    /// <summary>Shown under a bot slider at 0: what a match with nobody else in it does.</summary>
+    private void TestModeHint()
+    {
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 560 * _scale);
+        ImGui.TextColored(Orange, "No bots (test mode): while you're alone the match clock stops and nobody can win, so try anything for as long as you like."u8);
+        ImGui.PopTextWrapPos();
     }
 
     private void DifficultyPicker(ref BotDifficulty d)
@@ -799,6 +815,10 @@ public sealed partial class Ui
                     action = PauseAction.Resume;
                 if (BigButton("CHANGE LOADOUT"))
                     action = PauseAction.Loadout;
+                ImGui.BeginDisabled(!game.CanRequestSuicide);
+                if (BigButton("KILL YOURSELF (respawn)"))
+                    action = PauseAction.Suicide;
+                ImGui.EndDisabled();
                 if (BigButton("SETTINGS"))
                     _pauseSettings = true;
                 if (game.IsServer && BigButton("RELOAD MAP FILES"))

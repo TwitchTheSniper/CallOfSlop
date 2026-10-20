@@ -52,7 +52,7 @@ public static class Throwables
     public static IEnumerable<ThrowableDef> Grenades => All.Where(d => d.Kind is ThrowableKind.Frag or ThrowableKind.Impact or ThrowableKind.Smoke);
 
     public static string KillName(byte killId) =>
-        killId == Game.MeleeKillId ? "Melee" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
+        killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
         : KillStreaks.IsStreakKill(killId) ? KillStreaks.Get(KillStreaks.FromKillId(killId)).Name : Weapons.Get(killId).Name;
 
     /// <summary>Point-vs-box test for a small projectile.</summary>
