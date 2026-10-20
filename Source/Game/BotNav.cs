@@ -67,6 +67,8 @@ public sealed class NavGraph
     private static NavGraph? _last;
     private static IEnumerator<NavGraph?>? _builder;
     private static Map? _builderMap;
+    private static Map? _hashMap;
+    private static uint _hash;
 
     /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
     public static readonly NavGraph Empty = CreateEmpty();
@@ -90,7 +92,12 @@ public sealed class NavGraph
             var map = World.Map;
             if (_last != null && ReferenceEquals(_lastMap, map))
                 return _last;
-            if (!Cache.TryGetValue((map.Name, map.ContentHash), out var cached))
+            if (!ReferenceEquals(_hashMap, map))
+            {
+                _hashMap = map; // the fingerprint walks every box: work it out once per map, not every tick of a build
+                _hash = map.ContentHash;
+            }
+            if (!Cache.TryGetValue((map.Name, _hash), out var cached))
                 return Empty;
             _lastMap = map;
             _last = cached;
@@ -179,6 +186,7 @@ public sealed class NavGraph
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
+        var c = new NavCollision(map); // the boxes in a grid: every probe below tests only the boxes nearby
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
 
@@ -196,7 +204,7 @@ public sealed class NavGraph
         {
             for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
             {
-                AddColumn(map, nodes, x, z, s, top);
+                AddColumn(map, c, nodes, x, z, s, top);
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 yield return null;
                 t0 = Stopwatch.GetTimestamp();
@@ -207,10 +215,10 @@ public sealed class NavGraph
         var extra = 0;
         foreach (var w in map.Waypoints.Concat(map.Spawns))
         {
-            var y = Ground(w.X, w.Z, w.Y + 1f, 3f);
-            if (float.IsFinite(y) && Place(map, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
+            var y = Ground(c, w.X, w.Z, w.Y + 1f, 3f);
+            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
                 nodes.Add(p);
-            if (++extra % 16 == 0)
+            if (++extra % 4 == 0)
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 yield return null;
@@ -236,12 +244,13 @@ public sealed class NavGraph
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
                 var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
-                if (link)
-                    TryLink(g, i, j, edges);
+                if (!link || !TryLink(g, c, i, j, edges))
+                    continue;
+                // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
             }
-            work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-            yield return null;
-            t0 = Stopwatch.GetTimestamp();
         }
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
@@ -262,26 +271,41 @@ public sealed class NavGraph
         }
         g.Nodes = kept.ToArray();
         var count = g.Nodes.Length;
-        edges.Sort((p, q) => remap[p.From].CompareTo(remap[q.From]));
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
+
+        // CSR: count each node's edges, then drop every edge into its node's slice (a counting sort, O(edges)).
         g.EdgeStart = new int[count + 1];
+        foreach (var e in edges)
+            g.EdgeStart[remap[e.From] + 1]++;
+        for (var i = 0; i < count; i++)
+            g.EdgeStart[i + 1] += g.EdgeStart[i];
         g.EdgeTo = new int[edges.Count];
         g.EdgeCost = new float[edges.Count];
         g.EdgeFlags = new byte[edges.Count];
         g.EdgeLedge = new Vector3[edges.Count];
+        var slot = (int[])g.EdgeStart.Clone();
         for (var k = 0; k < edges.Count; k++)
         {
             var e = edges[k];
-            g.EdgeStart[remap[e.From] + 1]++;
-            g.EdgeTo[k] = remap[e.To];
-            g.EdgeCost[k] = e.Cost;
-            g.EdgeFlags[k] = e.Flags;
-            g.EdgeLedge[k] = e.Ledge;
+            var at = slot[remap[e.From]]++;
+            g.EdgeTo[at] = remap[e.To];
+            g.EdgeCost[at] = e.Cost;
+            g.EdgeFlags[at] = e.Flags;
+            g.EdgeLedge[at] = e.Ledge;
             if ((e.Flags & FlagMantle) != 0)
                 g.MantleEdges++;
         }
-        for (var i = 0; i < count; i++)
-            g.EdgeStart[i + 1] += g.EdgeStart[i];
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
+
         g.BuildCells(map);
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
+
         g.BuildComponents();
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
@@ -292,8 +316,8 @@ public sealed class NavGraph
         TickProfile.Stage = "openness";
         for (var i = 0; i < count; i++)
         {
-            g.Openness[i] = OpennessAt(g.Nodes[i]);
-            if (i % 16 == 15)
+            g.Openness[i] = OpennessAt(c, g.Nodes[i]);
+            if (i % 4 == 3)
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 yield return null;
@@ -305,24 +329,18 @@ public sealed class NavGraph
     }
 
     /// <summary>Adds a node for every surface a player can stand on at grid point (x, z).</summary>
-    private static void AddColumn(Map map, List<Vector3> nodes, float x, float z, float s, float top)
+    private static void AddColumn(Map map, NavCollision c, List<Vector3> nodes, float x, float z, float s, float top)
     {
         Span<float> heights = stackalloc float[16];
         var n = 0;
         var columnStart = nodes.Count;
         // Whatever the world says is the highest ground here (covers non-box ground too).
-        var t = World.RaycastWorld(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
+        var t = c.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
         if (t > 0.001f && t < top + 6f)
             heights[n++] = top - t;
-        foreach (var b in map.Solid)
-        {
-            if (n >= heights.Length)
-                break;
-            if (x > b.Min.X && x < b.Max.X && z > b.Min.Z && z < b.Max.Z && b.Max.Y < top)
-                heights[n++] = b.Max.Y;
-        }
+        n += c.TopsAt(x, z, top, heights[n..]); // the top of every box over this point
         for (var i = 0; i < n; i++)
-            if (Place(map, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
+            if (Place(map, c, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
                 nodes.Add(p);
     }
 
@@ -335,7 +353,7 @@ public sealed class NavGraph
     }
 
     /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
-    private static Vector3? Place(Map map, Vector3 p, float spread)
+    private static Vector3? Place(Map map, NavCollision col, Vector3 p, float spread)
     {
         ReadOnlySpan<float> offsets = [0f, 0.3f, -0.3f];
         foreach (var ox in offsets)
@@ -344,11 +362,11 @@ public sealed class NavGraph
             var c = new Vector3(p.X + ox * spread, p.Y, p.Z + oz * spread);
             if (MathF.Abs(c.X) > map.HalfX - 0.5f || MathF.Abs(c.Z) > map.HalfZ - 0.5f)
                 continue;
-            var y = Ground(c.X, c.Z, p.Y + 0.3f, 0.6f);
+            var y = Ground(col, c.X, c.Z, p.Y + 0.3f, 0.6f);
             if (!float.IsFinite(y) || MathF.Abs(y - p.Y) > 0.05f)
                 continue;
             c.Y = y;
-            if (!World.Blocked(c + new Vector3(0, 0.01f, 0)))
+            if (!col.Blocked(c + new Vector3(0, 0.01f, 0)))
                 return c;
         }
         return null;
@@ -358,28 +376,30 @@ public sealed class NavGraph
     /// Height of the first surface below (x, fromY, z) within <paramref name="depth"/>: NaN if there's none,
     /// +infinity if the start point is already inside something (a wall too tall to climb).
     /// </summary>
-    public static float Ground(float x, float z, float fromY, float depth)
+    private static float Ground(NavCollision c, float x, float z, float fromY, float depth)
     {
-        var t = World.RaycastWorld(new Vector3(x, fromY, z), -Vector3.UnitY, depth);
+        var t = c.Raycast(new Vector3(x, fromY, z), -Vector3.UnitY, depth);
         if (t >= depth)
             return float.NaN;
         return t < 0.001f ? float.PositiveInfinity : fromY - t;
     }
 
-    private static void TryLink(NavGraph g, int i, int j, List<(int, int, float, byte, Vector3)> edges)
+    /// <summary>Links nodes i and j where a player can walk between them. False if they were rejected without a walk (cheap).</summary>
+    private static bool TryLink(NavGraph g, NavCollision c, int i, int j, List<(int, int, float, byte, Vector3)> edges)
     {
         var a = g.Nodes[i];
         var b = g.Nodes[j];
         if (MathF.Abs(a.Y - b.Y) > MaxDrop)
-            return;
+            return false;
         if (TooSteep(a, b))
-            return;
-        Walk(a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
+            return true;
+        Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
         var len = Vector3.Distance(a, b);
         if (fwd)
             edges.Add((i, j, len + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
         if (back)
             edges.Add((j, i, len + ((bFlags & FlagMantle) != 0 ? 2f : 0f), bFlags, bLedge));
+        return true;
     }
 
     /// <summary>
@@ -414,7 +434,7 @@ public sealed class NavGraph
     /// Can a player walk the straight line a -> b (and b -> a)? Samples the ground every <see cref="SampleStep"/>,
     /// allowing steps, mantles and drops, and checks there's room for the body above the step height.
     /// </summary>
-    public static void Walk(Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
+    private static void Walk(NavCollision c, Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
         out Vector3 fLedge, out Vector3 bLedge)
     {
         forward = backward = false;
@@ -432,12 +452,12 @@ public sealed class NavGraph
             var f = k / (float)n;
             float x = a.X + d.X * f, z = a.Z + d.Y * f;
             var from = y + World.MantleReach + 0.05f;
-            var g = Ground(x, z, from, World.MantleReach + 0.05f + MaxDrop);
+            var g = Ground(c, x, z, from, World.MantleReach + 0.05f + MaxDrop);
             if (!float.IsFinite(g))
                 return; // a wall too tall to climb, or a hole
             h[k] = g;
             y = g;
-            blocked[k] = World.Blocked(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
+            blocked[k] = c.Blocked(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
         }
         if (MathF.Abs(h[n] - b.Y) > 0.35f)
             return; // ended up on a different floor
@@ -634,14 +654,14 @@ public sealed class NavGraph
         MainNodes = Enumerable.Range(0, Nodes.Length).Where(i => Component[i] == MainComponent).ToArray();
     }
 
-    private static byte OpennessAt(Vector3 feet)
+    private static byte OpennessAt(NavCollision c, Vector3 feet)
     {
         var eye = feet + new Vector3(0, World.EyeHeight, 0);
         var open = 0;
         for (var k = 0; k < 8; k++)
         {
             var a = k * MathF.Tau / 8;
-            if (World.RaycastWorld(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
+            if (c.Raycast(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
                 open++;
         }
         return (byte)open;
