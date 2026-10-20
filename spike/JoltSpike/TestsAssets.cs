@@ -31,8 +31,8 @@ public static class TestsAssets
         Check("glTF loads: meshes / primitives / nodes", meshes == 2 && prims == 2 && nodes == 5, $"{meshes} meshes, {prims} primitives, {nodes} nodes, {gltf.Accessors?.Length ?? 0} accessors");
 
         var prim = gltf.Meshes![0].Primitives[0];
-        var positions = MemoryMarshal.Cast<byte, float3>(loader.GetAccessorBufferSpan(prim.Attributes["POSITION"])).ToArray();
-        var indices = MemoryMarshal.Cast<byte, ushort>(loader.GetAccessorBufferSpan(prim.Indices!.Value)).ToArray();
+        var positions = MemoryMarshal.Cast<byte, float3>(AccessorBytes(loader, prim.Attributes["POSITION"], 12)).ToArray();
+        var indices = MemoryMarshal.Cast<byte, ushort>(AccessorBytes(loader, prim.Indices!.Value, 2)).ToArray();
         var loadUs = Clock.UsSince(t0);
         Check("glTF vertex data read", positions.Length == 24 && indices.Length == 36, $"{positions.Length} verts, {indices.Length} indices, load+read {F(loadUs, 0)} us");
 
@@ -119,6 +119,15 @@ public static class TestsAssets
         }
         var allUs = Clock.UsSince(t1) / 20;
         Metric("scene graph 10k nodes: walk clean / 1 prop moved / root moved, us", $"{F(cleanUs, 1)} / {F(oneUs, 1)} / {F(allUs, 1)}");
+    }
+
+    /// <summary>Tightly packed accessor bytes (the published package has no accessor helper yet).</summary>
+    static ReadOnlySpan<byte> AccessorBytes(G.GltfLoader loader, int accessor, int elementSize)
+    {
+        var acc = loader.GltfJson.Accessors[accessor];
+        var view = loader.GltfJson.BufferViews[acc.BufferView!.Value];
+        var buffer = loader.GetOrLoadBuffer(view.Buffer);
+        return buffer.Slice(view.ByteOffset + acc.ByteOffset, acc.Count * elementSize);
     }
 
     static Node FromGltf(G.Gltf gltf, int index)

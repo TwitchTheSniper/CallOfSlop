@@ -26,11 +26,12 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Build
-        run: dotnet build spike/JoltSpike/JoltSpike.csproj -c Release -nologo
+        run: |
+          mkdir -p spike/out
+          dotnet build spike/JoltSpike/JoltSpike.csproj -c Release -nologo
 
       - name: Machine
         run: |
-          mkdir -p spike/out
           cpu=$( (lscpu 2>/dev/null | grep 'Model name' | sed 's/.*: *//') || true)
           [ -z "$cpu" ] && cpu=$(powershell -NoProfile -Command "(Get-CimInstance Win32_Processor).Name" 2>/dev/null)
           echo "::notice title=machine ${{ matrix.os }}::$cpu, $(nproc 2>/dev/null || echo $NUMBER_OF_PROCESSORS) cpus"
