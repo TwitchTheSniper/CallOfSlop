@@ -163,7 +163,9 @@ public sealed partial class Ui : IDisposable
         }
         ImGui.End();
 
+        _hudSettings = settings;
         DrawMatchBar(game, pos, size);
+        DrawModeHud(game, now, pos, size, settings); // warmup panel, hill / flag / gun indicators (UiModes.cs)
         if (game.Phase == MatchPhase.Ended)
         {
             DrawResults(game, pos, size);
@@ -324,6 +326,10 @@ public sealed partial class Ui : IDisposable
             {
                 ImGui.TextColored(Dim, $"Next match in {clock}");
             }
+            else if (game.Phase == MatchPhase.Warmup)
+            {
+                DrawWarmupBar(game, _hudSettings);
+            }
             else if (game.Phase == MatchPhase.Countdown)
             {
                 var text = t > 0 ? $"MATCH STARTS IN {t}" : "GO!";
@@ -331,7 +337,10 @@ public sealed partial class Ui : IDisposable
                 ImGui.TextColored(Orange, text);
                 ImGui.PopFont();
                 ImGui.TextColored(Dim, MenuOpen ? "Pick your loadout - it deploys automatically at GO."u8 : "Get ready..."u8);
-                ImGui.TextColored(Dim, $"First to {Game.WinKills} kills, win by {Game.WinMargin}, {Game.MatchSeconds / 60:0} minutes max");
+                ImGui.TextColored(Dim, game.ModeGoalText);
+            }
+            else if (DrawModeScoreBar(game, clock, t))
+            {
             }
             else
             {
@@ -370,12 +379,13 @@ public sealed partial class Ui : IDisposable
         ImGui.SetNextWindowBgAlpha(0.9f);
         if (ImGui.Begin("##results"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoMove))
         {
-            var won = game.Winner == game.LocalId;
+            var won = game.LocalWon;
             var draw = game.Winner == Game.NoWinner;
             ImGui.PushFont(default, 48);
             ImGui.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
             ImGui.PopFont();
             ImGui.Text(game.MatchResult.Length > 0 ? game.MatchResult : draw ? "No winner" : $"{game.NameOf(game.Winner)} wins");
+            DrawModeResultsLine(game);
             ImGui.Spacing();
             if (ImGui.BeginTable("##final"u8, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
             {
@@ -385,7 +395,7 @@ public sealed partial class Ui : IDisposable
                 ImGui.TableSetupColumn("Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
                 ImGui.TableHeadersRow();
                 var rank = 1;
-                foreach (var p in game.Players.Values.OrderByDescending(q => q.Kills).ThenBy(q => q.Deaths))
+                foreach (var p in game.Players.Values.OrderBy(q => game.IsTeamMode ? q.Team : 0).ThenByDescending(q => q.GunLevel).ThenByDescending(q => q.Kills).ThenBy(q => q.Deaths))
                 {
                     var c = p.Color;
                     ImGui.TableNextRow();
@@ -444,6 +454,8 @@ public sealed partial class Ui : IDisposable
 
     private void DrawScoreboard(Game game, float2 size, float2 pos)
     {
+        if (DrawModeScoreboard(game, size, pos))
+            return; // team modes and Gun Game (UiModes.cs)
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
         ImGui.SetNextWindowSize(new float2(MathF.Min(620 * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))

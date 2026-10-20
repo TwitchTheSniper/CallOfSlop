@@ -275,6 +275,7 @@ public sealed partial class Game
     public void HotSwapMap(Map fresh)
     {
         World.SetMap(fresh);
+        ResetObjectives();
         foreach (var p in Players.Values)
         {
             p.Snaps.Clear();

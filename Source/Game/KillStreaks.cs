@@ -320,13 +320,19 @@ public static class KillStreaks
 public sealed partial class Game
 {
     /// <summary>Kill streaks on or off for this match (the lead wires this to the game mode: Gun Game turns them off).</summary>
-    public bool StreaksEnabled { get; set; } = true;
+    public bool StreaksEnabled
+    {
+        get => _streaksSwitch && ModeAllowsStreaks; // Gun Game: off
+        set => _streaksSwitch = value;
+    }
+
+    private bool _streaksSwitch = true;
 
     /// <summary>
     /// Is <paramref name="other"/> an enemy of a streak's owner? The ONE place streaks decide who they hurt, reveal and jam.
     /// </summary>
-    // TODO(lead): use IsEnemy from game modes
-    public static bool StreakIsEnemy(Player owner, Player other) => other != owner;
+    /// Teams count (game modes): a streak never hurts, reveals or jams its owner's teammates.
+    public bool StreakIsEnemy(Player owner, Player other) => IsEnemy(owner, other);
 
     /// <summary>The streaks picked in the menu (sent with the loadout).</summary>
     public StreakSet ChosenStreaks = StreakSet.Starter;

@@ -55,6 +55,28 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `ops` | **yes** | The list of building steps, run in order. |
 
+## Game mode objectives (optional)
+
+Team modes need two teams' spawn points, King of the Hill needs hill zones, and Capture the Flag needs two flags. You can place them with three optional top-level fields. Anything you leave out is worked out automatically, the same way on every PC:
+
+- **Team spawns:** the two spawns furthest apart anchor the teams, and every spawn joins the side it's closer to, split evenly.
+- **Hills:** waypoints on open ground that lie on the routes between the two teams' spawns, central and equally far from both teams. Two hills on small maps, three on bigger ones, spread apart. Radius 3.5 m (small), 4.5 m (medium) or 6 m (large).
+- **Flags:** on each team's spawn that's deepest in its own half.
+
+| Field | Meaning |
+|---|---|
+| `teamSpawns` | Two lists of points, Blue's then Red's: `[[[x, y, z], ...], [[x, y, z], ...]]`. A point is `[x, y, z]` or `[x, z]` (y = 0). Each list needs at least one point. |
+| `hills` | Hill zones in rotation order: `[{ "x": 0, "z": 10 }, { "x": -20, "z": -5, "y": 3.2, "radius": 5 }]`. `y` (default 0) is the floor height, `radius` defaults to the size-based value. |
+| `flags` | Exactly two points, Blue's flag then Red's: `[[-24, 0, 0], [24, 0, 0]]`. |
+
+```json
+  "teamSpawns": [[[-24, -8], [-24, 8], [-20, 0]], [[24, -8], [24, 8], [20, 0]]],
+  "hills": [{ "x": 0, "z": 10 }, { "x": 0, "z": -10, "radius": 4 }],
+  "flags": [[-26, 0, 0], [26, 0, 0]],
+```
+
+These fields (and the waypoints, which the automatic hills use) are part of the map's fingerprint, so host and players must have the same version. Put spawns, hills and flags on open floor: something standing on them shouldn't be inside a wall.
+
 ## Units and directions
 
 - Distances are in metres. **Y is up**, the ground is at y = 0, and (0, 0) is the middle of the map.

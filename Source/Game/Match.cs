@@ -8,6 +8,7 @@ public enum MatchPhase : byte
     Countdown, // 5 s before each match: pick a loadout, everyone is frozen and nobody can be hurt
     Playing,
     Ended, // results screen; nobody can be hurt; a new match starts automatically
+    Warmup, // before the countdown: waiting for every person to ready up; nobody can be hurt (see ReadyUp.cs)
 }
 
 /// <summary>
@@ -99,10 +100,15 @@ public sealed partial class Game
         if (!_matchClockStarted)
         {
             _matchClockStarted = true;
-            BeginCountdown(now);
+            BeginPreMatch(now);
         }
+        ServerTickMode(now);
 
-        if (Phase == MatchPhase.Countdown)
+        if (Phase == MatchPhase.Warmup)
+        {
+            ServerTickWarmup(now);
+        }
+        else if (Phase == MatchPhase.Countdown)
         {
             TimeLeft = Math.Max(0, _countdownUntil - now);
             CountdownBeeps();
@@ -118,7 +124,9 @@ public sealed partial class Game
         {
             TimeLeft = Math.Max(0, MatchSeconds - (now - _matchStart));
             var (leader, best, second) = Standings();
-            if (leader != null && best >= WinKills && best - second >= WinMargin)
+            if (Mode != GameMode.FreeForAll)
+                ServerTickModePlaying(now); // objectives and the mode's own win rules (GameModes.cs)
+            else if (leader != null && best >= WinKills && best - second >= WinMargin)
                 EndMatch(leader, $"{NameOf(leader.Id)} wins {best}-{second}", now);
             else if (TimeLeft <= 0)
             {
@@ -138,10 +146,10 @@ public sealed partial class Game
         }
     }
 
-    private void EndMatch(Player? winner, string result, double now)
+    private void EndMatch(Player? winner, string result, double now, byte? winnerCode = null)
     {
         Phase = MatchPhase.Ended;
-        Winner = winner?.Id ?? NoWinner;
+        Winner = winnerCode ?? winner?.Id ?? NoWinner; // winnerCode: TeamWinBase + team for a team win
         MatchResult = result;
         _intermissionUntil = now + IntermissionSeconds;
         TimeLeft = IntermissionSeconds;
@@ -179,7 +187,8 @@ public sealed partial class Game
         Winner = NoWinner;
         MatchResult = "";
         MatchNumber++;
-        BeginCountdown(now);
+        BeginPreMatch(now);
+        ResetModeForMatch(respawn: false); // new teams, scores and objectives before everyone spawns
 
         Projectiles.Clear();
         Smokes.Clear();
@@ -195,7 +204,7 @@ public sealed partial class Game
                 p.Bot.Waypoint = Vector3.Zero;
         }
 
-        _w.Begin(Msg.MatchStart).U16((ushort)MatchNumber).Str(World.Map.Name).U32(World.Map.ContentHash);
+        _w.Begin(Msg.MatchStart).U16((ushort)MatchNumber).Str(World.Map.Name).U32(World.Map.ContentHash).U8((byte)Phase);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnMatchStarted();
     }
@@ -204,7 +213,7 @@ public sealed partial class Game
 
     private void OnMatchEnded(double now)
     {
-        var won = Winner == LocalId;
+        var won = LocalWon;
         Log(MatchResult, true);
         // Match XP for whoever finished the match in it (account XP + a weapon XP bonus for the loadout carried).
         if (Progress != null && Local is { } me && Progress.AwardMatch(won, me.Primary, me.Secondary, Brutal.GlfwApi.Glfw.Time) != null)
@@ -222,7 +231,7 @@ public sealed partial class Game
         Smokes.Clear();
         Sensors.Clear();
         Blasts.Clear();
-        Log($"Match {MatchNumber}: first to {WinKills} kills, win by {WinMargin}, {MatchSeconds / 60:0} minutes", true);
+        Log($"Match {MatchNumber}: {ModeGoalText}", true);
         if (!IsServer)
             _localInitialized = false; // treat the next snapshot as a fresh spawn (full ammo, new position)
     }
@@ -273,8 +282,8 @@ public sealed partial class Game
                     break;
                 Winner = NoWinner;
                 MatchResult = "";
-                Phase = MatchPhase.Countdown;
-                TimeLeft = CountdownSeconds;
+                Phase = r.Has(1) ? (MatchPhase)r.U8() : MatchPhase.Countdown; // Warmup when the host waits for ready-up
+                TimeLeft = Phase == MatchPhase.Countdown ? CountdownSeconds : 0;
                 _lastBeep = -1;
                 _countdownStartedFlag = true;
                 OnMatchStarted();
