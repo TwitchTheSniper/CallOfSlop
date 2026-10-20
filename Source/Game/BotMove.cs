@@ -9,6 +9,23 @@ public sealed partial class Game
     private const double BotNavBuildMs = 3; // per server tick, while a new map's nav graph is being built
 
     private readonly NavSearch _botSearch = new();
+
+    /// <summary>
+    /// Enemy scans (a sight line to every enemy) allowed per server tick, shared by all bots: with 31 bots the
+    /// 0.2-0.3 s scans can bunch up on one tick; the extras wait a tick or two, which nobody can notice.
+    /// </summary>
+    private const int BotScansPerTick = 4;
+
+    private int _botScanBudget;
+
+    /// <summary>Takes one of this tick's enemy scans (false: none left, try again next tick).</summary>
+    private bool TakeBotScan()
+    {
+        if (_botScanBudget <= 0)
+            return false;
+        _botScanBudget--;
+        return true;
+    }
     private int _botPathBudget;
     private uint _botBudgetTick = uint.MaxValue;
 
@@ -19,6 +36,7 @@ public sealed partial class Game
             return;
         _botBudgetTick = ServerTick;
         _botPathBudget = BotSearchesPerTick;
+        _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
     }
 

@@ -349,6 +349,7 @@ public sealed partial class Map
         SnapToGround(Waypoints);
         Fix(Spawns, "spawn");
         Fix(Waypoints, "waypoint");
+        EnsureSpawns(); // one spawn per player: generated extras when the map has too few (MapPlayers.cs)
 
         void Fix(List<Vector3> points, string what)
         {
@@ -620,8 +621,8 @@ public static partial class Maps
                                   + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");
             if (moved > 0)
                 Console.WriteLine($"note: {moved} spawn(s) were inside geometry and get moved to the nearest free spot");
-            if (m.Spawns.Count < 8)
-                Console.WriteLine($"note: only {m.Spawns.Count} spawns; 8 or more is better for a full server");
+            if (m.GeneratedSpawns > 0 || m.MaxPlayers < m.WantedMaxPlayers)
+                Console.WriteLine($"note: {m.AuthoredSpawns} spawns for up to {m.WantedMaxPlayers} players: {m.GeneratedSpawns} generated, limit {m.MaxPlayers} (add Spawn ops to place them yourself)");
             if (m.Waypoints.Count == 0)
                 Console.WriteLine("note: no waypoints; bots will wander. Add \"Waypoint\" ops or { \"op\": \"AutoWaypoints\", \"spacing\": 8 }");
             return 0;

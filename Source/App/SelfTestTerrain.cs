@@ -496,7 +496,7 @@ public static partial class SelfTest
 
         // A full bot match: nobody stuck, nobody below the ground.
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-            bots: Game.MaxPlayers - 1, botSkill: BotDifficulty.Normal, mapId: demo.Id);
+            bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Normal, mapId: demo.Id);
         game.MapVoteEnabled = false;
         const double dt = 1.0 / World.TickRate;
         var now = 0.0;
