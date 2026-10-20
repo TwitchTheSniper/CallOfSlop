@@ -21,6 +21,6 @@ jobs:
         shell: bash
         run: |
           for p in ahwoo.brutal.jolt ahwoo.brutal.gltf ahwoo.brutal.render.mesh ahwoo.brutal.stb ahwoo.brutal.numerics ahwoo.brutal.meshoptimizer; do
-            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | tr -d '\n ' | grep -o '"versions":\[[^]]*\]' | tail -c 200)
+            v=$(curl -s https://api.nuget.org/v3-flatcontainer/$p/index.json | jq -r '.versions[-8:] | join(" ")')
             echo "::notice title=nuget $p::$v"
           done
