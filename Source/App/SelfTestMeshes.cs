@@ -21,6 +21,19 @@ public static partial class SelfTest
         CheckBadModels();
         CheckMeshPool();
         CheckMeshMap();
+        // TEMP: numbers for the report, visible in CI annotations
+        var sb = new StringBuilder("TEMP stats: ");
+        foreach (var f in new[] { "Models/barrel.glb", "Models/traffic_cone.glb", "Models/lamp_post.gltf" })
+        {
+            var m = MeshLibrary.Model(f);
+            sb.Append($"{f} {m.Triangles}t LODs {string.Join("/", m.Meshes.Select(x => $"{x.LodSource}:{string.Join(",", x.Lods.Select(l => l.TriangleCount))}"))} {m.LoadMs:0.0}ms warn[{string.Join(";", m.Warnings)}] | ");
+        }
+        var sph = MeshPrimitives.Build(new PrimitiveSpec(PrimitiveKind.Sphere, Segments: 64, Detail: 32));
+        sb.Append($"acmr {Acmr(sph.Indices, 16):0.000}->{Acmr(MeshOpt.Optimize(sph).Indices, 16):0.000} | ");
+        var mt = Maps.Find("Mesh Test")!;
+        var tris = mt.MeshPlacements.Sum(p => p.Mesh != null ? p.Mesh.Lods[0].TriangleCount : p.Model!.Triangles);
+        sb.Append($"MeshTest {mt.MeshPlacements.Count} placements {mt.MeshPlacements.Sum(p => p.Model?.Parts.Length ?? 1)} parts {tris} LOD0 tris; lib {MeshLibrary.Counts}");
+        Fail(sb.ToString());
     }
 
     private static void CheckMeshCanaries()
@@ -31,7 +44,6 @@ public static partial class SelfTest
         // Brutal.Texture (native "stb"): a PNG decoded by stb and by the built-in reader must match.
         var stb = MeshTextures.StbAvailable;
         Line($"canary Brutal.Texture/stb: {(stb ? "PASS" : "FALLBACK")} - {MeshTextures.CanaryReport}");
-        Fail($"TEMP canaries: meshoptimizer {MeshOpt.CanaryReport} | stb {MeshTextures.CanaryReport}"); // TEMP: visible in CI annotations
         // Brutal.Gltf is managed (System.Text.Json); check its schema parser on a tiny document.
         try
         {
