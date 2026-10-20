@@ -189,11 +189,8 @@ public sealed partial class Game
         Winner = NoWinner;
         MatchResult = "";
         MatchNumber++;
-        var tp = TickProfile.Now();
         BeginPreMatch(now);
         ResetModeForMatch(respawn: false); // new teams, scores and objectives before everyone spawns
-        TickProfile.Add(TickProfile.NmMode, tp);
-        tp = TickProfile.Now();
 
         Projectiles.Clear();
         Smokes.Clear();
@@ -208,15 +205,10 @@ public sealed partial class Game
             if (p.Bot != null)
                 p.Bot.Waypoint = Vector3.Zero;
         }
-        TickProfile.Add(TickProfile.NmSpawn, tp);
-        tp = TickProfile.Now();
 
         _w.Begin(Msg.MatchStart).U16((ushort)MatchNumber).Str(World.Map.Name).U32(World.Map.ContentHash).U8((byte)Phase);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
-        TickProfile.Add(TickProfile.NmSend, tp);
-        tp = TickProfile.Now();
         OnMatchStarted();
-        TickProfile.Add(TickProfile.NmStart, tp);
     }
 
     // ---- Both sides -----------------------------------------------------------------

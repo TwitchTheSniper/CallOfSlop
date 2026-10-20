@@ -42,7 +42,6 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
-        Console.SetOut(new TickProfile.TimedWriter(Console.Out)); // PERF (temporary)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -82,7 +81,6 @@ public static partial class SelfTest
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
-            Line("PERF: sections " + string.Join(", ", _perfSections) + $" | GC g{GC.CollectionCount(0)}/{GC.CollectionCount(1)}/{GC.CollectionCount(2)} pause {GC.GetTotalPauseDuration().TotalMilliseconds:0} ms, server GC {System.Runtime.GCSettings.IsServerGC}, latency {System.Runtime.GCSettings.LatencyMode}, worst log write {TickProfile.TimedWriter.MaxMs:0.0} ms, cpus {Environment.ProcessorCount}, tiered {AppContext.TryGetSwitch("System.Runtime.TieredCompilation", out var tc) && tc}");
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -94,7 +92,6 @@ public static partial class SelfTest
     {
         Line("");
         Line($"== {name} ==");
-        var perf = Stopwatch.StartNew();
         try
         {
             body();
@@ -103,10 +100,7 @@ public static partial class SelfTest
         {
             Fail($"{name} threw: {ex}");
         }
-        _perfSections.Add($"{name} {perf.Elapsed.TotalSeconds:0.0}");
     }
-
-    private static readonly List<string> _perfSections = new(); // PERF (temporary)
 
     // ---- 1. Maps -------------------------------------------------------------------------
 
@@ -408,62 +402,26 @@ public static partial class SelfTest
             var moved = new Dictionary<byte, float>();
             var maxTickMs = 0.0;
             var slowTicks = 0; // ticks over the 16 ms budget (one-off spikes from GC or a busy CI machine are fine)
+            var cpu = new TickCpu(); // the work done in each tick, apart from time the machine gave to other programs
             var phasesSeen = new HashSet<MatchPhase>();
             var killsDone = 0;
             var lastKillSum = 0;
             var lastMatch = game.MatchNumber;
-            // PERF (temporary): where the time goes, per phase and around the worst tick.
-            var phaseTotals = new double[TickProfile.Names.Length];
-            var worstInfo = "";
-            var slowList = new List<string>();
-            int gc0 = GC.CollectionCount(0), gc1 = GC.CollectionCount(1), gc2 = GC.CollectionCount(2);
-            var pause0 = GC.GetTotalPauseDuration();
-            var alloc0 = GC.GetAllocatedBytesForCurrentThread();
-            var navReadyAt = -1.0;
-            var slowWithGc = 0;
-            double normCycles = 0, normMs = 0, worstCyc = 0;
-            var slowCyc = new List<double>();
-            var desched = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
-                    TickProfile.Reset();
-                    int c0 = GC.CollectionCount(0), c1 = GC.CollectionCount(1), c2 = GC.CollectionCount(2);
-                    var pz = GC.GetTotalPauseDuration();
-                    var cy0 = TickProfile.Cycles();
+                    cpu.Start();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                    var cyc = TickProfile.Cycles() - cy0;
-                    if (ms < 5)
-                    {
-                        normCycles += cyc;
-                        normMs += ms;
-                    }
-                    var pauseMs = (GC.GetTotalPauseDuration() - pz).TotalMilliseconds;
-                    var gcs = $"g{GC.CollectionCount(0) - c0}/{GC.CollectionCount(1) - c1}/{GC.CollectionCount(2) - c2} pause {pauseMs:0.0}";
-                    for (var k = 0; k < phaseTotals.Length; k++)
-                        phaseTotals[k] += TickProfile.Ms[k];
-                    if (navReadyAt < 0 && NavGraph.Current.Nodes.Length > 0)
-                        navReadyAt = i / 60.0;
+                    cpu.Stop(ms, count: i > 60);
                     if (i > 60)
                     {
-                        if (ms > maxTickMs)
-                            worstCyc = cyc;
-                        if (ms > maxTickMs)
-                            worstInfo = $"{ms:0.0} ms at t={i / 60.0:0.00}s phase {game.Phase} match {game.MatchNumber} nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")} {gcs} | {TickProfile.Breakdown()}";
                         maxTickMs = Math.Max(maxTickMs, ms);
                         if (ms > 16)
-                        {
                             slowTicks++;
-                            slowCyc.Add(cyc);
-                            if (pauseMs > 1)
-                                slowWithGc++;
-                            if (slowList.Count < 6)
-                                slowList.Add($"{ms:0}@{i / 60.0:0.0}s({gcs}{(ms > 30 ? " " + game.Phase + " | " + TickProfile.Breakdown() : "")})");
-                        }
                     }
                     phasesSeen.Add(game.Phase);
                     if (game.MatchNumber != lastMatch)
@@ -493,24 +451,12 @@ public static partial class SelfTest
             }
 
             botStats.Add(game.BotStats);
-            {
-                var ticks = 90.0 * World.TickRate;
-                var cpm = normMs > 0 ? normCycles / normMs : 0; // cycles per ms of real work on this machine
-                string Cpu(double c) => cpm > 0 ? $"{c / cpm:0.0}" : "?";
-                desched = slowCyc.Count(c => cpm > 0 && c / cpm < 8);
-                worstInfo = $"cpu {Cpu(worstCyc)} ms of " + worstInfo;
-                slowList.Add($"slow cpu ms: {string.Join("/", slowCyc.Take(8).Select(Cpu))} desched {desched}");
-                var avg = string.Join(" ", Enumerable.Range(0, phaseTotals.Length).Where(k => phaseTotals[k] / ticks >= 0.01).Select(k => $"{TickProfile.Names[k]} {phaseTotals[k] / ticks:0.00}"));
-                Line($"PERF: {m.Name} total {sw.Elapsed.TotalSeconds:0.0}s navReady {navReadyAt:0.0}s worst [{worstInfo}] slow {slowTicks} (gc {slowWithGc}) [{string.Join(" ", slowList)}] "
-                     + $"GC g{GC.CollectionCount(0) - gc0}/{GC.CollectionCount(1) - gc1}/{GC.CollectionCount(2) - gc2} pause {(GC.GetTotalPauseDuration() - pause0).TotalMilliseconds:0} ms "
-                     + $"alloc {(GC.GetAllocatedBytesForCurrentThread() - alloc0) / ticks / 1024:0.0} KB/tick heap {GC.GetTotalMemory(false) / 1048576} MB | avg ms/tick: {avg}");
-            }
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
             var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z) - 0.5f); // below the floor (or the terrain)
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             if (bots.Count != Game.MaxPlayers - 1)
                 Fail($"{m.Name}: expected {Game.MaxPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -519,13 +465,16 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
-            // A real performance problem shows up as many slow ticks or a huge one; a single spike on a shared
-            // CI machine doesn't. (The old rule failed on any tick over 8 ms and was flaky on GitHub's runners.)
-            // (One 100-120 ms hiccup has also come up on runners with healthy code, hence 250.)
-            if (slowTicks > 54 || maxTickMs > 250)
+            // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
+            // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
+            // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
+            // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
+            if (cpu.WorstMs > MaxTickWorkMs)
+                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget)");
+            if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)
-                Line($"  note: {slowTicks} tick(s) over 16 ms, worst {maxTickMs:0.0} ms (within tolerance)");
+                Line($"  note: {slowTicks} tick(s) over 16 ms, worst {maxTickMs:0.0} ms; the busiest tick did {cpu.WorstText} of work (the machine was busy elsewhere)");
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }

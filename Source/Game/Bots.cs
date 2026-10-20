@@ -226,9 +226,7 @@ public sealed partial class Game
             return;
         }
 
-        var tp = TickProfile.Now();
         BotUseStreaks(p, now); // kill streaks (BotStreaks.cs)
-        TickProfile.Add(TickProfile.BStreak, tp);
         var def = p.WeaponDef;
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
         {
@@ -245,27 +243,13 @@ public sealed partial class Game
             b.Waypoint = Vector3.Zero;
         }
 
-        tp = TickProfile.Now();
         var target = BotPerceive(p, b, now, out var visible);
-        TickProfile.Add(TickProfile.Perceive, tp);
-        tp = TickProfile.Now();
         BotDecide(p, b, target, visible, def, now);
-        TickProfile.Add(TickProfile.Decide, tp);
-        tp = TickProfile.Now();
         var steer = BotSteer(p, b, target, visible, def, now);
-        TickProfile.Add(TickProfile.Steer, tp);
-        tp = TickProfile.Now();
         var aim = BotAim(p, b, target, visible, def, steer, now);
-        TickProfile.Add(TickProfile.Aim, tp);
-        tp = TickProfile.Now();
         BotShoot(p, b, target, visible, def, aim, now);
-        TickProfile.Add(TickProfile.Shoot, tp);
-        tp = TickProfile.Now();
         BotGrenade(p, b, target, visible, aim.Distance, now);
-        TickProfile.Add(TickProfile.Nade, tp);
-        tp = TickProfile.Now();
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
-        TickProfile.Add(TickProfile.Buttons, tp);
 
         var cmd = new InputCmd
         {
@@ -276,9 +260,7 @@ public sealed partial class Game
             Weapon = p.Weapon,
             SpeedPct = (byte)Math.Clamp((int)(def.Mobility * (aim.Ads ? World.AdsSpeedMult : 1f) * 100), 1, 200),
         };
-        tp = TickProfile.Now();
         ApplyCmd(p, cmd);
-        TickProfile.Add(TickProfile.Physics, tp);
         b.LastHealth = p.Health;
     }
 

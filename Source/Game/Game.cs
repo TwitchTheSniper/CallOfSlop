@@ -183,14 +183,12 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        var tp0 = TickProfile.Now();
         Net.Poll((sender, data) => OnPacket(sender, data, now));
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateThrowableEffects(now, (float)frameDt);
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
-        TickProfile.Add(TickProfile.Pre, tp0);
 
         _accumulator += frameDt;
         var steps = 0;
@@ -205,7 +203,6 @@ public sealed partial class Game : IDisposable
         if (_accumulator > World.TickDt)
             _accumulator = 0;
         _alpha = (float)(_accumulator / World.TickDt);
-        tp0 = TickProfile.Now();
 
         if (!IsServer)
         {
@@ -216,7 +213,6 @@ public sealed partial class Game : IDisposable
         UpdateRenderStates((float)frameDt);
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
-        TickProfile.Add(TickProfile.Post, tp0);
     }
 
     private InputCmd SampleLocalInput(uint seq)
@@ -785,15 +781,9 @@ public sealed partial class Game : IDisposable
     private void ServerTickStep(double now)
     {
         ServerTick++;
-        var tp = TickProfile.Now();
         ServerTickMatch(now);
-        TickProfile.Add(TickProfile.Match, tp);
-        tp = TickProfile.Now();
         ServerTickProjectiles(now);
-        TickProfile.Add(TickProfile.Proj, tp);
-        tp = TickProfile.Now();
         ServerTickStreaks(now);
-        TickProfile.Add(TickProfile.Streaks, tp);
 
         foreach (var p in Players.Values)
         {
@@ -820,20 +810,16 @@ public sealed partial class Game : IDisposable
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
             if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt)
             {
-                tp = TickProfile.Now();
                 Spawn(p, ServerTick, now);
                 if (p.Id == LocalId)
                     OnLocalSpawn(p);
-                TickProfile.Add(TickProfile.Spawn, tp);
             }
 
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw };
         }
 
-        tp = TickProfile.Now();
         if (ServerTick % World.SnapshotEvery == 0)
             SendSnapshots();
-        TickProfile.Add(TickProfile.Snap, tp);
 
         if (now >= _nextInfoLog && _clients.Count > 0)
         {
