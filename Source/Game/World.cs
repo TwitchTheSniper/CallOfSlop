@@ -98,6 +98,12 @@ public static class World
 
     public const float StepHeight = 0.55f; // walk up anything this tall (stairs are 0.4 m)
 
+    /// <summary>Terrain steeper than this can't be walked up: you slide down it, and cliffs are walls.</summary>
+    public const float MaxSlopeDeg = 42f;
+
+    /// <summary>cos(<see cref="MaxSlopeDeg"/>): ground whose normal points up less than this is too steep.</summary>
+    public const float MinWalkNormalY = 0.7431448f;
+
     // ---- Player ------------------------------------------------------------
     public const float PlayerRadius = 0.4f;
     public const float PlayerHeight = 1.8f; // standing
@@ -213,7 +219,9 @@ public static class World
         var boxes = Map.Solid;
         var parkour = s.MovePerk == PerkId.Parkour;
         var maxReach = parkour ? Perks.ParkourReach : MantleReach;
-        ReadOnlySpan<float> reach = [0.55f, 0.8f, 1.05f];
+        var terrain = Map.TerrainCollision;
+        // Terrain banks are a cell wide or more, so on terrain maps also look a little further for the top.
+        ReadOnlySpan<float> reach = terrain == null ? [0.55f, 0.8f, 1.05f] : [0.55f, 0.8f, 1.05f, 1.35f, 1.65f];
         ReadOnlySpan<float> side = [0f, 0.15f, -0.15f, 0.3f, -0.3f]; // small sideways nudge to line up with windows
 
         foreach (var d in reach)
@@ -221,7 +229,14 @@ public static class World
             var probe = feet + f * d;
             // Highest box top under the probe point that's a climbable height.
             var top = float.NegativeInfinity;
-            for (var i = 0; i < boxes.Count; i++)
+            if (terrain != null)
+            {
+                // A terrain ledge counts if its top is flat enough to stand on (so you can't mantle up a cliff face).
+                var g = terrain.HeightAt(probe.X, probe.Z);
+                if (g > feet.Y + StepHeight && g <= feet.Y + maxReach && terrain.NormalAt(probe.X, probe.Z).Y >= MinWalkNormalY)
+                    top = g;
+            }
+            for (var i = 0; i < boxes.Count && d <= 1.05f; i++)
             {
                 var bx = boxes[i];
                 if (probe.X < bx.Min.X || probe.X > bx.Max.X || probe.Z < bx.Min.Z || probe.Z > bx.Max.Z)
@@ -283,8 +298,17 @@ public static class World
         };
     }
 
-    /// <summary>Nearest distance at which a ray hits static geometry (or maxDist if nothing).</summary>
+    /// <summary>Nearest distance at which a ray hits static geometry, boxes or terrain (or maxDist if nothing).</summary>
     public static float RaycastWorld(Vector3 origin, Vector3 dir, float maxDist)
+    {
+        var best = RaycastBoxes(origin, dir, maxDist);
+        if (Map.TerrainCollision is { } terrain && best > 0)
+            best = MathF.Min(best, terrain.Raycast(origin, dir, best));
+        return best;
+    }
+
+    /// <summary>Nearest distance at which a ray hits a box (terrain ignored), or maxDist.</summary>
+    public static float RaycastBoxes(Vector3 origin, Vector3 dir, float maxDist)
     {
         var best = maxDist;
         var boxes = Map.Solid;
@@ -292,6 +316,65 @@ public static class World
             if (boxes[i].Raycast(origin, dir, best) is { } t && t < best)
                 best = t;
         return best;
+    }
+
+    /// <summary>
+    /// Could a player walk in a straight line from <paramref name="from"/> to <paramref name="to"/> (feet positions)?
+    /// No box in the way at knee (0.5 m) or chest (1.3 m) height and, on terrain, no stretch steeper than
+    /// <see cref="MaxSlopeDeg"/> (up or down, so the answer is the same both ways) and no hill in between.
+    /// Meant for bot navigation (waypoint picking, nav graphs). Pure geometry: smoke etc. is up to the caller.
+    /// </summary>
+    public static bool CanWalkStraight(Vector3 from, Vector3 to)
+    {
+        var knee = new Vector3(0, 0.5f, 0);
+        var chest = new Vector3(0, 1.3f, 0);
+        var terrain = Map.TerrainCollision;
+        if (terrain == null)
+            return Clear(from + knee, to + knee) && Clear(from + chest, to + chest);
+        // Off the ground (on a roof, a bridge): straight lines only, terrain included in the ray casts.
+        if (from.Y - terrain.HeightAt(from.X, from.Z) > 0.6f || to.Y - terrain.HeightAt(to.X, to.Z) > 0.6f)
+            return ClearAll(from + knee, to + knee) && ClearAll(from + chest, to + chest);
+
+        var flat = new Vector2(to.X - from.X, to.Z - from.Z);
+        var len = flat.Length();
+        var step = MathF.Min(0.5f, terrain.Data.Cell * 0.5f);
+        var n = Math.Max(1, (int)MathF.Ceiling(len / step));
+        var run = len / n;
+        var maxRise = run * (1f / MinWalkNormalY) * MathF.Sqrt(1 - MinWalkNormalY * MinWalkNormalY) + 0.02f; // run * tan(max slope)
+        var prev = new Vector3(from.X, terrain.HeightAt(from.X, from.Z), from.Z);
+        var segStart = prev;
+        for (var k = 1; k <= n; k++)
+        {
+            var t = k / (float)n;
+            var x = from.X + flat.X * t;
+            var z = from.Z + flat.Y * t;
+            var p = new Vector3(x, terrain.HeightAt(x, z), z);
+            if (MathF.Abs(p.Y - prev.Y) > maxRise)
+                return false; // a cliff or a drop
+            // Boxes: check the path in pieces of about 4 m that follow the ground.
+            if (k % 8 == 0 || k == n)
+            {
+                if (!Clear(segStart + knee, p + knee) || !Clear(segStart + chest, p + chest))
+                    return false;
+                segStart = p;
+            }
+            prev = p;
+        }
+        return true;
+
+        static bool Clear(Vector3 a, Vector3 b)
+        {
+            var d = b - a;
+            var dist = d.Length();
+            return dist < 0.01f || RaycastBoxes(a, d / dist, dist) >= dist - 0.05f;
+        }
+
+        static bool ClearAll(Vector3 a, Vector3 b)
+        {
+            var d = b - a;
+            var dist = d.Length();
+            return dist < 0.01f || RaycastWorld(a, d / dist, dist) >= dist - 0.05f;
+        }
     }
 
     /// <summary>
@@ -303,6 +386,7 @@ public static class World
     {
         var boxes = Map.Solid;
         var H = height;
+        var wasGrounded = grounded;
 
         // ---- Vertical ----
         velocity.Y -= Gravity * dt;
@@ -327,6 +411,8 @@ public static class World
             }
         }
         feet.Y = newY;
+        if (Map.TerrainCollision is { } terrain)
+            TerrainVertical(terrain, ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
 
         // ---- Horizontal, X then Z ----
         feet = MoveAxis(feet, velocity.X * dt, true, ref velocity, grounded, H);
@@ -372,11 +458,70 @@ public static class World
                 velocity.Z = 0;
             }
         }
+
+        // Terrain rising in front: walk up it if it's gentle (and there's headroom), otherwise it's a wall.
+        if (Map.TerrainCollision is { } terrain)
+        {
+            var g = terrain.HeightAt(p.X, p.Z);
+            if (g > p.Y + 0.001f)
+            {
+                if (g - p.Y <= StepHeight && terrain.NormalAt(p.X, p.Z).Y >= MinWalkNormalY && !BlockedByBoxes(p with { Y = g }, height))
+                    p.Y = g;
+                else
+                {
+                    p = feet; // no progress along this axis this tick
+                    if (alongX)
+                        velocity.X = 0;
+                    else
+                        velocity.Z = 0;
+                }
+            }
+        }
         return p;
     }
 
-    /// <summary>Would a player standing at <paramref name="feet"/> overlap any box?</summary>
+    /// <summary>
+    /// The ground under a player after the vertical move: land on it, stick to it walking downhill (so you don't
+    /// hop down slopes), and slide off anything steeper than <see cref="MaxSlopeDeg"/>.
+    /// </summary>
+    private static void TerrainVertical(ITerrainCollision terrain, ref Vector3 feet, ref Vector3 velocity, ref bool grounded, bool wasGrounded, float height, float dt)
+    {
+        var g = terrain.HeightAt(feet.X, feet.Z);
+        var gap = feet.Y - g;
+        if (gap > 0)
+        {
+            // In the air above the ground: snap down only when we were walking on it last tick and it's walkable.
+            var speed = MathF.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
+            if (grounded || !wasGrounded || velocity.Y > 0 || gap > 0.12f + speed * dt * 1.2f)
+                return;
+            if (terrain.NormalAt(feet.X, feet.Z).Y < MinWalkNormalY || BlockedByBoxes(feet with { Y = g }, height))
+                return;
+        }
+        var n = terrain.NormalAt(feet.X, feet.Z);
+        feet.Y = g;
+        if (velocity.Y < 0)
+            velocity.Y = 0;
+        if (n.Y >= MinWalkNormalY)
+            grounded = true;
+        else if (!grounded)
+        {
+            // Too steep to stand on: gravity pulls you down the slope.
+            var push = Gravity * n.Y * dt;
+            velocity.X += n.X * push;
+            velocity.Z += n.Z * push;
+        }
+    }
+
+    /// <summary>Would a player standing at <paramref name="feet"/> overlap any box, or be under the terrain?</summary>
     public static bool Blocked(Vector3 feet, float height = PlayerHeight)
+    {
+        if (Map.TerrainCollision is { } terrain && terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
+            return true;
+        return BlockedByBoxes(feet, height);
+    }
+
+    /// <summary>Would a player standing at <paramref name="feet"/> overlap any box (terrain ignored)?</summary>
+    public static bool BlockedByBoxes(Vector3 feet, float height = PlayerHeight)
     {
         var boxes = Map.Solid;
         for (var i = 0; i < boxes.Count; i++)
@@ -392,7 +537,14 @@ public static class World
     {
         feet.X = Math.Clamp(feet.X, -Map.HalfX + PlayerRadius, Map.HalfX - PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -Map.HalfZ + PlayerRadius, Map.HalfZ - PlayerRadius);
-        feet.Y = Math.Clamp(feet.Y, -5, 60);
+        if (Map.TerrainCollision is { } terrain)
+        {
+            // Never below the ground: nobody falls out of a terrain map.
+            feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
+            feet.Y = MathF.Max(feet.Y, terrain.HeightAt(feet.X, feet.Z));
+        }
+        else
+            feet.Y = Math.Clamp(feet.Y, -5, 60);
         return feet;
     }
 

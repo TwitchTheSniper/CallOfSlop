@@ -24,8 +24,11 @@ public sealed class MapFileException(string message) : Exception(message);
 /// </summary>
 public sealed partial class Map
 {
-    /// <summary>One recorded builder call: the method name and its arguments, in parameter order.</summary>
-    public readonly record struct RecordedOp(string Name, object?[] Args);
+    /// <summary>One recorded builder call: the method name, its arguments in parameter order, and its terrain anchor.</summary>
+    public readonly record struct RecordedOp(string Name, object?[] Args, OpAnchor Anchor = OpAnchor.Auto);
+
+    /// <summary>The terrain anchor for the next top-level op (the map file loader sets it from an op's "anchor" key).</summary>
+    public OpAnchor NextAnchor;
 
     private readonly List<RecordedOp> _ops = new();
     private int _opDepth;
@@ -44,17 +47,30 @@ public sealed partial class Map
     /// <summary>The file the map was loaded from (null for maps built in code).</summary>
     public string? SourceFile;
 
-    public readonly struct OpScope(Map map) : IDisposable
+    public readonly struct OpScope(Map map, bool top, string name, int firstBox, OpAnchor anchor) : IDisposable
     {
-        public void Dispose() => map._opDepth--;
+        public void Dispose()
+        {
+            map._opDepth--;
+            if (top)
+                map.PlaceOnTerrain(name, firstBox, anchor); // terrain maps: lift what the op built onto the ground
+        }
     }
 
     private OpScope Op(object?[] args, [CallerMemberName] string name = "")
     {
-        if (_opDepth == 0)
-            _ops.Add(new RecordedOp(name, args));
+        var top = _opDepth == 0;
+        var anchor = OpAnchor.Auto;
+        if (top)
+        {
+            anchor = NextAnchor;
+            NextAnchor = OpAnchor.Auto;
+            _topAnchor = anchor;
+            _topName = name;
+            _ops.Add(new RecordedOp(name, args, anchor));
+        }
         _opDepth++;
-        return new OpScope(this);
+        return new OpScope(this, top, name, Solid.Count, anchor);
     }
 
     /// <summary>
@@ -85,6 +101,15 @@ public sealed partial class Map
             foreach (var s in Spawns)
             {
                 Mix(s.X); Mix(s.Y); Mix(s.Z);
+            }
+            if (Terrain != null)
+            {
+                // Terrain maps only, so flat maps keep the fingerprint they always had.
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (Terrain.Hash >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
             }
             return h;
         }
@@ -125,6 +150,8 @@ public static class MapFile
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
         sb.Append($"  \"halfZ\": {Num(m.HalfZ)},\n");
         sb.Append($"  \"sky\": {Col(m.Sky)},\n");
+        if (m.TerrainSpec != null)
+            sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         sb.Append("  \"ops\": [\n");
         for (var i = 0; i < m.Ops.Count; i++)
         {
@@ -142,6 +169,8 @@ public static class MapFile
                     continue;
                 parts.Add($"{Str(p.Name!)}: {Fmt(v)}");
             }
+            if (op.Anchor != OpAnchor.Auto)
+                parts.Add($"\"anchor\": {Str(op.Anchor.ToString().ToLowerInvariant())}");
             sb.Append("    { ").Append(string.Join(", ", parts)).Append(" }").Append(i < m.Ops.Count - 1 ? ",\n" : "\n");
         }
         sb.Append("  ]\n}\n");
@@ -203,6 +232,8 @@ public static class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
+            if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
+                map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             if (Prop(root, "ops") is not { ValueKind: JsonValueKind.Array } ops)
                 throw new MapFileException($"{source}: missing \"ops\" list");
 
@@ -227,8 +258,14 @@ public static class MapFile
                     else
                         throw new MapFileException($"{where}: {method.Name} needs \"{p.Name}\"");
                 }
+                map.NextAnchor = Prop(op, "anchor") switch
+                {
+                    null => OpAnchor.Auto,
+                    { ValueKind: JsonValueKind.String } a when Enum.TryParse<OpAnchor>(a.GetString(), true, out var parsed) && Enum.IsDefined(parsed) => parsed,
+                    var a => throw new MapFileException($"{where}: \"anchor\" is \"ground\", \"drape\", \"world\" or \"auto\", got {a}"),
+                };
                 foreach (var prop in op.EnumerateObject())
-                    if (prop.Name != "op" && !ps.Any(p => string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase)))
+                    if (prop.Name != "op" && !prop.Name.Equals("anchor", StringComparison.OrdinalIgnoreCase) && !ps.Any(p => string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase)))
                         throw new MapFileException($"{where}: {method.Name} has no parameter \"{prop.Name}\" (it takes: {string.Join(", ", ps.Select(p => p.Name))})");
                 try
                 {
@@ -293,7 +330,7 @@ public static class MapFile
         Prop(obj, name) is { } v ? Num(v, where) : throw new MapFileException($"{where}: missing \"{name}\"");
 
     /// <summary>Colours are [r, g, b] (0-1) or "#rrggbb".</summary>
-    private static Vector3 ToColour(JsonElement e, string where, string source)
+    internal static Vector3 ToColour(JsonElement e, string where, string source)
     {
         if (e.ValueKind == JsonValueKind.Array && e.GetArrayLength() == 3)
             return new Vector3(Num(e[0], where), Num(e[1], where), Num(e[2], where));

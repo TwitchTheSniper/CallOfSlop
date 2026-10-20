@@ -110,8 +110,8 @@ public sealed partial class Game
             var d = Vector3.Distance(from, c);
             if (d < 6f || d > 70f)
                 continue;
-            if (HasLineOfSight(from + new Vector3(0, 0.5f, 0), c + new Vector3(0, 0.5f, 0))
-                && HasLineOfSight(from + new Vector3(0, 1.3f, 0), c + new Vector3(0, 1.3f, 0)))
+            if (World.CanWalkStraight(from, c) // knee and chest clear, and on terrain no cliffs or hills in the way
+                && !SmokeBlocks(from + new Vector3(0, 1.3f, 0), c + new Vector3(0, 1.3f, 0), Brutal.GlfwApi.Glfw.Time))
                 return c;
         }
         return w[_rng.Next(w.Count)];

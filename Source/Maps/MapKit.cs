@@ -35,7 +35,7 @@ public sealed partial class Map
     {
         using var __ = Op([x, z, h]);
         foreach (var (ox, oz) in new[] { (0f, 0f), (2f, 0f), (-2f, 0f), (0f, 2f), (0f, -2f) })
-            if (IsBlocked(new Vector3(x + ox, 0, z + oz)))
+            if (IsBlocked(new Vector3(x + ox, GroundHeight(x + ox, z + oz), z + oz)))
                 return;
         Tree(x, z, h);
     }
@@ -289,8 +289,8 @@ public sealed partial class Map
         for (var x = -HalfX + spacing / 2; x < HalfX; x += spacing)
         for (var z = -HalfZ + spacing / 2; z < HalfZ; z += spacing)
         {
-            var p = new Vector3(x, 0, z);
-            if (!IsBlocked(p))
+            var p = new Vector3(x, GroundHeight(x, z), z); // terrain maps: on the ground, and not on slopes too steep to stand on
+            if (!BadSpot(p))
                 Waypoints.Add(p);
         }
     }

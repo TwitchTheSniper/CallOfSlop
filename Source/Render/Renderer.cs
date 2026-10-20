@@ -162,14 +162,38 @@ public sealed unsafe class Renderer
     {
         _viewProj = view * proj;
         if (Matrix4x4.Invert(view, out var inv))
+        {
+            CameraPosition = new Vector3(inv.M41, inv.M42, inv.M43);
             Native.glUniform3f(_locCam, inv.M41, inv.M42, inv.M43);
+        }
     }
+
+    /// <summary>The current view * projection (for other renderers drawing into the same frame, e.g. terrain).</summary>
+    public Matrix4x4 ViewProj => _viewProj;
+
+    public Vector3 CameraPosition { get; private set; }
+    public Vector3 FogColor { get; private set; }
+    public Vector2 FogRange { get; private set; }
+
+    /// <summary>The shared texture array (see <see cref="Textures"/>).</summary>
+    public uint TextureArray => _texture;
 
     /// <summary>Distance fog towards <paramref name="color"/> between start and end metres (end &lt;= start: off).</summary>
     public void SetFog(Vector3 color, float start, float end)
     {
+        FogColor = color;
+        FogRange = new Vector2(start, end);
         Native.glUniform3f(_locFog, color.X, color.Y, color.Z);
         Native.glUniform2f(_locFogRange, start, end);
+    }
+
+    /// <summary>Makes the box shader, cube mesh and texture current again after another renderer drew.</summary>
+    public void Rebind()
+    {
+        _program.Use();
+        _vao.Bind();
+        Native.glActiveTexture(GL_TEXTURE0);
+        Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _texture);
     }
 
     public void ClearDepthBuffer() => Clear(GlClearBit.Depth);

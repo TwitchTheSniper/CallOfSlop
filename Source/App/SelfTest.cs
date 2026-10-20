@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///      attachments work, and the visual shake never moves the aim.
 /// It never touches settings, progress or loadout files.
 /// </summary>
-public static class SelfTest
+public static partial class SelfTest
 {
     private static StreamWriter _log = null!;
     private static int _failures;
@@ -47,6 +47,7 @@ public static class SelfTest
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
             Section("Mantling", CheckMantle);
+            Section("Terrain", CheckTerrain);
             Section("Attachments", CheckAttachments);
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
@@ -426,7 +427,7 @@ public static class SelfTest
 
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
-            var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < -0.5f);
+            var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z) - 0.5f); // below the floor (or the terrain)
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms  ({sw.Elapsed.TotalSeconds:0.0} s)");
