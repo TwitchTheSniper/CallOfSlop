@@ -61,6 +61,7 @@ public static partial class SelfTest
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Collision grid", CheckCollisionGrid); // SelfTestNav.cs
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
@@ -402,6 +403,7 @@ public static partial class SelfTest
             var moved = new Dictionary<byte, float>();
             var maxTickMs = 0.0;
             var slowTicks = 0; // ticks over the 16 ms budget (one-off spikes from GC or a busy CI machine are fine)
+            var cpu = new TickCpu(); // the work done in each tick, apart from time the machine gave to other programs
             var phasesSeen = new HashSet<MatchPhase>();
             var killsDone = 0;
             var lastKillSum = 0;
@@ -411,9 +413,11 @@ public static partial class SelfTest
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
+                    cpu.Start();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    cpu.Stop(ms, count: i > 60);
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -453,7 +457,7 @@ public static partial class SelfTest
             var fallen = game.Players.Values.Count(p => p.Alive && p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z) - 0.5f); // below the floor (or the terrain)
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             if (bots.Count != Game.MaxPlayers - 1)
                 Fail($"{m.Name}: expected {Game.MaxPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -462,13 +466,16 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
-            // A real performance problem shows up as many slow ticks or a huge one; a single spike on a shared
-            // CI machine doesn't. (The old rule failed on any tick over 8 ms and was flaky on GitHub's runners.)
-            // (One 100-120 ms hiccup has also come up on runners with healthy code, hence 250.)
-            if (slowTicks > 54 || maxTickMs > 250)
+            // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
+            // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
+            // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
+            // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
+            if (cpu.WorstMs > MaxTickWorkMs)
+                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget)");
+            if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)
-                Line($"  note: {slowTicks} tick(s) over 16 ms, worst {maxTickMs:0.0} ms (within tolerance)");
+                Line($"  note: {slowTicks} tick(s) over 16 ms, worst {maxTickMs:0.0} ms; the busiest tick did {cpu.WorstText} of work (the machine was busy elsewhere)");
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
