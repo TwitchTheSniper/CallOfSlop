@@ -563,7 +563,7 @@ public static partial class SelfTest
                 route += Vector3.Distance(g.Nodes[path[i - 1]], g.Nodes[path[i]]);
             bot.Teleport(from);
             bot.Bot!.ForcedGoal = to;
-            var limit = route / 4f + 8f; // sprinting is 9 m/s, walking 6: generous for corners, climbs and doors
+            var limit = route / 4f + 8f; // sprinting is 13.5 m/s, walking 6: generous for corners, climbs and doors
             const double dt = 1.0 / World.TickRate;
             var now = 0.0;
             var took = -1.0;
@@ -855,6 +855,16 @@ public static partial class SelfTest
             Fail("Low Profile doesn't speed up crouching enough");
         if (walkBoost < walk * 1.25f)
             Fail("Head Start / Afterburner boost isn't faster");
+        var sprintState = new MoveState { Position = new Vector3(-14, 0, 14), Grounded = true };
+        var sprintTop = 0f;
+        for (var i = 0; i < 40; i++)
+        {
+            World.Simulate(ref sprintState, new InputCmd { Buttons = Buttons.Right | Buttons.Sprint, Yaw = 0, SpeedPct = 100 });
+            sprintTop = MathF.Max(sprintTop, new Vector2(sprintState.Velocity.X, sprintState.Velocity.Z).Length());
+        }
+        Line($"sprint top speed {sprintTop:0.00} m/s (walk {World.WalkSpeed} m/s)");
+        if (MathF.Abs(sprintTop - World.SprintSpeed) > 0.1f || MathF.Abs(World.SprintSpeed - 13.5f) > 0.001f)
+            Fail("sprinting should reach 13.5 m/s");
         var boosted = new MoveState { Position = new Vector3(-14, 0, 14), Grounded = true, BoostTicks = 10 };
         for (var i = 0; i < 20; i++)
             World.Simulate(ref boosted, new InputCmd { Yaw = 0, SpeedPct = 100 });

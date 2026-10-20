@@ -1066,7 +1066,7 @@ public sealed partial class Game : IDisposable
         shooter.ShotClock += def.FireInterval * 0.85;
         shooter.LastShotTime = now;
         shooter.LastCombatTime = now;
-        if (Vector3.Distance(origin, shooter.Eye) > 5f)
+        if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
             origin = shooter.Eye;
         if (dir.LengthSquared() < 0.5f)
             return;
