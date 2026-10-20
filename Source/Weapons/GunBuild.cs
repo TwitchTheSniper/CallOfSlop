@@ -219,7 +219,7 @@ public sealed class GunBuilder
         // ---- Handguard ----
         var hgBottom = HandguardPart(bstart);
         _hgBottom = hgBottom;
-        var ubZ = bstart - (HL > 0.06f ? HL * 0.45f : MathF.Min(0.05f, BL * 0.5f));
+        var ubZ = bstart - (HL > 0.06f ? MathF.Min(HL * 0.45f, 0.24f) : MathF.Min(0.05f, BL * 0.5f)); // the off hand stays within reach on long forends
         if (p.Handguard == "pump")
             ubZ = bstart - 0.03f - HL * 0.5f;
         var ubY = hgBottom;

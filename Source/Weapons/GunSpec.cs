@@ -206,7 +206,7 @@ public sealed class GunSpec
         if (e.ValueKind != JsonValueKind.Object)
             throw new WeaponFileException($"{where}: expected {{ \"base\": \"{string.Join("/", ArchetypeJson.Keys.Take(3))}...\", ... }}");
         var name = "rifle";
-        if (e.TryGetProperty("base", out var b))
+        if (e.TryGetProperty("base"u8, out var b))
         {
             name = WeaponFile.Text(b, $"{where}.base");
             if (!ArchetypeJson.ContainsKey(name))
