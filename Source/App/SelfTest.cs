@@ -52,6 +52,7 @@ public static class SelfTest
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
             Section("Matches", CheckMatches);
+            Section("Bots", CheckBots);
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
@@ -367,7 +368,7 @@ public static class SelfTest
 
     private static void CheckMatches()
     {
-        var botStats = new BotStats();
+        var botStats = _matchBotStats = new BotStats();
         foreach (var m in Maps.All)
         {
             var sw = Stopwatch.StartNew();
@@ -449,7 +450,116 @@ public static class SelfTest
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
-        Line($"BOTSTAT headshots: {botStats.GunHeadshots} of {botStats.GunKills} bot gun kills ({botStats.HeadshotRatio:P1})");
+    }
+
+    private static BotStats _matchBotStats = new();
+
+    // ---- 2a. Bots ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// Bot AI: a nav graph on every map, A* between far-apart spawns, bots actually walking to a far goal, the headshot
+    /// share (Normal bots from the matches above, plus a few Hard matches), and personalities that play differently.
+    /// </summary>
+    private static void CheckBots()
+    {
+        var rng = new Random(7);
+        var search = new NavSearch();
+        var path = new int[128];
+        double totalBuild = 0;
+        foreach (var m in Maps.All)
+        {
+            World.SetMap(m);
+            var g = NavGraph.Build(m);
+            totalBuild += g.BuildMs;
+            // A* between the spawns furthest apart (the routes bots need most).
+            var pairs = 0;
+            var unreachable = new List<string>();
+            var expanded = 0;
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var spawns = m.Spawns;
+            for (var i = 0; i < spawns.Count; i++)
+            {
+                var far = spawns.OrderByDescending(s => Vector3.Distance(s, spawns[i])).First();
+                int a = g.Nearest(spawns[i]), b = g.Nearest(far, needSight: false);
+                pairs++;
+                if (search.Find(g, a, b, path) == 0)
+                    unreachable.Add($"({spawns[i].X:0},{spawns[i].Z:0})->({far.X:0},{far.Z:0})");
+                expanded += search.LastExpanded;
+            }
+            var perSearch = sw.Elapsed.TotalMilliseconds / Math.Max(1, pairs);
+            var mainPct = g.Nodes.Length == 0 ? 0 : 100f * g.MainNodes.Length / g.Nodes.Length;
+            Line($"BOTSTAT nav {m.Name,-14} spacing {g.Spacing:0.0}  nodes {g.Nodes.Length,5}  edges {g.EdgeCount,6}  mantles {g.MantleEdges,4}  main {mainPct,3:0}%  "
+                + $"build {g.BuildMs,5:0} ms  A* {perSearch:0.00} ms  unreachable {unreachable.Count}/{pairs}"
+                + (unreachable.Count > 0 ? "  " + string.Join(" ", unreachable.Take(3)) : ""));
+            if (g.Nodes.Length < 20 || g.EdgeCount < g.Nodes.Length)
+                Fail($"{m.Name}: nav graph too small ({g.Nodes.Length} nodes, {g.EdgeCount} edges)");
+            if (unreachable.Count > pairs / 4)
+                Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
+            if (g.BuildMs > 3000)
+                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build");
+        }
+        Line($"nav graphs for {Maps.All.Length} maps built in {totalBuild / 1000:0.0} s");
+
+        // Walk to a far goal: one bot alone, told where to go.
+        foreach (var name in new[] { "ProtoBox", "Courtyard", "Rooftops", "Harbor", "Downtown", "Galleria" })
+        {
+            if (Maps.Find(name) is not { } m)
+                continue;
+            using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+                bots: 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
+            game.MapVoteEnabled = false;
+            var bot = game.Players.Values.First(p => p.Bot != null);
+            World.SetMap(m);
+            var g = NavGraph.Current;
+            if (g.MainNodes.Length < 2)
+            {
+                Fail($"{name}: no main nav area");
+                continue;
+            }
+            // Start and goal: far apart in the main area, with a path between them.
+            Vector3 from = default, to = default;
+            var len = 0;
+            for (var attempt = 0; attempt < 40 && len == 0; attempt++)
+            {
+                var a = g.MainNodes[rng.Next(g.MainNodes.Length)];
+                var b = g.MainNodes[rng.Next(g.MainNodes.Length)];
+                if (Vector3.Distance(g.Nodes[a], g.Nodes[b]) < MathF.Min(m.HalfX, m.HalfZ))
+                    continue;
+                len = search.Find(g, a, b, path);
+                from = g.Nodes[a];
+                to = g.Nodes[b];
+            }
+            if (len == 0)
+            {
+                Fail($"{name}: couldn't find a far pair of nodes with a path");
+                continue;
+            }
+            var route = 0f;
+            for (var i = 1; i < len; i++)
+                route += Vector3.Distance(g.Nodes[path[i - 1]], g.Nodes[path[i]]);
+            bot.Teleport(from);
+            bot.Bot!.ForcedGoal = to;
+            var limit = route / 4f + 8f; // sprinting is 9 m/s, walking 6: generous for corners, climbs and doors
+            const double dt = 1.0 / World.TickRate;
+            var now = 0.0;
+            var took = -1.0;
+            for (var i = 0; i < limit * World.TickRate; i++)
+            {
+                now += dt;
+                game.Update(now, dt);
+                if (Vector3.Distance(bot.Position, to) < 2.5f)
+                {
+                    took = now;
+                    break;
+                }
+            }
+            Line($"{name,-14} walk {Vector3.Distance(from, to),5:0} m straight, {route,5:0} m route: "
+                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)"));
+            if (took < 0)
+                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+        }
+
+        // Hard bots: the headshot share with the most accurate aim.
         var hard = new BotStats();
         foreach (var m in Maps.All.Where((_, i) => i % 3 == 0))
         {
@@ -464,7 +574,25 @@ public static class SelfTest
             }
             hard.Add(game.BotStats);
         }
-        Line($"BOTSTAT hard headshots: {hard.GunHeadshots} of {hard.GunKills} bot gun kills ({hard.HeadshotRatio:P1})");
+        var normal = _matchBotStats;
+        Line($"BOTSTAT headshots: normal {normal.GunHeadshots}/{normal.GunKills} ({normal.HeadshotRatio:P1}), hard {hard.GunHeadshots}/{hard.GunKills} ({hard.HeadshotRatio:P1})"
+             + " (before this change: normal 51.4%, hard 51.0%)");
+        foreach (var (stats, label) in new[] { (normal, "Normal"), (hard, "Hard") })
+            if (stats.GunKills < 40)
+                Fail($"{label} bots: only {stats.GunKills} gun kills, too few to judge");
+            else if (stats.HeadshotRatio is < 0.10f or > 0.30f)
+                Fail($"{label} bots: headshot share {stats.HeadshotRatio:P1} is outside 10-30%");
+
+        // Personalities: how far away each one fights.
+        var all = new BotStats();
+        all.Add(normal);
+        all.Add(hard);
+        Line("BOTSTAT range: " + string.Join("  ", BotPersonalities.All.Select(p => $"{p.Name} {all.AverageRange(p.Kind):0.0} m ({all.Shots[(int)p.Kind]})")));
+        if (all.AverageRange(BotPersonality.Rusher) >= all.AverageRange(BotPersonality.Marksman) * 0.8f)
+            Fail($"Rushers fight at {all.AverageRange(BotPersonality.Rusher):0.0} m, Marksmen at {all.AverageRange(BotPersonality.Marksman):0.0} m: not different enough");
+        if (BotPersonalities.All.Any(p => all.Shots[(int)p.Kind] == 0))
+            Fail("a personality never fired a shot");
+        World.SetMap(Maps.All[0]);
     }
 
     // ---- 2b. Map vote ---------------------------------------------------------------------

@@ -135,3 +135,69 @@ public static class BotPersonalities
 
     public static BotProfile Get(BotPersonality p) => All[(int)p];
 }
+
+public sealed partial class Game
+{
+    /// <summary>The personality the lobby has least of (random among ties), so a full lobby gets a mix.</summary>
+    private BotPersonality NextPersonality()
+    {
+        Span<int> count = stackalloc int[BotPersonalities.Count];
+        foreach (var p in Players.Values)
+            if (p.Bot != null)
+                count[(int)p.Bot.Personality]++;
+        // Chaotic counts double: one is fun, several is noise.
+        count[(int)BotPersonality.Chaotic] *= 2;
+        var min = int.MaxValue;
+        foreach (var c in count)
+            min = Math.Min(min, c);
+        var ties = 0;
+        foreach (var c in count)
+            if (c == min)
+                ties++;
+        var pick = _rng.Next(ties);
+        for (var i = 0; i < count.Length; i++)
+            if (count[i] == min && pick-- == 0)
+                return (BotPersonality)i;
+        return BotPersonality.Tactician;
+    }
+
+    /// <summary>A loadout to suit the bot's personality: weighted by weapon class, the occasional silly special.</summary>
+    private void PickBotLoadout(Player bot, BotProfile prof)
+    {
+        var primaries = Weapons.All.Where(w => w.Slot == Slot.Primary).ToArray();
+        var weights = primaries.Select(w =>
+        {
+            var c = (int)w.Class;
+            var weight = c < prof.ClassWeight.Length ? prof.ClassWeight[c] : 0f;
+            return w.Class == WeaponClass.Special && prof.Kind != BotPersonality.Chaotic ? weight * 0.4f : weight;
+        }).ToArray();
+        var total = weights.Sum();
+        var primary = primaries[_rng.Next(primaries.Length)];
+        if (total > 0)
+        {
+            var r = _rng.NextDouble() * total;
+            for (var i = 0; i < primaries.Length; i++)
+                if ((r -= weights[i]) <= 0)
+                {
+                    primary = primaries[i];
+                    break;
+                }
+        }
+        var secondaries = Weapons.All.Where(w => w.Slot == Slot.Secondary).ToArray();
+        bot.WantPrimary = primary.Id;
+        bot.WantSecondary = secondaries[_rng.Next(secondaries.Length)].Id;
+        bot.WantGrenade = _rng.NextDouble() < (prof.Kind == BotPersonality.Tactician ? 0.95 : 0.8) ? ThrowableKind.Frag : ThrowableKind.Impact;
+        bot.WantEquipment = ThrowableKind.None;
+        bot.WantPrimaryKit = RandomKit(Weapons.Get(bot.WantPrimary));
+        bot.WantSecondaryKit = RandomKit(Weapons.Get(bot.WantSecondary));
+        bot.WantPerks = BotPerks(prof);
+    }
+
+    /// <summary>Perks the personality likes (one per category), or random ones for an empty preference list.</summary>
+    private PerkSet BotPerks(BotProfile prof)
+    {
+        var random = RandomPerks();
+        PerkId Pick(PerkId[] options, PerkId fallback) => options.Length == 0 ? fallback : options[_rng.Next(options.Length)];
+        return new PerkSet(Pick(prof.Movement, random.Movement), Pick(prof.Survival, random.Survival), Pick(prof.Damage, random.Damage)).Sanitized();
+    }
+}
