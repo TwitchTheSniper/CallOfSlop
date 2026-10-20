@@ -11,8 +11,11 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    /// <summary>The CPU budget: at most this many ms of mixing per second of music (1 ms per 10 ms of audio).</summary>
-    private const double MusicBudgetMsPerSecond = 100;
+    /// <summary>
+    /// The CPU budget: at most this many ms of rendering per second of music, i.e. 0.5 ms per 10 ms of audio (half the
+    /// 1 ms target, so a slow CI runner still passes). It measures about 7 ms per second on the CI runner.
+    /// </summary>
+    private const double MusicBudgetMsPerSecond = 50;
 
     private static void CheckMusic()
     {
@@ -129,7 +132,7 @@ public static partial class SelfTest
         }
         Line($"track costs (ms per s of audio):{costs}");
         var msPerSecond = renderMs / renderSeconds;
-        Line($"rendering cost: {msPerSecond:0.00} ms per second of music ({msPerSecond / 10:0.00} ms per 10 ms, {msPerSecond / 10:0.00}% of a core); budget {MusicBudgetMsPerSecond} ms");
+        Line($"rendering cost: {msPerSecond:0.00} ms per second of music ({msPerSecond / 100:0.000} ms per 10 ms, {msPerSecond / 10:0.00}% of a core); budget {MusicBudgetMsPerSecond} ms");
         if (msPerSecond > MusicBudgetMsPerSecond)
             Fail($"music rendering costs {msPerSecond:0.0} ms per second of audio (budget {MusicBudgetMsPerSecond})");
 
@@ -162,58 +165,9 @@ public static partial class SelfTest
         if (allocated > 0)
             Fail($"music rendering allocated {allocated} bytes (want 0)");
 
-        MusicVoiceCosts();
         CheckMusicPlayer();
         CheckMusicPlaylist(menu, lobby);
         CheckMusicSettings();
-    }
-
-    /// <summary>TEMP diagnostics: the cost of each instrument on its own, in ms per second of audio.</summary>
-    private static void MusicVoiceCosts()
-    {
-        const int blocks = 2 * Audio.SampleRate / 1024;
-        var rng = new MusicRng(5);
-        var sb = new System.Text.StringBuilder("voice costs (ms per s):");
-        var a = new float[1024];
-        var b = new float[1024];
-        void Time(string name, Action<int> block)
-        {
-            for (var i = 0; i < 20; i++)
-                block(i);
-            var t0 = Stopwatch.GetTimestamp();
-            for (var i = 0; i < blocks; i++)
-                block(i);
-            sb.Append($" {name} {(Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / 2:0.00};");
-        }
-        var kick = new KickVoice { Hold = 0.1f, Drive = 5f };
-        kick.Configure(0.2f);
-        Time("kick", i => { if (i % 8 == 0) kick.Trigger(1f); kick.Render(a, b, ref rng); });
-        var sn = new SnareVoice { Clap = true };
-        sn.Configure();
-        Time("snare", i => { if (i % 8 == 0) sn.Trigger(1f); sn.Render(a, ref rng); });
-        var bass = new BassVoice { Sustain = 0.9f };
-        bass.Configure();
-        bass.NoteOn(55f, 1f);
-        Time("bass", i => bass.Render(a));
-        foreach (var (name, saws, harm, notes, half) in new[] { ("lead7+3+3", 7, 3, 3, false), ("lead7", 7, 7, 1, false), ("pad4x4half", 4, 4, 4, true), ("saw1", 1, 1, 1, false) })
-        {
-            var syn = new SawSynth { Saws = saws, HarmonySaws = harm, HalfRate = half, Sustain = 0.8f };
-            syn.Configure();
-            for (var k = 0; k < notes; k++)
-                syn.NoteOn(k, 220f * (1 + k * 0.25f), 1f);
-            Time(name, i => syn.Render(a, b));
-        }
-        var fx = new FxVoices { RiserLevel = 0.3f, RiserHz = 1000 };
-        fx.Configure();
-        Time("fx", i => { if (i % 20 == 0) fx.Crash(1f); fx.Render(a, b, ref rng); });
-        var input = new float[1024];
-        for (var i = 0; i < input.Length; i++)
-            input[i] = MathF.Sin(i * 0.01f);
-        var delay = new PingPongDelay();
-        Time("delay", i => delay.Render(input, a, b));
-        var verb = new RoomReverb();
-        Time("reverb", i => verb.Render(input, a, b));
-        Line(sb.ToString());
     }
 
     private static MusicPart? PartAt(MusicTrack t, int bar)

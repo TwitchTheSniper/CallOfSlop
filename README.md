@@ -364,7 +364,7 @@ The menus and lobbies have **hard electronic background music, generated live in
 - Each list is shuffled (every track once per round, never the same track twice in a row), and tracks **crossfade** into each other, as do menu and lobby music.
 - The main menu shows a subtle *Now playing* line in the bottom-left corner.
 - **Settings > Audio > Music volume** (0 = off, default 0.50) sits on top of the master volume. It's saved as `music_volume` in `settings.txt`; older settings files without it load with the default.
-- The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs well under 1% of one CPU core (the self-test measures it).
+- The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs about 1% of one CPU core (the self-test measures it).
 
 ## Development and version control
 
