@@ -19,7 +19,7 @@ Pick a loadout from 50 weapons and a map from 8 blocky prototype maps, then frag
 
 ## Play
 
-Double-click **`Start.bat`**. It builds the game if anything changed (the first build downloads the BRUTAL packages), then opens straight into the **lobby**:
+Double-click **`Start.bat`**. It builds the game if anything changed (the first build downloads the BRUTAL packages), then shows the BRUTAL logo for a few seconds (the BRUTAL licence asks for it before gameplay; click or press a key to skip it after 1.5 s) and opens the **lobby**:
 
 | Lobby option | What it does |
 | --- | --- |

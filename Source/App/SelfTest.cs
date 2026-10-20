@@ -77,6 +77,7 @@ public static partial class SelfTest
             Section("Mode state and matches", CheckModeMatches);
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
+            Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
