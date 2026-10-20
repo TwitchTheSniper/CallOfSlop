@@ -136,7 +136,10 @@ public static partial class SelfTest
                     anim.Update(i);
                     frames++;
                     if (!CheckArmFrame(d, mode, f, anim, a))
+                    {
                         problems++;
+                        break; // one report per weapon and animation
+                    }
                 }
 
                 // Aimed: the gun sits exactly where Program's sight alignment puts it.
@@ -273,8 +276,8 @@ public static partial class SelfTest
             foreach (var p in anchors)
                 nearest = MathF.Min(nearest, (hand - p).Length());
             var held = mode is "idle" or "sprint" or "jump" or "fire" or "equip" || (mode == "melee" && (right || d.Class != WeaponClass.Pistol)) || (mode == "ads" && (right || !a.Magnified));
-            if (mode == "mantle" && !right)
-                continue; // planted on the ledge
+            if (!right && (mode == "mantle" || (mode == "melee" && d.Class == WeaponClass.Pistol)))
+                continue; // planted on the ledge / let go for a pistol whip
             var limit = held ? 1e-3f : mode == "melee" ? 0.4f : 0.5f;
             if (nearest > limit)
             {
