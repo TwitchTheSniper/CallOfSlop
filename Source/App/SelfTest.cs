@@ -417,7 +417,8 @@ public static partial class SelfTest
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                    cpu.Stop(ms, count: i > 60);
+                    var tick = i;
+                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, feed: {string.Join(" / ", game.Feed.TakeLast(3).Select(f => f.Text))}"); // TEMP context
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -471,7 +472,8 @@ public static partial class SelfTest
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
             // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
             if (cpu.WorstMs > MaxTickWorkMs)
-                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget)");
+                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
+            Line($"  WORK {m.Name}: {cpu.WorstMs:0.00} ms | {cpu.WorstDetail}"); // TEMP
             if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)

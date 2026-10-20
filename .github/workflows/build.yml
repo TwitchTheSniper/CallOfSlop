@@ -33,6 +33,12 @@ jobs:
           if (Test-Path $log) {
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
+            # TEMPORARY (fix/tick-spikes): busiest tick per map as notices.
+            $perf = @(Select-String -Path $log -Pattern "  WORK " | ForEach-Object { $_.Line.Trim() })
+            for ($i = 0; $i -lt $perf.Count; $i += 8) {
+              $chunk = ($perf[$i..([Math]::Min($i + 7, $perf.Count - 1))] -join "%0A")
+              Write-Output "::notice title=Work $i::$chunk"
+            }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
           } else {
