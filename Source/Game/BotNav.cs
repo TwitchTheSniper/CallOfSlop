@@ -192,17 +192,24 @@ public sealed class NavGraph
             }
         }
         var gridCount = nodes.Count;
+        var extra = 0;
         foreach (var w in map.Waypoints.Concat(map.Spawns))
         {
             var y = Ground(w.X, w.Z, w.Y + 1f, 3f);
             if (float.IsFinite(y) && Place(map, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
                 nodes.Add(p);
+            if (++extra % 16 == 0)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
         }
 
         // ---- Edges between nearby nodes ----
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
-        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>();
+        var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)

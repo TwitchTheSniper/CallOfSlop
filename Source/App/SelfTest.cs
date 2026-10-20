@@ -9,6 +9,8 @@ namespace CallOfSlop;
 /// Writes selftest.log next to the game and exits with the number of failures.
 ///   1. Every map: geometry, spawns and waypoints, nothing spawning inside walls.
 ///   2. Every map: a full offline match with 7 bots for 90 simulated seconds (crashes, kills, stuck bots, tick cost).
+///   2a. Bots: a nav graph and A* routes on every map, a bot walking to a far goal, the headshot share of bot kills
+///       (Normal and Hard) and that personalities fight at different ranges.
 ///   3. Mantling: through a Courtyard window and onto a crate.
 ///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
@@ -439,7 +441,7 @@ public static class SelfTest
                 Fail($"{m.Name}: no kills in 90 s with 7 bots");
             if (fallen > 0)
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
-            if (stuck > 3)
+            if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
             // A real performance problem shows up as many slow ticks or a huge one; a single spike on a shared
             // CI machine doesn't. (The old rule failed on any tick over 8 ms and was flaky on GitHub's runners.)
@@ -469,7 +471,9 @@ public static class SelfTest
         foreach (var m in Maps.All)
         {
             World.SetMap(m);
-            var g = NavGraph.Build(m);
+            for (var wait = 0; wait < 1000 && NavGraph.Current == NavGraph.Empty; wait++)
+                NavGraph.Pump(50); // usually already built (and cached) during the match on this map above
+            var g = NavGraph.Current;
             totalBuild += g.BuildMs;
             // A* between the spawns furthest apart (the routes bots need most).
             var pairs = 0;
@@ -498,7 +502,7 @@ public static class SelfTest
             if (g.BuildMs > 3000)
                 Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build");
         }
-        Line($"nav graphs for {Maps.All.Length} maps built in {totalBuild / 1000:0.0} s");
+        Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
 
         // Walk to a far goal: one bot alone, told where to go.
         foreach (var name in new[] { "ProtoBox", "Courtyard", "Rooftops", "Harbor", "Downtown", "Galleria" })
