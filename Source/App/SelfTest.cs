@@ -50,6 +50,7 @@ public static class SelfTest
             Section("Matches", CheckMatches);
             Section("Map vote", CheckMapVote);
             Section("Server browser", CheckServerBrowser);
+            Section("HUD layout", CheckHudLayout);
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -765,5 +766,43 @@ public static class SelfTest
             Fail($"snapshot writes {perPlayer} bytes per player but the reader expects {Game.SnapPlayerBytes}");
         if (w.Length > 1200)
             Fail("snapshot too big for one packet");
+    }
+
+    // ---- HUD layout ------------------------------------------------------------------------
+
+    /// <summary>The HUD safe area: centred, full height, width capped by the HUD width setting.</summary>
+    private static void CheckHudLayout()
+    {
+        void Expect(float w, float h, HudWidth mode, float left, float width)
+        {
+            var (l, sw) = HudLayout.Span(w, h, mode);
+            Line($"  {w}x{h} {HudLayout.Label(mode)}: left {l}, width {sw}");
+            if (MathF.Abs(l - left) > 0.5f || MathF.Abs(sw - width) > 0.5f)
+                Fail($"{w}x{h} at {HudLayout.Label(mode)}: got left {l} width {sw}, expected left {left} width {width}");
+        }
+
+        // 16:9 screen: the safe area is the whole screen whatever the setting.
+        Expect(1920, 1080, HudWidth.Wide16x9, 0, 1920);
+        Expect(1920, 1080, HudWidth.Wide21x9, 0, 1920);
+        Expect(1920, 1080, HudWidth.Full, 0, 1920);
+        // 3440x1440 (Dell AW3420DW, really 21.5:9): 2560 wide at 16:9, 3360 at 21:9.
+        Expect(3440, 1440, HudWidth.Wide16x9, 440, 2560);
+        Expect(3440, 1440, HudWidth.Wide21x9, 40, 3360);
+        Expect(3440, 1440, HudWidth.Full, 0, 3440);
+        // 32:9 (Samsung Odyssey G95NC): 2560 at 16:9, 3360 at 21:9.
+        Expect(5120, 1440, HudWidth.Wide16x9, 1280, 2560);
+        Expect(5120, 1440, HudWidth.Wide21x9, 880, 3360);
+        Expect(5120, 1440, HudWidth.Full, 0, 5120);
+        // Portrait / narrow windows: the whole screen.
+        Expect(1080, 1920, HudWidth.Wide16x9, 0, 1080);
+        Expect(800, 900, HudWidth.Wide21x9, 0, 800);
+        // Degenerate (minimised window): no NaN, no negative width.
+        var (dl, dw) = HudLayout.Span(0, 0, HudWidth.Wide16x9);
+        if (float.IsNaN(dl) || float.IsNaN(dw) || dw < 0)
+            Fail($"0x0 screen gave left {dl} width {dw}");
+
+        // Default (settings files from before this option have no hud_width line, so they keep it).
+        if (new Settings().HudWidth != HudWidth.Wide16x9)
+            Fail("HUD width should default to 16:9");
     }
 }

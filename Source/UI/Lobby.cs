@@ -615,6 +615,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Menus and HUD text scale with the window size automatically; this adjusts on top of that."u8);
 
             ImGui.Spacing();
+            ImGui.Text("HUD width"u8);
+            var hud = (int)s.HudWidth;
+            for (var i = 0; i <= (int)HudWidth.Full; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{HudLayout.Label((HudWidth)i)}##hud", ref hud, i))
+                    s.HudWidth = (HudWidth)hud;
+            }
+            ImGui.TextColored(Dim, "On ultra-wide monitors, keeps the in-match HUD in a centred area this wide. The crosshair is always centred."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.EndChild();
             ImGui.EndTabItem();

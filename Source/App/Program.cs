@@ -1494,15 +1494,17 @@ public static unsafe class Program
                 }
             }
 
-            // Health bar (bottom-left; the number is drawn by ImGui)
+            // Health bar (bottom-left of the HUD safe area; the number is drawn by ImGui)
+            var (safeLeft, safeWidth) = HudLayout.Span(w, h, _settings.HudWidth);
             var hp = Math.Clamp(local.Health / (float)World.MaxHealth, 0f, 1f);
             float m = 30 * k, bw = 300 * k, bh = 18 * k, inset = 3 * k;
-            Gfx.Rect(m, m, bw, bh, black, 0.5f);
-            Gfx.Rect(m + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, Vector3.Lerp(new Vector3(1, 0.15f, 0.15f), new Vector3(0.25f, 0.95f, 0.35f), hp), 0.95f);
+            var left = safeLeft + m;
+            Gfx.Rect(left, m, bw, bh, black, 0.5f);
+            Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, Vector3.Lerp(new Vector3(1, 0.15f, 0.15f), new Vector3(0.25f, 0.95f, 0.35f), hp), 0.95f);
 
             // Ammo bar (bottom-right) or reload progress
             var def = _game.Active.Def;
-            var right = w - m;
+            var right = safeLeft + safeWidth - m;
             var rp = _game.ReloadProgress(now);
             Gfx.Rect(right - bw, m, bw, bh, black, 0.5f);
             var fill = rp >= 0 ? rp : _game.Active.Ammo / (float)def.Mag;

@@ -33,6 +33,7 @@ public sealed class Settings
     public int Width = 1600; // windowed size, or fullscreen resolution
     public int Height = 900;
     public float UiScale = 1f; // multiplier on the automatic scale (which follows window height)
+    public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
 
     /// <summary>Set by the settings screen when display options change; Program applies them.</summary>
     [NonSerialized] public bool DisplayDirty;
@@ -135,6 +136,7 @@ public sealed class Settings
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
                     case "ui_scale" when float.TryParse(v, inv, out var f): s.UiScale = Math.Clamp(f, 0.6f, 2.5f); break;
+                    case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
@@ -179,6 +181,7 @@ public sealed class Settings
                     $"width={Width}",
                     $"height={Height}",
                     $"ui_scale={UiScale.ToString(inv)}",
+                    $"hud_width={HudWidth}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
             );
