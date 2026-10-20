@@ -140,6 +140,7 @@ public static class TestsWorldAndMovement
         var configs = new (string Name, bool Manual, bool Own, float Up, float MinFwd, float FwdTest)[]
         {
             ("native ExtendedUpdate", false, false, 0.6f, 0.02f, 0.15f),
+            ("native ExtendedUpdate, min forward 0.3, up 0.5", false, false, 0.5f, 0.3f, 0.15f),
             ("C# ExtendedUpdate + Jolt WalkStairs", true, false, 0.6f, 0.02f, 0.15f),
             ("WalkStairs min forward 0.3, up 0.6", true, false, 0.6f, 0.3f, 0.15f),
             ("same, up 0.5", true, false, 0.5f, 0.3f, 0.15f),

@@ -197,9 +197,9 @@ public sealed class Mover
     }
 
     /// <summary>
-    /// true: our C# copy of Jolt's ExtendedUpdate (Update + StickToFloor + WalkStairs, all exported natively).
-    /// The native ExtendedUpdate in 2026.10.2 seems to ignore the settings struct (it climbs exactly Jolt's
-    /// default 0.4 m whatever WalkStairsStepUp says), so the spike measures both.
+    /// true: our C# copy of Jolt's ExtendedUpdate (Update + StickToFloor + WalkStairs, all exported natively), so
+    /// the spike can count WalkStairs attempts and swap in its own step. false: the native ExtendedUpdate.
+    /// The step sweep runs both (with Jolt's default 0.02 m minimum forward step both stop at 0.4 m steps).
     /// </summary>
     public static bool ManualExtended = true;
 
