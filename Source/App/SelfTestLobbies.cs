@@ -325,7 +325,8 @@ public static partial class SelfTest
             var kills = server.Players.Values.Sum(p => (int)p.Kills);
             Line($"loopback {players,2} players on {map.Name,-10} ({GameModes.Short(server.Mode)}): client sees {client.Players.Count}, kills {kills}; "
                  + $"snapshots {snaps / 1024:0.0} KB/s in {packets:0} packets/s (biggest {server.SnapMaxBytes} B, max {server.SnapMaxParts} part(s)); "
-                 + $"everything the client received {total / 1024:0.0} KB/s; correction {client.LastCorrection * 100:0.0} cm");
+                 + $"everything the client received {total / 1024:0.0} KB/s "
+                 + $"(protocol 10's snapshots + 30 Hz mode state would be {(16 + 65 * players + 55 + 4 * players) * 30 / 1024.0:0.0} KB/s); correction {client.LastCorrection * 100:0.0} cm");
             if (server.Players.Count != players)
                 Fail($"loopback {players}: the server has {server.Players.Count} players");
             if (missing > 0 || client.Players.Count != server.Players.Count)
@@ -361,7 +362,7 @@ public static partial class SelfTest
             var lastMatch = game.MatchNumber;
             var lastKills = 0;
             var recipient = game.Players.Values.First(p => p.Bot != null);
-            long snapBytes = 0;
+            long snapBytes = 0, allBytes = 0;
             var snapCount = 0;
             var lastSnapTick = 0u;
             var modeBytes = 0L;
@@ -389,6 +390,10 @@ public static partial class SelfTest
                     lastSnapTick = game.ServerTick;
                     foreach (var pkt in game.SelfTestSnapshotFor(recipient))
                         snapBytes += pkt.Length;
+                    Game.SnapshotRelevance = false; // the same snapshot with everyone in it, to compare
+                    foreach (var pkt in game.SelfTestSnapshotFor(recipient, prepare: false))
+                        allBytes += pkt.Length;
+                    Game.SnapshotRelevance = true;
                     snapCount++;
                     if (snapCount % 3 == 0)
                     {
@@ -401,8 +406,9 @@ public static partial class SelfTest
             wall.Sort();
             var seconds = snapCount / (double)(World.TickRate / World.SnapshotEvery);
             var perSec = seconds > 0 ? (snapBytes + modeBytes) / seconds : 0;
+            var perSecAll = seconds > 0 ? (allBytes + modeBytes) / seconds : 0;
             Line($"{game.Players.Count} players on {map.Name} (limit {map.MaxPlayers}, {game.BotCount} bots): kills {kills}, server tick wall median {wall[wall.Count / 2]:0.00} ms, "
-                 + $"p99 {wall[(int)(wall.Count * 0.99)]:0.00} ms, worst work {cpu.WorstText}; snapshots + mode state per client {perSec / 1024:0.0} KB/s "
+                 + $"p99 {wall[(int)(wall.Count * 0.99)]:0.00} ms, worst work {cpu.WorstText}; snapshots + mode state per client {perSec / 1024:0.0} KB/s ({perSecAll / 1024:0.0} KB/s without relevance) "
                  + $"(biggest snapshot {game.SnapMaxBytes} B, {game.SnapMaxParts} part(s))");
             if (game.Players.Count != map.MaxPlayers)
                 Fail($"{map.Name}: {game.Players.Count} players, expected the map's limit {map.MaxPlayers}");

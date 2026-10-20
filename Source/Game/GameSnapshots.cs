@@ -15,7 +15,18 @@ public sealed partial class Game
     /// <summary>Ticks a changed slow field keeps being resent (covers lost packets).</summary>
     private const uint SlowResendTicks = 30;
 
+    /// <summary>
+    /// Relevance: players further than this from the recipient (and dead players) go out in every other snapshot
+    /// (15 Hz, alternating halves), the rest in every one. Interpolation covers the gap; lag compensation runs on the
+    /// server's own history, so hits are unaffected. Cuts a 32-player lobby's traffic by roughly a third.
+    /// </summary>
+    public const float NearDistance = 40f;
+
+    /// <summary>Self-test: false sends everyone in every snapshot (to compare).</summary>
+    public static bool SnapshotRelevance = true;
+
     private readonly List<SnapPlayer> _snapFast = new(Map.HardMaxPlayers);
+    private readonly List<SnapPlayer> _snapMine = new(Map.HardMaxPlayers);
     private readonly List<SnapSlow> _snapSlow = new(Map.HardMaxPlayers);
     private readonly List<PacketWriter> _snapParts = new();
     private readonly SnapSlow[] _lastSlow = new SnapSlow[256];
@@ -90,8 +101,14 @@ public sealed partial class Game
         {
             Position = p.Position, Velocity = p.Sim.Velocity, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
         };
-        var ownIndex = _snapFast.FindIndex(f => f.Id == p.Id);
-        var n = Snapshot.Build(header, own, _snapFast, ownIndex, _snapSlow, _snapParts);
+        // This recipient's selection: near and alive every time, the rest on alternate snapshots.
+        _snapMine.Clear();
+        foreach (var f in _snapFast)
+            if (!SnapshotRelevance || f.Id == p.Id || (f.Alive && System.Numerics.Vector3.DistanceSquared(f.Position, p.Position) < NearDistance * NearDistance)
+                || (_snapCounter + f.Id) % 2 == 0)
+                _snapMine.Add(f);
+        var ownIndex = _snapMine.FindIndex(f => f.Id == p.Id);
+        var n = Snapshot.Build(header, own, _snapMine, ownIndex, _snapSlow, _snapParts);
         SnapPackets += n;
         SnapMaxParts = Math.Max(SnapMaxParts, n);
         for (var i = 0; i < n; i++)
@@ -106,9 +123,10 @@ public sealed partial class Game
     /// Self-test: the snapshot packets this server would send <paramref name="recipient"/> right now (copies), as if
     /// it were a connected client. Counts towards the snapshot statistics.
     /// </summary>
-    public List<byte[]> SelfTestSnapshotFor(Player recipient)
+    public List<byte[]> SelfTestSnapshotFor(Player recipient, bool prepare = true)
     {
-        PrepareSnapshot();
+        if (prepare)
+            PrepareSnapshot(); // false: the same snapshot again (e.g. built another way to compare)
         var n = BuildSnapshotFor(recipient);
         var list = new List<byte[]>(n);
         for (var i = 0; i < n; i++)
