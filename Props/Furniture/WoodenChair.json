@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Wooden Chair",
+  "category": "Furniture",
+  "description": "A plain wooden chair.",
+  "collision": "solid",
+  "collider": [{"size": [0.46, 0.48, 0.44]}, {"size": [0.46, 0.86, 0.08], "offset": [0.0, 0.43, -0.2]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 30, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2], "speed": 3.5}},
+  "parts": [
+    {"size": [0.44, 0.04, 0.42], "offset": [0.0, 0.46, 0.0], "color": "wood", "material": "wood"},
+    {"size": [0.04, 0.44, 0.04], "offset": [-0.19, 0.22, -0.18], "color": "wood", "material": "wood"},
+    {"size": [0.04, 0.44, 0.04], "offset": [-0.19, 0.22, 0.18], "color": "wood", "material": "wood"},
+    {"size": [0.04, 0.44, 0.04], "offset": [0.19, 0.22, -0.18], "color": "wood", "material": "wood"},
+    {"size": [0.04, 0.44, 0.04], "offset": [0.19, 0.22, 0.18], "color": "wood", "material": "wood"},
+    {"size": [0.44, 0.34, 0.03], "offset": [0.0, 0.66, -0.2], "rotation": [-8.0, 0.0, 0.0], "color": "wood", "material": "wood"},
+    {"size": [0.04, 0.24, 0.03], "offset": [-0.19, 0.55, -0.2], "rotation": [-8.0, 0.0, 0.0], "color": "wood"},
+    {"size": [0.04, 0.24, 0.03], "offset": [0.19, 0.55, -0.2], "rotation": [-8.0, 0.0, 0.0], "color": "wood"},
+    {"size": [0.38, 0.03, 0.03], "offset": [0.0, 0.165, 0.18], "color": "wood"},
+    {"size": [0.38, 0.03, 0.03], "offset": [0.0, 0.165, -0.18], "color": "wood"}
+  ]
+}

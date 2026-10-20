@@ -591,6 +591,7 @@ public sealed partial class Game
             }
             StreakBlastEntities(owner, center, radius, maxDamage, now);
         }
+        BlastProps(owner, center, radius, maxDamage, PropDamage.Streak, now); // breakable props (GameProps.cs)
         if (ownerId == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);
     }

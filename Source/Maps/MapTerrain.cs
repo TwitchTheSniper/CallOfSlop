@@ -103,8 +103,8 @@ public sealed partial class Map
     /// <summary>Runs when a top-level op finishes: lifts the boxes it made onto the terrain.</summary>
     private void PlaceOnTerrain(string op, int firstBox, OpAnchor anchor)
     {
-        if (!HasTerrain || Solid.Count == firstBox)
-            return;
+        if (!HasTerrain || Solid.Count == firstBox || op is nameof(PlaceProp) or nameof(Clutter))
+            return; // (props stand themselves on the ground, see MapProps.cs)
         switch (EffectiveAnchor(op, anchor))
         {
             case OpAnchor.Ground:

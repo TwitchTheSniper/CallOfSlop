@@ -227,6 +227,8 @@ public sealed partial class Game
 
     private void OnMatchStarted()
     {
+        World.Map.RestoreProps(); // breakable props are whole again every match
+        PropDebris.Clear();
         ClearVote();
         Feed.Clear();
         Tracers.Clear();

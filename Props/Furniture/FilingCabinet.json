@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Filing Cabinet",
+  "category": "Furniture",
+  "description": "A grey four-drawer filing cabinet.",
+  "collision": "solid",
+  "collider": [{"size": [0.48, 1.32, 0.64]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
+  "parts": [
+    {"size": [0.47, 1.32, 0.62], "offset": [0.0, 0.66, 0.0], "color": "#7f8a86", "material": "metal"},
+    {"size": [0.43, 0.28, 0.01], "offset": [0.0, 0.2, 0.31], "color": "#8d9894"},
+    {"size": [0.14, 0.03, 0.03], "offset": [0.0, 0.275, 0.32], "color": "chrome"},
+    {"size": [0.08, 0.04, 0.005], "offset": [0.0, 0.2, 0.317], "color": "white"},
+    {"size": [0.43, 0.28, 0.01], "offset": [0.0, 0.52, 0.31], "color": "#8d9894"},
+    {"size": [0.14, 0.03, 0.03], "offset": [0.0, 0.595, 0.32], "color": "chrome"},
+    {"size": [0.08, 0.04, 0.005], "offset": [0.0, 0.52, 0.317], "color": "white"},
+    {"size": [0.43, 0.28, 0.01], "offset": [0.0, 0.84, 0.31], "color": "#8d9894"},
+    {"size": [0.14, 0.03, 0.03], "offset": [0.0, 0.915, 0.32], "color": "chrome"},
+    {"size": [0.08, 0.04, 0.005], "offset": [0.0, 0.84, 0.317], "color": "white"},
+    {"size": [0.43, 0.28, 0.01], "offset": [0.0, 1.16, 0.31], "color": "#8d9894"},
+    {"size": [0.14, 0.03, 0.03], "offset": [0.0, 1.235, 0.32], "color": "chrome"},
+    {"size": [0.08, 0.04, 0.005], "offset": [0.0, 1.16, 0.317], "color": "white"}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Plastic Bag",
+  "category": "Debris",
+  "description": "A tied-off white plastic bag.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 35,
+  "breakable": {"health": 1, "breakBy": "all", "sound": "soft", "debris": {"count": 6, "size": [0.04, 0.1], "speed": 2}},
+  "parts": [
+    {"size": [0.3, 0.18, 0.22], "offset": [0.0, 0.09, 0.0], "rotation": [0.0, 8.0, 0.0], "color": "white"},
+    {"size": [0.24, 0.1, 0.18], "offset": [0.02, 0.2, 0.0], "rotation": [0.0, -6.0, 0.0], "color": "white"},
+    {"size": [0.1, 0.08, 0.06], "offset": [0.0, 0.28, 0.0], "color": "white"},
+    {"size": [0.02, 0.06, 0.08], "offset": [-0.03, 0.32, 0.0], "color": "white"},
+    {"size": [0.02, 0.06, 0.08], "offset": [0.04, 0.32, 0.0], "color": "white"},
+    {"size": [0.12, 0.002, 0.08], "offset": [0.0, 0.121, 0.111], "rotation": [0.0, 8.0, 0.0], "color": "red"}
+  ]
+}

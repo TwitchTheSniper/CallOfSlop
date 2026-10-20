@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Plank Pile",
+  "category": "Debris",
+  "description": "A pile of timber planks on two bearers.",
+  "collision": "solid",
+  "collider": [{"size": [2.3, 0.3, 0.7], "offset": [0.0, 0.15, 0.0]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.06, 0.45], "speed": 3}},
+  "parts": [
+    {"size": [2.185, 0.04, 0.18], "offset": [-0.025, 0.02, -0.242], "rotation": [0.0, -6.91, 0.0], "color": "pallet", "material": "wood"},
+    {"size": [2.201, 0.04, 0.18], "offset": [0.08, 0.02, -0.025], "rotation": [0.0, 6.109, 0.0], "color": "pallet", "material": "wood"},
+    {"size": [2.28, 0.04, 0.18], "offset": [0.046, 0.02, 0.2], "rotation": [0.0, 6.318, 0.0], "color": "wood", "material": "wood"},
+    {"size": [2.169, 0.04, 0.18], "offset": [-0.066, 0.06, -0.247], "rotation": [0.0, 4.088, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.37, 0.04, 0.18], "offset": [0.018, 0.06, 0.016], "rotation": [0.0, 8.054, 0.0], "color": "wood", "material": "wood"},
+    {"size": [2.355, 0.04, 0.18], "offset": [0.084, 0.1, -0.238], "rotation": [0.0, 3.16, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.169, 0.04, 0.18], "offset": [-0.082, 0.1, -0.014], "rotation": [0.0, -1.448, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.137, 0.04, 0.18], "offset": [-0.091, 0.1, 0.233], "rotation": [0.0, 5.311, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.022, 0.04, 0.18], "offset": [-0.024, 0.14, -0.22], "rotation": [0.0, 0.314, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.294, 0.04, 0.18], "offset": [0.07, 0.14, 0.028], "rotation": [0.0, -1.303, 0.0], "color": "lightwood", "material": "wood"},
+    {"size": [2.2, 0.04, 0.18], "offset": [0.3, 0.12, 0.42], "rotation": [0.0, 24.0, 4.0], "color": "wood", "material": "wood"},
+    {"size": [0.1, 0.08, 0.7], "offset": [-0.8, 0.04, 0.0], "color": "darkwood"},
+    {"size": [0.1, 0.08, 0.7], "offset": [0.8, 0.04, 0.0], "color": "darkwood"}
+  ]
+}

@@ -55,6 +55,7 @@ public static partial class SelfTest
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
+            Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Packets", CheckPackets);

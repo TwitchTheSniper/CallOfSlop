@@ -38,7 +38,7 @@ public static unsafe partial class Program
         if (Maps.Find(FoliageSmokeMap) == null)
         {
             Console.WriteLine($"[smoke] foliage: map '{FoliageSmokeMap}' not found, step skipped");
-            SmokeNextMap(now);
+            StartPropsSmoke(now); // then the props step (Program.Props.cs), then on to the maps
             return;
         }
         _foliageSmokeSavedQuality = _settings.FoliageQuality;
@@ -67,7 +67,7 @@ public static unsafe partial class Program
                 _foliageSmoke = -1;
                 _settings.FoliageQuality = _foliageSmokeSavedQuality;
                 _settings.VSync = _foliageSmokeSavedVSync;
-                SmokeNextMap(now);
+                StartPropsSmoke(now); // then the props step (Program.Props.cs), then on to the maps
                 return;
             }
             BeginFoliageSmokeView(now);

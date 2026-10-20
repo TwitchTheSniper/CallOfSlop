@@ -38,6 +38,8 @@ public enum Msg : byte
     ModeEvent, // server -> all: a game-mode line for the kill feed + a sound (flag taken, hill moved...)
     Suicide, // client -> server: kill me (pause menu "Kill yourself"; rate-limited, server decides)
     Full, // server -> one client: the server (this map's player limit) is full; the connection is closed after it
+    PropBreak, // server -> all: a breakable prop broke (index, damage kind, where the hit came from) (reliable)
+    PropState, // server -> joining client: the props broken so far this match (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

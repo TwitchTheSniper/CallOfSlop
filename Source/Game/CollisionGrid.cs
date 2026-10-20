@@ -76,6 +76,12 @@ public sealed class CollisionGrid
         }
     }
 
+    /// <summary>
+    /// Swaps box <paramref name="index"/> for a box that lies inside the columns the old one was filed in (a broken prop's
+    /// collider, shrunk to a speck under the world). A box that grows needs a new grid instead.
+    /// </summary>
+    public void ReplaceShrunkBox(int index, Box box) => _boxes[index] = box;
+
     /// <summary>Is this a snapshot of <paramref name="map"/> as it is now? (Maps don't change once built; the count is a cheap guard.)</summary>
     public bool IsFor(Map map) => ReferenceEquals(map, _map) && map.Solid.Count == _boxes.Length && ReferenceEquals(map.TerrainCollision, _terrain);
 

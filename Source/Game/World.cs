@@ -97,8 +97,23 @@ public static class World
 
     public static void SetMap(Map map)
     {
+        map.RestoreProps(); // a map always starts with its breakable props whole
         Map = map;
         _grid = null;
+    }
+
+    /// <summary>A breakable prop's collider box changed (it broke): the collision grid takes the new box in place.</summary>
+    public static void SolidChanged(Map map, int index)
+    {
+        if (ReferenceEquals(map, Map) && _grid is { } g && g.IsFor(map))
+            g.ReplaceShrunkBox(index, map.Solid[index]);
+    }
+
+    /// <summary>Boxes of the current map grew back (broken props restored): rebuild the collision grid on next use.</summary>
+    public static void InvalidateGrid(Map map)
+    {
+        if (ReferenceEquals(map, Map))
+            _grid = null;
     }
 
     private static CollisionGrid? _grid;

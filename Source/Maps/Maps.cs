@@ -436,6 +436,7 @@ public static partial class Maps
     {
         var old = _all ?? [];
         LoadErrors.Clear();
+        Props.Reload(); // maps place props from the library, so it's re-read first
         var fresh = LoadAll();
         _all = fresh;
         Generation++;

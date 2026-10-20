@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cardboard Stack",
+  "category": "Debris",
+  "description": "A stack of moving boxes and one beside it.",
+  "collision": "solid",
+  "collider": [{"size": [0.82, 1.28, 0.62]}, {"size": [0.6, 0.42, 0.55], "offset": [0.7, 0.21, 0.12]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 14, "size": [0.08, 0.3], "speed": 3, "colors": ["cardboard", "#8a6a44", "tape"]}},
+  "parts": [
+    {"size": [0.8, 0.6, 0.6], "offset": [0.0, 0.3, 0.0], "color": "cardboard"},
+    {"size": [0.804, 0.006, 0.05], "offset": [0.0, 0.603, 0.0], "color": "tape"},
+    {"size": [0.55, 0.42, 0.45], "offset": [-0.06, 0.81, 0.03], "rotation": [0.0, 8.0, 0.0], "color": "cardboard"},
+    {"size": [0.554, 0.006, 0.05], "offset": [-0.06, 1.023, 0.03], "rotation": [0.0, 8.0, 0.0], "color": "tape"},
+    {"size": [0.36, 0.26, 0.3], "offset": [0.02, 1.15, -0.02], "rotation": [0.0, -12.0, 0.0], "color": "cardboard"},
+    {"size": [0.364, 0.006, 0.05], "offset": [0.02, 1.283, -0.02], "rotation": [0.0, -12.0, 0.0], "color": "tape"},
+    {"size": [0.55, 0.42, 0.45], "offset": [0.7, 0.21, 0.12], "rotation": [0.0, 20.0, 0.0], "color": "cardboard"},
+    {"size": [0.554, 0.006, 0.05], "offset": [0.7, 0.423, 0.12], "rotation": [0.0, 20.0, 0.0], "color": "tape"}
+  ]
+}
