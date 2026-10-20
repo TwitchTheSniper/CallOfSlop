@@ -969,7 +969,8 @@ public sealed partial class Game : IDisposable
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
     /// <paramref name="killId"/> is a weapon id, 240+ for throwables, or <see cref="MeleeKillId"/>.
     /// </summary>
-    private bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet)
+    private bool DamagePlayer(Player attacker, Player victim, int amount, bool head, byte killId, double now, DamageKind kind = DamageKind.Bullet,
+        Vector3? from = null)
     {
         if (!victim.Alive || amount <= 0 || !DamageEnabled || now < victim.ImmuneUntil)
             return false;
@@ -1002,9 +1003,12 @@ public sealed partial class Game : IDisposable
             if (attacker.Alive && attacker.Perks.Has(PerkId.Afterburner))
                 attacker.Sim.BoostTicks = Perks.BoostTicks;
         }
-        _w.Begin(Msg.Kill).U8(attacker.Id).U8(victim.Id).U8(head ? (byte)1 : (byte)0).U8(killId);
+        var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
+        kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
+        RecordKill(kill);
         return true;
     }
 
@@ -1383,8 +1387,12 @@ public sealed partial class Game : IDisposable
                 break;
             }
             case (byte)Msg.Kill when !IsServer && r.Has(4):
-                LogKill(r.U8(), r.U8(), r.U8() != 0, r.U8());
+            {
+                var kill = KillPacket.Read(ref r); // the protocol 5 extras are read only if present
+                LogKill(kill.Killer, kill.Victim, kill.Headshot, kill.KillId);
+                RecordKill(kill);
                 break;
+            }
         }
     }
 
