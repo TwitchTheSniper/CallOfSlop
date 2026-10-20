@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Newspaper Stack",
+  "category": "Debris",
+  "description": "A bundle of old newspapers tied with string.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 5, "breakBy": ["explosions", "streaks", "melee"], "sound": "soft", "debris": {"count": 10, "size": [0.08, 0.2], "speed": 3, "colors": ["newsprint", "paper"]}},
+  "parts": [
+    {"size": [0.3, 0.025, 0.42], "offset": [-0.007, 0.013, 0.006], "rotation": [0.0, 3.02, 0.0], "color": "#c9c4b4"},
+    {"size": [0.3, 0.025, 0.42], "offset": [0.012, 0.038, 0.005], "rotation": [0.0, -3.528, 0.0], "color": "#c9c4b4"},
+    {"size": [0.3, 0.025, 0.42], "offset": [-0.008, 0.062, 0.007], "rotation": [0.0, -4.292, 0.0], "color": "newsprint"},
+    {"size": [0.3, 0.025, 0.42], "offset": [0.01, 0.088, 0.007], "rotation": [0.0, -0.684, 0.0], "color": "newsprint"},
+    {"size": [0.3, 0.025, 0.42], "offset": [0.01, 0.113, 0.003], "rotation": [0.0, 4.93, 0.0], "color": "newsprint"},
+    {"size": [0.3, 0.025, 0.42], "offset": [0.01, 0.138, -0.012], "rotation": [0.0, 3.264, 0.0], "color": "paper"},
+    {"size": [0.3, 0.025, 0.42], "offset": [0.007, 0.163, 0.013], "rotation": [0.0, -1.443, 0.0], "color": "paper"},
+    {"size": [0.3, 0.025, 0.42], "offset": [-0.008, 0.188, 0.012], "rotation": [0.0, 0.641, 0.0], "color": "#c9c4b4"},
+    {"size": [0.3, 0.025, 0.42], "offset": [-0.002, 0.212, -0.004], "rotation": [0.0, 1.386, 0.0], "color": "paper"},
+    {"size": [0.31, 0.012, 0.012], "offset": [0.0, 0.231, 0.1], "color": "tan"},
+    {"size": [0.31, 0.012, 0.012], "offset": [0.0, 0.231, -0.1], "color": "tan"},
+    {"size": [0.012, 0.225, 0.012], "offset": [0.155, 0.112, 0.1], "color": "tan"},
+    {"size": [0.012, 0.225, 0.012], "offset": [0.155, 0.112, -0.1], "color": "tan"},
+    {"size": [0.012, 0.225, 0.012], "offset": [-0.155, 0.112, 0.1], "color": "tan"},
+    {"size": [0.012, 0.225, 0.012], "offset": [-0.155, 0.112, -0.1], "color": "tan"},
+    {"size": [0.3, 0.006, 0.42], "offset": [0.05, 0.228, 0.36], "rotation": [0.0, 30.0, 0.0], "color": "newsprint"}
+  ]
+}

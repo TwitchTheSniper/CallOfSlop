@@ -36,6 +36,8 @@
     <!-- Weapons and attachments are data files too: one JSON file each, loaded at startup (see Weapons\README.md). -->
     <None Update="Weapons\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Attachments\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Map props (trash cans, crates, litter...): one JSON file each, in category folders (see Props\README.md). -->
+    <None Update="Props\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

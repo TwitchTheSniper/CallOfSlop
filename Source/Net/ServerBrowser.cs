@@ -18,7 +18,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 10: sprint speed 9 -> 13.5 m/s (shared movement sim);
     // 11: up to 32 players: quantised, split snapshots with a presence mask (Snapshot.cs), server-full message,
     //     per-map player limits (max players in this info is the map's), TDM kill limit in the mode state
-    public const byte ProtocolVersion = 11;
+    // 12: breakable props (prop break and prop state messages)
+    public const byte ProtocolVersion = 12;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

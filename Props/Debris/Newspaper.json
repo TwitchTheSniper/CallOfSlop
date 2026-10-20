@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Newspaper",
+  "category": "Debris",
+  "description": "An open newspaper, one page lifting in the breeze.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 30,
+  "parts": [
+    {"size": [0.58, 0.004, 0.4], "offset": [0.0, 0.005, 0.0], "color": "newsprint"},
+    {"size": [0.56, 0.004, 0.39], "offset": [0.04, 0.009, 0.03], "rotation": [0.0, 14.0, 0.0], "color": "paper"},
+    {"size": [0.2, 0.002, 0.012], "offset": [-0.07, 0.012, -0.12], "rotation": [0.0, 14.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [0.15, 0.012, -0.04], "rotation": [0.0, 14.0, 0.0], "color": "grey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [-0.07, 0.012, -0.085], "rotation": [0.0, 14.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [0.15, 0.012, -0.005], "rotation": [0.0, 14.0, 0.0], "color": "grey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [-0.07, 0.012, -0.05], "rotation": [0.0, 14.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [0.15, 0.012, 0.03], "rotation": [0.0, 14.0, 0.0], "color": "grey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [-0.07, 0.012, -0.015], "rotation": [0.0, 14.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [0.15, 0.012, 0.065], "rotation": [0.0, 14.0, 0.0], "color": "grey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [-0.07, 0.012, 0.02], "rotation": [0.0, 14.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.002, 0.012], "offset": [0.15, 0.012, 0.1], "rotation": [0.0, 14.0, 0.0], "color": "grey"},
+    {"size": [0.22, 0.002, 0.07], "offset": [-0.04, 0.012, 0.16], "rotation": [0.0, 14.0, 0.0], "color": "black"},
+    {"size": [0.3, 0.004, 0.4], "offset": [-0.3, 0.06, 0.05], "rotation": [0.0, 0.0, -28.0], "color": "newsprint"}
+  ]
+}

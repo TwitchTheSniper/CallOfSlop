@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Planter",
+  "category": "Nature",
+  "description": "A concrete planter with a bushy shrub.",
+  "collision": "solid",
+  "collider": [{"size": [1.06, 0.56, 1.06]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.0, 0.5, 1.0], "offset": [0.0, 0.25, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [1.06, 0.06, 1.06], "offset": [0.0, 0.53, 0.0], "color": "lightgrey"},
+    {"size": [0.88, 0.03, 0.88], "offset": [0.0, 0.495, 0.0], "color": "#4a3a2a", "material": "dirt"},
+    {"size": [0.6, 0.45, 0.55], "offset": [0.0, 0.725, 0.0], "color": "green", "material": "dirt"},
+    {"size": [0.45, 0.35, 0.5], "offset": [0.08, 0.925, 0.05], "rotation": [0.0, 30.0, 0.0], "color": "#2f6a32", "material": "dirt"},
+    {"size": [0.3, 0.3, 0.3], "offset": [-0.25, 0.65, 0.22], "rotation": [0.0, 10.0, 0.0], "color": "#3d7a3a", "material": "dirt"}
+  ]
+}

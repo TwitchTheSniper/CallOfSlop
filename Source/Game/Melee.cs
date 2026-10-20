@@ -113,6 +113,8 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
+        else
+            MeleeProps(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs)
 
         if (attacker.Id == LocalId)
             OnOwnMelee(flags, now);

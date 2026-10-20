@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Plank",
+  "category": "Debris",
+  "description": "A loose wooden plank.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.8, 1.1]},
+  "parts": [
+    {"size": [2.4, 0.035, 0.18], "offset": [0.0, 0.03, 0.0], "rotation": [0.0, 0.0, 1.2], "color": "lightwood", "material": "wood"},
+    {"size": [0.08, 0.036, 0.004], "offset": [0.6, 0.048, 0.0], "color": "darkgrey"}
+  ]
+}
