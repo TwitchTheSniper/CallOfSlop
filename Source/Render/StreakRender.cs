@@ -22,7 +22,9 @@ public static class StreakRender
             var owner = game.Players.GetValueOrDefault(e.Owner);
             var friendly = local != null && owner != null && !game.StreakIsEnemy(owner, local);
             var stripe = owner?.Color ?? new Vector3(0.6f, 0.6f, 0.6f);
-            if (e.Kind == StreakId.SentryTurret)
+            if (ScenePresentation.Enabled) // turret base -> head -> barrels, drone body -> rotors/pod (Source/Scene/Rigs/StreakRigs.cs)
+                ScenePresentation.DrawStreakEntity(gfx, e, stripe, friendly, now);
+            else if (e.Kind == StreakId.SentryTurret)
                 DrawTurret(gfx, e, stripe, friendly, now);
             else
                 DrawDrone(gfx, e, stripe, friendly, now);
@@ -101,7 +103,7 @@ public static class StreakRender
         }
     }
 
-    private static void DrawTurret(Renderer gfx, StreakEntity e, Vector3 stripe, bool friendly, double now)
+    internal static void DrawTurret(Renderer gfx, StreakEntity e, Vector3 stripe, bool friendly, double now)
     {
         var pos = e.RenderPos;
         var hub = pos + new Vector3(0, 0.62f, 0);
@@ -129,7 +131,7 @@ public static class StreakRender
         HealthBar(gfx, e, pos + new Vector3(0, 1.55f, 0));
     }
 
-    private static void DrawDrone(Renderer gfx, StreakEntity e, Vector3 stripe, bool friendly, double now)
+    internal static void DrawDrone(Renderer gfx, StreakEntity e, Vector3 stripe, bool friendly, double now)
     {
         var body = Matrix4x4.CreateRotationY(-e.RenderYaw) * Matrix4x4.CreateTranslation(e.RenderPos);
         gfx.Draw(Matrix4x4.CreateScale(0.55f, 0.2f, 0.7f) * body, Gunmetal, 1f, material: Material.Metal);

@@ -84,6 +84,7 @@ public static partial class SelfTest
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
+            Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
             Section("Text", CheckText); // SelfTestText.cs: player-visible text

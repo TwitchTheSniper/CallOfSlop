@@ -59,6 +59,64 @@ public static class GunModel
 
     private static bool _inMag;
 
+    // ---- Scene graph emission (Source/Scene/GunRig.cs) ---------------------------------
+
+    /// <summary>Which part of the gun a box belongs to (a <see cref="GunRig"/> groups them under nodes of these names).</summary>
+    public enum PartGroup : byte
+    {
+        Body,
+        Muzzle,
+        Underbarrel,
+        Magazine,
+        Optic,
+    }
+
+    /// <summary>How a box is drawn: inside a blend block, or as an optic housing that fades with <see cref="AdsCutaway"/>.</summary>
+    [Flags]
+    public enum EmitFlags : byte
+    {
+        None = 0,
+        Blend = 1,
+        Shell = 2,
+    }
+
+    /// <summary>Receives the gun's boxes in draw order instead of drawing them (see <see cref="Emit"/>).</summary>
+    public interface IPartSink
+    {
+        /// <summary>One box: its model matrix in gun space and how it's drawn. Shell boxes give their base alpha (before the cutaway fade).</summary>
+        void Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, PartGroup group, EmitFlags flags);
+
+        /// <summary>Where the muzzle flash goes (gun space) and what it looks like. Always emitted last.</summary>
+        void Flash(Vector3 muzzle, float size, Vector3 color, float alpha);
+    }
+
+    private static IPartSink? _emit;
+    private static bool _blendOn, _inShell;
+    private static PartGroup _group;
+
+    /// <summary>
+    /// Runs the same build code as <see cref="Draw"/> but hands every box to <paramref name="sink"/> (in draw order, with no
+    /// pose, no magazine offset and every optic housing at its base alpha) so a scene graph can hold the gun as nodes.
+    /// <paramref name="cutaway"/> only matters for the few parts whose shape follows it (the holo sight's hood).
+    /// </summary>
+    public static void Emit(WeaponDef d, IPartSink sink, float cutaway)
+    {
+        var keep = AdsCutaway;
+        _emit = sink;
+        AdsCutaway = cutaway;
+        try
+        {
+            Draw(null!, d, Matrix4x4.Identity, true);
+        }
+        finally
+        {
+            _emit = null;
+            _blendOn = _inShell = _inOptic = _inMag = false;
+            _group = PartGroup.Body;
+            AdsCutaway = keep;
+        }
+    }
+
     /// <summary>The cut-away for an aim-down-sights blend: none at the hip, complete by 85% aimed.</summary>
     public static float CutawayFor(float aimT) => SmoothStep(0.5f, 0.85f, aimT);
 
@@ -354,6 +412,12 @@ public static class GunModel
             Record(m, mode == 2 || alpha < 0.999f);
             return;
         }
+        if (_emit != null)
+        {
+            _emit.Part(m, c, alpha, mode, _inOptic ? PartGroup.Optic : _inMag ? PartGroup.Magazine : _group,
+                (_blendOn ? EmitFlags.Blend : EmitFlags.None) | (_inShell ? EmitFlags.Shell : EmitFlags.None));
+            return;
+        }
         if (_inMag)
         {
             if (MagHidden)
@@ -378,13 +442,22 @@ public static class GunModel
 
     private static void Blend(bool on)
     {
-        if (_record == null)
+        if (_emit != null)
+            _blendOn = on;
+        else if (_record == null)
             _g.SetBlend(on);
     }
 
     /// <summary>An optic housing box: fades out as <see cref="AdsCutaway"/> rises (gone when fully aimed).</summary>
     private static void Shell(float sx, float sy, float sz, float x, float y, float z, Vector3 c, float rotZ = 0, int mode = 0, float alpha = 1f)
     {
+        if (_emit != null)
+        {
+            _inShell = true; // the rig fades it with the cutaway each frame
+            Box(sx, sy, sz, x, y, z, c, rotZ: rotZ, mode: mode, alpha: alpha);
+            _inShell = false;
+            return;
+        }
         var a = alpha * (1f - AdsCutaway);
         if (a <= 0.02f)
             return;
@@ -477,6 +550,7 @@ public static class GunModel
         }
 
         // ---- Muzzle device -------------------------------------------------------------
+        _group = PartGroup.Muzzle;
         switch (Att(d, AttachSlot.Muzzle))
         {
             case "Suppressor":
@@ -508,6 +582,8 @@ public static class GunModel
                 break;
         }
 
+        _group = PartGroup.Body;
+
         // ---- Optics --------------------------------------------------------------------
         var mountTop = d.Optic != OpticKind.Iron ? MountTop(d, f) : top;
         if (d.Optic != OpticKind.Iron && d.Class != WeaponClass.Pistol)
@@ -517,6 +593,7 @@ public static class GunModel
         // ---- Underbarrel -----------------------------------------------------------------
         var ubZ = d.Class == WeaponClass.Pistol ? recvFront + 0.04f : recvFront - f.GuardLen * 0.45f;
         var ubY = d.Class == WeaponClass.Pistol ? -f.RecvH * 0.15f : -f.GuardH * 0.5f;
+        _group = PartGroup.Underbarrel;
         switch (Att(d, AttachSlot.Underbarrel))
         {
             case "Vertical Grip":
@@ -538,6 +615,8 @@ public static class GunModel
             }
         }
 
+        _group = PartGroup.Body;
+
         // ---- Muzzle flash ------------------------------------------------------------------
         if (flash && _record == null)
             DrawFlash(d, barrelY, muzzleZ, time);
@@ -545,13 +624,19 @@ public static class GunModel
 
     private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time)
     {
-        _g.SetBlend(true);
         var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
         if (d.Suppressor)
             size *= 0.4f;
         var color = d.Sound == SoundStyle.Zap ? CyanGlow : new Vector3(1f, 0.85f, 0.3f);
+        var alpha = d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f;
+        if (_emit != null)
+        {
+            _emit.Flash(new Vector3(0, barrelY, muzzleZ), size, color, alpha);
+            return;
+        }
+        _g.SetBlend(true);
         _g.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, barrelY, muzzleZ - size * 0.4f) * _pose, color,
-            d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f, mode: 2);
+            alpha, mode: 2);
         _g.SetBlend(false);
     }
 
@@ -565,6 +650,14 @@ public static class GunModel
             if (_record != null)
             {
                 Record(m.Matrices[i], pt.Mode == 2 || pt.Alpha < 0.999f);
+                continue;
+            }
+            if (_emit != null)
+            {
+                var group = (pt.Flags & GunPartFlags.Mag) != 0 ? PartGroup.Magazine
+                    : (pt.Flags & GunPartFlags.Muzzle) != 0 ? PartGroup.Muzzle
+                    : (pt.Flags & GunPartFlags.Underbarrel) != 0 ? PartGroup.Underbarrel : PartGroup.Body;
+                _emit.Part(m.Matrices[i], pt.Color, pt.Alpha, pt.Mode, group, (pt.Flags & GunPartFlags.Blend) != 0 ? EmitFlags.Blend : EmitFlags.None);
                 continue;
             }
             var blend = (pt.Flags & GunPartFlags.Blend) != 0;

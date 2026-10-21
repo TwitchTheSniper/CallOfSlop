@@ -209,10 +209,27 @@ public sealed unsafe class Renderer
     }
 
     /// <summary>Turn depth writes off for soft transparent things like smoke.</summary>
-    public void SetDepthWrite(bool on) => DepthMask(on);
+    public void SetDepthWrite(bool on)
+    {
+        if (Recorder != null)
+            Recorder.SetDepthWrite(on);
+        else
+            DepthMask(on);
+    }
+
+    /// <summary>
+    /// Self-test hook: while set, <see cref="Draw"/>, <see cref="SetBlend"/> and <see cref="SetDepthWrite"/> report to it
+    /// instead of calling OpenGL, so draw code can be checked headlessly (see Source/Scene).
+    /// </summary>
+    public IDrawRecorder? Recorder;
 
     public void SetBlend(bool on)
     {
+        if (Recorder != null)
+        {
+            Recorder.SetBlend(on);
+            return;
+        }
         if (on)
             Enable(GlCapability.Blend);
         else
@@ -222,6 +239,11 @@ public sealed unsafe class Renderer
     /// <summary>Draws the unit cube transformed by <paramref name="model"/>.</summary>
     public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid)
     {
+        if (Recorder != null)
+        {
+            Recorder.Draw(model, color, alpha, mode, material);
+            return;
+        }
         Native.glUniform1f(_locLayer, (float)material);
         var mvp = model * _viewProj;
         var m = model;
