@@ -64,6 +64,9 @@ public sealed class AttachmentDef
 
     public AttachmentEffect[] Effects = [];
 
+    /// <summary>An optic's "sight" block: how it looks when aiming (null = the default for its optic kind).</summary>
+    public SightSpec? Sight;
+
     /// <summary>The file it was loaded from, relative to the Attachments folder.</summary>
     public string? SourceFile;
 }

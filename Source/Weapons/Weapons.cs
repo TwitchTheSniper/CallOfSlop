@@ -125,6 +125,9 @@ public sealed class WeaponDef
     public bool Suppressor;
     public uint Kit; // which attachments made this copy (0 = stock weapon)
 
+    /// <summary>The fitted optic's "sight" block (null = the default for <see cref="Optic"/>; see <see cref="Sights.Spec"/>). A property, so it isn't a stat.</summary>
+    public SightSpec? Sight { get; set; }
+
     public WeaponDef Clone() => (WeaponDef)MemberwiseClone();
 
     // ---- File info (not stats; properties so they stay out of the field list) ----
