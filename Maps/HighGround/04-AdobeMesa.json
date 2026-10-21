@@ -7,7 +7,7 @@
   "maxPlayers": 16,
   "halfX": 60,
   "halfZ": 48,
-  "sky": "#e0c9a6",
+  "skybox": { "preset": "desert", "horizon": "#e0c9a6" },
   "terrain": {
     "cell": 1,
     "margin": 24,
