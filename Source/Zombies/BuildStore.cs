@@ -56,7 +56,7 @@ public static class BuildStore
             var ex = BuilderExamples.All();
             for (var i = 0; i < SlotCount && i < ex.Count; i++)
                 Slots[i] = ex[i].Build;
-            Melee = BuilderExamples.Melee().FirstOrDefault()?.Build;
+            Melee = BuilderExamples.Melee().Select(m => m.Build).FirstOrDefault();
             return;
         }
         Load(lines, Parts.Find, out _);

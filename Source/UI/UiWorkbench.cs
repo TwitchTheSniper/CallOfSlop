@@ -322,7 +322,7 @@ public sealed partial class Ui
         ImGuiSafe.TextColored(WbCol(PartDef.RarityColor(grip.Rarity)), grip.Name);
         ImGui.SameLine();
         if (b.IsMelee)
-            ImGuiSafe.TextColored(Dim, "  melee weapon   (pick another hilt from the Hilt list to move the head and mods)");
+            ImGui.TextColored(Dim, "  melee weapon   (pick another hilt from the Hilt list to move the head and mods)"u8);
         else
         {
             var fed = b.HopperFed().Count;
@@ -494,7 +494,7 @@ public sealed partial class Ui
         if (ImGui.Checkbox("Weapon slots 3-4 unlocked"u8, ref BuildStore.ExtraSlotsUnlocked))
             BuildStore.Save();
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip("In Zombies the slot upgrade is bought on the map, once per run. Here it's a toggle (or use the station by the range's spawn).");
+            ImGui.SetTooltip("In Zombies the slot upgrade is bought on the map, once per run. Here it's a toggle (or use the station by the range's spawn)."u8);
         ImGuiSafe.TextColored(Dim, $"Practice dummies: {BuildStore.Dummies}");
         ImGui.SameLine();
         if (ImGui.SmallButton("-##dum"u8) && BuildStore.Dummies > 0)

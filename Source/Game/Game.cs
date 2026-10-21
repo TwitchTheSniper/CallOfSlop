@@ -1115,12 +1115,12 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Hitscan with lag compensation (targets rewound to <paramref name="viewTick"/>), one ray per pellet.</summary>
-    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now, bool turret = false)
+    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now, bool fromTurret = false)
     {
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
-        if (turret)
+        if (fromTurret)
             shooter.LastCombatTime = now; // a parked cart firing on its own (GameCart.cs): the server picked origin and rate
         else
         {
@@ -1213,14 +1213,14 @@ public sealed partial class Game : IDisposable
         }
 
         // Host-side feedback
-        if (turret)
+        if (fromTurret)
             Audio.Shot(def, origin);
         if (shooter.Id == LocalId)
             OnOwnShotConfirmed(flags, now);
-        else if (!turret)
+        else if (!fromTurret)
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(turret ? starts[i] : MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
+            AddTracer(fromTurret ? starts[i] : MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)

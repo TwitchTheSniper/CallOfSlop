@@ -382,7 +382,7 @@ public sealed partial class Game
             return;
         c.NextShot = now + MathF.Max(0.05f, def.FireInterval);
         var dir = World.Forward(c.Body.Yaw, c.AimPitch);
-        ServerResolveShot(owner, def, muzzle, dir, def.HipSpreadDeg * MathF.PI / 180f * 0.5f, c.Shots++, ServerTick, now, turret: true);
+        ServerResolveShot(owner, def, muzzle, dir, def.HipSpreadDeg * MathF.PI / 180f * 0.5f, c.Shots++, ServerTick, now, fromTurret: true);
         c.TurretAmmo--;
     }
 
