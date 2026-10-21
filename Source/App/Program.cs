@@ -310,8 +310,10 @@ public static unsafe partial class Program
         switch (_smokeStage)
         {
             case 0 when t > 0.8:
-                if (_smokeMap == 0)
+                if (_smokeMap == 0 && _teamSmoke == 0)
                     SmokeShot("loadout_overview");
+                if (_smokeMap == 0 && SmokeTeamsTick(game, now))
+                    break; // the TEAMS window shot (Program.Teams.cs)
                 _smokeStage++;
                 break;
             case 1 when t > 1.0:
