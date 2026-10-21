@@ -14,5 +14,5 @@
     { "stat": "adsSpreadMult", "mul": 0.78 },
     { "stat": "adsTime", "add": 0.02 }
   ],
-  "sight": { "reticle": "HoloRing", "reticleColor": [0.35, 0.95, 1], "reticleSize": 1, "vignette": 0, "tint": [0.21, 0.57, 0.6], "tintAlpha": 0.07 }
+  "sight": { "reticle": "HoloRing", "reticleColor": [0.35, 0.95, 1], "reticleSize": 1, "vignette": 0, "tint": [0.21, 0.57, 0.6], "tintAlpha": 0.12 }
 }

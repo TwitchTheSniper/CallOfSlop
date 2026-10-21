@@ -111,13 +111,13 @@ public static class Sights
             switch (kind)
             {
                 case OpticKind.RedDot:
-                    (s.Reticle, s.ReticleColor, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.Dot, Red, 0, new Vector3(0.6f, 0.9f, 0.7f), 0.06f);
+                    (s.Reticle, s.ReticleColor, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.Dot, Red, 0, new Vector3(0.6f, 0.9f, 0.7f), 0.12f);
                     break;
                 case OpticKind.MiniDot:
-                    (s.Reticle, s.ReticleColor, s.ReticleSize, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.Dot, new Vector3(0.3f, 1f, 0.35f), 0.8f, 0, new Vector3(0.6f, 0.9f, 0.7f), 0.05f);
+                    (s.Reticle, s.ReticleColor, s.ReticleSize, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.Dot, new Vector3(0.3f, 1f, 0.35f), 0.8f, 0, new Vector3(0.6f, 0.9f, 0.7f), 0.1f);
                     break;
                 case OpticKind.Holo:
-                    (s.Reticle, s.ReticleColor, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.HoloRing, new Vector3(0.35f, 0.95f, 1f), 0, new Vector3(0.21f, 0.57f, 0.6f), 0.07f);
+                    (s.Reticle, s.ReticleColor, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.HoloRing, new Vector3(0.35f, 0.95f, 1f), 0, new Vector3(0.21f, 0.57f, 0.6f), 0.12f);
                     break;
                 case OpticKind.Prism2:
                     (s.Reticle, s.ReticleColor, s.Screen, s.Tint, s.TintAlpha) = (GunModel.Reticle.Horseshoe, new Vector3(1f, 0.32f, 0.1f), 0.8f, Amber, 0.06f);
@@ -214,13 +214,13 @@ public static class Sights
     /// <summary>
     /// 0..1: how much of the gun's sway, bob and kick moves the lens when aimed. A lens a couple of centimetres from the eye
     /// would jump around the screen with the same few millimetres of motion as a red dot 15 cm away, so high-power optics
-    /// are steadied (rotations, and so the reticle's recoil, are kept). 1 = untouched (iron sights, reflex sights).
+    /// are steadied (rotations, and so the reticle's recoil, are kept). 1 = untouched (iron sights and reflex sights move exactly as before).
     /// </summary>
     public static float Steadiness(WeaponDef d, float aimT)
     {
-        if (!HasLens(d))
+        if (!Magnified(d))
             return 1f;
-        var keep = Math.Clamp(EyeDistance(d) / 0.12f, 0.08f, 1f);
+        var keep = Math.Clamp(EyeDistance(d) / 0.2f, 0.05f, 1f);
         return float.Lerp(1f, keep, Math.Clamp(aimT, 0f, 1f));
     }
 
