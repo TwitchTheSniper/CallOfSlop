@@ -552,7 +552,7 @@ public sealed partial class Ui
             if (cur.NoAds)
                 ImGui.TextColored(Yellow, "Hip fire only."u8);
             if (Game.IsCart(cur))
-                ImGui.TextColored(Yellow, "A real cart: push it on the ground, E parks it as a turret."u8);
+                ImGui.TextColored(Yellow, "A real cart: push it, E parks it, E at its bar mans its gun."u8);
             if (cur.BuildFlags.Length > 0)
                 ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", cur.BuildFlags) + " (effects come with Zombies)");
         }

@@ -412,12 +412,12 @@ public static partial class SelfTest
 
         // The state message round-trips.
         var w = new PacketWriter();
-        var ent = new CartEntity { Owner = 3, Mode = CartMode.Turret, Body = b2, AimPitch = 0.2f, TurretUntil = 12.4 };
-        Game.WriteCartState(w, [ent], 10);
+        var ent = new CartEntity { Owner = 3, Mode = CartMode.Manned, Body = b2, AimYaw = -0.5f, AimPitch = 0.2f };
+        Game.WriteCartState(w, [ent]);
         var r = new PacketReader(w.Span[1..]);
         var got = Game.ReadCartState(ref r);
-        if (w.Span[0] != (byte)Msg.CartState || got.Count != 1 || got[0].Owner != 3 || got[0].Mode != CartMode.Turret || got[0].Body.Position != b2.Position
-            || got[0].Body.Yaw != b2.Yaw || got[0].AimPitch != 0.2f || got[0].SecondsLeft != 3)
+        if (w.Span[0] != (byte)Msg.CartState || got.Count != 1 || got[0].Owner != 3 || got[0].Mode != CartMode.Manned || got[0].Body.Position != b2.Position
+            || got[0].Body.Yaw != b2.Yaw || got[0].AimYaw != -0.5f || got[0].AimPitch != 0.2f || w.Length != 2 + Game.CartStateBytes)
             Fail("cart: the cart state message didn't round-trip");
         else
             Line($"cart: state message {w.Length} bytes for one cart (protocol {ServerInfo.ProtocolVersion})");
@@ -427,60 +427,159 @@ public static partial class SelfTest
     {
         var cart = Example("Shopping Spree");
         var mg = Example("Minigun");
-        if (cart == null || mg == null)
+        var tp = Example("Triple Pistol");
+        if (cart == null || mg == null || tp == null)
+        {
+            Fail("cart: the Shopping Spree, Minigun or Triple Pistol example is missing");
             return;
-        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1, mapId: Maps.Find("Workbench Range")?.Id ?? 0);
+        }
+        // The traverse limits on their own.
+        var (cy, cp) = Game.ClampCartAim(0.3f, 0.3f + 2.0f, 1.0f);
+        var (ly, lp) = Game.ClampCartAim(0.3f, 0.3f - 0.4f, -1.0f);
+        if (MathF.Abs(cy - (0.3f + Game.CartTraverseYaw)) > 1e-5f || cp != Game.CartPitchUp || MathF.Abs(ly - (0.3f - 0.4f)) > 1e-5f || lp != Game.CartPitchDown)
+            Fail("cart gun: the traverse limits don't clamp the aim (+-60 deg yaw, -15..+30 deg pitch)");
+        var first = CartScenario(cart, mg, tp, log: true);
+        var second = CartScenario(cart, mg, tp, log: false);
+        Line($"cart gun: the same run twice gave the same result: {first == second}");
+        if (first != second)
+            Fail($"cart gun: not deterministic ({first} vs {second})");
+    }
+
+    /// <summary>
+    /// Push, park (it must not fire on its own for 10 s), man (aim clamped, fire hits a dummy), step off (back to the
+    /// weapon held before), hold to push it again. Returns a summary of the state at each step (for the determinism check).
+    /// </summary>
+    private static string CartScenario(WeaponDef cart, WeaponDef mg, WeaponDef tp, bool log)
+    {
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2, mapId: Maps.Find("Workbench Range")?.Id ?? 0);
         game.BuilderRange = true;
         var me = game.Local!;
-        var bot = game.Players.Values.First(p => p.Id != me.Id);
+        var bots = game.Players.Values.Where(p => p.Id != me.Id).OrderBy(p => p.Id).ToList();
+        var (ahead, side) = (bots[0], bots[1]);
         game.SelfTestPlace(me, new Vector3(0, 0, 45), 0); // facing -Z, down the range
-        game.UseBuiltWeapons(cart, mg, null, null, null, extraSlots: false);
-        game.SelfTestPlace(bot, new Vector3(3, 0, 30), MathF.PI); // between the 25 m target boards
+        game.UseBuiltWeapons(cart, mg, tp, null, null, extraSlots: true);
+        cart = game.Slots[0].Def; // the slot's own copy (its id may have been moved off a clash)
+        var sum = new System.Text.StringBuilder();
         var t = 100.0;
+        void Tick(int n)
+        {
+            for (var i = 0; i < n; i++)
+                game.SelfTestTickCarts(t += World.TickDt);
+        }
+        void Sync() => me.Weapon = game.Active.Def.Id; // the next input would carry the switch
         game.SelfTestTickCarts(t);
         if (!game.Carts.TryGetValue(me.Id, out var c) || c.Mode != CartMode.Pushed)
         {
-            Fail("cart parking: holding the cart build should make a pushed cart");
-            return;
+            Fail("cart: holding the cart build should make a pushed cart");
+            return "";
         }
-        // Parked: you switch away and it fires on its own at the dummy.
-        game.SelfTestInteract(me, t);
-        var parkedMode = c.Mode;
-        var active = game.Active.Def;
-        me.Weapon = active.Id;
-        var hp = bot.Health;
+        // Pushing: it doesn't fire (both hands on the bar).
         var tracers = game.Tracers.Count;
-        var targeted = false;
-        for (var i = 0; i < 120; i++)
-        {
-            game.SelfTestTickCarts(t += World.TickDt);
-            targeted |= c.Target == bot.Id;
-        }
-        Line($"cart parking: interact -> {parkedMode}, you hold the {active.Name}; after 2 s the turret targeted the dummy: {targeted}, dummy {hp} -> {(bot.Alive ? bot.Health : 0)} HP, "
-             + $"{game.Tracers.Count - tracers} tracer(s), {c.TurretAmmo} round(s) left");
-        if (parkedMode != CartMode.Turret || Game.IsCart(active))
-            Fail("cart parking: the interact key should park the cart as a turret and switch you to another weapon");
-        if (!targeted || (bot.Alive && bot.Health >= hp) || game.Tracers.Count == tracers)
-            Fail("cart parking: the parked cart should turn to the dummy and shoot it");
-        // A parked cart can't be fired by hand.
-        var before = game.Tracers.Count;
-        game.TestServerShot(cart, -Vector3.UnitZ, 99);
-        if (game.Tracers.Count != before)
-            Fail("cart parking: a parked cart shouldn't fire by hand");
-        // It stops after its time and stands idle; walking up to it and interacting picks it up.
-        for (var i = 0; i < 40; i++)
-            game.SelfTestTickCarts(t += 1.0);
-        var expired = c.Mode;
-        game.SelfTestPlace(me, c.Bar + new Vector3(0, 0, 0.6f), 0);
+        game.TestServerShot(cart, -Vector3.UnitZ, 1);
+        var firedPushing = game.Tracers.Count != tracers;
+
+        // Parked: it stands where it is, you go back to another weapon, and it never fires on its own.
         game.SelfTestInteract(me, t);
-        Line($"cart parking: after {Game.TurretSeconds:0} s it's {expired}; interact at the bar -> {c.Mode}, holding {game.Active.Def.Name}");
-        if (expired != CartMode.Idle || c.Mode != CartMode.Pushed || !Game.IsCart(game.Active.Def))
-            Fail("cart parking: the turret should stop after its time, and interacting at the bar should pick it up again");
+        var parked = c.Mode;
+        var away = game.Active.Def;
+        Sync();
+        var spot = c.Body.Position;
+        game.SelfTestPlace(ahead, new Vector3(3, 0, 30), MathF.PI); // in front of the cart (between the 25 m target boards), facing it
+        game.SelfTestPlace(side, c.Stand + new Vector3(6f, 0, 0.5f), MathF.PI); // 90 degrees to the right of it
+        tracers = game.Tracers.Count;
+        Tick(600);
+        var idleHp = ahead.Health;
+        var idleTracers = game.Tracers.Count - tracers;
+        var stayed = Vector3.Distance(c.Body.Position, spot) < 1e-4f && c.Mode == CartMode.Idle;
+        if (log)
+            Line($"cart parked: interact -> {parked}, you hold the {away.Name}; 10 s later: dummy in front {idleHp} HP, {idleTracers} tracer(s), cart still {(stayed ? "standing idle" : "MOVED")}");
+        if (firedPushing)
+            Fail("cart: it shouldn't fire while you push it");
+        if (parked != CartMode.Idle || Game.IsCart(away))
+            Fail("cart: E while pushing should park it and switch you to another weapon");
+        if (idleHp != World.MaxHealth || idleTracers != 0 || !stayed)
+            Fail("cart: a parked cart with nobody manning it must not fire on its own");
+        sum.Append($"{parked} {idleTracers} {c.Body.Position} {c.Body.Yaw}; ");
+
+        // Pick the triple pistol (slot 3), then walk up and tap E: you man the cart.
+        game.SwitchTo(2, t);
+        Sync();
+        var before = game.Active.Def;
+        game.SelfTestPlace(me, c.Bar + World.FlatForward(c.Body.Yaw) * -0.7f + new Vector3(0.3f, 0, 0), c.Body.Yaw);
+        game.SelfTestInteract(me, t);
+        var manned = c.Mode;
+        Sync();
+        Tick(2);
+        var atBar = Vector2.Distance(new Vector2(me.Position.X, me.Position.Z), new Vector2(c.Stand.X, c.Stand.Z));
+        // Aim at the dummy in front and fire the cart's build through the real server shot path.
+        var to = Vector3.Normalize(ahead.Chest - me.Eye);
+        tracers = game.Tracers.Count;
+        game.TestServerShot(cart, to, 7);
+        var hitHp = ahead.Alive ? ahead.Health : 0;
+        var firedTracers = game.Tracers.Count - tracers;
+        if (log)
+            Line($"cart manned: interact at the bar -> {manned}, holding {game.Active.Def.Name}, feet {F(atBar)} m from the bar spot; one shot at the dummy in front: "
+                 + $"{firedTracers} tracer(s), {World.MaxHealth} -> {hitHp} HP");
+        if (manned != CartMode.Manned || !Game.IsCart(game.Active.Def) || atBar > 0.05f)
+            Fail("cart: tapping E at a parked cart's bar should man it (you stand at the bar holding its gun)");
+        if (firedTracers == 0 || hitHp >= World.MaxHealth)
+            Fail("cart: firing a manned cart should hit the dummy in front of it");
+        sum.Append($"{manned} hit {hitHp < World.MaxHealth} {me.Position}; "); // (the bot's random perks, e.g. Last Stand, decide its HP)
+
+        // Traverse: looking 90 degrees right, the gun stops at 60; a shot straight at the dummy on the right is turned back to 60 and misses it.
+        me.Yaw = c.Body.Yaw + MathF.PI / 2;
+        me.Pitch = 1.2f;
+        Tick(1);
+        var aimYaw = c.AimYaw;
+        var aimPitch = c.AimPitch;
+        var sideHp = side.Health;
+        var toSide = Vector3.Normalize(side.Chest - me.Eye);
+        game.TestServerShot(cart, toSide, 8);
+        if (log)
+            Line($"cart traverse: look 90 deg right / 69 deg up -> gun {F(aimYaw * 180 / MathF.PI)} deg / {F(aimPitch * 180 / MathF.PI)} deg; a shot at the dummy 90 deg right: {side.Health} HP; yaw stays {F(c.Body.Yaw)}");
+        if (MathF.Abs(aimYaw - Game.CartTraverseYaw) > 1e-4f || MathF.Abs(aimPitch - Game.CartPitchUp) > 1e-4f)
+            Fail("cart: the manned gun's aim should clamp to the traverse limits");
+        if (side.Health != sideHp)
+            Fail("cart: a shot outside the traverse limits should be turned back inside them (it hit the dummy at 90 degrees)");
+        sum.Append($"{aimYaw} {aimPitch}; ");
+
+        // Step off: back to the triple pistol you held before (not just the first other slot).
+        me.Yaw = c.Body.Yaw;
+        me.Pitch = 0;
+        game.SelfTestInteract(me, t);
+        var left = c.Mode;
+        Sync();
+        if (log)
+            Line($"cart leave: interact while manning -> {left}, holding {game.Active.Def.Name} (held {before.Name} before)");
+        if (left != CartMode.Idle || !ReferenceEquals(game.Active.Def, before))
+            Fail("cart: E while manning should step off and give back the weapon you held before");
+        Tick(90); // past the mode-change grace: switching away doesn't pick it up again
+
+        // Hold E at the bar: push it again, and it rolls.
+        game.SelfTestInteract(me, t, hold: true);
+        var pushed = c.Mode;
+        Sync();
+        var rolled = c.Body.Rolled;
+        var feet = me.Position;
+        for (var i = 0; i < 30; i++)
+        {
+            feet += World.FlatForward(c.Body.Yaw) * (3f * World.TickDt);
+            game.SelfTestPlace(me, feet, c.Body.Yaw);
+            Tick(1);
+            feet = me.Position;
+        }
+        if (log)
+            Line($"cart push again: hold E -> {pushed}, holding {game.Active.Def.Name}, rolled {F(c.Body.Rolled - rolled)} m in 0.5 s");
+        if (pushed != CartMode.Pushed || !Game.IsCart(game.Active.Def) || c.Body.Rolled - rolled < 0.8f)
+            Fail("cart: holding E at a parked cart should push it again");
+        sum.Append($"{pushed} {c.Body.Position} {c.Body.Rolled}");
+
         // Dead owners lose their cart; it comes back in front of them.
         me.Alive = false;
         game.SelfTestTickCarts(t += 1);
         if (game.Carts.ContainsKey(me.Id))
-            Fail("cart parking: a dead owner's cart should go");
+            Fail("cart: a dead owner's cart should go");
+        return sum.ToString();
     }
 
     private static void CheckMeleeBuilds()

@@ -3,7 +3,7 @@
   "name": "Push Cart",
   "category": "grip",
   "rarity": "wonder",
-  "flavor": "A full-size squeaky shopping cart with sixteen receivers in the basket. Push it, park it, let it shoot. Hip fire only, obviously.",
+  "flavor": "A full-size squeaky shopping cart with sixteen receivers in the basket. Push it, park it, man it. Hip fire only, obviously.",
   "weight": 6.0,
   "flags": ["cart"],
   "hand": [0.2, 0, 0],

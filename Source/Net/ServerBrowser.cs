@@ -26,7 +26,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     capped steerable slides) in both movers: client prediction must run the same movement as the server
     // 15: Last Stand shield charges and a regenerating flag in the snapshot's per-player flags byte, shield hit message
     // 16: Zombies preview: push carts (cart use, cart state messages) and per-run flags (run state message: weapon-slot upgrade)
-    public const byte ProtocolVersion = 16;
+    // 17: the push cart is a manned gun, not a turret: cart use carries tap / hold, cart state carries the gun's aim
+    //     (yaw offset and pitch) instead of turret seconds, and mode 2 is "manned"
+    public const byte ProtocolVersion = 17;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

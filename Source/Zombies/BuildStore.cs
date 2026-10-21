@@ -22,7 +22,7 @@ public static class BuildStore
     /// <summary>Sandbox toggle: start the Workbench Range with weapon slots 3-4 unlocked (in Zombies: bought on the map, per run).</summary>
     public static bool ExtraSlotsUnlocked;
 
-    /// <summary>Practice dummies standing down the Workbench Range (for the cart turret, cleave and stun).</summary>
+    /// <summary>Practice dummies standing down the Workbench Range (for the cart gun, cleave and stun).</summary>
     public static int Dummies = 4;
 
     /// <summary>The slot being edited (and the primary in the range), and the slot used as the range secondary.</summary>
