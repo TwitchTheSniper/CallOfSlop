@@ -28,6 +28,8 @@ public sealed class Settings
     // Audio / video
     public float Volume = 0.8f;
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
+    public float EffectsVolume = 1f; // gunfire, hits and every other sound effect, on top of the master volume
+    public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
     public bool VSync = true;
 
     /// <summary>A small fps counter in the top-right corner.</summary>
@@ -166,6 +168,8 @@ public sealed class Settings
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
                     case "show_fps": s.ShowFps = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
@@ -222,6 +226,8 @@ public sealed class Settings
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",
+                    $"effects_volume={EffectsVolume.ToString(inv)}",
+                    $"footstep_volume={FootstepVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
                     $"show_fps={(ShowFps ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
