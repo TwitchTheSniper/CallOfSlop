@@ -80,6 +80,8 @@ public static partial class SelfTest
         var oldSource = SafeClipboard.Source;
         var oldSink = SafeClipboard.Sink;
         var sw = Stopwatch.StartNew();
+        var savedOut = Console.Out;
+        Console.SetOut(TextWriter.Null); // the deliberate clipboard failures log exception names, which CI reads as crashes
         try
         {
             _pasteStep = "clipboard hooks and text boxes";
@@ -87,8 +89,32 @@ public static partial class SelfTest
         }
         finally
         {
+            Console.SetOut(savedOut);
             SafeClipboard.Source = oldSource;
             SafeClipboard.Sink = oldSink;
+        }
+
+        // The host froze on a garbage yaw: WrapAngle looped forever on huge values (1e34 - 2 pi == 1e34).
+        _pasteStep = "WrapAngle";
+        foreach (var a in new[] { 1e34f, -3e38f, float.MaxValue, float.PositiveInfinity, float.NegativeInfinity, 12345.6f, -98765.4f })
+        {
+            var w = World.WrapAngle(a);
+            if (!(w >= -MathF.PI - 1e-4f && w <= MathF.PI + 1e-4f))
+                Fail($"WrapAngle({a}) = {w}");
+        }
+        for (var i = -2000; i <= 2000; i++)
+        {
+            var a = i * 0.37f; // ordinary angles: exactly the old loop's answer
+            var old = a;
+            while (old > MathF.PI)
+                old -= MathF.Tau;
+            while (old < -MathF.PI)
+                old += MathF.Tau;
+            if (MathF.Abs(a) <= 1000f && World.WrapAngle(a) != old)
+            {
+                Fail($"WrapAngle({a}) changed for an ordinary angle");
+                break;
+            }
         }
         Line($"  (clipboard and text boxes: {sw.ElapsedMilliseconds} ms)");
         _pasteStep = "sanitizers";

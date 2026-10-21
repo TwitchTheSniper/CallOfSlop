@@ -330,6 +330,10 @@ public static class World
 
     public static float WrapAngle(float a)
     {
+        // Far outside one turn, step down with a remainder first: subtracting 2 pi from 1e34 changes nothing, so the loops
+        // below would never end (a client sending such a yaw froze the host). Normal angles take the same path as before.
+        if (MathF.Abs(a) > 1000f)
+            a = float.IsFinite(a) ? MathF.IEEERemainder(a, MathF.Tau) : 0f;
         while (a > MathF.PI)
             a -= MathF.Tau;
         while (a < -MathF.PI)
