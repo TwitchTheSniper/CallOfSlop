@@ -132,8 +132,14 @@ public sealed class SweptMover : IMover
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.Grounded ? 14f : 3f;
         var target = wish * speed;
-        // On terrain (the feet just above it, as the capsule rests on a slope): the slope rules' uphill speed and slide steering.
-        var onTerrain = _terrain != null && s.Position.Y - _terrain.HeightAt(s.Position.X, s.Position.Z) < EdgeGap;
+        // On terrain (the feet just above it, as high as the capsule's round bottom rests on that slope): the slope rules'
+        // uphill speed and slide steering.
+        var onTerrain = false;
+        if (_terrain != null)
+        {
+            var gap = s.Position.Y - _terrain.HeightAt(s.Position.X, s.Position.Z);
+            onTerrain = gap < 1f && gap < World.PlayerRadius * (1f / SlopeRules.SupportNormal(_terrain, s.Position.X, s.Position.Z).Y - 1f) + 0.15f;
+        }
         if (onTerrain)
         {
             float tx = target.X, tz = target.Z;
