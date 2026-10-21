@@ -1,0 +1,44 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Sky Test",
+  "description": "Sky demo: open rolling ground with a tall tower in the middle and low walls, so you see a lot of sky and the far hills fading into it.",
+  "author": "Call of Slop",
+  "order": 970,
+  "halfX": 60,
+  "halfZ": 60,
+  "skybox": {
+    "preset": "clear",
+    "clouds": { "coverage": 0.38 }
+  },
+  "terrain": {
+    "cell": 1,
+    "margin": 48,
+    "surface": { "grass": "#5f8442", "dirt": "#7a6446", "rock": "#7d7a73", "sand": "#b5a577", "dirtSlope": 22, "rockSlope": 36, "sandBelow": -2.5 },
+    "features": [
+      { "type": "noise", "amplitude": 0.8, "scale": 22, "octaves": 4, "seed": 21 },
+      { "type": "hill", "x": -34, "z": 30, "radius": 20, "height": 5 },
+      { "type": "hill", "x": 36, "z": -30, "radius": 18, "height": 4 },
+      { "type": "valley", "points": [[-90, -40], [-20, -26], [30, 40], [90, 50]], "width": 18, "depth": 2.5 },
+      { "type": "flatten", "x": 0, "z": 0, "w": 18, "d": 18, "edge": 6 }
+    ]
+  },
+  "ops": [
+    { "op": "Ground", "color": [0.38, 0.52, 0.27] },
+    { "op": "Perimeter", "height": 1.6, "color": "#8f8a80" },
+    { "op": "Watchtower", "x": 0, "z": 0, "height": 7, "color": [0.5, 0.42, 0.32] },
+    { "op": "Building", "cx": -30, "cz": -24, "w": 10, "d": 8, "stories": 1, "wall": [0.66, 0.62, 0.55], "floor": [0.45, 0.42, 0.4], "doors": "NE", "roofAccess": true },
+    { "op": "Building", "cx": 28, "cz": 26, "w": 12, "d": 9, "stories": 2, "wall": [0.58, 0.6, 0.64], "floor": [0.44, 0.44, 0.46], "doors": "SW", "roofAccess": true },
+    { "op": "Container", "x": 14, "z": -14, "alongX": true, "color": [0.62, 0.32, 0.24] },
+    { "op": "Container", "x": -14, "z": 16, "alongX": false, "color": [0.28, 0.42, 0.6] },
+    { "op": "Rocks", "x": -40, "z": 34, "size": 3, "color": [0.52, 0.5, 0.47], "seed": 4 },
+    { "op": "Rocks", "x": 40, "z": -36, "size": 2.5, "color": [0.52, 0.5, 0.47], "seed": 6 },
+    { "op": "CoverLine", "x0": -10, "z0": 40, "x1": 14, "z1": 40, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "CoverLine", "x0": -14, "z0": -40, "x1": 10, "z1": -40, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "TreeIfClear", "x": -48, "z": -8 },
+    { "op": "TreeIfClear", "x": 46, "z": 6 },
+    { "op": "TreeIfClear", "x": 8, "z": 50 },
+    { "op": "TreeIfClear", "x": -6, "z": -50 },
+    { "op": "RingSpawns", "count": 10, "frac": 0.8 },
+    { "op": "AutoWaypoints", "spacing": 7 }
+  ]
+}

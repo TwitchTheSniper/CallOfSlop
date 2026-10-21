@@ -38,7 +38,7 @@ public static unsafe partial class Program
         if (Maps.Find(LegsSmokeMap) is not { } map)
         {
             Console.WriteLine($"[smoke] legs: map '{LegsSmokeMap}' not found, step skipped");
-            SmokeNextMap(now);
+            StartSkySmoke(now); // then the sky step (Program.Sky.cs), then on to the maps
             return;
         }
         if (World.Map != map)
@@ -106,7 +106,7 @@ public static unsafe partial class Program
             _legsSmoke = -1;
             _legsSmokePlayer = null;
             LegAnimator.Viewer = new Vector3(float.NaN);
-            SmokeNextMap(now);
+            StartSkySmoke(now); // then the sky step (Program.Sky.cs), then on to the maps
             return;
         }
         BeginLegsRun(now);

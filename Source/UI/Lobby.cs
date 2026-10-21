@@ -686,6 +686,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Grass, bushes and tree tops on maps that have them. Lower it for more fps. Tree trunks are always there (they stop bullets)."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Sky quality"u8);
+            var skyQ = (int)s.SkyQuality;
+            for (var i = 0; i <= (int)SkyQuality.High; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(SkyQuality)i}##sky", ref skyQ, i))
+                    s.SkyQuality = (SkyQuality)skyQ;
+            }
+            ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();

@@ -154,6 +154,8 @@ public sealed unsafe class Renderer
     public void SetCamera(Matrix4x4 view, Matrix4x4 proj)
     {
         _viewProj = view * proj;
+        View = view;
+        Proj = proj;
         if (Matrix4x4.Invert(view, out var inv))
         {
             CameraPosition = new Vector3(inv.M41, inv.M42, inv.M43);
@@ -174,6 +176,12 @@ public sealed unsafe class Renderer
 
     /// <summary>The current view * projection matrix (row-vector convention, as uploaded).</summary>
     public Matrix4x4 ViewProj => _viewProj;
+
+    /// <summary>The view and projection matrices from the last <see cref="SetCamera"/> (the sky needs them apart).</summary>
+    public Matrix4x4 View { get; private set; } = Matrix4x4.Identity;
+
+    /// <inheritdoc cref="View"/>
+    public Matrix4x4 Proj { get; private set; } = Matrix4x4.Identity;
 
     /// <summary>The camera position from the last <see cref="SetCamera"/>.</summary>
     public Vector3 CameraPosition { get; private set; }
