@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fishing Net Pile",
+  "category": "Harbour",
+  "description": "A heap of green fishing net with floats in it.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [1.6, 0.22, 1.1], "offset": [0, 0.11, 0], "color": "#2f5a34"},
+    {"size": [1.1, 0.18, 0.8], "offset": [0.1, 0.3, 0.05], "color": "#365f3a"},
+    {"size": [0.6, 0.12, 0.5], "offset": [-0.1, 0.44, -0.05], "color": "#2a5030"},
+    {"size": [0.14, 0.14, 0.14], "offset": [0.6, 0.25, 0.4], "color": "orange"},
+    {"size": [0.14, 0.14, 0.14], "offset": [-0.6, 0.25, -0.35], "color": "orange"},
+    {"size": [0.14, 0.14, 0.14], "offset": [0.2, 0.42, -0.3], "color": "#e0d040"}
+  ]
+}

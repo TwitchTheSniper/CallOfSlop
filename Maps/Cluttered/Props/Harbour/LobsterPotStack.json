@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Lobster Pot Stack",
+  "category": "Harbour",
+  "description": "Three wooden lobster pots stacked on the quay with their marker floats.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.55, 0.88, 0.55]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
+  "breakable": {"health": 45, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.3]}},
+  "parts": [
+    {"size": [0.72, 0.42, 0.52], "offset": [-0.4, 0.22, 0], "color": "#6a5a3a", "material": "wood"},
+    {"size": [0.74, 0.05, 0.54], "offset": [-0.4, 0.42, 0], "color": "#3a3020"},
+    {"size": [0.6, 0.3, 0.02], "offset": [-0.4, 0.22, 0.27], "color": "#2f3a30"},
+    {"size": [0.72, 0.42, 0.52], "offset": [0.4, 0.22, 0], "color": "#6a5a3a", "material": "wood"},
+    {"size": [0.74, 0.05, 0.54], "offset": [0.4, 0.42, 0], "color": "#3a3020"},
+    {"size": [0.6, 0.3, 0.02], "offset": [0.4, 0.22, 0.27], "color": "#2f3a30"},
+    {"size": [0.72, 0.42, 0.52], "offset": [0.0, 0.66, 0], "color": "#6a5a3a", "material": "wood"},
+    {"size": [0.74, 0.05, 0.54], "offset": [0.0, 0.86, 0], "color": "#3a3020"},
+    {"size": [0.6, 0.3, 0.02], "offset": [0.0, 0.66, 0.27], "color": "#2f3a30"},
+    {"size": [0.18, 0.18, 0.18], "offset": [0.4, 0.52, 0.18], "color": "orange"},
+    {"size": [0.14, 0.14, 0.14], "offset": [-0.45, 0.5, -0.2], "color": "red"}
+  ]
+}

@@ -31,6 +31,9 @@ public static unsafe partial class Program
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
         ("cluttered_culdesac_street", "Cul-de-sac", new Vector3(-9f, 1.7f, -6f), new Vector3(-17f, 1.2f, -20f), false),
+        // Cluttered pack, Dockside: the bay from above the west horn, then the waterfront road at eye height towards the fish market.
+        ("cluttered_dockside", "Dockside", new Vector3(-62f, 24f, 38f), new Vector3(0f, 0f, -16f), false),
+        ("cluttered_dockside_street", "Dockside", new Vector3(-27f, 1.7f, 2.5f), new Vector3(2f, 1.4f, 9f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

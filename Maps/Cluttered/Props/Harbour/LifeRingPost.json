@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Life Ring Post",
+  "category": "Harbour",
+  "description": "A yellow post with an orange life ring on the quay (the ring faces +Z, towards the water).",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 1.5, 0.14]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.1, 1.5, 0.1], "offset": [0, 0.75, 0], "color": "#c8b040"},
+    {"size": [0.5, 0.06, 0.14], "offset": [0, 1.45, 0], "color": "#c8b040"},
+    {"size": [0.6, 0.12, 0.06], "offset": [0, 1.15, 0.08], "color": "orange"},
+    {"size": [0.6, 0.12, 0.06], "offset": [0, 0.67, 0.08], "color": "orange"},
+    {"size": [0.12, 0.6, 0.06], "offset": [-0.24, 0.91, 0.08], "color": "orange"},
+    {"size": [0.12, 0.6, 0.06], "offset": [0.24, 0.91, 0.08], "color": "orange"},
+    {"size": [0.1, 0.1, 0.07], "offset": [0, 1.15, 0.09], "color": "white"},
+    {"size": [0.1, 0.1, 0.07], "offset": [0, 0.67, 0.09], "color": "white"},
+    {"size": [0.34, 0.06, 0.34], "offset": [0, 0.03, 0], "color": "darkgrey"}
+  ]
+}

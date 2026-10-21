@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fish Box Stack",
+  "category": "Harbour",
+  "description": "Plastic fish boxes stacked on the quay. Knee-high cover that breaks easily.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.25, 0.8, 0.44]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "breakable": {"health": 25, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.6, 0.26, 0.42], "offset": [-0.32, 0.13, 0], "color": "#3a7ad0"},
+    {"size": [0.6, 0.26, 0.42], "offset": [0.32, 0.13, 0], "color": "orange"},
+    {"size": [0.6, 0.26, 0.42], "offset": [0, 0.39, 0], "color": "#e0d040"},
+    {"size": [0.6, 0.26, 0.42], "offset": [-0.32, 0.65, 0], "color": "#3a7ad0"},
+    {"size": [0.6, 0.26, 0.42], "offset": [0.3, 0.39, 0.02], "color": "orange"},
+    {"size": [0.5, 0.04, 0.34], "offset": [-0.32, 0.79, 0], "color": "#dfe8ee"}
+  ]
+}
