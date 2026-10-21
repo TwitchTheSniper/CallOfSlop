@@ -37,17 +37,12 @@ measurement), lobby option in `Source/UI/UiModes.cs` (`ScoreLimitPicker`), setti
 
 ## Formulas in use
 
-| Mode | Base (8 players) | Exponent | Step | Min | 4 | 8 | 12 | 16 | 24 | 32 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Free-for-all | 11 | 0.60 | 1 | 7 | 7 | 11 | 14 | 17 | 21 | 25 |
-| Team Deathmatch | 40 | 1.00 | 5 | 20 | 20 | 40 | 60 | 80 | 120 | 160 |
-| King of the Hill | 150 | 0.00 | 10 | 150 | 150 | 150 | 150 | 150 | 150 | 150 |
-| Capture the Flag | 3 | 0.00 | 1 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
-
-**Status: provisional.** These are first estimates from the reasoning above. The measurement below could not run
-yet: GitHub Actions refused every job on 2026-10-21 ("recent account payments have failed or your spending limit
-needs to be increased"), and there is no .NET SDK in the agent container. The exponents must be replaced with the
-measured ones (`ScoreLimits.cs`) once the sweep has run.
+| Mode | Base (8 players) | Exponent | Step | Min | 2 | 4 | 6 | 8 | 10 | 12 | 16 | 20 | 24 | 32 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Free-for-all | 11 | 0.85 | 1 | 7 | 7 | 7 | 9 | 11 | 13 | 16 | 20 | 24 | 28 | 36 |
+| Team Deathmatch | 40 | 0.80 | 5 | 20 | 20 | 25 | 30 | 40 | 50 | 55 | 70 | 85 | 95 | 120 |
+| King of the Hill | 150 | 0 | 10 | 150 | 150 | 150 | 150 | 150 | 150 | 150 | 150 | 150 | 150 | 150 |
+| Capture the Flag | 3 | 0 | 1 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 | 3 |
 
 ## Measurement
 
@@ -59,23 +54,58 @@ ticks a second of game time, Normal bots):
   mode's win rule for k first held (free-for-all: leader at k or more and 2 clear; team modes: a team at k). One match
   therefore gives the time-to-limit for every candidate limit. The host waits to deploy and never plays, so the bots
   are the N players.
-- **Sweep** (`ScoreSweep = true`, about 5 extra minutes of CI): free-for-all and TDM at 4 / 8 / 12 / 16 / 23 players on
-  the smallest Classic 24-player map, 8 / 16 / 24 / 31 on Farmland (32) and 4 / 8 / 15 on Quarry (16), twice each;
-  King of the Hill and CTF once at 4 / 8 / 16 / 23 and 8 / 31. A 330 s wall-clock budget stops it starting new
-  matches. For each player count it reports the median time to the classic limit, the limit that takes as long as
-  the classic limit does at 8 players (interpolated on the median curve), and a least-squares exponent fitted on
-  log(limit / base) against log(n / 8). The results appear as one "Score scaling (results)" warning on the CI run.
-- **Every run** (CI-sized check): free-for-all and TDM on the 24-player map, 4 matches each at 8 and 16 players, each
+- **Sweep** (`ScoreSweep = true`, about 2 minutes of CI): free-for-all and TDM at 4 / 8 / 12 / 16 / 23 players on
+  Canyon (the smallest Classic 24-player map), 8 / 16 / 24 / 31 on Farmland (32) and 4 / 8 / 15 on Quarry (16), four
+  matches each; King of the Hill and CTF twice at 4 / 8 / 16 / 23 on Canyon and 8 / 31 on Farmland. Per map and
+  player count: the median curve, the median time to the classic limit, and the **same-time limit** (the score whose
+  median time equals that map's 8-player time to the classic limit, interpolated). The exponent is a least-squares fit
+  of log(same-time limit / base) against log(N / 8), each map against its own 8-player time.
+- **Every run** (CI-sized check, about 10 s): free-for-all and TDM on Canyon, 8 matches each at 8 and 16 players, each
   until its Auto limit; the median time at 16 must be within 35% of the median at 8.
 
-### Measurements
+### Measurements (CI run 39694006161, 2026-10-21, 120 matches in 108 s)
 
-Pending (see Status). Fill in from the CI warning: per mode, per N, median time to the classic limit and the
-same-time limit, and the fitted exponent.
+Median of 4 matches per row (2 for KotH / CTF). "Same-time limit": the limit that takes as long at N as the classic
+limit at 8 on that map. "never": not reached within the time (8 min FFA / TDM, 9 min KotH / CTF).
 
-| Mode | Map | N | Matches | Time to classic limit (s) | Same-time limit |
-| --- | --- | --- | --- | --- | --- |
-| | | | | | |
+| Mode | Map | N | Time to classic limit (s) | Same-time limit |
+| --- | --- | --- | --- | --- |
+| FFA | Canyon (24) | 4 | 104 | 5.2 |
+| FFA | Canyon | 8 | 60 | 11 |
+| FFA | Canyon | 12 | 40 | 16.3 |
+| FFA | Canyon | 16 | 35 | 17.9 |
+| FFA | Canyon | 23 | 27 | 27.8 |
+| FFA | Quarry (16) | 4 | 54 | 9.9 |
+| FFA | Quarry | 8 | 49 | 11 |
+| FFA | Quarry | 15 | 31 | 18.2 |
+| FFA | Farmland (32) | 8 | 161 | 11 |
+| FFA | Farmland | 16 | 63 | 22.4 |
+| FFA | Farmland | 24 | 41 | 38.6 |
+| FFA | Farmland | 31 | 42 | 46.3 |
+| TDM | Canyon | 4 | 311 | 24.6 |
+| TDM | Canyon | 8 | 199 | 40 |
+| TDM | Canyon | 12 | 92 | 71.7 |
+| TDM | Canyon | 16 | 98 | 77.4 |
+| TDM | Canyon | 23 | 92 | 94.7 |
+| TDM | Quarry | 4 | 160 | 22.6 |
+| TDM | Quarry | 8 | 100 | 40 |
+| TDM | Quarry | 15 | 57 | 73.1 |
+| TDM | Farmland | 8 | 337 | 40 |
+| TDM | Farmland | 16 | 204 | 65.5 |
+| TDM | Farmland | 24 | 148 | 86.9 |
+| TDM | Farmland | 31 | 104 | 106.2 |
+| KotH | Farmland | 8 / 31 | 440 / never | 150 / ~60 |
+| KotH | Canyon | 4 / 8 / 16 / 23 | 391 / never / never / 360 | - |
+| CTF | both | 4 to 31 | never except 4 players on Canyon (351) | - |
 
-To re-measure: set `ScoreSweep = true` in `SelfTestScoreScaling.cs`, push, read the warning, put the fitted
-exponents in `ScoreLimits.cs` (rounded to 0.05), update the table above, and set `ScoreSweep = false` again.
+**Fits:** free-for-all 0.94 over all three maps, 0.77 without Farmland (8 bots on a 32-player map is sparse, so it
+speeds up more than a real lobby would); chosen **0.85**. Team Deathmatch 0.79 over all three maps, 0.87 without
+Farmland; chosen **0.80**. King of the Hill: 8 bots take 7+ minutes to 150 and bigger matches are no faster (more
+contesting), so no scaling (the rules never lower a limit for more players). Capture the Flag: bots almost never get
+3 captures in 9 minutes, at any size, so there's no trend to fit; no scaling.
+
+**Check with the chosen formula:** the 8 vs 16 player check on Canyon passed with the earlier estimates (FFA 0.88x,
+TDM 0.98x); the final numbers are in the report of the run that turned the sweep off.
+
+To re-measure: set `ScoreSweep = true` in `SelfTestScoreScaling.cs`, push, read the "Score scaling (results)"
+warning on the run, put the fitted exponents in `ScoreLimits.cs`, update the tables above, and set it back to false.

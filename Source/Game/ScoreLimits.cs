@@ -22,11 +22,12 @@ public static class ScoreLimits
     /// <summary>One mode's rule: the classic limit, how fast it grows with players, its rounding step and floor.</summary>
     public readonly record struct Rule(int Base, double Exponent, int Step, int Min);
 
-    // Measured (docs/SCORE-SCALING.md). Free-for-all: the leader's kill rate rises with more targets around.
-    // Team Deathmatch: team kills per minute grow about with the team size. King of the Hill: points come one a
-    // second whoever holds the hill. Capture the Flag: captures come about as often in bigger matches.
-    public static readonly Rule FreeForAll = new(Game.WinKills, 0.60, 1, 7);
-    public static readonly Rule TeamDeathmatch = new(GameModes.TdmScoreLimit, 1.00, 5, 20);
+    // Measured with bot matches on three maps (docs/SCORE-SCALING.md): the limit that takes as long at N players as the
+    // classic one does at 8 grows about as (N/8)^0.85 in free-for-all (more targets around, and the leader is the best
+    // of more players) and (N/8)^0.8 in Team Deathmatch. King of the Hill and Capture the Flag showed no clear trend
+    // (bots rarely finish them inside 10 minutes), so they keep their classic limits.
+    public static readonly Rule FreeForAll = new(Game.WinKills, 0.85, 1, 7);
+    public static readonly Rule TeamDeathmatch = new(GameModes.TdmScoreLimit, 0.80, 5, 20);
     public static readonly Rule KingOfTheHill = new(GameModes.HillScoreLimit, 0.00, 10, 150);
     public static readonly Rule CaptureTheFlag = new(GameModes.CtfCaptureLimit, 0.00, 1, 3);
 

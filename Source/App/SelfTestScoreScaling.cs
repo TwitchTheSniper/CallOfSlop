@@ -15,7 +15,7 @@ public static partial class SelfTest
     /// True: also run the full measurement (every mode at 4..31 bots on two maps) and report it as warnings on the CI
     /// run. Adds several minutes, so it's off except when re-tuning the exponents.
     /// </summary>
-    private static readonly bool ScoreSweep = true;
+    private static readonly bool ScoreSweep = false;
 
     private static readonly List<string> ScoreNotes = [];
 
@@ -411,7 +411,7 @@ public static partial class SelfTest
                     var match = MatchedLimit(medCurve, baseTime, out var atLeast);
                     var toBase = medCurve[b];
                     parts.Add($"{n}p x{curves.Count}: to {b} {Sec(toBase)} s, same time {(double.IsNaN(match) ? "?" : (atLeast ? ">" : "") + match.ToString("0.0", CultureInfo.InvariantCulture))}");
-                    if (mapName == "all" && n != 8 && !double.IsNaN(match) && !atLeast && match > 0)
+                    if (mapName != "all" && n != 8 && !double.IsNaN(match) && !atLeast && match > 0) // each map against its own 8-player time
                     {
                         var x = Math.Log(n / 8.0);
                         sxy += x * Math.Log(match / b);
