@@ -25,6 +25,7 @@ public static partial class SelfTest
             SlopeSteep();
             SlopeLips();
             SlopeDeterminism();
+            SlopeDiag();
             SlopeRoutes();
             SlopeBotMatches();
         }
@@ -359,6 +360,41 @@ public static partial class SelfTest
             if (!same)
                 Fail($"{mover.Mode}: slope movement isn't deterministic (run {s.Position}, again {again.Position}, replay {replay.Position})");
         }
+    }
+
+    // TEMP diagnostics: why the mesa top isn't connected.
+    private static void SlopeDiag()
+    {
+        var m = SlopeHighGroundMaps().FirstOrDefault(x => x.Name == "Adobe Mesa");
+        if (m == null)
+            return;
+        World.SetMap(m);
+        for (var wait = 0; wait < 4000 && NavGraph.Current == NavGraph.Empty; wait++)
+            NavGraph.Pump(50);
+        var g = NavGraph.Current;
+        var t = m.TerrainCollision!;
+        var near = new List<int>();
+        g.Within(new Vector3(-14, 0, -12.5f), 9f, near);
+        var parts = new List<string>();
+        foreach (var i in near.OrderBy(i => g.Nodes[i].X))
+        {
+            var q = g.Nodes[i];
+            parts.Add(FormattableString.Invariant($"({q.X:0.0},{q.Y:0.0},{q.Z:0.0}) c{(g.Component[i] == g.MainComponent ? "M" : g.Component[i].ToString())} d{g.EdgeStart[i + 1] - g.EdgeStart[i]}"));
+        }
+        SlopeNote("diag", "ramp nodes: " + string.Join(" ", parts));
+        ReadOnlySpan<float> wx = [-28f, -23.5f, -19f, -14f, -9.5f, -4f];
+        ReadOnlySpan<float> wz = [-17f, -16f, -15f, -12.5f, -10.2f, -5f];
+        var lw = new List<string>();
+        for (var k = 0; k + 1 < wx.Length; k++)
+        {
+            var a0 = new Vector3(wx[k], m.GroundHeight(wx[k], wz[k]), wz[k]);
+            var a1 = new Vector3(wx[k + 1], m.GroundHeight(wx[k + 1], wz[k + 1]), wz[k + 1]);
+            lw.Add($"{k}: line {SlopeRules.LineWalkable(t, a0, a1, true)} straight {World.CanWalkStraight(a0, a1)} clear {NavGraph.Clear(a0, a1)} blocked {World.Blocked(a0 + new Vector3(0, 0.01f, 0))}/{World.Blocked(a1 + new Vector3(0, 0.01f, 0))}");
+        }
+        SlopeNote("diag", "ramp waypoints: " + string.Join("; ", lw));
+        var top = new List<int>();
+        g.Within(new Vector3(0, 0, 0), 6f, top);
+        SlopeNote("diag", "top nodes: " + string.Join(" ", top.Select(i => FormattableString.Invariant($"({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}) c{(g.Component[i] == g.MainComponent ? "M" : g.Component[i].ToString())}"))));
     }
 
     // ---- High Ground routes -----------------------------------------------------------------------------
