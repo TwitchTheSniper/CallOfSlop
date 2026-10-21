@@ -5,8 +5,9 @@ namespace CallOfSlop;
 
 /// <summary>
 /// End-of-match map vote (server-authoritative).
-///   - When a match ends the server picks 3 maps from the pack of the map just played (one small, one
-///     medium, one large when possible, never the map just played) and broadcasts them.
+///   - When a match ends the server picks 3 maps from the pack of the map just played (True Random: from every
+///     pack in True Random), one small, one medium, one large when possible, never the map just played, and
+///     broadcasts them.
 ///   - Everyone votes during the 12 s results screen (click, or press 1/2/3). Bots vote too, after a
 ///     random delay. You can change your vote until the timer runs out.
 ///   - The next match starts on the map with the most votes (ties and no votes: random among the top).
@@ -30,6 +31,12 @@ public sealed partial class Game
     /// <summary>Turn off to keep playing the same map (the self-test uses this).</summary>
     public bool MapVoteEnabled = true;
 
+    /// <summary>
+    /// The host picked True Random: the vote offers maps from every pack in True Random (still only maps big enough
+    /// for the people here) instead of the pack of the map just played, and server browsers show "True Random".
+    /// </summary>
+    public bool TrueRandom;
+
     public bool VoteOpen => Phase == MatchPhase.Ended && VoteOptions.Length > 0;
 
     private readonly Dictionary<byte, int> _votes = new(); // player id -> option
@@ -45,7 +52,8 @@ public sealed partial class Game
 
         // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
         var pack = (Maps.Find(World.Map.Name) ?? World.Map).Pack is { } playedPack ? Maps.FindPack(playedPack.Name) : null;
-        var pool = FitForPeople(VotePool(World.Map.Name, pack, Maps.All), HumanCount); // never a map too small for the people here
+        var pool = FitForPeople(TrueRandom ? TrueRandomVotePool(World.Map.Name, Maps.Packs, Maps.All) : VotePool(World.Map.Name, pack, Maps.All),
+            HumanCount); // never a map too small for the people here
         var picks = new List<Map>();
         // One of each size first, so there's always a choice of pace...
         foreach (var size in new[] { MapSize.Small, MapSize.Medium, MapSize.Large })
@@ -82,6 +90,10 @@ public sealed partial class Game
         var inPack = pack?.Maps.Where(Other).ToList();
         return inPack is { Count: >= 2 } ? inPack : all.Where(Other).ToList();
     }
+
+    /// <summary>True Random's ballot pool: every other map of the packs True Random draws from (Dev test maps stay out).</summary>
+    public static List<Map> TrueRandomVotePool(string current, IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all) =>
+        VotePool(current, null, MapPack.TrueRandomPool(packs, all));
 
     private void ServerTickVotes(double now)
     {
