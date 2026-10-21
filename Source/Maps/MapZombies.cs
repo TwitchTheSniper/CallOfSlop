@@ -476,6 +476,15 @@ public sealed partial class Map
             World.InvalidateGrid(this);
     }
 
+    /// <summary>Opens every door (the map played in a mode other than Zombies: all its areas are one map).</summary>
+    public void OpenAllDoors()
+    {
+        if (Zombies is not { } z)
+            return;
+        for (var d = 0; d < z.Doors.Count; d++)
+            SetDoorOpen(d, true);
+    }
+
     /// <summary>The box the fingerprint uses for a Zombies box: the closed door (opening it never changes the fingerprint).</summary>
     internal bool ZombieHashBox(int i, out Box b) => _zombieOriginal.TryGetValue(i, out b);
 }

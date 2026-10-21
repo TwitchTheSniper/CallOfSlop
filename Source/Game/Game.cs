@@ -149,6 +149,7 @@ public sealed partial class Game : IDisposable
         if (net.IsServer)
         {
             World.SetMap(Maps.Get(mapId)); // clients get the map from the server's Welcome
+            World.Map.OpenAllDoors(); // a Zombies map in another mode is one big map (the Zombies mode shuts them again)
             // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
             _ = World.Map.Objectives;
             _ = World.Physics;

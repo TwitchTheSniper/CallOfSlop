@@ -117,6 +117,9 @@ public sealed class ZDrop
 /// </summary>
 public sealed partial class Game
 {
+    /// <summary>Zombies is co-op for up to this many players (people and bots).</summary>
+    public const int ZombiesMaxPlayers = 4;
+
     /// <summary>The most zombies that can be alive at once (the rules file's cap goes up to this).</summary>
     public const int MaxZombies = 64;
 
@@ -202,10 +205,15 @@ public sealed partial class Game
     {
         if (Mode != GameMode.Zombies && !_zBuildsGiven)
         {
-            World.Map.CloseAllDoors(); // FFA on a Zombies map: the doors are shut
+            World.Map.OpenAllDoors(); // another mode on a Zombies map: every door is open (one big map)
             return;
         }
         _zBuildsGiven = Mode == GameMode.Zombies;
+        if (Mode == GameMode.Zombies)
+            while (Players.Count > ZombiesMaxPlayers && KickOneBot())
+            {
+                // co-op for up to 4: extra bots go
+            }
         ResetZombiesWorld();
         ZPlayers.Clear();
         _zRunMatch = -1;
@@ -313,7 +321,7 @@ public sealed partial class Game
     {
         ZRound = round;
         ZPhase = ZRoundPhase.Round;
-        _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count));
+        _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0)));
         _zNextSpawn = now + 1.0;
         foreach (var p in Players.Values)
         {

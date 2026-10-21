@@ -500,7 +500,11 @@ public sealed partial class Game
     private void UpdateZombiesFrame(float dt)
     {
         if (Mode != GameMode.Zombies)
+        {
+            if (World.Map.Zombies is { } zmap && zmap.Doors.Count > 0 && !World.Map.IsDoorOpen(0))
+                World.Map.OpenAllDoors(); // a Zombies map in another mode: one big map (clients learn the mode after joining)
             return;
+        }
         foreach (var z in Horde)
         {
             if (IsServer)

@@ -305,7 +305,8 @@ public sealed partial class Game
             p.GunLevel = 0;
         TdmLimit = GameModes.TdmLimitFor(Players.Count);
         AssignTeams();
-        ResetZombiesRun(); // a fresh Zombies run (nothing outside the Zombies mode; ZombiesMode.cs)
+        if (World.Map.Zombies != null || Mode == GameMode.Zombies)
+            ResetZombiesRun(); // a fresh Zombies run, or a Zombies map's doors opened for other modes (ZombiesMode.cs)
         if (!respawn)
             return;
         foreach (var p in Players.Values.Where(p => p.Alive).ToList())

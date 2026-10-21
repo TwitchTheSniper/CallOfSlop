@@ -6,7 +6,7 @@
   "order": 985,
   "halfX": 24,
   "halfZ": 24,
-  "maxPlayers": 4,
+  "maxPlayers": 8,
   "sky": "#2b2f3a",
   "teamSpawns": [[[-2, -2], [2, -2], [0, 2]], [[-3, 14], [3, 14], [0, 11]]],
   "flags": [[0, 0, -3], [0, 0, 15]],
@@ -40,6 +40,10 @@
     {"op": "Spawn", "x": 2, "z": -3},
     {"op": "Spawn", "x": -2, "z": 3},
     {"op": "Spawn", "x": 2, "z": 3},
+    {"op": "Spawn", "x": -5, "z": -1},
+    {"op": "Spawn", "x": 5, "z": -1},
+    {"op": "Spawn", "x": -0.5, "z": 4.5},
+    {"op": "Spawn", "x": 1, "z": -4.5},
     {"op": "AutoWaypoints", "spacing": 4}
   ],
   "zombies": {

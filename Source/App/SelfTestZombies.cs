@@ -15,11 +15,11 @@ public static partial class SelfTest
     private static Map? ZTestMap => Maps.Find("Zombies Test");
 
     /// <summary>A Zombies game on Zombies Test (offline), live and playing, with the given rules tweaks.</summary>
-    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true)
+    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true, BotDifficulty skill = BotDifficulty.Normal)
     {
         var map = ZTestMap!;
         World.SetMap(map);
-        var g = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: bots, mapId: map.Id)
+        var g = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: bots, botSkill: skill, mapId: map.Id)
         {
             MapVoteEnabled = false,
         };
@@ -47,7 +47,29 @@ public static partial class SelfTest
         }
     }
 
+    private static readonly List<string> ZNotes = new();
+
+    /// <summary>A result line, also kept for the section's one GitHub notice (the report's numbers).</summary>
+    private static void ZLine(string s)
+    {
+        Line(s);
+        ZNotes.Add(s);
+    }
+
     private static void CheckZombiesMode()
+    {
+        ZNotes.Clear();
+        try
+        {
+            CheckZombiesModeBody();
+        }
+        finally
+        {
+            Line("::notice title=Zombies mode::" + string.Join("%0A", ZNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static void CheckZombiesModeBody()
     {
         // ---- The rules and the round curve ----
         var rules = ZombiesRules.Current;
@@ -55,8 +77,8 @@ public static partial class SelfTest
             Fail($"zombies rules: {e}");
         var counts = Enumerable.Range(1, 30).Select(r => rules.ZombieCount(r, 1)).ToArray();
         var health = Enumerable.Range(1, 30).Select(rules.ZombieHealth).ToArray();
-        Line($"round curve (solo): zombies {string.Join(" ", counts.Take(12))} ... r20 {counts[19]} r30 {counts[29]}; health r1 {health[0]} r5 {health[4]} r9 {health[8]} r10 {health[9]} r20 {health[19]}");
-        Line($"  4 players: r1 {rules.ZombieCount(1, 4)} r5 {rules.ZombieCount(5, 4)} r10 {rules.ZombieCount(10, 4)}; sprinters r4 {rules.SpeedMix(4).Sprint:0.00} r5 {rules.SpeedMix(5).Sprint:0.00} r10 {rules.SpeedMix(10).Sprint:0.00}; runners r2 {rules.SpeedMix(2).Run:0.00} r3 {rules.SpeedMix(3).Run:0.00}; spawn delay r1 {rules.SpawnDelayFor(1):0.00} s r20 {rules.SpawnDelayFor(20):0.00} s");
+        ZLine($"round curve (solo): zombies {string.Join(" ", counts.Take(12))} ... r20 {counts[19]} r30 {counts[29]}; health r1 {health[0]} r5 {health[4]} r9 {health[8]} r10 {health[9]} r20 {health[19]}");
+        ZLine($"  4 players: r1 {rules.ZombieCount(1, 4)} r5 {rules.ZombieCount(5, 4)} r10 {rules.ZombieCount(10, 4)}; sprinters r4 {rules.SpeedMix(4).Sprint:0.00} r5 {rules.SpeedMix(5).Sprint:0.00} r10 {rules.SpeedMix(10).Sprint:0.00}; runners r2 {rules.SpeedMix(2).Run:0.00} r3 {rules.SpeedMix(3).Run:0.00}; spawn delay r1 {rules.SpawnDelayFor(1):0.00} s r20 {rules.SpawnDelayFor(20):0.00} s");
         if (counts[0] is < 4 or > 8 || health[0] != 150 || health[8] != 950 || health[9] <= health[8])
             Fail("the round curve isn't World at War like (round 1: a handful at 150 health, +100 a round to round 9, then growing)");
         for (var i = 1; i < 30; i++)
@@ -82,7 +104,7 @@ public static partial class SelfTest
             Fail("Maps/Dev/ZombiesTest.json is missing or has no \"zombies\" section");
             return;
         }
-        Line($"Zombies Test: {zm.Areas.Count} areas, {zm.Doors.Count} doors, {zm.Windows.Count} windows, {zm.Spawners.Count} spawners, {zm.WallBuys.Count} wall buys, {zm.BoxSpots.Count} box spots, "
+        ZLine($"Zombies Test: {zm.Areas.Count} areas, {zm.Doors.Count} doors, {zm.Windows.Count} windows, {zm.Spawners.Count} spawners, {zm.WallBuys.Count} wall buys, {zm.BoxSpots.Count} box spots, "
              + $"{zm.Benches.Count} workbenches, {zm.PerkMachines.Count} perk machines, slot upgrade {zm.SlotUpgrade != null}, power {zm.Power != null}, {zm.Salvage.Count} salvage");
         if (zm.Areas.Count < 4 || zm.Doors.Count < 3 || zm.Windows.Count < 3 || zm.BoxSpots.Count < 3 || zm.Benches.Count < 1 || zm.PerkMachines.Count < 4 || zm.SlotUpgrade == null || zm.Power == null)
             Fail("Zombies Test is missing something it should exercise");
@@ -126,7 +148,7 @@ public static partial class SelfTest
         var hashOpen = map.ContentHash;
         map.CloseAllDoors();
         var shutAgain = World.Blocked(doorCenter with { Y = 0.05f });
-        Line($"window opening: bullets through {through >= Vector3.Distance(w0.Inside, w0.Outside) - 0.01f}, a body blocked {blockedBody}; door: shut {shut}, open {openNow}, shut again {shutAgain}, fingerprint kept {hash == hashOpen}");
+        ZLine($"window opening: bullets through {through >= Vector3.Distance(w0.Inside, w0.Outside) - 0.01f}, a body blocked {blockedBody}; door: shut {shut}, open {openNow}, shut again {shutAgain}, fingerprint kept {hash == hashOpen}");
         if (through < Vector3.Distance(w0.Inside, w0.Outside) - 0.01f || !blockedBody)
             Fail("window openings should block bodies but not bullets");
         if (!shut || !openNow || !shutAgain || hash != hashOpen)
@@ -173,7 +195,7 @@ public static partial class SelfTest
                 maxAlive = Math.Max(maxAlive, g.AliveZombies);
             }
             var hall = zm.AreaIndex("Hall");
-            Line($"spawners: closed doors -> areas {string.Join(",", seenAreas.Select(a => zm.Areas[a].Name))}; {seen.Count} spawned; alive at most {maxAlive} (cap {g.ZRules.MaxAlive}), {g.SelfTestToSpawn} still queued in round 9");
+            ZLine($"spawners: closed doors -> areas {string.Join(",", seenAreas.Select(a => zm.Areas[a].Name))}; {seen.Count} spawned; alive at most {maxAlive} (cap {g.ZRules.MaxAlive}), {g.SelfTestToSpawn} still queued in round 9");
             if (!startOnly)
                 Fail("with every door shut, zombies came from outside the start area");
             if (!seenAreas.Contains(hall) || seenAreas.Any(a => !g.AreaOpen(a)))
@@ -196,7 +218,7 @@ public static partial class SelfTest
             zp.Points = 2000;
             g.SelfTestUse(me, now);
             var opened = map.IsDoorOpen(0) && zp.Points == 2000 - door.Cost && g.AreaOpen(door.AreaB);
-            Line($"door: start points {start}, refused with 100 {refused}, opened with 2000 -> {zp.Points} (cost {door.Cost}), {zm.Areas[door.AreaB].Name} unlocked {g.AreaOpen(door.AreaB)}");
+            ZLine($"door: start points {start}, refused with 100 {refused}, opened with 2000 -> {zp.Points} (cost {door.Cost}), {zm.Areas[door.AreaB].Name} unlocked {g.AreaOpen(door.AreaB)}");
             if (start != g.ZRules.StartPoints || !refused || !opened)
                 Fail("a door should cost its price, refuse when you can't pay, and unlock the area behind it");
 
@@ -206,6 +228,7 @@ public static partial class SelfTest
             g.SwitchTo(1, now);
             me.Teleport(smg.At with { Y = 0 } - World.FlatForward(smg.Yaw) * -0.7f);
             zp.Points = 3000;
+            var smgPrompt = g.FindZUse(me);
             g.SelfTestUse(me, now);
             var smgSlot = Game.OwnsBuild(me, "Wall SMG");
             var afterSmg = zp.Points;
@@ -221,11 +244,11 @@ public static partial class SelfTest
             g.SelfTestUse(me, now);
             var ammoPaid = afterSmg - zp.Points;
             var refilled = rifleSlot >= 0 && g.Slots[rifleSlot].Reserve > 0 && g.Slots[rifleSlot].Ammo == g.Slots[rifleSlot].Def.Mag;
-            Line($"wall buy: Wall SMG in slot {smgSlot + 1} for {3000 - afterSmg}; Wall Rifle owned (slot {rifleSlot + 1}): '{prompt?.Text}', paid {ammoPaid}, refilled {refilled}; in hand {g.Active.Def.Name}");
+            ZLine($"wall buy: Wall SMG in slot {smgSlot + 1} for {3000 - afterSmg}; Wall Rifle owned (slot {rifleSlot + 1}): '{prompt?.Text}', paid {ammoPaid}, refilled {refilled}; in hand {g.Active.Def.Name}");
             if (smgSlot < 0 || 3000 - afterSmg != g.WallCost(smg) || g.Active.Def.Name != "Wall SMG")
-                Fail("buying a wall gun should cost its price and put it in your hands");
+                Fail($"buying a wall gun should cost its price and put it in your hands (slot {smgSlot}, paid {3000 - afterSmg}, in hand {g.Active.Def.Name}, prompt there '{smgPrompt?.Text}')");
             if (prompt?.Kind != ZUseKind.WallAmmo || ammoPaid != g.WallAmmoCost(rifle) || ammoPaid >= g.WallCost(rifle) || !refilled)
-                Fail("a wall gun you already have should sell ammo (cheaper) and refill it");
+                Fail($"a wall gun you already have should sell ammo (cheaper) and refill it ('{prompt?.Text}', paid {ammoPaid}, refilled {refilled})");
 
             // The box: odds follow DropTables.json's boxTiers.
             var tables = RunTables.Current;
@@ -242,7 +265,7 @@ public static partial class SelfTest
                 }
                 var total = row.Weights.Sum();
                 var worst = Enumerable.Range(0, 6).Max(i => MathF.Abs(n[i] / (float)trials - row.Weights[i] / total));
-                Line($"box odds round {round}: {string.Join(" ", Enumerable.Range(0, 6).Select(i => $"{(Rarity)i} {n[i] * 100f / trials:0.0}%/{row.Weights[i] * 100 / total:0}%"))} (worst off {worst * 100:0.0}%)");
+                ZLine($"box odds round {round}: {string.Join(" ", Enumerable.Range(0, 6).Select(i => $"{(Rarity)i} {n[i] * 100f / trials:0.0}%/{row.Weights[i] * 100 / total:0}%"))} (worst off {worst * 100:0.0}%)");
                 if (worst > 0.04f)
                     Fail($"the mystery box's tiers don't follow DropTables.json in round {round}");
             }
@@ -263,7 +286,7 @@ public static partial class SelfTest
             ZTicks(g, ref now, g.ZRules.BoxSpinSeconds + 0.1);
             var teddy = g.BoxState == ZBoxState.Teddy && zp.Points == before;
             ZTicks(g, ref now, g.ZRules.BoxMoveSeconds + 0.1);
-            Line($"box: spin {spinning}, offered {(offered >= 0 ? StandardBuilds.All[offered].Name : "nothing")}, taken {took}; teddy {teddy} (refunded), moved from spot {oldSpot} to {g.BoxSpot}, {g.BoxState}");
+            ZLine($"box: spin {spinning}, offered {(offered >= 0 ? StandardBuilds.All[offered].Name : "nothing")}, taken {took}; teddy {teddy} (refunded), moved from spot {oldSpot} to {g.BoxSpot}, {g.BoxState}");
             if (!spinning || !took || !teddy || g.BoxSpot == oldSpot || g.BoxState != ZBoxState.Idle)
                 Fail("the mystery box should spin for its price, offer a build to take, and the teddy bear should refund and move it");
 
@@ -285,7 +308,7 @@ public static partial class SelfTest
             g.ZombieHurt(me, g.ZRules.ZombieDamage, now);
             var juggHit = World.MaxHealth - me.Health;
             g.SelfTestDown(me, now);
-            Line($"perks: refused without power {noPower}, power on {power}, Juggernog {hasJugg}; a zombie hit does {juggHit} with it ({g.ZRules.ZombieDamage} without); down -> perks {zp.Perks}");
+            ZLine($"perks: refused without power {noPower}, power on {power}, Juggernog {hasJugg}; a zombie hit does {juggHit} with it ({g.ZRules.ZombieDamage} without); down -> perks {zp.Perks}");
             if (!noPower || !power || !hasJugg || juggHit >= g.ZRules.ZombieDamage || zp.Perks != 0)
                 Fail("perk machines should need the power, Juggernog should cut zombie damage, and going down should lose every perk");
             // Speed Cola and Double Tap change the reload and the fire rate.
@@ -300,7 +323,7 @@ public static partial class SelfTest
             zp.Points = 5000;
             var su = g.FindZUse(me);
             g.SelfTestUse(me, now);
-            Line($"slot upgrade: '{su?.Text}' -> {(me.ExtraSlots ? 4 : 2)} slots, paid {5000 - zp.Points}");
+            ZLine($"slot upgrade: '{su?.Text}' -> {(me.ExtraSlots ? 4 : 2)} slots, paid {5000 - zp.Points}");
             if (!me.ExtraSlots || 5000 - zp.Points != g.SlotCost(zm))
                 Fail("the weapon-slot upgrade should cost its price and give slots 3-4");
         }
@@ -330,7 +353,7 @@ public static partial class SelfTest
             g.ServerSetUse(me, false, now);
             var repaired = g.ZBoards[0];
             var earned = g.ZP(me).Points - points;
-            Line($"boards: {full} -> {minBoards} (zombie climbed in {climbed}); rebuilt to {repaired} for {earned} points ({g.ZRules.RepairPoints} a board)");
+            ZLine($"boards: {full} -> {minBoards} (zombie climbed in {climbed}); rebuilt to {repaired} for {earned} points ({g.ZRules.RepairPoints} a board)");
             if (minBoards > 0 || !climbed || repaired != full || earned != g.ZRules.RepairPoints * full)
                 Fail("a zombie should tear every board off and climb in, and a player should rebuild them for points");
         }
@@ -353,7 +376,7 @@ public static partial class SelfTest
             var body = Kill(false, false);
             var head = Kill(true, false);
             var knife = Kill(false, true);
-            Line($"points: hit {body / 10000}, kill {body % 10000}, headshot kill {head % 10000}, melee kill {knife % 10000}; zombie kills {zp.Kills}, scrap {zp.Scrap}");
+            ZLine($"points: hit {body / 10000}, kill {body % 10000}, headshot kill {head % 10000}, melee kill {knife % 10000}; zombie kills {zp.Kills}, scrap {zp.Scrap}");
             if (body / 10000 != g.ZRules.HitPoints || body % 10000 != g.ZRules.KillPoints || head % 10000 != g.ZRules.HeadshotKillPoints || knife % 10000 != g.ZRules.MeleeKillPoints || zp.Kills != 3)
                 Fail("points per hit / kill / headshot kill / melee kill don't match the rules");
 
@@ -365,7 +388,7 @@ public static partial class SelfTest
                 z2.History[i] = z2.Sim.Position;
             var p1 = zp.Points;
             g.SelfTestServerShot(me, me.Eye, Vector3.Normalize(z2.Position + new Vector3(0, 1.0f, 0) - me.Eye), now);
-            Line($"a shot at a zombie: health {z2.Health}/{z2.MaxHealth}, points +{zp.Points - p1}");
+            ZLine($"a shot at a zombie: health {z2.Health}/{z2.MaxHealth}, points +{zp.Points - p1}");
             if (z2.Health >= z2.MaxHealth || zp.Points - p1 != g.ZRules.HitPoints)
                 Fail("a bullet didn't hit a zombie through the server's shot path");
 
@@ -376,7 +399,7 @@ public static partial class SelfTest
             me.Teleport(me.Position + new Vector3(3, 0, 0));
             g.SelfTestZombiesTick(now);
             var picked = zp.Parts.Values.Sum();
-            Line($"part drops: {drops} of 400 rolls at round 30 (chance {RunTables.RowFor(RunTables.Current.DropChance, 30)?.Chance:0.00}), picked up {picked}");
+            ZLine($"part drops: {drops} of 400 rolls at round 30 (chance {RunTables.RowFor(RunTables.Current.DropChance, 30)?.Chance:0.00}), picked up {picked}");
             if (drops is < 15 or > 80 || picked < 1)
                 Fail("part drops don't follow the drop chance, or can't be picked up");
         }
@@ -405,7 +428,7 @@ public static partial class SelfTest
             me.ImmuneUntil = 0;
             g.SelfTestDown(me, now);
             ZTicks(g, ref now, 0.2);
-            Line($"revive: downed {down}, prompt '{use?.Text}', revived {revived}; bled out {bledOut} (run goes on {playing}); last one down -> {g.Phase}: '{g.MatchResult}'");
+            ZLine($"revive: downed {down}, prompt '{use?.Text}', revived {revived}; bled out {bledOut} (run goes on {playing}); last one down -> {g.Phase}: '{g.MatchResult}'");
             if (!down || use?.Kind != ZUseKind.Revive || !revived || !bledOut || !playing)
                 Fail("downed players should be revivable with the interact key and bleed out after the bleedout time");
             if (g.Phase != MatchPhase.Ended || !g.MatchResult.StartsWith("Game over", StringComparison.Ordinal))
@@ -419,7 +442,7 @@ public static partial class SelfTest
             g.ZP(me).Perks = (byte)(1 << g.ZRules.PerkIndex("revive"));
             g.SelfTestDown(me, now);
             ZTicks(g, ref now, g.ZRules.SelfReviveSeconds + 0.3);
-            Line($"solo Quick Revive: back up {!g.IsDowned(me) && me.Alive}, still playing {g.Phase == MatchPhase.Playing}, perk used up {g.ZP(me).Perks == 0}");
+            ZLine($"solo Quick Revive: back up {!g.IsDowned(me) && me.Alive}, still playing {g.Phase == MatchPhase.Playing}, perk used up {g.ZP(me).Perks == 0}");
             if (g.IsDowned(me) || g.Phase != MatchPhase.Playing || g.ZP(me).Perks != 0)
                 Fail("solo Quick Revive should get you back up once");
         }
@@ -442,7 +465,7 @@ public static partial class SelfTest
             zp.Scrap = 1000;
             var craftRare = g.ServerBench(me, 2, 0, "Gas Overclock"); // round 0-1 crafts common/uncommon only
             var craftCommon = g.ServerBench(me, 2, 0, "Lightweight Bolt");
-            Line($"workbench: without the part '{notOwned}', with it {ok ?? "ok"} (fitted {fitted}); salvage {salvage ?? "ok"} -> {scrap} scrap; craft rare '{craftRare}', common {craftCommon ?? "ok"}");
+            ZLine($"workbench: without the part '{notOwned}', with it {ok ?? "ok"} (fitted {fitted}); salvage {salvage ?? "ok"} -> {scrap} scrap; craft rare '{craftRare}', common {craftCommon ?? "ok"}");
             if (notOwned == null || ok != null || !fitted || salvage != null || scrap <= 0 || craftRare == null || craftCommon != null || zp.Parts.GetValueOrDefault("Lightweight Bolt") != 1)
                 Fail("the workbench should only fit parts you own, salvage for scrap and craft within the round's tier");
             me.Teleport(new Vector3(-30, 0, -30));
@@ -481,7 +504,7 @@ public static partial class SelfTest
             g.GiveBuild(gl, 0, build, full: true);
             Game.SelfTestWriteBuild(w3, gl, 0, build);
             var applied = c.SelfTestApplyBuild(w3.Span);
-            Line($"replication: {g.Horde.Count} zombies in {ents.Length} bytes (worst {worst * 100:0.0} cm), run state {world.Length} bytes: round {c.ZRound}, boards {string.Join(",", c.ZBoards)}, "
+            ZLine($"replication: {g.Horde.Count} zombies in {ents.Length} bytes (worst {worst * 100:0.0} cm), run state {world.Length} bytes: round {c.ZRound}, boards {string.Join(",", c.ZBoards)}, "
                  + $"points {c.ZP(bot.Id).Points}/{botPoints}; build '{c.Local?.BuiltPrimary?.Name}' applied {applied} (DPS {c.Local?.BuiltPrimary?.Dps:0} vs {gl.BuiltPrimary?.Dps:0}), protocol {ServerInfo.ProtocolVersion}");
             if (c.Horde.Count != g.Horde.Count || worst > 0.05f || c.ZRound != g.ZRound || !c.ZBoards.SequenceEqual(g.ZBoards) || c.ZP(bot.Id).Points != botPoints)
                 Fail("the zombies or the run state didn't replicate");
@@ -511,7 +534,7 @@ public static partial class SelfTest
             ZTicks(g, ref now, 4);
             var perZombie = g.ZAiMs * 1000 / Math.Max(1, g.ZAiZombieTicks);
             var perTick = g.ZAiMs / Math.Max(1, g.ZAiTicks);
-            Line($"AI cost: {g.AliveZombies} alive, {perZombie:0.0} us per zombie per tick, {perTick:0.00} ms per tick ({sw.Elapsed.TotalMilliseconds / 240:0.00} ms per whole tick)");
+            ZLine($"AI cost: {g.AliveZombies} alive, {perZombie:0.0} us per zombie per tick, {perTick:0.00} ms per tick ({sw.Elapsed.TotalMilliseconds / 240:0.00} ms per whole tick)");
             if (g.AliveZombies != 24)
                 Fail("the 24 test zombies didn't stay alive (the host is immune)");
             if (perZombie > 150 || perTick > 3)
@@ -537,12 +560,12 @@ public static partial class SelfTest
         }
         var h1 = RunHash();
         var h2 = RunHash();
-        Line($"determinism: {h1} vs {h2}");
+        ZLine($"determinism: {h1} vs {h2}");
         if (h1 != h2)
             Fail("the same Zombies run (same seed) played out differently");
 
         // ---- A bots-only run survives rounds 1-3 ----
-        using (var g = ZGame(3, ref now, tweak: r => r.FirstRoundDelay = 2, hostIn: false))
+        using (var g = ZGame(3, ref now, tweak: r => r.FirstRoundDelay = 2, hostIn: false, skill: BotDifficulty.Hard))
         {
             var sw = Stopwatch.StartNew();
             var t0 = now;
@@ -552,10 +575,10 @@ public static partial class SelfTest
                 g.Update(now, World.TickDt);
             }
             var bots = g.Players.Values.Where(p => p.Bot != null).ToList();
-            Line($"bots-only run: round {g.ZRound} after {now - t0:0} s ({sw.Elapsed.TotalSeconds:0.0} s to simulate), {g.Phase}, kills {string.Join("/", bots.Select(b => g.ZP(b).Kills))}, "
+            ZLine($"bots-only run: round {g.ZRound} after {now - t0:0} s ({sw.Elapsed.TotalSeconds:0.0} s to simulate), {g.Phase}, kills {string.Join("/", bots.Select(b => g.ZP(b).Kills))}, "
                  + $"downs {bots.Sum(b => g.ZP(b).Downs)}, points {string.Join("/", bots.Select(b => g.ZP(b).Points))}, boards {string.Join(",", g.ZBoards)}");
             if (g.ZRound < 4 || g.Phase != MatchPhase.Playing)
-                Fail($"three bots didn't survive rounds 1-3 on Zombies Test ({g.ZLastResult})");
+                Fail($"three bots didn't survive rounds 1-3 on Zombies Test ({g.ZLastResult}; kills {string.Join("/", bots.Select(b => g.ZP(b).Kills))}, downs {bots.Sum(b => g.ZP(b).Downs)})");
         }
 
         // ---- Player-visible text is plain ASCII ----
