@@ -1112,7 +1112,7 @@ public sealed partial class Game : IDisposable
         victim.Health -= amount;
         if (victim.Health > 0)
             return false;
-        if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed)
+        if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
         {
             // Saved: 1 HP and a shield that blocks the next few bullet hits (Health.cs).
             StartLastStand(victim, now);

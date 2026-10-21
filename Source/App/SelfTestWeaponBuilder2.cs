@@ -663,10 +663,10 @@ public static partial class SelfTest
             if (inReach != 1 || outReach != 0)
                 Fail("melee: reach should decide what a swing hits");
         }
-        // Standard multiplayer melee: unchanged (no melee build: 55 damage, one target, 2.4 m).
+        // Standard multiplayer melee (no melee build): one hit kills a player, one target, 2.4 m, 0.8 s; 55 to zombies and props.
         var std = Swing(null, arc);
-        Line($"standard melee: hit {std}, {World.MaxHealth - bots[0].Health} damage (constants {F(Game.MeleeDamage)} dmg, {F(Game.MeleeRange)} m, {Game.MeleeCooldown} s)");
-        if (std != 1 || World.MaxHealth - bots[0].Health != (int)Game.MeleeDamage || Game.MeleeDamage != 55f || Game.MeleeRange != 2.4f || Game.MeleeCooldown != 0.8)
+        Line($"standard melee: hit {std}, nearest dummy killed {!bots[0].Alive} (constants {F(Game.MeleeDamage)} dmg, {F(Game.MeleeObjectDamage)} to zombies, {F(Game.MeleeRange)} m, {Game.MeleeCooldown} s)");
+        if (std != 1 || bots[0].Alive || Game.MeleeDamage < World.MaxHealth || Game.MeleeObjectDamage != 55f || Game.MeleeRange != 2.4f || Game.MeleeCooldown != 0.8)
             Fail("standard melee changed");
         // Stunned bots stand still.
         if (defs.TryGetValue("The Codfather", out var cod))
