@@ -160,6 +160,14 @@ public static unsafe partial class Program
             + $"worst scaled to 2560x1440 ~{worst.Gpu * scale:0.000} ms (budget 0.2 ms: {(worst.Gpu * scale <= 0.2 ? "ok" : "OVER")})");
     }
 
+    private static bool SkySmokeBlocked(Map map, Vector3 p)
+    {
+        foreach (var b in map.Solid)
+            if (MathF.Abs(p.X - b.Center.X) < b.Half.X + 0.5f && MathF.Abs(p.Y - b.Center.Y) < b.Half.Y + 0.5f && MathF.Abs(p.Z - b.Center.Z) < b.Half.Z + 0.5f)
+                return true;
+        return false;
+    }
+
     /// <summary>Renders the Sky Test map from the ground, facing the sun (or the moon at night), a little upwards.</summary>
     private static void DrawSkySmoke()
     {
@@ -171,10 +179,17 @@ public static unsafe partial class Program
         var toward = sky == null ? -Vector3.UnitZ : sky.Moon && sky.SunDir.Y < 0 ? sky.MoonDir : sky.SunDir;
         var flat = Vector3.Normalize(new Vector3(toward.X, 0, toward.Z) + new Vector3(0.0001f, 0, 0));
         var side = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, flat));
-        // Stand back from the middle on the far side from the sun, so the tower and the far hills are in front.
-        var x = -flat.X * 34f + side.X * 10f;
-        var z = -flat.Z * 34f + side.Z * 10f;
-        var eye = new Vector3(x, (map.HasTerrain ? map.GroundHeight(x, z) : 0f) + 1.7f, z);
+        // Stand back from the middle on the far side from the sun, so the tower and the far hills are in front; skip spots
+        // inside buildings.
+        var eye = Vector3.Zero;
+        foreach (var (back, across) in new[] { (34f, 10f), (34f, -10f), (40f, 0f), (26f, 14f), (26f, -14f), (20f, 0f) })
+        {
+            var x = -flat.X * back + side.X * across;
+            var z = -flat.Z * back + side.Z * across;
+            eye = new Vector3(x, (map.HasTerrain ? map.GroundHeight(x, z) : 0f) + 1.7f, z);
+            if (!SkySmokeBlocked(map, eye) && !SkySmokeBlocked(map, eye + flat * 3f))
+                break;
+        }
         var dir = Vector3.Normalize(flat + new Vector3(0, 0.22f, 0) + side * 0.35f);
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
         Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, eye + dir, Vector3.UnitY),
