@@ -90,6 +90,7 @@ public static partial class SelfTest
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
+            Section("Head bob", CheckHeadBob); // SelfTestHeadBob.cs: first-person camera bob and its setting
             Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly

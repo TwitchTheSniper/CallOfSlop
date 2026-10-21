@@ -126,6 +126,7 @@ public static class LegAnimator
         public bool Init;
         public Vector2 Vel; // smoothed velocity relative to facing: x = right, y = forward
         public float Phase, PelvisH, Drop, AirTime, Air, Fall, Mantle, Land, MinVy, Twist;
+        public float Cadence; // gait cycles per second last frame (GaitPhase extrapolates with it)
         public Stance Stance;
         public Vector3 Plant0, Plant1; // idle: planted feet (world)
         public float PlantYaw0, PlantYaw1; // idle: planted foot yaw (world)
@@ -276,6 +277,7 @@ public static class LegAnimator
         var stride = speed / MathF.Max(cadence, 1e-3f);
         st.Phase += cadence * dt;
         st.Phase -= MathF.Floor(st.Phase);
+        st.Cadence = cadence;
         var duty = crouch ? WalkDuty : float.Lerp(WalkDuty, RunDuty, run);
         var lift = crouch ? 0.075f : float.Lerp(WalkLift, RunLift, run);
         var early = 0.3f * run; // running: the foot comes up early (heel kick), smoothly
@@ -535,6 +537,21 @@ public static class LegAnimator
         _calls++;
         _ticks += Stopwatch.GetTimestamp() - t0;
         return pose;
+    }
+
+    /// <summary>
+    /// A player's gait phase (0..1: foot 0 touches down at 0, foot 1 at 0.5) carried forward to <paramref name="time"/> (the
+    /// clock <see cref="Animate"/> is called with), or NaN if their legs weren't animated in the last quarter second. The
+    /// camera head bob (<see cref="HeadBob"/>) times its dips to it.
+    /// </summary>
+    public static float GaitPhase(byte id, double time)
+    {
+        ref readonly var st = ref States[id];
+        var age = time - st.Last;
+        if (!st.Init || !(age >= 0 && age <= 0.25))
+            return float.NaN;
+        var ph = st.Phase + st.Cadence * (float)age;
+        return ph - MathF.Floor(ph);
     }
 
     /// <summary>Idle feet: planted in the world; when the body turns or drifts away from one, it steps back under the hips.</summary>
