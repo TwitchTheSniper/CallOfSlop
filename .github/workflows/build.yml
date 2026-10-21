@@ -33,7 +33,6 @@ jobs:
           if (Test-Path $log) {
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
-            $all = Get-Content $log; $i = [Array]::IndexOf($all, "== Legs =="); if ($i -ge 0) { $chunk = $all[($i+1)..([Math]::Min($i+40, $all.Length-1))] | Where-Object { $_ -notmatch "^== " }; for ($k = 0; $k -lt $chunk.Count; $k += 6) { $msg = ($chunk[$k..([Math]::Min($k+5, $chunk.Count-1))] -join "%0A"); Write-Output "::warning title=LEGSDBG::$msg" } }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
           } else {
