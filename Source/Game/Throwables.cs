@@ -208,7 +208,7 @@ public static class Throwables
         var best = float.MaxValue;
         var longest = 0f;
         var longestPitch = 0f;
-        for (var a = -0.8f; a <= 0.88f; a += 0.04f)
+        for (var a = -0.92f; a <= 0.88f; a += 0.04f)
         {
             var miss = Miss(a, out var reach);
             if (miss < best)

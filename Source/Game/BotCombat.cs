@@ -215,7 +215,7 @@ public sealed partial class Game
         if (b.Skill == BotDifficulty.Easy || p.Grenade == ThrowableKind.None || p.GrenadesLeft <= 0 || now < p.NextThrow)
             return;
         var rate = (b.Skill == BotDifficulty.Hard ? 0.006 : 0.003) * b.Profile.GrenadeRate;
-        if (visible && dist is > 6f and < 15f && _rng.NextDouble() < rate)
+        if (visible && dist is > 6f and < 18f && _rng.NextDouble() < rate)
         {
             BotThrowAt(p, b, target!.Position, now);
             return;
@@ -225,21 +225,20 @@ public sealed partial class Game
         if (!visible && b.Profile.GrenadeRate >= 1.5f && lost is > 1 and < 4)
         {
             var d = Vector3.Distance(p.Position, b.LastSeenAt);
-            if (d is > 8f and < 22f && _rng.NextDouble() < rate * 0.5)
+            if (d is > 8f and < 30f && _rng.NextDouble() < rate * 0.5)
                 BotThrowAt(p, b, b.LastSeenAt, now);
         }
     }
 
     private void BotThrowAt(Player p, BotBrain b, Vector3 at, double now)
     {
-        // Pick the launch angle that lands it at the target's distance (flat-ground ballistics).
+        // Pick the launch angle that makes it go off at the target (flat-ground flight with bounces and roll,
+        // Throwables.AimPitch), so the aim follows each throwable's own speed and fuse.
         var to = at - p.Position;
-        var dist = new Vector2(to.X, to.Z).Length();
-        var v = Throwables.ThrowSpeed;
-        var s = Math.Clamp(World.Gravity * dist / (v * v), 0f, 1f);
-        var launch = 0.5f * MathF.Asin(s) - 0.12f; // a little lower: throws also get +2.5 m/s upward
+        Throwables.AimPitch(Throwables.Get(p.Grenade), p.Eye, at, out var launch);
         var throwYaw = MathF.Atan2(to.X, -to.Z) + ((float)_rng.NextDouble() - 0.5f) * b.AimError;
-        ServerThrow(p, p.Grenade, p.Eye, World.Forward(throwYaw, launch), now);
+        var dir = World.Forward(throwYaw, launch);
+        ServerThrow(p, p.Grenade, Throwables.LaunchPoint(p.Eye, dir), dir, now);
     }
 
     /// <summary>Turns the steering result into buttons: direction keys relative to the view, sprint, jump/mantle and stance.</summary>
