@@ -219,7 +219,7 @@ public static partial class SelfTest
             Reach("hill", h.Center);
         for (var i = 0; i < o.Flags.Length; i++)
             Reach(i == 0 ? "blue flag" : "red flag", o.Flags[i]);
-        ClutteredLine($"  nav graph: {g.Nodes.Length} nodes, {g.Nodes.Count((_, i) => g.Component[i] == g.MainComponent)} in the main area");
+        ClutteredLine($"  nav graph: {g.Nodes.Length} nodes, {Enumerable.Range(0, g.Nodes.Length).Count(i => g.Component[i] == g.MainComponent)} in the main area");
         if (missing.Count > 0)
             Fail($"{m.Name}: the nav graph doesn't reach {string.Join(", ", missing.Take(5))}{(missing.Count > 5 ? $" and {missing.Count - 5} more" : "")}");
 
