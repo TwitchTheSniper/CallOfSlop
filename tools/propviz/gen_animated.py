@@ -55,6 +55,9 @@ def prop(name, desc, model, collision="solid", collider=None, breakable=None, sc
         d["fadeDistance"] = fade
     if breakable is not None:
         d["breakable"] = breakable
+    for part in model.parts:
+        if "rotation" in part:  # prop files take -360 to 360; keep every angle in -180..180
+            part["rotation"] = [round((a + 180.0) % 360.0 - 180.0, 3) for a in part["rotation"]]
     d["parts"] = model.parts
     assert len(model.parts) <= 128, (name, len(model.parts))
     PROPS.append(d)

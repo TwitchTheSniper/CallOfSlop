@@ -31,7 +31,7 @@
     {"size": [0.08, 0.08, 0.08], "offset": [0.32, 1.6, -0.0], "color": "white", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
     {"size": [0.32, 0.015, 0.015], "offset": [-0.08, 1.6, -0.139], "rotation": [0.0, 120.0, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
     {"size": [0.08, 0.08, 0.08], "offset": [-0.16, 1.6, -0.277], "rotation": [0.0, 120.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
-    {"size": [0.32, 0.015, 0.015], "offset": [-0.08, 1.6, 0.139], "rotation": [0.0, 240.0, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
-    {"size": [0.08, 0.08, 0.08], "offset": [-0.16, 1.6, 0.277], "rotation": [0.0, 240.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}}
+    {"size": [0.32, 0.015, 0.015], "offset": [-0.08, 1.6, 0.139], "rotation": [0.0, -120.0, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
+    {"size": [0.08, 0.08, 0.08], "offset": [-0.16, 1.6, 0.277], "rotation": [0.0, -120.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}}
   ]
 }

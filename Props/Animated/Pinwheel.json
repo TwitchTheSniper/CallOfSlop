@@ -28,8 +28,8 @@
     {"size": [0.02, 0.9, 0.02], "offset": [0.0, 0.45, 0.0], "color": "lightwood"},
     {"size": [0.16, 0.1, 0.005], "offset": [0.09, 0.9, 0.03], "rotation": [0.0, 0.0, 20.0], "color": "red", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
     {"size": [0.16, 0.1, 0.005], "offset": [0.0, 0.99, 0.03], "rotation": [0.0, 0.0, 110.0], "color": "yellow", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
-    {"size": [0.16, 0.1, 0.005], "offset": [-0.09, 0.9, 0.03], "rotation": [0.0, 0.0, 200.0], "color": "blue", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
-    {"size": [0.16, 0.1, 0.005], "offset": [-0.0, 0.81, 0.03], "rotation": [0.0, 0.0, 290.0], "color": "green", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
+    {"size": [0.16, 0.1, 0.005], "offset": [-0.09, 0.9, 0.03], "rotation": [0.0, 0.0, -160.0], "color": "blue", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
+    {"size": [0.16, 0.1, 0.005], "offset": [-0.0, 0.81, 0.03], "rotation": [0.0, 0.0, -70.0], "color": "green", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}},
     {"size": [0.03, 0.03, 0.02], "offset": [0.0, 0.9, 0.03], "color": "white", "anim": {"type": "spin", "axis": "z", "rpm": 150, "pivot": [0.0, 0.9, 0.03], "wind": 1, "jitter": 0.4}}
   ]
 }
