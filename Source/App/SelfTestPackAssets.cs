@@ -86,8 +86,9 @@ public static partial class SelfTest
             Fail("Maps/Dev/PackAssets.json ('Pack Assets') didn't load");
             return;
         }
-        var pack = map.PropInstances.Where(p => p.Def.Name == "Apple Crate" && p.Def.Pack == "Dev").ToList();
-        var global = map.PropInstances.Where(p => p.Def.Name == "Apple Crate" && p.Def.Pack == null).ToList();
+        var placed = map.PropInstances.Take(map.ClutterStart).ToList(); // the hand-placed ones (the clutter below picks pack crates too)
+        var pack = placed.Where(p => p.Def.Name == "Apple Crate" && p.Def.Pack == "Dev").ToList();
+        var global = placed.Where(p => p.Def.Name == "Apple Crate" && p.Def.Pack == null).ToList();
         var clutter = map.PropInstances.Skip(map.ClutterStart).ToList();
         if (pack.Count != 3 || global.Count != 3)
             Fail($"Pack Assets: {pack.Count} pack Apple Crates and {global.Count} global ones (expected 3 and 3)");
@@ -108,8 +109,8 @@ public static partial class SelfTest
             Fail($"Pack Assets: {beacons} beacons placed, pack models [{string.Join(", ", map.PackModels)}] (expected 2 and the Dev beacon only; the barrel is global)");
         if (map.PackAssetHash == 0)
             Fail("Pack Assets: no pack-asset fingerprint");
-        var again = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!); // pack worked out from the path, like --check-map
-        var roundTrip = MapFile.Load(MapFile.ToJson(map), "Pack Assets (round trip)", map.PackDir);
+        var again = Validated(MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!)); // pack worked out from the path, like --check-map
+        var roundTrip = Validated(MapFile.Load(MapFile.ToJson(map), "Pack Assets (round trip)", map.PackDir));
         if (again.ContentHash != map.ContentHash || roundTrip.ContentHash != map.ContentHash)
             Fail($"Pack Assets: fingerprint {map.ContentHash:x8}, reloaded {again.ContentHash:x8}, round trip {roundTrip.ContentHash:x8}");
         var batches = PropBatches.Build(map, PropMeshes.Build(scope.Library));
@@ -130,6 +131,13 @@ public static partial class SelfTest
         }
         Line($"Dev pack example: {pack.Count} pack + {global.Count} global Apple Crates, {clutter.Count} pack clutter props, {beacons} pack models, "
              + $"fingerprint {map.ContentHash:x8} (pack assets {map.PackAssetHash:x8}); Classic maps can't see them");
+    }
+
+    /// <summary>A loaded map validated like the map list does (spawns and waypoints snapped and fixed), so fingerprints compare.</summary>
+    private static Map Validated(Map m)
+    {
+        m.Validate();
+        return m;
     }
 
     private static string PackTestMap(string name, params string[] ops) => $$"""
@@ -222,18 +230,18 @@ public static partial class SelfTest
             Fail("maps using pack props have no pack-asset fingerprint");
         var packA = Path.Combine(dir, "PackA");
         var aJson = File.ReadAllText(Path.Combine(packA, "a.json"));
-        Map ReloadA() => MapFile.Load(aJson, "PackA/a.json", packA);
+        Map ReloadA() => Validated(MapFile.Load(aJson, "PackA/a.json", packA));
         Write("PackC/Props/Crate.json", PackTestProp("Test Crate", 0.6f, "red"));
         Directory.CreateDirectory(Path.Combine(dir, "PackC", "Models"));
         File.Copy(beacon, Path.Combine(dir, "PackC", "Models", "barrel.glb"));
-        var withoutCone = MapFile.Load(aJson, "PackC/a.json", Path.Combine(dir, "PackC")); // same files minus the shadowing cone (the folder name doesn't count)
+        var withoutCone = Validated(MapFile.Load(aJson, "PackC/a.json", Path.Combine(dir, "PackC"))); // same files minus the shadowing cone (the folder name doesn't count)
         foreach (var f in Directory.GetFiles(packA, "*", SearchOption.AllDirectories)) // PackD: a copy of PackA under another folder name
         {
             var to = Path.Combine(dir, "PackD", Path.GetRelativePath(packA, f));
             Directory.CreateDirectory(Path.GetDirectoryName(to)!);
             File.Copy(f, to);
         }
-        var renamed = MapFile.Load(aJson, "PackD/a.json", Path.Combine(dir, "PackD")).ContentHash;
+        var renamed = Validated(MapFile.Load(aJson, "PackD/a.json", Path.Combine(dir, "PackD"))).ContentHash;
         if (renamed != hashA)
             Fail($"the same pack files in a folder with another name give another fingerprint ({hashA:x8} vs {renamed:x8})");
         var reformatted = PackTestProp("Test Crate", 0.6f, "red").Replace(", ", ",\n      ").Replace("\n", "\r\n");
@@ -301,7 +309,7 @@ public static partial class SelfTest
             _ = Props.ForPack(dev);
         var cachedUs = sw.Elapsed.TotalMilliseconds * 1000 / 10000;
         sw.Restart();
-        var map = MapFile.Load(File.ReadAllText(Path.Combine(dev, "PackAssets.json")), "Dev/PackAssets.json");
+        var map = Validated(MapFile.Load(File.ReadAllText(Path.Combine(dev, "PackAssets.json")), "Dev/PackAssets.json"));
         var loadMs = sw.Elapsed.TotalMilliseconds;
         Line($"cost: Dev pack props {scope.Local.Length} loaded in {cold:0.0} ms (cold), a pack without a Props folder {noFolder:0.00} ms, cached lookup {cachedUs:0.00} us; "
              + $"Pack Assets map loads in {loadMs:0.0} ms; {Props.LoadedPacks.Length} pack(s) with their own props loaded");

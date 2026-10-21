@@ -21,7 +21,8 @@ public sealed record MeshPlacement(string Source, MeshAsset? Mesh, ModelAsset? M
 /// <summary>
 /// Meshes on a map: procedural primitives (cylinders, spheres, ramps...) and glTF models, drawn instanced by
 /// <see cref="MeshRenderer"/>. They are <b>cosmetic</b> for now: no collision, no effect on movement, bullets, bots or
-/// the map fingerprint (so clients and servers never disagree because of them). Put a Block or Prop under or inside
+/// the map fingerprint (so clients and servers never disagree because of them), except that a model from the map's own
+/// pack folder counts towards the fingerprint (<see cref="PackAssetHash"/>). Put a Block or Prop under or inside
 /// one where players need something solid. Collision data is ready (<see cref="MeshPlacement.BuildCollision"/>) for
 /// when the physics work can take it.
 /// </summary>
