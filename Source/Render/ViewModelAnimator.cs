@@ -29,6 +29,13 @@ public struct ViewModelInput
     public Vector3 Eye;
     public float Yaw, Pitch;
     public bool SprintHeld;
+
+    /// <summary>
+    /// How much camera head bob is on (<see cref="CallOfSlop.HeadBob.Weight"/>, 0 = none) and its dip phase
+    /// (<see cref="CallOfSlop.HeadBob.DipPhase"/>). The gun rides on the camera, so with head bob on its own bob locks to
+    /// the camera's footfalls and eases off instead of doubling the motion. 0 = the gun's own bob exactly as before.
+    /// </summary>
+    public float HeadBob, HeadBobPhase;
 }
 
 /// <summary>
@@ -69,7 +76,8 @@ public sealed class ViewModelAnimator
 
     // State
     private float _sprintW, _bobPhase, _landPos, _landVel, _prevVy, _mantleRecover;
-    private bool _prevGrounded = true;
+    private bool _prevGrounded = true, _headBobLocked;
+    private float _headBobPrev;
     private int _mantleStart;
 
     // ---- Key tables -------------------------------------------------------------------
@@ -299,7 +307,28 @@ public sealed class ViewModelAnimator
         _sprintW = want ? MathF.Min(_sprintW + step, 1f) : MathF.Max(_sprintW - step, 0f);
         var s = Ease(_sprintW) * (1 - a);
         var move = i.Grounded ? MathF.Min(speed / Walk, 1.5f) : 0f;
-        _bobPhase = (_bobPhase + dt * (10 + 6 * s)) % (MathF.Tau * 2); // stride rate grows with about the square root of speed: 13.5 m/s sprint ~1.6x the walk cadence
+        var headBob = Math.Clamp(float.IsFinite(i.HeadBob) ? i.HeadBob : 0f, 0f, 1f);
+        if (headBob > 0 && float.IsFinite(i.HeadBobPhase))
+        {
+            // Camera head bob on: run at the camera's stride rate and lock on to it, so the gun dips (sin = -1) when the
+            // camera dips at a footfall instead of bobbing against it.
+            const float cycle = MathF.Tau * 2;
+            var own = dt * (10 + 6 * s);
+            var target = cycle * i.HeadBobPhase - MathF.PI / 2;
+            var rate = _headBobLocked ? target - _headBobPrev : own;
+            rate -= cycle * MathF.Round(rate / cycle);
+            _headBobPrev = target;
+            _headBobLocked = true;
+            var err = target - _bobPhase;
+            err -= cycle * MathF.Round(err / cycle);
+            _bobPhase += float.Lerp(own, rate, headBob) + err * (1f - MathF.Exp(-12f * dt)) * headBob;
+            _bobPhase -= cycle * MathF.Floor(_bobPhase / cycle);
+        }
+        else
+        {
+            _headBobLocked = false;
+            _bobPhase = (_bobPhase + dt * (10 + 6 * s)) % (MathF.Tau * 2); // stride rate grows with about the square root of speed: 13.5 m/s sprint ~1.6x the walk cadence
+        }
 
         if (_prevGrounded && !i.Grounded && vel.Y > 0.5f)
             _landVel += 0.9f; // takeoff: the gun lifts
@@ -345,7 +374,7 @@ public sealed class ViewModelAnimator
         pitch += MathF.Sin(t * 1.7f + 0.7f) * 0.006f * idle;
         roll += MathF.Sin(t * 0.9f + 1.3f) * 0.008f * idle;
 
-        var bob = move * (1 - a * 0.8f); // walk bob, scaled by speed
+        var bob = move * (1 - a * 0.8f) * (1 - 0.6f * headBob); // walk bob, scaled by speed (less when the camera bobs too)
         y += MathF.Sin(_bobPhase) * 0.012f * bob;
         x += MathF.Cos(_bobPhase * 0.5f) * 0.008f * bob * (1 - a);
         roll += MathF.Cos(_bobPhase * 0.5f) * 0.02f * bob * (1 - a);
