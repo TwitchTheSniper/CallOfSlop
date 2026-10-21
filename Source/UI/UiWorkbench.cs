@@ -284,7 +284,15 @@ public sealed partial class Ui
                 _wbSocketName = s.Name;
                 _wbCat = s.Accepts.Length > 0 ? s.Accepts[0] : CategoryFor(s.Type);
                 if (_wbPart != null && !_wbPart.IsRoot && _wbPart.Mount == s.Type)
+                {
                     Place(b, _wbPart);
+                    if (node.Child(s.Name) != child)
+                    {
+                        // The tree changed under us: stop drawing it this frame (the old child is off the build now).
+                        ImGui.PopStyleColor();
+                        return;
+                    }
+                }
             }
             ImGui.PopStyleColor();
             if (child != null)
