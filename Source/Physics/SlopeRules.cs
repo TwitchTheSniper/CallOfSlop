@@ -60,13 +60,13 @@ public static class SlopeRules
     public const float SlideControl = 6f;
 
     /// <summary>
-    /// The bots plan with a little margin: ground they route over must be walkable to cos(43.5 degrees), a bit inside the
+    /// The bots plan with a little margin: ground they route over must be walkable to cos(44.5 degrees), a bit inside the
     /// limit, so no route depends on a slope a player only just manages.
     /// </summary>
-    public const float NavMinNormalY = 0.72537437f;
+    public const float NavMinNormalY = 0.71325045f;
 
-    /// <summary>tan(43.5 degrees): the steepest rise per metre of run a bot route takes.</summary>
-    public const float NavTanLimit = 0.94896457f;
+    /// <summary>tan(44.5 degrees): the steepest rise per metre of run a bot route takes.</summary>
+    public const float NavTanLimit = 0.98269726f;
 
     /// <summary>Is the terrain walkable at (x, z) with the bots' planning margin (<see cref="NavMinNormalY"/>)?</summary>
     public static bool NavWalkable(ITerrainCollision t, float x, float z) => SupportNormal(t, x, z).Y >= NavMinNormalY;
