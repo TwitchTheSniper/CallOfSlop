@@ -32,8 +32,8 @@ public static class GameModes
     /// <summary>Team Deathmatch: team kills to win with up to 8 players (4 v 4, so about 10 kills each).</summary>
     public const int TdmScoreLimit = 40;
 
-    /// <summary>Team Deathmatch: bigger lobbies play to more kills: 5 per player, from 40 (8 players) up to 100 (20+).</summary>
-    public static int TdmLimitFor(int players) => Math.Clamp(players * 5, TdmScoreLimit, 100);
+    /// <summary>Team Deathmatch: kills to win with this many players (Auto score limit, see ScoreLimits.cs).</summary>
+    public static int TdmLimitFor(int players) => ScoreLimits.For(GameMode.TeamDeathmatch, players);
 
     /// <summary>King of the Hill: points to win (1 point per second of holding the hill alone).</summary>
     public const int HillScoreLimit = 150;
@@ -77,15 +77,15 @@ public static class GameModes
 
     public static bool IsTeam(GameMode m) => m is GameMode.TeamDeathmatch or GameMode.KingOfTheHill or GameMode.CaptureTheFlag;
 
-    /// <summary>One line of rules for the lobby and the countdown.</summary>
-    public static string Rules(GameMode m) => m switch
+    /// <summary>One line of rules for the lobby and the countdown. <paramref name="limit"/>: this match's score limit (0: the classic one).</summary>
+    public static string Rules(GameMode m, int limit = 0) => m switch
     {
-        GameMode.TeamDeathmatch => $"Two teams. First team to {TdmScoreLimit} kills (5 per player in bigger lobbies, up to 100). No friendly fire.",
-        GameMode.KingOfTheHill => $"Two teams. Hold the hill alone for 1 point a second (contested: nobody scores). It moves every {HillMoveSeconds:0} s. First to {HillScoreLimit}.",
-        GameMode.CaptureTheFlag => $"Two teams. Grab the enemy flag and bring it to yours while yours is home. First to {CtfCaptureLimit} captures.",
+        GameMode.TeamDeathmatch => $"Two teams. First team to {(limit > 0 ? limit : TdmScoreLimit)} kills. No friendly fire.",
+        GameMode.KingOfTheHill => $"Two teams. Hold the hill alone for 1 point a second (contested: nobody scores). It moves every {HillMoveSeconds:0} s. First to {(limit > 0 ? limit : HillScoreLimit)}.",
+        GameMode.CaptureTheFlag => $"Two teams. Grab the enemy flag and bring it to yours while yours is home. First to {(limit > 0 ? limit : CtfCaptureLimit)} captures.",
         GameMode.GunGame => $"Everyone gets the same gun. Each kill moves you up a weapon ({GunGame.Ladder.Length} in all); a melee kill also sets the victim back one. Win with a kill using the last gun. No loadouts: everyone has the same perks (Afterburner, Bloodthirst) and no grenades or equipment.",
         GameMode.Zombies => "Co-op for 1 to 4 players against endless rounds of zombies. Earn points, open doors, buy guns off the walls and from the mystery box, and build silly guns at the workbench. The run ends when everyone is down.",
-        _ => $"First to {Game.WinKills} kills, win by {Game.WinMargin}.",
+        _ => $"First to {(limit > 0 ? limit : Game.WinKills)} kills, win by {Game.WinMargin}.",
     };
 
     public static Vector3 TeamColor(byte team) => team < 2 ? TeamColors[team] : new Vector3(0.85f, 0.85f, 0.85f);
@@ -189,9 +189,6 @@ public sealed partial class Game
     /// <summary>Gun Game: no loadout screen at all; you spawn straight in with the ladder's gun and the shared perks.</summary>
     public bool SkipsLoadout => Mode is GameMode.GunGame or GameMode.Zombies || BuilderRange; // the Workbench Range and Zombies (start gear) have no loadout screen either
 
-    /// <summary>Team Deathmatch kills to win this match (set from the player count when play starts; replicated).</summary>
-    public int TdmLimit = GameModes.TdmScoreLimit;
-
     /// <summary>Team score: kills (TDM), hill points (KotH) or captures (CTF).</summary>
     public readonly int[] TeamScore = new int[2];
 
@@ -222,10 +219,10 @@ public sealed partial class Game
 
     /// <summary>The goal of the current mode, one line ("first to 11 kills..."), for the HUD and the log.</summary>
     public string ModeGoalText => Mode == GameMode.FreeForAll
-        ? $"First to {WinKills} kills, win by {WinMargin}, {MatchSeconds / 60:0} minutes max"
+        ? $"First to {ScoreLimit} kills, win by {WinMargin}, {MatchSeconds / 60:0} minutes max"
         : Mode == GameMode.Zombies
             ? $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode)}"
-            : $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode)} {MatchSeconds / 60:0} minutes max.";
+            : $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode, ScoreLimit)} {MatchSeconds / 60:0} minutes max.";
 
     /// <summary>Damage is allowed against enemies and yourself (your own grenade still hurts), never teammates.</summary>
     private bool CanDamage(Player attacker, Player victim) => attacker == victim || AreEnemies(attacker, victim);
@@ -334,7 +331,7 @@ public sealed partial class Game
         _gunWinner = null;
         foreach (var p in Players.Values)
             p.GunLevel = 0;
-        TdmLimit = GameModes.TdmLimitFor(Players.Count);
+        ScoreLimit = ScoreLimitFor(Players.Count); // the new mode's own limit (ScoreLimits.cs)
         AssignTeams();
         if (World.Map.Zombies != null || Mode == GameMode.Zombies)
             ResetZombiesRun(); // a fresh Zombies run, or a Zombies map's doors opened for other modes (ZombiesMode.cs)
@@ -402,13 +399,7 @@ public sealed partial class Game
                 break;
         }
 
-        var limit = Mode switch
-        {
-            GameMode.TeamDeathmatch => TdmLimit,
-            GameMode.KingOfTheHill => GameModes.HillScoreLimit,
-            GameMode.CaptureTheFlag => GameModes.CtfCaptureLimit,
-            _ => int.MaxValue,
-        };
+        var limit = IsTeamMode && ScoreLimit > 0 ? ScoreLimit : int.MaxValue; // ScoreLimits.cs
         if (SoloMatch && IsTeamMode)
             SoloCapScores(limit); // alone: objectives still score, but never win (TestTools.cs)
         for (var t = 0; t < 2 && IsTeamMode; t++)
@@ -673,7 +664,7 @@ public sealed partial class Game
         w.U8((byte)HillIndex).U8(HillOwner).U8(HillContested ? (byte)1 : (byte)0).F32((float)HillMoveIn);
         foreach (var f in Flags)
             w.Vec(f.Position).U8(f.Carrier).U8(f.Home ? (byte)1 : (byte)0).F32((float)f.ReturnIn);
-        w.U16((ushort)TdmLimit); // protocol 11
+        w.U16((ushort)Math.Min(ScoreLimit, ushort.MaxValue)); // protocol 11: the TDM limit; protocol 21: the current mode's score limit
         WriteTeamPicks(w); // protocol 20: team selection rules and picks (TeamPick.cs)
     }
 
@@ -720,7 +711,7 @@ public sealed partial class Game
             f.ReturnIn = r.F32();
         }
         if (r.Has(2))
-            TdmLimit = r.U16();
+            ScoreLimit = r.U16();
         ReadTeamPicks(ref r); // protocol 20 (TeamPick.cs)
     }
 

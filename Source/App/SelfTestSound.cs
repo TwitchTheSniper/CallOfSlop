@@ -112,7 +112,7 @@ public static partial class SelfTest
             Fail("in the world, a headshot doesn't sound different from a body hit");
 
         // ---- Hit, kill and accent sounds are told apart by their envelopes ----
-        Sfx[] distinct = [Sfx.HitBody, Sfx.Headshot, Sfx.Kill, Sfx.KillHeadshot, Sfx.HitMetal, Sfx.HitTick];
+        Sfx[] distinct = [Sfx.HitBody, Sfx.Headshot, Sfx.Kill, Sfx.KillHeadshot, Sfx.HitMetal, Sfx.HitTick, Sfx.FriendlyHit];
         for (var a = 0; a < distinct.Length; a++)
             for (var b = a + 1; b < distinct.Length; b++)
             {

@@ -440,6 +440,11 @@ public sealed partial class Game
                 var amount = (int)MathF.Round(dmg);
                 if (amount <= 0)
                     continue;
+                if (IsFriendlyHit(owner, victim))
+                {
+                    flags |= ShotHitFriendly; // a teammate in the blast: no damage, a friendly marker (FriendlyHits.cs)
+                    continue;
+                }
                 flags |= 1;
                 if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive, center) && victim != owner)
                     flags |= 4;

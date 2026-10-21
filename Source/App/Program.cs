@@ -883,6 +883,7 @@ public static unsafe partial class Program
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
+            _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
@@ -1011,6 +1012,7 @@ public static unsafe partial class Program
             if (_session is { } g)
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
+                DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1984,7 +1986,9 @@ public static unsafe partial class Program
                 Gfx.Rect(cx - 1, cy - 1, 2, 2, white, 0.8f);
             }
 
-            if (now < _game.HitMarkerUntil)
+            if (now < _game.HitMarkerUntil && _game.HitMarkerFriendly)
+                DrawFriendlyHitMarker(cx, cy, k, now); // a teammate: no damage (Program.FriendlyHit.cs)
+            else if (now < _game.HitMarkerUntil)
             {
                 var c = _game.HitMarkerHead ? new Vector3(1f, 0.85f, 0.2f) : new Vector3(1f, 0.25f, 0.25f);
                 for (var i = 0; i < 4; i++)

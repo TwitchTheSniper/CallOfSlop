@@ -83,6 +83,7 @@ public sealed class Settings
     public TeamSelection TeamSelect = TeamSelection.Manual; // team modes: players pick their team, or Auto only (TeamPick.cs)
     public int TeamMaxDiff = TeamRules.DefaultMaxDiff; // team modes: how much bigger a side may get by picks (0-4)
     public PhysicsMode Physics = PhysicsMode.Classic; // hosting: player movement (classic, or the swept capsule controller); joiners use the host's
+    public ScoreLimitMode ScoreLimit = ScoreLimitMode.Auto; // single player and hosting: Auto scales the limit with the player count; files without it get Auto
 
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
 
@@ -203,6 +204,7 @@ public sealed class Settings
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;
                     case "team_max_diff" when int.TryParse(v, out var i): s.TeamMaxDiff = Math.Clamp(i, 0, TeamRules.MaxDiffLimit); break;
                     case "physics" when Enum.TryParse<PhysicsMode>(v, true, out var pm) && Enum.IsDefined(pm): s.Physics = pm; break;
+                    case "score_limit" when Enum.TryParse<ScoreLimitMode>(v, true, out var sl) && Enum.IsDefined(sl): s.ScoreLimit = sl; break;
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
@@ -266,6 +268,7 @@ public sealed class Settings
                     $"team_select={(TeamSelect == TeamSelection.AutoOnly ? "auto" : "manual")}",
                     $"team_max_diff={TeamMaxDiff}",
                     $"physics={Physics.ToString().ToLowerInvariant()}",
+                    $"score_limit={ScoreLimit.ToString().ToLowerInvariant()}",
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",
