@@ -539,7 +539,7 @@ public static partial class SelfTest
             game.SelfTestMelee(me, 0, 0, t += 5);
             return bots.Count(b => !b.Alive || b.Health < World.MaxHealth);
         }
-        var arc = new[] { new Vector3(0, 0, 38.4f), new Vector3(-0.7f, 0, 38.5f), new Vector3(0.7f, 0, 38.5f) };
+        var arc = new[] { new Vector3(0, 0, 38.4f), new Vector3(-0.7f, 0, 38.0f), new Vector3(0.7f, 0, 38.0f) }; // the middle one is nearest
         if (defs.TryGetValue("Chainsaw Sword", out var cs))
         {
             var hit = Swing(cs, arc);
