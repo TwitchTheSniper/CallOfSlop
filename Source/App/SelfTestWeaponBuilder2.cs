@@ -499,7 +499,7 @@ public static partial class SelfTest
             Fail("cart: E while pushing should park it and switch you to another weapon");
         if (idleHp != World.MaxHealth || idleTracers != 0 || !stayed)
             Fail("cart: a parked cart with nobody manning it must not fire on its own");
-        sum.Append($"{parked} {idleHp} {c.Body.Position} {c.Body.Yaw}; ");
+        sum.Append($"{parked} {idleTracers} {c.Body.Position} {c.Body.Yaw}; ");
 
         // Pick the triple pistol (slot 3), then walk up and tap E: you man the cart.
         game.SwitchTo(2, t);
@@ -524,7 +524,7 @@ public static partial class SelfTest
             Fail("cart: tapping E at a parked cart's bar should man it (you stand at the bar holding its gun)");
         if (firedTracers == 0 || hitHp >= World.MaxHealth)
             Fail("cart: firing a manned cart should hit the dummy in front of it");
-        sum.Append($"{manned} {hitHp} {me.Position}; ");
+        sum.Append($"{manned} hit {hitHp < World.MaxHealth} {me.Position}; "); // (the bot's random perks, e.g. Last Stand, decide its HP)
 
         // Traverse: looking 90 degrees right, the gun stops at 60; a shot straight at the dummy on the right is turned back to 60 and misses it.
         me.Yaw = c.Body.Yaw + MathF.PI / 2;

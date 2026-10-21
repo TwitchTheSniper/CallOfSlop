@@ -432,7 +432,7 @@ public sealed partial class Game : IDisposable
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
 
-        var origin = me.RenderEye;
+        var origin = MannedEye ?? me.RenderEye; // manning a push cart: the view sits behind its gun (GameZombies.cs)
         var dir = World.Forward(LookYaw, LookPitch);
         var spread = CurrentSpread();
         var seed = _shotSeed++;

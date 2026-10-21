@@ -96,8 +96,22 @@ public static unsafe partial class Program
         if (c.Mode == CartMode.Manned)
             return c.Shape.World(c.Body.Position, c.Body.Yaw) * _worldView;
         var rattle = 0.004f * MathF.Sin(c.Body.Rolled * 23f); // the wheels rattle as it rolls
-        return c.Shape.World(LocalCartRenderPos(c, me) + new Vector3(0, rattle, 0), c.Body.Yaw) * _worldView;
+        var pose = c.Shape.World(LocalCartRenderPos(c, me) + new Vector3(0, rattle, 0), c.Body.Yaw) * _worldView;
+        // Pushing, the real cart sits under the bottom of the view (your eyes are well above its basket). Swing it up about
+        // the eye so its basket and gun read ahead of you, no more than CartViewDeg below the middle; the hands follow the bar.
+        var centre = Vector3.Transform(c.Shape.ModelGround + new Vector3(0, c.Shape.Half.Y, 0), pose);
+        if (centre.Z < -0.05f)
+        {
+            var below = MathF.Atan2(-centre.Y, -centre.Z);
+            var lift = Math.Clamp(below - CartViewDeg * MathF.PI / 180f, 0f, 0.7f);
+            if (lift > 0)
+                pose *= Matrix4x4.CreateRotationX(lift);
+        }
+        return pose;
     }
+
+    /// <summary>The pushed cart's basket shows at most this far below the middle of the view (degrees).</summary>
+    private const float CartViewDeg = 17f;
 
     /// <summary>A cart build split for the manned view: the cart's frame (stays put) and its gun (everything mounted on it, turns), turned about <see cref="Pivot"/>.</summary>
     private sealed record CartGunParts(GunMesh Source, WeaponDef Frame, WeaponDef? Gun, Vector3 Pivot);
@@ -286,6 +300,8 @@ public static unsafe partial class Program
                 break;
             }
             case 54 when t > 4.2:
+                if (g != null)
+                    g.LoadoutNotice = ""; // the melee shot shouldn't carry the cart's toast
                 g?.TryMelee(now); // the chainsaw sword
                 _wbSmokeStage = 55;
                 break;

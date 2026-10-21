@@ -1594,7 +1594,7 @@ public static unsafe partial class Program
         Vector3 eye, fwd;
         if (local != null)
         {
-            eye = local.Alive ? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0);
+            eye = local.Alive ? _game.MannedEye ?? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0); // (manning a cart: behind its gun)
             fwd = local.Alive ? World.Forward(_game.LookYaw, _game.LookPitch) : World.Forward(_game.LookYaw, -1.2f);
             if (!local.Alive && _deathCam.Active)
             {
@@ -1912,7 +1912,7 @@ public static unsafe partial class Program
             Def = def, Now = now, Dt = (float)FrameDt, Aim = _game.AimT, Reload = _game.ReloadProgress(now), Melee = _game.MeleeProgress(now),
             Equip = now < _game.EquipUntil ? Math.Clamp((float)((_game.EquipUntil - now) / def.EquipTime), 0f, 1f) : 0f,
             Kick = _game.WeaponKick, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded, MantleTicks = me.Sim.MantleTicks, MantleTo = me.Sim.MantleTo,
-            Eye = me.RenderEye, Yaw = _game.LookYaw, Pitch = _game.LookPitch, SprintHeld = (_game.HeldButtons & Buttons.Sprint) != 0,
+            Eye = _game.MannedEye ?? me.RenderEye, Yaw = _game.LookYaw, Pitch = _game.LookPitch, SprintHeld = (_game.HeldButtons & Buttons.Sprint) != 0,
             HeadBob = _headBob.Weight, HeadBobPhase = _headBob.DipPhase,
         });
         var pose = _vmAnim.GunPose;

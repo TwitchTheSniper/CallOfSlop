@@ -425,6 +425,14 @@ public sealed partial class Game
     /// <summary>The local player's cart, when they're manning it.</summary>
     public CartEntity? MannedCart => Local is { Alive: true } && Carts.TryGetValue(LocalId, out var c) && c.Mode == CartMode.Manned ? c : null;
 
+    /// <summary>
+    /// Where your view sits while you man your cart: low behind its gun (just over the push bar, a step back), so the gun
+    /// in the basket is in view. Null when you aren't manning one. Your shots leave from here too.
+    /// </summary>
+    public Vector3? MannedEye => MannedCart is { } c
+        ? c.Bar + new Vector3(0, c.Shape.BarHeight + 0.05f, 0) - World.FlatForward(c.Body.Yaw) * 0.55f
+        : null;
+
     /// <summary>The interact key (E): park your cart, man it (tap at its bar) or push it (<paramref name="hold"/>), step off, buy the slot upgrade.</summary>
     public void Interact(double now, bool hold = false)
     {

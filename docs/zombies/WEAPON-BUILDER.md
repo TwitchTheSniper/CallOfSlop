@@ -10,7 +10,7 @@ Anything marked **proposed** is a working default the code implements so it can 
 change. The "Open creative questions" at the end list the calls that are the user's to make.
 
 Code: `Source/Zombies/` (PartDef, PartFile, WeaponBuild, BuildRules, BuildStats, BuildModel, BuildStore, MeleeStats,
-StandardBuilds, RunTables, PushCart), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart, turret,
+StandardBuilds, RunTables, PushCart), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart,
 slots, melee builds, practice dummies) in `Source/Game/GameZombies.cs`, UI in `Source/UI/UiWorkbench.cs`, the range
 session and cart drawing in `Source/App/Program.Workbench.cs`, self-test section "Weapon builder" in
 `Source/App/SelfTestWeaponBuilder.cs` and `SelfTestWeaponBuilder2.cs`. Data: `Parts/<Category>/*.json`, standard
@@ -23,7 +23,7 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 | --- | --- | --- |
 | 1 | Fire style across receivers is **fixed by the grip** | Each grip file has one `"fireStyle"`; builds have no choice; the workbench shows it ("Fire style: VOLLEY (fixed by the Rifle Grip)"). Old saves that chose a style load with the grip's. |
 | 2 | **Weight** stays the main limiter; huge multi-receiver guns must be reachable late in a run | Rarer frames carry more (Mule Frame 16 kg / 6 receivers, Exo Harness 30 kg / 12, Gantry Rig 48 kg / 16), weight-relief parts raise the carry weight, and the drop tables put those tiers late (see "Run progression"). |
-| 3 | The push cart is a **real pushed object** that can be **parked as a turret** | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, and E parks it as an **auto-firing turret** (proposed, open: see "The push cart"). Replicated (protocol 16). |
+| 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, E parks it, tap E at its bar to man its gun (aim within traverse limits, fire it by hand), hold E to push it again. No auto turret. Replicated (protocol 17). |
 | 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
 | 5 | A **shared feed** that feeds several receivers; per-receiver feeds still allowed | Five shared feeds on a grip's `hopper` socket, with rules for which receivers they feed, a pooled magazine and shared ammo. |
 | 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 25 standard builds by tier with where they come from (box, wall, start); the workbench loads them as presets. |
@@ -220,11 +220,13 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
   (Self-test: Triple Pistol, Nine Lives and the Twin Splitter Shotgun each use exactly one charge.)
 - **Network:** protocol **16** (milestone 2) adds three messages at the end of the list: `CartUse` (client -> server:
   the interact key), `CartState` (server -> all, with snapshots while any cart exists: owner, mode, position, yaw,
-  rolled distance, aim pitch, turret seconds left) and `RunState` (server -> one client: the slot upgrade). Built
+  rolled distance, gun aim) and `RunState` (server -> one client: the slot upgrade). **Protocol 17** (the manned cart)
+  changes two of them: `CartUse` carries one byte (0 tap, 1 hold) and `CartState` carries the manned gun's aim (yaw
+  offset from the cart's facing and pitch, 30 bytes per cart) instead of turret seconds; cart mode 2 is now "manned".
+  Built
   weapons and melee builds are still host-local in the Workbench Range (single player); co-op will need builds sent to
   clients (their text form) so they can draw and predict them. Until then, clients draw other players' carts as a bare
-  Push Cart, a remote pusher's own movement isn't predicted against the cart (the server corrects it), and a turret's
-  tracers on clients start at its owner.
+  Push Cart, and a remote pusher's own movement isn't predicted against the cart (the server corrects it).
 
 ## Rarity tiers and scrap hooks
 
@@ -392,23 +394,30 @@ When you hold a cart build, a **cart entity** exists in the world (server-author
   slides along the wall if it can; otherwise **you are held at the push bar** (you can't walk through your own cart).
   It's slow to push because a cart build's mobility is low (the frame's 0.65 times the weight penalty).
 - **Hands on the bar.** In first person the cart isn't a held gun: it's drawn where it really is on the ground (its
-  world pose in camera space) and both arms IK onto the push bar; it rattles a little as it rolls. Firing works as
-  usual (the rays leave from your eye, offset per barrel).
-- **Parked (E).** **Proposed, open for the user: an auto-firing turret** rather than a manned emplacement. Press E
-  while pushing: the cart stays where it is, you switch to your next weapon, and for **30 s** (or two magazines of its
-  build, whichever runs out first) it turns toward the nearest enemy it can see within 45 m (zombies later; bots and
-  the range's practice dummies today) and fires its own build at it, credited to you. Then it stands idle. Walk up to
-  it and press E (or select its slot next to it) to push it again; select its slot far away and you're told where it
-  is. Switching weapons while pushing leaves it standing idle. A parked cart can't be fired by hand, and a dead
-  owner's cart is gone (it comes back in front of you on respawn).
-  Why auto-fire: it keeps the player moving (the roguelite loop rewards running and building), needs no camera or
-  control hand-over, and reads clearly in co-op. A manned emplacement (step up, aim it yourself, step off back to your
-  weapons) is the alternative; the turret code keeps the aiming separate so it can be swapped.
+  world pose in camera space) and both arms IK onto the push bar; it rattles a little as it rolls. **It doesn't fire
+  while you push it** (decided with the manned gun: both hands are on the bar, and it keeps "park it, then man it" the
+  one way to use its firepower). Pulling the trigger tells you how.
+- **Parked (E while pushing).** The cart stays where it is and you go back to the weapon you held before. It does
+  nothing on its own. Switching weapons while pushing parks it the same way. A dead owner's cart is gone (it comes
+  back in front of you on respawn).
+- **Manned (tap E at a parked cart's bar).** Decided by the user: **a gun you fire yourself, not a turret**. You stand
+  at the push bar (your feet are held there; the movement keys do nothing) with your hands on its handles, the view
+  over the basket, and the cart body stays put. The mouse turns its gun (everything mounted on the cart: the receivers
+  and feeds in the basket turn as one block about their middle) up to **60 degrees either side** of the cart's facing,
+  **15 degrees down and 30 up** (proposed); your view is held inside those limits. The fire key fires the cart's build
+  through the normal server-authoritative shot path with the same stats (damage, fire rate, spread, rays per
+  receiver), reload works as usual, and the HUD shows the cart gun's ammo and "Leave: E   Push it: hold E". The
+  server clamps every shot's direction to the traverse limits too.
+- **Leaving.** Tap E again, or jump or sprint: you step off and get the weapon you held before back. **Hold E**
+  (0.4 s) at a parked or manned cart to push it again; tap E stays "man it / step off". Selecting the cart's slot next
+  to it also picks it up; far away you're told where it is.
+- **An auto turret may come later as a separate deployable.** The turret behaviour (auto-targeting, 30 s, two
+  magazines) is removed from the cart entirely; nothing of it is left in the code.
 - **Network:** the server sends every cart in `CartState` with the snapshots while any exist; the interact key is
   `CartUse` (see "Firing" for the protocol notes and what co-op still needs).
 - **Workbench Range:** a cart lane on the left of the spawn (x -12): an 8 cm curb the cart rolls over and a 30 cm step
   it can't climb. The workbench's "Practice dummies" setting (0-8, default 4) puts dummies down the range for the
-  turret, cleave and stun.
+  cart gun, cleave and stun.
 
 ## The melee slot (decided: melee-only parts)
 
@@ -484,18 +493,21 @@ Milestone 2 (the user's decisions):
 - [x] Late-game frames and weight relief; the progression curve and drop tables as proposed data.
 - [x] Standard complete builds (`Parts/Builds`), loaded as workbench presets.
 - [x] Weapon slots 3-4 behind a per-run flag; station in the range, toggle in the workbench.
-- [x] The push cart as a real, replicated, server-authoritative object; parked as an auto-firing turret.
+- [x] The push cart as a real, replicated, server-authoritative object; parked, it's a manned gun (no auto turret).
 - [x] The melee slot: hilts, heads, mods; damage, swing, reach, cleave, stun; workbench section; standard melee unchanged.
 - [x] Self-test (fire style, splitter conservation, multipliers, upgrades, shared feed, standard builds, drop tables,
       slots, cart physics and parking, melee builds, standard melee, determinism) and smoke shots (melee on the bench,
-      the cart pushed and parked, a melee swing, the minigun).
+      the cart pushed and manned, a melee swing, the minigun). The manned cart: parked it never fires on its own (10 s,
+      nobody manning), manned it hits a dummy, the traverse limits clamp the aim and the shots, leaving gives back the
+      weapon held before, hold E pushes it again, and the whole run is deterministic.
 
 ## Decided (2026-10-21)
 
 1. **Volley or rotate?** Fixed by the grip.
 2. **Feeds?** Per-receiver feeds plus shared feeds.
 3. **Scaling?** Weight is the main limiter; huge guns come late (rarer frames, weight relief).
-4. **The cart and the chainsaw?** The cart is a real pushed object that can be parked as a turret; the chainsaw grip is
+4. **The cart and the chainsaw?** The cart is a real pushed object; parked, it's a gun you man and fire yourself (not a
+   turret: "a turret would be a little too strong"; one may come later as a separate deployable); the chainsaw grip is
    just a grip, and melee gets its own slot built from melee parts.
 6. **Splitter balance?** Splitters always conserve; damage comes from multipliers and receiver upgrades.
 7. **Mystery box?** Complete standard builds only.
@@ -508,6 +520,7 @@ Milestone 2 (the user's decisions):
 2. **Special ammo effects** (incendiary, explosive, penetrating, plasma, squeaking ducks; and now chainsaw, fish,
    shock, nails on melee) are flagged but have no effect yet: which matter most for Zombies, and do they **stack**
    across receivers (two incendiary receivers = twice the burn, or the same burn)?
-3. **The parked cart:** auto-firing turret (built) or a manned emplacement? Are 30 s and two magazines right?
-4. **The numbers marked proposed:** the drop tables and prices, the weight penalties, the turret's range, melee stun
+3. **The manned cart:** are the traverse limits right (60 degrees either side, 15 down, 30 up)? Should it ever fire
+   while pushed (hip fire with heavy spread), or stay "park it, then man it"?
+4. **The numbers marked proposed:** the drop tables and prices, the weight penalties, melee stun
    on players (off today).
