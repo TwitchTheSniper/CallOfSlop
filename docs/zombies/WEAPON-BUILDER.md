@@ -394,15 +394,18 @@ When you hold a cart build, a **cart entity** exists in the world (server-author
   slides along the wall if it can; otherwise **you are held at the push bar** (you can't walk through your own cart).
   It's slow to push because a cart build's mobility is low (the frame's 0.65 times the weight penalty).
 - **Hands on the bar.** In first person the cart isn't a held gun: it's drawn where it really is on the ground (its
-  world pose in camera space) and both arms IK onto the push bar; it rattles a little as it rolls. **It doesn't fire
+  world pose in camera space) and both arms IK onto the push bar; it rattles a little as it rolls. Your eyes are well
+  above the basket, so the view swings the cart up about the eye until its basket is no more than 17 degrees below the
+  middle of the screen (the hands follow the bar in from the bottom). **It doesn't fire
   while you push it** (decided with the manned gun: both hands are on the bar, and it keeps "park it, then man it" the
   one way to use its firepower). Pulling the trigger tells you how.
 - **Parked (E while pushing).** The cart stays where it is and you go back to the weapon you held before. It does
   nothing on its own. Switching weapons while pushing parks it the same way. A dead owner's cart is gone (it comes
   back in front of you on respawn).
 - **Manned (tap E at a parked cart's bar).** Decided by the user: **a gun you fire yourself, not a turret**. You stand
-  at the push bar (your feet are held there; the movement keys do nothing) with your hands on its handles, the view
-  over the basket, and the cart body stays put. The mouse turns its gun (everything mounted on the cart: the receivers
+  at the push bar (your feet are held there; the movement keys do nothing) with your hands on its handles, and the
+  cart body stays put. The view sits low behind the gun (just over the push bar, a step back) so the gun in the basket
+  is in view, and your shots leave from there. The mouse turns its gun (everything mounted on the cart: the receivers
   and feeds in the basket turn as one block about their middle) up to **60 degrees either side** of the cart's facing,
   **15 degrees down and 30 up** (proposed); your view is held inside those limits. The fire key fires the cart's build
   through the normal server-authoritative shot path with the same stats (damage, fire rate, spread, rays per
