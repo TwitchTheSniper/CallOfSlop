@@ -40,6 +40,7 @@ public enum Msg : byte
     Full, // server -> one client: the server (this map's player limit) is full; the connection is closed after it
     PropBreak, // server -> all: a breakable prop broke (index, damage kind, where the hit came from) (reliable)
     PropState, // server -> joining client: the props broken so far this match (reliable)
+    ShieldHit, // server -> all: Last Stand's shield blocked a bullet hit on player X (charges left) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

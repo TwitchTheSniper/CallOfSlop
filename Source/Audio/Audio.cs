@@ -47,6 +47,7 @@ public enum Sfx
     Scuffle, // prone crawl
     LandThud, // landing from a fall
     JumpPush, // jump push-off
+    ShieldBlock, // Last Stand's shield blocking a bullet hit (an energy zap and a glassy ring)
     COUNT,
 }
 
