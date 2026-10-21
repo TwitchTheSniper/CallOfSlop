@@ -459,7 +459,7 @@ Without a `boundary` section a map is the classic rectangle `-halfX..halfX` by `
 - **Fair halves:** for a point-symmetric map, make the outline symmetric too (for every point `[x, z]` there's a `[-x, -z]`), and use `"mirror": true` on Clutter.
 - **Terrain + cliff:** put the map's own hills well inside; the cliff edge rises from the ground as it is at the outline. A `wall` edge on terrain follows the ground segment by segment, so on steep slopes its top steps.
 - **Spawns:** `RingSpawns` with `frac` 0.7-0.8 works for any roundish shape. For a U or L shape, place `Spawn` ops yourself.
-- **Cost:** the barrier is one collider per segment in the physics world's BVH, and the inside test is a grid lookup away from the edge, so outlines of a few hundred segments cost nothing measurable. The Shape Test bean has about 140 segments.
+- **Cost:** the barrier is one collider per segment in the physics world's BVH, and the inside test is a grid lookup away from the edge, so outlines of a few hundred segments cost nothing measurable. The Shape Test bean has 65 segments.
 
 ### For tools
 

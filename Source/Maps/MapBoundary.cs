@@ -546,11 +546,11 @@ public sealed class MapBoundary
             pts.Reverse();
             area = -area;
         }
-        if (area < 100)
-            throw new InvalidOperationException($"the boundary encloses only {area:0} square metres (at least 100)");
         if (SelfIntersects(pts, out var sa, out var sb))
             throw new InvalidOperationException($"the boundary crosses itself (near ({pts[sa].X:0.#}, {pts[sa].Y:0.#}) and ({pts[sb].X:0.#}, {pts[sb].Y:0.#}))"
                 + (spec.Noise != null ? ": lower the noise amplitude or raise its scale" : ": check the order of the points"));
+        if (area < 100)
+            throw new InvalidOperationException($"the boundary encloses only {area:0} square metres (at least 100)");
         foreach (var p in pts)
             if (!float.IsFinite(p.X + p.Y) || MathF.Abs(p.X) > 500 || MathF.Abs(p.Y) > 500)
                 throw new InvalidOperationException("the boundary must stay within 500 m of the map's centre");

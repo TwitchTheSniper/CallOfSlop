@@ -117,7 +117,7 @@ public static partial class SelfTest
         {
             // One GitHub notice with the section's results (the workflow prints selftest.log; see SelfTestSlopes.cs).
             // A few GitHub notices with the section's results (the workflow prints selftest.log; see SelfTestSlopes.cs), in
-            // chunks because one annotation holds about 1 KB.
+            // chunks because one annotation holds about 4 KB.
             var chunk = new List<string>();
             var part = 1;
             void Flush()
@@ -128,7 +128,7 @@ public static partial class SelfTest
             }
             foreach (var n in ShapeNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " ")))
             {
-                if (chunk.Sum(c => c.Length + 3) + n.Length > 950)
+                if (chunk.Sum(c => c.Length + 3) + n.Length > 3800)
                     Flush();
                 chunk.Add(n);
             }
