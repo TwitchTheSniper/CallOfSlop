@@ -20,6 +20,7 @@ public static partial class SelfTest
               { "op": "Spawn", "x": 0, "z": 80 } ] }
             """, "grenade-range.json");
         World.SetMap(flat);
+        GrenadeNotes.Clear();
         try
         {
             GrenadeRanges();
@@ -29,7 +30,18 @@ public static partial class SelfTest
         finally
         {
             World.SetMap(Maps.All[0]);
+            // The results as one annotation (the workflow prints selftest.log; the run's notices are already full).
+            Line("::warning title=Grenade range (results)::" + string.Join("%0A", GrenadeNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
+    }
+
+    private static readonly List<string> GrenadeNotes = new();
+
+    /// <summary><see cref="Line"/>, also kept for the section's results annotation.</summary>
+    private static void GLine(string s)
+    {
+        Line(s);
+        GrenadeNotes.Add(s);
     }
 
     /// <summary>Thrower's eye on the test map (standing at z = 75, throwing towards -Z).</summary>
@@ -85,7 +97,7 @@ public static partial class SelfTest
             var (now, nowTime, deg) = MaxCarry(def);
             var (before, _, _) = MaxCarry(old);
             var at45 = FlyThrow(new ThrowableDef { Kind = ThrowableKind.Frag, Name = "", Blurb = "", Fuse = 9f, ThrowSpeed = def.ThrowSpeed }, RangeEye, 0, MathF.PI / 4);
-            Line($"{def.Name}: {def.ThrowSpeed:0.0} m/s carries {now:0.0} m on flat ground (best at {deg} deg, lands after {nowTime:0.00} s; "
+            GLine($"{def.Name}: {def.ThrowSpeed:0.0} m/s carries {now:0.0} m on flat ground (best at {deg} deg, lands after {nowTime:0.00} s; "
                  + $"45 deg {at45.firstDist:0.0} m), was {before:0.0} m at {OldThrowSpeed:0} m/s ({now / before:0.00}x)");
             if (now < 30f || now > 40f)
                 Fail($"{def.Name}: max throw range {now:0.0} m, expected 30-40 m");
@@ -100,7 +112,7 @@ public static partial class SelfTest
         {
             var (d, t, end, endT) = FlyThrow(frag, RangeEye, 0, deg * MathF.PI / 180f);
             var rolled = new Vector2(end.X - RangeEye.X, end.Z - RangeEye.Z).Length();
-            Line($"frag at {deg} deg: lands {d:0.0} m out at {t:0.00} s, explodes at {endT:0.00} s (fuse {frag.Fuse:0.0} s) {rolled:0.0} m out, {end.Y:0.00} m up");
+            GLine($"frag at {deg} deg: lands {d:0.0} m out at {t:0.00} s, explodes at {endT:0.00} s (fuse {frag.Fuse:0.0} s) {rolled:0.0} m out, {end.Y:0.00} m up");
             if (t < 0 || t > frag.Fuse - 0.2f)
                 Fail($"frag at {deg} deg: lands at {t:0.00} s, less than 0.2 s before its {frag.Fuse:0.0} s fuse (air burst)");
             if (end.Y > 2.5f)
@@ -111,13 +123,13 @@ public static partial class SelfTest
         for (var deg = 0; deg <= 89; deg++)
             if (FlyThrow(frag, RangeEye, 0, deg * MathF.PI / 180f).firstTime is var ft and > 0 && ft <= frag.Fuse)
                 steepest = deg;
-        Line($"frag: lands before its fuse when thrown up to {steepest} deg (max range {fragMax:0.0} m)");
+        GLine($"frag: lands before its fuse when thrown up to {steepest} deg (max range {fragMax:0.0} m)");
 
         // Smoke thrown far pops on the ground, not in the air.
         var smoke = Throwables.Get(ThrowableKind.Smoke);
         var s = FlyThrow(smoke, RangeEye, 0, 40 * MathF.PI / 180f);
         var shortSmoke = FlyThrow(smoke, RangeEye, 0, -0.3f);
-        Line($"smoke at 40 deg: lands {s.firstDist:0.0} m out at {s.firstTime:0.00} s, pops at {s.endTime:0.00} s {s.end.Y:0.00} m up; short throw pops at {shortSmoke.endTime:0.00} s");
+        GLine($"smoke at 40 deg: lands {s.firstDist:0.0} m out at {s.firstTime:0.00} s, pops at {s.endTime:0.00} s {s.end.Y:0.00} m up; short throw pops at {shortSmoke.endTime:0.00} s");
         if (s.end.Y > 0.6f)
             Fail($"a long smoke throw popped {s.end.Y:0.00} m in the air");
         if (MathF.Abs(shortSmoke.endTime - smoke.Fuse) > 0.02f)
@@ -158,7 +170,7 @@ public static partial class SelfTest
                     Fail($"bot aim: {def.Name} at {range:0} m goes off {miss:0.00} m from the target (limit 2 m)");
             }
         }
-        Line($"bot throws go off within {worst:0.00} m of the target ({string.Join(", ", parts)} m)");
+        GLine($"bot throws go off within {worst:0.00} m of the target ({string.Join(", ", parts)} m)");
 
         // Out of range: says so and throws as far as it can.
         if (Throwables.AimPitch(Throwables.Get(ThrowableKind.Frag), RangeEye, RangeEye + new Vector3(0, -World.EyeHeight, -80), out var far) || far < 0.3f)
@@ -176,7 +188,7 @@ public static partial class SelfTest
         var dir = World.Forward(0.3f, 0.5f);
         var predicted = Throwables.PredictFlat(frag, Throwables.LaunchPoint(RangeEye, dir), Throwables.LaunchVelocity(frag, dir, Vector3.Zero), 0f, out _, out var pt);
         var gap = Vector3.Distance(predicted, a.end);
-        Line($"determinism: same throw twice ends at {a.end} / {b.end}, aim {p1:0.0000} / {p2:0.0000}; flat prediction {gap:0.000} m from the real flight ({pt:0.00} s vs {a.endTime:0.00} s)");
+        GLine($"determinism: same throw twice ends at {a.end} / {b.end}, aim {p1:0.0000} / {p2:0.0000}; flat prediction {gap:0.000} m from the real flight ({pt:0.00} s vs {a.endTime:0.00} s)");
         if (a.end != b.end || a.endTime != b.endTime || p1 != p2)
             Fail("grenade flight or bot aim isn't deterministic");
         if (gap > 0.05f)
