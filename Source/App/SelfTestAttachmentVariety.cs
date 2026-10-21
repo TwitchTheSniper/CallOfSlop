@@ -178,6 +178,8 @@ public static partial class SelfTest
             }
         Line($"{models} weapon x attachment models built from their \"model\" looks, each on the gun and on its mount");
 
+        CheckBayonet();
+
         // ---- Saves: a loadout with new attachments (and an unknown name) round-trips; old kits still load ----
         var backup = LoadoutStore.SaveLines().ToArray();
         try
@@ -206,5 +208,49 @@ public static partial class SelfTest
         {
             LoadoutStore.LoadLines(backup);
         }
+    }
+
+    /// <summary>The Bayonet: only on muzzle-loading specials (the musket), and with it fitted a melee stab reaches 0.8 m further.</summary>
+    private static void CheckBayonet()
+    {
+        if (Attachments.Find("Bayonet") is not { } bay)
+        {
+            Fail("the Bayonet isn't loaded");
+            return;
+        }
+        var fits = Weapons.All.Where(bay.Fits).ToArray();
+        Line($"  Bayonet: {bay.Slot} slot, +{bay.MeleeReach:0.0} m melee reach, fits {string.Join(", ", fits.Select(w => w.Name))}");
+        if (fits.Length == 0 || fits.Any(w => w.Class != WeaponClass.Special || w.Sound != SoundStyle.Boom))
+            Fail("the Bayonet should fit the musket-type specials and nothing else");
+        if (bay.MeleeReach is < 0.7f or > 0.9f || all().Any(x => x != bay && x.MeleeReach != 0))
+            Fail("only the Bayonet adds melee reach, about 0.8 m");
+        if (fits.FirstOrDefault() is not { } musket)
+            return;
+        var kit = Attachments.With(0, bay.Slot, bay.Index);
+        if (Attachments.MeleeReachBonus(musket) != 0 || Attachments.MeleeReachBonus(Attachments.Apply(musket, kit)) != bay.MeleeReach)
+            Fail($"melee reach bonus: stock {Attachments.MeleeReachBonus(musket)}, with the bayonet {Attachments.MeleeReachBonus(Attachments.Apply(musket, kit))}");
+
+        // A real stab: 2.95 m away (2.55 m to the body) is out of reach without it, in reach with it.
+        World.SetMap(Maps.All[0]);
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", musket.Slot == Slot.Primary ? musket.Id : Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
+        var a = game.Players[0];
+        var v = game.Players.Values.First(p => p.Id != 0);
+        game.SelfTestPerks(a, PerkSet.Empty);
+        game.SelfTestPerks(v, PerkSet.Empty);
+        a.Primary = a.Weapon = musket.Id;
+        var hits = new int[2];
+        for (var withBayonet = 0; withBayonet < 2; withBayonet++)
+        {
+            a.PrimaryKit = withBayonet == 1 ? kit : 0;
+            game.SelfTestPlace(a, new Vector3(5, 0, 5), MathF.PI);
+            game.SelfTestPlace(v, new Vector3(5, 0, 7.95f), 0);
+            game.SelfTestMelee(a, MathF.PI, 0, 20 + withBayonet * 5);
+            hits[withBayonet] = World.MaxHealth - v.Health;
+        }
+        Line($"  stab at 2.55 m: {hits[0]} damage without the bayonet (reach {Game.MeleeRange} m), {hits[1]} with it ({Game.MeleeRange + bay.MeleeReach:0.0} m)");
+        if (hits[0] != 0 || hits[1] <= 0)
+            Fail($"bayonet reach: a stab at 2.55 m did {hits[0]} without and {hits[1]} with the bayonet (expected 0 and a hit)");
+
+        static AttachmentDef[] all() => Attachments.BySlot.SelectMany(s => s).ToArray();
     }
 }

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Bayonet",
+  "slot": "Muzzle",
+  "order": 14,
+  "unlockOrder": 237,
+  "blurb": "A socket bayonet for the musket. Out of shots? Lunge: your melee reaches 0.8 m further.",
+  "pros": ["+0.8 m melee reach (3.2 m)"],
+  "cons": ["-3% speed", "Slower to aim", "+10% draw time", "Takes the muzzle slot"],
+  "fits": { "classes": ["Special"], "sounds": ["Boom"] },
+  "model": "bayonet",
+  "meleeReach": 0.8,
+  "effects": [
+    { "stat": "mobility", "add": -0.03 },
+    { "stat": "adsTime", "add": 0.02 },
+    { "stat": "equipTime", "mul": 1.1 }
+  ]
+}

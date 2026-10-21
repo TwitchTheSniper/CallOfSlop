@@ -73,6 +73,9 @@ public sealed class AttachmentDef
     /// </summary>
     public string? Look;
 
+    /// <summary>Metres added to melee reach while the gun carrying it is in hand (the file's "meleeReach"; a bayonet). 0 for almost everything.</summary>
+    public float MeleeReach;
+
     /// <summary>The model the gun builder draws for it: <see cref="Look"/>, or its name.</summary>
     public string Model => Look ?? Name;
 
@@ -175,6 +178,19 @@ public static class Attachments
 
     /// <summary>The model ("look") drawn for the attachment in a kit's slot (see <see cref="AttachmentDef.Model"/>), or null when the slot is empty.</summary>
     public static string? LookIn(uint kit, AttachSlot slot) => Get(slot, Slot(kit, slot))?.Model;
+
+    /// <summary>Extra melee reach from a kitted gun's attachments (a bayonet), in metres; 0 for a stock gun.</summary>
+    public static float MeleeReachBonus(WeaponDef d)
+    {
+        if (d.Kit == 0)
+            return 0f;
+        var baseDef = Weapons.Get(d.Id);
+        var sum = 0f;
+        foreach (var a in InKit(d.Kit))
+            if (a.MeleeReach != 0 && a.Fits(baseDef))
+                sum += a.MeleeReach;
+        return sum;
+    }
 
     public static AttachmentDef? Find(string name) => BySlot.SelectMany(s => s).FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 

@@ -830,6 +830,13 @@ class B:
             self.rod(BW * 2.3, 0.05, 0, bore, z - 0.025, mul(DARK, 1.2))
             self.rod(BW * 2.4, 0.006, 0, bore, z - 0.006, METAL)
             return z - 0.05
+        if name == "bayonet":
+            by = bore - BW * 0.5 - 0.012
+            self.rod(BW * 1.35, 0.03, 0, bore, z + 0.012, mul(METAL, 0.8))  # socket
+            self.box(0.008, 0.014, 0.014, 0, by + 0.006, z + 0.006, mul(METAL, 0.7))  # arm
+            self.box(0.004, 0.016, 0.2, 0, by, z - 0.09, mul(COLORS["steel"], 1.3))  # blade
+            self.box(0.004, 0.008, 0.02, 0, by + 0.002, z - 0.2, mul(COLORS["steel"], 1.3), rx=0.35)  # point
+            return z
         return z
 
     def barrel_attachment(self, name, bstart, BL, BW):

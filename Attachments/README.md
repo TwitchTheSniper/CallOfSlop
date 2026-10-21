@@ -1,6 +1,6 @@
 # Making attachments for Call of Slop
 
-Every attachment is a single `.json` file in this folder. The 70 that ship with the game are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
+Every attachment is a single `.json` file in this folder. The 71 that ship with the game are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
 
 An attachment says which slot it goes in, which weapons it fits, and a list of stat changes ("effects") it makes to the weapon's numbers. The weapon numbers are the fields described in [Weapons/README.md](../Weapons/README.md).
 
@@ -44,6 +44,7 @@ Check it with `CallOfSlop.exe --check-weapon Attachments\Muzzle\OilCan.json`. Th
 | `fits` | Which weapons take it (below). | fits everything |
 | `effects` | What it changes (below). | no change |
 | `model` | How it's drawn on the gun: one of the [attachment models](#attachment-models), e.g. `"bipod"` or `"Drum Mag"`. Leave it out to draw it by its name (the 17 non-optic attachments that shipped first are drawn that way). | by name |
+| `meleeReach` | Extra melee reach in metres (0-2) while the gun carrying it is in hand. Only the Bayonet uses it (+0.8 m: 3.2 m instead of 2.4 m). | `0` |
 | `sight` | Optics only: how it looks when aiming (see [Sight block](#sight-block)). | the default for its `optic` look |
 
 **At most 15 attachments per slot.** A loadout packs each slot into 4 bits (0 = empty), so a 16th attachment in a slot is skipped with a message. In multiplayer, kits travel as these indices, so **never change the `order` of a shipped attachment**: add new ones after the existing ones (saves store names, so they don't care).
@@ -100,7 +101,7 @@ Any attachment file can borrow any of these with `"model"`. They're built from b
 
 | Slot | Models |
 | --- | --- |
-| Muzzle | `Suppressor`, `Compensator`, `Muzzle Brake`, `Choke`, `flashHider` (slotted prongs), `slideComp` (chunky pistol comp), `longSuppressor` (long rifle can), `fullChoke`, `tankBrake` (big boxy brake), `focuser` (glowing lens ring), `nozzle` (flared splitter), `bell` (brass blunderbuss bell), `weight` (heavy collar) |
+| Muzzle | `Suppressor`, `Compensator`, `Muzzle Brake`, `Choke`, `flashHider` (slotted prongs), `slideComp` (chunky pistol comp), `longSuppressor` (long rifle can), `fullChoke`, `tankBrake` (big boxy brake), `focuser` (glowing lens ring), `nozzle` (flared splitter), `bell` (brass blunderbuss bell), `weight` (heavy collar), `bayonet` (socket bayonet, blade under the muzzle) |
 | Barrel | `Long Barrel`, `Short Barrel`, `Heavy Barrel`, `extendedBarrel` (+4 cm, threaded collar), `snubBarrel`, `slugBarrel` (thicker, with a rib), `quickChange` (handle on the left of the barrel), `matchBarrel` (+5 cm, fluted), `straightPull` (T-handle bolt), `overclock` (glowing coils), `precisionBore` (thicker, accent band; same length, so a musket can still be loaded from the muzzle), `sawnOff` (barrel and forend cut back) |
 | Underbarrel | `Vertical Grip`, `Angled Grip`, `Laser`, `handstop`, `bipod` (folded legs), `light` (with a lit lens), `foldingGrip`, `gyro` (flywheel), `weightedGrip` |
 | Magazine | `Extended Mag`, `Fast Mag`, `Drum Mag`, `Hollow Point Mag` (a short magazine), `shotgunDrum` (a drum instead of a shotgun's tube, swapped whole on a reload), `apRounds` (blue band), `incendiary` (glowing orange band), `overcharged` (glowing accent band), `stripper` (brass clips on the receiver), `fastLoader` (paper cartridges on the receiver) |
@@ -174,7 +175,7 @@ Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in
 
 ## Which classes take what
 
-Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
+Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Bayonet, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
 
 | Slot | Attachment | Unlock | Pistol | SMG | AssaultRifle | DMR | Sniper | Shotgun | LMG | Special |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -205,6 +206,7 @@ Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Ext
 | Muzzle | Scatter Nozzle | 193 | - | - | - | - | - | - | - | 3/4 |
 | Muzzle | Blunderbuss Bell | 233 | - | - | - | - | - | - | - | 1/4 |
 | Muzzle | Muzzle Weight | 43 | - | - | - | - | - | - | - | all |
+| Muzzle | Bayonet | 237 | - | - | - | - | - | - | - | 1/4 |
 | Barrel | Long Barrel | 140 | - | all | all | all | all | all | all | - |
 | Barrel | Short Barrel | 95 | - | all | all | all | all | all | all | - |
 | Barrel | Heavy Barrel | 190 | - | all | all | all | all | - | all | - |

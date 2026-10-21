@@ -174,7 +174,7 @@ public sealed class GunBuilder
         "Suppressor", "Compensator", "Muzzle Brake", "Choke", "Long Barrel", "Short Barrel", "Heavy Barrel", "Vertical Grip", "Angled Grip", "Laser",
         "Extended Mag", "Fast Mag", "Drum Mag", "Hollow Point Mag", "Light Stock", "Heavy Stock", "No Stock",
         // muzzle
-        "flashHider", "slideComp", "longSuppressor", "fullChoke", "tankBrake", "focuser", "nozzle", "bell", "weight",
+        "flashHider", "slideComp", "longSuppressor", "fullChoke", "tankBrake", "focuser", "nozzle", "bell", "weight", "bayonet",
         // barrel
         "extendedBarrel", "snubBarrel", "slugBarrel", "quickChange", "matchBarrel", "straightPull", "overclock", "precisionBore", "sawnOff",
         // underbarrel
@@ -767,6 +767,16 @@ public sealed class GunBuilder
                 Rod(BW * 2.3f, 0.05f, 0, _bore, z - 0.025f, Dark * 1.2f);
                 Rod(BW * 2.4f, 0.006f, 0, _bore, z - 0.006f, Metal);
                 return z - 0.05f;
+            case "bayonet":
+            {
+                // socket bayonet: a ring around the muzzle, a short offset arm, and the blade under and past the muzzle
+                var by = _bore - BW * 0.5f - 0.012f;
+                Rod(BW * 1.35f, 0.03f, 0, _bore, z + 0.012f, Metal * 0.8f); // socket
+                Box(0.008f, 0.014f, 0.014f, 0, by + 0.006f, z + 0.006f, Metal * 0.7f); // arm
+                Box(0.004f, 0.016f, 0.2f, 0, by, z - 0.09f, Named("steel") * 1.3f); // blade
+                Box(0.004f, 0.008f, 0.02f, 0, by + 0.002f, z - 0.2f, Named("steel") * 1.3f, rx: 0.35f); // point
+                return z; // the bore still ends at the muzzle
+            }
             default:
                 return z;
         }
