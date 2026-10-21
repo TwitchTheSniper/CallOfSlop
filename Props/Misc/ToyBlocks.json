@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Toy Blocks",
+  "category": "Misc",
+  "description": "A child's wooden building blocks.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 30,
+  "breakable": {"health": 3, "breakBy": "all", "sound": "wood", "debris": {"count": 6, "size": [0.02, 0.06], "speed": 2.5}},
+  "parts": [
+    {"size": [0.1, 0.1, 0.1], "offset": [0.0, 0.05, 0.0], "rotation": [0.0, 17.413, 0.0], "color": "#d03030"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.11, 0.05, 0.0], "rotation": [0.0, 5.242, 0.0], "color": "#d03030"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.055, 0.15, 0.0], "rotation": [0.0, -2.49, 0.0], "color": "#f0c020"},
+    {"size": [0.1, 0.1, 0.1], "offset": [-0.2, 0.05, 0.15], "rotation": [0.0, 19.3, 0.0], "color": "#d03030"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.25, 0.05, -0.18], "rotation": [0.0, 4.027, 0.0], "color": "#30a040"},
+    {"size": [0.1, 0.1, 0.1], "offset": [-0.1, 0.05, -0.2], "rotation": [0.0, 17.011, 0.0], "color": "#f0c020"},
+    {"size": [0.04, 0.006, 0.04], "offset": [0.055, 0.203, 0.0], "color": "white"}
+  ]
+}

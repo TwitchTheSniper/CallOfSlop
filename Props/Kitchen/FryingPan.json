@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Frying Pan",
+  "category": "Kitchen",
+  "description": "A cast-iron frying pan with a fried egg in it. Doesn't break.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 35,
+  "parts": [
+    {"size": [0.28, 0.012, 0.116], "offset": [0.0, 0.006, 0.0], "color": "#2a2a2c"},
+    {"size": [0.28, 0.012, 0.116], "offset": [0.0, 0.006, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#2a2a2c"},
+    {"size": [0.28, 0.012, 0.116], "offset": [0.0, 0.006, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#2a2a2c"},
+    {"size": [0.28, 0.012, 0.116], "offset": [0.0, 0.006, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#2a2a2c"},
+    {"size": [0.28, 0.04, 0.116], "offset": [0.0, 0.032, 0.0], "color": "#333336"},
+    {"size": [0.28, 0.04, 0.116], "offset": [0.0, 0.032, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#333336"},
+    {"size": [0.28, 0.04, 0.116], "offset": [0.0, 0.032, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#333336"},
+    {"size": [0.28, 0.04, 0.116], "offset": [0.0, 0.032, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#333336"},
+    {"size": [0.24, 0.002, 0.099], "offset": [0.0, 0.041, 0.0], "color": "#1e1e20"},
+    {"size": [0.24, 0.002, 0.099], "offset": [0.0, 0.041, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#1e1e20"},
+    {"size": [0.24, 0.002, 0.099], "offset": [0.0, 0.041, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#1e1e20"},
+    {"size": [0.24, 0.002, 0.099], "offset": [0.0, 0.041, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#1e1e20"},
+    {"size": [0.24, 0.025, 0.035], "offset": [0.25, 0.04, 0.0], "rotation": [0.0, 0.0, 8.0], "color": "#2a2a2c"},
+    {"size": [0.06, 0.008, 0.06], "offset": [-0.05, 0.043, 0.03], "color": "#f0e8c0"},
+    {"size": [0.03, 0.009, 0.03], "offset": [-0.05, 0.044, 0.03], "color": "#f0b020"}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Toilet",
+  "category": "Household",
+  "description": "A white porcelain toilet with the seat up.",
+  "collision": "solid",
+  "collider": [{"size": [0.44, 0.8, 0.72], "offset": [0.0, 0.4, -0.04]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 45, "breakBy": "all", "sound": "glass", "debris": {"count": 12, "size": [0.04, 0.15], "speed": 3.5}},
+  "parts": [
+    {"size": [0.26, 0.3, 0.32], "offset": [0.0, 0.15, 0.0], "color": "white"},
+    {"size": [0.38, 0.12, 0.5], "offset": [0.0, 0.34, 0.04], "color": "white"},
+    {"size": [0.3, 0.01, 0.4], "offset": [0.0, 0.405, 0.06], "color": "#a8c0d0"},
+    {"size": [0.4, 0.03, 0.52], "offset": [0.0, 0.415, 0.04], "color": "#f0f0ec"},
+    {"size": [0.42, 0.38, 0.18], "offset": [0.0, 0.57, -0.26], "color": "white"},
+    {"size": [0.44, 0.04, 0.2], "offset": [0.0, 0.78, -0.26], "color": "#f0f0ec"},
+    {"size": [0.06, 0.02, 0.03], "offset": [0.12, 0.81, -0.26], "color": "chrome"},
+    {"size": [0.4, 0.42, 0.03], "offset": [0.0, 0.62, -0.17], "rotation": [-8.0, 0.0, 0.0], "color": "#f0f0ec"}
+  ]
+}

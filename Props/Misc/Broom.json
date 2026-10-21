@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Broom",
+  "category": "Misc",
+  "description": "A broom lying on the floor.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 35,
+  "parts": [
+    {"size": [1.3, 0.025, 0.025], "offset": [0.0, 0.03, 0.0], "rotation": [0.0, 8.0, 0.0], "color": "#c8a070"},
+    {"size": [0.08, 0.05, 0.3], "offset": [-0.68, 0.03, 0.1], "rotation": [0.0, 8.0, 0.0], "color": "#c03030"},
+    {"size": [0.08, 0.04, 0.3], "offset": [-0.74, 0.02, 0.1], "rotation": [0.0, 8.0, 0.0], "color": "#e0c060"}
+  ]
+}

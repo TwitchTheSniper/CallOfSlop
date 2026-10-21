@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Microwave",
+  "category": "Kitchen",
+  "description": "A black microwave (for counters).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "yawJitter": 20},
+  "breakable": {"health": 50, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.03, 0.12], "speed": 3}},
+  "parts": [
+    {"size": [0.5, 0.3, 0.38], "offset": [0.0, 0.16, 0.0], "color": "#2a2a2e"},
+    {"size": [0.34, 0.24, 0.01], "offset": [-0.06, 0.16, 0.195], "color": "#18181c"},
+    {"size": [0.3, 0.2, 0.004], "offset": [-0.06, 0.16, 0.201], "color": "#3a3020"},
+    {"size": [0.1, 0.26, 0.01], "offset": [0.19, 0.16, 0.195], "color": "#3a3a3e"},
+    {"size": [0.06, 0.02, 0.005], "offset": [0.19, 0.25, 0.202], "color": "#30f060"},
+    {"size": [0.04, 0.02, 0.04], "offset": [-0.2, 0.01, -0.14], "color": "black"},
+    {"size": [0.04, 0.02, 0.04], "offset": [-0.2, 0.01, 0.14], "color": "black"},
+    {"size": [0.04, 0.02, 0.04], "offset": [0.2, 0.01, -0.14], "color": "black"},
+    {"size": [0.04, 0.02, 0.04], "offset": [0.2, 0.01, 0.14], "color": "black"}
+  ]
+}

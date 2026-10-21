@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mop and Bucket",
+  "category": "Misc",
+  "description": "A yellow mop bucket with a mop in it.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 15, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.03, 0.12], "speed": 3}},
+  "parts": [
+    {"size": [0.4, 0.04, 0.34], "offset": [0.0, 0.06, 0.0], "color": "#e0c020"},
+    {"size": [0.04, 0.06, 0.04], "offset": [-0.16, 0.03, -0.13], "color": "black"},
+    {"size": [0.04, 0.06, 0.04], "offset": [-0.16, 0.03, 0.13], "color": "black"},
+    {"size": [0.04, 0.06, 0.04], "offset": [0.16, 0.03, -0.13], "color": "black"},
+    {"size": [0.04, 0.06, 0.04], "offset": [0.16, 0.03, 0.13], "color": "black"},
+    {"size": [0.38, 0.26, 0.02], "offset": [0.0, 0.21, 0.16], "color": "#e0c020"},
+    {"size": [0.38, 0.26, 0.02], "offset": [0.0, 0.21, -0.16], "color": "#e0c020"},
+    {"size": [0.02, 0.26, 0.3], "offset": [0.18, 0.21, 0.0], "color": "#e0c020"},
+    {"size": [0.02, 0.26, 0.3], "offset": [-0.18, 0.21, 0.0], "color": "#e0c020"},
+    {"size": [0.34, 0.01, 0.3], "offset": [0.0, 0.265, 0.0], "color": "#8a9a7a"},
+    {"size": [0.14, 0.14, 0.32], "offset": [0.1, 0.41, 0.0], "color": "#555555"},
+    {"size": [0.025, 1.2, 0.025], "offset": [-0.08, 0.72, 0.0], "rotation": [0.0, 0.0, 10.0], "color": "#3060d0"},
+    {"size": [0.14, 0.12, 0.14], "offset": [-0.02, 0.18, 0.0], "color": "#d8d0c0"}
+  ]
+}

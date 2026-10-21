@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Whiteboard",
+  "category": "Office",
+  "description": "A whiteboard on a wheeled stand, covered in scribbles.",
+  "collision": "solid",
+  "collider": [{"size": [1.5, 1.75, 0.1], "offset": [0.0, 0.875, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.3], "speed": 3}},
+  "parts": [
+    {"size": [1.5, 0.9, 0.03], "offset": [0.0, 1.25, 0.0], "color": "#a8acb0"},
+    {"size": [1.44, 0.84, 0.005], "offset": [0.0, 1.25, 0.017], "color": "#f4f4f0"},
+    {"size": [1.4, 0.03, 0.08], "offset": [0.0, 0.795, 0.04], "color": "#a8acb0"},
+    {"size": [0.5, 0.012, 0.004], "offset": [-0.3, 1.406, 0.021], "color": "#2040c0"},
+    {"size": [0.4, 0.012, 0.004], "offset": [-0.32, 1.336, 0.021], "color": "#2040c0"},
+    {"size": [0.3, 0.012, 0.004], "offset": [0.2, 1.206, 0.021], "color": "#c02020"},
+    {"size": [0.25, 0.012, 0.004], "offset": [0.3, 1.1, 0.021], "rotation": [0.0, 0.0, 25.0], "color": "#20a040"},
+    {"size": [0.12, 0.02, 0.02], "offset": [0.3, 0.82, 0.05], "color": "#c02020"},
+    {"size": [0.12, 0.02, 0.02], "offset": [0.45, 0.82, 0.05], "color": "black"},
+    {"size": [0.04, 1.75, 0.04], "offset": [-0.7, 0.875, 0.0], "color": "#888888"},
+    {"size": [0.06, 0.04, 0.6], "offset": [-0.7, 0.02, 0.0], "color": "#666666"},
+    {"size": [0.05, 0.05, 0.05], "offset": [-0.7, 0.025, -0.27], "color": "black"},
+    {"size": [0.05, 0.05, 0.05], "offset": [-0.7, 0.025, 0.27], "color": "black"},
+    {"size": [0.04, 1.75, 0.04], "offset": [0.7, 0.875, 0.0], "color": "#888888"},
+    {"size": [0.06, 0.04, 0.6], "offset": [0.7, 0.02, 0.0], "color": "#666666"},
+    {"size": [0.05, 0.05, 0.05], "offset": [0.7, 0.025, -0.27], "color": "black"},
+    {"size": [0.05, 0.05, 0.05], "offset": [0.7, 0.025, 0.27], "color": "black"}
+  ]
+}

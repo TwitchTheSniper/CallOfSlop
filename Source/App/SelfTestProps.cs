@@ -18,6 +18,7 @@ public static partial class SelfTest
     private static void CheckProps()
     {
         CheckPropLibrary();
+        CheckIndoorProps(); // the Household, Office, Kitchen, Garden and Misc folders (SelfTestPropsIndoor.cs)
         CheckPropFileErrors();
         CheckPropCollision();
         CheckClutter();
@@ -298,8 +299,10 @@ public static partial class SelfTest
                 Fail($"{name}: {unreachable} spawn pairs have no path (props block the way?)");
             if (batches.Count != map.PropInstances.Count || batches.Chunks.Sum(c => c.Count) != batches.Count || batches.SlotOf.Any(s => s < 0))
                 Fail($"{name}: render batches don't cover every prop");
-            if (name == "Prop Gallery" && map.PropInstances.Count != Props.All.Length)
-                Fail($"Prop Gallery shows {map.PropInstances.Count} props but the library has {Props.All.Length}");
+            // The first gallery keeps its look; newer prop folders have their own gallery maps ("Prop Gallery 2", "Prop Gallery 3").
+            if (name == "Prop Gallery" && Props.All.FirstOrDefault(p => !Maps.All.Any(m => m.Name.StartsWith("Prop Gallery", StringComparison.Ordinal)
+                                                                                       && m.PropInstances.Any(q => q.Def == p))) is { } unshown)
+                Fail($"'{unshown.Name}' ({unshown.Category}) isn't on any Prop Gallery map");
         }
         Line("(both maps also play the full bot match in \"Matches\" above, like every map)");
     }

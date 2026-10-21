@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Striped Rug",
+  "category": "Household",
+  "description": "A striped runner rug (flat).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "fadeDistance": 60,
+  "parts": [
+    {"size": [1.8, 0.008, 1.0], "offset": [0.0, 0.004, 0.0], "color": "#3a5a8a"},
+    {"size": [1.68, 0.003, 0.88], "offset": [0.0, 0.009, 0.0], "color": "#d8c8a0"},
+    {"size": [1.68, 0.002, 0.06], "offset": [0.0, 0.012, -0.25], "color": "#3a5a8a"},
+    {"size": [1.68, 0.002, 0.06], "offset": [0.0, 0.012, -0.125], "color": "#3a5a8a"},
+    {"size": [1.68, 0.002, 0.06], "offset": [0.0, 0.012, 0.0], "color": "#3a5a8a"},
+    {"size": [1.68, 0.002, 0.06], "offset": [0.0, 0.012, 0.125], "color": "#3a5a8a"},
+    {"size": [1.68, 0.002, 0.06], "offset": [0.0, 0.012, 0.25], "color": "#3a5a8a"},
+    {"size": [0.02, 0.004, 1.0], "offset": [-0.92, 0.002, 0.0], "color": "#e0d8c0"},
+    {"size": [0.02, 0.004, 1.0], "offset": [0.92, 0.002, 0.0], "color": "#e0d8c0"}
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Acoustic Guitar",
+  "category": "Misc",
+  "description": "An acoustic guitar lying on its back.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "breakable": {"health": 8, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.02, 0.12], "speed": 3}},
+  "parts": [
+    {"size": [0.36, 0.1, 0.44], "offset": [-0.3, 0.05, 0.0], "color": "#c8904a"},
+    {"size": [0.3, 0.1, 0.34], "offset": [0.0, 0.05, 0.0], "color": "#c8904a"},
+    {"size": [0.32, 0.005, 0.42], "offset": [-0.3, 0.103, 0.0], "color": "#d8a05a"},
+    {"size": [0.26, 0.005, 0.3], "offset": [0.0, 0.103, 0.0], "color": "#d8a05a"},
+    {"size": [0.1, 0.006, 0.041], "offset": [-0.12, 0.103, 0.0], "color": "#1a1410"},
+    {"size": [0.1, 0.006, 0.041], "offset": [-0.12, 0.103, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#1a1410"},
+    {"size": [0.1, 0.006, 0.041], "offset": [-0.12, 0.103, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#1a1410"},
+    {"size": [0.1, 0.006, 0.041], "offset": [-0.12, 0.103, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#1a1410"},
+    {"size": [0.04, 0.012, 0.1], "offset": [-0.36, 0.106, 0.0], "color": "#3a2414"},
+    {"size": [0.5, 0.03, 0.06], "offset": [0.38, 0.085, 0.0], "color": "#3a2414"},
+    {"size": [0.14, 0.03, 0.08], "offset": [0.69, 0.085, 0.0], "color": "#3a2414"},
+    {"size": [0.82, 0.003, 0.004], "offset": [0.1, 0.107, -0.012], "color": "#d8d8d8"},
+    {"size": [0.82, 0.003, 0.004], "offset": [0.1, 0.107, 0.0], "color": "#d8d8d8"},
+    {"size": [0.82, 0.003, 0.004], "offset": [0.1, 0.107, 0.012], "color": "#d8d8d8"}
+  ]
+}

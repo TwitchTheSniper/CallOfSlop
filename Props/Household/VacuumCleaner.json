@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Vacuum Cleaner",
+  "category": "Household",
+  "description": "A red cylinder vacuum cleaner with its hose out.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 20, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.03, 0.12], "speed": 3}},
+  "parts": [
+    {"size": [0.36, 0.22, 0.26], "offset": [0.0, 0.15, 0.0], "color": "#c03040"},
+    {"size": [0.3, 0.06, 0.22], "offset": [0.0, 0.29, 0.0], "color": "#a02030"},
+    {"size": [0.12, 0.04, 0.16], "offset": [0.0, 0.34, -0.02], "color": "#222222"},
+    {"size": [0.08, 0.06, 0.033], "offset": [-0.12, 0.03, 0.09], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [-0.12, 0.03, 0.09], "rotation": [0.0, 45.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [-0.12, 0.03, 0.09], "rotation": [0.0, 90.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [-0.12, 0.03, 0.09], "rotation": [0.0, 135.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.12, 0.03, 0.09], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.12, 0.03, 0.09], "rotation": [0.0, 45.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.12, 0.03, 0.09], "rotation": [0.0, 90.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.12, 0.03, 0.09], "rotation": [0.0, 135.0, 0.0], "color": "black"},
+    {"size": [0.04, 0.6, 0.04], "offset": [0.32, 0.16, 0.0], "rotation": [0.0, 0.0, -80.0], "color": "#888888"},
+    {"size": [0.3, 0.05, 0.08], "offset": [0.62, 0.025, 0.0], "color": "#333333"},
+    {"size": [0.03, 0.4, 0.03], "offset": [0.16, 0.28, 0.12], "rotation": [0.0, 0.0, -70.0], "color": "#222222"}
+  ]
+}

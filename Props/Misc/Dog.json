@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Dog",
+  "category": "Misc",
+  "description": "A sleepy labrador lying down.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 45,
+  "parts": [
+    {"size": [0.6, 0.22, 0.28], "offset": [0.0, 0.11, 0.0], "color": "#c8a070"},
+    {"size": [0.2, 0.16, 0.2], "offset": [0.36, 0.12, 0.0], "color": "#c8a070"},
+    {"size": [0.12, 0.08, 0.12], "offset": [0.5, 0.08, 0.0], "color": "#c8a070"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.57, 0.12, 0.0], "color": "#111111"},
+    {"size": [0.06, 0.12, 0.03], "offset": [0.34, 0.14, 0.11], "color": "#8a6a40"},
+    {"size": [0.06, 0.12, 0.03], "offset": [0.34, 0.14, -0.11], "color": "#8a6a40"},
+    {"size": [0.02, 0.02, 0.006], "offset": [0.46, 0.17, 0.06], "color": "#111111"},
+    {"size": [0.02, 0.02, 0.006], "offset": [0.46, 0.17, -0.06], "color": "#111111"},
+    {"size": [0.22, 0.06, 0.08], "offset": [0.42, 0.03, 0.1], "color": "#c8a070"},
+    {"size": [0.22, 0.06, 0.08], "offset": [0.42, 0.03, -0.1], "color": "#c8a070"},
+    {"size": [0.3, 0.05, 0.05], "offset": [-0.42, 0.06, 0.06], "rotation": [0.0, -25.0, 0.0], "color": "#c8a070"},
+    {"size": [0.04, 0.03, 0.29], "offset": [0.25, 0.175, 0.0], "color": "#c02020"}
+  ]
+}
