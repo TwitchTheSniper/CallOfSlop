@@ -215,7 +215,7 @@ public sealed partial class Game
         if (b.Skill == BotDifficulty.Easy || p.Grenade == ThrowableKind.None || p.GrenadesLeft <= 0 || now < p.NextThrow)
             return;
         var rate = (b.Skill == BotDifficulty.Hard ? 0.006 : 0.003) * b.Profile.GrenadeRate;
-        if (visible && dist is > 6f and < 18f && _rng.NextDouble() < rate)
+        if (visible && dist is > 6f and < 15f && _rng.NextDouble() < rate)
         {
             BotThrowAt(p, b, target!.Position, now);
             return;
@@ -225,7 +225,7 @@ public sealed partial class Game
         if (!visible && b.Profile.GrenadeRate >= 1.5f && lost is > 1 and < 4)
         {
             var d = Vector3.Distance(p.Position, b.LastSeenAt);
-            if (d is > 8f and < 30f && _rng.NextDouble() < rate * 0.5)
+            if (d is > 8f and < 22f && _rng.NextDouble() < rate * 0.5)
                 BotThrowAt(p, b, b.LastSeenAt, now);
         }
     }

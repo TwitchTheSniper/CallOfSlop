@@ -423,7 +423,7 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s where it lands (1.2 s after the throw, or on landing if it's still in the air then). Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you through walls as a silhouette in their team colour (orange in free-for-all modes); teammates are never revealed. It beeps once a second, so enemies can hear where it is. |
 
-Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-18 m away, picking the angle that makes the grenade go off at the target (bounces and roll included); Tacticians throw more, also at where an enemy just ducked out of sight (up to 30 m away). Explosions shake your screen when they're close.
+Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, picking the angle that makes the grenade go off at the target (bounces and roll included); Tacticians throw more, also at where an enemy just ducked out of sight (up to 22 m away). Explosions shake your screen when they're close.
 
 ### Loadouts and weapons
 
