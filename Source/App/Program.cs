@@ -1744,17 +1744,9 @@ public static unsafe partial class Program
             }
         }
         ObjectiveRender.Draw(Gfx, _game, now); // hill zone, flags, carrier beacons (game modes)
-        // Enemies near your Recon Pulse show through walls.
+        // Enemies revealed by a Recon Pulse / Recon Sweep show through walls, in their team colour (Source/Render/ReconOverlay.cs).
         Gfx.SetDepthTest(false);
-        foreach (var p in _game.Players.Values)
-        {
-            if (!_game.IsRevealed(p, now))
-                continue;
-            var hb = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
-            var pulse = 0.35f + 0.15f * MathF.Sin((float)now * 8f);
-            Gfx.DrawBox(hb, new Vector3(1f, 0.15f, 0.1f), mode: 2);
-            Gfx.Draw(Matrix4x4.CreateScale(hb.Half * 2.2f) * Matrix4x4.CreateTranslation(hb.Center), new Vector3(1f, 0.3f, 0.2f), pulse, mode: 2);
-        }
+        ReconOverlay.Draw(Gfx, _game, now);
         Gfx.SetDepthTest(true);
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);
