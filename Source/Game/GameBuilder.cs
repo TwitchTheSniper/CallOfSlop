@@ -93,11 +93,18 @@ public sealed partial class Game
         return m + right * lateral.X + up * lateral.Y;
     }
 
+    private double _testShotClock;
+
     /// <summary>Self-test: resolves one shot of <paramref name="def"/> by the local (host) player through the real server path.</summary>
     internal void TestServerShot(WeaponDef def, Vector3 dir, uint seed)
     {
         if (Local is { } me)
-            ServerResolveShot(me, def, me.Eye, dir, 0f, seed, ServerTick, Brutal.GlfwApi.Glfw.Time);
+        {
+            // Its own clock, 10 s apart per test shot, so the fire-rate budget never refuses one (the window clock can be
+            // stopped or 0 in a headless run, e.g. on Linux CI with no display).
+            _testShotClock += 10;
+            ServerResolveShot(me, def, me.Eye, dir, 0f, seed, ServerTick, Math.Max(Brutal.GlfwApi.Glfw.Time, 0) + _testShotClock);
+        }
     }
 
     // ---- Spool-up (miniguns, chain guns) ---------------------------------------------------
