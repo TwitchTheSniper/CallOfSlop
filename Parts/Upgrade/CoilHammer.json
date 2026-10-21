@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Coil Hammer",
+  "category": "upgrade",
+  "rarity": "rare",
+  "flavor": "An electromagnetic hammer strikes the primer and then some.",
+  "weight": 0.4,
+  "model": [
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "brass"},
+    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "damage", "mul": 1.2}
+  ]
+}

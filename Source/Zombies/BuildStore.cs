@@ -2,8 +2,10 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The workbench's saved builds: up to <see cref="SlotCount"/> slots in workbench.txt next to the game (a new file; no
-/// other save changes). Slots 1-2 are always yours; 3-4 are unlockable in Zombies (in the sandbox they can be filled
-/// but show as "unlockable"). Lines are <c>slot1=Name|style|Grip{...}</c>, plus <c>selected=</c> and <c>second=</c>.
+/// other save changes). Slots 1-2 are always yours; 3-4 come with the Zombies slot upgrade (bought on the map once per
+/// run; the sandbox has a toggle). Lines are <c>slot1=Name|style|Grip{...}</c>, plus <c>melee=</c> (the melee slot),
+/// <c>selected=</c>, <c>second=</c>, <c>slots4=</c> (the sandbox toggle) and <c>dummies=</c> (practice dummies in the
+/// range). Files from before the melee slot simply have no <c>melee=</c> line and load as they were.
 /// </summary>
 public static class BuildStore
 {
@@ -13,6 +15,15 @@ public static class BuildStore
     public const int FreeSlots = 2;
 
     public static readonly WeaponBuild?[] Slots = new WeaponBuild?[SlotCount];
+
+    /// <summary>The melee slot: a melee build (rooted on a hilt), or null for the standard knife/butt strike.</summary>
+    public static WeaponBuild? Melee;
+
+    /// <summary>Sandbox toggle: start the Workbench Range with weapon slots 3-4 unlocked (in Zombies: bought on the map, per run).</summary>
+    public static bool ExtraSlotsUnlocked;
+
+    /// <summary>Practice dummies standing down the Workbench Range (for the cart turret, cleave and stun).</summary>
+    public static int Dummies = 4;
 
     /// <summary>The slot being edited (and the primary in the range), and the slot used as the range secondary.</summary>
     public static int Selected, Second = 1;
@@ -45,6 +56,7 @@ public static class BuildStore
             var ex = BuilderExamples.All();
             for (var i = 0; i < SlotCount && i < ex.Count; i++)
                 Slots[i] = ex[i].Build;
+            Melee = BuilderExamples.Melee().Select(m => m.Build).FirstOrDefault();
             return;
         }
         Load(lines, Parts.Find, out _);
@@ -55,6 +67,7 @@ public static class BuildStore
     {
         dropped = new List<string>();
         Array.Clear(Slots);
+        Melee = null;
         foreach (var raw in lines)
         {
             var line = raw.Trim();
@@ -74,6 +87,22 @@ public static class BuildStore
                     dropped.Add($"slot {n}: {ex.Message}");
                 }
             }
+            else if (key == "melee")
+            {
+                try
+                {
+                    var m = WeaponBuild.Parse(value, find, dropped);
+                    Melee = m.IsMelee ? m : null;
+                }
+                catch (FormatException ex)
+                {
+                    dropped.Add($"melee: {ex.Message}");
+                }
+            }
+            else if (key == "slots4")
+                ExtraSlotsUnlocked = value.Trim() == "1";
+            else if (key == "dummies" && int.TryParse(value, out var dn))
+                Dummies = Math.Clamp(dn, 0, 8);
             else if (key == "selected" && int.TryParse(value, out var s))
                 Selected = Math.Clamp(s - 1, 0, SlotCount - 1);
             else if (key == "second" && int.TryParse(value, out var s2))
@@ -90,8 +119,12 @@ public static class BuildStore
         for (var i = 0; i < SlotCount; i++)
             if (Slots[i] is { } b)
                 list.Add($"slot{i + 1}={b.ToText()}");
+        if (Melee is { } m)
+            list.Add($"melee={m.ToText()}");
         list.Add($"selected={Selected + 1}");
         list.Add($"second={Second + 1}");
+        list.Add($"slots4={(ExtraSlotsUnlocked ? 1 : 0)}");
+        list.Add($"dummies={Dummies}");
         return list;
     }
 
@@ -202,7 +235,7 @@ public static class BuilderExamples
             }
             r.Attach("feed", Need("Drum Mag", find));
             r.Attach("ammo", Need("5.56 FMJ", find));
-            return new Example(b, 220, 400, "Ridiculous: a 4-way splitter feeding four 3-way splitters, twelve barrels.");
+            return new Example(b, 80, 220, "Ridiculous: a 4-way splitter feeding four 3-way splitters, twelve barrels (the same total damage, everywhere).");
         });
         Try(() =>
         {
@@ -234,11 +267,38 @@ public static class BuilderExamples
         });
         Try(() =>
         {
-            var b = new WeaponBuild("Shopping Spree", Need("Push Cart", find)) { Style = FireStyle.Volley };
+            var b = new WeaponBuild("Shopping Spree", Need("Push Cart", find));
             for (var i = 1; i <= 16; i++)
                 Rx(b.Root!, $"receiver_{i}", "Stampede Receiver", "Stub Barrel", "Stick Mag", "9mm Ball");
             return new Example(b, 3000, 5500, "Sixteen SMG receivers on a push cart. Hip fire only.");
         });
+        return list;
+    }
+
+    /// <summary>The example melee builds (machete, nail bat, sledgehammer, fire axe, chainsaw sword, frying pan, frozen fish).</summary>
+    public static List<(WeaponBuild Build, string Note)> Melee(Func<string, PartDef?>? find = null)
+    {
+        find ??= Parts.Find;
+        var list = new List<(WeaponBuild, string)>();
+        void Add(string name, string hilt, string head, string? mod1, string? mod2, string note)
+        {
+            if (find(hilt) is not { } h || find(head) is not { } hd)
+                return;
+            var b = new WeaponBuild(name, h);
+            b.Root!.Attach("head", hd);
+            if (mod1 != null && find(mod1) is { } m1)
+                b.Root.Attach("mod_1", m1);
+            if (mod2 != null && find(mod2) is { } m2)
+                b.Root.Attach("mod_2", m2);
+            list.Add((b, note));
+        }
+        Add("Machete", "Wooden Handle", "Machete Blade", null, null, "Fast, cleaves two.");
+        Add("Nail Bat", "Bat Grip", "Bat Barrel", "Nail Ring", null, "A bat with nails: hits hard, stuns a little.");
+        Add("Sledgehammer", "Long Haft", "Sledgehammer Head", null, null, "Slow, huge damage, long stun.");
+        Add("Fire Axe", "Long Haft", "Fire Axe Head", null, null, "Wide swings that take several at once.");
+        Add("Chainsaw Sword", "Motor Hilt", "Chainsaw Blade", "Grip Tape", null, "Very fast sweeps through crowds.");
+        Add("Frying Pan", "Wooden Handle", "Frying Pan", null, null, "Bonk: big stun.");
+        Add("The Codfather", "Fishing Rod Grip", "Frozen Fish", null, "Whoopee Cushion", "Long reach, stuns everything it slaps.");
         return list;
     }
 }

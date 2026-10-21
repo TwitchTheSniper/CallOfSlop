@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Nail Bat",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A baseball bat with nails through it. A classic for a reason.",
+  "build": "Bat Grip{head:Bat Barrel,mod_1:Nail Ring}"
+}

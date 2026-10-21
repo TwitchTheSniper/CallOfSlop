@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Padded Sling",
+  "category": "utility",
+  "rarity": "common",
+  "flavor": "A wide padded strap. The grip carries 1.5 kg more before you feel it.",
+  "weight": 0.2,
+  "carry": 1.5,
+  "model": [
+    {"size": [0.012, 0.03, 0.08], "pos": [0.006, 0, 0], "color": "olive"},
+    {"size": [0.014, 0.012, 0.012], "pos": [0.007, 0, -0.045], "color": "steel"}
+  ]
+}

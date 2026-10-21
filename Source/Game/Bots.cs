@@ -30,6 +30,12 @@ public sealed class BotBrain
         EdgePenaltyFn = EdgePenalty;
     }
 
+    /// <summary>A Workbench Range practice dummy: stands at <see cref="DummyHome"/>, never moves or shoots (GameZombies.cs).</summary>
+    public bool Dummy;
+
+    public Vector3 DummyHome;
+    public bool DummyPlaced;
+
     // ---- Perception ----
     public byte Target = byte.MaxValue;
     public double TargetSince;
@@ -229,6 +235,8 @@ public sealed partial class Game
     private void BotTick(Player p, double now)
     {
         var b = p.Bot!;
+        if (BotHeld(p, b, now))
+            return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
         if (!p.Alive)
         {
             b.Target = byte.MaxValue;

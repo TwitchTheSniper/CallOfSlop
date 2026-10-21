@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Exo Twelve",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Twelve rifle receivers on a servo harness, taking turns: six on an ammo can manifold, six on stick mags.",
+  "build": "Exo Harness{receiver_1:Workhorse Receiver{barrel:Stub Barrel},receiver_2:Workhorse Receiver{barrel:Stub Barrel},receiver_3:Workhorse Receiver{barrel:Stub Barrel},receiver_4:Workhorse Receiver{barrel:Stub Barrel},receiver_5:Workhorse Receiver{barrel:Stub Barrel},receiver_6:Workhorse Receiver{barrel:Stub Barrel},receiver_7:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_8:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_9:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_10:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_11:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_12:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},hopper:Ammo Can Manifold{ammo:5.56 FMJ},stock:Shoulder Harness}"
+}

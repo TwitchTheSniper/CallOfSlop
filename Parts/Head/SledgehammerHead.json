@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Sledgehammer Head",
+  "category": "head",
+  "rarity": "uncommon",
+  "flavor": "Five kilos of forged steel. Slow. Final.",
+  "weight": 5.0,
+  "melee": {"damage": 70, "swingMult": 1.5, "stun": 1.0},
+  "model": [
+    {"size": [0.08, 0.08, 0.2], "pos": [0, 0, -0.04], "rot": [90, 0, 0], "color": "gunmetal"},
+    {"size": [0.085, 0.085, 0.02], "pos": [0, 0.1, -0.04], "rot": [90, 0, 0], "color": "steel"}
+  ]
+}

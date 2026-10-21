@@ -5,7 +5,7 @@
   "rarity": "legendary",
   "flavor": "A 2 by 2 grid of outputs at 40% each. Bring enough for everyone.",
   "weight": 1.2,
-  "split": {"outputMult": 0.4, "splay": 0},
+  "split": {"splay": 0, "spreadMult": 0.7},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [-0.035, 0.032, -0.06], "accepts": ["barrel", "splitter"]},
     {"name": "barrel_2", "type": "barrel", "pos": [0.035, 0.032, -0.06], "accepts": ["barrel", "splitter"]},

@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ammo Can Manifold",
+  "category": "feed",
+  "rarity": "epic",
+  "flavor": "A big green can with six belts coming out of it. Feeds six rifle or heavy receivers.",
+  "mount": "hopper",
+  "bores": ["rifle", "heavy"],
+  "weight": 3.5,
+  "feed": "hopper",
+  "hand": [0, -0.05, 0],
+  "shared": {"feeds": 6},
+  "sockets": [
+    {"name": "ammo", "type": "ammo", "pos": [0, -0.02, 0]}
+  ],
+  "model": [
+    {"size": [0.12, 0.1, 0.12], "pos": [0, -0.06, 0], "color": "olive"},
+    {"size": [0.13, 0.015, 0.13], "pos": [0, -0.008, 0], "color": "black"},
+    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [0.04, -0.02, -0.08], "color": "black"},
+    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [-0.04, -0.02, -0.08], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 300},
+    {"stat": "reload", "set": 6.0}
+  ]
+}

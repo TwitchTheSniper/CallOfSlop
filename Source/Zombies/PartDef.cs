@@ -15,6 +15,21 @@ public enum PartCategory : byte
     Optic,
     Muzzle,
     Utility,
+
+    /// <summary>Receiver upgrades: mount on a receiver's upgrade sockets (behind it or on its side) and raise its fire rate or damage.</summary>
+    Upgrade,
+
+    /// <summary>Damage multipliers: one per receiver, in its "amp" socket (an overpressure chamber, a hot-load kit...).</summary>
+    Multiplier,
+
+    /// <summary>Melee only: the handle a melee weapon is built on (the root of a melee build).</summary>
+    Hilt,
+
+    /// <summary>Melee only: what hits (a blade, a hammer head, a fish).</summary>
+    Head,
+
+    /// <summary>Melee only: modifiers on a hilt (nails, a wrap, a counterweight).</summary>
+    MeleeMod,
 }
 
 /// <summary>How rare (and how strong) a part is. Later rounds drop rarer parts; scrap values follow the tier.</summary>
@@ -134,8 +149,11 @@ public enum FireStyle : byte
 /// </summary>
 public sealed class FrameInfo
 {
-    /// <summary>Fire styles the grip allows; the first is the default (the build picks one).</summary>
-    public FireStyle[] FireStyles = [FireStyle.Volley];
+    /// <summary>
+    /// How the grip fires several receivers. Fixed by the grip (the user's call, docs/zombies/WEAPON-BUILDER.md): picking
+    /// the grip picks the style; a build has no choice of its own.
+    /// </summary>
+    public FireStyle Style = FireStyle.Volley;
 
     /// <summary>How it's held: "one" (pistol), "two" (rifle), "chainsaw" (top handle + trigger handle), "cart" (both hands on a push bar), "wheel", "case".</summary>
     public string Hands = "two";
@@ -159,14 +177,71 @@ public sealed class FrameInfo
     public float ReloadPerReceiver = 0.25f;
 }
 
+/// <summary>
+/// A shared feed (hopper / manifold) on a grip's "hopper" socket: one pooled magazine that feeds up to <see cref="Feeds"/>
+/// receivers that have no feed of their own (in receiver-socket order, matching bores and actions only). Its capacity
+/// and reload are its "mag" and "reload" stats; ammo in its own "ammo" socket is shared by every receiver it feeds.
+/// </summary>
+public sealed class SharedFeedInfo
+{
+    /// <summary>How many receivers it can feed at most.</summary>
+    public int Feeds = 3;
+}
+
+/// <summary>
+/// A melee hilt (the root of a melee build): the base numbers of the melee weapon. Heads and modifiers change them with
+/// their <see cref="MeleeEffects"/>.
+/// </summary>
+public sealed class HiltInfo
+{
+    public float Damage = 30;
+
+    /// <summary>Seconds between swings.</summary>
+    public float Swing = 0.7f;
+
+    /// <summary>Reach from the eyes, metres.</summary>
+    public float Reach = 2.0f;
+
+    /// <summary>How many targets one swing can hit.</summary>
+    public int Cleave = 1;
+
+    /// <summary>Seconds a hit target is stunned.</summary>
+    public float Stun;
+
+    /// <summary>"one" or "two" handed (two-handed hilts swing slower but hit harder, set in the numbers).</summary>
+    public string Hands = "one";
+}
+
+/// <summary>What a melee head or modifier does to the hilt's numbers.</summary>
+public sealed class MeleeEffects
+{
+    /// <summary>Damage added, then multiplied.</summary>
+    public float Damage, DamageMult = 1f;
+
+    /// <summary>Swing time multiplier (below 1 = faster).</summary>
+    public float SwingMult = 1f;
+
+    /// <summary>Reach added (m), extra targets per swing, stun seconds added.</summary>
+    public float Reach;
+
+    public int Cleave;
+    public float Stun;
+}
+
 /// <summary>Splitter-only data: the documented damage rule for each output.</summary>
 public sealed class SplitInfo
 {
-    /// <summary>Damage multiplier on every output barrel. 1/N conserves the shot's damage; more than 1/N multiplies it (silly tier).</summary>
-    public float OutputMult = 0.5f;
-
     /// <summary>Outputs fan out by this many degrees each side of centre (0 = parallel barrels).</summary>
     public float SplayDeg;
+
+    /// <summary>Spread multiplier on every output (rarer splitters are more accurate: below 1 = tighter).</summary>
+    public float SpreadMult = 1f;
+
+    /// <summary>
+    /// Damage on every output: always 1 / outputs, so a splitter never changes the total damage of a shot (the user's
+    /// rule: splitters trade focus for spread and coverage; rarity buys accuracy and more outputs, not damage).
+    /// </summary>
+    public static float OutputMult(PartDef splitter) => 1f / Math.Max(1, splitter.Sockets.Count(s => s.Type == "barrel"));
 }
 
 /// <summary>
@@ -225,11 +300,26 @@ public sealed class PartDef
     public ReceiverInfo? Receiver;
     public SplitInfo? Split;
 
-    /// <summary>Root grips only (a grip with no mount): receiver capacity, fire styles, handling.</summary>
+    /// <summary>Root grips only (a grip with no mount): receiver capacity, fire style, handling.</summary>
     public FrameInfo? Frame;
 
-    /// <summary>True for the grips a weapon is built on (the root of the tree).</summary>
-    public bool IsRoot => Frame != null;
+    /// <summary>Shared feeds only (a feed on a grip's "hopper" socket).</summary>
+    public SharedFeedInfo? Shared;
+
+    /// <summary>Melee hilts only: the root of a melee build.</summary>
+    public HiltInfo? Hilt;
+
+    /// <summary>Melee heads and modifiers: what they do to the hilt's numbers.</summary>
+    public MeleeEffects? Melee;
+
+    /// <summary>Weight relief: kg added to the grip's carry weight while this part is on the build (slings, harnesses, anti-grav).</summary>
+    public float CarryBonus;
+
+    /// <summary>True for the parts a build starts from: gun grips (the root of a weapon) and melee hilts (the root of a melee weapon).</summary>
+    public bool IsRoot => Frame != null || Hilt != null;
+
+    /// <summary>A melee-only part (hilt, head or modifier).</summary>
+    public bool IsMeleePart => Category is PartCategory.Hilt or PartCategory.Head or PartCategory.MeleeMod;
 
     /// <summary>How many receivers a root grip holds (its "receiver" sockets).</summary>
     public int ReceiverCapacity => Sockets.Count(s => s.Type == "receiver");
@@ -251,7 +341,13 @@ public sealed class PartDef
     }
 
     /// <summary>Display name of a category ("Receiver", "Barrel"...).</summary>
-    public static string CategoryName(PartCategory c) => c.ToString();
+    public static string CategoryName(PartCategory c) => c switch
+    {
+        PartCategory.Multiplier => "Damage Multiplier",
+        PartCategory.Upgrade => "Receiver Upgrade",
+        PartCategory.MeleeMod => "Melee Mod",
+        _ => c.ToString(),
+    };
 
     /// <summary>Display name of a tier.</summary>
     public static string RarityName(Rarity r) => r.ToString();

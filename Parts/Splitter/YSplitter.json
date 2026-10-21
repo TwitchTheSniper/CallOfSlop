@@ -5,7 +5,7 @@
   "rarity": "common",
   "flavor": "One shot in, two half-shots out, side by side. Physics stays roughly intact.",
   "weight": 0.6,
-  "split": {"outputMult": 0.5, "splay": 0},
+  "split": {"splay": 0},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [-0.035, 0, -0.06], "accepts": ["barrel", "splitter"]},
     {"name": "barrel_2", "type": "barrel", "pos": [0.035, 0, -0.06], "accepts": ["barrel", "splitter"]}

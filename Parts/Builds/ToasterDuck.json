@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Toaster Duck",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Rubber ducks, two at a time, out of a toaster.",
+  "build": "Pistol Grip{receiver_1:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Rubber Duck Rounds}}"
+}

@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Sword Hilt",
+  "category": "hilt",
+  "rarity": "rare",
+  "flavor": "A wrapped grip, a crossguard and a pommel. Fast hands.",
+  "weight": 0.6,
+  "hand": [0, 0, 0.0],
+  "gripAngle": 20,
+  "hilt": {"damage": 38, "swing": 0.5, "reach": 2.2, "cleave": 1, "hands": "one"},
+  "sockets": [
+    {"name": "head", "type": "head", "pos": [0, 0, -0.1], "required": true},
+    {"name": "mod_1", "type": "mod", "pos": [0, 0, 0.02]},
+    {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.07]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.03, 0.03, 0.16], "pos": [0, 0, 0.0], "color": "black"},
+    {"size": [0.16, 0.025, 0.025], "pos": [0, 0, -0.085], "color": "brass"},
+    {"size": [0.04, 0.04, 0.04], "pos": [0, 0, 0.09], "color": "brass"}
+  ]
+}

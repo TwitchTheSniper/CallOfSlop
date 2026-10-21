@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Twin Splitter Shotgun",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A pump shotgun through a Y-splitter: twice the pellets, half the damage each, the same total.",
+  "build": "Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot},stock:Wire Stock}"
+}

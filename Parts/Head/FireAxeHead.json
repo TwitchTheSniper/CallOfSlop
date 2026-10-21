@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Fire Axe Head",
+  "category": "head",
+  "rarity": "uncommon",
+  "flavor": "A red axe head with a spike on the back. Through doors, through zombies.",
+  "weight": 2.2,
+  "melee": {"damage": 42, "swingMult": 1.2, "reach": 0.1, "cleave": 1},
+  "model": [
+    {"size": [0.012, 0.16, 0.08], "pos": [0, 0.07, -0.03], "color": [0.75, 0.12, 0.1]},
+    {"size": [0.013, 0.02, 0.09], "pos": [0, 0.15, -0.03], "color": "chrome"},
+    {"size": [0.012, 0.06, 0.03], "pos": [0, -0.04, -0.03], "color": [0.75, 0.12, 0.1]}
+  ]
+}

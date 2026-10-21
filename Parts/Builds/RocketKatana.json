@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Rocket Katana",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A katana with a rocket motor taped on. Very fast, very silly.",
+  "build": "Sword Hilt{head:Katana Blade,mod_1:Rocket Booster}"
+}

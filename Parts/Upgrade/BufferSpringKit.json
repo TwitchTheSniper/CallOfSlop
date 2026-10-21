@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Buffer Spring Kit",
+  "category": "upgrade",
+  "rarity": "uncommon",
+  "flavor": "Stiffer springs, shorter stroke, faster cycle.",
+  "weight": 0.2,
+  "model": [
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "black"},
+    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "rpm", "mul": 1.15},
+    {"stat": "recoilDeg", "mul": 1.05}
+  ]
+}

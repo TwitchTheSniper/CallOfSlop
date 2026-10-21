@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Minigun",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Six barrels taking turns off a backpack hopper, once it spins up.",
+  "build": "Tactical Rifle Grip{receiver_1:Hellwheel Rotary Receiver{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel,barrel_5:Standard Barrel,barrel_6:Standard Barrel,feed:Backpack Hopper,ammo:5.56 FMJ},foregrip:Chaingun Handle}"
+}

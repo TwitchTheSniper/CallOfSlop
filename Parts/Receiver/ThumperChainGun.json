@@ -10,7 +10,10 @@
     {"name": "barrel", "type": "barrel", "pos": [0, 0.0558, -0.22], "accepts": ["barrel", "splitter"], "required": true},
     {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.099], "required": true},
     {"name": "ammo", "type": "ammo", "pos": [0, 0.045, 0], "required": true},
-    {"name": "utility", "type": "utility", "pos": [0.042, 0.045, -0.132]}
+    {"name": "utility", "type": "utility", "pos": [0.042, 0.045, -0.132]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.056, 0.1]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.075, 0.056, 0.02], "rot": [0, 0, 0]},
+    {"name": "amp", "type": "amp", "pos": [-0.075, 0.056, 0.02]}
   ],
   "model": [
     {"size": [0.08, 0.09, 0.32], "pos": [0, 0.045, -0.06], "color": "gunmetal"},

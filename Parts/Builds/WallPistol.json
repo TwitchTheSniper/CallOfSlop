@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Wall Pistol",
+  "tier": "common",
+  "source": [
+    "wall",
+    "start"
+  ],
+  "flavor": "A pistol grip, a plinker and a stick mag. Your sidearm until something better drops.",
+  "build": "Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+}

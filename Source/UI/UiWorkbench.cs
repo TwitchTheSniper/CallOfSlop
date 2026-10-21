@@ -4,14 +4,20 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>What the workbench asks Program to start: a Workbench Range session with these two built weapons.</summary>
-public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary);
+/// <summary>
+/// What the workbench asks Program to start: a Workbench Range session with these built weapons (slots 3-4 used once
+/// the slot upgrade is on or bought at the range's station), the built melee weapon (null = the standard strike) and
+/// how many practice dummies stand down the range.
+/// </summary>
+public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary, WeaponDef? Third = null, WeaponDef? Fourth = null, MeleeDef? Melee = null,
+    bool ExtraSlots = false, int Dummies = 0);
 
 /// <summary>
 /// The Weapon Workbench (Zombies preview, docs/zombies/WEAPON-BUILDER.md): every part (sandbox: all unlocked) on the left,
 /// the live 3D build in the middle with its part tree under it (the grip's receiver slots first), stats with deltas and
-/// problems on the right, four save slots (3-4 "unlockable in Zombies") and Test fire, which opens the Workbench Range
-/// with the selected build and the second slot as your two weapons. Click a socket, then a part (or a part, then a socket).
+/// problems on the right, four save slots (3-4 with the slot upgrade), the melee slot (its own section: hilts, heads,
+/// mods), the standard builds as presets, the sandbox toggles (slots 3-4, practice dummies) and Test fire, which opens the
+/// Workbench Range with your builds. Click a socket, then a part (or a part, then a socket).
 /// </summary>
 public sealed partial class Ui
 {
@@ -27,6 +33,11 @@ public sealed partial class Ui
     private ImInputString? _wbNameInput;
     private (string Key, AssembledWeapon? Asm) _wbTrial;
 
+    /// <summary>Editing the melee slot (hilts, heads, mods) instead of a gun slot.</summary>
+    private bool _wbMelee;
+
+    private static readonly PartCategory[] MeleeCategories = [PartCategory.Hilt, PartCategory.Head, PartCategory.MeleeMod];
+
     private static readonly float4 Yellow = new(1f, 0.85f, 0.3f, 1f);
 
     public void OpenWorkbench()
@@ -40,14 +51,37 @@ public sealed partial class Ui
     public void SmokeWorkbenchBuild(WeaponBuild b)
     {
         _wb = b.Clone();
+        _wbMelee = b.IsMelee;
+        _wbCat = b.IsMelee ? PartCategory.Head : PartCategory.Grip;
         _wbNameInput?.SetValue(_wb.Name.AsSpan());
+        WorkbenchChanged();
+    }
+
+    /// <summary>Switches the editor to the melee slot (or back to the selected gun slot).</summary>
+    private void LoadWorkbenchMelee(bool melee)
+    {
+        _wbMelee = melee;
+        _wbPart = null;
+        if (!melee)
+        {
+            LoadWorkbenchSlot(BuildStore.Selected);
+            return;
+        }
+        _wbCat = PartCategory.Head;
+        _wb = BuildStore.Melee?.Clone() ?? new WeaponBuild("Melee", Parts.InCategory(PartCategory.Hilt).First(p => p.IsRoot));
+        _wbNameInput ??= new ImInputString(33);
+        _wbNameInput.SetValue(_wb.Name.AsSpan());
+        _wbSocketParent = _wbSocketName = null;
         WorkbenchChanged();
     }
 
     private void LoadWorkbenchSlot(int slot)
     {
         BuildStore.Selected = slot;
-        _wb = BuildStore.Slots[slot]?.Clone() ?? new WeaponBuild($"Build {slot + 1}", Parts.InCategory(PartCategory.Grip).First(p => p.IsRoot));
+        _wbMelee = false;
+        if (MeleeCategories.Contains(_wbCat))
+            _wbCat = PartCategory.Grip;
+        _wb = BuildStore.Slots[slot]?.Clone() ?? new WeaponBuild($"Build {slot + 1}", Parts.InCategory(PartCategory.Grip).First(p => p.Frame != null));
         _wbNameInput ??= new ImInputString(33);
         _wbNameInput.SetValue(_wb.Name.AsSpan());
         _wbSocketParent = _wbSocketName = null;
@@ -86,10 +120,10 @@ public sealed partial class Ui
         return asm;
     }
 
-    /// <summary>The build moved onto another grip: receivers go into the same-numbered slots, the rest by socket name where it fits.</summary>
+    /// <summary>The build moved onto another grip (or hilt): receivers go into the same-numbered slots, the rest by socket name where it fits.</summary>
     private static WeaponBuild Regrip(WeaponBuild b, PartDef grip)
     {
-        var nb = new WeaponBuild(b.Name, grip) { Style = grip.Frame!.FireStyles.Contains(b.Style) ? b.Style : grip.Frame.FireStyles[0] };
+        var nb = new WeaponBuild(b.Name, grip); // the fire style comes with the grip
         if (b.Root != null)
             foreach (var (s, c) in b.Root.Children())
                 if (grip.Sockets.FirstOrDefault(x => x.Name == s.Name && x.Type == s.Type) is { } ns)
@@ -164,11 +198,18 @@ public sealed partial class Ui
 
     private void DrawWorkbenchParts(WeaponBuild b)
     {
+        // Gun slots or the melee slot: each has its own parts.
+        if (ImGui.RadioButton("GUNS"u8, !_wbMelee) && _wbMelee)
+            LoadWorkbenchMelee(false);
+        ImGui.SameLine();
+        if (ImGui.RadioButton("MELEE SLOT"u8, _wbMelee) && !_wbMelee)
+            LoadWorkbenchMelee(true);
         ImGui.TextColored(Orange, "PARTS"u8);
+        var shown = 0;
         foreach (var c in Enum.GetValues<PartCategory>())
         {
             var n = Parts.InCategory(c).Count();
-            if (n == 0)
+            if (n == 0 || MeleeCategories.Contains(c) != _wbMelee)
                 continue;
             var on = c == _wbCat;
             if (on)
@@ -177,7 +218,7 @@ public sealed partial class Ui
                 _wbCat = c;
             if (on)
                 ImGui.PopStyleColor();
-            if ((int)c % 3 != 2)
+            if (++shown % 3 != 0)
                 ImGui.SameLine();
         }
         ImGui.NewLine();
@@ -204,7 +245,7 @@ public sealed partial class Ui
             if (p.IsRoot)
             {
                 _wb = Regrip(b, p);
-                _wbMessage = $"Moved the build onto the {p.Name} ({p.ReceiverCapacity} receiver slots).";
+                _wbMessage = p.Hilt != null ? $"Moved the head and mods onto the {p.Name}." : $"Moved the build onto the {p.Name} ({p.ReceiverCapacity} receiver slots, fires {p.Frame!.Style.ToString().ToLowerInvariant()}).";
                 WorkbenchChanged();
             }
             else if (socketParent != null && _wbSocketName != null)
@@ -232,11 +273,29 @@ public sealed partial class Ui
     {
         var bits = new List<string>();
         if (p.Frame is { } f)
-            bits.Add($"Holds {p.ReceiverCapacity} receivers, fires {string.Join("/", f.FireStyles.Select(x => x.ToString().ToLowerInvariant()))}, carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}");
+            bits.Add($"Holds {p.ReceiverCapacity} receivers, always fires {f.Style.ToString().ToLowerInvariant()} ({(f.Style == FireStyle.Volley ? "all at once" : "taking turns")}), carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}"
+                     + (p.Sockets.Any(s => s.Type == "hopper") ? ", takes a shared feed" : ""));
+        if (p.Shared is { } sh)
+            bits.Add($"shared feed: feeds up to {sh.Feeds} receivers with no feed of their own (pooled)");
+        if (p.CarryBonus > 0)
+            bits.Add($"weight relief: the grip carries {p.CarryBonus:0.#} kg more");
+        if (p.Hilt is { } hl)
+            bits.Add($"melee hilt: {hl.Damage:0} damage, {hl.Swing:0.00} s swing, {hl.Reach:0.0} m reach, cleave {hl.Cleave}{(hl.Stun > 0 ? $", stun {hl.Stun:0.0} s" : "")}, {hl.Hands}-handed");
+        if (p.Melee is { } me)
+        {
+            var mb = new List<string>();
+            if (me.Damage != 0) mb.Add($"damage {(me.Damage > 0 ? "+" : "")}{me.Damage:0}");
+            if (me.DamageMult != 1) mb.Add($"damage x{me.DamageMult:0.##}");
+            if (me.SwingMult != 1) mb.Add($"swing time x{me.SwingMult:0.##}");
+            if (me.Reach != 0) mb.Add($"reach {(me.Reach > 0 ? "+" : "")}{me.Reach:0.##} m");
+            if (me.Cleave != 0) mb.Add($"cleave {(me.Cleave > 0 ? "+" : "")}{me.Cleave}");
+            if (me.Stun != 0) mb.Add($"stun +{me.Stun:0.0} s");
+            bits.Add(string.Join(", ", mb));
+        }
         if (p.Receiver is { } r)
             bits.Add($"{r.Action.ToString().ToLowerInvariant()} action, {r.Bore} rounds, {(r.RpmPerBarrel > 0 ? $"{r.RpmPerBarrel} rpm per barrel" : $"{r.Rpm} rpm")}");
         if (p.Split is { } s)
-            bits.Add($"{p.Sockets.Count(x => x.Type == "barrel")} outputs at {s.OutputMult * 100:0}% damage each");
+            bits.Add($"{p.Sockets.Count(x => x.Type == "barrel")} outputs at {SplitInfo.OutputMult(p) * 100:0}% damage each (the same total){(s.SpreadMult != 1 ? $", spread x{s.SpreadMult:0.##}" : "")}");
         if (p.Bores.Length > 0)
             bits.Add("for " + string.Join(", ", p.Bores) + " rounds");
         if (p.RequiresAction.Length > 0)
@@ -260,11 +319,16 @@ public sealed partial class Ui
         if (b.Root == null)
             return;
         var grip = b.Root.Part;
-        ImGui.PushStyleColor(ImGuiCol.Text, WbCol(PartDef.RarityColor(grip.Rarity)));
-        ImGui.Text(grip.Name);
-        ImGui.PopStyleColor();
+        ImGuiSafe.TextColored(WbCol(PartDef.RarityColor(grip.Rarity)), grip.Name);
         ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, $"  receiver slots {b.Receivers.Count}/{grip.ReceiverCapacity}   (pick another grip from the Grip list to move the build)");
+        if (b.IsMelee)
+            ImGui.TextColored(Dim, "  melee weapon   (pick another hilt from the Hilt list to move the head and mods)"u8);
+        else
+        {
+            var fed = b.HopperFed().Count;
+            ImGuiSafe.TextColored(Dim, $"  receiver slots {b.Receivers.Count}/{grip.ReceiverCapacity}, fires {b.Style.ToString().ToUpperInvariant()}"
+                                       + (b.Hopper is { } h ? $", {h.Part.Name} feeds {fed}/{h.Part.Shared!.Feeds}" : "") + "   (pick another grip to move the build)");
+        }
         DrawTreeNode(b, b.Root, 1);
     }
 
@@ -320,6 +384,11 @@ public sealed partial class Ui
         "foregrip" => PartCategory.Grip,
         "optic" => PartCategory.Optic,
         "muzzle" => PartCategory.Muzzle,
+        "upgrade" => PartCategory.Upgrade,
+        "amp" => PartCategory.Multiplier,
+        "hopper" => PartCategory.Feed,
+        "head" => PartCategory.Head,
+        "mod" => PartCategory.MeleeMod,
         _ => PartCategory.Utility,
     };
 
@@ -339,29 +408,130 @@ public sealed partial class Ui
     private WorkbenchLaunch? DrawWorkbenchSide(WeaponBuild b)
     {
         WorkbenchLaunch? launch = null;
-        ImGui.TextColored(Orange, "BUILD"u8);
+        ImGui.TextColored(Orange, _wbMelee ? "MELEE SLOT"u8 : "BUILD"u8);
         ImGui.SetNextItemWidth(-1);
         if (ImGui.InputText("##wbname"u8, _wbNameInput!))
         {
             b.Name = WeaponBuild.CleanName(_wbNameInput!.ToString());
             WorkbenchChanged();
         }
-        if (b.Frame is { FireStyles.Length: > 1 } frame)
-        {
-            ImGui.Text("Fire style"u8);
-            foreach (var st in frame.FireStyles)
-            {
-                ImGui.SameLine();
-                if (ImGui.RadioButton($"{st}##style{st}", b.Style == st))
-                {
-                    b.Style = st;
-                    WorkbenchChanged();
-                }
-            }
-            ImGuiSafe.TextColored(Dim, b.EffectiveStyle == FireStyle.Volley ? "Volley: every receiver fires on each pull." : "Rotate: the receivers take turns.");
-        }
+        if (b.Frame is { } frame)
+            ImGuiSafe.TextColored(Dim, $"Fire style: {frame.Style.ToString().ToUpperInvariant()} (fixed by the {b.Root!.Part.Name}): "
+                                       + (frame.Style == FireStyle.Volley ? "every receiver fires on each pull." : "the receivers take turns."));
         ImGui.Separator();
 
+        if (_wbMelee)
+            DrawWorkbenchMeleeStats(b);
+        else
+            DrawWorkbenchGunStats(b);
+        var problems = _wbAsm?.Problems ?? [];
+        if (problems.Count == 0)
+            ImGui.TextColored(Green, _wbMelee ? "Ready to swing."u8 : "Ready to fire."u8);
+        foreach (var p in problems.Take(8))
+            ImGuiSafe.TextColored(p.Incomplete ? Yellow : Red, (p.Incomplete ? "Needs: " : "Problem: ") + p.Message);
+        ImGui.Separator();
+
+        if (_wbMelee)
+        {
+            ImGui.TextColored(Orange, "MELEE SLOT"u8);
+            ImGuiSafe.TextColored(Dim, $"Saved: {BuildStore.Melee?.Name ?? "(the standard knife / butt strike)"}");
+            if (ImGui.Button("Save melee"u8))
+            {
+                BuildStore.Melee = b.Clone();
+                BuildStore.Save();
+                _wbMessage = $"Saved '{b.Name}' to the melee slot.";
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Revert"u8))
+                LoadWorkbenchMelee(true);
+            ImGui.SameLine();
+            if (ImGui.Button("Use the standard strike"u8))
+            {
+                BuildStore.Melee = null;
+                BuildStore.Save();
+                _wbMessage = "The melee key does the standard knife / butt strike again.";
+            }
+        }
+        else
+        {
+            ImGui.TextColored(Orange, "SAVED BUILDS"u8);
+            for (var i = 0; i < BuildStore.SlotCount; i++)
+            {
+                var s = BuildStore.Slots[i];
+                var label = $"{i + 1}. {(s?.Name ?? "(empty)")}{(i >= BuildStore.FreeSlots ? "  (slot upgrade)" : "")}##slot{i}";
+                if (ImGui.Selectable(label, BuildStore.Selected == i))
+                    LoadWorkbenchSlot(i);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetTooltip(i == BuildStore.Second ? "Your second weapon in the range." : i >= BuildStore.FreeSlots ? "Slots 3-4: used once the weapon-slot upgrade is on (toggle below, or the station in the range)." : "Click to edit this build.");
+            }
+            if (ImGui.Button("Save to this slot"u8))
+            {
+                BuildStore.Slots[BuildStore.Selected] = b.Clone();
+                BuildStore.Save();
+                _wbMessage = $"Saved '{b.Name}' to slot {BuildStore.Selected + 1}.";
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Revert"u8))
+                LoadWorkbenchSlot(BuildStore.Selected);
+            ImGui.SameLine();
+            if (ImGui.Button("Clear"u8))
+            {
+                _wb = new WeaponBuild(b.Name, b.Root?.Part ?? Parts.InCategory(PartCategory.Grip).First(p => p.Frame != null));
+                WorkbenchChanged();
+            }
+            ImGuiSafe.TextColored(Dim, $"Second weapon in the range: slot {BuildStore.Second + 1}");
+            ImGui.SameLine();
+            if (ImGui.SmallButton("next"u8))
+            {
+                BuildStore.Second = (BuildStore.Second + 1) % BuildStore.SlotCount;
+                BuildStore.Save();
+            }
+        }
+        DrawWorkbenchPresets();
+        ImGui.Separator();
+
+        // ---- Sandbox toggles ----
+        if (ImGui.Checkbox("Weapon slots 3-4 unlocked"u8, ref BuildStore.ExtraSlotsUnlocked))
+            BuildStore.Save();
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("In Zombies the slot upgrade is bought on the map, once per run. Here it's a toggle (or use the station by the range's spawn)."u8);
+        ImGuiSafe.TextColored(Dim, $"Practice dummies: {BuildStore.Dummies}");
+        ImGui.SameLine();
+        if (ImGui.SmallButton("-##dum"u8) && BuildStore.Dummies > 0)
+        {
+            BuildStore.Dummies--;
+            BuildStore.Save();
+        }
+        ImGui.SameLine();
+        if (ImGui.SmallButton("+##dum"u8) && BuildStore.Dummies < 8)
+        {
+            BuildStore.Dummies++;
+            BuildStore.Save();
+        }
+        ImGui.Spacing();
+        var ready = _wbMelee ? _wbAsm?.Melee != null : _wbAsm?.Def != null;
+        ImGui.BeginDisabled(!ready);
+        if (ImGui.Button("TEST FIRE"u8, new float2(-1, 40 * _scale)) && ready)
+        {
+            launch = WorkbenchLaunchFor(b, out var why); // assembles every slot once, on the click
+            if (launch == null)
+                _wbMessage = why;
+            else
+            {
+                if (_wbMelee)
+                    BuildStore.Melee = b.Clone();
+                else
+                    BuildStore.Slots[BuildStore.Selected] = b.Clone();
+                BuildStore.Save();
+            }
+        }
+        ImGui.EndDisabled();
+        ImGui.TextColored(Dim, "Opens the Workbench Range with your builds (E: park / push a cart, buy the slot upgrade)."u8);
+        return launch;
+    }
+
+    private void DrawWorkbenchGunStats(WeaponBuild b)
+    {
         var cur = _wbAsm?.Def;
         var trial = _wbPart != null ? Trial(_wbPart)?.Def : null;
         if (cur != null)
@@ -381,61 +551,81 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, $"Spins up over {cur.SpoolTime:0.0} s from {cur.SpoolStart * 100:0}% fire rate.");
             if (cur.NoAds)
                 ImGui.TextColored(Yellow, "Hip fire only."u8);
+            if (Game.IsCart(cur))
+                ImGui.TextColored(Yellow, "A real cart: push it on the ground, E parks it as a turret."u8);
             if (cur.BuildFlags.Length > 0)
                 ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", cur.BuildFlags) + " (effects come with Zombies)");
         }
-        ImGuiSafe.TextColored(Dim, $"{b.PartCount} parts, {b.Weight:0.0} kg (carry {b.Frame?.Carry ?? 0:0} kg), {b.ScrapValue} scrap");
-        var problems = _wbAsm?.Problems ?? [];
-        if (problems.Count == 0)
-            ImGui.TextColored(Green, "Ready to fire."u8);
-        foreach (var p in problems.Take(8))
-            ImGuiSafe.TextColored(p.Incomplete ? Yellow : Red, (p.Incomplete ? "Needs: " : "Problem: ") + p.Message);
-        ImGui.Separator();
+        ImGuiSafe.TextColored(Dim, $"{b.PartCount} parts, {b.Weight:0.0} kg (carry {b.CarryWeight:0.#} kg, max {b.CarryWeight * 2:0.#}), {b.ScrapValue} scrap");
+    }
 
-        ImGui.TextColored(Orange, "SAVED BUILDS"u8);
-        for (var i = 0; i < BuildStore.SlotCount; i++)
+    private void DrawWorkbenchMeleeStats(WeaponBuild b)
+    {
+        var cur = _wbAsm?.Melee;
+        var trial = _wbPart != null ? Trial(_wbPart)?.Melee : null;
+        if (cur != null)
         {
-            var s = BuildStore.Slots[i];
-            var label = $"{i + 1}. {(s?.Name ?? "(empty)")}{(i >= BuildStore.FreeSlots ? "  (unlockable in Zombies)" : "")}##slot{i}";
-            if (ImGui.Selectable(label, BuildStore.Selected == i))
-                LoadWorkbenchSlot(i);
+            ImGuiSafe.TextColored(Dim, $"{(cur.TwoHanded ? "Two" : "One")}-handed melee weapon");
+            StatLine("Damage", cur.Damage, trial?.Damage, "0", true);
+            StatLine("Swing (s)", cur.Swing, trial?.Swing, "0.00", false);
+            StatLine("DPS", cur.Dps, trial?.Dps, "0", true);
+            StatLine("Reach (m)", cur.Reach, trial?.Reach, "0.0", true);
+            StatLine("Cleave", cur.Cleave, trial?.Cleave, "0", true);
+            StatLine("Stun (s)", cur.Stun, trial?.Stun, "0.0", true);
+            if (cur.Flags.Length > 0)
+                ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", cur.Flags));
+            ImGuiSafe.TextColored(Dim, $"Standard strike: {Game.MeleeDamage:0} damage, {Game.MeleeCooldown:0.0} s, {Game.MeleeRange:0.0} m, one target.");
+        }
+        ImGuiSafe.TextColored(Dim, $"{b.PartCount} parts, {b.Weight:0.0} kg (max {BuildRules.MaxMeleeWeight:0}), {b.ScrapValue} scrap");
+    }
+
+    /// <summary>The standard complete builds (the mystery box's and the wall's), as presets for the editor.</summary>
+    private void DrawWorkbenchPresets()
+    {
+        var list = StandardBuilds.All.Where(x => x.IsMelee == _wbMelee).ToList();
+        if (list.Count == 0)
+            return;
+        if (!ImGui.CollapsingHeader("Standard builds (box / wall presets)"u8, ImGuiTreeNodeFlags.None))
+            return;
+        foreach (var sb in list)
+        {
+            ImGui.PushStyleColor(ImGuiCol.Text, WbCol(PartDef.RarityColor(sb.Tier)));
+            var clicked = ImGui.Selectable($"{sb.Name}  [{PartDef.RarityName(sb.Tier)}, {string.Join("/", sb.Sources)}]##preset{sb.Name}");
+            ImGui.PopStyleColor();
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetTooltip(i == BuildStore.Second ? "Your second weapon in the range." : "Click to edit this build.");
-        }
-        if (ImGui.Button("Save to this slot"u8))
-        {
-            BuildStore.Slots[BuildStore.Selected] = b.Clone();
-            BuildStore.Save();
-            _wbMessage = $"Saved '{b.Name}' to slot {BuildStore.Selected + 1}.";
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("Revert"u8))
-            LoadWorkbenchSlot(BuildStore.Selected);
-        ImGui.SameLine();
-        if (ImGui.Button("Clear"u8))
-        {
-            _wb = new WeaponBuild(b.Name, b.Root?.Part ?? Parts.InCategory(PartCategory.Grip).First(p => p.IsRoot));
+                ImGuiSafe.SetTooltip(sb.Flavor);
+            if (!clicked)
+                continue;
+            _wb = sb.Build();
+            _wbNameInput?.SetValue(_wb.Name.AsSpan());
+            _wbSocketParent = _wbSocketName = null;
+            _wbMessage = $"Loaded the standard build '{sb.Name}' (save it to keep it).";
             WorkbenchChanged();
         }
-        ImGuiSafe.TextColored(Dim, $"Second weapon in the range: slot {BuildStore.Second + 1}");
-        ImGui.SameLine();
-        if (ImGui.SmallButton("next"u8))
+    }
+
+    /// <summary>What Test fire would start (every slot's build that's complete, the melee slot, the toggles), or null with the reason.</summary>
+    private WorkbenchLaunch? WorkbenchLaunchFor(WeaponBuild editing, out string why)
+    {
+        why = "";
+        WeaponDef? Gun(int slot) =>
+            !_wbMelee && slot == BuildStore.Selected ? _wbAsm?.Def : BuildStore.Slots[slot] is { IsMelee: false } sb ? WeaponBuilder.Assemble(sb).Def : null;
+        var primary = Gun(BuildStore.Selected);
+        if (primary == null && _wbMelee)
+            primary = Enumerable.Range(0, BuildStore.SlotCount).Select(Gun).FirstOrDefault(d => d != null);
+        if (primary == null)
         {
-            BuildStore.Second = (BuildStore.Second + 1) % BuildStore.SlotCount;
-            BuildStore.Save();
+            why = _wbMelee ? "Save a complete gun to a slot first: the range needs a gun as well as the melee weapon." : "Finish the build first (it needs everything listed above).";
+            return null;
         }
-        ImGui.Spacing();
-        var ready = cur != null;
-        ImGui.BeginDisabled(!ready);
-        if (ImGui.Button("TEST FIRE"u8, new float2(-1, 40 * _scale)) && cur != null)
+        var second = BuildStore.Second != BuildStore.Selected ? Gun(BuildStore.Second) : null;
+        var rest = Enumerable.Range(0, BuildStore.SlotCount).Where(i => i != BuildStore.Selected && i != BuildStore.Second).Select(Gun).Where(d => d != null).ToList();
+        var melee = _wbMelee ? _wbAsm?.Melee : BuildStore.Melee is { } m ? WeaponBuilder.Assemble(m).Melee : null;
+        if (_wbMelee && melee == null)
         {
-            BuildStore.Slots[BuildStore.Selected] = b.Clone();
-            BuildStore.Save();
-            var second = BuildStore.Second != BuildStore.Selected && BuildStore.Slots[BuildStore.Second] is { } sb ? WeaponBuilder.Assemble(sb).Def : null;
-            launch = new WorkbenchLaunch(cur, second ?? cur);
+            why = "Finish the melee weapon first (it needs a head).";
+            return null;
         }
-        ImGui.EndDisabled();
-        ImGui.TextColored(Dim, "Opens the Workbench Range with this build and the second slot as your weapons."u8);
-        return launch;
+        return new WorkbenchLaunch(primary, second ?? primary, rest.ElementAtOrDefault(0), rest.ElementAtOrDefault(1), melee, BuildStore.ExtraSlotsUnlocked, BuildStore.Dummies);
     }
 }

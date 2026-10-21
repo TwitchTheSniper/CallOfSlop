@@ -1,27 +1,48 @@
-# Zombies: the weapon builder (milestone 1)
+# Zombies: the weapon builder (milestones 1 and 2)
 
-Status: **in development**. Milestone 1 is the modular weapon system, playable today as a sandbox: main menu >
-**WORKBENCH (ZOMBIES PREVIEW)**. The Zombies mode itself (World at War style, co-op 1-4, rounds, new maps) comes
-later and plugs into the hooks described here.
+Status: **in development**. Milestone 1 is the modular weapon system; milestone 2 applies the user's decisions (below):
+grip-fixed fire styles, conserving splitters with damage multipliers and receiver upgrades, shared feeds, the late-game
+weight path, standard complete builds, the real push cart, the melee slot and four weapon slots. All of it is playable
+today as a sandbox: main menu > **WORKBENCH (ZOMBIES PREVIEW)**. The Zombies mode itself (World at War style, co-op 1-4,
+rounds, new maps) comes later and plugs into the hooks described here.
 
 Anything marked **proposed** is a working default the code implements so it can be tested. It is open for the user to
 change. The "Open creative questions" at the end list the calls that are the user's to make.
 
-Code: `Source/Zombies/` (PartDef, PartFile, WeaponBuild, BuildRules, BuildStats, BuildModel, BuildStore), firing in
-`Source/Game/GameBuilder.cs`, UI in `Source/UI/UiWorkbench.cs`, the range session in `Source/App/Program.Workbench.cs`,
-self-test section "Weapon builder" in `Source/App/SelfTestWeaponBuilder.cs`. Data: `Parts/<Category>/*.json`, the
-range map `Maps/Dev/WorkbenchRange.json`.
+Code: `Source/Zombies/` (PartDef, PartFile, WeaponBuild, BuildRules, BuildStats, BuildModel, BuildStore, MeleeStats,
+StandardBuilds, RunTables, PushCart), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart, turret,
+slots, melee builds, practice dummies) in `Source/Game/GameZombies.cs`, UI in `Source/UI/UiWorkbench.cs`, the range
+session and cart drawing in `Source/App/Program.Workbench.cs`, self-test section "Weapon builder" in
+`Source/App/SelfTestWeaponBuilder.cs` and `SelfTestWeaponBuilder2.cs`. Data: `Parts/<Category>/*.json`, standard
+builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, the range map
+`Maps/Dev/WorkbenchRange.json`.
+
+## The user's decisions (2026-10-21) and what was built
+
+| # | Decision | Built in milestone 2 |
+| --- | --- | --- |
+| 1 | Fire style across receivers is **fixed by the grip** | Each grip file has one `"fireStyle"`; builds have no choice; the workbench shows it ("Fire style: VOLLEY (fixed by the Rifle Grip)"). Old saves that chose a style load with the grip's. |
+| 2 | **Weight** stays the main limiter; huge multi-receiver guns must be reachable late in a run | Rarer frames carry more (Mule Frame 16 kg / 6 receivers, Exo Harness 30 kg / 12, Gantry Rig 48 kg / 16), weight-relief parts raise the carry weight, and the drop tables put those tiers late (see "Run progression"). |
+| 3 | The push cart is a **real pushed object** that can be **parked as a turret** | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, and E parks it as an **auto-firing turret** (proposed, open: see "The push cart"). Replicated (protocol 16). |
+| 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
+| 5 | A **shared feed** that feeds several receivers; per-receiver feeds still allowed | Five shared feeds on a grip's `hopper` socket, with rules for which receivers they feed, a pooled magazine and shared ammo. |
+| 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 25 standard builds by tier with where they come from (box, wall, start); the workbench loads them as presets. |
+| 7 | Weapon slots **2 -> 4** via an on-map upgrade, per run; the mode is a **roguelite** | Slots 3-4 exist in the game (keys 3 / 4, the swap key and wheel cycle them), unlocked per player per run (a flag the server owns); the range has a station (E) and the workbench a toggle. Drop tables by round are proposed data. |
+| 8 | The chainsaw grip is just a grip; add a **melee slot** built from melee-only parts | Hilts, heads and mods (21 parts) build melee weapons with damage, swing time, reach, cleave and stun; the melee key swings them (in the range / Zombies only), with their own workbench section. |
+
 
 ## How it fits the Zombies loop
 
 - **Finding parts.** Zombies drop parts (later rounds roll rarer tiers), and salvage spots on the map give scrap.
 - **Workbenches** on the map are where you assemble, swap and break down parts.
-- **Mystery box** gives a *standard complete configuration*: a whole build (for example a ready-made Minigun or a
-  Twin Splitter Shotgun), not a single part. You can then take it to a bench and change it.
-- **Wall weapons** are plain, working guns (one grip, one receiver). Bought off the wall, they are builds too, so you
-  can modify them at a bench.
-- **Weapon slots.** Players carry **2 builds**. A purchasable unlock (the "Mule Kick" of this game) raises it to **4**.
-  The workbench sandbox already shows 4 save slots, with slots 3 and 4 marked "unlockable in Zombies".
+- **Mystery box** gives a *standard complete configuration* only (decided): a whole build from `Parts/Builds` (for
+  example the Minigun or the Twin Splitter Shotgun), never a single part. You can then take it to a bench and change it.
+- **Wall weapons** are plain, working guns (one grip, one receiver): the standard builds marked `"wall"`. Bought off
+  the wall, they are builds too, so you can modify them at a bench.
+- **Weapon slots.** Players carry **2 builds**. An upgrade bought on the map (the "Mule Kick" of this game, proposed
+  price 4000) raises it to **4** for the rest of the run.
+- **A roguelite run.** You start each run with low-level gear (the `"start"` builds: a wall rifle, a wall pistol, a
+  machete) and climb, inside one run, to broken, overpowered, silly guns. Bad parts along the way can make it hard.
 
 ## The component model
 
@@ -30,16 +51,24 @@ category, a rarity tier, a weight, its sockets, a box model and stat effects (th
 effects attachments use).
 
 ```
-Grip (root: the part you hold)
- |- receiver_1 .. receiver_N    <- the grip decides N (pistol grip 3, rifle grip 9, push cart 16)
+Grip (root: the part you hold; it fixes the fire style)
+ |- receiver_1 .. receiver_N    <- the grip decides N (pistol grip 3, rifle grip 9, Gantry Rig and push cart 16)
  |    |- barrel                 <- a barrel, or a SPLITTER whose outputs take barrels (or another splitter)
  |    |    \- muzzle            <- muzzle device
- |    |- feed                   <- box / drum / belt / tube / cell / hopper
- |    |- ammo                   <- calibre / special rounds
- |    \- utility                <- side rail (laser, bayonet, cup holder)
+ |    |- feed                   <- box / drum / belt / tube / cell (or none: fed by the shared feed)
+ |    |- ammo                   <- calibre / special rounds (or none: the shared feed's ammo)
+ |    |- amp                    <- DAMAGE MULTIPLIER
+ |    |- upgrade_rear           <- RECEIVER UPGRADE behind the receiver
+ |    |- upgrade_side           <- RECEIVER UPGRADE on its side
+ |    \- utility                <- side rail (laser, bayonet, cup holder, weight relief)
+ |- hopper                      <- SHARED FEED (feeds several receivers) \- ammo
  |- stock
  |- optic
  \- foregrip                    <- vertical / angled / chaingun handle
+
+Hilt (root of a MELEE weapon)
+ |- head                        <- blade / hammer head / fish (required)
+ |- mod_1, mod_2                <- nails, grip tape, counterweight, shock coil...
 ```
 
 **The grip is the root.** It holds the player's hand and has one `receiver` socket per receiver it can hold, so the grip
@@ -48,16 +77,21 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire styles, how it is held, carry weight) and foregrips (off hand) | 11 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 14 |
 | Receiver | The action: semi, auto, burst, pump, bolt, rotary (minigun, spools up, barrels take turns), chain (spool-up). Sets the bore (calibre class) and base fire rate | 11 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
-| Splitter | One shot in, N barrels out (barrel sockets take barrels or another splitter) | 5 |
-| Feed | Magazine size and reload (box, stick, extended, drum, belt, hopper, tube, shell drum, cell, breech, toaster) | 12 |
+| Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
+| Feed | Magazine size and reload (box, stick, extended, drum, belt, hopper, tube, shell drum, cell, breech, toaster) and 5 shared feeds | 17 |
 | Ammo | Damage, pellets, range, special flags | 10 |
-| Stock | Recoil, aim time, mobility | 4 |
+| Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
+| Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
+| Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
 | Optic | The game's optics (red dot, holo, ACOG, 4x, 8x) with their reticles and lens | 5 |
 | Muzzle | Flash hider, compensator, brake, suppressor | 4 |
-| Utility | Laser, bayonet, cup holder | 3 |
+| Utility | Laser, bayonet, cup holder, and weight relief (sling, anti-grav coil, helium balloons) | 6 |
+| Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 6 |
+| Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
+| Melee Mod | Nails, grip tape, counterweight, barbed wire, shock coil, rocket booster, whoopee cushion | 7 |
 
 **Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`). Barrels,
 splitters, feeds, ammo and muzzles list the bores they fit.
@@ -70,16 +104,19 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | --- | --- |
 | A part only goes in a socket of its mount type | "Red Dot mounts on an optic socket, not a receiver socket." |
 | A socket can limit what it takes | "Hellwheel Rotary Receiver's barrel_1 socket takes barrels only, not splitters." |
-| A build starts from a grip | "Rifle Grip is a grip you build on: start a new build with it instead." |
+| A build starts from a grip (or a hilt) | "Rifle Grip is a grip you build on: start a new build with it instead." |
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
 | Bores must match the receiver | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
 | Actions: belts and hoppers need something that pulls them | "Belt Box needs auto, chain or rotary action; the Triad Burst Receiver is burst." |
 | Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
-| Weight: a grip carries up to 2x its carry weight | "Too heavy: 9.1 kg; the Pistol Grip can't carry more than 8 kg." |
-| The fire style must be one the grip allows | "The Pistol Grip can't fire rotate; it does volley." |
-| Required sockets (barrel, feed, ammo) | "Plinker Receiver needs a feed." (shown as "Needs:", not an error) |
+| Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 9.1 kg; the Pistol Grip can't carry more than 8 kg." |
+| Shared feed ammo must fit the feed | "00 Buckshot is made for shell rounds; the Manifold Hopper feeds pistol or rifle rounds." |
+| Shared feed capacity and bores | "Workhorse Receiver needs a feed (the Manifold Hopper can't feed it: it feeds 3 receivers at most)." |
+| Melee and gun parts don't mix | "Wooden Handle is a hilt you build a melee weapon on: start a melee build with it instead." |
+| A melee weapon weighs 14 kg at most | "Too heavy: 15.2 kg; a melee weapon can't be more than 14 kg." |
+| Required sockets (barrel, feed, ammo; a hilt's head) | "Plinker Receiver needs a feed." (shown as "Needs:", not an error) |
 
 A build that is incomplete still gets a model for the live preview. Only complete, legal builds get a `WeaponDef`.
 
@@ -90,37 +127,82 @@ sound, HUD and bots all work unchanged. The pipeline is **deterministic**: the s
 and the same muzzle positions, and the self-test checks this by assembling every example twice.
 
 1. **Each receiver on its own.** Start from the receiver's base numbers (class defaults, action, fire rate), then
-   apply its parts in stages: receiver, ammo, feed, splitters. Then each barrel path (barrel plus muzzle device) is
-   applied to its own copy, so a long barrel and a stub barrel on one splitter really differ.
-2. **Splitter rule.** Every output gets the incoming shot's damage times the splitter's `outputMult`. Nested
-   splitters multiply. `1/N` conserves the shot (Y-Splitter: 2 x 0.5). Higher tiers give more than `1/N` (Trident
-   3 x 0.4 = 1.2x, Party Tray 4 x 0.4 = 1.6x, Party Tray of Tridents = 12 barrels at 0.16 each = 1.92x). Pellets are
-   per barrel, so a split shotgun really fires twice the pellets at half the damage each.
-3. **Combine the receivers** by the grip's fire style (**proposed**, see below).
+   apply its parts in stages: receiver, ammo, feed, damage multiplier, receiver upgrades, splitters. A receiver fed by
+   the shared feed takes the shared feed as its feed (and its ammo, if it has none). Then each barrel path (barrel plus
+   muzzle device) is applied to its own copy, so a long barrel and a stub barrel on one splitter really differ.
+   Upgrades change the fire rate as a ratio, so a minigun's rate per barrel scales the same way.
+2. **Splitter rule (decided): splitters conserve damage.** Every output gets 1/N of the incoming shot (N = the
+   splitter's outputs); nested splitters divide again (a Party Tray of Tridents: 12 barrels at 1/12). The total damage
+   of a shot is the same with or without splitters; what changes is coverage (more barrels, splay) and accuracy: each
+   splitter's `spreadMult` multiplies its outputs' spread (Y 1.0, Over-Under 0.85, Trident 0.8, Peacock 0.75, Party
+   Tray 0.7, Hydra 0.6). Pellets are per barrel, so a split shotgun really fires twice the pellets at half the damage
+   each. Damage comes from **damage multipliers** and **receiver upgrades** instead.
+3. **Combine the receivers** by the grip's fire style (**fixed by the grip**, see below).
 4. **The grip and what's on it:** grip, stock, foregrip, optic and utility parts, applied once to the whole weapon.
-5. **Weight against the grip's carry weight** (**proposed**): mobility `-0.012/kg`, and `-0.03/kg` over the carry
-   weight; ADS time `+0.008 s/kg` (+0.02 over); draw time `+0.03 s/kg` (+0.05 over); recoil times
+5. **Weight against the grip's carry weight** (**proposed**; the carry weight is the grip's plus every weight-relief
+   part's `"carry"`): mobility `-0.012/kg`, and `-0.03/kg` over the carry weight; ADS time `+0.008 s/kg` (+0.02 over); draw time `+0.03 s/kg` (+0.05 over); recoil times
    `sqrt(6 / (kg + 4))` (heavy guns kick less per shot, clamped 0.55-1.25x). Then the frame's own mobility (a cart
    is slow however light it is).
 6. **Clamp** everything into the ranges weapon files allow (mobility 0.4-1.2 for builds).
 
-### Several receivers (proposed, open for the user)
+### Several receivers (the grip decides)
 
 | | Volley (default) | Rotate |
 | --- | --- | --- |
 | A trigger pull | Fires every receiver at once | Fires the next receiver in turn |
 | Fire rate | The slowest receiver's (they are linked) | The receivers' rates add up (max 3000 rpm) |
-| Magazine | Per-receiver feeds, shown as the smallest (all run dry together) | Feeds add up |
+| Magazine | Per-receiver feeds, shown as the smallest (all run dry together); a shared pool lasts pool / receivers it feeds | Feeds add up; a shared pool counts once |
 | Recoil | Root of the sum of squares (3 receivers = 1.7x one) | The average |
 | Trigger | The strictest: semi beats burst beats auto | Same |
 | Reload | The longest feed, plus 0.2-0.35 s per extra receiver (the grip sets it); every feed is swapped at once | Same |
 
-**Feeds are per receiver** (each receiver needs its own feed and ammo). That keeps every receiver's subtree complete on
-its own and lets mixed calibres work. A shared-feed part (one drum feeding several receivers) is a good candidate for a
-later legendary part.
+**Grips (decided: one fixed style each).** Volley: Pistol Grip, Rifle Grip, Briefcase, Chainsaw Grip, Mule Frame,
+Gantry Rig, Push Cart. Rotate: Competition Pistol Grip, Tactical Rifle Grip, Steering Wheel, Exo Harness. The workbench
+shows the style next to the grip and in the stats panel; picking another grip picks its style.
 
-Grips choose which styles they allow: the Pistol Grip and Chainsaw Grip are volley only, the Competition Pistol Grip and
-the Steering Wheel rotate, rifle grips and the cart allow both (the player picks).
+### Damage multipliers and receiver upgrades
+
+Every receiver has three new sockets: `amp` (one **damage multiplier**) and `upgrade_rear` / `upgrade_side` (two
+**receiver upgrades**). Their effects apply to that receiver only, before its barrels, so they stack across receivers.
+
+| Part | Tier | Socket | Effect |
+| --- | --- | --- | --- |
+| Hot Load Kit | common | amp | damage x1.1, recoil x1.08 |
+| Overpressure Chamber | uncommon | amp | damage x1.2, fire rate x0.95 |
+| Tungsten Core Injector | rare | amp | damage x1.35, reload x1.05 |
+| Rail Accelerator | epic | amp | damage x1.5, reload x1.1 |
+| Singularity Chamber | legendary | amp | damage x1.8, aim time +0.05 s |
+| Spite Amplifier | wonder | amp | damage x2.5, hip spread x1.6 |
+| Lightweight Bolt | common | upgrade | fire rate x1.08 |
+| Match Trigger Group | common | upgrade | damage x1.05 |
+| Buffer Spring Kit | uncommon | upgrade | fire rate x1.15, recoil x1.05 |
+| Heavy Hammer | uncommon | upgrade | damage x1.12, fire rate x0.95 |
+| Gas Overclock | rare | upgrade | fire rate x1.25 |
+| Coil Hammer | rare | upgrade | damage x1.2 |
+| Twin Sear | epic | upgrade | fire rate x1.4, hip spread x1.1 |
+| Overclock Core | legendary | upgrade | fire rate x1.6, damage x1.1 |
+
+### Shared feeds (hoppers and manifolds)
+
+A shared feed sits on a grip's `hopper` socket (rifle grips, the chainsaw grip, the steering wheel, the briefcase,
+the new frames and the cart; not the pistol grips). Per-receiver feeds are still allowed. The rules:
+
+- It feeds receivers that have **no feed of their own**, in receiver-socket order, up to its **capacity** (`"shared":
+  {"feeds": N}`); the rest need their own feed ("...the Manifold Hopper can't feed it: it feeds 3 receivers at most").
+- A receiver is fed only if its bore is one the shared feed takes, its action is one the feed needs (if any), and the
+  shared feed's ammo fits it.
+- Ammo in the shared feed's `ammo` socket is **shared**: fed receivers need no ammo of their own.
+- The magazine is **one pool** (its `mag` stat): in a volley, each pull takes a round per fed receiver, so it lasts
+  pool / k pulls (next to any own magazines, the smallest wins); rotating, each shot takes one round and the pool
+  counts once next to the receivers' own magazines. The reload is the longest feed's, as before.
+
+| Shared feed | Tier | Feeds | Bores | Pool | Reload |
+| --- | --- | --- | --- | --- | --- |
+| Manifold Hopper | rare | 3 | pistol, rifle | 120 | 4.0 s |
+| Shell Hopper | epic | 4 | shell | 48 | 5.0 s |
+| Ammo Can Manifold | epic | 6 | rifle, heavy | 300 | 6.0 s |
+| Bottomless Bucket | legendary | 9 | pistol, rifle, heavy | 900 | 8.0 s |
+| Power Bus | legendary | 8 | energy | 400 | 5.0 s |
 
 ### Firing (GameBuilder.cs)
 
@@ -136,9 +218,13 @@ the Steering Wheel rotate, rifle grips and the cart allow both (the player picks
   barrel and receiver that hit a player, then applies it once, like a shotgun blast. So a Last Stand shield loses one
   charge per pull, not one per barrel. Rotating grips and rotary receivers fire one receiver/barrel per pull anyway.
   (Self-test: Triple Pistol, Nine Lives and the Twin Splitter Shotgun each use exactly one charge.)
-- **Network:** no packet changed (protocol stays at 15). Built weapons are host-local in the Workbench Range (single
-  player). Co-op will need the build sent to clients (its text form, below) so they can draw it and predict shots:
-  that's a protocol bump in the Zombies milestone.
+- **Network:** protocol **16** (milestone 2) adds three messages at the end of the list: `CartUse` (client -> server:
+  the interact key), `CartState` (server -> all, with snapshots while any cart exists: owner, mode, position, yaw,
+  rolled distance, aim pitch, turret seconds left) and `RunState` (server -> one client: the slot upgrade). Built
+  weapons and melee builds are still host-local in the Workbench Range (single player); co-op will need builds sent to
+  clients (their text form) so they can draw and predict them. Until then, clients draw other players' carts as a bare
+  Push Cart, a remote pusher's own movement isn't predicted against the cart (the server corrects it), and a turret's
+  tracers on clients start at its owner.
 
 ## Rarity tiers and scrap hooks
 
@@ -170,12 +256,8 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   it. Iron-sight boxes (`"tag": "irons"`) come off when an optic is fitted. Grips with `"ads": false` (cart,
   briefcase) are hip fire only and drop the optic's zoom.
 
-**Chainsaw and cart view (proposed, open for the user).** Milestone 1 uses the normal first-person pose: the trigger
-hand on the grip part's hand point and the off hand IK'd to the support point (chainsaw: the top wrap bar; cart: the
-push bar). The cart model is the gun body, so it floats in front of you at hip height. A proper version would put the
-cart on the ground (its own scene node parented to the player, not the view), push the hands forward onto the bar
-with both arms straight, bob it with the walk cycle, and turn the camera less sharply (it is a cart). The chainsaw could
-get an idle shake and a pull-start animation on equip.
+**Chainsaw view.** The chainsaw grip is just a grip (decided): the normal first-person pose with the off hand on its
+top wrap bar. The push cart is no longer a held gun: see "The push cart".
 
 ## The part file format (`Parts/<Category>/*.json`)
 
@@ -201,34 +283,163 @@ get an idle shake and a pull-start animation on equip.
 ```
 
 Other blocks: `receiver` (action, class, bore, soundOf, rpm, burstCount, burstDelay, spoolTime, spoolStart,
-minBarrels, maxBarrels, rpmPerBarrel), `frame` for root grips (fireStyles, hands, carry, mobility, ads, ironHeight,
-support, reloadPerReceiver), `hand`, `gripAngle`, `muzzles`, `optic`, `sight`, `feedStyle`, `flags`, `requiresAction`,
-`mount`, `scrap`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
+minBarrels, maxBarrels, rpmPerBarrel), `frame` for root grips (fireStyle, hands, carry, mobility, ads, ironHeight,
+support, reloadPerReceiver; an older `fireStyles` list reads as its first style), `split` (splay, spreadMult; the old
+`outputMult` is refused: splitters always conserve), `shared` for shared feeds (feeds; with `"mount": "hopper"`),
+`carry` (weight relief, kg), `hilt` for melee roots (damage, swing, reach, cleave, stun, hands), `melee` for heads and
+mods (damage, damageMult, swingMult, reach, cleave, stun), `hand`, `gripAngle`, `muzzles`, `optic`, `sight`,
+`feedStyle`, `flags`, `requiresAction`, `mount`, `scrap`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
 the problem; the self-test loads every part file and feeds it broken ones.
 
 Builds save as one line in `workbench.txt` (a new file next to the game; nothing older changes):
 `Name|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}`.
-A save naming a part that no longer exists, or a receiver past a grip's capacity, loads with that part dropped.
+A save naming a part that no longer exists, or a receiver past a grip's capacity, loads with that part dropped. The
+style field is the grip's (an older save's own choice is ignored). Milestone 2 adds `melee=` (the melee slot),
+`slots4=` and `dummies=` lines; files without them load as before.
 
-## The starter set: 75 parts
+## The part set: 123 parts
 
-Tiers: Common 24, Uncommon 14, Rare 16, Epic 10, Legendary 6, Wonder 5.
+Milestone 1's 75 parts plus 48 new ones (milestone 2). By tier, all categories:
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (11) | Pistol Grip (3 receivers), Vertical Foregrip | Rifle Grip (9), Angled Foregrip | Competition Pistol Grip (3, rotate), Briefcase (4, hip fire), Chaingun Handle | Tactical Rifle Grip (9), Steering Wheel (8, rotate) | Chainsaw Grip (6) | Push Cart (16, hip fire) |
-| Receiver (11) | Plinker (semi pistol), Stampede (auto pistol), Workhorse (auto rifle), Farmhand Pump (shell) | Longreach Bolt (heavy), Triad Burst (rifle) | Bucket Launcher, Gravedigger Auto (shell) | Hellwheel Rotary (minigun, 3-6 barrels, spool-up), Thumper Chain Gun (heavy, spool-up) | Sparkplug Energy | |
-| Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels (7 muzzles) |
-| Splitter (5) | Y-Splitter (2 x 0.5) | Over-Under (2 x 0.55) | Trident (3 x 0.4) | Peacock (5 x 0.3, fanned) | Party Tray (2x2 at 0.4) | |
-| Feed (12) | Box, Stick, Shell Tube, Single Breech | Extended, Heavy Box | Drum, Shell Drum, Energy Cell | Belt Box | Backpack Hopper (400) | Toaster Feed |
+| Grip (14) | Pistol Grip (3, volley), Vertical Foregrip | Rifle Grip (9, volley), Angled Foregrip | Competition Pistol Grip (3, rotate), Briefcase (4, volley, hip fire), Chaingun Handle, **Mule Frame (6, volley, 16 kg)** | Tactical Rifle Grip (9, rotate), Steering Wheel (8, rotate), **Exo Harness (12, rotate, 30 kg)** | Chainsaw Grip (6, volley), **Gantry Rig (16, volley, 48 kg)** | Push Cart (16, volley, a real cart) |
+| Receiver (11) | Plinker, Stampede, Workhorse, Farmhand Pump | Longreach Bolt, Triad Burst | Bucket Launcher, Gravedigger Auto | Hellwheel Rotary, Thumper Chain Gun | Sparkplug Energy | |
+| Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
+| Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
+| Feed (17) | Box, Stick, Shell Tube, Single Breech | Extended, Heavy Box | Drum, Shell Drum, Energy Cell, **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
 | Ammo (10) | 5.56 FMJ, 9mm Ball, 00 Buckshot, 40mm Frag | Slug | .50 BMG, Plasma Charge | Explosive Tip, Dragon's Breath | | Rubber Duck Rounds |
-| Stock (4) | Fixed, Wire | | Recoil Buffer | | Gyro | |
+| Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
+| Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
+| Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
 | Optic (5) | Red Dot | Holographic | 2.5x ACOG | 4x Scope | 8x Sniper Scope | |
 | Muzzle (4) | Flash Hider | Compensator, Muzzle Brake | Suppressor | | | |
-| Utility (3) | Bayonet | Laser Sight | | | | Cup Holder (draws faster) |
+| Utility (6) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | | | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
+| Hilt (6, new) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | | |
+| Head (8, new) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | | Frozen Fish |
+| Melee Mod (7, new) | Nail Ring, Grip Tape | Counterweight, Barbed Wire Wrap | Shock Coil | | Rocket Booster | Whoopee Cushion |
 
-Special flags (incendiary, explosive, penetrating, plasma, squeaky, bouncy, bayonet, suppressed, ...) are carried into the built weapon and shown in the
-workbench; their gameplay effects come with the Zombies mode.
+Special flags (incendiary, explosive, penetrating, plasma, squeaky, bouncy, bayonet, suppressed, chainsaw, fish, ...) are
+carried into the built weapon and shown in the workbench; their gameplay effects come with the Zombies mode.
+
+## Weight and run progression (proposed, open for the user)
+
+Weight stays the main limiter (decided). A grip carries up to twice its carry weight, and the build gets slower and
+slower to aim and move past its carry weight. Bigger, rarer frames carry more and hold more receivers, and
+weight-relief parts (`"carry"`) raise what any grip carries, so the huge guns are a **late-run** thing:
+
+| Rounds (proposed) | What drops (part tiers) | Frames you can expect | What a build looks like |
+| --- | --- | --- | --- |
+| 1-2 | common 85%, uncommon 15% | Pistol Grip (4 kg, 3), Rifle Grip (9 kg, 9) | the start builds: Wall Rifle, Wall Pistol, a Machete |
+| 3-7 | + rare 8% | + Competition Pistol Grip, Briefcase | two or three receivers, a Y-splitter shotgun, first upgrades |
+| 8-14 | rare 24%, epic 6% | + **Mule Frame (16 kg, 6)**, Shoulder Harness | three to six receivers, a Manifold Hopper, Gas Overclock |
+| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Tactical Rifle Grip, Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
+| 25+ | legendary 17-28%, wonder 5-12% | + **Gantry Rig (48 kg, 16)**, Anti-Grav Coil, the Push Cart | broken, silly, sixteen receivers (Gantry Sixteen, Shopping Spree) |
+
+The numbers live in `Parts/Tables/DropTables.json` (format `call-of-slop-drops/1`): part tiers by round, the chance a
+zombie drops a part by round (4% -> 10%), the mystery box's build tier by round, and prices (box 950, slot upgrade 4000,
+wall weapon 500). `RunTables.Roll(rows, round, seed)` rolls deterministically (the same seed gives the same tier on
+the server and every client). Nothing rolls them yet: the Zombies mode will. Bad parts along the way (heavy, slow,
+drawbacks on multipliers) are what make a run hard.
+
+## Standard builds: the mystery box and wall weapons
+
+The mystery box gives **complete builds only** (decided). They live in `Parts/Builds/*.json`, one per file:
+
+```json
+{
+  "format": "call-of-slop-build/1",
+  "name": "Twin Splitter Shotgun",
+  "tier": "uncommon",
+  "source": ["box"],
+  "flavor": "A pump shotgun through a Y-splitter: twice the pellets, half the damage each, the same total.",
+  "build": "Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot},stock:Wire Stock}"
+}
+```
+
+`source` says where it shows up: `box` (mystery box), `wall` (wall weapon), `start` (a run's starting gear). Every file
+must assemble into a complete, legal build with today's parts, or it's refused with the reason (self-test). The
+workbench lists them under **Standard builds** and loads one as a preset into the editor. The 25 shipped:
+
+| Tier | Guns | Melee |
+| --- | --- | --- |
+| Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall) | Machete (start, box) |
+| Uncommon | Twin Splitter Shotgun, Triple Pistol, Burst Marksman (box, wall) | Nail Bat, Fire Axe |
+| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun | Sledgehammer, Frying Pan |
+| Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, rotate, ammo can manifold) | Chainsaw Sword |
+| Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack | Rocket Katana |
+| Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter | The Codfather (a frozen fish on a rod) |
+
+## Weapon slots: 2 -> 4 (decided: an on-map upgrade, per run)
+
+- The game has **four weapon slots** now. Slots 3 and 4 only open once the player's run flag `ExtraSlots` is set
+  (server-owned, sent to that client in `RunState`); otherwise everything behaves exactly as before (2 slots).
+- Keys: **3** = slot 3, slot 4 is unbound by default (bind it in the settings), and the swap key and mouse wheel cycle
+  through every slot you have. The HUD lists your other slots.
+- **Workbench Range:** a station stands by the spawn line (right side); **E** there unlocks slots 3-4 (free in the
+  sandbox; proposed price 4000 points in Zombies). The workbench has a toggle to start with them unlocked; slots 3-4
+  take the workbench slots that aren't the selected or second one.
+
+## The push cart (a real object)
+
+The Push Cart grip is now a life-size shopping cart (bar at about waist height, sixteen receivers in the basket).
+When you hold a cart build, a **cart entity** exists in the world (server-authoritative, `GameZombies.cs`; physics in
+`PushCart.cs`):
+
+- **Pushed.** Every tick the cart turns toward where you face (2.2 rad/s: carts turn slowly) and rolls to a spot in
+  front of your feet (up to 7 m/s), colliding with the world as a box. It **rolls over curbs up to 15 cm**, but **not
+  higher steps** and **not slopes steeper than 22 degrees** (front wheels against back wheels). When it's stuck it
+  slides along the wall if it can; otherwise **you are held at the push bar** (you can't walk through your own cart).
+  It's slow to push because a cart build's mobility is low (the frame's 0.65 times the weight penalty).
+- **Hands on the bar.** In first person the cart isn't a held gun: it's drawn where it really is on the ground (its
+  world pose in camera space) and both arms IK onto the push bar; it rattles a little as it rolls. Firing works as
+  usual (the rays leave from your eye, offset per barrel).
+- **Parked (E).** **Proposed, open for the user: an auto-firing turret** rather than a manned emplacement. Press E
+  while pushing: the cart stays where it is, you switch to your next weapon, and for **30 s** (or two magazines of its
+  build, whichever runs out first) it turns toward the nearest enemy it can see within 45 m (zombies later; bots and
+  the range's practice dummies today) and fires its own build at it, credited to you. Then it stands idle. Walk up to
+  it and press E (or select its slot next to it) to push it again; select its slot far away and you're told where it
+  is. Switching weapons while pushing leaves it standing idle. A parked cart can't be fired by hand, and a dead
+  owner's cart is gone (it comes back in front of you on respawn).
+  Why auto-fire: it keeps the player moving (the roguelite loop rewards running and building), needs no camera or
+  control hand-over, and reads clearly in co-op. A manned emplacement (step up, aim it yourself, step off back to your
+  weapons) is the alternative; the turret code keeps the aiming separate so it can be swapped.
+- **Network:** the server sends every cart in `CartState` with the snapshots while any exist; the interact key is
+  `CartUse` (see "Firing" for the protocol notes and what co-op still needs).
+- **Workbench Range:** a cart lane on the left of the spawn (x -12): an 8 cm curb the cart rolls over and a 30 cm step
+  it can't climb. The workbench's "Practice dummies" setting (0-8, default 4) puts dummies down the range for the
+  turret, cleave and stun.
+
+## The melee slot (decided: melee-only parts)
+
+Today's melee (a quick knife / butt strike on V, `Melee.cs`) stays exactly as it is in normal multiplayer modes. In
+the Workbench Range (and Zombies later) the **melee slot** replaces it with a built melee weapon:
+
+- **Parts:** a **hilt** (the root: base damage, swing time, reach, cleave, hands), a **head** (required) and up to two
+  **mods**. Heads and mods change the numbers with a `melee` block: damage added then multiplied, swing time
+  multiplied, reach / cleave / stun added. Every kg over 2 adds 0.03 s to the swing. A melee weapon weighs 14 kg at
+  most. Models are built like guns (parts at sockets, along -Z from the hand).
+- **Stats:** damage per target, swing time, reach from the eyes, **cleave** (how many targets one swing hits, nearest
+  first; cleaving weapons sweep a wider arc), **stun** (seconds a hit target stands still: bots today, zombies later;
+  players aren't stunned). From behind it does double damage.
+- **The swing** uses the existing first-person melee animation (the one-handed arc, arms IK), with the built model in
+  your hand for the swing, timed to the weapon (a bit over half its swing time).
+- **Server:** the same lag-compensated, line-of-sight-checked hit test as today's melee, with the build's reach, arc
+  and cleave; one damage event per target.
+- **Workbench:** the **MELEE SLOT** switch shows hilts, heads and mods, the melee stats with deltas, and saves to the
+  melee slot (`melee=` in `workbench.txt`); "Use the standard strike" clears it.
+
+| Example | Parts | Damage | Swing | Reach | Cleave | Stun |
+| --- | --- | --- | --- | --- | --- | --- |
+| Machete | Wooden Handle, Machete Blade | 50 | 0.59 s | 2.1 m | 2 | 0 |
+| Nail Bat | Bat Grip, Bat Barrel, Nail Ring | 61 | 0.72 s | 2.1 m | 1 | 0.3 s |
+| Sledgehammer | Long Haft, Sledgehammer Head | 110 | 1.55 s | 2.5 m | 2 | 1.0 s |
+| Fire Axe | Long Haft, Fire Axe Head | 82 | 1.18 s | 2.6 m | 3 | 0 |
+| Chainsaw Sword | Motor Hilt, Chainsaw Blade, Grip Tape | 55 | 0.27 s | 2.3 m | 4 | 0 |
+| Frying Pan | Wooden Handle, Frying Pan | 55 | 0.69 s | 1.9 m | 1 | 1.2 s |
+| The Codfather | Fishing Rod Grip, Frozen Fish, Whoopee Cushion | 27 | 0.6 s | 2.8 m | 1 | 2.5 s |
+
+(The standard strike: 55 damage, 0.8 s, 2.4 m, one target, a kill from behind.)
 
 ## Example builds
 
@@ -246,14 +457,16 @@ range; DPS = damage per shot x shots per second, every projectile landing).
 | **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, 5.56 | Tactical Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
 | **Lumberjack**: six Gravedigger auto shotguns, shell drums, buckshot | Chainsaw Grip | 6 / 6 | 672 (6 x 8 x 14) | 260 auto | 20 | 5.6 s | 0.40 | 2912 |
 | **Shopping Spree**: sixteen Stampede SMG receivers (hip fire only) | Push Cart | 16 / 16 | 320 (16 x 20) | 900 auto | 20 | 4.9 s | 0.40 | 4800 |
-| **Party Platter**: Workhorse, Party Tray of four Tridents, twelve stub barrels | Rifle Grip | 1 / 12 | 50 (12 x ~4) | 335 auto | 75 | 3.4 s | 0.87 | 279 |
+| **Party Platter**: Workhorse, Party Tray of four Tridents, twelve stub barrels | Rifle Grip | 1 / 12 | 26 (12 x 2.2: conserved) | 335 auto | 75 | 3.4 s | 0.87 | 145 |
 | **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck Rounds | Pistol Grip | 1 / 1 | 90 | 90 semi | 2 | 1.0 s | 0.96 | 135 |
 
 The big multi-receiver numbers (Lumberjack, Shopping Spree) are deliberately silly in this sandbox; in Zombies they
 are gated by weight (both sit at the 0.40 mobility floor), part rarity and scrap cost, and by zombie health scaling with
 rounds. Balancing them is part of the open questions.
 
-## Milestone 1 checklist
+## Checklists
+
+Milestone 1:
 
 - [x] Part data and validation (75 parts, 10 categories, 6 tiers).
 - [x] Assembly rules with "why not" messages; deterministic stats into a `WeaponDef`.
@@ -263,26 +476,38 @@ rounds. Balancing them is part of the open questions.
       in the Workbench Range).
 - [x] Self-test section "Weapon builder" and a smoke step.
 
-## Open creative questions (for the user)
+Milestone 2 (the user's decisions):
 
-1. **Volley or rotate by default?** Volley makes multi-receiver guns feel like one huge shot (and makes the 9-receiver
-   rifle a monster); rotate makes them feel like one very fast gun. Should the player choose per build (as now, where
-   the grip allows it), or should each grip have one fixed personality?
-2. **Per-receiver feeds or a shared feed?** Today each receiver needs its own feed and ammo (mixed calibres work, but
-   9 magazines is a lot of scavenging). Do you want a shared-feed part (one drum, many receivers), or should the feed
-   live on the grip for some grips?
-3. **How hard should receivers scale?** Should multi-receiver guns be held back mostly by weight and mobility (now), by
-   a scrap cost per receiver, by heat/jamming, or by recoil that grows faster than the damage?
-4. **The cart and the chainsaw.** Should the cart be a real object on the ground you push (slow turning, both hands on
-   the bar, maybe you can let go of it and it stays put as a deployable turret)? Should the chainsaw grip also be a
-   melee weapon (it is a chainsaw)?
-5. **More silly grips?** The Steering Wheel (8 receivers round the rim, rotate) and the Briefcase (4 hidden receivers,
-   hip fire) are in. Ideas waiting for a yes: a **Guitar** (receivers in the body, strum to fire), a **Leaf Blower**,
-   a **Bicycle Handlebar**, a **Shield** with receivers behind it.
-6. **Splitter balance.** Conserving splitters (1/N) are honest; the rarer ones multiply damage (up to 1.92x for a
-   Party Tray of Tridents). Is that the reward for rarity you want, or should splitters always conserve and pay off in
-   spread and coverage instead?
-7. **Mystery box contents.** Complete standard configurations only (as planned), or occasionally a single Wonder part?
-8. **Special ammo effects** (incendiary, explosive, penetrating, squeaking ducks) are flagged but have no effect yet:
-   which matter most for Zombies, and should they stack across receivers?
-9. **Slots.** 2 builds, 4 with the unlock: is the unlock bought once per match (perk machine) or once per account?
+- [x] Fire style fixed per grip; shown in the workbench.
+- [x] Splitters conserve damage (all of them); damage multipliers and receiver upgrades (new sockets, tiers, models).
+- [x] Shared feeds with capacity, bore/action/ammo rules and a pooled magazine.
+- [x] Late-game frames and weight relief; the progression curve and drop tables as proposed data.
+- [x] Standard complete builds (`Parts/Builds`), loaded as workbench presets.
+- [x] Weapon slots 3-4 behind a per-run flag; station in the range, toggle in the workbench.
+- [x] The push cart as a real, replicated, server-authoritative object; parked as an auto-firing turret.
+- [x] The melee slot: hilts, heads, mods; damage, swing, reach, cleave, stun; workbench section; standard melee unchanged.
+- [x] Self-test (fire style, splitter conservation, multipliers, upgrades, shared feed, standard builds, drop tables,
+      slots, cart physics and parking, melee builds, standard melee, determinism) and smoke shots (melee on the bench,
+      the cart pushed and parked, a melee swing, the minigun).
+
+## Decided (2026-10-21)
+
+1. **Volley or rotate?** Fixed by the grip.
+2. **Feeds?** Per-receiver feeds plus shared feeds.
+3. **Scaling?** Weight is the main limiter; huge guns come late (rarer frames, weight relief).
+4. **The cart and the chainsaw?** The cart is a real pushed object that can be parked as a turret; the chainsaw grip is
+   just a grip, and melee gets its own slot built from melee parts.
+6. **Splitter balance?** Splitters always conserve; damage comes from multipliers and receiver upgrades.
+7. **Mystery box?** Complete standard builds only.
+9. **Slots?** 2 -> 4 via an upgrade bought on the map, per run (a roguelite).
+
+## Open questions (for the user)
+
+1. **More silly grips?** Ideas waiting for a yes: a **Guitar** (receivers in the body, strum to fire), a **Leaf
+   Blower**, a **Bicycle Handlebar**, a **Shield** with receivers behind it.
+2. **Special ammo effects** (incendiary, explosive, penetrating, plasma, squeaking ducks; and now chainsaw, fish,
+   shock, nails on melee) are flagged but have no effect yet: which matter most for Zombies, and do they **stack**
+   across receivers (two incendiary receivers = twice the burn, or the same burn)?
+3. **The parked cart:** auto-firing turret (built) or a manned emplacement? Are 30 s and two magazines right?
+4. **The numbers marked proposed:** the drop tables and prices, the weight penalties, the turret's range, melee stun
+   on players (off today).

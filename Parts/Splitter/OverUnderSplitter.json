@@ -5,7 +5,7 @@
   "rarity": "uncommon",
   "flavor": "Stacks the outputs. Each one gets a bit more than half, nobody knows why.",
   "weight": 0.6,
-  "split": {"outputMult": 0.55, "splay": 0},
+  "split": {"splay": 0, "spreadMult": 0.85},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [0, 0.032, -0.06], "accepts": ["barrel", "splitter"]},
     {"name": "barrel_2", "type": "barrel", "pos": [0, -0.032, -0.06], "accepts": ["barrel", "splitter"]}

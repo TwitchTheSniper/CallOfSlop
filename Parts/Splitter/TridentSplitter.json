@@ -5,7 +5,7 @@
   "rarity": "rare",
   "flavor": "Three outputs fanned a little apart. Each gets 40% of the shot.",
   "weight": 0.8,
-  "split": {"outputMult": 0.4, "splay": 3},
+  "split": {"splay": 3, "spreadMult": 0.8},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [-0.045, 0, -0.06], "accepts": ["barrel", "splitter"], "rot": [0, 3, 0]},
     {"name": "barrel_2", "type": "barrel", "pos": [0, 0, -0.06], "accepts": ["barrel", "splitter"]},

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Grip Tape",
+  "category": "meleemod",
+  "rarity": "common",
+  "flavor": "Fresh tape on the handle. Faster swings, fewer blisters.",
+  "weight": 0.05,
+  "melee": {"swingMult": 0.9},
+  "model": [
+    {"shape": "rod", "size": [0.036, 0.036, 0.08], "pos": [0, 0, 0], "color": "black"}
+  ]
+}

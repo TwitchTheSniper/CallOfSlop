@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Counterweight",
+  "category": "meleemod",
+  "rarity": "uncommon",
+  "flavor": "A lead slug in the pommel: more weight behind every hit.",
+  "weight": 0.6,
+  "melee": {"damageMult": 1.15, "swingMult": 1.08},
+  "model": [
+    {"size": [0.045, 0.045, 0.04], "pos": [0, 0, 0.1], "color": "gunmetal"}
+  ]
+}

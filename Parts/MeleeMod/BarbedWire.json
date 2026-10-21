@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Barbed Wire Wrap",
+  "category": "meleemod",
+  "rarity": "uncommon",
+  "flavor": "Wrapped round the head: catches the next zombie along too.",
+  "weight": 0.3,
+  "melee": {"damage": 8, "cleave": 1},
+  "model": [
+    {"shape": "rod", "size": [0.07, 0.07, 0.01], "pos": [0, 0, -0.06], "color": "steel"},
+    {"shape": "rod", "size": [0.07, 0.07, 0.01], "pos": [0, 0, -0.1], "color": "steel"}
+  ]
+}

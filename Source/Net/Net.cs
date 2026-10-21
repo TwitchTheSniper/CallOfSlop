@@ -41,6 +41,9 @@ public enum Msg : byte
     PropBreak, // server -> all: a breakable prop broke (index, damage kind, where the hit came from) (reliable)
     PropState, // server -> joining client: the props broken so far this match (reliable)
     ShieldHit, // server -> all: Last Stand's shield blocked a bullet hit on player X (charges left) (reliable)
+    CartUse, // client -> server: the interact key (park / pick up my push cart, buy the weapon-slot upgrade) (reliable)
+    CartState, // server -> all: every push cart (owner, pushed / idle / turret, position, yaw, aim) with snapshots while any exist (unreliable)
+    RunState, // server -> one client: per-run flags (the weapon-slot upgrade) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

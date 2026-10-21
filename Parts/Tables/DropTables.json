@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-drops/1",
+  "note": "PROPOSED roguelite tables for the Zombies mode (open for the user). Weights are relative per row; a row applies from its round on. A run starts with wall gear (common) and climbs: rare frames from round 8, legendary carry from round 15, wonder parts and box builds late.",
+  "partDrops": [
+    {"fromRound": 1, "common": 85, "uncommon": 15},
+    {"fromRound": 3, "common": 60, "uncommon": 32, "rare": 8},
+    {"fromRound": 8, "common": 35, "uncommon": 35, "rare": 24, "epic": 6},
+    {"fromRound": 15, "common": 15, "uncommon": 25, "rare": 32, "epic": 20, "legendary": 7, "wonder": 1},
+    {"fromRound": 25, "common": 5, "uncommon": 15, "rare": 30, "epic": 28, "legendary": 17, "wonder": 5},
+    {"fromRound": 35, "uncommon": 5, "rare": 20, "epic": 35, "legendary": 28, "wonder": 12}
+  ],
+  "dropChance": [
+    {"fromRound": 1, "chance": 0.04},
+    {"fromRound": 5, "chance": 0.06},
+    {"fromRound": 15, "chance": 0.08},
+    {"fromRound": 30, "chance": 0.1}
+  ],
+  "boxTiers": [
+    {"fromRound": 1, "uncommon": 60, "rare": 35, "epic": 5},
+    {"fromRound": 8, "uncommon": 25, "rare": 45, "epic": 25, "legendary": 5},
+    {"fromRound": 15, "rare": 35, "epic": 40, "legendary": 20, "wonder": 5},
+    {"fromRound": 25, "rare": 15, "epic": 35, "legendary": 35, "wonder": 15}
+  ],
+  "costs": {"box": 950, "slotUpgrade": 4000, "wall": 500}
+}

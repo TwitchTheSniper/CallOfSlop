@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Wooden Handle",
+  "category": "hilt",
+  "rarity": "common",
+  "flavor": "A sturdy hardwood handle. Put something heavy on the end.",
+  "weight": 0.4,
+  "hand": [0, 0, 0.0],
+  "gripAngle": 20,
+  "hilt": {"damage": 30, "swing": 0.65, "reach": 1.9, "cleave": 1, "hands": "one"},
+  "sockets": [
+    {"name": "head", "type": "head", "pos": [0, 0, -0.11], "required": true},
+    {"name": "mod_1", "type": "mod", "pos": [0, 0, 0.02]},
+    {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.08]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.032, 0.032, 0.22], "pos": [0, 0, -0.0], "color": "wood"},
+    {"size": [0.04, 0.04, 0.02], "pos": [0, 0, 0.11], "color": "darkwood"}
+  ]
+}

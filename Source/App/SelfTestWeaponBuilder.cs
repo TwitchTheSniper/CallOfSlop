@@ -55,6 +55,7 @@ public static partial class SelfTest
         CheckBuilderServerShots();
         CheckBuilderLastStand();
         CheckBuilderSaves();
+        CheckBuilder2(); // SelfTestWeaponBuilder2.cs: the user's decisions (fire style, splitters, upgrades, shared feed, builds, cart, melee, slots)
 
         // Scrap hooks
         var common = parts.First(p => p.Rarity == Rarity.Common);
@@ -138,7 +139,12 @@ public static partial class SelfTest
         ExpectPartError("""{ "name": "X", "category": "grip", "rarity": "common", "hand": [0,0,0], "frame": { "hands": "one" } }""", "receiver", "a root grip without receiver sockets");
         ExpectPartError("""{ "name": "X", "category": "barrel", "rarity": "common", "bores": ["laser"], "muzzles": [[0,0,-0.2]] }""", "bore", "an unknown bore");
         ExpectPartError("""{ "name": "X", "category": "barrel", "rarity": "common" }""", "muzzles", "a barrel without muzzles");
-        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "outputMult": 0.5 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }] }""", "two", "a splitter with one output");
+        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "splay": 0 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }] }""", "two", "a splitter with one output");
+        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "outputMult": 0.7 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }, { "name": "barrel_2", "type": "barrel", "pos": [0,0,0] }] }""", "conserves damage", "a splitter that multiplies damage");
+        ExpectPartError("""{ "name": "X", "category": "head", "rarity": "common" }""", "melee", "a melee head without a melee block");
+        ExpectPartError("""{ "name": "X", "category": "hilt", "rarity": "common", "hand": [0,0,0], "hilt": { "damage": 10 } }""", "head", "a hilt without a head socket");
+        ExpectPartError("""{ "name": "X", "category": "feed", "rarity": "rare", "mount": "hopper" }""", "shared", "a hopper feed without a shared block");
+        ExpectPartError("""{ "name": "X", "category": "grip", "rarity": "common", "hand": [0,0,0], "frame": { "fireStyle": "volley", "fireStyles": ["rotate"] }, "sockets": [{ "name": "receiver_1", "type": "receiver", "pos": [0,0,0] }] }""", "once", "a grip with two fire styles");
         ExpectPartError("""{ "name": "X", "category": "stock", "rarity": "common", "stats": [{ "stat": "rnage", "mul": 2 }] }""", "unknown stat", "an unknown stat");
         ExpectPartError("""{ "name": "X{1}", "category": "stock", "rarity": "common" }""", "name", "braces in the name");
         ExpectPartError("""{ "name": "X", "category": "optic", "rarity": "common" }""", "optic", "an optic without a look");
@@ -205,9 +211,9 @@ public static partial class SelfTest
             var single = platter.Build.Clone();
             single.Receivers[0].Attach("barrel", Parts.Find("Stub Barrel")!);
             var s = WeaponBuilder.Assemble(single).Def!;
-            var expect = s.ShotDamage * 4 * 0.4f * 3 * 0.4f;
-            Line($"splitter rule: Party Tray x Trident = 12 barrels, {pp.ShotDamage:0} per shot vs {expect:0} expected (1.92x)");
-            if (pp.BarrelCount != 12 || MathF.Abs(pp.ShotDamage - expect) > 12)
+            var expect = s.ShotDamage; // splitters conserve: 4 x 3 outputs at 1/12 each
+            Line($"splitter rule: Party Tray x Trident = 12 barrels, {pp.ShotDamage:0.0} per shot vs {expect:0.0} for one barrel (conserved)");
+            if (pp.BarrelCount != 12 || MathF.Abs(pp.ShotDamage - expect) > 0.5f)
                 Fail($"Party Platter: {pp.BarrelCount} barrels, {pp.ShotDamage} per shot (expected 12 barrels, about {expect})");
         }
     }
@@ -340,11 +346,10 @@ public static partial class SelfTest
         heavy.Root.Attach("receiver_2", Parts.Find("Hellwheel Rotary Receiver")!);
         ExpectWhyNot(heavy, "", "receiver_3", "Hellwheel Rotary Receiver", "too heavy");
 
-        // Fire style must be one the grip allows.
-        var bad = BuilderExamples.All().First(e => e.Build.Name == "Triple Pistol").Build.Clone();
-        bad.Style = FireStyle.Rotate;
-        if (!BuildRules.Check(bad).Any(p => p.Message.Contains("can't fire rotate")))
-            Fail("rules: the Pistol Grip should refuse the rotate fire style");
+        // The fire style is the grip's: an old save that chose another style loads with the grip's.
+        var oldStyle = WeaponBuild.Parse("Old|rotate|Pistol Grip{receiver_1:Plinker Receiver}", Parts.Find);
+        if (oldStyle.Style != FireStyle.Volley || !oldStyle.ToText().StartsWith("Old|volley|", StringComparison.Ordinal))
+            Fail("rules: a saved style should give way to the grip's fixed fire style");
         // A build must start from a grip.
         var dropped = new List<string>();
         var parsed = WeaponBuild.Parse("Odd|volley|Workhorse Receiver{barrel:Standard Barrel}", Parts.Find, dropped);
@@ -407,7 +412,7 @@ public static partial class SelfTest
 
         // A rotating grip: the receivers take turns.
         var comp = BuilderExamples.All().First(e => e.Build.Name == "Triple Pistol").Build.Clone();
-        var turns = new WeaponBuild("Turns", Parts.Find("Competition Pistol Grip")!) { Style = FireStyle.Rotate };
+        var turns = new WeaponBuild("Turns", Parts.Find("Competition Pistol Grip")!); // a rotate grip
         foreach (var (s, n) in comp.Root!.Children())
             turns.Root!.Attach(s.Name, n.Clone());
         if (WeaponBuilder.Assemble(turns).Def is not { } td)

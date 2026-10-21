@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Fire Axe",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A long haft and a red axe head: wide swings that take two at once.",
+  "build": "Long Haft{head:Fire Axe Head}"
+}
