@@ -37,7 +37,7 @@ public sealed partial class Game
         Audio.Tick(now);
         if (!Audio.Enabled)
             return; // headless (self-test, no device): no footstep rays at all
-        _emitStep ??= e => Audio.Footstep(e, e.Player == LocalId);
+        _emitStep ??= e => Audio.Footstep(e, e.Player == LocalId, Players.TryGetValue(e.Player, out var stepper) && stepper.Perks.Has(PerkId.DeadSilence));
         foreach (var p in Players.Values)
             _footsteps.Update(p, now, _emitStep, LegAnimator.PhaseOf(p.Id, now));
     }

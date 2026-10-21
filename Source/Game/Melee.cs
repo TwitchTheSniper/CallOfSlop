@@ -248,6 +248,7 @@ public sealed partial class Game
     {
         if (Local is not { } me)
             return;
+        UpdateMorePerkFeedback(me, now); // Quick Fix, Hardline (PerksMore.cs)
         if (!me.Alive)
         {
             _lastStandShown = false;

@@ -84,7 +84,8 @@ public static class BotPersonalities
             RangeMult = 0.6f, Aggression = 0.95f, RetreatHealth = 12, CoverUse = 0.1f,
             StrafeMin = 0.25f, StrafeMax = 0.8f, StrafeStrength = 1f, GrenadeRate = 0.6f, CrouchPeek = 0.1f,
             ObjectiveWeight = 0.25f,
-            Movement = [PerkId.Afterburner, PerkId.HeadStart], Survival = [PerkId.Bloodthirst, PerkId.LastStand], Damage = [PerkId.PointBlank],
+            Movement = [PerkId.Afterburner, PerkId.HeadStart], Survival = [PerkId.Bloodthirst, PerkId.LastStand, PerkId.QuickFix],
+            Damage = [PerkId.PointBlank, PerkId.SteadyAim, PerkId.SleightOfHand],
         },
         new()
         {
@@ -93,7 +94,7 @@ public static class BotPersonalities
             RangeMult = 1.5f, Aggression = 0.2f, RetreatHealth = 45, CoverUse = 0.8f,
             StrafeMin = 1.2f, StrafeMax = 2.5f, StrafeStrength = 0.4f, GrenadeRate = 0.5f, CrouchPeek = 0.2f, GoesProne = true,
             ObjectiveWeight = 0.4f,
-            Movement = [PerkId.LowProfile], Survival = [PerkId.Entrenched], Damage = [PerkId.Deadeye],
+            Movement = [PerkId.LowProfile, PerkId.Stalker], Survival = [PerkId.Entrenched, PerkId.ColdBlooded], Damage = [PerkId.Deadeye],
         },
         new()
         {
@@ -102,7 +103,8 @@ public static class BotPersonalities
             RangeMult = 0.85f, Aggression = 0.7f, RetreatHealth = 30, CoverUse = 0.4f,
             StrafeMin = 0.4f, StrafeMax = 1.2f, StrafeStrength = 1f, GrenadeRate = 0.8f, CrouchPeek = 0.2f, FlankOffset = 14f,
             ObjectiveWeight = 0.35f,
-            Movement = [PerkId.HeadStart, PerkId.Parkour], Survival = [PerkId.LastStand], Damage = [PerkId.Flanker],
+            Movement = [PerkId.HeadStart, PerkId.Parkour, PerkId.DeadSilence, PerkId.Ghost], Survival = [PerkId.LastStand, PerkId.QuickFix],
+            Damage = [PerkId.Flanker],
         },
         new()
         {
@@ -111,7 +113,8 @@ public static class BotPersonalities
             RangeMult = 1.1f, Aggression = 0.3f, RetreatHealth = 30, CoverUse = 0.9f,
             StrafeMin = 0.8f, StrafeMax = 2f, StrafeStrength = 0.6f, GrenadeRate = 1f, CrouchPeek = 0.6f, Holds = true,
             ObjectiveWeight = 0.95f,
-            Movement = [PerkId.LowProfile], Survival = [PerkId.Entrenched, PerkId.FlakJacket], Damage = [PerkId.Opener],
+            Movement = [PerkId.LowProfile, PerkId.Lightweight], Survival = [PerkId.Entrenched, PerkId.FlakJacket, PerkId.Hardline],
+            Damage = [PerkId.Opener, PerkId.SleightOfHand],
         },
         new()
         {
@@ -120,7 +123,8 @@ public static class BotPersonalities
             RangeMult = 1f, Aggression = 0.5f, RetreatHealth = 40, CoverUse = 0.85f,
             StrafeMin = 0.6f, StrafeMax = 1.6f, StrafeStrength = 0.9f, GrenadeRate = 3f, CrouchPeek = 0.5f,
             ObjectiveWeight = 0.6f,
-            Movement = [PerkId.Parkour, PerkId.LowProfile], Survival = [PerkId.FlakJacket], Damage = [PerkId.Opener, PerkId.Deadeye],
+            Movement = [PerkId.Parkour, PerkId.LowProfile, PerkId.Ghost], Survival = [PerkId.FlakJacket, PerkId.Scavenger, PerkId.Hardline],
+            Damage = [PerkId.Opener, PerkId.Deadeye, PerkId.Demolitions],
         },
         new()
         {

@@ -77,7 +77,7 @@ public sealed partial class Game
         }
         if (p.ShieldCharges > 0 && now >= p.ShieldUntil)
             p.ShieldCharges = 0;
-        if (p.Health >= World.MaxHealth || now - p.LastHurtTime < Regen.Delay)
+        if (p.Health >= World.MaxHealth || now - p.LastHurtTime < Perks.RegenDelay(p.Perks)) // Quick Fix: sooner
         {
             p.Regenerating = false;
             p.RegenCarry = 0;
