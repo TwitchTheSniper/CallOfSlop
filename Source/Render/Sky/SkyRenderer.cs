@@ -286,13 +286,65 @@ public static unsafe class SkyRenderer
     }
 
     /// <summary>
-    /// The noise value above which a pixel is cloud, for a coverage of 0-1: calibrated on the shader's noise mix so that
-    /// the share of sky covered is about the coverage (the self-test checks this on the real noise texture).
+    /// The noise value above which a pixel is cloud, for a coverage of 0-1, so that about that share of the cloud layer
+    /// is covered. Calibrated once on the real noise texture with the shader's own mix (<see cref="Calibration"/>), so it
+    /// holds whatever the noise looks like.
     /// </summary>
-    public static float CoverageThreshold(float coverage) => coverage <= 0 ? 2f : CoverageMid + (0.5f - Math.Clamp(coverage, 0f, 1f)) * CoverageSpread;
+    public static float CoverageThreshold(float coverage)
+    {
+        if (coverage <= 0)
+            return 2f; // never
+        var table = Calibration;
+        var f = Math.Clamp(coverage, 0f, 1f) * (table.Length - 1);
+        var i = Math.Min((int)f, table.Length - 2);
+        return table[i] + (table[i + 1] - table[i]) * (f - i);
+    }
 
-    /// <summary>The threshold at 50% coverage, and how far it moves per unit of coverage (fitted to the noise mix's distribution).</summary>
-    public const float CoverageMid = 0.443f, CoverageSpread = 0.42f;
+    /// <summary>The middle of the shader's soft cloud edge, above the threshold (smoothstep(thr, thr + 0.09, n)).</summary>
+    private const float EdgeMid = 0.045f;
+
+    private static float[]? _calibration;
+    private static byte[]? _noiseCache;
+
+    /// <summary>The cloud noise texels (made once; see <see cref="MakeNoise"/>).</summary>
+    public static byte[] Noise => _noiseCache ??= MakeNoise();
+
+    /// <summary>Thresholds for coverage 0, 1/32 ... 1: quantiles of the shader's noise mix over many layer positions.</summary>
+    private static float[] Calibration
+    {
+        get
+        {
+            if (_calibration != null)
+                return _calibration;
+            var values = SampleMix(Noise, 40000, 77);
+            Array.Sort(values);
+            var table = new float[33];
+            for (var k = 0; k <= 32; k++)
+            {
+                var q = 1f - k / 32f; // coverage c: the (1 - c) quantile is where cloud starts
+                table[k] = values[Math.Clamp((int)(q * (values.Length - 1)), 0, values.Length - 1)] - EdgeMid;
+            }
+            table[32] = MathF.Min(table[32], -0.1f); // full coverage: everything
+            return _calibration = table;
+        }
+    }
+
+    /// <summary>The shader's cumulus noise mix at <paramref name="count"/> pseudo-random layer positions.</summary>
+    private static float[] SampleMix(byte[] noise, int count, int seed)
+    {
+        var rng = new Random(seed);
+        var values = new float[count];
+        for (var k = 0; k < count; k++)
+        {
+            var u = rng.NextDouble() * 64;
+            var v = rng.NextDouble() * 64;
+            Texel(noise, u, v, out var r, out var g, out var b, out var a);
+            var fbm = (r * 0.50f + g * 0.25f + b * 0.15f + a * 0.10f) / 255f;
+            Texel(noise, u * 0.23, v * 0.23, out var br, out _, out _, out _);
+            values[k] = fbm * 0.72f + br / 255f * 0.28f;
+        }
+        return values;
+    }
 
     /// <summary>Cloud layer offsets in noise tiles, wrapped to 0-1 in double precision (cumulus xy, coverage variation zw).</summary>
     public static Vector4 WindOffsets(SkySettings s, double time)
@@ -371,21 +423,8 @@ public static unsafe class SkyRenderer
     public static float MeasuredCoverage(byte[] noise, float coverage)
     {
         var thr = CoverageThreshold(coverage);
-        var rng = new Random(77);
-        var covered = 0;
-        const int samples = 40000;
-        for (var k = 0; k < samples; k++)
-        {
-            var u = rng.NextDouble() * 64;
-            var v = rng.NextDouble() * 64;
-            Texel(noise, u, v, out var r, out var g, out var b, out var a);
-            var fbm = (r * 0.50f + g * 0.25f + b * 0.15f + a * 0.10f) / 255f;
-            Texel(noise, u * 0.23, v * 0.23, out var br, out _, out _, out _);
-            var n = fbm * 0.72f + br / 255f * 0.28f;
-            if (n > thr + 0.045f) // the middle of the shader's soft edge
-                covered++;
-        }
-        return covered / (float)samples;
+        var values = SampleMix(noise, 20000, 4242); // other positions than the calibration's, so this isn't circular
+        return values.Count(v => v > thr + EdgeMid) / (float)values.Length;
     }
 
     private static float Texel(byte[] noise, double u, double v, out float r, out float g, out float b, out float a)
@@ -456,7 +495,7 @@ public static unsafe class SkyRenderer
 
     private static uint MakeNoiseTexture()
     {
-        var px = MakeNoise();
+        var px = Noise;
         GlTexture tex = default;
         Native.glGenTextures(1, &tex);
         Native.glActiveTexture(GL_TEXTURE0 + NoiseUnit);

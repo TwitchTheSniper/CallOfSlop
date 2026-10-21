@@ -286,11 +286,11 @@ public static partial class SelfTest
         }
 
         // ---- Clouds -----------------------------------------------------------------------------------------------
-        var noise = SkyRenderer.MakeNoise();
+        var noise = SkyRenderer.Noise;
         var cov = new[] { 0.2f, 0.5f, 0.8f }.Select(c => (c, SkyRenderer.MeasuredCoverage(noise, c))).ToArray();
         Line("cloud coverage asked vs drawn: " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         if (cov.Any(c => MathF.Abs(c.c - c.Item2) > 0.12f) || SkyRenderer.MeasuredCoverage(noise, 0) > 0)
-            Fail("cloud coverage doesn't mean what it says (recalibrate SkyRenderer.CoverageMid / CoverageSpread): " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
+            Fail("cloud coverage doesn't mean what it says (see SkyRenderer.CoverageThreshold): " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         var w0 = SkyRenderer.WindOffsets(SkySettings.FromPreset("clear"), 1e6);
         if (!float.IsFinite(w0.X) || w0.X is < 0 or >= 1 || w0.W is < 0 or >= 1)
             Fail("cloud drift offsets must stay wrapped to 0-1 after a long session");
