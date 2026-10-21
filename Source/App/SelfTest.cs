@@ -67,6 +67,7 @@ public static partial class SelfTest
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
+            Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);

@@ -59,7 +59,7 @@ public sealed class Settings
     public string JoinAddress = "127.0.0.1";
     public string MapName = "Proto Box"; // map for single player and hosting (when not random)
     public bool MapRandom = true; // default: a random map each time you start
-    public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists)
+    public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
     public bool Advertise; // list my hosted game on the public server list
     public string ServerName = ""; // empty: "<name>'s game"
     public string MasterServer = ""; // host[:port] of a master server for the public list (empty: LAN only)
@@ -86,7 +86,7 @@ public sealed class Settings
         }
     }
 
-    /// <summary>The map to start: the chosen one, or a random one from the selected pack.</summary>
+    /// <summary>The map to start: the chosen one, or a random one from the selected pack (or from every pack in True Random).</summary>
     public Map PickMap(int players = 0) => PickMap(Maps.Packs, Maps.All, Random.Shared, players);
 
     /// <summary>
@@ -101,21 +101,19 @@ public sealed class Settings
     {
         if (!MapRandom && all.FirstOrDefault(m => m.Name.Equals(MapName, StringComparison.OrdinalIgnoreCase)) is { } chosen)
             return chosen;
-        var pack = packs.FirstOrDefault(p => p.Name.Equals(MapPack, StringComparison.OrdinalIgnoreCase) && p.Maps.Count > 0);
+        var pool = CallOfSlop.MapPack.RandomPool(MapPack, packs, all); // the pack, True Random's packs, or everything
         if (players <= 0)
-            return pack != null ? pack.PickRandom(rng) : all[rng.Next(all.Count)];
-        var pool = pack != null ? pack.Maps : all;
+            return pool[rng.Next(pool.Count)];
         var fit = pool.Where(m => m.MaxPlayers >= players).ToList();
         return fit.Count > 0 ? fit[rng.Next(fit.Count)] : pool.OrderByDescending(m => m.MaxPlayers).First();
     }
 
-    /// <summary>The player limit the lobby's sliders use: the chosen map's, or for "random from pack" the biggest in the pack.</summary>
+    /// <summary>The player limit the lobby's sliders use: the chosen map's, or for "random from pack" the biggest in the pack (True Random: in all its packs).</summary>
     public int LobbyMaxPlayers(IReadOnlyList<MapPack> packs, IReadOnlyList<Map> all)
     {
         if (!MapRandom && all.FirstOrDefault(m => m.Name.Equals(MapName, StringComparison.OrdinalIgnoreCase)) is { } chosen)
             return chosen.MaxPlayers;
-        var pack = packs.FirstOrDefault(p => p.Name.Equals(MapPack, StringComparison.OrdinalIgnoreCase) && p.Maps.Count > 0);
-        var pool = pack != null ? (IReadOnlyList<Map>)pack.Maps : all;
+        var pool = CallOfSlop.MapPack.RandomPool(MapPack, packs, all);
         return pool.Count == 0 ? Game.ClassicPlayers : pool.Max(m => m.MaxPlayers);
     }
 
