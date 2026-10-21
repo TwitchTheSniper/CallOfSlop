@@ -249,7 +249,7 @@ public sealed class GunBuilder
             BL += 0.04f;
         else if (barrelAtt == "snubBarrel")
             BL -= MathF.Min(0.03f, BL * 0.4f);
-        else if (barrelAtt is "matchBarrel" or "precisionBore")
+        else if (barrelAtt == "matchBarrel")
             BL += 0.05f;
         else if (barrelAtt == "sawnOff")
         {

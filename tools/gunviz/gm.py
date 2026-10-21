@@ -381,7 +381,7 @@ class B:
             BL += 0.04
         elif barrel_att == "snubBarrel":
             BL -= min(0.03, BL * 0.4)
-        elif barrel_att in ("matchBarrel", "precisionBore"):
+        elif barrel_att == "matchBarrel":
             BL += 0.05
         elif barrel_att == "sawnOff":
             BL -= min(0.3, BL * 0.45)
