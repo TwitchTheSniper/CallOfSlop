@@ -29,7 +29,7 @@ public static partial class SelfTest
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ad80326u), ("Dev/PhysicsTest.json", 0x476984bcu),
         ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0xe4ccc239u),
         ("Dev/PropGallery3.json", 0xc24b7fd9u), ("Dev/AnimatedProps.json", 0x966dadfdu), ("Dev/MeshTest.json", 0xb7a01a63u),
-        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x378eaae8u), ("Dev/WorkbenchRange.json", 0xacbc140eu),
+        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x378eaae8u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 
     private static void CheckPackAssets()
