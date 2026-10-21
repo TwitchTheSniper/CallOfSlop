@@ -294,9 +294,9 @@ public static partial class SelfTest
         // Replacing or removing a part takes it fully off the build (a half-detached node crashed the workbench tree).
         {
             var t = new WeaponBuild("Swap", pistol);
-            var first = t.Root!.Attach("receiver_1", Parts.Find("Plinker Receiver")!);
+            var swapped = t.Root!.Attach("receiver_1", Parts.Find("Plinker Receiver")!);
             t.Root.Attach("receiver_1", Parts.Find("Plinker Receiver")!);
-            if (first.Parent != null || first.ParentSocket != null || first.Path() != "")
+            if (swapped.Parent != null || swapped.ParentSocket != null || swapped.Path() != "")
                 Fail("rules: a replaced receiver is still half attached");
             var second = t.Root.Child("receiver_1")!;
             second.Detach();
