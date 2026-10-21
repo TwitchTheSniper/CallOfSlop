@@ -52,6 +52,7 @@ public static partial class SelfTest
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
+            Section("Pack assets", CheckPackAssets); // SelfTestPackAssets.cs: pack-local props, models and skies
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Foliage no-go", CheckFoliageNoGo); // SelfTest.FoliageNoGo.cs: indoor / pavement rules and zones
