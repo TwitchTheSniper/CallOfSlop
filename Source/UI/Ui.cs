@@ -449,7 +449,7 @@ public sealed partial class Ui : IDisposable
                     if (mine)
                         ImGui.PopStyleColor();
                 }
-                ImGuiSafe.TextColored(Dim, $"Click a map or press 1-{n}. Voting closes in {Math.Ceiling(game.TimeLeft):0} s; ties are broken at random.");
+                ImGuiSafe.TextColored(Dim, $"Click a map or press 1-{n}. Voting closes in {Math.Ceiling(game.TimeLeft):0} s; ties are broken at random. (Bots don't vote.)");
             }
             else
             {
