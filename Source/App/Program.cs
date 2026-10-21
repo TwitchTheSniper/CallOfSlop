@@ -1011,6 +1011,7 @@ public static unsafe partial class Program
             if (_session is { } g)
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
+                DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1984,7 +1985,9 @@ public static unsafe partial class Program
                 Gfx.Rect(cx - 1, cy - 1, 2, 2, white, 0.8f);
             }
 
-            if (now < _game.HitMarkerUntil)
+            if (now < _game.HitMarkerUntil && _game.HitMarkerFriendly)
+                DrawFriendlyHitMarker(cx, cy, k, now); // a teammate: no damage (Program.FriendlyHit.cs)
+            else if (now < _game.HitMarkerUntil)
             {
                 var c = _game.HitMarkerHead ? new Vector3(1f, 0.85f, 0.2f) : new Vector3(1f, 0.25f, 0.25f);
                 for (var i = 0; i < 4; i++)

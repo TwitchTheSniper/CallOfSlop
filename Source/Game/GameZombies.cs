@@ -175,6 +175,11 @@ public sealed partial class Game
         byte flags = 0;
         foreach (var (victim, at, dist) in hits.Take(m.Cleave))
         {
+            if (IsFriendlyHit(attacker, victim))
+            {
+                flags |= ShotHitFriendly; // a teammate: no damage or stun, a friendly marker (FriendlyHits.cs)
+                continue;
+            }
             var backstab = Perks.IsFromBehind(dir, at.Yaw);
             var dmg = m.Damage * (backstab ? 2f : 1f) * Perks.AttackMult(attacker.Perks, dist, dir, at.Yaw, victim.Health, melee: true);
             flags |= 1;

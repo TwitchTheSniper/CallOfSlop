@@ -477,7 +477,7 @@ public sealed partial class Game : IDisposable
                 if (World.Hitbox(other.RenderPosition, other.RenderStance, other.RenderYaw).Raycast(o, d, dist) is { } t)
                 {
                     dist = t;
-                    predictedHit = true;
+                    predictedHit |= AreEnemies(me, other); // a teammate waits for the server's friendly marker (FriendlyHits.cs)
                 }
             }
             if (Horde.Count > 0)
@@ -488,7 +488,10 @@ public sealed partial class Game : IDisposable
             AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now);
         }
         if (predictedHit)
+        {
             HitMarkerUntil = now + 0.12;
+            HitMarkerFriendly = false;
+        }
 
         var tickBase = (uint)Math.Max(0, Math.Floor(RenderTick));
         _w.Begin(Msg.Fire).U8(def.Id).Vec(origin).Vec(dir).F32(spread).U32(seed).U32(tickBase).F32((float)(RenderTick - tickBase));
@@ -1235,6 +1238,11 @@ public sealed partial class Game : IDisposable
 
         foreach (var (victim, dmg) in damage)
         {
+            if (IsFriendlyHit(shooter, victim))
+            {
+                flags |= ShotHitFriendly; // a teammate: no damage, a friendly marker for the shooter (FriendlyHits.cs)
+                continue;
+            }
             flags |= 1 | ShotHitPlayer;
             var head = headshotOn.Contains(victim);
             if (head)
@@ -1262,8 +1270,14 @@ public sealed partial class Game : IDisposable
 
     private void OnOwnShotConfirmed(byte flags, double now)
     {
+        LastHitFlags = flags;
         if ((flags & 1) == 0)
+        {
+            if ((flags & ShotHitFriendly) != 0)
+                OnOwnFriendlyHit(now); // only teammates were hit (FriendlyHits.cs)
             return;
+        }
+        HitMarkerFriendly = false;
         HitMarkerUntil = now + 0.15;
         HitMarkerHead = (flags & 2) != 0;
         PlayHitConfirm(flags); // GameSounds.cs
