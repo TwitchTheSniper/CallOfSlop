@@ -96,6 +96,7 @@ public static partial class SelfTest
             Section("Gun Game", CheckGunGame);
             Section("Mode state and matches", CheckModeMatches);
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
+            Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs

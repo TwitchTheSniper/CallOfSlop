@@ -373,16 +373,15 @@ public sealed partial class Ui : IDisposable
                 ImGui.PopFont();
 
                 var top = Math.Max(mine, bestOther);
-                var deuce = top >= WinKillsMinusOne && Math.Abs(mine - bestOther) < Game.WinMargin;
+                var limit = game.ScoreLimit; // scales with the player count (ScoreLimits.cs)
+                var deuce = top >= limit - 1 && Math.Abs(mine - bestOther) < Game.WinMargin;
                 ImGuiSafe.TextColored(deuce ? Orange : Dim, deuce
-                    ? $"Win by {Game.WinMargin}!  ({Math.Max(Game.WinKills, top + 1)}+ kills and {Game.WinMargin} clear)"
-                    : $"First to {Game.WinKills} kills, win by {Game.WinMargin}");
+                    ? $"Win by {Game.WinMargin}!  ({Math.Max(limit, top + 1)}+ kills and {Game.WinMargin} clear)"
+                    : $"First to {limit} kills, win by {Game.WinMargin}");
             }
         }
         ImGui.End();
     }
-
-    private const int WinKillsMinusOne = Game.WinKills - 1;
 
     /// <summary>End-of-match screen: who won, final scores, countdown to the next match.</summary>
     private void DrawResults(Game game, float2 pos, float2 size)
