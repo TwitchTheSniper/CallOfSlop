@@ -133,7 +133,7 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Survival | **Scavenger** (21) | Just got a kill | Each kill gives back one grenade and one equipment charge, up to what you spawn with |
 | Survival | **Entrenched** (25) | Crouched/prone and still | 40% less bullet damage |
 | Survival | **Hardline** (29) | Earning kill streaks | Every streak costs one kill less (never below 2) |
-| Survival | **Last Stand** (41) | Once per life | The first lethal hit leaves you on 1 HP, and a shield blocks your next 3 bullet hits (up to 8 s) |
+| Survival | **Last Stand** (41) | Once per life | The first lethal bullet or blast leaves you on 1 HP, and a shield blocks your next 3 bullet hits (up to 8 s); never saves you from melee |
 | Survival | **Cold Blooded** (43) | Turrets and drones | Enemy Sentry Turrets and Attack Drones can't lock onto you (stray rounds still hurt) |
 | Damage | **Point Blank** (start) | Within 8 m | Bullets and melee hit 40% harder |
 | Damage | **Sleight of Hand** (5) | Reloading | Reload 35% faster (stacks with Overdrive) |
@@ -146,7 +146,7 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 
 Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality. Handling perks (Sleight of Hand, Steady Aim, Tight Grip, Stalker) work on your own client like Overdrive does, and bots get Sleight of Hand, Steady Aim, Stalker and Lightweight too. Saved loadouts store perks by name, so older `loadout.txt` files load unchanged; the original perks keep their unlock levels.
 
-**Last Stand in detail.** Once per life, the first hit that would kill you (bullets, melee or a blast) leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
+**Last Stand in detail.** Once per life, the first bullet or blast that would kill you leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. Last Stand never saves you from a melee hit at all: melee kills in one hit. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
 
 ### Health regeneration
 
@@ -177,7 +177,7 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 
 ### Melee
 
-Press **V** for a quick rifle-butt. It reaches about 2.4 m and does 55 damage, so two hits kill. A hit **from behind always kills**. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Bots use it when you get right up close.
+Press **V** for a quick rifle-butt. It reaches about 2.4 m and **kills in one hit** (150 damage against 100 health), from the front or behind. Entrenched (bullets only) and Flak Jacket (explosions only) don't reduce it, and Last Stand doesn't save you from it. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Zombies and breakable props still take 55 damage from it (a built Zombies melee weapon has its own stats). Bots use it when you stay right up close to them: they need a moment in reach first (0.6 s on Easy, 0.35 s on Normal, 0.2 s on Hard), so running past one isn't instant death.
 
 ### Bots
 
