@@ -734,7 +734,7 @@ for (x, z) in WAYPOINTS:
 # ================================================================ cosmetic clutter (the game's Clutter op runs last and keeps out of walls)
 LITTER = ["Litter", "Litter", "Litter", "Newspaper", "Soda Cans", "Bottles", "Bottle", "Plastic Bag", "Flattened Cardboard", "Cardboard Box Small",
           "Trash Bag", "Newspaper Stack", "Loose Bricks", "Rubble", "Cinder Blocks", "Plank", "Tyre", "Car Wheel", "Manhole Cover"]
-t.clutter(LITTER, BX0, BZ0, BX1, BZ1, 2200, 41)
+t.clutter(LITTER, BX0, BZ0, 0, BZ1, 1100, 41); t.clutter(LITTER, 0, BZ0, BX1, BZ1, 1100, 42)  # a Clutter op takes up to 2000
 # along the kerbs: leaves of newspaper, cans, bottles in the gutters
 for k, (a, b) in enumerate([((-90, -8.6), (-16, -8.6)), ((-90, -1.4), (-16, -1.4)), ((16, 1.4), (90, 1.4)), ((16, 8.6), (90, 8.6)),
                             ((-40.6, 2), (-40.6, 60)), ((-33.4, 2), (-33.4, 60)), ((40.6, -2), (40.6, -60)), ((33.4, -2), (33.4, -60))]):
