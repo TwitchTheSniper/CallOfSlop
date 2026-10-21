@@ -37,7 +37,8 @@ public static partial class SelfTest
             Fail($"Carousel: maxPlayers {m.MaxPlayersSetting} in the file, {m.MaxPlayers} in effect (expected 10)");
         if (m.Movers.Count != 1)
             Fail($"Carousel: {m.Movers.Count} movers (expected the carousel)");
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 1500, SolidProps: 250, CosmeticProps: 1200, Breakable: 600, Plants: 14000, Trees: 12, Boxes: 300));
+        // Plants: 13,500 since the foliage no-go rules took the grass out of the stalls, trucks and bandstands (was 14,000).
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 1500, SolidProps: 250, CosmeticProps: 1200, Breakable: 600, Plants: 13500, Trees: 12, Boxes: 300));
     }
 
     /// <summary>

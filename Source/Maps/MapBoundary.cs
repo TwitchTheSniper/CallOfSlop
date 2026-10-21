@@ -527,7 +527,7 @@ public sealed class MapBoundary
     public static Vector2[] BuildOutline(BoundarySpec spec, float mapHalfX, float mapHalfZ, float minArea = 100f)
     {
         var tol = Math.Clamp(spec.Tolerance, 0.005f, 1f);
-        var pts = BaseCurve(spec, mapHalfX, mapHalfZ);
+        var pts = BaseCurve(spec, mapHalfX, mapHalfZ, minArea >= 100f);
         if (pts.Count < 3)
             throw new InvalidOperationException("the boundary needs at least 3 points");
         if (SignedArea(pts) < 0)
@@ -571,7 +571,7 @@ public sealed class MapBoundary
     }
 
     /// <summary>The shape before noise: exact corners for polygons and rects, dense samples (about 0.25 m apart) on curves.</summary>
-    private static List<Vector2> BaseCurve(BoundarySpec s, float mapHalfX, float mapHalfZ)
+    private static List<Vector2> BaseCurve(BoundarySpec s, float mapHalfX, float mapHalfZ, bool mapSized = true)
     {
         const double step = 0.25; // metres between samples on curves (simplified afterwards)
         var pts = new List<Vector2>();
@@ -581,7 +581,7 @@ public sealed class MapBoundary
             {
                 var hx = s.HalfX > 0 ? s.HalfX : mapHalfX;
                 var hz = s.HalfZ > 0 ? s.HalfZ : mapHalfZ;
-                if (hx < 5 || hz < 5)
+                if (hx < (mapSized ? 5 : 0.25f) || hz < (mapSized ? 5 : 0.25f))
                     throw new InvalidOperationException("a rect boundary needs halfX and halfZ of at least 5");
                 var r = Math.Clamp(s.Round, 0, MathF.Min(hx, hz) - 0.01f);
                 double cx = s.Center.X, cz = s.Center.Y;
@@ -606,7 +606,7 @@ public sealed class MapBoundary
             }
             case BoundaryShape.Circle:
             {
-                if (s.Radius < 6)
+                if (s.Radius < (mapSized ? 6 : 0.3f))
                     throw new InvalidOperationException("a circle boundary needs a radius of at least 6");
                 var n = Math.Clamp((int)Math.Ceiling(2 * Math.PI * s.Radius / step), 64, 16384);
                 for (var k = 0; k < n; k++)
@@ -618,7 +618,7 @@ public sealed class MapBoundary
             }
             case BoundaryShape.Ellipse:
             {
-                if (s.RadiusX < 6 || s.RadiusZ < 6)
+                if (s.RadiusX < (mapSized ? 6 : 0.3f) || s.RadiusZ < (mapSized ? 6 : 0.3f))
                     throw new InvalidOperationException("an ellipse boundary needs radiusX and radiusZ of at least 6");
                 var n = Math.Clamp((int)Math.Ceiling(2 * Math.PI * Math.Max(s.RadiusX, s.RadiusZ) / step), 64, 16384);
                 var rot = s.Rotation * Math.PI / 180;

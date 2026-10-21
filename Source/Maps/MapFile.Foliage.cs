@@ -249,7 +249,7 @@ public static partial class MapFile
             }
             catch (InvalidOperationException ex)
             {
-                throw new MapFileException($"{w}: {ex.Message.Replace("the boundary", "the zone")}");
+                throw new MapFileException($"{w}: {ex.Message.Replace("boundary", "zone")}");
             }
             var zone = new FoliageZone { Shape = shape, Outline = outline };
             if (!include && Prop(z, "density") is { } de)
