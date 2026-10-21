@@ -54,6 +54,8 @@ public sealed class SceneNode
     internal SceneNode? _parent;
     internal SceneNode[] _kids = NoChildren;
     internal int _kidCount;
+    internal int _index; // position in the parent's children
+    internal bool _wForce, _wVisible; // scratch for the stackless walks: recomputed / visible in the current walk
     internal Scene? _scene;
 
     private Vector3 _pos;
@@ -149,6 +151,7 @@ public sealed class SceneNode
         {
             if (parent._kidCount == parent._kids.Length)
                 Array.Resize(ref parent._kids, Math.Max(4, parent._kidCount * 2));
+            _index = parent._kidCount;
             parent._kids[parent._kidCount++] = this;
         }
         SetSceneRecursive(parent?._scene);
@@ -173,6 +176,8 @@ public sealed class SceneNode
             {
                 Array.Copy(_kids, i + 1, _kids, i, _kidCount - i - 1);
                 _kids[--_kidCount] = null!;
+                for (var j = i; j < _kidCount; j++)
+                    _kids[j]._index = j;
                 return;
             }
     }
@@ -344,25 +349,35 @@ public sealed class SceneNode
     [MethodImpl(MethodImplOptions.AggressiveOptimization)] // hot: full JIT optimisation from the first call, no tier-0 phase
     public int UpdateWorld()
     {
-        // An explicit stack instead of recursion: no call (and SIMD register save) per node.
-        var st = t_walk ??= new WalkStack();
-        var bottom = st.Count;
-        st.Push(this, true, false);
+        // Stackless depth-first walk (child -> next sibling -> up): no recursion, no stack of references to write.
         var n = 0;
-        while (st.Count > bottom)
+        for (var node = this; node != null; node = Next(node, this, true))
         {
-            var node = st.Items[--st.Count].Node;
             node.Recompute();
             n++;
-            var kids = node._kids;
-            for (var i = node._kidCount - 1; i >= 0; i--)
-                st.Push(kids[i], true, false);
         }
         return n;
     }
 
-    [ThreadStatic]
-    private static WalkStack? t_walk;
+    /// <summary>
+    /// The node after <paramref name="n"/> in a depth-first walk of <paramref name="root"/>'s subtree (its first child when
+    /// <paramref name="descend"/>, else the next sibling of it or of the nearest ancestor that has one), or null at the end.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static SceneNode? Next(SceneNode n, SceneNode root, bool descend)
+    {
+        if (descend && n._kidCount > 0)
+            return n._kids[0];
+        while (!ReferenceEquals(n, root))
+        {
+            var p = n._parent!;
+            var i = n._index + 1;
+            if (i < p._kidCount)
+                return p._kids[i];
+            n = p;
+        }
+        return null;
+    }
 
     /// <summary>World = local * parent world (local composed first if its TRS changed); clears the dirty flag.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

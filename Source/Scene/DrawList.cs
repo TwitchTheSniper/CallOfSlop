@@ -91,24 +91,18 @@ public sealed class DrawList
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     public void Flatten(SceneNode root)
     {
-        var st = _walk;
-        var bottom = st.Count;
-        st.Push(root, false, true);
-        while (st.Count > bottom)
+        for (var n = root; n != null;)
         {
-            var n = st.Items[--st.Count].Node;
-            if ((n.Flags & NodeFlags.Hidden) != 0)
-                continue;
-            if (n.Renderable.Kind != RenderKind.None)
-                AddNode(n);
-            n.Custom?.Emit(this, n);
-            var kids = n._kids;
-            for (var i = n._kidCount - 1; i >= 0; i--)
-                st.Push(kids[i], false, true);
+            var visible = (n.Flags & NodeFlags.Hidden) == 0;
+            if (visible)
+            {
+                if (n.Renderable.Kind != RenderKind.None)
+                    AddNode(n);
+                n.Custom?.Emit(this, n);
+            }
+            n = SceneNode.Next(n, root, visible); // a hidden node's subtree is skipped
         }
     }
-
-    private readonly WalkStack _walk = new();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal void AddNode(SceneNode n)
@@ -133,16 +127,14 @@ public sealed class DrawList
                 top = a;
         var updated = top?.UpdateWorld() ?? 0;
 
-        // One depth-first walk with an explicit stack (children pushed in reverse, so they come out in order).
-        var st = _walk;
-        var bottom = st.Count;
-        st.Push(root, false, true);
-        while (st.Count > bottom)
+        // One stackless depth-first walk; each node takes "recomputed" and "visible" from its parent's scratch flags.
+        for (var n = root; n != null; n = SceneNode.Next(n, root, true))
         {
-            ref readonly var e = ref st.Items[--st.Count];
-            var n = e.Node;
-            var force = e.Force;
-            var visible = e.Visible;
+            bool force, visible;
+            if (ReferenceEquals(n, root))
+                (force, visible) = (false, true);
+            else
+                (force, visible) = (n._parent!._wForce, n._parent._wVisible);
             if (force || n._dirty)
             {
                 n.Recompute();
@@ -155,11 +147,10 @@ public sealed class DrawList
             {
                 if (n.Renderable.Kind != RenderKind.None)
                     AddNode(n);
-                n.Custom?.Emit(this, n); // may flatten more into this list (the stack is re-entrant)
+                n.Custom?.Emit(this, n); // must not flatten its own subtree into this list
             }
-            var kids = n._kids;
-            for (var i = n._kidCount - 1; i >= 0; i--)
-                st.Push(kids[i], force, visible);
+            n._wForce = force;
+            n._wVisible = visible;
         }
         return updated;
     }

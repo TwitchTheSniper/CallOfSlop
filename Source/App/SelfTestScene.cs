@@ -236,6 +236,19 @@ public static partial class SelfTest
         list.Flatten(root);
         if (list.Count != 1)
             Fail($"a hidden node's subtree was flattened ({list.Count} items)");
+        a.Visible = true;
+        var mid = root.Add("mid", Matrix4x4.Identity, Renderable.Box(new Vector3(9, 0, 0)));
+        var last = root.Add("last", Matrix4x4.Identity, Renderable.Box(new Vector3(4, 0, 0)));
+        mid.Detach(); // removing a middle child: the walk must still reach the ones after it
+        scene.UpdateTransforms();
+        list.Clear();
+        list.Flatten(root);
+        if (list.Count != 4 || list.Item(3).Color.X != 4)
+            Fail($"after removing a child the walk found {list.Count} items (expected a, a1, b, last)");
+        last.Detach();
+        a.Visible = false;
+        list.Clear();
+        list.Flatten(root);
         var counter = new CountVisitor();
         root.Visit(ref counter);
         if (counter.Entered != root.CountNodes() || counter.Left != counter.Entered)
