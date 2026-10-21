@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Wardrobe",
+  "category": "Household",
+  "description": "A tall two-door wooden wardrobe. Full-height cover.",
+  "collision": "solid",
+  "collider": [{"size": [1.24, 2.05, 0.66], "offset": [0.0, 1.025, 0.01]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 3},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.08, 0.5], "speed": 3.5}},
+  "parts": [
+    {"size": [1.2, 1.92, 0.6], "offset": [0.0, 1.04, 0.0], "color": "#8a6440", "material": "wood"},
+    {"size": [1.24, 0.05, 0.64], "offset": [0.0, 2.025, 0.0], "color": "#6a4a2e"},
+    {"size": [1.16, 0.08, 0.56], "offset": [0.0, 0.04, 0.0], "color": "#5a3e26"},
+    {"size": [0.57, 1.8, 0.02], "offset": [-0.3, 1.02, 0.305], "color": "#9a7450", "material": "wood"},
+    {"size": [0.47, 1.5, 0.01], "offset": [-0.3, 1.02, 0.318], "color": "#8a6440"},
+    {"size": [0.57, 1.8, 0.02], "offset": [0.3, 1.02, 0.305], "color": "#9a7450", "material": "wood"},
+    {"size": [0.47, 1.5, 0.01], "offset": [0.3, 1.02, 0.318], "color": "#8a6440"},
+    {"size": [0.02, 0.18, 0.03], "offset": [-0.04, 1.09, 0.33], "color": "chrome"},
+    {"size": [0.02, 0.18, 0.03], "offset": [0.04, 1.09, 0.33], "color": "chrome"}
+  ]
+}

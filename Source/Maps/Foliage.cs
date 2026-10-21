@@ -119,8 +119,34 @@ public sealed class FoliageRegion
 /// <summary>A single hand-placed plant.</summary>
 public sealed record FoliageItem(FoliageType Type, float X, float Z, float Size, Vector3? Color);
 
-/// <summary>A path (polyline of x, z points) that scatter regions keep clear.</summary>
-public sealed record FoliagePath(float[] Points, float Width);
+/// <summary>
+/// A path (polyline of x, z points) that scatter regions keep clear. <paramref name="Density"/> is how much of the normal
+/// density still grows on it (0 = nothing, an intact road; 0.1 = busted pavement with the odd tuft).
+/// </summary>
+public sealed record FoliagePath(float[] Points, float Width, float Density = 0f);
+
+/// <summary>
+/// An explicit foliage zone (FoliageNoGo.cs): an "exclude" area where scattered plants grow at <see cref="Density"/> of
+/// normal (0 = none), or an "include" area where the automatic indoor and pavement rules are switched off (a courtyard
+/// garden; with <see cref="OnTop"/> plants sit on the roof or box surface there, a rooftop planter). The shape uses the
+/// boundary shape code (<see cref="MapBoundary"/>): rect, circle, ellipse, polygon or smooth.
+/// </summary>
+public sealed class FoliageZone
+{
+    public required BoundarySpec Shape;
+
+    /// <summary>The built outline (point-in-shape).</summary>
+    public required MapBoundary Outline;
+
+    /// <summary>Exclude zones: fraction of the normal density that still grows (0 to 1).</summary>
+    public float Density;
+
+    /// <summary>Include zones: plants sit on top of whatever is there (roof, box, mesh) instead of on the ground.</summary>
+    public bool OnTop;
+
+    public bool Contains(float x, float z) =>
+        x >= Outline.Min.X && x <= Outline.Max.X && z >= Outline.Min.Y && z <= Outline.Max.Y && Outline.Contains(x, z);
+}
 
 /// <summary>A map's "foliage" section, as written in the map file.</summary>
 public sealed class FoliageSpec
@@ -129,6 +155,18 @@ public sealed class FoliageSpec
     public readonly List<FoliagePath> Paths = new();
     public readonly List<FoliageRegion> Regions = new();
     public readonly List<FoliageItem> Items = new();
+
+    /// <summary>The automatic no-go rules (indoors, under roofs, inside geometry, pavement). Default on; "auto": false turns them off.</summary>
+    public bool Auto = true;
+
+    /// <summary>No-go (or thinned) areas, see <see cref="FoliageZone"/>.</summary>
+    public readonly List<FoliageZone> Exclude = new();
+
+    /// <summary>Areas where the automatic rules don't apply.</summary>
+    public readonly List<FoliageZone> Include = new();
+
+    /// <summary>Per-surface allowances that replace the built-in ones (<see cref="Foliage.SurfaceDefaults"/>), by name.</summary>
+    public readonly SortedDictionary<string, float> Surfaces = new(StringComparer.OrdinalIgnoreCase);
 }
 
 /// <summary>
@@ -151,6 +189,39 @@ public static class Foliage
     public static readonly Vector3 PineGreen = new(0.17f, 0.35f, 0.19f);
 
     public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine;
+
+    /// <summary>
+    /// Built-in foliage allowance per surface (fraction of the normal density that may grow there, 0 to 1). Box and mesh
+    /// surfaces go by their texture material (<see cref="Material"/>), terrain by its surface type, "Ground" is a flat map's
+    /// ground slab and "Plain" an untextured mesh or a model. Paved and built surfaces default to 0, earth and grass to 1.
+    /// A map's "surfaces" table overrides any of them (e.g. "Concrete": 0.1 for cracked concrete).
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, float> SurfaceDefaults = new SortedDictionary<string, float>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Concrete"] = 0f,
+        ["Tiles"] = 0f,
+        ["Brick"] = 0f,
+        ["Wood"] = 0f,
+        ["Metal"] = 0f,
+        ["Grid"] = 0f,
+        ["Plain"] = 0f,
+        ["Dirt"] = 1f,
+        ["Ground"] = 1f,
+        ["Grass"] = 1f,
+        ["Rock"] = 1f,
+        ["Sand"] = 1f,
+    };
+
+    /// <summary>
+    /// How much of an allowance a plant type uses: on partly allowed ground (busted pavement) tufts of grass and small
+    /// shrubs come through the cracks, bushes half as often, trees never (unless the ground is fully allowed).
+    /// </summary>
+    public static float AllowanceFactor(FoliageType t) => t switch
+    {
+        FoliageType.Grass or FoliageType.Shrub => 1f,
+        FoliageType.Bush => 0.5f,
+        _ => 0f,
+    };
 
     public static Vector3 DefaultColor(FoliageType t) => t switch
     {
@@ -333,9 +404,14 @@ public sealed partial class Map
         var spec = FoliageSection;
         if (spec == null)
             return;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var list = new List<FoliageInstance>();
         var trunks = new List<Box>();
         var grid = new BoxGrid(Solid);
+        var stats = new FoliageNoGoStats();
+        FoliageStats = stats;
+        // The no-go rules' query world is built before any trunk exists, so trees never count as roofs.
+        var nogo = LegacyFoliage || spec.Regions.Count == 0 ? null : new FoliageNoGo(this, spec, stats);
 
         // Hand-placed plants first: they always appear, and scattered trees keep out of their way.
         var itemIndex = 0;
@@ -357,7 +433,7 @@ public sealed partial class Map
         }
 
         for (var r = 0; r < spec.Regions.Count; r++)
-            Scatter(spec, spec.Regions[r], list, trunks, grid);
+            Scatter(spec, spec.Regions[r], list, trunks, grid, nogo, stats);
 
         if (list.Count > Foliage.MaxInstances)
         {
@@ -372,6 +448,9 @@ public sealed partial class Map
         FoliageInstances = list.ToArray();
         FoliageHash = HashFoliage(FoliageInstances);
         AddTrunkColliders(trunks);
+        stats.PlantMs = clock.Elapsed.TotalMilliseconds;
+        if (nogo != null)
+            Console.WriteLine($"Map '{Name}': {FoliageInstances.Length} plants; no-go rules removed {stats}");
     }
 
     /// <summary>
@@ -422,7 +501,7 @@ public sealed partial class Map
         return h == 0 ? 1u : h;
     }
 
-    private void Scatter(FoliageSpec spec, FoliageRegion reg, List<FoliageInstance> list, List<Box> trunks, BoxGrid grid)
+    private void Scatter(FoliageSpec spec, FoliageRegion reg, List<FoliageInstance> list, List<Box> trunks, BoxGrid grid, FoliageNoGo? nogo, FoliageNoGoStats stats)
     {
         var density = Math.Clamp(reg.Density, 0f, Foliage.MaxDensity);
         if (density <= 0f)
@@ -461,6 +540,7 @@ public sealed partial class Map
             var rand = rng.Next();
             var tint = 0.9f + rng.Next() * 0.2f;
             var hueShift = rng.Next() - 0.5f;
+            var thin = rng.Next(); // drawn last, so it changes none of the numbers above (partly allowed ground)
 
             if (x < bx0 || x > bx1 || z < bz0 || z > bz1 || !reg.Area.Contains(x, z))
                 continue;
@@ -474,15 +554,86 @@ public sealed partial class Map
             }
             if (Boundary != null && !Boundary.Inside(x, z, margin + (tree ? 1f : 0.3f)))
                 continue; // only inside the map's outline (MapEdges.cs)
-            if (reg.AvoidPaths && NearPath(spec, x, z, margin))
-                continue;
+            // How much of the normal density may grow here (1 = all; busted paths, thinned zones and pavement are less).
+            var allow = 1f;
+            var why = 0; // what set the allowance: 1 path, 2 exclude zone, 3 surface
+            if (reg.AvoidPaths)
+            {
+                var pd = PathAllowance(spec, x, z, margin);
+                if (pd <= 0f)
+                    continue;
+                if (pd < 1f)
+                    (allow, why) = (pd, 1);
+            }
+            FoliageZone? include = null;
+            if (nogo != null)
+            {
+                foreach (var zone in spec.Exclude)
+                    if (zone.Density < allow && zone.Contains(x, z))
+                        (allow, why) = (zone.Density, 2);
+                if (allow <= 0f)
+                {
+                    stats.Excluded++;
+                    continue;
+                }
+                foreach (var zone in spec.Include)
+                    if (zone.Contains(x, z))
+                    {
+                        include = zone;
+                        break;
+                    }
+            }
             var g = FoliageGround(x, z);
-            if (HasTerrain && GroundNormal(x, z).Y < World.MinWalkNormalY)
+            var onTop = false;
+            if (include is { OnTop: true } && nogo!.TopAt(x, z, g) is { } roof && roof > g + 0.05f)
+            {
+                g = roof; // a rooftop garden or planter: on the roof, whatever the terrain below does
+                onTop = true;
+            }
+            else if (HasTerrain && GroundNormal(x, z).Y < World.MinWalkNormalY)
                 continue; // nothing grows on cliff faces
             var s = reg.SizeMin + (reg.SizeMax - reg.SizeMin) * size;
             var top = tree ? s : 1.6f * s;
             if (reg.AvoidSolid && grid.Blocks(x, z, margin + (tree ? Foliage.TrunkWidth(s) / 2 : 0f), g + 0.05f, g + top))
                 continue;
+            if (nogo != null && spec.Auto && include == null)
+            {
+                // Indoors: under a roof, a floor above, a bridge or an awning, or inside a box or mesh. Bushes and shrubs
+                // check their footprint's edge too, so they don't poke through a wall or out from under an eave.
+                if (nogo.Covered(x, z, g, reg.Type is FoliageType.Bush or FoliageType.Shrub ? margin : 0f))
+                {
+                    stats.Indoors++;
+                    continue;
+                }
+                var sa = nogo.Allowance(x, z, g, out var surface);
+                if (sa < allow)
+                {
+                    (allow, why) = (sa, 3);
+                    if (sa <= 0f)
+                    {
+                        stats.Surface++;
+                        stats.BySurface[surface] = stats.BySurface.GetValueOrDefault(surface) + 1;
+                        continue;
+                    }
+                }
+            }
+            if (allow < 1f)
+            {
+                // Partly allowed ground: grass and small shrubs through the cracks, bushes half as often, no trees.
+                if (thin >= allow * Foliage.AllowanceFactor(reg.Type))
+                {
+                    if (why == 1)
+                        stats.PathThinned++;
+                    else if (why == 2)
+                        stats.Excluded++;
+                    else
+                        stats.Surface++;
+                    continue;
+                }
+                stats.Sparse++;
+            }
+            if (onTop)
+                stats.OnTop++;
             if (tree)
             {
                 var near = false;
@@ -512,29 +663,46 @@ public sealed partial class Map
         }
     }
 
-    private static bool NearPath(FoliageSpec spec, float x, float z, float margin)
+    /// <summary>
+    /// The lowest density of the paths (x, z) is on (1 when it's on none). Paths are full no-go (0) unless they say
+    /// otherwise; the self-test's "before" pass (<see cref="LegacyFoliage"/>) treats every path as one.
+    /// </summary>
+    private static float PathAllowance(FoliageSpec spec, float x, float z, float margin)
     {
+        var allow = 1f;
         foreach (var p in spec.Paths)
         {
-            var r = p.Width / 2 + margin;
-            var r2 = r * r;
-            var pts = p.Points;
-            for (var i = 0; i + 3 < pts.Length; i += 2)
+            var d = LegacyFoliage ? 0f : Math.Clamp(p.Density, 0f, 1f);
+            if (d < allow && OnPath(p, x, z, margin))
             {
-                float ax = pts[i], az = pts[i + 1], bx = pts[i + 2], bz = pts[i + 3];
-                float dx = bx - ax, dz = bz - az;
-                var len2 = dx * dx + dz * dz;
-                var t = len2 > 0f ? Math.Clamp(((x - ax) * dx + (z - az) * dz) / len2, 0f, 1f) : 0f;
-                float qx = ax + dx * t - x, qz = az + dz * t - z;
-                if (qx * qx + qz * qz < r2)
-                    return true;
+                allow = d;
+                if (d <= 0f)
+                    break;
             }
-            if (pts.Length == 2)
-            {
-                float qx = pts[0] - x, qz = pts[1] - z;
-                if (qx * qx + qz * qz < r2)
-                    return true;
-            }
+        }
+        return allow;
+    }
+
+    private static bool OnPath(FoliagePath p, float x, float z, float margin)
+    {
+        var r = p.Width / 2 + margin;
+        var r2 = r * r;
+        var pts = p.Points;
+        for (var i = 0; i + 3 < pts.Length; i += 2)
+        {
+            float ax = pts[i], az = pts[i + 1], bx = pts[i + 2], bz = pts[i + 3];
+            float dx = bx - ax, dz = bz - az;
+            var len2 = dx * dx + dz * dz;
+            var t = len2 > 0f ? Math.Clamp(((x - ax) * dx + (z - az) * dz) / len2, 0f, 1f) : 0f;
+            float qx = ax + dx * t - x, qz = az + dz * t - z;
+            if (qx * qx + qz * qz < r2)
+                return true;
+        }
+        if (pts.Length == 2)
+        {
+            float qx = pts[0] - x, qz = pts[1] - z;
+            if (qx * qx + qz * qz < r2)
+                return true;
         }
         return false;
     }

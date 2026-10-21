@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pylon Sign",
+  "category": "Signage",
+  "description": "A tall petrol station price sign. Unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 5.7, 0.44]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.9, 0.3, 0.5], "offset": [0.0, 0.15, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [0.4, 4.0, 0.3], "offset": [0.0, 2.3, 0.0], "color": "#6a6c6e"},
+    {"size": [1.6, 1.4, 0.4], "offset": [0.0, 5.0, 0.0], "color": "#c4281c"},
+    {"size": [1.4, 0.5, 0.42], "offset": [0.0, 5.0, 0.0], "color": "white"},
+    {"size": [0.9, 0.24, 0.44], "offset": [0.0, 5.0, 0.0], "color": "#c4281c"},
+    {"size": [1.6, 1.6, 0.36], "offset": [0.0, 3.4, 0.0], "color": "#1c1c1e"},
+    {"size": [0.5, 0.36, 0.38], "offset": [-0.45, 2.9, 0.0], "color": "#ffffff"},
+    {"size": [0.7, 0.36, 0.38], "offset": [0.38, 2.9, 0.0], "color": "#e04a1a"},
+    {"size": [0.5, 0.36, 0.38], "offset": [-0.45, 3.38, 0.0], "color": "#ffffff"},
+    {"size": [0.7, 0.36, 0.38], "offset": [0.38, 3.38, 0.0], "color": "#e04a1a"},
+    {"size": [0.5, 0.36, 0.38], "offset": [-0.45, 3.86, 0.0], "color": "#ffffff"},
+    {"size": [0.7, 0.36, 0.38], "offset": [0.38, 3.86, 0.0], "color": "#e04a1a"}
+  ]
+}

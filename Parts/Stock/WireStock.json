@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Wire Stock",
+  "category": "stock",
+  "rarity": "common",
+  "flavor": "Bent wire against your shoulder. Better than nothing.",
+  "weight": 0.25,
+  "model": [
+    {"size": [0.01, 0.01, 0.2], "pos": [0, 0, 0.1], "color": "steel"},
+    {"size": [0.01, 0.07, 0.01], "pos": [0, -0.03, 0.2], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.9}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Utility Pedestal",
+  "category": "Utility",
+  "description": "A small green cable pedestal by the kerb.",
+  "collision": "solid",
+  "collider": [{"size": [0.36, 0.9, 0.32]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#3d5a3c"]}},
+  "parts": [
+    {"size": [0.34, 0.85, 0.3], "offset": [0.0, 0.425, 0.0], "color": "#3d5a3c", "material": "metal"},
+    {"size": [0.38, 0.05, 0.34], "offset": [0.0, 0.875, 0.0], "color": "#2d4a2c"},
+    {"size": [0.2, 0.08, 0.012], "offset": [0.0, 0.64, 0.156], "color": "white"},
+    {"size": [0.04, 0.06, 0.02], "offset": [0.1, 0.43, 0.16], "color": "#1c1c1e"}
+  ]
+}

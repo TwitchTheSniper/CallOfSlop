@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Radiator",
+  "category": "Household",
+  "description": "A white cast-iron radiator. Put it against a wall.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.06, 0.6, 0.08], "offset": [-0.36, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [-0.28, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [-0.2, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [-0.12, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [-0.04, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [0.04, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [0.12, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [0.2, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [0.28, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.06, 0.6, 0.08], "offset": [0.36, 0.42, 0.0], "color": "#e8e8e4", "material": "metal"},
+    {"size": [0.84, 0.04, 0.06], "offset": [0.0, 0.68, 0.0], "color": "#e0e0dc"},
+    {"size": [0.84, 0.04, 0.06], "offset": [0.0, 0.16, 0.0], "color": "#e0e0dc"},
+    {"size": [0.04, 0.12, 0.04], "offset": [-0.36, 0.06, 0.0], "color": "#d0d0cc"},
+    {"size": [0.04, 0.12, 0.04], "offset": [0.36, 0.06, 0.0], "color": "#d0d0cc"},
+    {"size": [0.04, 0.06, 0.06], "offset": [0.45, 0.23, 0.0], "color": "chrome"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "4x Scope",
+  "category": "optic",
+  "rarity": "epic",
+  "flavor": "A proper scope. Four times closer, a little slower to raise.",
+  "weight": 0.5,
+  "optic": "Scope4",
+  "stats": [
+    {"stat": "adsZoom", "set": 4.0},
+    {"stat": "adsSpreadMult", "mul": 0.48},
+    {"stat": "adsTime", "add": 0.1},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

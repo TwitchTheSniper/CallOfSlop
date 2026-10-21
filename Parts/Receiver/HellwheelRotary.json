@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Hellwheel Rotary Receiver",
+  "category": "receiver",
+  "rarity": "epic",
+  "flavor": "A minigun drive. Needs at least three barrels, takes six, spins up before it screams.",
+  "weight": 3.5,
+  "receiver": {"action": "rotary", "class": "LMG", "bore": "rifle", "soundOf": "Grinder Rotary", "rpm": 1800, "rpmPerBarrel": 400, "spoolTime": 1.2, "spoolStart": 0.25, "minBarrels": 3, "maxBarrels": 6},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0.0, 0.071, -0.2], "accepts": ["barrel"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [-0.0225, 0.058, -0.2], "accepts": ["barrel"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [-0.0225, 0.032, -0.2], "accepts": ["barrel"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [-0.0, 0.019, -0.2], "accepts": ["barrel"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [0.0225, 0.032, -0.2], "accepts": ["barrel"]},
+    {"name": "barrel_6", "type": "barrel", "pos": [0.0225, 0.058, -0.2], "accepts": ["barrel"]},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.09], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.045, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.042, 0.045, -0.12]}
+  ],
+  "model": [
+    {"size": [0.08, 0.09, 0.3], "pos": [0, 0.045, -0.05], "color": "gunmetal"},
+    {"size": [0.04, 0.014, 0.15], "pos": [0, 0.094, -0.04], "color": "black"},
+    {"size": [0.082, 0.01, 0.04], "pos": [0, 0.054, 0.07], "color": "accent"},
+    {"size": [0.08, 0.08, 0.02], "pos": [0, 0.045, -0.19], "color": "steel"},
+    {"size": [0.03, 0.03, 0.06], "pos": [0.05, 0.07, 0.0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 2.6},
+    {"stat": "reload", "set": 4.0}
+  ]
+}

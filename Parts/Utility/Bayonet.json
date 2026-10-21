@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Bayonet",
+  "category": "utility",
+  "rarity": "common",
+  "flavor": "A blade on the side. For later, when zombies get close (melee comes later).",
+  "weight": 0.3,
+  "flags": ["bayonet"],
+  "model": [
+    {"size": [0.004, 0.02, 0.16], "pos": [0.006, 0, -0.08], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "mobility", "add": -0.01}
+  ]
+}

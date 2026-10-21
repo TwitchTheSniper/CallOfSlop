@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-prop/1",
-  "name": "Street Clock",
+  "name": "Ticking Street Clock",
   "category": "Animated",
   "description": "A green two-faced street clock on a post; the hands go round (a little faster than real time).",
   "collision": "solid",

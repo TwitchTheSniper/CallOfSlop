@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Chaingun Handle",
+  "category": "grip",
+  "rarity": "rare",
+  "flavor": "A carry handle off something mounted on a helicopter. Holds heavy builds steady.",
+  "mount": "foregrip",
+  "weight": 0.5,
+  "hand": [0, 0.06, 0],
+  "model": [
+    {"size": [0.02, 0.08, 0.02], "pos": [0, 0.04, 0.05], "color": "black"},
+    {"size": [0.02, 0.08, 0.02], "pos": [0, 0.04, -0.05], "color": "black"},
+    {"shape": "rod", "size": [0.024, 0.024, 0.13], "pos": [0, 0.08, 0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilHorizontal", "mul": 0.6},
+    {"stat": "mobility", "add": 0.02}
+  ]
+}

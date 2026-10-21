@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Step Ladder",
+  "category": "Misc",
+  "description": "An aluminium step ladder, opened out.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.3], "speed": 3}},
+  "parts": [
+    {"size": [0.05, 1.5, 0.03], "offset": [-0.22, 0.72, 0.18], "rotation": [-12.0, 0.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.04, 1.45, 0.03], "offset": [-0.22, 0.7, -0.2], "rotation": [14.0, 0.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.05, 1.5, 0.03], "offset": [0.22, 0.72, 0.18], "rotation": [-12.0, 0.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.04, 1.45, 0.03], "offset": [0.22, 0.7, -0.2], "rotation": [14.0, 0.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.44, 0.03, 0.12], "offset": [0.0, 0.315, 0.221], "color": "#9a9ea4"},
+    {"size": [0.44, 0.03, 0.12], "offset": [0.0, 0.645, 0.155], "color": "#9a9ea4"},
+    {"size": [0.44, 0.03, 0.12], "offset": [0.0, 0.975, 0.09], "color": "#9a9ea4"},
+    {"size": [0.44, 0.03, 0.12], "offset": [0.0, 1.305, 0.025], "color": "#9a9ea4"},
+    {"size": [0.5, 0.06, 0.24], "offset": [0.0, 1.47, 0.0], "color": "#c03030"},
+    {"size": [0.4, 0.02, 0.3], "offset": [0.0, 0.71, 0.0], "color": "#888888"},
+    {"size": [0.06, 0.03, 0.06], "offset": [-0.22, 0.015, -0.37], "color": "black"},
+    {"size": [0.06, 0.03, 0.06], "offset": [-0.22, 0.015, 0.33], "color": "black"},
+    {"size": [0.06, 0.03, 0.06], "offset": [0.22, 0.015, -0.37], "color": "black"},
+    {"size": [0.06, 0.03, 0.06], "offset": [0.22, 0.015, 0.33], "color": "black"}
+  ]
+}

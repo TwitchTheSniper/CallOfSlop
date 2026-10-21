@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gas Meter",
+  "category": "Utility",
+  "description": "A gas meter on its yellow riser pipes.",
+  "collision": "solid",
+  "collider": [{"size": [0.4, 1.17, 0.3], "offset": [0.0, 0.585, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#c8c8c4", "#e3c21a"]}},
+  "parts": [
+    {"size": [0.36, 0.3, 0.22], "offset": [0.0, 0.7, 0.0], "color": "#c8c8c4"},
+    {"size": [0.16, 0.08, 0.012], "offset": [0.0, 0.76, 0.112], "color": "#1c1c1e"},
+    {"size": [0.04, 0.55, 0.04], "offset": [-0.12, 0.275, 0.0], "color": "#e3c21a"},
+    {"size": [0.04, 0.55, 0.04], "offset": [0.12, 0.275, 0.0], "color": "#e3c21a"},
+    {"size": [0.1, 0.06, 0.1], "offset": [-0.12, 0.38, 0.0], "color": "#e3c21a"},
+    {"size": [0.2, 0.03, 0.03], "offset": [-0.12, 0.465, 0.06], "color": "#c4281c"},
+    {"size": [0.04, 0.3, 0.04], "offset": [0.12, 1.0, 0.0], "color": "#e3c21a"},
+    {"size": [0.2, 0.04, 0.04], "offset": [0.2, 1.15, 0.0], "color": "#e3c21a"},
+    {"size": [0.5, 0.06, 0.4], "offset": [0.0, 0.03, 0.0], "color": "concrete", "material": "concrete"}
+  ]
+}

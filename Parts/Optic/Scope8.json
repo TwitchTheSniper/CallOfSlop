@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "8x Sniper Scope",
+  "category": "optic",
+  "rarity": "legendary",
+  "flavor": "Eight times closer. Count the zombie's teeth.",
+  "weight": 0.7,
+  "optic": "Scope8",
+  "stats": [
+    {"stat": "adsZoom", "set": 8.0},
+    {"stat": "adsSpreadMult", "mul": 0.35},
+    {"stat": "adsTime", "add": 0.15},
+    {"stat": "mobility", "add": -0.05}
+  ]
+}

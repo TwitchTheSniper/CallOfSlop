@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Gyro Stock",
+  "category": "stock",
+  "rarity": "legendary",
+  "flavor": "A spinning gyroscope in a stock. The gun simply refuses to move sideways.",
+  "weight": 0.9,
+  "model": [
+    {"size": [0.04, 0.06, 0.2], "pos": [0, -0.01, 0.1], "color": "white"},
+    {"size": [0.06, 0.06, 0.06], "pos": [0, 0.0, 0.12], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.55},
+    {"stat": "recoilHorizontal", "mul": 0.6}
+  ]
+}

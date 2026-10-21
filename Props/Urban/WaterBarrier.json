@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Water Barrier",
+  "category": "Urban",
+  "description": "A red and white plastic water-filled road barrier (along X).",
+  "collision": "solid",
+  "collider": [{"size": [1.9, 0.97, 0.56]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.08, 0.3], "speed": 3, "colors": ["#c4281c", "white"]}},
+  "parts": [
+    {"size": [1.8, 0.2, 0.55], "offset": [0.0, 0.1, 0.0], "color": "#c4281c"},
+    {"size": [1.8, 0.35, 0.42], "offset": [0.0, 0.375, 0.0], "color": "#c4281c"},
+    {"size": [1.8, 0.3, 0.3], "offset": [0.0, 0.7, 0.0], "color": "white"},
+    {"size": [1.8, 0.12, 0.22], "offset": [0.0, 0.91, 0.0], "color": "#c4281c"},
+    {"size": [0.12, 0.1, 0.12], "offset": [-0.6, 1.02, 0.0], "color": "#c4281c"},
+    {"size": [0.12, 0.1, 0.12], "offset": [0.6, 1.02, 0.0], "color": "#c4281c"},
+    {"size": [0.2, 0.18, 0.56], "offset": [-0.9, 0.14, 0.0], "color": "#a41c14"},
+    {"size": [0.2, 0.18, 0.56], "offset": [0.9, 0.14, 0.0], "color": "#a41c14"}
+  ]
+}

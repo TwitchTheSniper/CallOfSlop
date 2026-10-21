@@ -8,6 +8,47 @@ public enum MusicStyle
     Industrial, // 140-145 BPM: rolling 16th bass, metallic square stabs and arps
     DrumAndBass, // 170-175 BPM: two-step breaks, a long wobbling reese bass
     Darksynth, // 155-160 BPM metal-flavoured synth: double kicks, chugging distorted bass, fuzz lead
+    Hardbass, // 145-165 BPM (and one 200 BPM monster): clipped pounding kick, bouncy pumping off-beat bass, chants, hoovers and screeches
+}
+
+/// <summary>The lead sound of a hardbass track (it can change for the later drops).</summary>
+public enum HardbassLead : byte
+{
+    Supersaw, // seven detuned saws with a third on top: the anthem
+    Hoover, // wide detuned saws that swoop down onto every note, with vibrato and an octave below
+    Screech, // a resonant band-passed saw with a wobbling filter: the hardstyle screech
+    Rave, // a hard square chord stab
+}
+
+/// <summary>When a hardbass track swaps its off-beat bass for a hardstyle reverse bass.</summary>
+public enum ReverseBassUse : byte
+{
+    Never,
+    LaterDrops, // the second and later drops
+    Alternate, // every other four bars of every drop
+}
+
+/// <summary>
+/// What makes one hardbass track different from the next: lead sounds, bassline, chants, reverse bass and kick.
+/// Bass patterns are 16 steps ('.' rest, 'x' root, 'o' root an octave up, 'f' fifth); the chant pattern is 32 steps
+/// over two bars ('.' none, 'h' HEY, 'o' OI, 'a' HA, 'y' YAH).
+/// </summary>
+public sealed record HardbassFlavor(
+    HardbassLead Lead,
+    HardbassLead LaterLead,
+    string BassA,
+    string BassB,
+    string Chants,
+    ReverseBassUse Reverse,
+    float KickClip = 1.6f,
+    float Bounce = 5f,
+    bool HalfTimeBreak = false);
+
+/// <summary>Settings > Audio > Music style: every track, or only the hardbass ones.</summary>
+public enum MusicChoice
+{
+    Mixed,
+    HardbassOnly,
 }
 
 /// <summary>Which playlist a track belongs to.</summary>
@@ -67,8 +108,13 @@ public sealed class MusicTrack
     /// <summary>Length including the tail.</summary>
     public double Seconds => (TotalBars + TailBars) * SecondsPerBar;
 
-    public MusicTrack(string name, MusicSet set, MusicStyle style, float bpm, int root, string key, int[] scale, int[] chords, uint seed, string form)
+    /// <summary>The hardbass recipe (non-null for <see cref="MusicStyle.Hardbass"/> tracks).</summary>
+    public HardbassFlavor? Hardbass { get; }
+
+    public MusicTrack(string name, MusicSet set, MusicStyle style, float bpm, int root, string key, int[] scale, int[] chords, uint seed, string form,
+                      HardbassFlavor? hardbass = null)
     {
+        Hardbass = style == MusicStyle.Hardbass ? hardbass ?? MusicTracks.DefaultHardbass : null;
         Name = name;
         Set = set;
         Style = style;
@@ -134,6 +180,10 @@ public static class MusicTracks
     public static readonly int[] PhrygianDominant = [0, 1, 4, 5, 7, 8, 10];
     public static readonly int[] Dorian = [0, 2, 3, 5, 7, 9, 10];
 
+    /// <summary>The recipe for a hardbass track made without one.</summary>
+    public static readonly HardbassFlavor DefaultHardbass =
+        new(HardbassLead.Supersaw, HardbassLead.Supersaw, "..x...x...x...x.", "..x...o...x...o.", "............................h...", ReverseBassUse.Never);
+
     public static readonly MusicTrack[] All =
     [
         // ---- Main menu -------------------------------------------------------------------------------
@@ -157,7 +207,43 @@ public static class MusicTracks
             [0, 3, 0, 6], 0x4E59_0008, "I8 B8 D32 K8 B8 D16 O8"),
         new("Results Screen of Death", MusicSet.Lobby, MusicStyle.Darksynth, 155, 34, "A# harmonic minor", HarmonicMinor,
             [0, 5, 3, 4], 0xDEAD_0009, "I8 B8 D16 K8 B8 D16 O8"),
+
+        // ---- Hardbass (menu) -------------------------------------------------------------------------
+        new("Tracksuit Tactical", MusicSet.Menu, MusicStyle.Hardbass, 156, 35, "B minor", Minor,
+            [0, 5, 2, 6], 0x7AC7_000A, "I8 B8 D16 K4 B8 D16 D8 O4",
+            new(HardbassLead.Supersaw, HardbassLead.Supersaw, "..x...x...x...o.", "..x...o...x..xo.",
+                "............................h...", ReverseBassUse.Never)),
+        new("Ushanka Uprising", MusicSet.Menu, MusicStyle.Hardbass, 146, 38, "D harmonic minor", HarmonicMinor,
+            [0, 3, 4, 0, 5, 3, 4, 4], 0x05A1_000B, "I8 B4 D16 K8 B8 D16 D16 O8",
+            new(HardbassLead.Hoover, HardbassLead.Hoover, "..x...x...x...x.", "..x...x...f...o.",
+                "o...............o.......o.......", ReverseBassUse.LaterDrops, KickClip: 1.4f, Bounce: 3f)),
+        new("Panelka Pressure", MusicSet.Menu, MusicStyle.Hardbass, 161, 41, "F phrygian", Phrygian,
+            [0, 0, 1, 1, 6, 6, 5, 1], 0x9A7E_000C, "I4 B8 D16 K4 B4 D16 D16 O4",
+            new(HardbassLead.Screech, HardbassLead.Screech, "..xx..xx..xx..xo", "..xo..xx..xo..xx",
+                "........a.......a.......a...a.a.", ReverseBassUse.Alternate, KickClip: 2f, Bounce: 7f)),
+        new("Squat Speedrun", MusicSet.Menu, MusicStyle.Hardbass, 200, 37, "C# minor", Minor,
+            [0, 6, 5, 4], 0x200B_000D, "I8 B8 D16 K8 B8 D16 D16 O8",
+            new(HardbassLead.Hoover, HardbassLead.Supersaw, "..x...x...x...x.", "..x...o...x...o.",
+                "h...............h.......h...h...", ReverseBassUse.LaterDrops, KickClip: 1.8f, Bounce: 4f, HalfTimeBreak: true)),
+
+        // ---- Hardbass (lobby) ------------------------------------------------------------------------
+        new("Hey Hey Headshot", MusicSet.Lobby, MusicStyle.Hardbass, 152, 44, "G# minor", Minor,
+            [0, 6, 5, 6], 0x4E4E_000E, "I8 B8 D8 D8 K4 B8 D16 O4",
+            new(HardbassLead.Rave, HardbassLead.Supersaw, "..o...x...o...x.", "..o.x.o...o.x.o.",
+                "h.......h.......h...h...h.h.h...", ReverseBassUse.Never, KickClip: 1.5f, Bounce: 6f)),
+        new("Squat Before Respawn", MusicSet.Lobby, MusicStyle.Hardbass, 158, 36, "C harmonic minor", HarmonicMinor,
+            [0, 5, 3, 4], 0x5B4F_000F, "I8 B8 D16 K8 B8 D16 D8 O4",
+            new(HardbassLead.Supersaw, HardbassLead.Screech, "..x...x...x...x.", "..x..xx...x..xo.",
+                "............a...............a.a.", ReverseBassUse.Alternate, KickClip: 1.7f)),
+        new("Kvass Overflow", MusicSet.Lobby, MusicStyle.Hardbass, 164, 40, "E phrygian dominant", PhrygianDominant,
+            [0, 1, 0, 6, 0, 1, 5, 1], 0x6A55_0010, "I4 B8 D16 K4 B8 D24 O8",
+            new(HardbassLead.Hoover, HardbassLead.Rave, "..x...x...x...x.", "..x.o.x...x.o.x.",
+                "y.......y.......y.......y...o...", ReverseBassUse.LaterDrops, KickClip: 1.3f, Bounce: 2f)),
     ];
 
     public static MusicTrack[] For(MusicSet set) => All.Where(t => t.Set == set).ToArray();
+
+    /// <summary>The tracks of a set, or only its hardbass tracks.</summary>
+    public static MusicTrack[] For(MusicSet set, bool hardbassOnly) =>
+        All.Where(t => t.Set == set && (!hardbassOnly || t.Style == MusicStyle.Hardbass)).ToArray();
 }

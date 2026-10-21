@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bird Bath",
+  "category": "Garden",
+  "description": "A stone bird bath with a sparrow on the rim. Doesn't break.",
+  "collision": "solid",
+  "collider": [{"size": [0.66, 0.78, 0.66]}],
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.4, 0.08, 0.166], "offset": [0.0, 0.04, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.4, 0.08, 0.166], "offset": [0.0, 0.04, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.4, 0.08, 0.166], "offset": [0.0, 0.04, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.4, 0.08, 0.166], "offset": [0.0, 0.04, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.18, 0.6, 0.075], "offset": [0.0, 0.38, 0.0], "color": "#b0aca4", "material": "concrete"},
+    {"size": [0.18, 0.6, 0.075], "offset": [0.0, 0.38, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b0aca4", "material": "concrete"},
+    {"size": [0.18, 0.6, 0.075], "offset": [0.0, 0.38, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b0aca4", "material": "concrete"},
+    {"size": [0.18, 0.6, 0.075], "offset": [0.0, 0.38, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b0aca4", "material": "concrete"},
+    {"size": [0.66, 0.1, 0.273], "offset": [0.0, 0.73, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.66, 0.1, 0.273], "offset": [0.0, 0.73, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.66, 0.1, 0.273], "offset": [0.0, 0.73, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.66, 0.1, 0.273], "offset": [0.0, 0.73, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#a8a49c", "material": "concrete"},
+    {"size": [0.54, 0.01, 0.224], "offset": [0.0, 0.755, 0.0], "color": "#8ab0c8"},
+    {"size": [0.54, 0.01, 0.224], "offset": [0.0, 0.755, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#8ab0c8"},
+    {"size": [0.54, 0.01, 0.224], "offset": [0.0, 0.755, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#8ab0c8"},
+    {"size": [0.54, 0.01, 0.224], "offset": [0.0, 0.755, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#8ab0c8"},
+    {"size": [0.08, 0.06, 0.12], "offset": [0.22, 0.81, 0.0], "color": "#6a5a4a"},
+    {"size": [0.05, 0.05, 0.05], "offset": [0.22, 0.845, 0.06], "color": "#6a5a4a"},
+    {"size": [0.02, 0.01, 0.03], "offset": [0.22, 0.845, 0.1], "color": "#e0a020"}
+  ]
+}

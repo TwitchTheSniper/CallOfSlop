@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Parking Meter",
+  "category": "Signage",
+  "description": "A coin parking meter on a short post.",
+  "collision": "solid",
+  "collider": [{"size": [0.28, 1.42, 0.22]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#7a8088", "#4a4c4e"]}},
+  "parts": [
+    {"size": [0.07, 1.0, 0.07], "offset": [0.0, 0.5, 0.0], "color": "#4a4c4e", "material": "metal"},
+    {"size": [0.13, 0.03, 0.13], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.26, 0.36, 0.2], "offset": [0.0, 1.18, 0.0], "color": "#7a8088", "material": "metal"},
+    {"size": [0.2, 0.12, 0.02], "offset": [0.0, 1.23, 0.1], "color": "#b0c8c0"},
+    {"size": [0.2, 0.06, 0.18], "offset": [0.0, 1.39, 0.0], "color": "#7a8088"},
+    {"size": [0.05, 0.03, 0.02], "offset": [0.0, 1.095, 0.105], "color": "#1c1c1e"},
+    {"size": [0.08, 0.06, 0.02], "offset": [0.07, 1.09, 0.105], "color": "#c4281c"}
+  ]
+}

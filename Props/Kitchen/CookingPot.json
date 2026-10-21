@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cooking Pot",
+  "category": "Kitchen",
+  "description": "A big steel stock pot with its lid on.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 35, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.03, 0.1], "speed": 2.5}},
+  "parts": [
+    {"size": [0.32, 0.22, 0.133], "offset": [0.0, 0.11, 0.0], "color": "#9a9ea4"},
+    {"size": [0.32, 0.22, 0.133], "offset": [0.0, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#9a9ea4"},
+    {"size": [0.32, 0.22, 0.133], "offset": [0.0, 0.11, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#9a9ea4"},
+    {"size": [0.32, 0.22, 0.133], "offset": [0.0, 0.11, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#9a9ea4"},
+    {"size": [0.34, 0.02, 0.141], "offset": [0.0, 0.23, 0.0], "color": "#b8bcc0"},
+    {"size": [0.34, 0.02, 0.141], "offset": [0.0, 0.23, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.34, 0.02, 0.141], "offset": [0.0, 0.23, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.34, 0.02, 0.141], "offset": [0.0, 0.23, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.06, 0.03, 0.025], "offset": [0.0, 0.255, 0.0], "color": "#222222"},
+    {"size": [0.06, 0.03, 0.025], "offset": [0.0, 0.255, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#222222"},
+    {"size": [0.06, 0.03, 0.025], "offset": [0.0, 0.255, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#222222"},
+    {"size": [0.06, 0.03, 0.025], "offset": [0.0, 0.255, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#222222"},
+    {"size": [0.06, 0.03, 0.04], "offset": [0.19, 0.185, 0.0], "color": "#222222"},
+    {"size": [0.06, 0.03, 0.04], "offset": [-0.19, 0.185, 0.0], "color": "#222222"}
+  ]
+}

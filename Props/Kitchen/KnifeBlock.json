@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Knife Block",
+  "category": "Kitchen",
+  "description": "A wooden knife block (for counters).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 35,
+  "breakable": {"health": 10, "breakBy": "all", "sound": "wood", "debris": {"count": 5, "size": [0.02, 0.06], "speed": 2.5}},
+  "parts": [
+    {"size": [0.12, 0.22, 0.16], "offset": [0.0, 0.1, 0.0], "rotation": [-15.0, 0.0, 0.0], "color": "#8a5a32"},
+    {"size": [0.015, 0.08, 0.03], "offset": [-0.04, 0.24, -0.03], "rotation": [-15.0, 0.0, 0.0], "color": "#222222"},
+    {"size": [0.015, 0.08, 0.03], "offset": [-0.013, 0.24, -0.03], "rotation": [-15.0, 0.0, 0.0], "color": "#222222"},
+    {"size": [0.015, 0.08, 0.03], "offset": [0.014, 0.24, -0.03], "rotation": [-15.0, 0.0, 0.0], "color": "#222222"},
+    {"size": [0.015, 0.08, 0.03], "offset": [0.041, 0.24, -0.03], "rotation": [-15.0, 0.0, 0.0], "color": "#222222"}
+  ]
+}

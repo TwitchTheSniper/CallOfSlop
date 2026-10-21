@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Backpack",
+  "category": "Misc",
+  "description": "A red school backpack.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "breakable": {"health": 10, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.03, 0.1], "speed": 3, "colors": ["#c03030", "white", "#2a4a7a"]}},
+  "parts": [
+    {"size": [0.32, 0.42, 0.18], "offset": [0.0, 0.21, 0.0], "color": "#c03030"},
+    {"size": [0.28, 0.2, 0.06], "offset": [0.0, 0.16, 0.12], "color": "#a02020"},
+    {"size": [0.33, 0.08, 0.19], "offset": [0.0, 0.44, 0.0], "color": "#a02020"},
+    {"size": [0.08, 0.06, 0.03], "offset": [0.0, 0.51, 0.0], "color": "#222222"},
+    {"size": [0.05, 0.36, 0.03], "offset": [-0.09, 0.22, -0.105], "color": "#222222"},
+    {"size": [0.05, 0.36, 0.03], "offset": [0.09, 0.22, -0.105], "color": "#222222"},
+    {"size": [0.18, 0.02, 0.01], "offset": [0.0, 0.23, 0.152], "color": "#222222"}
+  ]
+}

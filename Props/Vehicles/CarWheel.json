@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Car Wheel",
+  "category": "Vehicles",
+  "description": "A loose car wheel lying flat.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.95, 1.05]},
+  "parts": [
+    {"size": [0.14, 0.2, 0.27], "offset": [0.25, 0.1, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [0.177, 0.1, 0.177], "rotation": [0.0, -45.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [0.0, 0.1, 0.25], "rotation": [0.0, -90.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [-0.177, 0.1, 0.177], "rotation": [0.0, -135.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [-0.25, 0.1, 0.0], "rotation": [0.0, -180.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [-0.177, 0.1, -0.177], "rotation": [0.0, -225.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [-0.0, 0.1, -0.25], "rotation": [0.0, -270.0, 0.0], "color": "rubber"},
+    {"size": [0.14, 0.2, 0.27], "offset": [0.177, 0.1, -0.177], "rotation": [0.0, -315.0, 0.0], "color": "rubber"},
+    {"size": [0.38, 0.19, 0.157], "offset": [0.0, 0.1, 0.0], "color": "steel"},
+    {"size": [0.38, 0.19, 0.157], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "steel"},
+    {"size": [0.38, 0.19, 0.157], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "steel"},
+    {"size": [0.38, 0.19, 0.157], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "steel"},
+    {"size": [0.1, 0.02, 0.041], "offset": [0.0, 0.205, 0.0], "color": "darkgrey"},
+    {"size": [0.1, 0.02, 0.041], "offset": [0.0, 0.205, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
+    {"size": [0.1, 0.02, 0.041], "offset": [0.0, 0.205, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
+    {"size": [0.1, 0.02, 0.041], "offset": [0.0, 0.205, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"}
+  ]
+}

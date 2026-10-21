@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-prop/1",
-  "name": "Traffic Light",
+  "name": "Cycling Traffic Light",
   "category": "Animated",
   "description": "A traffic light on a pole, cycling green, amber, red.",
   "collision": "solid",

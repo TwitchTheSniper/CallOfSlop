@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fireplace",
+  "category": "Household",
+  "description": "A brick fireplace with a wooden mantel and a fire going. Doesn't break.",
+  "collision": "solid",
+  "collider": [{"size": [1.5, 1.42, 0.5], "offset": [0.0, 0.71, 0.0]}, {"size": [1.66, 0.06, 0.46], "offset": [0.0, 1.45, -0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.5, 0.12, 0.5], "offset": [0.0, 0.06, 0.0], "color": "#7a7670", "material": "concrete"},
+    {"size": [0.3, 1.0, 0.36], "offset": [-0.6, 0.62, -0.07], "color": "#9a4a34", "material": "brick"},
+    {"size": [0.3, 1.0, 0.36], "offset": [0.6, 0.62, -0.07], "color": "#9a4a34", "material": "brick"},
+    {"size": [1.5, 0.3, 0.36], "offset": [0.0, 1.27, -0.07], "color": "#9a4a34", "material": "brick"},
+    {"size": [0.9, 1.0, 0.1], "offset": [0.0, 0.62, -0.2], "color": "#2a2420"},
+    {"size": [1.66, 0.06, 0.46], "offset": [0.0, 1.45, -0.05], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.5, 0.1, 0.12], "offset": [0.0, 0.2, 0.0], "rotation": [0.0, 15.0, 0.0], "color": "#5a3a22"},
+    {"size": [0.5, 0.1, 0.12], "offset": [0.0, 0.26, 0.0], "rotation": [0.0, -20.0, 0.0], "color": "#4a3020"},
+    {"size": [0.3, 0.16, 0.12], "offset": [0.0, 0.34, 0.0], "color": "#e07020"},
+    {"size": [0.16, 0.14, 0.08], "offset": [0.02, 0.43, 0.0], "color": "#f0c040"},
+    {"size": [0.14, 0.2, 0.06], "offset": [-0.5, 1.58, -0.05], "color": "#b89a50"},
+    {"size": [0.3, 0.24, 0.03], "offset": [0.3, 1.6, -0.18], "color": "#6a7a5a"}
+  ]
+}

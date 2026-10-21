@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Dragon's Breath",
+  "category": "ammo",
+  "rarity": "epic",
+  "flavor": "Ten burning pellets per shell (fire damage comes later).",
+  "bores": ["shell"],
+  "weight": 0.0,
+  "flags": ["incendiary"],
+  "stats": [
+    {"stat": "damage", "set": 12},
+    {"stat": "pellets", "set": 10},
+    {"stat": "rangeM", "set": 10},
+    {"stat": "minDamageMult", "set": 0.2}
+  ]
+}

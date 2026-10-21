@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fence Panel",
+  "category": "Garden",
+  "description": "A 2 m larch-lap wooden fence panel between two posts. Blocks sight.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 1.89, 0.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 1},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.05, 0.5], "speed": 3.5}},
+  "parts": [
+    {"size": [0.1, 1.85, 0.1], "offset": [-0.95, 0.925, 0.0], "color": "#5a4428", "material": "wood"},
+    {"size": [0.1, 1.85, 0.1], "offset": [0.95, 0.925, 0.0], "color": "#5a4428", "material": "wood"},
+    {"size": [0.12, 0.04, 0.12], "offset": [-0.95, 1.87, 0.0], "color": "#4a3820"},
+    {"size": [0.12, 0.04, 0.12], "offset": [0.95, 1.87, 0.0], "color": "#4a3820"},
+    {"size": [1.8, 0.12, 0.03], "offset": [0.0, 0.06, 0.0], "color": "#6a5030", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 0.21, -0.004], "color": "#7a5e38", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 0.375, 0.012], "color": "#8a6a40", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 0.54, -0.004], "color": "#7a5e38", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 0.705, 0.012], "color": "#8a6a40", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 0.87, -0.004], "color": "#7a5e38", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 1.035, 0.012], "color": "#8a6a40", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 1.2, -0.004], "color": "#7a5e38", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 1.365, 0.012], "color": "#8a6a40", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 1.53, -0.004], "color": "#7a5e38", "material": "wood"},
+    {"size": [1.8, 0.18, 0.02], "offset": [0.0, 1.695, 0.012], "color": "#8a6a40", "material": "wood"},
+    {"size": [1.8, 0.05, 0.05], "offset": [0.0, 1.825, 0.0], "color": "#5a4428"}
+  ]
+}

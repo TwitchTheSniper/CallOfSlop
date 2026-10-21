@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fire Escape Stairs",
+  "category": "Utility",
+  "description": "A black iron fire escape stair flight, 3 m up along +X (pairs with Fire Escape Landing).",
+  "collision": "solid",
+  "collider": [{"size": [0.45, 0.375, 0.9], "offset": [-1.575, 0.188, 0.0]}, {"size": [0.45, 0.75, 0.9], "offset": [-1.125, 0.375, 0.0]}, {"size": [0.45, 1.125, 0.9], "offset": [-0.675, 0.562, 0.0]}, {"size": [0.45, 1.5, 0.9], "offset": [-0.225, 0.75, 0.0]}, {"size": [0.45, 1.875, 0.9], "offset": [0.225, 0.938, 0.0]}, {"size": [0.45, 2.25, 0.9], "offset": [0.675, 1.125, 0.0]}, {"size": [0.45, 2.625, 0.9], "offset": [1.125, 1.312, 0.0]}, {"size": [0.45, 3.0, 0.9], "offset": [1.575, 1.5, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [4.686, 0.06, 0.06], "offset": [0.0, 1.5, 0.45], "rotation": [0.0, -0.0, 39.806], "color": "#2a2c2e"},
+    {"size": [4.686, 0.06, 0.06], "offset": [0.0, 1.5, -0.45], "rotation": [0.0, -0.0, 39.806], "color": "#2a2c2e"},
+    {"size": [4.686, 0.04, 0.04], "offset": [0.0, 2.45, 0.48], "rotation": [0.0, -0.0, 39.806], "color": "#2a2c2e"},
+    {"size": [4.686, 0.04, 0.04], "offset": [0.0, 2.45, -0.48], "rotation": [0.0, -0.0, 39.806], "color": "#2a2c2e"},
+    {"size": [0.32, 0.03, 0.84], "offset": [-1.62, 0.15, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [-1.26, 0.45, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [-0.9, 0.75, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [-0.54, 1.05, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [-0.18, 1.35, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [0.18, 1.65, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [0.54, 1.95, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [0.9, 2.25, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [1.26, 2.55, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.32, 0.03, 0.84], "offset": [1.62, 2.85, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
+    {"size": [0.035, 0.95, 0.035], "offset": [-1.75, 0.517, 0.48], "color": "#2a2c2e"},
+    {"size": [0.035, 0.95, 0.035], "offset": [-1.75, 0.517, -0.48], "color": "#2a2c2e"},
+    {"size": [0.035, 0.95, 0.035], "offset": [0.0, 1.975, 0.48], "color": "#2a2c2e"},
+    {"size": [0.035, 0.95, 0.035], "offset": [0.0, 1.975, -0.48], "color": "#2a2c2e"},
+    {"size": [0.035, 0.95, 0.035], "offset": [1.75, 3.433, 0.48], "color": "#2a2c2e"},
+    {"size": [0.035, 0.95, 0.035], "offset": [1.75, 3.433, -0.48], "color": "#2a2c2e"},
+    {"size": [0.06, 3.0, 0.06], "offset": [1.8, 1.5, 0.45], "color": "#2a2c2e"},
+    {"size": [0.06, 3.0, 0.06], "offset": [1.8, 1.5, -0.45], "color": "#2a2c2e"}
+  ]
+}

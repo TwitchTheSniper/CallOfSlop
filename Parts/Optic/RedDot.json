@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Red Dot",
+  "category": "optic",
+  "rarity": "common",
+  "flavor": "A red dot on glass. Quick to find, easy to love.",
+  "weight": 0.2,
+  "optic": "RedDot",
+  "stats": [
+    {"stat": "adsZoom", "set": 1.5},
+    {"stat": "adsSpreadMult", "mul": 0.85}
+  ]
+}

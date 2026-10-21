@@ -426,7 +426,7 @@ def traffic_light():
     lamps = [("red", "#ff2a1a", "#3a0806", [4, 5, 6, 7]), ("amber", "#ffb020", "#3a2606", [3]), ("green", "#30ff60", "#063a10", [0, 1, 2])]
     for k, (_, on, off, steps) in enumerate(lamps):
         m.add(B([0.18, 0.18, 0.03], [0, 3.47 - 0.3 * k, 0.14], color=on), A("cycle", period=16, steps=8, on=steps, color=on, off=off, glow=1.4, freezeDistance=200))
-    prop("Traffic Light", "A traffic light on a pole, cycling green, amber, red.", m, collider=[C([0.4, 0.15, 0.4]), C([0.18, 2.7, 0.18]), C([0.36, 1.0, 0.3], [0, 3.2, 0])],
+    prop("Cycling Traffic Light", "A traffic light on a pole, cycling green, amber, red.", m, collider=[C([0.4, 0.15, 0.4]), C([0.18, 2.7, 0.18]), C([0.36, 1.0, 0.3], [0, 3.2, 0])],
          scatter={"randomYaw": False, "yawStep": 90})
 
 
@@ -527,7 +527,7 @@ def street_clock():
         m.add(B([0.025, 0.2, 0.01], [0, 3.24, z + s * 0.02], color="black"), A("spin", axis=[0, 0, -s], rpm=0.5, pivot=hub))
         m.add(B([0.02, 0.24, 0.01], [0, 3.26, z + s * 0.03], color="black"), A("spin", axis=[0, 0, -s], rpm=6, pivot=hub))
         m.add(B([0.008, 0.25, 0.006], [0, 3.25, z + s * 0.04], color="red"), A("spin", axis=[0, 0, -s], rpm=60, pivot=hub))
-    prop("Street Clock", "A green two-faced street clock on a post; the hands go round (a little faster than real time).", m,
+    prop("Ticking Street Clock", "A green two-faced street clock on a post; the hands go round (a little faster than real time).", m,
          collider=[C([0.5, 0.2, 0.5]), C([0.16, 2.6, 0.16], [0, 1.5, 0]), C([0.7, 0.85, 0.3], [0, 3.2, 0])], scatter={"randomYaw": False, "yawStep": 90})
 
 

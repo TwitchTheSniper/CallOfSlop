@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Fixed Stock",
+  "category": "stock",
+  "rarity": "common",
+  "flavor": "A solid polymer stock. Steadier, a touch heavier.",
+  "weight": 0.5,
+  "model": [
+    {"size": [0.035, 0.06, 0.22], "pos": [0, -0.01, 0.11], "color": "polymer"},
+    {"size": [0.04, 0.08, 0.02], "pos": [0, -0.015, 0.22], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.85},
+    {"stat": "mobility", "add": -0.01}
+  ]
+}

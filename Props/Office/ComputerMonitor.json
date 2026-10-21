@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Computer Monitor",
+  "category": "Office",
+  "description": "A flat computer monitor on its stand (for desks).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "yawJitter": 20},
+  "breakable": {"health": 5, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.02, 0.1], "speed": 3, "colors": ["#18181a", "#2a4a6a"]}},
+  "parts": [
+    {"size": [0.24, 0.02, 0.18], "offset": [0.0, 0.01, 0.0], "color": "#222222"},
+    {"size": [0.05, 0.25, 0.04], "offset": [0.0, 0.145, -0.03], "color": "#222222"},
+    {"size": [0.56, 0.34, 0.03], "offset": [0.0, 0.31, -0.01], "color": "#18181a"},
+    {"size": [0.52, 0.3, 0.005], "offset": [0.0, 0.31, 0.007], "color": "#2a4a6a"},
+    {"size": [0.03, 0.01, 0.005], "offset": [0.24, 0.15, 0.007], "color": "#30c0f0"}
+  ]
+}

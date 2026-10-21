@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Archive Boxes",
+  "category": "Office",
+  "description": "Cardboard archive boxes full of old files.",
+  "collision": "solid",
+  "collider": [{"size": [0.86, 0.58, 0.38], "offset": [0.0, 0.29, 0.0]}, {"size": [0.42, 0.3, 0.42], "offset": [0.5, 0.15, 0.32]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 20, "breakBy": "all", "sound": "soft", "debris": {"count": 14, "size": [0.05, 0.2], "speed": 3, "colors": ["#d8ccb0", "white", "paper"]}},
+  "parts": [
+    {"size": [0.4, 0.28, 0.32], "offset": [-0.22, 0.14, 0.0], "rotation": [0.0, 2.0, 0.0], "color": "#d8ccb0"},
+    {"size": [0.42, 0.06, 0.34], "offset": [-0.22, 0.27, 0.0], "rotation": [0.0, 2.0, 0.0], "color": "#c8bca0"},
+    {"size": [0.12, 0.06, 0.004], "offset": [-0.214, 0.13, 0.165], "rotation": [0.0, 2.0, 0.0], "color": "white"},
+    {"size": [0.08, 0.03, 0.004], "offset": [-0.214, 0.055, 0.165], "rotation": [0.0, 2.0, 0.0], "color": "#555555"},
+    {"size": [0.4, 0.28, 0.32], "offset": [0.22, 0.14, 0.02], "rotation": [0.0, -3.0, 0.0], "color": "#d8ccb0"},
+    {"size": [0.42, 0.06, 0.34], "offset": [0.22, 0.27, 0.02], "rotation": [0.0, -3.0, 0.0], "color": "#c8bca0"},
+    {"size": [0.12, 0.06, 0.004], "offset": [0.211, 0.13, 0.185], "rotation": [0.0, -3.0, 0.0], "color": "white"},
+    {"size": [0.08, 0.03, 0.004], "offset": [0.211, 0.055, 0.185], "rotation": [0.0, -3.0, 0.0], "color": "#555555"},
+    {"size": [0.4, 0.28, 0.32], "offset": [0.0, 0.42, 0.0], "rotation": [0.0, 6.0, 0.0], "color": "#d8ccb0"},
+    {"size": [0.42, 0.06, 0.34], "offset": [0.0, 0.55, 0.0], "rotation": [0.0, 6.0, 0.0], "color": "#c8bca0"},
+    {"size": [0.12, 0.06, 0.004], "offset": [0.017, 0.41, 0.164], "rotation": [0.0, 6.0, 0.0], "color": "white"},
+    {"size": [0.08, 0.03, 0.004], "offset": [0.017, 0.335, 0.164], "rotation": [0.0, 6.0, 0.0], "color": "#555555"},
+    {"size": [0.4, 0.28, 0.32], "offset": [0.5, 0.14, 0.32], "rotation": [0.0, 30.0, 0.0], "color": "#d8ccb0"},
+    {"size": [0.42, 0.06, 0.34], "offset": [0.5, 0.27, 0.32], "rotation": [0.0, 30.0, 0.0], "color": "#c8bca0"},
+    {"size": [0.12, 0.06, 0.004], "offset": [0.583, 0.13, 0.463], "rotation": [0.0, 30.0, 0.0], "color": "white"},
+    {"size": [0.08, 0.03, 0.004], "offset": [0.583, 0.055, 0.463], "rotation": [0.0, 30.0, 0.0], "color": "#555555"}
+  ]
+}

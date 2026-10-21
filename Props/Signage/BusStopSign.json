@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bus Stop Sign",
+  "category": "Signage",
+  "description": "A bus stop flag sign with a timetable case.",
+  "collision": "solid",
+  "collider": [{"size": [0.1, 2.7, 0.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#c4281c", "#9a9c9e"]}},
+  "parts": [
+    {"size": [0.07, 2.7, 0.07], "offset": [0.0, 1.35, 0.0], "color": "#9a9c9e", "material": "metal"},
+    {"size": [0.13, 0.03, 0.13], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.5, 0.5, 0.03], "offset": [0.0, 2.35, 0.05], "color": "#c4281c"},
+    {"size": [0.36, 0.14, 0.035], "offset": [0.0, 2.35, 0.05], "color": "white"},
+    {"size": [0.36, 0.08, 0.035], "offset": [0.0, 2.19, 0.05], "color": "white"},
+    {"size": [0.36, 0.5, 0.08], "offset": [0.0, 1.45, 0.07], "color": "#d8d8d4"},
+    {"size": [0.3, 0.42, 0.012], "offset": [0.0, 1.45, 0.11], "color": "#f0f0e8"}
+  ]
+}

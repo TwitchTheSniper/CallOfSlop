@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sandwich Board",
+  "category": "Signage",
+  "description": "A wooden A-frame chalkboard sign outside a cafe.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.25], "speed": 4, "colors": ["darkwood", "#2a302c"]}},
+  "parts": [
+    {"size": [0.6, 0.95, 0.03], "offset": [0.0, 0.46, 0.12], "rotation": [-14.0, 0.0, 0.0], "color": "darkwood"},
+    {"size": [0.6, 0.95, 0.03], "offset": [0.0, 0.46, -0.12], "rotation": [14.0, 0.0, 0.0], "color": "darkwood"},
+    {"size": [0.5, 0.75, 0.01], "offset": [0.0, 0.48, 0.137], "rotation": [-14.0, 0.0, 0.0], "color": "#2a302c"},
+    {"size": [0.36, 0.05, 0.012], "offset": [0.0, 0.72, 0.135], "rotation": [-14.0, 0.0, 0.0], "color": "white"},
+    {"size": [0.3, 0.04, 0.012], "offset": [0.0, 0.55, 0.155], "rotation": [-14.0, 0.0, 0.0], "color": "#f0c020"},
+    {"size": [0.34, 0.04, 0.012], "offset": [0.0, 0.42, 0.185], "rotation": [-14.0, 0.0, 0.0], "color": "white"},
+    {"size": [0.6, 0.06, 0.06], "offset": [0.0, 0.93, 0.0], "color": "darkwood"}
+  ]
+}

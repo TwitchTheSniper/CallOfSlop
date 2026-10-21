@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Washing Machine",
+  "category": "Household",
+  "description": "A white front-loading washing machine.",
+  "collision": "solid",
+  "collider": [{"size": [0.6, 0.85, 0.62]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.06, 0.25], "speed": 3.5}},
+  "parts": [
+    {"size": [0.6, 0.85, 0.6], "offset": [0.0, 0.425, 0.0], "color": "white", "material": "metal"},
+    {"size": [0.6, 0.12, 0.02], "offset": [0.0, 0.79, 0.3], "color": "#e0e0e0"},
+    {"size": [0.18, 0.06, 0.01], "offset": [-0.16, 0.79, 0.312], "color": "#c0c8d0"},
+    {"size": [0.06, 0.06, 0.02], "offset": [0.16, 0.79, 0.315], "color": "#888888"},
+    {"size": [0.4, 0.36, 0.01], "offset": [0.0, 0.38, 0.302], "color": "#a0a8b0"},
+    {"size": [0.38, 0.16, 0.02], "offset": [0.0, 0.38, 0.305], "color": "#c0c4c8"},
+    {"size": [0.38, 0.16, 0.02], "offset": [0.0, 0.38, 0.305], "rotation": [0.0, 0.0, 45.0], "color": "#c0c4c8"},
+    {"size": [0.38, 0.16, 0.02], "offset": [0.0, 0.38, 0.305], "rotation": [0.0, 0.0, 90.0], "color": "#c0c4c8"},
+    {"size": [0.38, 0.16, 0.02], "offset": [0.0, 0.38, 0.305], "rotation": [0.0, 0.0, 135.0], "color": "#c0c4c8"},
+    {"size": [0.3, 0.12, 0.02], "offset": [0.0, 0.38, 0.312], "color": "#1e2a3a"},
+    {"size": [0.3, 0.12, 0.02], "offset": [0.0, 0.38, 0.312], "rotation": [0.0, 0.0, 45.0], "color": "#1e2a3a"},
+    {"size": [0.3, 0.12, 0.02], "offset": [0.0, 0.38, 0.312], "rotation": [0.0, 0.0, 90.0], "color": "#1e2a3a"},
+    {"size": [0.3, 0.12, 0.02], "offset": [0.0, 0.38, 0.312], "rotation": [0.0, 0.0, 135.0], "color": "#1e2a3a"},
+    {"size": [0.56, 0.05, 0.02], "offset": [0.0, 0.025, 0.305], "color": "#cccccc"}
+  ]
+}

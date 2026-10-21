@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Kitchen Counter",
+  "category": "Kitchen",
+  "description": "A kitchen base unit with a chopping board and a knife block.",
+  "collision": "solid",
+  "collider": [{"size": [1.22, 0.9, 0.62]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 2},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.05, 0.35], "speed": 3.5, "colors": ["#f0ece0", "#4a4a4e", "#2a2a2a"]}},
+  "parts": [
+    {"size": [1.2, 0.78, 0.58], "offset": [0.0, 0.49, -0.02], "color": "#f0ece0"},
+    {"size": [1.16, 0.1, 0.52], "offset": [0.0, 0.05, -0.04], "color": "#2a2a2a"},
+    {"size": [1.22, 0.04, 0.62], "offset": [0.0, 0.88, 0.0], "color": "#4a4a4e", "material": "tiles", "texScale": 2},
+    {"size": [0.58, 0.6, 0.02], "offset": [-0.3, 0.42, 0.28], "color": "#e8e4d8"},
+    {"size": [0.12, 0.02, 0.03], "offset": [-0.3, 0.63, 0.3], "color": "chrome"},
+    {"size": [0.58, 0.6, 0.02], "offset": [0.3, 0.42, 0.28], "color": "#e8e4d8"},
+    {"size": [0.12, 0.02, 0.03], "offset": [0.3, 0.63, 0.3], "color": "chrome"},
+    {"size": [1.18, 0.1, 0.02], "offset": [0.0, 0.79, 0.28], "color": "#e0dccf"},
+    {"size": [0.36, 0.03, 0.26], "offset": [-0.25, 0.915, 0.05], "color": "#c8a070", "material": "wood"},
+    {"size": [0.06, 0.04, 0.06], "offset": [-0.3, 0.95, 0.05], "color": "#e05030"},
+    {"size": [0.14, 0.24, 0.1], "offset": [0.4, 1.02, -0.2], "color": "#5a3a22"},
+    {"size": [0.012, 0.08, 0.03], "offset": [0.37, 1.18, -0.2], "color": "#333333"},
+    {"size": [0.012, 0.08, 0.03], "offset": [0.4, 1.18, -0.2], "color": "#333333"},
+    {"size": [0.012, 0.08, 0.03], "offset": [0.43, 1.18, -0.2], "color": "#333333"}
+  ]
+}

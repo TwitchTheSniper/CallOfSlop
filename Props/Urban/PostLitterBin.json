@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Post Litter Bin",
+  "category": "Urban",
+  "description": "A green litter bin bolted to a post.",
+  "collision": "solid",
+  "collider": [{"size": [0.44, 1.0, 0.44], "offset": [0.0, 0.5, 0.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#1e4a2a", "#d4a83a"]}},
+  "parts": [
+    {"size": [0.08, 1.0, 0.08], "offset": [0.0, 0.5, 0.0], "color": "#1e4a2a", "material": "metal"},
+    {"size": [0.14, 0.03, 0.14], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.42, 0.55, 0.32], "offset": [0.0, 0.625, 0.18], "color": "#1e4a2a", "material": "metal"},
+    {"size": [0.44, 0.04, 0.34], "offset": [0.0, 0.92, 0.18], "color": "#d4a83a"},
+    {"size": [0.3, 0.1, 0.012], "offset": [0.0, 0.8, 0.342], "color": "#1c1c1e"},
+    {"size": [0.16, 0.12, 0.012], "offset": [0.0, 0.56, 0.342], "color": "#d4a83a"}
+  ]
+}

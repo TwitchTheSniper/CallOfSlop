@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pedal Bin",
+  "category": "Kitchen",
+  "description": "A steel kitchen pedal bin.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 50, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.14], "speed": 3}},
+  "parts": [
+    {"size": [0.3, 0.6, 0.124], "offset": [0.0, 0.32, 0.0], "color": "#b8bcc0"},
+    {"size": [0.3, 0.6, 0.124], "offset": [0.0, 0.32, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.3, 0.6, 0.124], "offset": [0.0, 0.32, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.3, 0.6, 0.124], "offset": [0.0, 0.32, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b8bcc0"},
+    {"size": [0.32, 0.03, 0.133], "offset": [0.0, 0.635, 0.0], "color": "#c8ccd0"},
+    {"size": [0.32, 0.03, 0.133], "offset": [0.0, 0.635, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#c8ccd0"},
+    {"size": [0.32, 0.03, 0.133], "offset": [0.0, 0.635, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#c8ccd0"},
+    {"size": [0.32, 0.03, 0.133], "offset": [0.0, 0.635, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#c8ccd0"},
+    {"size": [0.18, 0.02, 0.075], "offset": [0.0, 0.66, 0.0], "color": "#a8acb0"},
+    {"size": [0.18, 0.02, 0.075], "offset": [0.0, 0.66, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#a8acb0"},
+    {"size": [0.18, 0.02, 0.075], "offset": [0.0, 0.66, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#a8acb0"},
+    {"size": [0.18, 0.02, 0.075], "offset": [0.0, 0.66, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#a8acb0"},
+    {"size": [0.3, 0.02, 0.124], "offset": [0.0, 0.01, 0.0], "color": "#222222"},
+    {"size": [0.3, 0.02, 0.124], "offset": [0.0, 0.01, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#222222"},
+    {"size": [0.3, 0.02, 0.124], "offset": [0.0, 0.01, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#222222"},
+    {"size": [0.3, 0.02, 0.124], "offset": [0.0, 0.01, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#222222"},
+    {"size": [0.1, 0.03, 0.08], "offset": [0.0, 0.015, 0.18], "color": "#222222"}
+  ]
+}

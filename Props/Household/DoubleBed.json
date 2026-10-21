@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Double Bed",
+  "category": "Household",
+  "description": "A wooden double bed, made up with a blue duvet.",
+  "collision": "solid",
+  "collider": [{"size": [1.5, 0.58, 2.13], "offset": [0.0, 0.29, 0.0]}, {"size": [1.5, 0.95, 0.1], "offset": [0.0, 0.475, -1.055]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 200, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.08, 0.4], "speed": 3}},
+  "parts": [
+    {"size": [1.5, 0.22, 2.05], "offset": [0.0, 0.23, 0.0], "color": "darkwood", "material": "wood"},
+    {"size": [1.44, 0.2, 1.95], "offset": [0.0, 0.42, 0.02], "color": "#c9d4e0"},
+    {"size": [1.48, 0.06, 1.271], "offset": [0.0, 0.53, 0.36], "color": "#5a7ab0"},
+    {"size": [1.48, 0.18, 0.06], "offset": [0.0, 0.44, 0.995], "color": "#5a7ab0"},
+    {"size": [0.6, 0.1, 0.36], "offset": [-0.33, 0.57, -0.725], "color": "white"},
+    {"size": [0.04, 0.95, 0.06], "offset": [-0.73, 0.475, -1.055], "color": "darkwood"},
+    {"size": [0.04, 0.95, 0.06], "offset": [0.73, 0.475, -1.055], "color": "darkwood"},
+    {"size": [1.5, 0.45, 0.04], "offset": [0.0, 0.675, -1.055], "color": "darkwood", "material": "wood"},
+    {"size": [1.5, 0.25, 0.04], "offset": [0.0, 0.275, 1.045], "color": "darkwood"},
+    {"size": [0.6, 0.1, 0.36], "offset": [0.33, 0.57, -0.725], "color": "white"},
+    {"size": [0.06, 0.12, 0.06], "offset": [-0.72, 0.06, -1.025], "color": "darkwood"},
+    {"size": [0.06, 0.12, 0.06], "offset": [-0.72, 0.06, 1.025], "color": "darkwood"},
+    {"size": [0.06, 0.12, 0.06], "offset": [0.72, 0.06, -1.025], "color": "darkwood"},
+    {"size": [0.06, 0.12, 0.06], "offset": [0.72, 0.06, 1.025], "color": "darkwood"}
+  ]
+}

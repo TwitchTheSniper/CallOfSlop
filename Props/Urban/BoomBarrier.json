@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Boom Barrier",
+  "category": "Urban",
+  "description": "A car park boom gate: a red and white arm 4 m along +X from its post.",
+  "collision": "solid",
+  "collider": [{"size": [0.44, 1.06, 0.44]}, {"size": [4.0, 0.12, 0.08], "offset": [2.42, 0.89, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.4], "speed": 3.5, "colors": ["#c4281c", "white", "#e3c21a"]}},
+  "parts": [
+    {"size": [0.4, 1.0, 0.4], "offset": [0.0, 0.5, 0.0], "color": "#e3c21a", "material": "metal"},
+    {"size": [0.44, 0.06, 0.44], "offset": [0.0, 1.03, 0.0], "color": "#3a3c3e"},
+    {"size": [0.22, 0.22, 0.2], "offset": [0.25, 0.89, 0.0], "color": "#3a3c3e"},
+    {"size": [0.48, 0.1, 0.07], "offset": [0.6, 0.89, 0.0], "color": "#c4281c"},
+    {"size": [0.48, 0.1, 0.07], "offset": [1.08, 0.89, 0.0], "color": "white"},
+    {"size": [0.48, 0.1, 0.07], "offset": [1.56, 0.89, 0.0], "color": "#c4281c"},
+    {"size": [0.48, 0.1, 0.07], "offset": [2.04, 0.89, 0.0], "color": "white"},
+    {"size": [0.48, 0.1, 0.07], "offset": [2.52, 0.89, 0.0], "color": "#c4281c"},
+    {"size": [0.48, 0.1, 0.07], "offset": [3.0, 0.89, 0.0], "color": "white"},
+    {"size": [0.48, 0.1, 0.07], "offset": [3.48, 0.89, 0.0], "color": "#c4281c"},
+    {"size": [0.48, 0.1, 0.07], "offset": [3.96, 0.89, 0.0], "color": "white"},
+    {"size": [0.08, 0.84, 0.08], "offset": [4.1, 0.42, 0.0], "color": "#3a3c3e"},
+    {"size": [0.18, 0.06, 0.12], "offset": [4.1, 0.83, 0.0], "color": "#3a3c3e"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Portable Toilet",
+  "category": "Urban",
+  "description": "A blue plastic portable toilet (door faces +Z).",
+  "collision": "solid",
+  "collider": [{"size": [1.16, 2.34, 1.16]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "soft", "debris": {"count": 16, "size": [0.1, 0.4], "speed": 3, "colors": ["#2a6ab0", "white"]}},
+  "parts": [
+    {"size": [1.15, 0.1, 1.15], "offset": [0.0, 0.05, 0.0], "color": "#1e4a8a"},
+    {"size": [1.1, 2.1, 1.1], "offset": [0.0, 1.15, 0.0], "color": "#2a6ab0"},
+    {"size": [1.16, 0.08, 1.16], "offset": [0.0, 2.24, 0.0], "color": "white"},
+    {"size": [0.9, 0.06, 0.9], "offset": [0.0, 2.31, 0.0], "color": "white"},
+    {"size": [0.85, 1.9, 0.02], "offset": [0.0, 1.15, 0.56], "color": "#3a7ac0"},
+    {"size": [0.04, 0.16, 0.04], "offset": [0.33, 1.18, 0.58], "color": "#9a9c9e"},
+    {"size": [0.16, 0.06, 0.012], "offset": [0.33, 1.33, 0.571], "color": "#c4281c"},
+    {"size": [0.4, 0.06, 0.02], "offset": [0.0, 1.93, 0.571], "color": "#1e4a8a"},
+    {"size": [0.04, 2.1, 0.04], "offset": [-0.42, 1.15, 0.55], "color": "#1e4a8a"},
+    {"size": [0.04, 2.1, 0.04], "offset": [0.42, 1.15, 0.55], "color": "#1e4a8a"}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Single Breech",
+  "category": "feed",
+  "rarity": "common",
+  "flavor": "Holds one. Make it count.",
+  "bores": ["launcher"],
+  "weight": 0.3,
+  "hand": [0, -0.015, 0],
+  "feed": "single",
+  "model": [
+    {"size": [0.03, 0.03, 0.04], "pos": [0, -0.015, 0], "color": "olive"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 1},
+    {"stat": "reload", "set": 2.0}
+  ]
+}

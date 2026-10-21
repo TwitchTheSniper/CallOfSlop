@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bucket",
+  "category": "Misc",
+  "description": "A blue plastic bucket of water.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "breakable": {"health": 8, "breakBy": "all", "sound": "soft", "debris": {"count": 6, "size": [0.03, 0.1], "speed": 3, "colors": ["#3060d0", "#8ab0d0"]}},
+  "parts": [
+    {"size": [0.24, 0.26, 0.099], "offset": [0.0, 0.13, 0.0], "color": "#3060d0"},
+    {"size": [0.24, 0.26, 0.099], "offset": [0.0, 0.13, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3060d0"},
+    {"size": [0.24, 0.26, 0.099], "offset": [0.0, 0.13, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#3060d0"},
+    {"size": [0.24, 0.26, 0.099], "offset": [0.0, 0.13, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#3060d0"},
+    {"size": [0.27, 0.02, 0.112], "offset": [0.0, 0.27, 0.0], "color": "#2050b0"},
+    {"size": [0.27, 0.02, 0.112], "offset": [0.0, 0.27, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#2050b0"},
+    {"size": [0.27, 0.02, 0.112], "offset": [0.0, 0.27, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#2050b0"},
+    {"size": [0.27, 0.02, 0.112], "offset": [0.0, 0.27, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#2050b0"},
+    {"size": [0.2, 0.01, 0.2], "offset": [0.0, 0.225, 0.0], "color": "#8ab0d0"},
+    {"size": [0.27, 0.012, 0.012], "offset": [0.0, 0.34, 0.0], "color": "#888888"},
+    {"size": [0.012, 0.1, 0.012], "offset": [-0.13, 0.29, 0.0], "color": "#888888"},
+    {"size": [0.012, 0.1, 0.012], "offset": [0.13, 0.29, 0.0], "color": "#888888"}
+  ]
+}

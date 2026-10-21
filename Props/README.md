@@ -1,8 +1,8 @@
 # Making props for Call of Slop
 
-Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`, and `Animated` for props with moving or lit parts). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
+Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders: the starter library (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`), the outdoor set (`Vehicles`, `Rooftop`, `Utility`, `Signage`, `Urban`; see [Categories](#categories)), and `Animated` for props with moving or lit parts (see [Animation](#animation)). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
 
-To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. The **Prop Gallery** map in the Dev pack shows every prop on its own pad, in rows by category, so you can check them by eye.
+To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. The Dev pack's **Prop Gallery** shows the starter props on their own pads, in rows by category, and **Prop Gallery 2** the outdoor set, so you can check them by eye.
 
 A prop is a model made of boxes, the same style as everything else in the game. It's drawn instanced (one copy of the model on the graphics card, hundreds of props in a handful of draw calls), so a map can have hundreds of them for very little cost.
 
@@ -202,10 +202,68 @@ Tips:
 
 How it's drawn: the animated parts' vertices carry the number of their animation record (a second vertex stream next to the shared prop mesh); the records sit in a small float texture. Animated prop types near the camera are drawn by a second shader that reads them; everything else, including animated props past their freeze distance, uses the plain prop shader, so props without animation draw exactly as before. The `[props]` log line adds how many animated props were drawn moving and still and the animated pass's GPU time.
 
+### Material health guide
+
+Pick a prop's `health` and `sound` from what it's made of, then nudge it for size (a big wooden kiosk takes more than a sandwich board). A rifle bullet does about 25-35, a melee swing 55, a frag grenade up to 120.
+
+| Material | `sound` | `health` | Breaks after | Examples |
+|---|---|---|---|---|
+| Glass, paper | `glass` / `soft` | 5-20 | one shot | Neon Sign 10, Solar Panel 15, Skylight 20, bottles, newspapers |
+| Cardboard, thin plastic | `soft` | 8-30 | one or two shots | cardboard boxes, traffic cone, recycling bin |
+| Plastic (moulded, big) | `soft` | 30-60 | two or three shots | Shop Sign 40, Plastic Water Tank 50, Water Barrier 60, Portable Toilet 60 |
+| Wood | `wood` | 40-150 | small 40-60, furniture 70-100, big 100-150 | Sandwich Board 40, Hanging Shop Sign 50, crates 40-70, Park Picnic Table 100, Newsstand 140 |
+| Thin metal (sheet, tube) | `metal` | 60-180 | three to six shots | Jerry Can 60, Bicycle 60, signs 100, Window AC Unit 120, Air Duct 160 |
+| Heavy metal (cabinets, machines) | `metal` | 200-400 | a magazine, or a grenade | Junction Box 200, Rooftop Condenser 250, Ticket Machine 300, Golf Cart 320, ATM and Phone Booth 400 (explosions and strikes only) |
+| Concrete, brick, vehicles, structures | | unbreakable | never | cars, buses, trucks, chimneys, poles, billboards, bus shelters, scaffolding, concrete blocks |
+
+Leave out `breakable` for anything players should be able to trust as cover. The self-test holds the outdoor folders to these bands (glass up to 25, soft up to 60, wood 30-150, metal 60-450) and checks that each material's middle value is in the order glass, soft, wood, metal.
+
+## Categories
+
+| Folder | What's in it |
+|---|---|
+| `Street` | Bins, dumpsters, benches, lamps, hydrants, mailboxes, cones, barriers, the vending machine, signs. |
+| `Industrial` | Crates, pallets, drums (one explosive), pipes, sandbags, tyres, cable spools, gas cylinders. |
+| `Debris` | Bricks, rubble, planks, cardboard, newspapers, bottles, cans, bags, litter. |
+| `Furniture` | Chairs, a table, a sofa, a filing cabinet. |
+| `Nature` | A planter, a log, a stump, a hay bale. |
+| `Vehicles` | Cars (hatchback, sedan, SUV, pickup, van, taxi, police car, ambulance, burnt-out wreck, car on bricks, overturned car), a bus, a box truck, a truck cab, a forklift, a golf cart, a motorbike, a moped, a bicycle, a kick scooter, a trailer, and loose bits (wheel, door, engine block, jerry can). Vehicles are solid, unbreakable cover with a simple two-box collider; long ones run along X. |
+| `Rooftop` | Air conditioners (window unit, condenser, split unit, big HVAC unit), vents, air ducts (straight, elbow, riser, round), an exhaust fan, chimneys and flues, a water tower and a plastic tank, a satellite dish, aerials, a radio mast, a solar panel, a skylight, a roof hatch, a pipe rack. |
+| `Utility` | Power poles and transformers, junction boxes, street cabinets, manholes and drains, meters, fire escape stairs, landing and ladder, ladders, a scaffold tower and boards, generators, a gas valve, a floodlight tower, a road plate. |
+| `Signage` | Traffic lights, a pedestrian signal, road signs (speed limit, yield, one way, no parking, crossing, road works, direction), a parking meter, a bus stop sign, a billboard, shop signs (box, hanging, neon), an arrow board trailer, a price pylon, a street clock. |
+| `Urban` | A bus shelter, a phone booth, a payphone, a newsstand, a newspaper box, an ATM, a ticket machine, a post box, bins, a bike rack, a picnic table, a hot dog cart, a market stall, fences and barriers, a concrete block, a speed bump, a boom gate, a portable toilet, a builder's skip. |
+| `Animated` | Props with moving or lit parts (see [Animation](#animation)): fans (ceiling, desk, pedestal, drum, exhaust box, AC condenser, cooling unit), a roof turbine vent, a windmill, a small wind turbine, a weather vane, an anemometer, flags, a banner, a swinging shop sign, a hanging lantern, a flickering street lamp, a neon OPEN sign, beacons and alarm lights, a cycling traffic light, railway crossing lights, a police light bar, a lighthouse, radar and satellite dishes, a ticking street clock, a ferris wheel and a carousel, an oil pumpjack, conveyor rollers, a running generator and washer, a cement mixer, a water wheel, a barber pole, a rotating diner sign, a piston pump, a pinwheel, a lawn sprinkler, a rocking chair, a hammock, wind chimes, a grandfather clock, a metronome, a globe, a Newtons cradle, a swing set, a bell frame, a boom gate, a gantry hook, a freight hoist, a buoy, a fishing bobber, a duck on a pond, a bird on a perch, a laundry line, a smoking chimney, a fountain, a TV, a monitor, an arcade cabinet, a slot machine and a glowing vending machine. Most stand on the ground; the Ceiling Fan hangs (use `"y"`: its top is 0.7 m up). |
+
+Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.
+
 ## Tips
 
 - Keep the part count sensible: most starter props use 10 to 40 boxes. A box is 12 triangles; the renderer draws hundreds of props in a few draw calls, so detail is cheap, but very fiddly props are hard to read in the game's chunky style anyway.
 - Give a prop a few details that read from a distance (a lid, a band, a handle, a label) and sensible colours rather than lots of tiny parts.
 - Overlapping parts with the same top height and different colours flicker. Lift one a millimetre or two.
 - Check a new prop on the Prop Gallery: add it to `Maps/Dev/PropGallery.json` with `{ "op": "Prop", "name": "My Prop", "x": 0, "z": 0 }` (or put it on any map) and reload.
-- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from.
+- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from, and `tools/propviz/gen_outdoor.py` writes the outdoor folders and `Maps/Dev/PropGallery2.json` (run it from the repository root).
+
+## The indoor and everyday set
+
+The `Household`, `Office`, `Kitchen`, `Garden` and `Misc` folders hold 123 props for houses, offices, shops and back gardens, generated by `tools/propviz/gen_indoor.py` (run `python3 tools/propviz/gen_indoor.py Props Maps/Dev`; it rewrites those five folders and the **Prop Gallery 3** map in the Dev pack, which shows every one of them in rows by category).
+
+- **Household** (34): beds (double, single, bunk, baby cot), wardrobe, chest of drawers, bookshelf, bedside table, sofa, armchair, coffee table, TV stand, CRT TV, lamps, rugs, dining table and chair, washing machine, tumble dryer, ironing board, toilet, sink, bathtub, shower, laundry basket, radiator, coat stand, mirror, piano, fireplace, vacuum cleaner, fish tank.
+- **Office** (20): desk, swivel chair, monitor, PC tower, laptop, photocopier, printer, water cooler, whiteboard, server rack, lockers, partition, archive boxes, conference table, pot plant, shredder, desk phone, metal shelving, safe, reception desk.
+- **Kitchen** (21): fridge, counter, sink unit, cooker, microwave, kettle, toaster, pot, frying pan, plates, crates of apples, oranges and cabbages, stacked produce crates, potato sacks, dishwasher, pedal bin, coffee maker, knife block, bar stool, chest freezer.
+- **Garden** (23): lawnmower, wheelbarrow, gnome, hose reel, kettle and gas barbecues, patio table and chair, sun lounger, picket fence, fence panel, flower pots, watering can, shed, compost bin and bags, bird bath, raised bed, tools, dog kennel, paddling pool.
+- **Misc** (25): ducks (rubber duck, a two-metre inflatable one, a wooden decoy, a mallard, a hen, a family with ducklings, a duck pond), a cat, a dog, a chicken, pigeons, books, toy blocks, a teddy bear, mop and bucket, broom, paint cans, toolbox, suitcase, guitar, duffel bag, backpack, step ladder, sports balls, a bucket. (Air ducts and vents are in the outdoor set.)
+
+Big furniture and appliances are solid (cover you can mantle or hide behind); things you'd find on a desk, a counter or the floor (monitors, kettles, toys, animals) are cosmetic, so put them on a table or a counter and they won't snag players. Desk-top props stand on y = 0: place them on a table or counter top with a `Block` under them or the Prop op's ground snap (up to 0.6 m) onto a counter-height box.
+
+### Health by material (indoor set)
+
+The break sound doubles as the material class, and health follows it (the self-test checks the order and that bigger props of a material are tougher than small ones):
+
+| Material (sound) | Health | Examples |
+|---|---|---|
+| Glass, porcelain, terracotta (`glass`) | 1-45 | plates 1, lamps 2-4, mirror 3, monitor 5, fish tank 8, flower pots 8-15, shower 15, sink 35, toilet 45 |
+| Paper, cardboard, plastic, fabric (`soft`) | 1-130 | rubber duck 1, books 4, laptop 4, laundry 10, archive boxes 20, suitcase 25, water cooler 30, office chair 45, compost bin 55, partition 60, giant duck 60, armchair 90, sofa 130 |
+| Wood (`wood`) | 3-450 | toy blocks 3, decoy 5, guitar 8, crates 30, dining chair 35, bedside table 45, fence panel 70, bookshelf 110, wardrobe 180, double bed 200, piano 250, shed 450 (explosions only) |
+| Thin metal (`metal`) | 15-420 | kettle 15, PC tower 25, patio chair 50, bar stool 60, whiteboard 70, barbecues 90-150, lawnmower 110, photocopier 170, washing machine 220, fridge 300, bunk bed 320, server rack 420 (no melee) |
+| Heavy metal, stone, cast iron | unbreakable | bathtub, fireplace, safe, bird bath, frying pan |

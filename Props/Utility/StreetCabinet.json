@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Street Cabinet",
+  "category": "Utility",
+  "description": "A grey-green telecoms street cabinet.",
+  "collision": "solid",
+  "collider": [{"size": [1.06, 1.45, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 250, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.08, 0.28], "speed": 3.5, "colors": ["#5a6a5a", "#4a5a4a"]}},
+  "parts": [
+    {"size": [1.1, 0.12, 0.5], "offset": [0.0, 0.06, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [1.0, 1.25, 0.45], "offset": [0.0, 0.745, 0.0], "color": "#5a6a5a", "material": "metal"},
+    {"size": [1.06, 0.08, 0.5], "offset": [0.0, 1.41, 0.0], "color": "#4a5a4a"},
+    {"size": [0.012, 1.15, 0.012], "offset": [0.0, 0.745, 0.227], "color": "#1c1c1e"},
+    {"size": [0.04, 0.12, 0.03], "offset": [0.07, 0.86, 0.235], "color": "darkgrey"},
+    {"size": [0.04, 0.12, 0.03], "offset": [-0.07, 0.86, 0.235], "color": "darkgrey"},
+    {"size": [0.24, 0.1, 0.012], "offset": [0.25, 1.2, 0.228], "color": "white"},
+    {"size": [0.3, 0.02, 0.02], "offset": [-0.3, 0.285, 0.228], "color": "#4a5a4a"},
+    {"size": [0.3, 0.02, 0.02], "offset": [-0.3, 0.335, 0.228], "color": "#4a5a4a"},
+    {"size": [0.3, 0.02, 0.02], "offset": [-0.3, 0.385, 0.228], "color": "#4a5a4a"},
+    {"size": [0.3, 0.02, 0.02], "offset": [-0.3, 0.435, 0.228], "color": "#4a5a4a"}
+  ]
+}

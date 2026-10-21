@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Suitcase",
+  "category": "Misc",
+  "description": "A navy wheeled suitcase with a luggage tag.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 25, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.04, 0.14], "speed": 3, "colors": ["#2a3a5a", "white", "#c03030", "#3a6a3a"]}},
+  "parts": [
+    {"size": [0.48, 0.7, 0.24], "offset": [0.0, 0.39, 0.0], "color": "#2a3a5a"},
+    {"size": [0.5, 0.04, 0.26], "offset": [0.0, 0.42, 0.0], "color": "#1e2a44"},
+    {"size": [0.012, 0.66, 0.245], "offset": [-0.1, 0.39, 0.0], "color": "#1e2a44"},
+    {"size": [0.012, 0.66, 0.245], "offset": [0.1, 0.39, 0.0], "color": "#1e2a44"},
+    {"size": [0.03, 0.2, 0.03], "offset": [-0.08, 0.84, -0.06], "color": "#888888"},
+    {"size": [0.03, 0.2, 0.03], "offset": [0.08, 0.84, -0.06], "color": "#888888"},
+    {"size": [0.2, 0.03, 0.04], "offset": [0.0, 0.955, -0.06], "color": "#222222"},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.2, 0.02, -0.08], "color": "black"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.2, 0.02, -0.08], "color": "black"},
+    {"size": [0.14, 0.08, 0.005], "offset": [0.12, 0.54, 0.122], "color": "#f0d040"}
+  ]
+}

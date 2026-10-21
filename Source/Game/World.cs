@@ -376,6 +376,9 @@ public sealed class Player
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
     public byte GunLevel; // Gun Game: step on the weapon ladder (replicated)
     public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
+    public byte ShieldCharges; // Last Stand: bullet hits the shield still blocks (server-owned, replicated in the snapshot)
+    public bool Regenerating; // health is coming back right now (server-owned, replicated in the snapshot)
+    public double ShieldFlashTime = -100; // client: when the shield last blocked a hit (the shimmer)
 
     // Loadout and the weapon in hand (replicated so others see and hear the right gun)
     public byte Primary = Weapons.DefaultPrimary.Id;
@@ -392,7 +395,12 @@ public sealed class Player
 
     /// <summary>A weapon's stats with this player's attachments on it.</summary>
     public WeaponDef DefFor(byte weaponId) =>
-        Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
+        weaponId == Primary && BuiltPrimary != null ? BuiltPrimary
+        : weaponId == Secondary && BuiltSecondary != null ? BuiltSecondary
+        : Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
+
+    /// <summary>Workbench Range (Zombies preview): built weapons used in place of the loadout's guns. Host-local, never replicated.</summary>
+    public WeaponDef? BuiltPrimary, BuiltSecondary;
     public bool Owns(byte weaponId) => weaponId == Primary || weaponId == Secondary;
 
     public Vector3 Position
@@ -429,7 +437,10 @@ public sealed class Player
     public uint WantPrimaryKit, WantSecondaryKit;
     public PerkSet WantPerks = PerkSet.Empty;
     public bool LastStandUsed; // Last Stand saves you once per life
-    public double ImmuneUntil; // Last Stand's moment of immunity
+    public double ShieldUntil; // Last Stand: when the shield runs out even if it still has charges
+    public double LastHurtTime = -100; // last time they took or dealt damage (health regen waits for this)
+    public float RegenCarry; // health regen: fraction of a point owed
+    public double ImmuneUntil; // can't be hurt at all until then (smoke test only)
     public double NextMelee;
     public bool WantsRespawn; // people respawn when they click Respawn; bots respawn on their own
     public uint SpawnTick;

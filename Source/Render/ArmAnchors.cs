@@ -232,7 +232,7 @@ public static class ArmAnchors
         a.Action = cls switch
         {
             WeaponClass.Pistol => new Vector3(0, top + 0.004f, back - 0.015f), // slide rear / hammer
-            WeaponClass.Sniper when built != null => built.Spec!.Bolt == "side"
+            WeaponClass.Sniper when built != null => built.Spec?.Bolt == "side"
                 ? new Vector3(recvW * 0.5f + 0.055f, built.Bore - 0.006f, back - 0.03f) // bolt knob
                 : new Vector3(0, top + 0.01f, back - 0.03f), // charging handle
             WeaponClass.Sniper => new Vector3(recvW * 0.7f + 0.035f, recvH * 0.08f + 0.012f, back - 0.03f), // bolt knob

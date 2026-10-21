@@ -54,6 +54,7 @@ public static partial class SelfTest
             Section("Map packs", CheckMapPacks);
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
+            Section("Foliage no-go", CheckFoliageNoGo); // SelfTest.FoliageNoGo.cs: indoor / pavement rules and zones
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
             Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
@@ -67,6 +68,7 @@ public static partial class SelfTest
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
+            Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
@@ -101,6 +103,7 @@ public static partial class SelfTest
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
+            Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -959,12 +962,11 @@ public static partial class SelfTest
         var standHp = v.Health;
         game.SelfTestDamage(a, v, 50, DamageKind.Bullet, 1.5);
         var immuneHp = v.Health;
-        var killed = game.SelfTestDamage(a, v, 50, DamageKind.Bullet, 3);
-        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, hit while immune -> {immuneHp} HP, later hit kills {killed}");
+        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, next bullet hit (shielded) -> {immuneHp} HP (the full rules: section Health)");
         if (flakHp != World.MaxHealth - (int)MathF.Round(100 * Perks.FlakMult))
             Fail("Flak Jacket didn't reduce blast damage");
-        if (standHp != 1 || immuneHp != 1 || !killed)
-            Fail("Last Stand didn't save once and then expire");
+        if (standHp != 1 || immuneHp != 1)
+            Fail("Last Stand didn't save the lethal hit and shield the next one");
 
         Reset(PerkSet.Empty, new PerkSet(PerkId.None, PerkId.Entrenched, PerkId.None));
         v.Sim.Stance = Stance.Crouch;

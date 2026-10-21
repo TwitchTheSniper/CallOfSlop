@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Satellite Dish",
+  "category": "Rooftop",
+  "description": "A satellite TV dish on a short mast, looking up and to +Z.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2], "speed": 3.5, "colors": ["#e6e6e2", "#9a9c9e"]}},
+  "parts": [
+    {"size": [0.3, 0.04, 0.3], "offset": [0.0, 0.02, 0.0], "color": "darkgrey"},
+    {"size": [0.05, 0.75, 0.05], "offset": [0.0, 0.415, 0.0], "color": "#9a9c9e"},
+    {"size": [0.12, 0.12, 0.1], "offset": [0.0, 0.76, 0.04], "color": "darkgrey"},
+    {"size": [0.62, 0.257, 0.025], "offset": [0.0, 0.86, 0.12], "rotation": [-30.0, 0.0, 0.0], "color": "#e6e6e2"},
+    {"size": [0.62, 0.257, 0.025], "offset": [0.0, 0.86, 0.12], "rotation": [-30.0, 0.0, 45.0], "color": "#e6e6e2"},
+    {"size": [0.62, 0.257, 0.025], "offset": [0.0, 0.86, 0.12], "rotation": [-30.0, 0.0, 90.0], "color": "#e6e6e2"},
+    {"size": [0.62, 0.257, 0.025], "offset": [0.0, 0.86, 0.12], "rotation": [-30.0, 0.0, 135.0], "color": "#e6e6e2"},
+    {"size": [0.421, 0.025, 0.025], "offset": [0.0, 0.72, 0.365], "rotation": [0.0, -90.0, 28.393], "color": "#9a9c9e"},
+    {"size": [0.07, 0.07, 0.1], "offset": [0.0, 0.835, 0.56], "color": "#1c1c1e"}
+  ]
+}

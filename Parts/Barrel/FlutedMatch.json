@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Fluted Match Barrel",
+  "category": "barrel",
+  "rarity": "rare",
+  "flavor": "Cut grooves, tight tolerances, smug owner.",
+  "bores": ["pistol", "rifle"],
+  "weight": 0.45,
+  "hand": [0, -0.03, -0.136],
+  "muzzles": [[0, 0, -0.34]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.34]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.022, 0.022, 0.34], "pos": [0, 0, -0.17], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.5},
+    {"stat": "hipSpreadDeg", "mul": 0.7}
+  ]
+}

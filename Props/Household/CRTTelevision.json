@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "CRT Television",
+  "category": "Household",
+  "description": "A chunky old tube TV with rabbit-ear aerials.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 12, "breakBy": "all", "sound": "glass", "debris": {"count": 12, "size": [0.03, 0.12], "speed": 3.5, "colors": ["#3a3a38", "#2a3830", "#9ab0a8"]}},
+  "parts": [
+    {"size": [0.62, 0.5, 0.5], "offset": [0.0, 0.25, -0.02], "color": "#3a3a38"},
+    {"size": [0.5, 0.38, 0.03], "offset": [-0.03, 0.26, 0.235], "color": "#2a3830"},
+    {"size": [0.62, 0.5, 0.03], "offset": [0.0, 0.25, 0.225], "color": "#4a4a46"},
+    {"size": [0.42, 0.3, 0.3], "offset": [0.0, 0.25, -0.38], "color": "#3a3a38"},
+    {"size": [0.06, 0.32, 0.02], "offset": [0.26, 0.24, 0.245], "color": "#2e2e2c"},
+    {"size": [0.03, 0.03, 0.01], "offset": [0.26, 0.365, 0.255], "color": "#a0a0a0"},
+    {"size": [0.03, 0.03, 0.01], "offset": [0.26, 0.315, 0.255], "color": "#a0a0a0"},
+    {"size": [0.01, 0.4, 0.01], "offset": [-0.12, 0.66, -0.15], "rotation": [0.0, 0.0, 25.0], "color": "chrome"},
+    {"size": [0.01, 0.4, 0.01], "offset": [0.12, 0.66, -0.15], "rotation": [0.0, 0.0, -25.0], "color": "chrome"},
+    {"size": [0.08, 0.04, 0.08], "offset": [0.0, 0.52, -0.15], "color": "#222222"}
+  ]
+}

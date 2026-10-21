@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Push Cart",
+  "category": "grip",
+  "rarity": "wonder",
+  "flavor": "Sixteen receivers on a squeaky shopping cart. You push, it shoots. Hip fire only, obviously.",
+  "weight": 6.0,
+  "flags": ["cart"],
+  "hand": [0.16, 0, 0],
+  "gripAngle": 0,
+  "frame": {"fireStyles": ["volley", "rotate"], "hands": "cart", "carry": 40, "mobility": 0.65, "ads": false, "ironHeight": 0.0, "support": [-0.16, 0, 0], "reloadPerReceiver": 0.2},
+  "sockets": [
+    {"name": "receiver_1", "type": "receiver", "pos": [-0.07, -0.27, -0.5]},
+    {"name": "receiver_2", "type": "receiver", "pos": [0.07, -0.27, -0.5]},
+    {"name": "receiver_3", "type": "receiver", "pos": [-0.21, -0.27, -0.5]},
+    {"name": "receiver_4", "type": "receiver", "pos": [0.21, -0.27, -0.5]},
+    {"name": "receiver_5", "type": "receiver", "pos": [-0.07, -0.195, -0.5]},
+    {"name": "receiver_6", "type": "receiver", "pos": [0.07, -0.195, -0.5]},
+    {"name": "receiver_7", "type": "receiver", "pos": [-0.21, -0.195, -0.5]},
+    {"name": "receiver_8", "type": "receiver", "pos": [0.21, -0.195, -0.5]},
+    {"name": "receiver_9", "type": "receiver", "pos": [-0.07, -0.12, -0.5]},
+    {"name": "receiver_10", "type": "receiver", "pos": [0.07, -0.12, -0.5]},
+    {"name": "receiver_11", "type": "receiver", "pos": [-0.21, -0.12, -0.5]},
+    {"name": "receiver_12", "type": "receiver", "pos": [0.21, -0.12, -0.5]},
+    {"name": "receiver_13", "type": "receiver", "pos": [-0.07, -0.045, -0.5]},
+    {"name": "receiver_14", "type": "receiver", "pos": [0.07, -0.045, -0.5]},
+    {"name": "receiver_15", "type": "receiver", "pos": [-0.21, -0.045, -0.5]},
+    {"name": "receiver_16", "type": "receiver", "pos": [0.21, -0.045, -0.5]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.44, 0.025, 0.025], "pos": [0, 0, 0], "color": "black"},
+    {"size": [0.02, 0.02, 0.32], "pos": [-0.2, -0.14, -0.13], "color": "chrome", "rot": [30, 0, 0]},
+    {"size": [0.02, 0.02, 0.32], "pos": [0.2, -0.14, -0.13], "color": "chrome", "rot": [30, 0, 0]},
+    {"size": [0.5, 0.02, 0.56], "pos": [0, -0.3, -0.5], "color": "chrome"},
+    {"size": [0.5, 0.3, 0.012], "pos": [0, -0.16, -0.22], "color": "chrome", "alpha": 0.6},
+    {"size": [0.5, 0.3, 0.012], "pos": [0, -0.16, -0.78], "color": "chrome", "alpha": 0.6},
+    {"size": [0.04, 0.07, 0.07], "pos": [-0.22, -0.36, -0.26], "color": "black"},
+    {"size": [0.04, 0.07, 0.07], "pos": [0.22, -0.36, -0.26], "color": "black"},
+    {"size": [0.04, 0.07, 0.07], "pos": [-0.22, -0.36, -0.74], "color": "black"},
+    {"size": [0.04, 0.07, 0.07], "pos": [0.22, -0.36, -0.74], "color": "black"},
+    {"size": [0.46, 0.006, 0.03], "pos": [0, 0.013, 0], "color": "#c83228"}
+  ]
+}
