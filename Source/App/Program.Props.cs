@@ -24,6 +24,7 @@ public static unsafe partial class Program
         // The Cluttered pack's large map (thousands of props and plants): overview from the south-west, then the market at eye height.
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
+        ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running
@@ -142,7 +143,7 @@ public static unsafe partial class Program
                 + $"{map.MeshPlacements.Count} meshes, quality {_settings.FoliageQuality}");
         }
         if (!view.Break)
-            SmokeShot(view.Name.StartsWith("cluttered_", StringComparison.Ordinal) ? view.Name : "props_" + view.Name);
+            SmokeShot(view.Name.StartsWith("cluttered") ? view.Name : "props_" + view.Name); // the Cluttered pack's views keep their own names
         _propsSmokeAdvance = true;
     }
 
