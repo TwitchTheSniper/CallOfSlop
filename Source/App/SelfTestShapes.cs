@@ -30,8 +30,8 @@ public static partial class SelfTest
         ("01-Blueprint", 0xde9e3279u), ("02-Galleria", 0x429afd78u), ("03-Floodgate", 0xcb35e9deu), ("04-Trefoil", 0x39b08239u),
         ("05-Citadel", 0x340e65a1u), ("06-Confluence", 0x3aad3033u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
         ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0x59b1babcu), ("TerrainTest", 0x6ad80326u),
-        ("01-GravelPit", 0x1010fd2au), ("02-Hillfort", 0xddcb110bu), ("03-Riverbend", 0xc5603735u), ("04-AdobeMesa", 0xfd374d0cu),
-        ("05-Ridgeline", 0xeea2e24fu), ("06-AlpinePass", 0x3275f63au), // High Ground: new fingerprints since the foliage no-go rules
+        ("01-GravelPit", 0x1010fd2au), ("02-Hillfort", 0xddcb110bu), ("03-Riverbend", 0xa7be54dau), ("04-AdobeMesa", 0x579dc03fu),
+        ("05-Ridgeline", 0xb945fc4au), ("06-AlpinePass", 0x3275f63au), // High Ground: new fingerprints since the foliage no-go rules
     ];
 
     private static readonly List<string> ShapeNotes = new();

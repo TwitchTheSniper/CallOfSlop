@@ -267,9 +267,13 @@ public static partial class SelfTest
         var plain = Maps.All.Where(m => m.FoliageSection == null && m.SourceFile != null && File.Exists(Path.Combine(Maps.Folder, m.SourceFile))).Take(6).ToList();
         foreach (var m in plain)
         {
-            var legacy = LoadLegacy(File.ReadAllText(Path.Combine(Maps.Folder, m.SourceFile!)), m.SourceFile!);
-            if (legacy.ContentHash != m.ContentHash || m.FoliageHash != 0 || m.FoliageStats != null)
-                Fail($"{m.Name}: a map without foliage changed (fingerprint {legacy.ContentHash:x8} vs {m.ContentHash:x8})");
+            // (Their start-up fingerprints are checked against the recorded ones in "Map shapes"; here the same file
+            // loaded with and without the rules must match.)
+            var text = File.ReadAllText(Path.Combine(Maps.Folder, m.SourceFile!));
+            var legacy = LoadLegacy(text, m.SourceFile!);
+            var now = MapFile.Load(text, m.SourceFile!);
+            if (legacy.ContentHash != now.ContentHash || now.FoliageHash != 0 || now.FoliageStats != null || m.FoliageHash != 0)
+                Fail($"{m.Name}: a map without foliage changed (fingerprint {legacy.ContentHash:x8} vs {now.ContentHash:x8})");
         }
         NoGoLine($"{plain.Count} maps without foliage checked: same fingerprints, no foliage data");
     }
