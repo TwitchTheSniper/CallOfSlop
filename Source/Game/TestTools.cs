@@ -20,7 +20,7 @@ public sealed partial class Game
     public const double SuicideCooldown = 1.0;
 
     /// <summary>True on the server when nobody but one player (or nobody) is in the match: it never ends on its own.</summary>
-    public bool SoloMatch => IsServer && Players.Count <= 1;
+    public bool SoloMatch => IsServer && (Players.Count <= 1 || BuilderRange); // the Workbench Range's practice dummies don't count
 
     private double _soloElapsed; // match seconds played so far, kept while the clock is stopped for a solo match
     private readonly Dictionary<byte, double> _suicideAt = new(); // server: when each player last killed themselves

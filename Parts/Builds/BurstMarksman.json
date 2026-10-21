@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Burst Marksman",
+  "tier": "uncommon",
+  "source": [
+    "box",
+    "wall"
+  ],
+  "flavor": "A three-round burst rifle with a long barrel and a holo sight.",
+  "build": "Rifle Grip{receiver_1:Triad Burst Receiver{barrel:Long Barrel,feed:Extended Mag,ammo:5.56 FMJ},stock:Fixed Stock,optic:Holographic}"
+}

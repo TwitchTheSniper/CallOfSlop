@@ -68,7 +68,7 @@ public sealed partial class Game : IDisposable
     public byte ChosenSecondary = Weapons.DefaultSecondary.Id;
     public uint ChosenPrimaryKit, ChosenSecondaryKit; // attachments picked in the gunsmith
     public PerkSet ChosenPerks = PerkSet.Empty;
-    public readonly WeaponState[] Slots = [new(Weapons.DefaultPrimary), new(Weapons.DefaultSecondary)];
+    public readonly WeaponState[] Slots = [new(Weapons.DefaultPrimary), new(Weapons.DefaultSecondary), new(Weapons.DefaultPrimary), new(Weapons.DefaultSecondary)]; // 3-4: the Zombies slot upgrade (GameCart.cs)
     public int ActiveSlot;
     public WeaponState Active => Slots[ActiveSlot];
     public double EquipUntil;
@@ -510,7 +510,7 @@ public sealed partial class Game : IDisposable
 
     public void SwitchTo(int slot, double now)
     {
-        if (slot == ActiveSlot || slot < 0 || slot > 1 || Local is not { Alive: true })
+        if (slot == ActiveSlot || slot < 0 || slot >= WeaponSlots || Local is not { Alive: true } || CartRefusesSwitch(slot))
             return;
         Active.ReloadUntil = 0; // switching cancels a reload
         ActiveSlot = slot;
@@ -605,6 +605,8 @@ public sealed partial class Game : IDisposable
             var changed = Slots[0].Def != primary || Slots[1].Def != secondary;
             Slots[0] = new WeaponState(primary);
             Slots[1] = new WeaponState(secondary);
+            Slots[2] = new WeaponState(p.BuiltExtra[0] ?? primary); // slots 3-4 (GameCart.cs): only reachable once unlocked
+            Slots[3] = new WeaponState(p.BuiltExtra[1] ?? secondary);
             ActiveSlot = 0;
             _burstLeft = 0;
             Bloom = 0;
@@ -862,6 +864,8 @@ public sealed partial class Game : IDisposable
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw };
         }
 
+        if (Carts.Count > 0 || BuilderRange)
+            ServerTickCarts(now); // push carts and parked cart turrets (GameCart.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
             SendSnapshots();
 
@@ -1111,21 +1115,28 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Hitscan with lag compensation (targets rewound to <paramref name="viewTick"/>), one ray per pellet.</summary>
-    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now)
+    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now, bool turret = false)
     {
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
-        // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
-        // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
-        shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
-        if (shooter.ShotClock > now + 0.05)
-            return;
-        shooter.ShotClock += def.FireInterval * 0.85;
-        shooter.LastShotTime = now;
-        shooter.LastCombatTime = now;
-        if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
-            origin = shooter.Eye;
+        if (turret)
+            shooter.LastCombatTime = now; // a parked cart firing on its own (GameCart.cs): the server picked origin and rate
+        else
+        {
+            if (CartBlocksShot(shooter, def))
+                return; // a push cart only fires while you push it (parked, it fires on its own)
+            // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
+            // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
+            shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
+            if (shooter.ShotClock > now + 0.05)
+                return;
+            shooter.ShotClock += def.FireInterval * 0.85;
+            shooter.LastShotTime = now;
+            shooter.LastCombatTime = now;
+            if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
+                origin = shooter.Eye;
+        }
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
@@ -1150,6 +1161,7 @@ public sealed partial class Game : IDisposable
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
         var ends = new List<Vector3>(rays.Count);
         var laterals = new List<Vector2>(rays.Count);
+        var starts = new List<Vector3>(rays.Count);
 
         foreach (var ray in rays)
         {
@@ -1172,6 +1184,7 @@ public sealed partial class Game : IDisposable
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
+            starts.Add(o);
             if (turret != null)
                 flags |= ShotHitMachine;
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
@@ -1200,12 +1213,14 @@ public sealed partial class Game : IDisposable
         }
 
         // Host-side feedback
+        if (turret)
+            Audio.Shot(def, origin);
         if (shooter.Id == LocalId)
             OnOwnShotConfirmed(flags, now);
-        else
+        else if (!turret)
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
+            AddTracer(turret ? starts[i] : MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
@@ -1458,6 +1473,11 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
+                break;
+            case (byte)Msg.CartUse:
+            case (byte)Msg.CartState:
+            case (byte)Msg.RunState:
+                OnCartPacket(id, ref r, sender, now); // push carts and the weapon-slot upgrade (GameCart.cs)
                 break;
             case (byte)Msg.Ready:
             case (byte)Msg.ModeState:

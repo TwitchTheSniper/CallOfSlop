@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Nail Ring",
+  "category": "meleemod",
+  "rarity": "common",
+  "flavor": "A fistful of nails hammered through the business end.",
+  "weight": 0.2,
+  "flags": ["nails"],
+  "melee": {"damage": 12},
+  "model": [
+    {"size": [0.08, 0.004, 0.004], "pos": [0, 0, -0.05], "color": "steel"},
+    {"size": [0.004, 0.08, 0.004], "pos": [0, 0, -0.08], "color": "steel"},
+    {"size": [0.06, 0.004, 0.004], "pos": [0, 0.02, -0.12], "rot": [0, 0, 45], "color": "steel"}
+  ]
+}

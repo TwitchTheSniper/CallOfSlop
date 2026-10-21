@@ -192,9 +192,12 @@ public sealed partial class Ui : IDisposable
                 ImGuiSafe.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), $"{w.Ammo} / {w.Def.Mag}");
             ImGui.PopFont();
             ImGui.Text($"{w.Def.Name}");
-            ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{(game.ActiveSlot == 0 ? "1" : "2")}]");
-            var other = game.Slots[1 - game.ActiveSlot];
-            ImGuiSafe.TextColored(Dim, $"[{(game.ActiveSlot == 0 ? "2" : "1")}] {other.Def.Name}  {other.Ammo}/{other.Def.Mag}");
+            ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
+            for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
+                if (i != game.ActiveSlot)
+                    ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
+            if (game.InteractHint() is { } hint)
+                ImGuiSafe.TextColored(Orange, $"[{K(GameAction.Interact)}] {hint}");
             if (game.LocalGrenade != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
                     $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");

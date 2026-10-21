@@ -25,7 +25,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 14: terrain slope rules (SlopeRules: footprint slope, walkable to 45 degrees, slower uphill, grip and terrain steps,
     //     capped steerable slides) in both movers: client prediction must run the same movement as the server
     // 15: Last Stand shield charges and a regenerating flag in the snapshot's per-player flags byte, shield hit message
-    public const byte ProtocolVersion = 15;
+    // 16: Zombies preview: push carts (cart use, cart state messages) and per-run flags (run state message: weapon-slot upgrade)
+    public const byte ProtocolVersion = 16;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

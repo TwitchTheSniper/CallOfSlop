@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Singularity Chamber",
+  "category": "multiplier",
+  "rarity": "legendary",
+  "flavor": "A very small black hole in a very sturdy box. It makes bullets heavier. Mostly.",
+  "weight": 1.4,
+  "model": [
+    {"size": [0.03, 0.04, 0.07], "pos": [-0.015, 0, 0], "color": "black"},
+    {"size": [0.032, 0.012, 0.05], "pos": [-0.015, 0.02, 0], "color": "accent"},
+    {"size": [0.008, 0.008, 0.008], "pos": [-0.031, 0.008, -0.02], "color": [1.0, 0.4, 0.1], "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "damage", "mul": 1.8},
+    {"stat": "adsTime", "add": 0.05}
+  ]
+}

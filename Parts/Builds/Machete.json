@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Machete",
+  "tier": "common",
+  "source": [
+    "start",
+    "box"
+  ],
+  "flavor": "A wooden handle and a machete blade: the starting melee weapon of a run.",
+  "build": "Wooden Handle{head:Machete Blade}"
+}

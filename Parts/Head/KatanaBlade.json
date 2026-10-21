@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Katana Blade",
+  "category": "head",
+  "rarity": "rare",
+  "flavor": "A long curved blade. Quick, clean, a little bit dramatic.",
+  "weight": 0.9,
+  "melee": {"damage": 30, "swingMult": 0.8, "reach": 0.45, "cleave": 1},
+  "model": [
+    {"size": [0.005, 0.035, 0.7], "pos": [0, 0.01, -0.35], "rot": [-3, 0, 0], "color": "chrome"},
+    {"size": [0.006, 0.006, 0.7], "pos": [0, 0.028, -0.35], "rot": [-3, 0, 0], "color": "steel"}
+  ]
+}

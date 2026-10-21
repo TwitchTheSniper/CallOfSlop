@@ -397,11 +397,29 @@ public sealed class Player
     public WeaponDef DefFor(byte weaponId) =>
         weaponId == Primary && BuiltPrimary != null ? BuiltPrimary
         : weaponId == Secondary && BuiltSecondary != null ? BuiltSecondary
+        : ExtraDef(weaponId) is { } extra ? extra
         : Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
 
     /// <summary>Workbench Range (Zombies preview): built weapons used in place of the loadout's guns. Host-local, never replicated.</summary>
     public WeaponDef? BuiltPrimary, BuiltSecondary;
-    public bool Owns(byte weaponId) => weaponId == Primary || weaponId == Secondary;
+
+    /// <summary>Workbench Range / Zombies: built weapons for slots 3 and 4 (used once <see cref="ExtraSlots"/> is unlocked). Host-local.</summary>
+    public readonly WeaponDef?[] BuiltExtra = new WeaponDef?[2];
+
+    /// <summary>Zombies weapon-slot upgrade (2 -> 4 slots), bought on the map once per run (server-owned, sent in <see cref="Msg.RunState"/>).</summary>
+    public bool ExtraSlots;
+
+    /// <summary>Workbench Range / Zombies: the built melee weapon used on the melee key (null = the standard knife/butt strike). Host-local.</summary>
+    public MeleeDef? MeleeBuild;
+
+    /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
+    public double StunnedUntil;
+
+    /// <summary>The built weapon in slot 3 or 4 with this id, if the slots are unlocked.</summary>
+    public WeaponDef? ExtraDef(byte weaponId) =>
+        !ExtraSlots ? null : BuiltExtra[0]?.Id == weaponId ? BuiltExtra[0] : BuiltExtra[1]?.Id == weaponId ? BuiltExtra[1] : null;
+
+    public bool Owns(byte weaponId) => weaponId == Primary || weaponId == Secondary || ExtraDef(weaponId) != null;
 
     public Vector3 Position
     {

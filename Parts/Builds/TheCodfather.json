@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "The Codfather",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A frozen fish on a fishing rod, with a whoopee cushion. Stuns everything it slaps.",
+  "build": "Fishing Rod Grip{head:Frozen Fish,mod_2:Whoopee Cushion}"
+}

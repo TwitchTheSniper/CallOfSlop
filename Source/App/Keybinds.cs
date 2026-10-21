@@ -30,6 +30,9 @@ public enum GameAction
     Streak2,
     Streak3,
     Ready,
+    Interact,
+    Weapon3,
+    Weapon4,
     COUNT,
 }
 
@@ -71,6 +74,9 @@ public static class Keybinds
         Key(GlfwKey.Number5),
         Key(GlfwKey.Number6),
         Key(GlfwKey.F3),
+        Key(GlfwKey.E),
+        Key(GlfwKey.Number3),
+        Unbound,
     ];
 
     public static string Label(GameAction a) =>
@@ -100,6 +106,9 @@ public static class Keybinds
             GameAction.Streak2 => "Kill streak 2",
             GameAction.Streak3 => "Kill streak 3 (biggest)",
             GameAction.Ready => "Ready up (warmup)",
+            GameAction.Interact => "Interact (Zombies: cart, slot upgrade)",
+            GameAction.Weapon3 => "Weapon slot 3 (Zombies)",
+            GameAction.Weapon4 => "Weapon slot 4 (Zombies)",
             _ => a.ToString(),
         };
 

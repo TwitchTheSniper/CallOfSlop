@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Fishing Rod Grip",
+  "category": "hilt",
+  "rarity": "uncommon",
+  "flavor": "A cork rod handle with a reel. Long reach, questionable dignity.",
+  "weight": 0.4,
+  "hand": [0, 0, 0.0],
+  "gripAngle": 20,
+  "hilt": {"damage": 18, "swing": 0.6, "reach": 2.8, "cleave": 1, "hands": "one"},
+  "sockets": [
+    {"name": "head", "type": "head", "pos": [0, 0, -0.6], "required": true},
+    {"name": "mod_1", "type": "mod", "pos": [0, 0, 0.02]},
+    {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.57]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.03, 0.03, 0.2], "pos": [0, 0, 0.0], "color": "tan"},
+    {"size": [0.05, 0.05, 0.03], "pos": [0, -0.035, -0.02], "color": "black"},
+    {"shape": "rod", "size": [0.012, 0.012, 0.5], "pos": [0, 0, -0.35], "color": "black"}
+  ]
+}

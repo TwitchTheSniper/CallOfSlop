@@ -8,14 +8,15 @@
   "flags": ["chainsaw"],
   "hand": [0, -0.02, 0.12],
   "gripAngle": 0,
-  "frame": {"fireStyles": ["volley"], "hands": "chainsaw", "carry": 14, "mobility": 0.92, "ironHeight": 0.24, "support": [0, 0.2, -0.03], "reloadPerReceiver": 0.35},
+  "frame": {"fireStyle": "volley", "hands": "chainsaw", "carry": 14, "mobility": 0.92, "ironHeight": 0.24, "support": [0, 0.2, -0.03], "reloadPerReceiver": 0.35},
   "sockets": [
     {"name": "receiver_1", "type": "receiver", "pos": [0, 0.04, -0.16]},
     {"name": "receiver_2", "type": "receiver", "pos": [-0.068, 0.04, -0.16]},
     {"name": "receiver_3", "type": "receiver", "pos": [0.068, 0.04, -0.16]},
     {"name": "receiver_4", "type": "receiver", "pos": [0, 0.115, -0.16]},
     {"name": "receiver_5", "type": "receiver", "pos": [-0.068, 0.115, -0.16]},
-    {"name": "receiver_6", "type": "receiver", "pos": [0.068, 0.115, -0.16]}
+    {"name": "receiver_6", "type": "receiver", "pos": [0.068, 0.115, -0.16]},
+    {"name": "hopper", "type": "hopper", "pos": [0, -0.1, -0.1]}
   ],
   "model": [
     {"size": [0.16, 0.14, 0.2], "pos": [0, 0.04, -0.02], "color": "orange"},

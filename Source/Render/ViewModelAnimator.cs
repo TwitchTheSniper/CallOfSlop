@@ -18,6 +18,12 @@ public struct ViewModelInput
     /// <summary>0..1 through the melee swing, or -1 (Game.MeleeProgress).</summary>
     public float Melee;
 
+    /// <summary>
+    /// Puts the gun here in camera space instead of the animated pose (a pushed cart sits on the ground in the world: its
+    /// pose is its world matrix times the view). The hands still solve onto its grip and support anchors.
+    /// </summary>
+    public Matrix4x4? PoseOverride;
+
     /// <summary>1 when the gun has just been drawn, falling to 0 when it's ready.</summary>
     public float Equip;
 
@@ -542,6 +548,11 @@ public sealed class ViewModelAnimator
         }
         var gunRot = Quaternion.Concatenate(Quaternion.Concatenate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, pitch), Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw)),
             Quaternion.CreateFromAxisAngle(Vector3.UnitZ, roll));
+        if (i.PoseOverride is { } po && Matrix4x4.Decompose(po, out _, out var poRot, out _))
+        {
+            GunPose = po;
+            gunRot = poRot;
+        }
 
         // ---- Hand targets ----
         var right = OnGun(At.Grip, Vector3.Zero, Vector3.Zero, gunRot);

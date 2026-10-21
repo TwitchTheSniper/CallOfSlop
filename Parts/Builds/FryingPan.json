@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Frying Pan",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "Cast iron on a wooden handle. Bonk.",
+  "build": "Wooden Handle{head:Frying Pan,mod_1:Counterweight}"
+}

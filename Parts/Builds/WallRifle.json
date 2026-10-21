@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Wall Rifle",
+  "tier": "common",
+  "source": [
+    "wall",
+    "start"
+  ],
+  "flavor": "The plain rifle off the wall: one receiver, one barrel, a box mag. Where every run starts.",
+  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ}}"
+}

@@ -7,7 +7,7 @@
   "weight": 2.0,
   "hand": [0.17, 0, 0.03],
   "gripAngle": 0,
-  "frame": {"fireStyles": ["rotate"], "hands": "wheel", "carry": 10, "mobility": 0.95, "ironHeight": 0.2, "support": [-0.17, 0, 0.03]},
+  "frame": {"fireStyle": "rotate", "hands": "wheel", "carry": 10, "mobility": 0.95, "ironHeight": 0.2, "support": [-0.17, 0, 0.03]},
   "sockets": [
     {"name": "receiver_1", "type": "receiver", "pos": [0.0, 0.1, -0.02]},
     {"name": "receiver_2", "type": "receiver", "pos": [-0.0707, 0.0619, -0.02]},
@@ -16,7 +16,8 @@
     {"name": "receiver_5", "type": "receiver", "pos": [-0.0, -0.16, -0.02]},
     {"name": "receiver_6", "type": "receiver", "pos": [0.0707, -0.1219, -0.02]},
     {"name": "receiver_7", "type": "receiver", "pos": [0.1, -0.03, -0.02]},
-    {"name": "receiver_8", "type": "receiver", "pos": [0.0707, 0.0619, -0.02]}
+    {"name": "receiver_8", "type": "receiver", "pos": [0.0707, 0.0619, -0.02]},
+    {"name": "hopper", "type": "hopper", "pos": [0, -0.12, 0.03]}
   ],
   "model": [
     {"size": [0.02, 0.075, 0.022], "pos": [0.17, 0.0, 0.03], "color": "black", "rot": [0, 0, 0.0]},

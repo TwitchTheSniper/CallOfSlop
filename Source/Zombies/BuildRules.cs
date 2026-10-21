@@ -13,8 +13,8 @@ public sealed class WeaponBuild
     public string Name = "Custom Build";
     public BuildNode? Root;
 
-    /// <summary>How the grip fires several receivers (one of the grip's allowed styles).</summary>
-    public FireStyle Style = FireStyle.Volley;
+    /// <summary>How the grip fires several receivers: fixed by the grip (a build has no choice of its own).</summary>
+    public FireStyle Style => Frame?.Style ?? FireStyle.Volley;
 
     public WeaponBuild()
     {
@@ -24,7 +24,6 @@ public sealed class WeaponBuild
     {
         Name = name;
         Root = new BuildNode(grip);
-        Style = grip.Frame?.FireStyles[0] ?? FireStyle.Volley;
     }
 
     public IEnumerable<BuildNode> Nodes => Root?.Walk() ?? [];
@@ -34,9 +33,46 @@ public sealed class WeaponBuild
     /// <summary>The receivers in the grip's receiver sockets, in socket order (the first is the lead receiver).</summary>
     public List<BuildNode> Receivers => Root == null ? [] : Root.Children().Where(c => c.Socket.Type == "receiver" && c.Node.Part.Category == PartCategory.Receiver).Select(c => c.Node).ToList();
 
-    /// <summary>The fire style actually used: the build's choice if the grip allows it, else the grip's default.</summary>
-    public FireStyle EffectiveStyle => Frame is { } f && !f.FireStyles.Contains(Style) ? f.FireStyles[0] : Style;
+    /// <summary>The fire style used: the grip's.</summary>
+    public FireStyle EffectiveStyle => Style;
 
+    /// <summary>A melee build (rooted on a hilt) rather than a gun.</summary>
+    public bool IsMelee => Root?.Part.Hilt != null;
+
+    /// <summary>The shared feed (hopper / manifold) on the grip's hopper socket, if one is fitted.</summary>
+    public BuildNode? Hopper => Root?.Children().Where(c => c.Socket.Type == "hopper" && c.Node.Part.Shared != null).Select(c => c.Node).FirstOrDefault();
+
+    /// <summary>Why <paramref name="hopper"/> can't feed <paramref name="receiver"/> (bore, action, its ammo's bore), or null if it can.</summary>
+    public static string? WhyNotShared(BuildNode hopper, BuildNode receiver)
+    {
+        var h = hopper.Part;
+        var r = receiver.Part.Receiver!;
+        if (!h.FitsBore(r.Bore))
+            return $"the {h.Name} feeds {string.Join("/", h.Bores)} rounds, the {receiver.Part.Name} fires {r.Bore}";
+        if (h.RequiresAction.Length > 0 && !h.RequiresAction.Contains(r.Action))
+            return $"the {h.Name} needs {string.Join("/", h.RequiresAction.Select(a => a.ToString().ToLowerInvariant()))} action, the {receiver.Part.Name} is {r.Action.ToString().ToLowerInvariant()}";
+        if (hopper.Child("ammo") is { } ammo && !ammo.Part.FitsBore(r.Bore))
+            return $"the {h.Name} is loaded with {ammo.Part.Name}, the {receiver.Part.Name} fires {r.Bore}";
+        return null;
+    }
+
+    /// <summary>
+    /// The receivers the shared feed feeds: those with no feed of their own that it can feed (bore and action), in receiver
+    /// socket order, up to its capacity. Empty when there's no shared feed.
+    /// </summary>
+    public List<BuildNode> HopperFed()
+    {
+        var list = new List<BuildNode>();
+        if (Hopper is not { } h)
+            return list;
+        foreach (var r in Receivers)
+            if (list.Count < h.Part.Shared!.Feeds && r.Child("feed") == null && WhyNotShared(h, r) == null)
+                list.Add(r);
+        return list;
+    }
+
+    /// <summary>The kg the grip handles: its carry weight plus every weight-relief part's bonus (the cap is twice this).</summary>
+    public float CarryWeight => (Frame?.Carry ?? 0) + Nodes.Sum(n => n.Part.CarryBonus);
     /// <summary>The node at a path from <see cref="BuildNode.Path"/> ("" = the root), or null.</summary>
     public BuildNode? At(string path)
     {
@@ -64,7 +100,7 @@ public sealed class WeaponBuild
 
     public int ScrapValue => Nodes.Sum(n => n.Part.Scrap);
 
-    public WeaponBuild Clone() => new() { Name = Name, Style = Style, Root = Root?.Clone() };
+    public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone() };
 
     // ---- Text form (saves) ---------------------------------------------------------------
 
@@ -105,8 +141,7 @@ public sealed class WeaponBuild
         if (fields.Length != 3)
             throw new FormatException("a build is \"Name|style|Grip{...}\"");
         var b = new WeaponBuild { Name = CleanName(fields[0]) };
-        if (Enum.TryParse<FireStyle>(fields[1], true, out var style) && Enum.IsDefined(style))
-            b.Style = style;
+        // fields[1] is the fire style: older saves chose one per build; the grip fixes it now, so it's ignored on load.
         var tree = fields[2];
         var pos = 0;
         if (tree.Length == 0)
@@ -117,7 +152,7 @@ public sealed class WeaponBuild
         if (root is { Part.IsRoot: true })
             b.Root = root;
         else if (root != null)
-            dropped?.Add($"{root.Part.Name} (a build starts from a grip)");
+            dropped?.Add($"{root.Part.Name} (a build starts from a grip or a hilt)");
         return b;
     }
 
@@ -210,6 +245,9 @@ public static class BuildRules
     /// <summary>Categories that must match their receiver's bore.</summary>
     public static bool BoreBound(PartCategory c) => c is PartCategory.Barrel or PartCategory.Splitter or PartCategory.Feed or PartCategory.Ammo or PartCategory.Muzzle;
 
+    /// <summary>Heaviest melee weapon (a melee build has no grip carry weight).</summary>
+    public const float MaxMeleeWeight = 14f;
+
     private static string Article(string word) => "aeiou".Contains(char.ToLowerInvariant(word[0])) ? "an" : "a";
 
     private static string ActionName(ActionKind a) => a.ToString().ToLowerInvariant();
@@ -229,6 +267,9 @@ public static class BuildRules
     {
         PartCategory.Ammo => "ammo",
         PartCategory.Utility => "utility parts",
+        PartCategory.Multiplier => "damage multipliers",
+        PartCategory.Upgrade => "receiver upgrades",
+        PartCategory.MeleeMod => "melee mods",
         _ => c.ToString().ToLowerInvariant() + "s",
     };
 
@@ -236,7 +277,9 @@ public static class BuildRules
     private static string? SocketProblem(BuildNode parent, PartSocket socket, PartDef part)
     {
         if (part.IsRoot)
-            return $"{part.Name} is a grip you build on: start a new build with it instead.";
+            return part.Hilt != null
+                ? $"{part.Name} is a hilt you build a melee weapon on: start a melee build with it instead."
+                : $"{part.Name} is a grip you build on: start a new build with it instead.";
         if (socket.Type != part.Mount)
             return $"{part.Name} mounts on {Article(part.Mount)} {part.Mount} socket, not {Article(socket.Type)} {socket.Type} socket.";
         if (socket.Accepts.Length > 0 && !socket.Accepts.Contains(part.Category))
@@ -249,9 +292,24 @@ public static class BuildRules
                 return $"{part.Name} needs {ListOr(part.RequiresAction.Select(ActionName))} action; the {rp.Name} is {ActionName(r.Action)}.";
         }
         else if (BoreBound(part.Category))
-            return $"{part.Name} has to hang off a receiver.";
+        {
+            // Shared feeds sit on the grip; their ammo hangs off them (bores checked against the feed's).
+            var hopper = part.Mount == "hopper" ? null : HopperAbove(parent);
+            if (part.Mount != "hopper" && hopper == null)
+                return $"{part.Name} has to hang off a receiver.";
+            if (hopper != null && part.Bores.Length > 0 && hopper.Part.Bores.Length > 0 && !part.Bores.Intersect(hopper.Part.Bores).Any())
+                return $"{part.Name} is made for {ListOr(part.Bores)} rounds; the {hopper.Part.Name} feeds {ListOr(hopper.Part.Bores)} rounds.";
+        }
         if (part.Category == PartCategory.Splitter && parent.SplitterDepth() + (parent.Part.Category == PartCategory.Splitter ? 1 : 0) >= MaxSplitterDepth)
             return $"Splitters only stack {MaxSplitterDepth} deep: the shot gets too thin.";
+        return null;
+    }
+
+    private static BuildNode? HopperAbove(BuildNode n)
+    {
+        for (var x = n; x != null; x = x.Parent)
+            if (x.Part.Shared != null)
+                return x;
         return null;
     }
 
@@ -324,8 +382,10 @@ public static class BuildRules
         var shots = ProjectilesPerPull(b);
         if (shots > MaxProjectiles)
             return $"Too many projectiles per trigger pull: {shots}; the most is {MaxProjectiles}.";
-        if (b.Frame is { } f && b.Weight > f.Carry * 2)
-            return $"Too heavy: {b.Weight:0.0} kg; the {b.Root!.Part.Name} can't carry more than {f.Carry * 2:0.#} kg.";
+        if (b.Frame != null && b.Weight > b.CarryWeight * 2)
+            return $"Too heavy: {b.Weight:0.0} kg; the {b.Root!.Part.Name} can't carry more than {b.CarryWeight * 2:0.#} kg.";
+        if (b.IsMelee && b.Weight > MaxMeleeWeight)
+            return $"Too heavy: {b.Weight:0.0} kg; a melee weapon can't be more than {MaxMeleeWeight:0} kg.";
         return null;
     }
 
@@ -349,16 +409,33 @@ public static class BuildRules
                     list.Add(new(false, why));
         if (LimitProblem(b) is { } limit)
             list.Add(new(false, limit));
-        if (b.Frame is { } frame && !frame.FireStyles.Contains(b.Style))
-            list.Add(new(false, $"The {b.Root.Part.Name} can't fire {b.Style.ToString().ToLowerInvariant()}; it does {ListOr(frame.FireStyles.Select(x => x.ToString().ToLowerInvariant()))}."));
+        if (b.IsMelee)
+        {
+            foreach (var n in b.Nodes)
+                foreach (var s in n.Part.Sockets)
+                    if (n.Child(s.Name) == null && s.Required)
+                        list.Add(new(true, $"{n.Part.Name} needs {Article(s.Type)} {s.Type}."));
+            return list;
+        }
         if (b.Receivers.Count == 0)
             list.Add(new(true, $"The {b.Root.Part.Name} needs at least one receiver (it holds up to {b.Root.Part.ReceiverCapacity})."));
+        var fed = b.HopperFed();
+        var hopper = b.Hopper;
         foreach (var n in b.Nodes)
             foreach (var s in n.Part.Sockets)
-                if (n.Child(s.Name) == null && (s.Required || (n.Part.Category == PartCategory.Splitter && s.Type == "barrel")))
-                    list.Add(new(true, n.Part.Category == PartCategory.Splitter
-                        ? $"{n.Part.Name}: output {s.Name} needs a barrel."
-                        : $"{n.Part.Name} needs {(s.Type == "ammo" ? "ammo" : Article(s.Type) + " " + s.Type)}."));
+            {
+                if (n.Child(s.Name) != null || !(s.Required || (n.Part.Category == PartCategory.Splitter && s.Type == "barrel")))
+                    continue;
+                // A receiver the shared feed feeds needs no feed of its own (nor ammo, when the shared feed is loaded).
+                if (fed.Contains(n) && (s.Type == "feed" || (s.Type == "ammo" && hopper!.Child("ammo") != null)))
+                    continue;
+                var extra = s.Type == "feed" && hopper != null && n.Part.Receiver != null && !fed.Contains(n)
+                    ? $" (the {hopper.Part.Name} can't feed it: {WeaponBuild.WhyNotShared(hopper, n) ?? $"it feeds {hopper.Part.Shared!.Feeds} receivers at most"})"
+                    : s.Type == "ammo" && fed.Contains(n) ? $" (or load the {hopper!.Part.Name})" : "";
+                list.Add(new(true, n.Part.Category == PartCategory.Splitter
+                    ? $"{n.Part.Name}: output {s.Name} needs a barrel."
+                    : $"{n.Part.Name} needs {(s.Type == "ammo" ? "ammo" : Article(s.Type) + " " + s.Type)}{extra}."));
+            }
         foreach (var r in b.Receivers)
         {
             var info = r.Part.Receiver!;

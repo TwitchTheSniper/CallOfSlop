@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Twin Sear",
+  "category": "upgrade",
+  "rarity": "epic",
+  "flavor": "Two sears, one trigger: the action double-taps before it knows it.",
+  "weight": 0.4,
+  "model": [
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "gunmetal"},
+    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "rpm", "mul": 1.4},
+    {"stat": "hipSpreadDeg", "mul": 1.1}
+  ]
+}

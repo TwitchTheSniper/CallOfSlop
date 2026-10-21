@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rail Accelerator",
+  "category": "multiplier",
+  "rarity": "epic",
+  "flavor": "Magnetic rails along the chamber give every round a running start.",
+  "weight": 0.9,
+  "model": [
+    {"size": [0.03, 0.04, 0.07], "pos": [-0.015, 0, 0], "color": "copper"},
+    {"size": [0.032, 0.012, 0.05], "pos": [-0.015, 0.02, 0], "color": "accent"},
+    {"size": [0.008, 0.008, 0.008], "pos": [-0.031, 0.008, -0.02], "color": [1.0, 0.4, 0.1], "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "damage", "mul": 1.5},
+    {"stat": "reload", "mul": 1.1}
+  ]
+}

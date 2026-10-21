@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Lightweight Bolt",
+  "category": "upgrade",
+  "rarity": "common",
+  "flavor": "A skeletonised bolt carrier. Cycles a hair faster.",
+  "weight": 0.1,
+  "model": [
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "steel"},
+    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "rpm", "mul": 1.08}
+  ]
+}

@@ -238,7 +238,10 @@ public sealed class AssembledWeapon
     /// <summary>Something to draw: <see cref="Def"/>, or a stand-in carrying the partial model.</summary>
     public WeaponDef? PreviewDef;
 
-    public bool Ok => Def != null;
+    /// <summary>A complete melee build's numbers (melee builds have no <see cref="Def"/>).</summary>
+    public MeleeDef? Melee;
+
+    public bool Ok => Def != null || Melee != null;
 }
 
 /// <summary>Puts builds together: rules, stats, model, muzzle positions (docs/zombies/WEAPON-BUILDER.md).</summary>
@@ -261,6 +264,8 @@ public static class WeaponBuilder
             for (var i = 0; i < pts.Length && i < model.Muzzles.Length; i++)
                 pts[i] = pts[i] with { Muzzle = model.Muzzles[i] };
         a.PreviewDef = shown;
+        if (b.IsMelee && problems.Count == 0)
+            a.Melee = MeleeStats.Compute(b, shown);
         return a;
     }
 
@@ -269,7 +274,8 @@ public static class WeaponBuilder
     {
         var w = new WeaponDef
         {
-            Name = WeaponBuild.CleanName(b.Name), Class = b.Receivers.FirstOrDefault()?.Part.Receiver?.Class ?? WeaponClass.AssaultRifle,
+            Name = WeaponBuild.CleanName(b.Name),
+            Class = b.IsMelee ? WeaponClass.Pistol : b.Receivers.FirstOrDefault()?.Part.Receiver?.Class ?? WeaponClass.AssaultRifle, // melee: the one-handed swing
             Damage = 1, RangeM = 1, Rpm = 60, Mag = 1, Reload = 1, HipSpreadDeg = 1, Accent = accent, Order = 10000,
         };
         if (b.Nodes.FirstOrDefault(n => n.Part.Category == PartCategory.Optic) is { } o && b.Frame?.Ads != false)

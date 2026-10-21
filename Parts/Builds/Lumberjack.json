@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Lumberjack",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Six auto shotguns on a chainsaw grip.",
+  "build": "Chainsaw Grip{receiver_1:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_2:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_3:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_4:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_5:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_6:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot}}"
+}

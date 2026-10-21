@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Shock Coil",
+  "category": "meleemod",
+  "rarity": "rare",
+  "flavor": "A taser coil on the head. Hits stun for longer.",
+  "weight": 0.4,
+  "flags": ["shock"],
+  "melee": {"stun": 0.6},
+  "model": [
+    {"shape": "rod", "size": [0.03, 0.03, 0.05], "pos": [0, 0.03, -0.03], "color": "copper"},
+    {"size": [0.01, 0.01, 0.01], "pos": [0, 0.05, -0.055], "color": [0.4, 0.8, 1.0], "tag": "glow"}
+  ]
+}

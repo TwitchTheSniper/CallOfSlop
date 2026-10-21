@@ -7,7 +7,7 @@
   "weight": 0.4,
   "hand": [0, -0.055, 0.05935602608679917],
   "gripAngle": 12,
-  "frame": {"fireStyles": ["volley"], "hands": "one", "carry": 4, "ironHeight": 0.105},
+  "frame": {"fireStyle": "volley", "hands": "one", "carry": 4, "ironHeight": 0.105},
   "sockets": [
     {"name": "receiver_1", "type": "receiver", "pos": [0, 0.012, 0]},
     {"name": "receiver_2", "type": "receiver", "pos": [-0.068, 0.012, 0]},

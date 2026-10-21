@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Gantry Sixteen",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Sixteen rifle receivers on a shoulder gantry, nine of them fed by a bottomless bucket. All at once.",
+  "build": "Gantry Rig{receiver_1:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_2:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_3:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_4:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_5:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_6:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_7:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_8:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_9:Workhorse Receiver{barrel:Stub Barrel,upgrade_rear:Lightweight Bolt},receiver_10:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_11:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_12:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_13:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_14:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_15:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_16:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},hopper:Bottomless Bucket{ammo:5.56 FMJ},stock:Shoulder Harness}"
+}

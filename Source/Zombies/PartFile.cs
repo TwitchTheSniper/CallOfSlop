@@ -13,7 +13,8 @@ public static class PartFile
     public const string Format = "call-of-slop-part/1";
 
     /// <summary>Socket types (what a part's "mount" and a socket's "type" may be).</summary>
-    public static readonly string[] SocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility"];
+    public static readonly string[] SocketTypes =
+        ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility", "upgrade", "amp", "hopper", "head", "mod"];
 
     /// <summary>Calibre classes ("bore").</summary>
     public static readonly string[] BoreNames = ["pistol", "rifle", "heavy", "shell", "launcher", "energy"];
@@ -24,7 +25,7 @@ public static class PartFile
     private static readonly string[] Keys =
     [
         "format", "name", "category", "rarity", "flavor", "author", "mount", "bores", "requiresAction", "weight", "scrap", "flags", "hand",
-        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "split", "frame", "sockets", "model", "stats",
+        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
     /// <summary>The mount a category gets when the file doesn't say.</summary>
@@ -38,6 +39,11 @@ public static class PartFile
         PartCategory.Grip => "",
         PartCategory.Optic => "optic",
         PartCategory.Muzzle => "muzzle",
+        PartCategory.Upgrade => "upgrade",
+        PartCategory.Multiplier => "amp",
+        PartCategory.Hilt => "",
+        PartCategory.Head => "head",
+        PartCategory.MeleeMod => "mod",
         _ => "utility",
     };
 
@@ -103,6 +109,14 @@ public static class PartFile
             part.Frame = ReadFrame(fr, $"{where}: \"frame\"");
         if (Get("split") is { } sp)
             part.Split = ReadSplit(sp, $"{where}: \"split\"");
+        if (Get("carry") is { } cb)
+            part.CarryBonus = Range(WeaponFile.Number(cb, $"{where}: \"carry\""), 0, 40, $"{where}: \"carry\" (kg of weight relief)");
+        if (Get("shared") is { } sh)
+            part.Shared = ReadShared(sh, $"{where}: \"shared\"");
+        if (Get("hilt") is { } hi)
+            part.Hilt = ReadHilt(hi, $"{where}: \"hilt\"");
+        if (Get("melee") is { } me)
+            part.Melee = ReadMelee(me, $"{where}: \"melee\"");
         if (Get("sockets") is { } so)
             part.Sockets = so.ValueKind == JsonValueKind.Array
                 ? so.EnumerateArray().Select((x, i) => ReadSocket(x, $"{where}: socket #{i + 1}")).ToArray()
@@ -146,6 +160,27 @@ public static class PartFile
         }
         else if (p.Receiver != null)
             throw new WeaponFileException($"{where}: only receivers have a \"receiver\" block");
+        if (p.Category == PartCategory.Hilt)
+        {
+            if (p.Mount != "" || p.Hilt == null)
+                throw new WeaponFileException($"{where}: a hilt is the root of a melee weapon: no \"mount\", and a \"hilt\" block (damage, swing, reach...)");
+            if (p.Hand == null)
+                throw new WeaponFileException($"{where}: a hilt needs a \"hand\" point (where the hand holds it)");
+            if (!p.Sockets.Any(s => s.Type == "head"))
+                throw new WeaponFileException($"{where}: a hilt needs a \"head\" socket (where the blade or head goes)");
+        }
+        else if (p.Hilt != null)
+            throw new WeaponFileException($"{where}: only hilts have a \"hilt\" block");
+        if (p.Category is PartCategory.Head or PartCategory.MeleeMod && p.Melee == null)
+            throw new WeaponFileException($"{where}: a melee {(p.Category == PartCategory.Head ? "head" : "mod")} needs a \"melee\" block (damage, swing, reach, cleave, stun)");
+        if (p.Melee != null && p.Category is not (PartCategory.Head or PartCategory.MeleeMod))
+            throw new WeaponFileException($"{where}: only melee heads and mods have a \"melee\" block");
+        if (p.IsMeleePart && (p.Effects.Length > 0 || p.Bores.Length > 0))
+            throw new WeaponFileException($"{where}: melee parts change the melee numbers with \"melee\"/\"hilt\", not gun \"stats\" or \"bores\"");
+        if (p.Shared != null && (p.Category != PartCategory.Feed || p.Mount != "hopper"))
+            throw new WeaponFileException($"{where}: a \"shared\" block is for shared feeds (category feed, \"mount\": \"hopper\")");
+        if (p.Category == PartCategory.Feed && p.Mount == "hopper" && p.Shared == null)
+            throw new WeaponFileException($"{where}: a feed on a hopper socket is a shared feed: give it a \"shared\" block (feeds)");
         if (p.Category == PartCategory.Grip)
         {
             if (p.Mount is not ("" or "foregrip"))
@@ -163,7 +198,7 @@ public static class PartFile
         {
             if (p.Frame != null)
                 throw new WeaponFileException($"{where}: only root grips have a \"frame\" block");
-            if (!SocketTypes.Contains(p.Mount))
+            if (p.Category != PartCategory.Hilt && !SocketTypes.Contains(p.Mount))
                 throw new WeaponFileException($"{where}: \"mount\" \"{p.Mount}\" isn't a socket type ({string.Join(", ", SocketTypes)})");
         }
         if (p.ReceiverCapacity > 0 && p.Frame == null)
@@ -283,17 +318,26 @@ public static class PartFile
     private static FrameInfo ReadFrame(JsonElement e, string where)
     {
         var f = new FrameInfo();
-        foreach (var (k, v) in Props(e, where, "fireStyles", "hands", "carry", "mobility", "ads", "ironHeight", "support", "reloadPerReceiver"))
+        var styled = false;
+        foreach (var (k, v) in Props(e, where, "fireStyle", "fireStyles", "hands", "carry", "mobility", "ads", "ironHeight", "support", "reloadPerReceiver"))
         {
             var at = $"{where}.{k}";
             switch (k)
             {
+                case "fireStyle":
+                    if (styled)
+                        throw new WeaponFileException($"{where}: give \"fireStyle\" once (the grip fixes the style)");
+                    f.Style = WeaponFile.EnumValue<FireStyle>(v, at);
+                    styled = true;
+                    break;
                 case "fireStyles":
-                    f.FireStyles = v.ValueKind == JsonValueKind.Array
-                        ? v.EnumerateArray().Select(x => WeaponFile.EnumValue<FireStyle>(x, at)).Distinct().ToArray()
-                        : throw new WeaponFileException($"{at}: expected a list like [\"volley\", \"rotate\"]");
-                    if (f.FireStyles.Length == 0)
-                        throw new WeaponFileException($"{at}: give at least one fire style");
+                    // Older files listed styles the player could pick between; the grip now fixes one: the first.
+                    if (styled)
+                        throw new WeaponFileException($"{where}: give \"fireStyle\" once (the grip fixes the style)");
+                    if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() == 0)
+                        throw new WeaponFileException($"{at}: give \"fireStyle\": \"volley\" or \"rotate\" (the grip fixes the style)");
+                    f.Style = WeaponFile.EnumValue<FireStyle>(v[0], at);
+                    styled = true;
                     break;
                 case "hands":
                     f.Hands = WeaponFile.Text(v, at).ToLowerInvariant();
@@ -314,14 +358,67 @@ public static class PartFile
     private static SplitInfo ReadSplit(JsonElement e, string where)
     {
         var s = new SplitInfo();
-        foreach (var (k, v) in Props(e, where, "outputMult", "splay"))
+        foreach (var (k, v) in Props(e, where, "outputMult", "splay", "spreadMult"))
         {
             if (k == "outputMult")
-                s.OutputMult = Range(WeaponFile.Number(v, $"{where}.outputMult"), 0.05f, 2, $"{where}.outputMult");
-            else
+                throw new WeaponFileException($"{where}: \"outputMult\" is gone: every splitter conserves damage (each output gets 1/N of the shot). Rarer splitters pay off in \"spreadMult\" (accuracy) and more outputs");
+            if (k == "splay")
                 s.SplayDeg = Range(WeaponFile.Number(v, $"{where}.splay"), 0, 30, $"{where}.splay");
+            else
+                s.SpreadMult = Range(WeaponFile.Number(v, $"{where}.spreadMult"), 0.2f, 2, $"{where}.spreadMult");
         }
         return s;
+    }
+
+    private static SharedFeedInfo ReadShared(JsonElement e, string where)
+    {
+        var s = new SharedFeedInfo();
+        foreach (var (k, v) in Props(e, where, "feeds"))
+            if (k == "feeds")
+                s.Feeds = (int)Range(WeaponFile.Int(v, $"{where}.feeds"), 2, 16, $"{where}.feeds");
+        return s;
+    }
+
+    private static HiltInfo ReadHilt(JsonElement e, string where)
+    {
+        var h = new HiltInfo();
+        foreach (var (k, v) in Props(e, where, "damage", "swing", "reach", "cleave", "stun", "hands"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "damage": h.Damage = Range(WeaponFile.Number(v, at), 1, 300, at); break;
+                case "swing": h.Swing = Range(WeaponFile.Number(v, at), 0.2f, 3, at); break;
+                case "reach": h.Reach = Range(WeaponFile.Number(v, at), 1, 4, at); break;
+                case "cleave": h.Cleave = (int)Range(WeaponFile.Int(v, at), 1, 8, at); break;
+                case "stun": h.Stun = Range(WeaponFile.Number(v, at), 0, 3, at); break;
+                case "hands":
+                    h.Hands = WeaponFile.Text(v, at).ToLowerInvariant();
+                    if (h.Hands is not ("one" or "two"))
+                        throw new WeaponFileException($"{at}: \"{h.Hands}\" isn't one or two");
+                    break;
+            }
+        }
+        return h;
+    }
+
+    private static MeleeEffects ReadMelee(JsonElement e, string where)
+    {
+        var m = new MeleeEffects();
+        foreach (var (k, v) in Props(e, where, "damage", "damageMult", "swingMult", "reach", "cleave", "stun"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "damage": m.Damage = Range(WeaponFile.Number(v, at), -100, 300, at); break;
+                case "damageMult": m.DamageMult = Range(WeaponFile.Number(v, at), 0.1f, 5, at); break;
+                case "swingMult": m.SwingMult = Range(WeaponFile.Number(v, at), 0.2f, 3, at); break;
+                case "reach": m.Reach = Range(WeaponFile.Number(v, at), -1, 2, at); break;
+                case "cleave": m.Cleave = (int)Range(WeaponFile.Int(v, at), -4, 8, at); break;
+                case "stun": m.Stun = Range(WeaponFile.Number(v, at), 0, 3, at); break;
+            }
+        }
+        return m;
     }
 
     private static PartSocket ReadSocket(JsonElement e, string where)
@@ -481,6 +578,13 @@ public static class Parts
         }
     }
 
+    /// <summary>Files under Parts that aren't part files: Builds/ (standard complete builds) and Tables/ (drop tables).</summary>
+    public static bool IsDataFile(string relative)
+    {
+        var first = relative.Replace('\\', '/').Split('/')[0];
+        return first.Equals("Builds", StringComparison.OrdinalIgnoreCase) || first.Equals("Tables", StringComparison.OrdinalIgnoreCase);
+    }
+
     public static PartDef? Find(string name) => All.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public static IEnumerable<PartDef> InCategory(PartCategory c) => All.Where(p => p.Category == c);
@@ -497,6 +601,8 @@ public static class Parts
         foreach (var file in Directory.GetFiles(folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
         {
             var rel = Path.GetRelativePath(folder, file);
+            if (IsDataFile(rel))
+                continue; // standard builds and drop tables live in Parts/Builds and Parts/Tables (StandardBuilds.cs, RunTables.cs)
             try
             {
                 var p = PartFile.Load(File.ReadAllText(file), rel);

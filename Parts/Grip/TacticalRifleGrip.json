@@ -7,7 +7,7 @@
   "weight": 1.0,
   "hand": [0, -0.055, 0.05935602608679917],
   "gripAngle": 12,
-  "frame": {"fireStyles": ["volley", "rotate"], "hands": "two", "carry": 12, "ironHeight": 0.257, "support": [0, -0.01, -0.2]},
+  "frame": {"fireStyle": "rotate", "hands": "two", "carry": 12, "ironHeight": 0.257, "support": [0, -0.01, -0.2]},
   "sockets": [
     {"name": "receiver_1", "type": "receiver", "pos": [0, 0.012, 0]},
     {"name": "receiver_2", "type": "receiver", "pos": [-0.068, 0.012, 0]},
@@ -21,7 +21,8 @@
     {"name": "optic", "type": "optic", "pos": [0, 0.245, -0.02]},
     {"name": "stock", "type": "stock", "pos": [0, 0.06, 0.12]},
     {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.2]},
-    {"name": "utility", "type": "utility", "pos": [0.11, 0.03, -0.12]}
+    {"name": "utility", "type": "utility", "pos": [0.11, 0.03, -0.12]},
+    {"name": "hopper", "type": "hopper", "pos": [0, -0.09, -0.05]}
   ],
   "model": [
     {"size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0594], "color": "tan", "rot": [-12, 0, 0]},

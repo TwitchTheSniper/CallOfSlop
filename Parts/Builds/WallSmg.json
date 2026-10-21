@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Wall SMG",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "A full-auto pistol receiver with a stub barrel. Sprays and prays.",
+  "build": "Pistol Grip{receiver_1:Stampede Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+}

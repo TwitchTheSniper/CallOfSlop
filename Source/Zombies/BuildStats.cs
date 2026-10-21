@@ -12,7 +12,7 @@ namespace CallOfSlop;
 public readonly record struct BarrelPoint(Vector3 Muzzle, float YawDeg, float PitchDeg, int Group, int Pellets, float DamageMult, float SpreadMult, bool Rotary);
 
 /// <summary>One barrel muzzle of a receiver as the stat pipeline sees it.</summary>
-public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float SplitMult, float SplayDeg);
+public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float SplitMult, float SplayDeg, float SpreadMult = 1f);
 
 /// <summary>
 /// Turns a build (a tree of parts) into a <see cref="WeaponDef"/> the existing firing code uses. Deterministic: the same
@@ -33,7 +33,8 @@ public static class BuildStats
 {
     private static readonly FieldInfo[] Numeric = AttachmentFile.EffectFields.Where(f => f.FieldType == typeof(float) || f.FieldType == typeof(int)).ToArray();
 
-    private static readonly PartCategory[] ReceiverStages = [PartCategory.Receiver, PartCategory.Ammo, PartCategory.Feed, PartCategory.Splitter];
+    private static readonly PartCategory[] ReceiverStages =
+        [PartCategory.Receiver, PartCategory.Ammo, PartCategory.Feed, PartCategory.Multiplier, PartCategory.Upgrade, PartCategory.Splitter];
 
     private static readonly string[] Averaged =
     [
@@ -57,16 +58,16 @@ public static class BuildStats
     public static List<BarrelLeaf> Leaves(BuildNode receiver)
     {
         var list = new List<BarrelLeaf>();
-        Collect(receiver, 1f, 0f, list);
+        Collect(receiver, 1f, 0f, 1f, list);
         return list;
     }
 
-    private static void Collect(BuildNode n, float mult, float splay, List<BarrelLeaf> into)
+    private static void Collect(BuildNode n, float mult, float splay, float spread, List<BarrelLeaf> into)
     {
         if (n.Part.Category == PartCategory.Barrel)
         {
             for (var i = 0; i < n.Part.Muzzles.Length; i++)
-                into.Add(new BarrelLeaf(n, i, mult, splay));
+                into.Add(new BarrelLeaf(n, i, mult, splay, spread));
             return;
         }
         var split = n.Part.Split;
@@ -75,10 +76,11 @@ public static class BuildStats
         {
             if (n.Child(outs[i].Name) is not { } child)
                 continue;
-            var m = split != null ? mult * split.OutputMult : mult;
+            // Splitters conserve damage: each output gets 1/N of the shot (nested splitters divide again).
+            var m = split != null ? mult * SplitInfo.OutputMult(n.Part) : mult;
             // Outputs fan out evenly from -splay to +splay across the splitter's barrel sockets.
             var sp = split != null && outs.Count > 1 ? splay + split.SplayDeg * (2f * i / (outs.Count - 1) - 1f) : splay;
-            Collect(child, m, sp, into);
+            Collect(child, m, sp, split != null ? spread * split.SpreadMult : spread, into);
         }
     }
 
@@ -133,18 +135,35 @@ public static class BuildStats
     {
         public required BuildNode Node;
         public required WeaponDef Def;
+
+        /// <summary>Fed by the build's shared feed (its magazine is the pool, shared with the other receivers it feeds).</summary>
+        public bool SharedFed;
         public readonly List<(BarrelLeaf Leaf, float Damage, int Pellets, float HipSpread)> Barrels = new();
     }
 
     /// <summary>Runs the per-receiver part of the pipeline (stages, then barrel paths).</summary>
-    public static ReceiverResult ReceiverStats(string name, BuildNode receiver)
+    public static ReceiverResult ReceiverStats(string name, BuildNode receiver) => ReceiverStats(name, receiver, null);
+
+    /// <summary>
+    /// <inheritdoc cref="ReceiverStats(string, BuildNode)"/> A receiver fed by a shared feed (<paramref name="hopper"/>)
+    /// takes the shared feed's effects as its feed stage, and the shared feed's ammo when it has none of its own.
+    /// </summary>
+    public static ReceiverResult ReceiverStats(string name, BuildNode receiver, BuildNode? hopper)
     {
         var r = receiver.Part.Receiver!;
         var w = BaseDef(name, r);
         var nodes = receiver.Walk().ToList();
+        if (hopper != null)
+        {
+            nodes.Add(hopper);
+            if (receiver.Child("ammo") == null && hopper.Child("ammo") is { } sharedAmmo)
+                nodes.Add(sharedAmmo);
+        }
         foreach (var cat in ReceiverStages)
             foreach (var n in nodes.Where(n => n.Part.Category == cat))
                 Apply(n.Part, w);
+        // Receiver upgrades change the fire rate as a ratio, so rotary receivers (rate per barrel) scale the same way.
+        var rateMult = w.Rpm / (float)Math.Max(1, r.Rpm);
         var res = new ReceiverResult { Node = receiver, Def = w };
         var copies = new List<WeaponDef>();
         foreach (var leaf in Leaves(receiver))
@@ -155,7 +174,7 @@ public static class BuildStats
                 if (s.Type == "muzzle")
                     Apply(dev.Part, c);
             copies.Add(c);
-            res.Barrels.Add((leaf, c.Damage * leaf.SplitMult, Math.Clamp(c.Pellets, 1, 30), c.HipSpreadDeg));
+            res.Barrels.Add((leaf, c.Damage * leaf.SplitMult, Math.Clamp(c.Pellets, 1, 30), c.HipSpreadDeg * leaf.SpreadMult));
         }
         if (copies.Count > 0)
         {
@@ -170,7 +189,8 @@ public static class BuildStats
             w.Damage = Math.Max(1, (int)MathF.Round(res.Barrels.Average(x => x.Damage)));
         }
         if (r.RpmPerBarrel > 0)
-            w.Rpm = r.RpmPerBarrel * Math.Max(1, copies.Count);
+            w.Rpm = Math.Min(3000, (int)MathF.Round(r.RpmPerBarrel * Math.Max(1, copies.Count) * rateMult));
+        res.SharedFed = hopper != null;
         return res;
     }
 
@@ -181,7 +201,7 @@ public static class BuildStats
     public static WeaponDef? Compute(WeaponBuild b, out List<BuildProblem> problems)
     {
         problems = BuildRules.Check(b);
-        return problems.Count > 0 ? null : ComputeUnchecked(b);
+        return problems.Count > 0 || b.IsMelee ? null : ComputeUnchecked(b); // melee builds: MeleeStats
     }
 
     /// <summary>The stats of a complete build (no rule checks). Muzzle positions are zero until the model is built.</summary>
@@ -191,7 +211,9 @@ public static class BuildStats
         var frame = grip.Part.Frame!;
         var style = b.EffectiveStyle;
         var name = WeaponBuild.CleanName(b.Name);
-        var per = b.Receivers.Select(r => ReceiverStats(name, r)).ToList();
+        var fed = b.HopperFed();
+        var hopper = b.Hopper;
+        var per = b.Receivers.Select(r => ReceiverStats(name, r, fed.Contains(r) ? hopper : null)).ToList();
         var lead = per[0];
         var w = lead.Def.Clone();
         var count = per.Count;
@@ -203,7 +225,20 @@ public static class BuildStats
         if (defs.FirstOrDefault(d => d.Mode == FireMode.Burst) is { } burst)
             (w.BurstCount, w.BurstDelay) = (burst.BurstCount, burst.BurstDelay);
         w.Rpm = rotate ? Math.Min(3000, defs.Sum(d => d.Rpm)) : defs.Min(d => d.Rpm);
-        w.Mag = rotate ? Math.Min(1000, defs.Sum(d => d.Mag)) : defs.Min(d => d.Mag);
+        // Magazines: per-receiver feeds as before (volley: the smallest, they run dry together; rotate: they add up). A
+        // shared feed is one pool: in a volley each pull takes a round per receiver it feeds, so it lasts pool / k pulls;
+        // rotating, each shot takes one round, and the pool counts once.
+        var own = per.Where(p => !p.SharedFed).Select(p => p.Def.Mag).ToList();
+        var pooled = per.Where(p => p.SharedFed).ToList();
+        var pool = pooled.Count > 0 ? pooled[0].Def.Mag : 0;
+        if (rotate)
+            w.Mag = Math.Min(1000, own.Sum() + pool);
+        else
+        {
+            if (pooled.Count > 0)
+                own.Add(Math.Max(1, pool / pooled.Count));
+            w.Mag = own.Min();
+        }
         w.Reload = defs.Max(d => d.Reload) + frame.ReloadPerReceiver * (count - 1);
         w.RecoilDeg = rotate ? defs.Average(d => d.RecoilDeg) : MathF.Sqrt(defs.Sum(d => d.RecoilDeg * d.RecoilDeg));
         foreach (var f in Averaged)
@@ -243,7 +278,7 @@ public static class BuildStats
 
         // ---- Weight and the frame ----
         var weight = b.Weight;
-        var over = MathF.Max(0, weight - frame.Carry);
+        var over = MathF.Max(0, weight - b.CarryWeight); // weight relief parts raise what the grip carries
         w.Mobility = w.Mobility * frame.Mobility - 0.012f * weight - 0.03f * over;
         w.AdsTime += 0.008f * weight + 0.02f * over;
         w.EquipTime += 0.03f * weight + 0.05f * over;

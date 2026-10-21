@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Bat Barrel",
+  "category": "head",
+  "rarity": "common",
+  "flavor": "The fat end of a baseball bat. Classic.",
+  "weight": 0.5,
+  "melee": {"damage": 15, "stun": 0.3},
+  "model": [
+    {"shape": "rod", "size": [0.06, 0.06, 0.45], "pos": [0, 0, -0.22], "color": "lightwood"},
+    {"shape": "rod", "size": [0.065, 0.065, 0.02], "pos": [0, 0, -0.44], "color": "wood"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Belt-Fed Chaingun",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Heavy rounds off a belt, with a short spin-up.",
+  "build": "Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG},foregrip:Chaingun Handle,stock:Fixed Stock}"
+}

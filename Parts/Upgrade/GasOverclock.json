@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Gas Overclock",
+  "category": "upgrade",
+  "rarity": "rare",
+  "flavor": "Opens the gas port as far as it goes. The receiver gets very warm.",
+  "weight": 0.3,
+  "model": [
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "copper"},
+    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "rpm", "mul": 1.25}
+  ]
+}

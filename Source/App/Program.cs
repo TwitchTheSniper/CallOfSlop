@@ -1198,7 +1198,7 @@ public static unsafe partial class Program
     private static void OnScroll(GlfwWindow window, double2 offset)
     {
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
-            _game.SwitchTo(1 - _game.ActiveSlot, Glfw.Time);
+            _game.SwitchTo(_game.NextSlot, Glfw.Time); // 2 slots, or up to 4 with the Zombies slot upgrade
     }
 
     private static void OnMouseButton(GlfwWindow window, GlfwMouseButton button, GlfwButtonAction action, GlfwModifier mods)
@@ -1448,7 +1448,13 @@ public static unsafe partial class Program
             if (Pressed(GameAction.SecondaryWeapon))
                 _game.SwitchTo(1, now);
             if (Pressed(GameAction.SwapWeapon))
-                _game.SwitchTo(1 - _game.ActiveSlot, now);
+                _game.SwitchTo(_game.NextSlot, now);
+            if (Pressed(GameAction.Weapon3))
+                _game.SwitchTo(2, now); // Zombies slot upgrade (refused while you have 2 slots)
+            if (Pressed(GameAction.Weapon4))
+                _game.SwitchTo(3, now);
+            if (Pressed(GameAction.Interact))
+                _game.Interact(now); // push cart and slot station (GameZombies.cs); nothing in normal matches
             if (Pressed(GameAction.Grenade))
                 _game.TryThrow(equipment: false, now);
             if (Pressed(GameAction.Equipment))
@@ -1659,6 +1665,8 @@ public static unsafe partial class Program
         }
 
         StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
+        DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
+        _worldView = view;
 
         // ---- Tracers --------------------------------------------------------
         Gfx.SetBlend(true);
@@ -1883,8 +1891,11 @@ public static unsafe partial class Program
         var def = _game.Active.Def;
         // Arms and gun animation (Source/Render/ViewModelAnimator.cs): hip/ADS, sway, bob, sprint, jump, equip, melee, reloads, mantle, kick.
         var me = _game.Local!;
+        if (_game.MeleeProgress(now) >= 0 && me.MeleeBuild is { } mb)
+            def = mb.View; // a built melee weapon is swung in place of the gun (Zombies melee slot)
         _vmAnim.Update(new ViewModelInput
         {
+            PoseOverride = PushedCartPose(def), // a pushed cart sits on the ground in the world; the hands reach its bar (Program.Workbench.cs)
             Def = def, Now = now, Dt = (float)FrameDt, Aim = _game.AimT, Reload = _game.ReloadProgress(now), Melee = _game.MeleeProgress(now),
             Equip = now < _game.EquipUntil ? Math.Clamp((float)((_game.EquipUntil - now) / def.EquipTime), 0f, 1f) : 0f,
             Kick = _game.WeaponKick, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded, MantleTicks = me.Sim.MantleTicks, MantleTo = me.Sim.MantleTo,

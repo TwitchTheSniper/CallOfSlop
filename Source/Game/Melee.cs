@@ -33,7 +33,7 @@ public sealed partial class Game
     /// <summary>0..1 through the local swing animation, or -1 when not swinging.</summary>
     public float MeleeProgress(double now)
     {
-        var t = (now - MeleeStarted) / 0.35;
+        var t = (now - MeleeStarted) / (Local?.MeleeBuild?.SwingAnim ?? 0.35); // a built melee weapon swings at its own speed (GameZombies.cs)
         return t is >= 0 and < 1 ? (float)t : -1f;
     }
 
@@ -42,7 +42,7 @@ public sealed partial class Game
     {
         if (Local is not { Alive: true } me || Phase != MatchPhase.Playing || now < _nextMelee || me.Sim.MantleTicks > 0)
             return;
-        _nextMelee = now + MeleeCooldown;
+        _nextMelee = now + (me.MeleeBuild?.Swing ?? MeleeCooldown);
         MeleeStarted = now;
         Active.ReloadUntil = 0; // a swing cancels a reload
         _burstLeft = 0;
@@ -64,6 +64,11 @@ public sealed partial class Game
     {
         if (!attacker.Alive || now < attacker.NextMelee || Phase != MatchPhase.Playing)
             return;
+        if (attacker.MeleeBuild is { } built)
+        {
+            ServerBuiltMelee(attacker, built, yaw, pitch, viewTick, now); // Zombies melee slot (GameZombies.cs); standard melee below is unchanged
+            return;
+        }
         attacker.NextMelee = now + MeleeCooldown * 0.85; // a little slack for packet timing
         attacker.LastCombatTime = now;
 

@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Long Haft",
+  "category": "hilt",
+  "rarity": "uncommon",
+  "flavor": "A metre of ash for axes and hammers. Two hands, wide swings, room for two at once.",
+  "weight": 1.0,
+  "hand": [0, 0, 0.0],
+  "gripAngle": 20,
+  "hilt": {"damage": 40, "swing": 0.95, "reach": 2.5, "cleave": 2, "hands": "two"},
+  "sockets": [
+    {"name": "head", "type": "head", "pos": [0, 0, -0.57], "required": true},
+    {"name": "mod_1", "type": "mod", "pos": [0, 0, 0.02]},
+    {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.5399999999999999]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.035, 0.035, 0.7], "pos": [0, 0, -0.22], "color": "wood"},
+    {"size": [0.045, 0.045, 0.03], "pos": [0, 0, 0.12], "color": "darkwood"}
+  ]
+}

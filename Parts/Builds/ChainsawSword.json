@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Chainsaw Sword",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "A motor hilt driving a chainsaw bar. Every swing is a sweep.",
+  "build": "Motor Hilt{head:Chainsaw Blade,mod_1:Grip Tape}"
+}

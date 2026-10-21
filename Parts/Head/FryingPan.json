@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Frying Pan",
+  "category": "head",
+  "rarity": "rare",
+  "flavor": "Cast iron. The sound it makes is half the damage.",
+  "weight": 2.0,
+  "flags": ["bonk"],
+  "melee": {"damage": 25, "stun": 1.2, "swingMult": 1.05},
+  "model": [
+    {"shape": "rod", "size": [0.22, 0.22, 0.03], "pos": [0, 0, -0.12], "rot": [90, 0, 0], "color": "black"},
+    {"shape": "rod", "size": [0.2, 0.2, 0.032], "pos": [0, 0.005, -0.12], "rot": [90, 0, 0], "color": "gunmetal"}
+  ]
+}

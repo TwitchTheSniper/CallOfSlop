@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Shoulder Harness",
+  "category": "stock",
+  "rarity": "rare",
+  "flavor": "A padded yoke that spreads the gun across both shoulders: the grip carries 5 kg more.",
+  "weight": 0.8,
+  "carry": 5,
+  "model": [
+    {"size": [0.12, 0.04, 0.16], "pos": [0, -0.01, 0.1], "color": "olive"},
+    {"size": [0.14, 0.06, 0.03], "pos": [0, -0.01, 0.19], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.9},
+    {"stat": "mobility", "add": -0.02}
+  ]
+}

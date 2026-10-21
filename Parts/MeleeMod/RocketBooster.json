@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rocket Booster",
+  "category": "meleemod",
+  "rarity": "legendary",
+  "flavor": "A model rocket motor taped on. Every swing is a launch.",
+  "weight": 0.5,
+  "flags": ["rocket"],
+  "melee": {"damage": 15, "swingMult": 0.65},
+  "model": [
+    {"shape": "rod", "size": [0.025, 0.025, 0.09], "pos": [0.03, 0, -0.02], "color": "white"},
+    {"size": [0.02, 0.02, 0.02], "pos": [0.03, 0, 0.035], "color": "orange", "tag": "glow"}
+  ]
+}
