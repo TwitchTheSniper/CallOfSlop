@@ -13,8 +13,11 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
+    private static readonly List<string> SoundNotes = new();
+
     private static void CheckSound()
     {
+        SoundNotes.Clear();
         CheckSoundSynthesis();
         CheckSoundSurfaces();
         CheckFootstepCadence();
@@ -22,6 +25,15 @@ public static partial class SelfTest
         CheckSoundSpaces();
         CheckSoundSettings();
         CheckSoundDevice();
+        // The summary as a GitHub Actions notice (the workflow prints selftest.log; see SelfTestSlopes.cs).
+        Line("::notice title=Sound::" + string.Join("%0A", SoundNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+    }
+
+    /// <summary>A log line that also goes into the section's CI notice.</summary>
+    private static void SoundLine(string s)
+    {
+        Line(s);
+        SoundNotes.Add(s);
     }
 
     // ---- Synthesis ----------------------------------------------------------------------------------
@@ -33,7 +45,7 @@ public static partial class SelfTest
         var sw = Stopwatch.StartNew();
         var set = Audio.SynthesiseAll();
         var ms = sw.Elapsed.TotalMilliseconds;
-        Line($"[audio] synthesised {set.Count} buffers ({set.Bytes / 1024} KB) in {ms:0} ms on {Environment.ProcessorCount} threads; "
+        SoundLine($"[audio] synthesised {set.Count} buffers ({set.Bytes / 1024} KB) in {ms:0} ms on {Environment.ProcessorCount} threads; "
             + $"{(int)Sfx.COUNT} effects, {set.Steps.Length} footsteps, {set.Far.Count(f => f != null)} distant gunshot layers");
         if (ms > 20000)
             Fail($"synthesis took {ms:0} ms (budget 20 s)");
@@ -90,8 +102,8 @@ public static partial class SelfTest
         var body = Features(set.Effects[(int)Sfx.HitBody][0]);
         var head3D = Features(set.Effects[(int)Sfx.Headshot3D][0]);
         var flesh3D = Features(set.Effects[(int)Sfx.FleshHit3D][0]);
-        Line($"headshot: tail {head.Tail:0.000}, brightness {head.Bright:0.000}, length {head.Length * 1000:0} ms; body hit: tail {body.Tail:0.000}, brightness {body.Bright:0.000}, length {body.Length * 1000:0} ms");
-        Line($"headshot 3D: tail {head3D.Tail:0.000}, length {head3D.Length * 1000:0} ms; flesh 3D: tail {flesh3D.Tail:0.000}, length {flesh3D.Length * 1000:0} ms");
+        SoundLine($"headshot: tail {head.Tail:0.000}, brightness {head.Bright:0.000}, length {head.Length * 1000:0} ms; body hit: tail {body.Tail:0.000}, brightness {body.Bright:0.000}, length {body.Length * 1000:0} ms");
+        SoundLine($"headshot 3D: tail {head3D.Tail:0.000}, length {head3D.Length * 1000:0} ms; flesh 3D: tail {flesh3D.Tail:0.000}, length {flesh3D.Length * 1000:0} ms");
         if (head.Tail < body.Tail * 1.5f + 0.02f || head.Length < body.Length * 1.3f)
             Fail("the headshot crunch doesn't have a clearly longer gritty tail than a body hit");
         if (MathF.Abs(head.Bright - body.Bright) < 0.1f * MathF.Max(head.Bright, body.Bright))
@@ -200,7 +212,7 @@ public static partial class SelfTest
             void Expect(string what, Vector3 foot, FootSurface want)
             {
                 var got = SurfaceProbe.Under(foot);
-                Line($"surface: {what} at {foot.X:0.0},{foot.Y:0.0},{foot.Z:0.0} -> {got}");
+                SoundLine($"surface: {what} at {foot.X:0.0},{foot.Y:0.0},{foot.Z:0.0} -> {got}");
                 if (got != want)
                     Fail($"footstep surface on {what}: {got} (want {want})");
             }
@@ -273,7 +285,7 @@ public static partial class SelfTest
                 if (SurfaceProbe.Under(foot) == want)
                     right++;
             }
-        Line($"surface: {mapName} {(steep ? "steep" : "flat")} {mat}: {right}/{tried} probes and {direct}/{tried} samples read as {want}");
+        SoundSoundLine($"surface: {mapName} {(steep ? "steep" : "flat")} {mat}: {right}/{tried} probes and {direct}/{tried} samples read as {want}");
         if (tried < 5)
             Fail($"{mapName}: only {tried} {mat} samples to probe");
         else if (direct < tried || right < tried * 0.8f)
@@ -318,7 +330,7 @@ public static partial class SelfTest
                 var ev = RunSteps(new Vector3(speed, 0, 0), stance, secs);
                 var want = 2 * cadence * secs;
                 var rate = ev.Count / secs;
-                Line($"footsteps {name} at {speed:0.0} m/s: {ev.Count} in {secs:0} s ({rate:0.0}/s, gait wants {2 * cadence:0.0}/s), kinds {string.Join(",", ev.Select(e => e.Kind).Distinct())}, surface {ev.FirstOrDefault().Surface}");
+                SoundLine($"footsteps {name} at {speed:0.0} m/s: {ev.Count} in {secs:0} s ({rate:0.0}/s, gait wants {2 * cadence:0.0}/s), kinds {string.Join(",", ev.Select(e => e.Kind).Distinct())}, surface {ev.FirstOrDefault().Surface}");
                 if (MathF.Abs(ev.Count - want) > 2.5f)
                     Fail($"{name}: {ev.Count} steps in {secs} s, the gait wants {want:0.0}");
                 if (ev.Any(e => e.Kind != kind))
@@ -372,7 +384,7 @@ public static partial class SelfTest
                 Frame(Vector3.Zero, true);
             var jumps = evs.Count(e => e.Kind == StepKind.Jump);
             var lands = evs.Where(e => e.Kind == StepKind.Land).ToList();
-            Line($"jump: {jumps} push-off, {lands.Count} landing (strength {lands.FirstOrDefault().Strength:0.00})");
+            SoundLine($"jump: {jumps} push-off, {lands.Count} landing (strength {lands.FirstOrDefault().Strength:0.00})");
             if (jumps != 1 || lands.Count != 1)
                 Fail($"a jump made {jumps} push-offs and {lands.Count} landings (want 1 and 1)");
             evs.Clear();
@@ -440,7 +452,7 @@ public static partial class SelfTest
                 now += 1.0 / 60;
             }
             var us = sw.Elapsed.TotalMilliseconds * 1000 / (60 * 5);
-            Line($"[audio] 32 sprinting players for 5 s: {steps} steps, {played} voiced, {pool.Dropped} dropped by the cap, at most {maxBusy}/{Audio.StepVoices} voices busy; "
+            SoundLine($"[audio] 32 sprinting players for 5 s: {steps} steps, {played} voiced, {pool.Dropped} dropped by the cap, at most {maxBusy}/{Audio.StepVoices} voices busy; "
                 + $"{nearDropped} steps within 3.5 m dropped; footstep logic {us:0.0} us per frame (with surface rays)");
             if (maxBusy > Audio.StepVoices)
                 Fail($"{maxBusy} footstep voices busy at once (cap {Audio.StepVoices})");
@@ -470,7 +482,7 @@ public static partial class SelfTest
                 Fail($"{m.Name}: a terrain map has a {s} reverb (want Open)");
         }
         foreach (var (s, names) in counts.OrderBy(k => k.Key))
-            Line($"reverb {s}: {names.Count} maps ({string.Join(", ", names.Take(8))}{(names.Count > 8 ? ", ..." : "")})");
+            SoundLine($"reverb {s}: {names.Count} maps ({string.Join(", ", names.Take(8))}{(names.Count > 8 ? ", ..." : "")})");
         if (!counts.ContainsKey(AudioSpace.Urban) && !counts.ContainsKey(AudioSpace.Indoor))
             Fail("every map got the same reverb");
     }
@@ -519,10 +531,10 @@ public static partial class SelfTest
             audio.Init(music: false);
             if (!audio.Enabled)
             {
-                Line("no audio device: OpenAL start-up and the EFX canary skipped");
+                SoundLine("no audio device: OpenAL start-up and the EFX canary skipped");
                 return;
             }
-            Line($"[audio] device up: {audio.BufferCount} buffers in {audio.SynthMs:0} ms; EFX {audio.EfxStatus}");
+            SoundLine($"[audio] device up: {audio.BufferCount} buffers in {audio.SynthMs:0} ms; EFX {audio.EfxStatus}");
             audio.SetListener(Vector3.Zero, -Vector3.UnitZ);
             audio.SetEnvironment(Maps.All[0]);
             audio.Effect(Sfx.Headshot, 0.01f);

@@ -60,7 +60,7 @@ public sealed partial class Audio
                 throw new InvalidOperationException($"low-pass GainHf read back {back}");
             _reverb = efx.CreateReverb();
             var props = ReverbPreset.Generic;
-            _reverb.Set(ref props);
+            _reverb.Set(in props);
             _slot = efx.CreateAuxiliaryEffectSlot();
             _slot.Load(_reverb);
             _slot.Gain = 0.3f;
@@ -156,7 +156,7 @@ public sealed partial class Audio
                 AudioSpace.Indoor => (ReverbPreset.Stoneroom, 0.4f),
                 _ => (ReverbPreset.CityStreets, 0.35f),
             };
-            _reverb.Set(ref props);
+            _reverb.Set(in props);
             _slot.Load(_reverb); // a slot keeps a copy: reload after changing the effect
             _slot.Gain = gain;
         }
