@@ -503,6 +503,14 @@ public sealed class ViewModelAnimator
         yaw += -0.25f * mw;
 
         GunPose = Matrix4x4.CreateRotationX(pitch) * Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateRotationZ(roll) * Matrix4x4.CreateTranslation(x, y, z);
+        var steady = Sights.Steadiness(d, a);
+        if (steady < 1 && Sights.Lens(d) is { } lens)
+        {
+            // A high-power lens sits a couple of centimetres from the eye: only part of the sway, bob and kick moves it
+            // (the rotations stay, so the reticle still climbs with the recoil). See Sights.Steadiness.
+            var rest = lens.Center + new Vector3(float.Lerp(0.24f, 0f, a), float.Lerp(-0.22f, -GunModel.SightHeight(d), a), float.Lerp(-0.42f, GunModel.AdsZ(d), a));
+            GunPose.Translation -= (Vector3.Transform(lens.Center, GunPose) - rest) * (1 - steady);
+        }
         var gunRot = Quaternion.Concatenate(Quaternion.Concatenate(Quaternion.CreateFromAxisAngle(Vector3.UnitX, pitch), Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw)),
             Quaternion.CreateFromAxisAngle(Vector3.UnitZ, roll));
 

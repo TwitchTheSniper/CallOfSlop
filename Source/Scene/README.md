@@ -15,7 +15,7 @@ own state and the scene graph only holds how it's drawn.
 | `SceneBuilder.cs` | Builds a tree from glTF-shaped records (name, parent index anywhere in the list, TRS or matrix, renderable, sockets). |
 | `SceneMeshes.cs` | Mesh handles (`MeshAsset.Id`) and `BuildModel`: a loaded glTF `ModelAsset` (its `ModelNode` list) as a node tree. |
 | `ScenePresentation.cs` | The game's scene: the viewmodel, a rig per player and streak entity id, the map's movers. Program calls its Draw* methods where it used to draw immediately. `CALLOFSLOP_SCENEGRAPH=0` switches back to the old code. |
-| `Rigs/` | `GunRig` (gun -> body / magazine / optic / muzzle_device / underbarrel groups, sockets grip, support, mag_well, action, optic_mount, underbarrel_mount, stock, muzzle -> flash), `ArmNodes` (shoulder -> upper -> forearm -> hand, hand shapes, hand_r / hand_l sockets, carried magazine), `ViewModelRig`, `PlayerRig`, `MoverRig` (+ riders node), `VehicleRig` (seats as sockets, its own gravity frame), `TurretRig`, `DroneRig`. |
+| `Rigs/` | `GunRig` (gun -> body / magazine / optic / muzzle_device / underbarrel groups, sockets grip, support, mag_well, action, optic_mount, underbarrel_mount, stock, muzzle -> flash), `ArmNodes` (shoulder -> upper -> forearm -> hand, hand shapes, hand_r / hand_l sockets, carried magazine), `ViewModelRig`, `PlayerRig` (upper_body -> stances, pelvis -> thigh -> shin -> foot per side posed by `LegAnimator`, upper_gear -> gun and arms), `MoverRig` (+ riders node), `VehicleRig` (seats as sockets, its own gravity frame), `TurretRig`, `DroneRig`. |
 
 ## Conventions
 

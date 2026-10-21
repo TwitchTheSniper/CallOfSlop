@@ -233,7 +233,7 @@ public sealed partial class Game
                 p.Pitch = e.Pitch;
                 if (e.Alive && !wasAlive)
                     p.Snaps.Clear();
-                p.Snaps.Add(new Snap { Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance });
+                p.Snaps.Add(new Snap { Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0 });
                 if (p.Snaps.Count > 64)
                     p.Snaps.RemoveAt(0);
             }

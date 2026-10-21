@@ -97,6 +97,18 @@ public static class ScenePresentation
         Draw(g, rig.Root, t0);
     }
 
+    /// <summary>Show your own legs in first person (looking down). Off with CALLOFSLOP_FPLEGS=0.</summary>
+    public static bool FirstPersonLegs = Environment.GetEnvironmentVariable("CALLOFSLOP_FPLEGS") != "0";
+
+    /// <summary>The local player's own legs in first person (only the legs; see <see cref="PlayerRig.Pose"/>).</summary>
+    public static void DrawLocalLegs(Renderer g, Player p, double time)
+    {
+        var t0 = Stopwatch.GetTimestamp();
+        var rig = Players[p.Id] ??= NewPlayer(p.Id);
+        rig.Pose(p, time, legsOnly: true);
+        Draw(g, rig.Root, t0);
+    }
+
     private static PlayerRig NewPlayer(byte id)
     {
         var r = new PlayerRig(id);

@@ -14,5 +14,6 @@
     { "stat": "adsSpreadMult", "mul": 0.48 },
     { "stat": "adsTime", "add": 0.1 },
     { "stat": "mobility", "add": -0.03 }
-  ]
+  ],
+  "sight": { "reticle": "Duplex", "reticleColor": [1, 0.15, 0.1], "screen": 1.3, "housing": 1.2, "vignette": 0.35, "tint": [0.65, 0.82, 1], "tintAlpha": 0.05 }
 }

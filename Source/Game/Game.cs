@@ -274,7 +274,12 @@ public sealed partial class Game : IDisposable
             }
 
             if (p.Id == LocalId || IsServer)
+            {
                 p.RenderStance = p.Sim.Stance;
+                p.RenderVelocity = p.Sim.Velocity;
+                p.RenderGrounded = p.Sim.Grounded;
+                p.RenderMantling = p.Sim.MantleTicks > 0;
+            }
             // Ease the eye height so stance changes glide instead of snapping the camera.
             p.RenderEyeHeight += (World.EyeOf(p.RenderStance) - p.RenderEyeHeight) * (1f - MathF.Exp(-14f * dt));
         }
@@ -754,6 +759,7 @@ public sealed partial class Game : IDisposable
             p.RenderPosition = p.Position;
             p.RenderYaw = p.Yaw;
             p.RenderPitch = p.Pitch;
+            SetMotion(p, p.Sim.Velocity, p.Sim.Grounded, p.Sim.MantleTicks > 0);
             return;
         }
 
@@ -766,6 +772,7 @@ public sealed partial class Game : IDisposable
         {
             Set(p, first.Position, first.Yaw, first.Pitch);
             p.RenderStance = first.Stance;
+            SetMotion(p, first.Velocity, first.Grounded, first.Mantling);
         }
         else if (renderTick >= last.Tick)
         {
@@ -773,6 +780,7 @@ public sealed partial class Game : IDisposable
             var pos = World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead);
             Set(p, pos, last.Yaw, last.Pitch);
             p.RenderStance = last.Stance;
+            SetMotion(p, last.Velocity, last.Grounded, last.Mantling);
         }
         else
         {
@@ -784,8 +792,16 @@ public sealed partial class Game : IDisposable
                 var t = (float)((renderTick - a.Tick) / Math.Max(1, b.Tick - a.Tick));
                 Set(p, Vector3.Lerp(a.Position, b.Position, t), World.LerpAngle(a.Yaw, b.Yaw, t), float.Lerp(a.Pitch, b.Pitch, t));
                 p.RenderStance = t < 0.5f ? a.Stance : b.Stance;
+                SetMotion(p, Vector3.Lerp(a.Velocity, b.Velocity, t), t < 0.5f ? a.Grounded : b.Grounded, t < 0.5f ? a.Mantling : b.Mantling);
                 break;
             }
+        }
+
+        static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)
+        {
+            p.RenderVelocity = vel;
+            p.RenderGrounded = grounded;
+            p.RenderMantling = mantling;
         }
 
         static void Set(Player p, Vector3 pos, float yaw, float pitch)

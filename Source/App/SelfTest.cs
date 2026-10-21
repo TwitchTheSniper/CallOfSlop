@@ -14,8 +14,10 @@ namespace CallOfSlop;
 ///   3. Mantling: through a Courtyard window and onto a crate.
 ///   4. Weapon files: the Weapons and Attachments folders load, round-trip, keep the old ids, and old saves migrate.
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
-///      Optics: every optic loads and fits sensibly, the full scope view is 4x+ only, sights stay aligned,
-///      the cut-away leaves a clear view, and no gun part clashes with a fitted optic.
+///      Optics: every optic loads and fits sensibly, full scopes (4x+) only on long guns, sights stay aligned,
+///      nothing blocks the sight line, and no gun part clashes with a fitted optic.
+///      Sight pictures (SelfTestSights.cs): how much of the screen each lens fills, a clear view through it,
+///      continuity from hip to full aim, the steadied lens, and the "sight" blocks of optic files.
 ///   5. Packet sizes: a full 32-player snapshot fits in one packet (more in SelfTestLobbies.cs).
 ///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
 ///      attachments work, and the visual shake never moves the aim.
@@ -59,6 +61,7 @@ public static partial class SelfTest
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
+            Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
@@ -86,6 +89,7 @@ public static partial class SelfTest
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
+            Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
             Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
@@ -1118,11 +1122,8 @@ public static partial class SelfTest
                     Fail($"{w.Name} + {o.Name}: sight height {sh}, ADS z {z}");
                 if (GunModel.FullScope(d) != d.AdsZoom >= 4f)
                     Fail($"{w.Name} + {o.Name}: full scope view at {d.AdsZoom}x");
-                var look = GunModel.Look(d);
-                if (d.Optic != OpticKind.Iron && look.Reticle == GunModel.Reticle.None)
-                    Fail($"{o.Name}: no reticle");
-                if (d.AdsZoom >= 1.8f && d.Optic != OpticKind.Iron && look.LensRadius is < 0.3f or > 0.5f)
-                    Fail($"{o.Name}: magnified optic with lens radius {look.LensRadius} of the screen height");
+                if (d.Optic != OpticKind.Iron && (Sights.Spec(d).Reticle == GunModel.Reticle.None || Sights.Lens(d) == null))
+                    Fail($"{o.Name}: no reticle or no lens");
                 // The cut-away is drawing only: it must never move the sight line.
                 GunModel.AdsCutaway = 1f;
                 var moved = GunModel.SightHeight(d) != sh || GunModel.AdsZ(d) != z;
@@ -1144,8 +1145,8 @@ public static partial class SelfTest
             if (GunModel.FullScope(t) != scoped)
                 Fail($"full scope view at {zoom}x should be {scoped}");
         }
-        if (ScopeOverlay.SurroundAlpha(Attachments.Apply(Weapons.DefaultPrimary, 0), 1f) != 0f)
-            Fail("iron sights draw a scope surround");
+        if (Sights.HasLens(Weapons.DefaultPrimary) || Sights.Lens(Weapons.DefaultPrimary) != null)
+            Fail("plain iron sights have a lens");
 
         // Fits: every class gets a sensible optic, nothing big on small guns.
         foreach (var cls in Enum.GetValues<WeaponClass>())
@@ -1167,8 +1168,9 @@ public static partial class SelfTest
                 Line($"{cls}: optics {string.Join(", ", Attachments.For(guns[0]).Where(a => a.Slot == AttachSlot.Optic).Select(a => a.Name))}");
         }
 
-        // Model checks, from the gun's box list: the cut-away leaves a clear view down the sight line, it only
-        // touches the optic, and no gun part clashes with a fitted optic (alone, or with one other attachment).
+        // Model checks, from the gun's box list: nothing blocks the sight line between the eye and the lens (behind the lens
+        // plane the lens pass shows the view instead; reflex sights also cut their dot away), the cut-away only touches the
+        // optic, and no gun part clashes with a fitted optic (alone, or with one other attachment).
         var built = 0;
         foreach (var w in Weapons.All)
         {
@@ -1179,10 +1181,11 @@ public static partial class SelfTest
                 var d = Attachments.Apply(w, kit);
                 var sight = GunModel.SightHeight(d);
                 var eyeZ = -GunModel.AdsZ(d); // the eye in model space at full ADS (pose = translation (0, -sight, AdsZ))
-                var open = GunModel.RecordParts(d, 1f);
+                var lensZ = Sights.Lens(d)?.Center.Z ?? float.MinValue; // the lens plane: behind it the lens pass shows the view
+                var aimed = GunModel.RecordParts(d, Sights.Cutaway(d, 1f));
                 foreach (var (dx, dy) in new[] { (0f, 0f), (0.004f, 0f), (-0.004f, 0f), (0f, 0.004f), (0f, -0.004f) })
                 {
-                    var hit = open.FirstOrDefault(p => !p.Clear && p.Min.X < dx && p.Max.X > dx && p.Min.Y < sight + dy && p.Max.Y > sight + dy && p.Min.Z < eyeZ);
+                    var hit = aimed.FirstOrDefault(p => !p.Clear && p.Min.X < dx && p.Max.X > dx && p.Min.Y < sight + dy && p.Max.Y > sight + dy && p.Min.Z < eyeZ && p.Max.Z > lensZ + 1e-4f);
                     if (hit != default)
                     {
                         Fail($"{w.Name} + {o.Name}: at full ADS a {(hit.Optic ? "optic" : "gun")} part blocks the sight line ({dx}, {dy}) at z {hit.Min.Z:0.000}..{hit.Max.Z:0.000}");
@@ -1190,6 +1193,7 @@ public static partial class SelfTest
                     }
                 }
                 var closed = GunModel.RecordParts(d, 0f);
+                var open = GunModel.RecordParts(d, 1f);
                 if (!closed.Where(p => !p.Optic).SequenceEqual(open.Where(p => !p.Optic)))
                     Fail($"{w.Name} + {o.Name}: the cut-away changes non-optic parts");
 

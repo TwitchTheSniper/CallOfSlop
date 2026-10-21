@@ -396,6 +396,7 @@ public static class AttachmentFile
         var fits = new AttachmentFits();
         var effects = new List<AttachmentEffect>();
         var given = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        JsonElement? sight = null;
         foreach (var p in root.EnumerateObject())
         {
             var where = $"{source} (\"{p.Name}\")";
@@ -404,6 +405,7 @@ public static class AttachmentFile
             switch (p.Name.ToLowerInvariant())
             {
                 case "format": WeaponFile.CheckFormat(p.Value, "call-of-slop-attachment/", Format, where); break;
+                case "sight": sight = p.Value.Clone(); break;
                 case "name": name = WeaponFile.Text(p.Value, where); break;
                 case "slot": slot = WeaponFile.EnumValue<AttachSlot>(p.Value, where); break;
                 case "order": a.Order = WeaponFile.Int(p.Value, where); break;
@@ -421,7 +423,7 @@ public static class AttachmentFile
                         effects.Add(ReadEffect(e, $"{source}, effect #{++i}"));
                     break;
                 default:
-                    throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, slot, order, unlockOrder, author, blurb, pros, cons, fits, effects");
+                    throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, slot, order, unlockOrder, author, blurb, pros, cons, fits, effects, sight");
             }
         }
         if (name == null || slot == null)
@@ -432,11 +434,23 @@ public static class AttachmentFile
         a.Rule = fits;
         a.Effects = effects.ToArray();
         a.Fits = fits.Test;
+        if (sight is { } sb)
+        {
+            // How the optic looks when aiming, on top of the defaults for the optic kind and zoom its effects set.
+            var kind = a.Effects.FirstOrDefault(e => e.Field.Name == nameof(WeaponDef.Optic) && e.Op == "set")?.Value as OpticKind?;
+            if (a.Slot != AttachSlot.Optic || kind is null or OpticKind.Iron)
+                throw new WeaponFileException($"{source} (\"sight\"): only an optic has a sight block, and it needs an effect that sets \"optic\" (RedDot, Acog, Scope8...)");
+            var zoom = a.Effects.FirstOrDefault(e => e.Field.Name == nameof(WeaponDef.AdsZoom) && e.Op == "set")?.Value is float z ? z : 1.5f;
+            a.Sight = Sights.Read(sb, kind.Value, zoom, $"{source} (\"sight\")");
+        }
         var list = a.Effects;
+        var spec = a.Sight;
         a.Apply = w =>
         {
             foreach (var e in list)
                 e.ApplyTo(w);
+            if (spec != null)
+                w.Sight = spec;
         };
         a.SourceFile = source;
         return a;
@@ -568,7 +582,10 @@ public static class AttachmentFile
                 parts.Add($"\"max\": {Num(mx)}");
             return "    { " + string.Join(", ", parts) + " }";
         }).ToArray();
-        sb.Append("  \"effects\": ").Append(effects.Length == 0 ? "[]" : "[\n" + string.Join(",\n", effects) + "\n  ]").Append("\n}\n");
+        sb.Append("  \"effects\": ").Append(effects.Length == 0 ? "[]" : "[\n" + string.Join(",\n", effects) + "\n  ]");
+        if (a.Sight != null)
+            sb.Append(",\n  \"sight\": ").Append(Sights.ToJson(a.Sight));
+        sb.Append("\n}\n");
         return sb.ToString();
     }
 }
