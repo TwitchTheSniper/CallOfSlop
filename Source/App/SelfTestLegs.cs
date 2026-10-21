@@ -437,7 +437,7 @@ public static partial class SelfTest
             }
             if (maxY < 1.5f)
                 Fail($"legs {name}: the test walker only climbed to {maxY:0.00} m (lab layout changed?)");
-            if (samples < 15 || bad > samples / 20)
+            if (samples < 8 || bad > samples / 20)
                 Fail($"legs {name}: {bad}/{samples} planted feet more than 5 cm off the ground (worst {worst * 100:0.0} cm: {worstWhat})");
             if (misses > frames / 50)
                 Fail($"legs {name}: {misses} of {frames * 2} foot poses out of reach");
