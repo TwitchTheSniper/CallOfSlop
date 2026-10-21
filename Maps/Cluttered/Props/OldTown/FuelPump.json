@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Old Town Fuel Pump",
+  "category": "Old Town",
+  "description": "A tall old petrol pump with a lit price panel and a hose on each side (front faces +Z). Unbreakable.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.9, 1.95, 0.55]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "parts": [
+    {"size": [0.96, 0.12, 0.6], "offset": [0.0, 0.06, 0.0], "color": "darkgrey", "material": "concrete"},
+    {"size": [0.86, 1.5, 0.5], "offset": [0.0, 0.87, 0.0], "color": "white", "material": "metal"},
+    {"size": [0.9, 0.06, 0.54], "offset": [0.0, 1.65, 0.0], "color": "red"},
+    {"size": [0.86, 0.3, 0.5], "offset": [0.0, 1.83, 0.0], "color": "red", "material": "metal"},
+    {"size": [0.6, 0.18, 0.02], "offset": [0.0, 1.84, 0.255], "color": "white"},
+    {"size": [0.6, 0.18, 0.02], "offset": [0.0, 1.84, -0.255], "color": "white"},
+    {"size": [0.5, 0.3, 0.02], "offset": [0.0, 1.32, 0.255], "color": "#20362a",
+     "anim": {"type": "pulse", "period": 3.0, "color": "#7cff9a", "off": "#1a3a24", "glow": 0.8}},
+    {"size": [0.5, 0.3, 0.02], "offset": [0.0, 1.32, -0.255], "color": "#20362a",
+     "anim": {"type": "pulse", "period": 3.0, "phase": 0.5, "color": "#7cff9a", "off": "#1a3a24", "glow": 0.8}},
+    {"size": [0.3, 0.08, 0.02], "offset": [0.0, 1.06, 0.255], "color": "black"},
+    {"size": [0.3, 0.08, 0.02], "offset": [0.0, 1.06, -0.255], "color": "black"},
+    {"size": [0.08, 0.22, 0.12], "offset": [0.47, 1.0, 0.0], "color": "black"},
+    {"size": [0.08, 0.22, 0.12], "offset": [-0.47, 1.0, 0.0], "color": "black"},
+    {"size": [0.04, 0.8, 0.04], "offset": [0.5, 0.55, 0.1], "color": "rubber"},
+    {"size": [0.04, 0.8, 0.04], "offset": [-0.5, 0.55, -0.1], "color": "rubber"},
+    {"size": [0.6, 0.2, 0.02], "offset": [0.0, 0.4, 0.255], "color": "yellow"},
+    {"size": [0.6, 0.2, 0.02], "offset": [0.0, 0.4, -0.255], "color": "yellow"}
+  ]
+}
