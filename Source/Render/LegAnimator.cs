@@ -426,7 +426,7 @@ public static class LegAnimator
                     rays++;
                     // from above the highest step a foot can stand on (stairs two steps up at a sprint) to below the lowest
                     var top = crouch ? 0.95f : 1.1f;
-                    if (World.Query.Raycast(new Vector3(w.X, pos.Y + top, w.Z), -Vector3.UnitY, top + 0.8f, filter, out var hit) && hit.Normal.Y > 0.5f)
+                    if (World.Query.Raycast(new Vector3(w.X, pos.Y + top, w.Z), -Vector3.UnitY, top + 1.2f, filter, out var hit) && hit.Normal.Y > 0.5f)
                     {
                         h = hit.Point.Y;
                         n = hit.Normal;
@@ -441,7 +441,7 @@ public static class LegAnimator
                 }
                 else
                 {
-                    var k = 1f - MathF.Exp(-25f * dt);
+                    var k = 1f - MathF.Exp((pose.Planted[i] ? -60f : -25f) * dt); // a planted foot settles fast (its ray doesn't move)
                     g = float.Lerp(g, h, k);
                     gn = Vector3.Lerp(gn, n, k);
                 }
