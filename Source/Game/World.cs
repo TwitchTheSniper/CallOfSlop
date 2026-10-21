@@ -253,7 +253,7 @@ public static class World
         var step = MathF.Min(0.5f, terrain.Data.Cell * 0.5f);
         var n = Math.Max(1, (int)MathF.Ceiling(len / step));
         var run = len / n;
-        var maxRise = run * SlopeRules.TanWalkLimit + 0.02f;
+        var maxRise = run * SlopeRules.NavTanLimit;
         var prev = new Vector3(from.X, terrain.HeightAt(from.X, from.Z), from.Z);
         var segStart = prev;
         var steep = 0;
@@ -265,7 +265,7 @@ public static class World
             var z = from.Z + flat.Y * t;
             var p = new Vector3(x, terrain.HeightAt(x, z), z);
             var rise = MathF.Abs(p.Y - prev.Y);
-            if (rise > maxRise || !SlopeRules.Walkable(terrain, x, z))
+            if (rise > maxRise || !SlopeRules.NavWalkable(terrain, x, z))
             {
                 if (rise > StepHeight || ++steep > gripSamples)
                     return false; // a cliff, a drop or a slope too steep to walk

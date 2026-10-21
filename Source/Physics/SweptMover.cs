@@ -44,6 +44,12 @@ public sealed class SweptMover : IMover
 
     public const float ProneRadius = 0.3f;
 
+    /// <summary>
+    /// On terrain, the feet may be at most this far above the ground under their middle to count as standing (the capsule's
+    /// round bottom keeps them up to about 0.17 m above a 45 degree slope).
+    /// </summary>
+    private const float EdgeGap = 0.25f;
+
     private const int SlideIterations = 4;
     private const float Skin = CapsuleContact.Skin;
 
@@ -250,7 +256,12 @@ public sealed class SweptMover : IMover
     private bool WalkableHit(Vector3 n, int index, Vector3 point, Vector3 dir, bool grip)
     {
         if (_terrain is { } t && index >= 0 && Shapes[index].Id.Kind == ShapeKind.Terrain)
+        {
+            // Resting on a bank's edge with the feet out over lower ground isn't standing on it.
+            if (point.Y - t.HeightAt(point.X, point.Z) > EdgeGap)
+                return false;
             return grip ? SlopeRules.CanStand(t, point.X, point.Z, dir.X, dir.Z) : SlopeRules.Walkable(t, point.X, point.Z);
+        }
         return Vector3.Dot(n, _up) >= World.MinWalkNormalY;
     }
 
@@ -418,7 +429,7 @@ public sealed class SweptMover : IMover
     {
         if (!Cast(feet, stance, -_up, dist, out var t, out var n, out _, out var hit))
             return false;
-        if (WalkableHit(n, hit, feet, moveDir, grip))
+        if (WalkableHit(n, hit, feet - _up * t, moveDir, grip))
         {
             feet -= _up * t;
             return true;
@@ -437,7 +448,7 @@ public sealed class SweptMover : IMover
             step = t2;
         var q = p + along * step;
         var left = dist - Vector3.Dot(feet - q, _up);
-        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3, out _, out var hit3) || !WalkableHit(n3, hit3, q, moveDir, grip))
+        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3, out _, out var hit3) || !WalkableHit(n3, hit3, q - _up * t3, moveDir, grip))
             return false;
         feet = q - _up * t3;
         return true;

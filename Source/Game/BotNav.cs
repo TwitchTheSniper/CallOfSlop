@@ -353,7 +353,7 @@ public sealed class NavGraph
                 continue;
             c.Y = y;
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
-            if (col.Terrain is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.Walkable(t, c.X, c.Z))
+            if (col.Terrain is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
             if (!col.Blocked(c + new Vector3(0, 0.01f, 0)))
                 return c;

@@ -157,7 +157,7 @@ public static partial class SelfTest
         // Up 20 degrees to a crest at z = 0, then down 30 degrees (heights from south to north).
         var up = MathF.Tan(20 * MathF.PI / 180f) * 34f;
         var downH = up - MathF.Tan(30 * MathF.PI / 180f) * 34f;
-        var rows = FormattableString.Invariant($"{{ \"type\": \"grid\", \"x0\": -34, \"z0\": -34, \"cell\": 34, \"cols\": 2, \"rows\": 3, \"heights\": [{downH}, {downH}, {up}, {up}, 0, 0], \"mode\": \"set\" }}");
+        var rows = FormattableString.Invariant($"{{ \"type\": \"grid\", \"x0\": -34, \"z0\": -34, \"cell\": 34, \"cols\": 3, \"rows\": 3, \"heights\": [{downH}, {downH}, {downH}, {up}, {up}, {up}, 0, 0, 0], \"mode\": \"set\" }}");
         var crest = SlopeMap("crest", 0, rows: rows);
         var plane = SlopeMap("slope 30", 30);
         foreach (var mover in SlopeMovers)
@@ -395,6 +395,7 @@ public static partial class SelfTest
         var idx = 0;
         var check = s.Position;
         var jump = false;
+        var stuckRun = 0;
         var ticks = 0;
         for (; ticks < maxTicks; ticks++)
         {
@@ -434,7 +435,22 @@ public static partial class SelfTest
                 {
                     r.Stalls++;
                     jump = true;
+                    // Stuck twice in a row: re-plan from here, like a bot (around whatever stopped it).
+                    var here = nav.Nearest(s.Position);
+                    if (++stuckRun >= 2 && here >= 0)
+                    {
+                        int bf = idx > 0 && idx < n ? path[idx - 1] : -1, bt = idx < n ? path[idx] : -1;
+                        var replanned = search.Find(nav, here, b, path, (f, t, _) => f == bf && t == bt ? float.PositiveInfinity : 0f, 100000);
+                        if (replanned > 0)
+                        {
+                            n = replanned;
+                            idx = 0;
+                        }
+                        stuckRun = 0;
+                    }
                 }
+                else
+                    stuckRun = 0;
                 check = s.Position;
             }
         }

@@ -59,6 +59,18 @@ public static class SlopeRules
     /// <summary>Steering response while sliding (per second; walking is 14, the air 3).</summary>
     public const float SlideControl = 6f;
 
+    /// <summary>
+    /// The bots plan with a little margin: ground they route over must be walkable to cos(43.5 degrees), a bit inside the
+    /// limit, so no route depends on a slope a player only just manages.
+    /// </summary>
+    public const float NavMinNormalY = 0.72537437f;
+
+    /// <summary>tan(43.5 degrees): the steepest rise per metre of run a bot route takes.</summary>
+    public const float NavTanLimit = 0.94896457f;
+
+    /// <summary>Is the terrain walkable at (x, z) with the bots' planning margin (<see cref="NavMinNormalY"/>)?</summary>
+    public static bool NavWalkable(ITerrainCollision t, float x, float z) => SupportNormal(t, x, z).Y >= NavMinNormalY;
+
     /// <summary>How close above the terrain the feet must be to count as on it (speed and slide rules).</summary>
     public const float OnGround = 0.05f;
 
@@ -173,9 +185,9 @@ public static class SlopeRules
     }
 
     /// <summary>
-    /// Could a player walk the terrain along the straight line a -> b (either way)? Samples every half metre (at most 128
-    /// samples): a sample is steep if the rise from the last one is steeper than the walk limit or the ground isn't walkable
-    /// (<see cref="SupportNormal"/>). A single steep sample is fine when its rise is within a step (the movers' grip and
+    /// Could a player walk the terrain along the straight line a -> b (either way)? For the bots, so with their margin
+    /// (<see cref="NavMinNormalY"/>). Samples every half metre (at most 128 samples): a sample is steep if the rise from the
+    /// last one is steeper than that or the ground isn't walkable (<see cref="SupportNormal"/>). A single steep sample is fine when its rise is within a step (the movers' grip and
     /// terrain steps); two in a row are not. With <paramref name="onlyNearLine"/>, stretches where the line runs more than
     /// 1.5 m above or below the ground (on a box floor) don't count.
     /// </summary>
@@ -186,7 +198,7 @@ public static class SlopeRules
         var len = MathF.Sqrt(dx * dx + dz * dz);
         var n = Math.Clamp((int)MathF.Ceiling(len / 0.5f), 1, 128);
         var run = len / n;
-        var maxRise = run * TanWalkLimit + 0.02f;
+        var maxRise = run * NavTanLimit;
         var prev = t.HeightAt(a.X, a.Z);
         var bad = 0;
         for (var k = 1; k <= n; k++)
@@ -201,7 +213,7 @@ public static class SlopeRules
                 continue;
             }
             var rise = MathF.Abs(h - prev);
-            if (rise > maxRise || !Walkable(t, x, z))
+            if (rise > maxRise || !NavWalkable(t, x, z))
             {
                 if (rise > World.StepHeight || ++bad > 1)
                     return false;

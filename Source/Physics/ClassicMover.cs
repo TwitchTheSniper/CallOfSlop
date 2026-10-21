@@ -387,11 +387,17 @@ public sealed class ClassicMover : IMover
         var gap = feet.Y - g;
         if (gap > 0)
         {
-            // In the air above the ground: snap down only when we were walking on it last tick and it's walkable.
+            // In the air above the ground: snap down only when we were walking on it last tick and it's walkable, or when
+            // sliding down ground too steep to stand on (so the slide stays on the slope and gravity keeps pulling along it).
             var speed = MathF.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
-            if (grounded || !wasGrounded || velocity.Y > 0 || gap > 0.12f + speed * dt * 1.2f)
+            if (grounded || velocity.Y > 0 || World.BlockedByBoxes(feet with { Y = g }, height))
                 return;
-            if (!SlopeRules.CanStand(terrain, feet.X, feet.Z, velocity.X, velocity.Z) || World.BlockedByBoxes(feet with { Y = g }, height))
+            if (wasGrounded && gap <= 0.12f + speed * dt * 1.2f)
+            {
+                if (!SlopeRules.CanStand(terrain, feet.X, feet.Z, velocity.X, velocity.Z))
+                    return;
+            }
+            else if (gap > 0.12f + speed * dt * 2f || SlopeRules.Walkable(terrain, feet.X, feet.Z))
                 return;
         }
         var n = SlopeRules.SupportNormal(terrain, feet.X, feet.Z);
