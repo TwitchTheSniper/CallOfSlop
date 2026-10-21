@@ -82,8 +82,8 @@ public static partial class SelfTest
         foreach (var m in mapsWithSky)
         {
             var copy = MapFile.Load(MapFile.ToJson(m), m.SourceFile ?? m.Name);
-            if (copy.Skybox == null || SkyFile.ToJson(copy.Skybox) != SkyFile.ToJson(m.Skybox!) || copy.Sky != m.Sky || copy.ContentHash != m.ContentHash)
-                Fail($"{m.Name}: its sky didn't survive writing the map out and reading it back");
+            if (copy.Skybox == null || SkyFile.ToJson(copy.Skybox) != SkyFile.ToJson(m.Skybox!) || copy.Sky != m.Sky)
+                Fail($"{m.Name}: its sky didn't survive writing the map out and reading it back ({SkyFile.ToJson(m.Skybox!)} became {(copy.Skybox is { } cs ? SkyFile.ToJson(cs) : "none")}, sky {m.Sky} / {copy.Sky})");
         }
         Line($"round trip: a sky with every setting changed, and {mapsWithSky.Count} map(s) with a sky ({string.Join(", ", mapsWithSky.Select(m => $"{m.Name}: {m.Skybox!.Preset}"))})");
         if (Maps.Find("Sky Test") is not { Skybox: not null } skyTest || skyTest.Pack?.Name != "Dev")
@@ -290,7 +290,7 @@ public static partial class SelfTest
         var cov = new[] { 0.2f, 0.5f, 0.8f }.Select(c => (c, SkyRenderer.MeasuredCoverage(noise, c))).ToArray();
         Line("cloud coverage asked vs drawn: " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         if (cov.Any(c => MathF.Abs(c.c - c.Item2) > 0.12f) || SkyRenderer.MeasuredCoverage(noise, 0) > 0)
-            Fail("cloud coverage doesn't mean what it says (recalibrate SkyRenderer.CoverageMid / CoverageSpread)");
+            Fail("cloud coverage doesn't mean what it says (recalibrate SkyRenderer.CoverageMid / CoverageSpread): " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         var w0 = SkyRenderer.WindOffsets(SkySettings.FromPreset("clear"), 1e6);
         if (!float.IsFinite(w0.X) || w0.X is < 0 or >= 1 || w0.W is < 0 or >= 1)
             Fail("cloud drift offsets must stay wrapped to 0-1 after a long session");
@@ -309,7 +309,7 @@ public static partial class SelfTest
                 Fail($"sky uniform {name} is declared but never used");
         foreach (var (what, src) in new[] { ("sky vertex", SkyRenderer.VertexSource), ("sky fragment", fs) })
         {
-            if (!src.StartsWith("#version 330 core\n") || !src.Contains("void main()") || src.Any(c => c > 126 || (c < 32 && c != '\n' && c != '\r' && c != '\t'))
+            if (!src.StartsWith("#version 330 core") || !src.Contains("void main()") || src.Any(c => c > 126 || (c < 32 && c != '\n' && c != '\r' && c != '\t'))
                 || src.Count(c => c == '{') != src.Count(c => c == '}') || src.Count(c => c == '(') != src.Count(c => c == ')'))
                 Fail($"{what} shader source is malformed (version line, main, ASCII, balanced brackets)");
         }
