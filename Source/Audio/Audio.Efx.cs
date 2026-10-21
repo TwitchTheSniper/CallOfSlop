@@ -126,20 +126,46 @@ public sealed partial class Audio
         }
     }
 
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<Map, object> Spaces = new();
+
     /// <summary>
-    /// How a map sounds: terrain maps are open; box maps more than a quarter roofed over (thin slabs at least 2.5 m up)
-    /// are indoor; the rest are urban.
+    /// How a map sounds: terrain maps are open; box maps more than 30% roofed over are indoor; the rest are urban. A
+    /// roof is a thin slab (not earth or grass) at least 2.5 m up with open space under it, so terraced hills and
+    /// stacked floors standing on something don't count.
     /// </summary>
     public static AudioSpace Classify(Map map)
     {
+        if (Spaces.TryGetValue(map, out var known))
+            return (AudioSpace)known;
+        var space = AudioSpace.Urban;
         if (map.HasTerrain)
-            return AudioSpace.Open;
-        var area = MathF.Max(1f, map.HalfX * map.HalfZ * 4);
-        var roof = 0f;
-        foreach (var b in map.Solid)
-            if (b.Half.Y <= 0.4f && b.Min.Y >= 2.5f && b.Half.X * b.Half.Z * 4 >= 4f)
-                roof += b.Half.X * b.Half.Z * 4;
-        return roof / area > 0.25f ? AudioSpace.Indoor : AudioSpace.Urban;
+            space = AudioSpace.Open;
+        else
+        {
+            var area = MathF.Max(1f, map.HalfX * map.HalfZ * 4);
+            var roof = 0f;
+            var mats = map.Materials;
+            var solid = map.Solid;
+            for (var i = 0; i < solid.Count; i++)
+            {
+                var b = solid[i];
+                if (b.Half.Y > 0.4f || b.Min.Y < 2.5f || b.Half.X * b.Half.Z * 4 < 4f || mats[i] == Material.Dirt)
+                    continue;
+                var below = new Vector3(b.Center.X, b.Min.Y - 1.2f, b.Center.Z); // head height under the slab
+                var open = true;
+                foreach (var o in solid)
+                    if (below.X > o.Min.X && below.X < o.Max.X && below.Y > o.Min.Y && below.Y < o.Max.Y && below.Z > o.Min.Z && below.Z < o.Max.Z)
+                    {
+                        open = false;
+                        break;
+                    }
+                if (open)
+                    roof += b.Half.X * b.Half.Z * 4;
+            }
+            space = roof / area > 0.3f ? AudioSpace.Indoor : AudioSpace.Urban;
+        }
+        Spaces.AddOrUpdate(map, space);
+        return space;
     }
 
     /// <summary>Sets the reverb for a map (once per map change).</summary>
