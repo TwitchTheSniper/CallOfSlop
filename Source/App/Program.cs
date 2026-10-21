@@ -287,6 +287,11 @@ public static unsafe partial class Program
             SmokeStreaks(now);
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeNameTagStep < 3)
+        {
+            SmokeNameTags(now); // Program.NameTags.cs
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -1001,6 +1006,7 @@ public static unsafe partial class Program
                 FpsCounter.Draw(now);
             if (_session is { } g)
             {
+                DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1654,6 +1660,7 @@ public static unsafe partial class Program
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         Gfx.SetCamera(view, proj);
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
+        UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
 
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
@@ -1746,17 +1753,9 @@ public static unsafe partial class Program
             }
         }
         ObjectiveRender.Draw(Gfx, _game, now); // hill zone, flags, carrier beacons (game modes)
-        // Enemies near your Recon Pulse show through walls.
+        // Enemies revealed by a Recon Pulse / Recon Sweep show through walls, in their team colour (Source/Render/ReconOverlay.cs).
         Gfx.SetDepthTest(false);
-        foreach (var p in _game.Players.Values)
-        {
-            if (!_game.IsRevealed(p, now))
-                continue;
-            var hb = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
-            var pulse = 0.35f + 0.15f * MathF.Sin((float)now * 8f);
-            Gfx.DrawBox(hb, new Vector3(1f, 0.15f, 0.1f), mode: 2);
-            Gfx.Draw(Matrix4x4.CreateScale(hb.Half * 2.2f) * Matrix4x4.CreateTranslation(hb.Center), new Vector3(1f, 0.3f, 0.2f), pulse, mode: 2);
-        }
+        ReconOverlay.Draw(Gfx, _game, now);
         Gfx.SetDepthTest(true);
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);

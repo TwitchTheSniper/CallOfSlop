@@ -72,6 +72,7 @@ public static partial class SelfTest
             Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
+            Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
@@ -109,6 +110,7 @@ public static partial class SelfTest
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
+            Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -988,6 +990,29 @@ public static partial class SelfTest
             Fail("Bloodthirst didn't heal on a kill");
         if (a.Sim.BoostTicks != Perks.BoostTicks)
             Fail("Afterburner didn't boost on a kill");
+        // No stacking: a kill during the boost doesn't refresh it; after it ends there's a cooldown.
+        {
+            a.Sim.BoostTicks = 100; // part-way through the boost
+            Reset2();
+            var during = a.Sim.BoostTicks;
+            a.Sim.BoostTicks = 0; // boost over, still cooling down
+            game.ServerTick = a.AfterburnerReadyTick - 1;
+            Reset2();
+            var cooling = a.Sim.BoostTicks;
+            a.Sim.BoostTicks = 0;
+            game.ServerTick = a.AfterburnerReadyTick;
+            Reset2();
+            var ready = a.Sim.BoostTicks;
+            Line($"Afterburner: kill mid-boost leaves {during} ticks (no refresh); kill in cooldown {cooling}; kill after cooldown {ready}");
+            if (during != 100 || cooling != 0 || ready != Perks.BoostTicks)
+                Fail($"Afterburner stacking: mid-boost {during} (want 100), cooldown {cooling} (want 0), ready {ready} (want {Perks.BoostTicks})");
+            void Reset2()
+            {
+                v.Health = World.MaxHealth;
+                v.Alive = true;
+                game.SelfTestDamage(a, v, 200, DamageKind.Bullet, 1);
+            }
+        }
         game.SelfTestPerks(a, new PerkSet(PerkId.HeadStart, PerkId.None, PerkId.None));
         if (a.Sim.BoostTicks != Perks.BoostTicks || a.Sim.MovePerk != PerkId.HeadStart)
             Fail("Head Start doesn't boost on spawn");

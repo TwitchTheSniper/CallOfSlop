@@ -192,6 +192,7 @@ public sealed partial class Game
         p.Sim.MovePerk = p.Perks.Movement;
         p.Sim.BoostTicks = p.Perks.Has(PerkId.HeadStart) ? Perks.BoostTicks : (byte)0;
         p.LastStandUsed = false;
+        p.AfterburnerReadyTick = 0;
         p.ShieldCharges = 0;
         p.ImmuneUntil = 0;
     }

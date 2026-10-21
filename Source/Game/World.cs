@@ -455,6 +455,7 @@ public sealed class Player
     public uint WantPrimaryKit, WantSecondaryKit;
     public PerkSet WantPerks = PerkSet.Empty;
     public bool LastStandUsed; // Last Stand saves you once per life
+    public uint AfterburnerReadyTick; // server tick from which a kill can fire Afterburner again (Perks.AfterburnerCooldownTicks)
     public double ShieldUntil; // Last Stand: when the shield runs out even if it still has charges
     public double LastHurtTime = -100; // last time they took or dealt damage (health regen waits for this)
     public float RegenCarry; // health regen: fraction of a point owed

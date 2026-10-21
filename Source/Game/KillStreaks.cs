@@ -209,7 +209,7 @@ public static class KillStreaks
     [
         new() { Id = StreakId.None, Name = "None", Kills = 0, Short = "", Effect = "Leave this slot empty." },
         new() { Id = StreakId.ReconSweep, Name = "Recon Sweep", Kills = 3, Short = "Reveal every enemy",
-            Effect = "A sweep shows every enemy on the map to you as a red silhouette through walls for 10 seconds.",
+            Effect = "A sweep shows every enemy on the map to you and your team through walls for 10 seconds, in their team colour.",
             Color = new(0.2f, 0.85f, 0.95f) },
         new() { Id = StreakId.CounterSweep, Name = "Counter Sweep", Kills = 4, Short = "Jam enemy intel",
             Effect = "Jams the enemy for 15 seconds: their Recon Pulses and Recon Sweeps show nothing and their HUD fills with static.",
@@ -682,13 +682,20 @@ public sealed partial class Game
         return false;
     }
 
-    /// <summary>Is <paramref name="p"/> shown to the local player by a friendly Recon Sweep?</summary>
-    public bool StreakSweepReveals(Player p, double now)
+    /// <summary>
+    /// Is <paramref name="p"/> shown to the local player by a friendly Recon Sweep? Decided from the VIEWER's side, not the
+    /// caller's: a sweep runs for the viewer when they called it or a teammate did (team modes: the whole team benefits;
+    /// free-for-all: only the caller), and it shows only the viewer's enemies (<see cref="AreEnemies"/>), so nobody ever
+    /// sees their own team revealed. Team data is read live each frame, so team changes and late joins show correctly.
+    /// No local player (not joined yet) means nothing is revealed.
+    /// </summary>
+    public bool StreakSweepReveals(Player p, double now) => Local is { } me && AreEnemies(me, p) && StreakSweepRunsFor(me, now);
+
+    /// <summary>Is a Recon Sweep called by <paramref name="viewer"/> or one of their teammates running?</summary>
+    public bool StreakSweepRunsFor(Player viewer, double now)
     {
-        if (Local is not { } me)
-            return false;
         foreach (var e in StreakEffects)
-            if (e.Kind == StreakId.ReconSweep && now < e.Until && Players.TryGetValue(e.Owner, out var o) && !StreakIsEnemy(o, me) && StreakIsEnemy(o, p))
+            if (e.Kind == StreakId.ReconSweep && now < e.Until && Players.TryGetValue(e.Owner, out var o) && (o == viewer || !StreakIsEnemy(o, viewer)))
                 return true;
         return false;
     }
