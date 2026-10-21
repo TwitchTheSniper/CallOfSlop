@@ -40,7 +40,7 @@ public sealed class LegPose
 
     // ---- Diagnostics (the self-test and the smoke log read these) ----
     public readonly Vector3[] Target = new Vector3[2], Ankle = new Vector3[2], AnkleWorld = new Vector3[2];
-    public readonly bool[] Reached = new bool[2], Planted = new bool[2];
+    public readonly bool[] Reached = new bool[2], Planted = new bool[2], Lifted = new bool[2]; // Lifted: raised to stay within reach
     public float Phase, Speed, Run, Drop, Air, Moving;
     public int Rays;
     public bool GroundIk;
@@ -62,6 +62,9 @@ public static class LegAnimator
 
     /// <summary>The longest hip-to-ankle distance the gait asks for (a slight bend kept).</summary>
     public const float MaxReach = (Thigh + Shin) * 0.98f;
+
+    /// <summary>How far the pelvis may sink to keep the feet in reach, and how much of that the upper body follows (keeps the head near the hit box).</summary>
+    public const float MaxDrop = 0.6f, MaxUpperDrop = 0.25f;
 
     /// <summary>Hip joints below the pelvis frame.</summary>
     private const float HipDrop = 0.04f;
@@ -94,7 +97,7 @@ public static class LegAnimator
     }
 
     /// <summary>The boxes, in draw order: pelvis, then per leg thigh, knee pad, shin, boot, sole.</summary>
-    public static readonly LegPart PelvisPart = new(0, new Vector3(0.56f, 0.22f, 0.4f), new Vector3(0, 0.02f, 0), 0);
+    public static readonly LegPart PelvisPart = new(0, new Vector3(0.56f, 0.32f, 0.4f), new Vector3(0, 0.07f, 0), 0); // tall enough to fill the gap when the hips drop below the torso
 
     public static readonly LegPart[] LegParts =
     [
@@ -306,7 +309,6 @@ public static class LegAnimator
                 needW[i] = float.Lerp(1f, pull, moving);
             }
 
-            UpdateIdle(ref st, pos, yaw, bodyRot, target, footYaw, moving, dt, crouch, idleHipX, fresh);
             if (st.Stepping >= 0 && moving < 0.999f)
             {
                 // the stepping foot's position comes from UpdateIdle (lifted)
@@ -321,6 +323,9 @@ public static class LegAnimator
                 target[i] = Vector3.Lerp(stepPos, target[i], moving);
                 footYaw[i] = float.Lerp(float.Lerp(World.WrapAngle(st.StepYawFrom + yaw), -side * 0.08f, e), footYaw[i], moving);
             }
+
+            // (after the step above, so a step cut short by moving off blends out instead of popping)
+            UpdateIdle(ref st, pos, yaw, bodyRot, target, footYaw, moving, dt, crouch, idleHipX, fresh);
 
             // ---- Air and mantle poses ----
             if (st.Air > 0 || st.Mantle > 0)
@@ -395,7 +400,7 @@ public static class LegAnimator
                 var need = dy - MathF.Sqrt(MathF.Max(room, 0f));
                 drop = MathF.Max(drop, need * needW[i]);
             }
-            drop = Math.Clamp(drop, 0f, 0.5f);
+            drop = Math.Clamp(drop, 0f, MaxDrop);
             hipY -= drop;
             var twistT = float.Lerp(0.07f, 0.12f, run) * moving * MathF.Sin(MathF.Tau * st.Phase) * MathF.Max(dir.Y * dir.Y, 0.3f);
             pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, hipZ);
@@ -407,7 +412,7 @@ public static class LegAnimator
             var roll = -0.04f * dir.X * MathF.Min(speed / World.WalkSpeed, 1f) * moving;
             lean -= 0.12f * st.Air * (1 - st.Fall) + 0.15f * st.Mantle;
             pose.Upper = Matrix4x4.CreateTranslation(0, -baseH, 0) * Matrix4x4.CreateRotationX(lean) * Matrix4x4.CreateRotationZ(roll)
-                         * Matrix4x4.CreateTranslation(0, baseH + (hipY - baseH), 0);
+                         * Matrix4x4.CreateTranslation(0, baseH + MathF.Max(hipY - baseH, -MaxUpperDrop), 0);
 
             // ---- Two-bone IK per leg, knee forward ----
             for (var i = 0; i < 2; i++)
@@ -418,7 +423,8 @@ public static class LegAnimator
                 var d = target[i] - hip;
                 var dxz2 = d.X * d.X + d.Z * d.Z;
                 const float reach = MaxReach * 1.01f;
-                if (d.LengthSquared() > reach * reach)
+                pose.Lifted[i] = d.LengthSquared() > reach * reach;
+                if (pose.Lifted[i])
                     target[i] = dxz2 < reach * reach ? target[i] with { Y = hip.Y - MathF.Sqrt(reach * reach - dxz2) } : hip + d * (reach / d.Length());
                 var pole = Vector3.Normalize(new Vector3(side * 0.15f, 0.1f * st.Air, -1f));
                 Solve(pose, i, hip, target[i], pole, FootFrame(footYaw[i], footPitch[i], normal[i]));

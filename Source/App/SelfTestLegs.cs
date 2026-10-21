@@ -246,7 +246,7 @@ public static partial class SelfTest
         var now = 300.0;
         Span<Vector3> prev = stackalloc Vector3[2];
         var prevUp = Vector3.Zero;
-        float worstFoot = 0, worstHip = 0, worstRate = 0, prevRate = -1, worstAt = 0;
+        float worstFoot = 0, worstHip = 0, worstRate = 0, prevRate = -1, worstAt = 0, worstHipAt = 0, worstHipT = 0;
         var prevPhase = 0f;
         var total = 4800; // 0 -> sprint -> 0 over 20 s, plus a sudden walk -> sprint jump as the game does it
         for (var f = 0; f < total; f++)
@@ -273,7 +273,9 @@ public static partial class SelfTest
                     if (d > worstFoot)
                         (worstFoot, worstAt) = (d, legs.Speed);
                 }
-                worstHip = MathF.Max(worstHip, Vector3.Distance(prevUp, up));
+                var dh = Vector3.Distance(prevUp, up);
+                if (dh > worstHip)
+                    (worstHip, worstHipAt, worstHipT) = (dh, legs.Speed, t);
                 if (prevRate >= 0)
                     worstRate = MathF.Max(worstRate, MathF.Abs(rate - prevRate));
             }
@@ -287,11 +289,11 @@ public static partial class SelfTest
         if (worstFoot > 0.1f)
             Fail($"legs blend: a foot jumped {worstFoot * 100:0.0} cm in one 240 Hz frame (at {worstAt:0.0} m/s)");
         if (worstHip > 0.02f)
-            Fail($"legs blend: the hips jumped {worstHip * 100:0.0} cm in one frame");
+            Fail($"legs blend: the hips jumped {worstHip * 100:0.0} cm in one frame (at {worstHipAt:0.00} m/s, t = {worstHipT:0.000} s)");
         if (worstRate > 0.2f)
             Fail($"legs blend: gait cadence jumped {worstRate:0.000} cycles/s between frames");
         Line($"  walk/run blend over 0..{World.SprintSpeed} m/s and back (240 Hz): worst foot step {worstFoot * 1000:0.0} mm/frame (at {worstAt:0.0} m/s), "
-             + $"hips {worstHip * 1000:0.0} mm/frame, cadence change {worstRate * 1000:0.00} mHz/frame (phase continuous)");
+             + $"hips {worstHip * 1000:0.0} mm/frame (at {worstHipAt:0.0} m/s), cadence change {worstRate * 1000:0.00} mHz/frame (phase continuous)");
     }
 
     // ---- Idle turning, jump, fall, landing, mantle ---------------------------------------------------------
@@ -373,6 +375,7 @@ public static partial class SelfTest
         foreach (var (name, x, buttons, mover) in new (string, float, Buttons, IMover)[]
                  {
                      ("stairs walk", -22f, Buttons.Forward, ClassicMover.Instance), ("stairs sprint", -22f, Buttons.Forward | Buttons.Sprint, ClassicMover.Instance),
+                     ("stairs (swept)", -22f, Buttons.Forward, SweptMover.Instance),
                      ("30 deg ramp", -12f, Buttons.Forward, SweptMover.Instance), ("40 deg ramp", -4f, Buttons.Forward, SweptMover.Instance),
                  })
         {
@@ -381,7 +384,7 @@ public static partial class SelfTest
             var s = new MoveState { Position = new Vector3(x, 0, 3), Grounded = true };
             var now = 700.0;
             float worst = 0, sum = 0, worstDrop = 0;
-            int samples = 0, bad = 0, misses = 0, frames = 0;
+            int samples = 0, bad = 0, misses = 0, frames = 0, lifted = 0;
             var maxY = 0f;
             var groundedFor = 0f;
             plantedFor.Clear();
@@ -407,7 +410,12 @@ public static partial class SelfTest
                             misses++;
                         plantedFor[i] = legs.Planted[i] ? plantedFor[i] + World.TickDt / 2 : 0;
                         if (plantedFor[i] < 0.06f || groundedFor < 0.1f)
-                            continue; // just landed (the smoothed ground height is still settling), or the body is in the air
+                            continue;
+                        if (legs.Lifted[i])
+                        {
+                            lifted++; // out of reach even with the pelvis down: held up, not standing
+                            continue;
+                        } // just landed (the smoothed ground height is still settling), or the body is in the air
                         var a = legs.AnkleWorld[i];
                         var truth = World.Query.Raycast(new Vector3(a.X, a.Y + 0.7f, a.Z), -Vector3.UnitY, 2f, QueryFilter.All, out var hit) ? hit.Point.Y : float.NaN;
                         if (float.IsNaN(truth))
@@ -428,7 +436,7 @@ public static partial class SelfTest
             if (misses > frames / 50)
                 Fail($"legs {name}: {misses} of {frames * 2} foot poses out of reach");
             Line($"  {name,-13}: climbed to {maxY:0.0} m, planted feet vs ground ray: mean {sum / Math.Max(samples, 1) * 1000:0.0} mm, worst {worst * 1000:0.0} mm "
-                 + $"({samples} samples, {bad} over 5 cm), out of reach {misses}/{frames * 2}, max pelvis drop {worstDrop * 100:0.0} cm");
+                 + $"({samples} samples, {bad} over 5 cm), out of reach {misses}/{frames * 2}, lifted (out of reach) {lifted}, max pelvis drop {worstDrop * 100:0.0} cm");
         }
     }
 
