@@ -31,8 +31,6 @@ jobs:
           $log = "$dir/selftest.log"
           # Each failed check becomes an annotation on the run, so it's visible without opening the log.
           if (Test-Path $log) {
-            $wb = Select-String -Path $log -Pattern "^\s*(cart|melee|slot upgrade|standard melee|drop tables|weight relief|\d+ standard build|frames by)" | ForEach-Object { $_.Line.Trim() }
-            if ($wb) { Write-Output ("::warning title=WB2::" + ($wb -join "%0A")) }
             Get-Content $log
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
