@@ -281,7 +281,7 @@ public sealed partial class Game
             Yaw = aim.Yaw,
             Pitch = Math.Clamp(aim.Pitch, -1.5f, 1.5f),
             Weapon = p.Weapon,
-            SpeedPct = (byte)Math.Clamp((int)(def.Mobility * (aim.Ads ? World.AdsSpeedMult : 1f) * 100), 1, 200),
+            SpeedPct = (byte)Math.Clamp((int)(Perks.MoveSpeed(p.Perks, def.Mobility, aim.Ads) * 100), 1, 200), // Lightweight, Stalker
         };
         ApplyCmd(p, cmd);
         b.LastHealth = p.Health;
@@ -290,7 +290,7 @@ public sealed partial class Game
     private void BotReload(Player p, WeaponDef def, double now)
     {
         var b = p.Bot!;
-        b.ReloadUntil = now + def.Reload * StreakReloadMult(p, now);
+        b.ReloadUntil = now + def.Reload * StreakReloadMult(p, now) * Perks.ReloadMult(p.Perks); // Overdrive, Sleight of Hand
         b.BurstLeft = 0;
         Audio.Reload(def, p.RenderEye);
         Net.Broadcast(ReloadFx(p.Id, def.Id), PacketReliability.Unreliable);

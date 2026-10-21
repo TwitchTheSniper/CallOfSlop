@@ -426,13 +426,26 @@ public sealed partial class Audio : IDisposable
         _ => (0.3f, 20f),
     };
 
-    /// <summary>Plays a footstep event (<see cref="Footsteps"/>): positional for others, quieter and centred for yourself.</summary>
-    public void Footstep(in StepEvent e, bool self)
+    /// <summary>
+    /// <see cref="StepLoudness(StepKind, float)"/> for a step someone else hears: <paramref name="silenced"/> (the stepper
+    /// carries Dead Silence) makes it <see cref="Perks.DeadSilenceGain"/> as loud, heard within <see cref="Perks.DeadSilenceRange"/> of the range.
+    /// </summary>
+    public static (float Gain, float Range) StepLoudness(StepKind kind, float strength, bool silenced)
+    {
+        var (gain, range) = StepLoudness(kind, strength);
+        return silenced ? (gain * Perks.DeadSilenceGain, range * Perks.DeadSilenceRange) : (gain, range);
+    }
+
+    /// <summary>
+    /// Plays a footstep event (<see cref="Footsteps"/>): positional for others, quieter and centred for yourself.
+    /// <paramref name="silenced"/>: the stepper carries Dead Silence (ignored for your own steps).
+    /// </summary>
+    public void Footstep(in StepEvent e, bool self, bool silenced = false)
     {
         if (!Enabled)
             return;
         var t0 = Stopwatch.GetTimestamp();
-        var (gain, range) = StepLoudness(e.Kind, e.Strength);
+        var (gain, range) = StepLoudness(e.Kind, e.Strength, silenced && !self);
         var d = self ? 0f : Vector3.Distance(e.Position, _listener);
         gain *= FootstepVolume * EffectsVolume * (self ? SelfStepGain : 1f);
         if (gain > 0.002f && d <= range)

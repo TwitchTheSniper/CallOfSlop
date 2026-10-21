@@ -348,7 +348,7 @@ public sealed class RecoilState
     /// One shot fired at time <paramref name="now"/>. Returns the aim kick to add (radians: pitch up, yaw right) and
     /// starts the visual shake, punch and viewmodel kick.
     /// </summary>
-    public (float Pitch, float Yaw) Shot(WeaponDef d, Stance stance, float aimT, double now, float lookPitch, float lookYaw)
+    public (float Pitch, float Yaw) Shot(WeaponDef d, Stance stance, float aimT, double now, float lookPitch, float lookYaw, float perkMult = 1f)
     {
         if (_def != d || now - _lastShot > Recoil.ResetTime(d))
         {
@@ -367,8 +367,8 @@ public sealed class RecoilState
 
         var (up, right) = Recoil.PatternDeg(d, ShotIndex, Spray);
         var (mv, mh) = Recoil.Multipliers(d, stance, aimT);
-        var pitch = up * mv * Deg;
-        var yaw = right * mh * Deg;
+        var pitch = up * mv * perkMult * Deg; // perkMult: Tight Grip (Perks.RecoilMult)
+        var yaw = right * mh * perkMult * Deg;
         ShotIndex = Math.Min(ShotIndex + 1, 10000);
         _pendPitch += pitch * d.RecoilRecoveryAmount;
         _pendYaw += yaw * d.RecoilRecoveryAmount;

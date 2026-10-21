@@ -159,8 +159,8 @@ public sealed partial class Game
         var bestScore = float.MaxValue;
         foreach (var o in Players.Values)
         {
-            if (!o.Alive || !StreakIsEnemy(owner, o))
-                continue;
+            if (!o.Alive || !StreakIsEnemy(owner, o) || !Perks.MachinesCanTarget(o.Perks))
+                continue; // (Cold Blooded: turrets and drones can't lock on)
             var to = o.Chest - from;
             var dist = to.Length();
             if (dist > range || dist < 0.1f)
