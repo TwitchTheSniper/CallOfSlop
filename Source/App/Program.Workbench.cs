@@ -199,6 +199,17 @@ public static unsafe partial class Program
     private static double _wbSmokeStart;
     private static int _wbSmokeFrames;
     private static bool WorkbenchSmokeActive => _wbSmokeStage > 0;
+    private static int _wbMeleeTries;
+    private static double _wbMeleeAt, _wbShotAt;
+
+    /// <summary>The smoke step's melee swing (the chainsaw sword), without the cart's toast over it.</summary>
+    private static void SmokeMeleeSwing(Game? g, double now)
+    {
+        if (g == null)
+            return;
+        g.LoadoutNotice = "";
+        g.TryMelee(now);
+    }
 
     private static void StartWorkbenchSmoke(double now)
     {
@@ -290,44 +301,67 @@ public static unsafe partial class Program
                 break;
             case 53 when t > 3.9:
             {
+                // Still manning it (the shot is saved after this frame is drawn, so stepping off waits for the next stage).
                 SmokeShot("range_cart_manned");
                 var c = g?.Local is { } me && g.Carts.TryGetValue(me.Id, out var cc) ? cc : null;
                 Console.WriteLine($"[smoke] cart manned: {(c == null ? "none" : $"{c.Mode}, gun aim {c.AimYaw * 180 / MathF.PI:0} deg yaw, {c.AimPitch * 180 / MathF.PI:0} deg pitch")}, "
                                   + $"ammo {g?.Active.Ammo}/{g?.Active.Def.Mag}, {g?.Tracers.Count ?? 0} tracer(s), {(_smokeFrames - _wbSmokeFrames) / 1.8:0} fps");
+                _wbSmokeStage = 531;
+                break;
+            }
+            case 531 when t > 4.05:
                 _smokeFireHeld = false;
                 g?.Interact(now); // step off: back to your other weapon
                 _wbSmokeStage = 54;
                 break;
-            }
-            case 54 when t > 4.2:
-                if (g != null)
-                    g.LoadoutNotice = ""; // the melee shot shouldn't carry the cart's toast
-                g?.TryMelee(now); // the chainsaw sword
+            // The melee shot: wait until you're off the cart with your weapon raised, swing, and save the frame mid-swing
+            // (retrying if the swing was refused, e.g. while a step off still mantles you), so the built melee is in view.
+            case 54 when t > 4.35 && (g == null || (g.MannedCart == null && !Game.IsCart(g.Active.Def) && now >= g.EquipUntil) || t > 6.0):
+                SmokeMeleeSwing(g, now);
+                _wbMeleeTries = 1;
+                _wbMeleeAt = t;
                 _wbSmokeStage = 55;
                 break;
-            case 55 when t > 4.32:
-                SmokeShot("range_melee");
-                Console.WriteLine($"[smoke] melee: {g?.Local?.MeleeBuild?.ToString() ?? "standard"}");
-                _wbSmokeStage = 56;
+            case 55:
+            {
+                var p = g?.MeleeProgress(now) ?? -1f;
+                if (p >= 0.3f || t > _wbMeleeAt + 2.5)
+                {
+                    SmokeShot("range_melee");
+                    var mb = g?.Local?.MeleeBuild;
+                    var inHand = g == null ? "nothing" : p >= 0 && mb != null ? $"{mb.View.Name} (melee build, swing {p:0.00})" : $"{g.Active.Def.Name} (gun{(p >= 0 ? $", standard melee swing {p:0.00}" : ", not swinging")})";
+                    Console.WriteLine($"[smoke] melee: in hand {inHand} after {_wbMeleeTries} swing(s); build {mb?.ToString() ?? "standard"}"
+                                      + $"{(g?.Local is { } who ? $", mantle {who.Sim.MantleTicks}, manned {g.MannedCart != null}" : "")}");
+                    _wbShotAt = t;
+                    _wbSmokeStage = 56;
+                }
+                else if (p < 0 && t > _wbMeleeAt + 0.25 * _wbMeleeTries && _wbMeleeTries < 8)
+                {
+                    SmokeMeleeSwing(g, now); // refused (or already over): swing again
+                    _wbMeleeTries++;
+                }
                 break;
-            case 56 when t > 5.0:
+            }
+            case 56 when t > _wbShotAt + 0.6:
                 if (g != null)
                     for (var i = 0; i < g.WeaponSlots; i++)
                         if (g.Slots[i].Def.SpoolTime > 0)
                             g.SwitchTo(i, now);
                 _smokeFireHeld = true; // spin the minigun up
                 _wbSmokeFrames = _smokeFrames;
+                _wbShotAt = t;
                 _wbSmokeStage = 6;
                 break;
-            case 6 when t > 8.0:
+            case 6 when t > _wbShotAt + 3.0:
             {
                 SmokeShot("range_minigun");
                 Console.WriteLine($"[smoke] workbench range: {(g?.Local?.Alive == true ? "alive" : "not spawned")}, {g?.WeaponSlots} slot(s), spool {g?.SpoolRate:0.00}, "
-                                  + $"{g?.Tracers.Count ?? 0} tracer(s) live, {(_smokeFrames - _wbSmokeFrames) / 3.0:0} fps while firing");
+                                  + $"{g?.Tracers.Count ?? 0} tracer(s) live, {(_smokeFrames - _wbSmokeFrames) / (t - _wbShotAt):0} fps while firing");
+                _wbShotAt = t;
                 _wbSmokeStage = 7;
                 break;
             }
-            case 7 when t > 8.3:
+            case 7 when t > _wbShotAt + 0.3:
                 _smokeFireHeld = false;
                 EndSession("");
                 _returnToWorkbench = false;

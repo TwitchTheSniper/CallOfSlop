@@ -26,6 +26,9 @@ public static partial class SelfTest
                 };
                 if (m.FogStart != start || m.FogEnd != end)
                     Fail($"{m.Name}: fog {m.FogStart:0.#}-{m.FogEnd:0.#} m, was {start:0.#}-{end:0.#} m (a map without a boundary changed its look)");
+                var old = m.Skybox is { } sky ? sky.Light() : Lighting.Default;
+                if (m.OuterFog != Vector4.Zero || m.Light != old)
+                    Fail($"{m.Name}: light changed (outer fog {m.OuterFog}) on a map without a boundary");
                 continue;
             }
             shaped++;
@@ -65,8 +68,10 @@ public static partial class SelfTest
                 Fail($"{m.Name}: far ground top at y {hi.Y:0.00} (should sit just under the floor)");
             if (far.Color.X + far.Color.Y + far.Color.Z <= 0.01f)
                 Fail($"{m.Name}: far ground is black");
+            var worst = CheckFarGroundHorizon(m, b, far.Color, hi.Y);
             Line($"{m.Name}: {b.Spec.Shape} outline {across:0} m across ({m.Size}), far ground {hi.X - lo.X:0} x {hi.Z - lo.Z:0} m, "
-                 + $"fog {m.FogStart:0}-{m.FogEnd:0} m, far plane {m.FarPlane:0} m");
+                 + $"fog {m.FogStart:0}-{m.FogEnd:0} m, horizon fade {m.OuterFog.Z:0}-{m.OuterFog.W:0} m from the centre, far plane {m.FarPlane:0} m, "
+                 + $"far ground vs sky horizon worst {worst:0.0000} over {SkySettings.PresetNames.Length} presets + flat sky");
         }
         if (shaped == 0)
             Fail("no map has a boundary (the Cluttered pack should)");
@@ -74,6 +79,97 @@ public static partial class SelfTest
         if (carousel != null && (carousel.Size != MapSize.Small || !(carousel.FogEnd > carousel.FogStart)))
             Fail("Carousel: a small circle map without fog over its far ground (the smoke run's black void below the horizon)");
         Line($"{shaped} shaped maps have ground and fog past the outline; maps without a boundary keep their fog");
+    }
+
+    /// <summary>
+    /// A flat shaped map's far ground and the sky below the horizon must meet the sky's horizon colour (no dark band, the
+    /// second smoke run's Carousel overview): for every sky preset and the classic flat sky, from cameras low and high
+    /// inside the outline, every visible far-ground point past the fade and every below-horizon sky direction must be
+    /// within a small difference of the sky at the horizon in that direction; nothing inside the floor is touched.
+    /// Returns the largest difference seen.
+    /// </summary>
+    private static float CheckFarGroundHorizon(Map m, MapBoundary b, Vector4 farColor, float farTop)
+    {
+        const float tolerance = 0.02f;
+        var of = m.OuterFog;
+        if (!(of.W > of.Z))
+        {
+            Fail($"{m.Name}: flat shaped map without a horizon fade past its outline");
+            return 1f;
+        }
+        var c = new Vector2(of.X, of.Y);
+        var radius = 0f;
+        foreach (var p in b.Outline)
+            radius = MathF.Max(radius, Vector2.Distance(p, c));
+        if (of.Z < radius + MathF.Min(b.Spec.GroundMargin, 64f))
+            Fail($"{m.Name}: horizon fade starts {of.Z:0.0} m from the centre, inside the outline plus floor margin ({radius + b.Spec.GroundMargin:0.0} m)");
+        // Ground cut off by the far plane must already be fully faded, or the cut would show against the sky.
+        if (of.W + radius > m.FarPlane)
+            Fail($"{m.Name}: horizon fade ends {of.W:0} m from the centre, but the far plane ({m.FarPlane:0} m) cuts ground at {m.FarPlane - radius:0} m");
+        var lights = new List<(string Name, LightSetup Light, Vector3 Flat)>();
+        foreach (var preset in SkySettings.PresetNames)
+            lights.Add((preset, SkySettings.FromPreset(preset).Light() with { OuterFog = of }, m.Sky));
+        lights.Add(("flat sky", Lighting.Default with { OuterFog = of }, m.Sky));
+        if (m.Light.OuterFog != of)
+            Fail($"{m.Name}: the map's light doesn't carry its horizon fade");
+        var worst = 0f;
+        var cams = new List<Vector3>();
+        foreach (var h in new[] { 1.7f, 13f, 40f, 90f })
+        {
+            cams.Add(new Vector3(c.X, h, c.Y));
+            for (var k = 0; k < 4; k++)
+            {
+                var a = k * MathF.PI / 2 + 0.4f;
+                var p = c + new Vector2(MathF.Cos(a), MathF.Sin(a)) * radius;
+                if (!b.Contains(p.X, p.Y))
+                    p = c + (p - c) * 0.6f;
+                cams.Add(new Vector3(p.X, h, p.Y));
+            }
+        }
+        var albedo = new Vector3(farColor.X, farColor.Y, farColor.Z);
+        foreach (var (name, light, flat) in lights)
+        {
+            var plain = light with { OuterFog = Vector4.Zero };
+            var lit = albedo * (light.AmbSky + light.SunColor * MathF.Max(light.SunDir.Y, 0f)); // the far ground's top, roughly lit
+            var bad = 0;
+            foreach (var cam in cams)
+            for (var i = 0; i < 24; i++)
+            {
+                var az = i * MathF.Tau / 24f;
+                var flatDir = new Vector3(MathF.Cos(az), 0f, MathF.Sin(az));
+                // The sky right at the horizon in this direction (what the far ground must meet).
+                var horizon = light.SkyFog ? Lighting.SkyGradient(plain, Vector3.Normalize(flatDir + new Vector3(0, 1e-4f, 0))) : flat;
+                foreach (var drop in new[] { 0.002f, 0.01f, 0.03f, 0.08f, 0.2f, 0.5f })
+                {
+                    var dir = Vector3.Normalize(flatDir - new Vector3(0, drop, 0));
+                    // Below the horizon where no ground is drawn (past the far plane): the sky itself.
+                    var skyBelow = light.SkyFog ? Lighting.SkyGradient(light, dir) : flat;
+                    var d0 = Vector3.Distance(skyBelow, horizon);
+                    // The far ground along this ray, when it's within the far plane and past the floor.
+                    var t = (cam.Y - farTop) / -dir.Y;
+                    var d1 = 0f;
+                    if (t > 0 && t < m.FarPlane)
+                    {
+                        var hit = cam + dir * t;
+                        var r = Vector2.Distance(new Vector2(hit.X, hit.Z), c);
+                        if (r >= of.W)
+                            d1 = Vector3.Distance(Lighting.ApplyFog(light, lit, hit, cam, flat, new Vector2(m.FogStart, m.FogEnd)), horizon);
+                    }
+                    var d = MathF.Max(d0, d1);
+                    worst = MathF.Max(worst, d);
+                    if (d > tolerance && bad++ == 0)
+                        Fail($"{m.Name} under {name}: from ({cam.X:0},{cam.Y:0},{cam.Z:0}) looking {drop:0.###} below the horizon, "
+                             + $"{(d1 > d0 ? "far ground" : "sky")} differs from the sky's horizon colour by {d:0.000} (max {tolerance})");
+                }
+            }
+            // Nothing on the floor is touched by the fade (only by the map's usual fog).
+            var inside = new Vector3(c.X + radius * 0.5f, 0f, c.Y);
+            var cam0 = new Vector3(c.X, 1.7f, c.Y);
+            var range = new Vector2(m.FogStart, m.FogEnd);
+            if (Lighting.ApplyFog(light, lit, inside, cam0, flat, range) != Lighting.ApplyFog(plain, lit, inside, cam0, flat, range))
+                Fail($"{m.Name} under {name}: the horizon fade changes the floor inside the outline");
+        }
+        return worst;
     }
 
     /// <summary>A fake timestamp backend: stamps take the current fake time; results come back <see cref="Latency"/> frames later.</summary>

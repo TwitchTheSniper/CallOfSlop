@@ -14,9 +14,15 @@ namespace CallOfSlop;
 /// <param name="SkyFog">Fog takes the sky gradient's colour along each view ray (false: the flat fog colour).</param>
 /// <param name="HazeDir">Towards the real sun (the horizon glow is on its side, even when the moon is the key light).</param>
 /// <param name="Haze">Horizon glow colour (xyz) and strength (w).</param>
+/// <param name="OuterFog">
+/// Flat maps with a boundary (<see cref="Map.OuterFog"/>): centre x, z and a start / end radius (end &lt;= start: off).
+/// Past the start radius everything fades fully (not just <see cref="FogMax"/>) into the sky's horizon colour, measured
+/// from the map's centre so it doesn't depend on the camera, and the sky gradient below the horizon is the horizon
+/// colour, so the far ground meets the sky without a dark band. Zero for every other map (their look is unchanged).
+/// </param>
 public readonly record struct LightSetup(
     Vector3 SunDir, Vector3 SunColor, Vector3 AmbSky, Vector3 AmbGround, float FogMax,
-    bool SkyFog, Vector3 Zenith, Vector3 Horizon, Vector3 Ground, Vector3 HazeDir, Vector4 Haze);
+    bool SkyFog, Vector3 Zenith, Vector3 Horizon, Vector3 Ground, Vector3 HazeDir, Vector4 Haze, Vector4 OuterFog = default);
 
 /// <summary>
 /// The scene's one light setup, shared by every renderer so boxes, terrain, foliage, props and meshes are lit the
@@ -91,6 +97,7 @@ public static unsafe class Lighting
         uniform vec3 uSkyGround;
         uniform vec3 uSkyHazeDir; // towards the real sun
         uniform vec4 uSkyHaze;    // horizon glow colour, strength
+        uniform vec4 uOuterFog;   // flat shaped maps: centre x, z, start / end radius (w <= z: off); see LightSetup.OuterFog
 
         // wrap: 0 = plain Lambert (solid surfaces), ~0.5 = leaves (light leaks round the edges)
         vec3 ApplyLight(vec3 albedo, vec3 n, float wrap)
@@ -106,6 +113,8 @@ public static unsafe class Lighting
         // The sky's colour in direction d (unit) without sun, moon, stars or clouds (SkySettings.Gradient in C#).
         vec3 SkyGradient(vec3 d)
         {
+            if (uOuterFog.w > uOuterFog.z) // shaped flat maps: below the horizon is the horizon colour (no dark ground band)
+                d = normalize(vec3(d.x, max(d.y, 0.0), d.z) + vec3(0.0, 1e-5, 0.0));
             float y = d.y;
             vec3 c = y >= 0.0 ? mix(uSkyHorizon, uSkyZenith, sqrt(min(y, 1.0)))
                               : mix(uSkyHorizon, uSkyGround, smoothstep(0.0, 0.3, -y));
@@ -120,9 +129,11 @@ public static unsafe class Lighting
                 return col;
             vec3 v = world - uCam;
             float dist = length(v);
-            float f = clamp((dist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);
+            float f = clamp((dist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0) * uFogMax;
+            if (uOuterFog.w > uOuterFog.z) // past a shaped map's outline: fully into the horizon, wherever the camera is
+                f = max(f, smoothstep(uOuterFog.z, uOuterFog.w, length(world.xz - uOuterFog.xy)));
             vec3 fogCol = uSkyFog > 0.5 ? SkyGradient(v / max(dist, 1e-4)) : uFog;
-            return mix(col, fogCol, f * uFogMax);
+            return mix(col, fogCol, f);
         }
         """;
 
@@ -180,6 +191,7 @@ public static unsafe class Lighting
         Native.glUniform3f(Loc(program, "uSkyGround\0"u8), l.Ground.X, l.Ground.Y, l.Ground.Z);
         Native.glUniform3f(Loc(program, "uSkyHazeDir\0"u8), l.HazeDir.X, l.HazeDir.Y, l.HazeDir.Z);
         Native.glUniform4f(Loc(program, "uSkyHaze\0"u8), l.Haze.X, l.Haze.Y, l.Haze.Z, l.Haze.W);
+        Native.glUniform4f(Loc(program, "uOuterFog\0"u8), l.OuterFog.X, l.OuterFog.Y, l.OuterFog.Z, l.OuterFog.W);
     }
 
     private static int Loc(uint program, ReadOnlySpan<byte> nameZ)
@@ -190,5 +202,36 @@ public static unsafe class Lighting
 
     /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree).</summary>
     public static readonly string[] UniformNames =
-        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze"];
+        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog"];
+
+    /// <summary>
+    /// C# mirror of <see cref="Glsl"/>'s SkyGradient under <paramref name="l"/> (the self-test checks horizons with it).
+    /// </summary>
+    public static Vector3 SkyGradient(in LightSetup l, Vector3 d)
+    {
+        if (l.OuterFog.W > l.OuterFog.Z)
+            d = Vector3.Normalize(new Vector3(d.X, MathF.Max(d.Y, 0f), d.Z) + new Vector3(0f, 1e-5f, 0f));
+        return SkySettings.Gradient(d, l.Zenith, l.Horizon, l.Ground, l.HazeDir, new Vector3(l.Haze.X, l.Haze.Y, l.Haze.Z), l.Haze.W);
+    }
+
+    /// <summary>
+    /// C# mirror of <see cref="Glsl"/>'s ApplyFog: <paramref name="col"/> at <paramref name="world"/> seen from
+    /// <paramref name="cam"/>, with the flat fog colour <paramref name="fog"/> and range (start, end) as SetFog gives them.
+    /// </summary>
+    public static Vector3 ApplyFog(in LightSetup l, Vector3 col, Vector3 world, Vector3 cam, Vector3 fog, Vector2 range)
+    {
+        if (range.Y <= range.X)
+            return col;
+        var v = world - cam;
+        var dist = v.Length();
+        var f = Math.Clamp((dist - range.X) / (range.Y - range.X), 0f, 1f) * l.FogMax;
+        if (l.OuterFog.W > l.OuterFog.Z)
+        {
+            var r = Vector2.Distance(new Vector2(world.X, world.Z), new Vector2(l.OuterFog.X, l.OuterFog.Y));
+            var t = Math.Clamp((r - l.OuterFog.Z) / (l.OuterFog.W - l.OuterFog.Z), 0f, 1f);
+            f = MathF.Max(f, t * t * (3f - 2f * t));
+        }
+        var fogCol = l.SkyFog ? SkyGradient(l, v / MathF.Max(dist, 1e-4f)) : fog;
+        return Vector3.Lerp(col, fogCol, f);
+    }
 }
