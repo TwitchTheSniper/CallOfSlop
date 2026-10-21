@@ -112,6 +112,7 @@ public static partial class SelfTest
                 g.SelfTestPerks(p, PerkSet.Empty);
             var enemy = g.Players.Values.First(p => p.Bot != null && p.Team != me.Team);
             g.Phase = MatchPhase.Playing;
+            g.SelfTestSpawn(me); // deployed and alive (an offline game starts with you waiting on the loadout screen)
             var start = me.Team;
             var alive = g.SelfTestSetTeam(me, (byte)(1 - start), now);
             g.SelfTestDamageWith(enemy, me, 1000, Weapons.DefaultPrimary.Id, now);
@@ -121,7 +122,7 @@ public static partial class SelfTest
             var later = g.SelfTestSetTeam(me, start, now + 1 + TeamRules.SwitchCooldown + 0.1);
             var noPenalty = me.Kills == kills && me.Deaths == deaths && g.TeamScore[0] == s0 && g.TeamScore[1] == s1 && enemy.Kills == enemyKills;
             Line($"switching: alive '{alive}', dead {dead ?? "ok"}, again '{back}', after {TeamRules.SwitchCooldown:0} s {later ?? "ok"}; deaths {deaths} -> {me.Deaths}, scores unchanged {noPenalty}");
-            if (me.Alive || alive == null || dead != null || back == null || !back.StartsWith("Wait", StringComparison.Ordinal) || later != null || !noPenalty || me.Team != start)
+            if (me.Alive || deaths != 1 || alive == null || dead != null || back == null || !back.StartsWith("Wait", StringComparison.Ordinal) || later != null || !noPenalty || me.Team != start)
                 Fail("team pick: mid-match switching rules (dead only, cooldown, no score change) broken");
 
             // Carrying the flag: never.
