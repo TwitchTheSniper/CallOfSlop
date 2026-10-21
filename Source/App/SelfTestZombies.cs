@@ -731,6 +731,7 @@ public static partial class SelfTest
                 msgs.Add(w.Span.ToArray());
             }
             var serverDrops = g.ZWeaponDrops.ToList();
+            var snow = now; // (a ref parameter can't go into the lambda below)
             using (var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
             {
                 World.SetMap(map);
@@ -738,7 +739,7 @@ public static partial class SelfTest
                 foreach (var m in msgs)
                     c.SelfTestReadWeaponDrop(m, cnow);
                 var same = c.ZWeaponDrops.Count == serverDrops.Count && serverDrops.All(s => c.ZWeaponDrops.FirstOrDefault(x => x.Id == s.Id) is { } cd && cd.At == s.At && cd.Build.ToText() == s.Build.ToText()
-                    && cd.Owner == s.Owner && cd.OwnerName == s.OwnerName && cd.Full == s.Full && cd.Melee == s.Melee && Math.Abs((cd.Until - cnow) - (s.Until - now)) < 0.01);
+                    && cd.Owner == s.Owner && cd.OwnerName == s.OwnerName && cd.Full == s.Full && cd.Melee == s.Melee && Math.Abs((cd.Until - cnow) - (s.Until - snow)) < 0.01);
                 var prompted = false;
                 if (c.ZWeaponDrops.Count > 0 && c.Local is { } cl)
                 {
