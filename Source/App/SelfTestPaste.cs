@@ -23,8 +23,47 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    private static unsafe void CheckPaste()
+    private static volatile string _pasteStep = "";
+    private static volatile byte[]? _pastePacket;
+    private static volatile bool _pasteAbandoned;
+
+    /// <summary>
+    /// Runs the checks on a worker thread with a deadline, so a handler that loops forever on a garbage packet shows up
+    /// as a failure naming the message and the packet instead of hanging the whole self-test.
+    /// </summary>
+    private static void CheckPaste()
     {
+        var worker = new Thread(() =>
+        {
+            try
+            {
+                CheckPasteBody();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    Fail($"Paste and packets threw at {_pasteStep}: {ex}");
+                }
+                catch
+                {
+                    // the log is already closed (we were abandoned): nothing left to report to
+                }
+            }
+        }, 64 << 20) { IsBackground = true, Name = "paste and packets" };
+        worker.Start();
+        if (!worker.Join(TimeSpan.FromSeconds(150)))
+        {
+            _pasteAbandoned = true;
+            var packet = _pastePacket;
+            Fail($"Paste and packets hung at: {_pasteStep}"
+                 + (packet != null ? $" (packet {Convert.ToHexString(packet.AsSpan(0, Math.Min(packet.Length, 48)))}, {packet.Length} bytes)" : ""));
+        }
+    }
+
+    private static unsafe void CheckPasteBody()
+    {
+        _pasteStep = "root cause";
         // ---- The root cause -------------------------------------------------------------------------------------
         // BRUTAL's GlfwBackend.GetClipboardText: var str = Glfw.Clipboard; Utf8.GetByteCount(str) -> Encoding.UTF8.GetByteCount.
         try
@@ -40,8 +79,10 @@ public static partial class SelfTest
 
         var oldSource = SafeClipboard.Source;
         var oldSink = SafeClipboard.Sink;
+        var sw = Stopwatch.StartNew();
         try
         {
+            _pasteStep = "clipboard hooks and text boxes";
             CheckClipboardHooks();
         }
         finally
@@ -49,9 +90,14 @@ public static partial class SelfTest
             SafeClipboard.Source = oldSource;
             SafeClipboard.Sink = oldSink;
         }
+        Line($"  (clipboard and text boxes: {sw.ElapsedMilliseconds} ms)");
+        _pasteStep = "sanitizers";
         CheckSanitizers();
+        _pasteStep = "received text";
         CheckReceivedText();
+        _pasteStep = "packet fuzzing";
         CheckPacketFuzz();
+        _pasteStep = "done";
     }
 
     /// <summary>Pastes <paramref name="source"/>'s text through the real hook (a native function pointer call, as ImGui makes it).</summary>
@@ -139,6 +185,7 @@ public static partial class SelfTest
             var bad = 0;
             foreach (var (name, source) in pastes)
             {
+                _pasteStep = $"text box {f.Name}: pasting {name}";
                 try
                 {
                     var box = new ImInputString(f.Capacity);
@@ -277,6 +324,7 @@ public static partial class SelfTest
         for (var i = 0; i < 3000; i++)
         {
             var s = RandomText(rng);
+            _pasteStep = $"sanitizers: string {i} ({s.Length} chars)";
             try
             {
                 Check("NetSafety.CleanText", s, NetSafety.CleanText(s, 64), 64);
@@ -414,6 +462,7 @@ public static partial class SelfTest
         var rng = new Random(7003);
         var bugs = new Dictionary<string, string>();
         int sent = 0, shortOnes = 0, escaped = 0;
+        var slow = new List<string>();
         var dropped = NetSafety.Dropped;
         var sw = Stopwatch.StartNew();
         Console.SetOut(TextWriter.Null); // the handlers log feed lines; 100k of them would bury the log
@@ -422,13 +471,20 @@ public static partial class SelfTest
             var now = 1.0;
             foreach (var id in Enum.GetValues<Msg>())
             {
-                for (var i = 0; i < perType; i++)
+                var typeTime = Stopwatch.StartNew();
+                var done = 0;
+                for (var i = 0; i < perType && !_pasteAbandoned; i++, done++)
                 {
+                    if (typeTime.Elapsed.TotalSeconds > 1.5)
+                        break; // time budget per message type (reported below): some host messages are slow on purpose (a prop state rebuilds the map's props)
                     var packet = FuzzPacket(rng, (byte)id);
+                    _pastePacket = packet;
                     now += 0.001;
                     foreach (var (side, game) in new[] { ("client", c), ("host", s) })
                     {
                         sent++;
+                        _pasteStep = $"packet fuzzing: {id} #{i} on the {side}";
+                        var one = Stopwatch.StartNew();
                         try
                         {
                             game.SelfTestPacketRaw(FuzzGuid, packet, now);
@@ -442,6 +498,10 @@ public static partial class SelfTest
                             var key = $"{id} on the {side}: {ex.GetType().Name} at {TopFrame(ex)}";
                             bugs.TryAdd(key, $"{ex.Message} (packet {Convert.ToHexString(packet.AsSpan(0, Math.Min(packet.Length, 24)))})");
                         }
+                        // A client must not be able to stall the host: anything that slow on the host side is a bug. (A host can slow its
+                        // clients down in many legitimate ways, so the client side only gets a line.)
+                        if (one.Elapsed.TotalSeconds > 0.5 && side == "host")
+                            bugs.TryAdd($"{id} on the {side}: one packet took {one.Elapsed.TotalSeconds:0.0} s", Convert.ToHexString(packet.AsSpan(0, Math.Min(packet.Length, 24))));
                         if (i % 8 == 0)
                         {
                             try
@@ -455,9 +515,14 @@ public static partial class SelfTest
                         }
                     }
                 }
+                if (done < perType || typeTime.ElapsedMilliseconds > 1000)
+                    slow.Add($"{id}: {done} in {typeTime.ElapsedMilliseconds} ms");
             }
+            if (slow.Count > 0)
+                Line($"  slow message types: {string.Join(", ", slow)}");
 
             // The browser and the master server's parsers.
+            _pasteStep = "server browser parsers";
             for (var i = 0; i < 4000; i++)
             {
                 var packet = FuzzPacket(rng, (byte)DefaultMessageIDTypes.UnconnectedPong);
@@ -480,6 +545,7 @@ public static partial class SelfTest
         finally
         {
             Console.SetOut(savedOut);
+            World.Map.RestoreProps(); // prop state packets broke props on the shared map
             if (World.Map != savedMap)
                 World.SetMap(savedMap);
             World.PhysicsMode = savedPhysics;
