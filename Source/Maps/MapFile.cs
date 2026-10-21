@@ -185,7 +185,10 @@ public static partial class MapFile
         sb.Append($"  \"halfZ\": {Num(m.HalfZ)},\n");
         if (m.MaxPlayersSetting > 0)
             sb.Append($"  \"maxPlayers\": {m.MaxPlayersSetting},\n");
-        sb.Append($"  \"sky\": {Col(m.Sky)},\n");
+        if (m.Skybox is { } skybox)
+            sb.Append("  \"skybox\": ").Append(SkyFile.ToJson(skybox)).Append(",\n"); // the horizon colour is the map's sky colour
+        else
+            sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
         if (m.TerrainSpec != null)
@@ -283,6 +286,11 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
+            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)
+            {
+                map.Skybox = parsedSky;
+                map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)
+            }
             if (boundaryEl is { } boundary)
             {
                 var spec = ReadBoundary(boundary, source);

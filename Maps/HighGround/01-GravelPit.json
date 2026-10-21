@@ -7,7 +7,7 @@
   "maxPlayers": 10,
   "halfX": 36,
   "halfZ": 32,
-  "sky": "#c8c3b4",
+  "skybox": { "preset": "clear", "horizon": "#c8c3b4", "haze": { "color": "#eadcc0", "strength": 0.4 } },
   "terrain": {
     "cell": 0.5,
     "margin": 16,
