@@ -35,6 +35,8 @@ jobs:
             Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
+            $wb = Select-String -Path $log -Pattern "^\s*(cart|melee|splitter|shared feed|slot upgrade|standard melee|drop tables|weight relief|fire styles|damage multiplier|receiver upgrade|frames by|\d+ standard build|Plain Rifle|Minigun|Party Platter|Shopping Spree|Nine Lives|Lumberjack|Twin Splitter|Pack assets|Dev/Workbench)" | ForEach-Object { $_.Line.Trim() }
+            if ($wb) { Write-Output ("::notice title=WB2::" + ($wb -join "%0A")) }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           }
