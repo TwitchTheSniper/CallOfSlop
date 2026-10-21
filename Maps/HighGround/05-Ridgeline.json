@@ -46,9 +46,9 @@
       { "type": "path", "points": [[40, 42], [14, 41], [0, 40]], "width": 6, "edge": 4, "material": "dirt" },
       { "type": "hill", "x": 0, "z": 0, "radius": 34, "height": 1.5 },
       { "type": "plateau", "x": 0, "z": 0, "w": 22, "d": 22, "height": 11, "edge": 11, "mode": "set" },
-      { "type": "flatten", "x": -68, "z": -6, "w": 26, "d": 24, "edge": 6 },
+      { "type": "flatten", "x": -68, "z": -6, "w": 26, "d": 24, "edge": 9 },
       { "type": "flatten", "x": -2, "z": -40, "w": 14, "d": 10, "edge": 4 },
-      { "type": "flatten", "x": 68, "z": 6, "w": 26, "d": 24, "edge": 6 },
+      { "type": "flatten", "x": 68, "z": 6, "w": 26, "d": 24, "edge": 9 },
       { "type": "flatten", "x": 2, "z": 40, "w": 14, "d": 10, "edge": 4 }
     ]
   },

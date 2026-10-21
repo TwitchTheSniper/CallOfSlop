@@ -60,7 +60,7 @@ public sealed class TerrainSurface
     /// <summary>Slopes at or above this many degrees are dirt.</summary>
     public double DirtSlope = 24;
 
-    /// <summary>Slopes at or above this many degrees are rock (players can walk up to <see cref="World.MaxSlopeDeg"/>).</summary>
+    /// <summary>Slopes at or above this many degrees are rock (players can walk terrain up to <see cref="SlopeRules.WalkLimitDeg"/>).</summary>
     public double RockSlope = 38;
 
     /// <summary>Gentle ground at or below this height is sand (null: no sand).</summary>

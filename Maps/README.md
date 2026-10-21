@@ -213,7 +213,7 @@ Any feature except `noise`, `smooth` and `grid` can also take `"material": "gras
 |---|---|---|
 | `grass`, `dirt`, `rock`, `sand` | green, brown, grey, beige | Colours (`[r, g, b]` or `"#rrggbb"`). |
 | `dirtSlope` | 24 | Slopes from this many degrees are dirt. |
-| `rockSlope` | 38 | Slopes from this many degrees are rock (players can walk up to 42°). |
+| `rockSlope` | 38 | Slopes from this many degrees are rock (players can walk terrain up to 45°). |
 | `sandBelow` | none | Gentle ground at or below this height is sand: beaches and river beds. |
 | `variation` | 0.06 | Large, soft brightness patches (0–0.5) so big fields aren't one flat colour. |
 
@@ -221,9 +221,10 @@ Each sample stores its surface type. Painted features win. Otherwise the rules a
 
 ### Slopes, cliffs and movement
 
-- Players walk up anything up to **42°**. Steeper ground can't be walked up: walking into it stops you, and standing on it slides you down. Cliffs are real walls.
+- Players walk up terrain up to **45°**, measured over their footprint (0.4 m around the feet), so fine noise doesn't count. Walking uphill is full speed up to 25° and slower above that (60% straight up 45°). Steeper ground can't be walked up: walking into it stops you, and standing on it slides you down (at most 8 m/s, and you can steer out sideways). Cliffs are real walls.
+- **Grip and terrain steps:** a narrow steep patch (walkable ground within 0.45 m before and after it) that rises at most 0.55 m against the slope around it is walked over, like a stair. A taller bank needs a mantle.
 - Low banks can be **mantled** like crates: a bank up to 1.7 m tall whose top is flat enough to stand on (jump + forward). With a jump that reaches about 2.7 m, and about 3.8 m with the Parkour perk. **Make a cliff at least 4 m tall if it must never be climbed.** Mantling never works up a steep face, only onto a walkable top.
-- Comfortable ramps are 15–30° (height ÷ length 0.27–0.58). A `ramp` steeper than 42° is a wall.
+- Comfortable ramps are 15–30° (height ÷ length 0.27–0.58). A `ramp` steeper than 45° is a wall. Slopes that should stop players (a scarp, a mesa face) need to be clearly steeper than 45°: aim for 50° or more (a `cliff`, or a `plateau` with a small `edge`). Boxes and meshes keep a 42° limit.
 - Grenades bounce off the slope they hit and roll; they come to rest on slopes up to about 38°.
 - Nobody falls through the terrain or out of the map: the ground is a hard floor everywhere.
 
@@ -246,7 +247,7 @@ On a terrain map every op is placed **on the ground**, so y = 0 in an op means "
 
 ### Bots
 
-Bots pick waypoints they can walk to in a straight line: no box at knee or chest height and, on terrain, no stretch steeper than 42° or hill in between. They walk around cliffs if waypoints exist around them. Use `AutoWaypoints` with a spacing of 6–8 m, and make sure every area of the map is reachable by gentle slopes or ramps.
+Bots pick waypoints they can walk to in a straight line: no box at knee or chest height and, on terrain, nothing a player couldn't walk by the slope rules above, and no hill in between. Uphill links cost the time they take (slower walking), so routes prefer gentler ways up. They walk around cliffs if waypoints exist around them. Use `AutoWaypoints` with a spacing of 6–8 m, and make sure every area of the map is reachable by gentle slopes or ramps.
 
 ### Design tips
 
@@ -256,7 +257,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - **Cliff with a way round:** a `cliff` with a long `taper` (20 m or more) at the open end. A `ramp` with points on both sides of the face cuts a road up it.
 - **Valleys** with `sandBelow` a little above their floor get sandy beds. A `CoverLine` along the floor drapes over the bumps.
 - **Sightlines:** hills and ridges block sight like walls do, so use them to break up long lines across open maps.
-- Keep slopes where people fight below about 25°, so movement feels smooth.
+- Keep slopes where people fight below about 25° (full speed), so movement feels smooth.
 - `CallOfSlop.exe --check-map` prints the terrain size, height range and how much of it is rock.
 
 **Lessons from the High Ground pack** (`Maps/HighGround`, see its DESIGN.md):

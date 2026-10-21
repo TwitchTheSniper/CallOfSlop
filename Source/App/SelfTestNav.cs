@@ -11,7 +11,8 @@ public static partial class SelfTest
     /// (walking, jumping, mantling, starting inside a wall, long held-key input streams) must give bit-identical answers from
     /// the frozen old code (<see cref="LegacyCollision"/>: every-box scans and the 4 m collision grid) and from the new
     /// <see cref="PhysicsWorld"/> + <see cref="ClassicMover"/>. Maps with breakable props are checked again with half of them
-    /// broken. Also times old scan, old grid and the new BVH.
+    /// broken. Also times old scan, old grid and the new BVH. Movement ticks are compared on maps without terrain only: on
+    /// terrain the classic mover follows <see cref="SlopeRules"/> (protocol 14), which the old code doesn't.
     /// </summary>
     private static void CheckCollisionParity()
     {
@@ -125,8 +126,10 @@ public static partial class SelfTest
 
                     // Movement: a few ticks from random spots (on a surface, in the air, inside things), random keys, plus
                     // a few long streams of held keys (like a player or bot: hold a direction for a while, sprint, jump).
+                    // Not on terrain maps: since protocol 14 movement on terrain follows SlopeRules, deliberately not the
+                    // frozen old code (the "Slopes" section checks it there; the queries above still must match).
                     var runs = pass == 0 ? 150 : 40;
-                    for (var run = 0; run < runs + 6; run++)
+                    for (var run = 0; run < (m.HasTerrain ? 0 : runs + 6); run++)
                     {
                         var stream = run >= runs;
                         var x = Rand(-m.HalfX + 1, m.HalfX - 1);
