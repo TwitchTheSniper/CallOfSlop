@@ -6,6 +6,7 @@
   "order": 403,
   "maxPlayers": 32,
   "sky": "#a9bccb",
+  "skybox": {"preset": "clear", "horizon": "#b8c4c6", "sun": {"time": 16.8, "latitude": 42}, "clouds": {"coverage": 0.45, "speed": 6}, "haze": {"color": "#e6d6b4", "strength": 0.3}},
   "boundary": {"shape": "smooth", "points": [[-106, 4], [-78, -66], [-48, -76], [-28, -50], [-2, -70], [34, -74], [54, -102], [72, -98], [84, -62], [108, -24], [106, 20], [80, 56], [52, 92], [30, 54], [-10, 76], [-96, 46]], "noise": {"amplitude": 2.5, "scale": 22, "seed": 11, "octaves": 2}, "edge": {"style": "cliff", "height": 8, "width": 7}, "groundMargin": 8, "barrierHeight": 4},
   "terrain": {
     "cell": 1,
@@ -392,7 +393,7 @@
     {"op": "Spawn", "x": 0, "z": -12},
     {"op": "Spawn", "x": -14, "z": 2},
     {"op": "Spawn", "x": 16, "z": -6},
-    {"op": "Spawn", "x": 10, "z": 22},
+    {"op": "Spawn", "x": 9, "z": 31},
     {"op": "Spawn", "x": -16, "z": -40},
     {"op": "Spawn", "x": 8, "z": -54},
     {"op": "Spawn", "x": 26, "z": -66},
