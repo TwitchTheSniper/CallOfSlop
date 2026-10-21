@@ -67,7 +67,10 @@ public static class LegAnimator
     private const float HipDrop = 0.04f;
 
     /// <summary>Pelvis height per stance (stand, crouch); prone has its own fixed frame.</summary>
-    public const float StandPelvis = 0.9f, CrouchPelvis = 0.52f;
+    public const float StandPelvis = 0.9f, CrouchPelvis = 0.56f;
+
+    /// <summary>Crouching, the hips sit this far back (so the knees stay near the body).</summary>
+    public const float CrouchHipBack = 0.08f;
 
     // ---- Gait parameters: walk (at or below walking speed) vs run (at sprint speed) ----
     public const float WalkDuty = 0.62f, RunDuty = 0.36f; // fraction of the cycle a foot is planted
@@ -222,13 +225,18 @@ public static class LegAnimator
         var run = crouch || prone ? 0f : RunWeight(speed);
         var lateral = MathF.Abs(dir.X);
         var strideK = float.Lerp(1f, 0.65f, lateral); // shorter, quicker steps sideways
+        // ... and on slopes: the ground's rise along the direction of travel (from last frame's foot normals)
+        var avgN = st.GroundInit ? Vector3.Normalize(st.Normal0 + st.Normal1) : Vector3.UnitY;
+        var travel = right * dir.X + fwd * dir.Y;
+        var rise = MathF.Abs(Vector3.Dot(avgN, travel)) / MathF.Max(avgN.Y, 0.3f); // tan of the slope along the travel
+        strideK *= float.Lerp(1f, 0.55f, Math.Clamp(rise / 0.85f, 0f, 1f));
         var cadence = (prone ? speed / 0.7f : crouch ? CrouchCadence(speed) : Cadence(speed)) / strideK;
         var stride = speed / MathF.Max(cadence, 1e-3f);
         st.Phase += cadence * dt;
         st.Phase -= MathF.Floor(st.Phase);
         var duty = crouch ? WalkDuty : float.Lerp(WalkDuty, RunDuty, run);
         var lift = crouch ? 0.075f : float.Lerp(WalkLift, RunLift, run);
-        var skew = float.Lerp(1f, 0.7f, run);
+        var early = 0.3f * run; // running: the foot comes up early (heel kick), smoothly
         var sweep = duty * stride; // how far a planted foot travels (relative to the body) during its stance
 
         // Stance height, eased between stand and crouch
@@ -273,14 +281,14 @@ public static class LegAnimator
                 {
                     var s = (u - duty) / (1 - duty);
                     along = sweep * (-0.5f + s * s * (3 - 2 * s));
-                    var arc = MathF.Sin(MathF.PI * MathF.Pow(s, skew));
+                    var arc = (MathF.Sin(MathF.PI * s) + early * MathF.Sin(MathF.Tau * s)) / (1f + 0.55f * early);
                     up = lift * arc;
                     pitch = -0.45f * run * arc;
                     planted = false;
                 }
                 var gait = new Vector3(side * walkHipX + dir.X * along, AnkleHeight + up, -dir.Y * along);
                 // Idle: feet stay where they were planted (world) and shuffle back under the body when it turns or drifts.
-                var idleZ = crouch ? (i == 0 ? 0.12f : -0.16f) : (i == 0 ? 0.03f : -0.03f);
+                var idleZ = IdleZ(crouch, i);
                 var idleLocal = Vector3.Transform((i == 0 ? st.Plant0 : st.Plant1) - pos, rotYaw);
                 var idleYaw = World.WrapAngle((i == 0 ? st.PlantYaw0 : st.PlantYaw1) + yaw);
                 if (fresh)
@@ -302,7 +310,7 @@ public static class LegAnimator
                 var i = st.Stepping;
                 var e = st.StepT * st.StepT * (3 - 2 * st.StepT);
                 var side = i == 0 ? 1f : -1f;
-                var idleZ = crouch ? (i == 0 ? 0.12f : -0.16f) : (i == 0 ? 0.03f : -0.03f);
+                var idleZ = IdleZ(crouch, i);
                 var home = new Vector3(side * idleHipX, AnkleHeight, idleZ);
                 var from = Vector3.Transform(st.StepFrom - pos, rotYaw);
                 from.Y = AnkleHeight;
@@ -341,7 +349,9 @@ public static class LegAnimator
                 {
                     var w = Vector3.Transform(new Vector3(target[i].X, 0, target[i].Z), bodyRot) + pos;
                     rays++;
-                    if (World.Query.Raycast(new Vector3(w.X, pos.Y + 0.65f, w.Z), -Vector3.UnitY, 1.35f, filter, out var hit) && hit.Normal.Y > 0.5f)
+                    // from above the highest step a foot can stand on (stairs two steps up at a sprint) to below the lowest
+                    var top = crouch ? 0.95f : 1.1f;
+                    if (World.Query.Raycast(new Vector3(w.X, pos.Y + top, w.Z), -Vector3.UnitY, top + 0.8f, filter, out var hit) && hit.Normal.Y > 0.5f)
                     {
                         h = hit.Point.Y;
                         n = hit.Normal;
@@ -360,7 +370,7 @@ public static class LegAnimator
                     g = float.Lerp(g, h, k);
                     gn = Vector3.Lerp(gn, n, k);
                 }
-                groundOff[i] = Math.Clamp(g - pos.Y, -0.6f, 0.6f) * groundW;
+                groundOff[i] = Math.Clamp(g - pos.Y, -0.75f, 0.95f) * groundW;
                 normal[i] = Vector3.TransformNormal(Vector3.Normalize(Vector3.Lerp(Vector3.UnitY, gn, groundW)), rotYaw); // into body space
                 target[i].Y += groundOff[i];
             }
@@ -370,21 +380,22 @@ public static class LegAnimator
             // ---- Pelvis: bob, landing dip, then lowered until both feet are in reach ----
             var bobAmp = crouch ? 0.015f : float.Lerp(WalkBob, -RunBob, run);
             var hipY = st.PelvisH - RunCrouch * run * moving + bobAmp * moving * MathF.Cos(MathF.Tau * 2 * (st.Phase - duty / 2)) - 0.16f * st.Land;
+            var hipZ = CrouchHipBack * Math.Clamp((StandPelvis - st.PelvisH) / (StandPelvis - CrouchPelvis), 0f, 1f);
             var drop = 0f;
             for (var i = 0; i < 2; i++)
             {
                 var hipX = (i == 0 ? 1f : -1f) * 0.19f;
                 var dx = target[i].X - hipX;
-                var dz = target[i].Z;
+                var dz = target[i].Z - hipZ;
                 var dy = hipY - HipDrop - target[i].Y;
                 var room = MaxReach * MaxReach - dx * dx - dz * dz;
                 var need = dy - MathF.Sqrt(MathF.Max(room, 0f));
                 drop = MathF.Max(drop, need);
             }
-            drop = Math.Clamp(drop, 0f, 0.45f);
+            drop = Math.Clamp(drop, 0f, 0.5f);
             hipY -= drop;
             var twistT = float.Lerp(0.07f, 0.12f, run) * moving * MathF.Sin(MathF.Tau * st.Phase) * MathF.Max(dir.Y * dir.Y, 0.3f);
-            pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, 0);
+            pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, hipZ);
             pose.Drop = drop;
 
             // Upper body: follows the hips' height and leans into the run (less when backing up, a little into strafes).
@@ -400,6 +411,12 @@ public static class LegAnimator
             {
                 var side = i == 0 ? 1f : -1f;
                 var hip = Vector3.Transform(new Vector3(side * 0.19f, -HipDrop, 0), pose.Pelvis);
+                // Still out of reach after the pelvis drop (a foot far down a staircase): lift the foot to where the leg reaches.
+                var d = target[i] - hip;
+                var dxz2 = d.X * d.X + d.Z * d.Z;
+                const float reach = MaxReach * 1.01f;
+                if (d.LengthSquared() > reach * reach)
+                    target[i] = dxz2 < reach * reach ? target[i] with { Y = hip.Y - MathF.Sqrt(reach * reach - dxz2) } : hip + d * (reach / d.Length());
                 var pole = Vector3.Normalize(new Vector3(side * 0.15f, 0.1f * st.Air, -1f));
                 Solve(pose, i, hip, target[i], pole, FootFrame(footYaw[i], footPitch[i], normal[i]));
             }
@@ -450,7 +467,7 @@ public static class LegAnimator
             // landed: plant it at home
             var i = st.Stepping;
             var side = i == 0 ? 1f : -1f;
-            var home = new Vector3(side * idleHipX, AnkleHeight, crouch ? (i == 0 ? 0.12f : -0.16f) : (i == 0 ? 0.03f : -0.03f));
+            var home = new Vector3(side * idleHipX, AnkleHeight, IdleZ(crouch, i));
             var w = Vector3.Transform(home, bodyRot) + pos;
             if (i == 0)
             {
@@ -473,7 +490,7 @@ public static class LegAnimator
         for (var i = 0; i < 2; i++)
         {
             var side = i == 0 ? 1f : -1f;
-            var home = new Vector3(side * idleHipX, AnkleHeight, crouch ? (i == 0 ? 0.12f : -0.16f) : (i == 0 ? 0.03f : -0.03f));
+            var home = new Vector3(side * idleHipX, AnkleHeight, IdleZ(crouch, i));
             var d = new Vector2(target[i].X - home.X, target[i].Z - home.Z).Length();
             var yawErr = MathF.Abs(World.WrapAngle(footYaw[i] + side * 0.08f));
             var err = MathF.Max(d / 0.2f, yawErr / 0.55f);
@@ -496,17 +513,17 @@ public static class LegAnimator
     {
         var crawl = MathF.Min(speed / 1.2f, 1f) * moving;
         var sway = 0.06f * crawl * MathF.Sin(MathF.Tau * st.Phase);
-        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, 0.2f, -0.04f);
+        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, 0.18f, -0.14f);
         pose.Upper = Matrix4x4.CreateRotationY(-sway * 0.5f);
         pose.Drop = 0;
         // toes back, soles up
-        var foot = Matrix4x4.CreateRotationY(MathF.PI) * Matrix4x4.CreateRotationZ(MathF.PI);
+        var foot = Matrix4x4.CreateRotationY(MathF.PI) * Matrix4x4.CreateRotationZ(MathF.PI) * Matrix4x4.CreateRotationX(0.6f); // toes back and down
         for (var i = 0; i < 2; i++)
         {
             var side = i == 0 ? 1f : -1f;
             var u = st.Phase + i * 0.5f;
             var c = MathF.Max(0f, MathF.Sin(MathF.Tau * u)) * crawl;
-            var target = new Vector3(side * (0.14f + 0.14f * c), 0.14f + 0.04f * c, 0.68f - 0.22f * c);
+            var target = new Vector3(side * (0.14f + 0.14f * c), 0.13f + 0.04f * c, 0.7f - 0.22f * c);
             var hip = Vector3.Transform(new Vector3(side * 0.13f, 0, 0), pose.Pelvis);
             var pole = Vector3.Normalize(new Vector3(side * (0.3f + 0.9f * c), -1f, 0));
             pose.Planted[i] = false;
@@ -533,6 +550,9 @@ public static class LegAnimator
         var slopeRoll = Math.Clamp(-MathF.Atan2(normalBody.X, normalBody.Y) * 0.6f, -0.35f, 0.35f);
         return Matrix4x4.CreateRotationY(yaw) * Matrix4x4.CreateRotationX(pitch + slopePitch) * Matrix4x4.CreateRotationZ(slopeRoll);
     }
+
+    /// <summary>Idle foot placement front-to-back (crouching: one foot back, knee forward).</summary>
+    private static float IdleZ(bool crouch, int i) => crouch ? (i == 0 ? 0.2f : -0.05f) : (i == 0 ? 0.03f : -0.03f);
 
     private static float Approach(float v, float target, float step) => v < target ? MathF.Min(v + step, target) : MathF.Max(v - step, target);
 

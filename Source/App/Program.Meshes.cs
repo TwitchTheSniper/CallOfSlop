@@ -35,7 +35,7 @@ public static unsafe partial class Program
         if (Maps.Find(MeshSmokeMap) is not { } map)
         {
             Console.WriteLine($"[smoke] mesh: map '{MeshSmokeMap}' not found, step skipped");
-            SmokeNextMap(now);
+            StartLegsSmoke(now); // then the legs step (Program.Legs.cs), then on to the maps
             return;
         }
         if (World.Map != map)
@@ -62,7 +62,7 @@ public static unsafe partial class Program
             {
                 _meshSmoke = -1;
                 _settings.VSync = _meshSmokeSavedVSync;
-                SmokeNextMap(now);
+                StartLegsSmoke(now); // then the legs step (Program.Legs.cs), then on to the maps
                 return;
             }
             BeginMeshSmokeView(now);
