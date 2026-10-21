@@ -45,6 +45,9 @@ public enum ZUseKind : byte
     Workbench,
     Salvage,
     Repair,
+
+    /// <summary>A built weapon on the floor (dropped when someone bled out): pick it up (ZombiesDrops.cs).</summary>
+    Pickup,
 }
 
 /// <summary>One thing the interact key can use: what, which one, its price and the prompt.</summary>
@@ -234,6 +237,7 @@ public sealed partial class Game
     {
         Horde.Clear();
         ZDrops.Clear();
+        ZWeaponDrops.Clear();
         ZPlayers.Clear();
         ZRound = 0;
         ZPhase = ZRoundPhase.Waiting;
@@ -304,6 +308,7 @@ public sealed partial class Game
             TickZPlayer(p, ZP(p), zm, now);
         TickBox(zm, now);
         TickDrops(now);
+        TickWeaponDrops(now); // ZombiesDrops.cs
 
         // The game over: nobody left standing (everyone downed or bled out).
         if (_zAnySpawned && ZRound > 0 && Players.Count > 0 && !Players.Values.Any(p => IsStanding(p) || (p.Alive && ZP(p).SelfReviveAt > 0)))
@@ -634,18 +639,25 @@ public sealed partial class Game
 
     private void Down(Player p, ZPlayer zp, double now)
     {
-        var solo = Players.Count <= 1;
-        var selfRevive = solo && ZRules.Perks.Select((d, i) => (d, i)).Any(x => x.d.SelfRevive && zp.Has(x.i));
+        // A self-revive perk (Second Wind) gets you back up on your own, solo or co-op, and is used up by it.
+        var selfPerk = -1;
+        for (var i = 0; i < ZRules.Perks.Count && selfPerk < 0; i++)
+            if (ZRules.Perks[i].SelfRevive && zp.Has(i))
+                selfPerk = i;
+        var selfRevive = selfPerk >= 0;
+        if (selfRevive)
+            zp.Perks &= (byte)~(1 << selfPerk); // consumed (even if perks were kept on down)
         zp.Downed = true;
         zp.Downs++;
         zp.DownedAt = now;
         zp.BleedAt = now + ZRules.BleedoutSeconds;
         zp.SelfReviveAt = selfRevive ? now + ZRules.SelfReviveSeconds : -1;
-        zp.Perks = 0; // every perk is lost when you go down
+        if (ZRules.LosePerksOnDown)
+            zp.Perks = 0; // every perk is lost when you go down
         zp.UseHeld = false;
         zp.BeingRevived = 0;
         p.Health = World.MaxHealth;
-        ModeEvent(selfRevive ? $"{p.Name} is down! Quick Revive gets them up in {ZRules.SelfReviveSeconds:0} seconds." : $"{p.Name} is down! Hold the interact key on them to revive.", Sfx.Death);
+        ModeEvent(selfRevive ? $"{p.Name} is down! {ZRules.Perks[selfPerk].Name} gets them up in {ZRules.SelfReviveSeconds:0} seconds." : $"{p.Name} is down! Hold the interact key on them to revive.", Sfx.Death);
     }
 
     private void Revive(Player p, Player? by, double now)
@@ -665,12 +677,15 @@ public sealed partial class Game
         zp.Downed = false;
         zp.NeedsStartGear = true;
         zp.Points -= (int)(zp.Points * ZRules.BleedoutPointLoss);
+        var dropped = ZRules.DropBuildsOnBleedout ? DropBuildsOnBleedout(p, zp, p.Position, now) : 0; // ZombiesDrops.cs
         p.Alive = false;
         p.Health = 0;
         p.Deaths++;
         p.RespawnAt = double.MaxValue; // back at the start of the next round (BeginRound)
         p.WantsRespawn = false;
-        ModeEvent($"{p.Name} bled out. They'll be back next round.", Sfx.Death);
+        ModeEvent(dropped > 0
+            ? $"{p.Name} bled out. They'll be back next round; their {(dropped == 1 ? "weapon is" : $"{dropped} weapons are")} on the floor where they went down for {ZRules.BuildDropSeconds / 60:0.#} minutes."
+            : $"{p.Name} bled out. They'll be back next round.", Sfx.Death);
     }
 
     // ---- The interact key ----------------------------------------------------------------------------
@@ -795,6 +810,12 @@ public sealed partial class Game
                 ? new ZUse(ZUseKind.Salvage, i, 0, "Picked clean this round", Blocked: true)
                 : new ZUse(ZUseKind.Salvage, i, 0, $"Hold [E] to salvage scrap (+{scrap})"));
         }
+        foreach (var wd in ZWeaponDrops)
+        {
+            var d = Flat(wd.At - pos);
+            if (d <= UseRange && MathF.Abs(wd.At.Y - pos.Y) < 1.5f && d < bestD)
+                Consider(d, UseRange, WeaponDropUse(p, wd)); // ZombiesDrops.cs
+        }
         for (var i = 0; i < zm.Windows.Count; i++)
         {
             var w = zm.Windows[i];
@@ -877,6 +898,9 @@ public sealed partial class Game
                 ZPower = true;
                 ModeEvent($"{p.Name} turned on the power!", Sfx.StreakReady);
                 ZBanner("THE POWER IS ON");
+                break;
+            case ZUseKind.Pickup:
+                ClaimWeaponDrop(p, u.Index, now); // ZombiesDrops.cs
                 break;
             case ZUseKind.Salvage:
             {

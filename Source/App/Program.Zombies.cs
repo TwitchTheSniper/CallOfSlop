@@ -185,6 +185,26 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateRotationY(t * 2 + d.Id) * Matrix4x4.CreateTranslation(d.At + new Vector3(0, 0.25f + 0.06f * MathF.Sin(t * 3 + d.Id), 0)), c, 1f, mode: 2);
         }
 
+        // Dropped builds (ZombiesDrops.cs): the weapon's own model lying over a glowing ring, slowly turning and bobbing;
+        // in their last seconds the ring goes red and the whole pickup blinks.
+        foreach (var wd in _game.ZWeaponDrops)
+        {
+            var left = wd.Until - now;
+            var warn = left < _game.ZRules.BuildDropWarnSeconds;
+            if (warn && ((int)(now * 4) & 1) == 0)
+                continue; // the blink
+            var ring = warn ? new Vector3(1f, 0.2f, 0.15f) : wd.Melee ? new Vector3(0.4f, 0.75f, 1f) : new Vector3(1f, 0.8f, 0.3f);
+            var spin = t * 0.8f + wd.Id;
+            for (var k = 0; k < 10; k++)
+            {
+                var a = spin * 0.5f + k * MathF.Tau / 10;
+                Gfx.Draw(Matrix4x4.CreateScale(0.16f, 0.015f, 0.05f) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(wd.At + new Vector3(MathF.Sin(a) * 0.45f, 0.03f, MathF.Cos(a) * 0.45f)), ring, 0.9f, mode: 2);
+            }
+            Gfx.Draw(Matrix4x4.CreateScale(0.06f, 1.2f, 0.06f) * Matrix4x4.CreateTranslation(wd.At + new Vector3(0, 0.6f, 0)), ring, 0.25f, mode: 2); // a faint beam so it reads from across the room
+            if (Game.AssembleCached(wd.Build).PreviewDef is { } def)
+                DrawGun(def, Matrix4x4.CreateRotationZ(MathF.PI / 2 * 0.9f) * Matrix4x4.CreateRotationY(spin) * Matrix4x4.CreateTranslation(wd.At + new Vector3(0, 0.35f + 0.06f * MathF.Sin(t * 2 + wd.Id), 0)), false);
+        }
+
         // The zombies.
         foreach (var z in _game.Horde)
             DrawZombie(z, now);

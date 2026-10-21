@@ -96,6 +96,7 @@
     ],
     "perks": [
       {"perk": "revive", "at": [-6.5, -4.5], "yaw": 90},
+      {"perk": "secondwind", "at": [6.5, -1.5], "yaw": -90},
       {"perk": "jugg", "at": [-6, 16], "yaw": 90, "power": true},
       {"perk": "speed", "at": [-18.5, 4.5], "yaw": 90, "power": true},
       {"perk": "doubletap", "at": [17.5, -4.5], "yaw": -90, "power": true}

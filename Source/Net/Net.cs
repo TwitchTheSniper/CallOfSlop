@@ -51,6 +51,7 @@ public enum Msg : byte
     ZRun, // server -> one client: Zombies: your loose parts and scrap (reliable)
     ZBuild, // server -> all: Zombies: a built weapon went into player X's slot (the build's text) (reliable)
     ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, salvage a part, craft a part) (reliable)
+    ZPickup, // server -> all (and each joiner): Zombies: a dropped build appeared (where, seconds left, owner, build text) or went (picked up by X / despawned) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

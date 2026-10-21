@@ -1512,6 +1512,7 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ZRun:
             case (byte)Msg.ZBuild:
             case (byte)Msg.ZBench:
+            case (byte)Msg.ZPickup:
                 OnZombiesPacket(id, ref r, sender, now); // the Zombies mode (ZombiesNet.cs)
                 break;
             case (byte)Msg.Ready:

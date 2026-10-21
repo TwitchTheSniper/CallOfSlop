@@ -106,6 +106,14 @@ public sealed class ZombiesRules
 
     public float BleedoutPointLoss = 0.1f;
 
+    /// <summary>Going down loses every perk (World at War).</summary>
+    public bool LosePerksOnDown = true;
+
+    /// <summary>Bleeding out drops your built weapons where you went down, for anyone to pick up, for this long (seconds); the HUD blinks for the last <see cref="BuildDropWarnSeconds"/>.</summary>
+    public bool DropBuildsOnBleedout = true;
+
+    public float BuildDropSeconds = 300f, BuildDropWarnSeconds = 30f;
+
     // ---- Buyables -----------------------------------------------------------------------------------------
     /// <summary>How long the interact key is held to buy something (seconds).</summary>
     public float BuyHoldSeconds = 0.25f;
@@ -165,7 +173,8 @@ public sealed class ZombiesRules
         r.Perks.Add(new ZombiePerkDef { Name = "Juggernog", Key = "jugg", Cost = 2500, DamageTaken = 0.4f, Color = new Vector3(0.85f, 0.15f, 0.15f), Blurb = "Zombie hits do 40 percent of their damage." });
         r.Perks.Add(new ZombiePerkDef { Name = "Speed Cola", Key = "speed", Cost = 3000, Reload = 0.5f, Color = new Vector3(0.2f, 0.85f, 0.3f), Blurb = "Reload twice as fast." });
         r.Perks.Add(new ZombiePerkDef { Name = "Double Tap", Key = "doubletap", Cost = 2000, FireRate = 1.33f, Color = new Vector3(0.95f, 0.75f, 0.15f), Blurb = "Fire a third faster." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Quick Revive", Key = "revive", Cost = 1500, SoloCost = 500, Revive = 0.5f, SelfRevive = true, Color = new Vector3(0.3f, 0.6f, 1f), Blurb = "Revive teammates twice as fast. Alone, it gets you back up once." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Quick Revive", Key = "revive", Cost = 1500, Revive = 0.5f, Color = new Vector3(0.3f, 0.6f, 1f), Blurb = "Revive teammates twice as fast." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Second Wind", Key = "secondwind", Cost = 1500, SelfRevive = true, Color = new Vector3(1f, 0.55f, 0.1f), Blurb = "When you go down, you get back up on your own after a few seconds (used up)." });
         return r;
     }
 
@@ -313,6 +322,10 @@ public sealed class ZombiesRules
                             case "selfReviveSeconds": r.SelfReviveSeconds = Real(v, w, 0.5f, 60); break;
                             case "revivePoints": r.RevivePoints = Whole(v, w, 0, 100000); break;
                             case "bleedoutPointLoss": r.BleedoutPointLoss = Real(v, w, 0, 1); break;
+                            case "losePerksOnDown": r.LosePerksOnDown = Flag(v, w); break;
+                            case "dropBuildsOnBleedout": r.DropBuildsOnBleedout = Flag(v, w); break;
+                            case "buildDropSeconds": r.BuildDropSeconds = Real(v, w, 5, 3600); break;
+                            case "buildDropWarnSeconds": r.BuildDropWarnSeconds = Real(v, w, 0, 600); break;
                             default: return false;
                         }
                         return true;
@@ -456,6 +469,13 @@ public sealed class ZombiesRules
         var v = WeaponFile.Int(e, where);
         return v >= min && v <= max ? v : throw new WeaponFileException($"{where}: {v} is outside {min}-{max}");
     }
+
+    private static bool Flag(JsonElement e, string where) => e.ValueKind switch
+    {
+        JsonValueKind.True => true,
+        JsonValueKind.False => false,
+        _ => throw new WeaponFileException($"{where}: true or false"),
+    };
 
     private static float Real(JsonElement e, string where, float min, float max)
     {
