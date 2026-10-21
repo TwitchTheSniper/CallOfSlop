@@ -18,7 +18,55 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  # Default: Linux (1x minutes; Windows bills 2x). Same build and headless self-test as the Windows job.
+  linux:
+    if: ${{ !contains(github.event.head_commit.message, '[windows ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build CallOfSlop.csproj -c Release -nologo
+
+      - name: Self-test
+        shell: bash
+        run: |
+          dir=bin/Release/net10.0
+          set +e
+          timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest
+          code=$?
+          set -e
+          log="$dir/selftest.log"
+          if [ -f "$log" ]; then
+            cat "$log"
+            grep "FAIL:" "$log" | sed 's/^/::error title=Self-test::/' || true
+            done=$(grep "^DONE" "$log" | tail -1)
+            [ -n "$done" ] && echo "::notice title=Self-test::$done"
+          else
+            echo "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
+          fi
+          game="$dir/callofslop.log"
+          [ -f "$game" ] && { grep -E "Exception|Unhandled" "$game" | head -5 | sed 's/^/::error title=Crash::/' || true; }
+          echo "::notice title=Exit code::$code"
+          [ "$code" -eq 0 ] || exit 1
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: selftest-logs-linux
+          path: |
+            bin/Release/net10.0/selftest.log
+            bin/Release/net10.0/callofslop.log
+          if-no-files-found: ignore
+
+  # Windows (2x minutes): only when a commit message contains [windows ci], or run by hand.
+  windows:
+    if: ${{ contains(github.event.head_commit.message, '[windows ci]') || github.event_name == 'workflow_dispatch' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5
