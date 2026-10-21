@@ -60,7 +60,7 @@ public sealed partial class Ui
         _wbTrial = ("", null);
     }
 
-    private static float4 Col(Vector3 c) => new(c.X, c.Y, c.Z, 1f);
+    private static float4 WbCol(Vector3 c) => new(c.X, c.Y, c.Z, 1f);
 
     private static string SocketLabel(PartSocket s) =>
         s.Name.Length == 0 ? s.Type : char.ToUpperInvariant(s.Name[0]) + s.Name[1..].Replace('_', ' ');
@@ -188,7 +188,7 @@ public sealed partial class Ui
             string? why = null;
             if (!p.IsRoot && socketParent != null && _wbSocketName != null)
                 why = BuildRules.WhyNot(b, _wbSocketParent!, _wbSocketName, p);
-            ImGui.PushStyleColor(ImGuiCol.Text, why != null ? new float4(0.5f, 0.5f, 0.52f, 1f) : Col(PartDef.RarityColor(p.Rarity)));
+            ImGui.PushStyleColor(ImGuiCol.Text, why != null ? new float4(0.5f, 0.5f, 0.52f, 1f) : WbCol(PartDef.RarityColor(p.Rarity)));
             var clicked = ImGui.Selectable($"{p.Name}  [{PartDef.RarityName(p.Rarity)}]##part{p.Name}", _wbPart == p);
             ImGui.PopStyleColor();
             if (ImGui.IsItemHovered())
@@ -260,7 +260,7 @@ public sealed partial class Ui
         if (b.Root == null)
             return;
         var grip = b.Root.Part;
-        ImGui.PushStyleColor(ImGuiCol.Text, Col(PartDef.RarityColor(grip.Rarity)));
+        ImGui.PushStyleColor(ImGuiCol.Text, WbCol(PartDef.RarityColor(grip.Rarity)));
         ImGui.Text(grip.Name);
         ImGui.PopStyleColor();
         ImGui.SameLine();
@@ -277,7 +277,7 @@ public sealed partial class Ui
             var selected = _wbSocketParent == path && _wbSocketName == s.Name;
             var need = s.Required || (node.Part.Category == PartCategory.Splitter && s.Type == "barrel");
             var label = $"{new string(' ', depth * 3)}{SocketLabel(s)}: {(child != null ? child.Part.Name : need ? "(empty - needed)" : "(empty)")}##{path}/{s.Name}";
-            ImGui.PushStyleColor(ImGuiCol.Text, child != null ? Col(PartDef.RarityColor(child.Part.Rarity)) : need ? Yellow : Dim);
+            ImGui.PushStyleColor(ImGuiCol.Text, child != null ? WbCol(PartDef.RarityColor(child.Part.Rarity)) : need ? Yellow : Dim);
             if (ImGui.Selectable(label, selected))
             {
                 _wbSocketParent = path;
@@ -427,7 +427,7 @@ public sealed partial class Ui
             launch = new WorkbenchLaunch(cur, second ?? cur);
         }
         ImGui.EndDisabled();
-        ImGuiSafe.TextColored(Dim, "Opens the Workbench Range with this build and the second slot as your weapons.");
+        ImGui.TextColored(Dim, "Opens the Workbench Range with this build and the second slot as your weapons."u8);
         return launch;
     }
 }
