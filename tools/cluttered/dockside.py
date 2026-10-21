@@ -703,10 +703,11 @@ foliage = {
     ],
     "items": [],
 }
-TREES = [("tree", -60.0, 15.5, 7.0), ("tree", -64.5, -4.0, 6.5), ("tree", -49.5, 21.0, 6.0), ("tree", -43.5, 5.0, 5.5), ("pine", -66.0, 6.0, 8.5),
+TREES = [("tree", -57.5, 13.0, 7.0), ("tree", -64.5, -4.0, 6.5), ("tree", -49.5, 20.0, 6.0), ("tree", -43.5, 5.0, 5.5), ("pine", -62.5, 4.0, 8.5),
          ("tree", -34.0, -6.8, 6.0), ("tree", -31.0, 25.0, 5.5), ("tree", -45.0, -14.6, 6.0), ("tree", -27.5, 8.9, 5.5), ("tree", -3.8, 9.2, 5.0),
          ("tree", -15.5, 9.4, 5.5)]
 for t, x, z, h in TREES:
+    assert inset_ok(x, z, 2.0), ("tree too near the edge", x, z)
     for sx in (1, -1):
         foliage["items"].append({"type": t, "x": x * sx, "z": z, "height": h})
         lay.solids.append((x * sx - 0.4, z - 0.4, x * sx + 0.4, z + 0.4))
