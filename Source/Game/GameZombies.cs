@@ -6,14 +6,17 @@ namespace CallOfSlop;
 /// <summary>What a push cart is doing.</summary>
 public enum CartMode : byte
 {
-    /// <summary>In its owner's hands: rolls in front of them, fires when they pull the trigger.</summary>
+    /// <summary>In its owner's hands: rolls in front of them. Both hands are on the bar, so it doesn't fire.</summary>
     Pushed,
 
-    /// <summary>Standing where it was left (switched away from, or a turret that ran out). Walk up and pick it up.</summary>
+    /// <summary>Standing where it was left (parked, or switched away from). Tap E at its bar to man it, hold E to push it.</summary>
     Idle,
 
-    /// <summary>Parked as a turret: fires its own build at the nearest enemy for a while (proposed, open for the user).</summary>
-    Turret,
+    /// <summary>
+    /// Manned: parked, with its owner standing at the push bar aiming and firing its gun by hand (within the traverse
+    /// limits). Decided by the user: no auto-firing turret (that may come later as a separate deployable).
+    /// </summary>
+    Manned,
 }
 
 /// <summary>A push cart in the world: one per owner (server-owned; clients get <see cref="Msg.CartState"/>).</summary>
@@ -27,31 +30,27 @@ public sealed class CartEntity
     /// <summary>The cart build (the owner's; on clients the owner's own or a stand-in Push Cart for others).</summary>
     public WeaponDef? Def;
 
-    /// <summary>Turret: when it stops, rounds left, next shot, shots fired (the shot seed), target and aim pitch.</summary>
-    public double TurretUntil;
+    /// <summary>Manned: where its gun points, as a yaw offset from the cart's facing and a pitch (both clamped to the traverse limits).</summary>
+    public float AimYaw;
 
-    public int TurretAmmo;
-    public double NextShot;
-    public uint Shots;
-    public byte Target = byte.MaxValue;
     public float AimPitch;
 
-    /// <summary>Picked up this recently: stays pushed while the owner's weapon switch catches up.</summary>
-    public double PickedUpAt = -100;
+    /// <summary>When the mode last changed: the weapon-switch rules wait a moment so the owner's switch can catch up.</summary>
+    public double ModeAt = -100;
 
     /// <summary>Client: when the last state arrived (carts not heard of for a while are dropped).</summary>
     public double HeardAt;
 
-    /// <summary>Where the push bar is (the owner stands just behind it to push).</summary>
+    /// <summary>Where the push bar is (the owner stands just behind it to push or man it).</summary>
     public Vector3 Bar => Body.Position - World.FlatForward(Body.Yaw) * (Shape.PushDist - CartShape.PlayerGap);
 
-    /// <summary>Where a parked cart's shots start: above its centre at about barrel height.</summary>
-    public Vector3 TurretMuzzle => Body.Position + new Vector3(0, MathF.Max(0.3f, Shape.BarHeight * 0.65f), 0) + World.FlatForward(Body.Yaw) * Shape.Half.Z;
+    /// <summary>Where the owner's feet are held while manning it: the spot they'd push it from.</summary>
+    public Vector3 Stand => Body.Position - World.FlatForward(Body.Yaw) * Shape.PushDist;
 }
 
 /// <summary>
 /// The Zombies preview systems that live in a match (docs/zombies/WEAPON-BUILDER.md), all used by the Workbench Range
-/// today and by the Zombies mode later: the push cart as a real object (pushed, parked as a turret, picked up again),
+/// today and by the Zombies mode later: the push cart as a real object (pushed, parked, manned as a gun emplacement),
 /// weapon slots 3 and 4 (the per-run slot upgrade), the built melee weapon on the melee key (damage, reach, cleave,
 /// stun), and the range's practice dummies. Everything is server-authoritative; standard matches never create any of it.
 /// </summary>
@@ -60,12 +59,14 @@ public sealed partial class Game
     /// <summary>How close to a cart's push bar you must be to pick it up (or park it).</summary>
     public const float CartPickupRange = 2.4f;
 
-    /// <summary>Parked turret: how long it fires on its own, how many magazines of the build it gets, how far it sees, how fast it turns.</summary>
-    public const double TurretSeconds = 30;
+    /// <summary>Manned cart gun: how far it turns either side of the cart's facing, and how far down and up it tilts (radians).</summary>
+    public const float CartTraverseYaw = 60f * MathF.PI / 180f;
 
-    public const int TurretMags = 2;
-    public const float TurretRange = 45f;
-    public const float TurretTurnRate = 2.5f;
+    public const float CartPitchDown = -15f * MathF.PI / 180f;
+    public const float CartPitchUp = 30f * MathF.PI / 180f;
+
+    /// <summary>Holding the interact key this long at a parked (or manned) cart pushes it instead of manning it (seconds).</summary>
+    public const double CartHoldSeconds = 0.4;
 
     /// <summary>How close to the slot upgrade station the interact key buys it.</summary>
     public const float StationRange = 1.8f;
@@ -269,7 +270,7 @@ public sealed partial class Game
 
     // ---- Push carts (server) ----------------------------------------------------------------
 
-    /// <summary>Server, every tick: create, push, park and fire every push cart.</summary>
+    /// <summary>Server, every tick: create, push, park and man every push cart.</summary>
     private void ServerTickCarts(double now)
     {
         foreach (var id in Players.Keys.Order().ToList())
@@ -293,10 +294,12 @@ public sealed partial class Game
                 c.Def = def;
                 c.Shape = ShapeOf(def);
             }
-            // Holding the cart weapon next to a parked cart picks it up; switching away leaves it standing.
-            if (holding && c.Mode != CartMode.Pushed && NearBar(p, c))
+            // Selecting the cart weapon next to a parked cart picks it up; switching away leaves it standing (and steps
+            // off a manned one). Both wait a moment after a mode change so the owner's own weapon switch can catch up.
+            var settled = now - c.ModeAt > 1.0;
+            if (holding && c.Mode == CartMode.Idle && settled && NearBar(p, c))
                 SetCartMode(p, c, CartMode.Pushed, now);
-            else if (!holding && c.Mode == CartMode.Pushed && now - c.PickedUpAt > 1.0)
+            else if (!holding && c.Mode != CartMode.Idle && settled)
                 SetCartMode(p, c, CartMode.Idle, now);
             switch (c.Mode)
             {
@@ -310,17 +313,35 @@ public sealed partial class Game
                     }
                     break;
                 }
-                case CartMode.Turret:
-                    TickTurret(p, c, now);
+                case CartMode.Manned:
+                {
+                    // The owner stands at the push bar (the cart doesn't move); its gun follows their aim within the limits.
+                    var stand = c.Stand;
+                    p.Sim.Position = new Vector3(stand.X, p.Sim.Position.Y, stand.Z);
+                    p.Sim.Velocity.X = p.Sim.Velocity.Z = 0;
+                    var (yaw, pitch) = ClampCartAim(c.Body.Yaw, p.Yaw, p.Pitch);
+                    c.AimYaw = World.WrapAngle(yaw - c.Body.Yaw);
+                    c.AimPitch = pitch;
                     break;
+                }
             }
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Carts.Count > 0 || _cartsLive))
         {
-            WriteCartState(_w, Carts.Values.OrderBy(c => c.Owner), now);
+            WriteCartState(_w, Carts.Values.OrderBy(c => c.Owner));
             Net.Broadcast(_w.Span, PacketReliability.UnreliableSequenced);
             _cartsLive = Carts.Count > 0;
         }
+    }
+
+    /// <summary>
+    /// A manned cart gun's aim: <paramref name="yaw"/> and <paramref name="pitch"/> clamped to the traverse limits around
+    /// a cart facing <paramref name="cartYaw"/> (+-<see cref="CartTraverseYaw"/>, <see cref="CartPitchDown"/> to <see cref="CartPitchUp"/>).
+    /// </summary>
+    public static (float Yaw, float Pitch) ClampCartAim(float cartYaw, float yaw, float pitch)
+    {
+        var rel = Math.Clamp(World.WrapAngle(yaw - cartYaw), -CartTraverseYaw, CartTraverseYaw);
+        return (World.WrapAngle(cartYaw + rel), Math.Clamp(pitch, CartPitchDown, CartPitchUp));
     }
 
     private static bool NearBar(Player p, CartEntity c)
@@ -335,94 +356,92 @@ public sealed partial class Game
         if (old == mode)
             return;
         c.Mode = mode;
-        if (mode == CartMode.Pushed)
-            c.PickedUpAt = now;
-        if (mode == CartMode.Turret)
+        c.ModeAt = now;
+        if (mode == CartMode.Manned)
         {
-            c.TurretUntil = now + TurretSeconds;
-            c.TurretAmmo = Math.Max(1, (c.Def?.Mag ?? 1) * TurretMags);
-            c.NextShot = now + 0.5;
-            c.Target = byte.MaxValue;
+            var (yaw, pitch) = ClampCartAim(c.Body.Yaw, owner.Yaw, owner.Pitch);
+            c.AimYaw = World.WrapAngle(yaw - c.Body.Yaw);
+            c.AimPitch = pitch;
         }
+        else
+            c.AimYaw = c.AimPitch = 0;
         if (owner.Id == LocalId)
             OnOwnCartMode(c, old, now);
     }
 
-    /// <summary>A parked cart: turns toward the nearest enemy it can see and fires its build at it until its time or rounds run out.</summary>
-    private void TickTurret(Player owner, CartEntity c, double now)
-    {
-        if (now >= c.TurretUntil || c.TurretAmmo <= 0 || c.Def is not { } def)
-        {
-            SetCartMode(owner, c, CartMode.Idle, now);
-            return;
-        }
-        var muzzle = c.TurretMuzzle;
-        Player? best = null;
-        var bestD = TurretRange;
-        foreach (var t in Players.Values.OrderBy(x => x.Id))
-        {
-            if (t == owner || !t.Alive || !AreEnemies(owner, t))
-                continue;
-            var d = Vector3.Distance(t.Chest, muzzle);
-            if (d < bestD && HasLineOfSight(muzzle, t.Chest))
-            {
-                best = t;
-                bestD = d;
-            }
-        }
-        c.Target = best?.Id ?? byte.MaxValue;
-        if (best == null)
-            return;
-        var to = best.Chest - muzzle;
-        var wantYaw = MathF.Atan2(to.X, -to.Z);
-        var turn = World.WrapAngle(wantYaw - c.Body.Yaw);
-        c.Body.Yaw = World.WrapAngle(c.Body.Yaw + Math.Clamp(turn, -TurretTurnRate * World.TickDt, TurretTurnRate * World.TickDt));
-        c.AimPitch = Math.Clamp(MathF.Asin(Math.Clamp(to.Y / MathF.Max(0.01f, to.Length()), -1f, 1f)), -0.45f, 0.45f);
-        if (MathF.Abs(World.WrapAngle(wantYaw - c.Body.Yaw)) > 0.07f || now < c.NextShot)
-            return;
-        c.NextShot = now + MathF.Max(0.05f, def.FireInterval);
-        var dir = World.Forward(c.Body.Yaw, c.AimPitch);
-        ServerResolveShot(owner, def, muzzle, dir, def.HipSpreadDeg * MathF.PI / 180f * 0.5f, c.Shots++, ServerTick, now, fromTurret: true);
-        c.TurretAmmo--;
-    }
-
-    /// <summary>Server: the interact key: buy the slot upgrade at its station, park the cart you're pushing, or pick up your cart.</summary>
-    private void ServerInteract(Player p, double now)
+    /// <summary>
+    /// Server: the interact key (<paramref name="hold"/>: held at a parked or manned cart). Buys the slot upgrade at its
+    /// station; parks the cart you're pushing; tap at a parked cart's bar to man its gun, hold to push it; tap while
+    /// manning to step off, hold to push it from there.
+    /// </summary>
+    private void ServerInteract(Player p, double now, bool hold = false)
     {
         if (!p.Alive || Phase != MatchPhase.Playing)
             return;
-        if (SlotStation is { } st && !p.ExtraSlots && Vector3.Distance(st, p.Position) <= StationRange)
+        if (!hold && SlotStation is { } st && !p.ExtraSlots && Vector3.Distance(st, p.Position) <= StationRange)
         {
             ServerBuySlots(p);
             return;
         }
         if (!Carts.TryGetValue(p.Id, out var c) || c.Def == null)
             return;
-        if (c.Mode == CartMode.Pushed && p.Weapon == c.Def.Id)
-            SetCartMode(p, c, CartMode.Turret, now);
-        else if (c.Mode != CartMode.Pushed && NearBar(p, c))
-            SetCartMode(p, c, CartMode.Pushed, now);
+        switch (c.Mode)
+        {
+            case CartMode.Pushed when p.Weapon == c.Def.Id:
+                SetCartMode(p, c, CartMode.Idle, now); // parked where it stands
+                break;
+            case CartMode.Idle when NearBar(p, c):
+                SetCartMode(p, c, hold ? CartMode.Pushed : CartMode.Manned, now);
+                break;
+            case CartMode.Manned:
+                SetCartMode(p, c, hold ? CartMode.Pushed : CartMode.Idle, now);
+                break;
+        }
     }
 
-    /// <summary>Server: may <paramref name="shooter"/> not fire <paramref name="def"/> by hand right now (a cart that isn't being pushed)?</summary>
-    private bool CartBlocksShot(Player shooter, WeaponDef def) =>
-        IsCart(def) && (!Carts.TryGetValue(shooter.Id, out var c) || c.Mode != CartMode.Pushed);
+    /// <summary>
+    /// Server: may <paramref name="shooter"/> not fire <paramref name="def"/> right now? A cart only fires while its owner
+    /// mans it (not while pushing it: both hands are on the bar), and then only within the traverse limits, so
+    /// <paramref name="dir"/> is clamped to them. Anything that isn't a cart is never blocked.
+    /// </summary>
+    private bool CartBlocksShot(Player shooter, WeaponDef def, ref Vector3 dir)
+    {
+        if (!IsCart(def))
+            return false;
+        if (!Carts.TryGetValue(shooter.Id, out var c) || c.Mode != CartMode.Manned || dir.LengthSquared() < 0.5f)
+            return true;
+        var n = Vector3.Normalize(dir);
+        var (yaw, pitch) = ClampCartAim(c.Body.Yaw, MathF.Atan2(n.X, -n.Z), MathF.Asin(Math.Clamp(n.Y, -1f, 1f)));
+        dir = World.Forward(yaw, pitch);
+        return false;
+    }
 
     // ---- Push carts (both sides) --------------------------------------------------------------
 
-    /// <summary>The interact key (E): park / pick up your cart, buy the slot upgrade.</summary>
-    public void Interact(double now)
+    private int _slotBeforeCart = -1; // the weapon you held before you took the cart (leaving the cart goes back to it)
+    private Buttons _cartPrevButtons;
+    private double _cartLeaveSentAt = -100;
+
+    /// <summary>The local player's cart, when they're manning it.</summary>
+    public CartEntity? MannedCart => Local is { Alive: true } && Carts.TryGetValue(LocalId, out var c) && c.Mode == CartMode.Manned ? c : null;
+
+    /// <summary>The interact key (E): park your cart, man it (tap at its bar) or push it (<paramref name="hold"/>), step off, buy the slot upgrade.</summary>
+    public void Interact(double now, bool hold = false)
     {
         if (Local is not { Alive: true } me || Phase != MatchPhase.Playing)
             return;
         if (IsServer)
-            ServerInteract(me, now);
+            ServerInteract(me, now, hold);
         else
         {
-            _w.Begin(Msg.CartUse);
+            _w.Begin(Msg.CartUse).U8(hold ? (byte)1 : (byte)0);
             Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
         }
     }
+
+    /// <summary>Would holding the interact key do something different from tapping it right now (at a parked or manned cart)?</summary>
+    public bool InteractCanHold =>
+        Local is { Alive: true } me && Carts.TryGetValue(LocalId, out var c) && (c.Mode == CartMode.Manned || c.Mode == CartMode.Idle && NearBar(me, c));
 
     /// <summary>What the interact key would do right now (for the HUD hint), or null.</summary>
     public string? InteractHint()
@@ -434,72 +453,108 @@ public sealed partial class Game
         if (!Carts.TryGetValue(LocalId, out var c))
             return null;
         if (c.Mode == CartMode.Pushed && IsCart(Active.Def))
-            return "park the cart as a turret";
-        if (c.Mode != CartMode.Pushed && NearBar(me, c))
-            return c.Mode == CartMode.Turret ? "pick the cart up (stops the turret)" : "push the cart";
+            return "park the cart";
+        if (c.Mode == CartMode.Idle && NearBar(me, c))
+            return "man the cart gun (hold: push the cart)";
         return null;
     }
 
-    /// <summary>The local player's own cart changed mode: switch to it when it's picked up, away from it when it's parked.</summary>
+    /// <summary>
+    /// Every frame (before the input goes out): a manned cart keeps your view inside its traverse limits, and jump or
+    /// sprint steps you off it. Your feet stay at the bar, so the movement keys do nothing while you man it.
+    /// </summary>
+    private void UpdateCartControls(double now)
+    {
+        var pressed = HeldButtons & ~_cartPrevButtons;
+        _cartPrevButtons = HeldButtons;
+        if (MannedCart is not { } c)
+            return;
+        (LookYaw, LookPitch) = ClampCartAim(c.Body.Yaw, LookYaw, LookPitch);
+        if ((pressed & (Buttons.Jump | Buttons.Sprint)) != 0 && now - _cartLeaveSentAt > 0.5)
+        {
+            _cartLeaveSentAt = now;
+            Interact(now); // a tap while manning steps off
+        }
+    }
+
+    /// <summary>The buttons that go out with the input: none of the movement ones while you man a cart (you stand at its bar).</summary>
+    private Buttons CartInputButtons(Buttons held) =>
+        MannedCart != null ? held & ~(Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right | Buttons.Jump | Buttons.Sprint) : held;
+
+    /// <summary>The trigger is refused: your cart only fires while you man it (park it with E, then tap E at its bar).</summary>
+    private bool CartHoldsFire(bool pressed)
+    {
+        if (!IsCart(Active.Def) || MannedCart != null)
+            return false;
+        if (pressed)
+            LoadoutNotice = "Both hands are on the bar: park the cart (E), then tap E at its bar to man its gun.";
+        return true;
+    }
+
+    /// <summary>The local player's own cart changed mode: switch to it when it's pushed or manned, back to your weapon when you step away.</summary>
     private void OnOwnCartMode(CartEntity c, CartMode old, double now)
     {
-        if (c.Mode == CartMode.Pushed)
+        if (c.Mode != CartMode.Idle)
         {
+            if (!IsCart(Active.Def))
+                _slotBeforeCart = ActiveSlot;
             for (var i = 0; i < WeaponSlots; i++)
                 if (IsCart(Slots[i].Def) && i != ActiveSlot)
                 {
                     SwitchTo(i, now);
                     break;
                 }
-            LoadoutNotice = "Pushing the cart.";
+            LoadoutNotice = c.Mode == CartMode.Pushed ? "Pushing the cart. E parks it." : "Manning the cart gun. Leave: E (or jump / sprint). Hold E to push it.";
+            if (c.Mode == CartMode.Manned)
+                (LookYaw, LookPitch) = ClampCartAim(c.Body.Yaw, LookYaw, LookPitch);
         }
-        else if (old == CartMode.Pushed && IsCart(Active.Def))
+        else if (IsCart(Active.Def))
         {
-            for (var i = 0; i < WeaponSlots; i++)
+            var back = _slotBeforeCart >= 0 && _slotBeforeCart < WeaponSlots && !IsCart(Slots[_slotBeforeCart].Def) ? _slotBeforeCart : -1;
+            for (var i = 0; back < 0 && i < WeaponSlots; i++)
                 if (!IsCart(Slots[i].Def))
-                {
-                    SwitchTo(i, now);
-                    break;
-                }
-            LoadoutNotice = c.Mode == CartMode.Turret ? $"Cart parked: it fires on its own for {TurretSeconds:0} s." : "";
+                    back = i;
+            if (back >= 0)
+                SwitchTo(back, now);
+            LoadoutNotice = old == CartMode.Pushed ? "Cart parked. Tap E at its bar to man its gun, hold E to push it." : "You stepped off the cart gun.";
         }
-        if (c.Mode == CartMode.Idle && old == CartMode.Turret)
-            LoadoutNotice = "Your cart turret stopped. Walk up to it to push it again.";
     }
 
     /// <summary>The weapon switch is refused: it's your cart, and the cart is parked out of reach.</summary>
     private bool CartRefusesSwitch(int slot)
     {
-        if (!IsCart(Slots[slot].Def) || !Carts.TryGetValue(LocalId, out var c) || c.Mode == CartMode.Pushed || Local is not { } me || NearBar(me, c))
+        if (!IsCart(Slots[slot].Def) || !Carts.TryGetValue(LocalId, out var c) || c.Mode != CartMode.Idle || Local is not { } me || NearBar(me, c))
             return false;
         LoadoutNotice = "Your cart is parked over there: walk up to it to push it again.";
         return true;
     }
 
-    /// <summary>Writes every cart's state (owner, mode, position, yaw, rolled distance, aim pitch, turret seconds left).</summary>
-    public static void WriteCartState(PacketWriter w, IEnumerable<CartEntity> carts, double now)
+    /// <summary>Bytes per cart in <see cref="Msg.CartState"/>.</summary>
+    public const int CartStateBytes = 30;
+
+    /// <summary>Writes every cart's state (owner, mode, position, yaw, rolled distance, gun aim yaw offset and pitch).</summary>
+    public static void WriteCartState(PacketWriter w, IEnumerable<CartEntity> carts)
     {
         var list = carts.Take(32).ToList();
         w.Begin(Msg.CartState).U8((byte)list.Count);
         foreach (var c in list)
-            w.U8(c.Owner).U8((byte)c.Mode).Vec(c.Body.Position).F32(c.Body.Yaw).F32(c.Body.Rolled).F32(c.AimPitch)
-                .U8((byte)Math.Clamp(c.Mode == CartMode.Turret ? Math.Ceiling(c.TurretUntil - now) : 0, 0, 255));
+            w.U8(c.Owner).U8((byte)c.Mode).Vec(c.Body.Position).F32(c.Body.Yaw).F32(c.Body.Rolled).F32(c.AimYaw).F32(c.AimPitch);
     }
 
-    /// <summary>Reads a cart state message (after the message id): (owner, mode, body, aim pitch, turret seconds left) per cart.</summary>
-    public static List<(byte Owner, CartMode Mode, CartBody Body, float AimPitch, byte SecondsLeft)> ReadCartState(ref PacketReader r)
+    /// <summary>Reads a cart state message (after the message id): (owner, mode, body, aim yaw offset, aim pitch) per cart.</summary>
+    public static List<(byte Owner, CartMode Mode, CartBody Body, float AimYaw, float AimPitch)> ReadCartState(ref PacketReader r)
     {
-        var list = new List<(byte, CartMode, CartBody, float, byte)>();
+        var list = new List<(byte, CartMode, CartBody, float, float)>();
         int n = r.Has(1) ? r.U8() : 0;
-        for (var i = 0; i < n && r.Has(23); i++)
+        for (var i = 0; i < n && r.Has(CartStateBytes); i++)
         {
             var owner = r.U8();
-            var mode = (CartMode)Math.Min(r.U8(), (byte)CartMode.Turret);
+            var mode = (CartMode)Math.Min(r.U8(), (byte)CartMode.Manned);
             var body = new CartBody { Position = r.Vec(), Yaw = r.F32(), Rolled = r.F32() };
+            var aimYaw = r.F32();
             var pitch = r.F32();
-            var left = r.U8();
-            if (float.IsFinite(body.Position.X + body.Position.Y + body.Position.Z + body.Yaw + body.Rolled + pitch))
-                list.Add((owner, mode, body, pitch, left));
+            if (float.IsFinite(body.Position.X + body.Position.Y + body.Position.Z + body.Yaw + body.Rolled + aimYaw + pitch))
+                list.Add((owner, mode, body, Math.Clamp(aimYaw, -CartTraverseYaw, CartTraverseYaw), Math.Clamp(pitch, CartPitchDown, CartPitchUp)));
         }
         return list;
     }
@@ -510,12 +565,12 @@ public sealed partial class Game
         {
             case (byte)Msg.CartUse when IsServer:
                 if (_clients.TryGetValue(sender.G, out var cl) && Players.TryGetValue(cl.Id, out var p))
-                    ServerInteract(p, now);
+                    ServerInteract(p, now, hold: r.Has(1) && r.U8() == 1);
                 break;
             case (byte)Msg.CartState when !IsServer:
             {
                 var seen = new HashSet<byte>();
-                foreach (var (owner, mode, body, pitch, left) in ReadCartState(ref r))
+                foreach (var (owner, mode, body, aimYaw, pitch) in ReadCartState(ref r))
                 {
                     seen.Add(owner);
                     if (!Carts.TryGetValue(owner, out var c))
@@ -524,10 +579,12 @@ public sealed partial class Game
                     c.Def ??= owner == LocalId ? Slots.Select(s => s.Def).FirstOrDefault(IsCart) ?? CartStandIn() : CartStandIn();
                     c.Shape = c.Def != null ? ShapeOf(c.Def) : default;
                     c.Body = body;
+                    c.AimYaw = aimYaw;
                     c.AimPitch = pitch;
-                    c.TurretUntil = now + left;
                     c.HeardAt = now;
                     c.Mode = mode;
+                    if (old != mode)
+                        c.ModeAt = now;
                     if (owner == LocalId && old != mode)
                         OnOwnCartMode(c, old, now);
                 }
@@ -558,7 +615,7 @@ public sealed partial class Game
 
     // ---- Self-test hooks ------------------------------------------------------------------------
 
-    public void SelfTestInteract(Player p, double now) => ServerInteract(p, now);
+    public void SelfTestInteract(Player p, double now, bool hold = false) => ServerInteract(p, now, hold);
 
     public void SelfTestTickCarts(double now)
     {

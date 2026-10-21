@@ -196,7 +196,9 @@ public sealed partial class Ui : IDisposable
             for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
                 if (i != game.ActiveSlot)
                     ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
-            if (game.InteractHint() is { } hint)
+            if (game.MannedCart != null) // manning a push cart's gun (GameZombies.cs)
+                ImGuiSafe.TextColored(Orange, $"Leave: {K(GameAction.Interact)}   Push it: hold {K(GameAction.Interact)}");
+            else if (game.InteractHint() is { } hint)
                 ImGuiSafe.TextColored(Orange, $"[{K(GameAction.Interact)}] {hint}");
             if (game.LocalGrenade != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,

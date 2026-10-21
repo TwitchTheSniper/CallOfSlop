@@ -1238,6 +1238,9 @@ public static unsafe partial class Program
 
     private static bool Pressed(GameAction a) => _down[(int)a] && !_prev[(int)a];
 
+    /// <summary>When the interact key went down at a cart where holding it means something else (-1: not waiting).</summary>
+    private static double _interactDownAt = -1;
+
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
@@ -1454,7 +1457,17 @@ public static unsafe partial class Program
             if (Pressed(GameAction.Weapon4))
                 _game.SwitchTo(3, now);
             if (Pressed(GameAction.Interact))
-                _game.Interact(now); // push cart and slot station (GameZombies.cs); nothing in normal matches
+            {
+                if (_game.InteractCanHold)
+                    _interactDownAt = now; // at a parked or manned cart: tap = man it / step off, hold = push it
+                else
+                    _game.Interact(now); // push cart and slot station (GameZombies.cs); nothing in normal matches
+            }
+            if (_interactDownAt >= 0 && (!Down(GameAction.Interact) || now - _interactDownAt >= Game.CartHoldSeconds))
+            {
+                _game.Interact(now, hold: Down(GameAction.Interact));
+                _interactDownAt = -1;
+            }
             if (Pressed(GameAction.Grenade))
                 _game.TryThrow(equipment: false, now);
             if (Pressed(GameAction.Equipment))
@@ -1907,6 +1920,11 @@ public static unsafe partial class Program
         var lens = SightLens.Begin(def, _game.AimT, pose, vmProj, fb.X, fb.Y);
 
         var armColors = ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f));
+        if (Game.IsCart(def) && _game.MannedCart != null)
+        {
+            _vmAnim.DrawArms(Gfx, armColors); // manning a cart: it's drawn in the world (its gun turns); only your hands on its bar here
+            return;
+        }
         if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
         {
             ScenePresentation.DrawViewModel(Gfx, _vmAnim, def, GunModel.AdsCutaway, now < _game.MuzzleFlashUntil, (float)Glfw.Time, armColors);

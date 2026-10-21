@@ -86,6 +86,18 @@ public sealed class GunMesh
     /// <summary>Built weapons (Zombies weapon builder): every barrel's muzzle, for one flash each. Empty for standard guns.</summary>
     public Vector3[] Muzzles = [];
 
+    /// <summary>Built weapons: how many of the first <see cref="Parts"/> are the root part's own boxes (a push cart's frame).</summary>
+    public int RootParts;
+
+    /// <summary>A copy with only parts <paramref name="from"/> to <paramref name="to"/> (exclusive); everything else is shared.</summary>
+    public GunMesh Slice(int from, int to)
+    {
+        var m = (GunMesh)MemberwiseClone();
+        m.Parts = Parts[from..to];
+        m.Matrices = Matrices[from..to];
+        return m;
+    }
+
     // What the mesh was built from (rebuilt when any of these change on the same WeaponDef).
     internal GunSpec? Spec;
     internal uint Kit;

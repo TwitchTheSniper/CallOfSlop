@@ -203,6 +203,7 @@ public sealed partial class Game : IDisposable
         Net.Poll((sender, data) => OnPacket(sender, data, now));
 
         UpdateWeaponState(now, (float)frameDt);
+        UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
@@ -241,7 +242,7 @@ public sealed partial class Game : IDisposable
         return new InputCmd
         {
             Seq = seq,
-            Buttons = HeldButtons,
+            Buttons = CartInputButtons(HeldButtons), // no walking while you man a cart (GameZombies.cs)
             Yaw = LookYaw,
             Pitch = LookPitch,
             Weapon = def.Id,
@@ -369,6 +370,8 @@ public sealed partial class Game : IDisposable
         }
         if (StreakTrigger(now, held, pressed))
             return; // targeting a streak: fire calls it in
+        if (CartHoldsFire(pressed))
+            return; // a push cart only fires while you man it (GameZombies.cs)
         var w = Active;
         var def = w.Def;
         if (now < EquipUntil || IsReloading(now))
@@ -865,7 +868,7 @@ public sealed partial class Game : IDisposable
         }
 
         if (Carts.Count > 0 || BuilderRange)
-            ServerTickCarts(now); // push carts and parked cart turrets (GameCart.cs): after the players move, so a stuck cart holds its owner
+            ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
             SendSnapshots();
 
@@ -1115,28 +1118,23 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Hitscan with lag compensation (targets rewound to <paramref name="viewTick"/>), one ray per pellet.</summary>
-    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now, bool fromTurret = false)
+    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now)
     {
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
-        if (fromTurret)
-            shooter.LastCombatTime = now; // a parked cart firing on its own (GameCart.cs): the server picked origin and rate
-        else
-        {
-            if (CartBlocksShot(shooter, def))
-                return; // a push cart only fires while you push it (parked, it fires on its own)
-            // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
-            // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
-            shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
-            if (shooter.ShotClock > now + 0.05)
-                return;
-            shooter.ShotClock += def.FireInterval * 0.85;
-            shooter.LastShotTime = now;
-            shooter.LastCombatTime = now;
-            if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
-                origin = shooter.Eye;
-        }
+        if (CartBlocksShot(shooter, def, ref dir))
+            return; // a push cart only fires while you man it, within its traverse limits (GameZombies.cs)
+        // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
+        // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
+        shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
+        if (shooter.ShotClock > now + 0.05)
+            return;
+        shooter.ShotClock += def.FireInterval * 0.85;
+        shooter.LastShotTime = now;
+        shooter.LastCombatTime = now;
+        if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
+            origin = shooter.Eye;
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
@@ -1161,7 +1159,6 @@ public sealed partial class Game : IDisposable
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
         var ends = new List<Vector3>(rays.Count);
         var laterals = new List<Vector2>(rays.Count);
-        var starts = new List<Vector3>(rays.Count);
 
         foreach (var ray in rays)
         {
@@ -1184,7 +1181,6 @@ public sealed partial class Game : IDisposable
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
-            starts.Add(o);
             if (turret != null)
                 flags |= ShotHitMachine;
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
@@ -1213,14 +1209,12 @@ public sealed partial class Game : IDisposable
         }
 
         // Host-side feedback
-        if (fromTurret)
-            Audio.Shot(def, origin);
         if (shooter.Id == LocalId)
             OnOwnShotConfirmed(flags, now);
-        else if (!fromTurret)
+        else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(fromTurret ? starts[i] : MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)

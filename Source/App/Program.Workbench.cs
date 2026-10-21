@@ -85,14 +85,58 @@ public static unsafe partial class Program
     /// <summary>Where your pushed cart is drawn this frame: its server position moved with your own render smoothing.</summary>
     private static Vector3 LocalCartRenderPos(CartEntity c, Player me) => c.Body.Position + (me.RenderPosition - me.Position);
 
-    /// <summary>The camera-space pose of the cart you're pushing (its world matrix times the view), or null when you aren't pushing one.</summary>
+    /// <summary>
+    /// The camera-space pose of the cart you're pushing or manning (its world matrix times the view: the hands go to its
+    /// bar), or null when you aren't at one. A manned cart stands still and is drawn in the world (its gun turns).
+    /// </summary>
     private static Matrix4x4? PushedCartPose(WeaponDef def)
     {
-        if (_game.Local is not { Alive: true } me || !Game.IsCart(def) || !_game.Carts.TryGetValue(me.Id, out var c) || c.Mode != CartMode.Pushed)
+        if (_game.Local is not { Alive: true } me || !Game.IsCart(def) || !_game.Carts.TryGetValue(me.Id, out var c) || c.Mode == CartMode.Idle)
             return null;
+        if (c.Mode == CartMode.Manned)
+            return c.Shape.World(c.Body.Position, c.Body.Yaw) * _worldView;
         var rattle = 0.004f * MathF.Sin(c.Body.Rolled * 23f); // the wheels rattle as it rolls
         return c.Shape.World(LocalCartRenderPos(c, me) + new Vector3(0, rattle, 0), c.Body.Yaw) * _worldView;
     }
+
+    /// <summary>A cart build split for the manned view: the cart's frame (stays put) and its gun (everything mounted on it, turns), turned about <see cref="Pivot"/>.</summary>
+    private sealed record CartGunParts(GunMesh Source, WeaponDef Frame, WeaponDef? Gun, Vector3 Pivot);
+
+    private static readonly Dictionary<WeaponDef, CartGunParts> _cartGunParts = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>The frame / gun split of a cart build (cached per build mesh), or null for a weapon without a built mesh.</summary>
+    private static CartGunParts? CartParts(WeaponDef def)
+    {
+        if (def.BuiltMesh is not { } m)
+            return null;
+        if (_cartGunParts.TryGetValue(def, out var cached) && ReferenceEquals(cached.Source, m))
+            return cached;
+        var k = Math.Clamp(m.RootParts, 0, m.Parts.Length);
+        var frame = def.Clone();
+        frame.Optic = OpticKind.Iron; // an optic rides on the gun
+        frame.BuiltMesh = m.Slice(0, k);
+        frame.BuiltMesh.Muzzles = [];
+        WeaponDef? gun = null;
+        var pivot = Vector3.Zero;
+        if (k < m.Parts.Length)
+        {
+            gun = def.Clone();
+            gun.BuiltMesh = m.Slice(k, m.Parts.Length);
+            var mn = new Vector3(float.MaxValue);
+            var mx = new Vector3(float.MinValue);
+            foreach (var w in gun.BuiltMesh.Matrices)
+            {
+                mn = Vector3.Min(mn, w.Translation);
+                mx = Vector3.Max(mx, w.Translation);
+            }
+            pivot = (mn + mx) * 0.5f;
+        }
+        return _cartGunParts[def] = new CartGunParts(m, frame, gun, pivot);
+    }
+
+    /// <summary>The cart gun's pose in the cart's model space: turned <paramref name="aimYaw"/> (from the cart's facing) and tilted to <paramref name="aimPitch"/> about its middle.</summary>
+    private static Matrix4x4 CartGunPose(CartGunParts parts, float aimYaw, float aimPitch) =>
+        Matrix4x4.CreateTranslation(-parts.Pivot) * Matrix4x4.CreateRotationX(aimPitch) * Matrix4x4.CreateRotationY(-aimYaw) * Matrix4x4.CreateTranslation(parts.Pivot);
 
     /// <summary>Push carts standing in the world (yours when you aren't pushing it, everyone else's) and the slot upgrade station.</summary>
     private static void DrawZombiesWorld(double now)
@@ -107,13 +151,22 @@ public static unsafe partial class Program
             var pos = c.Body.Position;
             if (c.Owner != _game.LocalId && _game.Players.TryGetValue(c.Owner, out var owner) && c.Mode == CartMode.Pushed)
                 pos += owner.RenderPosition - owner.Position; // keep a pushed cart with its owner as they're drawn
-            DrawGun(c.Def, c.Shape.World(pos, c.Body.Yaw), false);
-            if (c.Mode == CartMode.Turret)
+            var world = c.Shape.World(pos, c.Body.Yaw);
+            if (c.Mode == CartMode.Manned && CartParts(c.Def) is { } parts)
             {
-                var blink = ((int)(now * 4) & 1) == 0;
-                var top = pos + new Vector3(0, c.Shape.Half.Y * 2 + 0.12f, 0);
-                Gfx.Draw(Matrix4x4.CreateScale(0.08f) * Matrix4x4.CreateTranslation(top), blink ? new Vector3(1f, 0.25f, 0.15f) : new Vector3(0.4f, 0.1f, 0.05f), 1f, mode: 2);
+                // Manned: the cart stands still and its gun turns to where its owner aims (yours follows your view directly).
+                var (aimYaw, aimPitch) = (c.AimYaw, c.AimPitch);
+                if (mine)
+                {
+                    var (y, p) = Game.ClampCartAim(c.Body.Yaw, _game.LookYaw, _game.LookPitch);
+                    (aimYaw, aimPitch) = (World.WrapAngle(y - c.Body.Yaw), p);
+                }
+                DrawGun(parts.Frame, world, false);
+                if (parts.Gun != null)
+                    DrawGun(parts.Gun, CartGunPose(parts, aimYaw, aimPitch) * world, mine && now < _game.MuzzleFlashUntil);
+                continue;
             }
+            DrawGun(c.Def, world, false);
         }
         if (_game.SlotStation is { } st)
         {
@@ -207,16 +260,28 @@ public static unsafe partial class Program
                 break;
             }
             case 52 when t > 1.9:
-                g?.Interact(now); // park it: it fires on its own at the dummies
+                g?.Interact(now); // park it (it doesn't fire on its own)
+                _wbSmokeStage = 521;
+                break;
+            case 521 when t > 2.1:
+                g?.Interact(now); // tap E at its bar: man its gun
                 _wbSmokeFrames = _smokeFrames;
+                _wbSmokeStage = 522;
+                break;
+            case 522 when t > 2.6:
+                if (g != null)
+                    g.LookYaw = World.WrapAngle(g.LookYaw + 0.35f); // swing the gun right a little: the cart stays put
+                _smokeFireHeld = true; // fire it by hand at the dummies
                 _wbSmokeStage = 53;
                 break;
             case 53 when t > 3.9:
             {
-                SmokeShot("range_cart_turret");
+                SmokeShot("range_cart_manned");
                 var c = g?.Local is { } me && g.Carts.TryGetValue(me.Id, out var cc) ? cc : null;
-                Console.WriteLine($"[smoke] cart turret: {(c == null ? "none" : $"{c.Mode}, target {c.Target}, {c.TurretAmmo} round(s) left")}, {g?.Tracers.Count ?? 0} tracer(s), "
-                                  + $"{(_smokeFrames - _wbSmokeFrames) / 2.0:0} fps");
+                Console.WriteLine($"[smoke] cart manned: {(c == null ? "none" : $"{c.Mode}, gun aim {c.AimYaw * 180 / MathF.PI:0} deg yaw, {c.AimPitch * 180 / MathF.PI:0} deg pitch")}, "
+                                  + $"ammo {g?.Active.Ammo}/{g?.Active.Def.Mag}, {g?.Tracers.Count ?? 0} tracer(s), {(_smokeFrames - _wbSmokeFrames) / 1.8:0} fps");
+                _smokeFireHeld = false;
+                g?.Interact(now); // step off: back to your other weapon
                 _wbSmokeStage = 54;
                 break;
             }

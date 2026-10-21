@@ -74,6 +74,14 @@ public static class BuildModel
             muzzles[i] = root.Find($"muzzle_{i + 1}")!.WorldPosition;
 
         var mesh = Flatten(root);
+        if (root.ChildCount > 0)
+        {
+            // Flatten walks depth first, so the root part's own boxes come first (a push cart's frame: the rest is its gun).
+            var rootPart = root.Child(0);
+            for (var i = 0; i < rootPart.ChildCount; i++)
+                if (rootPart.Child(i) is { Renderable.Kind: RenderKind.Box } n && (n.Flags & NodeFlags.Socket) == 0)
+                    mesh.RootParts++;
+        }
         var grip = GripAnchor;
         var lead = b.Receivers.FirstOrDefault();
         Vector3 support;
