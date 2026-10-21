@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Smoking Chimney",
+  "category": "Animated",
+  "description": "A brick chimney stack puffing chunky grey smoke.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.9,
+        1.7,
+        0.9
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": true,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.8, 1.6, 0.8], "offset": [0.0, 0.8, 0.0], "color": "brick", "material": "brick"},
+    {"size": [0.9, 0.1, 0.9], "offset": [0.0, 1.65, 0.0], "color": "concrete"},
+    {"size": [0.3, 0.3, 0.3], "offset": [0.15, 1.85, 0.1], "color": "darkgrey"},
+    {"size": [0.28, 0.28, 0.28], "offset": [0.15, 2.2, 0.1], "color": "#909090", "anim": {"type": "bob", "axis": [0.3, 1.0, 0.0], "distance": 0.2, "period": 3.0, "phase": 0.0, "wind": 0.8}},
+    {"size": [0.38, 0.38, 0.38], "offset": [0.2, 2.6, 0.1], "rotation": [0.0, 20.0, 0.0], "color": "#a0a0a0", "anim": {"type": "bob", "axis": [0.3, 1.0, 0.0], "distance": 0.25, "period": 3.4, "phase": 0.25, "wind": 0.8}},
+    {"size": [0.48, 0.48, 0.48], "offset": [0.25, 3.0, 0.1], "rotation": [0.0, 40.0, 0.0], "color": "#b0b0b0", "anim": {"type": "bob", "axis": [0.3, 1.0, 0.0], "distance": 0.30000000000000004, "period": 3.8, "phase": 0.5, "wind": 0.8}},
+    {"size": [0.58, 0.58, 0.58], "offset": [0.3, 3.4, 0.1], "rotation": [0.0, 60.0, 0.0], "color": "#c4c4c4", "anim": {"type": "bob", "axis": [0.3, 1.0, 0.0], "distance": 0.35000000000000003, "period": 4.2, "phase": 0.75, "wind": 0.8}}
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Glowing Vending Machine",
+  "category": "Animated",
+  "description": "A drinks machine with a softly glowing front and a buzzing sign.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.0,
+        1.9,
+        0.82
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [1.0, 1.9, 0.7], "offset": [0.0, 0.95, -0.05], "color": "#1a5aa0", "material": "metal"},
+    {"size": [0.1, 1.9, 0.12], "offset": [-0.45, 0.95, 0.36], "color": "#1a5aa0"},
+    {"size": [0.1, 1.9, 0.12], "offset": [0.38, 0.95, 0.36], "color": "#1a5aa0"},
+    {"size": [1.0, 0.25, 0.12], "offset": [0.0, 0.125, 0.36], "color": "#1a5aa0"},
+    {"size": [1.0, 0.15, 0.12], "offset": [0.0, 1.825, 0.36], "color": "#1a5aa0"},
+    {"size": [0.56, 0.02, 0.1], "offset": [-0.12, 0.45, 0.37], "color": "darkgrey"},
+    {"size": [0.56, 0.02, 0.1], "offset": [-0.12, 0.73, 0.37], "color": "darkgrey"},
+    {"size": [0.56, 0.02, 0.1], "offset": [-0.12, 1.01, 0.37], "color": "darkgrey"},
+    {"size": [0.56, 0.02, 0.1], "offset": [-0.12, 1.29, 0.37], "color": "darkgrey"},
+    {"size": [0.56, 0.02, 0.1], "offset": [-0.12, 1.57, 0.37], "color": "darkgrey"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.37, 0.54, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.27, 0.54, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.17, 0.54, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.07, 0.54, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.03, 0.54, 0.36], "color": "#3060c0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.13, 0.54, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.37, 0.82, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.27, 0.82, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.17, 0.82, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.07, 0.82, 0.36], "color": "#3060c0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.03, 0.82, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.13, 0.82, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.37, 1.1, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.27, 1.1, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.17, 1.1, 0.36], "color": "#3060c0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.07, 1.1, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.03, 1.1, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.13, 1.1, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.37, 1.38, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.27, 1.38, 0.36], "color": "#3060c0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.17, 1.38, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.07, 1.38, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.03, 1.38, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.13, 1.38, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.37, 1.66, 0.36], "color": "#3060c0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.27, 1.66, 0.36], "color": "red"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.17, 1.66, 0.36], "color": "#30a030"},
+    {"size": [0.06, 0.16, 0.06], "offset": [-0.07, 1.66, 0.36], "color": "orange"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.03, 1.66, 0.36], "color": "white"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.13, 1.66, 0.36], "color": "#3060c0"},
+    {"size": [0.72, 1.5, 0.01], "offset": [-0.04, 1.0, 0.305], "color": "#a0c0e0", "anim": {"type": "pulse", "period": 5, "color": "#d0e8ff", "off": "#6080a0", "glow": 0.35}},
+    {"size": [0.86, 0.12, 0.02], "offset": [0.0, 1.82, 0.42], "color": "white", "anim": {"type": "flicker", "rate": 3, "duty": 0.93, "color": "#f0f8ff", "off": "#808890", "glow": 0.9}},
+    {"size": [0.18, 0.4, 0.02], "offset": [0.36, 1.1, 0.405], "color": "black"},
+    {"size": [0.1, 0.06, 0.02], "offset": [0.36, 1.38, 0.41], "color": "#30ff60"}
+  ]
+}

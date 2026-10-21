@@ -298,8 +298,10 @@ public static partial class SelfTest
                 Fail($"{name}: {unreachable} spawn pairs have no path (props block the way?)");
             if (batches.Count != map.PropInstances.Count || batches.Chunks.Sum(c => c.Count) != batches.Count || batches.SlotOf.Any(s => s < 0))
                 Fail($"{name}: render batches don't cover every prop");
-            if (name == "Prop Gallery" && map.PropInstances.Count != Props.All.Length)
-                Fail($"Prop Gallery shows {map.PropInstances.Count} props but the library has {Props.All.Length}");
+            // The Prop Gallery shows the starter library; animated props have their own gallery (SelfTestAnimProps.cs).
+            var library = Props.All.Count(p => !p.Category.Equals(AnimCategory, StringComparison.OrdinalIgnoreCase));
+            if (name == "Prop Gallery" && map.PropInstances.Count != library)
+                Fail($"Prop Gallery shows {map.PropInstances.Count} props but the library has {library}");
         }
         Line("(both maps also play the full bot match in \"Matches\" above, like every map)");
     }

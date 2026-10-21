@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ceiling Fan",
+  "category": "Animated",
+  "description": "A ceiling fan with wooden blades and a light. Place it hanging: its top is 0.7 m up, so use y = ceiling - 0.7.",
+  "collision": "cosmetic",
+  "fadeDistance": 60,
+  "breakable": {
+    "health": 30,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {
+      "count": 8,
+      "size": [
+        0.04,
+        0.14
+      ],
+      "speed": 4,
+      "colors": [
+        "darkwood",
+        "white"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.16, 0.06, 0.16], "offset": [0.0, 0.67, 0.0], "color": "white"},
+    {"size": [0.04, 0.4, 0.04], "offset": [0.0, 0.46, 0.0], "color": "white"},
+    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 0.2, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 0.2, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 0.2, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 0.2, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "white", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.62, 0.02, 0.15], "offset": [0.31, 0.2, 0.0], "rotation": [10.0, 0.0, 0.0], "color": "darkwood", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.62, 0.02, 0.15], "offset": [0.0, 0.2, -0.31], "rotation": [10.0, 90.0, 0.0], "color": "darkwood", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.62, 0.02, 0.15], "offset": [-0.31, 0.2, -0.0], "rotation": [10.0, 180.0, 0.0], "color": "darkwood", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.62, 0.02, 0.15], "offset": [-0.0, 0.2, 0.31], "rotation": [10.0, 270.0, 0.0], "color": "darkwood", "anim": {"type": "spin", "rpm": 120, "pivot": [0.0, 0.2, 0.0]}},
+    {"size": [0.14, 0.08, 0.058], "offset": [0.0, 0.1, 0.0], "color": "paper", "anim": {"type": "pulse", "period": 6, "color": "#fff2c0", "off": "paper", "glow": 0.4}},
+    {"size": [0.14, 0.08, 0.058], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "paper", "anim": {"type": "pulse", "period": 6, "color": "#fff2c0", "off": "paper", "glow": 0.4}},
+    {"size": [0.14, 0.08, 0.058], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "paper", "anim": {"type": "pulse", "period": 6, "color": "#fff2c0", "off": "paper", "glow": 0.4}},
+    {"size": [0.14, 0.08, 0.058], "offset": [0.0, 0.1, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "paper", "anim": {"type": "pulse", "period": 6, "color": "#fff2c0", "off": "paper", "glow": 0.4}}
+  ]
+}

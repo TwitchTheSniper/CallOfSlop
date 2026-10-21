@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Running Washer",
+  "category": "Animated",
+  "description": "A front-loading washing machine on its spin cycle: the drum turns and the whole thing shudders.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.62,
+        0.9,
+        0.62
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "breakable": {
+    "health": 140,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {
+      "count": 10,
+      "size": [
+        0.05,
+        0.18
+      ],
+      "speed": 4,
+      "colors": [
+        "white",
+        "lightgrey",
+        "chrome"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.6, 0.85, 0.6], "offset": [0.0, 0.425, 0.0], "color": "white", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.6, 0.06, 0.6], "offset": [0.0, 0.88, 0.0], "color": "lightgrey", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.5, 0.1, 0.02], "offset": [0.0, 0.77, 0.3], "color": "lightgrey", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [0.19, 0.42, 0.31], "rotation": [0.0, 0.0, 90.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [0.134, 0.554, 0.31], "rotation": [0.0, 0.0, 135.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [0.0, 0.61, 0.31], "rotation": [0.0, 0.0, 180.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [-0.134, 0.554, 0.31], "rotation": [0.0, 0.0, 225.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [-0.19, 0.42, 0.31], "rotation": [0.0, 0.0, 270.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [-0.134, 0.286, 0.31], "rotation": [0.0, 0.0, 315.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [-0.0, 0.23, 0.31], "rotation": [0.0, 0.0, 360.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.164, 0.04, 0.03], "offset": [0.134, 0.286, 0.31], "rotation": [0.0, 0.0, 405.0], "color": "chrome", "anim": {"type": "shake", "axis": [1.0, 0.3, 0.2], "distance": 0.01, "period": 0.11, "jitter": 0.25}},
+    {"size": [0.32, 0.133, 0.02], "offset": [0.0, 0.42, 0.305], "color": "#506070", "anim": {"type": "follow", "parent": 1}},
+    {"size": [0.32, 0.133, 0.02], "offset": [0.0, 0.42, 0.305], "rotation": [0.0, 0.0, 45.0], "color": "#506070", "anim": {"type": "follow", "parent": 1}},
+    {"size": [0.32, 0.133, 0.02], "offset": [0.0, 0.42, 0.305], "rotation": [0.0, 0.0, 90.0], "color": "#506070", "anim": {"type": "follow", "parent": 1}},
+    {"size": [0.32, 0.133, 0.02], "offset": [0.0, 0.42, 0.305], "rotation": [0.0, 0.0, 135.0], "color": "#506070", "anim": {"type": "follow", "parent": 1}},
+    {"size": [0.28, 0.05, 0.01], "offset": [0.0, 0.42, 0.318], "color": "#e0e8f0", "anim": {"type": "spin", "axis": "z", "rpm": 90, "pivot": [0.0, 0.42, 0.31], "parent": 1}},
+    {"size": [0.05, 0.28, 0.01], "offset": [0.0, 0.42, 0.318], "color": "#c0d0e0", "anim": {"type": "spin", "axis": "z", "rpm": 90, "pivot": [0.0, 0.42, 0.31], "parent": 1}},
+    {"size": [0.04, 0.03, 0.01], "offset": [0.18, 0.77, 0.312], "color": "#30ff60", "anim": {"type": "blink", "period": 2, "duty": 0.7, "color": "#40ff60", "off": "#063a10", "glow": 0.8, "parent": 1}}
+  ]
+}

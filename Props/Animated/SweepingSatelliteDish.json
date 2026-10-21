@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sweeping Satellite Dish",
+  "category": "Animated",
+  "description": "A big white satellite dish on a post that slowly sweeps from side to side.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.8,
+        0.15,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        1.55,
+        0.3
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": true
+  },
+  "parts": [
+    {"size": [0.8, 0.15, 0.8], "offset": [0.0, 0.075, 0.0], "color": "concrete"},
+    {"size": [0.14, 1.2, 0.14], "offset": [0.0, 0.75, 0.0], "color": "lightgrey"},
+    {"size": [0.3, 0.2, 0.3], "offset": [0.0, 1.45, 0.0], "color": "grey"},
+    {"size": [0.12, 0.2, 0.12], "offset": [0.0, 1.62, 0.0], "color": "grey", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 1.5, 0.0], "angle": 50, "period": 14, "jitter": 0.2}},
+    {"size": [1.5, 0.621, 0.05], "offset": [0.0, 2.0, 0.12], "rotation": [-25.0, 0.0, 0.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.5, 0.621, 0.05], "offset": [0.0, 2.0, 0.12], "rotation": [-25.0, 0.0, 45.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.5, 0.621, 0.05], "offset": [0.0, 2.0, 0.12], "rotation": [-25.0, 0.0, 90.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.5, 0.621, 0.05], "offset": [0.0, 2.0, 0.12], "rotation": [-25.0, 0.0, 135.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.2, 0.497, 0.05], "offset": [0.0, 2.0, 0.07], "rotation": [-25.0, 0.0, 0.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.2, 0.497, 0.05], "offset": [0.0, 2.0, 0.07], "rotation": [-25.0, 0.0, 45.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.2, 0.497, 0.05], "offset": [0.0, 2.0, 0.07], "rotation": [-25.0, 0.0, 90.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.2, 0.497, 0.05], "offset": [0.0, 2.0, 0.07], "rotation": [-25.0, 0.0, 135.0], "color": "white", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.04, 0.04, 0.8], "offset": [0.0, 2.1, 0.55], "rotation": [-25.0, 0.0, 0.0], "color": "grey", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.12, 0.12, 0.12], "offset": [0.0, 2.25, 0.88], "color": "darkgrey", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.2, 0.3, 0.1], "offset": [0.0, 1.82, 0.0], "color": "grey", "anim": {"type": "follow", "parent": 4}}
+  ]
+}

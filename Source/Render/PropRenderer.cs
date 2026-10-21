@@ -165,7 +165,10 @@ public sealed unsafe class PropRenderer
                     }
                     else if (type == 2)
                     {
-                        float a = r0.w * k * sin(TAU * u) * (1.0 + wind * gust * 0.6);
+                        float sv = sin(TAU * u);
+                        if (Rec(r, 4).w > 0.5)
+                            sv = max(sv, 0.0); // one way: out and back, resting in between
+                        float a = r0.w * k * sv * (1.0 + wind * gust * 0.6);
                         p = r1.xyz + Turn(p - r1.xyz, r2.xyz, a);
                         n = Turn(n, r2.xyz, a);
                     }

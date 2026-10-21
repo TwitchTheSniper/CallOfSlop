@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hanging Banner",
+  "category": "Animated",
+  "description": "A red and gold cloth banner between two posts, rippling in the wind.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.1,
+        3.2,
+        0.1
+      ],
+      "offset": [
+        -0.8,
+        1.6,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        3.2,
+        0.1
+      ],
+      "offset": [
+        0.8,
+        1.6,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.08, 3.2, 0.08], "offset": [-0.8, 1.6, 0.0], "color": "black"},
+    {"size": [0.08, 3.2, 0.08], "offset": [0.8, 1.6, 0.0], "color": "black"},
+    {"size": [1.7, 0.05, 0.05], "offset": [0.0, 3.1, 0.0], "color": "black"},
+    {"size": [1.3, 0.9, 0.02], "offset": [0.0, 2.6, 0.0], "color": "red", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 3.08, 0.0], "angle": 8, "period": 3.2, "wind": 1, "jitter": 0.2}},
+    {"size": [0.9, 0.12, 0.025], "offset": [0.0, 2.7, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.12, 0.5, 0.025], "offset": [0.0, 2.55, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 4}},
+    {"size": [1.3, 0.6, 0.02], "offset": [0.0, 1.85, 0.0], "color": "red", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 2.15, 0.0], "angle": 10, "period": 3.2, "phase": 0.15, "wind": 1, "jitter": 0.2, "parent": 4}},
+    {"size": [0.25, 0.3, 0.021], "offset": [-0.45, 1.42, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "red", "anim": {"type": "follow", "parent": 7}},
+    {"size": [0.25, 0.3, 0.021], "offset": [0.0, 1.42, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "red", "anim": {"type": "follow", "parent": 7}},
+    {"size": [0.25, 0.3, 0.021], "offset": [0.45, 1.42, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "red", "anim": {"type": "follow", "parent": 7}}
+  ]
+}

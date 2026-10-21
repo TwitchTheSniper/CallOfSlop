@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Railway Crossing Lights",
+  "category": "Animated",
+  "description": "A level-crossing sign with two red lamps flashing in turn.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.4,
+        0.15,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.14,
+        3.2,
+        0.14
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.4, 0.15, 0.4], "offset": [0.0, 0.075, 0.0], "color": "concrete"},
+    {"size": [0.1, 3.2, 0.1], "offset": [0.0, 1.6, 0.0], "color": "white"},
+    {"size": [1.3, 0.16, 0.03], "offset": [0.0, 2.9, 0.06], "rotation": [0.0, 0.0, 35.0], "color": "white"},
+    {"size": [1.3, 0.16, 0.03], "offset": [0.0, 2.9, 0.06], "rotation": [0.0, 0.0, -35.0], "color": "white"},
+    {"size": [0.1, 0.1, 0.04], "offset": [0.0, 2.9, 0.08], "color": "black"},
+    {"size": [0.9, 0.08, 0.08], "offset": [0.0, 2.1, 0.0], "color": "black"},
+    {"size": [0.5, 0.25, 0.04], "offset": [0.0, 1.75, 0.05], "color": "black"},
+    {"size": [0.28, 0.28, 0.05], "offset": [-0.4, 2.1, 0.06], "color": "black"},
+    {"size": [0.3, 0.06, 0.18], "offset": [-0.4, 2.26, 0.12], "color": "black"},
+    {"size": [0.2, 0.2, 0.03], "offset": [-0.4, 2.1, 0.1], "color": "#ff2010", "anim": {"type": "blink", "period": 1.2, "duty": 0.5, "phase": 0.0, "color": "#ff2010", "off": "#300806", "glow": 1.6, "freezeDistance": 180}},
+    {"size": [0.28, 0.28, 0.05], "offset": [0.4, 2.1, 0.06], "color": "black"},
+    {"size": [0.3, 0.06, 0.18], "offset": [0.4, 2.26, 0.12], "color": "black"},
+    {"size": [0.2, 0.2, 0.03], "offset": [0.4, 2.1, 0.1], "color": "#ff2010", "anim": {"type": "blink", "period": 1.2, "duty": 0.5, "phase": 0.5, "color": "#ff2010", "off": "#300806", "glow": 1.6, "freezeDistance": 180}},
+    {"size": [0.06, 0.06, 0.03], "offset": [0.0, 1.75, 0.08], "color": "white", "anim": {"type": "blink", "period": 0.6, "duty": 0.5, "color": "white", "off": "grey", "glow": 0.6}}
+  ]
+}

@@ -51,6 +51,9 @@ public sealed class PropPartAnim
 
     public float Rpm, AngleDeg, Distance, Period = 1f, Phase, Jitter, Wind, Rate = 10f, Duty = 0.5f;
 
+    /// <summary>Swing only: swings out to one side and back, resting in between (a boom gate, a Newton's cradle ball).</summary>
+    public bool OneWay;
+
     /// <summary>Each copy of the prop starts at a different point of the cycle (from its position), so rows don't move in lockstep.</summary>
     public bool RandomPhase = true;
 
@@ -128,6 +131,9 @@ public static class PropAnimFile
                 case "phase":
                     a.Phase = Range(Num(p.Value, w), 0, 1, w);
                     break;
+                case "oneway":
+                    a.OneWay = Bool(p.Value, w);
+                    break;
                 case "randomphase":
                     a.RandomPhase = Bool(p.Value, w);
                     break;
@@ -177,7 +183,7 @@ public static class PropAnimFile
                     a.FreezeDistance = Range(Num(p.Value, w), 10, 400, w);
                     break;
                 default:
-                    throw new PropFileException($"{w}: unknown key. \"anim\" uses: type, axis, pivot, rpm, angle, distance, period, phase, randomPhase, "
+                    throw new PropFileException($"{w}: unknown key. \"anim\" uses: type, axis, pivot, rpm, angle, distance, period, phase, oneWay, randomPhase, "
                         + "jitter, wind, rate, duty, color, off, glow, steps, on, parent, freezeDistance");
             }
         }
@@ -252,6 +258,8 @@ public static class PropAnimFile
         }
         if (a.Type != PropAnimType.Flicker)
             NotFor(seen.Contains("rate"), "rate");
+        if (a.Type != PropAnimType.Swing)
+            NotFor(seen.Contains("oneWay"), "oneWay");
         if (!a.IsLight)
         {
             NotFor(seen.Contains("off"), "off");
@@ -422,7 +430,10 @@ public static class PropAnim
                 }
                 case PropAnimType.Swing:
                 {
-                    var angle = amp * k * MathF.Sin(MathF.Tau * u) * (1f + wind * gust * 0.6f);
+                    var sv = MathF.Sin(MathF.Tau * u);
+                    if (duty > 0.5f)
+                        sv = MathF.Max(sv, 0f); // one way: out and back, resting in between
+                    var angle = amp * k * sv * (1f + wind * gust * 0.6f);
                     p = pivot + Vector3.Transform(p - pivot, Quaternion.CreateFromAxisAngle(axis, angle));
                     break;
                 }
@@ -475,7 +486,7 @@ public static class PropAnim
 /// stream only the animated draw path reads).</item>
 /// <item><see cref="Records"/>: <see cref="RecordTexels"/> RGBA texels per animated part (a float texture the vertex
 /// shader reads with texelFetch): type, parent record, rate (cycles a second), amplitude | pivot, phase | axis, jitter |
-/// on colour, glow | off colour, duty | steps, on-mask, wind, random phase.</item>
+/// on colour, glow | off colour, duty (swing: 1 = one way) | steps, on-mask, wind, random phase.</item>
 /// </list>
 /// </summary>
 public sealed class PropAnimData
@@ -555,7 +566,7 @@ public sealed class PropAnimData
                     pv.X, pv.Y, pv.Z, a.Phase,
                     a.Axis.X, a.Axis.Y, a.Axis.Z, a.Jitter,
                     on.X, on.Y, on.Z, glow,
-                    off.X, off.Y, off.Z, a.Duty,
+                    off.X, off.Y, off.Z, a.Type == PropAnimType.Swing ? (a.OneWay ? 1f : 0f) : a.Duty,
                     a.Steps, a.OnMask, a.Wind, a.RandomPhase ? 1f : 0f,
                 ]);
             }

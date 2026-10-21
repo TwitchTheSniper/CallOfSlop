@@ -1,0 +1,44 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Small Wind Turbine",
+  "category": "Animated",
+  "description": "A small three-bladed wind turbine on a white mast, red light on top.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.8,
+        0.3,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        7.3,
+        0.3
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false
+  },
+  "parts": [
+    {"size": [0.8, 0.3, 0.8], "offset": [0.0, 0.15, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "color": "white"},
+    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white"},
+    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "white"},
+    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "white"},
+    {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "color": "white"},
+    {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white"},
+    {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "white"},
+    {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "white"},
+    {"size": [0.4, 0.4, 1.0], "offset": [0.0, 7.4, -0.1], "color": "white"},
+    {"size": [0.36, 0.06, 0.9], "offset": [0.0, 7.62, -0.1], "color": "lightgrey"},
+    {"size": [0.3, 0.3, 0.3], "offset": [0.0, 7.4, 0.48], "color": "white", "anim": {"type": "spin", "axis": "z", "rpm": 30, "pivot": [0.0, 7.4, 0.48], "wind": 0.8, "jitter": 0.2}},
+    {"size": [2.3, 0.22, 0.05], "offset": [0.0, 8.55, 0.52], "rotation": [0.0, 0.0, 90.0], "color": "white", "anim": {"type": "spin", "axis": "z", "rpm": 30, "pivot": [0.0, 7.4, 0.48], "wind": 0.8, "jitter": 0.2}},
+    {"size": [2.3, 0.22, 0.05], "offset": [-0.996, 6.825, 0.52], "rotation": [0.0, 0.0, 210.0], "color": "white", "anim": {"type": "spin", "axis": "z", "rpm": 30, "pivot": [0.0, 7.4, 0.48], "wind": 0.8, "jitter": 0.2}},
+    {"size": [2.3, 0.22, 0.05], "offset": [0.996, 6.825, 0.52], "rotation": [0.0, 0.0, 330.0], "color": "white", "anim": {"type": "spin", "axis": "z", "rpm": 30, "pivot": [0.0, 7.4, 0.48], "wind": 0.8, "jitter": 0.2}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.0, 7.67, -0.5], "color": "red", "anim": {"type": "blink", "period": 2, "duty": 0.2, "color": "#ff3020", "glow": 1.2, "freezeDistance": 200}}
+  ]
+}

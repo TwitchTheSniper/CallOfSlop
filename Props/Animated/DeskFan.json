@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Desk Fan",
+  "category": "Animated",
+  "description": "A little desk fan whose head turns from side to side.",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.95,
+      1.05
+    ]
+  },
+  "breakable": {
+    "health": 30,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {
+      "count": 8,
+      "size": [
+        0.03,
+        0.1
+      ],
+      "speed": 4,
+      "colors": [
+        "darkgrey",
+        "blue",
+        "chrome"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.28, 0.04, 0.22], "offset": [0.0, 0.02, 0.0], "color": "darkgrey"},
+    {"size": [0.04, 0.3, 0.04], "offset": [0.0, 0.19, -0.04], "color": "grey"},
+    {"size": [0.1, 0.1, 0.12], "offset": [0.0, 0.38, -0.07], "color": "darkgrey", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 0.38, -0.05], "angle": 35, "period": 8, "jitter": 0.1}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.15, 0.38, 0.06], "rotation": [0.0, 0.0, 90.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.106, 0.486, 0.06], "rotation": [0.0, 0.0, 135.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.0, 0.53, 0.06], "rotation": [0.0, 0.0, 180.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.106, 0.486, 0.06], "rotation": [0.0, 0.0, 225.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.15, 0.38, 0.06], "rotation": [0.0, 0.0, 270.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.106, 0.274, 0.06], "rotation": [0.0, 0.0, 315.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.0, 0.23, 0.06], "rotation": [0.0, 0.0, 360.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.106, 0.274, 0.06], "rotation": [0.0, 0.0, 405.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.15, 0.38, -0.01], "rotation": [0.0, 0.0, 90.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.106, 0.486, -0.01], "rotation": [0.0, 0.0, 135.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.0, 0.53, -0.01], "rotation": [0.0, 0.0, 180.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.106, 0.486, -0.01], "rotation": [0.0, 0.0, 225.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.15, 0.38, -0.01], "rotation": [0.0, 0.0, 270.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.106, 0.274, -0.01], "rotation": [0.0, 0.0, 315.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [-0.0, 0.23, -0.01], "rotation": [0.0, 0.0, 360.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.129, 0.015, 0.02], "offset": [0.106, 0.274, -0.01], "rotation": [0.0, 0.0, 405.0], "color": "chrome", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.13, 0.06, 0.01], "offset": [0.065, 0.38, 0.025], "color": "blue", "anim": {"type": "spin", "axis": "z", "rpm": 240, "pivot": [0.0, 0.38, 0.025], "parent": 3}},
+    {"size": [0.13, 0.06, 0.01], "offset": [-0.032, 0.436, 0.025], "rotation": [0.0, 0.0, 120.0], "color": "blue", "anim": {"type": "spin", "axis": "z", "rpm": 240, "pivot": [0.0, 0.38, 0.025], "parent": 3}},
+    {"size": [0.13, 0.06, 0.01], "offset": [-0.033, 0.324, 0.025], "rotation": [0.0, 0.0, 240.0], "color": "blue", "anim": {"type": "spin", "axis": "z", "rpm": 240, "pivot": [0.0, 0.38, 0.025], "parent": 3}},
+    {"size": [0.05, 0.021, 0.03], "offset": [0.0, 0.38, 0.03], "color": "darkgrey", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.05, 0.021, 0.03], "offset": [0.0, 0.38, 0.03], "rotation": [0.0, 0.0, 45.0], "color": "darkgrey", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.05, 0.021, 0.03], "offset": [0.0, 0.38, 0.03], "rotation": [0.0, 0.0, 90.0], "color": "darkgrey", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.05, 0.021, 0.03], "offset": [0.0, 0.38, 0.03], "rotation": [0.0, 0.0, 135.0], "color": "darkgrey", "anim": {"type": "follow", "parent": 3}}
+  ]
+}
