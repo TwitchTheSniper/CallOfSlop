@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Workbench Range",
-  "description": "Zombies preview: a firing range for weapons built at the workbench, with targets at 10, 25, 50, 75 and 100 m.",
+  "description": "Zombies preview: a firing range for weapons built at the workbench, with targets at 10, 25, 50, 75 and 100 m, a cart lane (a low curb a cart rolls over and a step it can't climb) and the weapon-slot upgrade station.",
   "author": "Call of Slop",
   "order": 980,
   "halfX": 15,
@@ -96,6 +96,8 @@
     {"op": "Prop", "name": "Cardboard Box", "x": 9, "z": 10},
     {"op": "Prop", "name": "Cardboard Box", "x": 10, "z": 10},
     {"op": "Block", "x0": -10, "y0": 0, "z0": -45, "x1": 10, "y1": 6, "z1": -44, "color": "#6e665c"},
+    {"op": "Block", "x0": -12.8, "y0": 0, "z0": 53.8, "x1": -11.2, "y1": 0.08, "z1": 54.2, "color": "#f2c94c"},
+    {"op": "Block", "x0": -12.8, "y0": 0, "z0": 50.6, "x1": -11.2, "y1": 0.3, "z1": 52.0, "color": "#8a8f96"},
     {"op": "Spawn", "x": -10.5, "z": 64},
     {"op": "Spawn", "x": -7.5, "z": 64},
     {"op": "Spawn", "x": -4.5, "z": 64},

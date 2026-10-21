@@ -5,7 +5,7 @@
   "rarity": "epic",
   "flavor": "Five outputs in a proud fan. Thirty percent each, covering a whole doorway.",
   "weight": 1.0,
-  "split": {"splay": 9, "spreadMult": 0.8},
+  "split": {"splay": 9, "spreadMult": 0.75},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [-0.09, 0, -0.06], "accepts": ["barrel", "splitter"]},
     {"name": "barrel_2", "type": "barrel", "pos": [-0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
