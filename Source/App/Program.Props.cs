@@ -28,11 +28,14 @@ public static unsafe partial class Program
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
+        // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
+        ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
+        ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running
     private static double _propsSmokeStart, _propsSmokeMeasureStart, _propsSmokeWorst;
-    private static bool _propsSmokeMeasuring, _propsSmokeAdvance, _propsSmokeShot, _propsSmokeSavedVSync;
+    private static bool _propsSmokeMeasuring, _propsSmokeAdvance, _propsSmokeShot, _propsSmokeShotA, _propsSmokeSavedVSync;
     private static int _propsSmokeFrames;
 
     private static bool PropsSmokeActive => _propsSmoke >= 0;
@@ -57,6 +60,7 @@ public static unsafe partial class Program
         _propsSmokeMeasuring = false;
         _propsSmokeAdvance = false;
         _propsSmokeShot = false;
+        _propsSmokeShotA = false;
         var view = PropsSmokeViews[_propsSmoke];
         if (Maps.Find(view.Map) is { } map)
         {
@@ -109,6 +113,20 @@ public static unsafe partial class Program
             SmokeShot("props_" + view.Name); // debris in the air
             _propsSmokeShot = true;
         }
+        if (view.Name == "animated" && !_propsSmokeShot && t > 0.6)
+        {
+            // A pair a quarter of a second apart: fans, flags and lights are visibly elsewhere in the second one.
+            if (!_propsSmokeShotA)
+            {
+                SmokeShot("props_animated_a");
+                _propsSmokeShotA = true;
+            }
+            else if (t > 0.85)
+            {
+                SmokeShot("props_animated_b");
+                _propsSmokeShot = true;
+            }
+        }
         if (!_propsSmokeMeasuring)
         {
             if (t > 0.5)
@@ -131,7 +149,11 @@ public static unsafe partial class Program
         Console.WriteLine($"[smoke] props {view.Name,-14} ({World.Map.Name}): {_propsSmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_propsSmokeFrames, 1):0.00} ms/frame), "
             + $"worst {_propsSmokeWorst * 1000:0.0} ms, {PropGfx.Uploaded} props uploaded, {w.AvgInstances:0} drawn in {w.AvgDraws:0.0} draw calls, "
             + $"debris {w.AvgDebris:0}, props CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")}, "
-            + $"{World.Map.BrokenProps.Count} broken, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"{World.Map.BrokenProps.Count} broken, GL error 0x{(uint)OpenGl.Native.glGetError():X}"
+            + (PropGfx.UploadedAnimated > 0
+                ? $"; animated {PropGfx.UploadedAnimated} ({(PropGfx.AnimationOn ? "on" : "off")}, {PropGfx.AnimatedTypes} types): {w.AvgAnimInstances:0} moving + {w.AvgFrozenInstances:0} still in "
+                  + $"{w.AvgAnimDraws:0.0} draw calls, anim GPU {(w.AvgAnimGpuMs >= 0 ? $"{w.AvgAnimGpuMs:0.000} ms" : "n/a")}"
+                : ""));
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))
         {
             // Cluttered pack maps: the foliage and box side of the same frames (boxes are still one draw call each).
@@ -145,7 +167,7 @@ public static unsafe partial class Program
                 + $"foliage CPU {f.AvgCpuMs:0.000} ms, GPU {(f.AvgGpuMs >= 0 ? $"{f.AvgGpuMs:0.000} ms" : "n/a")}; {boxes} boxes, {map.PropInstances.Count} props, "
                 + $"{map.MeshPlacements.Count} meshes, quality {_settings.FoliageQuality}");
         }
-        if (!view.Break)
+        if (!view.Break && view.Name != "animated") // the animated view took its pair already
             SmokeShot(view.Name.StartsWith("cluttered") ? view.Name : "props_" + view.Name); // the Cluttered pack's views keep their own names
         _propsSmokeAdvance = true;
     }

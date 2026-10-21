@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Newtons Cradle",
+  "category": "Animated",
+  "description": "A desk toy: the end balls swing out and click back in turn.",
+  "collision": "cosmetic",
+  "breakable": {
+    "health": 20,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {
+      "count": 6,
+      "size": [
+        0.02,
+        0.05
+      ],
+      "speed": 4
+    }
+  },
+  "parts": [
+    {"size": [0.34, 0.03, 0.2], "offset": [0.0, 0.015, 0.0], "color": "black"},
+    {"size": [0.012, 0.24, 0.012], "offset": [-0.15, 0.15, -0.08], "color": "chrome"},
+    {"size": [0.012, 0.24, 0.012], "offset": [-0.15, 0.15, 0.08], "color": "chrome"},
+    {"size": [0.012, 0.24, 0.012], "offset": [0.15, 0.15, -0.08], "color": "chrome"},
+    {"size": [0.012, 0.24, 0.012], "offset": [0.15, 0.15, 0.08], "color": "chrome"},
+    {"size": [0.31, 0.012, 0.012], "offset": [0.0, 0.27, -0.08], "color": "chrome"},
+    {"size": [0.31, 0.012, 0.012], "offset": [0.0, 0.27, 0.08], "color": "chrome"},
+    {"size": [0.003, 0.15, 0.003], "offset": [-0.08, 0.195, -0.04], "color": "lightgrey", "anim": {"type": "swing", "axis": "-z", "pivot": [-0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "oneWay": true}},
+    {"size": [0.003, 0.15, 0.003], "offset": [-0.08, 0.195, 0.04], "color": "lightgrey", "anim": {"type": "swing", "axis": "-z", "pivot": [-0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "oneWay": true}},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.08, 0.11, 0.0], "color": "chrome", "anim": {"type": "swing", "axis": "-z", "pivot": [-0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "oneWay": true}},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.08, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "chrome", "anim": {"type": "swing", "axis": "-z", "pivot": [-0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "oneWay": true}},
+    {"size": [0.003, 0.15, 0.003], "offset": [-0.04, 0.195, -0.04], "color": "lightgrey"},
+    {"size": [0.003, 0.15, 0.003], "offset": [-0.04, 0.195, 0.04], "color": "lightgrey"},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.04, 0.11, 0.0], "color": "chrome"},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.04, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "chrome"},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.0, 0.195, -0.04], "color": "lightgrey"},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.0, 0.195, 0.04], "color": "lightgrey"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.0, 0.11, 0.0], "color": "chrome"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.0, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "chrome"},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.04, 0.195, -0.04], "color": "lightgrey"},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.04, 0.195, 0.04], "color": "lightgrey"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.04, 0.11, 0.0], "color": "chrome"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.04, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "chrome"},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.08, 0.195, -0.04], "color": "lightgrey", "anim": {"type": "swing", "axis": "z", "pivot": [0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "phase": 0.5, "oneWay": true}},
+    {"size": [0.003, 0.15, 0.003], "offset": [0.08, 0.195, 0.04], "color": "lightgrey", "anim": {"type": "swing", "axis": "z", "pivot": [0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "phase": 0.5, "oneWay": true}},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.08, 0.11, 0.0], "color": "chrome", "anim": {"type": "swing", "axis": "z", "pivot": [0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "phase": 0.5, "oneWay": true}},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.08, 0.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "chrome", "anim": {"type": "swing", "axis": "z", "pivot": [0.08, 0.27, 0.0], "angle": 35, "period": 1.4, "phase": 0.5, "oneWay": true}}
+  ]
+}

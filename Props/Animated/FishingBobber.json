@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fishing Bobber",
+  "category": "Animated",
+  "description": "A red and white float bobbing in a little pool of water.",
+  "collision": "cosmetic",
+  "fadeDistance": 30,
+  "parts": [
+    {"size": [0.5, 0.01, 0.5], "offset": [0.0, 0.005, 0.0], "color": "#2a5070"},
+    {"size": [0.3, 0.012, 0.3], "offset": [0.0, 0.006, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3a6890"},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.0, 0.03, 0.0], "color": "white", "anim": {"type": "bob", "distance": 0.02, "period": 1.3, "jitter": 0.4}},
+    {"size": [0.08, 0.05, 0.08], "offset": [0.0, 0.085, 0.0], "color": "red", "anim": {"type": "bob", "distance": 0.02, "period": 1.3, "jitter": 0.4}},
+    {"size": [0.015, 0.08, 0.015], "offset": [0.0, 0.15, 0.0], "color": "red", "anim": {"type": "bob", "distance": 0.02, "period": 1.3, "jitter": 0.4}}
+  ]
+}

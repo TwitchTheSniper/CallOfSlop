@@ -1,0 +1,56 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hanging Lantern",
+  "category": "Animated",
+  "description": "An iron lantern hanging from a post, swinging a little, its flame flickering.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.3,
+        0.08,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        2.4,
+        0.08
+      ]
+    }
+  ],
+  "breakable": {
+    "health": 40,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {
+      "count": 10,
+      "size": [
+        0.03,
+        0.1
+      ],
+      "speed": 4,
+      "colors": [
+        "black",
+        "amber",
+        "#ffc860"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.3, 0.08, 0.3], "offset": [0.0, 0.04, 0.0], "color": "black"},
+    {"size": [0.06, 2.4, 0.06], "offset": [0.0, 1.2, 0.0], "color": "black"},
+    {"size": [0.7, 0.04, 0.04], "offset": [0.3, 2.36, 0.0], "color": "black"},
+    {"size": [0.25, 0.025, 0.025], "offset": [0.08, 2.24, 0.0], "rotation": [0.0, 0.0, -45.0], "color": "black"},
+    {"size": [0.012, 0.16, 0.012], "offset": [0.55, 2.26, 0.0], "color": "black", "anim": {"type": "swing", "axis": "z", "pivot": [0.55, 2.34, 0.0], "angle": 7, "period": 2.2, "wind": 1, "jitter": 0.2}},
+    {"size": [0.2, 0.03, 0.2], "offset": [0.55, 1.875, 0.0], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.22, 0.05, 0.22], "offset": [0.55, 2.165, 0.0], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.1, 0.06, 0.1], "offset": [0.55, 2.21, 0.0], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.02, 0.26, 0.02], "offset": [0.46, 2.02, -0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.02, 0.26, 0.02], "offset": [0.46, 2.02, 0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.02, 0.26, 0.02], "offset": [0.64, 2.02, -0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.02, 0.26, 0.02], "offset": [0.64, 2.02, 0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.15, 0.22, 0.15], "offset": [0.55, 2.01, 0.0], "color": "amber", "anim": {"type": "flicker", "rate": 9, "duty": 0.9, "color": "#ffc860", "off": "#704010", "glow": 1.0, "parent": 5}}
+  ]
+}

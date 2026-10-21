@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Swinging Shop Sign",
+  "category": "Animated",
+  "description": "A wooden shop sign hanging from a bracket, swinging on its chains.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.3,
+        0.1,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        2.7,
+        0.1
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false
+  },
+  "parts": [
+    {"size": [0.3, 0.1, 0.3], "offset": [0.0, 0.05, 0.0], "color": "darkgrey"},
+    {"size": [0.08, 2.7, 0.08], "offset": [0.0, 1.35, 0.0], "color": "black"},
+    {"size": [1.0, 0.05, 0.05], "offset": [0.45, 2.6, 0.0], "color": "black"},
+    {"size": [0.3, 0.03, 0.03], "offset": [0.12, 2.48, 0.0], "rotation": [0.0, 0.0, -40.0], "color": "black"},
+    {"size": [0.8, 0.5, 0.04], "offset": [0.55, 2.2, 0.0], "color": "darkwood", "material": "wood", "anim": {"type": "swing", "axis": "x", "pivot": [0.55, 2.58, 0.0], "angle": 12, "period": 2.6, "wind": 1, "jitter": 0.25}},
+    {"size": [0.01, 0.12, 0.01], "offset": [0.25, 2.52, 0.0], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.01, 0.12, 0.01], "offset": [0.85, 2.52, 0.0], "color": "black", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.6, 0.12, 0.05], "offset": [0.55, 2.25, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 5}},
+    {"size": [0.3, 0.06, 0.05], "offset": [0.55, 2.1, 0.0], "color": "paper", "anim": {"type": "follow", "parent": 5}}
+  ]
+}

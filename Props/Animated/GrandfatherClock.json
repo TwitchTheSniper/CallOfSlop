@@ -1,0 +1,59 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Grandfather Clock",
+  "category": "Animated",
+  "description": "A tall wooden pendulum clock: the brass pendulum swings, the hands move.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.56,
+        2.2,
+        0.36
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "breakable": {
+    "health": 110,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {
+      "count": 14,
+      "size": [
+        0.05,
+        0.3
+      ],
+      "speed": 4,
+      "colors": [
+        "darkwood",
+        "#c8a040",
+        "paper"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.55, 0.25, 0.35], "offset": [0.0, 0.125, 0.0], "color": "darkwood", "material": "wood"},
+    {"size": [0.46, 1.25, 0.28], "offset": [0.0, 0.875, 0.0], "color": "darkwood", "material": "wood"},
+    {"size": [0.56, 0.5, 0.34], "offset": [0.0, 1.75, 0.0], "color": "darkwood", "material": "wood"},
+    {"size": [0.6, 0.1, 0.38], "offset": [0.0, 2.05, 0.0], "color": "darkwood"},
+    {"size": [0.3, 0.1, 0.2], "offset": [0.0, 2.15, 0.0], "color": "darkwood"},
+    {"size": [0.32, 1.0, 0.01], "offset": [0.0, 0.88, 0.142], "color": "#20160c"},
+    {"size": [0.36, 0.04, 0.02], "offset": [0.0, 1.4, 0.15], "color": "#c8a040"},
+    {"size": [0.36, 0.04, 0.02], "offset": [0.0, 0.36, 0.15], "color": "#c8a040"},
+    {"size": [0.38, 0.157, 0.02], "offset": [0.0, 1.75, 0.175], "color": "paper"},
+    {"size": [0.38, 0.157, 0.02], "offset": [0.0, 1.75, 0.175], "rotation": [0.0, 0.0, 45.0], "color": "paper"},
+    {"size": [0.38, 0.157, 0.02], "offset": [0.0, 1.75, 0.175], "rotation": [0.0, 0.0, 90.0], "color": "paper"},
+    {"size": [0.38, 0.157, 0.02], "offset": [0.0, 1.75, 0.175], "rotation": [0.0, 0.0, 135.0], "color": "paper"},
+    {"size": [0.02, 0.12, 0.01], "offset": [0.0, 1.8, 0.19], "color": "black", "anim": {"type": "spin", "axis": "-z", "rpm": 0.2, "pivot": [0.0, 1.75, 0.19]}},
+    {"size": [0.016, 0.16, 0.01], "offset": [0.0, 1.82, 0.195], "color": "black", "anim": {"type": "spin", "axis": "-z", "rpm": 2, "pivot": [0.0, 1.75, 0.19]}},
+    {"size": [0.02, 0.8, 0.01], "offset": [0.0, 0.96, 0.155], "color": "#c8a040", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 1.36, 0.155], "angle": 8, "period": 2, "randomPhase": false}},
+    {"size": [0.14, 0.058, 0.02], "offset": [0.0, 0.56, 0.16], "color": "#d8b050", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 1.36, 0.155], "angle": 8, "period": 2, "randomPhase": false}},
+    {"size": [0.14, 0.058, 0.02], "offset": [0.0, 0.56, 0.16], "rotation": [0.0, 0.0, 45.0], "color": "#d8b050", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 1.36, 0.155], "angle": 8, "period": 2, "randomPhase": false}},
+    {"size": [0.14, 0.058, 0.02], "offset": [0.0, 0.56, 0.16], "rotation": [0.0, 0.0, 90.0], "color": "#d8b050", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 1.36, 0.155], "angle": 8, "period": 2, "randomPhase": false}},
+    {"size": [0.14, 0.058, 0.02], "offset": [0.0, 0.56, 0.16], "rotation": [0.0, 0.0, 135.0], "color": "#d8b050", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 1.36, 0.155], "angle": 8, "period": 2, "randomPhase": false}}
+  ]
+}

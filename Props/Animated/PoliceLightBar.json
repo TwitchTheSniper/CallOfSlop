@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Light Bar",
+  "category": "Animated",
+  "description": "A police barrier with a red and blue light bar flashing on top.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        0.98,
+        0.1
+      ],
+      "offset": [
+        0.0,
+        0.49,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "yawJitter": 10
+  },
+  "breakable": {
+    "health": 120,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {
+      "count": 12,
+      "size": [
+        0.05,
+        0.16
+      ],
+      "speed": 4,
+      "colors": [
+        "white",
+        "blue",
+        "#c01818"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.06, 0.8, 0.5], "offset": [-0.7, 0.4, 0.0], "color": "white"},
+    {"size": [0.06, 0.8, 0.5], "offset": [0.7, 0.4, 0.0], "color": "white"},
+    {"size": [1.6, 0.2, 0.06], "offset": [0.0, 0.7, 0.0], "color": "white"},
+    {"size": [1.6, 0.06, 0.07], "offset": [0.0, 0.7, 0.0], "color": "blue"},
+    {"size": [1.2, 0.05, 0.22], "offset": [0.0, 0.825, 0.0], "color": "black"},
+    {"size": [0.52, 0.12, 0.2], "offset": [-0.3, 0.91, 0.0], "color": "#c01818", "anim": {"type": "blink", "period": 0.5, "duty": 0.5, "color": "#ff2020", "off": "#401010", "glow": 1.8, "freezeDistance": 150}},
+    {"size": [0.52, 0.12, 0.2], "offset": [0.3, 0.91, 0.0], "color": "#1830c0", "anim": {"type": "blink", "period": 0.5, "duty": 0.5, "phase": 0.5, "color": "#3060ff", "off": "#101840", "glow": 1.8, "freezeDistance": 150}},
+    {"size": [0.08, 0.12, 0.2], "offset": [0.0, 0.91, 0.0], "color": "white", "anim": {"type": "blink", "period": 0.25, "duty": 0.3, "color": "white", "off": "grey", "glow": 1.0}}
+  ]
+}

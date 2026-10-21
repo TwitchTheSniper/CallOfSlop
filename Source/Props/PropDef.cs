@@ -46,6 +46,9 @@ public sealed class PropPart
 
     public float TexScale = 1f;
 
+    /// <summary>The part's "anim" block (cosmetic motion or light, see <see cref="PropAnimFile"/>), or null for a still part.</summary>
+    public PropPartAnim? Anim;
+
     public Quaternion Rotation => Quaternion.CreateFromYawPitchRoll(RotationDeg.Y * Deg, RotationDeg.X * Deg, RotationDeg.Z * Deg);
 
     private const float Deg = MathF.PI / 180f;

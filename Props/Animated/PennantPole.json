@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pennant Pole",
+  "category": "Animated",
+  "description": "A flagpole flying a yellow and black pennant.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.4,
+        0.15,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        4.6,
+        0.1
+      ]
+    }
+  ],
+  "parts": [
+    {"size": [0.4, 0.15, 0.4], "offset": [0.0, 0.075, 0.0], "color": "concrete"},
+    {"size": [0.08, 4.6, 0.08], "offset": [0.0, 2.3, 0.0], "color": "white"},
+    {"size": [0.12, 0.08, 0.12], "offset": [0.0, 4.64, 0.0], "color": "yellow"},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.25, 4.38, 0.0], "color": "yellow", "anim": {"type": "swing", "axis": "y", "pivot": [0.04, 4.15, 0.0], "angle": 14, "period": 1.6, "phase": 0.0, "wind": 1, "jitter": 0.15}},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.25, 4.08, 0.0], "color": "black", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.25, 3.78, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 4}},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.67, 4.38, 0.0], "color": "yellow", "anim": {"type": "swing", "axis": "y", "pivot": [0.46, 4.15, 0.0], "angle": 18, "period": 1.6, "phase": 0.12, "wind": 1, "jitter": 0.15, "parent": 4}},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.67, 4.08, 0.0], "color": "black", "anim": {"type": "follow", "parent": 7}},
+    {"size": [0.43, 0.3, 0.02], "offset": [0.67, 3.78, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 7}},
+    {"size": [0.43, 0.3, 0.02], "offset": [1.09, 4.38, 0.0], "color": "yellow", "anim": {"type": "swing", "axis": "y", "pivot": [0.88, 4.15, 0.0], "angle": 22, "period": 1.6, "phase": 0.24, "wind": 1, "jitter": 0.15, "parent": 7}},
+    {"size": [0.43, 0.3, 0.02], "offset": [1.09, 4.08, 0.0], "color": "black", "anim": {"type": "follow", "parent": 10}},
+    {"size": [0.43, 0.3, 0.02], "offset": [1.09, 3.78, 0.0], "color": "yellow", "anim": {"type": "follow", "parent": 10}}
+  ]
+}

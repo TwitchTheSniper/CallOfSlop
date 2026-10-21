@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Weather Vane",
+  "category": "Animated",
+  "description": "A black iron weather vane with a rooster that swings round with the wind.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.3,
+        0.1,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        1.9,
+        0.08
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": true
+  },
+  "parts": [
+    {"size": [0.3, 0.1, 0.3], "offset": [0.0, 0.05, 0.0], "color": "darkgrey"},
+    {"size": [0.05, 1.9, 0.05], "offset": [0.0, 0.95, 0.0], "color": "black"},
+    {"size": [0.6, 0.015, 0.015], "offset": [0.0, 1.6, 0.0], "color": "black"},
+    {"size": [0.015, 0.015, 0.6], "offset": [0.0, 1.6, 0.0], "color": "black"},
+    {"size": [0.06, 0.06, 0.02], "offset": [0.33, 1.6, 0.0], "color": "black"},
+    {"size": [0.02, 0.06, 0.06], "offset": [0.0, 1.6, 0.33], "color": "black"},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 2.0, 0.0], "color": "black", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 2.0, 0.0], "angle": 30, "period": 7, "wind": 1, "jitter": 0.2}},
+    {"size": [0.12, 0.1, 0.012], "offset": [0.36, 2.0, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "black", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 2.0, 0.0], "angle": 30, "period": 7, "wind": 1, "jitter": 0.2}},
+    {"size": [0.22, 0.2, 0.01], "offset": [-0.32, 2.0, 0.0], "color": "black", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 2.0, 0.0], "angle": 30, "period": 7, "wind": 1, "jitter": 0.2}},
+    {"size": [0.18, 0.14, 0.01], "offset": [-0.06, 2.1, 0.0], "color": "rust", "anim": {"type": "swing", "axis": "y", "pivot": [0.0, 2.0, 0.0], "angle": 30, "period": 7, "wind": 1, "jitter": 0.2}}
+  ]
+}

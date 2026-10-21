@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cycling Traffic Light",
+  "category": "Animated",
+  "description": "A traffic light on a pole, cycling green, amber, red.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.4,
+        0.15,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.18,
+        2.7,
+        0.18
+      ]
+    },
+    {
+      "size": [
+        0.36,
+        1.0,
+        0.3
+      ],
+      "offset": [
+        0.0,
+        3.2,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.4, 0.15, 0.4], "offset": [0.0, 0.075, 0.0], "color": "darkgrey"},
+    {"size": [0.14, 2.6, 0.058], "offset": [0.0, 1.45, 0.0], "color": "darkgrey"},
+    {"size": [0.14, 2.6, 0.058], "offset": [0.0, 1.45, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
+    {"size": [0.14, 2.6, 0.058], "offset": [0.0, 1.45, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
+    {"size": [0.14, 2.6, 0.058], "offset": [0.0, 1.45, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"},
+    {"size": [0.34, 0.95, 0.26], "offset": [0.0, 3.175, 0.0], "color": "#202020"},
+    {"size": [0.4, 0.03, 0.3], "offset": [0.0, 3.665, 0.0], "color": "#202020"},
+    {"size": [0.26, 0.04, 0.12], "offset": [0.0, 3.64, 0.16], "color": "#202020"},
+    {"size": [0.26, 0.04, 0.12], "offset": [0.0, 3.34, 0.16], "color": "#202020"},
+    {"size": [0.26, 0.04, 0.12], "offset": [0.0, 3.04, 0.16], "color": "#202020"},
+    {"size": [0.18, 0.18, 0.03], "offset": [0.0, 3.47, 0.14], "color": "#ff2a1a", "anim": {"type": "cycle", "period": 16, "steps": 8, "on": [4, 5, 6, 7], "color": "#ff2a1a", "off": "#3a0806", "glow": 1.4, "freezeDistance": 200}},
+    {"size": [0.18, 0.18, 0.03], "offset": [0.0, 3.17, 0.14], "color": "#ffb020", "anim": {"type": "cycle", "period": 16, "steps": 8, "on": [3], "color": "#ffb020", "off": "#3a2606", "glow": 1.4, "freezeDistance": 200}},
+    {"size": [0.18, 0.18, 0.03], "offset": [0.0, 2.87, 0.14], "color": "#30ff60", "anim": {"type": "cycle", "period": 16, "steps": 8, "on": [0.0, 1.0, 2.0], "color": "#30ff60", "off": "#063a10", "glow": 1.4, "freezeDistance": 200}}
+  ]
+}

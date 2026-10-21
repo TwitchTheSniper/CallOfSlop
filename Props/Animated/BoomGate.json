@@ -1,0 +1,34 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Boom Gate",
+  "category": "Animated",
+  "description": "A car park barrier arm that lifts up and comes down again, a red light blinking.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.44,
+        1.06,
+        0.44
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.4, 1.0, 0.4], "offset": [0.0, 0.5, 0.0], "color": "yellow", "material": "metal"},
+    {"size": [0.44, 0.06, 0.44], "offset": [0.0, 1.03, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.2, 0.02], "offset": [0.0, 0.7, 0.21], "color": "black"},
+    {"size": [3.6, 0.1, 0.06], "offset": [2.0, 0.9, 0.0], "color": "white", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [0.5, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [1.1, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [1.7, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [2.3, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [2.9, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.3, 0.102, 0.062], "offset": [3.5, 0.9, 0.0], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.4, 0.16, 0.16], "offset": [-0.08, 0.9, 0.0], "color": "darkgrey", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 0.9, 0.0], "angle": 80, "period": 10, "oneWay": true}},
+    {"size": [0.08, 0.08, 0.08], "offset": [0.0, 1.08, 0.0], "color": "red", "anim": {"type": "blink", "period": 0.8, "duty": 0.5, "color": "#ff3020", "off": "#401008", "glow": 1.2}}
+  ]
+}

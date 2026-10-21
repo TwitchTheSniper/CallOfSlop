@@ -1,0 +1,47 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Exhaust Fan Box",
+  "category": "Animated",
+  "description": "A square galvanized exhaust fan with a grille, blades spinning behind it.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.8,
+        0.8,
+        0.16
+      ],
+      "offset": [
+        0.0,
+        0.4,
+        0.02
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.8, 0.8, 0.1], "offset": [0.0, 0.4, 0.0], "color": "galvanized", "material": "metal"},
+    {"size": [0.66, 0.66, 0.02], "offset": [0.0, 0.4, 0.06], "color": "darkgrey"},
+    {"size": [0.04, 0.8, 0.06], "offset": [-0.38, 0.4, 0.08], "color": "galvanized"},
+    {"size": [0.04, 0.8, 0.06], "offset": [0.38, 0.4, 0.08], "color": "galvanized"},
+    {"size": [0.8, 0.04, 0.06], "offset": [0.0, 0.02, 0.08], "color": "galvanized"},
+    {"size": [0.8, 0.04, 0.06], "offset": [0.0, 0.78, 0.08], "color": "galvanized"},
+    {"size": [0.12, 0.05, 0.05], "offset": [0.0, 0.4, 0.09], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.12, 0.05, 0.05], "offset": [0.0, 0.4, 0.09], "rotation": [0.0, 0.0, 45.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.12, 0.05, 0.05], "offset": [0.0, 0.4, 0.09], "rotation": [0.0, 0.0, 90.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.12, 0.05, 0.05], "offset": [0.0, 0.4, 0.09], "rotation": [0.0, 0.0, 135.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.3, 0.12, 0.012], "offset": [0.15, 0.4, 0.09], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.3, 0.12, 0.012], "offset": [0.046, 0.543, 0.09], "rotation": [0.0, 0.0, 72.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.3, 0.12, 0.012], "offset": [-0.121, 0.488, 0.09], "rotation": [0.0, 0.0, 144.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.3, 0.12, 0.012], "offset": [-0.121, 0.312, 0.09], "rotation": [0.0, 0.0, -144.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.3, 0.12, 0.012], "offset": [0.046, 0.257, 0.09], "rotation": [0.0, 0.0, -72.0], "color": "steel", "anim": {"type": "spin", "axis": "z", "rpm": -180, "pivot": [0.0, 0.4, 0.09], "jitter": 0.15}},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 0.14, 0.13], "color": "black"},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 0.27, 0.13], "color": "black"},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 0.4, 0.13], "color": "black"},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 0.53, 0.13], "color": "black"},
+    {"size": [0.7, 0.02, 0.02], "offset": [0.0, 0.66, 0.13], "color": "black"}
+  ]
+}
