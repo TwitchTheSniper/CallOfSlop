@@ -387,6 +387,7 @@ public sealed partial class Game
             return false;
         victim.ImmuneUntil = 0;
         victim.LastStandUsed = true; // no Last Stand save
+        victim.ShieldCharges = 0; // and no shield left over from one
         return DamagePlayer(attacker, victim, 9999, head, killId, now,
             killId >= Throwables.KillIdBase ? DamageKind.Explosive : DamageKind.Bullet);
     }

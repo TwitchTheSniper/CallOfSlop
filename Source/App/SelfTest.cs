@@ -53,7 +53,6 @@ public static partial class SelfTest
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
-            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the dense non-rectangular maps
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
@@ -67,6 +66,7 @@ public static partial class SelfTest
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("Melee", CheckMelee);
+            Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
@@ -75,6 +75,7 @@ public static partial class SelfTest
             Section("Map vote", CheckMapVote);
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
+            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
@@ -959,12 +960,11 @@ public static partial class SelfTest
         var standHp = v.Health;
         game.SelfTestDamage(a, v, 50, DamageKind.Bullet, 1.5);
         var immuneHp = v.Health;
-        var killed = game.SelfTestDamage(a, v, 50, DamageKind.Bullet, 3);
-        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, hit while immune -> {immuneHp} HP, later hit kills {killed}");
+        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, next bullet hit (shielded) -> {immuneHp} HP (the full rules: section Health)");
         if (flakHp != World.MaxHealth - (int)MathF.Round(100 * Perks.FlakMult))
             Fail("Flak Jacket didn't reduce blast damage");
-        if (standHp != 1 || immuneHp != 1 || !killed)
-            Fail("Last Stand didn't save once and then expire");
+        if (standHp != 1 || immuneHp != 1)
+            Fail("Last Stand didn't save the lethal hit and shield the next one");
 
         Reset(PerkSet.Empty, new PerkSet(PerkId.None, PerkId.Entrenched, PerkId.None));
         v.Sim.Stance = Stance.Crouch;
