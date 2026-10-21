@@ -192,6 +192,7 @@ public static partial class SelfTest
         var moved = new Dictionary<byte, float>();
         var cpu = new TickCpu();
         var maxTickMs = 0.0;
+        var jitTicks = 0;
         var killsDone = 0;
         var lastKillSum = 0;
         var lastMatch = game.MatchNumber;
@@ -200,12 +201,17 @@ public static partial class SelfTest
             for (var i = 0; i < seconds * World.TickRate; i++)
             {
                 now += dt;
+                // A tick that spent over a millisecond compiling (JIT) is a one-off warm-up: counted and reported, not measured.
+                var jit0 = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
                 cpu.Start();
                 var t0 = Stopwatch.GetTimestamp();
                 game.Update(now, dt);
                 var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                cpu.Stop(ms, count: i > 60);
-                if (i > 60)
+                var jit = (System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - jit0).TotalMilliseconds > 1;
+                if (jit)
+                    jitTicks++;
+                cpu.Stop(ms, count: i > 60 && !jit);
+                if (i > 60 && !jit)
                     maxTickMs = Math.Max(maxTickMs, ms);
                 if (game.MatchNumber != lastMatch)
                 {
@@ -239,7 +245,7 @@ public static partial class SelfTest
         var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
         var teams = GameModes.IsTeam(mode) ? $"  score blue {game.TeamScore[0]} red {game.TeamScore[1]}" : "";
         ClutteredLine($"  bots {mode,-14} {game.Players.Count} players: kills {kills}{teams}  avg bot travel {avgMove:0} m  stuck {stuck}  fallen {fallen}  outside {escaped}  "
-                      + $"worst tick {maxTickMs:0.00} ms (work {cpu.WorstText})  broken props {m.BrokenProps.Count}  ({sw.Elapsed.TotalSeconds:0.0} s)");
+                      + $"worst tick {maxTickMs:0.00} ms (work {cpu.WorstText}; {jitTicks} JIT warm-up ticks not counted)  broken props {m.BrokenProps.Count}  ({sw.Elapsed.TotalSeconds:0.0} s)");
         if (game.Players.Count != bots + 1)
             Fail($"{m.Name}: {mode} match has {game.Players.Count} players (expected {bots + 1})");
         if (kills == 0 && m.Size != MapSize.Large)
