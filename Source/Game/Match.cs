@@ -13,7 +13,8 @@ public enum MatchPhase : byte
 
 /// <summary>
 /// Match rules (server-authoritative, same in single player and multiplayer):
-///   - first to 11 kills wins, but you must lead the next player by 2 ("win by two", like tennis),
+///   - first to 11 kills wins (with 8 players; the Auto score limit scales it with the player count, ScoreLimits.cs),
+///     but you must lead the next player by 2 ("win by two", like tennis),
 ///   - matches last at most 10 minutes; at the buzzer the kill leader wins, a tie at the top is a draw,
 ///   - then a results screen, and a fresh match starts on the same map,
 ///   - every match opens with a 5 second countdown (frozen, loadout menu open).
@@ -104,6 +105,9 @@ public sealed partial class Game
         }
         ServerTickMode(now);
 
+        if (Phase is MatchPhase.Warmup or MatchPhase.Countdown)
+            UpdateScoreLimit(); // before play the limit follows whoever is there
+
         if (Phase == MatchPhase.Warmup)
         {
             ServerTickWarmup(now);
@@ -115,7 +119,7 @@ public sealed partial class Game
             if (now >= _countdownUntil)
             {
                 Phase = MatchPhase.Playing;
-                TdmLimit = GameModes.TdmLimitFor(Players.Count); // everyone who made it to the start counts
+                ScoreLimit = ScoreLimitFor(Players.Count); // everyone who made it to the start counts (ScoreLimits.cs)
                 _matchStart = now;
                 _soloElapsed = 0;
                 TimeLeft = MatchSeconds;
@@ -125,11 +129,12 @@ public sealed partial class Game
         else if (Phase == MatchPhase.Playing)
         {
             SoloHoldClock(now); // alone in the match (no bots, nobody joined): the clock stops (TestTools.cs)
+            UpdateScoreLimit(); // people joining mid-match raise the limit, never lower it (ScoreLimits.cs)
             TimeLeft = Math.Max(0, MatchSeconds - (now - _matchStart));
             var (leader, best, second) = Standings();
             if (Mode != GameMode.FreeForAll)
                 ServerTickModePlaying(now); // objectives and the mode's own win rules (GameModes.cs)
-            else if (leader != null && best >= WinKills && best - second >= WinMargin)
+            else if (leader != null && best >= ScoreLimit && best - second >= WinMargin)
                 EndMatch(leader, $"{NameOf(leader.Id)} wins {best}-{second}", now);
             else if (TimeLeft <= 0)
             {

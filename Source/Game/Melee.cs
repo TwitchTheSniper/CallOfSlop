@@ -108,7 +108,9 @@ public sealed partial class Game
         }
 
         byte flags = 0;
-        if (victim != null)
+        if (victim != null && IsFriendlyHit(attacker, victim))
+            flags = ShotHitFriendly; // a teammate: no damage, a friendly marker (FriendlyHits.cs)
+        else if (victim != null)
         {
             var backstab = Perks.IsFromBehind(dir, victimAt.Yaw);
             var dmg = (backstab ? MeleeBackstabDamage : MeleeDamage)
@@ -133,7 +135,10 @@ public sealed partial class Game
     private void OnOwnMelee(byte flags, double now)
     {
         if ((flags & 1) == 0)
+        {
+            OnOwnShotConfirmed(flags, now); // a friendly hit still gets its own marker (FriendlyHits.cs)
             return;
+        }
         Audio.Effect(Sfx.MeleeHit, 0.8f);
         OnOwnShotConfirmed(flags, now);
     }
