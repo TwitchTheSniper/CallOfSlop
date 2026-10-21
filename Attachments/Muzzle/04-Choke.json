@@ -3,13 +3,14 @@
   "name": "Choke",
   "slot": "Muzzle",
   "order": 4,
-  "unlockOrder": 4,
+  "unlockOrder": 40,
   "blurb": "Tightens the pellet pattern.",
   "pros": ["-40% pellet spread", "+22% range"],
-  "cons": [],
+  "cons": ["Slightly slower to aim"],
   "fits": { "classes": ["Shotgun"] },
   "effects": [
     { "stat": "hipSpreadDeg", "mul": 0.6 },
-    { "stat": "rangeM", "mul": 1.22 }
+    { "stat": "rangeM", "mul": 1.22 },
+    { "stat": "adsTime", "add": 0.015 }
   ]
 }

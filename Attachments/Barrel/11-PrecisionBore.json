@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Precision Bore",
+  "slot": "Barrel",
+  "order": 11,
+  "unlockOrder": 93,
+  "blurb": "A longer, tighter bore for the odd guns. More reach and less wander, at a slower pace.",
+  "pros": ["+50% range", "-30% hip spread"],
+  "cons": ["-15% fire rate", "15% slower reload"],
+  "fits": { "classes": ["Special"] },
+  "model": "precisionBore",
+  "effects": [
+    { "stat": "rangeM", "mul": 1.5 },
+    { "stat": "hipSpreadDeg", "mul": 0.7 },
+    { "stat": "rpm", "mul": 0.85 },
+    { "stat": "reload", "mul": 1.15 }
+  ]
+}

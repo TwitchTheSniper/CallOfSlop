@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Shoulder Brace",
+  "slot": "Stock",
+  "order": 6,
+  "unlockOrder": 123,
+  "blurb": "A bolt-on brace for guns that were never meant to be shouldered.",
+  "pros": ["-20% recoil", "-12% hip spread"],
+  "cons": ["-4% speed", "Slightly slower to aim"],
+  "fits": { "classes": ["Special"] },
+  "model": "shoulderBrace",
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.8 },
+    { "stat": "hipSpreadDeg", "mul": 0.88 },
+    { "stat": "mobility", "add": -0.04 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

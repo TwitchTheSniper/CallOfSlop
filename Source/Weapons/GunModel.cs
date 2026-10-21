@@ -291,7 +291,7 @@ public static class GunModel
         return (f.RecvLen, f.RecvH, f.RecvW, f.BarrelLen, f.BarrelW, f.GuardLen, f.GuardH);
     }
 
-    private static string? Att(WeaponDef d, AttachSlot slot) => Attachments.Get(slot, Attachments.Slot(d.Kit, slot))?.Name;
+    private static string? Att(WeaponDef d, AttachSlot slot) => Attachments.LookIn(d.Kit, slot);
 
     /// <summary>Has a scope built into the gun itself (long-range rifles with no optic attachment).</summary>
     private static bool BuiltInScope(WeaponDef d) => d.Optic == OpticKind.Iron && d.AdsZoom >= 1.8f && d.Class != WeaponClass.Pistol;

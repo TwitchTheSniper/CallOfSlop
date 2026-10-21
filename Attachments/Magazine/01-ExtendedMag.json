@@ -3,7 +3,7 @@
   "name": "Extended Mag",
   "slot": "Magazine",
   "order": 1,
-  "unlockOrder": 8,
+  "unlockOrder": 80,
   "blurb": "More rounds before you reload.",
   "pros": ["+75% magazine"],
   "cons": ["15% slower reload"],

@@ -3,12 +3,13 @@
   "name": "Laser",
   "slot": "Underbarrel",
   "order": 3,
-  "unlockOrder": 2,
+  "unlockOrder": 20,
   "blurb": "Points where the hip-fire cone is centred.",
   "pros": ["-40% hip spread"],
-  "cons": [],
+  "cons": ["+8% draw time"],
   "fits": {},
   "effects": [
-    { "stat": "hipSpreadDeg", "mul": 0.6 }
+    { "stat": "hipSpreadDeg", "mul": 0.6 },
+    { "stat": "equipTime", "mul": 1.08 }
   ]
 }

@@ -65,6 +65,7 @@ public static partial class SelfTest
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
+            Section("Attachment variety", CheckAttachmentVariety); // SelfTestAttachmentVariety.cs: slots per gun, downsides, class matrix, unlocks, models, saves
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);

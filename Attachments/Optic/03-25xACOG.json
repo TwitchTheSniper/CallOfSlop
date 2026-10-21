@@ -3,7 +3,7 @@
   "name": "2.5x ACOG",
   "slot": "Optic",
   "order": 3,
-  "unlockOrder": 12,
+  "unlockOrder": 120,
   "blurb": "Mid-range prism scope with a chevron reticle.",
   "pros": ["2.5x zoom", "-35% aimed spread"],
   "cons": ["Slower to aim", "Narrow view"],

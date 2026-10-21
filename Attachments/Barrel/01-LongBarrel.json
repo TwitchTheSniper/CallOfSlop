@@ -3,7 +3,7 @@
   "name": "Long Barrel",
   "slot": "Barrel",
   "order": 1,
-  "unlockOrder": 14,
+  "unlockOrder": 140,
   "blurb": "More velocity, more reach.",
   "pros": ["+45% range"],
   "cons": ["-4% speed", "Slower to aim"],

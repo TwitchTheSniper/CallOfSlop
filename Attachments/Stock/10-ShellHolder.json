@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Shell Holder",
+  "slot": "Stock",
+  "order": 10,
+  "unlockOrder": 63,
+  "blurb": "A row of spare shells on the stock, right where your hand goes to reload.",
+  "pros": ["20% faster reload"],
+  "cons": ["-2% speed", "+5% recoil"],
+  "fits": { "classes": ["Shotgun"] },
+  "model": "shellHolder",
+  "effects": [
+    { "stat": "reload", "mul": 0.8 },
+    { "stat": "mobility", "add": -0.02 },
+    { "stat": "recoilDeg", "mul": 1.05 }
+  ]
+}

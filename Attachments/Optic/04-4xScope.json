@@ -3,7 +3,7 @@
   "name": "4x Scope",
   "slot": "Optic",
   "order": 4,
-  "unlockOrder": 17,
+  "unlockOrder": 170,
   "blurb": "Full scope for long sightlines.",
   "pros": ["4x zoom", "-52% aimed spread"],
   "cons": ["Much slower to aim", "Tunnel vision", "-3% speed"],

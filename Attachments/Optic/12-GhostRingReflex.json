@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Ghost Ring Reflex",
+  "slot": "Optic",
+  "order": 12,
+  "unlockOrder": 33,
+  "blurb": "An open reflex sight with a big gold ring sized to the pellet pattern.",
+  "pros": ["Ring sized to the spread", "-15% aimed spread", "-8% hip spread"],
+  "cons": ["Slightly slower to aim", "Low 1.5x zoom"],
+  "fits": { "classes": ["Shotgun"] },
+  "effects": [
+    { "stat": "optic", "set": "RedDot" },
+    { "stat": "adsZoom", "set": 1.5 },
+    { "stat": "adsSpreadMult", "mul": 0.85 },
+    { "stat": "hipSpreadDeg", "mul": 0.92 },
+    { "stat": "adsTime", "add": 0.015 }
+  ],
+  "sight": { "reticle": "HoloRing", "reticleColor": [1, 0.85, 0.2], "reticleSize": 1.3, "vignette": 0, "tint": [0.6, 0.55, 0.25], "tintAlpha": 0.1 }
+}

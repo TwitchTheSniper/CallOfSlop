@@ -3,7 +3,7 @@
   "name": "Heavy Barrel",
   "slot": "Barrel",
   "order": 3,
-  "unlockOrder": 19,
+  "unlockOrder": 190,
   "blurb": "Thick, stable barrel.",
   "pros": ["+22% range", "-15% recoil"],
   "cons": ["-6% speed", "15% slower draw"],

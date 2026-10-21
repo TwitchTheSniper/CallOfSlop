@@ -3,7 +3,7 @@
   "name": "Brick 2x Prism",
   "slot": "Optic",
   "order": 7,
-  "unlockOrder": 9,
+  "unlockOrder": 90,
   "blurb": "Stubby fixed 2x prism with a horseshoe reticle. A little reach without the tunnel.",
   "pros": ["2x zoom", "Horseshoe + dot reticle", "-28% aimed spread"],
   "cons": ["Slightly slower to aim"],

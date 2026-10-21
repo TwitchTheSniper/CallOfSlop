@@ -3,7 +3,7 @@
   "name": "Light Stock",
   "slot": "Stock",
   "order": 1,
-  "unlockOrder": 10,
+  "unlockOrder": 100,
   "blurb": "Skeletonised for speed.",
   "pros": ["+9% speed"],
   "cons": ["+10% recoil"],

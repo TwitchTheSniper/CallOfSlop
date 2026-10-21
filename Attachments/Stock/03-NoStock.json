@@ -3,7 +3,7 @@
   "name": "No Stock",
   "slot": "Stock",
   "order": 3,
-  "unlockOrder": 20,
+  "unlockOrder": 200,
   "blurb": "Run and gun.",
   "pros": ["+13% speed", "20% faster to aim"],
   "cons": ["+25% recoil", "+10% hip spread", "Slower recoil recovery"],

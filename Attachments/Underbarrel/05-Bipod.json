@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Bipod",
+  "slot": "Underbarrel",
+  "order": 5,
+  "unlockOrder": 165,
+  "blurb": "Folding legs that brace the gun when you get low. Heavy to carry around.",
+  "pros": ["-40% recoil while crouched", "-50% recoil while prone"],
+  "cons": ["-5% speed", "Slower to aim"],
+  "fits": { "classes": ["LMG", "Sniper", "DMR"] },
+  "model": "bipod",
+  "effects": [
+    { "stat": "recoilCrouchVertical", "mul": 0.6 },
+    { "stat": "recoilCrouchHorizontal", "mul": 0.6 },
+    { "stat": "recoilProneVertical", "mul": 0.5 },
+    { "stat": "recoilProneHorizontal", "mul": 0.5 },
+    { "stat": "mobility", "add": -0.05 },
+    { "stat": "adsTime", "add": 0.03 }
+  ]
+}

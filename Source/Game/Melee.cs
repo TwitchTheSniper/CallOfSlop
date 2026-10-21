@@ -78,6 +78,7 @@ public sealed partial class Game
 
         var origin = attacker.Eye;
         var dir = World.Forward(yaw, pitch);
+        var reach = MeleeRange + Attachments.MeleeReachBonus(attacker.WeaponDef); // a bayonet reaches further (Attachments/Muzzle/14-Bayonet.json)
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         Player? victim = null;
         HistoryEntry victimAt = default;
@@ -92,10 +93,10 @@ public sealed partial class Game
             var closest = Vector3.Clamp(origin, box.Min, box.Max);
             var to = closest - origin;
             var dist = to.Length();
-            if (dist > MeleeRange)
+            if (dist > reach)
                 continue;
             var toCenter = box.Center - origin;
-            var aimed = box.Raycast(origin, dir, MeleeRange) != null
+            var aimed = box.Raycast(origin, dir, reach) != null
                         || (toCenter.LengthSquared() > 1e-4f && Vector3.Dot(Vector3.Normalize(toCenter), dir) >= MeleeConeCos);
             if (!aimed)
                 continue;
@@ -124,7 +125,7 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
-        else if ((flags = ZombieMelee(attacker, origin, dir, MeleeRange, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
+        else if ((flags = ZombieMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
             MeleeProps(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs)
 
         if (attacker.Id == LocalId)

@@ -3,7 +3,7 @@
   "name": "Suppressor",
   "slot": "Muzzle",
   "order": 1,
-  "unlockOrder": 11,
+  "unlockOrder": 110,
   "blurb": "Quiet shots and a dim muzzle flash. Bullets lose a bit of punch at range.",
   "pros": ["Much quieter, muffled gunshot", "Faint flash and thin, dim tracers", "-25% camera shake"],
   "cons": ["-15% range"],

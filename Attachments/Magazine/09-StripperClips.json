@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Stripper Clips",
+  "slot": "Magazine",
+  "order": 9,
+  "unlockOrder": 57,
+  "blurb": "Rounds on clips that strip straight into the gun. Quick to top up, one round short.",
+  "pros": ["35% faster reload"],
+  "cons": ["-20% magazine"],
+  "fits": { "classes": ["Sniper"] },
+  "model": "stripper",
+  "effects": [
+    { "stat": "reload", "mul": 0.65 },
+    { "stat": "mag", "mul": 0.8, "min": 1 }
+  ]
+}
