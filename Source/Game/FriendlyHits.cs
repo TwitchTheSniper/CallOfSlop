@@ -1,5 +1,3 @@
-using System.Numerics;
-
 namespace CallOfSlop;
 
 /// <summary>
@@ -34,8 +32,4 @@ public sealed partial class Game
         HitMarkerFriendly = true;
         Audio.Effect(Sfx.FriendlyHit, 0.4f); // mixed under the enemy hit sounds
     }
-
-    /// <summary>Self-test: a throwable of <paramref name="kind"/> thrown by <paramref name="owner"/> goes off at <paramref name="at"/> now.</summary>
-    public void SelfTestDetonate(Player owner, ThrowableKind kind, Vector3 at, double now) =>
-        ServerDetonate(new Projectile { Id = 60000, Kind = kind, Owner = owner.Id, Pos = at, Vel = Vector3.Zero, Born = now }, now);
 }
