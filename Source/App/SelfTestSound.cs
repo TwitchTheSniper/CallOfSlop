@@ -285,7 +285,7 @@ public static partial class SelfTest
                 if (SurfaceProbe.Under(foot) == want)
                     right++;
             }
-        SoundSoundLine($"surface: {mapName} {(steep ? "steep" : "flat")} {mat}: {right}/{tried} probes and {direct}/{tried} samples read as {want}");
+        SoundLine($"surface: {mapName} {(steep ? "steep" : "flat")} {mat}: {right}/{tried} probes and {direct}/{tried} samples read as {want}");
         if (tried < 5)
             Fail($"{mapName}: only {tried} {mat} samples to probe");
         else if (direct < tried || right < tried * 0.8f)
