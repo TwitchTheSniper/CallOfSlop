@@ -14,13 +14,17 @@ public enum DamageKind : byte
 /// <summary>
 /// Melee (a quick rifle-butt / pistol-whip on V) and the server-side parts of perks.
 /// Melee is resolved on the server with the same lag compensation as shots: you hit whoever you
-/// were looking at, within reach, on your screen. Two hits kill; one from behind always does.
+/// were looking at, within reach, on your screen. One hit kills a player on full health (CoD style): Entrenched only
+/// cuts bullet damage, Flak Jacket only explosions, and Last Stand doesn't save you from a melee hit (DamagePlayer).
+/// Zombies and breakable props still take the old strike (<see cref="MeleeObjectDamage"/>), and a built Zombies melee
+/// weapon uses its own stats (GameZombies.cs).
 /// </summary>
 public sealed partial class Game
 {
     public const float MeleeRange = 2.4f; // from your eyes to the edge of their body
-    public const float MeleeDamage = 55f; // two hits
-    public const float MeleeBackstabDamage = 150f; // from behind: always a kill
+    public const float MeleeDamage = 150f; // one hit kills a player on full health (was 55, two hits)
+    public const float MeleeBackstabDamage = 150f; // from behind: also a kill (still flagged for the hit feedback)
+    public const float MeleeObjectDamage = 55f; // the standard strike against zombies and breakable props (unchanged)
     public const double MeleeCooldown = 0.8;
     public const double MeleeRecovery = 0.45; // can't shoot for this long after a swing
     public const float MeleeConeCos = 0.77f; // ~40 degrees either side of where you look
@@ -74,6 +78,7 @@ public sealed partial class Game
 
         var origin = attacker.Eye;
         var dir = World.Forward(yaw, pitch);
+        var reach = MeleeRange + Attachments.MeleeReachBonus(attacker.WeaponDef); // a bayonet reaches further (Attachments/Muzzle/14-Bayonet.json)
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         Player? victim = null;
         HistoryEntry victimAt = default;
@@ -88,10 +93,10 @@ public sealed partial class Game
             var closest = Vector3.Clamp(origin, box.Min, box.Max);
             var to = closest - origin;
             var dist = to.Length();
-            if (dist > MeleeRange)
+            if (dist > reach)
                 continue;
             var toCenter = box.Center - origin;
-            var aimed = box.Raycast(origin, dir, MeleeRange) != null
+            var aimed = box.Raycast(origin, dir, reach) != null
                         || (toCenter.LengthSquared() > 1e-4f && Vector3.Dot(Vector3.Normalize(toCenter), dir) >= MeleeConeCos);
             if (!aimed)
                 continue;
@@ -120,7 +125,7 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
-        else if ((flags = ZombieMelee(attacker, origin, dir, MeleeRange, MeleeConeCos, MeleeDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
+        else if ((flags = ZombieMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
             MeleeProps(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs)
 
         if (attacker.Id == LocalId)
@@ -178,15 +183,36 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Bots: swing at anyone who gets right up close instead of shooting.</summary>
+    /// <summary>
+    /// Bots: swing at anyone who gets right up close instead of shooting. Melee kills in one hit, so a bot first has to
+    /// stay in reach of its target for a short wind-up (<see cref="BotMeleeWindup"/>): walking past a bot isn't instant death,
+    /// and you get a moment to shoot or swing first.
+    /// </summary>
     private bool BotTryMelee(Player bot, BotBrain b, Player target, float dist, float yaw, float pitch, double now)
     {
-        if (dist > MeleeRange + 0.2f || now < bot.NextMelee || b.Skill == BotDifficulty.Easy && _rng.NextDouble() < 0.7)
+        var fresh = now - b.MeleeCheckedAt > 0.1; // not checked last tick: lost sight, turned away... start over
+        b.MeleeCheckedAt = now;
+        if (dist > MeleeRange + 0.2f || b.MeleeTarget != target.Id || fresh)
+        {
+            b.MeleeTarget = dist > MeleeRange + 0.2f ? byte.MaxValue : target.Id;
+            b.MeleeCloseSince = now;
+            return false;
+        }
+        if (now < bot.NextMelee || now - b.MeleeCloseSince < BotMeleeWindup(b.Skill))
             return false;
         ServerMelee(bot, yaw, pitch, ServerTick, now);
         b.NextFire = Math.Max(b.NextFire, now + MeleeRecovery);
+        b.MeleeCloseSince = now; // a miss: wind up again before the next swing
         return true;
     }
+
+    /// <summary>How long a bot must stay within melee reach of its target before it swings (seconds).</summary>
+    public static double BotMeleeWindup(BotDifficulty skill) => skill switch
+    {
+        BotDifficulty.Easy => 0.6,
+        BotDifficulty.Normal => 0.35,
+        _ => 0.2,
+    };
 
     // ---- Perks (server side) -------------------------------------------------------------
 

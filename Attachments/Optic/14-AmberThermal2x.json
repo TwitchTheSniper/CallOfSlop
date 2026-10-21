@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Amber Thermal 2x",
+  "slot": "Optic",
+  "order": 14,
+  "unlockOrder": 177,
+  "blurb": "Warm amber glass in a thermal-style housing. It tints the view, but it doesn't see through smoke.",
+  "pros": ["2x zoom", "-25% aimed spread", "Amber thermal-style tint"],
+  "cons": ["Slower to aim", "-2% speed"],
+  "fits": { "classes": ["LMG", "Special"] },
+  "effects": [
+    { "stat": "optic", "set": "Prism2" },
+    { "stat": "adsZoom", "set": 2 },
+    { "stat": "adsSpreadMult", "mul": 0.75 },
+    { "stat": "adsTime", "add": 0.04 },
+    { "stat": "mobility", "add": -0.02 }
+  ],
+  "sight": { "reticle": "CircleDot", "reticleColor": [1, 1, 1], "screen": 0.8, "housing": 1.28, "vignette": 0.45, "tint": [1, 0.6, 0.15], "tintAlpha": 0.22 }
+}

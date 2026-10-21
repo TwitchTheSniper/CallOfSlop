@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Collapsed Stock",
+  "slot": "Stock",
+  "order": 7,
+  "unlockOrder": 105,
+  "blurb": "The stock pushed all the way in. Out of the holster fast, a bit harder to hold.",
+  "pros": ["20% faster draw", "12% faster to aim"],
+  "cons": ["+12% recoil", "Recovers from recoil 10% slower"],
+  "fits": { "classes": ["SMG"] },
+  "model": "collapsedStock",
+  "effects": [
+    { "stat": "equipTime", "mul": 0.8 },
+    { "stat": "adsTime", "mul": 0.88 },
+    { "stat": "recoilDeg", "mul": 1.12 },
+    { "stat": "recoilRecovery", "mul": 0.9 }
+  ]
+}

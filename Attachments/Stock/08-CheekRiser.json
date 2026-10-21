@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Cheek Riser",
+  "slot": "Stock",
+  "order": 8,
+  "unlockOrder": 155,
+  "blurb": "A raised cheek rest that lines your eye up with the glass every time.",
+  "pros": ["-15% aimed spread", "Recovers from recoil 15% faster"],
+  "cons": ["Slower to aim", "-2% speed"],
+  "fits": { "classes": ["DMR"] },
+  "model": "cheekRiser",
+  "effects": [
+    { "stat": "adsSpreadMult", "mul": 0.85 },
+    { "stat": "recoilRecovery", "mul": 1.15 },
+    { "stat": "adsTime", "add": 0.025 },
+    { "stat": "mobility", "add": -0.02 }
+  ]
+}

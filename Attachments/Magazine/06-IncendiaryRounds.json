@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Incendiary Rounds",
+  "slot": "Magazine",
+  "order": 6,
+  "unlockOrder": 207,
+  "blurb": "Hot-loaded rounds that hit harder up close and fade sooner. There's no burning: it's all in the numbers.",
+  "pros": ["+15% damage"],
+  "cons": ["-25% range", "+10% recoil"],
+  "fits": { "sounds": ["Gun", "Boom", "Suppressed"] },
+  "model": "incendiary",
+  "effects": [
+    { "stat": "damage", "mul": 1.15 },
+    { "stat": "rangeM", "mul": 0.75 },
+    { "stat": "recoilDeg", "mul": 1.1 }
+  ]
+}

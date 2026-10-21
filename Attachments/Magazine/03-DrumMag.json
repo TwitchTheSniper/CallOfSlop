@@ -3,7 +3,7 @@
   "name": "Drum Mag",
   "slot": "Magazine",
   "order": 3,
-  "unlockOrder": 18,
+  "unlockOrder": 180,
   "blurb": "Huge capacity, huge weight.",
   "pros": ["2.4x magazine"],
   "cons": ["40% slower reload", "-5% speed"],

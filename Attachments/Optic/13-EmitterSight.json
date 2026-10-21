@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Emitter Sight",
+  "slot": "Optic",
+  "order": 13,
+  "unlockOrder": 15,
+  "blurb": "A glowing magenta ring projected over the barrel. Built for the strange guns.",
+  "pros": ["Glowing magenta ring", "1.6x zoom", "-20% aimed spread"],
+  "cons": ["-1% speed", "Slightly slower to aim"],
+  "fits": { "classes": ["Special"] },
+  "effects": [
+    { "stat": "optic", "set": "RedDot" },
+    { "stat": "adsZoom", "set": 1.6 },
+    { "stat": "adsSpreadMult", "mul": 0.8 },
+    { "stat": "adsTime", "add": 0.01 },
+    { "stat": "mobility", "add": -0.01 }
+  ],
+  "sight": { "reticle": "HoloRing", "reticleColor": [1, 0.3, 0.9], "reticleSize": 0.9, "vignette": 0, "tint": [0.7, 0.3, 0.7], "tintAlpha": 0.12 }
+}

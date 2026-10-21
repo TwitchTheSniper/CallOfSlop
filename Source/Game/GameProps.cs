@@ -70,7 +70,7 @@ public sealed partial class Game
         }
         if (best < 0)
             return false;
-        DamageProp(attacker, best, MeleeDamage, PropDamage.Melee, origin, now);
+        DamageProp(attacker, best, MeleeObjectDamage, PropDamage.Melee, origin, now);
         return true;
     }
 

@@ -3,14 +3,15 @@
   "name": "Muzzle Brake",
   "slot": "Muzzle",
   "order": 3,
-  "unlockOrder": 15,
+  "unlockOrder": 150,
   "blurb": "Balances recoil and keeps hip fire steady.",
   "pros": ["-30% horizontal recoil", "-40% camera shake", "-14% hip spread"],
-  "cons": [],
+  "cons": ["Louder blast: more FOV kick"],
   "fits": { "notClasses": ["Shotgun", "Special", "Pistol"] },
   "effects": [
     { "stat": "recoilHorizontal", "mul": 0.7 },
     { "stat": "recoilShake", "mul": 0.6 },
-    { "stat": "hipSpreadDeg", "mul": 0.86 }
+    { "stat": "hipSpreadDeg", "mul": 0.86 },
+    { "stat": "recoilPunchFov", "mul": 1.25 }
   ]
 }

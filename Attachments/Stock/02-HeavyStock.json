@@ -3,7 +3,7 @@
   "name": "Heavy Stock",
   "slot": "Stock",
   "order": 2,
-  "unlockOrder": 16,
+  "unlockOrder": 160,
   "blurb": "Padded and weighted.",
   "pros": ["-20% recoil", "Recovers from recoil 40% faster"],
   "cons": ["-4% speed", "Slightly slower to aim"],

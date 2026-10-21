@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Shotgun Drum",
+  "slot": "Magazine",
+  "order": 7,
+  "unlockOrder": 225,
+  "blurb": "A fat drum instead of the tube. Twice the shells, and you swap the whole thing.",
+  "pros": ["2x magazine", "Reloads as one drum swap"],
+  "cons": ["50% slower reload", "-6% speed", "Slower to aim"],
+  "fits": { "classes": ["Shotgun"], "minMag": 4 },
+  "model": "shotgunDrum",
+  "effects": [
+    { "stat": "mag", "grow": 2 },
+    { "stat": "reload", "mul": 1.5 },
+    { "stat": "mobility", "add": -0.06 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

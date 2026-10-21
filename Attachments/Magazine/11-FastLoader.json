@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Fast-Loader",
+  "slot": "Magazine",
+  "order": 11,
+  "unlockOrder": 53,
+  "blurb": "Pre-measured paper cartridges for guns you load by hand. Faster, with slightly lighter loads.",
+  "pros": ["35% faster reload"],
+  "cons": ["-8% damage"],
+  "fits": { "maxMag": 2 },
+  "model": "fastLoader",
+  "effects": [
+    { "stat": "reload", "mul": 0.65 },
+    { "stat": "damage", "mul": 0.92 }
+  ]
+}

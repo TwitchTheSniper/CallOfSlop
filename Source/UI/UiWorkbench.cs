@@ -606,7 +606,7 @@ public sealed partial class Ui
             StatLine("Stun (s)", cur.Stun, trial?.Stun, "0.0", true);
             if (cur.Flags.Length > 0)
                 ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", cur.Flags));
-            ImGuiSafe.TextColored(Dim, $"Standard strike: {Game.MeleeDamage:0} damage, {Game.MeleeCooldown:0.0} s, {Game.MeleeRange:0.0} m, one target.");
+            ImGuiSafe.TextColored(Dim, $"Standard strike: kills a player in one hit, {Game.MeleeObjectDamage:0} damage to zombies, {Game.MeleeCooldown:0.0} s, {Game.MeleeRange:0.0} m, one target.");
         }
         ImGuiSafe.TextColored(Dim, $"{b.PartCount} parts, {b.Weight:0.0} kg (max {BuildRules.MaxMeleeWeight:0}), {b.ScrapValue} scrap");
     }

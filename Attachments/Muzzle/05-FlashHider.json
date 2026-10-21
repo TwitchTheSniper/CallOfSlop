@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Flash Hider",
+  "slot": "Muzzle",
+  "order": 5,
+  "unlockOrder": 75,
+  "blurb": "Slotted prongs that break up the blast, so the view stays calmer while you fire.",
+  "pros": ["-25% camera shake", "Less view punch"],
+  "cons": ["+6% vertical recoil"],
+  "fits": { "classes": ["AssaultRifle", "SMG", "LMG", "DMR"] },
+  "model": "flashHider",
+  "effects": [
+    { "stat": "recoilShake", "mul": 0.75 },
+    { "stat": "recoilPunchFov", "mul": 0.8 },
+    { "stat": "recoilVertical", "mul": 1.06 }
+  ]
+}

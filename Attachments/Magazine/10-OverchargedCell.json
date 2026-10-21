@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Overcharged Cell",
+  "slot": "Magazine",
+  "order": 10,
+  "unlockOrder": 153,
+  "blurb": "Overcharged ammo for the strange guns. Every shot hits harder and the supply runs dry fast.",
+  "pros": ["+20% damage"],
+  "cons": ["-40% magazine", "20% slower reload"],
+  "fits": { "classes": ["Special"], "notSounds": ["Boom"] },
+  "model": "overcharged",
+  "effects": [
+    { "stat": "damage", "mul": 1.2 },
+    { "stat": "mag", "mul": 0.6, "min": 1 },
+    { "stat": "reload", "mul": 1.2 }
+  ]
+}

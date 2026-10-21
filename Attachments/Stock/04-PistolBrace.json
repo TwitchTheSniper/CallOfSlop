@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Pistol Brace",
+  "slot": "Stock",
+  "order": 4,
+  "unlockOrder": 135,
+  "blurb": "A light wire brace off the back of the frame. A pistol you can shoulder.",
+  "pros": ["-15% recoil", "Recovers from recoil 15% faster"],
+  "cons": ["-3% speed", "+12% draw time"],
+  "fits": { "classes": ["Pistol"] },
+  "model": "pistolBrace",
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.85 },
+    { "stat": "recoilRecovery", "mul": 1.15 },
+    { "stat": "mobility", "add": -0.03 },
+    { "stat": "equipTime", "mul": 1.12 }
+  ]
+}

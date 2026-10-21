@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Overclock Coils",
+  "slot": "Barrel",
+  "order": 10,
+  "unlockOrder": 203,
+  "blurb": "Extra glowing coils around the barrel. Faster, hotter, and harder to hold on target.",
+  "pros": ["+20% fire rate"],
+  "cons": ["+25% hip spread", "+25% recoil", "10% slower reload"],
+  "fits": { "classes": ["Special"], "notSounds": ["Boom"] },
+  "model": "overclock",
+  "effects": [
+    { "stat": "rpm", "mul": 1.2 },
+    { "stat": "hipSpreadDeg", "mul": 1.25 },
+    { "stat": "recoilDeg", "mul": 1.25 },
+    { "stat": "reload", "mul": 1.1 }
+  ]
+}

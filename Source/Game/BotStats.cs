@@ -9,6 +9,9 @@ public sealed class BotStats
     /// <summary>Kills scored by bots with a gun (not grenades or melee).</summary>
     public int GunKills;
 
+    /// <summary>Kills scored by bots with melee (one hit kills, so the self-test keeps an eye on how often they use it).</summary>
+    public int MeleeKills;
+
     /// <summary>How many of <see cref="GunKills"/> were headshots.</summary>
     public int GunHeadshots;
 
@@ -25,6 +28,7 @@ public sealed class BotStats
     {
         GunKills += o.GunKills;
         GunHeadshots += o.GunHeadshots;
+        MeleeKills += o.MeleeKills;
         for (var i = 0; i < Shots.Length; i++)
         {
             Shots[i] += o.Shots[i];

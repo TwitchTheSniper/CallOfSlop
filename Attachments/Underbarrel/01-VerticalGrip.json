@@ -3,7 +3,7 @@
   "name": "Vertical Grip",
   "slot": "Underbarrel",
   "order": 1,
-  "unlockOrder": 7,
+  "unlockOrder": 70,
   "blurb": "Something solid to hold on to.",
   "pros": ["-30% vertical recoil", "Steadier gun"],
   "cons": ["Slightly slower to aim"],

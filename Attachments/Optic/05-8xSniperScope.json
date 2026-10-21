@@ -3,7 +3,7 @@
   "name": "8x Sniper Scope",
   "slot": "Optic",
   "order": 5,
-  "unlockOrder": 21,
+  "unlockOrder": 210,
   "blurb": "High-power glass for map-length shots.",
   "pros": ["8x zoom", "-65% aimed spread"],
   "cons": ["Slowest to aim", "-5% speed"],

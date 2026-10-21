@@ -54,6 +54,9 @@ public sealed class BotBrain
     public double NextFire;
     public int BurstLeft;
     public bool CoverReload; // this reload should happen behind cover
+    public byte MeleeTarget = byte.MaxValue; // who we've been within melee reach of (Melee.cs: BotTryMelee)
+    public double MeleeCloseSince; // ...since then (the wind-up before a swing)
+    public double MeleeCheckedAt = -100;
 
     // ---- Decisions ----
     public BotMode Mode;
@@ -310,6 +313,8 @@ public sealed partial class Game
             b.HoldUntil = 0;
             b.GoalUntil = 0;
         }
+        if (killId == MeleeKillId)
+            BotStats.MeleeKills++;
         if (killId >= MeleeKillId)
             return;
         BotStats.GunKills++;
