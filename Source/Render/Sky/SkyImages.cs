@@ -175,22 +175,41 @@ public static class SkyImages
 
     /// <summary>
     /// The file <paramref name="file"/> named by a map (<paramref name="source"/> is the map's path relative to the Maps
-    /// folder): next to the map file first, then from the Maps folder. Absolute paths and ".." aren't allowed, so maps
-    /// stay self-contained.
+    /// folder): next to the map file first, then in its pack folder (Maps/&lt;Pack&gt;, for a map in a pack subfolder),
+    /// then from the Maps folder (the shared images). "global:Skies/x.png" looks in the Maps folder only. Absolute paths
+    /// and ".." aren't allowed, so maps stay self-contained.
     /// </summary>
     public static string Resolve(string file, string source)
     {
+        var forceGlobal = file.StartsWith(PropScope.GlobalPrefix, StringComparison.OrdinalIgnoreCase);
+        if (forceGlobal)
+            file = file[PropScope.GlobalPrefix.Length..].Trim();
         var norm = file.Replace('\\', '/');
         if (Path.IsPathRooted(file) || norm.Split('/').Any(p => p == ".."))
             throw new ArgumentException($"image \"{file}\" must be a path inside the Maps folder (no drive letters or \"..\")");
-        var dir = Path.GetDirectoryName(source) ?? "";
-        var near = Path.Combine(Maps.Folder, dir, norm);
-        if (File.Exists(near))
-            return near;
+        var looked = new List<string>();
+        if (!forceGlobal)
+        {
+            var dir = (Path.GetDirectoryName(source) ?? "").Replace('\\', '/');
+            var near = Path.Combine(Maps.Folder, dir, norm);
+            if (File.Exists(near))
+                return near;
+            looked.Add(dir.Length > 0 ? "Maps/" + dir : "Maps");
+            var slash = dir.IndexOf('/');
+            if (slash > 0) // a map in a subfolder of its pack: the pack folder next
+            {
+                var pack = Path.Combine(Maps.Folder, dir[..slash], norm);
+                if (File.Exists(pack))
+                    return pack;
+                looked.Add("Maps/" + dir[..slash]);
+            }
+        }
         var root = Path.Combine(Maps.Folder, norm);
         if (File.Exists(root))
             return root;
-        throw new IOException($"image \"{file}\" not found (looked in {Path.Combine("Maps", dir).Replace('\\', '/')} and Maps)");
+        if (!looked.Contains("Maps"))
+            looked.Add("Maps");
+        throw new IOException($"image \"{file}\" not found (looked in {string.Join(", ", looked)})");
     }
 
     /// <summary>Six square PNG faces of one size, +X, -X, +Y, -Y, +Z, -Z.</summary>

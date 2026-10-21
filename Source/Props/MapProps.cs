@@ -44,7 +44,8 @@ public sealed partial class Map
     public void PlaceProp(string name, float x, float z, float yaw = 0, float scale = 1, float y = 0)
     {
         using var __ = Op([name, x, z, yaw, scale, y]);
-        var def = Props.Find(name) ?? throw new InvalidOperationException($"unknown prop \"{name}\": {Props.Suggest(name)}");
+        var scope = PropScope; // the pack's own props first, then the Props folder (MapPackAssets.cs)
+        var def = scope.Find(name) ?? throw new InvalidOperationException($"unknown prop \"{name}\": {scope.Suggest(name)}");
         if (scale is < 0.1f or > 10f)
             throw new InvalidOperationException("scale is 0.1 to 10");
         var yawRad = yaw * (MathF.PI / 180f);
@@ -82,9 +83,10 @@ public sealed partial class Map
         using var __ = Op([props, x0, z0, x1, z1, count, seed, width, align, gap, mirror]);
         if (props.Length == 0)
             throw new InvalidOperationException("\"props\" needs at least one prop or category name");
+        var scope = PropScope;
         foreach (var n in props)
-            if (Props.Find(n) == null && !Props.All.Any(p => p.Category.Equals(n, StringComparison.OrdinalIgnoreCase)))
-                throw new InvalidOperationException($"unknown prop or category \"{n}\": {Props.Suggest(n)}");
+            if (scope.Find(n) == null && scope.InCategory(n).Count == 0)
+                throw new InvalidOperationException($"unknown prop or category \"{n}\": {scope.Suggest(n)}");
         if (count is < 0 or > 2000)
             throw new InvalidOperationException("count is 0 to 2000");
         if (width < 0 || gap is < 0 or > 10)
@@ -295,12 +297,13 @@ public sealed partial class Map
     {
         // The pick list: every name once (repeats add weight), a category stands for all its props.
         var pool = new List<PropDef>();
+        var scope = PropScope;
         foreach (var n in req.Props)
         {
-            if (Props.Find(n) is { } d)
+            if (scope.Find(n) is { } d)
                 pool.Add(d);
             else
-                pool.AddRange(Props.All.Where(p => p.Category.Equals(n, StringComparison.OrdinalIgnoreCase)));
+                pool.AddRange(scope.InCategory(n));
         }
         var weights = pool.Select(p => p.Weight).ToArray();
         var total = weights.Sum();

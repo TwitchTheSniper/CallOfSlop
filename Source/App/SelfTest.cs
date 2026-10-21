@@ -170,7 +170,7 @@ public static partial class SelfTest
             Map copy;
             try
             {
-                copy = MapFile.Load(json, original.Name + " (round trip)");
+                copy = MapFile.Load(json, original.Name + " (round trip)", original.PackDir ?? ""); // same pack: its own props and models
             }
             catch (MapFileException ex)
             {

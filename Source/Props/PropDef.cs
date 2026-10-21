@@ -119,8 +119,23 @@ public sealed class PropDef
 
     public PropBreakable? Breakable;
 
-    /// <summary>Position in <see cref="Props.All"/> (the mesh and batch index).</summary>
+    /// <summary>Position in <see cref="Props.All"/>, or for a pack prop in its pack's <see cref="PropScope.Library"/> (the mesh index).</summary>
     public int Index;
+
+    /// <summary>
+    /// The pack folder (in Maps) a pack-local prop comes from (Maps/&lt;Pack&gt;/Props), or null for a prop in the global
+    /// Props folder. Pack props are only visible to that pack's maps.
+    /// </summary>
+    public string? Pack;
+
+    /// <summary>Unique across every library: the name for a global prop, "Pack/Name" for a pack prop (two packs may both have a "Crate").</summary>
+    public string Key => Pack == null ? Name : Pack + "/" + Name;
+
+    /// <summary>
+    /// A fingerprint of a pack prop's file (its JSON with whitespace and comments dropped; 0 for global props). Maps
+    /// mix it into their fingerprint, so a player with a different copy of the pack's prop gets the map mismatch message.
+    /// </summary>
+    public uint FileHash;
 
     public bool IsSolid => Collision == PropCollision.Solid;
 

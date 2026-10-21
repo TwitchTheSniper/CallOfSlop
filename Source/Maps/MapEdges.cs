@@ -324,15 +324,16 @@ public sealed partial class Map
     private void BuildPropEdge(MapBoundary b)
     {
         var defs = new List<PropDef>();
+        var scope = PropScope; // pack props first (MapPackAssets.cs)
         foreach (var name in b.Spec.Edge.Props)
         {
-            if (Props.Find(name) is { } one)
+            if (scope.Find(name) is { } one)
                 defs.Add(one);
             else
             {
-                var cat = Props.All.Where(p => p.Category.Equals(name, StringComparison.OrdinalIgnoreCase)).ToList();
+                var cat = scope.InCategory(name);
                 if (cat.Count == 0)
-                    throw new InvalidOperationException($"boundary edge: unknown prop or category \"{name}\": {Props.Suggest(name)}");
+                    throw new InvalidOperationException($"boundary edge: unknown prop or category \"{name}\": {scope.Suggest(name)}");
                 defs.AddRange(cat);
             }
         }

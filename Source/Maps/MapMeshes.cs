@@ -53,20 +53,25 @@ public sealed partial class Map
     /// <summary>
     /// A glTF model (.glb or .gltf, path relative to the game folder, e.g. "Models/barrel.glb") standing at (x, z), turned
     /// and scaled like <see cref="Mesh"/>. Drawn with its own materials. Cosmetic: players and bullets pass through.
+    /// A map in a pack finds the path in its pack folder first (Maps/&lt;Pack&gt;/Models/barrel.glb); "global:Models/..."
+    /// skips the pack. A pack-local model counts towards the map's fingerprint (<see cref="PackAssetHash"/>).
     /// </summary>
     [MapOp]
     public void Model(string file, float x, float z, float y = 0, float yaw = 0, float pitch = 0, float roll = 0, float scale = 1)
     {
         using var __ = Op([file, x, z, y, yaw, pitch, roll, scale]);
         ModelAsset model;
+        var (path, display, packRel) = ResolveModelFile(file);
         try
         {
-            model = MeshLibrary.Model(file);
+            model = MeshLibrary.Model(path, display);
         }
         catch (ModelException ex)
         {
             throw new InvalidOperationException(ex.Message);
         }
+        if (packRel != null)
+            NotePackModel(packRel, model);
         AddMeshPlacement(new MeshPlacement(file, null, model, PlacementTransform(x, y, z, yaw, pitch, roll, scale), Vector4.One, MeshVertex.NoLayer));
     }
 
