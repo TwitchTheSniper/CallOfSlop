@@ -3,10 +3,19 @@
 # attachments, packets, full bot matches, the map vote and the server browser. See Source/App/SelfTest.cs.
 name: Build and self-test
 
+# To save Actions minutes (private repo, Windows runner minutes bill at 2x): docs-only and tool-script-only pushes don't
+# run, a newer push to the same branch cancels the older run, and a commit message containing [skip ci] skips the run.
 on:
   push:
-  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'tools/**'
   workflow_dispatch:
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
