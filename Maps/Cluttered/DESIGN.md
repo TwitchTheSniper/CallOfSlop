@@ -7,7 +7,7 @@ objectives, fairness, a bot match).
 
 ## 02 Crescent Bazaar (medium, bean, 137 x 83 m, 9,140 m2, 16 players): walled market
 
-**Theme.** A walled market town in warm sandstone. A caravanserai at each end, a crescent plaza with a fountain, a covered
+**Theme.** A walled market town in warm sandstone under the `desert` sky preset (hot afternoon haze). A caravanserai at each end, a crescent plaza with a fountain, a covered
 souk hall in the middle, and a palace garden with a pavilion and a minaret along the outer curve. Every open space is full
 of crates, sacks, stalls, carts, rugs, pots, lanterns, bunting and litter.
 

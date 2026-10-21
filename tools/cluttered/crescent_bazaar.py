@@ -545,6 +545,7 @@ mp = {
     "order": 402,
     "maxPlayers": 16,
     "sky": "#d8c3a0",
+    "skybox": "desert",
     "boundary": {
         "shape": "smooth",
         "points": CTRL,
