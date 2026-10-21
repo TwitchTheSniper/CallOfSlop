@@ -74,6 +74,8 @@ public sealed class Settings
     // Matches (single player and hosting)
     public GameMode Mode = GameMode.FreeForAll;
     public int AutoStart; // hosting: start N seconds after the first person readies up (0: wait for everyone)
+    public TeamSelection TeamSelect = TeamSelection.Manual; // team modes: players pick their team, or Auto only (TeamPick.cs)
+    public int TeamMaxDiff = TeamRules.DefaultMaxDiff; // team modes: how much bigger a side may get by picks (0-4)
     public PhysicsMode Physics = PhysicsMode.Classic; // hosting: player movement (classic, or the swept capsule controller); joiners use the host's
 
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
@@ -189,6 +191,8 @@ public sealed class Settings
                     case "master": s.MasterServer = v.Trim(); break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
+                    case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;
+                    case "team_max_diff" when int.TryParse(v, out var i): s.TeamMaxDiff = Math.Clamp(i, 0, TeamRules.MaxDiffLimit); break;
                     case "physics" when Enum.TryParse<PhysicsMode>(v, true, out var pm) && Enum.IsDefined(pm): s.Physics = pm; break;
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
@@ -248,6 +252,8 @@ public sealed class Settings
                     $"master={MasterServer}",
                     $"mode={Mode}",
                     $"auto_start={AutoStart}",
+                    $"team_select={(TeamSelect == TeamSelection.AutoOnly ? "auto" : "manual")}",
+                    $"team_max_diff={TeamMaxDiff}",
                     $"physics={Physics.ToString().ToLowerInvariant()}",
                     $"display={Display}",
                     $"width={Width}",

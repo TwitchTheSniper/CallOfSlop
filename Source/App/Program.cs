@@ -874,6 +874,8 @@ public static unsafe partial class Program
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
+            _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
+            _session.MaxTeamDiff = _settings.TeamMaxDiff;
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome

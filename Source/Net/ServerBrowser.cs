@@ -31,7 +31,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 18: the Zombies mode: game mode 5, zombie / run / event / parts / build / interact / workbench messages (ZUse..ZBench at
     //     the end of Msg), built weapons replicated to clients as build text, the window-opening collision layer (Clip)
     // 19: Zombies dropped builds: bleeding out drops your built weapons as pickups (ZPickup at the end of Msg: appear / gone)
-    public const byte ProtocolVersion = 19;
+    // 20: team selection: TeamPick / TeamReply at the end of Msg, the team rules and every player's pick at the end of the mode state
+    public const byte ProtocolVersion = 20;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
