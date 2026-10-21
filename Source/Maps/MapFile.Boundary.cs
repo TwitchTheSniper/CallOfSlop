@@ -177,11 +177,4 @@ public static partial class MapFile
             throw new MapFileException($"{where}: groundMargin is 0-64 m, barrierHeight 0-100 m, tolerance 0.005-1 m");
         return s;
     }
-
-    private static void CheckKeys(JsonElement obj, string[] keys, string where)
-    {
-        foreach (var p in obj.EnumerateObject())
-            if (!keys.Any(k => k.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
-                throw new MapFileException($"{where}: unknown field \"{p.Name}\" (known: {string.Join(", ", keys)})");
-    }
 }
