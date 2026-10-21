@@ -84,14 +84,14 @@ public static partial class SelfTest
         {
             float blue = Walk(0, at, keep), red = Walk(1, at, keep);
             var diff = (blue - red) / MathF.Max(blue, red);
-            walks.Add($"{name} {blue:0}/{red:0} m ({diff * 100:+0;-0}%)");
+            walks.Add($"{name} {blue:0}/{red:0} m ({diff * 100:+0.0;-0.0;0.0}%)");
             if (!float.IsFinite(blue + red) || MathF.Abs(diff) > 0.1f)
                 Fail($"{m.Name}: {name} at ({at.X:0},{at.Z:0}) is a {blue:0} m walk for Blue and {red:0} m for Red (more than 10% apart)");
         }
         {
             float blue = Walk(0, o.Flags[1], false), red = Walk(1, o.Flags[0], false);
             var diff = (blue - red) / MathF.Max(blue, red);
-            walks.Add($"enemy flag {blue:0}/{red:0} m ({diff * 100:+0;-0}%)");
+            walks.Add($"enemy flag {blue:0}/{red:0} m ({diff * 100:+0.0;-0.0;0.0}%)");
             if (!float.IsFinite(blue + red) || MathF.Abs(diff) > 0.1f)
                 Fail($"{m.Name}: the enemy flag is a {blue:0} m walk for Blue and {red:0} m for Red (more than 10% apart)");
         }
