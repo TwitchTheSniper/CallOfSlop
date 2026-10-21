@@ -15,12 +15,15 @@ public static unsafe partial class Program
 
     private const string MeshSmokeMap = "Mesh Test";
 
-    private static readonly (string Name, Vector3 Eye, Vector3 Target)[] MeshSmokeViews =
+    private static readonly (string Name, Vector3 Eye, Vector3 Target, string Map)[] MeshSmokeViews =
     [
-        ("overview", new Vector3(0f, 24f, 44f), new Vector3(0f, 0f, 2f)),
-        ("primitives", new Vector3(0f, 4.5f, -25f), new Vector3(0f, 0.8f, -8f)),
-        ("models", new Vector3(-7f, 2.4f, 7f), new Vector3(0f, 0.9f, 16f)),
-        ("lod", new Vector3(-36f, 1.8f, 6f), new Vector3(30f, 1f, 6f)),
+        ("overview", new Vector3(0f, 24f, 44f), new Vector3(0f, 0f, 2f), MeshSmokeMap),
+        ("primitives", new Vector3(0f, 4.5f, -25f), new Vector3(0f, 0.8f, -8f), MeshSmokeMap),
+        ("models", new Vector3(-7f, 2.4f, 7f), new Vector3(0f, 0.9f, 16f), MeshSmokeMap),
+        ("lod", new Vector3(-36f, 1.8f, 6f), new Vector3(30f, 1f, 6f), MeshSmokeMap),
+        // The Dev pack's bean-shaped map (a map boundary): its wall is instanced meshes, its floor a mesh following the outline.
+        ("shape_inside", new Vector3(30f, 1.7f, -3f), new Vector3(-30f, 1.4f, 3f), "Shape Test"),
+        ("shape_overview", new Vector3(0f, 52f, 48f), new Vector3(0f, 0f, -2f), "Shape Test"),
     ];
 
     private static int _meshSmoke = -1; // view index; -1 = not running
@@ -48,6 +51,8 @@ public static unsafe partial class Program
 
     private static void BeginMeshSmokeView(double now)
     {
+        if (Maps.Find(MeshSmokeViews[_meshSmoke].Map) is { } viewMap && World.Map != viewMap)
+            World.SetMap(viewMap);
         _meshSmokeStart = now;
         _meshSmokeMeasuring = false;
         _meshSmokeAdvance = false;
@@ -99,7 +104,7 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         if (fb.X <= 0 || fb.Y <= 0)
             return;
-        var (_, eye, target) = MeshSmokeViews[Math.Max(_meshSmoke, 0)];
+        var (_, eye, target, _) = MeshSmokeViews[Math.Max(_meshSmoke, 0)];
         var map = World.Map;
         Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
         Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),

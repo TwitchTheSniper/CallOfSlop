@@ -32,7 +32,7 @@ public sealed partial class Map
     {
         get
         {
-            var area = HalfX * 2 * HalfZ * 2;
+            var area = PlayArea; // the rectangle, or the inside of the boundary outline
             return Size switch
             {
                 MapSize.Small => area < 2500 ? 8 : 10,

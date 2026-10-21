@@ -315,6 +315,8 @@ public static class World
     {
         feet.X = Math.Clamp(feet.X, -Map.HalfX + PlayerRadius, Map.HalfX - PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -Map.HalfZ + PlayerRadius, Map.HalfZ - PlayerRadius);
+        if (Map.Boundary is { } boundary)
+            feet = boundary.ClampFeet(feet, PlayerRadius); // a shaped map: held inside its outline (MapEdges.cs)
         if (Map.TerrainCollision is { } terrain)
         {
             // Never below the ground: nobody falls out of a terrain map.

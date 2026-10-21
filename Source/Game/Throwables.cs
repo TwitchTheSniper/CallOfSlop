@@ -57,7 +57,7 @@ public static class Throwables
 
     /// <summary>Point-vs-box test for a small projectile: static colliders, then movers at their current pose (the terrain is handled by <see cref="TerrainContact"/>).</summary>
     private static bool InsideSolid(Vector3 p) =>
-        World.Query.PointInside(p, ProjectileRadius, new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers));
+        World.Query.PointInside(p, ProjectileRadius, new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary));
 
     /// <summary>One tick of ballistic flight with bounces. Returns true if it touched geometry.</summary>
     public static bool Step(Projectile p, float dt)
@@ -103,6 +103,8 @@ public static class Throwables
             }
             pos.X = Math.Clamp(pos.X, -World.Map.HalfX, World.Map.HalfX);
             pos.Z = Math.Clamp(pos.Z, -World.Map.HalfZ, World.Map.HalfZ);
+            if (World.Map.Boundary is { } boundary && boundary.KeepInside(ref pos, ref p.Vel, ProjectileRadius, Restitution))
+                touched = true; // over the barrier: bounced back in off the outline
             if (World.Map.TerrainCollision is { } terrain && TerrainContact(p, ref pos, terrain, h))
                 touched = true;
             p.Pos = pos;

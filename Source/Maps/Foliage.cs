@@ -472,6 +472,8 @@ public sealed partial class Map
                 if (accept >= 1f - patch + patch * n)
                     continue;
             }
+            if (Boundary != null && !Boundary.Inside(x, z, margin + (tree ? 1f : 0.3f)))
+                continue; // only inside the map's outline (MapEdges.cs)
             if (reg.AvoidPaths && NearPath(spec, x, z, margin))
                 continue;
             var g = FoliageGround(x, z);

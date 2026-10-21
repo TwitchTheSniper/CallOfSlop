@@ -669,6 +669,11 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "On ultra-wide monitors, keeps the in-match HUD in a centred area this wide. The crosshair is always centred."u8);
 
             ImGui.Spacing();
+            ImGui.SetNextItemWidth(w);
+            ImGui.SliderInt("Head bob"u8, ref s.HeadBob, 0, 100, "%d%%"u8, ImGuiSliderFlags.AlwaysClamp);
+            ImGui.TextColored(Dim, "How much the camera bobs as you walk and sprint. At 0 the view stays perfectly steady. Never affects your aim."u8);
+
+            ImGui.Spacing();
             ImGui.Text("Foliage"u8);
             var foliage = (int)s.FoliageQuality;
             for (var i = 0; i <= (int)FoliageQuality.High; i++)

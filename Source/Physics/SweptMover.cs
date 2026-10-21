@@ -66,7 +66,7 @@ public sealed class SweptMover : IMover
 
     private SweptMover()
     {
-        _roomForLedge = (feet, stance) => !World.Physics.OverlapCapsule(CapsuleAt(feet, stance, _up), new QueryFilter(QueryLayers.Static | QueryLayers.Movers, _tick));
+        _roomForLedge = (feet, stance) => !World.Physics.OverlapCapsule(CapsuleAt(feet, stance, _up), new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, _tick));
     }
 
     /// <summary>Capsule radius of a stance.</summary>
@@ -112,7 +112,7 @@ public sealed class SweptMover : IMover
         var reach = s.Velocity.Length() * dt + World.StepHeight + SnapDown + MinStepForward + 0.5f;
         var lo = Vector3.Min(s.Position, s.Position + up * World.PlayerHeight) - new Vector3(reach);
         var hi = Vector3.Max(s.Position, s.Position + up * World.PlayerHeight) + new Vector3(reach);
-        phys.Gather(lo, hi, new QueryFilter(QueryLayers.Static | QueryLayers.Movers, _tick), _shapes);
+        phys.Gather(lo, hi, new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, _tick), _shapes);
 
         // Pushed by movers (or spawned a hair inside something): get clear first.
         s.Position = Unstick(s.Position, s.Stance);
@@ -465,6 +465,8 @@ public sealed class SweptMover : IMover
     {
         feet.X = Math.Clamp(feet.X, -phys.HalfX + World.PlayerRadius, phys.HalfX - World.PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.PlayerRadius, phys.HalfZ - World.PlayerRadius);
+        if (phys.Map?.Boundary is { } boundary)
+            feet = boundary.ClampFeet(feet, World.PlayerRadius); // the barrier stops the capsule; this is the safety net
         if (phys.Terrain is { } terrain)
         {
             feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
