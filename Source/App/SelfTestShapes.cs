@@ -116,7 +116,23 @@ public static partial class SelfTest
         finally
         {
             // One GitHub notice with the section's results (the workflow prints selftest.log; see SelfTestSlopes.cs).
-            Line("::notice title=Map shapes::" + string.Join("%0A", ShapeNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            // A few GitHub notices with the section's results (the workflow prints selftest.log; see SelfTestSlopes.cs), in
+            // chunks because one annotation holds about 1 KB.
+            var chunk = new List<string>();
+            var part = 1;
+            void Flush()
+            {
+                if (chunk.Count > 0)
+                    Line($"::notice title=Map shapes {part++}::" + string.Join("%0A", chunk));
+                chunk.Clear();
+            }
+            foreach (var n in ShapeNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " ")))
+            {
+                if (chunk.Sum(c => c.Length + 3) + n.Length > 950)
+                    Flush();
+                chunk.Add(n);
+            }
+            Flush();
         }
     }
 
@@ -634,10 +650,15 @@ public static partial class SelfTest
         copy.Validate();
         if (withNull.ContentHash != copy.ContentHash || copy.ContentHash != proto.ContentHash)
             Fail($"\"boundary\": null changed {proto.Name}'s fingerprint");
-        var rect = MapFile.Load(json.Replace("\"ops\": [", "\"boundary\": { \"shape\": \"rect\", \"edge\": \"none\" },\n  \"ops\": [").Replace("{ \"op\": \"Perimeter\"", "{ \"op\": \"Block\", \"x0\": 0, \"y0\": 0, \"z0\": 0, \"x1\": 0.1, \"y1\": 0.1, \"z1\": 0.1, \"color\": [1, 1, 1] }, { \"op\": \"Ground\""), "rect boundary");
+        // Perimeter isn't allowed with a boundary (the edge replaces it), so compare without it on both sides.
+        var noPerimeter = string.Join("\n", json.Split('\n').Where(l => !l.Contains("\"op\": \"Perimeter\"")));
+        var plainNoWall = MapFile.Load(noPerimeter, "no perimeter");
+        plainNoWall.Validate();
+        var rect = MapFile.Load(noPerimeter.Replace("\"ops\": [", "\"boundary\": { \"shape\": \"rect\", \"edge\": \"none\" },\n  \"ops\": ["), "rect boundary");
         rect.Validate();
-        if (rect.Boundary == null || rect.ContentHash == copy.ContentHash || rect.HalfX != proto.HalfX)
-            Fail("a rect boundary on Proto Box should keep its size and change the fingerprint");
+        if (rect.Boundary == null || rect.ContentHash == plainNoWall.ContentHash || rect.HalfX != proto.HalfX || rect.HalfZ != proto.HalfZ
+            || !rect.Solid.SequenceEqual(plainNoWall.Solid))
+            Fail("a rect boundary on Proto Box should keep its size and boxes and change the fingerprint");
         // Round trip of a shaped map: identical outline, boxes and fingerprint.
         var again = MapFile.Load(MapFile.ToJson(file), "Shape Test (round trip)");
         again.Validate();

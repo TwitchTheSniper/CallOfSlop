@@ -736,59 +736,60 @@ public sealed class MapBoundary
         return outPts;
     }
 
-    /// <summary>Douglas-Peucker on a closed polygon: keeps the fewest vertices that stay within <paramref name="tol"/> of every original one.</summary>
+    /// <summary>
+    /// Simplifies a closed polygon greedily: from each kept vertex, the next kept one is the furthest along the loop such
+    /// that every vertex in between stays within <paramref name="tol"/> of the straight segment and the segment is at most
+    /// <see cref="MaxSegment"/> long. Curvy stretches get many short segments, gentle ones few long ones, and the count is
+    /// close to the fewest possible (Douglas-Peucker rounds evenly sampled arcs up to powers of two). Starts at the sharpest
+    /// corner, so a polygon's corners are kept exactly.
+    /// </summary>
     private static List<Vector2> Simplify(List<Vector2> pts, float tol)
     {
         var n = pts.Count;
         if (n <= 4)
             return pts;
-        // Split the loop at vertex 0 and the vertex furthest from it.
-        var far = 0;
-        var farD = -1f;
-        for (var i = 1; i < n; i++)
-        {
-            var d = Vector2.DistanceSquared(pts[0], pts[i]);
-            if (d > farD)
-            {
-                farD = d;
-                far = i;
-            }
-        }
-        var keep = new bool[n];
-        keep[0] = keep[far] = true;
-        var stack = new Stack<(int A, int B)>();
-        stack.Push((0, far));
-        stack.Push((far, n));
-        var tol2 = (double)tol * tol;
-        while (stack.Count > 0)
-        {
-            var (a, b) = stack.Pop();
-            if (b - a < 2)
-                continue;
-            var pa = pts[a];
-            var pb = pts[b % n];
-            var worst = -1.0;
-            var at = -1;
-            for (var i = a + 1; i < b; i++)
-            {
-                var d = SegDist2(pts[i], pa, pb);
-                if (d > worst)
-                {
-                    worst = d;
-                    at = i;
-                }
-            }
-            if (worst > tol2)
-            {
-                keep[at] = true;
-                stack.Push((a, at));
-                stack.Push((at, b));
-            }
-        }
-        var result = new List<Vector2>();
+        // Start at the vertex with the sharpest turn (a corner if there is one; deterministic: the first on ties).
+        var start = 0;
+        var sharpest = float.MinValue;
         for (var i = 0; i < n; i++)
-            if (keep[i])
-                result.Add(pts[i]);
+        {
+            var d0 = pts[i] - pts[(i - 1 + n) % n];
+            var d1 = pts[(i + 1) % n] - pts[i];
+            if (d0.LengthSquared() < 1e-12f || d1.LengthSquared() < 1e-12f)
+                continue;
+            var turn = 1f - Vector2.Dot(Vector2.Normalize(d0), Vector2.Normalize(d1));
+            if (turn > sharpest + 1e-6f)
+            {
+                sharpest = turn;
+                start = i;
+            }
+        }
+        var tol2 = (double)tol * tol;
+        var result = new List<Vector2>();
+        var at = 0; // offset from start
+        while (at < n)
+        {
+            result.Add(pts[(start + at) % n]);
+            var a = pts[(start + at) % n];
+            var best = at + 1;
+            for (var j = at + 2; j <= n; j++)
+            {
+                var b = pts[(start + j) % n];
+                if (Vector2.Distance(a, b) > MaxSegment)
+                    break;
+                var ok = true;
+                for (var k = at + 1; k < j; k++)
+                    if (SegDist2(pts[(start + k) % n], a, b) > tol2)
+                    {
+                        ok = false;
+                        break;
+                    }
+                if (!ok)
+                    break;
+                best = j;
+            }
+            at = best;
+        }
         return result;
     }
 

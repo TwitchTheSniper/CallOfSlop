@@ -382,7 +382,7 @@ public sealed class NavGraph
         var b = g.Nodes[j];
         if (MathF.Abs(a.Y - b.Y) > MaxDrop)
             return false;
-        if (TooSteep(a, b))
+        if (TooSteep(a, b) || LeavesBoundary(a, b))
             return true;
         Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
         var len = Vector3.Distance(a, b);
@@ -400,6 +400,21 @@ public sealed class NavGraph
     /// </summary>
     private static bool TooSteep(Vector3 a, Vector3 b) =>
         World.Map.TerrainCollision is { } t && !SlopeRules.LineWalkable(t, a, b, onlyNearLine: true);
+
+    /// <summary>A shaped map: a link that passes outside its outline, or hugs it closer than a body width, is no use to a bot.</summary>
+    private static bool LeavesBoundary(Vector3 a, Vector3 b)
+    {
+        if (World.Map.Boundary is not { } boundary)
+            return false;
+        var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z)) / 0.5f));
+        for (var k = 0; k <= steps; k++)
+        {
+            var p = Vector3.Lerp(a, b, k / (float)steps);
+            if (!boundary.Inside(p.X, p.Z, 0.3f))
+                return true;
+        }
+        return false;
+    }
 
     /// <summary>
     /// Terrain maps: walking up a slope is slower (<see cref="SlopeRules.SpeedFactor"/>), so an uphill link costs the time it
