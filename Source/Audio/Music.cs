@@ -82,10 +82,11 @@ public sealed class MusicPlayer : IDisposable
     }
 
     private readonly Deck[] _decks = [new(), new()];
-    private readonly MusicPlaylist _menu, _lobby;
+    private readonly MusicPlaylist _menu, _lobby, _menuHardbass, _lobbyHardbass;
     private Deck? _lead; // the deck the current track plays on (null while fading to silence)
     private int _mood = (int)MusicMood.Off;
     private int _appliedMood = -1;
+    private int _hardbassOnly, _appliedHardbassOnly;
     private float _volume = 0.5f, _appliedGain = -1f;
     private uint _seed;
     private string? _nowPlaying;
@@ -97,6 +98,18 @@ public sealed class MusicPlayer : IDisposable
         _seed = seed != 0 ? seed : (uint)Environment.TickCount | 1u;
         _menu = new MusicPlaylist(MusicTracks.For(MusicSet.Menu), _seed);
         _lobby = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby), _seed * 31u + 7u);
+        _menuHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Menu, hardbassOnly: true), _seed * 17u + 3u);
+        _lobbyHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby, hardbassOnly: true), _seed * 13u + 5u);
+    }
+
+    /// <summary>
+    /// Settings > Audio > Music style: true plays only the hardbass tracks. Switching it on while another style plays
+    /// crossfades straight into a hardbass track; switching it off lets the current track finish.
+    /// </summary>
+    public bool HardbassOnly
+    {
+        get => Volatile.Read(ref _hardbassOnly) != 0;
+        set => Volatile.Write(ref _hardbassOnly, value ? 1 : 0);
     }
 
     /// <summary>Music volume 0..1 (Settings.MusicVolume); a perceptual curve is applied when mixing.</summary>
@@ -218,6 +231,13 @@ public sealed class MusicPlayer : IDisposable
                     StartNext(set);
             }
         }
+        var hardbassOnly = Volatile.Read(ref _hardbassOnly);
+        if (hardbassOnly != _appliedHardbassOnly)
+        {
+            _appliedHardbassOnly = hardbassOnly;
+            if (hardbassOnly != 0 && _lead is { Active: true } now && now.Target > 0 && now.R.Track.Style != MusicStyle.Hardbass)
+                StartNext(now.Set);
+        }
         // Near the end of a track, crossfade into the next one of the same playlist.
         if (_lead is { Active: true } cur && cur.Target > 0 && cur.R.Remaining < CrossfadeSeconds)
             StartNext(cur.Set);
@@ -251,7 +271,9 @@ public sealed class MusicPlayer : IDisposable
             if (d != free)
                 FadeOut(d, fade);
 
-        var track = (set == MusicSet.Menu ? _menu : _lobby).Next();
+        var track = (_appliedHardbassOnly != 0
+            ? set == MusicSet.Menu ? _menuHardbass : _lobbyHardbass
+            : set == MusicSet.Menu ? _menu : _lobby).Next();
         _seed = _seed * 1664525u + 1013904223u;
         free.R.Load(track, _seed);
         free.Set = set;

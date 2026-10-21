@@ -46,6 +46,7 @@ public sealed partial class Game
         Id = p.Id, Position = p.Position, Velocity = p.Sim.Velocity, Yaw = p.Yaw, Pitch = p.Pitch,
         Health = (byte)Math.Clamp(p.Health, 0, 255), Alive = p.Alive, Grounded = p.Sim.Grounded, Stance = p.Sim.Stance,
         Weapon = p.Weapon, Boost = p.Sim.BoostTicks, MantleTicks = p.Sim.MantleTicks, MantleTo = p.Sim.MantleTo,
+        Shield = p.ShieldCharges, Regen = p.Regenerating,
     };
 
     private static SnapSlow SlowOf(Player p) => new()
@@ -201,6 +202,8 @@ public sealed partial class Game
             var wasAlive = p.Alive;
             p.Health = e.Health;
             p.Alive = e.Alive;
+            p.ShieldCharges = e.Shield;
+            p.Regenerating = e.Regen;
             if (e.Id == LocalId)
             {
                 if (_snapIn.Own is { } o)

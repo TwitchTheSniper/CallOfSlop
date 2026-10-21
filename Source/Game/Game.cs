@@ -825,6 +825,7 @@ public sealed partial class Game : IDisposable
         ServerTickMatch(now);
         ServerTickProjectiles(now);
         ServerTickStreaks(now);
+        ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
 
         foreach (var p in Players.Values)
         {
@@ -1066,6 +1067,10 @@ public sealed partial class Game : IDisposable
             return false; // no friendly fire in team modes (your own grenade still hurts you)
         victim.LastCombatTime = now;
         attacker.LastCombatTime = now;
+        victim.LastHurtTime = now; // health regen waits (Health.cs)
+        attacker.LastHurtTime = now;
+        if (kind == DamageKind.Bullet && attacker != victim && ShieldBlocks(victim, now))
+            return false; // Last Stand's shield took the hit (Health.cs)
         if (kind == DamageKind.Explosive && victim.Perks.Has(PerkId.FlakJacket))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
@@ -1075,10 +1080,8 @@ public sealed partial class Game : IDisposable
             return false;
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed)
         {
-            // Saved: 1 HP and a moment of immunity to get to cover.
-            victim.Health = 1;
-            victim.LastStandUsed = true;
-            victim.ImmuneUntil = now + Perks.LastStandImmunity;
+            // Saved: 1 HP and a shield that blocks the next few bullet hits (Health.cs).
+            StartLastStand(victim, now);
             return false;
         }
         victim.Health = 0;
@@ -1444,6 +1447,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.PropBreak:
             case (byte)Msg.PropState:
                 OnPropPacket(id, ref r); // breakable props (GameProps.cs)
+                break;
+            case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
+                OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
                 break;
             case (byte)Msg.Ready:
             case (byte)Msg.ModeState:

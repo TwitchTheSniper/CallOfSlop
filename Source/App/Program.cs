@@ -954,6 +954,7 @@ public static unsafe partial class Program
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;
+            AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
 
             if (_session == null)
@@ -1672,6 +1673,7 @@ public static unsafe partial class Program
 
         // ---- Explosions, smoke, recon reveal ---------------------------------------
         Gfx.SetDepthWrite(false);
+        DrawShieldShimmer(now); // Last Stand shields on other players (Program.Health.cs)
         foreach (var b in _game.Blasts)
         {
             var age = (float)(now - b.Born);
@@ -1944,7 +1946,8 @@ public static unsafe partial class Program
             float m = 30 * k, bw = 300 * k, bh = 18 * k, inset = 3 * k;
             var left = safeLeft + m;
             Gfx.Rect(left, m, bw, bh, black, 0.5f);
-            Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, Vector3.Lerp(new Vector3(1, 0.15f, 0.15f), new Vector3(0.25f, 0.95f, 0.35f), hp), 0.95f);
+            Gfx.Rect(left + inset, m + inset, (bw - 2 * inset) * hp, bh - 2 * inset, HealthBarColor(local, hp, now), 0.95f);
+            DrawHealthExtras(local, left, m, bw, bh, k, now); // regen glow and Last Stand shield pips (Program.Health.cs)
 
             // Ammo bar (bottom-right) or reload progress
             var def = _game.Active.Def;
@@ -1961,6 +1964,8 @@ public static unsafe partial class Program
             var a = (float)((_game.DamageFlashUntil - now) / 0.4) * 0.6f;
             Gfx.Rect(0, 0, w, h, new Vector3(0.9f, 0.05f, 0.05f), Math.Clamp(a, 0f, 0.6f));
         }
+        if (now < _game.ShieldFlashUntil) // your Last Stand shield blocked a hit
+            Gfx.Rect(0, 0, w, h, new Vector3(0.35f, 0.85f, 1f), Math.Clamp((float)((_game.ShieldFlashUntil - now) / 0.3) * 0.3f, 0f, 0.3f));
         if (local is { Alive: false })
             Gfx.Rect(0, 0, w, h, new Vector3(0.5f, 0f, 0f), 0.35f);
         if (!_mouseCaptured)

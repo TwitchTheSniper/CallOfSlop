@@ -34,7 +34,7 @@ public static partial class SelfTest
             Fail("two tracks share both tempo and key");
         foreach (var t in all)
         {
-            if (t.Bpm is < 135 or > 180)
+            if (t.Style != MusicStyle.Hardbass && t.Bpm is < 135 or > 180)
                 Fail($"{t.Name}: {t.Bpm} BPM is outside 135-180");
             if (t.Scale.Length != 7 || t.Chords.Length == 0)
                 Fail($"{t.Name}: bad scale or chords");
@@ -52,6 +52,7 @@ public static partial class SelfTest
             r.Render(block); // warm up the JIT before timing anything
 
         var dropWindows = new float[all.Length][];
+        var stats = new MusicTrackStats[all.Length];
         double renderMs = 0, renderSeconds = 0;
         var costs = new System.Text.StringBuilder();
         for (var ti = 0; ti < all.Length; ti++)
@@ -106,6 +107,10 @@ public static partial class SelfTest
             costs.Append($" {t.Name} {ms / seconds:0.0} (rms intro {Rms(MusicPart.Intro):0.00} drop {Rms(MusicPart.Drop):0.00} break {Rms(MusicPart.Break):0.00});");
             double Rms(MusicPart p) => partCount[(int)p] == 0 ? 0 : Math.Sqrt(partSum[(int)p] / partCount[(int)p]);
             var clipPct = samples == 0 ? 0 : 100.0 * clipped / samples;
+            stats[ti] = new MusicTrackStats(Rms(MusicPart.Intro), Rms(MusicPart.Build), Rms(MusicPart.Drop), Rms(MusicPart.Break), peak, clipped, ms / seconds,
+                                            t.Style == MusicStyle.Hardbass ? r.LimiterMinGain : 1f);
+            if (ms / seconds > MusicBudgetMsPerSecond)
+                Fail($"{t.Name}: rendering costs {ms / seconds:0.0} ms per second of audio (budget {MusicBudgetMsPerSecond} for every track)");
             Line($"{t.Name,-24} {t.Set,-5} {t.Style,-11} {t.Bpm,3:0} BPM  {t.Key,-21} {seconds,4:0} s  rms intro {Rms(MusicPart.Intro):0.000} "
                  + $"build {Rms(MusicPart.Build):0.000} drop {Rms(MusicPart.Drop):0.000} break {Rms(MusicPart.Break):0.000} outro {Rms(MusicPart.Outro):0.000}  "
                  + $"peak {peak:0.000} clipped {clipPct:0.000}%  {ms / seconds:0.0} ms per s");
@@ -165,9 +170,321 @@ public static partial class SelfTest
         if (allocated > 0)
             Fail($"music rendering allocated {allocated} bytes (want 0)");
 
+        CheckHardbass(stats, r, block);
         CheckMusicPlayer();
         CheckMusicPlaylist(menu, lobby);
+        CheckMusicPlaylist(MusicTracks.For(MusicSet.Menu, true), MusicTracks.For(MusicSet.Lobby, true));
         CheckMusicSettings();
+        CheckMusicStyleSetting();
+    }
+
+    private readonly record struct MusicTrackStats(double Intro, double Build, double Drop, double Break, float Peak, long Clipped, double MsPerSecond, float LimiterMinGain);
+
+    /// <summary>Loudness window (RMS) for a hardbass drop: loud, but not a brick.</summary>
+    private const double HardbassDropRmsMin = 0.3, HardbassDropRmsMax = 0.56;
+
+    /// <summary>
+    /// The hardbass tracks: enough of them in both sets, the tempo rules (145-165 BPM, plus one 200 BPM monster), each
+    /// one distinct, loud within a window but never past the limiter's ceiling, harder than the older tracks, drops well
+    /// above the intros, a kick and off-beat bass that never smear into each other, deterministic and allocation-free;
+    /// then the new voices (chants, reverse bass, clipped kick) and the master limiter on their own.
+    /// </summary>
+    private static void CheckHardbass(MusicTrackStats[] stats, MusicRenderer r, float[] block)
+    {
+        var all = MusicTracks.All;
+        var hb = all.Where(t => t.Style == MusicStyle.Hardbass).ToArray();
+        var notes = new List<string>();
+        Line($"hardbass: {hb.Length} tracks ({hb.Count(t => t.Set == MusicSet.Menu)} menu, {hb.Count(t => t.Set == MusicSet.Lobby)} lobby)");
+        if (hb.Length < 6)
+            Fail($"only {hb.Length} hardbass tracks (want 5 + the 200 BPM one)");
+        if (hb.Count(t => t.Set == MusicSet.Menu) < 2 || hb.Count(t => t.Set == MusicSet.Lobby) < 2)
+            Fail("both the menu and the lobby need at least two hardbass tracks");
+        if (hb.Count(t => t.Bpm is >= 195 and <= 205) != 1)
+            Fail($"want exactly one ~200 BPM hardbass track (have {hb.Count(t => t.Bpm is >= 195 and <= 205)})");
+        foreach (var t in hb)
+        {
+            if (t.Bpm is not (>= 145 and <= 165) && t.Bpm is not (>= 195 and <= 205))
+                Fail($"{t.Name}: {t.Bpm} BPM (hardbass is 145-165, or the 200 BPM track)");
+            if (t.Hardbass is not { } f)
+            {
+                Fail($"{t.Name}: no hardbass recipe");
+                continue;
+            }
+            if (f.BassA.Length != 16 || f.BassB.Length != 16 || f.Chants.Length != 32 || !f.Chants.Any(c => c != '.'))
+                Fail($"{t.Name}: bass patterns need 16 steps and chants 32 (with at least one chant)");
+            if (f.BassA.Where((c, i) => c != '.' && i % 4 == 0).Any())
+                Fail($"{t.Name}: the bass plays on a kick ({f.BassA}); the hardbass bass sits between the kicks");
+        }
+        if (hb.Select(t => t.Bpm).Distinct().Count() != hb.Length)
+            Fail("two hardbass tracks share a tempo");
+        if (hb.Select(t => t.Key).Distinct().Count() != hb.Length)
+            Fail("two hardbass tracks share a key");
+        if (hb.Select(t => (t.Hardbass!.Lead, t.Hardbass!.LaterLead, t.Hardbass!.BassA, t.Hardbass!.Reverse)).Distinct().Count() != hb.Length)
+            Fail("two hardbass tracks share the same lead sounds, bassline and reverse bass");
+        foreach (var lead in Enum.GetValues<HardbassLead>())
+            if (!hb.Any(t => t.Hardbass!.Lead == lead || t.Hardbass!.LaterLead == lead))
+                Fail($"no hardbass track uses the {lead} lead");
+        if (!hb.Any(t => t.Hardbass!.Reverse != ReverseBassUse.Never))
+            Fail("no hardbass track uses the reverse bass");
+
+        // Loudness, limiter, drops against intros, CPU.
+        double hbDrop = 0, oldDrop = 0;
+        var oldCount = 0;
+        for (var i = 0; i < all.Length; i++)
+        {
+            var t = all[i];
+            var st = stats[i];
+            if (t.Style != MusicStyle.Hardbass)
+            {
+                oldDrop += st.Drop;
+                oldCount++;
+                continue;
+            }
+            hbDrop += st.Drop;
+            notes.Add($"{t.Name} ({t.Set}, {t.Bpm:0} BPM, {t.Key}): {st.MsPerSecond:0.0} ms/s, rms intro {st.Intro:0.000} drop {st.Drop:0.000} break {st.Break:0.000}, "
+                      + $"peak {st.Peak:0.000}, limiter down to {st.LimiterMinGain:0.00}");
+            if (st.Peak > MasterLimiter.SafetyCeiling + 1e-4f || st.Clipped > 0)
+                Fail($"{t.Name}: peak {st.Peak:0.0000}, {st.Clipped} samples above 0.99 (the limiter should keep it under {MasterLimiter.SafetyCeiling})");
+            if (st.Drop is < HardbassDropRmsMin or > HardbassDropRmsMax)
+                Fail($"{t.Name}: drop rms {st.Drop:0.000} outside {HardbassDropRmsMin}-{HardbassDropRmsMax}");
+            if (st.Drop < st.Intro * 1.25)
+                Fail($"{t.Name}: drops ({st.Drop:0.000}) should hit at least 1.25x harder than the intro ({st.Intro:0.000})");
+            if (st.LimiterMinGain > 0.97f)
+                Fail($"{t.Name}: the master limiter never worked (min gain {st.LimiterMinGain:0.00}); the mix isn't driven");
+            if (st.LimiterMinGain < 0.25f)
+                Fail($"{t.Name}: the limiter pulls {st.LimiterMinGain:0.00}x: the mix is far too hot");
+            var (kickTail, bassTail) = r.GrooveTails(t);
+            notes[^1] += $", kick at the 8th {kickTail:0.000}, bass at the next kick {bassTail:0.000}";
+            if (kickTail > 0.1f || bassTail > 0.1f)
+                Fail($"{t.Name}: the kick ({kickTail:0.000} at the next 8th) or bass ({bassTail:0.000} at the next kick) smears (want < 0.1)");
+        }
+        hbDrop /= Math.Max(1, hb.Length);
+        oldDrop /= Math.Max(1, oldCount);
+        Line($"average drop rms: hardbass {hbDrop:0.000}, the other tracks {oldDrop:0.000}");
+        notes.Add($"average drop rms: hardbass {hbDrop:0.000}, others {oldDrop:0.000}; heaviest track {stats.Max(x => x.MsPerSecond):0.0} ms/s (budget {MusicBudgetMsPerSecond})");
+        if (hbDrop < oldDrop)
+            Fail($"hardbass drops ({hbDrop:0.000}) aren't harder than the other tracks' ({oldDrop:0.000})");
+
+        // Deterministic for a seed (from the drop and from the last drop, where reverse basses and later leads play),
+        // different for another seed somewhere in the track, and allocation-free.
+        foreach (var t in hb)
+        {
+            var lastDrop = LastDropBar(t);
+            foreach (var bar in new[] { t.FirstDropBar, lastDrop })
+            {
+                var x = RenderSeconds(new MusicRenderer(), t, 77, bar, 2);
+                var y = RenderSeconds(r, t, 77, bar, 2);
+                if (!x.AsSpan().SequenceEqual(y))
+                    Fail($"{t.Name}: two renders from bar {bar} with the same seed differ");
+                if (Measure(x).Rms < 0.1)
+                    Fail($"{t.Name}: bar {bar} is too quiet (rms {Measure(x).Rms:0.000})");
+            }
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            r.Load(t, 3, lastDrop);
+            for (var i = 0; i < 44; i++)
+                r.Render(block);
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (allocated > 0)
+                Fail($"{t.Name}: load + 1 s render allocated {allocated} bytes (want 0)");
+        }
+
+        CheckHardbassVoices(notes);
+        foreach (var n in notes)
+            Line("hardbass: " + n); // log lines, not a notice: a CI step shows only 10 notices and the DONE line must stay visible
+    }
+
+    private static int LastDropBar(MusicTrack t)
+    {
+        int bar = 0, last = 0;
+        foreach (var (part, bars) in t.Sections)
+        {
+            if (part == MusicPart.Drop)
+                last = bar;
+            bar += bars;
+        }
+        return last;
+    }
+
+    /// <summary>The new synth voices on their own: chants, reverse bass, the clipped kick and the master limiter.</summary>
+    private static void CheckHardbassVoices(List<string> notes)
+    {
+        const int sr = Audio.SampleRate;
+        var rng = new MusicRng(5);
+
+        // Chants: every word is loud enough, finite, ends, and sounds unlike the others.
+        var words = Enum.GetValues<VocalWord>();
+        var shouts = new float[words.Length][];
+        var vox = new VocalVoice();
+        for (var w = 0; w < words.Length; w++)
+        {
+            vox.Reset();
+            vox.Trigger(words[w], 160f, 1f);
+            var buf = new float[sr / 2];
+            for (var i = 0; i < buf.Length; i += 512)
+                vox.Render(buf.AsSpan(i, Math.Min(512, buf.Length - i)), ref rng);
+            shouts[w] = buf;
+            double sum = 0;
+            float peak = 0;
+            var finite = true;
+            for (var i = 0; i < sr / 4; i++)
+            {
+                finite &= float.IsFinite(buf[i]);
+                sum += buf[i] * (double)buf[i];
+                peak = MathF.Max(peak, MathF.Abs(buf[i]));
+            }
+            var rms = Math.Sqrt(sum / (sr / 4));
+            var tail = buf.AsSpan(sr * 9 / 20).ToArray().Max(MathF.Abs);
+            notes.Add($"chant {words[w]}: rms {rms:0.000}, peak {peak:0.000}");
+            if (!finite || rms < 0.05 || peak > 1.0001f)
+                Fail($"chant {words[w]}: rms {rms:0.000}, peak {peak:0.000}, finite {finite}");
+            if (tail > 1e-3f)
+                Fail($"chant {words[w]} doesn't end (level {tail:0.0000} after 0.45 s)");
+        }
+        for (var a = 0; a < words.Length; a++)
+            for (var b = a + 1; b < words.Length; b++)
+            {
+                var c = Math.Abs(Correlation(shouts[a], shouts[b]));
+                if (c > 0.6)
+                    Fail($"chants {words[a]} and {words[b]} sound alike (correlation {c:0.00})");
+            }
+
+        // Reverse bass: swells (the second half much louder than the first) and is silent soon after its length.
+        var rev = new ReverseBassVoice();
+        rev.Configure();
+        rev.Reset();
+        rev.Trigger(55f, 0.25f, 1f);
+        var rb = new float[sr * 3 / 10];
+        for (var i = 0; i < rb.Length; i += 512)
+            rev.Render(rb.AsSpan(i, Math.Min(512, rb.Length - i)));
+        var len = sr / 4;
+        double first = 0, second = 0;
+        for (var i = 0; i < len / 2; i++)
+            first += rb[i] * (double)rb[i];
+        for (var i = len / 2; i < len; i++)
+            second += rb[i] * (double)rb[i];
+        var after = rb.AsSpan(len + 441).ToArray().Max(MathF.Abs);
+        notes.Add($"reverse bass: second half {Math.Sqrt(second / first):0.0}x the first, {after:0.0000} after the cut");
+        if (second < first * 4 || rb.Any(x => !float.IsFinite(x)))
+            Fail($"the reverse bass doesn't swell (second half {Math.Sqrt(second / Math.Max(first, 1e-12)):0.0}x the first)");
+        if (after > 0.01f)
+            Fail($"the reverse bass rings on after its cut ({after:0.000})");
+
+        // Clipped kick: harder (more energy) than the same kick without clipping, never past full scale.
+        float KickEnergy(float clip)
+        {
+            var k = new KickVoice { StartHz = 320, EndHz = 50, Hold = 0.02f, DecayTime = 0.03f, Drive = 7, Clip = clip, Punch = 0.3f };
+            k.Configure(0.15f);
+            k.Reset();
+            k.Trigger(1f);
+            var kb = new float[sr / 8];
+            var duck = new float[kb.Length];
+            var kr = new MusicRng(1);
+            k.Render(kb, duck, ref kr);
+            if (kb.Any(x => !float.IsFinite(x) || MathF.Abs(x) > 1.6f))
+                Fail("the kick produced non-finite or wild samples");
+            return (float)Math.Sqrt(kb.Sum(x => x * (double)x) / kb.Length);
+        }
+        var soft = KickEnergy(0);
+        var hard = KickEnergy(1.8f);
+        notes.Add($"kick rms soft {soft:0.000}, clipped {hard:0.000}");
+        if (hard < soft * 1.05f)
+            Fail($"the clipped kick ({hard:0.000}) isn't harder than the soft one ({soft:0.000})");
+
+        // Limiter: a quiet signal passes untouched (just delayed); a signal 3x too hot comes out at the ceiling.
+        var lim = new MasterLimiter();
+        lim.Configure();
+        lim.Reset();
+        var quiet = new float[4096];
+        for (var i = 0; i < quiet.Length; i += 2)
+            quiet[i] = quiet[i + 1] = 0.5f * MathF.Sin(i * 0.01f);
+        var copy = (float[])quiet.Clone();
+        lim.Process(quiet);
+        var exact = true;
+        for (var i = MasterLimiter.Lookahead * 2; i < quiet.Length; i++)
+            exact &= quiet[i] == copy[i - MasterLimiter.Lookahead * 2];
+        if (!exact || lim.MinGain < 1f)
+            Fail("the limiter changes a signal that's under its ceiling");
+        lim.Reset();
+        var hot = new float[sr]; // 0.5 s stereo
+        for (var i = 0; i < hot.Length; i += 2)
+            hot[i] = hot[i + 1] = 3f * MathF.Sin(i * 0.5f * 110f * Dsp.TwoPi / sr) * (i < hot.Length / 2 ? 1f : 0.2f);
+        lim.Process(hot);
+        var hotPeak = hot.Max(MathF.Abs);
+        var steady = hot.AsSpan(sr / 4, sr / 8).ToArray().Max(MathF.Abs);
+        notes.Add($"limiter: 3x too hot comes out at peak {hotPeak:0.000}, steady {steady:0.000}");
+        if (hotPeak > MasterLimiter.SafetyCeiling + 1e-5f || steady is < 0.85f or > 0.97f)
+            Fail($"limiter: peak {hotPeak:0.000} (ceiling {MasterLimiter.SafetyCeiling}), steady level {steady:0.000} (want 0.85-0.97)");
+    }
+
+    /// <summary>Settings > Audio > Music style: Mixed for old files, parsed, saved; Hardbass only switches the music over.</summary>
+    private static void CheckMusicStyleSetting()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"callofslop-selftest-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "settings.txt");
+            File.WriteAllLines(path, ["name=Old Timer", "volume=0.6", "music_volume=0.4"]); // from before the music style
+            var s = Settings.Load(path);
+            if (s.MusicChoice != MusicChoice.Mixed || Math.Abs(s.MusicVolume - 0.4f) > 1e-6f)
+                Fail($"old settings file: music style {s.MusicChoice} (want Mixed), music volume {s.MusicVolume}");
+            foreach (var (text, want) in new[] { ("HardbassOnly", MusicChoice.HardbassOnly), ("hardbassonly", MusicChoice.HardbassOnly), ("Mixed", MusicChoice.Mixed),
+                                                 ("7", MusicChoice.Mixed), ("polka", MusicChoice.Mixed), ("", MusicChoice.Mixed) })
+            {
+                File.WriteAllLines(path, ["volume=0.6", $"music_style={text}"]);
+                var m = Settings.Load(path).MusicChoice;
+                if (m != want)
+                    Fail($"music_style={text} loaded as {m} (want {want})");
+            }
+            s.MusicChoice = MusicChoice.HardbassOnly;
+            s.Save(path);
+            if (Settings.Load(path).MusicChoice != MusicChoice.HardbassOnly || !File.ReadAllLines(path).Contains("music_style=HardbassOnly"))
+                Fail("music style didn't survive a save and load");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch
+            {
+                // a leftover temp folder is harmless
+            }
+        }
+
+        // The player: switching to Hardbass only crossfades into a hardbass track straight away, in the menu and the lobby.
+        const int sr = Audio.SampleRate;
+        var tenth = new float[sr / 10 * 2];
+        for (var seed = 1u; seed <= 6; seed++)
+        {
+            var p = new MusicPlayer(seed) { Volume = 1f };
+            void Mix(double seconds)
+            {
+                for (var i = 0; i < (int)Math.Round(seconds * 10); i++)
+                    p.Mix(tenth);
+            }
+            p.SetMood(MusicMood.Menu);
+            Mix(1.5);
+            var first = p.Current;
+            p.HardbassOnly = true;
+            Mix(4);
+            if (p.Current is not { Style: MusicStyle.Hardbass, Set: MusicSet.Menu })
+                Fail($"Hardbass only: the menu still plays \"{p.Current?.Name}\" ({p.Current?.Style})");
+            else if (first?.Style == MusicStyle.Hardbass && p.Current != first)
+                Fail($"Hardbass only: \"{first.Name}\" was already hardbass but got replaced");
+            p.SetMood(MusicMood.Lobby);
+            Mix(4);
+            if (p.Current is not { Style: MusicStyle.Hardbass, Set: MusicSet.Lobby })
+                Fail($"Hardbass only: the lobby plays \"{p.Current?.Name}\" ({p.Current?.Style})");
+            var held = p.Current;
+            p.HardbassOnly = false;
+            Mix(1);
+            if (p.Current != held)
+                Fail("switching back to Mixed shouldn't cut the hardbass track short");
+            if (seed == 1)
+                Line($"Hardbass only: menu \"{first?.Name}\" -> hardbass, lobby \"{held?.Name}\"");
+        }
     }
 
     private static MusicPart? PartAt(MusicTrack t, int bar)
