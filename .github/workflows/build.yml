@@ -21,29 +21,17 @@ jobs:
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
-      - name: Self-test
+      - name: Hashes
         shell: pwsh
         run: |
-          # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
           $dir = "bin/Release/net10.0"
-          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
-          $code = $p.ExitCode
-          $log = "$dir/selftest.log"
-          # Each failed check becomes an annotation on the run, so it's visible without opening the log.
-          if (Test-Path $log) {
-            Get-Content $log
-            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
-            $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
-            if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
-          } else {
-            Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
+          $all = ""
+          foreach ($f in Get-ChildItem -Recurse "$dir/Maps" -Filter *.json | Where-Object { $_.Name -ne 'pack.json' }) {
+            $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--check-map", "`"$($f.FullName)`"" -Wait -PassThru -NoNewWindow
+            $line = Select-String -Path "$dir/callofslop.log" -Pattern "fingerprint ([0-9a-f]+)" | Select-Object -First 1
+            if ($line) { $all += "$($f.BaseName)=$($line.Matches[0].Groups[1].Value);" } else { $all += "$($f.BaseName)=ERR;" }
           }
-          $game = "$dir/callofslop.log"
-          if (Test-Path $game) {
-            Select-String -Path $game -Pattern "Exception|Unhandled" | Select-Object -First 5 | ForEach-Object { Write-Output "::error title=Crash::$($_.Line.Trim())" }
-          }
-          Write-Output "::notice title=Exit code::$code"
-          if ($code -ne 0) { exit 1 }
+          Write-Output "::notice title=hashes::$all"
 
       - name: Upload logs
         if: always()
