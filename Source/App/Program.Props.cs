@@ -21,6 +21,7 @@ public static unsafe partial class Program
         ("yard", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), false),
         ("yard_break", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), true),
         ("yard_overview", "Prop Yard", new Vector3(-30f, 24f, 34f), new Vector3(0f, 0f, 0f), false),
+        ("cluttered_small", "Carousel", new Vector3(-27f, 13f, 25f), new Vector3(0f, 1f, -3f), false), // Cluttered pack: smoke_cluttered_small.bmp
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running
@@ -123,9 +124,9 @@ public static unsafe partial class Program
         Console.WriteLine($"[smoke] props {view.Name,-14} ({World.Map.Name}): {_propsSmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_propsSmokeFrames, 1):0.00} ms/frame), "
             + $"worst {_propsSmokeWorst * 1000:0.0} ms, {PropGfx.Uploaded} props uploaded, {w.AvgInstances:0} drawn in {w.AvgDraws:0.0} draw calls, "
             + $"debris {w.AvgDebris:0}, props CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")}, "
-            + $"{World.Map.BrokenProps.Count} broken, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"{World.Map.BrokenProps.Count} broken, {World.Map.FoliageInstances.Length} plants, {World.Map.Solid.Count} boxes, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
         if (!view.Break)
-            SmokeShot("props_" + view.Name);
+            SmokeShot(view.Name.StartsWith("cluttered_", StringComparison.Ordinal) ? view.Name : "props_" + view.Name);
         _propsSmokeAdvance = true;
     }
 
