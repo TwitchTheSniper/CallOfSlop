@@ -12,15 +12,14 @@ public static partial class SelfTest
     /// builds are legal with sane, deterministic numbers, the assembly rules refuse illegal builds with the right
     /// reasons (grip capacity, bores, actions, splitter depth, limits), the splitter damage rule, multi-barrel and
     /// multi-receiver shots (projectile counts, muzzles, turns) including through the real server shot path, standard
-    /// weapons firing exactly as before, models with hand anchors and sight lines, and saves round-tripping.
+    /// weapons firing exactly as before, models with hand anchors and sight lines, one trigger pull using one Last Stand charge, and saves round-tripping.
     /// </summary>
     private static void CheckWeaponBuilder()
     {
         BuildStore.ReadOnly = true;
         var parts = Parts.All;
-        BuilderNotes.Clear();
-        BuilderNote($"{parts.Length} part(s): " + string.Join(", ", Enum.GetValues<PartCategory>().Select(c => $"{c} {parts.Count(p => p.Category == c)}")));
-        BuilderNote("tiers: " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {parts.Count(p => p.Rarity == r)}")));
+        Line($"{parts.Length} part(s): " + string.Join(", ", Enum.GetValues<PartCategory>().Select(c => $"{c} {parts.Count(p => p.Category == c)}")));
+        Line("tiers: " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {parts.Count(p => p.Rarity == r)}")));
         foreach (var e in Parts.LoadErrors)
             Fail($"part file: {e}");
         if (parts.Length < 40)
@@ -70,18 +69,6 @@ public static partial class SelfTest
             Fail("no Workbench Range map");
         else
             Line($"Workbench Range: {range.Spawns.Count} spawn(s), {range.Solid.Count} boxes, max {range.WantedMaxPlayers} players");
-
-        // The part counts and example builds as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
-        Line("::notice title=Weapon builder::" + string.Join("%0A", BuilderNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
-    }
-
-    private static readonly List<string> BuilderNotes = [];
-
-    /// <summary>A self-test line that also goes into the section's summary notice.</summary>
-    private static void BuilderNote(string text)
-    {
-        Line(text);
-        BuilderNotes.Add(text);
     }
 
     /// <summary>
@@ -176,7 +163,7 @@ public static partial class SelfTest
                 continue;
             }
             var d = a.Def!;
-            BuilderNote($"{ex.Build.Name}: {ex.Build.Receivers.Count} receiver(s), {ex.Build.PartCount} parts, {ex.Build.Weight:0.0} kg: {StatLine(d)}");
+            Line($"{ex.Build.Name}: {ex.Build.Receivers.Count} receiver(s), {ex.Build.PartCount} parts, {ex.Build.Weight:0.0} kg: {StatLine(d)}");
             if (d.Dps < ex.MinDps || d.Dps > ex.MaxDps)
                 Fail($"example '{ex.Build.Name}': DPS {d.Dps:0} outside its documented band {ex.MinDps:0}-{ex.MaxDps:0}");
             foreach (var (field, (min, max)) in WeaponFile.Ranges)
