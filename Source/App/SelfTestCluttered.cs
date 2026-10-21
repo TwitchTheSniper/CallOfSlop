@@ -42,6 +42,7 @@ public static partial class SelfTest
         CheckClutteredSmall();
         CheckClutteredMedium(); // SelfTestCluttered.Medium.cs: Crescent Bazaar
         CheckClutteredLarge();
+        CheckClutteredCulDeSac(); // SelfTestCluttered.CulDeSac.cs: 04 Cul-de-sac
         World.SetMap(Maps.All[0]);
         if (ClutteredNotes.Count > 0)
             Line("::notice title=Cluttered pack::" + string.Join("%0A", ClutteredNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
