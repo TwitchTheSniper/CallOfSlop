@@ -2,7 +2,7 @@
 
 Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders: the starter library (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`), the outdoor set (`Vehicles`, `Rooftop`, `Utility`, `Signage`, `Urban`; see [Categories](#categories)), and `Animated` for props with moving or lit parts (see [Animation](#animation)). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
 
-To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. The Dev pack's **Prop Gallery** shows the starter props on their own pads, in rows by category, and **Prop Gallery 2** the outdoor set, so you can check them by eye.
+To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. A prop that only one map pack needs goes in that pack's own `Props` folder instead (see [Pack props](#pack-props)). The Dev pack's **Prop Gallery** shows the starter props on their own pads, in rows by category, and **Prop Gallery 2** the outdoor set, so you can check them by eye.
 
 A prop is a model made of boxes, the same style as everything else in the game. It's drawn instanced (one copy of the model on the graphics card, hundreds of props in a handful of draw calls), so a map can have hundreds of them for very little cost.
 
@@ -109,6 +109,17 @@ How breaking works in a match:
 - Bots plan their routes as if every prop were whole, so a broken one just gives them a little more room.
 
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
+
+## Pack props
+
+Props go in this folder whenever they can be reused. A prop that is specific to one map pack goes in that pack's own `Props` folder, `Maps/<Pack>/Props` (same file format, category subfolders work the same way). Only that pack's maps can use it:
+
+- A pack's maps look a name up in the pack's `Props` folder first, then here. Two packs can each have a prop with the same name without clashing.
+- A pack prop with the same name as a prop here **shadows** it for that pack's maps only (in name lookups and in its category); the game log notes it. `"global:Name"` (or `"global:Category"` in a Clutter list) always means the prop from this folder.
+- Names must be unique within a pack's folder, as here.
+- The pack props a map uses count towards its fingerprint (the file's contents, whitespace and comments aside), so everyone in a game needs the same copy of the pack.
+
+The Dev pack's `Maps/Dev/Props/AppleCrate.json` is an example: a magenta crate that replaces the Kitchen **Apple Crate** on the Dev pack's **Pack Assets** map. See [Maps/README.md](../Maps/README.md#where-assets-go) for the whole rule (props, models and sky images).
 
 ## Animation
 

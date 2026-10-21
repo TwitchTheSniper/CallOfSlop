@@ -129,6 +129,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (PackAssetHash is var packAssets and not 0) // pack-local props and models (MapPackAssets.cs); maps without any keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (packAssets >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (BoundaryHash != 0) // maps without a "boundary" section keep their old fingerprint
             {
                 for (var i = 0; i < 4; i++)
@@ -246,8 +254,12 @@ public static partial class MapFile
 
     // ---- Reading --------------------------------------------------------------------------
 
-    /// <summary>Builds a map from a map file. Throws <see cref="MapFileException"/> with a readable message if the file is wrong.</summary>
-    public static Map Load(string json, string source)
+    /// <summary>
+    /// Builds a map from a map file. Throws <see cref="MapFileException"/> with a readable message if the file is wrong.
+    /// <paramref name="source"/> is the file's path relative to the Maps folder; <paramref name="packDir"/> is the pack
+    /// folder its props and models are looked up in first (null: worked out from <paramref name="source"/>; "": none).
+    /// </summary>
+    public static Map Load(string json, string source, string? packDir = null)
     {
         JsonDocument doc;
         try
@@ -274,6 +286,7 @@ public static partial class MapFile
                 HalfX = Math.Clamp(ReqNum("halfX"), 5f, 500f),
                 HalfZ = Math.Clamp(ReqNum("halfZ"), 5f, 500f),
                 SourceFile = source,
+                PackDir = packDir == null ? Map.PackDirFor(source) : packDir.Length > 0 ? packDir : null,
             };
             if (Prop(root, "author") is { ValueKind: JsonValueKind.String } a)
                 map.Author = a.GetString()!;

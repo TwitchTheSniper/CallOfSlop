@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Apple Crate",
+  "category": "Dev Pack",
+  "description": "Dev pack test prop: a magenta and teal crate that shadows the global Apple Crate in the Dev pack's maps only.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 0.8, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [0.9, 1.1]},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "wood", "debris": {"count": 10, "size": [0.06, 0.2], "colors": ["#d02a9e", "#1a9e9e"]}},
+  "parts": [
+    {"size": [0.8, 0.8, 0.8], "offset": [0, 0.4, 0], "color": "#d02a9e", "material": "wood"},
+    {"size": [0.84, 0.1, 0.84], "offset": [0, 0.05, 0], "color": "#1a9e9e"},
+    {"size": [0.84, 0.1, 0.84], "offset": [0, 0.75, 0], "color": "#1a9e9e"},
+    {"size": [0.12, 0.6, 0.84], "offset": [0, 0.4, 0], "color": "#1a9e9e"},
+    {"size": [0.84, 0.6, 0.12], "offset": [0, 0.4, 0], "color": "#1a9e9e"}
+  ]
+}
