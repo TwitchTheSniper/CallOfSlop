@@ -315,18 +315,19 @@ public sealed partial class Game
         if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
         {
             var center = proj.Pos + new Vector3(0, 0.15f, 0);
+            var radius = def.Radius * Perks.BlastRadiusMult(owner.Perks); // Demolitions: wider, the falloff curve stretched with it
             foreach (var victim in Players.Values.ToList())
             {
                 if (!victim.Alive)
                     continue;
                 var to = victim.Chest - center;
                 var dist = to.Length();
-                if (dist > def.Radius)
+                if (dist > radius)
                     continue;
                 // Walls shield you from the blast.
                 if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
                     continue;
-                var dmg = Throwables.BlastDamage(def, dist);
+                var dmg = Throwables.BlastDamage(def, dist * def.Radius / radius);
                 if (victim == owner)
                     dmg *= 0.5f; // your own grenade still hurts
                 if (victim.Sim.Stance == Stance.Prone)
@@ -338,9 +339,9 @@ public sealed partial class Game
                 if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive, center) && victim != owner)
                     flags |= 4;
             }
-            StreakBlastEntities(owner, center, def.Radius, def.MaxDamage, now); // enemy turrets and drones too
-            BlastProps(owner, center, def.Radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
-            BlastZombies(owner, center, def.Radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
+            StreakBlastEntities(owner, center, radius, def.MaxDamage, now); // enemy turrets and drones too
+            BlastProps(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
+            BlastZombies(owner, center, radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
         }
 
         _w.Begin(Msg.Explode).U16(proj.Id).U8((byte)proj.Kind).U8(proj.Owner).Vec(proj.Pos).U8(flags);
@@ -358,7 +359,7 @@ public sealed partial class Game
         {
             case ThrowableKind.Frag:
             case ThrowableKind.Impact:
-                Blasts.Add(new Blast(pos, now, def.Radius, kind));
+                Blasts.Add(new Blast(pos, now, def.Radius * (Players.TryGetValue(owner, out var thrower) ? Perks.BlastRadiusMult(thrower.Perks) : 1f), kind));
                 Audio.Effect3D(Sfx.Explosion, pos, kind == ThrowableKind.Frag ? 1f : 0.8f);
                 if (Local is { } me)
                 {
@@ -433,8 +434,8 @@ public sealed partial class Game
     /// </summary>
     public bool IsRevealed(Player p, double now)
     {
-        if (p.Perks.Has(PerkId.LowProfile) && p.RenderStance != Stance.Stand)
-            return false; // Low Profile: hidden from Recon while low
+        if (Perks.HiddenFromRecon(p.Perks, p.RenderStance, p.RenderVelocity))
+            return false; // Low Profile: hidden from Recon while low; Ghost: while moving
         if (Local is not { } me || p.Id == LocalId || !p.Alive)
             return false;
         if (!AreEnemies(me, p))

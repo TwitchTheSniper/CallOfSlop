@@ -111,12 +111,22 @@ public sealed class Progress
         "Grinder Rotary", "Railspike", "Toy Blaster",
     ];
 
-    /// <summary>Perks after the three starters, in unlock order (alternating categories).</summary>
-    private static readonly PerkId[] PerkOrder =
+    /// <summary>
+    /// Perks after the three starters, in unlock order, each with its place on the perk track: the original nine sit
+    /// on whole numbers 0-8 (so their levels never move), the later ones in between. Level = 3 + place * (max - 4) / 8.
+    /// </summary>
+    private static readonly (PerkId Id, float Place)[] PerkOrder =
     [
-        PerkId.HeadStart, PerkId.Bloodthirst, PerkId.Opener, PerkId.Parkour, PerkId.Entrenched,
-        PerkId.Deadeye, PerkId.Afterburner, PerkId.LastStand, PerkId.Flanker,
+        (PerkId.HeadStart, 0), (PerkId.SleightOfHand, 0.4f), (PerkId.QuickFix, 0.75f), (PerkId.Bloodthirst, 1),
+        (PerkId.Stalker, 1.45f), (PerkId.Opener, 2), (PerkId.SteadyAim, 2.35f), (PerkId.Parkour, 3),
+        (PerkId.Scavenger, 3.3f), (PerkId.DeadSilence, 3.65f), (PerkId.Entrenched, 4), (PerkId.Demolitions, 4.4f),
+        (PerkId.Hardline, 4.75f), (PerkId.Deadeye, 5), (PerkId.Lightweight, 5.45f), (PerkId.Afterburner, 6),
+        (PerkId.TightGrip, 6.35f), (PerkId.LastStand, 7), (PerkId.ColdBlooded, 7.25f), (PerkId.Ghost, 7.6f),
+        (PerkId.Flanker, 8),
     ];
+
+    /// <summary>The non-starter perks in unlock order (self-test).</summary>
+    public static IEnumerable<PerkId> PerkUnlockOrder => PerkOrder.Select(e => e.Id);
 
     /// <summary>Loadout slots: one at level 1, the last at max level, the rest evenly in between.</summary>
     public const int MaxLoadoutSlots = 10;
@@ -130,9 +140,10 @@ public sealed class Progress
     {
         if (id == PerkId.None || Perks.Starters.Contains(id))
             return 1;
-        var i = Array.IndexOf(PerkOrder, id);
-        // From level 3 to the level before max, evenly spaced.
-        return i < 0 ? MaxLevel : 3 + (int)MathF.Round(i * (MaxLevel - 4) / (float)(PerkOrder.Length - 1));
+        foreach (var (pid, place) in PerkOrder)
+            if (pid == id)
+                return 3 + (int)MathF.Round(place * (MaxLevel - 4) / 8f); // from level 3 to the level before max
+        return MaxLevel;
     }
 
     public bool IsUnlocked(PerkId id) => Level >= PerkLevel(id);

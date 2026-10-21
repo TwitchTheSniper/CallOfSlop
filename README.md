@@ -122,17 +122,29 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Movement | **Low Profile** (start) | Crouched or prone | Move 80% faster; Recon Pulses can't reveal you while you're low |
 | Movement | **Head Start** (level 3) | Just spawned | 35% faster for the first 4 s of every life |
 | Movement | **Parkour** (19) | Walls, windows, roofs | Reach ledges 0.6 m higher, climb twice as fast, jump about 55% higher |
-| Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after each kill |
+| Movement | **Stalker** (11) | Aiming down sights | Keep 95% of your speed while aiming instead of 70% |
+| Movement | **Dead Silence** (23) | Sneaking up | Others hear your steps, jumps and landings 75% quieter and from half as far; bots notice you behind them within 3 m instead of 7 m |
+| Movement | **Lightweight** (33) | Carrying a heavy gun | Your gun never slows you below full speed (LMGs, snipers); no effect with light guns |
+| Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after a kill; no refresh during the boost, 6 s cooldown after it |
+| Movement | **Ghost** (45) | On the move | Recon Pulses and Recon Sweeps can't reveal you while you're moving (faster than 1 m/s) |
 | Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own |
+| Survival | **Quick Fix** (7) | Between fights | Health starts coming back 2.5 s after the last damage instead of 5 s |
 | Survival | **Bloodthirst** (9) | Just got a kill | Each kill heals you to full |
+| Survival | **Scavenger** (21) | Just got a kill | Each kill gives back one grenade and one equipment charge, up to what you spawn with |
 | Survival | **Entrenched** (25) | Crouched/prone and still | 40% less bullet damage |
+| Survival | **Hardline** (29) | Earning kill streaks | Every streak costs one kill less (never below 2) |
 | Survival | **Last Stand** (41) | Once per life | The first lethal hit leaves you on 1 HP, and a shield blocks your next 3 bullet hits (up to 8 s) |
+| Survival | **Cold Blooded** (43) | Turrets and drones | Enemy Sentry Turrets and Attack Drones can't lock onto you (stray rounds still hurt) |
 | Damage | **Point Blank** (start) | Within 8 m | Bullets and melee hit 40% harder |
+| Damage | **Sleight of Hand** (5) | Reloading | Reload 35% faster (stacks with Overdrive) |
 | Damage | **Opener** (14) | Enemy on full health | Bullets and melee hit 50% harder |
+| Damage | **Steady Aim** (16) | Hip fire | 35% tighter hip-fire spread; aimed fire unchanged |
+| Damage | **Demolitions** (27) | Grenades | Your Frag and Impact blasts reach 25% farther (Frag 9 m -> 11 m), same centre damage |
 | Damage | **Deadeye** (31) | Beyond 30 m | Bullets hit 40% harder |
+| Damage | **Tight Grip** (38) | Aiming down sights | 30% less recoil while aimed; hip fire unchanged |
 | Damage | **Flanker** (47) | Hitting their back | Bullets and melee hit 60% harder |
 
-Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality.
+Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality. Handling perks (Sleight of Hand, Steady Aim, Tight Grip, Stalker) work on your own client like Overdrive does, and bots get Sleight of Hand, Steady Aim, Stalker and Lightweight too. Saved loadouts store perks by name, so older `loadout.txt` files load unchanged; the original perks keep their unlock levels.
 
 **Last Stand in detail.** Once per life, the first hit that would kill you (bullets, melee or a blast) leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
 

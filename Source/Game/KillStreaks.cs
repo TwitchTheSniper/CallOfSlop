@@ -435,7 +435,7 @@ public sealed partial class Game
         {
             if (s.IsReady(id))
                 continue;
-            var kills = KillStreaks.Get(id).Kills;
+            var kills = Perks.StreakCost(attacker.Perks, KillStreaks.Get(id).Kills); // Hardline: one less
             if (s.Progress[(int)id] < kills)
                 s.Progress[(int)id]++;
             if (s.Progress[(int)id] >= kills)
