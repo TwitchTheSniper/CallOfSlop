@@ -717,6 +717,14 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Music volume"u8, ref s.MusicVolume, 0f, 1f, "%.2f"u8))
                 audio.Music.Volume = s.MusicVolume;
+            var musicStyle = (int)s.MusicChoice;
+            ImGui.Text("Music style"u8);
+            ImGui.SameLine();
+            ImGui.RadioButton("Mixed"u8, ref musicStyle, (int)MusicChoice.Mixed);
+            ImGui.SameLine();
+            ImGui.RadioButton("Hardbass only"u8, ref musicStyle, (int)MusicChoice.HardbassOnly);
+            s.MusicChoice = (MusicChoice)musicStyle;
+            audio.Music.HardbassOnly = s.MusicChoice == MusicChoice.HardbassOnly;
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Effects volume"u8, ref s.EffectsVolume, 0f, 1f, "%.2f"u8))
                 audio.EffectsVolume = s.EffectsVolume;
@@ -729,7 +737,7 @@ public sealed partial class Ui
             ImGui.SameLine();
             if (ImGui.Button("Test##steps"u8))
                 audio.Footstep(new StepEvent(0, StepKind.Run, FootSurface.Concrete, default, 1f), self: true);
-            ImGui.TextColored(Dim, "Generated hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
+            ImGui.TextColored(Dim, "Generated hardbass, hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
