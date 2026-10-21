@@ -13,11 +13,11 @@ namespace CallOfSlop;
 ///
 /// Model space: origin at the grip, -Z towards the muzzle, +Y up, metres.
 ///
-/// Optics are see-through at full ADS: Program sets <see cref="AdsCutaway"/> before drawing the
-/// viewmodel, and the optic's housing, tubes and mounts fade out with it (reflex sights keep their
-/// thin window frame). The lens, tint and reticle are then drawn flat in the HUD pass by
-/// <see cref="ScopeOverlay"/> from <see cref="Look"/>, centred on the screen where the sight line is.
-/// Fitting any optic removes the parts it would clash with (iron sights, LMG carry handles).
+/// Every optic is a physical sight with a lens (<see cref="Lens"/>): the eyepiece of a magnified optic, or a reflex
+/// sight's window. When aiming, <see cref="SightLens"/> draws the view through that lens on top of the gun (the world
+/// behind it, the reticle, tint and rim), so the whole housing stays on the gun from hip to full aim and nothing of the
+/// gun shows inside the lens. <see cref="AdsZ"/> brings the lens to its eye distance (<see cref="Sights"/>), which sets
+/// how much of the screen it fills. Fitting any optic removes the parts it would clash with (iron sights, LMG carry handles).
 ///
 /// Weapons whose file has a "model" block (all the shipped ones) are built by <see cref="GunBuilder"/> instead of the
 /// per-class code below: their receiver, barrels, handguard, magazine, stock and grip come from the block, so every gun
@@ -120,13 +120,13 @@ public static class GunModel
     /// <summary>The cut-away for an aim-down-sights blend: none at the hip, complete by 85% aimed.</summary>
     public static float CutawayFor(float aimT) => SmoothStep(0.5f, 0.85f, aimT);
 
-    /// <summary>Optics at this zoom or more get the full scope view (black surround, round lens, no viewmodel).</summary>
+    /// <summary>Optics at this zoom or more count as full scopes (which classes may take them; their lens fills most of the screen).</summary>
     public const float FullScopeZoom = 4f;
 
-    /// <summary>True when aiming this gun shows the full scope view instead of the see-through lens.</summary>
+    /// <summary>True for a full scope (4x and up).</summary>
     public static bool FullScope(WeaponDef d) => d.AdsZoom >= FullScopeZoom;
 
-    /// <summary>The reticle styles drawn by <see cref="ScopeOverlay"/>.</summary>
+    /// <summary>The reticle styles drawn by <see cref="SightLens"/>.</summary>
     public enum Reticle : byte
     {
         None,
@@ -142,30 +142,42 @@ public static class GunModel
     }
 
     /// <summary>
-    /// What you see through an optic at full ADS. <paramref name="LensRadius"/> is the eyepiece radius as a
-    /// fraction of the screen height (0 = an open reflex window: reticle only). <paramref name="Size"/> scales
-    /// the reticle (1 = its design size at 1080p). <paramref name="Tint"/> is the faint lens colour.
+    /// The lens of a sight in model space: <paramref name="Center"/> is the middle of the plane you look through (a
+    /// magnified optic's eyepiece face, a hair behind its rear end; a reflex sight's glass), <paramref name="HalfW"/> /
+    /// <paramref name="HalfH"/> its half size in metres, <paramref name="Round"/> for an eyepiece (a reflex window is a
+    /// rectangle) and <paramref name="Rim"/> the outer radius of the eyepiece rim drawn around a round lens.
     /// </summary>
-    public readonly record struct OpticLook(float LensRadius, Reticle Reticle, Vector3 Color, float Size, Vector3 Tint);
+    public readonly record struct OpticLens(Vector3 Center, float HalfW, float HalfH, bool Round, float Rim);
 
-    private static readonly Vector3 AmberTint = new(1f, 0.82f, 0.55f);
-    private static readonly Vector3 CoolTint = new(0.65f, 0.82f, 1f);
-
-    /// <summary>The see-through view for the gun's sight (Reticle.None for plain iron sights).</summary>
-    public static OpticLook Look(WeaponDef d) => d.Optic switch
+    /// <summary>The sight's lens (see <see cref="OpticLens"/>), matching what <see cref="DrawOptic"/> builds. Null for iron sights.</summary>
+    public static OpticLens? Lens(WeaponDef d)
     {
-        OpticKind.RedDot => new(0, Reticle.Dot, RedGlow, 1f, Vector3.Zero),
-        OpticKind.MiniDot => new(0, Reticle.Dot, GreenGlow, 0.8f, Vector3.Zero),
-        OpticKind.Holo => new(0, Reticle.HoloRing, CyanGlow, 1f, Vector3.Zero),
-        OpticKind.Prism2 => new(0.42f, Reticle.Horseshoe, new Vector3(1f, 0.32f, 0.1f), 1f, AmberTint),
-        OpticKind.Acog => new(0.46f, Reticle.Chevron, RedGlow, 1f, AmberTint),
-        OpticKind.Hybrid3 => new(0.44f, Reticle.CircleDot, RedGlow, 1f, AmberTint),
-        OpticKind.Scope4 => new(0.47f, Reticle.Duplex, RedGlow, 1f, CoolTint),
-        OpticKind.Lpvo6 => new(0.47f, Reticle.Stadia, RedGlow, 1f, CoolTint),
-        OpticKind.Scope8 => new(0.47f, Reticle.FineCross, RedGlow, 1f, CoolTint),
-        OpticKind.Scope12 => new(0.47f, Reticle.MilDot, RedGlow, 1f, CoolTint),
-        _ => HasBuiltInScope(d) ? new OpticLook(0.46f, Reticle.Duplex, RedGlow, 1f, CoolTint) : new OpticLook(0, Reticle.None, Vector3.Zero, 1f, Vector3.Zero),
-    };
+        if (!HasScope(d))
+            return null;
+        var z = OpticZ(d);
+        var y = SightHeight(d);
+        const float eps = 0.0003f; // in front of the eyepiece's rear face
+        OpticLens Window(float glassZ, float half) => new(new Vector3(0, y, glassZ + 0.0013f), half, half, false, half);
+        OpticLens Eye(float rear, float r, float rim) => new(new Vector3(0, y, rear + eps), r, r, true, rim);
+        switch (d.Optic)
+        {
+            case OpticKind.RedDot: return Window(z - 0.018f, 0.014f);
+            case OpticKind.MiniDot: return Window(z - 0.008f, 0.011f);
+            case OpticKind.Holo: return Window(z - 0.034f, 0.021f);
+            case OpticKind.Prism2: return Eye(z + 0.045f, 0.018f, 0.026f); // square eyecup: the round rim covers its corners
+            case OpticKind.Acog: return Eye(z + 0.05f, 0.016f, 0.023f);
+            case OpticKind.Hybrid3: return Eye(z + 0.071f, 0.016f, 0.023f);
+            case OpticKind.Lpvo6: return Eye(z + 0.16f, 0.018f, 0.0215f);
+            case OpticKind.Scope12: return Eye(z + 0.24f, 0.019f, 0.0225f);
+            case OpticKind.Scope4 or OpticKind.Scope8:
+            {
+                var k = d.Optic == OpticKind.Scope8 ? 1.25f : 1f;
+                return Eye(z + 0.26f * k * 0.63f, 0.0195f * k, 0.0235f * k);
+            }
+            default: // built-in scope (DrawScope at 0.85)
+                return Eye(z + 0.26f * 0.85f * 0.63f, 0.0195f * 0.85f, 0.0235f * 0.85f);
+        }
+    }
 
     private static float SmoothStep(float a, float b, float x)
     {
@@ -335,12 +347,14 @@ public static class GunModel
 
     /// <summary>
     /// How far in front of the eye the gun's grip sits when fully aimed (viewmodel Z, negative = forward).
-    /// Iron sights stay at arm's length; optics are brought up so their rear end is a set distance from
-    /// the eye. Magnified optics come close, but their housing is cut away at full ADS (see <see cref="AdsCutaway"/>),
-    /// so what you see is the HUD lens, not the inside of a tube.
+    /// Iron sights stay at arm's length; reflex sights are brought up so their rear end is a set distance from the eye;
+    /// magnified optics put their lens at the sight's eye distance (<see cref="Sights.EyeDistanceOverride"/>), close
+    /// enough for the lens to fill as much of the screen as its "sight" block asks for.
     /// </summary>
     public static float AdsZ(WeaponDef d)
     {
+        if (Sights.EyeDistanceOverride(d) is { } eye && Sights.Lens(d) is { } lens)
+            return -eye - lens.Center.Z;
         var z = OpticZ(d);
         float rear, relief;
         switch (d.Optic)
@@ -1020,7 +1034,7 @@ public static class GunModel
                 Blend(true);
                 Box(0.028f, 0.028f, 0.002f, 0, sight, z - 0.018f, new Vector3(0.6f, 0.9f, 0.7f), mode: 2, alpha: 0.12f); // glass
                 Blend(false);
-                Shell(0.004f, 0.004f, 0.002f, 0, sight, z - 0.019f, RedGlow, mode: 2); // the HUD draws the dot at full ADS
+                Shell(0.004f, 0.004f, 0.002f, 0, sight, z - 0.019f, RedGlow, mode: 2); // the lens pass draws the dot when aimed
                 break;
             }
             case OpticKind.MiniDot:

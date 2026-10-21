@@ -13,5 +13,6 @@
     { "stat": "adsZoom", "set": 2.5 },
     { "stat": "adsSpreadMult", "mul": 0.65 },
     { "stat": "adsTime", "add": 0.05 }
-  ]
+  ],
+  "sight": { "reticle": "Chevron", "reticleColor": [1, 0.15, 0.1], "screen": 0.88, "housing": 1.45, "vignette": 0.35, "tint": [1, 0.82, 0.55], "tintAlpha": 0.06 }
 }
