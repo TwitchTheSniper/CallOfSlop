@@ -223,12 +223,15 @@ public static partial class SelfTest
         if (missing.Count > 0)
             Fail($"{m.Name}: the nav graph doesn't reach {string.Join(", ", missing.Take(5))}{(missing.Count > 5 ? $" and {missing.Count - 5} more" : "")}");
 
-        // Bot matches at the map's player limit: free-for-all and team deathmatch, 90 simulated seconds each.
+        // Bot matches at the map's player limit: free-for-all and team deathmatch, 90 simulated seconds each, after a
+        // short unmeasured warm-up (this section runs early, so the first kills, breaks and respawns would JIT-compile
+        // inside a measured tick).
+        ClutteredBotMatch(m, GameMode.FreeForAll, m.MaxPlayers - 1, 20, measured: false);
         foreach (var mode in new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch })
-            ClutteredBotMatch(m, mode, m.MaxPlayers - 1);
+            ClutteredBotMatch(m, mode, m.MaxPlayers - 1, 90);
     }
 
-    private static void ClutteredBotMatch(Map m, GameMode mode, int bots)
+    private static void ClutteredBotMatch(Map m, GameMode mode, int bots, int seconds, bool measured = true)
     {
         var sw = Stopwatch.StartNew();
         using var game = ModeGame(bots, mode, m.Id);
@@ -244,7 +247,7 @@ public static partial class SelfTest
         var lastMatch = game.MatchNumber;
         try
         {
-            for (var i = 0; i < 90 * World.TickRate; i++)
+            for (var i = 0; i < seconds * World.TickRate; i++)
             {
                 now += dt;
                 cpu.Start();
@@ -272,6 +275,11 @@ public static partial class SelfTest
         catch (Exception ex)
         {
             Fail($"{m.Name}: {mode} bot match crashed: {ex}");
+            return;
+        }
+        if (!measured)
+        {
+            m.RestoreProps();
             return;
         }
         var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);

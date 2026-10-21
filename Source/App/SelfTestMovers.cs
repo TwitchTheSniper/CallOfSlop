@@ -26,8 +26,8 @@ public static partial class SelfTest
             Fail("Physics Test should have rotating platforms, sliders and an elevator");
 
         // ---- Fingerprints: only maps with movers change, and movers do count ----
-        // Movers ship on the Physics Test and in the High Ground pack (lifts, ferries); the older packs have none.
-        var withMovers = Maps.All.Where(m => m.Movers.Count > 0 && m.Pack?.Name != "High Ground").Select(m => m.Name).ToList();
+        // Movers ship on the Physics Test, in the High Ground pack (lifts, ferries) and the Cluttered pack (Carousel's ride); the older packs have none.
+        var withMovers = Maps.All.Where(m => m.Movers.Count > 0 && m.Pack?.Name is not ("High Ground" or "Cluttered")).Select(m => m.Name).ToList();
         if (withMovers.Count != 1 || withMovers[0] != PhysicsTestMap)
             Fail($"maps with movers: {string.Join(", ", withMovers)} (expected only {PhysicsTestMap} outside High Ground)");
         if (Maps.All.Any(m => m.Movers.Count == 0 && m.MoverHash != 0))
