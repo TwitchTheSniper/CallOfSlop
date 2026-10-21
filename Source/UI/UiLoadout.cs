@@ -1069,7 +1069,7 @@ public sealed partial class Ui
         PerkId.HeadStart or PerkId.Afterburner => p.Sim.BoostTicks > 0,
         PerkId.Parkour => p.Sim.MantleTicks > 0,
         PerkId.Entrenched => Game.IsDugIn(p),
-        PerkId.LastStand => p.Health == 1,
+        PerkId.LastStand => p.ShieldCharges > 0 || p.Health == 1,
         _ => false,
     };
 }

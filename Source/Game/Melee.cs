@@ -187,6 +187,7 @@ public sealed partial class Game
         p.Sim.MovePerk = p.Perks.Movement;
         p.Sim.BoostTicks = p.Perks.Has(PerkId.HeadStart) ? Perks.BoostTicks : (byte)0;
         p.LastStandUsed = false;
+        p.ShieldCharges = 0;
         p.ImmuneUntil = 0;
     }
 
@@ -251,11 +252,12 @@ public sealed partial class Game
         if (me.Perks.Has(PerkId.LastStand) && me.Health == 1 && !_lastStandShown)
         {
             _lastStandShown = true;
-            ShowPerk("LAST STAND - you can't be hurt for a moment, get to cover!", now);
+            ShowPerk($"LAST STAND - a shield blocks your next {Perks.LastStandCharges} bullet hits, get to cover!", now);
         }
         if (me.Sim.BoostTicks > _lastBoost + 20 && me.Perks.Has(PerkId.Afterburner) && _lastBoost < Perks.BoostTicks - 20)
             ShowPerk("AFTERBURNER", now);
-        if (me.Perks.Has(PerkId.Bloodthirst) && me.Health == World.MaxHealth && _lastPerkHealth < World.MaxHealth && _lastPerkHealth > 0)
+        // (A jump of a few points at once: health regen only ever adds one at a time.)
+        if (me.Perks.Has(PerkId.Bloodthirst) && me.Health == World.MaxHealth && _lastPerkHealth < World.MaxHealth - 2 && _lastPerkHealth > 0)
             ShowPerk("BLOODTHIRST - healed", now);
         _lastBoost = me.Sim.BoostTicks;
         _lastPerkHealth = me.Health;
