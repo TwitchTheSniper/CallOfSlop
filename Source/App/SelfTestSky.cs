@@ -20,6 +20,7 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckSky()
     {
+        SkyNotes.Clear();
         // ---- Presets ---------------------------------------------------------------------------------------------
         foreach (var name in SkySettings.PresetNames)
         {
@@ -34,7 +35,7 @@ public static partial class SelfTest
                 Fail($"preset {name}: bad light (sun {s.SunDir}, ambient {l.AmbSky})");
             if (back == null || SkyFile.ToJson(back) != json || back.Preset != s.Preset)
                 Fail($"preset {name}: written as {json} but didn't read back the same");
-            Line($"preset {name,-8}: {s.Describe()}; key light {l.SunColor.X:0.00}/{l.SunColor.Y:0.00}/{l.SunColor.Z:0.00}, sky ambient {l.AmbSky.Y:0.00}; file: {json}");
+            SkyLine($"preset {name,-8}: {s.Describe()}; key light {l.SunColor.X:0.00}/{l.SunColor.Y:0.00}/{l.SunColor.Z:0.00}, sky ambient {l.AmbSky.Y:0.00}; file: {json}");
         }
         foreach (var (alias, key) in new[] { ("clear day", "clear"), ("Desert Haze", "desert"), ("DUSK", "dusk"), ("sunset", "dusk") })
             if (SkySettings.PresetKey(alias) != key)
@@ -85,7 +86,7 @@ public static partial class SelfTest
             if (copy.Skybox == null || SkyFile.ToJson(copy.Skybox) != SkyFile.ToJson(m.Skybox!) || copy.Sky != m.Sky)
                 Fail($"{m.Name}: its sky didn't survive writing the map out and reading it back ({SkyFile.ToJson(m.Skybox!)} became {(copy.Skybox is { } cs ? SkyFile.ToJson(cs) : "none")}, sky {m.Sky} / {copy.Sky})");
         }
-        Line($"round trip: a sky with every setting changed, and {mapsWithSky.Count} map(s) with a sky ({string.Join(", ", mapsWithSky.Select(m => $"{m.Name}: {m.Skybox!.Preset}"))})");
+        SkyLine($"round trip: a sky with every setting changed, and {mapsWithSky.Count} map(s) with a sky ({string.Join(", ", mapsWithSky.Select(m => $"{m.Name}: {m.Skybox!.Preset}"))})");
         if (Maps.Find("Sky Test") is not { Skybox: not null } skyTest || skyTest.Pack?.Name != "Dev")
             Fail("the Sky Test map (Maps/Dev/SkyTest.json) should load into the Dev pack with a sky");
 
@@ -131,7 +132,7 @@ public static partial class SelfTest
                     readable++;
             }
         }
-        Line($"{readable} of {bad.Length} broken skybox sections rejected with a readable message, e.g. \"{TryLoadError(bad[3].Sky)}\"");
+        SkyLine($"{readable} of {bad.Length} broken skybox sections rejected with a readable message, e.g. \"{TryLoadError(bad[3].Sky)}\"");
 
         // ---- The sun from the time of day ------------------------------------------------------------------------
         (string What, Vector3 Got, Vector3 Want)[] suns =
@@ -154,7 +155,7 @@ public static partial class SelfTest
         if (Vector3.Distance(angles, new Vector3(MathF.Cos(MathF.PI / 6), 0.5f, 0)) > 1e-4f)
             Fail($"sun elevation 30 azimuth 90 should be 30 deg up in the east, got {angles}");
         var dusk = SkySettings.FromPreset("dusk");
-        Line($"sun from the time of day: {suns.Length} positions and the June solstice ({solstice:0.00} deg at 45N) right; dusk preset sun {dusk.SunElevation:0.0} deg up in the west");
+        SkyLine($"sun from the time of day: {suns.Length} positions and the June solstice ({solstice:0.00} deg at 45N) right; dusk preset sun {dusk.SunElevation:0.0} deg up in the west");
         if (dusk.SunElevation is < 1 or > 10 || dusk.SunDir.X > -0.9f)
             Fail("the dusk sun should be low in the west");
 
@@ -186,7 +187,7 @@ public static partial class SelfTest
         foreach (var term in gradientTerms)
             if (!Lighting.Glsl.Contains(term))
                 Fail($"Lighting.Glsl lost \"{term}\" (it must match SkySettings.Gradient)");
-        Line($"fog meets every preset's sky at the horizon exactly; worst step across the horizon {worstSeam:0.0000}");
+        SkyLine($"fog meets every preset's sky at the horizon exactly; worst step across the horizon {worstSeam:0.0000}");
 
         // ---- Old maps keep their look and fingerprint --------------------------------------------------------------
         var d = Lighting.Default;
@@ -229,13 +230,13 @@ public static partial class SelfTest
         var flatProbe = SkyProbe("\"sky\": [0.2, 0.3, 0.4],");
         if (flatProbe.Skybox != null || flatProbe.Sky != new Vector3(0.2f, 0.3f, 0.4f) || flatProbe.ContentHash != SkyProbe("\"skybox\": \"night\",").ContentHash)
             Fail("a sky must not change the fingerprint, and \"sky\" alone must stay a flat colour");
-        Line($"{plain} maps without a sky keep their flat colour and the classic light; {hashesKept} High Ground maps hash the same with their sky as with their old colour");
+        SkyLine($"{plain} maps without a sky keep their flat colour and the classic light; {hashesKept} High Ground maps hash the same with their sky as with their old colour");
 
         // ---- Image skies and decoders ------------------------------------------------------------------------------
         var stb = MeshTextures.StbAvailable;
         var hdrStb = SkyImages.HdrCanary;
-        Line($"canary Brutal.Texture/stb (PNG): {(stb ? "PASS" : "FALLBACK")} - {MeshTextures.CanaryReport}");
-        Line($"canary Brutal.Texture/stb (HDR): {(hdrStb ? "PASS" : "FALLBACK")} - {SkyImages.HdrCanaryReport}");
+        SkyLine($"canary Brutal.Texture/stb (PNG): {(stb ? "PASS" : "FALLBACK")} - {MeshTextures.CanaryReport}");
+        SkyLine($"canary Brutal.Texture/stb (HDR): {(hdrStb ? "PASS" : "FALLBACK")} - {SkyImages.HdrCanaryReport}");
         var (tw, th, trgb) = SkyImages.DecodeHdr(SkyImages.TinyHdr());
         if (tw != 5 || th != 3 || MathF.Abs(trgb[0] - 40f / 1024f) > 1e-7f || MathF.Abs(trgb[1] - 200f / 1024f) > 1e-7f)
             Fail($"the built-in RGBE reader got the test image wrong ({tw}x{th}, first pixel {trgb[0]}, {trgb[1]})");
@@ -245,7 +246,7 @@ public static partial class SelfTest
             var pano = SkyProbe("\"skybox\": { \"image\": \"Skies/sample.hdr\", \"sun\": { \"time\": 17.3 } },").Skybox!;
             var ci = cube.Loaded!;
             var pi = pano.Loaded!;
-            Line($"sample skies: cubemap 6x {ci.Width}x{ci.Height} ({ci.Decoder}), panorama {pi.Width}x{pi.Height} HDR {pi.Hdr} ({pi.Decoder}); "
+            SkyLine($"sample skies: cubemap 6x {ci.Width}x{ci.Height} ({ci.Decoder}), panorama {pi.Width}x{pi.Height} HDR {pi.Hdr} ({pi.Decoder}); "
                  + $"measured horizon {Fmt(cube.Horizon)} / {Fmt(pano.Horizon)}, zenith {Fmt(cube.Zenith)} / {Fmt(pano.Zenith)}");
             if (cube.Type != SkyType.Cubemap || pano.Type != SkyType.Equirect || ci.Width != ci.Height || pi.Width != pi.Height * 2 || !pi.Hdr)
                 Fail("the sample skies loaded as the wrong kind");
@@ -263,7 +264,7 @@ public static partial class SelfTest
             diffs.Sort();
             var p90 = diffs[(int)(diffs.Count * 0.9)];
             var mean = (Vector3.Distance(cube.Horizon, pano.Horizon) + Vector3.Distance(cube.Zenith, pano.Zenith)) / 2;
-            Line($"cubemap vs panorama in {diffs.Count} directions: median difference {diffs[diffs.Count / 2]:0.000}, 90th percentile {p90:0.000}, measured colours differ {mean:0.000}");
+            SkyLine($"cubemap vs panorama in {diffs.Count} directions: median difference {diffs[diffs.Count / 2]:0.000}, 90th percentile {p90:0.000}, measured colours differ {mean:0.000}");
             if (p90 > 0.08f || mean > 0.05f)
                 Fail("the cubemap and the panorama of the same sky disagree: a direction mapping is wrong");
             if (cube.Zenith.Z <= cube.Zenith.X || cube.Zenith.Z < 0.3f)
@@ -288,7 +289,7 @@ public static partial class SelfTest
         // ---- Clouds -----------------------------------------------------------------------------------------------
         var noise = SkyRenderer.Noise;
         var cov = new[] { 0.2f, 0.5f, 0.8f }.Select(c => (c, SkyRenderer.MeasuredCoverage(noise, c))).ToArray();
-        Line("cloud coverage asked vs drawn: " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
+        SkyLine("cloud coverage asked vs drawn: " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         if (cov.Any(c => MathF.Abs(c.c - c.Item2) > 0.12f) || SkyRenderer.MeasuredCoverage(noise, 0) > 0)
             Fail("cloud coverage doesn't mean what it says (see SkyRenderer.CoverageThreshold): " + string.Join(", ", cov.Select(c => $"{c.c:0.0} -> {c.Item2:0.00}")));
         var w0 = SkyRenderer.WindOffsets(SkySettings.FromPreset("clear"), 1e6);
@@ -313,7 +314,7 @@ public static partial class SelfTest
                 || src.Count(c => c == '{') != src.Count(c => c == '}') || src.Count(c => c == '(') != src.Count(c => c == ')'))
                 Fail($"{what} shader source is malformed (version line, main, ASCII, balanced brackets)");
         }
-        Line($"sky shaders: {declared.Count} uniforms declared, all in the C# lists and used; brackets balanced (compiled with Mesa llvmpipe during development)");
+        SkyLine($"sky shaders: {declared.Count} uniforms declared, all in the C# lists and used; brackets balanced (compiled with Mesa llvmpipe during development)");
 
         // ---- Settings ------------------------------------------------------------------------------------------------
         var tmp = Path.Combine(Path.GetTempPath(), "callofslop-sky-" + Guid.NewGuid().ToString("N") + ".txt");
@@ -330,6 +331,16 @@ public static partial class SelfTest
         {
             File.Delete(tmp);
         }
+        // The section's results as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
+        Line("::notice title=Sky::" + string.Join("%0A", SkyNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+    }
+
+    private static readonly List<string> SkyNotes = new();
+
+    private static void SkyLine(string s)
+    {
+        Line(s);
+        SkyNotes.Add(s);
     }
 
     private static string TryLoadError(string sky)
