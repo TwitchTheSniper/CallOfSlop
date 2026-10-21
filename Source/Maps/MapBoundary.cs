@@ -165,11 +165,12 @@ public sealed class MapBoundary
     /// <summary>How long the build took (ms).</summary>
     public double BuildMs { get; }
 
-    public MapBoundary(BoundarySpec spec, float mapHalfX, float mapHalfZ)
+    /// <param name="minArea">Smallest area allowed (m²): 100 for a map's outline; foliage zones (Foliage.cs) allow small planters.</param>
+    public MapBoundary(BoundarySpec spec, float mapHalfX, float mapHalfZ, float minArea = 100f)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
         Spec = spec;
-        Outline = BuildOutline(spec, mapHalfX, mapHalfZ);
+        Outline = BuildOutline(spec, mapHalfX, mapHalfZ, minArea);
         var n = Outline.Length;
         Normals = new Vector2[n];
         Min = new Vector2(float.MaxValue);
@@ -523,7 +524,7 @@ public sealed class MapBoundary
     /// of the dense curve (so curvy parts get more segments than straight ones), long segments split, made counter-clockwise
     /// and checked. Throws <see cref="InvalidOperationException"/> with a readable message for a bad shape.
     /// </summary>
-    public static Vector2[] BuildOutline(BoundarySpec spec, float mapHalfX, float mapHalfZ)
+    public static Vector2[] BuildOutline(BoundarySpec spec, float mapHalfX, float mapHalfZ, float minArea = 100f)
     {
         var tol = Math.Clamp(spec.Tolerance, 0.005f, 1f);
         var pts = BaseCurve(spec, mapHalfX, mapHalfZ);
@@ -549,8 +550,8 @@ public sealed class MapBoundary
         if (SelfIntersects(pts, out var sa, out var sb))
             throw new InvalidOperationException($"the boundary crosses itself (near ({pts[sa].X:0.#}, {pts[sa].Y:0.#}) and ({pts[sb].X:0.#}, {pts[sb].Y:0.#}))"
                 + (spec.Noise != null ? ": lower the noise amplitude or raise its scale" : ": check the order of the points"));
-        if (area < 100)
-            throw new InvalidOperationException($"the boundary encloses only {area:0} square metres (at least 100)");
+        if (area < minArea)
+            throw new InvalidOperationException($"the boundary encloses only {area:0.#} square metres (at least {minArea:0.##})");
         foreach (var p in pts)
             if (!float.IsFinite(p.X + p.Y) || MathF.Abs(p.X) > 500 || MathF.Abs(p.Y) > 500)
                 throw new InvalidOperationException("the boundary must stay within 500 m of the map's centre");
