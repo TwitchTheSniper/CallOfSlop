@@ -288,7 +288,7 @@ public static partial class SelfTest
         game.SelfTestPlace(b2, new Vector3(0, 0, 8), 0);
         game.SelfTestPlace(me, new Vector3(-20, 0, -20), 0);
         var shots = 0;
-        while (game.StreakEntities.ContainsKey(t2.Id) && shots < 60)
+        while (game.StreakEntities.ContainsKey(t2.Id) && shots < 200) // the sentry is armoured now (KillStreaks.TurretHealth)
         {
             game.SelfTestShoot(b2, Vector3.Normalize(center - b2.Eye), 82 + shots * 0.2);
             shots++;
