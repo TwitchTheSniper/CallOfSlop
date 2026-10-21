@@ -796,7 +796,6 @@ public sealed partial class Game
         return best;
     }
 
-    private static float Flat(Vector3 d) => MathF.Sqrt(d.X * d.X + d.Z * d.Z);
 
     private static int PerkCount(ZPlayer zp) => System.Numerics.BitOperations.PopCount(zp.Perks);
 
