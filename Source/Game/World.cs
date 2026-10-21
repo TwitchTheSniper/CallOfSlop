@@ -99,33 +99,45 @@ public static class World
     {
         map.RestoreProps(); // a map always starts with its breakable props whole
         Map = map;
-        _grid = null;
+        _physics = null;
     }
 
-    /// <summary>A breakable prop's collider box changed (it broke): the collision grid takes the new box in place.</summary>
+    /// <summary>A breakable prop's collider box changed (it broke): the physics world switches that box off.</summary>
     public static void SolidChanged(Map map, int index)
     {
-        if (ReferenceEquals(map, Map) && _grid is { } g && g.IsFor(map))
-            g.ReplaceShrunkBox(index, map.Solid[index]);
+        if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
+            p.UpdateBox(index, map.Solid[index]);
+        LegacyCollision.SolidChanged(map, index);
     }
 
-    /// <summary>Boxes of the current map grew back (broken props restored): rebuild the collision grid on next use.</summary>
+    /// <summary>Boxes of the current map grew back (broken props restored): the physics world reads them again.</summary>
     public static void InvalidateGrid(Map map)
     {
-        if (ReferenceEquals(map, Map))
-            _grid = null;
+        if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
+            p.RefreshBoxes();
+        LegacyCollision.Invalidate(map);
     }
 
-    private static CollisionGrid? _grid;
+    private static PhysicsWorld? _physics;
 
     /// <summary>
-    /// The current map's boxes in a grid (built on first use): collision queries test the boxes nearby instead of
-    /// every box on the map, with exactly the same answers.
+    /// The current map's collision world (built on first use): one BVH over every static collider, the terrain and the
+    /// movers. Every collision question goes through it (see <see cref="Query"/>).
     /// </summary>
-    public static CollisionGrid Grid => _grid is { } g && g.IsFor(Map) ? g : _grid = new CollisionGrid(Map);
+    public static PhysicsWorld Physics => _physics is { } p && p.IsFor(Map) ? p : _physics = new PhysicsWorld(Map);
 
-    /// <summary>Self-test only: false makes every query scan all the boxes again, to compare against the grid.</summary>
-    public static bool UseGrid = true;
+    /// <summary>The current map's world queries: rays, shape casts, overlaps (<see cref="IWorldQuery"/>).</summary>
+    public static IWorldQuery Query => Physics;
+
+    /// <summary>The movement code every player runs (classic or swept, from the server's physics setting).</summary>
+    public static IMover Mover { get; set; } = ClassicMover.Instance;
+
+    /// <summary>Which movement the server runs (and clients predict with). Set from Settings on the host, from the Welcome on clients.</summary>
+    public static PhysicsMode PhysicsMode
+    {
+        get => Mover.Mode;
+        set => Mover = value == PhysicsMode.Swept ? SweptMover.Instance : ClassicMover.Instance;
+    }
 
     public const float StepHeight = 0.55f; // walk up anything this tall (stairs are 0.4 m)
 
@@ -166,166 +178,12 @@ public static class World
     public static Vector3 FlatRight(float yaw) => new(MathF.Cos(yaw), 0, MathF.Sin(yaw));
 
     /// <summary>
-    /// Advances one player by exactly one tick of input. This must stay deterministic: the client
-    /// predicts with it and replays it during reconciliation, and the server runs it authoritatively.
+    /// Advances one player by exactly one tick of input, with the current <see cref="Mover"/>. This must stay
+    /// deterministic: the client predicts with it and replays it during reconciliation, and the server runs it authoritatively.
     /// </summary>
-    public static void Simulate(ref MoveState s, in InputCmd cmd)
-    {
-        var b = cmd.Buttons;
-        // Movers (moving platforms): posed at the command's tick, so prediction, replay and the server agree.
-        var movers = Map.Movers.Count > 0;
-        _moverTick = cmd.Tick != 0 ? cmd.Tick : MoverPhysics.Clock;
-        var platformVel = Vector3.Zero;
-        var carried = movers ? MoverPhysics.BeginTick(ref s, _moverTick, HeightOf(s.Stance), out platformVel) : -1;
-        if (s.BoostTicks > 0)
-            s.BoostTicks--;
+    public static void Simulate(ref MoveState s, in InputCmd cmd) => Mover.Simulate(ref s, cmd);
 
-        // Mid-mantle: glide to the ledge, no other control. Memoryless (only ticks left + target),
-        // so the server can send it in snapshots and prediction replays it exactly.
-        if (s.MantleTicks > 0)
-        {
-            s.Position += (s.MantleTo - s.Position) / s.MantleTicks;
-            if (Map.TerrainCollision is { } ground)
-                s.Position.Y = MathF.Max(s.Position.Y, ground.HeightAt(s.Position.X, s.Position.Z)); // don't cut through a bank's edge
-            s.MantleTicks--;
-            s.Velocity = Vector3.Zero;
-            if (s.MantleTicks == 0)
-            {
-                s.Position = s.MantleTo;
-                s.Grounded = true;
-                if ((b & Buttons.Forward) != 0)
-                    s.Velocity = FlatForward(cmd.Yaw) * 3f; // keep going: off the sill and through the window
-            }
-            return;
-        }
-
-        var wish = Vector3.Zero;
-        if ((b & Buttons.Forward) != 0) wish += FlatForward(cmd.Yaw);
-        if ((b & Buttons.Back) != 0) wish -= FlatForward(cmd.Yaw);
-        if ((b & Buttons.Right) != 0) wish += FlatRight(cmd.Yaw);
-        if ((b & Buttons.Left) != 0) wish -= FlatRight(cmd.Yaw);
-        if (wish.LengthSquared() > 0)
-            wish = Vector3.Normalize(wish);
-
-        // Stance: going lower is always allowed, getting up needs headroom (no standing up under a table).
-        var want = (b & Buttons.Prone) != 0 ? Stance.Prone : (b & Buttons.Crouch) != 0 ? Stance.Crouch : Stance.Stand;
-        if (want == Stance.Prone && !s.Grounded)
-            want = Stance.Crouch; // can't go prone in mid-air
-        if (want != s.Stance)
-        {
-            if (HeightOf(want) <= HeightOf(s.Stance) || !MoverPhysics.BlockedAll(s.Position, HeightOf(want), _moverTick))
-                s.Stance = want;
-            else if (want == Stance.Stand && s.Stance == Stance.Prone && !MoverPhysics.BlockedAll(s.Position, HeightOf(Stance.Crouch), _moverTick))
-                s.Stance = Stance.Crouch; // only room to get halfway up
-        }
-
-        var sprint = (b & Buttons.Sprint) != 0 && s.Stance == Stance.Stand;
-        var speed = (sprint ? SprintSpeed : WalkSpeed) * SpeedOf(s.Stance) * (cmd.SpeedPct == 0 ? 1f : cmd.SpeedPct / 100f);
-        if (s.MovePerk == PerkId.LowProfile && s.Stance != Stance.Stand)
-            speed *= Perks.LowProfileSpeed;
-        if (s.BoostTicks > 0)
-            speed *= Perks.BoostSpeed;
-        var control = s.Grounded ? 14f : 3f; // snappy on the ground, floaty in the air
-        var blend = 1f - MathF.Exp(-control * TickDt);
-        s.Velocity.X += (wish.X * speed - s.Velocity.X) * blend;
-        s.Velocity.Z += (wish.Z * speed - s.Velocity.Z) * blend;
-
-        // Jump facing a ledge or window sill (while moving forward) = mantle instead of jumping.
-        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && TryMantle(ref s, cmd.Yaw))
-            return;
-
-        if (s.Grounded && (b & Buttons.Jump) != 0 && s.Stance == Stance.Stand)
-            s.Velocity.Y = JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f);
-
-        s.Position = Move(s.Position, ref s.Velocity, ref s.Grounded, TickDt, HeightOf(s.Stance));
-        if (movers)
-            MoverPhysics.EndTick(ref s, _moverTick, carried, platformVel);
-    }
-
-    /// <summary>The mover tick of the command being simulated (read by <see cref="Move"/>).</summary>
-    private static uint _moverTick;
-
-    private static readonly Stance[] CrouchOnly = [Stance.Crouch];
-    private static readonly Stance[] StandOrCrouch = [Stance.Stand, Stance.Crouch];
     public const float MantleReach = 1.7f; // highest ledge you can climb, above your feet
-
-    /// <summary>
-    /// Looks for a ledge just in front (crate top, wall top, window sill) between step height and
-    /// <see cref="MantleReach"/> with room to stand or crouch on it. Starts the climb if found.
-    /// Windows are 1.3 m tall, so going through one puts you in a crouch on the sill.
-    /// </summary>
-    private static bool TryMantle(ref MoveState s, float yaw)
-    {
-        var f = FlatForward(yaw);
-        var right = FlatRight(yaw);
-        var feet = s.Position;
-        var boxes = Map.Solid;
-        var parkour = s.MovePerk == PerkId.Parkour;
-        var maxReach = parkour ? Perks.ParkourReach : MantleReach;
-        var terrain = Map.TerrainCollision;
-        // Terrain banks are a cell wide or more, so on terrain maps also look a little further for the top.
-        ReadOnlySpan<float> reach = terrain == null ? [0.55f, 0.8f, 1.05f] : [0.55f, 0.8f, 1.05f, 1.35f, 1.65f];
-        ReadOnlySpan<float> side = [0f, 0.15f, -0.15f, 0.3f, -0.3f]; // small sideways nudge to line up with windows
-
-        foreach (var d in reach)
-        {
-            var probe = feet + f * d;
-            // Highest box top under the probe point that's a climbable height.
-            var top = float.NegativeInfinity;
-            if (terrain != null)
-            {
-                // A terrain ledge counts if its top is flat enough to stand on (so you can't mantle up a cliff face).
-                var g = terrain.HeightAt(probe.X, probe.Z);
-                if (g > feet.Y + StepHeight && g <= feet.Y + maxReach && terrain.NormalAt(probe.X, probe.Z).Y >= MinWalkNormalY)
-                    top = g;
-            }
-            if (d <= 1.05f)
-            {
-                // The highest top wins, so the order the boxes are looked at doesn't matter.
-                if (UseGrid)
-                {
-                    var grid = Grid;
-                    foreach (var i in grid.Near(probe.X, probe.Z, probe.X, probe.Z))
-                        top = MantleTop(grid.Boxes[i], probe, feet, maxReach, top);
-                }
-                else
-                {
-                    for (var i = 0; i < boxes.Count; i++)
-                        top = MantleTop(boxes[i], probe, feet, maxReach, top);
-                }
-            }
-            if (float.IsNegativeInfinity(top))
-                continue;
-
-            foreach (var n in side)
-            {
-                var target = ClampToArena(new Vector3(probe.X, top, probe.Z) + right * n);
-                foreach (var stance in s.Stance == Stance.Crouch ? CrouchOnly : StandOrCrouch)
-                {
-                    var h = HeightOf(stance);
-                    // Room at the end, room to rise in place, and room halfway across.
-                    if (Blocked(target, h) || Blocked(feet with { Y = top + 0.01f }, h) || Blocked(Vector3.Lerp(feet, target, 0.5f) with { Y = top + 0.01f }, h))
-                        continue;
-                    s.Stance = stance;
-                    s.MantleTo = target;
-                    var ticks = Math.Clamp((int)(8 + (top - feet.Y) * 9), 10, 28);
-                    s.MantleTicks = (byte)(parkour ? Math.Max(6, ticks / 2) : ticks);
-                    s.Velocity = Vector3.Zero;
-                    s.Grounded = false;
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static float MantleTop(in Box bx, Vector3 probe, Vector3 feet, float maxReach, float top)
-    {
-        if (probe.X < bx.Min.X || probe.X > bx.Max.X || probe.Z < bx.Min.Z || probe.Z > bx.Max.Z)
-            return top;
-        var t = bx.Max.Y;
-        return t > feet.Y + StepHeight && t <= feet.Y + maxReach && t > top ? t : top;
-    }
 
     public static Box Hitbox(Vector3 feet) => Hitbox(feet, Stance.Stand, 0);
 
@@ -355,43 +213,17 @@ public static class World
         };
     }
 
-    /// <summary>Nearest distance at which a ray hits static geometry, boxes, terrain or a mover at its current pose (or maxDist if nothing).</summary>
-    public static float RaycastWorld(Vector3 origin, Vector3 dir, float maxDist)
-    {
-        var best = RaycastBoxes(origin, dir, maxDist);
-        if (Map.TerrainCollision is { } terrain && best > 0)
-            best = MathF.Min(best, terrain.Raycast(origin, dir, best));
-        if (Map.Movers.Count > 0 && best > 0)
-            best = MoverPhysics.Raycast(origin, dir, best, MoverPhysics.Clock);
-        return best;
-    }
+    /// <summary>Nearest distance at which a ray hits static geometry, boxes, terrain or a mover at its current pose (or maxDist if nothing). Shorthand for <see cref="Query"/>.</summary>
+    public static float RaycastWorld(Vector3 origin, Vector3 dir, float maxDist) => Physics.Raycast(origin, dir, maxDist, QueryFilter.All);
 
     /// <summary>
     /// Ray cast for bot navigation: static geometry, with each mover's whole sweep as a solid pillar (so nav graphs
     /// never route through moving platforms and don't depend on where they happen to be).
     /// </summary>
-    public static float RaycastNav(Vector3 origin, Vector3 dir, float maxDist)
-    {
-        var best = RaycastBoxes(origin, dir, maxDist);
-        if (Map.TerrainCollision is { } terrain && best > 0)
-            best = MathF.Min(best, terrain.Raycast(origin, dir, best));
-        if (Map.Movers.Count > 0 && best > 0)
-            best = MoverPhysics.RaycastSweeps(origin, dir, best);
-        return best;
-    }
+    public static float RaycastNav(Vector3 origin, Vector3 dir, float maxDist) => Physics.Raycast(origin, dir, maxDist, QueryFilter.Navigation);
 
     /// <summary>Nearest distance at which a ray hits a box (terrain ignored), or maxDist.</summary>
-    public static float RaycastBoxes(Vector3 origin, Vector3 dir, float maxDist)
-    {
-        if (UseGrid)
-            return Grid.RaycastBoxes(origin, dir, maxDist);
-        var best = maxDist;
-        var boxes = Map.Solid;
-        for (var i = 0; i < boxes.Count; i++)
-            if (boxes[i].Raycast(origin, dir, best) is { } t && t < best)
-                best = t;
-        return best;
-    }
+    public static float RaycastBoxes(Vector3 origin, Vector3 dir, float maxDist) => Physics.Raycast(origin, dir, maxDist, QueryFilter.BoxesOnly);
 
     /// <summary>
     /// Could a player walk in a straight line from <paramref name="from"/> to <paramref name="to"/> (feet positions)?
@@ -450,7 +282,7 @@ public static class World
         {
             var d = b - a;
             var dist = d.Length();
-            return dist < 0.01f || MoverPhysics.RaycastSweeps(a, d / dist, dist) >= dist;
+            return dist < 0.01f || Physics.Raycast(a, d / dist, dist, new QueryFilter(QueryLayers.MoverSweeps)) >= dist;
         }
 
         static bool ClearAll(Vector3 a, Vector3 b)
@@ -461,193 +293,11 @@ public static class World
         }
     }
 
-    /// <summary>
-    /// Moves a player's feet by velocity * dt against every box on the map, one axis at a time:
-    /// land on anything, bump heads on ceilings, slide along walls and walk up steps of up to
-    /// <see cref="StepHeight"/>. Deterministic, so prediction and the server always agree.
-    /// </summary>
-    public static Vector3 Move(Vector3 feet, ref Vector3 velocity, ref bool grounded, float dt, float height = PlayerHeight)
-    {
-        var boxes = Map.Solid;
-        var H = height;
-        var wasGrounded = grounded;
-
-        // ---- Vertical ----
-        velocity.Y -= Gravity * dt;
-        var prevY = feet.Y;
-        var newY = feet.Y + velocity.Y * dt;
-        grounded = false;
-        // The boxes under and over the player, in map order (the grid's short list, or all of them).
-        var grid = UseGrid ? Grid : null;
-        var near = grid != null ? grid.Near(feet.X - PlayerRadius, feet.Z - PlayerRadius, feet.X + PlayerRadius, feet.Z + PlayerRadius) : default;
-        var count = grid != null ? near.Length : boxes.Count;
-        for (var k = 0; k < count; k++)
-        {
-            var b = grid != null ? grid.Boxes[near[k]] : boxes[k];
-            if (!OverlapsXZ(feet, b))
-                continue;
-            if (velocity.Y <= 0 && prevY >= b.Max.Y - 0.02f && newY < b.Max.Y)
-            {
-                newY = b.Max.Y; // landed
-                velocity.Y = 0;
-                grounded = true;
-            }
-            else if (velocity.Y > 0 && prevY + H <= b.Min.Y + 0.02f && newY + H > b.Min.Y)
-            {
-                newY = b.Min.Y - H; // head hit a ceiling
-                velocity.Y = 0;
-            }
-        }
-        if (Map.Movers.Count > 0)
-            MoverPhysics.Vertical(feet, prevY, ref newY, ref velocity, ref grounded, H, _moverTick);
-        feet.Y = newY;
-        if (Map.TerrainCollision is { } terrain)
-            TerrainVertical(terrain, ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
-
-        // ---- Horizontal, X then Z ----
-        feet = MoveAxis(feet, velocity.X * dt, true, ref velocity, grounded, H);
-        feet = MoveAxis(feet, velocity.Z * dt, false, ref velocity, grounded, H);
-        if (Map.Movers.Count > 0)
-            feet = MoverPhysics.PushOut(feet, ref velocity, ref grounded, H, _moverTick); // pushed by (or stepping onto) moving platforms
-
-        return ClampToArena(feet);
-    }
-
-    private static Vector3 MoveAxis(Vector3 feet, float delta, bool alongX, ref Vector3 velocity, bool grounded, float height)
-    {
-        if (delta == 0)
-            return feet;
-        var boxes = Map.Solid;
-        var p = feet;
-        if (alongX)
-            p.X += delta;
-        else
-            p.Z += delta;
-
-        // Only boxes that reach the strip swept by this move can stop it, so walk the grid's short list of those, in
-        // map order. If a wall pushes us back out of the strip (we started inside a box), carry on with every box
-        // after the current one, exactly as a scan over the whole map would.
-        float x0 = MathF.Min(feet.X, p.X) - PlayerRadius, x1 = MathF.Max(feet.X, p.X) + PlayerRadius;
-        float z0 = MathF.Min(feet.Z, p.Z) - PlayerRadius, z1 = MathF.Max(feet.Z, p.Z) + PlayerRadius;
-        var grid = UseGrid ? Grid : null;
-        var near = grid != null ? grid.Near(x0, z0, x1, z1) : default;
-        var k = 0;
-        var i = -1;
-        while (true)
-        {
-            if (grid == null)
-            {
-                if (++i >= boxes.Count)
-                    break;
-            }
-            else
-            {
-                if (k >= near.Length)
-                    break;
-                i = near[k++];
-            }
-            var b = boxes[i];
-            if (p.Y >= b.Max.Y - 0.001f || p.Y + height <= b.Min.Y + 0.001f || !OverlapsXZ(p, b))
-                continue;
-
-            // A step? Climb it if there's room for our head up there.
-            var rise = b.Max.Y - p.Y;
-            if (grounded && rise <= StepHeight && !Blocked(p with { Y = b.Max.Y }, height))
-            {
-                p.Y = b.Max.Y;
-                continue;
-            }
-
-            // A wall: stop at its face.
-            if (alongX)
-            {
-                p.X = delta > 0 ? b.Min.X - PlayerRadius - 0.001f : b.Max.X + PlayerRadius + 0.001f;
-                velocity.X = 0;
-            }
-            else
-            {
-                p.Z = delta > 0 ? b.Min.Z - PlayerRadius - 0.001f : b.Max.Z + PlayerRadius + 0.001f;
-                velocity.Z = 0;
-            }
-            if (grid != null && (p.X - PlayerRadius < x0 || p.X + PlayerRadius > x1 || p.Z - PlayerRadius < z0 || p.Z + PlayerRadius > z1))
-                grid = null; // out of the strip: every remaining box from here on
-        }
-
-        // Terrain rising in front: walk up it if it's gentle (and there's headroom), otherwise it's a wall.
-        if (Map.TerrainCollision is { } terrain)
-        {
-            var g = terrain.HeightAt(p.X, p.Z);
-            if (g > p.Y + 0.001f)
-            {
-                if (g - p.Y <= StepHeight && terrain.NormalAt(p.X, p.Z).Y >= MinWalkNormalY && !BlockedByBoxes(p with { Y = g }, height))
-                    p.Y = g;
-                else
-                {
-                    p = feet; // no progress along this axis this tick
-                    if (alongX)
-                        velocity.X = 0;
-                    else
-                        velocity.Z = 0;
-                }
-            }
-        }
-        return p;
-    }
-
-    /// <summary>
-    /// The ground under a player after the vertical move: land on it, stick to it walking downhill (so you don't
-    /// hop down slopes), and slide off anything steeper than <see cref="MaxSlopeDeg"/>.
-    /// </summary>
-    private static void TerrainVertical(ITerrainCollision terrain, ref Vector3 feet, ref Vector3 velocity, ref bool grounded, bool wasGrounded, float height, float dt)
-    {
-        var g = terrain.HeightAt(feet.X, feet.Z);
-        var gap = feet.Y - g;
-        if (gap > 0)
-        {
-            // In the air above the ground: snap down only when we were walking on it last tick and it's walkable.
-            var speed = MathF.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
-            if (grounded || !wasGrounded || velocity.Y > 0 || gap > 0.12f + speed * dt * 1.2f)
-                return;
-            if (terrain.NormalAt(feet.X, feet.Z).Y < MinWalkNormalY || BlockedByBoxes(feet with { Y = g }, height))
-                return;
-        }
-        var n = terrain.NormalAt(feet.X, feet.Z);
-        feet.Y = g;
-        if (velocity.Y < 0)
-            velocity.Y = 0;
-        if (n.Y >= MinWalkNormalY)
-            grounded = true;
-        else if (!grounded)
-        {
-            // Too steep to stand on: gravity pulls you down the slope.
-            var push = Gravity * n.Y * dt;
-            velocity.X += n.X * push;
-            velocity.Z += n.Z * push;
-        }
-    }
-
-    /// <summary>Would a player standing at <paramref name="feet"/> overlap any box, or be under the terrain?</summary>
-    public static bool Blocked(Vector3 feet, float height = PlayerHeight)
-    {
-        if (Map.TerrainCollision is { } terrain && terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
-            return true;
-        return BlockedByBoxes(feet, height);
-    }
+    /// <summary>Would a player standing at <paramref name="feet"/> overlap any box, or be under the terrain? (The classic body check.)</summary>
+    public static bool Blocked(Vector3 feet, float height = PlayerHeight) => Physics.Blocked(feet, height);
 
     /// <summary>Would a player standing at <paramref name="feet"/> overlap any box (terrain ignored)?</summary>
-    public static bool BlockedByBoxes(Vector3 feet, float height = PlayerHeight)
-    {
-        if (UseGrid)
-            return Grid.BlockedByBoxes(feet, height);
-        var boxes = Map.Solid;
-        for (var i = 0; i < boxes.Count; i++)
-        {
-            var b = boxes[i];
-            if (feet.Y < b.Max.Y - 0.001f && feet.Y + height > b.Min.Y + 0.001f && OverlapsXZ(feet, b))
-                return true;
-        }
-        return false;
-    }
+    public static bool BlockedByBoxes(Vector3 feet, float height = PlayerHeight) => Physics.BlockedByBoxes(feet, height);
 
     public static Vector3 ClampToArena(Vector3 feet)
     {
@@ -663,12 +313,6 @@ public static class World
             feet.Y = Math.Clamp(feet.Y, -5, 60);
         return feet;
     }
-
-    private static bool OverlapsXZ(Vector3 feet, Box box) =>
-        feet.X + PlayerRadius > box.Min.X
-        && feet.X - PlayerRadius < box.Max.X
-        && feet.Z + PlayerRadius > box.Min.Z
-        && feet.Z - PlayerRadius < box.Max.Z;
 
     public static float WrapAngle(float a)
     {

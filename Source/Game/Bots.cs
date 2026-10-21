@@ -214,7 +214,7 @@ public sealed partial class Game
         var dist = d.Length();
         if (dist < 0.01f)
             return true;
-        if (World.RaycastWorld(from, d / dist, dist) < dist - 0.05f)
+        if (World.Query.Raycast(from, d / dist, dist, QueryFilter.All) < dist - 0.05f)
             return false;
         return !SmokeBlocks(from, to, Brutal.GlfwApi.Glfw.Time); // bots can't see through smoke either
     }

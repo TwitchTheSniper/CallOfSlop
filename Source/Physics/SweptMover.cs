@@ -1,0 +1,412 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// A swept capsule character controller (server setting physics=swept). Each tick it gathers the shapes around the player
+/// once (boxes, oriented boxes, mesh and terrain triangles, movers at the command's tick) and then only does capsule casts
+/// against that list:
+/// <list type="bullet">
+/// <item>sweep and slide: cast along the move, stop short of the contact, slide the rest along the surface (up to 4 times,
+/// following creases between two surfaces), so it never tunnels, even at sprint speed into a thin wall;</item>
+/// <item>step-up: blocked by a wall while walking, it tries up <see cref="StepUp"/>, forward, then down, and keeps
+/// that if it lands on walkable ground further along;</item>
+/// <item>ground snap: walking off a stair or down a slope keeps it on the ground (down to <see cref="SnapDown"/>);</item>
+/// <item>slopes: ground whose normal is within <see cref="World.MaxSlopeDeg"/> of "up" is walkable; steeper ground is a wall
+/// when walking and something you slide down otherwise;</item>
+/// <item>stances: stand and crouch are capsules of radius <see cref="World.PlayerRadius"/>, 1.8 and 1.2 m tall; prone is a
+/// 0.6 m ball of radius 0.3. Getting up needs room for the taller capsule;</item>
+/// <item>mantling: the classic ledge search with capsule room checks, then the same glide;</item>
+/// <item>movers: carried and given momentum like the classic mover (<see cref="MoverPhysics.BeginTick"/>, EndTick), pushed by
+/// them through depenetration at the start of the tick, never crushed (it is lifted clear).</item>
+/// </list>
+/// "Up" and gravity come from <see cref="PhysicsWorld.Gravity"/> at the player's feet, not a fixed -Y: a later gravity system can
+/// change them per zone. Deterministic: plain float maths on sorted shape lists, no state outside <see cref="MoveState"/>.
+/// </summary>
+public sealed class SweptMover : IMover
+{
+    public static readonly SweptMover Instance = new();
+
+    public PhysicsMode Mode => PhysicsMode.Swept;
+
+    /// <summary>How far down walking players are kept on the ground (stairs, slopes).</summary>
+    public const float SnapDown = World.StepHeight;
+
+    /// <summary>
+    /// How far the step-up lifts the capsule. Its round bottom then rolls over about 0.1 m more, so the effective step is about
+    /// 0.6 m: 0.55 m steps climb, 0.70 m steps block (the same as the classic mover for every step a map uses).
+    /// </summary>
+    public const float StepUp = World.StepHeight - 0.05f;
+
+    /// <summary>The step-up's forward probe goes at least this far, so the capsule's round bottom gets onto the step.</summary>
+    public const float MinStepForward = 0.2f;
+
+    public const float ProneRadius = 0.3f;
+
+    private const int SlideIterations = 4;
+    private const float Skin = CapsuleContact.Skin;
+
+    private readonly List<ContactShape> _shapes = new();
+    private readonly Func<Vector3, Stance, bool> _roomForLedge;
+    private Vector3 _up = Vector3.UnitY;
+    private uint _tick;
+
+    /// <summary>Optional per-tick statistics for the self-test (casts made).</summary>
+    public int Casts;
+
+    private SweptMover()
+    {
+        _roomForLedge = (feet, stance) => !World.Physics.OverlapCapsule(CapsuleAt(feet, stance, _up), new QueryFilter(QueryLayers.Static | QueryLayers.Movers, _tick));
+    }
+
+    /// <summary>Capsule radius of a stance.</summary>
+    public static float RadiusOf(Stance s) => s == Stance.Prone ? ProneRadius : World.PlayerRadius;
+
+    /// <summary>The body capsule of a stance standing at <paramref name="feet"/> with the given up direction.</summary>
+    public static Capsule CapsuleAt(Vector3 feet, Stance stance, Vector3 up)
+    {
+        var r = RadiusOf(stance);
+        var h = World.HeightOf(stance);
+        return new Capsule(feet + up * r, feet + up * MathF.Max(r, h - r), r);
+    }
+
+    private Span<ContactShape> Shapes => System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_shapes);
+
+    public void Simulate(ref MoveState s, in InputCmd cmd)
+    {
+        var map = World.Map;
+        var phys = World.Physics;
+        var b = cmd.Buttons;
+        var movers = map.Movers.Count > 0;
+        _tick = cmd.Tick != 0 ? cmd.Tick : MoverPhysics.Clock;
+        var platformVel = Vector3.Zero;
+        var carried = movers ? MoverPhysics.BeginTick(ref s, _tick, World.HeightOf(s.Stance), out platformVel) : -1;
+        if (s.BoostTicks > 0)
+            s.BoostTicks--;
+
+        if (s.MantleTicks > 0)
+        {
+            ClassicMover.MantleGlide(ref s, b, cmd.Yaw);
+            return;
+        }
+
+        // Up and gravity at the feet (one uniform field today).
+        var g = phys.Gravity.GravityAt(s.Position);
+        var gLen = g.Length();
+        var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
+        _up = up;
+        var dt = World.TickDt;
+
+        // Everything the capsule can touch this tick, gathered once.
+        var reach = s.Velocity.Length() * dt + World.StepHeight + SnapDown + MinStepForward + 0.5f;
+        var lo = Vector3.Min(s.Position, s.Position + up * World.PlayerHeight) - new Vector3(reach);
+        var hi = Vector3.Max(s.Position, s.Position + up * World.PlayerHeight) + new Vector3(reach);
+        phys.Gather(lo, hi, new QueryFilter(QueryLayers.Static | QueryLayers.Movers, _tick), _shapes);
+
+        // Pushed by movers (or spawned a hair inside something): get clear first.
+        s.Position = Unstick(s.Position, s.Stance);
+
+        // Stance: going lower is always allowed, getting up needs room for the taller capsule.
+        var want = MoveInput.WantedStance(b, s.Grounded);
+        if (want != s.Stance)
+        {
+            if (World.HeightOf(want) <= World.HeightOf(s.Stance) || TryFit(ref s.Position, want))
+                s.Stance = want;
+            else if (want == Stance.Stand && s.Stance == Stance.Prone && TryFit(ref s.Position, Stance.Crouch))
+                s.Stance = Stance.Crouch;
+        }
+
+        // Steering: the same input response as the classic mover, in the plane across "up".
+        var wish = Flatten(MoveInput.Wish(b, cmd.Yaw), up);
+        var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
+        var control = s.Grounded ? 14f : 3f;
+        var blend = 1f - MathF.Exp(-control * dt);
+        var vUp = Vector3.Dot(s.Velocity, up);
+        var vFlat = s.Velocity - up * vUp;
+        vFlat += (wish * speed - vFlat) * blend;
+        s.Velocity = vFlat + up * vUp;
+
+        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone
+            && ClassicMover.FindLedge(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge))
+        {
+            ClassicMover.StartMantle(ref s, ledgeStance, ledgeTarget, ledgeTop);
+            return;
+        }
+
+        var jumped = false;
+        if (s.Grounded && (b & Buttons.Jump) != 0 && s.Stance == Stance.Stand)
+        {
+            s.Velocity = vFlat + up * (World.JumpSpeed * (s.MovePerk == PerkId.Parkour ? Perks.ParkourJump : 1f));
+            s.Grounded = false;
+            jumped = true;
+        }
+
+        if (s.Grounded)
+        {
+            // Walking: no gravity builds up; move across the ground, step up, then stay on the ground.
+            s.Velocity = vFlat;
+            s.Position = Walk(s.Position, vFlat * dt, s.Stance, ref s.Velocity);
+            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown);
+        }
+        else
+        {
+            s.Velocity += g * dt;
+            s.Position = Fly(s.Position, s.Velocity * dt, s.Stance, ref s.Velocity, ref s.Grounded);
+            if (!s.Grounded && !jumped && Vector3.Dot(s.Velocity, up) <= 0)
+            {
+                // Resting on something walkable a hair below?
+                if (Snap(ref s.Position, s.Stance, Skin * 2))
+                {
+                    s.Grounded = true;
+                    var down = Vector3.Dot(s.Velocity, up);
+                    if (down < 0)
+                        s.Velocity -= up * down;
+                }
+            }
+        }
+
+        s.Position = Clamp(phys, s.Position);
+        if (movers)
+            MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
+    }
+
+    /// <summary>The vector without its component along up (zero stays zero).</summary>
+    private static Vector3 Flatten(Vector3 v, Vector3 up)
+    {
+        if (up == Vector3.UnitY)
+            return new Vector3(v.X, 0, v.Z);
+        var f = v - up * Vector3.Dot(v, up);
+        var len = f.Length();
+        return len > 1e-6f ? f * (v.Length() / len) : Vector3.Zero;
+    }
+
+    private bool Fits(Vector3 feet, Stance stance)
+    {
+        var c = CapsuleAt(feet, stance, _up);
+        return !CapsuleContact.Overlaps(Shapes, c.A, c.B, c.Radius, 1e-3f);
+    }
+
+    /// <summary>
+    /// Room for a taller stance here, or a hair away (prone is narrower: getting up beside a wall nudges you off it by up to
+    /// 12 cm across the ground)? Moves the feet if needed.
+    /// </summary>
+    private bool TryFit(ref Vector3 feet, Stance stance)
+    {
+        if (Fits(feet, stance))
+            return true;
+        var c = CapsuleAt(feet, stance, _up);
+        var push = CapsuleContact.Depenetrate(Shapes, c.A, c.B, c.Radius, 3, out var clear);
+        if (!clear || push.Length() > 0.12f || MathF.Abs(Vector3.Dot(push, _up)) > 0.01f || !Fits(feet + push, stance))
+            return false;
+        feet += push;
+        return true;
+    }
+
+    private bool Cast(Vector3 feet, Stance stance, Vector3 dir, float dist, out float toi, out Vector3 normal)
+    {
+        Casts++;
+        var c = CapsuleAt(feet, stance, _up);
+        return CapsuleContact.Cast(Shapes, c.A, c.B, c.Radius, dir, dist, out toi, out normal, out _, out _);
+    }
+
+    /// <summary>Out of anything the capsule overlaps; if squeezed, lifted until it fits (up to 4 m), like the classic mover's Unstick.</summary>
+    private Vector3 Unstick(Vector3 feet, Stance stance)
+    {
+        var c = CapsuleAt(feet, stance, _up);
+        if (!CapsuleContact.Overlaps(Shapes, c.A, c.B, c.Radius, 1e-3f))
+            return feet;
+        var push = CapsuleContact.Depenetrate(Shapes, c.A, c.B, c.Radius, 4, out var clear);
+        if (clear)
+            return feet + push;
+        for (var lift = 0.25f; lift <= 4f; lift += 0.25f)
+            if (Fits(feet + _up * lift, stance))
+                return feet + _up * lift;
+        return feet + push;
+    }
+
+    /// <summary>
+    /// Moves across the ground by <paramref name="disp"/> (across "up"): sweep and slide; if a wall (or too steep a slope)
+    /// stopped it, try stepping up onto it. Walkable slopes are followed (the slide turns the move up or down them).
+    /// </summary>
+    private Vector3 Walk(Vector3 feet, Vector3 disp, Stance stance, ref Vector3 velocity)
+    {
+        var slid = Slide(feet, disp, stance, true, ref velocity, out var wall);
+        if (wall > -0.2f || disp.LengthSquared() < 1e-12f)
+            return slid; // no wall, or only brushing along one
+
+        // Step up: as high as the step height allows (less under a ceiling), forward, then back down onto the step.
+        var up = _up;
+        var rise = StepUp;
+        if (Cast(feet, stance, up, rise, out var t, out _))
+            rise = t;
+        if (rise < 0.05f)
+            return slid;
+        var raised = feet + up * rise;
+        var len = disp.Length();
+        var dir = disp / len;
+        var fwd = MathF.Max(len, MinStepForward);
+        var stepVel = velocity;
+        var ahead = Slide(raised, dir * fwd, stance, true, ref stepVel, out _);
+        if (!Cast(ahead, stance, -up, rise + World.StepHeight, out var down, out var n) || Vector3.Dot(n, up) < World.MinWalkNormalY)
+            return slid;
+        var landed = ahead - up * down;
+        // Only worth it if it got further along than the plain slide.
+        if (Vector3.Dot(landed - feet, dir) <= Vector3.Dot(slid - feet, dir) + 1e-3f)
+            return slid;
+        velocity = stepVel;
+        return landed;
+    }
+
+    /// <summary>In the air: sweep and slide the full move; landing on walkable ground ends the fall.</summary>
+    private Vector3 Fly(Vector3 feet, Vector3 disp, Stance stance, ref Vector3 velocity, ref bool grounded)
+    {
+        var up = _up;
+        Span<Vector3> planes = stackalloc Vector3[SlideIterations];
+        var count = 0;
+        for (var i = 0; i < SlideIterations; i++)
+        {
+            var len = disp.Length();
+            if (len < 1e-6f)
+                break;
+            var dir = disp / len;
+            if (!Cast(feet, stance, dir, len, out var toi, out var n))
+            {
+                feet += disp;
+                break;
+            }
+            feet += dir * toi;
+            disp = dir * (len - toi);
+            if (Vector3.Dot(n, up) >= World.MinWalkNormalY && Vector3.Dot(velocity, up) <= 0)
+            {
+                // Landed: the fall stops, the rest of the move carries on along the ground.
+                grounded = true;
+                velocity -= up * Vector3.Dot(velocity, up);
+            }
+            velocity = Clip(velocity, n);
+            disp = ClipMove(disp, n, planes, count);
+            if (count < planes.Length)
+                planes[count++] = n;
+        }
+        return feet;
+    }
+
+    /// <summary>
+    /// Sweep and slide along the ground plane. A surface steeper than the slope limit (a wall) counts as vertical, so sliding
+    /// along it never lifts the player; walkable surfaces are slid along as they are (walking up a ramp).
+    /// </summary>
+    /// <param name="wall">How squarely the move ran into a wall: the lowest dot of the move direction with a wall's normal (0 = none).</param>
+    private Vector3 Slide(Vector3 feet, Vector3 disp, Stance stance, bool walking, ref Vector3 velocity, out float wall)
+    {
+        wall = 0;
+        var up = _up;
+        Span<Vector3> planes = stackalloc Vector3[SlideIterations];
+        var count = 0;
+        for (var i = 0; i < SlideIterations; i++)
+        {
+            var len = disp.Length();
+            if (len < 1e-6f)
+                break;
+            var dir = disp / len;
+            if (!Cast(feet, stance, dir, len, out var toi, out var n))
+            {
+                feet += disp;
+                break;
+            }
+            feet += dir * toi;
+            disp = dir * (len - toi);
+            var ny = Vector3.Dot(n, up);
+            if (walking && ny < World.MinWalkNormalY)
+            {
+                // Walls and too-steep slopes: slide along them horizontally (a ceiling edge: straight back).
+                var flat = n - up * ny;
+                var fl = flat.Length();
+                n = fl > 1e-4f ? flat / fl : -dir;
+                wall = MathF.Min(wall, Vector3.Dot(dir, n));
+                velocity = Clip(velocity, n);
+            }
+            disp = ClipMove(disp, n, planes, count);
+            if (count < planes.Length)
+                planes[count++] = n;
+        }
+        return feet;
+    }
+
+    /// <summary>Removes the part of a velocity going into a surface.</summary>
+    private static Vector3 Clip(Vector3 v, Vector3 n)
+    {
+        var into = Vector3.Dot(v, n);
+        return into < 0 ? v - n * into : v;
+    }
+
+    /// <summary>The rest of a move after touching a surface: along it, and along the crease if it also runs into an earlier one.</summary>
+    private static Vector3 ClipMove(Vector3 disp, Vector3 n, ReadOnlySpan<Vector3> planes, int count)
+    {
+        var d = Clip(disp, n);
+        for (var k = 0; k < count; k++)
+        {
+            var p = planes[k];
+            if (Vector3.Dot(d, p) >= -1e-6f || Vector3.Dot(p, n) > 0.999f)
+                continue;
+            // Into an earlier surface too: only the crease between the two is free.
+            var crease = Vector3.Cross(p, n);
+            var cl = crease.Length();
+            if (cl < 1e-5f)
+                return Vector3.Zero;
+            crease /= cl;
+            d = crease * Vector3.Dot(disp, crease);
+            for (var j = 0; j < count; j++)
+                if (j != k && Vector3.Dot(d, planes[j]) < -1e-6f)
+                    return Vector3.Zero; // a corner: stuck this tick
+            return d;
+        }
+        return d;
+    }
+
+    /// <summary>
+    /// Keeps a walking player on the ground: casts down up to <paramref name="dist"/>; on walkable ground it moves there and
+    /// returns true. Nothing walkable below: the player is falling (or sliding).
+    /// </summary>
+    private bool Snap(ref Vector3 feet, Stance stance, float dist)
+    {
+        if (!Cast(feet, stance, -_up, dist, out var t, out var n))
+            return false;
+        if (Vector3.Dot(n, _up) >= World.MinWalkNormalY)
+        {
+            feet -= _up * t;
+            return true;
+        }
+        // Resting on an edge (walking off a stair) or a steep bit: slide the rest of the way down along it, then look for
+        // walkable ground once more, never further down than dist in all.
+        var p = feet - _up * t;
+        var rest = dist - t;
+        var along = -_up - n * Vector3.Dot(-_up, n);
+        var len = along.Length();
+        if (rest < 0.02f || len < 0.1f)
+            return false;
+        along /= len;
+        var step = rest;
+        if (Cast(p, stance, along, step, out var t2, out _))
+            step = t2;
+        var q = p + along * step;
+        var left = dist - Vector3.Dot(feet - q, _up);
+        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3) || Vector3.Dot(n3, _up) < World.MinWalkNormalY)
+            return false;
+        feet = q - _up * t3;
+        return true;
+    }
+
+    /// <summary>The arena bounds, and never far under the terrain (a safety net; casts keep players on top of it).</summary>
+    private static Vector3 Clamp(PhysicsWorld phys, Vector3 feet)
+    {
+        feet.X = Math.Clamp(feet.X, -phys.HalfX + World.PlayerRadius, phys.HalfX - World.PlayerRadius);
+        feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.PlayerRadius, phys.HalfZ - World.PlayerRadius);
+        if (phys.Terrain is { } terrain)
+        {
+            feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
+            feet.Y = MathF.Max(feet.Y, terrain.HeightAt(feet.X, feet.Z) - 0.3f);
+        }
+        else
+            feet.Y = Math.Clamp(feet.Y, -5, 60);
+        return feet;
+    }
+}

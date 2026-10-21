@@ -841,6 +841,7 @@ public static unsafe partial class Program
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
             _session.Mode = _settings.Mode; // clients learn the host's mode from the server
+            World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
             if (kind == LobbyAction.Host)
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
@@ -1253,7 +1254,7 @@ public static unsafe partial class Program
             if (_game.SkipsLoadout && _game.Local is not { Deaths: > 0 })
                 _deathMenuAt = now; // Gun Game, just joined: no death to show, straight in
             if (_game.Local is { } me)
-                _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, World.RaycastWorld);
+                _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, (o, d, max) => World.Query.Raycast(o, d, max, QueryFilter.All));
         }
         if (!deadNow)
         {

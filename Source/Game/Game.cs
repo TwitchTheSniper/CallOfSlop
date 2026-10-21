@@ -148,7 +148,7 @@ public sealed partial class Game : IDisposable
             World.SetMap(Maps.Get(mapId)); // clients get the map from the server's Welcome
             // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
             _ = World.Map.Objectives;
-            _ = World.Grid;
+            _ = World.Physics;
             NavSearch.Prepare();
         }
         Net = net;
@@ -445,7 +445,7 @@ public sealed partial class Game : IDisposable
         for (var i = 0; i < def.Pellets; i++)
         {
             var d = Weapons.SpreadDirection(dir, spread, seed, i);
-            var dist = World.RaycastWorld(origin, d, World.Range);
+            var dist = World.Query.Raycast(origin, d, World.Range, QueryFilter.All);
             foreach (var other in Players.Values)
             {
                 if (other.Id == LocalId || !other.Alive)
@@ -1127,7 +1127,7 @@ public sealed partial class Game : IDisposable
         for (var i = 0; i < def.Pellets; i++)
         {
             var d = Weapons.SpreadDirection(dir, spread, seed, i);
-            var dist = World.RaycastWorld(origin, d, World.Range);
+            var dist = World.Query.Raycast(origin, d, World.Range, QueryFilter.All);
             var turret = StreakRaycast(origin, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
@@ -1232,7 +1232,8 @@ public sealed partial class Game : IDisposable
                 PlaceWaiting(p, now);
                 _clients[sender.G] = (sender, newId);
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
-                    .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length));
+                    .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
+                    .U8((byte)World.PhysicsMode); // protocol 13: which movement to predict with
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 if (VoteOpen)
@@ -1391,6 +1392,7 @@ public sealed partial class Game : IDisposable
                     Disconnected = true;
                     break;
                 }
+                World.PhysicsMode = r.Has(1) && r.U8() == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic; // predict with the host's movement
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.

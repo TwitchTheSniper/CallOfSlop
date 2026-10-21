@@ -178,7 +178,7 @@ public sealed class NavGraph
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
-        var c = World.Grid; // the boxes in a grid: every probe below tests only the boxes nearby (map is World.Map)
+        var c = World.Physics; // the map's collision world: every probe below goes through its BVH (map is World.Map)
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
 
@@ -315,13 +315,13 @@ public sealed class NavGraph
     }
 
     /// <summary>Adds a node for every surface a player can stand on at grid point (x, z).</summary>
-    private static void AddColumn(Map map, CollisionGrid c, List<Vector3> nodes, float x, float z, float s, float top)
+    private static void AddColumn(Map map, PhysicsWorld c, List<Vector3> nodes, float x, float z, float s, float top)
     {
         Span<float> heights = stackalloc float[16];
         var n = 0;
         var columnStart = nodes.Count;
         // Whatever the world says is the highest ground here (covers non-box ground too).
-        var t = MoverPhysics.NavRaycast(c, new Vector3(x, top, z), -Vector3.UnitY, top + 6f);
+        var t = c.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 6f, QueryFilter.Navigation);
         if (t > 0.001f && t < top + 6f)
             heights[n++] = top - t;
         n += c.TopsAt(x, z, top, heights[n..]); // the top of every box over this point
@@ -339,7 +339,7 @@ public sealed class NavGraph
     }
 
     /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
-    private static Vector3? Place(Map map, CollisionGrid col, Vector3 p, float spread)
+    private static Vector3? Place(Map map, PhysicsWorld col, Vector3 p, float spread)
     {
         ReadOnlySpan<float> offsets = [0f, 0.3f, -0.3f];
         foreach (var ox in offsets)
@@ -362,16 +362,16 @@ public sealed class NavGraph
     /// Height of the first surface below (x, fromY, z) within <paramref name="depth"/>: NaN if there's none,
     /// +infinity if the start point is already inside something (a wall too tall to climb).
     /// </summary>
-    private static float Ground(CollisionGrid c, float x, float z, float fromY, float depth)
+    private static float Ground(PhysicsWorld c, float x, float z, float fromY, float depth)
     {
-        var t = MoverPhysics.NavRaycast(c, new Vector3(x, fromY, z), -Vector3.UnitY, depth);
+        var t = c.Raycast(new Vector3(x, fromY, z), -Vector3.UnitY, depth, QueryFilter.Navigation);
         if (t >= depth)
             return float.NaN;
         return t < 0.001f ? float.PositiveInfinity : fromY - t;
     }
 
     /// <summary>Links nodes i and j where a player can walk between them. False if they were rejected without a walk (cheap).</summary>
-    private static bool TryLink(NavGraph g, CollisionGrid c, int i, int j, List<(int, int, float, byte, Vector3)> edges)
+    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges)
     {
         var a = g.Nodes[i];
         var b = g.Nodes[j];
@@ -420,7 +420,7 @@ public sealed class NavGraph
     /// Can a player walk the straight line a -> b (and b -> a)? Samples the ground every <see cref="SampleStep"/>,
     /// allowing steps, mantles and drops, and checks there's room for the body above the step height.
     /// </summary>
-    private static void Walk(CollisionGrid c, Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
+    private static void Walk(PhysicsWorld c, Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
         out Vector3 fLedge, out Vector3 bLedge)
     {
         forward = backward = false;
@@ -604,7 +604,7 @@ public sealed class NavGraph
         {
             var d = to - from;
             var len = d.Length();
-            return len < 0.01f || World.RaycastNav(from, d / len, len) >= len - 0.05f;
+            return len < 0.01f || World.Query.Raycast(from, d / len, len, QueryFilter.Navigation) >= len - 0.05f;
         }
         var knee = new Vector3(0, 0.6f, 0);
         var chest = new Vector3(0, 1.3f, 0);
@@ -640,14 +640,14 @@ public sealed class NavGraph
         MainNodes = Enumerable.Range(0, Nodes.Length).Where(i => Component[i] == MainComponent).ToArray();
     }
 
-    private static byte OpennessAt(CollisionGrid c, Vector3 feet)
+    private static byte OpennessAt(PhysicsWorld c, Vector3 feet)
     {
         var eye = feet + new Vector3(0, World.EyeHeight, 0);
         var open = 0;
         for (var k = 0; k < 8; k++)
         {
             var a = k * MathF.Tau / 8;
-            if (MoverPhysics.NavRaycast(c, eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f) >= 25f)
+            if (c.Raycast(eye, new Vector3(MathF.Cos(a), 0, MathF.Sin(a)), 25f, QueryFilter.Navigation) >= 25f)
                 open++;
         }
         return (byte)open;

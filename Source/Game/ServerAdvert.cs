@@ -26,7 +26,7 @@ public sealed partial class Game
         {
             _nextInfoUpdate = now + 1;
             var info = new ServerInfo(ServerName, World.Map.Name, (byte)Players.Count, (byte)MapMaxPlayers, (byte)Players.Values.Count(p => p.Bot != null),
-                Phase, GamePort, ServerInfo.ProtocolVersion, Mode);
+                Phase, GamePort, ServerInfo.ProtocolVersion, Mode, World.PhysicsMode);
             Net.SetOfflineInfo(info.Encode());
         }
         if (AdvertiseTo is { } m && now >= _nextHeartbeat)

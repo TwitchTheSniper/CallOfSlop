@@ -64,6 +64,7 @@ public sealed class Settings
     // Matches (single player and hosting)
     public GameMode Mode = GameMode.FreeForAll;
     public int AutoStart; // hosting: start N seconds after the first person readies up (0: wait for everyone)
+    public PhysicsMode Physics = PhysicsMode.Classic; // hosting: player movement (classic, or the swept capsule controller); joiners use the host's
 
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
 
@@ -176,6 +177,7 @@ public sealed class Settings
                     case "master": s.MasterServer = v.Trim(); break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
+                    case "physics" when Enum.TryParse<PhysicsMode>(v, true, out var pm) && Enum.IsDefined(pm): s.Physics = pm; break;
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
@@ -228,6 +230,7 @@ public sealed class Settings
                     $"master={MasterServer}",
                     $"mode={Mode}",
                     $"auto_start={AutoStart}",
+                    $"physics={Physics.ToString().ToLowerInvariant()}",
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",
