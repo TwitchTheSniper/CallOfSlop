@@ -20,6 +20,8 @@ public sealed class ThrowableDef
     public float Fuse; // seconds until it goes off (Frag/Smoke), max flight time otherwise
     public float Radius; // blast / cloud / reveal radius
     public float MaxDamage;
+    /// <summary>Damage falls off as (1 - distance / Radius) to this power: 1 is a straight line, higher drops off faster.</summary>
+    public float Falloff = 1.4f;
     public int PerLife;
     public Vector3 Color;
     public bool IsEquipment => Kind == ThrowableKind.Recon;
@@ -37,15 +39,23 @@ public static class Throwables
     public static readonly ThrowableDef[] All =
     [
         new() { Kind = ThrowableKind.None, Name = "None", Blurb = "Nothing in this slot." },
-        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.2 s fuse, bounces off walls. Kills within about 1.5 m, hurts out to 7 m.",
-            Fuse = 2.2f, Radius = 7f, MaxDamage = 150, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
-        new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast.",
-            Fuse = 6f, Radius = 4.5f, MaxDamage = 110, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },
+        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.2 s fuse, bounces off walls. Kills within about 4 m, hurts out to 9 m.",
+            Fuse = 2.2f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
+        new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast: kills within about 2.5 m, hurts out to 6 m.",
+            Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },
         new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls.",
             Fuse = 8f, Radius = 18f, PerLife = 1, Color = new(0.2f, 0.85f, 0.95f) },
     ];
+
+    /// <summary>Blast damage at <paramref name="dist"/> metres from the centre (before the self and prone multipliers).</summary>
+    public static float BlastDamage(ThrowableDef def, float dist) =>
+        dist >= def.Radius ? 0f : def.MaxDamage * MathF.Pow(1f - dist / def.Radius, def.Falloff);
+
+    /// <summary>Furthest distance (m) at which the blast still does <paramref name="hp"/> damage.</summary>
+    public static float LethalRange(ThrowableDef def, float hp) =>
+        hp >= def.MaxDamage ? 0f : def.Radius * (1f - MathF.Pow(hp / def.MaxDamage, 1f / def.Falloff));
 
     public static ThrowableDef Get(ThrowableKind k) => All[(int)k < All.Length ? (int)k : 0];
 
@@ -316,7 +326,7 @@ public sealed partial class Game
                 // Walls shield you from the blast.
                 if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
                     continue;
-                var dmg = def.MaxDamage * MathF.Pow(1f - dist / def.Radius, 1.4f);
+                var dmg = Throwables.BlastDamage(def, dist);
                 if (victim == owner)
                     dmg *= 0.5f; // your own grenade still hurts
                 if (victim.Sim.Stance == Stance.Prone)

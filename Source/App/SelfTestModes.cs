@@ -202,6 +202,12 @@ public static partial class SelfTest
             Fail("friendly fire hurt a teammate");
         if (selfHp != World.MaxHealth - 30)
             Fail("your own grenade should still hurt you");
+        // Grenades have to be able to get kills (user: "the AoE is not large enough to get kills with").
+        var fragKill = Throwables.LethalRange(Throwables.Get(ThrowableKind.Frag), World.MaxHealth);
+        var impactKill = Throwables.LethalRange(Throwables.Get(ThrowableKind.Impact), World.MaxHealth);
+        Line($"grenades: frag kills within {fragKill:0.0} m of the chest (hurts to {Throwables.Get(ThrowableKind.Frag).Radius:0} m), impact within {impactKill:0.0} m");
+        if (fragKill < 4f || impactKill < 2.3f)
+            Fail($"grenade kill range too small: frag {fragKill:0.0} m (want 4+), impact {impactKill:0.0} m (want 2.3+)");
         if (!killed || game.TeamScore[a.Team] != 1 || game.TeamScore[foe.Team] != 0)
             Fail("an enemy kill didn't score for the team");
         game.SelfTestSpawn(mate);
