@@ -116,7 +116,7 @@ public static unsafe partial class Program
             else if (plain.Length > 0 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1)
-                    _settings.JoinAddress = plain[1];
+                    _settings.JoinAddress = Settings.CleanAddress(plain[1]);
                 if (plain.Length > 2 && ushort.TryParse(plain[2], out var jp))
                     _settings.Port = jp;
                 StartSession(LobbyAction.Join);
@@ -287,6 +287,11 @@ public static unsafe partial class Program
             SmokeStreaks(now);
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeNameTagStep < 3)
+        {
+            SmokeNameTags(now); // Program.NameTags.cs
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -310,8 +315,10 @@ public static unsafe partial class Program
         switch (_smokeStage)
         {
             case 0 when t > 0.8:
-                if (_smokeMap == 0)
+                if (_smokeMap == 0 && _teamSmoke == 0)
                     SmokeShot("loadout_overview");
+                if (_smokeMap == 0 && SmokeTeamsTick(game, now))
+                    break; // the TEAMS window shot (Program.Teams.cs)
                 _smokeStage++;
                 break;
             case 1 when t > 1.0:
@@ -489,10 +496,12 @@ public static unsafe partial class Program
                 _smokeStreakStart = now;
                 _smokeStreakFrames = _smokeFrames;
                 Console.WriteLine($"[smoke] kill streaks: {_game.SmokeCallStreaks(now)}");
+                Console.WriteLine($"[smoke] kill notice: {_game.SmokeKillNearestBot(now)}"); // KillNotices.cs
                 _smokeStreakStep++;
                 break;
             case 1 when t > 0.9:
                 SmokeShot("streak_turret");
+                SmokeShot("killnotice"); // "KILLED <bot>" under the crosshair, and the turret's health bar + HUD readout
                 _smokeStreakStep++;
                 break;
             case 2 when t > KillStreaks.MortarDelay + 0.45:
@@ -763,7 +772,7 @@ public static unsafe partial class Program
 
     private static void CreateWindow()
     {
-        Glfw.ErrorCallback += (code, desc) => Console.WriteLine($"GLFW {code}: {desc}");
+        Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 
@@ -875,6 +884,8 @@ public static unsafe partial class Program
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
+            _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
+            _session.MaxTeamDiff = _settings.TeamMaxDiff;
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -1000,6 +1011,7 @@ public static unsafe partial class Program
                 FpsCounter.Draw(now);
             if (_session is { } g)
             {
+                DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1653,6 +1665,7 @@ public static unsafe partial class Program
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         Gfx.SetCamera(view, proj);
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
+        UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
 
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own

@@ -190,7 +190,8 @@ public sealed partial class Game
 
     private bool KickOneBot()
     {
-        var bot = Players.Values.FirstOrDefault(p => p.Bot != null);
+        // Team modes: a bot from the bigger side, so the newcomer (who gets the smaller side) takes its place.
+        var bot = Players.Values.Where(p => p.Bot != null).OrderByDescending(p => IsTeamMode && p.Team < 2 ? TeamCount(p.Team) : 0).FirstOrDefault();
         if (bot == null)
             return false;
         Players.Remove(bot.Id);

@@ -229,7 +229,10 @@ public sealed partial class Game
 
     // ---- Teams (server) ---------------------------------------------------------------------
 
-    /// <summary>Splits everyone into two even teams: people first (alternating), then bots fill the smaller team.</summary>
+    /// <summary>
+    /// Splits everyone into two teams for a new match: people who picked a side keep it (TeamPick.cs), then people on
+    /// Auto (alternating onto the smaller side), then bots fill the smaller team. Deterministic (by player id).
+    /// </summary>
     private void AssignTeams()
     {
         if (!IsTeamMode)
@@ -239,7 +242,24 @@ public sealed partial class Game
             return;
         }
         Span<int> n = stackalloc int[2];
-        foreach (var p in Players.Values.OrderBy(p => p.Bot != null).ThenBy(p => p.Id))
+        foreach (var p in Players.Values)
+            if (p.Bot != null || TeamSelection == TeamSelection.AutoOnly)
+                p.TeamChoice = NoTeam;
+        // Too many picks on one side (people left, or the host lowered the limit): the newest picks there go back to Auto.
+        for (var guard = 0; guard < Players.Count; guard++)
+        {
+            int p0 = Players.Values.Count(p => p.TeamChoice == 0), p1 = Players.Values.Count(p => p.TeamChoice == 1);
+            var big = (byte)(p0 >= p1 ? 0 : 1);
+            if (!TeamTooBig(big, null))
+                break;
+            Players.Values.Where(p => p.TeamChoice == big).OrderByDescending(p => p.Id).First().TeamChoice = NoTeam;
+        }
+        foreach (var p in Players.Values.Where(p => p.TeamChoice < 2))
+        {
+            p.Team = p.TeamChoice;
+            n[p.Team]++;
+        }
+        foreach (var p in Players.Values.Where(p => p.TeamChoice > 1).OrderBy(p => p.Bot != null).ThenBy(p => p.Id))
         {
             var t = n[0] <= n[1] ? 0 : 1;
             p.Team = (byte)t;
@@ -249,13 +269,13 @@ public sealed partial class Game
 
     private int TeamCount(int team) => Players.Values.Count(p => p.Team == team);
 
-    /// <summary>Gives a newcomer the smaller team (or no team outside team modes).</summary>
+    /// <summary>Gives a newcomer their picked team or else the smaller team (or no team outside team modes).</summary>
     private void EnsureTeam(Player p)
     {
         if (!IsTeamMode)
             p.Team = NoTeam;
         else if (p.Team > 1)
-            p.Team = (byte)(TeamCount(0) <= TeamCount(1) ? 0 : 1);
+            p.Team = p.TeamChoice < 2 ? p.TeamChoice : (byte)(TeamCount(0) <= TeamCount(1) ? 0 : 1);
     }
 
     /// <summary>Spawn points for a player: their team's half of the map in team modes.</summary>
@@ -268,20 +288,31 @@ public sealed partial class Game
         return list.Count > 0 ? list : World.Map.Spawns;
     }
 
-    /// <summary>Someone left and the teams are 2+ apart: move a bot over (a dead one if possible, never a flag carrier).</summary>
-    private void BalanceTeams(double now)
+    /// <summary>
+    /// The teams are 2+ apart (someone left or picked a side): move one player over and return true. A bot first (a dead
+    /// one if possible), else a person on Auto who is dead or between matches. Never someone who picked their team
+    /// (TeamPick.cs), never a flag carrier.
+    /// </summary>
+    private bool BalanceTeams(double now)
     {
         int a = TeamCount(0), b = TeamCount(1);
         if (Math.Abs(a - b) < 2)
-            return;
+            return false;
         var big = (byte)(a > b ? 0 : 1);
-        var bot = Players.Values.Where(p => p.Bot != null && p.Team == big && CarriedFlagOf(p) < 0).OrderBy(p => p.Alive).FirstOrDefault();
+        var bot = Players.Values.Where(p => p.Bot != null && p.Team == big && CarriedFlagOf(p) < 0).OrderBy(p => p.Alive).FirstOrDefault()
+                  ?? Players.Values.Where(p => p.Bot == null && p.TeamChoice > 1 && p.Team == big && CarriedFlagOf(p) < 0 && (!p.Alive || Phase != MatchPhase.Playing))
+                      .OrderByDescending(p => p.Id).FirstOrDefault();
         if (bot == null)
-            return;
+            return false;
         bot.Team = (byte)(1 - big);
         if (bot.Alive && Phase != MatchPhase.Ended)
+        {
             Spawn(bot, ServerTick, now);
+            if (bot.Id == LocalId)
+                OnLocalSpawn(bot);
+        }
         ModeEvent($"{bot.Name} moved to {GameModes.TeamName(bot.Team)} to even the teams", Sfx.HitTick);
+        return true;
     }
 
     // ---- Match flow (server) -------------------------------------------------------------------
@@ -633,7 +664,8 @@ public sealed partial class Game
         w.U8((byte)HillIndex).U8(HillOwner).U8(HillContested ? (byte)1 : (byte)0).F32((float)HillMoveIn);
         foreach (var f in Flags)
             w.Vec(f.Position).U8(f.Carrier).U8(f.Home ? (byte)1 : (byte)0).F32((float)f.ReturnIn);
-        w.U16((ushort)Math.Min(ScoreLimit, ushort.MaxValue)); // protocol 11: the TDM limit; protocol 20: the current mode's score limit
+        w.U16((ushort)Math.Min(ScoreLimit, ushort.MaxValue)); // protocol 11: the TDM limit; protocol 21: the current mode's score limit
+        WriteTeamPicks(w); // protocol 20: team selection rules and picks (TeamPick.cs)
     }
 
     /// <summary>Client: applies a mode state (the message id already read). Stale packets are ignored.</summary>
@@ -680,6 +712,7 @@ public sealed partial class Game
         }
         if (r.Has(2))
             ScoreLimit = r.U16();
+        ReadTeamPicks(ref r); // protocol 20 (TeamPick.cs)
     }
 
     private void OnModePacket(byte id, ref PacketReader r, RakNetGUID sender)
@@ -692,7 +725,7 @@ public sealed partial class Game
             case (byte)Msg.ModeEvent when !IsServer && r.Has(2):
             {
                 var sound = (Sfx)r.U8();
-                Log(r.Str(), true);
+                Log(r.Text(), true); // printable ASCII from the host
                 if (sound < Sfx.COUNT)
                     Audio.Effect(sound, 0.6f);
                 break;

@@ -52,7 +52,7 @@ public sealed class TurretRig
         var eye = friendly ? new Vector3(0.3f, 1f, 0.4f) : new Vector3(1f, 0.15f, 0.1f);
         _eye.Renderable.Color = eye * (lit ? 1.6f : 0.8f);
         _flash.Visible = e.Firing && ((int)(now * 30) & 1) == 0;
-        _bar.Pose(e);
+        _bar.Pose(e, friendly);
     }
 }
 
@@ -109,11 +109,11 @@ public sealed class DroneRig
         var blink = ((int)(now * 3) & 1) == 0;
         _light.Renderable.Color = light * (blink ? 1.6f : 0.5f);
         _flash.Visible = e.Firing && ((int)(now * 30) & 1) == 0;
-        _bar.Pose(e);
+        _bar.Pose(e, friendly);
     }
 }
 
-/// <summary>The small health bar over a damaged turret or drone (hidden at full health).</summary>
+/// <summary>The small health bar over a turret or drone (always shown to friends, to enemies once it's damaged).</summary>
 internal sealed class HealthBarNodes
 {
     private readonly SceneNode _root, _back, _fill;
@@ -126,10 +126,10 @@ internal sealed class HealthBarNodes
         _fill = _root.Add("fill", Matrix4x4.Identity, Renderable.Box(Vector3.One, 1f, 2));
     }
 
-    public void Pose(StreakEntity e)
+    public void Pose(StreakEntity e, bool friendly)
     {
         var f = Math.Clamp(e.Health / (float)e.MaxHealth, 0f, 1f);
-        _root.Visible = f < 0.999f;
+        _root.Visible = f < 0.999f || friendly;
         if (!_root.Visible)
             return;
         _fill.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * f, 0.07f, 0.07f) * Matrix4x4.CreateTranslation(-0.4f * (1 - f), 0, 0));

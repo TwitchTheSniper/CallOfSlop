@@ -87,7 +87,7 @@ public static class ScoreLimits
 /// <summary>
 /// The match's score limit on the server: set from everyone present (people + bots) until play starts, then only
 /// ever raised when someone joins mid-match (never lowered, so a leave can't suddenly hand anyone the win).
-/// Replicated in the mode state (protocol 20).
+/// Replicated in the mode state (protocol 21).
 /// </summary>
 public sealed partial class Game
 {

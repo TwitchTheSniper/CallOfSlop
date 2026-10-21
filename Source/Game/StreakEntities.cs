@@ -32,9 +32,9 @@ public sealed class StreakEntity
     public double LastUpdate;
     public double NextFx;
 
-    public int MaxHealth => Kind == StreakId.SentryTurret ? KillStreaks.TurretHealth : KillStreaks.DroneHealth;
+    public int MaxHealth => Math.Max(1, KillStreaks.Get(Kind).Health); // from the streak's definition (KillStreaks.All)
 
-    /// <summary>What bullets and blasts hit.</summary>
+    /// <summary>What bullets and blasts hit. Turret: 0.9 x 1.2 x 0.9 m, the tripod's footprint up to the top of its head.</summary>
     public Box Hitbox => Kind == StreakId.SentryTurret
         ? new Box(Pos + new Vector3(0, 0.6f, 0), new Vector3(0.45f, 0.6f, 0.45f))
         : new Box(Pos, new Vector3(0.75f, 0.3f, 0.75f));
@@ -316,17 +316,34 @@ public sealed partial class Game
         return best;
     }
 
-    /// <summary>Damages a turret or drone. Returns true if that destroyed it.</summary>
-    private bool DamageStreakEntity(StreakEntity e, Player attacker, int amount, double now)
+    /// <summary>
+    /// Damages a turret or drone by the raw <paramref name="amount"/>, scaled by its definition's bullet or explosive
+    /// multiplier (no headshot bonus ever applies). Returns true if that destroyed it.
+    /// </summary>
+    private bool DamageStreakEntity(StreakEntity e, Player attacker, int amount, double now, DamageKind kind = DamageKind.Bullet)
     {
         if (amount <= 0 || !StreakEntities.ContainsKey(e.Id) || !DamageEnabled)
             return false;
-        e.Health -= amount;
+        e.Health -= StreakEntityDamage(e.Kind, amount, kind);
         if (e.Health > 0)
             return false;
         RemoveStreakEntity(e, attacker.Id, now);
         return true;
     }
+
+    /// <summary>What a raw hit of <paramref name="amount"/> takes off a turret or drone (at least 1 for any hit).</summary>
+    public static int StreakEntityDamage(StreakId kind, int amount, DamageKind damage)
+    {
+        if (amount <= 0)
+            return 0;
+        var def = KillStreaks.Get(kind);
+        var mult = damage == DamageKind.Explosive ? def.ExplosiveDamageMult : def.BulletDamageMult;
+        return Math.Max(1, (int)MathF.Round(amount * mult));
+    }
+
+    /// <summary>Self-test: damages a turret or drone through the server path. Returns true if that destroyed it.</summary>
+    public bool SelfTestDamageStreakEntity(StreakEntity e, Player attacker, int amount, double now, DamageKind kind) =>
+        DamageStreakEntity(e, attacker, amount, now, kind);
 
     /// <summary>Grenade and strike blasts also hurt the turrets and drones of the thrower's enemies (walls shield them too).</summary>
     private void StreakBlastEntities(Player attacker, Vector3 center, float radius, float maxDamage, double now)
@@ -337,7 +354,7 @@ public sealed partial class Game
         {
             if (!Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, attacker))
                 continue;
-            DamageStreakEntity(e, attacker, (int)MathF.Round(BlastDamage(center, e.Hitbox.Center, radius, maxDamage)), now);
+            DamageStreakEntity(e, attacker, (int)MathF.Round(BlastDamage(center, e.Hitbox.Center, radius, maxDamage)), now, DamageKind.Explosive);
         }
     }
 

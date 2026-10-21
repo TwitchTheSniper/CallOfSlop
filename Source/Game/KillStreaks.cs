@@ -37,6 +37,15 @@ public sealed class StreakDef
     public required string Effect; // the full description
     public StreakAim Aim;
     public Vector3 Color;
+
+    /// <summary>Turrets and drones: hit points (0 for streaks that aren't a world object).</summary>
+    public int Health;
+
+    /// <summary>
+    /// Turrets and drones: multipliers on the damage they take from bullets (and melee) and from explosions
+    /// (grenades, strikes, exploding props). Never a headshot multiplier: machines have no head.
+    /// </summary>
+    public float BulletDamageMult = 1f, ExplosiveDamageMult = 1f;
 }
 
 /// <summary>One shell or strafe impact of a called-in strike: when (seconds after the call) and where.</summary>
@@ -181,7 +190,12 @@ public static class KillStreaks
     public const float StrafeDelay = 2.6f, StrafeLength = 50f, StrafeSpeed = 70f, StrafeRadius = 4.2f, StrafeDamage = 110f, StrafeAltitude = 28f;
 
     public const double TurretSeconds = 45;
-    public const int TurretHealth = 260;
+    /// <summary>
+    /// Sentry hit points. Was 260 (11 Vanguard AR body shots). Now 520 and bullets do 60%: a Vanguard AR (24 dmg -> 14)
+    /// needs 38 hits, a full 30-round magazine and then some; explosives do 150%, so grenades and strikes are the counter.
+    /// </summary>
+    public const int TurretHealth = 520;
+    public const float TurretBulletMult = 0.6f, TurretExplosiveMult = 1.5f;
     public const float TurretRange = 40f, TurretConeCos = 0.26f, TurretDamage = 12f, TurretSpread = 0.03f, TurretTurnRate = 3f;
     public const double TurretInterval = 0.13, TurretWarmup = 0.5;
 
@@ -207,11 +221,11 @@ public static class KillStreaks
             Effect = "Look at a spot and press fire. After a short delay 7 shells land around it, each one whistling as it comes in. Walls and roofs shield you.",
             Color = new(1f, 0.5f, 0.2f) },
         new() { Id = StreakId.SentryTurret, Name = "Sentry Turret", Kills = 6, Short = "Auto-turret, 45 s",
-            Effect = "Drops an automatic turret in front of you, facing where you look. It shoots enemies in front of it for 45 seconds, and can be destroyed.",
-            Color = new(0.55f, 0.9f, 0.45f) },
+            Effect = "Drops an automatic turret in front of you, facing where you look. It shoots enemies in front of it for 45 seconds. Armoured: bullets do reduced damage, explosives extra.",
+            Color = new(0.55f, 0.9f, 0.45f), Health = TurretHealth, BulletDamageMult = TurretBulletMult, ExplosiveDamageMult = TurretExplosiveMult },
         new() { Id = StreakId.AttackDrone, Name = "Attack Drone", Kills = 8, Short = "Circling gun drone, 40 s",
             Effect = "A drone circles the map for 40 seconds, firing bursts at any enemy it can see. It can be shot down.",
-            Color = new(0.95f, 0.35f, 0.35f) },
+            Color = new(0.95f, 0.35f, 0.35f), Health = DroneHealth },
         new() { Id = StreakId.StrafeRun, Name = "Strafe Run", Kills = 11, Short = "Jet strafes a line", Aim = StreakAim.Line,
             Effect = "Look at a spot and press fire: a jet strafes a 50 m line through it, along the way you're facing. Roofs shield you.",
             Color = new(1f, 0.3f, 0.6f) },

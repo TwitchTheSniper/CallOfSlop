@@ -31,9 +31,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 18: the Zombies mode: game mode 5, zombie / run / event / parts / build / interact / workbench messages (ZUse..ZBench at
     //     the end of Msg), built weapons replicated to clients as build text, the window-opening collision layer (Clip)
     // 19: Zombies dropped builds: bleeding out drops your built weapons as pickups (ZPickup at the end of Msg: appear / gone)
-    // 20: score limits scale with the player count (ScoreLimits.cs): the mode state's last U16 is the current mode's score
+    // 20: team selection: TeamPick / TeamReply at the end of Msg, the team rules and every player's pick at the end of the mode state
+    // 21: score limits scale with the player count (ScoreLimits.cs): the mode state's last U16 is the current mode's score
     //     limit (free-for-all kills, team kills, hill points or captures), no longer only the TDM kill limit
-    public const byte ProtocolVersion = 20;
+    public const byte ProtocolVersion = 21;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -75,7 +76,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
             if (tail.Length >= 1 + tail[0])
                 rotation = Encoding.ASCII.GetString(tail.Slice(1, tail[0]));
         }
-        return new ServerInfo(name, map, d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0], (GameMode)d[1], physics, rotation);
+        // Anyone can answer a ping: names are capped printable ASCII before the browser shows them.
+        return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0],
+            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24));
     }
 }
 
@@ -152,38 +155,50 @@ public sealed class ServerBrowser : IDisposable
             Refresh(s);
         _net.PollRaw((from, data) =>
         {
-            var ip = from.ToString(false, '|');
-            switch ((DefaultMessageIDTypes)data[0])
+            try
             {
-                case DefaultMessageIDTypes.UnconnectedPong when ServerInfo.Find(data) is { } info && info.Version == ServerInfo.ProtocolVersion:
-                {
-                    var key = $"{ip}:{info.Port}";
-                    var sent = _pingSent.TryGetValue(key, out var t) ? t : _pingSent.GetValueOrDefault($":{info.Port}", _lastRefresh);
-                    var ping = (int)Math.Clamp((Now - sent) * 1000, 1, 9999);
-                    if (_servers.TryGetValue(key, out var e))
-                    {
-                        e.Info = info;
-                        e.PingMs = ping;
-                        e.LastSeen = Now;
-                    }
-                    else
-                    {
-                        _servers[key] = new Entry { Address = ip, Info = info, PingMs = ping, LastSeen = Now, FromMaster = _fromMaster.Contains(key) };
-                    }
-                    break;
-                }
-                case DefaultMessageIDTypes.AdvertiseSystem when MasterServerApp.ParseList(data) is { } list:
-                {
-                    MasterStatus = list.Count == 0 ? "No public games right now." : $"{list.Count} public game(s) listed.";
-                    foreach (var (addr, port) in list)
-                    {
-                        _fromMaster.Add($"{addr}:{port}");
-                        PingServer(addr, port);
-                    }
-                    break;
-                }
+                OnBrowserPacket(from, data);
+            }
+            catch (Exception ex)
+            {
+                NetSafety.Drop("a server-browser reply", data, ex); // a bad reply is dropped, the browser keeps going
             }
         });
+    }
+
+    private void OnBrowserPacket(SystemAddress from, ReadOnlySpan<byte> data)
+    {
+        var ip = from.ToString(false, '|');
+        switch ((DefaultMessageIDTypes)data[0])
+        {
+            case DefaultMessageIDTypes.UnconnectedPong when ServerInfo.Find(data) is { } info && info.Version == ServerInfo.ProtocolVersion:
+            {
+                var key = $"{ip}:{info.Port}";
+                var sent = _pingSent.TryGetValue(key, out var t) ? t : _pingSent.GetValueOrDefault($":{info.Port}", _lastRefresh);
+                var ping = (int)Math.Clamp((Now - sent) * 1000, 1, 9999);
+                if (_servers.TryGetValue(key, out var e))
+                {
+                    e.Info = info;
+                    e.PingMs = ping;
+                    e.LastSeen = Now;
+                }
+                else
+                {
+                    _servers[key] = new Entry { Address = ip, Info = info, PingMs = ping, LastSeen = Now, FromMaster = _fromMaster.Contains(key) };
+                }
+                break;
+            }
+            case DefaultMessageIDTypes.AdvertiseSystem when MasterServerApp.ParseList(data) is { } list:
+            {
+                MasterStatus = list.Count == 0 ? "No public games right now." : $"{list.Count} public game(s) listed.";
+                foreach (var (addr, port) in list)
+                {
+                    _fromMaster.Add($"{addr}:{port}");
+                    PingServer(addr, port);
+                }
+                break;
+            }
+        }
     }
 
     public void Dispose() => _net.Dispose();
@@ -222,7 +237,7 @@ public static class MasterServerApp
             int len = d[p++];
             if (p + len + 2 > d.Length)
                 break;
-            var addr = Encoding.ASCII.GetString(d.Slice(p, len));
+            var addr = NetSafety.CleanText(Encoding.ASCII.GetString(d.Slice(p, len)), 64);
             p += len;
             var port = (ushort)(d[p] | (d[p + 1] << 8));
             p += 2;
@@ -236,35 +251,47 @@ public static class MasterServerApp
     {
         net.PollRaw((from, data) =>
         {
-            if ((DefaultMessageIDTypes)data[0] != DefaultMessageIDTypes.AdvertiseSystem)
-                return;
-            var ip = from.ToString(false, '|');
-            var hb = data.IndexOf(HeartbeatTag);
-            if (hb >= 0 && data.Length >= hb + 6)
+            try
             {
-                var gamePort = (ushort)(data[hb + 4] | (data[hb + 5] << 8));
-                var key = $"{ip}:{gamePort}";
-                if (!games.ContainsKey(key))
-                    Console.WriteLine($"[master] + {key}");
-                games[key] = (ip, gamePort, DateTime.UtcNow);
-                return;
+                OnMasterPacket(net, games, from, data);
             }
-            if (data.IndexOf(ListQuery) >= 0)
+            catch (Exception ex)
             {
-                var reply = new List<byte>(ListTag);
-                var live = games.Values.Where(g => DateTime.UtcNow - g.Seen < TimeSpan.FromSeconds(60)).Take(60).ToList();
-                reply.Add((byte)live.Count);
-                foreach (var g in live)
-                {
-                    var a = Encoding.ASCII.GetBytes(g.Ip);
-                    reply.Add((byte)a.Length);
-                    reply.AddRange(a);
-                    reply.Add((byte)g.Port);
-                    reply.Add((byte)(g.Port >> 8));
-                }
-                net.Advertise(ip, from.DebugPort, reply.ToArray());
+                NetSafety.Drop("a master-server message", data, ex);
             }
         });
+    }
+
+    private static void OnMasterPacket(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, SystemAddress from, ReadOnlySpan<byte> data)
+    {
+        if ((DefaultMessageIDTypes)data[0] != DefaultMessageIDTypes.AdvertiseSystem)
+            return;
+        var ip = from.ToString(false, '|');
+        var hb = data.IndexOf(HeartbeatTag);
+        if (hb >= 0 && data.Length >= hb + 6)
+        {
+            var gamePort = (ushort)(data[hb + 4] | (data[hb + 5] << 8));
+            var key = $"{ip}:{gamePort}";
+            if (!games.ContainsKey(key))
+                Console.WriteLine($"[master] + {key}");
+            games[key] = (ip, gamePort, DateTime.UtcNow);
+            return;
+        }
+        if (data.IndexOf(ListQuery) >= 0)
+        {
+            var reply = new List<byte>(ListTag);
+            var live = games.Values.Where(g => DateTime.UtcNow - g.Seen < TimeSpan.FromSeconds(60)).Take(60).ToList();
+            reply.Add((byte)live.Count);
+            foreach (var g in live)
+            {
+                var a = Encoding.ASCII.GetBytes(g.Ip);
+                reply.Add((byte)a.Length);
+                reply.AddRange(a);
+                reply.Add((byte)g.Port);
+                reply.Add((byte)(g.Port >> 8));
+            }
+            net.Advertise(ip, from.DebugPort, reply.ToArray());
+        }
     }
 
     public static int Run(string[] args)

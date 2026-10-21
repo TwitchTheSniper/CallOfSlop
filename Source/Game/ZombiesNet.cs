@@ -145,9 +145,9 @@ public sealed partial class Game
     {
         if (!r.Has(2))
             return "";
-        int n = r.U16();
+        int n = Math.Min(r.U16(), r.Remaining); // a lying length can't allocate more than the packet holds
         var bytes = new byte[n];
-        for (var i = 0; i < n && r.Has(1); i++)
+        for (var i = 0; i < n; i++)
             bytes[i] = r.U8();
         return Encoding.UTF8.GetString(bytes);
     }
@@ -284,7 +284,7 @@ public sealed partial class Game
                 var kind = (ZEventKind)r.U8();
                 var arg = r.U16();
                 var sound = (Sfx)r.U8();
-                var text = r.Str();
+                var text = r.Text(); // a feed line or banner: printable ASCII
                 switch (kind)
                 {
                     case ZEventKind.Feed:

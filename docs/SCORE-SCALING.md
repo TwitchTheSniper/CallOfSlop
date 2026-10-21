@@ -20,7 +20,7 @@ measurement), lobby option in `Source/UI/UiModes.cs` (`ScoreLimitPicker`), setti
 - **Fixed:** the classic limits whatever the count. (Before this change TDM already scaled crudely: 5 kills per player,
   40 to 100. Fixed is the plain 40.)
 - **HUD:** unchanged layout, the number is the match's limit ("First to 15 kills, win by 2", "first to 60 kills").
-- **Network:** the mode state's last U16 (protocol 11: the TDM limit) is now the current mode's limit: protocol 20.
+- **Network:** the mode state's last U16 (protocol 11: the TDM limit) is now the current mode's limit: protocol 21.
 - **Setting:** host / single player option "Score limit: Auto (scales with players) / Fixed" under the game mode,
   saved as `score_limit=auto|fixed` in settings.txt; files without the line get Auto.
 

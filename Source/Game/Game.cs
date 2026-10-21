@@ -204,7 +204,7 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacket(sender, data, now));
+        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
@@ -1527,6 +1527,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.MapVote:
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
+                break;
+            case (byte)Msg.TeamPick:
+            case (byte)Msg.TeamReply:
+                OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
                 break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);

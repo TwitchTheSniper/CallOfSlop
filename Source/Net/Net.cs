@@ -52,6 +52,8 @@ public enum Msg : byte
     ZBuild, // server -> all: Zombies: a built weapon went into player X's slot (the build's text) (reliable)
     ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, salvage a part, craft a part) (reliable)
     ZPickup, // server -> all (and each joiner): Zombies: a dropped build appeared (where, seconds left, owner, build text) or went (picked up by X / despawned) (reliable)
+    TeamPick, // client -> server: put me on Blue (0), Red (1) or Auto (255) (reliable; the server checks the rules, TeamPick.cs)
+    TeamReply, // server -> one client: the answer to a team pick (accepted / moved flags, team, pick, text) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
@@ -130,7 +132,10 @@ public sealed class PacketWriter
     public void PatchU8(int at, byte v) => _buf[at] = v;
 }
 
-/// <summary>Tiny little-endian packet reader.</summary>
+/// <summary>
+/// Tiny little-endian packet reader. Reading past the end throws <see cref="MalformedPacketException"/> (a short or
+/// garbage packet from another player), which <c>Game.OnPacketSafe</c> turns into a dropped packet and one log line.
+/// </summary>
 public ref struct PacketReader(ReadOnlySpan<byte> data)
 {
     private readonly ReadOnlySpan<byte> _data = data;
@@ -138,16 +143,37 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     public bool Has(int bytes) => _pos + bytes <= _data.Length;
 
-    public byte U8() => _data[_pos++];
+    /// <summary>Bytes left to read.</summary>
+    public int Remaining => _data.Length - _pos;
 
+    private readonly void Need(int bytes)
+    {
+        if (_pos + bytes > _data.Length)
+            Short(bytes, _pos, _data.Length);
+    }
+
+    [System.Diagnostics.CodeAnalysis.DoesNotReturn]
+    private static void Short(int bytes, int at, int length) =>
+        throw new MalformedPacketException($"the packet ended early (wanted {bytes} byte(s) at {at} of {length})");
+
+    public byte U8()
+    {
+        Need(1);
+        return _data[_pos++];
+    }
+
+    /// <summary>Short text (a length byte, then UTF-8). Control characters and NULs are removed; broken UTF-8 becomes U+FFFD.</summary>
     public string Str()
     {
         int n = U8();
         n = Math.Min(n, _data.Length - _pos);
         var s = Encoding.UTF8.GetString(_data.Slice(_pos, n));
         _pos += n;
-        return s;
+        return NetSafety.StripControls(s);
     }
+
+    /// <summary><see cref="Str"/> for showing on screen: printable ASCII, at most <paramref name="max"/> characters.</summary>
+    public string Text(int max = 255) => NetSafety.CleanText(Str(), max);
 
     public uint U24()
     {
@@ -157,6 +183,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     public ushort U16()
     {
+        Need(2);
         var v = BinaryPrimitives.ReadUInt16LittleEndian(_data[_pos..]);
         _pos += 2;
         return v;
@@ -164,6 +191,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     public uint U32()
     {
+        Need(4);
         var v = BinaryPrimitives.ReadUInt32LittleEndian(_data[_pos..]);
         _pos += 4;
         return v;
@@ -171,6 +199,7 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     public float F32()
     {
+        Need(4);
         var v = BinaryPrimitives.ReadSingleLittleEndian(_data[_pos..]);
         _pos += 4;
         return v;
@@ -207,6 +236,9 @@ public sealed unsafe class NetPeer : IDisposable
     }
 
     public static NetPeer Offline() => new(true, offline: true);
+
+    /// <summary>Self-test: a client with no sockets (every send is a no-op), to feed packets to a client game.</summary>
+    public static NetPeer OfflineClient() => new(false, offline: true);
 
     public static NetPeer Host(ushort port, ushort maxClients)
     {

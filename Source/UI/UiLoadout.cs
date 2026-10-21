@@ -209,7 +209,9 @@ public sealed partial class Ui
     {
         if (!MenuOpen)
             return false;
-        return DrawLoadoutScreen(game, game.Audio, now);
+        var deployed = DrawLoadoutScreen(game, game.Audio, now);
+        DrawTeamsWindow(game, now); // the TEAMS window beside it, when open (UiTeams.cs)
+        return deployed;
     }
 
     /// <summary>From the main menu.</summary>
@@ -302,6 +304,7 @@ public sealed partial class Ui
                     }
                     ImGui.SameLine();
                 }
+                TeamsButton(game, backBtn); // team modes: opens the TEAMS window (UiTeams.cs)
                 ReadyButton(game, backBtn); // warmup only (UiModes.cs)
                 if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
                     GoBack();
@@ -515,14 +518,23 @@ public sealed partial class Ui
                 if (ImGui.Button("Rename"u8))
                 {
                     _renameInput ??= new ImInputString(25);
-                    _renameInput.SetValue(l.Name.AsSpan());
+                    ImGuiSafe.SetInput(_renameInput, l.Name);
                     _renaming = true;
                 }
             }
             else
             {
                 ImGui.SetNextItemWidth(240 * _scale);
-                var enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                bool enter;
+                try
+                {
+                    enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                }
+                catch (Exception ex)
+                {
+                    ImGuiSafe.FieldFailed("loadout name", ex);
+                    enter = false;
+                }
                 ImGui.SameLine();
                 if (ImGui.Button("OK"u8) || enter)
                 {
