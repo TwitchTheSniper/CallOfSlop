@@ -169,12 +169,20 @@ public static partial class SelfTest
                 var b = Buttons.Forward | (sprint ? Buttons.Sprint : Buttons.None);
                 World.SetMap(crest);
                 var air = 0;
-                var s = SlopeHold(SlopeStand(crest, 0, 26), b, 0, sprint ? 220 : 480, (_, st) => air += st.Grounded ? 0 : 1);
+                var firstAir = float.NaN;
+                var s = SlopeHold(SlopeStand(crest, 0, 26), b, 0, sprint ? 220 : 480, (_, st) =>
+                {
+                    if (st.Grounded)
+                        return;
+                    air++;
+                    if (float.IsNaN(firstAir))
+                        firstAir = st.Position.Z;
+                });
                 var crossed = s.Position.Z < -6;
                 World.SetMap(plane);
                 var airDown = 0;
                 var d = SlopeHold(SlopeStand(plane, 0, -25), b, MathF.PI, sprint ? 200 : 420, (_, st) => airDown += st.Grounded ? 0 : 1);
-                parts.Add($"{(sprint ? "sprint" : "walk")}: over the crest {air} airborne ticks (ended at z {s.Position.Z:0}), down 30 degrees {airDown} (ended at z {d.Position.Z:0})");
+                parts.Add($"{(sprint ? "sprint" : "walk")}: over the crest {air} airborne ticks (first at z {firstAir:0.0}; ended at z {s.Position.Z:0}), down 30 degrees {airDown} (ended at z {d.Position.Z:0})");
                 if (!crossed || air > 0)
                     Fail($"{mover.Mode} {(sprint ? "sprint" : "walk")}: {air} airborne tick(s) going over a 20/30 degree crest (crossed it: {crossed})");
                 if (airDown > 0 || d.Position.Z < 10)
@@ -221,9 +229,10 @@ public static partial class SelfTest
                     prev = st.Position;
                 });
                 var climbed = 22 - s.Position.Z;
-                // Then stand still on it for 2 s.
-                var still = SlopeHold(s, Buttons.None, 0, 120);
-                var drift = Vector3.Distance(still.Position, s.Position);
+                // Then let go: after a second to stop, standing still for 2 s more mustn't move you.
+                var stopped = SlopeHold(s, Buttons.None, 0, 60);
+                var still = SlopeHold(stopped, Buttons.None, 0, 120);
+                var drift = Vector3.Distance(still.Position, stopped.Position);
                 parts.Add($"lane {lane:0}: {climbed:0} m, {stops} stopped, {slides} sliding/air, drift standing {drift:0.000} m");
                 if (climbed < 20 || stops > 0 || slides > 0)
                     Fail($"{mover.Mode}: stuttered up a noisy 36 degree slope (lane x {lane}: {climbed:0.0} m in 6 s, {stops} stopped ticks, {slides} airborne/sliding)");
@@ -481,7 +490,7 @@ public static partial class SelfTest
                         }
                         if (r.Reached)
                             reached++;
-                        times.Add(FormattableString.Invariant($"{(team == 0 ? "B" : "R")}>{name.Replace("hill ", "h").Replace("enemy flag", "flag")} {r.Length:0}m/{(r.Reached ? $"{r.Time:0.0}s" : "STUCK")}{(r.Stalls > 0 ? $" {r.Stalls}st" : "")}{(r.Airborne > 30 ? $" {r.Airborne}air" : "")}"));
+                        times.Add(FormattableString.Invariant($"{(team == 0 ? "B" : "R")}>{name.Replace("hill ", "h").Replace("enemy flag", "flag")} {r.Length:0}m/{(r.Reached ? $"{r.Time:0.0}s" : $"STUCK@{r.End.X:0},{r.End.Y:0},{r.End.Z:0}")}{(r.Stalls > 0 ? $" {r.Stalls}st" : "")}{(r.Airborne > 30 ? $" {r.Airborne}air" : "")}"));
                         if (!r.Reached)
                             Fail($"{m.Name}: {mover.Mode} {(sprint ? "sprinting" : "walking")} {who} ({r.Length:0} m) didn't get there in {r.Limit:0} s: stopped at ({r.End.X:0.0}, {r.End.Y:0.0}, {r.End.Z:0.0}), {r.Stalls} stalled seconds");
                     }
