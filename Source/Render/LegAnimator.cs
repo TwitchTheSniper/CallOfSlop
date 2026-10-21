@@ -263,6 +263,7 @@ public static class LegAnimator
             Span<Vector3> target = stackalloc Vector3[2];
             Span<float> footYaw = stackalloc float[2];
             Span<float> footPitch = stackalloc float[2];
+            Span<float> needW = stackalloc float[2]; // how much each foot pulls the pelvis down (a swing foot mid-air: not at all)
             var walkHipX = crouch ? 0.17f : 0.15f;
             var idleHipX = crouch ? 0.19f : 0.17f;
             for (var i = 0; i < 2; i++)
@@ -270,7 +271,7 @@ public static class LegAnimator
                 var side = i == 0 ? 1f : -1f;
                 var u = st.Phase + i * 0.5f;
                 u -= MathF.Floor(u);
-                float along, up = 0, pitch = 0;
+                float along, up = 0, pitch = 0, pull = 1;
                 bool planted;
                 if (u < duty)
                 {
@@ -284,6 +285,7 @@ public static class LegAnimator
                     var arc = (MathF.Sin(MathF.PI * s) + early * MathF.Sin(MathF.Tau * s)) / (1f + 0.55f * early);
                     up = lift * arc;
                     pitch = -0.45f * run * arc;
+                    pull = 1 - MathF.Sin(MathF.PI * s);
                     planted = false;
                 }
                 var gait = new Vector3(side * walkHipX + dir.X * along, AnkleHeight + up, -dir.Y * along);
@@ -301,6 +303,7 @@ public static class LegAnimator
                 footYaw[i] = float.Lerp(idleYaw, -side * 0.08f, moving);
                 footPitch[i] = pitch * moving;
                 pose.Planted[i] = planted && moving >= 0.999f;
+                needW[i] = float.Lerp(1f, pull, moving);
             }
 
             UpdateIdle(ref st, pos, yaw, bodyRot, target, footYaw, moving, dt, crouch, idleHipX, fresh);
@@ -390,7 +393,7 @@ public static class LegAnimator
                 var dy = hipY - HipDrop - target[i].Y;
                 var room = MaxReach * MaxReach - dx * dx - dz * dz;
                 var need = dy - MathF.Sqrt(MathF.Max(room, 0f));
-                drop = MathF.Max(drop, need);
+                drop = MathF.Max(drop, need * needW[i]);
             }
             drop = Math.Clamp(drop, 0f, 0.5f);
             hipY -= drop;
@@ -513,7 +516,7 @@ public static class LegAnimator
     {
         var crawl = MathF.Min(speed / 1.2f, 1f) * moving;
         var sway = 0.06f * crawl * MathF.Sin(MathF.Tau * st.Phase);
-        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, 0.18f, -0.14f);
+        pose.Pelvis = Matrix4x4.CreateRotationY(sway) * Matrix4x4.CreateTranslation(0, 0.18f, -0.24f);
         pose.Upper = Matrix4x4.CreateRotationY(-sway * 0.5f);
         pose.Drop = 0;
         // toes back, soles up
@@ -523,7 +526,7 @@ public static class LegAnimator
             var side = i == 0 ? 1f : -1f;
             var u = st.Phase + i * 0.5f;
             var c = MathF.Max(0f, MathF.Sin(MathF.Tau * u)) * crawl;
-            var target = new Vector3(side * (0.14f + 0.14f * c), 0.13f + 0.04f * c, 0.7f - 0.22f * c);
+            var target = new Vector3(side * (0.14f + 0.14f * c), 0.13f + 0.04f * c, 0.6f - 0.2f * c);
             var hip = Vector3.Transform(new Vector3(side * 0.13f, 0, 0), pose.Pelvis);
             var pole = Vector3.Normalize(new Vector3(side * (0.3f + 0.9f * c), -1f, 0));
             pose.Planted[i] = false;

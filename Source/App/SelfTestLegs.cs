@@ -383,11 +383,13 @@ public static partial class SelfTest
             float worst = 0, sum = 0, worstDrop = 0;
             int samples = 0, bad = 0, misses = 0, frames = 0;
             var maxY = 0f;
+            var groundedFor = 0f;
             plantedFor.Clear();
-            for (var tick = 0; tick < 150; tick++)
+            for (var tick = 0; tick < 150 && s.Position.Z > -9f; tick++) // stop before the top's far edge (no walking off it)
             {
                 var prevPos = s.Position;
                 World.Simulate(ref s, new InputCmd { Buttons = buttons, Yaw = 0, SpeedPct = 100 });
+                groundedFor = s.Grounded ? groundedFor + World.TickDt : 0;
                 maxY = MathF.Max(maxY, s.Position.Y);
                 for (var sub = 1; sub <= 2; sub++) // two rendered frames per tick (120 fps), tick-blended like the game
                 {
@@ -404,8 +406,8 @@ public static partial class SelfTest
                         if (!legs.Reached[i])
                             misses++;
                         plantedFor[i] = legs.Planted[i] ? plantedFor[i] + World.TickDt / 2 : 0;
-                        if (plantedFor[i] < 0.06f)
-                            continue; // just landed: the smoothed ground height is still settling
+                        if (plantedFor[i] < 0.06f || groundedFor < 0.1f)
+                            continue; // just landed (the smoothed ground height is still settling), or the body is in the air
                         var a = legs.AnkleWorld[i];
                         var truth = World.Query.Raycast(new Vector3(a.X, a.Y + 0.7f, a.Z), -Vector3.UnitY, 2f, QueryFilter.All, out var hit) ? hit.Point.Y : float.NaN;
                         if (float.IsNaN(truth))
