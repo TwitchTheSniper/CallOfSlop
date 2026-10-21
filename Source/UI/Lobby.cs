@@ -166,6 +166,10 @@ public sealed partial class Ui
                         _page = Page.Multiplayer;
                     if (BigButton("LOADOUTS"))
                         OpenLobbyLoadouts();
+                    if (BigButton("WORKBENCH (ZOMBIES PREVIEW)"))
+                        OpenWorkbench(); // the Weapon Workbench (UiWorkbench.cs)
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetItemTooltip("Weapon Workbench: build guns from parts and test fire them. A preview of the coming Zombies mode."u8);
                     if (BigButton("SETTINGS"))
                         _page = Page.Settings;
                     ImGui.Spacing();

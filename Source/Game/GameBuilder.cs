@@ -136,6 +136,12 @@ public sealed partial class Game
     {
         if (Local is not { } me)
             return;
+        if (secondary.Id == primary.Id && !ReferenceEquals(secondary, primary))
+        {
+            // Two builds borrowing the same gun's sounds: the second takes another id so the slots stay apart.
+            secondary = secondary.Clone();
+            secondary.Id = Weapons.All.First(w => w.Id != primary.Id).Id;
+        }
         me.BuiltPrimary = primary;
         me.BuiltSecondary = secondary;
         me.WantPrimary = me.Primary = primary.Id;

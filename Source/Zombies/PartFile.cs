@@ -225,6 +225,16 @@ public static class PartFile
         return v;
     }
 
+    private static Vector3 Angles(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() != 3)
+            throw new WeaponFileException($"{where}: expected [x, y, z] in degrees");
+        var v = new Vector3(WeaponFile.Number(e[0], where), WeaponFile.Number(e[1], where), WeaponFile.Number(e[2], where));
+        if (MathF.Abs(v.X) > 360 || MathF.Abs(v.Y) > 360 || MathF.Abs(v.Z) > 360)
+            throw new WeaponFileException($"{where}: angles must be between -360 and 360 degrees");
+        return v;
+    }
+
     private static IEnumerable<(string Key, JsonElement Value)> Props(JsonElement e, string where, params string[] known)
     {
         if (e.ValueKind != JsonValueKind.Object)
@@ -331,7 +341,7 @@ public static class PartFile
                         : throw new WeaponFileException($"{at}: expected a list like [\"barrel\", \"splitter\"]");
                     break;
                 case "pos": s.Pos = Vec(v, at); break;
-                case "rot": s.RotDeg = Vec(v, at); break;
+                case "rot": s.RotDeg = Angles(v, at); break;
                 case "required": s.Required = (bool)WeaponFile.FromJson(v, typeof(bool), at); break;
             }
         }
@@ -365,7 +375,7 @@ public static class PartFile
                         throw new WeaponFileException($"{at}: each size must be between 0.001 and 1.5 m");
                     break;
                 case "pos": b.Pos = Vec(v, at); break;
-                case "rot": b.RotDeg = Vec(v, at); break;
+                case "rot": b.RotDeg = Angles(v, at); break;
                 case "color": b.Color = ReadColor(v, at); break;
                 case "alpha": b.Alpha = Range(WeaponFile.Number(v, at), 0.05f, 1, at); break;
                 case "tag":

@@ -6,8 +6,10 @@
   "order": 980,
   "halfX": 15,
   "halfZ": 70,
-  "maxPlayers": 2,
+  "maxPlayers": 8,
   "sky": "#9fb4c8",
+  "teamSpawns": [[[-6, 64], [0, 64], [6, 64]], [[-8, -60], [0, -60], [8, -60]]],
+  "flags": [[0, 0, 64], [0, 0, -60]],
   "ops": [
     {"op": "Ground", "color": [0.42, 0.42, 0.4]},
     {"op": "Perimeter", "height": 5, "color": "#8f8a80"},
@@ -93,10 +95,15 @@
     {"op": "Prop", "name": "Cardboard Box", "x": -9, "z": 10},
     {"op": "Prop", "name": "Cardboard Box", "x": 9, "z": 10},
     {"op": "Prop", "name": "Cardboard Box", "x": 10, "z": 10},
-    {"op": "Block", "x0": -14, "y0": 0, "z0": -45, "x1": 14, "y1": 6, "z1": -44, "color": "#6e665c"},
-    {"op": "Spawn", "x": -1.5, "z": 62},
-    {"op": "Spawn", "x": 1.5, "z": 62},
-    {"op": "Spawn", "x": 0, "z": 64},
+    {"op": "Block", "x0": -10, "y0": 0, "z0": -45, "x1": 10, "y1": 6, "z1": -44, "color": "#6e665c"},
+    {"op": "Spawn", "x": -10.5, "z": 64},
+    {"op": "Spawn", "x": -7.5, "z": 64},
+    {"op": "Spawn", "x": -4.5, "z": 64},
+    {"op": "Spawn", "x": -1.5, "z": 64},
+    {"op": "Spawn", "x": 1.5, "z": 64},
+    {"op": "Spawn", "x": 4.5, "z": 64},
+    {"op": "Spawn", "x": 7.5, "z": 64},
+    {"op": "Spawn", "x": 10.5, "z": 64},
     {"op": "AutoWaypoints", "spacing": 6}
   ]
 }
