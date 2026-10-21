@@ -163,7 +163,7 @@ public sealed partial class Game
             _w.U8(c);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnMatchEnded(now);
-        if (MapVoteEnabled)
+        if (MapVoteEnabled && Mode != GameMode.Zombies) // a Zombies run restarts on its own map
             StartMapVote(now);
     }
 
@@ -228,6 +228,8 @@ public sealed partial class Game
     private void OnMatchStarted()
     {
         World.Map.RestoreProps(); // breakable props are whole again every match
+        if (!IsServer)
+            ResetZombiesWorld(); // Zombies: doors shut, boards up, no zombies (the server resets its run in ResetModeForMatch)
         PropDebris.Clear();
         ClearVote();
         Feed.Clear();

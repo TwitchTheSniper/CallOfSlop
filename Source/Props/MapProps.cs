@@ -595,7 +595,7 @@ public sealed partial class Map
     }
 
     /// <summary>The box <see cref="ContentHash"/> uses for Solid[i]: a broken prop's original collider, so breaking never changes the fingerprint.</summary>
-    internal Box HashBox(int i) => IsPropCollider(i) && _propOriginal.TryGetValue(i, out var o) ? o : Solid[i];
+    internal Box HashBox(int i) => IsPropCollider(i) && _propOriginal.TryGetValue(i, out var o) ? o : ZombieHashBox(i, out var zb) ? zb : Solid[i]; // an open Zombies door counts as closed
 }
 
 /// <summary>Boxes filed into 4 m columns, for the placement queries of PlaceProp and Clutter (map loading only).</summary>

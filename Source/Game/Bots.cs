@@ -237,6 +237,11 @@ public sealed partial class Game
         var b = p.Bot!;
         if (BotHeld(p, b, now))
             return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
+        if (Mode == GameMode.Zombies)
+        {
+            ZombieBotTick(p, b, now); // co-op bots fight zombies (ZombieBots.cs)
+            return;
+        }
         if (!p.Alive)
         {
             b.Target = byte.MaxValue;

@@ -69,8 +69,11 @@ public enum QueryLayers : ushort
     /// <summary>A map boundary's invisible barrier (<see cref="Map.BoundaryBarriers"/>). Not in <see cref="Static"/>: the classic body check stays exactly as it was, and movement is held inside by the boundary clamp.</summary>
     Boundary = 128,
 
+    /// <summary>Zombies window openings (<see cref="Map.IsClipBox"/>): they block bodies (movement, the nav graph) but not bullets (<see cref="QueryFilter.Shots"/>).</summary>
+    Clip = 256,
+
     /// <summary>Everything static except the terrain.</summary>
-    StaticShapes = Boxes | Props | Obbs | Meshes,
+    StaticShapes = Boxes | Props | Obbs | Meshes | Clip,
 
     /// <summary>Everything that never moves.</summary>
     Static = StaticShapes | Terrain,
@@ -108,6 +111,9 @@ public readonly struct QueryFilter
 
     /// <summary>Static geometry, terrain and movers at the current clock (what <see cref="World.RaycastWorld"/> sees).</summary>
     public static QueryFilter All => new(QueryLayers.World);
+
+    /// <summary>What bullets hit: <see cref="All"/> without the Zombies window openings (you shoot zombies through a window).</summary>
+    public static QueryFilter Shots => new(QueryLayers.World & ~QueryLayers.Clip);
 
     /// <summary>Static geometry and terrain, no movers.</summary>
     public static QueryFilter StaticOnly => new(QueryLayers.Static);

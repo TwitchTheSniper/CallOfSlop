@@ -166,6 +166,8 @@ public sealed partial class Ui : IDisposable
         _hudSettings = settings;
         DrawMatchBar(game, pos, size);
         DrawModeHud(game, now, pos, size, settings); // warmup panel, hill / flag / gun indicators (UiModes.cs)
+        if (game.Phase == MatchPhase.Playing)
+            DrawZombiesHud(game, now, pos, size, settings); // round, points, prompts, downs (UiZombies.cs)
         if (game.Phase == MatchPhase.Ended)
         {
             DrawResults(game, pos, size);
@@ -189,7 +191,7 @@ public sealed partial class Ui : IDisposable
             if (reload >= 0)
                 ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
             else
-                ImGuiSafe.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), $"{w.Ammo} / {w.Def.Mag}");
+                ImGuiSafe.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve
             ImGui.PopFont();
             ImGui.Text($"{w.Def.Name}");
             ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
@@ -297,7 +299,7 @@ public sealed partial class Ui : IDisposable
         }
 
         // ---- Centre messages --------------------------------------------------------
-        if (!local.Alive && !MenuOpen)
+        if (!local.Alive && !MenuOpen && game.Mode != GameMode.Zombies) // (Zombies says it itself: back next round)
         {
             var wait = game.RespawnWait(now);
             CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout
@@ -387,7 +389,10 @@ public sealed partial class Ui : IDisposable
             var won = game.LocalWon;
             var draw = game.Winner == Game.NoWinner;
             ImGui.PushFont(default, 48);
-            ImGuiSafe.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
+            if (game.Mode == GameMode.Zombies)
+                ImGuiSafe.TextColored(Red, "GAME OVER"u8);
+            else
+                ImGuiSafe.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
             ImGui.PopFont();
             ImGui.Text(game.MatchResult.Length > 0 ? game.MatchResult : draw ? "No winner" : $"{game.NameOf(game.Winner)} wins");
             DrawModeResultsLine(game);

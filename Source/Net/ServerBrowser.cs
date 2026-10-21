@@ -28,7 +28,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 16: Zombies preview: push carts (cart use, cart state messages) and per-run flags (run state message: weapon-slot upgrade)
     // 17: the push cart is a manned gun, not a turret: cart use carries tap / hold, cart state carries the gun's aim
     //     (yaw offset and pitch) instead of turret seconds, and mode 2 is "manned"
-    public const byte ProtocolVersion = 17;
+    // 18: the Zombies mode: game mode 5, zombie / run / event / parts / build / interact / workbench messages (ZUse..ZBench at
+    //     the end of Msg), built weapons replicated to clients as build text, the window-opening collision layer (Clip)
+    public const byte ProtocolVersion = 18;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

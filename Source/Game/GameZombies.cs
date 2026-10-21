@@ -185,7 +185,9 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
-        if (hits.Count == 0)
+        var taken = Math.Min(hits.Count, m.Cleave);
+        flags |= ZombieMelee(attacker, origin, dir, m.Reach, m.ConeCos, m.Damage, m.Cleave - taken, m.Stun, viewTick, now); // Zombies (ZombieAI.cs)
+        if (hits.Count == 0 && flags == 0)
             MeleeProps(attacker, origin, dir, now);
         if (attacker.Id == LocalId)
             OnOwnMelee(flags, now);
@@ -214,7 +216,7 @@ public sealed partial class Game
                         || (toCenter.LengthSquared() > 1e-4f && Vector3.Dot(Vector3.Normalize(toCenter), dir) >= coneCos);
             if (!aimed)
                 continue;
-            if (toCenter.Length() > 0.3f && World.Query.Raycast(origin, Vector3.Normalize(toCenter), toCenter.Length(), QueryFilter.All) < toCenter.Length() - 0.35f)
+            if (toCenter.Length() > 0.3f && World.Query.Raycast(origin, Vector3.Normalize(toCenter), toCenter.Length(), QueryFilter.Shots) < toCenter.Length() - 0.35f)
                 continue;
             list.Add((p, at, dist));
         }

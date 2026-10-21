@@ -189,7 +189,7 @@ public sealed partial class Game
         var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : 1f) + (b.Skill == BotDifficulty.Easy ? 0.02f : 0f);
         ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
-        b.NextFire = now + def.FireInterval;
+        b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);
         BotStats.Shots[(int)b.Personality]++;
         BotStats.ShotDistance[(int)b.Personality] += dist;
         switch (def.Mode)

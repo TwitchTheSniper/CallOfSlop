@@ -11,12 +11,23 @@ public enum GameMode : byte
     KingOfTheHill, // two teams hold a moving hill, first to 150 points
     CaptureTheFlag, // two teams, first to 3 captures
     GunGame, // everyone climbs the same weapon ladder; first kill with the last gun wins
+    Zombies, // co-op (1-4) against rounds of zombies, World at War style; only on maps with a "zombies" section (ZombiesMode.cs)
 }
 
 /// <summary>Names, limits and colours for the game modes.</summary>
 public static class GameModes
 {
+    /// <summary>The player-versus-player modes (every map plays them). Zombies is separate: see <see cref="Every"/> and <see cref="ForMap"/>.</summary>
     public static readonly GameMode[] All = [GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame];
+
+    /// <summary>Every mode, Zombies included.</summary>
+    public static readonly GameMode[] Every = [.. All, GameMode.Zombies];
+
+    /// <summary>The modes a map can be played in: Zombies only on maps with a "zombies" section.</summary>
+    public static GameMode[] ForMap(Map? map) => map?.Zombies != null ? Every : All;
+
+    /// <summary>Can <paramref name="mode"/> be played on <paramref name="map"/>?</summary>
+    public static bool Fits(GameMode mode, Map? map) => mode != GameMode.Zombies || map?.Zombies != null;
 
     /// <summary>Team Deathmatch: team kills to win with up to 8 players (4 v 4, so about 10 kills each).</summary>
     public const int TdmScoreLimit = 40;
@@ -49,6 +60,7 @@ public static class GameModes
         GameMode.KingOfTheHill => "King of the Hill",
         GameMode.CaptureTheFlag => "Capture the Flag",
         GameMode.GunGame => "Gun Game",
+        GameMode.Zombies => "Zombies",
         _ => "Free-for-all",
     };
 
@@ -59,6 +71,7 @@ public static class GameModes
         GameMode.KingOfTheHill => "KOTH",
         GameMode.CaptureTheFlag => "CTF",
         GameMode.GunGame => "GUN",
+        GameMode.Zombies => "ZOM",
         _ => "FFA",
     };
 
@@ -71,6 +84,7 @@ public static class GameModes
         GameMode.KingOfTheHill => $"Two teams. Hold the hill alone for 1 point a second (contested: nobody scores). It moves every {HillMoveSeconds:0} s. First to {HillScoreLimit}.",
         GameMode.CaptureTheFlag => $"Two teams. Grab the enemy flag and bring it to yours while yours is home. First to {CtfCaptureLimit} captures.",
         GameMode.GunGame => $"Everyone gets the same gun. Each kill moves you up a weapon ({GunGame.Ladder.Length} in all); a melee kill also sets the victim back one. Win with a kill using the last gun. No loadouts: everyone has the same perks (Afterburner, Bloodthirst) and no grenades or equipment.",
+        GameMode.Zombies => "Co-op for 1 to 4 players against endless rounds of zombies. Earn points, open doors, buy guns off the walls and from the mystery box, and build silly guns at the workbench. The run ends when everyone is down.",
         _ => $"First to {Game.WinKills} kills, win by {Game.WinMargin}.",
     };
 
@@ -170,10 +184,10 @@ public sealed partial class Game
     public bool IsTeamMode => GameModes.IsTeam(Mode);
 
     /// <summary>Kill streaks are off in Gun Game (<see cref="StreaksEnabled"/> follows it).</summary>
-    public bool ModeAllowsStreaks => Mode != GameMode.GunGame;
+    public bool ModeAllowsStreaks => Mode is not (GameMode.GunGame or GameMode.Zombies);
 
     /// <summary>Gun Game: no loadout screen at all; you spawn straight in with the ladder's gun and the shared perks.</summary>
-    public bool SkipsLoadout => Mode == GameMode.GunGame || BuilderRange; // the Workbench Range has no loadout screen either
+    public bool SkipsLoadout => Mode is GameMode.GunGame or GameMode.Zombies || BuilderRange; // the Workbench Range and Zombies (start gear) have no loadout screen either
 
     /// <summary>Team Deathmatch kills to win this match (set from the player count when play starts; replicated).</summary>
     public int TdmLimit = GameModes.TdmScoreLimit;
@@ -200,7 +214,7 @@ public sealed partial class Game
     public HillZone? ActiveHill => Mode == GameMode.KingOfTheHill && Objectives.Hills.Count > 0 ? Objectives.Hills[HillIndex % Objectives.Hills.Count] : null;
 
     /// <summary>Are these two on opposite sides? Everyone is an enemy in free-for-all and Gun Game; teammates never are.</summary>
-    public bool AreEnemies(Player a, Player b) => a != b && (!IsTeamMode || a.Team > 1 || a.Team != b.Team);
+    public bool AreEnemies(Player a, Player b) => a != b && Mode != GameMode.Zombies && (!IsTeamMode || a.Team > 1 || a.Team != b.Team); // Zombies: everyone's on the same side
 
     /// <summary>Did the local player (or their team) win the match that just ended?</summary>
     public bool LocalWon =>
@@ -209,7 +223,9 @@ public sealed partial class Game
     /// <summary>The goal of the current mode, one line ("first to 11 kills..."), for the HUD and the log.</summary>
     public string ModeGoalText => Mode == GameMode.FreeForAll
         ? $"First to {WinKills} kills, win by {WinMargin}, {MatchSeconds / 60:0} minutes max"
-        : $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode)} {MatchSeconds / 60:0} minutes max.";
+        : Mode == GameMode.Zombies
+            ? $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode)}"
+            : $"{GameModes.Name(Mode)}: {GameModes.Rules(Mode)} {MatchSeconds / 60:0} minutes max.";
 
     /// <summary>Damage is allowed against enemies and yourself (your own grenade still hurts), never teammates.</summary>
     private bool CanDamage(Player attacker, Player victim) => attacker == victim || AreEnemies(attacker, victim);
@@ -289,6 +305,7 @@ public sealed partial class Game
             p.GunLevel = 0;
         TdmLimit = GameModes.TdmLimitFor(Players.Count);
         AssignTeams();
+        ResetZombiesRun(); // a fresh Zombies run (nothing outside the Zombies mode; ZombiesMode.cs)
         if (!respawn)
             return;
         foreach (var p in Players.Values.Where(p => p.Alive).ToList())
@@ -338,6 +355,11 @@ public sealed partial class Game
     /// <summary>Server, every tick while playing (not free-for-all): objectives, then the win check and the time limit.</summary>
     private void ServerTickModePlaying(double now)
     {
+        if (Mode == GameMode.Zombies)
+        {
+            ServerTickZombies(now); // rounds, zombies, buyables, downs; the run ends when everyone is down (no time limit)
+            return;
+        }
         switch (Mode)
         {
             case GameMode.KingOfTheHill:
@@ -426,6 +448,8 @@ public sealed partial class Game
     /// <summary>Gun Game: the server hands out the gun and the shared perks; loadouts, grenades and equipment don't apply.</summary>
     private void ApplyModeLoadout(Player p)
     {
+        if (Mode == GameMode.Zombies)
+            ZombiesOnSpawn(p); // start gear, the start room (ZombiesMode.cs)
         if (Mode != GameMode.GunGame)
             return;
         GiveGunGameWeapon(p);

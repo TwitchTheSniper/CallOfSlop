@@ -370,7 +370,9 @@ public static unsafe partial class Program
                 break;
             case 9:
                 _wbSmokeStage = 0;
-                StartMoversSmoke(now); // the usual chain carries on
+                StartZombiesSmoke(now); // Zombies Test (Program.Zombies.cs), then the usual chain carries on
+                if (!ZombiesSmokeActive)
+                    StartMoversSmoke(now);
                 break;
         }
     }
