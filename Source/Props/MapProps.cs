@@ -385,6 +385,9 @@ public sealed partial class Map
         var edge = def.IsSolid ? ClutterClearance : 0.3f;
         if (min.X < -HalfX + edge || max.X > HalfX - edge || min.Y < -HalfZ + edge || max.Y > HalfZ - edge)
             return false;
+        if (Boundary is { } bd && !(bd.Inside(min.X, min.Y, edge) && bd.Inside(max.X, min.Y, edge) && bd.Inside(min.X, max.Y, edge)
+                                    && bd.Inside(max.X, max.Y, edge) && bd.Inside(p.X, p.Y, edge)))
+            return false; // inside the map's outline, clear of its edge
 
         // Ground: the terrain (lowest point under the footprint) or y = 0; no steep slopes, no big bumps under solid props.
         var ground = 0f;

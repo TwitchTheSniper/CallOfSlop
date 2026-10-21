@@ -274,6 +274,15 @@ public static unsafe class MapThumbs
     {
         var target = new Vector3(0, map.HasTerrain ? map.GroundHeight(0, 0) : 0f, 0);
         var radius = MathF.Sqrt(map.HalfX * map.HalfX + map.HalfZ * map.HalfZ);
+        if (map.Boundary is { } b)
+        {
+            // A shaped map: frame the outline (its bounding box centre, out to its furthest point), not the square around it.
+            var c = b.BoxCenter;
+            target = new Vector3(c.X, map.HasTerrain ? map.GroundHeight(c.X, c.Y) : 0f, c.Y);
+            radius = 0f;
+            foreach (var p in b.Outline)
+                radius = MathF.Max(radius, Vector2.Distance(p, c));
+        }
         const float fovY = 0.7f;
         const float pitch = 0.88f; // ~50 degrees down
         const float yaw = 0.62f;
@@ -291,7 +300,7 @@ public static unsafe class MapThumbs
         var dist = Vector3.Distance(eye, target);
         gfx.SetFog(map.Sky, dist * 1.2f, dist * 3f); // just a hint of haze on the far side of big maps
         for (var i = 0; i < map.Solid.Count; i++)
-            if (!map.IsPropCollider(i))
+            if (map.IsDrawnBox(i))
                 gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
         MoverRender.DrawImmediate(gfx, map, 0); // movers at their start pose
         TerrainR.Draw(gfx, map);

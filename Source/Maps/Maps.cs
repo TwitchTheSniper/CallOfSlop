@@ -28,7 +28,7 @@ public sealed partial class Map
     {
         get
         {
-            var side = MathF.Sqrt(HalfX * 2 * HalfZ * 2);
+            var side = MathF.Sqrt(PlayArea); // the rectangle's area, or the boundary outline's
             return side < 75 ? MapSize.Small : side < 135 ? MapSize.Medium : MapSize.Large;
         }
     }
@@ -69,6 +69,8 @@ public sealed partial class Map
             return;
         GroundIndex = Solid.Count;
         Block(-HalfX - 2, -1, -HalfZ - 2, HalfX + 2, 0, HalfZ + 2, color);
+        if (Boundary != null) // the slab stays as the collider; the floor is drawn following the outline (MapEdges.cs)
+            AddBoundaryGround(color, Textures.Pick(this, Solid[GroundIndex], color, true));
     }
 
     public int GroundIndex = -1;
@@ -82,6 +84,8 @@ public sealed partial class Map
     public void Perimeter(float height, Vector3 color, float t = 1f)
     {
         using var __ = Op([height, color, t]);
+        if (Boundary != null)
+            throw new InvalidOperationException("this map has a \"boundary\": its edge replaces Perimeter (use \"edge\": { \"style\": \"wall\" })");
         if (HasTerrain)
         {
             TerrainPerimeter(height, color, t);
@@ -306,6 +310,8 @@ public sealed partial class Map
         const float r = World.PlayerRadius + 0.05f;
         if (MathF.Abs(feet.X) > HalfX - r || MathF.Abs(feet.Z) > HalfZ - r)
             return true;
+        if (Boundary != null && !Boundary.Inside(feet.X, feet.Z, r))
+            return true; // outside the map's outline (MapEdges.cs)
         if (HasTerrain && GroundHeight(feet.X, feet.Z) > feet.Y + 0.05f)
             return true;
         foreach (var b in Solid)
@@ -617,6 +623,9 @@ public static partial class Maps
             m.Validate();
             var moved = spawnsBefore.Where((p, i) => p != m.Spawns[i]).Count();
             Console.WriteLine($"OK: '{m.Name}' ({m.Size}, {m.HalfX * 2:0} x {m.HalfZ * 2:0} m): {m.Solid.Count} boxes, {m.Spawns.Count} spawns, {m.Waypoints.Count} waypoints, fingerprint {m.ContentHash:x8}");
+            if (m.Boundary is { } bd)
+                Console.WriteLine($"boundary: {bd.Spec.Shape.ToString().ToLowerInvariant()}, {bd.SegmentCount} segments, {bd.Area:0} square metres inside, "
+                                  + $"{bd.Perimeter:0} m round, edge {bd.Spec.Edge.Style.ToString().ToLowerInvariant()}");
             if (m.Terrain is { } t)
                 Console.WriteLine($"terrain: {t.CountX} x {t.CountZ} samples every {t.Cell:0.##} m, heights {t.MinHeight:0.0} to {t.MaxHeight:0.0} m, {m.TerrainSpec!.Features.Count} features, "
                                   + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");

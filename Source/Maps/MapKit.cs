@@ -277,6 +277,16 @@ public sealed partial class Map
         for (var i = 0; i < count; i++)
         {
             var a = phase + i * MathF.Tau / count;
+            if (Boundary is { } b)
+            {
+                // Follow the outline: frac of the way from the middle to the edge in each direction.
+                var c = b.Contains(b.BoxCenter.X, b.BoxCenter.Y) ? b.BoxCenter : b.Pole;
+                var dir = new Vector2(MathF.Cos(a), MathF.Sin(a));
+                var reach = b.RayExit(c, dir);
+                var p = c + dir * (float.IsFinite(reach) ? reach * frac : 0f);
+                Spawn(p.X, p.Y);
+                continue;
+            }
             Spawn(MathF.Cos(a) * HalfX * frac, MathF.Sin(a) * HalfZ * frac);
         }
     }

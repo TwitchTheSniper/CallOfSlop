@@ -348,6 +348,8 @@ public sealed class NavGraph
             var c = new Vector3(p.X + ox * spread, p.Y, p.Z + oz * spread);
             if (MathF.Abs(c.X) > map.HalfX - 0.5f || MathF.Abs(c.Z) > map.HalfZ - 0.5f)
                 continue;
+            if (map.Boundary is { } boundary && !boundary.Inside(c.X, c.Z, 0.6f))
+                continue; // never a node outside (or hard against) a shaped map's outline
             var y = Ground(col, c.X, c.Z, p.Y + 0.3f, 0.6f);
             if (!float.IsFinite(y) || MathF.Abs(y - p.Y) > 0.05f)
                 continue;

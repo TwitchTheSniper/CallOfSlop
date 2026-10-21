@@ -169,6 +169,20 @@ public sealed unsafe class TerrainRenderer
             return Native.glGetUniformLocation(_program, p);
     }
 
+    /// <summary>
+    /// A shaped map (boundary): ground further than the ground margin outside the outline darkens to 45%, so the shape
+    /// reads from inside and from the map thumbnail, and the land beyond fades into the fog.
+    /// </summary>
+    private static float OutsideShade(MapBoundary b, float x, float z)
+    {
+        var margin = b.Spec.GroundMargin;
+        if (b.QuickClearance(x, z) > margin + 8f)
+            return b.Contains(x, z) ? 1f : 0.45f;
+        var d = b.SignedDistance(x, z);
+        var f = Math.Clamp((d - margin * 0.5f) / (margin * 0.5f + 4f), 0f, 1f);
+        return 1f - 0.55f * f * f * (3f - 2f * f);
+    }
+
     /// <summary>Builds the vertex and index buffers for a map (once per map).</summary>
     private void Build(Map map, TerrainData t)
     {
@@ -180,6 +194,8 @@ public sealed unsafe class TerrainRenderer
         for (var i = 0; i < nx; i++)
         {
             var (color, rock) = t.VertexColor(i, j);
+            if (map.Boundary is { } b)
+                color *= OutsideShade(b, t.OriginX + i * t.Cell, t.OriginZ + j * t.Cell);
             verts[j * nx + i] = new Vertex
             {
                 Pos = new Vector3(t.OriginX + i * t.Cell, t.Height(i, j), t.OriginZ + j * t.Cell),

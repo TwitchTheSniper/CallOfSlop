@@ -129,6 +129,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (BoundaryHash != 0) // maps without a "boundary" section keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (BoundaryHash >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (Terrain != null) // terrain maps only, so flat maps keep the fingerprint they always had
             {
                 for (var i = 0; i < 4; i++)
@@ -178,6 +186,8 @@ public static partial class MapFile
         if (m.MaxPlayersSetting > 0)
             sb.Append($"  \"maxPlayers\": {m.MaxPlayersSetting},\n");
         sb.Append($"  \"sky\": {Col(m.Sky)},\n");
+        if (m.Boundary != null)
+            sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         MapObjectiveJson.Write(sb, m);
@@ -249,7 +259,10 @@ public static partial class MapFile
         {
             var root = doc.RootElement;
             string ReqStr(string name) => Prop(root, name) is { ValueKind: JsonValueKind.String } e ? e.GetString()! : throw new MapFileException($"{source}: missing \"{name}\"");
-            float ReqNum(string name) => Prop(root, name) is { ValueKind: JsonValueKind.Number } e ? e.GetSingle() : throw new MapFileException($"{source}: missing number \"{name}\"");
+            var boundaryEl = Prop(root, "boundary") is { ValueKind: not JsonValueKind.Null } be ? be : (JsonElement?)null;
+            // With a boundary, halfX / halfZ are worked out from its outline (they're only needed for a rect boundary's size).
+            float ReqNum(string name) => Prop(root, name) is { ValueKind: JsonValueKind.Number } e ? e.GetSingle()
+                : boundaryEl != null ? 5f : throw new MapFileException($"{source}: missing number \"{name}\"");
 
             var map = new Map
             {
@@ -270,8 +283,30 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
+            if (boundaryEl is { } boundary)
+            {
+                var spec = ReadBoundary(boundary, source);
+                if (spec.Shape == BoundaryShape.Rect && (spec.HalfX <= 0 && Prop(root, "halfX") == null || spec.HalfZ <= 0 && Prop(root, "halfZ") == null))
+                    throw new MapFileException($"{source}: boundary: a rect needs \"halfX\" and \"halfZ\" (in the boundary or at the top level)");
+                try
+                {
+                    map.SetBoundary(spec); // before the terrain: halfX / halfZ become the outline's bounding box
+                }
+                catch (InvalidOperationException ex)
+                {
+                    throw new MapFileException($"{source}: boundary: {ex.Message}");
+                }
+            }
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
+            try
+            {
+                map.FinishBoundary(); // the barrier and the edge, on the terrain (no-op without a boundary)
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new MapFileException($"{source}: boundary: {ex.Message}");
+            }
             if (Prop(root, "ops") is not { ValueKind: JsonValueKind.Array } ops)
                 throw new MapFileException($"{source}: missing \"ops\" list");
 
@@ -329,6 +364,7 @@ public static partial class MapFile
                 CheckMoverSweeps(map, source); // before the objectives: automatic hills are picked from the waypoints
             }
             MapObjectiveJson.Read(root, map, source);
+            map.CheckInsideBoundary(source);
             map.FinishProps(); // last: Clutter keeps clear of the spawns, waypoints, objectives and movers above
             return map;
         }

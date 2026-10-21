@@ -293,6 +293,12 @@ public static class KillStreaks
     {
         x = Math.Clamp(x, -World.Map.HalfX + 0.5f, World.Map.HalfX - 0.5f);
         z = Math.Clamp(z, -World.Map.HalfZ + 0.5f, World.Map.HalfZ - 0.5f);
+        if (World.Map.Boundary is { } boundary && !boundary.Inside(x, z, 0.5f))
+        {
+            var c = boundary.Clamp(new Vector2(x, z), 0.5f); // inside a shaped map
+            x = c.X;
+            z = c.Y;
+        }
         var top = MathF.Max(nearY, 0) + 40f;
         var d = World.Query.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 5f, QueryFilter.All);
         return new Vector3(x, MathF.Max(top - d, -1f), z);
@@ -541,6 +547,8 @@ public sealed partial class Game
                 return false;
             target.X = Math.Clamp(target.X, -World.Map.HalfX, World.Map.HalfX);
             target.Z = Math.Clamp(target.Z, -World.Map.HalfZ, World.Map.HalfZ);
+            if (World.Map.Boundary is { } boundary)
+                target = boundary.ClampFeet(target, 0.5f);
             pos = target;
             var radius = id == StreakId.MortarBarrage ? KillStreaks.MortarRadius : KillStreaks.StrafeRadius;
             var damage = id == StreakId.MortarBarrage ? KillStreaks.MortarDamage : KillStreaks.StrafeDamage;
