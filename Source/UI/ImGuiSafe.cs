@@ -66,4 +66,26 @@ public static class ImGuiSafe
 
     /// <summary>The same escaping for a managed string (used by the self-test).</summary>
     public static string EscapeString(string text) => text.Replace("%", "%%");
+
+    /// <summary>
+    /// Puts <paramref name="value"/> in a text box's buffer safely: printable ASCII only, cut to fit. (ImInputString's
+    /// own SetValue throws when the text fills the whole buffer, e.g. a long address from settings.txt.)
+    /// </summary>
+    public static void SetInput(ImInputString input, string? value)
+    {
+        var clean = NetSafety.CleanText(value, input.Capacity - 1); // ASCII: one byte per character, room for the NUL
+        input.SetValue(clean.AsSpan());
+    }
+
+    private static readonly LogLimiter FieldLog = new(10);
+
+    /// <summary>
+    /// A text box (or the code reading it) threw: log it with the stack (once per 10 s per field) and carry on with
+    /// the rest of the screen. Only text boxes are wrapped like this; their failure never affects the game itself.
+    /// </summary>
+    public static void FieldFailed(string field, Exception ex)
+    {
+        if (FieldLog.Allow(field, out var held))
+            Console.WriteLine($"[ui] the '{field}' text box failed and was skipped this frame{LogLimiter.HeldText(held)}: {ex}");
+    }
 }

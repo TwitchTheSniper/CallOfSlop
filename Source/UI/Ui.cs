@@ -56,6 +56,7 @@ public sealed partial class Ui : IDisposable
         _scale = 0; // forces the first ApplyScale
 
         _platform = new GlfwBackend(window, GlfwBackend.ClientApi.OpenGL);
+        SafeClipboard.Install(); // replaces the backend's paste hook, which crashes on an image clipboard (SafeClipboard.cs)
         _renderer = new OpenGlBackend();
     }
 

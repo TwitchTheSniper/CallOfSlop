@@ -151,6 +151,9 @@ public sealed class Settings
     /// <summary>Server names: printable ASCII, up to 32 characters (may be empty).</summary>
     public static string CleanServerName(string name) => new string(name.Where(c => c >= 32 && c < 127).Take(32).ToArray()).Trim();
 
+    /// <summary>Addresses (join address, master server): printable ASCII without spaces, up to 127 characters (fits the lobby's text box).</summary>
+    public static string CleanAddress(string address) => new string(address.Where(c => c > 32 && c < 127).Take(127).ToArray());
+
     public static Settings Load() => Load(FilePath);
 
     /// <summary>Loads a settings file from <paramref name="path"/> (the self-test uses a temporary one).</summary>
@@ -188,13 +191,13 @@ public sealed class Settings
                     case "port" when ushort.TryParse(v, out var p) && p > 0: s.Port = p; break;
                     case "upnp": s.UseUpnp = v == "1"; break;
                     case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPlayers - 2); break;
-                    case "join_address": s.JoinAddress = v; break;
+                    case "join_address": s.JoinAddress = CleanAddress(v); break;
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
                     case "map_pack" when v.Length > 0: s.MapPack = v; break; // kept even if the pack is missing now (it may come back)
                     case "advertise": s.Advertise = v == "1"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
-                    case "master": s.MasterServer = v.Trim(); break;
+                    case "master": s.MasterServer = CleanAddress(v); break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;

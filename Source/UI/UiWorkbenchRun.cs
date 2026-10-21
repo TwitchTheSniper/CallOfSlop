@@ -49,7 +49,7 @@ public sealed partial class Ui
         var current = BenchPlayer?.Slots[slot];
         _wb = current?.Clone() ?? new WeaponBuild(_wbMelee ? "Melee" : $"Slot {slot + 1}", Parts.InCategory(_wbMelee ? PartCategory.Hilt : PartCategory.Grip).First(p => p.IsRoot));
         _wbNameInput ??= new ImInputString(33);
-        _wbNameInput.SetValue(_wb.Name.AsSpan());
+        ImGuiSafe.SetInput(_wbNameInput, _wb.Name);
         _wbSocketParent = _wbSocketName = null;
         _wbPart = null;
         WorkbenchChanged();

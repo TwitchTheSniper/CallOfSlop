@@ -518,14 +518,23 @@ public sealed partial class Ui
                 if (ImGui.Button("Rename"u8))
                 {
                     _renameInput ??= new ImInputString(25);
-                    _renameInput.SetValue(l.Name.AsSpan());
+                    ImGuiSafe.SetInput(_renameInput, l.Name);
                     _renaming = true;
                 }
             }
             else
             {
                 ImGui.SetNextItemWidth(240 * _scale);
-                var enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                bool enter;
+                try
+                {
+                    enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                }
+                catch (Exception ex)
+                {
+                    ImGuiSafe.FieldFailed("loadout name", ex);
+                    enter = false;
+                }
                 ImGui.SameLine();
                 if (ImGui.Button("OK"u8) || enter)
                 {

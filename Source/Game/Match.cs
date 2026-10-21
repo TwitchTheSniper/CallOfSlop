@@ -279,7 +279,7 @@ public sealed partial class Game
                 var chars = new char[len];
                 for (var k = 0; k < len && r.Has(1); k++)
                     chars[k] = (char)r.U8();
-                MatchResult = new string(chars);
+                MatchResult = NetSafety.CleanText(new string(chars), 255);
                 OnMatchEnded(Brutal.GlfwApi.Glfw.Time);
                 break;
             }

@@ -39,6 +39,7 @@ To test on one PC: run `Start.bat` twice. Host in one window and join `127.0.0.1
 - If the host's address says "LAN only - UPnP unavailable", turn on UPnP in your router's settings or forward UDP 60000. Same-network play works either way.
 - "Behind a second NAT" means a second router or your ISP's carrier-grade NAT. Use a LAN or a virtual LAN tool like Tailscale or ZeroTier.
 - The game has no console window; its log is written to `callofslop.log` next to the exe.
+- Text boxes take plain text only: pasting an image or a file does nothing (the log says `[ui] paste ignored: the clipboard has no text`), and pasted text is cut to printable ASCII. Names, server names and other text from other players are cleaned the same way, and a broken or hostile network packet is dropped with a `[net] dropped a bad ... packet` log line instead of closing the game.
 
 Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSlop.exe join <ip> [port]`, plus `--no-upnp`, `--lag=ms`, `--loss=%` for testing.
 

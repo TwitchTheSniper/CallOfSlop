@@ -49,14 +49,14 @@ public sealed partial class Ui
         if (_nameInput != null)
             return;
         _nameInput = new ImInputString(32);
-        _nameInput.SetValue(s.Name.AsSpan());
+        ImGuiSafe.SetInput(_nameInput, s.Name);
         _addressInput = new ImInputString(128);
-        _addressInput.SetValue(s.JoinAddress.AsSpan());
+        ImGuiSafe.SetInput(_addressInput, s.JoinAddress);
         _portInput = s.Port;
         _serverNameInput = new ImInputString(33);
-        _serverNameInput.SetValue(s.ServerName.AsSpan());
+        ImGuiSafe.SetInput(_serverNameInput, s.ServerName);
         _masterInput = new ImInputString(128);
-        _masterInput.SetValue(s.MasterServer.AsSpan());
+        ImGuiSafe.SetInput(_masterInput, s.MasterServer);
     }
 
     private ImInputString? _serverNameInput, _masterInput;
@@ -269,8 +269,15 @@ public sealed partial class Ui
                     else
                         TestModeHint();
                     ImGui.SetNextItemWidth(360 * _scale);
-                    if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
-                        s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                    try
+                    {
+                        if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
+                            s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        ImGuiSafe.FieldFailed("server name", ex);
+                    }
                     ImGui.Checkbox("Advertise server (list it publicly in the server browser)"u8, ref s.Advertise);
                     if (s.Advertise && s.Master == null)
                         ImGui.TextColored(Orange, "No master server set (Settings > Player), so only people on your network will see it."u8);
@@ -383,14 +390,21 @@ public sealed partial class Ui
     private void DrawDirectJoin(Settings s, ref LobbyAction action)
     {
         ImGui.SetNextItemWidth(360 * _scale);
-        ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+        try
+        {
+            ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+        }
+        catch (Exception ex)
+        {
+            ImGuiSafe.FieldFailed("address", ex);
+        }
         ImGui.SetNextItemWidth(200 * _scale);
         if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
             _portInput = Math.Clamp(_portInput, 1024, 65535);
         ImGui.TextColored(Dim, "Ask the host for the address shown at the top-left of their screen."u8);
         if (BigButton("JOIN GAME"))
         {
-            var addr = _addressInput!.ToString().Trim();
+            var addr = Settings.CleanAddress(_addressInput!.ToString());
             s.JoinAddress = addr.Length > 0 ? addr : "127.0.0.1";
             s.Port = (ushort)_portInput;
             s.Save();
@@ -521,12 +535,26 @@ public sealed partial class Ui
         {
             ImGui.BeginChild("##player"u8, panel);
             ImGui.SetNextItemWidth(w);
-            if (ImGui.InputText("Name"u8, _nameInput!))
-                s.Name = Settings.Clean(_nameInput!.ToString());
+            try
+            {
+                if (ImGui.InputText("Name"u8, _nameInput!))
+                    s.Name = Settings.Clean(_nameInput!.ToString());
+            }
+            catch (Exception ex)
+            {
+                ImGuiSafe.FieldFailed("player name", ex);
+            }
             ImGui.TextColored(Dim, "Name changes apply to your next match."u8);
             ImGui.SetNextItemWidth(w);
-            if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
-                s.MasterServer = _masterInput!.ToString().Trim();
+            try
+            {
+                if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
+                    s.MasterServer = Settings.CleanAddress(_masterInput!.ToString());
+            }
+            catch (Exception ex)
+            {
+                ImGuiSafe.FieldFailed("master server", ex);
+            }
             ImGui.TextColored(Dim, "Public server list. Anyone can run one with: CallOfSlop.exe --master  (UDP 27050). Leave empty for LAN only."u8);
             ImGui.Spacing();
             ImGui.SetNextItemWidth(w);
