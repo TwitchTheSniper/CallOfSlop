@@ -69,7 +69,7 @@ public sealed partial class Ui
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X - 16 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.12f), ImGuiCond.Always, new float2(1, 0));
         ImGui.SetNextWindowSize(new float2(MathF.Min(440 * _scale, vp.WorkSize.X - 32 * _scale), 0));
         ImGui.SetNextWindowBgAlpha(0.95f);
-        if (ImGui.Begin("TEAMS###teamswin", ref _teamsWindow, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings
+        if (ImGui.Begin("TEAMS###teamswin"u8, ref _teamsWindow, ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoSavedSettings
                                                         | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoResize))
             TeamPicker(game, now);
         ImGui.End();
