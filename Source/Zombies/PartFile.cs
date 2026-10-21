@@ -271,7 +271,7 @@ public static class PartFile
                 case "spoolTime": r.SpoolTime = Range(WeaponFile.Number(v, at), 0, 5, at); break;
                 case "spoolStart": r.SpoolStart = Range(WeaponFile.Number(v, at), 0.05f, 1, at); break;
                 case "minBarrels": r.MinBarrels = (int)Range(WeaponFile.Int(v, at), 1, 8, at); break;
-                case "maxBarrels": r.MaxBarrels = (int)Range(WeaponFile.Int(v, at), 1, 8, at); break;
+                case "maxBarrels": r.MaxBarrels = (int)Range(WeaponFile.Int(v, at), 1, 16, at); break;
                 case "rpmPerBarrel": r.RpmPerBarrel = (int)Range(WeaponFile.Int(v, at), 0, 1000, at); break;
             }
         }

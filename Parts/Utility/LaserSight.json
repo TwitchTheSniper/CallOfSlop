@@ -7,7 +7,7 @@
   "weight": 0.1,
   "model": [
     {"size": [0.02, 0.02, 0.05], "pos": [0.01, 0, 0], "color": "black"},
-    {"size": [0.006, 0.006, 0.006], "pos": [0.01, 0, -0.026], "color": "red", "tag": "glow"}
+    {"size": [0.006, 0.006, 0.006], "pos": [0.01, 0, -0.026], "color": "#c83228", "tag": "glow"}
   ],
   "stats": [
     {"stat": "hipSpreadDeg", "mul": 0.8}

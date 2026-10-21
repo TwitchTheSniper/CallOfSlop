@@ -111,7 +111,7 @@ public sealed class ReceiverInfo
     public float SpoolStart = 1f;
 
     /// <summary>Barrel limits for this receiver (counted after splitters).</summary>
-    public int MinBarrels = 1, MaxBarrels = 8;
+    public int MinBarrels = 1, MaxBarrels = 12;
 
     /// <summary>Rotary receivers: fire rate per fitted barrel (rpm = this x barrels). 0 = use <see cref="Rpm"/>.</summary>
     public int RpmPerBarrel;

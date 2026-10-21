@@ -18,8 +18,9 @@ public static partial class SelfTest
     {
         BuildStore.ReadOnly = true;
         var parts = Parts.All;
-        Line($"{parts.Length} part(s): " + string.Join(", ", Enum.GetValues<PartCategory>().Select(c => $"{c} {parts.Count(p => p.Category == c)}")));
-        Line("tiers: " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {parts.Count(p => p.Rarity == r)}")));
+        BuilderNotes.Clear();
+        BuilderNote($"{parts.Length} part(s): " + string.Join(", ", Enum.GetValues<PartCategory>().Select(c => $"{c} {parts.Count(p => p.Category == c)}")));
+        BuilderNote("tiers: " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {parts.Count(p => p.Rarity == r)}")));
         foreach (var e in Parts.LoadErrors)
             Fail($"part file: {e}");
         if (parts.Length < 40)
@@ -53,6 +54,7 @@ public static partial class SelfTest
         CheckBuilderRules();
         CheckBuilderShots();
         CheckBuilderServerShots();
+        CheckBuilderLastStand();
         CheckBuilderSaves();
 
         // Scrap hooks
@@ -68,6 +70,63 @@ public static partial class SelfTest
             Fail("no Workbench Range map");
         else
             Line($"Workbench Range: {range.Spawns.Count} spawn(s), {range.Solid.Count} boxes, max {range.WantedMaxPlayers} players");
+
+        // The part counts and example builds as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
+        Line("::notice title=Weapon builder::" + string.Join("%0A", BuilderNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+    }
+
+    private static readonly List<string> BuilderNotes = [];
+
+    /// <summary>A self-test line that also goes into the section's summary notice.</summary>
+    private static void BuilderNote(string text)
+    {
+        Line(text);
+        BuilderNotes.Add(text);
+    }
+
+    /// <summary>
+    /// Last Stand and built weapons: one trigger pull is one hit per victim, however many barrels or receivers land
+    /// (the server sums every projectile's damage per victim before it calls DamagePlayer, like a shotgun blast).
+    /// </summary>
+    private static void CheckBuilderLastStand()
+    {
+        World.SetMap(Maps.All[0]);
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
+        var human = game.Players[0];
+        var bot = game.Players.Values.First(p => p.Id != 0);
+        var lastStand = new PerkSet(PerkId.None, PerkId.LastStand, PerkId.None);
+        var t = 10.0;
+        foreach (var name in (string[])["Triple Pistol", "Nine Lives", "Twin Splitter Shotgun"])
+        {
+            if (Example(name) is not { } def)
+            {
+                Fail($"Last Stand: no example '{name}'");
+                continue;
+            }
+            void Setup(PerkSet victimPerks)
+            {
+                game.SelfTestPerks(human, PerkSet.Empty);
+                game.SelfTestPerks(bot, victimPerks);
+                game.SelfTestPlace(human, new Vector3(5, 0, 5), MathF.PI); // facing +Z, at the victim
+                game.SelfTestPlace(bot, new Vector3(5, 0, 8), 0);
+                human.BuiltPrimary = def;
+                human.Primary = human.Weapon = def.Id;
+                human.PrimaryKit = 0;
+            }
+            Setup(PerkSet.Empty);
+            game.SelfTestShoot(human, Vector3.Normalize(bot.Chest - human.Eye), t += 5);
+            var unshielded = World.MaxHealth - (bot.Alive ? bot.Health : 0);
+            Setup(lastStand);
+            game.SelfTestDamage(human, bot, 150, DamageKind.Bullet, t += 5);
+            game.SelfTestShoot(human, Vector3.Normalize(bot.Chest - human.Eye), t += 0.5);
+            var after = (bot.Alive, bot.Health, bot.ShieldCharges);
+            Line($"Last Stand: {name} ({def.BarrelCount} barrel(s) x {def.Pellets} pellet(s)): {unshielded} damage unshielded; shielded -> alive {after.Alive}, {after.Health} HP, {after.ShieldCharges} charge(s) left");
+            if (unshielded <= def.Damage * 1.5f)
+                Fail($"Last Stand: {name} didn't land several projectiles ({unshielded} damage), so it proves nothing");
+            if (!after.Alive || after.Health != 1 || after.ShieldCharges != Perks.LastStandCharges - 1)
+                Fail($"Last Stand: one pull of {name} should use exactly one shield charge");
+        }
+        human.BuiltPrimary = null;
     }
 
     private static void ExpectPartError(string json, string expect, string what)
@@ -117,7 +176,7 @@ public static partial class SelfTest
                 continue;
             }
             var d = a.Def!;
-            Line($"{ex.Build.Name,-22} {ex.Build.Receivers.Count} receiver(s), {ex.Build.PartCount} parts, {ex.Build.Weight:0.0} kg: {StatLine(d)}");
+            BuilderNote($"{ex.Build.Name}: {ex.Build.Receivers.Count} receiver(s), {ex.Build.PartCount} parts, {ex.Build.Weight:0.0} kg: {StatLine(d)}");
             if (d.Dps < ex.MinDps || d.Dps > ex.MaxDps)
                 Fail($"example '{ex.Build.Name}': DPS {d.Dps:0} outside its documented band {ex.MinDps:0}-{ex.MaxDps:0}");
             foreach (var (field, (min, max)) in WeaponFile.Ranges)

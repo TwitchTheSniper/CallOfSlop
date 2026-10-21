@@ -8,7 +8,7 @@
   "flags": ["refreshing"],
   "model": [
     {"size": [0.04, 0.03, 0.04], "pos": [0.03, 0, 0], "color": "accent"},
-    {"size": [0.03, 0.05, 0.03], "pos": [0.03, 0.03, 0], "color": "red"}
+    {"size": [0.03, 0.05, 0.03], "pos": [0.03, 0.03, 0], "color": "#c83228"}
   ],
   "stats": [
     {"stat": "equipTime", "add": -0.15}
