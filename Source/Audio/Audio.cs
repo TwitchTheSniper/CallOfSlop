@@ -48,6 +48,7 @@ public enum Sfx
     LandThud, // landing from a fall
     JumpPush, // jump push-off
     ShieldBlock, // Last Stand's shield blocking a bullet hit (an energy zap and a glassy ring)
+    FriendlyHit, // shooter feedback: hitting a teammate (no damage): a muted low bonk and a soft double beep
     COUNT,
 }
 

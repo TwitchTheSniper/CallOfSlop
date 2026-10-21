@@ -210,6 +210,16 @@ public static partial class Synth
                 Tone(b, 0.015f, 0.18f, 1003, 1003, 1, 0.003f, 0.2f);
                 Echo(b, 0.2f, 0.6f);
                 return Finish(b, 0.6f);
+            case Sfx.FriendlyHit:
+                // Hitting a teammate (no damage): a dull, muffled wooden "bonk" (low, rounded, no flesh noise or bright tick)
+                // and a soft falling two-note beep, so it reads as "wrong target", never as the enemy hit or the headshot crunch.
+                b = new Buf(0.32f);
+                Tone(b, 0, 0.7f, 330, 220, 0.04f, 0.002f, 0.05f, harmonics: 0.15f);
+                Tone(b, 0, 0.35f, 110, 90, 0.05f, 0.003f, 0.06f);
+                Noise(b, rng, 0, 0.25f, 0.002f, 0.015f, 500);
+                Tone(b, 0.06f, 0.22f, 520, 520, 1, 0.004f, 0.035f);
+                Tone(b, 0.14f, 0.2f, 390, 390, 1, 0.004f, 0.045f);
+                return Finish(b, 0.45f);
         }
         return null;
     }
