@@ -200,7 +200,7 @@ public static partial class SelfTest
             plain++;
             var text = File.ReadAllText(Path.Combine(Maps.Folder, m.SourceFile!));
             using var doc = JsonDocument.Parse(text, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-            var want = doc.RootElement.TryGetProperty("sky", out var se) ? MapFile.ToColour(se, "sky", m.Name) : Lighting.DefaultSky;
+            var want = doc.RootElement.TryGetProperty("sky"u8, out var se) ? MapFile.ToColour(se, "sky", m.Name) : Lighting.DefaultSky;
             if (m.Sky != want)
                 Fail($"{m.Name}: no skybox, so its sky colour should be its \"sky\" {want}, got {m.Sky}");
             var json = MapFile.ToJson(m);
