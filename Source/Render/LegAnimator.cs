@@ -76,11 +76,11 @@ public static class LegAnimator
     public const float CrouchHipBack = 0.08f;
 
     // ---- Gait parameters: walk (at or below walking speed) vs run (at sprint speed) ----
-    public const float WalkDuty = 0.62f, RunDuty = 0.36f; // fraction of the cycle a foot is planted
+    public const float WalkDuty = 0.58f, RunDuty = 0.32f; // fraction of the cycle a foot is planted
     public const float WalkLift = 0.11f, RunLift = 0.32f; // swing foot height
     public const float WalkBob = 0.025f, RunBob = 0.06f; // hip bob (walk: high at mid-stance; run: low at mid-stance)
     public const float WalkLean = 0.05f, RunLean = 0.2f; // forward lean of the upper body (radians)
-    public const float RunCrouch = 0.04f; // the hips sit a little lower when sprinting
+    public const float RunCrouch = 0.08f; // the hips sit a little lower when sprinting
 
     /// <summary>Cycles per second at a speed (standing): 1 + 0.45 s up to walking speed (3.7 Hz at 6 m/s), then up to 5 Hz at sprint.</summary>
     public static float Cadence(float speed) =>
@@ -135,6 +135,10 @@ public static class LegAnimator
         public float Ground0, Ground1; // smoothed ground height under each foot (world)
         public Vector3 Normal0, Normal1;
         public bool GroundInit;
+        public bool Locked0, Locked1; // a planted foot is locked to its touchdown point (world)
+        public Vector3 Lock0, Lock1;
+        public Vector3 Off0, Off1; // after a lock is released: where the foot was vs the gait (body space), fading out
+        public float OffT0, OffT1, OffDur0, OffDur1;
     }
 
     private static readonly State[] States = new State[256];
@@ -312,7 +316,7 @@ public static class LegAnimator
                     var arc = (MathF.Sin(MathF.PI * s) + early * MathF.Sin(MathF.Tau * s)) / (1f + 0.55f * early);
                     up = lift * arc;
                     pitch = -0.45f * run * arc;
-                    pull = 1 - MathF.Sin(MathF.PI * s);
+                    pull = 0.5f + 0.5f * MathF.Cos(MathF.Tau * s);
                     planted = false;
                 }
                 var gait = new Vector3(side * walkHipX + dir.X * along, AnkleHeight + up, -dir.Y * along);
@@ -331,6 +335,44 @@ public static class LegAnimator
                 footPitch[i] = pitch * moving;
                 pose.Planted[i] = planted && moving >= 0.999f;
                 needW[i] = float.Lerp(1f, pull, moving);
+
+                // Foot lock: a planted foot stays exactly where it touched down (the gait only decides when and where),
+                // dragged along only if the body gets more than 20 cm away from where the gait wants it. When it lifts, the
+                // difference fades out over the first part of the swing, so nothing pops.
+                ref var locked = ref i == 0 ? ref st.Locked0 : ref st.Locked1;
+                ref var lockAt = ref i == 0 ? ref st.Lock0 : ref st.Lock1;
+                ref var off = ref i == 0 ? ref st.Off0 : ref st.Off1;
+                ref var offT = ref i == 0 ? ref st.OffT0 : ref st.OffT1;
+                ref var offDur = ref i == 0 ? ref st.OffDur0 : ref st.OffDur1;
+                if (pose.Planted[i] && !fresh && st.Air < 0.001f && st.Mantle < 0.001f)
+                {
+                    var wT = Vector3.Transform(target[i] with { Y = 0 }, bodyRot) + pos;
+                    if (!locked)
+                    {
+                        lockAt = wT;
+                        locked = true;
+                    }
+                    var e = new Vector2(lockAt.X - wT.X, lockAt.Z - wT.Z);
+                    var el = e.Length();
+                    if (el > 0.2f)
+                        lockAt = new Vector3(wT.X + e.X * 0.2f / el, 0, wT.Z + e.Y * 0.2f / el);
+                    var l = Vector3.Transform(lockAt - pos, rotYaw);
+                    target[i].X = l.X;
+                    target[i].Z = l.Z;
+                }
+                else if (locked)
+                {
+                    locked = false;
+                    var l = Vector3.Transform(lockAt - pos, rotYaw);
+                    off = new Vector3(l.X - target[i].X, 0, l.Z - target[i].Z);
+                    offT = 1;
+                    offDur = Math.Clamp((1 - duty) / MathF.Max(cadence, 0.1f) * 0.7f, 0.05f, 0.15f);
+                }
+                if (offT > 0)
+                {
+                    target[i] += off * (offT * offT * (3 - 2 * offT));
+                    offT = MathF.Max(0, offT - dt / offDur);
+                }
             }
 
             if (st.Stepping >= 0 && moving < 0.999f)
@@ -425,9 +467,6 @@ public static class LegAnimator
                 drop = MathF.Max(drop, need * needW[i]);
             }
             drop = Math.Clamp(drop, 0f, MaxDrop);
-            // eased (the need jumps between feet as they plant and lift); the reach clamp below covers the lag
-            st.Drop = fresh ? drop : float.Lerp(st.Drop, drop, 1f - MathF.Exp(-18f * dt));
-            drop = st.Drop;
             hipY -= drop;
             var twistT = float.Lerp(0.07f, 0.12f, run) * moving * MathF.Sin(MathF.Tau * st.Phase) * MathF.Max(dir.Y * dir.Y, 0.3f);
             pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, hipZ);
