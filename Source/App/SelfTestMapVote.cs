@@ -107,7 +107,8 @@ public static partial class SelfTest
         now = 0;
         var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Normal, mapId: Maps.All[0].Id);
-        now = VoteStep(game, now); // a new game says Playing until its first tick starts the warmup/countdown
+        for (var i = 0; i < World.TickRate; i++) // a new game says Playing until its first server tick starts the countdown
+            now = VoteStep(game, now);
         for (var i = 0; i < 120 * World.TickRate && game.Phase != MatchPhase.Playing; i++)
             now = VoteStep(game, now);
         if (game.Phase != MatchPhase.Playing)
