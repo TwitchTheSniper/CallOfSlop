@@ -52,7 +52,11 @@
     "reviveRange": 1.8,
     "selfReviveSeconds": 5,
     "revivePoints": 0,
-    "bleedoutPointLoss": 0.1
+    "bleedoutPointLoss": 0.1,
+    "losePerksOnDown": true,
+    "dropBuildsOnBleedout": true,
+    "buildDropSeconds": 300,
+    "buildDropWarnSeconds": 30
   },
   "buy": {
     "holdSeconds": 0.25,
@@ -62,7 +66,8 @@
     {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "blurb": "Zombie hits do 40 percent of their damage."},
     {"name": "Speed Cola", "key": "speed", "cost": 3000, "reload": 0.5, "color": "#33d94d", "blurb": "Reload twice as fast."},
     {"name": "Double Tap", "key": "doubletap", "cost": 2000, "fireRate": 1.33, "color": "#f2bf26", "blurb": "Fire a third faster."},
-    {"name": "Quick Revive", "key": "revive", "cost": 1500, "soloCost": 500, "revive": 0.5, "selfRevive": true, "color": "#4d99ff", "blurb": "Revive teammates twice as fast. Alone, it gets you back up once."}
+    {"name": "Quick Revive", "key": "revive", "cost": 1500, "revive": 0.5, "color": "#4d99ff", "blurb": "Revive teammates twice as fast."},
+    {"name": "Second Wind", "key": "secondwind", "cost": 1500, "selfRevive": true, "color": "#ff8c1a", "blurb": "When you go down, you get back up on your own after a few seconds (used up)."}
   ],
   "box": {
     "moveMin": 4,

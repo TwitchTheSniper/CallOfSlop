@@ -86,8 +86,9 @@ public static partial class SelfTest
                 Fail($"the round curve goes down at round {i + 1}");
         if (rules.SpeedMix(4).Sprint > 0 || rules.SpeedMix(5).Sprint <= 0 || rules.SpeedMix(2).Run > 0 || rules.ZombieCount(1, 4) <= counts[0])
             Fail("sprinters should start at round 5 and runners at round 3, and more players should mean more zombies");
-        if (rules.Perks.Count != 4 || rules.Perk("jugg")?.DamageTaken >= 1 || rules.Perk("speed")?.Reload >= 1 || rules.Perk("doubletap")?.FireRate <= 1 || rules.Perk("revive") is not { SelfRevive: true })
-            Fail("the four World at War perks aren't in the rules as expected");
+        if (rules.Perks.Count != 5 || rules.Perk("jugg")?.DamageTaken >= 1 || rules.Perk("speed")?.Reload >= 1 || rules.Perk("doubletap")?.FireRate <= 1 || rules.Perk("revive") is not { SelfRevive: false, Revive: < 1f }
+            || rules.Perk("secondwind") is not { SelfRevive: true })
+            Fail("the four World at War perks and Second Wind (the only self-revive) aren't in the rules as expected");
         foreach (var bad in new[] { """{"format": "call-of-slop-zombies/1", "rounds": {"countBase": -3}}""", """{"format": "call-of-slop-zombies/1", "zombie": {"bite": 3}}""", """{"format": "x"}""" })
             try
             {
@@ -436,18 +437,62 @@ public static partial class SelfTest
             if (g.Phase != MatchPhase.Ended || !g.MatchResult.StartsWith("Game over", StringComparison.Ordinal))
                 Fail("the run should end when nobody is left standing");
         }
-        using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
-        {
-            // Solo with Quick Revive: back up on your own once.
-            var me = g.Local!;
-            g.SelfTestBeginRound(1, now);
-            g.ZP(me).Perks = (byte)(1 << g.ZRules.PerkIndex("revive"));
-            g.SelfTestDown(me, now);
-            ZTicks(g, ref now, g.ZRules.SelfReviveSeconds + 0.3);
-            ZLine($"solo Quick Revive: back up {!g.IsDowned(me) && me.Alive}, still playing {g.Phase == MatchPhase.Playing}, perk used up {g.ZP(me).Perks == 0}");
-            if (g.IsDowned(me) || g.Phase != MatchPhase.Playing || g.ZP(me).Perks != 0)
-                Fail("solo Quick Revive should get you back up once");
-        }
+        // Second Wind (the self-revive perk, start room): bought, down -> back up on your own after the delay, used up,
+        // bought again; solo and co-op. Quick Revive alone no longer gets you up.
+        foreach (var coop in new[] { false, true })
+            using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+            {
+                var me = g.Local!;
+                var zp = g.ZP(me);
+                Player? mate = null;
+                if (coop)
+                {
+                    mate = g.SelfTestAddHuman();
+                    g.SelfTestSpawn(mate);
+                    mate.Teleport(new Vector3(-5, 0, -1));
+                    mate.ImmuneUntil = 1e9;
+                }
+                me.ImmuneUntil = 1e9;
+                var k = g.ZRules.PerkIndex("secondwind");
+                var machine = zm.PerkMachines.FirstOrDefault(m => m.Perk == "secondwind");
+                if (machine == null || zm.Areas[zm.StartArea].Contains(machine.At) != true || machine.NeedsPower)
+                {
+                    Fail("Zombies Test should have a Second Wind machine in the start room that works without the power");
+                    break;
+                }
+                var stand = machine.At + World.FlatForward(machine.Yaw) * 1.0f;
+                var cost = g.ZRules.Perks[k].Price(!coop);
+                var results = new List<string>();
+                var ok = true;
+                for (var buy = 0; buy < 2; buy++)
+                {
+                    me.Teleport(stand);
+                    zp.Points = 5000;
+                    var prompt = g.FindZUse(me);
+                    g.SelfTestUse(me, now);
+                    var bought = zp.Has(k) && zp.Points == 5000 - cost;
+                    g.SelfTestDown(me, now);
+                    var downed = g.IsDowned(me);
+                    var used = !zp.Has(k);
+                    ZTicks(g, ref now, g.ZRules.SelfReviveSeconds - 0.5);
+                    var stillDown = g.IsDowned(me);
+                    ZTicks(g, ref now, 0.8);
+                    var up = !g.IsDowned(me) && me.Alive && g.Phase == MatchPhase.Playing;
+                    results.Add($"buy {buy + 1}: '{prompt?.Text}' bought {bought}, down {downed}, used up {used}, still down at {g.ZRules.SelfReviveSeconds - 0.5:0.0} s {stillDown}, up after {up}");
+                    ok &= bought && downed && used && stillDown && up;
+                }
+                // Without it: down stays down (solo: the game over; Quick Revive doesn't self-revive any more).
+                zp.Perks = (byte)(1 << g.ZRules.PerkIndex("revive"));
+                g.SelfTestBeginRound(1, now); // (the game over needs a round on)
+                g.SelfTestDown(me, now);
+                ZTicks(g, ref now, g.ZRules.SelfReviveSeconds + 0.3);
+                var noSelf = coop ? g.IsDowned(me) : g.Phase == MatchPhase.Ended;
+                ZLine($"Second Wind ({(coop ? "co-op" : "solo")}, {cost} points): {string.Join("; ", results)}; Quick Revive alone keeps you down {noSelf}");
+                if (!ok || !noSelf)
+                    Fail($"Second Wind should get you back up on your own once per buy ({(coop ? "co-op" : "solo")}), and Quick Revive alone shouldn't");
+            }
+
+        CheckZombieDroppedBuilds(map, zm, ref now);
 
         // ---- Workbench: change a build with your own parts; scrap ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
@@ -590,6 +635,184 @@ public static partial class SelfTest
         foreach (var s in texts)
             if (s.Any(ch => ch < 32 || ch > 126))
                 Fail($"Zombies text isn't plain ASCII: {s}");
+    }
+
+    /// <summary>
+    /// Dropped builds (ZombiesDrops.cs): bleeding out drops every build (not the untouched start builds) at the spot you
+    /// went down, spread out and never inside geometry; a teammate picks one up (swapping out the gun in hand, which drops
+    /// with the same time left), a free slot takes one without a swap, the melee build goes to the melee slot, and they all
+    /// despawn exactly 300 s after the drop. Plus the message round trip and determinism.
+    /// </summary>
+    private static void CheckZombieDroppedBuilds(Map map, ZombiesMap zm, ref double now)
+    {
+        var deathAt = new Vector3(2, 0, -3); // a spawn point in the start room
+
+        // A teammate with the Minigun (slot 1), the Auto Shotgun (slot 3) and the Fire Axe (melee) bleeds out there.
+        Game BleedOut(ref double t, out Player mate, out int pointsBefore)
+        {
+            var g = ZGame(0, ref t, tweak: r => { r.FirstRoundDelay = 9999; r.BleedoutSeconds = 5; });
+            g.Local!.ImmuneUntil = 1e9;
+            g.Local.Teleport(new Vector3(6, 0, 3));
+            mate = g.SelfTestAddHuman();
+            g.SelfTestSpawn(mate);
+            mate.ExtraSlots = true;
+            g.GiveBuild(mate, 0, StandardBuilds.Find("Minigun")!.Build(), full: true);
+            g.GiveBuild(mate, 2, StandardBuilds.Find("Auto Shotgun")!.Build(), full: true);
+            g.GiveBuild(mate, 4, StandardBuilds.Find("Fire Axe")!.Build(), full: true);
+            g.ZP(mate).Points = 1234;
+            pointsBefore = 1234;
+            mate.Teleport(deathAt);
+            g.SelfTestDown(mate, t);
+            ZTicks(g, ref t, g.ZRules.BleedoutSeconds + 0.5);
+            return g;
+        }
+
+        using (var g = BleedOut(ref now, out var mate, out var before))
+        {
+            var me = g.Local!;
+            var drops = g.ZWeaponDrops.ToList();
+            var names = string.Join(", ", drops.Select(d => d.Build.Name).OrderBy(n => n));
+            var tDrop = drops.Count > 0 ? drops[0].Until - g.ZRules.BuildDropSeconds : now;
+            var spread = drops.Count < 2 ? 9f : drops.SelectMany((a, i) => drops.Skip(i + 1).Select(b => Vector3.Distance(a.At, b.At))).Min();
+            var far = drops.Count == 0 ? 0 : drops.Max(d => Vector3.Distance(d.At, deathAt));
+            var solid = drops.Count(d => World.Blocked(d.At + new Vector3(0, 0.02f, 0)) || !World.CanWalkStraight(deathAt, d.At) || MathF.Abs(d.At.Y - deathAt.Y) > 0.05f);
+            var lost = before - g.ZP(mate).Points;
+            ZLine($"dropped builds: bled out {!mate.Alive}, dropped [{names}] (start pistol kept out), {g.ZRules.BuildDropSeconds:0} s each, spread {spread:0.00} m apart, at most {far:0.00} m from the spot, {solid} in geometry; points lost {lost} of {before}");
+            if (mate.Alive || names != "Auto Shotgun, Fire Axe, Minigun" || drops.Any(d => Math.Abs(d.Until - (tDrop + g.ZRules.BuildDropSeconds)) > 1e-6) || !drops.Single(d => d.Build.Name == "Fire Axe").Melee)
+                Fail($"bleeding out should drop every build but the start ones where you went down, for {g.ZRules.BuildDropSeconds} s ({names})");
+            if (spread < 0.45f || far > 1.2f || solid > 0)
+                Fail("dropped builds should be spread out around the spot, on the ground, never in geometry");
+            if (lost != (int)(before * g.ZRules.BleedoutPointLoss) || g.ZRules.BuildDropSeconds != 300 || !g.ZRules.LosePerksOnDown)
+                Fail("bleeding out should still cost 10 percent of your points, and the rules file should say 300 s and perks lost on down");
+
+            // A teammate picks up the Minigun with both slots full: it swaps with the Wall Rifle in hand, which drops there with the same time left.
+            me.Weapon = me.Primary;
+            var mini = drops.Single(d => d.Build.Name == "Minigun");
+            me.Teleport(mini.At);
+            var prompt = g.FindZUse(me);
+            g.SelfTestUse(me, now);
+            var left = g.ZWeaponDrops.FirstOrDefault(d => d.Build.Name == "Wall Rifle");
+            var swapped = Game.OwnsBuild(me, "Minigun") == 0 && g.ZP(me).Slots[0]?.Name == "Minigun" && g.Active.Def.Name == "Minigun" && left != null
+                          && Vector3.Distance(left.At, mini.At) < 0.01f && left.Until == mini.Until && !left.Full && g.ZWeaponDrops.Count == 3 && !g.ZWeaponDrops.Contains(mini);
+            ZLine($"  teammate pickup: '{prompt?.Text}' -> swapped {swapped} (Wall Rifle left there with {(left != null ? left.Until - now : 0):0} s, not a fresh timer)");
+            if (prompt?.Kind != ZUseKind.Pickup || !prompt.Value.Text.Contains("Minigun") || !prompt.Value.Text.Contains("swap for your Wall Rifle") || !swapped)
+                Fail("a teammate should pick up a dropped build, swapping it with the gun in hand (which drops with the remaining time)");
+
+            // A free slot (slots 3-4 bought): the Auto Shotgun goes there, nothing drops.
+            me.ExtraSlots = true;
+            var auto = g.ZWeaponDrops.Single(d => d.Build.Name == "Auto Shotgun");
+            me.Teleport(auto.At);
+            g.SelfTestUse(me, now);
+            var free = Game.OwnsBuild(me, "Auto Shotgun") == 2 && Game.OwnsBuild(me, "Minigun") == 0 && g.ZWeaponDrops.Count == 2;
+            ZLine($"  free slot: Auto Shotgun into slot {Game.OwnsBuild(me, "Auto Shotgun") + 1}, {g.ZWeaponDrops.Count} left on the floor");
+            if (!free)
+                Fail("a dropped build should go into a free slot without a swap");
+
+            // Back next round, the owner picks up their own Fire Axe: the melee slot, the Machete drops in its place.
+            g.SelfTestSpawn(mate);
+            var axe = g.ZWeaponDrops.Single(d => d.Build.Name == "Fire Axe");
+            mate.Teleport(axe.At);
+            var own = g.FindZUse(mate);
+            var gunsBefore = $"{mate.BuiltPrimary?.Name}/{mate.BuiltSecondary?.Name}";
+            g.SelfTestUse(mate, now);
+            var machete = g.ZWeaponDrops.FirstOrDefault(d => d.Build.Name == "Machete");
+            var melee = mate.MeleeBuild?.Name == "Fire Axe" && g.ZP(mate).Slots[4]?.Name == "Fire Axe" && machete is { Melee: true } && machete.Until == axe.Until
+                        && $"{mate.BuiltPrimary?.Name}/{mate.BuiltSecondary?.Name}" == gunsBefore;
+            ZLine($"  own pickup: '{own?.Text}' -> melee slot {mate.MeleeBuild?.Name}, guns kept {gunsBefore}, Machete on the floor {machete != null}");
+            if (own?.Text.Contains("your Fire Axe") != true || !melee)
+                Fail("the owner should pick up their own melee build into the melee slot (the old one swapped out, the guns untouched)");
+
+            // Replication: a client's copy reads every drop and the removals.
+            var msgs = new List<byte[]>();
+            foreach (var d in g.ZWeaponDrops)
+            {
+                var w = new PacketWriter();
+                Game.WriteWeaponDrop(w, d, d.Until - now);
+                msgs.Add(w.Span.ToArray());
+            }
+            var serverDrops = g.ZWeaponDrops.ToList();
+            using (var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+            {
+                World.SetMap(map);
+                var cnow = 5000.0;
+                foreach (var m in msgs)
+                    c.SelfTestReadWeaponDrop(m, cnow);
+                var same = c.ZWeaponDrops.Count == serverDrops.Count && serverDrops.All(s => c.ZWeaponDrops.FirstOrDefault(x => x.Id == s.Id) is { } cd && cd.At == s.At && cd.Build.ToText() == s.Build.ToText()
+                    && cd.Owner == s.Owner && cd.OwnerName == s.OwnerName && cd.Full == s.Full && cd.Melee == s.Melee && Math.Abs((cd.Until - cnow) - (s.Until - now)) < 0.01);
+                var prompted = false;
+                if (c.ZWeaponDrops.Count > 0 && c.Local is { } cl)
+                {
+                    cl.Teleport(c.ZWeaponDrops[0].At);
+                    prompted = c.FindZUse(cl)?.Kind == ZUseKind.Pickup;
+                }
+                var gw = new PacketWriter();
+                Game.WriteWeaponDropGone(gw, serverDrops[0].Id, me.Id);
+                c.SelfTestReadWeaponDrop(gw.Span, cnow);
+                var gone = c.ZWeaponDrops.Count == serverDrops.Count - 1 && c.ZWeaponDrops.All(x => x.Id != serverDrops[0].Id);
+                ZLine($"  replication: {msgs.Count} drop messages ({string.Join("/", msgs.Select(m => m.Length))} bytes), same on the client {same}, client prompt {prompted}, removal {gone}, protocol {ServerInfo.ProtocolVersion}");
+                if (!same || !prompted || !gone)
+                    Fail("dropped builds didn't replicate to a client (appear, prompt, go)");
+            }
+            World.SetMap(map);
+
+            // Despawn: exactly 300 s after the drop (simulated time), the swapped ones too (they kept the timer).
+            var ids = g.ZWeaponDrops.Count;
+            var until = mini.Until; // = the bleed-out time + 300 s (every drop shares it: the swapped ones kept it)
+            var exact = Math.Abs(until - tDrop - 300) < 1e-6 && g.ZWeaponDrops.All(d => d.Until == until);
+            g.SelfTestZombiesTick(until - World.TickDt);
+            var stillThere = g.ZWeaponDrops.Count;
+            g.SelfTestZombiesTick(until);
+            var after = g.ZWeaponDrops.Count;
+            now = Math.Max(now, until);
+            ZLine($"  despawn: {stillThere} of {ids} still there one tick before {g.ZRules.BuildDropSeconds:0} s, {after} at {g.ZRules.BuildDropSeconds:0} s");
+            if (ids == 0 || !exact || stillThere != ids || after != 0)
+                Fail("dropped builds should despawn exactly 300 s after the drop (and not before)");
+        }
+
+        // Never inside geometry: drops at every spawn and at every area's corners (where a player can stand), 5 at a time.
+        {
+            using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
+            World.SetMap(map);
+            var bases = new List<Vector3>(map.Spawns);
+            foreach (var a in zm.Areas)
+                foreach (var (x, z) in new[] { (a.X0 + 0.45f, a.Z0 + 0.45f), (a.X1 - 0.45f, a.Z0 + 0.45f), (a.X0 + 0.45f, a.Z1 - 0.45f), (a.X1 - 0.45f, a.Z1 - 0.45f) })
+                    bases.Add(new Vector3(x, 0, z));
+            int tested = 0, bad = 0, stacked = 0;
+            foreach (var b in bases)
+            {
+                if (World.Blocked(b + new Vector3(0, 0.02f, 0)))
+                    continue; // nobody can go down there
+                tested++;
+                var area = zm.Areas.FindIndex(a => a.Contains(b));
+                var spots = Game.DropSpots(b, 5, tested);
+                foreach (var s in spots)
+                {
+                    if (Vector3.Distance(s, b) < 0.01f)
+                        stacked++;
+                    if (World.Blocked(s + new Vector3(0, 0.02f, 0)) || MathF.Abs(s.X) > map.HalfX || MathF.Abs(s.Z) > map.HalfZ || (area >= 0 && !zm.Areas[area].Contains(s)) || !World.CanWalkStraight(b, s) && Vector3.Distance(s, b) > 0.01f)
+                    {
+                        bad++;
+                        Fail($"a dropped build went into geometry or out of its area: {s} from {b}");
+                    }
+                }
+            }
+            ZLine($"  placement: {tested} spots (spawns and area corners) x 5 drops: {bad} in geometry / out of the area, {stacked} on the spot itself (no room)");
+            if (tested < 8)
+                Fail("too few spots to test dropped-build placement on Zombies Test");
+        }
+
+        // Determinism: the same bleed-out twice drops the same builds at the same spots with the same ids.
+        string DropHash()
+        {
+            var t = 0.0;
+            using var g = BleedOut(ref t, out _, out _);
+            return string.Join(";", g.ZWeaponDrops.Select(d => $"{d.Id}:{d.Build.Name}@{d.At.X:0.000},{d.At.Y:0.000},{d.At.Z:0.000}/{d.Until:0.000}"));
+        }
+        var h1 = DropHash();
+        var h2 = DropHash();
+        ZLine($"  determinism: {(h1 == h2 ? "same" : "DIFFERENT")} ({h1.Length} chars)");
+        if (h1 != h2 || h1.Length == 0)
+            Fail($"the same bleed-out dropped builds differently: {h1} vs {h2}");
     }
 
     /// <summary>The build with <paramref name="part"/> on its grip's optic socket.</summary>

@@ -64,6 +64,7 @@ public sealed partial class Game
                         }
             if (Players.TryGetValue(id, out var me))
                 SendZRun(me);
+            SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
@@ -316,6 +317,9 @@ public sealed partial class Game
                 }
                 break;
             }
+            case (byte)Msg.ZPickup when !IsServer:
+                ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
+                break;
             case (byte)Msg.ZBuild when !IsServer && r.Has(6):
             {
                 var who = r.U8();

@@ -10,7 +10,7 @@ mystery box, wall buys, part drops and the workbench (the weapon builder: `WEAPO
 Everything marked **proposed** is a working default for the user to change; the numbers live in data files.
 
 Code: `Source/Game/ZombiesMode.cs` (run state, rounds, points, players, downs, the interact key, buyables, box, parts,
-workbench), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror), `ZombieBots.cs` (co-op
+workbench), `ZombiesDrops.cs` (dropped builds), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
 `Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-test `Source/App/SelfTestZombies.cs`.
@@ -31,11 +31,14 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   (they rise out of it). A zombie swipes at you when it's close (a windup you can back out of). Zombies at a window
   swipe through it at players standing right at it.
 - **Downs.** Zombie hits take health (it regenerates as usual). At 0 you're **downed**: you lie there (no walking, you
-  can still shoot), lose **every perk**, and bleed out in 30 s unless a teammate holds the interact key on you for 3 s
-  (Quick Revive halves it). Bleeding out: you're out until the **start of the next round**, then back in the start area
-  with the start gear (your builds, perks and 10 percent of your points are lost; the rest of your points stay).
-- **Solo.** Downed alone is the game over, unless you have **Quick Revive**: alone it gets you back up once after 5 s
-  (the perk is used up, World at War / Black Ops style). A separate self-revive item can come later (open question).
+  can still shoot), lose **every perk** (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the
+  interact key on you for 3 s (Quick Revive halves it). Bleeding out: you're out until the **start of the next round**,
+  then back in the start area with the start gear; perks and 10 percent of your points are lost
+  (`downs.bleedoutPointLoss`), and your **builds drop on the floor where you went down** (see "Dropped builds").
+- **Self-revive: Second Wind** (a perk machine in the start room, no power needed): when you go down with it you get
+  back up on your own after `downs.selfReviveSeconds` (5 s), **solo or co-op**; the perk is used up by it, and you can
+  buy it again. Downed alone without it is the game over. Quick Revive is back to World at War co-op behaviour
+  (revive teammates twice as fast) and no longer self-revives solo (user decision, 2026-10-21; see below).
 - **Game over** when nobody is left standing (everyone downed or bled out). The results screen says
   "Game over on round N: survived N-1 rounds"; after it a fresh run starts on the same map (no map vote in Zombies).
 - **No friendly fire**; your own grenade still hurts you.
@@ -90,9 +93,15 @@ grey: not possible now (needs the power, already owned...).
 | Juggernog | 2500 | zombie hits do 40 percent (the health bar stays 100: 6 hits instead of 3) |
 | Speed Cola | 3000 | reloads twice as fast |
 | Double Tap | 2000 | fires a third faster (client and server fire-rate checks both know it) |
-| Quick Revive | 1500 (500 solo) | revive teammates twice as fast; alone, gets you back up once |
+| Quick Revive | 1500 | revive teammates twice as fast |
+| Second Wind | 1500 (every buy) | down: back up on your own after 5 s (solo or co-op); used up by it |
 
-On Zombies Test, Quick Revive works without power; the other three need it.
+On Zombies Test, Quick Revive and Second Wind (both in the start room) work without power; the other three need it.
+A perk with `"selfRevive": true` is a self-revive perk (any perk can be made one in the rules file). **Second Wind
+(proposed)**: a fixed 1500 every time (no rising price), it counts toward the 4-perk limit (it's a perk like the
+others, and the limit makes it a real choice), it's used up by the revive (and lost with the others on a down anyway).
+Zombies don't attack downed players today, so a self-revive can't be "finished off" yet: being revived by a teammate
+first also ends it (the perk is still used up). Quick Revive lost its 500 solo price with its solo self-revive.
 
 ### Ammo
 
@@ -156,7 +165,35 @@ behind debris (window, a ground spawner, the wall rifle for ammo, Speed Cola, a 
 behind a door (window, the power switch, Double Tap, the slot upgrade, a workbench, salvage, the Burst Marksman), plus
 a shutter between the Hall and the Power Room that needs the power. Purpose-built maps come later.
 
-## Network (protocol 18)
+## Dropped builds (user decision, 2026-10-21)
+
+The user's answer to "should bleeding out stay this harsh?": "instead of losing your builds, they become pickups where
+your player has died. And if you can't get to them in time, will despawn after 5 minutes."
+
+- **What drops.** Bleeding out drops every built weapon in your slots (slots 1-4 and the melee build) at the spot you
+  went down. Untouched **start builds** don't drop (you get them back with the start gear anyway); a start build you
+  changed at the workbench does. Perks and 10 percent of your points are still lost (both data values: `downs`).
+- **Where.** Spread on rings of 0.7, 0.35 and 1.05 m around the spot, at least 0.45 m apart, each one where a player
+  could stand: not in a wall or a prop, inside the map and the area you went down in (never through a window or a shut
+  door), on the ground at about the same height, in straight walking reach of the spot. Short of room they share the
+  spot itself. Deterministic.
+- **How long.** `downs.buildDropSeconds` (300 s = 5 minutes) from the drop, then gone. The last
+  `downs.buildDropWarnSeconds` (30 s) the pickup and its label blink red.
+- **Looks.** The build's own model lying on its side, slowly turning and bobbing, over a ring of glowing dashes (gold
+  for guns, blue for melee builds, red when about to despawn) with a faint beam. Within 8 m the HUD lists each one:
+  "Tester's Minigun: 4:31 left".
+- **Who can pick up: anyone on the team** (proposed), so teammates can rescue your gear (and hand it back, or keep it).
+  No points refund to the owner. The owner gets a feed line when someone else takes their build.
+- **Picking up**: **hold E** (like a buy, `buy.holdSeconds`): a gun goes into a free slot 3-4 if you have one, else
+  it **swaps with the gun in your hands**; a melee build goes to the **melee slot**, swapping out the melee build there.
+  A swapped-out build **drops in the same spot with the picked one's remaining time** (not a fresh 5 minutes: swapping
+  back and forth can't keep builds on the floor forever). Bleed-out drops come with a full magazine and reserve; a
+  build left by a swap comes back with a magazine and the reserve the slot had (no free ammo by swapping).
+- At most 40 dropped builds at once (the oldest goes). Parts on a dropped build travel with it (the workbench treats
+  them as the new holder's, like any build in their slots).
+- `downs.dropBuildsOnBleedout: false` brings back the old rule (builds lost).
+
+## Network (protocol 19)
 
 New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (every zombie with each snapshot:
 id, quantised position, yaw, state, speed, health; 12 bytes each, about 300 bytes for 24), `ZWorld` (10 Hz: round,
@@ -167,6 +204,9 @@ player's slot: **the build's text**, which every PC assembles into the same weap
 guns) from `ZBuild`, fire them with the same stats as the server, and the server validates them as before. Clients
 interpolate zombies on the same clock as players; shots against zombies are lag compensated (32 ticks of history).
 Joiners get every player's builds when they connect. Game mode 5 is Zombies.
+Protocol 19 adds `ZPickup` at the end of `Msg` (reliable): a dropped build appeared (id, exact position, seconds left,
+owner id and name, full-ammo / melee flags, the build's text) or went (picked up by player X, or despawned); joiners
+get every dropped build on the floor when they connect. Clients keep the time left on their own clock.
 
 ## AI cost
 
@@ -182,9 +222,11 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 ## Open questions (for the user)
 
 1. **Numbers**: the round curve, points, prices, perks, reserve ammo and the drop chances are all proposed.
-2. **Bleeding out**: lose builds, perks and 10 percent of points, back next round with the start gear. Keep, soften
-   (keep your builds?) or make it harsher (lose parts too)?
-3. **Solo self-revive**: Quick Revive does it once today. A separate self-revive item (bought, or dropped)?
+2. ~~Bleeding out~~: **decided**: builds drop as pickups for 5 minutes (see "Dropped builds"). Still open: should
+   anyone be able to pick up your builds (today), or only you; and a points refund for the owner?
+3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). Still open: its price
+   (fixed 1500, or rising each buy), whether it should count toward the perk limit (today it does), and whether solo
+   Quick Revive should be cheaper again.
 4. **Power-ups** (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter) are not in yet: wanted, and which?
 5. **Special part flags** (incendiary, explosive, shock, fish...) still have no effects: they'd come alive against
    zombies first. Which ones matter most?

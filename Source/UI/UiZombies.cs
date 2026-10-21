@@ -114,7 +114,7 @@ public sealed partial class Ui
             if (me.Alive && me2.Downed)
             {
                 ImGui.PushFont(default, 28);
-                ImGuiSafe.TextColored(Red, me2.SelfReviveAt > 0 ? "DOWN - Quick Revive is getting you up" : "YOU ARE DOWN - a teammate can revive you");
+                ImGuiSafe.TextColored(Red, me2.SelfReviveAt > 0 ? $"DOWN - {game.ZRules.Perks.FirstOrDefault(d => d.SelfRevive)?.Name ?? "your perk"} is getting you up" : "YOU ARE DOWN - a teammate can revive you");
                 ImGui.PopFont();
                 ImGui.ProgressBar(me2.BleedFraction, new float2(320 * _scale, 10 * _scale), "bleeding out"u8);
                 if (me2.BeingRevived > 0)
@@ -130,6 +130,21 @@ public sealed partial class Ui
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
+            // Dropped builds near you: what they are and how long they stay (blinking red in their last seconds).
+            if (me.Alive)
+                foreach (var wd in game.ZWeaponDrops)
+                {
+                    var dx = wd.At.X - me.Position.X;
+                    var dz = wd.At.Z - me.Position.Z;
+                    if (dx * dx + dz * dz > 8 * 8)
+                        continue;
+                    var left = Math.Max(0, wd.Until - now);
+                    var warn = left < game.ZRules.BuildDropWarnSeconds;
+                    if (warn && ((int)(now * 4) & 1) == 0)
+                        continue;
+                    var whose = wd.Owner == me.Id ? "Your" : wd.OwnerName.Length > 0 ? $"{wd.OwnerName}'s" : "A";
+                    ImGuiSafe.TextColored(warn ? Red : ZGold, $"{whose} {wd.Build.Name}: {(int)left / 60}:{(int)left % 60:00} left{(warn ? " - about to despawn!" : "")}");
+                }
             foreach (var p in game.Players.Values)
                 if (p != me && p.Alive && game.IsDowned(p))
                     ImGuiSafe.TextColored(Orange, $"{game.NameOf(p.Id)} is down: revive them! ({(int)(game.ZP(p).BleedFraction * game.ZRules.BleedoutSeconds)} s)");
