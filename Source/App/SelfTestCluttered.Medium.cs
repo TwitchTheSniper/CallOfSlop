@@ -48,11 +48,12 @@ public static partial class SelfTest
         var cosmetic = props.Count - solid;
         var boxes = Enumerable.Range(0, m.Solid.Count).Count(i => m.IsDrawnBox(i) && !m.IsTrunk(i));
         var plants = m.FoliageInstances.Length;
+        var meshes = m.MeshPlacements.Count - m.BoundaryMeshCount; // the Mesh ops (not the edge's wall pieces and floor)
         ClutteredLine($"{m.Name}: {props.Count} props ({props.Count - m.ClutterStart} clutter): {solid} solid, {cosmetic} cosmetic, {breakable} breakable; "
-            + $"{boxes} boxes, {m.TrunkCount} trees, {plants} plants, {m.MeshPlacements.Count} meshes, {b.SegmentCount} outline segments");
-        if (solid < 250 || cosmetic < 600 || breakable < 150 || plants < 15000 || m.MeshPlacements.Count < 300 || m.TrunkCount < 20)
+            + $"{boxes} boxes, {m.TrunkCount} trees, {plants} plants, {meshes} meshes, {b.SegmentCount} outline segments");
+        if (solid < 250 || cosmetic < 600 || breakable < 150 || plants < 15000 || meshes < 300 || m.TrunkCount < 20)
             Fail($"{m.Name}: not cluttered enough (solid props {solid}/250, cosmetic {cosmetic}/600, breakable {breakable}/150, plants {plants}/15000, "
-                 + $"meshes {m.MeshPlacements.Count}/300, trees {m.TrunkCount}/20)");
+                 + $"meshes {meshes}/300, trees {m.TrunkCount}/20)");
         if (boxes > 400)
             Fail($"{m.Name}: {boxes} boxes (each is a draw call; keep it under 400 and use props and meshes)");
 
@@ -64,7 +65,7 @@ public static partial class SelfTest
         foreach (var f in m.FoliageInstances)
             if (!b.Contains(f.Position.X, f.Position.Z))
                 outside.Add($"{f.Type} ({f.Position.X:0.0},{f.Position.Z:0.0})");
-        foreach (var mp in m.MeshPlacements)
+        foreach (var mp in m.MeshPlacements.Where(mp => !mp.Source.StartsWith("boundary", StringComparison.OrdinalIgnoreCase))) // the edge's own wall pieces stand just outside
             if (!b.Contains(mp.Transform.Translation.X, mp.Transform.Translation.Z))
                 outside.Add($"mesh {mp.Source} ({mp.Transform.Translation.X:0.0},{mp.Transform.Translation.Z:0.0})");
         for (var i = 0; i < m.Solid.Count; i++)
@@ -195,7 +196,7 @@ public static partial class SelfTest
         var now = 0.0;
         var moved = new Dictionary<byte, float>();
         var last = new Dictionary<byte, Vector3>();
-        int outside = 0, fallen = 0, kills = 0, lastKills = 0;
+        int outside = 0, fallen = 0, kills = 0, lastKills = 0, jitTicks = 0;
         var lastMatch = game.MatchNumber;
         var cpu = new TickCpu();
         var b = map.Boundary!;
@@ -203,11 +204,17 @@ public static partial class SelfTest
         for (var i = 0; i < 60 * World.TickRate; i++)
         {
             now += dt;
+            // This section runs before the per-map matches, so some game code is still being compiled: a tick that spent
+            // over a millisecond in the JIT is a one-off warm-up and doesn't count towards the budget (it's reported).
+            var jit0 = System.Runtime.JitInfo.GetCompilationTime(currentThread: true);
             cpu.Start();
             var t0 = Stopwatch.GetTimestamp();
             game.Update(now, dt);
             var tick = i;
-            cpu.Stop(Stopwatch.GetElapsedTime(t0).TotalMilliseconds, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase}");
+            var jitMs = (System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - jit0).TotalMilliseconds;
+            if (jitMs > 1)
+                jitTicks++;
+            cpu.Stop(Stopwatch.GetElapsedTime(t0).TotalMilliseconds, count: i > 60 && jitMs <= 1, () => $"t={tick / 60.0:0.00} s, {game.Phase}");
             if (game.MatchNumber != lastMatch)
             {
                 kills += lastKills;
@@ -239,7 +246,7 @@ public static partial class SelfTest
         kills += lastKills;
         var stuck = moved.Count(kv => kv.Value < 15f);
         ClutteredLine($"{map.Name}: bot match (60 s, {game.Players.Count} players): kills {kills}, avg bot travel {(moved.Count == 0 ? 0 : moved.Values.Average()):0} m, "
-            + $"stuck {stuck}, player-ticks outside {outside}, below the floor {fallen}, worst tick {cpu.WorstText} ({sw.Elapsed.TotalSeconds:0.0} s)");
+            + $"stuck {stuck}, player-ticks outside {outside}, below the floor {fallen}, worst tick {cpu.WorstText} ({jitTicks} JIT warm-up ticks not counted; {sw.Elapsed.TotalSeconds:0.0} s)");
         if (game.Players.Count != map.MaxPlayers)
             Fail($"{map.Name}: {game.Players.Count} players in the bot match (expected {map.MaxPlayers})");
         if (kills == 0)

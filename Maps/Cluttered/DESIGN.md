@@ -39,7 +39,7 @@ prop has its twin, and that the walk from each team's spawns to every hill and t
   kept clear of the walking lanes, spawns, hills and flags.
 - Up to 1,280 cosmetic clutter props (litter, bottles, bags, boxes, planks, tyres; many break).
 - 431 meshes: awnings, domes, pots, rugs, lanterns, bunting and the minaret.
-- 26 hand-placed trees, plus grass, shrubs and bushes. The garden is lush (6 grass clumps per m2), with patchy dry
+- 26 hand-placed trees, plus grass, shrubs and bushes. The garden is lush (8 grass clumps per m2), with patchy dry
   tufts and wall weeds everywhere else.
 
 `tools/cluttered/crescent_bazaar.py` regenerates the file and a top-down preview PNG.

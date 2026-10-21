@@ -513,11 +513,11 @@ foliage = {
     "paths": paths,
     "regions": [
         # the garden: lush grass, shrubs and bushes, broadleaf trees, cypresses (pines) lining the walk
-        {"type": "grass", "density": 6, "polygon": [[-46, 18], [-30, 26], [-12, 24], [12, 24], [30, 26], [46, 18], [48, 30], [18, 40], [-18, 40], [-48, 30]], "color": "#6f8a3a"},
+        {"type": "grass", "density": 8, "polygon": [[-46, 18], [-30, 26], [-12, 24], [12, 24], [30, 26], [46, 18], [48, 30], [18, 40], [-18, 40], [-48, 30]], "color": "#6f8a3a"},
         {"type": "shrub", "density": 0.9, "polygon": [[-46, 18], [-30, 26], [-12, 24], [12, 24], [30, 26], [46, 18], [48, 30], [18, 40], [-18, 40], [-48, 30]]},
         {"type": "bush", "density": 0.35, "polygon": [[-46, 18], [-30, 26], [-12, 24], [12, 24], [30, 26], [46, 18], [48, 30], [18, 40], [-18, 40], [-48, 30]], "scale": [0.9, 1.5]},
         # dry tufts everywhere else (sparse, patchy)
-        {"type": "grass", "density": 2.2, "rect": [-69, -39, 69, 24], "patchiness": 0.8, "color": "#9a9450", "scale": [0.6, 1.0]},
+        {"type": "grass", "density": 3.2, "rect": [-69, -39, 69, 24], "patchiness": 0.8, "color": "#9a9450", "scale": [0.6, 1.0]},
         # weeds along the foot of the city wall
         {"type": "bush", "density": 0.25, "rect": [-69, -39, 69, 45], "patchiness": 0.9, "color": "#5f6e34", "scale": [0.6, 1.1]},
         # the base courtyards' kitchen gardens
