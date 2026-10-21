@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Duck on a Pond",
+  "category": "Animated",
+  "description": "A mallard duck bobbing on a small patch of pond water.",
+  "collision": "cosmetic",
+  "fadeDistance": 45,
+  "parts": [
+    {"size": [0.9, 0.01, 0.7], "offset": [0.0, 0.005, 0.0], "color": "#2a5070"},
+    {"size": [0.7, 0.012, 0.5], "offset": [0.0, 0.006, 0.0], "rotation": [0.0, 30.0, 0.0], "color": "#3a6890"},
+    {"size": [0.32, 0.12, 0.2], "offset": [0.0, 0.06, 0.0], "color": "#6a5030", "anim": {"type": "bob", "distance": 0.02, "period": 1.8, "jitter": 0.3}},
+    {"size": [0.18, 0.06, 0.18], "offset": [-0.12, 0.12, 0.0], "rotation": [0.0, 0.0, 15.0], "color": "#6a5030", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.02, 0.012, 0.11], "offset": [0.12, 0.13, 0.0], "color": "white", "anim": {"type": "follow", "parent": 3}},
+    {"size": [0.1, 0.12, 0.1], "offset": [0.12, 0.2, 0.0], "color": "darkgreen", "anim": {"type": "swing", "axis": "-z", "pivot": [0.1, 0.13, 0.0], "angle": 35, "period": 3.1, "oneWay": true, "parent": 3}},
+    {"size": [0.06, 0.03, 0.04], "offset": [0.19, 0.2, 0.0], "color": "orange", "anim": {"type": "swing", "axis": "-z", "pivot": [0.1, 0.13, 0.0], "angle": 35, "period": 3.1, "oneWay": true, "parent": 3}}
+  ]
+}

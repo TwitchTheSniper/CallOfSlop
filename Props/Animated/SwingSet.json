@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Swing Set",
+  "category": "Animated",
+  "description": "A red playground swing set, the empty seats swaying.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.12,
+        2.3,
+        0.7
+      ],
+      "offset": [
+        -1.2,
+        1.15,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        2.3,
+        0.7
+      ],
+      "offset": [
+        1.2,
+        1.15,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": true
+  },
+  "parts": [
+    {"size": [0.08, 2.3, 0.08], "offset": [-1.2, 1.1, -0.28], "rotation": [14.0, 0.0, 0.0], "color": "red"},
+    {"size": [0.08, 2.3, 0.08], "offset": [-1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
+    {"size": [0.08, 2.3, 0.08], "offset": [1.2, 1.1, -0.28], "rotation": [14.0, 0.0, 0.0], "color": "red"},
+    {"size": [0.08, 2.3, 0.08], "offset": [1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
+    {"size": [2.6, 0.08, 0.08], "offset": [0.0, 2.2, 0.0], "color": "red"},
+    {"size": [0.015, 1.7, 0.015], "offset": [-0.7, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [-0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.0, "wind": 0.5, "jitter": 0.15}},
+    {"size": [0.015, 1.7, 0.015], "offset": [-0.3, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [-0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.0, "wind": 0.5, "jitter": 0.15}},
+    {"size": [0.5, 0.04, 0.2], "offset": [-0.5, 0.48, 0.0], "color": "rubber", "anim": {"type": "swing", "axis": "x", "pivot": [-0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.0, "wind": 0.5, "jitter": 0.15}},
+    {"size": [0.015, 1.7, 0.015], "offset": [0.3, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.3, "wind": 0.5, "jitter": 0.15}},
+    {"size": [0.015, 1.7, 0.015], "offset": [0.7, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.3, "wind": 0.5, "jitter": 0.15}},
+    {"size": [0.5, 0.04, 0.2], "offset": [0.5, 0.48, 0.0], "color": "rubber", "anim": {"type": "swing", "axis": "x", "pivot": [0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.3, "wind": 0.5, "jitter": 0.15}}
+  ]
+}

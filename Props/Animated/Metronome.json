@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Metronome",
+  "category": "Animated",
+  "description": "A wooden pyramid metronome ticking from side to side.",
+  "collision": "cosmetic",
+  "breakable": {
+    "health": 20,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {
+      "count": 6,
+      "size": [
+        0.02,
+        0.06
+      ],
+      "speed": 4
+    }
+  },
+  "parts": [
+    {"size": [0.14, 0.03, 0.1], "offset": [0.0, 0.015, 0.0], "color": "darkwood"},
+    {"size": [0.1, 0.2, 0.08], "offset": [0.0, 0.12, 0.0], "color": "darkwood"},
+    {"size": [0.05, 0.06, 0.06], "offset": [0.0, 0.24, 0.0], "color": "darkwood"},
+    {"size": [0.07, 0.02, 0.005], "offset": [0.0, 0.08, 0.041], "color": "#c8a040"},
+    {"size": [0.008, 0.22, 0.006], "offset": [0.0, 0.16, 0.048], "color": "chrome", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 0.05, 0.045], "angle": 28, "period": 1.0, "jitter": 0.3}},
+    {"size": [0.025, 0.025, 0.012], "offset": [0.0, 0.2, 0.05], "color": "#c8a040", "anim": {"type": "swing", "axis": "z", "pivot": [0.0, 0.05, 0.045], "angle": 28, "period": 1.0, "jitter": 0.3}}
+  ]
+}

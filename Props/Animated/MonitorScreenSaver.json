@@ -1,0 +1,34 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Monitor Screen Saver",
+  "category": "Animated",
+  "description": "A computer monitor with a glowing logo bouncing round the screen.",
+  "collision": "cosmetic",
+  "breakable": {
+    "health": 25,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {
+      "count": 8,
+      "size": [
+        0.02,
+        0.08
+      ],
+      "speed": 4,
+      "colors": [
+        "black",
+        "#101830"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.25, 0.02, 0.18], "offset": [0.0, 0.01, 0.0], "color": "darkgrey"},
+    {"size": [0.04, 0.2, 0.03], "offset": [0.0, 0.12, -0.03], "color": "darkgrey"},
+    {"size": [0.56, 0.34, 0.04], "offset": [0.0, 0.33, 0.0], "color": "black"},
+    {"size": [0.52, 0.3, 0.005], "offset": [0.0, 0.33, 0.021], "color": "#101830"},
+    {"size": [0.002, 0.002, 0.002], "offset": [0.0, 0.33, 0.0], "color": "black", "anim": {"type": "bob", "axis": "y", "distance": 0.1, "period": 2.3, "randomPhase": true}},
+    {"size": [0.08, 0.05, 0.006], "offset": [0.0, 0.33, 0.024], "color": "#40e0a0", "anim": {"type": "pulse", "period": 4, "color": "#ff60c0", "off": "#40e0a0", "glow": 0.8, "parent": 7}},
+    {"size": [0.002, 0.002, 0.002], "offset": [0.0, 0.33, 0.0], "color": "black", "anim": {"type": "bob", "axis": "x", "distance": 0.2, "period": 3.1, "parent": 5}},
+    {"size": [0.02, 0.015, 0.006], "offset": [0.24, 0.17, 0.021], "color": "#30ff60", "anim": {"type": "blink", "period": 2, "duty": 0.5, "color": "#40ff60", "off": "#063a10", "glow": 0.5}}
+  ]
+}

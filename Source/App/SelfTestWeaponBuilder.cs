@@ -291,6 +291,18 @@ public static partial class SelfTest
     {
         var pistol = Parts.Find("Pistol Grip")!;
         var b = new WeaponBuild("Rules", pistol);
+        // Replacing or removing a part takes it fully off the build (a half-detached node crashed the workbench tree).
+        {
+            var t = new WeaponBuild("Swap", pistol);
+            var swapped = t.Root!.Attach("receiver_1", Parts.Find("Plinker Receiver")!);
+            t.Root.Attach("receiver_1", Parts.Find("Plinker Receiver")!);
+            if (swapped.Parent != null || swapped.ParentSocket != null || swapped.Path() != "")
+                Fail("rules: a replaced receiver is still half attached");
+            var second = t.Root.Child("receiver_1")!;
+            second.Detach();
+            if (t.Root.Child("receiver_1") != null || second.Path() != "")
+                Fail("rules: a removed receiver is still on the grip");
+        }
         if (BuildRules.Check(b).FirstOrDefault() is not { Incomplete: true } first || !first.Message.Contains("receiver"))
             Fail("rules: an empty grip should be incomplete for want of a receiver");
         var plinker = Parts.Find("Plinker Receiver")!;

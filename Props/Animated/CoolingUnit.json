@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cooling Unit",
+  "category": "Animated",
+  "description": "An industrial cooling unit on legs, two fans on top and a status light.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        2.0,
+        1.46,
+        1.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [2.0, 1.0, 1.0], "offset": [0.0, 0.9, 0.0], "color": "steel", "material": "metal"},
+    {"size": [0.08, 0.4, 0.08], "offset": [-0.9, 0.2, -0.4], "color": "darkgrey"},
+    {"size": [0.08, 0.4, 0.08], "offset": [-0.9, 0.2, 0.4], "color": "darkgrey"},
+    {"size": [0.08, 0.4, 0.08], "offset": [0.9, 0.2, -0.4], "color": "darkgrey"},
+    {"size": [0.08, 0.4, 0.08], "offset": [0.9, 0.2, 0.4], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [-0.5, 1.43, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [-0.5, 1.43, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [-0.5, 1.43, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [-0.5, 1.43, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"},
+    {"size": [0.38, 0.012, 0.12], "offset": [-0.313, 1.43, 0.033], "rotation": [20.0, -10.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [-0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [-0.411, 1.43, -0.168], "rotation": [20.0, 62.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [-0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [-0.632, 1.43, -0.137], "rotation": [20.0, 134.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [-0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [-0.671, 1.43, 0.083], "rotation": [20.0, -154.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [-0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [-0.474, 1.43, 0.188], "rotation": [20.0, -82.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [-0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.82, 0.012, 0.012], "offset": [-0.5, 1.47, -0.25], "color": "steel"},
+    {"size": [0.82, 0.012, 0.012], "offset": [-0.5, 1.47, 0.0], "color": "steel"},
+    {"size": [0.82, 0.012, 0.012], "offset": [-0.5, 1.47, 0.25], "color": "steel"},
+    {"size": [0.84, 0.06, 0.348], "offset": [0.5, 1.43, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [0.5, 1.43, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [0.5, 1.43, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
+    {"size": [0.84, 0.06, 0.348], "offset": [0.5, 1.43, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"},
+    {"size": [0.38, 0.012, 0.12], "offset": [0.665, 1.43, -0.095], "rotation": [20.0, 30.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [0.46, 1.43, -0.186], "rotation": [20.0, 102.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [0.311, 1.43, -0.02], "rotation": [20.0, 174.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [0.423, 1.43, 0.174], "rotation": [20.0, -114.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.38, 0.012, 0.12], "offset": [0.641, 1.43, 0.127], "rotation": [20.0, -42.0, 0.0], "color": "black", "anim": {"type": "spin", "rpm": 160, "pivot": [0.5, 1.43, 0.0], "jitter": 0.15}},
+    {"size": [0.82, 0.012, 0.012], "offset": [0.5, 1.47, -0.25], "color": "steel"},
+    {"size": [0.82, 0.012, 0.012], "offset": [0.5, 1.47, 0.0], "color": "steel"},
+    {"size": [0.82, 0.012, 0.012], "offset": [0.5, 1.47, 0.25], "color": "steel"},
+    {"size": [0.3, 0.2, 0.02], "offset": [0.0, 0.8, 0.51], "color": "white"},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.2, 0.8, 0.515], "color": "green", "anim": {"type": "blink", "period": 1.6, "duty": 0.15, "color": "#40ff60"}}
+  ]
+}

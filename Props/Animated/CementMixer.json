@@ -1,0 +1,65 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cement Mixer",
+  "category": "Animated",
+  "description": "A small orange cement mixer, its tilted drum turning.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.2,
+        1.3,
+        0.8
+      ],
+      "offset": [
+        0.0,
+        0.65,
+        0.0
+      ]
+    }
+  ],
+  "breakable": {
+    "health": 260,
+    "breakBy": [
+      "explosions",
+      "streaks"
+    ],
+    "sound": "metal",
+    "debris": {
+      "count": 12,
+      "size": [
+        0.06,
+        0.22
+      ],
+      "speed": 4,
+      "colors": [
+        "orange",
+        "darkgrey"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.08, 0.08, 1.2], "offset": [-0.3, 0.36, 0.0], "color": "darkgrey"},
+    {"size": [0.08, 0.08, 1.2], "offset": [0.3, 0.36, 0.0], "color": "darkgrey"},
+    {"size": [0.1, 0.36, 0.36], "offset": [-0.4, 0.2, -0.4], "color": "rubber"},
+    {"size": [0.1, 0.36, 0.36], "offset": [0.4, 0.2, -0.4], "color": "rubber"},
+    {"size": [0.08, 0.5, 0.08], "offset": [0.0, 0.25, 0.5], "color": "darkgrey"},
+    {"size": [0.06, 0.4, 0.06], "offset": [0.0, 0.6, -0.3], "color": "orange"},
+    {"size": [0.3, 0.3, 0.3], "offset": [0.0, 0.55, -0.45], "color": "orange"},
+    {"size": [0.6, 0.06, 0.1], "offset": [0.0, 0.2, -0.4], "color": "steel"},
+    {"size": [0.75, 0.311, 0.55], "offset": [0.0, 0.95, 0.05], "rotation": [-35.0, 0.0, 0.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.75, 0.311, 0.55], "offset": [0.0, 0.95, 0.05], "rotation": [-35.0, 0.0, 45.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.75, 0.311, 0.55], "offset": [0.0, 0.95, 0.05], "rotation": [-35.0, 0.0, 90.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.75, 0.311, 0.55], "offset": [0.0, 0.95, 0.05], "rotation": [-35.0, 0.0, 135.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.55, 0.228, 0.25], "offset": [0.0, 1.168, 0.361], "rotation": [-35.0, 0.0, 0.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.55, 0.228, 0.25], "offset": [0.0, 1.168, 0.361], "rotation": [-35.0, 0.0, 45.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.55, 0.228, 0.25], "offset": [0.0, 1.168, 0.361], "rotation": [-35.0, 0.0, 90.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.55, 0.228, 0.25], "offset": [0.0, 1.168, 0.361], "rotation": [-35.0, 0.0, 135.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.38, 0.157, 0.12], "offset": [0.0, 1.265, 0.501], "rotation": [-35.0, 0.0, 0.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.38, 0.157, 0.12], "offset": [0.0, 1.265, 0.501], "rotation": [-35.0, 0.0, 45.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.38, 0.157, 0.12], "offset": [0.0, 1.265, 0.501], "rotation": [-35.0, 0.0, 90.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.38, 0.157, 0.12], "offset": [0.0, 1.265, 0.501], "rotation": [-35.0, 0.0, 135.0], "color": "orange", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.05, 0.04, 0.6], "offset": [0.38, 0.95, 0.05], "rotation": [-35.0, 0.0, 0.0], "color": "darkgrey", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}},
+    {"size": [0.05, 0.04, 0.6], "offset": [-0.38, 0.95, 0.05], "rotation": [-35.0, 0.0, 0.0], "color": "darkgrey", "anim": {"type": "spin", "axis": [0.0, 0.574, 0.819], "rpm": 24, "pivot": [0.0, 0.95, 0.05]}}
+  ]
+}

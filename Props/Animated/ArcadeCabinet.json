@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Arcade Cabinet",
+  "category": "Animated",
+  "description": "An arcade machine: flickering screen, glowing marquee, buttons lighting in turn.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.76,
+        2.15,
+        0.76
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "breakable": {
+    "health": 160,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {
+      "count": 14,
+      "size": [
+        0.05,
+        0.25
+      ],
+      "speed": 4,
+      "colors": [
+        "#202040",
+        "#d03070",
+        "#203060"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.7, 1.1, 0.75], "offset": [0.0, 0.55, 0.0], "color": "#202040"},
+    {"size": [0.7, 0.9, 0.45], "offset": [0.0, 1.45, -0.15], "color": "#202040"},
+    {"size": [0.74, 0.25, 0.6], "offset": [0.0, 2.025, -0.08], "color": "#202040"},
+    {"size": [0.72, 0.08, 0.35], "offset": [0.0, 1.12, 0.22], "rotation": [10.0, 0.0, 0.0], "color": "black"},
+    {"size": [0.04, 1.6, 0.76], "offset": [-0.37, 1.1, -0.0], "color": "#d03070"},
+    {"size": [0.04, 1.6, 0.76], "offset": [0.37, 1.1, -0.0], "color": "#d03070"},
+    {"size": [0.56, 0.44, 0.02], "offset": [0.0, 1.5, 0.08], "rotation": [-12.0, 0.0, 0.0], "color": "#203060", "anim": {"type": "flicker", "rate": 14, "duty": 0.8, "color": "#4080ff", "off": "#102040", "glow": 0.8}},
+    {"size": [0.66, 0.18, 0.02], "offset": [0.0, 2.02, 0.23], "color": "#ffd040", "anim": {"type": "pulse", "period": 1.6, "color": "#fff080", "off": "#806010", "glow": 1.2}},
+    {"size": [0.05, 0.03, 0.05], "offset": [-0.18, 1.18, 0.25], "color": "#ff3030", "anim": {"type": "cycle", "period": 1.0, "steps": 4, "on": [0], "color": "#ff3030", "off": "#202020", "glow": 1.0}},
+    {"size": [0.05, 0.03, 0.05], "offset": [0.0, 1.18, 0.25], "color": "#30a0ff", "anim": {"type": "cycle", "period": 1.0, "steps": 4, "on": [1], "color": "#30a0ff", "off": "#202020", "glow": 1.0}},
+    {"size": [0.05, 0.03, 0.05], "offset": [0.15, 1.18, 0.25], "color": "#30ff60", "anim": {"type": "cycle", "period": 1.0, "steps": 4, "on": [2], "color": "#30ff60", "off": "#202020", "glow": 1.0}},
+    {"size": [0.05, 0.03, 0.05], "offset": [0.25, 1.18, 0.25], "color": "#ffd030", "anim": {"type": "cycle", "period": 1.0, "steps": 4, "on": [3], "color": "#ffd030", "off": "#202020", "glow": 1.0}},
+    {"size": [0.03, 0.12, 0.03], "offset": [-0.25, 1.22, 0.24], "color": "black", "anim": {"type": "swing", "axis": "z", "pivot": [-0.25, 1.17, 0.24], "angle": 15, "period": 0.9, "jitter": 0.4}},
+    {"size": [0.06, 0.06, 0.06], "offset": [-0.25, 1.29, 0.24], "color": "red", "anim": {"type": "swing", "axis": "z", "pivot": [-0.25, 1.17, 0.24], "angle": 15, "period": 0.9, "jitter": 0.4}}
+  ]
+}

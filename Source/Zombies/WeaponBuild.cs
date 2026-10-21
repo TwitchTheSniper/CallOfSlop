@@ -35,7 +35,10 @@ public sealed class BuildNode
                 ?? throw new ArgumentException($"{Part.Name} has no socket \"{socket}\"");
         child.Detach();
         if (_children.TryGetValue(s.Name, out var old))
-            old.Parent = null;
+        {
+            old.Parent = null; // the replaced part is fully off the build (a half-detached node broke Path())
+            old.ParentSocket = null;
+        }
         _children[s.Name] = child;
         child.Parent = this;
         child.ParentSocket = s;
@@ -86,7 +89,7 @@ public sealed class BuildNode
     public string Path()
     {
         var parts = new List<string>();
-        for (var n = this; n.ParentSocket != null; n = n.Parent!)
+        for (var n = this; n is { ParentSocket: not null, Parent: not null }; n = n.Parent)
             parts.Add(n.ParentSocket.Name);
         parts.Reverse();
         return string.Join('/', parts);

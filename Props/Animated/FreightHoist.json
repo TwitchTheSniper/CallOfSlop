@@ -1,0 +1,45 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Freight Hoist",
+  "category": "Animated",
+  "description": "An open goods lift with a crate, slowly riding up and down its frame.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        0.06,
+        1.4
+      ]
+    },
+    {
+      "size": [
+        1.6,
+        3.07,
+        0.16
+      ],
+      "offset": [
+        0.0,
+        1.535,
+        -0.6
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.12, 3.0, 0.12], "offset": [-0.7, 1.5, -0.6], "color": "darkgrey"},
+    {"size": [0.12, 3.0, 0.12], "offset": [0.7, 1.5, -0.6], "color": "darkgrey"},
+    {"size": [1.6, 0.14, 0.14], "offset": [0.0, 3.0, -0.6], "color": "darkgrey"},
+    {"size": [1.6, 0.06, 1.4], "offset": [0.0, 0.03, 0.0], "color": "#404040", "material": "grid"},
+    {"size": [1.3, 0.08, 1.0], "offset": [0.0, 1.04, 0.0], "color": "#808080", "material": "grid", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [0.04, 0.9, 0.04], "offset": [-0.63, 1.53, 0.48], "color": "yellow", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [0.04, 0.9, 0.04], "offset": [0.63, 1.53, 0.48], "color": "yellow", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [1.3, 0.04, 0.04], "offset": [0.0, 1.96, 0.48], "color": "yellow", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [0.5, 0.4, 0.4], "offset": [0.2, 1.28, -0.1], "color": "cardboard", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [0.03, 1.9, 0.03], "offset": [0.0, 2.03, -0.45], "color": "black", "anim": {"type": "bob", "distance": 0.8, "period": 12, "phase": 0.25, "jitter": 0.1}},
+    {"size": [0.08, 0.08, 0.06], "offset": [0.0, 2.8, -0.52], "color": "#ffb020", "anim": {"type": "blink", "period": 1.0, "duty": 0.5, "color": "#ffb020", "off": "#3a2606", "glow": 1.2}}
+  ]
+}

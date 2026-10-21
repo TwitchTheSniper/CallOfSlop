@@ -182,6 +182,7 @@ public static class PropFile
             if (max.Y <= 0.002f)
                 throw new PropFileException($"{source}: the whole model is below the ground (y = 0)");
 
+            PropAnimFile.Validate(def, source);
             def.Colliders = def.IsSolid ? ReadColliders(collider, def, source) : [];
             if (!def.IsSolid && collider != null)
                 throw new PropFileException($"{source}: \"collider\" is only for solid props (this one is cosmetic)");
@@ -241,8 +242,11 @@ public static class PropFile
                 case "texscale":
                     part.TexScale = Range(Num(p.Value, w), 0.1f, 10f, w);
                     break;
+                case "anim":
+                    part.Anim = PropAnimFile.Read(p.Value, where);
+                    break;
                 default:
-                    throw new PropFileException($"{w}: unknown key. A part uses: size, offset, rotation (or yaw / pitch / roll), color, material, texScale");
+                    throw new PropFileException($"{w}: unknown key. A part uses: size, offset, rotation (or yaw / pitch / roll), color, material, texScale, anim");
             }
         }
         if (!hasSize)

@@ -1,0 +1,64 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bell Frame",
+  "category": "Animated",
+  "description": "A bronze bell swinging in a timber frame.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.16,
+        2.06,
+        0.18
+      ],
+      "offset": [
+        -0.6,
+        1.03,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        0.16,
+        2.06,
+        0.18
+      ],
+      "offset": [
+        0.6,
+        1.03,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        1.6,
+        0.1,
+        0.5
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {"size": [0.14, 2.0, 0.14], "offset": [-0.6, 1.0, 0.0], "color": "darkwood"},
+    {"size": [0.14, 2.0, 0.14], "offset": [0.6, 1.0, 0.0], "color": "darkwood"},
+    {"size": [1.4, 0.14, 0.18], "offset": [0.0, 2.0, 0.0], "color": "darkwood"},
+    {"size": [1.6, 0.1, 0.5], "offset": [0.0, 0.05, 0.0], "color": "concrete"},
+    {"size": [0.5, 0.12, 0.207], "offset": [0.0, 1.26, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.5, 0.12, 0.207], "offset": [0.0, 1.26, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.5, 0.12, 0.207], "offset": [0.0, 1.26, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.5, 0.12, 0.207], "offset": [0.0, 1.26, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.42, 0.3, 0.174], "offset": [0.0, 1.47, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.42, 0.3, 0.174], "offset": [0.0, 1.47, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.42, 0.3, 0.174], "offset": [0.0, 1.47, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.42, 0.3, 0.174], "offset": [0.0, 1.47, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.3, 0.14, 0.124], "offset": [0.0, 1.69, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.3, 0.14, 0.124], "offset": [0.0, 1.69, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.3, 0.14, 0.124], "offset": [0.0, 1.69, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.3, 0.14, 0.124], "offset": [0.0, 1.69, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b08a3a", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.2, 0.16, 0.06], "offset": [0.0, 1.84, 0.0], "color": "black", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}},
+    {"size": [0.06, 0.3, 0.06], "offset": [0.0, 1.19, 0.0], "color": "#806020", "anim": {"type": "swing", "axis": "x", "pivot": [0.0, 1.92, 0.0], "angle": 18, "period": 2.4, "jitter": 0.15}}
+  ]
+}
