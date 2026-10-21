@@ -64,7 +64,8 @@ public static partial class SelfTest
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
-            Section("Collision grid", CheckCollisionGrid); // SelfTestNav.cs
+            Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
+            Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Server browser", CheckServerBrowser);

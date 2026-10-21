@@ -100,7 +100,7 @@ public static class PropDebris
     /// <summary>The ground, terrain or box top under a point (a short ray down), or far below if there's nothing.</summary>
     private static float FloorUnder(Vector3 p)
     {
-        var d = World.RaycastWorld(p + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 12f);
+        var d = World.Query.Raycast(p + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 12f, QueryFilter.All);
         return d >= 12f ? p.Y - 50f : p.Y + 0.3f - d;
     }
 

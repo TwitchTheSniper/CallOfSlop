@@ -130,6 +130,6 @@ public sealed partial class Game
             return World.CanWalkStraight(from - Vector3.UnitY, to - Vector3.UnitY);
         var d = to - from;
         var dist = d.Length();
-        return dist < 0.01f || World.RaycastWorld(from, d / dist, dist) >= dist - 0.05f;
+        return dist < 0.01f || World.Query.Raycast(from, d / dist, dist, QueryFilter.All) >= dist - 0.05f;
     }
 }

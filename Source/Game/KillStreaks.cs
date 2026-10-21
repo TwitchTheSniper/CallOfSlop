@@ -294,7 +294,7 @@ public static class KillStreaks
         x = Math.Clamp(x, -World.Map.HalfX + 0.5f, World.Map.HalfX - 0.5f);
         z = Math.Clamp(z, -World.Map.HalfZ + 0.5f, World.Map.HalfZ - 0.5f);
         var top = MathF.Max(nearY, 0) + 40f;
-        var d = World.RaycastWorld(new Vector3(x, top, z), -Vector3.UnitY, top + 5f);
+        var d = World.Query.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 5f, QueryFilter.All);
         return new Vector3(x, MathF.Max(top - d, -1f), z);
     }
 
@@ -603,7 +603,7 @@ public sealed partial class Game
         var dist = to.Length();
         if (dist > radius)
             return 0;
-        if (dist > 0.3f && World.RaycastWorld(center, to / dist, dist) < dist - 0.05f)
+        if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
             return 0;
         return maxDamage * MathF.Pow(1f - dist / radius, 1.4f);
     }
@@ -750,7 +750,7 @@ public sealed partial class Game
             if (!local.Alive || !local.Streak.IsReady(StreakTargeting) || Phase != MatchPhase.Playing)
                 StreakTargeting = StreakId.None;
             var dir = World.Forward(LookYaw, LookPitch);
-            var d = World.RaycastWorld(local.RenderEye, dir, KillStreaks.MaxCallRange);
+            var d = World.Query.Raycast(local.RenderEye, dir, KillStreaks.MaxCallRange, QueryFilter.All);
             StreakAimValid = d < KillStreaks.MaxCallRange - 0.01f;
             StreakAimPoint = local.RenderEye + dir * d;
         }

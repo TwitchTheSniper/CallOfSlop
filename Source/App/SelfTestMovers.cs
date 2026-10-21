@@ -122,17 +122,19 @@ public static partial class SelfTest
             CheckMoverMomentum(map);
             CheckMoverRays(map);
             var withGrid = CheckMoverPrediction(map);
-            World.UseGrid = false; // the collision grid is for static boxes; movers are queried separately either way
+            var mover = World.Mover;
+            World.Mover = LegacyMover.Instance; // the old movement code (Physics module parity)
+            LegacyCollision.UseGrid = false;
             try
             {
                 var noGrid = CheckMoverPrediction(map);
                 if (noGrid != withGrid)
-                    Fail($"movement on a mover differs without the collision grid: {withGrid} vs {noGrid}");
-                CheckMoverGrenade(map);
+                    Fail($"movement on a mover differs from the old code (every-box scan): {withGrid} vs {noGrid}");
             }
             finally
             {
-                World.UseGrid = true;
+                World.Mover = mover;
+                LegacyCollision.UseGrid = true;
             }
             CheckMoverGrenade(map);
             CheckMoverNav(map);
@@ -435,9 +437,9 @@ public static partial class SelfTest
             Throwables.Step(g, World.TickDt);
         }
         MoverPhysics.Clock = 0;
-        Line($"grenade on the parked elevator (grid {(World.UseGrid ? "on" : "off")}): rests at y {g.Pos.Y:0.00} (deck top {top.Y:0.00})");
+        Line($"grenade on the parked elevator: rests at y {g.Pos.Y:0.00} (deck top {top.Y:0.00})");
         if (g.Pos.Y < top.Y || g.Pos.Y > top.Y + 0.3f)
-            Fail($"a grenade dropped on the elevator ended at y {g.Pos.Y:0.00} (deck top {top.Y:0.00}, grid {(World.UseGrid ? "on" : "off")})");
+            Fail($"a grenade dropped on the elevator ended at y {g.Pos.Y:0.00} (deck top {top.Y:0.00})");
     }
 
     /// <summary>The nav graph keeps out of every mover's sweep, and bots can still get between the spawns.</summary>

@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// (the "offline ping response"). Starts with a magic tag so it can be found inside RakNet's pong.
 /// </summary>
 public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
-    GameMode Mode = GameMode.FreeForAll)
+    GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic)
 {
     // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome);
     // 5: kill packet carries the weapon kit, killer HP and damage source; 6: kill streaks (loadout packet + streak messages);
@@ -19,7 +19,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 11: up to 32 players: quantised, split snapshots with a presence mask (Snapshot.cs), server-full message,
     //     per-map player limits (max players in this info is the map's), TDM kill limit in the mode state
     // 12: breakable props (prop break and prop state messages)
-    public const byte ProtocolVersion = 12;
+    // 13: physics mode (classic | swept movement) in the Welcome and at the end of this info
+    public const byte ProtocolVersion = 13;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -31,6 +32,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         b.AddRange(name);
         b.Add((byte)map.Length);
         b.AddRange(map);
+        b.Add((byte)Physics);
         return b.ToArray();
     }
 
@@ -46,7 +48,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var name = Encoding.ASCII.GetString(d.Slice(9, d[8]));
         var rest = d[(9 + d[8])..];
         var map = rest.Length >= 1 && rest.Length >= 1 + rest[0] ? Encoding.UTF8.GetString(rest.Slice(1, rest[0])) : "?";
-        return new ServerInfo(name, map, d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0], (GameMode)d[1]);
+        var physics = rest.Length >= 1 && rest.Length >= 2 + rest[0] && rest[1 + rest[0]] == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic;
+        return new ServerInfo(name, map, d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0], (GameMode)d[1], physics);
     }
 }
 

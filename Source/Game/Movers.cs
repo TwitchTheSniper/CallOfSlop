@@ -189,7 +189,7 @@ public static class MoverPhysics
 
     /// <summary>Blocked by static geometry or a mover (movement only; bot navigation uses <see cref="World.Blocked"/>).</summary>
     public static bool BlockedAll(Vector3 feet, float height, double tick) =>
-        World.Blocked(feet, height) || (World.Map.Movers.Count > 0 && Overlaps(feet, height, tick));
+        World.Physics.OverlapBody(feet, height, new QueryFilter(QueryLayers.Static | QueryLayers.Movers, tick));
 
     /// <summary>Index of the box the feet stand on at <paramref name="tick"/> (the highest top within tolerance), or -1.</summary>
     public static int SupportBox(ReadOnlySpan<PosedBox> boxes, Vector3 feet, float tolerance = SupportTolerance)
@@ -216,9 +216,14 @@ public static class MoverPhysics
         if (i < 0)
             return -1;
         var top = boxes[i].Top;
-        foreach (var b in World.Map.Solid)
+        var phys = World.Physics;
+        var near = new Vector3(0.001f, SupportTolerance + 0.001f, 0.001f);
+        foreach (var k in phys.CollectBoxes(feet - near, feet + near))
+        {
+            var b = phys.Boxes[k];
             if (feet.X >= b.Min.X && feet.X <= b.Max.X && feet.Z >= b.Min.Z && feet.Z <= b.Max.Z && MathF.Abs(feet.Y - b.Max.Y) <= SupportTolerance && b.Max.Y >= top - 0.001f)
                 return -1;
+        }
         return i;
     }
 
@@ -299,7 +304,7 @@ public static class MoverPhysics
         }
     }
 
-    /// <summary>The vertical part of <see cref="World.Move"/> against mover boxes: land on tops, bump heads on bottoms.</summary>
+    /// <summary>The vertical part of <see cref="ClassicMover"/>'s move against mover boxes: land on tops, bump heads on bottoms.</summary>
     public static void Vertical(Vector3 feet, float prevY, ref float newY, ref Vector3 velocity, ref bool grounded, float height, uint tick)
     {
         foreach (ref readonly var b in At(tick))
@@ -460,26 +465,23 @@ public static class MoverPhysics
             var map = World.Map;
             if (!ReferenceEquals(_sweepMap, map))
             {
-                _sweeps = map.Movers.Select(m =>
-                {
-                    var s = m.Sweep;
-                    var margin = World.PlayerRadius + 0.2f;
-                    var lo = new Vector3(s.Min.X - margin, s.Min.Y, s.Min.Z - margin);
-                    var hi = new Vector3(s.Max.X + margin, 200f, s.Max.Z + margin);
-                    return new Box((lo + hi) / 2, (hi - lo) / 2);
-                }).ToArray();
+                _sweeps = SweepPillars(map);
                 _sweepMap = map;
             }
             return _sweeps;
         }
     }
 
-    /// <summary>Bot navigation's ray cast: the grid's static boxes and terrain, plus every mover's sweep as a solid pillar.</summary>
-    public static float NavRaycast(CollisionGrid grid, Vector3 origin, Vector3 dir, float maxDist)
-    {
-        var t = grid.Raycast(origin, dir, maxDist);
-        return World.Map.Movers.Count == 0 || t <= 0 ? t : RaycastSweeps(origin, dir, t);
-    }
+    /// <summary>A map's sweep pillars (see <see cref="Sweeps"/>); the physics world keeps its own copy for <see cref="QueryLayers.MoverSweeps"/>.</summary>
+    public static Box[] SweepPillars(Map map) =>
+        map.Movers.Select(m =>
+        {
+            var s = m.Sweep;
+            var margin = World.PlayerRadius + 0.2f;
+            var lo = new Vector3(s.Min.X - margin, s.Min.Y, s.Min.Z - margin);
+            var hi = new Vector3(s.Max.X + margin, 200f, s.Max.Z + margin);
+            return new Box((lo + hi) / 2, (hi - lo) / 2);
+        }).ToArray();
 
     /// <summary>Nearest sweep pillar along a ray, or <paramref name="maxDist"/>.</summary>
     public static float RaycastSweeps(Vector3 origin, Vector3 dir, float maxDist)
