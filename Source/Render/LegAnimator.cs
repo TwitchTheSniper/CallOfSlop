@@ -124,7 +124,7 @@ public static class LegAnimator
         public double Last;
         public bool Init;
         public Vector2 Vel; // smoothed velocity relative to facing: x = right, y = forward
-        public float Phase, PelvisH, AirTime, Air, Fall, Mantle, Land, MinVy, Twist;
+        public float Phase, PelvisH, Drop, AirTime, Air, Fall, Mantle, Land, MinVy, Twist;
         public Stance Stance;
         public Vector3 Plant0, Plant1; // idle: planted feet (world)
         public float PlantYaw0, PlantYaw1; // idle: planted foot yaw (world)
@@ -156,8 +156,19 @@ public static class LegAnimator
         }
     }
 
+    private static bool _cacheValid, _cacheGrounded, _cacheMantling;
+    private static byte _cacheId;
+    private static double _cacheNow;
+    private static Vector3 _cachePos, _cacheVel;
+    private static float _cacheYaw;
+    private static Stance _cacheStance;
+
     /// <summary>Forgets a player's leg state (the next pose starts fresh).</summary>
-    public static void Reset(byte id) => States[id].Init = false;
+    public static void Reset(byte id)
+    {
+        States[id].Init = false;
+        _cacheValid = false;
+    }
 
     /// <summary>
     /// Animates <paramref name="p"/>'s legs at <paramref name="now"/> (the game clock) into <see cref="Pose"/>. Calling it
@@ -165,6 +176,19 @@ public static class LegAnimator
     /// </summary>
     public static LegPose Animate(Player p, double now)
     {
+        // The same player at the same moment again (e.g. the scene graph and the reference drawing both posing it): same pose.
+        if (_cacheValid && p.Id == _cacheId && now == _cacheNow && p.RenderPosition == _cachePos && p.RenderYaw == _cacheYaw && p.RenderStance == _cacheStance
+            && p.RenderVelocity == _cacheVel && p.RenderGrounded == _cacheGrounded && p.RenderMantling == _cacheMantling && States[p.Id].Init)
+            return Pose;
+        _cacheValid = true;
+        _cacheId = p.Id;
+        _cacheNow = now;
+        _cachePos = p.RenderPosition;
+        _cacheYaw = p.RenderYaw;
+        _cacheStance = p.RenderStance;
+        _cacheVel = p.RenderVelocity;
+        _cacheGrounded = p.RenderGrounded;
+        _cacheMantling = p.RenderMantling;
         var t0 = Stopwatch.GetTimestamp();
         ref var st = ref States[p.Id];
         var pose = Pose;
@@ -401,6 +425,9 @@ public static class LegAnimator
                 drop = MathF.Max(drop, need * needW[i]);
             }
             drop = Math.Clamp(drop, 0f, MaxDrop);
+            // eased (the need jumps between feet as they plant and lift); the reach clamp below covers the lag
+            st.Drop = fresh ? drop : float.Lerp(st.Drop, drop, 1f - MathF.Exp(-18f * dt));
+            drop = st.Drop;
             hipY -= drop;
             var twistT = float.Lerp(0.07f, 0.12f, run) * moving * MathF.Sin(MathF.Tau * st.Phase) * MathF.Max(dir.Y * dir.Y, 0.3f);
             pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, hipZ);

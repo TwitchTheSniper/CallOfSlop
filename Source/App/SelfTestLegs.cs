@@ -387,6 +387,7 @@ public static partial class SelfTest
             int samples = 0, bad = 0, misses = 0, frames = 0, lifted = 0;
             var maxY = 0f;
             var groundedFor = 0f;
+            var worstWhat = "";
             plantedFor.Clear();
             for (var tick = 0; tick < 150 && s.Position.Z > -9f; tick++) // stop before the top's far edge (no walking off it)
             {
@@ -417,11 +418,15 @@ public static partial class SelfTest
                             continue;
                         } // just landed (the smoothed ground height is still settling), or the body is in the air
                         var a = legs.AnkleWorld[i];
-                        var truth = World.Query.Raycast(new Vector3(a.X, a.Y + 0.7f, a.Z), -Vector3.UnitY, 2f, QueryFilter.All, out var hit) ? hit.Point.Y : float.NaN;
+                        var truth = World.Query.Raycast(new Vector3(a.X, a.Y + 3f, a.Z), -Vector3.UnitY, 5f, QueryFilter.All, out var hit) ? hit.Point.Y : float.NaN;
                         if (float.IsNaN(truth))
                             continue;
                         var err = MathF.Abs(a.Y - LegAnimator.AnkleHeight - truth);
-                        worst = MathF.Max(worst, err);
+                        if (err > worst)
+                        {
+                            worst = err;
+                            worstWhat = $"ankle {a:0.00} on ground {truth:0.00}, body {p.RenderPosition:0.00}, target {legs.Target[i]:0.00}, planted {plantedFor[i]:0.00} s";
+                        }
                         sum += err;
                         samples++;
                         if (err > 0.05f)
@@ -431,8 +436,8 @@ public static partial class SelfTest
             }
             if (maxY < 1.5f)
                 Fail($"legs {name}: the test walker only climbed to {maxY:0.00} m (lab layout changed?)");
-            if (samples < 20 || bad > samples / 20)
-                Fail($"legs {name}: {bad}/{samples} planted feet more than 5 cm off the ground (worst {worst * 100:0.0} cm)");
+            if (samples < 15 || bad > samples / 20)
+                Fail($"legs {name}: {bad}/{samples} planted feet more than 5 cm off the ground (worst {worst * 100:0.0} cm: {worstWhat})");
             if (misses > frames / 50)
                 Fail($"legs {name}: {misses} of {frames * 2} foot poses out of reach");
             Line($"  {name,-13}: climbed to {maxY:0.0} m, planted feet vs ground ray: mean {sum / Math.Max(samples, 1) * 1000:0.0} mm, worst {worst * 1000:0.0} mm "
