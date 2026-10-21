@@ -60,7 +60,6 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
-            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
@@ -75,6 +74,7 @@ public static partial class SelfTest
             Section("Map vote", CheckMapVote);
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
+            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
