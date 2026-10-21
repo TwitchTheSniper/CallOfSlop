@@ -18,6 +18,7 @@ public static partial class SelfTest
     private static void CheckProps()
     {
         CheckPropLibrary();
+        CheckOutdoorProps(); // the outdoor folders and Prop Gallery 2 (SelfTestPropsOutdoor.cs)
         CheckPropFileErrors();
         CheckPropCollision();
         CheckClutter();
@@ -262,7 +263,7 @@ public static partial class SelfTest
 
     private static void CheckPropMapsAndNav()
     {
-        foreach (var name in new[] { "Prop Gallery", "Prop Yard" })
+        foreach (var name in new[] { "Prop Gallery", "Prop Yard", "Prop Gallery 2" })
         {
             if (Maps.Find(name) is not { } map)
             {
@@ -298,10 +299,11 @@ public static partial class SelfTest
                 Fail($"{name}: {unreachable} spawn pairs have no path (props block the way?)");
             if (batches.Count != map.PropInstances.Count || batches.Chunks.Sum(c => c.Count) != batches.Count || batches.SlotOf.Any(s => s < 0))
                 Fail($"{name}: render batches don't cover every prop");
-            if (name == "Prop Gallery" && map.PropInstances.Count != Props.All.Length)
-                Fail($"Prop Gallery shows {map.PropInstances.Count} props but the library has {Props.All.Length}");
+            // The first gallery shows the starter library, each prop once; newer props have their own galleries (every prop is on one: SelfTestPropsOutdoor.cs).
+            if (name == "Prop Gallery" && (map.PropInstances.Count < StarterProps || map.PropInstances.Select(p => p.Def).Distinct().Count() != map.PropInstances.Count))
+                Fail($"Prop Gallery shows {map.PropInstances.Count} props, {map.PropInstances.Select(p => p.Def).Distinct().Count()} different");
         }
-        Line("(both maps also play the full bot match in \"Matches\" above, like every map)");
+        Line("(these maps also play the full bot match in \"Matches\" above, like every map)");
     }
 
     private static void CheckBreakables()

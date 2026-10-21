@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Concrete Block",
+  "category": "Urban",
+  "description": "An interlocking concrete block with two studs on top. Unbreakable cover.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.8, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 5},
+  "parts": [
+    {"size": [1.6, 0.8, 0.8], "offset": [0.0, 0.4, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [-0.4, 0.86, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [-0.4, 0.86, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [-0.4, 0.86, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [-0.4, 0.86, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.4, 0.86, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.4, 0.86, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.4, 0.86, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.4, 0.86, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#8a8986", "material": "concrete"},
+    {"size": [1.0, 0.04, 0.04], "offset": [0.0, 0.62, 0.42], "color": "#7a7976"}
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Newsstand",
+  "category": "Urban",
+  "description": "A green wooden newspaper kiosk with magazines and a striped awning (front +Z).",
+  "collision": "solid",
+  "collider": [{"size": [2.5, 2.1, 1.7], "offset": [0.0, 1.05, 0.0]}, {"size": [2.4, 0.36, 0.4], "offset": [0.0, 0.18, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "wood", "debris": {"count": 20, "size": [0.08, 0.5], "speed": 4, "colors": ["#2e5a3a", "newsprint", "#c4281c"]}},
+  "parts": [
+    {"size": [2.4, 1.4, 1.6], "offset": [0.0, 0.7, 0.0], "color": "#2e5a3a", "material": "wood"},
+    {"size": [2.5, 0.08, 1.7], "offset": [0.0, 1.44, 0.0], "color": "#1e4a2a"},
+    {"size": [2.0, 0.6, 0.03], "offset": [0.0, 1.78, -0.78], "color": "#2e5a3a"},
+    {"size": [2.6, 0.06, 0.8], "offset": [0.0, 2.13, -0.1], "color": "#1e4a2a"},
+    {"size": [2.4, 0.5, 0.05], "offset": [0.0, 1.73, 0.8], "color": "#f0e8d0"},
+    {"size": [2.6, 0.04, 0.9], "offset": [0.0, 2.0, 1.1], "rotation": [18.0, 0.0, 0.0], "color": "#c4281c"},
+    {"size": [2.6, 0.16, 0.02], "offset": [0.0, 1.84, 1.52], "color": "#c4281c"},
+    {"size": [0.32, 0.4, 0.02], "offset": [-1.0, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "#d8402a"},
+    {"size": [0.32, 0.4, 0.02], "offset": [-0.6, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "#f0c020"},
+    {"size": [0.32, 0.4, 0.02], "offset": [-0.2, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "#2a6ab0"},
+    {"size": [0.32, 0.4, 0.02], "offset": [0.2, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "white"},
+    {"size": [0.32, 0.4, 0.02], "offset": [0.6, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "#d02a7a"},
+    {"size": [0.32, 0.4, 0.02], "offset": [1.0, 0.98, 0.82], "rotation": [-12.0, 0.0, 0.0], "color": "#f0c020"},
+    {"size": [0.5, 0.06, 0.32], "offset": [-0.8, 0.53, 0.85], "color": "newsprint"},
+    {"size": [0.5, 0.06, 0.32], "offset": [-0.3, 0.59, 0.85], "color": "newsprint"},
+    {"size": [0.5, 0.06, 0.32], "offset": [0.2, 0.53, 0.85], "color": "newsprint"},
+    {"size": [0.5, 0.06, 0.32], "offset": [0.7, 0.59, 0.85], "color": "newsprint"},
+    {"size": [2.4, 0.3, 0.36], "offset": [0.0, 0.15, 0.98], "color": "#1e4a2a"},
+    {"size": [0.05, 2.0, 0.05], "offset": [-1.2, 1.0, 1.15], "color": "#1c1c1e"},
+    {"size": [0.05, 2.0, 0.05], "offset": [1.2, 1.0, 1.15], "color": "#1c1c1e"}
+  ]
+}

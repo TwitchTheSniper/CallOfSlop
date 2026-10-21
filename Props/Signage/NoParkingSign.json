@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "No Parking Sign",
+  "category": "Signage",
+  "description": "A round blue no-parking sign with a red ring.",
+  "collision": "solid",
+  "collider": [{"size": [0.1, 2.5, 0.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.22], "speed": 3.5}},
+  "parts": [
+    {"size": [0.07, 2.5, 0.07], "offset": [0.0, 1.25, 0.0], "color": "#9a9c9e", "material": "metal"},
+    {"size": [0.13, 0.03, 0.13], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.6, 0.248, 0.025], "offset": [0.0, 2.2, 0.05], "color": "#c4281c"},
+    {"size": [0.6, 0.248, 0.025], "offset": [0.0, 2.2, 0.05], "rotation": [0.0, 0.0, 45.0], "color": "#c4281c"},
+    {"size": [0.6, 0.248, 0.025], "offset": [0.0, 2.2, 0.05], "rotation": [0.0, 0.0, 90.0], "color": "#c4281c"},
+    {"size": [0.6, 0.248, 0.025], "offset": [0.0, 2.2, 0.05], "rotation": [0.0, 0.0, 135.0], "color": "#c4281c"},
+    {"size": [0.48, 0.2, 0.03], "offset": [0.0, 2.2, 0.055], "color": "#1e4a9a"},
+    {"size": [0.48, 0.2, 0.03], "offset": [0.0, 2.2, 0.055], "rotation": [0.0, 0.0, 45.0], "color": "#1e4a9a"},
+    {"size": [0.48, 0.2, 0.03], "offset": [0.0, 2.2, 0.055], "rotation": [0.0, 0.0, 90.0], "color": "#1e4a9a"},
+    {"size": [0.48, 0.2, 0.03], "offset": [0.0, 2.2, 0.055], "rotation": [0.0, 0.0, 135.0], "color": "#1e4a9a"},
+    {"size": [0.56, 0.07, 0.035], "offset": [0.0, 2.2, 0.058], "rotation": [0.0, 0.0, 45.0], "color": "#c4281c"}
+  ]
+}

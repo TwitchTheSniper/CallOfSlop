@@ -1,8 +1,8 @@
 # Making props for Call of Slop
 
-Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
+Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders: the starter library (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`) and the outdoor set (`Vehicles`, `Rooftop`, `Utility`, `Signage`, `Urban`; see [Categories](#categories)). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
 
-To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. The **Prop Gallery** map in the Dev pack shows every prop on its own pad, in rows by category, so you can check them by eye.
+To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. The Dev pack's **Prop Gallery** shows the starter props on their own pads, in rows by category, and **Prop Gallery 2** the outdoor set, so you can check them by eye.
 
 A prop is a model made of boxes, the same style as everything else in the game. It's drawn instanced (one copy of the model on the graphics card, hundreds of props in a handful of draw calls), so a map can have hundreds of them for very little cost.
 
@@ -109,10 +109,43 @@ How breaking works in a match:
 
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
 
+### Material health guide
+
+Pick a prop's `health` and `sound` from what it's made of, then nudge it for size (a big wooden kiosk takes more than a sandwich board). A rifle bullet does about 25-35, a melee swing 55, a frag grenade up to 120.
+
+| Material | `sound` | `health` | Breaks after | Examples |
+|---|---|---|---|---|
+| Glass, paper | `glass` / `soft` | 5-20 | one shot | Neon Sign 10, Solar Panel 15, Skylight 20, bottles, newspapers |
+| Cardboard, thin plastic | `soft` | 8-30 | one or two shots | cardboard boxes, traffic cone, recycling bin |
+| Plastic (moulded, big) | `soft` | 30-60 | two or three shots | Shop Sign 40, Plastic Water Tank 50, Water Barrier 60, Portable Toilet 60 |
+| Wood | `wood` | 40-150 | small 40-60, furniture 70-100, big 100-150 | Sandwich Board 40, Hanging Shop Sign 50, crates 40-70, Park Picnic Table 100, Newsstand 140 |
+| Thin metal (sheet, tube) | `metal` | 60-180 | three to six shots | Jerry Can 60, Bicycle 60, signs 100, Window AC Unit 120, Air Duct 160 |
+| Heavy metal (cabinets, machines) | `metal` | 200-400 | a magazine, or a grenade | Junction Box 200, Rooftop Condenser 250, Ticket Machine 300, Golf Cart 320, ATM and Phone Booth 400 (explosions and strikes only) |
+| Concrete, brick, vehicles, structures | | unbreakable | never | cars, buses, trucks, chimneys, poles, billboards, bus shelters, scaffolding, concrete blocks |
+
+Leave out `breakable` for anything players should be able to trust as cover. The self-test holds the outdoor folders to these bands (glass up to 25, soft up to 60, wood 30-150, metal 60-450) and checks that each material's middle value is in the order glass, soft, wood, metal.
+
+## Categories
+
+| Folder | What's in it |
+|---|---|
+| `Street` | Bins, dumpsters, benches, lamps, hydrants, mailboxes, cones, barriers, the vending machine, signs. |
+| `Industrial` | Crates, pallets, drums (one explosive), pipes, sandbags, tyres, cable spools, gas cylinders. |
+| `Debris` | Bricks, rubble, planks, cardboard, newspapers, bottles, cans, bags, litter. |
+| `Furniture` | Chairs, a table, a sofa, a filing cabinet. |
+| `Nature` | A planter, a log, a stump, a hay bale. |
+| `Vehicles` | Cars (hatchback, sedan, SUV, pickup, van, taxi, police car, ambulance, burnt-out wreck, car on bricks, overturned car), a bus, a box truck, a truck cab, a forklift, a golf cart, a motorbike, a moped, a bicycle, a kick scooter, a trailer, and loose bits (wheel, door, engine block, jerry can). Vehicles are solid, unbreakable cover with a simple two-box collider; long ones run along X. |
+| `Rooftop` | Air conditioners (window unit, condenser, split unit, big HVAC unit), vents, air ducts (straight, elbow, riser, round), an exhaust fan, chimneys and flues, a water tower and a plastic tank, a satellite dish, aerials, a radio mast, a solar panel, a skylight, a roof hatch, a pipe rack. |
+| `Utility` | Power poles and transformers, junction boxes, street cabinets, manholes and drains, meters, fire escape stairs, landing and ladder, ladders, a scaffold tower and boards, generators, a gas valve, a floodlight tower, a road plate. |
+| `Signage` | Traffic lights, a pedestrian signal, road signs (speed limit, yield, one way, no parking, crossing, road works, direction), a parking meter, a bus stop sign, a billboard, shop signs (box, hanging, neon), an arrow board trailer, a price pylon, a street clock. |
+| `Urban` | A bus shelter, a phone booth, a payphone, a newsstand, a newspaper box, an ATM, a ticket machine, a post box, bins, a bike rack, a picnic table, a hot dog cart, a market stall, fences and barriers, a concrete block, a speed bump, a boom gate, a portable toilet, a builder's skip. |
+
+Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.
+
 ## Tips
 
 - Keep the part count sensible: most starter props use 10 to 40 boxes. A box is 12 triangles; the renderer draws hundreds of props in a few draw calls, so detail is cheap, but very fiddly props are hard to read in the game's chunky style anyway.
 - Give a prop a few details that read from a distance (a lid, a band, a handle, a label) and sensible colours rather than lots of tiny parts.
 - Overlapping parts with the same top height and different colours flicker. Lift one a millimetre or two.
 - Check a new prop on the Prop Gallery: add it to `Maps/Dev/PropGallery.json` with `{ "op": "Prop", "name": "My Prop", "x": 0, "z": 0 }` (or put it on any map) and reload.
-- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from.
+- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from, and `tools/propviz/gen_outdoor.py` writes the outdoor folders and `Maps/Dev/PropGallery2.json` (run it from the repository root).

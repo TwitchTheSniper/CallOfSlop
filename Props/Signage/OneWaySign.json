@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "One Way Sign",
+  "category": "Signage",
+  "description": "A black and white one-way arrow sign.",
+  "collision": "solid",
+  "collider": [{"size": [0.1, 2.4, 0.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.22], "speed": 3.5}},
+  "parts": [
+    {"size": [0.07, 2.4, 0.07], "offset": [0.0, 1.2, 0.0], "color": "#9a9c9e", "material": "metal"},
+    {"size": [0.13, 0.03, 0.13], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.9, 0.3, 0.025], "offset": [0.0, 2.15, 0.05], "color": "#1c1c1e"},
+    {"size": [0.55, 0.08, 0.03], "offset": [-0.08, 2.15, 0.052], "color": "white"},
+    {"size": [0.2, 0.06, 0.03], "offset": [0.24, 2.19, 0.052], "rotation": [0.0, 0.0, -40.0], "color": "white"},
+    {"size": [0.2, 0.06, 0.03], "offset": [0.24, 2.11, 0.052], "rotation": [0.0, 0.0, 40.0], "color": "white"}
+  ]
+}

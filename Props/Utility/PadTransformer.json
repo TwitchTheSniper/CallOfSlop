@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pad Transformer",
+  "category": "Utility",
+  "description": "A green pad-mounted transformer box on a concrete base. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [1.44, 1.4, 1.24]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "parts": [
+    {"size": [1.7, 0.15, 1.5], "offset": [0.0, 0.075, 0.0], "color": "concrete", "material": "concrete"},
+    {"size": [1.4, 1.2, 1.2], "offset": [0.0, 0.75, 0.0], "color": "#4a6a48", "material": "metal"},
+    {"size": [1.44, 0.05, 1.24], "offset": [0.0, 1.375, 0.0], "color": "#3d5a3c"},
+    {"size": [0.012, 1.0, 0.012], "offset": [0.0, 0.75, 0.606], "color": "#1c1c1e"},
+    {"size": [0.5, 0.02, 0.02], "offset": [-0.35, 0.991, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [-0.35, 1.054, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [-0.35, 1.116, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [-0.35, 1.179, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [0.35, 0.991, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [0.35, 1.054, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [0.35, 1.116, 0.606], "color": "#3d5a3c"},
+    {"size": [0.5, 0.02, 0.02], "offset": [0.35, 1.179, 0.606], "color": "#3d5a3c"},
+    {"size": [0.3, 0.22, 0.012], "offset": [0.35, 0.66, 0.607], "color": "yellow"},
+    {"size": [0.12, 0.1, 0.014], "offset": [0.35, 0.65, 0.608], "color": "#1c1c1e"},
+    {"size": [0.04, 0.12, 0.04], "offset": [-0.08, 0.76, 0.62], "color": "darkgrey"},
+    {"size": [0.04, 0.12, 0.04], "offset": [0.08, 0.76, 0.62], "color": "darkgrey"}
+  ]
+}

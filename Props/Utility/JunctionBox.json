@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Junction Box",
+  "category": "Utility",
+  "description": "A steel electrical junction box on its backboard, conduits running down.",
+  "collision": "solid",
+  "collider": [{"size": [0.5, 1.4, 0.3], "offset": [0.0, 0.7, -0.02]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 200, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#9a9c9e", "#6a6c6e"]}},
+  "parts": [
+    {"size": [0.5, 0.6, 0.22], "offset": [0.0, 1.1, 0.0], "color": "#9a9c9e", "material": "metal"},
+    {"size": [0.46, 0.56, 0.012], "offset": [0.0, 1.1, 0.11], "color": "#aeb0b0"},
+    {"size": [0.04, 0.08, 0.02], "offset": [0.2, 1.09, 0.12], "color": "#1c1c1e"},
+    {"size": [0.2, 0.14, 0.012], "offset": [-0.05, 1.27, 0.118], "color": "yellow"},
+    {"size": [0.08, 0.06, 0.014], "offset": [-0.05, 1.26, 0.12], "color": "#1c1c1e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [-0.12, 0.4, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [-0.12, 0.4, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [-0.12, 0.4, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [-0.12, 0.4, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [0.12, 0.4, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [0.12, 0.4, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [0.12, 0.4, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.06, 0.8, 0.025], "offset": [0.12, 0.4, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#7a7c7e"},
+    {"size": [0.5, 1.4, 0.04], "offset": [0.0, 0.7, -0.13], "color": "#6a6c6e"}
+  ]
+}

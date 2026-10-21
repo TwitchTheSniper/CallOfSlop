@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Extension Ladder",
+  "category": "Utility",
+  "description": "An aluminium extension ladder lying on the ground.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.4], "speed": 3.5, "colors": ["#c8ccd0"]}},
+  "parts": [
+    {"size": [3.6, 0.06, 0.04], "offset": [0.0, 0.03, -0.2], "color": "#c8ccd0"},
+    {"size": [3.6, 0.06, 0.04], "offset": [0.0, 0.03, 0.2], "color": "#c8ccd0"},
+    {"size": [3.0, 0.05, 0.035], "offset": [0.4, 0.085, -0.16], "color": "#c8ccd0"},
+    {"size": [3.0, 0.05, 0.035], "offset": [0.4, 0.085, 0.16], "color": "#c8ccd0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-1.65, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-1.35, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-1.05, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-0.75, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-0.45, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [-0.15, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [0.15, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [0.45, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [0.75, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [1.05, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [1.35, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.03, 0.03, 0.4], "offset": [1.65, 0.03, 0.0], "color": "#a8acb0"},
+    {"size": [0.08, 0.06, 0.08], "offset": [-1.8, 0.03, 0.2], "color": "rubber"},
+    {"size": [0.08, 0.06, 0.08], "offset": [-1.8, 0.03, -0.2], "color": "rubber"}
+  ]
+}

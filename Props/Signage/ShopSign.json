@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Shop Sign",
+  "category": "Signage",
+  "description": "A lit box sign over a shop front (front faces +Z; mount it with the Prop op's y).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.06, 0.2], "speed": 3, "colors": ["#1e3a6a", "#ffe9a8"]}},
+  "parts": [
+    {"size": [2.4, 0.6, 0.18], "offset": [0.0, 0.3, 0.0], "color": "#1e3a6a"},
+    {"size": [2.44, 0.04, 0.2], "offset": [0.0, 0.6, 0.0], "color": "#14284a"},
+    {"size": [2.44, 0.04, 0.2], "offset": [0.0, 0.02, 0.0], "color": "#14284a"},
+    {"size": [0.2, 0.26, 0.02], "offset": [-0.9, 0.27, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.32, 0.02], "offset": [-0.6, 0.3, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.32, 0.02], "offset": [-0.3, 0.3, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.26, 0.02], "offset": [-0.0, 0.27, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.32, 0.02], "offset": [0.3, 0.3, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.32, 0.02], "offset": [0.6, 0.3, 0.1], "color": "#ffe9a8"},
+    {"size": [0.2, 0.26, 0.02], "offset": [0.9, 0.27, 0.1], "color": "#ffe9a8"}
+  ]
+}

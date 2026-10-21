@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ticket Machine",
+  "category": "Urban",
+  "description": "A parking pay-and-display ticket machine.",
+  "collision": "solid",
+  "collider": [{"size": [0.54, 1.62, 0.48]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 300, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#2a5a8a", "#3a3c3e"]}},
+  "parts": [
+    {"size": [0.5, 1.5, 0.38], "offset": [0.0, 0.75, 0.0], "color": "#2a5a8a", "material": "metal"},
+    {"size": [0.54, 0.12, 0.42], "offset": [0.0, 1.56, 0.0], "color": "#1e4a7a"},
+    {"size": [0.3, 0.22, 0.012], "offset": [0.0, 1.26, 0.196], "color": "#4ab0d8"},
+    {"size": [0.3, 0.2, 0.012], "offset": [0.0, 0.95, 0.196], "color": "#3a3c3e"},
+    {"size": [0.12, 0.04, 0.02], "offset": [0.0, 0.72, 0.2], "color": "#1c1c1e"},
+    {"size": [0.2, 0.06, 0.012], "offset": [0.0, 0.43, 0.196], "color": "#1c1c1e"},
+    {"size": [0.4, 0.08, 0.012], "offset": [0.0, 1.42, 0.196], "color": "#f0c020"},
+    {"size": [0.6, 0.05, 0.48], "offset": [0.0, 0.025, 0.0], "color": "darkgrey"}
+  ]
+}

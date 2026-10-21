@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Speed Bump",
+  "category": "Urban",
+  "description": "A rubber speed bump with yellow stripes (across X). Walk straight over it.",
+  "collision": "solid",
+  "collider": [{"size": [3.6, 0.07, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [3.6, 0.04, 0.5], "offset": [0.0, 0.02, 0.0], "color": "#1c1c1e"},
+    {"size": [3.6, 0.03, 0.34], "offset": [0.0, 0.055, 0.0], "color": "#1c1c1e"},
+    {"size": [0.3, 0.072, 0.36], "offset": [-1.5, 0.036, 0.0], "color": "#e8c020"},
+    {"size": [0.3, 0.072, 0.36], "offset": [-0.9, 0.036, 0.0], "color": "#e8c020"},
+    {"size": [0.3, 0.072, 0.36], "offset": [-0.3, 0.036, 0.0], "color": "#e8c020"},
+    {"size": [0.3, 0.072, 0.36], "offset": [0.3, 0.036, 0.0], "color": "#e8c020"},
+    {"size": [0.3, 0.072, 0.36], "offset": [0.9, 0.036, 0.0], "color": "#e8c020"},
+    {"size": [0.3, 0.072, 0.36], "offset": [1.5, 0.036, 0.0], "color": "#e8c020"}
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Aluminium Step Ladder",
+  "category": "Utility",
+  "description": "A folding aluminium step ladder with an orange top.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.3], "speed": 3.5, "colors": ["#c8ccd0", "#d0622a"]}},
+  "parts": [
+    {"size": [1.53, 0.05, 0.05], "offset": [-0.2, 0.75, 0.2], "rotation": [0.0, 82.405, 78.593], "color": "#c8ccd0"},
+    {"size": [1.53, 0.05, 0.05], "offset": [0.2, 0.75, 0.2], "rotation": [0.0, 97.595, 78.593], "color": "#c8ccd0"},
+    {"size": [1.481, 0.04, 0.04], "offset": [-0.2, 0.725, -0.15], "rotation": [0.0, -82.405, 78.21], "color": "#c8ccd0"},
+    {"size": [1.481, 0.04, 0.04], "offset": [0.2, 0.725, -0.15], "rotation": [0.0, -97.595, 78.21], "color": "#c8ccd0"},
+    {"size": [0.42, 0.04, 0.22], "offset": [0.0, 1.52, 0.0], "color": "#d0622a"},
+    {"size": [0.42, 0.03, 0.1], "offset": [0.0, 0.3, 0.29], "color": "#c8ccd0"},
+    {"size": [0.42, 0.03, 0.1], "offset": [0.0, 0.6, 0.23], "color": "#c8ccd0"},
+    {"size": [0.42, 0.03, 0.1], "offset": [0.0, 0.9, 0.17], "color": "#c8ccd0"},
+    {"size": [0.42, 0.03, 0.1], "offset": [0.0, 1.2, 0.11], "color": "#c8ccd0"},
+    {"size": [0.03, 0.02, 0.6], "offset": [-0.2, 0.61, 0.02], "color": "#7a7c7e"},
+    {"size": [0.03, 0.02, 0.6], "offset": [0.2, 0.61, 0.02], "color": "#7a7c7e"},
+    {"size": [0.07, 0.03, 0.07], "offset": [-0.22, 0.015, 0.35], "color": "rubber"},
+    {"size": [0.07, 0.03, 0.07], "offset": [-0.22, 0.015, -0.3], "color": "rubber"},
+    {"size": [0.07, 0.03, 0.07], "offset": [0.22, 0.015, 0.35], "color": "rubber"},
+    {"size": [0.07, 0.03, 0.07], "offset": [0.22, 0.015, -0.3], "color": "rubber"}
+  ]
+}

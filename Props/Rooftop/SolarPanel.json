@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Solar Panel",
+  "category": "Rooftop",
+  "description": "A solar panel on a tilted frame, facing +Z. Glass: a couple of shots.",
+  "collision": "solid",
+  "collider": [{"size": [1.7, 1.016, 0.947]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 15, "breakBy": "all", "sound": "glass", "debris": {"count": 12, "size": [0.04, 0.14], "speed": 4, "colors": ["#1d2a4a", "#7a8aa8", "#c8c8c4"]}},
+  "parts": [
+    {"size": [1.7, 0.04, 1.05], "offset": [0.0, 0.75, 0.0], "rotation": [28.0, 0.0, 0.0], "color": "#1d2a4a"},
+    {"size": [1.74, 0.03, 1.09], "offset": [0.0, 0.728, -0.012], "rotation": [28.0, 0.0, 0.0], "color": "#c8c8c4"},
+    {"size": [0.012, 0.045, 1.03], "offset": [-0.567, 0.753, 0.001], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [0.012, 0.045, 1.03], "offset": [-0.283, 0.753, 0.001], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [0.012, 0.045, 1.03], "offset": [0.0, 0.753, 0.001], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [0.012, 0.045, 1.03], "offset": [0.283, 0.753, 0.001], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [0.012, 0.045, 1.03], "offset": [0.567, 0.753, 0.001], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [1.68, 0.045, 0.012], "offset": [0.0, 0.835, -0.153], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [1.68, 0.045, 0.012], "offset": [0.0, 0.67, 0.156], "rotation": [28.0, 0.0, 0.0], "color": "#7a8aa8"},
+    {"size": [0.05, 0.474, 0.05], "offset": [-0.7, 0.237, 0.414], "color": "#a8a8a4"},
+    {"size": [0.05, 0.966, 0.05], "offset": [-0.7, 0.483, -0.414], "color": "#a8a8a4"},
+    {"size": [0.06, 0.04, 1.027], "offset": [-0.7, 0.02, 0.0], "color": "#a8a8a4"},
+    {"size": [0.05, 0.474, 0.05], "offset": [0.7, 0.237, 0.414], "color": "#a8a8a4"},
+    {"size": [0.05, 0.966, 0.05], "offset": [0.7, 0.483, -0.414], "color": "#a8a8a4"},
+    {"size": [0.06, 0.04, 1.027], "offset": [0.7, 0.02, 0.0], "color": "#a8a8a4"}
+  ]
+}
