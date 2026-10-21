@@ -226,7 +226,7 @@ def seg_box(a, b, inner, outer, y, h, c, material=None, mirror=True, extend=0.0)
 
 
 # the sea: one big flat box (its top is the water surface)
-lay.mesh("box", 0.0, -170.0, WATER, mirror=False, y=WATER_Y - 0.3, width=700.0, height=0.3, depth=400.0, **W)
+lay.mesh("box", 0.0, -170.0, WATER, mirror=False, y=WATER_Y - 0.3, width=500.0, height=0.3, depth=400.0, **W)
 for a, b, t in BLUE_SEGS:
     if t == "land":
         continue
