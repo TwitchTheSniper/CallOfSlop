@@ -83,6 +83,7 @@ public static partial class SelfTest
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
+            Section("Map vote: humans only", CheckMapVoteHumansOnly); // SelfTestMapVote.cs: bots don't vote, ties, early end
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
@@ -696,6 +697,7 @@ public static partial class SelfTest
             byte[] ballot = [];
             byte[] tally = [];
             var hostVoted = false;
+            var votedAt = -1.0;
             for (var i = 0; i < 700 * World.TickRate && game.MatchNumber == 1; i++)
             {
                 now += dt;
@@ -708,6 +710,7 @@ public static partial class SelfTest
                     {
                         game.CastVote(0); // the host votes for the first map
                         hostVoted = true;
+                        votedAt = now;
                     }
                 }
             }
@@ -726,12 +729,12 @@ public static partial class SelfTest
                 Fail($"the ballot offered maps from outside the {pack.Name} pack");
             if (ballot.Select(id => Maps.Get(id).Size).Distinct().Count() < 3)
                 Fail("ballot doesn't offer one map of each size");
-            if (tally.Sum(t => t) != Game.ClassicPlayers)
-                Fail($"expected {Game.ClassicPlayers} votes (7 bots + host), got {tally.Sum(t => t)}");
-            if (!ballot.Contains(World.Map.Id))
-                Fail("next map wasn't one of the options");
-            else if (tally[Array.IndexOf(ballot, World.Map.Id)] != tally.Max())
-                Fail("next map didn't have the most votes");
+            if (tally.Sum(t => t) != 1 || tally[0] != 1)
+                Fail($"expected only the host's vote (bots don't vote), got tally {string.Join("/", tally)}");
+            if (World.Map.Id != ballot[0])
+                Fail($"the host was the only voter (for {Maps.Get(ballot[0]).Name}) but the next map is {World.Map.Name}");
+            if (votedAt >= 0 && now - votedAt > Game.VoteEarlyEndSeconds + 0.5)
+                Fail($"every human had voted, but the next match took {now - votedAt:0.0} s to start");
             if (game.MatchNumber != 2)
                 Fail("the next match didn't start");
             // Everyone is on the new map, standing on solid ground.

@@ -8,13 +8,19 @@ namespace CallOfSlop;
 ///   - When a match ends the server picks 3 maps from the pack of the map just played (True Random: from every
 ///     pack in True Random), one small, one medium, one large when possible, never the map just played, and
 ///     broadcasts them.
-///   - Everyone votes during the 12 s results screen (click, or press 1/2/3). Bots vote too, after a
-///     random delay. You can change your vote until the timer runs out.
-///   - The next match starts on the map with the most votes (ties and no votes: random among the top).
+///   - Human players vote during the 12 s results screen (click, or press 1/2/3) and can change their vote until
+///     the timer runs out. Bots never vote and don't count anywhere (tally, "everyone voted").
+///   - Once every human here has voted, the timer drops to <see cref="VoteEarlyEndSeconds"/> (if it was longer).
+///   - The next match starts on the map with the most human votes. Ties are broken at random among the tied maps;
+///     no human votes at all (a bots-only match, or nobody clicked) is a tie of all three, so a random pick.
+///     See <see cref="PickVoteWinner"/>.
 /// </summary>
 public sealed partial class Game
 {
     public const int VoteChoices = 3;
+
+    /// <summary>Seconds left on the results screen once every human has voted (when more were left).</summary>
+    public const double VoteEarlyEndSeconds = 3;
 
     /// <summary>Map ids on the ballot (empty when no vote is running).</summary>
     public byte[] VoteOptions = [];
@@ -22,7 +28,7 @@ public sealed partial class Game
     /// <summary>Map names on the ballot (what's shown; a client may not have every map the host offers).</summary>
     public string[] VoteNames = [];
 
-    /// <summary>Votes per option, same order as <see cref="VoteOptions"/>.</summary>
+    /// <summary>Human votes per option, same order as <see cref="VoteOptions"/> (bots don't vote).</summary>
     public byte[] VoteTally = [];
 
     /// <summary>The option the local player picked (-1: none yet).</summary>
@@ -39,15 +45,17 @@ public sealed partial class Game
 
     public bool VoteOpen => Phase == MatchPhase.Ended && VoteOptions.Length > 0;
 
-    private readonly Dictionary<byte, int> _votes = new(); // player id -> option
-    private readonly List<(byte Id, double At)> _botVotes = new();
+    private readonly Dictionary<byte, int> _votes = new(); // human player id -> option
+
+    /// <summary>True when at least one human is here and every human has a vote in (bots don't count).</summary>
+    public bool AllHumansVoted => VoteOpen && HumanCount > 0
+        && Players.Values.All(p => p.Bot != null || _votes.ContainsKey(p.Id));
 
     // ---- Server ---------------------------------------------------------------------
 
     private void StartMapVote(double now)
     {
         _votes.Clear();
-        _botVotes.Clear();
         MyVote = -1;
 
         // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
@@ -72,11 +80,6 @@ public sealed partial class Game
         VoteOptions = picks.OrderBy(m => m.Size).Select(m => m.Id).ToArray();
         VoteNames = VoteOptions.Select(id => Maps.Get(id).Name).ToArray();
         VoteTally = new byte[VoteOptions.Length];
-
-        // Bots make up their minds over the first ~8 seconds; they lean towards maps that suit the player count.
-        foreach (var p in Players.Values.Where(p => p.Bot != null))
-            _botVotes.Add((p.Id, now + 1.5 + _rng.NextDouble() * 6.5));
-
         BroadcastVoteState();
     }
 
@@ -97,63 +100,60 @@ public sealed partial class Game
 
     private void ServerTickVotes(double now)
     {
-        if (!VoteOpen)
-            return;
-        for (var i = _botVotes.Count - 1; i >= 0; i--)
-        {
-            if (now < _botVotes[i].At)
-                continue;
-            var id = _botVotes[i].Id;
-            _botVotes.RemoveAt(i);
-            if (!Players.ContainsKey(id))
-                continue;
-            // Few players: favour smaller maps. Full lobby: anything goes. A map too small for everyone (bots would leave) rarely.
-            var crowd = Players.Count;
-            var weights = VoteOptions.Select(mid => Maps.Get(mid).Size switch
-            {
-                MapSize.Small => crowd <= 4 ? 3.0 : 1.5,
-                MapSize.Medium => 2.0,
-                _ => crowd >= 6 ? 2.0 : 0.7,
-            } * (Maps.Get(mid).MaxPlayers >= crowd ? 1.0 : 0.3)).ToArray();
-            var roll = _rng.NextDouble() * weights.Sum();
-            var choice = 0;
-            for (; choice < weights.Length - 1; choice++)
-            {
-                roll -= weights[choice];
-                if (roll <= 0)
-                    break;
-            }
-            ServerVote(id, choice);
-        }
+        // Every human has voted: no need to sit through the rest of the timer.
+        if (AllHumansVoted && _intermissionUntil - now > VoteEarlyEndSeconds)
+            _intermissionUntil = now + VoteEarlyEndSeconds;
     }
 
     private void ServerVote(byte playerId, int option)
     {
         if (!VoteOpen || option < 0 || option >= VoteOptions.Length)
             return;
+        if (!Players.TryGetValue(playerId, out var voter) || voter.Bot != null)
+            return; // bots don't vote
         _votes[playerId] = option;
         RecountVotes();
         BroadcastVoteState();
+    }
+
+    /// <summary>Self-test only (server): player <paramref name="playerId"/> votes as if their vote packet arrived.</summary>
+    public void DebugVoteFor(byte playerId, int option)
+    {
+        if (IsServer)
+            ServerVote(playerId, option);
     }
 
     private void RecountVotes()
     {
         VoteTally = new byte[VoteOptions.Length];
         foreach (var (pid, option) in _votes)
-            if (Players.ContainsKey(pid) && option < VoteTally.Length)
+            if (Players.TryGetValue(pid, out var p) && p.Bot == null && option < VoteTally.Length)
                 VoteTally[option]++;
     }
 
-    /// <summary>Most votes wins; ties (and no votes at all) are broken at random.</summary>
+    /// <summary>
+    /// The vote rule: the option with the most (human) votes wins. A tie is broken at random among the tied options,
+    /// so no votes at all means a random pick among every option. Deterministic for a given <paramref name="rng"/> seed.
+    /// Returns -1 for an empty ballot.
+    /// </summary>
+    public static int PickVoteWinner(IReadOnlyList<byte> tally, Random rng)
+    {
+        if (tally.Count == 0)
+            return -1;
+        var best = tally.Max();
+        var top = Enumerable.Range(0, tally.Count).Where(i => tally[i] == best).ToList();
+        return top[rng.Next(top.Count)];
+    }
+
+    /// <summary>Picks the next map with <see cref="PickVoteWinner"/> from the human votes.</summary>
     private Map? ResolveVote()
     {
         if (VoteOptions.Length == 0)
             return null;
         RecountVotes();
-        var best = VoteTally.Max();
-        var top = Enumerable.Range(0, VoteOptions.Length).Where(i => VoteTally[i] == best).ToList();
+        var pick = PickVoteWinner(VoteTally, _rng);
         // By name, so a map reload between the vote and now picks up the current version of the winner.
-        var winner = VoteNames.Length == VoteOptions.Length ? Maps.Find(VoteNames[top[_rng.Next(top.Count)]]) : null;
+        var winner = VoteNames.Length == VoteOptions.Length ? Maps.Find(VoteNames[pick]) : null;
         return winner ?? Maps.All[_rng.Next(Maps.All.Length)]; // the winner's file was removed meanwhile
     }
 
@@ -201,7 +201,6 @@ public sealed partial class Game
         VoteTally = [];
         MyVote = -1;
         _votes.Clear();
-        _botVotes.Clear();
     }
 
     private void OnVotePacket(byte id, ref PacketReader r, RakNetGUID sender)
