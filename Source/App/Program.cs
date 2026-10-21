@@ -225,8 +225,13 @@ public static unsafe partial class Program
             }
             else if (_smokeGallery == 3 && t > 2.8)
             {
-                _smokeGallery = 0;
+                _smokeGallery = 4; // the map select screen (Program.MapSelect.cs)
                 Ui.LobbyLoadouts = false;
+                _shotTaken = false;
+            }
+            else if (_smokeGallery == 4 && SmokeMapSelectTick(now, t - 2.8))
+            {
+                _smokeGallery = 0;
                 StartMoversSmoke(now); // then foliage, then on to the maps
             }
             return;
@@ -844,6 +849,7 @@ public static unsafe partial class Program
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
             _session.Mode = _settings.Mode; // clients learn the host's mode from the server
+            _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
             if (kind == LobbyAction.Host)
             {
@@ -936,6 +942,8 @@ public static unsafe partial class Program
             AudioSystem.Music.Volume = _settings.MusicVolume;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
 
+            if (_session == null)
+                MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
             if (_session != null)
                 Render(now);
             else if (_smokeGallery is 1 or 2)
@@ -1053,10 +1061,12 @@ public static unsafe partial class Program
         var fb = _window.FramebufferSize;
         if (fb.X <= 0 || fb.Y <= 0)
             return;
-        // Preview the map currently picked in the lobby.
-        // (with "random from pack" picked, the background tours the pack's maps, a different one every 12 seconds)
-        var tour = Maps.FindPack(_settings.MapPack) is { Maps.Count: > 0 } pack ? pack.Maps : (IReadOnlyList<Map>)Maps.All;
-        var preview = _settings.MapRandom ? tour[(int)(now / 12) % tour.Count] : Maps.Find(_settings.MapName);
+        // Preview the map currently picked in the lobby (or selected on the map select screen while it's up).
+        // (with "random from pack" picked, the background tours the pack's maps, a different one every 12 seconds; True Random: every pack's)
+        var pick = Ui.MapSelectPreview;
+        var tour = MapPack.RandomPool(pick?.Pack ?? _settings.MapPack, Maps.Packs, Maps.All);
+        var random = pick != null ? pick.Value.Map == null : _settings.MapRandom;
+        var preview = random ? tour[(int)(now / 12) % tour.Count] : Maps.Find(pick?.Map ?? _settings.MapName);
         if (preview != null && preview != World.Map)
             World.SetMap(preview);
         var map = World.Map;

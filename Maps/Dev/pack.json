@@ -3,5 +3,6 @@
   "name": "Dev",
   "description": "Test maps for developers: engine features (terrain, foliage) and performance, not balanced for play.",
   "author": "Call of Slop",
-  "order": 900
+  "order": 900,
+  "trueRandom": false
 }

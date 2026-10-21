@@ -132,6 +132,12 @@ public sealed partial class Ui
         Footer();
         if (_page == Page.Main)
             NowPlaying(audio);
+        if (_msOpen && _page is (Page.SinglePlayer or Page.Multiplayer))
+        {
+            DrawMapSelect(s, audio); // the map select screen replaces the lobby panel until it's closed (UiMapSelect.cs)
+            return action;
+        }
+        _msOpen = false;
 
         CenterNext();
         ImGui.SetNextWindowBgAlpha(0.88f);
@@ -303,10 +309,9 @@ public sealed partial class Ui
     {
         if (!s.MapRandom)
             return $"{players} / {max} players on {s.MapName}";
-        var pack = Maps.FindPack(s.MapPack);
-        var pool = pack?.Maps ?? Maps.All.ToList();
+        var pool = MapPack.RandomPool(s.MapPack, Maps.Packs, Maps.All); // the pack, or every pack for True Random
         var fit = pool.Count(m => m.MaxPlayers >= players);
-        return $"{players} / {max} players - random from the {fit} of {pool.Count} maps that take {players}";
+        return $"{players} / {max} players - {(MapPack.IsTrueRandom(s.MapPack) ? "True Random" : "random")} from the {fit} of {pool.Count} maps that take {players}";
     }
 
     /// <summary>The server browser tab. Returns true if it already handled the rest of the page.</summary>
@@ -346,6 +351,8 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(Dim, GameModes.Short(i.Mode));
+                if (i.Rotation.Length > 0)
+                    ImGuiSafe.TextColored(Orange, i.Rotation); // e.g. "True Random": the next maps come from every pack
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
                 ImGui.TableNextColumn();
@@ -387,13 +394,19 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// Map pack list, then "random from pack" or a map from that pack. The lobby background previews the selection
-    /// (it tours the pack when random).
+    /// The current map choice and "Change map...", which opens the map select screen (UiMapSelect.cs). The lobby
+    /// background previews the choice (it tours the pack, or every pack, when random).
     /// </summary>
     private void MapPicker(Settings s)
     {
-        ImGui.Text("Map pack"u8);
+        ImGui.Text("Map"u8);
         ImGui.SameLine(0, 20 * _scale);
+        ImGui.PushFont(default, 18);
+        ImGuiSafe.TextColored(Orange, MapSelect.ChoiceText(s));
+        ImGui.PopFont();
+        if (ImGui.Button("Change map...##openmapselect"u8, new float2(200 * _scale, 0)))
+            OpenMapSelect(s);
+        ImGui.SameLine();
         if (ImGui.Button("Refresh maps"u8))
             _mapReloadMsg = (Maps.Reload().Summary, (Environment.TickCount64 / 1000.0) + 8);
         if (_mapReloadMsg is { } rm && (Environment.TickCount64 / 1000.0) < rm.Until)
@@ -401,97 +414,16 @@ public sealed partial class Ui
         if (Maps.LoadErrors.Count > 0)
             ImGuiSafe.TextColored(Red,
                 $"{Maps.LoadErrors.Count} map file(s) in the Maps folder didn't load: {Maps.LoadErrors[0]}{(Maps.LoadErrors.Count > 1 ? " (more in callofslop.log)" : "")}");
-
-        // The saved pack may be gone (folder removed or renamed): show the first one, but only change the
-        // setting when the player clicks, so the pack comes back if its folder does.
-        var saved = Maps.FindPack(s.MapPack);
-        var pack = saved ?? Maps.Packs[0];
-        var rows = Math.Min(Maps.Packs.Length, 4);
-        if (ImGui.BeginTable("##packs"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY,
-                new float2(720 * _scale, rows * 46 * _scale + 6 * _scale)))
-        {
-            ImGui.TableSetupColumn("Pack"u8, ImGuiTableColumnFlags.WidthFixed, 200 * _scale);
-            ImGui.TableSetupColumn("About"u8, ImGuiTableColumnFlags.WidthStretch);
-            foreach (var p in Maps.Packs)
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                if (ImGui.Selectable($"{p.Name}##pack{p.Name}", p == saved, ImGuiSelectableFlags.SpanAllColumns))
-                {
-                    s.MapPack = p.Name;
-                    if (!p.Maps.Any(m => m.Name.Equals(s.MapName, StringComparison.OrdinalIgnoreCase)))
-                        s.MapName = p.Maps[0].Name; // "Choose map" starts on a map of the new pack
-                }
-                ImGui.TableNextColumn();
-                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGuiSafe.TextWrapped($"{p.Maps.Count} maps: {p.SizeSummary}{(p.Author.Length > 0 ? $" (by {p.Author})" : "")}");
-                if (p.Description.Length > 0)
-                    ImGuiSafe.TextWrapped(p.Description);
-                ImGui.PopStyleColor();
-            }
-            ImGui.EndTable();
-        }
-
-        ImGui.Text("Play"u8);
-        ImGui.SameLine(0, 20 * _scale);
-        if (ImGui.RadioButton("Random from pack"u8, s.MapRandom))
-            s.MapRandom = true;
-        ImGui.SameLine();
-        if (ImGui.RadioButton("Choose map"u8, !s.MapRandom))
-        {
-            s.MapRandom = false;
-            s.MapPack = pack.Name;
-            if (!pack.Maps.Any(m => m.Name.Equals(s.MapName, StringComparison.OrdinalIgnoreCase)))
-                s.MapName = pack.Maps[0].Name;
-        }
-        if (s.MapRandom)
-        {
-            ImGuiSafe.TextColored(Dim, saved != null
-                ? $"A random one of the {saved.Maps.Count} maps in {saved.Name} each time. After a match, players vote on the next one from the same pack."
-                : $"The pack '{s.MapPack}' isn't in the Maps folder, so it's a random one of all {Maps.All.Length} maps. Pick a pack above.");
-            ImGui.Spacing();
-            return;
-        }
-        if (ImGui.BeginTable("##maps"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(720 * _scale, 260 * _scale)))
-        {
-            ImGui.TableSetupColumn("Map"u8, ImGuiTableColumnFlags.WidthFixed, 200 * _scale);
-            ImGui.TableSetupColumn("About"u8, ImGuiTableColumnFlags.WidthStretch);
-            MapSize? group = null;
-            foreach (var m in pack.Maps.OrderBy(x => x.Size).ThenBy(x => x.Id))
-            {
-                if (m.Size != group)
-                {
-                    group = m.Size;
-                    ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(Orange, m.Size switch
-                    {
-                        MapSize.Small => "SMALL",
-                        MapSize.Medium => "MEDIUM",
-                        _ => "LARGE",
-                    });
-                    ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(Dim, m.Size switch
-                    {
-                        MapSize.Small => "Up to ~75 m. Fast and close, up to 8-10 players.",
-                        MapSize.Medium => "80-135 m. Mixed ranges, up to 12-16 players.",
-                        _ => "150-240 m. Long sightlines, bring a scope. Up to 24-32 players.",
-                    });
-                }
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                if (ImGui.Selectable($"{m.Name}##map{m.Id}", m.Name == s.MapName, ImGuiSelectableFlags.SpanAllColumns))
-                {
-                    s.MapName = m.Name;
-                    s.MapPack = pack.Name;
-                }
-                ImGui.TableNextColumn();
-                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGuiSafe.TextWrapped(m.Author.Length > 0 ? $"{m.SizeLabel}, {m.MaxPlayers} players - {m.Description} (by {m.Author})" : $"{m.SizeLabel}, {m.MaxPlayers} players - {m.Description}");
-                ImGui.PopStyleColor();
-            }
-            ImGui.EndTable();
-        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+        if (!s.MapRandom && Maps.Find(s.MapName) is { } chosen)
+            ImGuiSafe.TextColored(Dim, $"{chosen.SizeLabel}, up to {chosen.MaxPlayers} players. {chosen.Description}");
+        else if (MapPack.IsTrueRandom(s.MapPack))
+            ImGuiSafe.TextColored(Dim, $"A random one of {MapPack.TrueRandomPool(Maps.Packs, Maps.All).Count} maps from every pack each time (Dev test maps left out). After a match, players vote on the next one from any pack.");
+        else if (Maps.FindPack(s.MapPack) is { } pack)
+            ImGuiSafe.TextColored(Dim, $"A random one of the {pack.Maps.Count} maps in {pack.Name} each time. After a match, players vote on the next one from the same pack.");
+        else
+            ImGuiSafe.TextColored(Dim, $"The pack '{s.MapPack}' isn't in the Maps folder, so it's a random one of all {Maps.All.Length} maps. Change map to pick a pack.");
+        ImGui.PopTextWrapPos();
         ImGui.Spacing();
     }
 

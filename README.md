@@ -180,7 +180,7 @@ Hold **forward + jump** at a ledge up to 1.7 m high (crates, low walls, window s
 
 ### Lobby size
 
-Up to **32 players** (people and bots), but every map has its own limit: **8-10** on small maps, **12-16** on medium ones and **24-32** on large ones, worked out from the map's area (a map file can set its own with `"maxPlayers"`, see [Maps/README.md](Maps/README.md#player-limits)). The lobby shows **x / max players** under the bot slider, and the slider stops at the map's limit. With **Random from pack**, it goes up to the pack's biggest map and the game picks among the maps that take everyone. The map list shows each map's limit.
+Up to **32 players** (people and bots), but every map has its own limit: **8-10** on small maps, **12-16** on medium ones and **24-32** on large ones, worked out from the map's area (a map file can set its own with `"maxPlayers"`, see [Maps/README.md](Maps/README.md#player-limits)). The lobby shows **x / max players** under the bot slider, and the slider stops at the map's limit. With **Random** from a pack (or **True Random**), it goes up to the biggest map in the pool and the game picks among the maps that take everyone. The map list shows each map's limit.
 
 - **Joining a full game:** a person takes a bot's place. If the map is full of people, the join is refused with "The server is full: x/y players on map".
 - **Map vote:** only maps big enough for the people playing are offered. When a smaller map wins, bots it has no room for leave (people never do), and they come back on a bigger map: the bot count you set is remembered.
@@ -207,23 +207,35 @@ Up to **32 players** (people and bots), but every map has its own limit: **8-10*
 
 **Multiplayer** has three tabs:
 
-- **Server browser:** lists games to join with name, map, players / the map's limit (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds.
-- **Host a game:** map pack and map (random from the pack by default, or *Choose map* to pick one of the pack's maps), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
+- **Server browser:** lists games to join with name, map (with an orange **True Random** tag when the host plays True Random), players / the map's limit (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds.
+- **Host a game:** the map (**Change map...** opens the [map select screen](#map-select): random from a pack by default, one map, or True Random), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
 - **Join by address:** type an IP and port directly.
 
 **About public listing:** a public list needs something always online that hosts can report to and browsers can ask. That's the **master server**, built into the game: run `CallOfSlop.exe --master` (optionally followed by a port; the default is UDP 27050) on any always-on PC with that UDP port reachable. It tries UPnP itself. Then everyone enters that PC's address under **Settings > Player > Master server**. The master only stores addresses: names, maps, players and pings come straight from each game. Without a master server, the browser still finds every game on your LAN.
 
-Single player works the same way: pick a **map pack**, then **Random from pack** (the default) or *Choose map*. With random picked, the lobby background tours the pack's maps.
+Single player works the same way: **Change map...** shows the current choice and opens the map select screen. With random picked, the lobby background tours the pack's maps (True Random: every pack's).
+
+### Map select
+
+**Change map...** (Single player and Host a game) opens the map select screen:
+
+- **Left: the map packs**, one tile each in their `pack.json` order (Dev last), with the pack's name, map count, sizes ("7 small, 9 medium, 8 large") and a small picture: a collage of up to four of its maps, seen from above. **True Random** sits at the bottom.
+- **Right: the open pack.** Its description, then **Random** at the top, then its maps, smallest first, each with a picture, size, player limit and description. Opening a pack always pre-selects **Random**. A map too small for your bots is shown in orange (the bots are cut to fit).
+- **Click** selects, **double-click** (or **Enter**, or the orange **CHOOSE** button) takes it and returns to the lobby; double-clicking a pack tile takes that pack's Random. **BACK** or **Esc** leaves without changing anything. Keyboard: **Up/Down** through the maps, **Left/Right** (or Page Up/Down) through the packs. The lobby background follows the selection, and CURRENT marks what's chosen now.
+- **True Random** is a pack that isn't a folder: every match is on a random map from **all** packs except **Dev** (its test maps aren't balanced for play; you can still pick them from the Dev pack). Like random from a pack, it only picks maps that take you and your bots, and the map vote afterwards offers maps from every pack. A pack can leave itself out with `"trueRandom": false` in its pack.json.
+- The pictures are rendered by the game itself (no image files): each map once, into a small offscreen texture at 384x216, one per frame so the screen never freezes, and cached until the map's file changes. If the graphics card can't do it, plain coloured tiles are shown instead.
+
+The choice is saved in `settings.txt` as before (`map_pack=<pack name>`, `map=<map>`, `map_random=1|0`); True Random is `map_pack=*all`. Older settings files load unchanged.
 
 ### Map vote
 
-At the end of every match the results screen shows **three maps to vote on**, taken from the pack of the map you just played (or from every map if that pack is too small): one small, one medium and one large where possible, never the map you just played. Click one or press **1 / 2 / 3**. You can change your vote until the 12-second timer runs out, and the live tally shows which map is leading. Only maps big enough for the people playing are offered (see [Lobby size](#lobby-size)). Bots vote too, leaning towards smaller maps when there are few players. The next match starts on the map with the most votes, with ties broken at random. Players who join during the results screen see the ballot and can vote.
+At the end of every match the results screen shows **three maps to vote on**, taken from the pack of the map you just played (with **True Random**: from every pack but Dev; from every map if that pack is too small): one small, one medium and one large where possible, never the map you just played. Click one or press **1 / 2 / 3**. You can change your vote until the 12-second timer runs out, and the live tally shows which map is leading. Only maps big enough for the people playing are offered (see [Lobby size](#lobby-size)). Bots vote too, leaning towards smaller maps when there are few players. The next match starts on the map with the most votes, with ties broken at random. Players who join during the results screen see the ballot and can vote.
 
 ### Maps
 
-All maps share the same primitive style: everything is a box, with the grey-and-orange dev grid. Buildings are walk-in, with doors, windows to shoot through, internal stairs between floors and, on many, a staircase onto the roof. Pick the map in the lobby (Single player or Host); the background previews your choice.
+All maps share the same primitive style: everything is a box, with the grey-and-orange dev grid. Buildings are walk-in, with doors, windows to shoot through, internal stairs between floors and, on many, a staircase onto the roof. Pick the map in the lobby (Single player or Host, **Change map...**); the background previews your choice.
 
-**Map packs.** Each folder in `Maps` is a map pack, and in the lobby you first pick a pack (shown with its map count by size, for example "7 small, 9 medium, 8 large", and its description), then play a random map from it or choose one. The 24 shipped maps are the **Classic** pack (`Maps/Classic`). Map files placed straight in `Maps` form a pack called **Other**. A folder can hold a `pack.json` with the pack's name, description, author and sort order; without one the folder name is used. To share a pack, zip its folder; to install one, unzip it into `Maps` and click **Refresh maps**. The Classic maps:
+**Map packs.** Each folder in `Maps` is a map pack, and on the [map select screen](#map-select) you first pick a pack (shown with its map count by size, for example "7 small, 9 medium, 8 large", and a picture), then play a random map from it or choose one, or pick **True Random** for any map of any pack. The 24 shipped maps are the **Classic** pack (`Maps/Classic`). Map files placed straight in `Maps` form a pack called **Other**. A folder can hold a `pack.json` with the pack's name, description, author and sort order; without one the folder name is used. To share a pack, zip its folder; to install one, unzip it into `Maps` and click **Refresh maps**. The Classic maps:
 
 | Map | Size | What it is |
 | --- | --- | --- |

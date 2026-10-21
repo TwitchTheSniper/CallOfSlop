@@ -15,7 +15,7 @@ public sealed partial class Map
 /// Packs only decide how maps are grouped in the lobby, what "random" picks from and what the map vote offers;
 /// servers and clients still identify maps by name + fingerprint.
 /// </summary>
-public sealed class MapPack
+public sealed partial class MapPack
 {
     /// <summary>The "format" value a pack.json should carry.</summary>
     public const string Format = "call-of-slop-pack/1";
@@ -32,6 +32,12 @@ public sealed class MapPack
 
     /// <summary>Sort order in the pack list (then by name). Default 1000; the loose-files pack sorts last.</summary>
     public int Order = 1000;
+
+    /// <summary>
+    /// Whether "True Random" (random from every pack) may pick this pack's maps. pack.json "trueRandom": false
+    /// leaves a pack out (the Dev test maps); its maps can still be chosen directly or played as random from that pack.
+    /// </summary>
+    public bool InTrueRandom = true;
 
     /// <summary>The pack's folder, relative to the Maps folder (null for the loose-files pack).</summary>
     public string? Folder;
@@ -93,6 +99,8 @@ public sealed class MapPack
             };
             if (Get("order") is { ValueKind: JsonValueKind.Number } o && o.TryGetInt32(out var order))
                 pack.Order = order;
+            if (Get("trueRandom") is { ValueKind: JsonValueKind.False })
+                pack.InTrueRandom = false;
             return pack;
         }
     }
