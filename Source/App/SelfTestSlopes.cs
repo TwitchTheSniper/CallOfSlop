@@ -30,12 +30,33 @@ public static partial class SelfTest
         }
         finally
         {
+            SlopeNotices();
             World.Mover = previousMover;
             World.SetMap(previousMap);
         }
     }
 
     private static float SlopeFlat(Vector3 v) => MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+
+    /// <summary>Result lines of this section by group: logged now, and repeated at the end as one CI notice per group.</summary>
+    private static readonly List<(string Group, string Text)> SlopeNotes = new();
+
+    private static void SlopeNote(string group, string text)
+    {
+        Line(text);
+        SlopeNotes.Add((group, text));
+    }
+
+    /// <summary>
+    /// The section's results as GitHub Actions notices (the workflow prints selftest.log, and a line starting with "::notice"
+    /// becomes an annotation on the run), so the numbers are visible without the log.
+    /// </summary>
+    private static void SlopeNotices()
+    {
+        foreach (var g in SlopeNotes.Select(n => n.Group).Distinct())
+            Line($"::notice title=Slopes: {g}::" + string.Join("%0A", SlopeNotes.Where(n => n.Group == g).Select(n => n.Text.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        SlopeNotes.Clear();
+    }
 
     /// <summary>
     /// A 60 x 60 m terrain map that is one plane rising to the north (-Z) at <paramref name="deg"/> degrees, with optional
@@ -94,7 +115,7 @@ public static partial class SelfTest
                     speeds[k] = (z0 - s.Position.Z) / 2f;
                     line.Add(FormattableString.Invariant($"{deg:0}:{speeds[k]:0.0}"));
                 }
-                Line($"{mover.Mode,-7} {(sprint ? "sprint" : "walk  ")} uphill speed (m/s) by slope (deg): {string.Join("  ", line)}");
+                SlopeNote("speed", $"{mover.Mode,-7} {(sprint ? "sprint" : "walk  ")} uphill speed (m/s) by slope (deg): {string.Join("  ", line)}");
                 for (var k = 0; k < SlopeAngles.Length; k++)
                 {
                     var deg = SlopeAngles[k];
@@ -123,7 +144,7 @@ public static partial class SelfTest
             down = SlopeHold(down, Buttons.Forward, MathF.PI, 60);
             var across = a.Position.X - ax;
             var downhill = down.Position.Z - dz;
-            Line($"{mover.Mode,-7} 35 degrees: across {across:0.0} m/s, downhill {downhill:0.0} m/s (walking, full speed {World.WalkSpeed})");
+            SlopeNote("speed", $"{mover.Mode,-7} 35 degrees: across {across:0.0} m/s, downhill {downhill:0.0} m/s (walking, full speed {World.WalkSpeed})");
             if (across < World.WalkSpeed * 0.95f || downhill < World.WalkSpeed * 0.95f)
                 Fail($"{mover.Mode}: slowed walking across ({across:0.0}) or down ({downhill:0.0}) a 35 degree slope");
         }
@@ -159,7 +180,7 @@ public static partial class SelfTest
                 if (airDown > 0 || d.Position.Z < 10)
                     Fail($"{mover.Mode} {(sprint ? "sprint" : "walk")}: {airDown} airborne tick(s) walking down a 30 degree slope (got to z {d.Position.Z:0.0})");
             }
-            Line($"{mover.Mode,-7} " + string.Join("; ", parts));
+            SlopeNote("feel", $"{mover.Mode,-7} " + string.Join("; ", parts));
         }
     }
 
@@ -180,7 +201,7 @@ public static partial class SelfTest
                 patchSteep += t.NormalAt(x, z).Y < World.MinWalkNormalY ? 1 : 0;
                 footSteep += SlopeRules.Walkable(t, x, z) ? 0 : 1;
             }
-        Line($"noisy 36 degree slope: {patchSteep * 100f / samples:0.0}% of points have a heightfield patch over 42 degrees, {footSteep * 100f / samples:0.00}% a footprint over {SlopeRules.WalkLimitDeg}");
+        SlopeNote("feel", $"noisy 36 degree slope: {patchSteep * 100f / samples:0.0}% of points have a heightfield patch over 42 degrees, {footSteep * 100f / samples:0.00}% a footprint over {SlopeRules.WalkLimitDeg}");
         foreach (var mover in SlopeMovers)
         {
             World.Mover = mover;
@@ -209,7 +230,7 @@ public static partial class SelfTest
                 if (drift > 0.05f)
                     Fail($"{mover.Mode}: slid {drift:0.00} m standing on a noisy 36 degree slope");
             }
-            Line($"{mover.Mode,-7} noisy 36 degrees, 6 s walking up: " + string.Join("; ", parts));
+            SlopeNote("feel", $"{mover.Mode,-7} noisy 36 degrees, 6 s walking up: " + string.Join("; ", parts));
         }
     }
 
@@ -240,7 +261,7 @@ public static partial class SelfTest
             var slid = SlopeHold(top, Buttons.None, 0, 180, (_, st) => fastest = MathF.Max(fastest, st.Velocity.Z));
             var steer = SlopeHold(top, Buttons.Right, 0, 120);
             var upward = SlopeHold(top, Buttons.Forward | Buttons.Sprint, 0, 120);
-            Line($"{mover.Mode,-7} steep: 50 degrees standing slid {stood.Position.Z - start.Position.Z:0.0} m in 2 s, sprinting up gained {climb.Position.Y - start.Position.Y:+0.00;-0.00} m; "
+            SlopeNote("feel", $"{mover.Mode,-7} steep: 50 degrees standing slid {stood.Position.Z - start.Position.Z:0.0} m in 2 s, sprinting up gained {climb.Position.Y - start.Position.Y:+0.00;-0.00} m; "
                  + $"60 degrees: fastest slide {fastest:0.0} m/s (cap {SlopeRules.MaxSlideSpeed}), steering right moved {steer.Position.X:0.0} m across in 2 s, holding forward ended {upward.Position.Z - top.Position.Z:+0.0;-0.0} m downhill");
             if (fastest > SlopeRules.MaxSlideSpeed + 0.05f)
                 Fail($"{mover.Mode}: slid down 60 degrees at {fastest:0.0} m/s (cap {SlopeRules.MaxSlideSpeed})");
@@ -278,7 +299,7 @@ public static partial class SelfTest
             var climb = SlopeHold(SlopeStand(m, 10, 0), Buttons.Forward, 0, 150, (i, st) => mantled |= st.MantleTicks > 0);
             climb = SlopeHold(climb, Buttons.Forward | Buttons.Jump, 0, 40, (i, st) => mantled |= st.MantleTicks > 0);
             climb = SlopeHold(climb, Buttons.Forward, 0, 60);
-            Line($"{mover.Mode,-7} lips: 0.4 m lip walked to y {lip.Position.Y:0.00} z {lip.Position.Z:0.0}; 0.9 m bank stopped at y {bank.Position.Y:0.00} z {bank.Position.Z:0.0}, mantle {(mantled ? "yes" : "no")} to y {climb.Position.Y:0.00}");
+            SlopeNote("feel", $"{mover.Mode,-7} lips: 0.4 m lip walked to y {lip.Position.Y:0.00} z {lip.Position.Z:0.0}; 0.9 m bank stopped at y {bank.Position.Y:0.00} z {bank.Position.Z:0.0}, mantle {(mantled ? "yes" : "no")} to y {climb.Position.Y:0.00}");
             if (lip.Position.Y < 0.35f || lip.Position.Z > -8f)
                 Fail($"{mover.Mode}: didn't step over a 0.4 m terrain lip (y {lip.Position.Y:0.00}, z {lip.Position.Z:0.0})");
             if (bank.Position.Y > 0.6f)
@@ -325,7 +346,7 @@ public static partial class SelfTest
                 World.Simulate(ref replay, cmds[i]);
             var same = again.Position == s.Position && again.Velocity == s.Velocity && again.Grounded == s.Grounded
                        && replay.Position == s.Position && replay.Velocity == s.Velocity && replay.Grounded == s.Grounded;
-            Line($"{mover.Mode,-7} determinism: 600 ticks on a noisy 40 degree slope end at {s.Position} both times and when replayed from tick 300: {(same ? "identical" : "DIFFERENT")}");
+            SlopeNote("feel", $"{mover.Mode,-7} determinism: 600 ticks on a noisy 40 degree slope end at {s.Position} both times and when replayed from tick 300: {(same ? "identical" : "DIFFERENT")}");
             if (!same)
                 Fail($"{mover.Mode}: slope movement isn't deterministic (run {s.Position}, again {again.Position}, replay {replay.Position})");
         }
@@ -467,9 +488,9 @@ public static partial class SelfTest
                 }
                 parts.Add($"  {mover.Mode,-7} {(sprint ? "sprint" : "walk  ")}: {string.Join("  ", times)}");
             }
-            Line($"{m.Name}: scripted walks along the bots' routes, {reached}/{total} arrived");
+            SlopeNote("routes", $"{m.Name}: scripted walks along the bots' routes, {reached}/{total} arrived");
             foreach (var p in parts)
-                Line(p);
+                SlopeNote("routes", p);
         }
         World.Mover = ClassicMover.Instance;
     }
@@ -539,7 +560,7 @@ public static partial class SelfTest
             var cover = cells.Count * 36f / (4 * m.HalfX * m.HalfZ) * 100f;
             var stalls = 0; // baseline: no slope re-plans yet
             var kills = game.Players.Values.Sum(p => (int)p.Kills);
-            Line($"{m.Name,-12} bots 60 s: kills {kills}, avg travel {(travel.Count > 0 ? travel.Values.Average() : 0):0} m, stuck {stuck} (under 15 m: {lowTravel}), "
+            SlopeNote("bots", $"{m.Name,-12} bots 60 s: kills {kills}, avg travel {(travel.Count > 0 ? travel.Values.Average() : 0):0} m, stuck {stuck} (under 15 m: {lowTravel}), "
                  + $"unstick tries {unstick.Values.Sum()}, slope re-plans {stalls}, sliding {slideTicks} bot-ticks, slow on slopes {slopeSlow}/{botSeconds} bot-seconds, "
                  + $"map covered {cover:0}% (6 m cells), bunched pairs {bunched / (float)Math.Max(1, samples):0.00} per second");
             if (stuck > 0)
