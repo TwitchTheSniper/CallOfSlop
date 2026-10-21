@@ -343,6 +343,7 @@ public struct Snap
     public Vector3 Velocity;
     public float Yaw;
     public float Pitch;
+    public bool Grounded, Mantling; // for the leg animation (Source/Render/LegAnimator.cs)
 }
 
 /// <summary>State for one player.</summary>
@@ -393,6 +394,10 @@ public sealed class Player
     public Vector3 RenderPosition;
     public float RenderYaw;
     public float RenderPitch;
+
+    /// <summary>Velocity being drawn (interpolated for remote players), plus on-ground / mantling: drives the legs (LegAnimator).</summary>
+    public Vector3 RenderVelocity;
+    public bool RenderGrounded = true, RenderMantling;
 
     // ---- Server only --------------------------------------------------------
     public readonly List<InputCmd> InputQueue = new();

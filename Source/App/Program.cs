@@ -184,6 +184,11 @@ public static unsafe partial class Program
             MeshSmokeTick(now); // Program.Meshes.cs
             return;
         }
+        if (LegsSmokeActive)
+        {
+            LegsSmokeTick(now); // Program.Legs.cs
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -956,6 +961,8 @@ public static unsafe partial class Program
                 DrawPropsSmoke();
             else if (MeshSmokeActive)
                 DrawMeshSmoke();
+            else if (LegsSmokeActive)
+                DrawLegsSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -998,7 +1005,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -1587,10 +1594,16 @@ public static unsafe partial class Program
         DrawArena();
 
         // ---- Players --------------------------------------------------------
+        LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
+        LegAnimator.MoverTick = _game.MoverRenderTick;
         foreach (var p in _game.Players.Values)
         {
             if (p.Id == _game.LocalId && p.Alive)
+            {
+                if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
+                    ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
+            }
             DrawPlayer(p);
         }
 
