@@ -3,16 +3,17 @@
   "name": "Pinhole Reflex",
   "slot": "Optic",
   "order": 6,
-  "unlockOrder": 3,
+  "unlockOrder": 35,
   "blurb": "Featherweight micro reflex with a tiny green dot. Up on target before you know it.",
   "pros": ["Fastest optic to aim", "Tiny green dot", "-12% aimed spread"],
-  "cons": ["Small window", "Low 1.4x zoom"],
+  "cons": ["Small window", "Low 1.4x zoom", "+5% draw time"],
   "fits": {},
   "effects": [
     { "stat": "optic", "set": "MiniDot" },
     { "stat": "adsZoom", "set": 1.4 },
     { "stat": "adsSpreadMult", "mul": 0.88 },
-    { "stat": "adsTime", "add": -0.02, "min": 0.08 }
+    { "stat": "adsTime", "add": -0.02, "min": 0.08 },
+    { "stat": "equipTime", "mul": 1.05 }
   ],
   "sight": { "reticle": "Dot", "reticleColor": [0.3, 1, 0.35], "reticleSize": 0.8, "vignette": 0, "tint": [0.6, 0.9, 0.7], "tintAlpha": 0.1 }
 }

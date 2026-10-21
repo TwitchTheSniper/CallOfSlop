@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Recoil Pad",
+  "slot": "Stock",
+  "order": 9,
+  "unlockOrder": 97,
+  "blurb": "A thick rubber butt pad for guns that kick like a mule.",
+  "pros": ["-30% view punch", "-25% camera shake", "-8% recoil"],
+  "cons": ["-2% speed", "+6% draw time"],
+  "fits": { "classes": ["Shotgun", "Sniper", "Special"] },
+  "model": "recoilPad",
+  "effects": [
+    { "stat": "recoilPunch", "mul": 0.7 },
+    { "stat": "recoilShake", "mul": 0.75 },
+    { "stat": "recoilDeg", "mul": 0.92 },
+    { "stat": "mobility", "add": -0.02 },
+    { "stat": "equipTime", "mul": 1.06 }
+  ]
+}

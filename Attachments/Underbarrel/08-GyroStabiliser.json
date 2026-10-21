@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Gyro Stabiliser",
+  "slot": "Underbarrel",
+  "order": 8,
+  "unlockOrder": 103,
+  "blurb": "A humming flywheel under the barrel that fights every twitch. Heavy and slow to bring up.",
+  "pros": ["-25% recoil", "-15% hip spread"],
+  "cons": ["-6% speed", "+15% draw time"],
+  "fits": { "classes": ["Special"] },
+  "model": "gyro",
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.75 },
+    { "stat": "hipSpreadDeg", "mul": 0.85 },
+    { "stat": "mobility", "add": -0.06 },
+    { "stat": "equipTime", "mul": 1.15 }
+  ]
+}

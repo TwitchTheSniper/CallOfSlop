@@ -3,13 +3,14 @@
   "name": "Angled Grip",
   "slot": "Underbarrel",
   "order": 2,
-  "unlockOrder": 13,
+  "unlockOrder": 130,
   "blurb": "Snappier shouldering.",
   "pros": ["32% faster to aim", "-40% first-shot kick"],
-  "cons": [],
+  "cons": ["+10% vertical recoil"],
   "fits": { "notClasses": ["Pistol", "Special"] },
   "effects": [
     { "stat": "adsTime", "mul": 0.68 },
-    { "stat": "recoilFirstShot", "mul": 0.6 }
+    { "stat": "recoilFirstShot", "mul": 0.6 },
+    { "stat": "recoilVertical", "mul": 1.1 }
   ]
 }

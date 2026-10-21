@@ -3,7 +3,7 @@
   "name": "Holographic",
   "slot": "Optic",
   "order": 2,
-  "unlockOrder": 6,
+  "unlockOrder": 60,
   "blurb": "Wide window with a ring reticle. Great for tracking moving targets.",
   "pros": ["Ring + dot reticle", "1.6x zoom", "-22% aimed spread"],
   "cons": ["Slightly slower to aim"],

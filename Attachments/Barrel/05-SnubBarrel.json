@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Snub Barrel",
+  "slot": "Barrel",
+  "order": 5,
+  "unlockOrder": 55,
+  "blurb": "Cut down for the holster. Out fast, but it doesn't reach far.",
+  "pros": ["+3% speed", "15% faster draw", "10% faster to aim"],
+  "cons": ["-20% range"],
+  "fits": { "classes": ["Pistol"] },
+  "model": "snubBarrel",
+  "effects": [
+    { "stat": "rangeM", "mul": 0.8 },
+    { "stat": "mobility", "add": 0.03 },
+    { "stat": "equipTime", "mul": 0.85 },
+    { "stat": "adsTime", "mul": 0.9 }
+  ]
+}

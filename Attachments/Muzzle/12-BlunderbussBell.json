@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Blunderbuss Bell",
+  "slot": "Muzzle",
+  "order": 12,
+  "unlockOrder": 233,
+  "blurb": "A brass bell on the muzzle and a handful of lead balls instead of one. Point it the right way.",
+  "pros": ["7 balls per shot", "Devastating up close"],
+  "cons": ["-80% damage per ball", "4x hip spread", "-65% range"],
+  "fits": { "classes": ["Special"], "sounds": ["Boom"] },
+  "model": "bell",
+  "effects": [
+    { "stat": "pellets", "set": 7 },
+    { "stat": "damage", "mul": 0.2 },
+    { "stat": "hipSpreadDeg", "mul": 4 },
+    { "stat": "rangeM", "mul": 0.35 }
+  ]
+}

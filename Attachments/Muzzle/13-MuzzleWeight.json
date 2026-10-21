@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Muzzle Weight",
+  "slot": "Muzzle",
+  "order": 13,
+  "unlockOrder": 43,
+  "blurb": "A heavy collar on the muzzle that keeps odd guns from flipping up.",
+  "pros": ["-25% vertical recoil", "-30% view punch"],
+  "cons": ["-4% speed", "Slower to aim"],
+  "fits": { "classes": ["Special"] },
+  "model": "weight",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.75 },
+    { "stat": "recoilPunch", "mul": 0.7 },
+    { "stat": "mobility", "add": -0.04 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

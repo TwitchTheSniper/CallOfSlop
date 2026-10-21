@@ -3,15 +3,16 @@
   "name": "Red Dot",
   "slot": "Optic",
   "order": 1,
-  "unlockOrder": 1,
+  "unlockOrder": 10,
   "blurb": "Small reflex sight. A clean dot instead of iron sights.",
   "pros": ["Clear sight picture", "-15% aimed spread"],
-  "cons": ["Low 1.5x zoom"],
+  "cons": ["Low 1.5x zoom", "Slightly slower to aim"],
   "fits": {},
   "effects": [
     { "stat": "optic", "set": "RedDot" },
     { "stat": "adsZoom", "set": 1.5 },
-    { "stat": "adsSpreadMult", "mul": 0.85 }
+    { "stat": "adsSpreadMult", "mul": 0.85 },
+    { "stat": "adsTime", "add": 0.01 }
   ],
   "sight": { "reticle": "Dot", "reticleColor": [1, 0.15, 0.1], "reticleSize": 1, "vignette": 0, "tint": [0.6, 0.9, 0.7], "tintAlpha": 0.12 }
 }

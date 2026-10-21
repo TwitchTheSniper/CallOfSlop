@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Tank Brake",
+  "slot": "Muzzle",
+  "order": 9,
+  "unlockOrder": 213,
+  "blurb": "A huge boxy brake that throws the blast sideways. The gun stays down, the screen doesn't.",
+  "pros": ["-35% vertical recoil", "-40% view punch"],
+  "cons": ["+50% camera shake", "-3% speed"],
+  "fits": { "classes": ["Sniper", "LMG"] },
+  "model": "tankBrake",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.65 },
+    { "stat": "recoilPunch", "mul": 0.6 },
+    { "stat": "recoilShake", "mul": 1.5 },
+    { "stat": "mobility", "add": -0.03 }
+  ]
+}

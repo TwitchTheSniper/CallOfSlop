@@ -3,7 +3,7 @@
   "name": "Variant 6x LPVO",
   "slot": "Optic",
   "order": 9,
-  "unlockOrder": 19,
+  "unlockOrder": 195,
   "blurb": "Low-power variable scope dialled to 6x. Crosshair with stadia ticks and a lit centre dot.",
   "pros": ["6x zoom", "Stadia crosshair", "-58% aimed spread"],
   "cons": ["Much slower to aim", "Scope view", "-4% speed"],

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Full Choke",
+  "slot": "Muzzle",
+  "order": 8,
+  "unlockOrder": 113,
+  "blurb": "The tightest choke there is. A narrow pattern that carries much further.",
+  "pros": ["-50% pellet spread", "+35% range"],
+  "cons": ["-3% speed", "Slightly slower to aim"],
+  "fits": { "classes": ["Shotgun"] },
+  "model": "fullChoke",
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.5 },
+    { "stat": "rangeM", "mul": 1.35 },
+    { "stat": "mobility", "add": -0.03 },
+    { "stat": "adsTime", "add": 0.015 }
+  ]
+}

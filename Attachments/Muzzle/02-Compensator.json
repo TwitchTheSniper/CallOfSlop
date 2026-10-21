@@ -3,13 +3,14 @@
   "name": "Compensator",
   "slot": "Muzzle",
   "order": 2,
-  "unlockOrder": 3,
+  "unlockOrder": 30,
   "blurb": "Vents gas upward to fight muzzle climb.",
   "pros": ["-30% vertical recoil", "-20% view punch"],
-  "cons": [],
+  "cons": ["+15% camera shake"],
   "fits": { "notClasses": ["Shotgun", "Special"] },
   "effects": [
     { "stat": "recoilVertical", "mul": 0.7 },
-    { "stat": "recoilPunch", "mul": 0.8 }
+    { "stat": "recoilPunch", "mul": 0.8 },
+    { "stat": "recoilShake", "mul": 1.15 }
   ]
 }

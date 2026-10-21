@@ -3,7 +3,7 @@
   "name": "Longshot 12x",
   "slot": "Optic",
   "order": 10,
-  "unlockOrder": 23,
+  "unlockOrder": 230,
   "blurb": "Big-bell 12x glass with a mil-dot reticle, for the far side of the biggest maps.",
   "pros": ["12x zoom", "Mil-dot reticle", "-70% aimed spread"],
   "cons": ["Slowest to aim", "Very narrow view", "-6% speed"],

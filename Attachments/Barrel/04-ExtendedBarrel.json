@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Extended Barrel",
+  "slot": "Barrel",
+  "order": 4,
+  "unlockOrder": 115,
+  "blurb": "A threaded barrel that sticks out past the slide for a little more reach.",
+  "pros": ["+30% range", "-12% aimed spread"],
+  "cons": ["-3% speed", "+10% draw time"],
+  "fits": { "classes": ["Pistol"] },
+  "model": "extendedBarrel",
+  "effects": [
+    { "stat": "rangeM", "mul": 1.3 },
+    { "stat": "adsSpreadMult", "mul": 0.88 },
+    { "stat": "mobility", "add": -0.03 },
+    { "stat": "equipTime", "mul": 1.1 }
+  ]
+}

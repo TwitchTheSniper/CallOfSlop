@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Beam Focuser",
+  "slot": "Muzzle",
+  "order": 10,
+  "unlockOrder": 133,
+  "blurb": "A glowing lens ring that squeezes bolts, nails and darts into a tighter line.",
+  "pros": ["-30% hip spread", "+25% range"],
+  "cons": ["-10% fire rate"],
+  "fits": { "classes": ["Special"], "notSounds": ["Boom"] },
+  "model": "focuser",
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.7 },
+    { "stat": "rangeM", "mul": 1.25 },
+    { "stat": "rpm", "mul": 0.9 }
+  ]
+}

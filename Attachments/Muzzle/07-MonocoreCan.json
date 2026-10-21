@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Monocore Can",
+  "slot": "Muzzle",
+  "order": 7,
+  "unlockOrder": 175,
+  "blurb": "A long, heavy rifle suppressor. Quiet shots that keep almost all of their reach.",
+  "pros": ["Much quieter, muffled gunshot", "-30% camera shake", "-8% recoil"],
+  "cons": ["-5% range", "-4% speed", "+12% draw time", "Slower to aim"],
+  "fits": { "classes": ["Sniper", "DMR"], "sounds": ["Gun", "Boom"] },
+  "model": "longSuppressor",
+  "effects": [
+    { "stat": "suppressor", "set": true },
+    { "stat": "sound", "set": "Suppressed" },
+    { "stat": "rangeM", "mul": 0.95 },
+    { "stat": "recoilShake", "mul": 0.7 },
+    { "stat": "recoilDeg", "mul": 0.92 },
+    { "stat": "mobility", "add": -0.04 },
+    { "stat": "equipTime", "mul": 1.12 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

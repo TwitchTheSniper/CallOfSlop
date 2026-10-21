@@ -3,12 +3,13 @@
   "name": "Fast Mag",
   "slot": "Magazine",
   "order": 2,
-  "unlockOrder": 5,
+  "unlockOrder": 50,
   "blurb": "Clipped together for quick swaps.",
   "pros": ["42% faster reload"],
-  "cons": [],
+  "cons": ["+10% draw time"],
   "fits": { "minMag": 3 },
   "effects": [
-    { "stat": "reload", "mul": 0.58 }
+    { "stat": "reload", "mul": 0.58 },
+    { "stat": "equipTime", "mul": 1.1 }
   ]
 }
