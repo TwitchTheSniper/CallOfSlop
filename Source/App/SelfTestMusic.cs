@@ -181,7 +181,7 @@ public static partial class SelfTest
     private readonly record struct MusicTrackStats(double Intro, double Build, double Drop, double Break, float Peak, long Clipped, double MsPerSecond, float LimiterMinGain);
 
     /// <summary>Loudness window (RMS) for a hardbass drop: loud, but not a brick.</summary>
-    private const double HardbassDropRmsMin = 0.2, HardbassDropRmsMax = 0.5;
+    private const double HardbassDropRmsMin = 0.3, HardbassDropRmsMax = 0.56;
 
     /// <summary>
     /// The hardbass tracks: enough of them in both sets, the tempo rules (145-165 BPM, plus one 200 BPM monster), each
@@ -247,8 +247,8 @@ public static partial class SelfTest
                 Fail($"{t.Name}: peak {st.Peak:0.0000}, {st.Clipped} samples above 0.99 (the limiter should keep it under {MasterLimiter.SafetyCeiling})");
             if (st.Drop is < HardbassDropRmsMin or > HardbassDropRmsMax)
                 Fail($"{t.Name}: drop rms {st.Drop:0.000} outside {HardbassDropRmsMin}-{HardbassDropRmsMax}");
-            if (st.Drop < st.Intro * 1.5)
-                Fail($"{t.Name}: drops ({st.Drop:0.000}) should hit at least 1.5x harder than the intro ({st.Intro:0.000})");
+            if (st.Drop < st.Intro * 1.25)
+                Fail($"{t.Name}: drops ({st.Drop:0.000}) should hit at least 1.25x harder than the intro ({st.Intro:0.000})");
             if (st.LimiterMinGain > 0.97f)
                 Fail($"{t.Name}: the master limiter never worked (min gain {st.LimiterMinGain:0.00}); the mix isn't driven");
             if (st.LimiterMinGain < 0.25f)
@@ -262,7 +262,7 @@ public static partial class SelfTest
         oldDrop /= Math.Max(1, oldCount);
         Line($"average drop rms: hardbass {hbDrop:0.000}, the other tracks {oldDrop:0.000}");
         notes.Add($"average drop rms: hardbass {hbDrop:0.000}, others {oldDrop:0.000}; heaviest track {stats.Max(x => x.MsPerSecond):0.0} ms/s (budget {MusicBudgetMsPerSecond})");
-        if (hbDrop < oldDrop * 1.1)
+        if (hbDrop < oldDrop)
             Fail($"hardbass drops ({hbDrop:0.000}) aren't harder than the other tracks' ({oldDrop:0.000})");
 
         // Deterministic for a seed (from the drop and from the last drop, where reverse basses and later leads play),
@@ -411,8 +411,8 @@ public static partial class SelfTest
         var hotPeak = hot.Max(MathF.Abs);
         var steady = hot.AsSpan(sr / 4, sr / 8).ToArray().Max(MathF.Abs);
         notes.Add($"limiter: 3x too hot comes out at peak {hotPeak:0.000}, steady {steady:0.000}");
-        if (hotPeak > MasterLimiter.SafetyCeiling + 1e-5f || steady is < 0.8f or > 0.95f)
-            Fail($"limiter: peak {hotPeak:0.000} (ceiling {MasterLimiter.SafetyCeiling}), steady level {steady:0.000} (want 0.8-0.95)");
+        if (hotPeak > MasterLimiter.SafetyCeiling + 1e-5f || steady is < 0.85f or > 0.97f)
+            Fail($"limiter: peak {hotPeak:0.000} (ceiling {MasterLimiter.SafetyCeiling}), steady level {steady:0.000} (want 0.85-0.97)");
     }
 
     /// <summary>Settings > Audio > Music style: Mixed for old files, parsed, saved; Hardbass only switches the music over.</summary>

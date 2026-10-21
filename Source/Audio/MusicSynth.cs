@@ -1367,7 +1367,7 @@ internal sealed class MasterLimiter
     private const float Knee = 0.9f;
 
     /// <summary>Peak level the limiter aims for (before the safety clipper).</summary>
-    public float Ceiling = 0.89f, ReleaseTime = 0.08f;
+    public float Ceiling = 0.93f, ReleaseTime = 0.06f;
 
     private readonly float[] _dl = new float[Lookahead], _dr = new float[Lookahead];
     private float _gain = 1f, _attackCoef, _releaseCoef;

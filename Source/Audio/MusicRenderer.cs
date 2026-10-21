@@ -58,7 +58,7 @@ public sealed class MusicRenderer
     private int _step, _section, _secStart, _secBars, _drops, _lastPadChord = int.MinValue;
     private MusicPart _part;
     private bool _fillBar, _gapAfter;
-    private float _leadLevel = 1f, _kickMuffle = 1f;
+    private float _leadLevel = 1f, _kickMuffle = 1f, _kickLevel = 1f;
     private long _rendered;
 
     // Master
@@ -108,6 +108,7 @@ public sealed class MusicRenderer
         _fillBar = false;
         _leadLevel = 1f;
         _kickMuffle = 1f;
+        _kickLevel = 1f;
         Finished = false;
         _dcInL = _dcInR = _dcOutL = _dcOutR = 0;
 
@@ -389,16 +390,16 @@ public sealed class MusicRenderer
                 _rollingBuildBass = true;
                 _duckDepth = 0.55f;
                 _bassDuck = 0.85f;
-                _gKick = 0.95f;
+                _gKick = 0.72f;
                 _gSnare = 0.5f;
                 _gHat = 0.14f;
-                _gBass = 0.45f;
+                _gBass = 0.55f;
                 _gPad = 0.12f;
                 _gRev = 0.5f;
                 _gVox = 0.45f;
                 _leadDelay = 0.2f;
                 _leadVerb = 0.12f;
-                _masterGain = 1.5f;
+                _masterGain = 1.6f;
                 _voxHz = Dsp.MidiHz(48 + _track.Root % 12);
                 break;
             }
@@ -498,7 +499,7 @@ public sealed class MusicRenderer
                 Lead(7, 0.024f, 0.002f, 0.35f, 0.75f, 0.1f, 3200, 1.2f, 0.2f, 2.2f);
                 _harmony1 = 2;
                 _harmony2 = -7;
-                _gLead = 0.3f;
+                _gLead = 0.36f;
                 break;
             case HardbassLead.Hoover:
                 Lead(5, 0.04f, 0.004f, 0.4f, 0.85f, 0.12f, 2600, 0.8f, 0.3f, 3f);
@@ -508,7 +509,7 @@ public sealed class MusicRenderer
                 _lead.Vibrato = 0.3f;
                 _lead.VibratoHz = 5.5f;
                 _harmony1 = -7;
-                _gLead = 0.3f;
+                _gLead = 0.36f;
                 break;
             case HardbassLead.Screech:
                 Lead(3, 0.012f, 0.002f, 0.2f, 0.8f, 0.08f, 1500, 2f, 0.12f, 6f);
@@ -521,7 +522,7 @@ public sealed class MusicRenderer
                 _lead.BendSemis = -4f;
                 _lead.BendTime = 0.05f;
                 _harmony1 = 7;
-                _gLead = 0.26f;
+                _gLead = 0.3f;
                 break;
             default: // Rave
                 Lead(3, 0.01f, 0.001f, 0.12f, 0.35f, 0.06f, 2200, 4f, 0.08f, 4f);
@@ -529,7 +530,7 @@ public sealed class MusicRenderer
                 _lead.Resonance = 0.4f;
                 _harmony1 = 2;
                 _harmony2 = 4;
-                _gLead = 0.26f;
+                _gLead = 0.32f;
                 break;
         }
     }
@@ -736,6 +737,7 @@ public sealed class MusicRenderer
         _snare.PitchMul = 1f;
         _leadLevel = 1f;
         _kickMuffle = 1f;
+        _kickLevel = 1f;
         switch (_part)
         {
             case MusicPart.Drop:
@@ -839,6 +841,12 @@ public sealed class MusicRenderer
             case MusicPart.Intro:
             {
                 _kickMuffle = secondHalf ? 1f : 0.18f;
+                if (_hb)
+                {
+                    // The driven hardbass kick is loud at any velocity: keep it muffled and down for most of the intro.
+                    _kickMuffle = prog < 0.75f ? 0.25f : 1f;
+                    _kickLevel = prog < 0.75f ? 0.4f : 1f;
+                }
                 if (!lastBar || s < 12 || !_gapAfter)
                     Drums(s, 0, kick: true, snare: secondHalf, hats: barIn >= 2, open: secondHalf);
                 if (secondHalf && _bassA != 0)
@@ -1150,7 +1158,7 @@ public sealed class MusicRenderer
         _vox.Render(vox, ref _noise);
 
         // Levels, then the delay and reverb sends.
-        float gKick = _gKick, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
+        float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
         float leadDelay = _leadDelay, leadVerb = _leadVerb, gVox = _gVox;
         for (var i = 0; i < n; i++)
         {
@@ -1236,8 +1244,9 @@ public sealed class MusicRenderer
             dcOutR = hr;
             if (MathF.Abs(hl) + MathF.Abs(hr) < 1e-15f)
                 dcOutL = dcOutR = 0;
-            stereo[i * 2] = hl * master;
-            stereo[i * 2 + 1] = hr * master;
+            // A soft clipper shaves the kick's peaks first, then the limiter takes what's left: loud, never clipped.
+            stereo[i * 2] = Dsp.Tanh(hl * master) * 1.05f;
+            stereo[i * 2 + 1] = Dsp.Tanh(hr * master) * 1.05f;
         }
         _dcInL = dcInL;
         _dcInR = dcInR;
