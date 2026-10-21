@@ -130,20 +130,24 @@ public sealed partial class Ui
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
-            // Dropped builds near you: what they are and how long they stay (blinking red in their last seconds).
+            // Dropped builds near you: what they are and how long they stay (blinking red in their last seconds). Labelled in the
+            // world over the weapon when it's on screen (Hud.WorldLabel, within 15 m); listed here when it's near (8 m) but off screen.
             if (me.Alive)
                 foreach (var wd in game.ZWeaponDrops)
                 {
                     var dx = wd.At.X - me.Position.X;
                     var dz = wd.At.Z - me.Position.Z;
-                    if (dx * dx + dz * dz > 8 * 8)
+                    if (dx * dx + dz * dz > 15 * 15)
                         continue;
                     var left = Math.Max(0, wd.Until - now);
                     var warn = left < game.ZRules.BuildDropWarnSeconds;
                     if (warn && ((int)(now * 4) & 1) == 0)
                         continue;
                     var whose = wd.Owner == me.Id ? "Your" : wd.OwnerName.Length > 0 ? $"{wd.OwnerName}'s" : "A";
-                    ImGuiSafe.TextColored(warn ? Red : ZGold, $"{whose} {wd.Build.Name}: {(int)left / 60}:{(int)left % 60:00} left{(warn ? " - about to despawn!" : "")}");
+                    var text = $"{whose} {wd.Build.Name}: {(int)left / 60}:{(int)left % 60:00} left{(warn ? " - about to despawn!" : "")}";
+                    var col = warn ? new System.Numerics.Vector3(Red.X, Red.Y, Red.Z) : new System.Numerics.Vector3(ZGold.X, ZGold.Y, ZGold.Z);
+                    if (!Hud.WorldLabel(wd.At + new System.Numerics.Vector3(0, 0.7f, 0), text, col, 1f, 15f * _scale) && dx * dx + dz * dz <= 8 * 8)
+                        ImGuiSafe.TextColored(warn ? Red : ZGold, text);
                 }
             foreach (var p in game.Players.Values)
                 if (p != me && p.Alive && game.IsDowned(p))
