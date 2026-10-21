@@ -21,6 +21,9 @@ public static unsafe partial class Program
         ("yard", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), false),
         ("yard_break", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), true),
         ("yard_overview", "Prop Yard", new Vector3(-30f, 24f, 34f), new Vector3(0f, 0f, 0f), false),
+        // The Cluttered pack's large map (thousands of props and plants): overview from the south-west, then the market at eye height.
+        ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
+        ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running
@@ -111,6 +114,7 @@ public static unsafe partial class Program
                 _propsSmokeWorst = 0;
                 _propsSmokeMeasureStart = now;
                 PropGfx.ResetWindow(now);
+                FoliageGfx.ResetWindow(now);
             }
             return;
         }
@@ -124,8 +128,21 @@ public static unsafe partial class Program
             + $"worst {_propsSmokeWorst * 1000:0.0} ms, {PropGfx.Uploaded} props uploaded, {w.AvgInstances:0} drawn in {w.AvgDraws:0.0} draw calls, "
             + $"debris {w.AvgDebris:0}, props CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")}, "
             + $"{World.Map.BrokenProps.Count} broken, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+        if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))
+        {
+            // Cluttered pack maps: the foliage and box side of the same frames (boxes are still one draw call each).
+            var f = FoliageGfx.Window;
+            var map = World.Map;
+            var boxes = 0;
+            for (var i = 0; i < map.Solid.Count; i++)
+                if (map.IsDrawnBox(i))
+                    boxes++;
+            Console.WriteLine($"[smoke] foliage {view.Name} ({map.Name}): {FoliageGfx.Uploaded} plants uploaded, {f.AvgInstances:0} drawn in {f.AvgDraws:0.0} draw calls, "
+                + $"foliage CPU {f.AvgCpuMs:0.000} ms, GPU {(f.AvgGpuMs >= 0 ? $"{f.AvgGpuMs:0.000} ms" : "n/a")}; {boxes} boxes, {map.PropInstances.Count} props, "
+                + $"{map.MeshPlacements.Count} meshes, quality {_settings.FoliageQuality}");
+        }
         if (!view.Break)
-            SmokeShot("props_" + view.Name);
+            SmokeShot(view.Name.StartsWith("cluttered_", StringComparison.Ordinal) ? view.Name : "props_" + view.Name);
         _propsSmokeAdvance = true;
     }
 

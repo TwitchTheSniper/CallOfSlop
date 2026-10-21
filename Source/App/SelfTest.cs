@@ -60,6 +60,7 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
+            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage)
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
