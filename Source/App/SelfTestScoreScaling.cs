@@ -249,11 +249,18 @@ public static partial class SelfTest
             var now = 0.0;
             var play = 0.0;
             var next = 1;
+            var countedDown = false;
             var maxTicks = (int)((seconds + Game.CountdownSeconds + 2) * World.TickRate);
             for (var i = 0; i < maxTicks && next <= maxScore; i++)
             {
                 now += dt;
                 game.Update(now, dt);
+                // A new game says Playing until its first tick runs (World.TickDt is a float, so the first frame of
+                // 1/60 s can fall just short of a tick): count play only after the countdown has been seen.
+                if (game.Phase == MatchPhase.Countdown)
+                    countedDown = true;
+                if (!countedDown)
+                    continue;
                 if (game.Phase != MatchPhase.Playing)
                 {
                     if (play > 0)
@@ -295,7 +302,7 @@ public static partial class SelfTest
     private static void CheckScoreTimes()
     {
         var map = ScoreMap();
-        const int reps = 4;
+        const int reps = 8;
         foreach (var mode in new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch })
         {
             var med = new double[2];
@@ -341,7 +348,7 @@ public static partial class SelfTest
             return;
         }
         var plan = new List<(GameMode Mode, Map Map, int N)>();
-        for (var rep = 0; rep < 2; rep++)
+        for (var rep = 0; rep < 4; rep++)
         {
             foreach (var mode in new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch })
             {
@@ -349,7 +356,7 @@ public static partial class SelfTest
                 plan.AddRange(new[] { 8, 16, 31, 24 }.Select(n => (mode, big, n)));
                 plan.AddRange(new[] { 8, 15, 4 }.Select(n => (mode, medium, n)));
             }
-            if (rep == 0)
+            if (rep < 2)
                 foreach (var mode in new[] { GameMode.KingOfTheHill, GameMode.CaptureTheFlag })
                 {
                     plan.AddRange(new[] { 8, 16, 4, Math.Min(23, mid.MaxPlayers - 1) }.Select(n => (mode, mid, n)));
