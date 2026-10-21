@@ -5,6 +5,50 @@ hold and how much life props and foliage bring. Each map's section below gives i
 counts. The self-test's `Cluttered pack` section checks every map (shape, density floors, nothing outside the outline,
 objectives, fairness, a bot match).
 
+## 01 Carousel (small, circle, 68 m across, 3,619 m2, 10 players): abandoned fairground
+
+**Theme.** A fairground left to go to seed in a round clearing, under the `dusk` sky preset: hedge all round, long grass
+and weeds pushing through, popcorn boxes, cans and paper everywhere. In the middle the carousel still turns. The game
+stalls, food trucks, two bandstands and the caravans are all dressed with balloons, striped awnings and umbrellas.
+
+**Shape.** A `circle` boundary of radius 34 m with a light wobble (`noise` 0.8 m) and a 2.8 m `hedge` edge (57 segments).
+
+**Layout and routes.** Blue comes in through the west entrance gate, Red through the east one. A gate screen and two ticket
+booths stop anyone looking out of a base down the middle. There are three lanes and tight loops round the centre:
+- **Mid (short).** Gate to plaza, past a ticket kiosk and a candy cart, round the **carousel** (a `rotate` mover: a 9.5 m
+  deck you can step onto, with poles and seats, round a solid core that blocks the long line through the middle). Bots
+  treat the ride as a pillar and loop round it, players can ride it.
+- **North and south lanes.** Each runs past a **bandstand** at x = 0 (1.6 m deck with stairs on three sides, a backdrop and
+  footlight lips) with hay bale audience rows in front. One team's end of a lane is the midway (game stalls with
+  counters to fight over, an operator watchtower 2.4 m up over the plaza), the other team's end is the food court
+  (food trucks, umbrella tables, vending machines, a fuel barrel). So each lane gives Blue one end and Red the other.
+- **Flanks.** A caravan with crate steps up to its roof (high ground over the lane and the gate) on one side of each base,
+  the backstage strip behind the stalls and trucks along the hedge, and cut-throughs between the lanes at x = +-12.
+- **Hills** sit in front of each bandstand (0, -13) and (0, 13), between the stage, the tower and the carousel.
+  **Flags** are behind the gate screens (+-31, 0).
+
+**Fairness.** The whole map is one half turned 180 degrees about the centre: every block, stair, mesh, hand-placed prop,
+spawn and tree has a twin at (-x, -z), and the scatter uses `"mirror": true`. Team spawn clusters are symmetric about
+z = 0 as well, so each hill is the same walk from both teams. The top-down check found no line of sight between Blue and
+Red spawns. The self-test's bot TDM leans to Red (about 20-30) because its host is an idle player on Blue, so Blue
+fights with four bots against five.
+
+**Density.** The game's `Clutter` keeps solid props off every bot route, which on a map this full left room for only a
+dozen. So the solid cover is hand-placed: 24 mirrored piles of crates, bales, bins and pallets that the generator found
+in the pockets between the lanes (at least 2.4 m from any box and 2.8 m from the walking lines), on top of the designed
+props. `Clutter` adds about 1,850 cosmetic and breakable props (litter, cans, bottles, bags, boxes, planks).
+
+**Object counts** (what the game placed, from the self-test):
+- 922 boxes in the physics world (191 map boxes; the rest are prop colliders and tree trunks), plus the carousel's 16 mover boxes.
+- 2,118 props: 292 solid, 1,826 cosmetic, 1,304 breakable (266 hand-placed, 1,852 clutter), 1 explosive barrel per side.
+- 14,576 plants: 13,743 grass clumps, 664 shrubs, 157 bushes, 12 trees.
+- 208 meshes: the carousel canopy, awnings, umbrellas, balloons and signs.
+- Bots (10 players, 90 s): about 50 kills in free-for-all and in TDM, no stuck, fallen or escaped bots, worst tick work
+  5.4 ms (JIT warm-up ticks aside) against the 8 ms budget.
+
+`tools/cluttered/carousel.py` regenerates the file (with `carousel_boxes.py`, which reads the box geometry back for
+the cover search).
+
 ## 02 Crescent Bazaar (medium, bean, 137 x 83 m, 9,140 m2, 16 players): walled market
 
 **Theme.** A walled market town in warm sandstone under the `desert` sky preset (hot afternoon haze). A caravanserai at each end, a crescent plaza with a fountain, a covered
