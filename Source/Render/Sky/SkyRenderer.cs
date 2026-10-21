@@ -199,9 +199,10 @@ public static unsafe class SkyRenderer
 
     /// <summary>
     /// Gives every scene shader <paramref name="map"/>'s light: its sky's sun, ambient and gradient fog, or the classic
-    /// light for maps without a sky. Nothing happens when it's already set, so calling it every frame is free.
+    /// light for maps without a sky, plus the horizon fade past a flat shaped map's outline (<see cref="Map.OuterFog"/>).
+    /// Nothing happens when it's already set, so calling it every frame is free.
     /// </summary>
-    public static void Use(Map map) => Lighting.Use(map.Skybox is { } s ? s.Light() : Lighting.Default);
+    public static void Use(Map map) => Lighting.Use(map.Light);
 
     /// <summary>Back to the classic light (gun previews and menus look the same on every map).</summary>
     public static void UseDefaultLight() => Lighting.Use(Lighting.Default);
