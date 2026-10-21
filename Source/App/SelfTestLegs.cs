@@ -218,7 +218,8 @@ public static partial class SelfTest
                             start[i] = legs.AnkleWorld[i];
                             stances++;
                         }
-                        worstSlide = MathF.Max(worstSlide, Vector3.Distance(start[i], legs.AnkleWorld[i]));
+                        var d = legs.AnkleWorld[i] - start[i];
+                        worstSlide = MathF.Max(worstSlide, MathF.Sqrt(d.X * d.X + d.Z * d.Z)); // along the ground (a heel lift isn't a slide)
                     }
                     was[i] = legs.Planted[i];
                 }
@@ -425,7 +426,7 @@ public static partial class SelfTest
                         if (err > worst)
                         {
                             worst = err;
-                            worstWhat = $"ankle {a:0.00} on ground {truth:0.00}, body {p.RenderPosition:0.00}, target {legs.Target[i]:0.00}, planted {plantedFor[i]:0.00} s";
+                            worstWhat = $"ankle {a:0.00} on ground {truth:0.00}, body {p.RenderPosition:0.00}, target {legs.Target[i]:0.00}, ground under foot {legs.GroundY[i]:0.00} (ray {legs.RayY[i]:0.00}), drop {legs.Drop:0.00}, planted {plantedFor[i]:0.00} s";
                         }
                         sum += err;
                         samples++;

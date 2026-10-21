@@ -39,6 +39,7 @@ public sealed class LegPose
     public readonly Matrix4x4[] ThighLocal = new Matrix4x4[2], ShinLocal = new Matrix4x4[2], FootLocal = new Matrix4x4[2];
 
     // ---- Diagnostics (the self-test and the smoke log read these) ----
+    public readonly float[] GroundY = new float[2], RayY = new float[2]; // smoothed and raw ground height under each foot (world)
     public readonly Vector3[] Target = new Vector3[2], Ankle = new Vector3[2], AnkleWorld = new Vector3[2];
     public readonly bool[] Reached = new bool[2], Planted = new bool[2], Lifted = new bool[2]; // Lifted: raised to stay within reach
     public float Phase, Speed, Run, Drop, Air, Moving;
@@ -445,6 +446,8 @@ public static class LegAnimator
                     gn = Vector3.Lerp(gn, n, k);
                 }
                 groundOff[i] = Math.Clamp(g - pos.Y, -0.75f, 0.95f) * groundW;
+                pose.GroundY[i] = g;
+                pose.RayY[i] = h;
                 normal[i] = Vector3.TransformNormal(Vector3.Normalize(Vector3.Lerp(Vector3.UnitY, gn, groundW)), rotYaw); // into body space
                 target[i].Y += groundOff[i];
             }
@@ -467,6 +470,10 @@ public static class LegAnimator
                 drop = MathF.Max(drop, need * needW[i]);
             }
             drop = Math.Clamp(drop, 0f, MaxDrop);
+            // Eased a little: the need is steep when a foot is near full stretch (end of stance). The lag shows as a
+            // slight heel lift, which the reach clamp below takes care of.
+            st.Drop = fresh ? drop : float.Lerp(st.Drop, drop, 1f - MathF.Exp(-30f * dt));
+            drop = st.Drop;
             hipY -= drop;
             var twistT = float.Lerp(0.07f, 0.12f, run) * moving * MathF.Sin(MathF.Tau * st.Phase) * MathF.Max(dir.Y * dir.Y, 0.3f);
             pose.Pelvis = Matrix4x4.CreateRotationY(twistT) * Matrix4x4.CreateTranslation(0, hipY, hipZ);
