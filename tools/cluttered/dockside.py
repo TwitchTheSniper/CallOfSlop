@@ -132,7 +132,7 @@ def plateau_circle(x, z, r, h, mode, edge=EDGE, mirror=True):
 TERRAIN_FEATURES = (
     plateau_rect(-130, -130, 130, -45 - CUT, SEA_BED, "cut", mirror=False)          # the open sea north of the horns
     + plateau_rect(-30 + CUT, -130, -4 - CUT, -5 - CUT, SEA_BED, "cut")              # each half of the bay
-    + plateau_rect(-30 + CUT, -14, -21, -5 - CUT, 0.0, "fill", edge=0)               # the bay's inner corner is land again...
+    + plateau_rect(-30 + CUT - 0.8, -14, -21, -5 - CUT + 0.8, 0.0, "fill", edge=0)   # the bay's inner corner is land again (over the cut's blend)...
     + plateau_circle(-21, -14, 9 - CUT, SEA_BED, "cut")                             # ...except a quarter circle of water
     + plateau_rect(-32, -34 - LEDGE, -17 + LEDGE, -29 + LEDGE, 0.0, "fill")          # pier P1
     + plateau_rect(-15 - LEDGE, -19 - LEDGE, -11 + LEDGE, -3, 0.0, "fill")           # pier P2
@@ -684,17 +684,17 @@ LOT_RED = [[-x, z] for x, z in reversed(LOT_BLUE)]
 CORNER_BLUE = [[-36.5, -12.0], [-31.0, -12.0], [-30.5, -5.5], [-28.0, -2.5], [-31.5, -1.0], [-34.5, -5.0]]
 foliage = {
     "seed": 5,
-    "surfaces": {"Concrete": 0.07},
+    "surfaces": {"Concrete": 0.09},
     "paths": [{"points": [list(map(lambda v: round(v, 2), p)) for p in pts], "width": w} for pts, w in LANES if pts is not ROAD],
-    "include": [{"shape": "polygon", "points": poly} for poly in WALLFOOT],
+    "include": [{"shape": "polygon", "points": poly} for poly in WALLFOOT + [CORNER_BLUE, [[-x, z] for x, z in reversed(CORNER_BLUE)]]],
     "regions": [
-        {"type": "grass", "density": 3.0, "polygon": INNER, "patchiness": 0.55, "color": "#7f8a4a", "scale": [0.6, 1.05]},
+        {"type": "grass", "density": 4.5, "polygon": INNER, "patchiness": 0.5, "color": "#7f8a4a", "scale": [0.6, 1.05]},
         {"type": "shrub", "density": 0.25, "polygon": INNER, "patchiness": 0.7, "color": "#6b7a3c"},
-        {"type": "grass", "density": 7.0, "polygon": LOT_BLUE, "patchiness": 0.45, "color": "#768a3e"},
-        {"type": "grass", "density": 7.0, "polygon": LOT_RED, "patchiness": 0.45, "color": "#768a3e"},
+        {"type": "grass", "density": 9.0, "polygon": LOT_BLUE, "patchiness": 0.45, "color": "#768a3e"},
+        {"type": "grass", "density": 9.0, "polygon": LOT_RED, "patchiness": 0.45, "color": "#768a3e"},
         {"type": "shrub", "density": 1.2, "polygon": LOT_BLUE}, {"type": "shrub", "density": 1.2, "polygon": LOT_RED},
         {"type": "bush", "density": 0.35, "polygon": LOT_BLUE, "scale": [0.9, 1.6]}, {"type": "bush", "density": 0.35, "polygon": LOT_RED, "scale": [0.9, 1.6]},
-        {"type": "grass", "density": 9.0, "polygon": WALLFOOT[0], "color": "#6a7d3a"}, {"type": "grass", "density": 9.0, "polygon": WALLFOOT[1], "color": "#6a7d3a"},
+        {"type": "grass", "density": 12.0, "polygon": WALLFOOT[0], "color": "#6a7d3a"}, {"type": "grass", "density": 12.0, "polygon": WALLFOOT[1], "color": "#6a7d3a"},
         {"type": "bush", "density": 0.9, "polygon": WALLFOOT[0], "patchiness": 0.6, "scale": [0.7, 1.4]},
         {"type": "bush", "density": 0.9, "polygon": WALLFOOT[1], "patchiness": 0.6, "scale": [0.7, 1.4]},
         {"type": "shrub", "density": 1.6, "polygon": WALLFOOT[0]}, {"type": "shrub", "density": 1.6, "polygon": WALLFOOT[1]},
@@ -788,6 +788,15 @@ for a, b, t in SEGS:
                 wet += 1
                 print("  dry water at", round(x + lx * 2.0, 1), round(z + lz * 2.0, 1), t)
 print(f"quay edge: {dry} samples not level within the ledge, {wet} with no water 2 m out")
+low = 0
+for gx in range(-140, 141):
+    for gz in range(-90, 70):
+        x, z = gx * 0.5, gz * 0.5
+        if inside(x, z) and abs(ground_at(x, z)) > 0.001:
+            low += 1
+            if low < 5:
+                print("  low ground inside at", x, z, round(ground_at(x, z), 2))
+print(f"inside the outline: {low} samples (every 0.5 m) off the quay level")
 
 # solid props over spawns/hills/flags?
 bad = []
