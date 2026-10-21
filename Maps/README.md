@@ -286,9 +286,13 @@ A map can have grass, bushes, shrubs and trees, described in an optional top-lev
 | Field | Meaning |
 |---|---|
 | `seed` | Whole number that reshuffles every region at once. Default 0. |
-| `paths` | Lines that scattered plants keep clear of: `{ "points": [[x, z], [x, z], ...], "width": 3 }`. |
+| `paths` | Lines that scattered plants keep clear of: `{ "points": [[x, z], [x, z], ...], "width": 3 }`. Add `"density": 0.1` for a busted path where an odd tuft still grows (0 to 1, default 0 = nothing). |
 | `regions` | Scatter areas (below). |
 | `items` | Single plants: `{ "type": "tree", "x": 4, "z": -8, "height": 7 }`. They're always drawn, at every quality setting. |
+| `auto` | `false` turns the automatic [no-go rules](#no-go-zones) off. Default `true`. |
+| `surfaces` | Foliage allowance per surface, replacing the built-in ones: `{ "Concrete": 0, "Tiles": 0.12 }`. See [No-go zones](#no-go-zones). |
+| `exclude` | Areas where scattered plants don't grow, or grow thinner: `[ { "shape": "circle", "center": [x, z], "radius": 5, "density": 0.1 } ]`. |
+| `include` | Areas where the automatic rules don't apply (a courtyard garden), optionally on a roof: `[ { "shape": "rect", "center": [x, z], "halfX": 3, "halfZ": 2, "onTop": true } ]`. |
 
 **Regions**
 
@@ -327,6 +331,43 @@ Players pick **Off / Low / Medium / High** in Settings > Video. Lower settings d
   ]
 }
 ```
+
+### No-go zones
+
+Nothing grows indoors or on intact paving. When scattering, every plant goes through these rules (hand-placed `items` don't: they're always where the file puts them):
+
+1. **Explicit `exclude` zones** win: inside one, a plant grows only at the zone's `density` (default 0, nothing).
+2. **Explicit `include` zones** switch rules 3 and 4 off where you want plants anyway: a courtyard garden under a pergola, a greenhouse. With `"onTop": true`, plants in the zone stand on top of whatever is there (a roof, a planter box, a mesh roof) instead of on the ground: a rooftop garden. Only regions plant things, so a region has to cover the zone too.
+3. **Indoors (automatic).** A ray straight up from 12 cm above the plant's base, up to 20 m, through the map's boxes, solid props and cosmetic meshes and models. If it hits anything, the plant is under a roof, a ceiling, an upper floor, a **bridge deck** or an **awning**, or inside a box or a closed mesh, and it's left out. Bushes and shrubs also check the edge of their footprint, so they don't poke through a wall or out from under an eave. Boxes and walls next to a plant are kept clear as before (`avoidSolid`). **Trees are never roofs**: grass grows under canopies, both foliage trees and mesh-built ones (cosmetic `cone`, `sphere`, `icosphere` and `capsule` meshes in a leafy green colour count as canopies). Under bridges and awnings counts as indoors: use an `include` zone if you want grass there.
+4. **Pavement (automatic).** A short ray down finds a box or mesh lying on the ground under the plant (a road slab, a tiled market floor, a deck: its top at most 12 cm above the ground and at most 40 cm below it) and uses its surface's **allowance**: the fraction of the normal density that may grow there (0 to 1). Without one it's the terrain's surface type, or `Ground` on a flat map. Anything higher already counts as rule 3. A map's own drawn ground (the floor that follows a boundary outline) is the ground, not a surface.
+
+**Partly allowed ground** (an allowance between 0 and 1: busted pavement, a thinned zone or path) keeps grass tufts and shrubs at that fraction, bushes at half of it and no trees, so cracked paving gets the odd tuft rather than a forest.
+
+Surfaces are named after the game's textures (a box's texture is picked from its colour and shape, a mesh's from its `material`):
+
+| Surface | Built-in allowance | What it is |
+|---|---|---|
+| `Concrete`, `Tiles`, `Brick`, `Wood`, `Metal`, `Grid` | 0 | Paved and built surfaces: roads, plazas, floors, decks. |
+| `Plain` | 0 | An untextured mesh or a model lying on the ground (a rug, a mat). |
+| `Dirt` | 1 | Earthy boxes and meshes, and dirt terrain. |
+| `Ground` | 1 | A flat map's ground (the `Ground` op), whatever its colour. |
+| `Grass`, `Rock`, `Sand` | 1 | Terrain surface types. |
+
+There's no separate cracked texture: mark cracked or busted paving with the `surfaces` table (e.g. Sprawl's `"Tiles": 0.12` for its market floor), an `exclude` zone with a `density`, or a path `density` (Carousel's busted paths use 0.1). Values from 0.05 to 0.15 look like weeds through cracks.
+
+Zone shapes are the [boundary](#boundaries) shapes, with the same fields: `rect` (`center`, `halfX`, `halfZ`, `round`; `halfX` and `halfZ` are required), `circle` (`center`, `radius`), `ellipse`, `polygon` and `smooth` (`points`), plus optional `noise`. Zones may be small (from 0.25 m²).
+
+```json
+"foliage": {
+  "surfaces": { "Concrete": 0.08 },
+  "exclude": [ { "shape": "polygon", "points": [[-10, -4], [10, -4], [10, 4], [-10, 4]] },
+               { "shape": "circle", "center": [20, 6], "radius": 6, "density": 0.1 } ],
+  "include": [ { "shape": "rect", "center": [-21, -21], "halfX": 2, "halfZ": 2, "onTop": true } ],
+  "regions": [ { "type": "grass", "density": 4, "rect": [-40, -40, 40, 40] } ]
+}
+```
+
+The rules are deterministic like the rest of the placement, so they're part of the foliage fingerprint (a map's online version); maps without foliage are unaffected. They cost about one or two short ray casts per scattered plant against the map's BVH at load (the self-test reports the time per map; Sprawl's 70,000 plants stay well under a second on a desktop). The log says how many plants each rule removed. `"auto": false` brings back the old placement (plus your explicit zones).
 
 The older `Tree` and `TreeIfClear` ops still work: they build a blocky tree out of solid boxes (trunk and leaves both solid), as in the Classic maps.
 

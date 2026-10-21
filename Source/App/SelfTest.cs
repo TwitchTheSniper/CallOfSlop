@@ -54,6 +54,7 @@ public static partial class SelfTest
             Section("Map packs", CheckMapPacks);
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
+            Section("Foliage no-go", CheckFoliageNoGo); // SelfTest.FoliageNoGo.cs: indoor / pavement rules and zones
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
             Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches

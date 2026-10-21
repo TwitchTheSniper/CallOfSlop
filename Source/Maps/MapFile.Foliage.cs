@@ -7,10 +7,10 @@ namespace CallOfSlop;
 /// <summary>Reading and writing a map file's optional "foliage" section (see Maps/README.md, "Foliage").</summary>
 public static partial class MapFile
 {
-    private static readonly string[] FoliageKeys = ["seed", "paths", "regions", "items"];
+    private static readonly string[] FoliageKeys = ["seed", "paths", "regions", "items", "auto", "surfaces", "exclude", "include"];
     private static readonly string[] RegionKeys = ["type", "density", "rect", "circle", "polygon", "seed", "scale", "height", "color", "patchiness", "avoidSolid", "avoidPaths"];
     private static readonly string[] ItemKeys = ["type", "x", "z", "scale", "height", "color"];
-    private static readonly string[] PathKeys = ["points", "width"];
+    private static readonly string[] PathKeys = ["points", "width", "density"];
 
     // ---- Writing ----------------------------------------------------------------------------------
 
@@ -25,7 +25,8 @@ public static partial class MapFile
             for (var i = 0; i < f.Paths.Count; i++)
             {
                 var p = f.Paths[i];
-                sb.Append($"      {{ \"points\": {PointList(p.Points)}, \"width\": {Num(p.Width)} }}").Append(i < f.Paths.Count - 1 ? ",\n" : "\n");
+                var density = p.Density > 0f ? $", \"density\": {Num(p.Density)}" : "";
+                sb.Append($"      {{ \"points\": {PointList(p.Points)}, \"width\": {Num(p.Width)}{density} }}").Append(i < f.Paths.Count - 1 ? ",\n" : "\n");
             }
             sb.Append("    ]");
         }
@@ -51,8 +52,32 @@ public static partial class MapFile
             }
             sb.Append("    ]");
         }
+        if (!f.Auto)
+            sb.Append(",\n    \"auto\": false");
+        if (f.Surfaces.Count > 0)
+            sb.Append(",\n    \"surfaces\": { ").Append(string.Join(", ", f.Surfaces.Select(kv => $"{Str(kv.Key)}: {Num(kv.Value)}"))).Append(" }");
+        AppendZones(sb, "exclude", f.Exclude);
+        AppendZones(sb, "include", f.Include);
         sb.Append("\n  }");
         return sb.ToString();
+    }
+
+    private static void AppendZones(StringBuilder sb, string key, List<FoliageZone> zones)
+    {
+        if (zones.Count == 0)
+            return;
+        sb.Append($",\n    \"{key}\": [\n");
+        for (var i = 0; i < zones.Count; i++)
+        {
+            var z = zones[i];
+            var parts = ShapeFieldsToJson(z.Shape);
+            if (z.Density > 0f)
+                parts.Add($"\"density\": {Num(z.Density)}");
+            if (z.OnTop)
+                parts.Add("\"onTop\": true");
+            sb.Append("      { ").Append(string.Join(", ", parts)).Append(" }").Append(i < zones.Count - 1 ? ",\n" : "\n");
+        }
+        sb.Append("    ]");
     }
 
     private static string RegionToJson(FoliageRegion r)
@@ -117,7 +142,10 @@ public static partial class MapFile
                 if (pts.Length < 2)
                     throw new MapFileException($"{w}: needs at least one point");
                 var width = Prop(p, "width") is { } we ? Num(we, w) : 3f;
-                spec.Paths.Add(new FoliagePath(pts, MathF.Max(0f, width)));
+                var density = Prop(p, "density") is { } pde ? Num(pde, $"{w} (density)") : 0f;
+                if (density is < 0f or > 1f)
+                    throw new MapFileException($"{w}: density is 0 (nothing grows) to 1 (no effect), e.g. 0.1 for busted pavement");
+                spec.Paths.Add(new FoliagePath(pts, MathF.Max(0f, width), density));
             }
         }
 
@@ -178,7 +206,62 @@ public static partial class MapFile
                 spec.Items.Add(new FoliageItem(type, x, z, size, color));
             }
         }
+        if (Prop(e, "auto") is { } auto)
+            spec.Auto = ReadBool(auto, $"{where} (auto)");
+        if (Prop(e, "surfaces") is { } surfaces)
+        {
+            var w = $"{where}, surfaces";
+            if (surfaces.ValueKind != JsonValueKind.Object)
+                throw new MapFileException($"{w}: expected {{ \"Concrete\": 0, \"Tiles\": 0.1, ... }}");
+            foreach (var p in surfaces.EnumerateObject())
+            {
+                if (!Foliage.SurfaceDefaults.ContainsKey(p.Name))
+                    throw new MapFileException($"{w}: unknown surface \"{p.Name}\" (known: {string.Join(", ", Foliage.SurfaceDefaults.Keys)})");
+                var v = Num(p.Value, $"{w} ({p.Name})");
+                if (v is < 0f or > 1f)
+                    throw new MapFileException($"{w}: {p.Name} is 0 (nothing grows) to 1 (normal density)");
+                var key = Foliage.SurfaceDefaults.Keys.First(k => k.Equals(p.Name, StringComparison.OrdinalIgnoreCase));
+                spec.Surfaces[key] = v;
+            }
+        }
+        if (Prop(e, "exclude") is { } exclude)
+            ReadZones(exclude, $"{where}, exclude", spec.Exclude, false);
+        if (Prop(e, "include") is { } include)
+            ReadZones(include, $"{where}, include", spec.Include, true);
         return spec;
+    }
+
+    private static void ReadZones(JsonElement list, string where, List<FoliageZone> into, bool include)
+    {
+        var i = 0;
+        foreach (var z in JsonList(list, where))
+        {
+            var w = $"{where} #{++i}";
+            var shape = ReadShape(z, w, "zone", include ? new[] { "onTop" } : new[] { "density" });
+            if (shape.Shape == BoundaryShape.Rect && (shape.HalfX <= 0 || shape.HalfZ <= 0))
+                throw new MapFileException($"{w}: a rect zone needs \"halfX\" and \"halfZ\" (and \"center\" [x, z])");
+            if (shape.Shape == BoundaryShape.Circle && shape.Radius <= 0 || shape.Shape == BoundaryShape.Ellipse && (shape.RadiusX <= 0 || shape.RadiusZ <= 0))
+                throw new MapFileException($"{w}: the radius must be above 0");
+            MapBoundary outline;
+            try
+            {
+                outline = new MapBoundary(shape, 1f, 1f, 0.25f);
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new MapFileException($"{w}: {ex.Message.Replace("boundary", "zone")}");
+            }
+            var zone = new FoliageZone { Shape = shape, Outline = outline };
+            if (!include && Prop(z, "density") is { } de)
+            {
+                zone.Density = Num(de, $"{w} (density)");
+                if (zone.Density is < 0f or > 1f)
+                    throw new MapFileException($"{w}: density is 0 (nothing grows) to 1 (no effect), e.g. 0.1 for busted pavement");
+            }
+            if (include && Prop(z, "onTop") is { } ot)
+                zone.OnTop = ReadBool(ot, $"{w} (onTop)");
+            into.Add(zone);
+        }
     }
 
     private static void CheckKeys(JsonElement obj, string[] known, string where)

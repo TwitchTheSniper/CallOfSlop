@@ -26,6 +26,27 @@ public static partial class MapFile
     /// <summary>The section as JSON (only the fields that differ from the defaults).</summary>
     public static string BoundaryToJson(BoundarySpec s, string indent = "  ")
     {
+        var parts = ShapeFieldsToJson(s);
+        var e = s.Edge;
+        var ep = new List<string> { $"\"style\": {Str(e.Style.ToString().ToLowerInvariant())}" };
+        if (e.Height > 0) ep.Add($"\"height\": {Num(e.Height)}");
+        if (e.Thickness > 0) ep.Add($"\"thickness\": {Num(e.Thickness)}");
+        if (e.Color is { } c) ep.Add($"\"color\": {Col(c)}");
+        if (e.Material.Length > 0) ep.Add($"\"material\": {Str(e.Material)}");
+        if (e.Spacing > 0) ep.Add($"\"spacing\": {Num(e.Spacing)}");
+        if (e.Width > 0) ep.Add($"\"width\": {Num(e.Width)}");
+        if (e.Props.Length > 0) ep.Add("\"props\": [" + string.Join(", ", e.Props.Select(Str)) + "]");
+        if (e.Seed != 0) ep.Add($"\"seed\": {e.Seed}");
+        parts.Add("\"edge\": { " + string.Join(", ", ep) + " }");
+        if (s.GroundMargin != 6f) parts.Add($"\"groundMargin\": {Num(s.GroundMargin)}");
+        if (s.BarrierHeight > 0) parts.Add($"\"barrierHeight\": {Num(s.BarrierHeight)}");
+        if (s.Tolerance != 0.05f) parts.Add($"\"tolerance\": {Num(s.Tolerance)}");
+        return "{\n" + string.Join(",\n", parts.Select(p => indent + "  " + p)) + "\n" + indent + "}";
+    }
+
+    /// <summary>The "shape" field, the shape's own fields and "noise" (shared by boundaries and foliage zones).</summary>
+    private static List<string> ShapeFieldsToJson(BoundarySpec s)
+    {
         var parts = new List<string> { $"\"shape\": {Str(s.Shape.ToString().ToLowerInvariant())}" };
         switch (s.Shape)
         {
@@ -51,21 +72,7 @@ public static partial class MapFile
         }
         if (s.Noise is { } n)
             parts.Add($"\"noise\": {{ \"amplitude\": {Num(n.Amplitude)}, \"scale\": {Num(n.Scale)}, \"seed\": {n.Seed}, \"octaves\": {n.Octaves} }}");
-        var e = s.Edge;
-        var ep = new List<string> { $"\"style\": {Str(e.Style.ToString().ToLowerInvariant())}" };
-        if (e.Height > 0) ep.Add($"\"height\": {Num(e.Height)}");
-        if (e.Thickness > 0) ep.Add($"\"thickness\": {Num(e.Thickness)}");
-        if (e.Color is { } c) ep.Add($"\"color\": {Col(c)}");
-        if (e.Material.Length > 0) ep.Add($"\"material\": {Str(e.Material)}");
-        if (e.Spacing > 0) ep.Add($"\"spacing\": {Num(e.Spacing)}");
-        if (e.Width > 0) ep.Add($"\"width\": {Num(e.Width)}");
-        if (e.Props.Length > 0) ep.Add("\"props\": [" + string.Join(", ", e.Props.Select(Str)) + "]");
-        if (e.Seed != 0) ep.Add($"\"seed\": {e.Seed}");
-        parts.Add("\"edge\": { " + string.Join(", ", ep) + " }");
-        if (s.GroundMargin != 6f) parts.Add($"\"groundMargin\": {Num(s.GroundMargin)}");
-        if (s.BarrierHeight > 0) parts.Add($"\"barrierHeight\": {Num(s.BarrierHeight)}");
-        if (s.Tolerance != 0.05f) parts.Add($"\"tolerance\": {Num(s.Tolerance)}");
-        return "{\n" + string.Join(",\n", parts.Select(p => indent + "  " + p)) + "\n" + indent + "}";
+        return parts;
     }
 
     private static string P2(Vector2 p) => $"[{Num(p.X)}, {Num(p.Y)}]";
@@ -78,56 +85,11 @@ public static partial class MapFile
         var where = $"{source}: boundary";
         if (e.ValueKind != JsonValueKind.Object)
             throw new MapFileException($"{where} must be an object, e.g. {{ \"shape\": \"circle\", \"radius\": 40 }}");
-        var s = new BoundarySpec();
-        var shapeName = Prop(e, "shape") is { ValueKind: JsonValueKind.String } sh ? sh.GetString()! : throw new MapFileException($"{where}: missing \"shape\" (rect, circle, ellipse, polygon or smooth)");
-        if (!Enum.TryParse(shapeName, true, out s.Shape) || !Enum.IsDefined(s.Shape) || int.TryParse(shapeName, out _))
-            throw new MapFileException($"{where}: unknown shape \"{shapeName}\" (rect, circle, ellipse, polygon or smooth)");
-        var allowed = BoundaryCommonKeys.Concat(BoundaryShapeKeys[s.Shape]).ToArray();
-        foreach (var p in e.EnumerateObject())
-            if (!allowed.Any(k => k.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
-                throw new MapFileException($"{where}: a {shapeName} boundary has no \"{p.Name}\" (it takes: {string.Join(", ", allowed)})");
+        var s = ReadShape(e, where, "boundary", BoundaryCommonKeys);
 
         float Opt(JsonElement obj, string name, float def, string w) => Prop(obj, name) is { } v ? Num(v, $"{w} \"{name}\"") : def;
         int OptInt(JsonElement obj, string name, int def, string w) =>
             Prop(obj, name) is { } v ? (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i) ? i : throw new MapFileException($"{w}: \"{name}\" is a whole number")) : def;
-        Vector2 Point(JsonElement p, string w) =>
-            p.ValueKind == JsonValueKind.Array && p.GetArrayLength() == 2 ? new Vector2(Num(p[0], w), Num(p[1], w)) : throw new MapFileException($"{w}: a point is [x, z]");
-
-        if (Prop(e, "center") is { } center)
-            s.Center = Point(center, $"{where} \"center\"");
-        s.HalfX = Opt(e, "halfX", 0, where);
-        s.HalfZ = Opt(e, "halfZ", 0, where);
-        s.Round = Opt(e, "round", 0, where);
-        s.Radius = Opt(e, "radius", 0, where);
-        s.RadiusX = Opt(e, "radiusX", 0, where);
-        s.RadiusZ = Opt(e, "radiusZ", 0, where);
-        s.Rotation = Opt(e, "rotation", 0, where);
-        if (s.Shape == BoundaryShape.Circle && Prop(e, "radius") == null)
-            throw new MapFileException($"{where}: a circle needs \"radius\"");
-        if (s.Shape == BoundaryShape.Ellipse && (Prop(e, "radiusX") == null || Prop(e, "radiusZ") == null))
-            throw new MapFileException($"{where}: an ellipse needs \"radiusX\" and \"radiusZ\"");
-        if (s.Shape is BoundaryShape.Polygon or BoundaryShape.Smooth)
-        {
-            if (Prop(e, "points") is not { ValueKind: JsonValueKind.Array } pts || pts.GetArrayLength() < 3)
-                throw new MapFileException($"{where}: a {shapeName} boundary needs \"points\": at least 3 [x, z] points in order round the outline");
-            s.Points = pts.EnumerateArray().Select((p, i) => Point(p, $"{where} point {i + 1}")).ToArray();
-        }
-        if (Prop(e, "noise") is { ValueKind: not JsonValueKind.Null } noise)
-        {
-            var w = $"{where} noise";
-            if (noise.ValueKind != JsonValueKind.Object)
-                throw new MapFileException($"{w}: expected {{ \"amplitude\": 2, \"scale\": 12, \"seed\": 1 }}");
-            CheckKeys(noise, NoiseKeys, w);
-            s.Noise = new BoundaryNoise
-            {
-                Amplitude = Opt(noise, "amplitude", 0, w),
-                Scale = Opt(noise, "scale", 12, w),
-                Seed = OptInt(noise, "seed", 1, w),
-                Octaves = OptInt(noise, "octaves", 2, w),
-            };
-            if (s.Noise.Amplitude is < 0 or > 30 || s.Noise.Scale is < 1 or > 200 || s.Noise.Octaves is < 1 or > 4)
-                throw new MapFileException($"{w}: amplitude is 0-30 m, scale 1-200 m, octaves 1-4");
-        }
         if (Prop(e, "edge") is { ValueKind: not JsonValueKind.Null } edge)
         {
             var w = $"{where} edge";
@@ -175,6 +137,67 @@ public static partial class MapFile
         s.Tolerance = Opt(e, "tolerance", 0.05f, where);
         if (s.GroundMargin is < 0 or > 64 || s.BarrierHeight is < 0 or > 100 || s.Tolerance is < 0.005f or > 1)
             throw new MapFileException($"{where}: groundMargin is 0-64 m, barrierHeight 0-100 m, tolerance 0.005-1 m");
+        return s;
+    }
+
+    /// <summary>
+    /// Reads "shape", the shape's own fields and "noise" (boundaries and foliage zones). <paramref name="extraKeys"/> are the
+    /// other fields the caller reads itself; anything else is an error.
+    /// </summary>
+    private static BoundarySpec ReadShape(JsonElement e, string where, string what, string[] extraKeys)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{where} must be an object, e.g. {{ \"shape\": \"circle\", \"radius\": 40 }}");
+        var s = new BoundarySpec();
+        var shapeName = Prop(e, "shape") is { ValueKind: JsonValueKind.String } sh ? sh.GetString()! : throw new MapFileException($"{where}: missing \"shape\" (rect, circle, ellipse, polygon or smooth)");
+        if (!Enum.TryParse(shapeName, true, out s.Shape) || !Enum.IsDefined(s.Shape) || int.TryParse(shapeName, out _))
+            throw new MapFileException($"{where}: unknown shape \"{shapeName}\" (rect, circle, ellipse, polygon or smooth)");
+        var allowed = new[] { "shape", "noise" }.Concat(extraKeys).Distinct(StringComparer.OrdinalIgnoreCase).Concat(BoundaryShapeKeys[s.Shape]).ToArray();
+        foreach (var p in e.EnumerateObject())
+            if (!allowed.Any(k => k.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
+                throw new MapFileException($"{where}: a {shapeName} {what} has no \"{p.Name}\" (it takes: {string.Join(", ", allowed)})");
+
+        float Opt(JsonElement obj, string name, float def, string w) => Prop(obj, name) is { } v ? Num(v, $"{w} \"{name}\"") : def;
+        int OptInt(JsonElement obj, string name, int def, string w) =>
+            Prop(obj, name) is { } v ? (v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var i) ? i : throw new MapFileException($"{w}: \"{name}\" is a whole number")) : def;
+        Vector2 Point(JsonElement p, string w) =>
+            p.ValueKind == JsonValueKind.Array && p.GetArrayLength() == 2 ? new Vector2(Num(p[0], w), Num(p[1], w)) : throw new MapFileException($"{w}: a point is [x, z]");
+
+        if (Prop(e, "center") is { } center)
+            s.Center = Point(center, $"{where} \"center\"");
+        s.HalfX = Opt(e, "halfX", 0, where);
+        s.HalfZ = Opt(e, "halfZ", 0, where);
+        s.Round = Opt(e, "round", 0, where);
+        s.Radius = Opt(e, "radius", 0, where);
+        s.RadiusX = Opt(e, "radiusX", 0, where);
+        s.RadiusZ = Opt(e, "radiusZ", 0, where);
+        s.Rotation = Opt(e, "rotation", 0, where);
+        if (s.Shape == BoundaryShape.Circle && Prop(e, "radius") == null)
+            throw new MapFileException($"{where}: a circle needs \"radius\"");
+        if (s.Shape == BoundaryShape.Ellipse && (Prop(e, "radiusX") == null || Prop(e, "radiusZ") == null))
+            throw new MapFileException($"{where}: an ellipse needs \"radiusX\" and \"radiusZ\"");
+        if (s.Shape is BoundaryShape.Polygon or BoundaryShape.Smooth)
+        {
+            if (Prop(e, "points") is not { ValueKind: JsonValueKind.Array } pts || pts.GetArrayLength() < 3)
+                throw new MapFileException($"{where}: a {shapeName} {what} needs \"points\": at least 3 [x, z] points in order round the outline");
+            s.Points = pts.EnumerateArray().Select((p, i) => Point(p, $"{where} point {i + 1}")).ToArray();
+        }
+        if (Prop(e, "noise") is { ValueKind: not JsonValueKind.Null } noise)
+        {
+            var w = $"{where} noise";
+            if (noise.ValueKind != JsonValueKind.Object)
+                throw new MapFileException($"{w}: expected {{ \"amplitude\": 2, \"scale\": 12, \"seed\": 1 }}");
+            CheckKeys(noise, NoiseKeys, w);
+            s.Noise = new BoundaryNoise
+            {
+                Amplitude = Opt(noise, "amplitude", 0, w),
+                Scale = Opt(noise, "scale", 12, w),
+                Seed = OptInt(noise, "seed", 1, w),
+                Octaves = OptInt(noise, "octaves", 2, w),
+            };
+            if (s.Noise.Amplitude is < 0 or > 30 || s.Noise.Scale is < 1 or > 200 || s.Noise.Octaves is < 1 or > 4)
+                throw new MapFileException($"{w}: amplitude is 0-30 m, scale 1-200 m, octaves 1-4");
+        }
         return s;
     }
 }
