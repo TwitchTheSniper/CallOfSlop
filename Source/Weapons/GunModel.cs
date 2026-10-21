@@ -228,6 +228,8 @@ public static class GunModel
     /// </summary>
     public static GunMesh? Mesh(WeaponDef d)
     {
+        if (d.BuiltMesh is { } builtMesh)
+            return builtMesh; // a weapon built from parts (Source/Zombies/BuildModel.cs)
         if (d.Model == null)
             return null;
         if (Meshes.TryGetValue(d, out var m) && m.Spec == d.Model && m.Kit == d.Kit && m.Optic == d.Optic && m.AdsZoom == d.AdsZoom)
@@ -638,7 +640,7 @@ public static class GunModel
             DrawFlash(d, barrelY, muzzleZ, time);
     }
 
-    private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time)
+    private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time, float x = 0f)
     {
         var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
         if (d.Suppressor)
@@ -647,11 +649,11 @@ public static class GunModel
         var alpha = d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f;
         if (_emit != null)
         {
-            _emit.Flash(new Vector3(0, barrelY, muzzleZ), size, color, alpha);
+            _emit.Flash(new Vector3(x, barrelY, muzzleZ), size, color, alpha);
             return;
         }
         _g.SetBlend(true);
-        _g.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, barrelY, muzzleZ - size * 0.4f) * _pose, color,
+        _g.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(x, barrelY, muzzleZ - size * 0.4f) * _pose, color,
             alpha, mode: 2);
         _g.SetBlend(false);
     }
@@ -694,7 +696,13 @@ public static class GunModel
             DrawRail(m.RailWidth, m.Mount, m.RailFront, m.RailBack);
         DrawOptic(d, m.Mount, m.OpticZ);
         if (flash && _record == null)
-            DrawFlash(d, m.Bore, m.MuzzleZ, time);
+        {
+            if (m.Muzzles.Length > 1 && _emit == null)
+                foreach (var mz in m.Muzzles)
+                    DrawFlash(d, mz.Y, mz.Z, time, mz.X); // a built weapon with several barrels: a flash at each muzzle
+            else
+                DrawFlash(d, m.Bore, m.MuzzleZ, time);
+        }
     }
 
     /// <summary>The optic's rail (part of the optic: it only appears with one fitted).</summary>

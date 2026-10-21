@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Energy Cell",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "A glowing cell good for forty shots. Swaps in a snap.",
+  "bores": ["energy"],
+  "weight": 0.3,
+  "hand": [0, -0.03, 0],
+  "feed": "cell",
+  "model": [
+    {"size": [0.03, 0.06, 0.06], "pos": [0, -0.03, 0], "color": "accent"},
+    {"size": [0.032, 0.012, 0.062], "pos": [0, -0.03, 0], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 40},
+    {"stat": "reload", "set": 1.6}
+  ]
+}

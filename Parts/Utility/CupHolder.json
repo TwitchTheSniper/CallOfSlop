@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Cup Holder",
+  "category": "utility",
+  "rarity": "wonder",
+  "flavor": "Holds a drink. Hydration is key: you draw this weapon noticeably faster.",
+  "weight": 0.1,
+  "flags": ["refreshing"],
+  "model": [
+    {"size": [0.04, 0.03, 0.04], "pos": [0.03, 0, 0], "color": "accent"},
+    {"size": [0.03, 0.05, 0.03], "pos": [0.03, 0.03, 0], "color": "red"}
+  ],
+  "stats": [
+    {"stat": "equipTime", "add": -0.15}
+  ]
+}

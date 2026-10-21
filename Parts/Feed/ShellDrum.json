@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Shell Drum",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "Twenty shells in a drum. The pump finally gets a break.",
+  "bores": ["shell"],
+  "weight": 1.3,
+  "hand": [0, -0.065, 0],
+  "feed": "drum",
+  "model": [
+    {"size": [0.06, 0.13, 0.13], "pos": [0, -0.065, 0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 20},
+    {"stat": "reload", "set": 3.8},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

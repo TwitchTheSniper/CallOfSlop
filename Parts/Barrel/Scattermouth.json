@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Scattermouth Barrel",
+  "category": "barrel",
+  "rarity": "common",
+  "flavor": "A smoothbore for shells. Wide at the end, wider at the target.",
+  "bores": ["shell"],
+  "weight": 0.6,
+  "hand": [0, -0.03, -0.12],
+  "muzzles": [[0, 0, -0.3]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.3]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.034, 0.034, 0.3], "pos": [0, 0, -0.15], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.0}
+  ]
+}

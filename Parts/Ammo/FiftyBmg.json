@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": ".50 BMG",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "Heavy rounds that go through things (penetration comes later).",
+  "bores": ["heavy"],
+  "weight": 0.0,
+  "flags": ["penetrating"],
+  "stats": [
+    {"stat": "damage", "set": 85},
+    {"stat": "rangeM", "set": 120},
+    {"stat": "minDamageMult", "set": 0.8}
+  ]
+}

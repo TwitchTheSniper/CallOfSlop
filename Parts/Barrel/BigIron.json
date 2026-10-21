@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Big Iron Barrel",
+  "category": "barrel",
+  "rarity": "rare",
+  "flavor": "A heavy-calibre barrel as long as your arm. Reaches out and touches someone.",
+  "bores": ["heavy"],
+  "weight": 1.6,
+  "hand": [0, -0.03, -0.2],
+  "muzzles": [[0, 0, -0.5]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.5]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.03, 0.03, 0.5], "pos": [0, 0, -0.25], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.6},
+    {"stat": "hipSpreadDeg", "mul": 0.8},
+    {"stat": "recoilDeg", "mul": 0.9}
+  ]
+}

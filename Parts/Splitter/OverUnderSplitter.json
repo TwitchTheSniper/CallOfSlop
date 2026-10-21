@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Over-Under Splitter",
+  "category": "splitter",
+  "rarity": "uncommon",
+  "flavor": "Stacks the outputs. Each one gets a bit more than half, nobody knows why.",
+  "weight": 0.6,
+  "split": {"outputMult": 0.55, "splay": 0},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0, 0.032, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0, -0.032, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.04, 0.104, 0.06], "pos": [0.0, 0.0, -0.03], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "rpm", "mul": 0.95}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "00 Buckshot",
+  "category": "ammo",
+  "rarity": "common",
+  "flavor": "Eight big pellets per shell.",
+  "bores": ["shell"],
+  "weight": 0.0,
+  "stats": [
+    {"stat": "damage", "set": 14},
+    {"stat": "pellets", "set": 8},
+    {"stat": "rangeM", "set": 9},
+    {"stat": "minDamageMult", "set": 0.2}
+  ]
+}

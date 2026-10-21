@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Launcher Tube",
+  "category": "barrel",
+  "rarity": "common",
+  "flavor": "A short fat tube. Point it up a bit.",
+  "bores": ["launcher"],
+  "weight": 0.7,
+  "hand": [0, -0.03, -0.104],
+  "muzzles": [[0, 0, -0.26]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.26]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.06, 0.06, 0.26], "pos": [0, 0, -0.13], "color": "olive"}
+  ],
+  "stats": []
+}

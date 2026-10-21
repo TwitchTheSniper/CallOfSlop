@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Slug",
+  "category": "ammo",
+  "rarity": "uncommon",
+  "flavor": "One big lead slug instead of pellets.",
+  "bores": ["shell"],
+  "weight": 0.0,
+  "stats": [
+    {"stat": "damage", "set": 75},
+    {"stat": "pellets", "set": 1},
+    {"stat": "rangeM", "set": 30},
+    {"stat": "hipSpreadDeg", "mul": 0.5}
+  ]
+}

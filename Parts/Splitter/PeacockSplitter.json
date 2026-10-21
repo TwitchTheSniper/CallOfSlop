@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Peacock Splitter",
+  "category": "splitter",
+  "rarity": "epic",
+  "flavor": "Five outputs in a proud fan. Thirty percent each, covering a whole doorway.",
+  "weight": 1.0,
+  "split": {"outputMult": 0.3, "splay": 9},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [-0.09, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [-0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [0, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [0.09, 0, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.22, 0.04, 0.06], "pos": [0.0, 0.0, -0.03], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "mul": 1.2}
+  ]
+}

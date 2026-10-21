@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Toaster Feed",
+  "category": "feed",
+  "rarity": "wonder",
+  "flavor": "Pops two grenades up like toast. Ding. Fires half again as fast.",
+  "bores": ["launcher"],
+  "weight": 1.2,
+  "flags": ["toasty"],
+  "hand": [0, -0.04, 0],
+  "feed": "single",
+  "model": [
+    {"size": [0.09, 0.08, 0.06], "pos": [0, -0.04, 0], "color": "chrome"},
+    {"size": [0.01, 0.03, 0.01], "pos": [0.05, -0.02, 0.0], "color": "black"},
+    {"size": [0.06, 0.004, 0.012], "pos": [0, 0.002, 0.0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 2},
+    {"stat": "reload", "set": 1.0},
+    {"stat": "rpm", "mul": 1.5}
+  ]
+}

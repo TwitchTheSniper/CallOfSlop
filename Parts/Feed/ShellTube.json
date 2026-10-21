@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Shell Tube",
+  "category": "feed",
+  "rarity": "common",
+  "flavor": "Six shells in a tube, loaded one at a time.",
+  "bores": ["shell"],
+  "weight": 0.3,
+  "hand": [0, -0.012, -0.1],
+  "feed": "tube",
+  "model": [
+    {"size": [0.025, 0.025, 0.2], "pos": [0, -0.012, -0.1], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 6},
+    {"stat": "reload", "set": 3.0}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Explosive Tip",
+  "category": "ammo",
+  "rarity": "epic",
+  "flavor": "Rifle rounds with a tiny charge in the tip. Hits harder, cycles a bit slower.",
+  "bores": ["rifle"],
+  "weight": 0.0,
+  "flags": ["explosive"],
+  "stats": [
+    {"stat": "damage", "set": 36},
+    {"stat": "rangeM", "set": 30},
+    {"stat": "rpm", "mul": 0.9}
+  ]
+}

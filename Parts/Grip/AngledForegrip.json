@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Angled Foregrip",
+  "category": "grip",
+  "rarity": "uncommon",
+  "flavor": "A wedge that points the way. Softer first shot, quicker to the eye.",
+  "mount": "foregrip",
+  "weight": 0.15,
+  "hand": [0, -0.035, 0.01],
+  "model": [
+    {"size": [0.03, 0.04, 0.08], "pos": [0, -0.025, 0], "color": "polymer", "rot": [25, 0, 0]}
+  ],
+  "stats": [
+    {"stat": "recoilFirstShot", "mul": 0.6},
+    {"stat": "adsTime", "add": -0.015}
+  ]
+}

@@ -392,7 +392,12 @@ public sealed class Player
 
     /// <summary>A weapon's stats with this player's attachments on it.</summary>
     public WeaponDef DefFor(byte weaponId) =>
-        Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
+        weaponId == Primary && BuiltPrimary != null ? BuiltPrimary
+        : weaponId == Secondary && BuiltSecondary != null ? BuiltSecondary
+        : Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
+
+    /// <summary>Workbench Range (Zombies preview): built weapons used in place of the loadout's guns. Host-local, never replicated.</summary>
+    public WeaponDef? BuiltPrimary, BuiltSecondary;
     public bool Owns(byte weaponId) => weaponId == Primary || weaponId == Secondary;
 
     public Vector3 Position
