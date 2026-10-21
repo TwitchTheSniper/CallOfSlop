@@ -3,10 +3,11 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Another player's box body as a scene graph: player (feet at the origin, -Z = facing) -> one body group per stance
-/// (torso box, head -> head box and visor), the gun in hand (<see cref="GunRig"/>, posed by <see cref="ThirdPersonArms"/>)
-/// with both arms holding it, the health bar, and the corpse box. Draws exactly what <see cref="PlayerRender.DrawImmediate"/>
-/// draws, in the same order.
+/// Another player's box body as a scene graph: player (feet at the origin, -Z = facing) -> "upper_body" (posed by the legs:
+/// hip bob, lean) -> one body group per stance (torso box, head -> head box and visor), the legs (pelvis -> thigh -> shin
+/// -> foot per side, posed by <see cref="LegAnimator"/>), "upper_gear" (same pose as upper_body) -> the gun in hand
+/// (<see cref="GunRig"/>, posed by <see cref="ThirdPersonArms"/>) with both arms holding it, the health bar, and the corpse
+/// box. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
 /// </summary>
 public sealed class PlayerRig
 {
@@ -15,27 +16,59 @@ public sealed class PlayerRig
     public readonly SceneNode Root;
     public readonly GunRig Gun;
     public readonly ArmNodes Right, Left;
+    public readonly SceneNode Pelvis;
+    public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2];
+    private readonly SceneNode _upper, _gear, _pelvisBox;
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
+    private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
     private Vector3 _color = new(float.NaN);
+
+    /// <summary>First-person legs: drawn this far behind the feet so looking down shows them a step ahead of the camera, not under it.</summary>
+    public const float FirstPersonBack = 0.1f;
 
     public PlayerRig(byte id)
     {
         Root = new SceneNode("player_" + id);
+        _upper = Root.Add("upper_body");
         var headH = World.PlayerHeight - World.HeadStart;
-        _stances[0] = MakeStance("stand", new Vector3(0.8f, World.HeadStart, 0.5f), new Vector3(0, World.HeadStart / 2, 0),
+        const float hip = LegAnimator.StandPelvis;
+        _stances[0] = MakeStance("stand", new Vector3(0.8f, World.HeadStart - hip, 0.5f), new Vector3(0, (World.HeadStart + hip) / 2, 0),
             new Vector3(0, World.HeadStart + headH / 2, 0), new Vector3(0.45f, headH, 0.45f), new Vector3(0.38f, 0.1f, 0.06f), new Vector3(0, 1.63f, -0.24f));
-        const float body = 0.85f, top = 1.2f;
-        _stances[1] = MakeStance("crouch", new Vector3(0.8f, body, 0.6f), new Vector3(0, body / 2, 0),
+        const float body = 0.85f, top = 1.2f, chip = LegAnimator.CrouchPelvis - 0.04f;
+        _stances[1] = MakeStance("crouch", new Vector3(0.8f, body - chip, 0.6f), new Vector3(0, (body + chip) / 2, 0),
             new Vector3(0, (body + top) / 2, -0.05f), new Vector3(0.45f, top - body, 0.45f), new Vector3(0.38f, 0.1f, 0.06f), new Vector3(0, 1.07f, -0.29f));
-        _stances[2] = MakeStance("prone", new Vector3(0.6f, 0.4f, 1.3f), new Vector3(0, 0.2f, 0.15f),
+        _stances[2] = MakeStance("prone", new Vector3(0.6f, 0.4f, 0.6f), new Vector3(0, 0.2f, -0.27f),
             new Vector3(0, 0.3f, -0.75f), new Vector3(0.4f, 0.38f, 0.4f), new Vector3(0.34f, 0.1f, 0.06f), new Vector3(0, 0.36f, -0.96f));
+
+        // Legs: pelvis -> thigh -> shin -> foot, boxes in LegAnimator's draw order.
+        Pelvis = Root.Add("pelvis");
+        var pp = LegAnimator.PelvisPart;
+        _pelvisBox = Pelvis.Add("pelvis_box", Matrix4x4.CreateScale(pp.Size) * Matrix4x4.CreateTranslation(pp.Center), Renderable.Box(Vector3.One));
+        var parts = LegAnimator.LegParts;
+        for (var i = 0; i < 2; i++)
+        {
+            var sfx = i == 0 ? "_r" : "_l";
+            Thighs[i] = Pelvis.Add("thigh" + sfx);
+            for (var k = 0; k < parts.Length; k++)
+            {
+                // each bone is created after its parent's boxes, so the draw order is thigh box, knee, shin box, boot, sole
+                if (parts[k].Bone == 2 && Shins[i] is null)
+                    Shins[i] = Thighs[i].Add("shin" + sfx);
+                if (parts[k].Bone == 3 && Feet[i] is null)
+                    Feet[i] = Shins[i].Add("foot" + sfx);
+                var bone = parts[k].Bone switch { 1 => Thighs[i], 2 => Shins[i], _ => Feet[i] };
+                _legBoxes[i * parts.Length + k] = bone.Add("box", Matrix4x4.CreateScale(parts[k].Size) * Matrix4x4.CreateTranslation(parts[k].Center), Renderable.Box(Vector3.One));
+            }
+        }
+
+        _gear = Root.Add("upper_gear");
         Gun = new GunRig();
-        Root.Add(Gun.Root);
+        _gear.Add(Gun.Root);
         Right = new ArmNodes("r", +1, carry: false);
         Left = new ArmNodes("l", -1, carry: false);
-        Root.Add(Right.Root);
-        Root.Add(Left.Root);
+        _gear.Add(Right.Root);
+        _gear.Add(Left.Root);
         _health = Root.Add("health_bar");
         _health.Renderable = Renderable.Box(Vector3.One, 1f, 2);
         _corpse = Root.Add("corpse", Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0), Renderable.Box(Vector3.One));
@@ -43,7 +76,7 @@ public sealed class PlayerRig
 
     private SceneNode MakeStance(string name, Vector3 torsoSize, Vector3 torsoAt, Vector3 headAt, Vector3 headSize, Vector3 visorSize, Vector3 visorAt)
     {
-        var g = Root.Add(name);
+        var g = _upper.Add(name);
         g.Add("torso", Matrix4x4.CreateScale(torsoSize) * Matrix4x4.CreateTranslation(torsoAt), Renderable.Box(Vector3.One));
         var head = g.Add("head");
         head.LocalPosition = headAt;
@@ -52,13 +85,17 @@ public sealed class PlayerRig
         return g;
     }
 
-    /// <summary>Poses the whole player for this frame (runs <see cref="ThirdPersonArms.Animate"/>, which keeps per-player state).</summary>
-    public void Pose(Player p, double time)
+    /// <summary>
+    /// Poses the whole player for this frame (runs <see cref="LegAnimator.Animate"/> and <see cref="ThirdPersonArms.Animate"/>,
+    /// which keep per-player state). <paramref name="legsOnly"/>: the local player's own legs in first person (no torso,
+    /// head, gun, arms, health bar or pelvis box; drawn <see cref="FirstPersonBack"/> behind the feet).
+    /// </summary>
+    public void Pose(Player p, double time, bool legsOnly = false)
     {
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var body = rot * at;
-        Root.SetLocalMatrix(body);
+        Root.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
         var color = p.Color;
         if (color != _color)
         {
@@ -69,31 +106,52 @@ public sealed class PlayerRig
                 g.Child(1).Child(0).Renderable.Color = color * 1.1f;
             }
             _corpse.Renderable.Color = color * 0.4f;
+            var lc = LegColors.For(color);
+            _pelvisBox.Renderable.Color = lc.Of(LegAnimator.PelvisPart.Paint);
+            var parts = LegAnimator.LegParts;
+            for (var i = 0; i < _legBoxes.Length; i++)
+                _legBoxes[i].Renderable.Color = lc.Of(parts[i % parts.Length].Paint);
         }
 
-        _corpse.Visible = !p.Alive;
-        _health.Visible = Gun.Root.Visible = Right.Root.Visible = Left.Root.Visible = p.Alive;
-        var stance = p.Alive ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
+        _corpse.Visible = !p.Alive && !legsOnly;
+        Pelvis.Visible = p.Alive;
+        _pelvisBox.Visible = !legsOnly;
+        _health.Visible = _gear.Visible = p.Alive && !legsOnly;
+        var stance = p.Alive && !legsOnly ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;
         if (!p.Alive)
             return;
 
-        var (gunAt, barY) = stance switch
+        var legs = LegAnimator.Animate(p, time);
+        _upper.SetLocalMatrix(legs.Upper);
+        Pelvis.SetLocalMatrix(legs.PelvisLocal);
+        for (var i = 0; i < 2; i++)
         {
-            2 => (new Vector3(0.25f, 0.3f, -0.9f), 0.9f),
-            1 => (new Vector3(0.3f, 0.82f, -0.3f), 1.45f),
+            Thighs[i].SetLocalMatrix(legs.ThighLocal[i]);
+            Shins[i].SetLocalMatrix(legs.ShinLocal[i]);
+            Feet[i].SetLocalMatrix(legs.FootLocal[i]);
+        }
+        if (legsOnly)
+            return;
+
+        _gear.SetLocalMatrix(legs.Upper);
+        var upper = legs.Upper * body;
+        var (gunAt, barY) = p.RenderStance switch
+        {
+            Stance.Prone => (new Vector3(0.25f, 0.3f, -0.9f), 0.9f),
+            Stance.Crouch => (new Vector3(0.3f, 0.82f, -0.3f), 1.45f),
             _ => (new Vector3(0.3f, 1.3f, -0.25f), 2.05f),
         };
         var def = p.WeaponDef;
-        var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * rot * at;
-        ThirdPersonArms.Animate(p, def, gunPose, body, time);
+        var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * upper;
+        ThirdPersonArms.Animate(p, def, gunPose, upper, time);
         Gun.Ensure(def);
         Gun.Pose(ThirdPersonArms.LastGunLocal, 0f, Vector3.Zero, false, false, (float)time);
         var (r, l) = ThirdPersonArms.Rigs;
         var colors = ThirdPersonArms.Colors;
-        Right.Pose(r, body, colors);
-        Left.Pose(l, body, colors);
+        Right.Pose(r, upper, colors);
+        Left.Pose(l, upper, colors);
 
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));

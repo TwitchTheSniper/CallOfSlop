@@ -1576,10 +1576,16 @@ public static unsafe partial class Program
         DrawArena();
 
         // ---- Players --------------------------------------------------------
+        LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
+        LegAnimator.MoverTick = _game.MoverRenderTick;
         foreach (var p in _game.Players.Values)
         {
             if (p.Id == _game.LocalId && p.Alive)
+            {
+                if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
+                    ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
                 continue;
+            }
             DrawPlayer(p);
         }
 
