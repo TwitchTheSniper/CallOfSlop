@@ -1,14 +1,16 @@
+using System.Diagnostics;
 using System.Numerics;
 using Brutal.Numerics;
 using Brutal.OpenAlApi;
 
 namespace CallOfSlop;
 
+// New effects go at the end (before COUNT): mode events send an Sfx as a byte, so existing values must not move.
 public enum Sfx
 {
     DryFire,
-    HitTick,
-    Headshot,
+    HitTick, // UI click; also the old hit tick
+    Headshot, // shooter feedback: hitmarker ping + meaty crunch
     Kill,
     Hurt,
     Death,
@@ -30,34 +32,81 @@ public enum Sfx
     BreakGlass, // bottles
     BreakMetal, // bins, barrels, cones
     BreakSoft, // cardboard, plastic, paper
+    HitBody, // shooter feedback: a body hit (flesh thwack + tick)
+    Headshot3D, // a headshot heard by everyone else, in the world
+    FleshHit3D, // a body hit heard by everyone else
+    HitMetal, // shooter feedback: hitting a turret or drone
+    KillHeadshot, // extra accent on a headshot kill
+    Whizz, // a subsonic bullet passing close by
+    Crack, // a supersonic bullet passing close by
+    Ricochet,
+    ImpactConcrete, // bullet impacts by surface
+    ImpactMetal,
+    ImpactWood,
+    ImpactDirt,
+    Scuffle, // prone crawl
+    LandThud, // landing from a fall
+    JumpPush, // jump push-off
     COUNT,
 }
 
 /// <summary>
-/// OpenAL (via Brutal.OpenAl) playback with 3D positioning for other players' shots.
-/// Every sound is synthesised at startup: each weapon gets its own gunshot, reload and equip
-/// sound built from its stats, so there are no audio files to ship.
+/// OpenAL (via Brutal.OpenAl) playback with 3D positioning for other players' shots, steps and impacts.
+/// Every sound is synthesised at startup: each weapon gets its own gunshot (near and distant layers), reload and equip
+/// sound built from its stats, so there are no audio files to ship. Footsteps have their own small voice pool
+/// (<see cref="FootstepVoicePool"/>). With OpenAL EFX (checked by a canary at start-up) far sounds are low-passed by
+/// distance and everything gets a light reverb send that suits the map (<see cref="AudioSpace"/>).
 /// </summary>
-public sealed class Audio : IDisposable
+public sealed partial class Audio : IDisposable
 {
     public const int SampleRate = 44100;
     private const int Voices = 48;
 
+    /// <summary>Voices only footsteps use (so 32 running players can't starve the gunfire).</summary>
+    public const int StepVoices = 12;
+
     private Device? _device;
     private Context? _context;
     private AlSource[] _sources = [];
+    private AlSource[] _stepSources = [];
     private readonly double[] _startedAt = new double[Voices];
-    private AlBuffer[] _shots = [], _shotsSuppressed = [], _reloads = [], _equips = [];
-    private readonly AlBuffer[] _sfx = new AlBuffer[(int)Sfx.COUNT];
+    private AlBuffer[] _shots = [], _shotsSuppressed = [], _shotsFar = [], _reloads = [], _equips = [];
+    private readonly AlBuffer[][] _sfx = new AlBuffer[(int)Sfx.COUNT][];
+    private AlBuffer[] _steps = []; // [surface][run][variant], see StepIndex
     private readonly Random _rng = new(1234);
+    private Vector3 _listener;
 
     public bool Enabled { get; private set; }
     public float MasterVolume = 0.8f;
 
+    /// <summary>Gunfire, hits, explosions and everything else that isn't music (on top of the master volume).</summary>
+    public float EffectsVolume = 1f;
+
+    /// <summary>Footsteps, jumps and landings (on top of the effects volume).</summary>
+    public float FootstepVolume = 1f;
+
+    /// <summary>Your own footsteps are this much quieter than someone else's at your feet.</summary>
+    public const float SelfStepGain = 0.5f;
+
+    /// <summary>The footstep voices' bookkeeping (cap and distance priority).</summary>
+    public readonly FootstepVoicePool StepPool = new(StepVoices);
+
+    /// <summary>Where the listener is (the camera), for distance culling and filtering.</summary>
+    public Vector3 ListenerPosition => _listener;
+
     /// <summary>Procedural background music for the menus and lobbies (Music.cs); streams only once OpenAL is up.</summary>
     public readonly MusicPlayer Music = new();
 
-    public void Init()
+    /// <summary>How long start-up synthesis took and how much it made (for the [audio] log line and the self-test).</summary>
+    public double SynthMs { get; private set; }
+
+    public int BufferCount { get; private set; }
+    public long BufferBytes { get; private set; }
+
+    public void Init() => Init(music: true);
+
+    /// <summary>Opens the device, synthesises every sound and (optionally) starts the music.</summary>
+    public void Init(bool music)
     {
         try
         {
@@ -65,41 +114,42 @@ public sealed class Audio : IDisposable
             _context = _device.CreateContext();
             _context.MakeCurrent();
             _sources = Al.GenSources(Voices);
-            for (var i = 0; i < _sources.Length; i++)
-            {
-                _sources[i].ReferenceDistance = 6f;
-                _sources[i].RolloffFactor = 1.1f;
-                _sources[i].MaxDistance = 120f;
-            }
+            _stepSources = Al.GenSources(StepVoices);
 
-            var sw = System.Diagnostics.Stopwatch.StartNew();
+            var sw = Stopwatch.StartNew();
+            var pcm = SynthesiseAll();
+            SynthMs = sw.Elapsed.TotalMilliseconds;
             var defs = Weapons.All;
-            var shotPcm = new short[defs.Length][];
-            var suppressedPcm = new short[defs.Length][];
-            var reloadPcm = new short[defs.Length][];
-            var equipPcm = new short[defs.Length][];
-            Parallel.For(0, defs.Length, i =>
-            {
-                shotPcm[i] = Synth.Gunshot(defs[i]);
-                // The same gun with a Suppressor attachment on it.
-                var quiet = defs[i].Clone();
-                quiet.Sound = SoundStyle.Suppressed;
-                suppressedPcm[i] = defs[i].Sound is SoundStyle.Gun or SoundStyle.Boom ? Synth.Gunshot(quiet) : shotPcm[i];
-                reloadPcm[i] = Synth.Reload(defs[i]);
-                equipPcm[i] = Synth.Equip(defs[i]);
-            });
-            _shots = shotPcm.Select(Upload).ToArray();
-            _shotsSuppressed = suppressedPcm.Select(Upload).ToArray();
-            _reloads = reloadPcm.Select(Upload).ToArray();
-            _equips = equipPcm.Select(Upload).ToArray();
+            _shots = defs.Select(d => Upload(pcm.Shots[d.Id])).ToArray();
+            _shotsSuppressed = defs.Select(d => Upload(pcm.Suppressed[d.Id])).ToArray();
+            _shotsFar = defs.Select(d => pcm.Far[d.Id] is { } f ? Upload(f) : default).ToArray();
+            _reloads = defs.Select(d => Upload(pcm.Reloads[d.Id])).ToArray();
+            _equips = defs.Select(d => Upload(pcm.Equips[d.Id])).ToArray();
             for (var i = 0; i < (int)Sfx.COUNT; i++)
-                _sfx[i] = Upload(Synth.Effect((Sfx)i));
+                _sfx[i] = pcm.Effects[i].Select(Upload).ToArray();
+            _steps = pcm.Steps.Select(Upload).ToArray();
+            BufferCount = pcm.Count;
+            BufferBytes = pcm.Bytes;
 
             Enabled = true;
-            Console.WriteLine($"Audio: OpenAL ready, synthesised {defs.Length * 4 + (int)Sfx.COUNT} sounds in {sw.ElapsedMilliseconds} ms.");
+            InitEfx();
+            var hrtf = "unknown";
             try
             {
-                Music.Start();
+                hrtf = _device.HrtfStatus.ToString();
+            }
+            catch (Exception)
+            {
+                // older drivers: no HRTF query
+            }
+            Console.WriteLine($"Audio: OpenAL ready, synthesised {BufferCount} sounds in {SynthMs:0} ms.");
+            Console.WriteLine($"[audio] {BufferCount} buffers ({BufferBytes / 1024} KB) synthesised in {SynthMs:0} ms on {Environment.ProcessorCount} threads; "
+                + $"{Voices} effect voices + {StepVoices} footstep voices; footsteps {(int)FootSurface.Count} surfaces x 2 gaits x {Synth.StepVariants} variants; "
+                + $"EFX {EfxStatus}; HRTF {hrtf}");
+            try
+            {
+                if (music)
+                    Music.Start();
             }
             catch (Exception ex)
             {
@@ -113,6 +163,96 @@ public sealed class Audio : IDisposable
         }
     }
 
+    /// <summary>Every sound the game makes, as 16-bit mono PCM (made in parallel; no OpenAL needed).</summary>
+    public sealed class SoundSet
+    {
+        public required short[][] Shots, Suppressed, Reloads, Equips;
+        public required short[]?[] Far;
+        public required short[][][] Effects; // [sfx][variant]
+        public required short[][] Steps; // StepIndex order
+        public int Count;
+        public long Bytes;
+    }
+
+    /// <summary>The footstep buffer for a surface, gait and variant.</summary>
+    public static int StepIndex(FootSurface s, bool run, int variant) => ((int)s * 2 + (run ? 1 : 0)) * Synth.StepVariants + variant;
+
+    /// <summary>Synthesises everything (also run headlessly by the self-test).</summary>
+    public static SoundSet SynthesiseAll()
+    {
+        var defs = Weapons.All;
+        var n = defs.Length;
+        var set = new SoundSet
+        {
+            Shots = new short[n][],
+            Suppressed = new short[n][],
+            Reloads = new short[n][],
+            Equips = new short[n][],
+            Far = new short[n][],
+            Effects = new short[(int)Sfx.COUNT][][],
+            Steps = new short[(int)FootSurface.Count * 2 * Synth.StepVariants][],
+        };
+        for (var i = 0; i < (int)Sfx.COUNT; i++)
+            set.Effects[i] = new short[Synth.VariantCount((Sfx)i)][];
+
+        // One flat job list so the short effects spread over the cores along with the long gunshots.
+        var jobs = new List<Action>();
+        for (var k = 0; k < n; k++)
+        {
+            var i = k;
+            jobs.Add(() =>
+            {
+                set.Shots[i] = Synth.Gunshot(defs[i]);
+                // The same gun with a Suppressor attachment on it.
+                var quiet = defs[i].Clone();
+                quiet.Sound = SoundStyle.Suppressed;
+                set.Suppressed[i] = defs[i].Sound is SoundStyle.Gun or SoundStyle.Boom ? Synth.Gunshot(quiet) : set.Shots[i];
+            });
+            jobs.Add(() => set.Far[i] = Synth.GunshotDistant(defs[i]));
+            jobs.Add(() =>
+            {
+                set.Reloads[i] = Synth.Reload(defs[i]);
+                set.Equips[i] = Synth.Equip(defs[i]);
+            });
+        }
+        for (var e = 0; e < (int)Sfx.COUNT; e++)
+            for (var v = 0; v < set.Effects[e].Length; v++)
+            {
+                var (ee, vv) = (e, v);
+                jobs.Add(() => set.Effects[ee][vv] = Synth.Effect((Sfx)ee, vv));
+            }
+        for (var s = 0; s < (int)FootSurface.Count; s++)
+            for (var r = 0; r < 2; r++)
+                for (var v = 0; v < Synth.StepVariants; v++)
+                {
+                    var (ss, rr, vv) = ((FootSurface)s, r == 1, v);
+                    jobs.Add(() => set.Steps[StepIndex(ss, rr, vv)] = Synth.Footstep(ss, rr, vv));
+                }
+        Parallel.For(0, jobs.Count, j => jobs[j]());
+
+        void Add(short[]? a)
+        {
+            if (a == null)
+                return;
+            set.Count++;
+            set.Bytes += a.Length * 2L;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            Add(set.Shots[i]);
+            Add(set.Suppressed[i]);
+            Add(set.Far[i]);
+            Add(set.Reloads[i]);
+            Add(set.Equips[i]);
+        }
+        foreach (var v in set.Effects)
+            foreach (var a in v)
+                Add(a);
+        foreach (var a in set.Steps)
+            Add(a);
+        return set;
+    }
+
     private static AlBuffer Upload(short[] pcm)
     {
         var buffer = Al.GenBuffer();
@@ -122,6 +262,7 @@ public sealed class Audio : IDisposable
 
     public void SetListener(Vector3 position, Vector3 forward)
     {
+        _listener = position;
         if (!Enabled)
             return;
         Al.Listener.Position = new float3(position.X, position.Y, position.Z);
@@ -131,11 +272,23 @@ public sealed class Audio : IDisposable
 
     // ---- Playback -----------------------------------------------------------
 
+    /// <summary>Distance falloff for a sound: where it starts to fade, how fast, and where it stops fading.</summary>
+    private readonly record struct Falloff(float Reference, float Rolloff, float Max)
+    {
+        public static readonly Falloff Normal = new(6f, 1.1f, 120f);
+        public static readonly Falloff Far = new(25f, 0.6f, 400f); // the distant gunshot layer carries
+        public static readonly Falloff Step = new(3f, 1f, 60f);
+        public static readonly Falloff Small = new(3f, 1.3f, 60f); // impacts, whizzes
+    }
+
     /// <summary>Plays a buffer. Null position = attached to the listener (our own gun / UI).</summary>
-    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch)
+    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch) => Play(buffer, position, gain, pitch, Falloff.Normal);
+
+    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff)
     {
         if (!Enabled || buffer.IsNull())
             return;
+        var t0 = Stopwatch.GetTimestamp();
 
         // Prefer a free voice, else steal the oldest one.
         var now = Now();
@@ -155,11 +308,21 @@ public sealed class Audio : IDisposable
             }
         }
 
-        var src = _sources[pick];
+        Start(_sources[pick], buffer, position, gain * EffectsVolume, pitch, falloff);
+        _startedAt[pick] = now;
+        _played++;
+        _cpuTicks += Stopwatch.GetTimestamp() - t0;
+    }
+
+    private void Start(AlSource src, AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff)
+    {
         src.Stop();
         src.Buffer = buffer;
         src.Gain = gain;
         src.Pitch = pitch;
+        src.ReferenceDistance = falloff.Reference;
+        src.RolloffFactor = falloff.Rolloff;
+        src.MaxDistance = falloff.Max;
         if (position is { } p)
         {
             src.SourceRelative = false;
@@ -170,19 +333,47 @@ public sealed class Audio : IDisposable
             src.SourceRelative = true;
             src.Position = new float3(0, 0, 0);
         }
+        ApplyDistanceFilter(src, position);
         src.Play();
-        _startedAt[pick] = now;
     }
 
     private static double Now() => Brutal.GlfwApi.Glfw.Time;
 
     private float Jitter(float amount) => 1f + ((float)_rng.NextDouble() - 0.5f) * 2f * amount;
 
+    private AlBuffer Pick(Sfx sfx)
+    {
+        var v = _sfx[(int)sfx];
+        return v.Length == 1 ? v[0] : v[_rng.Next(v.Length)];
+    }
+
+    /// <summary>
+    /// How much of a near gunshot is replaced by its distant layer at a distance (0 up close, 1 far away): a smooth
+    /// crossfade from 25 m to 90 m.
+    /// </summary>
+    public static float FarMix(float distance)
+    {
+        var x = Math.Clamp((distance - 25f) / 65f, 0f, 1f);
+        return x * x * (3 - 2 * x);
+    }
+
     // Every public sound call checks Enabled first: with no audio device the sound tables are empty.
     public void Shot(WeaponDef w, Vector3? position)
     {
-        if (Enabled)
-            Play(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id], position, (position == null ? 0.75f : 1f) * (w.Suppressor ? 0.5f : 1f), Jitter(0.04f));
+        if (!Enabled)
+            return;
+        var gain = (position == null ? 0.75f : 1f) * (w.Suppressor ? 0.5f : 1f);
+        var pitch = Jitter(0.04f);
+        if (position is { } p && !w.Suppressor && !_shotsFar[w.Id].IsNull())
+        {
+            var far = FarMix(Vector3.Distance(p, _listener));
+            if (far < 0.98f)
+                Play(_shots[w.Id], p, gain * (1f - 0.85f * far), pitch);
+            if (far > 0.02f)
+                Play(_shotsFar[w.Id], p, gain * 0.9f * far, pitch, Falloff.Far);
+            return;
+        }
+        Play(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id], position, gain, pitch);
     }
 
     public void Reload(WeaponDef w, Vector3? position)
@@ -200,14 +391,108 @@ public sealed class Audio : IDisposable
     public void Effect(Sfx sfx, float gain = 0.7f)
     {
         if (Enabled)
-            Play(_sfx[(int)sfx], null, gain, 1f);
+            Play(Pick(sfx), null, gain, Synth.VariantCount(sfx) > 1 ? Jitter(0.03f) : 1f);
     }
 
     /// <summary>A sound effect positioned in the world (explosions, bounces, beeps).</summary>
     public void Effect3D(Sfx sfx, System.Numerics.Vector3 position, float gain = 1f)
     {
         if (Enabled)
-            Play(_sfx[(int)sfx], position, gain, Jitter(0.05f));
+            Play(Pick(sfx), position, gain, Jitter(0.05f));
+    }
+
+    /// <summary>A small, short sound in the world (impacts, whizzes): fades out sooner and is skipped beyond <paramref name="range"/>.</summary>
+    public void Effect3DSmall(Sfx sfx, Vector3 position, float gain, float range = 50f)
+    {
+        if (Enabled && Vector3.DistanceSquared(position, _listener) <= range * range)
+            Play(Pick(sfx), position, gain, Jitter(0.07f), Falloff.Small);
+    }
+
+    // ---- Footsteps ----------------------------------------------------------
+
+    /// <summary>
+    /// Loudness (before distance) and how far a step carries, by kind: a sprint is heavy and heard 45 m away, a walk
+    /// 24 m, a crouch-walk barely at all; a landing scales with how hard it was.
+    /// </summary>
+    public static (float Gain, float Range) StepLoudness(StepKind kind, float strength) => kind switch
+    {
+        StepKind.Run => (0.8f, 45f),
+        StepKind.Walk => (0.34f * Math.Clamp(strength, 0.5f, 1f), 24f),
+        StepKind.Crouch => (0.06f, 6f),
+        StepKind.Crawl => (0.12f, 8f),
+        StepKind.Land => (0.35f + 0.65f * strength, 25f + 25f * strength),
+        StepKind.Jump => (0.35f, 20f),
+        _ => (0.3f, 20f),
+    };
+
+    /// <summary>Plays a footstep event (<see cref="Footsteps"/>): positional for others, quieter and centred for yourself.</summary>
+    public void Footstep(in StepEvent e, bool self)
+    {
+        if (!Enabled)
+            return;
+        var t0 = Stopwatch.GetTimestamp();
+        var (gain, range) = StepLoudness(e.Kind, e.Strength);
+        var d = self ? 0f : Vector3.Distance(e.Position, _listener);
+        gain *= FootstepVolume * EffectsVolume * (self ? SelfStepGain : 1f);
+        if (gain > 0.002f && d <= range)
+        {
+            var run = e.Kind is StepKind.Run or StepKind.Land;
+            var step = _steps[StepIndex(e.Surface, run, _rng.Next(Synth.StepVariants))];
+            var pitch = Jitter(0.06f) * (e.Kind == StepKind.Run ? 0.95f : 1f);
+            var at = self ? (Vector3?)null : e.Position;
+            switch (e.Kind)
+            {
+                case StepKind.Crawl:
+                    StepVoice(Pick(Sfx.Scuffle), at, d, gain, pitch);
+                    break;
+                case StepKind.Land:
+                    StepVoice(step, at, d, gain * 0.8f, pitch * 0.92f);
+                    StepVoice(Pick(Sfx.LandThud), at, d, gain * (0.4f + 0.6f * e.Strength), Jitter(0.05f));
+                    break;
+                case StepKind.Jump:
+                    StepVoice(Pick(Sfx.JumpPush), at, d, gain, Jitter(0.05f));
+                    StepVoice(step, at, d, gain * 0.5f, pitch * 1.05f);
+                    break;
+                default:
+                    StepVoice(step, at, d, gain * Jitter(0.12f), pitch);
+                    break;
+            }
+        }
+        _cpuTicks += Stopwatch.GetTimestamp() - t0;
+    }
+
+    private void StepVoice(AlBuffer buffer, Vector3? position, float distance, float gain, float pitch)
+    {
+        var v = StepPool.Acquire(Now(), distance, 0.45f / MathF.Max(pitch, 0.5f));
+        if (v < 0)
+            return;
+        Start(_stepSources[v], buffer, position, gain, pitch, Falloff.Step);
+        _stepsPlayed++;
+    }
+
+    // ---- Stats --------------------------------------------------------------
+
+    private long _cpuTicks;
+    private int _played, _stepsPlayed, _droppedAtLog;
+    private double _statsSince = double.NaN;
+
+    /// <summary>Once a minute while sounds play: an [audio] line with counts and the CPU spent starting them.</summary>
+    public void Tick(double now)
+    {
+        if (!Enabled)
+            return;
+        if (double.IsNaN(_statsSince))
+            _statsSince = now;
+        if (now - _statsSince < 60)
+            return;
+        var n = _played + _stepsPlayed;
+        if (n > 0)
+            Console.WriteLine($"[audio] last {now - _statsSince:0} s: {_played} sounds, {_stepsPlayed} footstep voices ({StepPool.Dropped - _droppedAtLog} steps dropped by the {StepVoices}-voice cap), "
+                + $"{_cpuTicks * 1e6 / Stopwatch.Frequency / Math.Max(n, 1):0.0} us CPU per sound started; EFX {(EfxEnabled ? "on" : "off")}, space {Space}");
+        _statsSince = now;
+        _played = _stepsPlayed = 0;
+        _droppedAtLog = StepPool.Dropped;
+        _cpuTicks = 0;
     }
 
     public void Dispose()
@@ -215,17 +500,22 @@ public sealed class Audio : IDisposable
         if (_context == null)
             return; // never initialised (no audio device): nothing to release
         Music.Dispose(); // stops the streaming thread before the context goes
-        if (_sources.Length > 0)
+        foreach (var set in new[] { _sources, _stepSources })
         {
-            foreach (var s in _sources)
+            if (set.Length == 0)
+                continue;
+            foreach (var s in set)
                 s.Stop();
-            Al.DeleteSources(_sources);
+            Al.DeleteSources(set);
         }
+        DisposeEfx();
         Al.DeleteBuffers(_shots);
         Al.DeleteBuffers(_shotsSuppressed);
+        Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);
         Al.DeleteBuffers(_equips);
-        Al.DeleteBuffers(_sfx.Where(b => !b.IsNull()).ToArray());
+        Al.DeleteBuffers(_sfx.Where(v => v != null).SelectMany(v => v).Where(b => !b.IsNull()).ToArray());
+        Al.DeleteBuffers(_steps);
         Context.MakeCurrent(null);
         _context?.Dispose();
         _device?.Dispose();
@@ -234,7 +524,7 @@ public sealed class Audio : IDisposable
 }
 
 /// <summary>Tiny procedural sound synthesiser (mono, 16-bit, 44.1 kHz).</summary>
-public static class Synth
+public static partial class Synth
 {
     private const int Sr = Audio.SampleRate;
 
@@ -324,6 +614,11 @@ public static class Synth
         var peak = 1e-6f;
         for (var i = 0; i < b.Len; i++)
         {
+            if (!float.IsFinite(b.S[i]))
+            {
+                Interlocked.Increment(ref NonFinite);
+                b.S[i] = 0;
+            }
             b.S[i] = MathF.Tanh(b.S[i] * 1.4f);
             peak = MathF.Max(peak, MathF.Abs(b.S[i]));
         }
@@ -498,9 +793,14 @@ public static class Synth
         return Finish(b, 0.45f);
     }
 
-    public static short[] Effect(Sfx sfx)
+    public static short[] Effect(Sfx sfx) => Effect(sfx, 0);
+
+    /// <summary>An effect, variant <paramref name="variant"/> (0 = the original; others differ in their random detail).</summary>
+    public static short[] Effect(Sfx sfx, int variant)
     {
-        var rng = new Random(77 + (int)sfx);
+        if (Foley(sfx, variant) is { } foley)
+            return foley;
+        var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
         {
@@ -513,12 +813,6 @@ public static class Synth
                 Tone(b, 0, 0.8f, 1900, 1700, 0.02f, 0.0005f, 0.012f);
                 Noise(b, rng, 0, 0.3f, 0.0003f, 0.004f, 5000, highpass: true);
                 return Finish(b, 0.5f);
-            case Sfx.Headshot:
-                b = new Buf(0.35f);
-                Tone(b, 0, 0.7f, 2600, 2600, 1, 0.0005f, 0.08f);
-                Tone(b, 0, 0.4f, 3900, 3900, 1, 0.0005f, 0.06f);
-                Tone(b, 0, 0.2f, 6100, 6100, 1, 0.0005f, 0.04f);
-                return Finish(b, 0.55f);
             case Sfx.Kill:
                 b = new Buf(0.4f);
                 Tone(b, 0, 0.7f, 880, 880, 1, 0.002f, 0.06f, length: 0.1f);

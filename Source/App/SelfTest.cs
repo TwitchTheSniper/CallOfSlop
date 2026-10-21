@@ -53,7 +53,7 @@ public static partial class SelfTest
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
-            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered.cs: the circle, bean and blob maps full of props and foliage
+            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the dense non-rectangular maps
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
@@ -96,8 +96,10 @@ public static partial class SelfTest
             Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
             Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
+            Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
+            Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");

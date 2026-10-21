@@ -53,7 +53,8 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `halfX`, `halfZ` | **yes** (no, with a `boundary`) | Half the map's width (X) and depth (Z) in metres. The playable area runs from `-halfX..halfX` and `-halfZ..halfZ`. The size class is worked out from these: Small up to ~75 m across, Medium up to ~135 m, Large beyond that. Large and Medium maps get distance fog. With a `boundary` they're worked out from its outline (and ignored if given), except as the default size of a `rect` boundary. |
 | `boundary` | no | A playable area that isn't a rectangle: a circle, an ellipse, a polygon or a smooth blob, optionally wobbly, with a wall, cliff, fence, hedge, rocks or props round it. See [Boundaries](#boundaries). |
 | `maxPlayers` | no | The most players (people + bots) the map takes, 2-32. Leave it out to get the default for the map's size (see [Player limits](#player-limits)). |
-| `sky` | no | Sky and fog colour. |
+| `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
+| `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
@@ -534,6 +535,69 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 - **Turned meshes:** a shape is turned about its own base point, so tipping one over (`"pitch": 90`) puts half of it under the ground: raise it with `y` (by its radius for a lying capsule or pipe, by `radius + inner` for a standing ring).
 - **Mistakes** give a readable message: an unknown shape suggests the closest name (`"cilinder"`: did you mean "cylinder"?), a missing model file lists the models that exist, and a broken model file says what's wrong with it.
 - **Cost:** every copy of the same shape (same name and parameters) shares one mesh and is drawn instanced, culled outside the view and simplified with distance. Thousands of meshes cost a handful of draw calls; the game log shows a `[mesh]` line every 5 seconds on maps with meshes (parts drawn, draw calls, LODs, CPU and GPU time).
+
+## Sky
+
+Without a `skybox`, a map has the classic look: the `sky` colour fills the background and the fog, and the sun is the game's usual one. Add a `skybox` and the game draws a real sky, and the map's lighting follows it: the sun's direction and colour, the ambient light and the fog all come from the sky, so distant hills fade into exactly the sky behind them. A `skybox` is looks only: it doesn't change the map's fingerprint, so it never stops anyone joining.
+
+The quickest way is a preset:
+
+```
+"skybox": "dusk",
+```
+
+| Preset | What it is |
+|---|---|
+| `clear` (also `clear day`) | Blue sky, the game's usual high sun, fair-weather clouds. |
+| `overcast` | Grey and cloudy, soft light, no sun disc. |
+| `dusk` (also `sunset`) | Sun just above the western horizon, orange glow, warm clouds, the first stars. |
+| `night` | Dark blue sky, moon and stars; the moon lights the map (dimmer, but still playable). |
+| `desert` (also `desert haze`) | Hot afternoon, dusty pale horizon, a few thin clouds. |
+| `alpine` | Deep blue high-altitude sky, bright sun, puffy clouds. |
+
+Start from a preset and change what you like; anything you leave out comes from the preset (or the defaults when there's no preset):
+
+```
+"skybox": {
+  "preset": "clear",
+  "horizon": "#c8c3b4",
+  "sun": { "time": 16.5, "latitude": 35 },
+  "clouds": { "coverage": 0.5, "speed": 10 },
+  "haze": { "color": "#eadcc0", "strength": 0.4 }
+},
+```
+
+| Field | Meaning |
+|---|---|
+| `preset` | One of the presets above. |
+| `type` | `procedural` (default), `cubemap` or `equirect`. `faces` or `image` set it for you. |
+| `zenith`, `horizon`, `ground` | Gradient colours: straight up, at the horizon, below it. The horizon colour is also the fog colour and the map's background colour. |
+| `sun` | `{ ... }`: where the sun is, given one way: `time` (hours, 0-24, 12 = noon) with optional `latitude` (degrees, -90 to 90, default 40) and `day` (1-366, default 80 = March equinox), **or** `elevation` + `azimuth` (degrees up; compass degrees, 0 = north, 90 = east), **or** `direction` `[x, y, z]` pointing at it. Also `heading` (degrees: turns the compass; north is -Z by default), `size` (disc diameter in degrees, default 1.6), `color`, `intensity` (1 = the usual sunlight), `glow` (halo strength) and `disc` (`false` hides the disc). |
+| `moon` | `true`, `false` or `{ "direction", "size", "color", "intensity" }`. Without a direction it sits opposite the sun. Once the sun is down, the moon lights the map (`intensity` is moonlight as a fraction of the usual sun). It shows phases: it's lit from the sun's side. |
+| `stars` | Star brightness, 0 (none) to 2. Seen only where the sky is dark enough. |
+| `clouds` | `false` or `{ ... }`: `coverage` (0 = clear, 1 = covered), `density` (0-1, how opaque), `scale` (pattern size in metres, default 900), `speed` (metres per second), `heading` (compass degrees they drift towards), `altitude` (metres; lower looks bigger and faster), `color` and `shade` (the colour of the thick parts). |
+| `haze` | `{ "color", "strength" }`: a glow along the horizon on the sun's side (dusk orange, desert dust). Fog picks it up too. |
+| `fog` | `{ "fromSky", "max" }`: `fromSky: false` fogs towards the flat horizon colour instead of the sky in each direction; `max` is how much of the sky colour the fog reaches at its far distance (default 0.85: distant things never fully vanish). The fog distances themselves stay the ones for the map's size. |
+| `ambient` | Ambient light multiplier, 0.2-3 (1 = the usual). |
+| `image`, `faces` | For image skies, see below. |
+| `exposure`, `rotation` | Image skies: brightness (for HDR images, the exposure before tone mapping) and a turn around the vertical axis in degrees. |
+
+**Image skies.** Put the images next to your map file (a `Skies` folder is tidy) and name them relative to the map file:
+
+```
+"skybox": { "faces": "Skies/sample_{face}.png", "sun": { "time": 17.3 } },
+"skybox": { "image": "Skies/sample.hdr", "exposure": 1.2, "sun": { "time": 17.3 } },
+```
+
+- A **cubemap** is six square PNGs of the same size, in the order +X, -X, +Y, -Y, +Z, -Z (OpenGL's cube map layout: north is -Z, up is +Y). Give a list of six names, or one name with `{face}` in it, which becomes `px`, `nx`, `py`, `ny`, `pz` and `nz`.
+- An **equirect** (panorama) is one image twice as wide as it is tall: `.png`, or Radiance `.hdr` for high dynamic range (tone mapped in the game). The middle of the image is north (-Z), the top row is straight up.
+- Image skies draw only the image (no procedural sun disc, clouds or stars). Still set the `sun` to match the sun in the picture, because it lights the map. Gradient colours you don't give are measured from the image, so the fog matches it.
+- Images are read with Brutal.Texture when its native library works on the PC, otherwise with the game's own PNG and RGBE readers. Faces up to 2048 x 2048 and panoramas up to 8192 wide; keep them small (a few hundred pixels is plenty for a sky).
+- The sample sky in `Maps/Dev/Skies` was made by `tools/skies/make_sample_sky.py`.
+
+**Mistakes** give a readable message naming the key, for example `Maps/MyMap.json: skybox: clouds: "coverage" is a number from 0 to 1, got 1.5`, or `unknown preset "sunrise" (presets: clear, overcast, dusk, night, desert, alpine)`.
+
+**Try it:** the **Sky Test** map in the Dev pack is open ground with a tall tower, made for looking at skies. **Settings > Video > Sky quality**: Low draws the gradient, sun and moon; High (default) adds clouds and stars. The sky is cheap either way (well under 0.2 ms of GPU time at 1440p); the game log shows a `[sky]` line every few seconds on maps with a sky.
 
 ## Map packs
 

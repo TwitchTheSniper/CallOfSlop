@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// <item>The screen asks with <see cref="Get"/> while drawing; a map it hasn't seen is queued (nothing renders then).</item>
 /// <item><see cref="Pump"/> runs at the start of the next frame, before the scene, and renders at most one queued map, so
 /// opening the screen costs one thumbnail per frame instead of a long freeze.</item>
-/// <item>Each picture is a fixed 3/4 view from above with boxes, movers, terrain, props, meshes and low foliage. It is made
+/// <item>Each picture is a fixed 3/4 view from above with boxes, movers, terrain, props, meshes, low foliage and the map's sky. It is made
 /// once per map and kept until the map's fingerprint (<see cref="Map.ContentHash"/>) changes, e.g. after "Refresh maps"
 /// with an edited file; identical maps keep their picture across reloads.</item>
 /// <item>The terrain, prop, mesh and foliage renderers here are separate instances from the lobby background's, so making
@@ -294,6 +294,7 @@ public static unsafe class MapThumbs
     private static void RenderMap(Renderer gfx, Map map, double now)
     {
         gfx.BeginFrame(Width, Height, map.Sky); // viewport, clear and the box shader
+        SkyRenderer.Use(map); // the map's own sun and sky fog (the scene puts its map's light back next frame)
         var (eye, target, fovY, far) = Camera(map);
         gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),
             Matrix4x4.CreatePerspectiveFieldOfView(fovY, Width / (float)Height, MathF.Max(0.1f, far * 0.002f), far));
@@ -307,6 +308,7 @@ public static unsafe class MapThumbs
         PropR.Draw(map, gfx, now);
         MeshR.Draw(map, gfx, now);
         FoliageR.Draw(map, gfx, FoliageQuality.Low, now);
+        SkyRenderer.Draw(gfx, map, SkyQuality.High, now, timed: false); // the sky behind the far side (maps with a "skybox")
         gfx.SetFog(map.Sky, 0, 0);
     }
 }

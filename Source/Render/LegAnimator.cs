@@ -169,6 +169,16 @@ public static class LegAnimator
     private static float _cacheYaw;
     private static Stance _cacheStance;
 
+    /// <summary>
+    /// A player's gait phase (0-1; a foot plants at 0 and 0.5) if their legs were posed within the last 0.15 s of
+    /// <paramref name="now"/>, else null (not drawn lately). Footsteps lock onto it (Source/Audio/Footsteps.cs).
+    /// </summary>
+    public static float? PhaseOf(byte id, double now)
+    {
+        ref readonly var st = ref States[id];
+        return st.Init && Math.Abs(now - st.Last) < 0.15 ? st.Phase : null;
+    }
+
     /// <summary>Forgets a player's leg state (the next pose starts fresh).</summary>
     public static void Reset(byte id)
     {

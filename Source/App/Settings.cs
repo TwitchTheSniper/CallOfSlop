@@ -28,6 +28,8 @@ public sealed class Settings
     // Audio / video
     public float Volume = 0.8f;
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
+    public float EffectsVolume = 1f; // gunfire, hits and every other sound effect, on top of the master volume
+    public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
     public bool VSync = true;
 
     /// <summary>A small fps counter in the top-right corner.</summary>
@@ -39,6 +41,7 @@ public sealed class Settings
     public float UiScale = 1f; // multiplier on the automatic scale (which follows window height)
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
+    public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
     public int HeadBob = 100;
@@ -165,6 +168,8 @@ public sealed class Settings
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
                     case "show_fps": s.ShowFps = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
@@ -190,6 +195,7 @@ public sealed class Settings
                     case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
                     case "head_bob" when int.TryParse(v, out var i): s.HeadBob = Math.Clamp(i, 0, 100); break;
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
+                    case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
@@ -220,6 +226,8 @@ public sealed class Settings
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",
+                    $"effects_volume={EffectsVolume.ToString(inv)}",
+                    $"footstep_volume={FootstepVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
                     $"show_fps={(ShowFps ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
@@ -244,6 +252,7 @@ public sealed class Settings
                     $"ui_scale={UiScale.ToString(inv)}",
                     $"hud_width={HudWidth}",
                     $"foliage={FoliageQuality}",
+                    $"sky={SkyQuality}",
                     $"head_bob={HeadBob}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
