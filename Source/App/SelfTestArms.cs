@@ -150,15 +150,18 @@ public static partial class SelfTest
                         Fail($"{d.Name}: aimed gun pose is off the sight line ({t.X:0.0000}, {t.Y:0.0000}, {t.Z:0.0000})");
                     if (a.Magnified)
                     {
-                        // Nothing of the arms near the middle of the screen (an ACOG's eyepiece is ~0.57 of the half-height).
+                        // Nothing of the arms in front of a magnified lens (behind its plane, the lens pass draws over them):
+                        // measured in lens radii (Sights.ProjectAimed).
+                        var lensR = MathF.Max(Sights.ProjectAimed(d, aspect).HalfH, 0.05f);
+                        var lensDepth = Sights.EyeDistance(d);
                         foreach (var rig in (ReadOnlySpan<ArmRig>)[anim.Left, anim.Right])
                             foreach (var pt in (ReadOnlySpan<Vector3>)[rig.HandWorld.Translation, rig.Wrist, rig.Elbow])
                             {
-                                if (pt.Z >= -0.01f)
+                                if (pt.Z >= -Sights.NearPlane || pt.Z < -lensDepth)
                                     continue;
-                                var nx = pt.X / (-pt.Z * MathF.Tan(35f * MathF.PI / 180) * aspect);
-                                var ny = pt.Y / (-pt.Z * MathF.Tan(35f * MathF.PI / 180));
-                                var r = MathF.Sqrt(nx * nx + ny * ny);
+                                var nx = pt.X / (-pt.Z * Sights.TanHalfFov); // half heights
+                                var ny = pt.Y / (-pt.Z * Sights.TanHalfFov);
+                                var r = MathF.Sqrt(nx * nx + ny * ny) / lensR;
                                 if (r < lensWorst)
                                     (lensWorst, lensWho) = (r, d.Name + " " + d.Optic);
                             }
@@ -166,9 +169,10 @@ public static partial class SelfTest
                 }
             }
         }
-        if (lensWorst < 0.6f)
-            Fail($"arms reach into a magnified optic's lens when aiming: {lensWho} at {lensWorst:0.00} of the half-height");
-        Line($"  {defs.Count} weapon setups, {frames} animated frames, {problems} with problems; closest arm part to a magnified lens: {lensWorst:0.00} ({lensWho})");
+        if (lensWorst < 1.1f)
+            Fail($"arms come in front of a magnified optic's lens when aiming: {lensWho} at {lensWorst:0.00} lens radii");
+        Line($"  {defs.Count} weapon setups, {frames} animated frames, {problems} with problems; closest arm part in front of a magnified lens: "
+            + (lensWorst < 9f ? $"{lensWorst:0.00} lens radii ({lensWho})" : "none"));
         Line($"  reload styles: {string.Join(", ", Enum.GetValues<ReloadStyle>().Select(s => $"{s} {styles[(int)s]}"))}");
 
         // ---- Third person ----------------------------------------------------------------------
