@@ -139,7 +139,7 @@ public static class StreakRender
         gfx.Draw(Matrix4x4.CreateScale(0.12f, 0.08f, 0.04f) * Matrix4x4.CreateTranslation(0, 0.05f, -0.29f) * head, eye * (lit ? 1.6f : 0.8f), 1f, mode: 2);
         if (e.Firing && ((int)(now * 30) & 1) == 0)
             gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateTranslation(0, 0, -0.95f) * head, new Vector3(1f, 0.85f, 0.4f), 1f, mode: 2);
-        HealthBar(gfx, e, pos + new Vector3(0, 1.55f, 0));
+        HealthBar(gfx, e, pos + new Vector3(0, 1.55f, 0), friendly);
     }
 
     internal static void DrawDrone(Renderer gfx, StreakEntity e, Vector3 stripe, bool friendly, double now)
@@ -166,14 +166,14 @@ public static class StreakRender
         gfx.Draw(Matrix4x4.CreateScale(0.1f) * Matrix4x4.CreateTranslation(0, -0.08f, -0.38f) * body, light * (blink ? 1.6f : 0.5f), 1f, mode: 2);
         if (e.Firing && ((int)(now * 30) & 1) == 0)
             gfx.Draw(Matrix4x4.CreateScale(0.25f) * Matrix4x4.CreateTranslation(0, 0, -0.45f) * pod, new Vector3(1f, 0.85f, 0.4f), 1f, mode: 2);
-        HealthBar(gfx, e, e.RenderPos + new Vector3(0, 0.6f, 0));
+        HealthBar(gfx, e, e.RenderPos + new Vector3(0, 0.6f, 0), friendly);
     }
 
-    /// <summary>A small bar over a damaged turret or drone.</summary>
-    private static void HealthBar(Renderer gfx, StreakEntity e, Vector3 at)
+    /// <summary>A small bar over a turret or drone: always for its owner and their team, for enemies once it's damaged.</summary>
+    private static void HealthBar(Renderer gfx, StreakEntity e, Vector3 at, bool friendly)
     {
         var f = Math.Clamp(e.Health / (float)e.MaxHealth, 0f, 1f);
-        if (f >= 0.999f)
+        if (f >= 0.999f && !friendly)
             return;
         gfx.Draw(Matrix4x4.CreateScale(0.8f, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(at), new Vector3(0.1f, 0.1f, 0.1f), 1f, mode: 2);
         gfx.Draw(Matrix4x4.CreateScale(0.8f * f, 0.07f, 0.07f) * Matrix4x4.CreateTranslation(at + new Vector3(-0.4f * (1 - f), 0, 0)),

@@ -160,7 +160,10 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##feed"u8, Overlay))
         {
             foreach (var f in game.Feed)
-                ImGuiSafe.TextColored(f.Mine ? Orange : new float4(1, 1, 1, 0.9f), f.Text);
+            {
+                var fade = (float)Math.Clamp(8 - (now - f.Time), 0, 1); // lines leave after 8 s: fade over the last one
+                ImGuiSafe.TextColored(f.Mine ? new float4(Orange.X, Orange.Y, Orange.Z, fade) : new float4(1, 1, 1, 0.9f * fade), f.Text);
+            }
         }
         ImGui.End();
 
@@ -263,6 +266,8 @@ public sealed partial class Ui : IDisposable
         }
 
         DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
+        DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
+        DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
 
         // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
         var prog = Progress;

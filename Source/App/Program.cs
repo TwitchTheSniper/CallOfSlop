@@ -496,10 +496,12 @@ public static unsafe partial class Program
                 _smokeStreakStart = now;
                 _smokeStreakFrames = _smokeFrames;
                 Console.WriteLine($"[smoke] kill streaks: {_game.SmokeCallStreaks(now)}");
+                Console.WriteLine($"[smoke] kill notice: {_game.SmokeKillNearestBot(now)}"); // KillNotices.cs
                 _smokeStreakStep++;
                 break;
             case 1 when t > 0.9:
                 SmokeShot("streak_turret");
+                SmokeShot("killnotice"); // "KILLED <bot>" under the crosshair, and the turret's health bar + HUD readout
                 _smokeStreakStep++;
                 break;
             case 2 when t > KillStreaks.MortarDelay + 0.45:
