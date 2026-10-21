@@ -18,6 +18,8 @@ public sealed class ThrowableDef
     public required string Name;
     public required string Blurb;
     public float Fuse; // seconds until it goes off (Frag/Smoke), max flight time otherwise
+    /// <summary>Launch speed along the aim direction (m/s); <see cref="Throwables.ThrowUp"/> and half the thrower's velocity are added on top.</summary>
+    public float ThrowSpeed = Throwables.ThrowSpeed;
     public float Radius; // blast / cloud / reveal radius
     public float MaxDamage;
     /// <summary>Damage falls off as (1 - distance / Radius) to this power: 1 is a straight line, higher drops off faster.</summary>
@@ -29,7 +31,16 @@ public sealed class ThrowableDef
 
 public static class Throwables
 {
-    public const float ThrowSpeed = 17f;
+    /// <summary>
+    /// The standard throw speed (m/s), each <see cref="ThrowableDef.ThrowSpeed"/>'s default. 22.5 carries about
+    /// 34 m on flat ground at the best angle (about 40 degrees up; 45 degrees is nearly as far), 1.6x the old 17 m/s
+    /// (about 21 m). The "Grenades" self-test measures it.
+    /// </summary>
+    public const float ThrowSpeed = 22.5f;
+    /// <summary>Extra upward speed (m/s) every throw gets, so a level throw still arcs a little.</summary>
+    public const float ThrowUp = 2.5f;
+    /// <summary>A smoke grenade still in the air at its fuse pops when it first lands, or at this age at the latest (s).</summary>
+    public const float SmokeMaxFlight = 4f;
     public const float Restitution = 0.35f;
     public const float ProjectileRadius = 0.1f;
     public const float SmokeDuration = 14f;
@@ -39,11 +50,11 @@ public static class Throwables
     public static readonly ThrowableDef[] All =
     [
         new() { Kind = ThrowableKind.None, Name = "None", Blurb = "Nothing in this slot." },
-        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.2 s fuse, bounces off walls. Kills within about 4 m, hurts out to 9 m.",
-            Fuse = 2.2f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
+        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.5 s fuse, bounces off walls, throws about 34 m. Kills within about 4 m, hurts out to 9 m.",
+            Fuse = 2.5f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
         new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast: kills within about 2.5 m, hurts out to 6 m.",
             Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },
-        new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
+        new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Pops where it lands: a thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
             Fuse = 8f, Radius = 18f, PerLife = 1, Color = new(0.2f, 0.85f, 0.95f) },
@@ -56,6 +67,13 @@ public static class Throwables
     /// <summary>Furthest distance (m) at which the blast still does <paramref name="hp"/> damage.</summary>
     public static float LethalRange(ThrowableDef def, float hp) =>
         hp >= def.MaxDamage ? 0f : def.Radius * (1f - MathF.Pow(hp / def.MaxDamage, 1f / def.Falloff));
+
+    /// <summary>Launch velocity of a throw along <paramref name="dir"/> (unit) by someone moving at <paramref name="throwerVel"/>.</summary>
+    public static Vector3 LaunchVelocity(ThrowableDef def, Vector3 dir, Vector3 throwerVel) =>
+        dir * def.ThrowSpeed + new Vector3(0, ThrowUp, 0) + throwerVel * 0.5f;
+
+    /// <summary>Where a throw starts: just in front of the eye.</summary>
+    public static Vector3 LaunchPoint(Vector3 eye, Vector3 dir) => eye + dir * 0.4f;
 
     public static ThrowableDef Get(ThrowableKind k) => All[(int)k < All.Length ? (int)k : 0];
 
@@ -70,8 +88,15 @@ public static class Throwables
         World.Query.PointInside(p, ProjectileRadius, new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary));
 
     /// <summary>One tick of ballistic flight with bounces. Returns true if it touched geometry.</summary>
-    public static bool Step(Projectile p, float dt)
+    public static bool Step(Projectile p, float dt) => Step(p, dt, float.NaN);
+
+    /// <summary>
+    /// <see cref="Step(Projectile, float)"/>, or with a number for <paramref name="flatGround"/> the same flight over an
+    /// endless flat floor at that height and nothing else (no map needed): used to aim bot throws.
+    /// </summary>
+    private static bool Step(Projectile p, float dt, float flatGround)
     {
+        var flat = !float.IsNaN(flatGround);
         if (p.Stuck)
             return false;
         var touched = false;
@@ -83,21 +108,21 @@ public static class Throwables
             var pos = p.Pos;
 
             pos.X += p.Vel.X * h;
-            if (InsideSolid(pos))
+            if (flat ? pos.Y < flatGround + ProjectileRadius : InsideSolid(pos))
             {
                 pos.X = p.Pos.X;
                 p.Vel.X *= -Restitution;
                 touched = true;
             }
             pos.Z += p.Vel.Z * h;
-            if (InsideSolid(pos))
+            if (flat ? pos.Y < flatGround + ProjectileRadius : InsideSolid(pos))
             {
                 pos.Z = p.Pos.Z;
                 p.Vel.Z *= -Restitution;
                 touched = true;
             }
             pos.Y += p.Vel.Y * h;
-            if (InsideSolid(pos))
+            if (flat ? pos.Y < flatGround + ProjectileRadius : InsideSolid(pos))
             {
                 pos.Y = p.Pos.Y;
                 var landing = p.Vel.Y < 0;
@@ -111,6 +136,11 @@ public static class Throwables
                 }
                 touched = true;
             }
+            if (flat)
+            {
+                p.Pos = pos;
+                continue;
+            }
             pos.X = Math.Clamp(pos.X, -World.Map.HalfX, World.Map.HalfX);
             pos.Z = Math.Clamp(pos.Z, -World.Map.HalfZ, World.Map.HalfZ);
             if (World.Map.Boundary is { } boundary && boundary.KeepInside(ref pos, ref p.Vel, ProjectileRadius, Restitution))
@@ -120,6 +150,85 @@ public static class Throwables
             p.Pos = pos;
         }
         return touched;
+    }
+
+    /// <summary>
+    /// Flies a throw over flat ground at height <paramref name="groundY"/> until it goes off (the same rules as the
+    /// server: a frag at its fuse, impact and recon on first contact, smoke at its fuse once it has landed). Returns
+    /// where it goes off and when; <paramref name="firstTouch"/> is where it first hit the ground.
+    /// </summary>
+    public static Vector3 PredictFlat(ThrowableDef def, Vector3 origin, Vector3 vel, float groundY, out Vector3 firstTouch, out float time)
+    {
+        var p = new Projectile { Kind = def.Kind, Pos = origin, Vel = vel };
+        var touched = false;
+        firstTouch = origin;
+        for (var tick = 1; tick <= 10 * World.TickRate; tick++)
+        {
+            var hit = Step(p, World.TickDt, groundY);
+            if (hit && !touched)
+                firstTouch = p.Pos;
+            touched |= hit;
+            time = tick * World.TickDt;
+            if (GoesOff(def, time, hit, touched))
+                return p.Pos;
+        }
+        time = 10;
+        return p.Pos;
+    }
+
+    /// <summary>Does a projectile go off now? <paramref name="age"/> in seconds, <paramref name="touched"/> this tick, <paramref name="landed"/> ever.</summary>
+    public static bool GoesOff(ThrowableDef def, double age, bool touched, bool landed) => def.Kind switch
+    {
+        ThrowableKind.Impact or ThrowableKind.Recon => touched || age > def.Fuse,
+        ThrowableKind.Smoke => (age >= def.Fuse && landed) || age >= SmokeMaxFlight,
+        _ => age >= def.Fuse,
+    };
+
+    /// <summary>
+    /// The aim pitch (radians, up positive) for a throw from <paramref name="eye"/> that goes off as close as it can to
+    /// <paramref name="target"/> (its feet), treating the ground as flat at the target's height and the thrower as
+    /// standing still. Picks the flat arc (the fastest), allowing for bounces and roll, so a frag thrown short rolls
+    /// up to the target. Returns false (and the longest throw) when the target is out of range.
+    /// </summary>
+    public static bool AimPitch(ThrowableDef def, Vector3 eye, Vector3 target, out float pitch)
+    {
+        var to = target - eye;
+        var want = new Vector2(to.X, to.Z).Length();
+        var flatDir = want > 1e-3f ? new Vector2(to.X, to.Z) / want : new Vector2(0, -1);
+        float Miss(float a, out float reach)
+        {
+            var dir = new Vector3(flatDir.X * MathF.Cos(a), MathF.Sin(a), flatDir.Y * MathF.Cos(a));
+            var start = LaunchPoint(eye, dir);
+            var end = PredictFlat(def, start, LaunchVelocity(def, dir, Vector3.Zero), target.Y, out _, out _);
+            reach = new Vector2(end.X - eye.X, end.Z - eye.Z).Length();
+            return MathF.Abs(reach - want);
+        }
+        // Coarse sweep from steeply down to about 50 degrees up, then refine around the best.
+        pitch = 0f;
+        var best = float.MaxValue;
+        var longest = 0f;
+        var longestPitch = 0f;
+        for (var a = -0.8f; a <= 0.88f; a += 0.04f)
+        {
+            var miss = Miss(a, out var reach);
+            if (miss < best)
+                (best, pitch) = (miss, a);
+            if (reach > longest)
+                (longest, longestPitch) = (reach, a);
+        }
+        var centre = pitch;
+        for (var a = centre - 0.04f; a <= centre + 0.04f; a += 0.004f)
+        {
+            var miss = Miss(a, out _);
+            if (miss < best)
+                (best, pitch) = (miss, a);
+        }
+        if (want > longest + 1f)
+        {
+            pitch = longestPitch;
+            return false;
+        }
+        return true;
     }
 
     /// <summary>Rolling friction on terrain (deceleration = this x gravity x cos(slope)): grenades stop on slopes up to about 38 degrees.</summary>
@@ -166,6 +275,8 @@ public sealed class Projectile
     public double Born;
     public bool Stuck;
     public double LastBounceSound;
+    /// <summary>Server: has it touched anything yet (a smoke grenade waits for this before it pops).</summary>
+    public bool Landed;
 }
 
 public readonly record struct SmokeCloud(Vector3 Pos, double Born, double Until);
@@ -225,7 +336,7 @@ public sealed partial class Game
         Audio.Effect(Sfx.Throw, 0.6f);
 
         var dir = World.Forward(LookYaw, LookPitch);
-        var origin = me.RenderEye + dir * 0.4f;
+        var origin = Throwables.LaunchPoint(me.RenderEye, dir);
         if (IsServer)
         {
             ServerThrow(me, kind, origin, dir, now);
@@ -263,7 +374,7 @@ public sealed partial class Game
             Kind = kind,
             Owner = p.Id,
             Pos = origin,
-            Vel = dir * Throwables.ThrowSpeed + new Vector3(0, 2.5f, 0) + p.Sim.Velocity * 0.5f,
+            Vel = Throwables.LaunchVelocity(Throwables.Get(kind), dir, p.Sim.Velocity),
             Born = now,
         };
         if (_nextProjectileId == 0)
@@ -287,14 +398,8 @@ public sealed partial class Game
             if (touched)
                 BounceSound(proj, now);
             var def = Throwables.Get(proj.Kind);
-            var age = now - proj.Born;
-            var go = proj.Kind switch
-            {
-                ThrowableKind.Impact => touched || age > def.Fuse,
-                ThrowableKind.Recon => touched || age > def.Fuse,
-                _ => age >= def.Fuse,
-            };
-            if (go)
+            proj.Landed |= touched;
+            if (Throwables.GoesOff(def, now - proj.Born, touched, proj.Landed))
                 (done ??= new()).Add(proj);
         }
         if (done == null)
