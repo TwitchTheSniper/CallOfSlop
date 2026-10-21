@@ -532,18 +532,19 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **Collision:** solid props (bins, crates, barriers) block movement, bullets and sight like any box, and bots walk round them. Cosmetic ones (litter, newspapers, bottles) are looks only.
 - **Breakable props** (crates, boxes, bottles, bins, chairs...) break when shot, hit or blown up, and every match starts with them whole again. See [Props/README.md](../Props/README.md#breakable-props).
 - **Fingerprint:** props count towards the map's fingerprint, so host and players need the same map file and the same Props folder. Maps without props keep their old fingerprint.
+- **Pack props:** a pack can carry props of its own in `Maps/<Pack>/Props`, seen only by that pack's maps; `"global:Name"` always means the prop from the `Props` folder. See [Where assets go](#where-assets-go).
 - **Cost:** props are drawn instanced, a few hundred on a map cost well under a millisecond. Hand-placed solid props are best for cover you design around; Clutter is best for litter and dressing.
 
 ## Meshes and models
 
 Maps aren't limited to boxes: the `Mesh` op places procedural shapes (cylinders, cones, spheres, capsules, rings, ramps, pipes, rounded boxes) and the `Model` op places glTF 2.0 models (`.glb` or `.gltf` files in the `Models` folder; see [Models/README.md](../Models/README.md)). The **Mesh Test** map in the Dev pack shows every shape, a LOD line and the test models.
 
-**They are cosmetic for now:** players, bullets, grenades and bots pass through them, and they don't count towards the map's fingerprint. Where players need cover, put a `Block` or a solid `Prop` under or inside the mesh (a `Block` the size of a pillar inside a `cylinder`, say). Collision for meshes comes with the physics work.
+**They are cosmetic for now:** players, bullets, grenades and bots pass through them, and they don't count towards the map's fingerprint (except a model from the map's own pack folder, see [Where assets go](#where-assets-go)). Where players need cover, put a `Block` or a solid `Prop` under or inside the mesh (a `Block` the size of a pillar inside a `cylinder`, say). Collision for meshes comes with the physics work.
 
 | Op | Parameters | What it makes |
 | --- | --- | --- |
 | `Mesh` | mesh, x, z, color, y = 0, width = 1, height = 1, depth = 1, radius = 0, inner = 0, segments = 0, detail = 0, yaw = 0, pitch = 0, roll = 0, scale = 1, material = "" | A procedural shape standing at (x, z), on the ground (or terrain) raised by `y`. |
-| `Model` | file, x, z, y = 0, yaw = 0, pitch = 0, roll = 0, scale = 1 | A glTF model (`"Models/barrel.glb"`) standing at (x, z), with its own materials. |
+| `Model` | file, x, z, y = 0, yaw = 0, pitch = 0, roll = 0, scale = 1 | A glTF model (`"Models/barrel.glb"`) standing at (x, z), with its own materials. A map in a pack finds `Maps/<Pack>/Models/barrel.glb` first; `"global:Models/barrel.glb"` skips the pack (see [Where assets go](#where-assets-go)). |
 
 Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (x, z). `yaw` turns it about the vertical axis like a prop's yaw, `pitch` tips it forward about x and `roll` about z (degrees, applied roll, then pitch, then yaw), and `scale` grows it evenly. Zero for `radius`, `inner`, `segments` and `detail` means "the default":
 
@@ -623,7 +624,7 @@ Start from a preset and change what you like; anything you leave out comes from 
 | `image`, `faces` | For image skies, see below. |
 | `exposure`, `rotation` | Image skies: brightness (for HDR images, the exposure before tone mapping) and a turn around the vertical axis in degrees. |
 
-**Image skies.** Put the images next to your map file (a `Skies` folder is tidy) and name them relative to the map file:
+**Image skies.** Put the images next to your map file (a `Skies` folder is tidy) and name them relative to the map file. The game looks next to the map file first, then in the map's pack folder (for a map in a subfolder of its pack), then in the `Maps` folder itself; `"global:Skies/x.png"` looks in the `Maps` folder only (see [Where assets go](#where-assets-go)):
 
 ```
 "skybox": { "faces": "Skies/sample_{face}.png", "sun": { "time": 17.3 } },
@@ -679,7 +680,39 @@ Maps/
 | `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 | `trueRandom` | `false` keeps the pack out of **True Random** (random from every pack), like the Dev test maps. Its maps can still be picked directly. Default `true`. Packs with `false` are listed last. |
 
-Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps; they don't matter online.
+Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps, and which [pack-local assets](#where-assets-go) a map can use.
+
+## Where assets go
+
+**The rule:** assets used inside maps go in the general, reusable top-level folders whenever possible: `Props/` for props, `Models/` for glTF models, and shared sky images in the `Maps` folder itself. Only an asset that is specific to one map or one pack goes in that pack's folder, so the pack stays self-contained and other packs never see it:
+
+```
+Maps/
+  MyPack/
+    pack.json
+    Bunker.json
+    Props/             props only this pack's maps can use (same format as Props/, category subfolders allowed)
+      Bunker/Crate.json
+    Models/            glTF models only this pack's maps can use
+      bunker_door.glb
+    Skies/             sky images for this pack's maps
+      dusk.hdr
+```
+
+**Resolution order.** When a map in a pack names an asset, the game looks in the pack first and in the global folders second:
+
+| Asset | Looked up in | Forcing the global one |
+|---|---|---|
+| Prop (`Prop`, `PlaceProp`, `Clutter`, a `props` boundary edge) | `Maps/<Pack>/Props`, then `Props` | `"global:Wooden Crate"`, or `"global:Street"` for a category |
+| Model (`Model` op) | the path inside the pack folder (`"Models/door.glb"` finds `Maps/<Pack>/Models/door.glb`), then the same path from the game folder (`Models/door.glb`) | `"global:Models/door.glb"` |
+| Sky image (`skybox`) | next to the map file, then the pack folder, then the `Maps` folder | `"global:Skies/dusk.hdr"` (the `Maps` folder only) |
+
+- **Namespaced per pack.** Two packs can each have a prop called "Crate": each pack's maps get their own, and maps in other packs (or loose in `Maps`) never see either.
+- **Shadowing.** A pack prop with the same name as a global prop replaces it for that pack's maps only, in name lookups and in its category, and the game log says so (`[props] pack MyPack: "Crate" shadows the global prop...`). A pack model at the same path as a global one does the same. Use `global:` where you still want the global one.
+- **Fingerprint.** The pack-local props and models a map uses count towards its fingerprint (each prop file's contents, ignoring whitespace and comments, and each model's geometry), so a player whose copy of the pack has different or missing asset files gets the usual "different version of the map" message instead of a game with different cover. The pack folder's name doesn't count, and a map that uses no pack-local assets keeps the fingerprint it always had. Sky images stay looks only, like the rest of the `skybox`.
+- **Cost.** A pack's Props folder is read the first time one of its maps loads and then cached until **Refresh maps**; a pack without one costs a single folder check.
+- **Example:** the Dev pack has its own **Apple Crate** (`Maps/Dev/Props/AppleCrate.json`, magenta, shadowing the global one) and a model (`Maps/Dev/Models/dev_beacon.glb`, written by `tools/models/make_pack_models.py`). The **Pack Assets** map shows them next to `"global:Apple Crate"` and the global barrel; **Prop Gallery 3** names `"global:Apple Crate"` so it keeps showing the global one.
+- Files in a pack's `Props` folder are props, never maps.
 
 **Sharing a pack:** zip the pack folder (for example `MyPack.zip` containing `MyPack/pack.json` and the maps). To install one, unzip it into `Maps` so it becomes `Maps/MyPack/`, then click **Refresh maps**.
 

@@ -4,7 +4,7 @@ namespace CallOfSlop;
 /// The prop library: every prop file in the Props folder (one JSON file per prop, sorted into category subfolders),
 /// loaded on first use. Names are unique (case-insensitive) and are how map files refer to props.
 /// </summary>
-public static class Props
+public static partial class Props
 {
     private static readonly object LoadLock = new();
     private static PropDef[]? _all;
@@ -31,8 +31,10 @@ public static class Props
     /// <summary>Goes up by one on every <see cref="Reload"/> (the renderer rebuilds its meshes).</summary>
     public static int Generation { get; private set; }
 
+    /// <summary>A prop from the global Props folder by name ("global:Name" works too). Maps look props up through their <see cref="PropScope"/>.</summary>
     public static PropDef? Find(string name)
     {
+        PropScope.IsGlobal(name, out name);
         foreach (var p in All)
             if (p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return p;
@@ -49,6 +51,7 @@ public static class Props
         {
             LoadErrors.Clear();
             _all = LoadAll(Folder, LoadErrors);
+            ClearPacks();
             Generation++;
         }
     }
@@ -60,7 +63,7 @@ public static class Props
         return close.Count == 0 ? $"the Props folder ({Folder}) has no props" : $"did you mean {string.Join(", ", close)}?";
     }
 
-    private static int Distance(string a, string b)
+    internal static int Distance(string a, string b)
     {
         var d = new int[b.Length + 1];
         for (var j = 0; j <= b.Length; j++)

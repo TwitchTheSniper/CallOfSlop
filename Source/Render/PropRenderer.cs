@@ -378,8 +378,11 @@ public sealed unsafe class PropRenderer
         var t0 = Stopwatch.GetTimestamp();
         if (!_ready && !Init())
             return;
-        if (_meshGeneration != Props.Generation || _meshes == null)
-            UploadMeshes();
+        var library = Props.ForPack(map.PackDir).Library; // the global props, plus the map's pack props (cached per pack)
+        if (_meshGeneration != Props.Generation || _meshes == null || !ReferenceEquals(_meshes.Defs, library))
+        {
+            UploadMeshes(library);
+        }
         if (map != _map)
             Rebuild(map);
         if (map.PropBreakVersion != _breakVersion && _batches.Count > 0)
@@ -859,10 +862,10 @@ public sealed unsafe class PropRenderer
         }
     }
 
-    private void UploadMeshes()
+    private void UploadMeshes(PropDef[] library)
     {
         var sw = Stopwatch.StartNew();
-        _meshes = PropMeshes.Build(Props.All);
+        _meshes = PropMeshes.Build(library);
         _meshGeneration = Props.Generation;
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _meshVbo);

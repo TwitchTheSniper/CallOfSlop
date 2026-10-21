@@ -451,7 +451,7 @@ public static partial class Maps
             fresh.Length,
             fresh.Where(m => Was(m) == null).Select(m => m.Name).ToArray(),
             old.Where(o => !fresh.Any(m => m.Name.Equals(o.Name, StringComparison.OrdinalIgnoreCase))).Select(o => o.Name).ToArray(),
-            fresh.Where(m => Was(m) is { } o && MapFile.ToJson(o) != MapFile.ToJson(m)).Select(m => m.Name).ToArray(),
+            fresh.Where(m => Was(m) is { } o && (MapFile.ToJson(o) != MapFile.ToJson(m) || o.PackAssetHash != m.PackAssetHash)).Select(m => m.Name).ToArray(),
             LoadErrors.ToArray());
     }
 
@@ -506,14 +506,14 @@ public static partial class Maps
         if (!Directory.Exists(folder))
             return ([], []);
         static bool IsMapFile(string f) => !Path.GetFileName(f).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase);
-        void LoadInto(MapPack pack, IEnumerable<string> files, bool loose)
+        void LoadInto(MapPack pack, IEnumerable<string> files, bool loose, string packDir)
         {
             foreach (var file in files.Where(IsMapFile).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
                 var rel = Path.GetRelativePath(folder, file);
                 try
                 {
-                    var m = MapFile.Load(File.ReadAllText(file), rel);
+                    var m = MapFile.Load(File.ReadAllText(file), rel, packDir); // packDir: the pack's own props and models come first
                     if (maps.FirstOrDefault(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)) is { } other)
                     {
                         // A loose copy identical to a map in a pack: most likely a file left over from before the
@@ -559,10 +559,10 @@ public static partial class Maps
             }
             if (packs.Any(p => p.Name.Equals(pack.Name, StringComparison.OrdinalIgnoreCase)))
                 pack.Name = $"{pack.Name} ({name})"; // two folders claiming the same pack name: keep them apart
-            LoadInto(pack, Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories), false);
+            LoadInto(pack, Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories).Where(f => !InPackAssetFolder(dir, f)), false, dir);
         }
         LoadInto(new MapPack { Name = MapPack.LooseName, Description = "Map files placed directly in the Maps folder.", Order = int.MaxValue },
-            Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly), true);
+            Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly), true, "");
 
         var sorted = maps.OrderBy(m => m.Order).ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         if (sorted.Length > 255)
@@ -582,6 +582,16 @@ public static partial class Maps
         }
         var usedPacks = packs.Where(p => p.Maps.Count > 0).OrderBy(p => p.Order).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         return (sorted, usedPacks);
+    }
+
+    /// <summary>
+    /// Is <paramref name="file"/> inside the pack's own Props folder (Maps/&lt;Pack&gt;/Props)? Those are prop files, not
+    /// maps. (Models hold no .json files.)
+    /// </summary>
+    private static bool InPackAssetFolder(string packDir, string file)
+    {
+        var rel = Path.GetRelativePath(packDir, file).Replace('\\', '/');
+        return rel.StartsWith(Props.PackFolderName + "/", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>The only map defined in code: used when the Maps folder is missing or empty.</summary>
@@ -618,7 +628,11 @@ public static partial class Maps
     {
         try
         {
-            var m = MapFile.Load(File.ReadAllText(file), Path.GetFileName(file));
+            // A file inside the Maps folder keeps its pack (its pack's own props and models); anything else stands alone.
+            var full = Path.GetFullPath(file);
+            var rel = Path.GetRelativePath(Folder, full);
+            var inMaps = !rel.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(rel);
+            var m = MapFile.Load(File.ReadAllText(file), inMaps ? rel : Path.GetFileName(file), inMaps ? null : "");
             var spawnsBefore = m.Spawns.ToList();
             m.Validate();
             var moved = spawnsBefore.Where((p, i) => p != m.Spawns[i]).Count();

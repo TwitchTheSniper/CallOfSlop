@@ -135,9 +135,10 @@ public static class MeshLibrary
 
     /// <summary>
     /// The (cached) model in <paramref name="file"/>: a path relative to the game folder ("Models/barrel.glb") or absolute.
-    /// Reloaded when the file changed. Throws <see cref="ModelException"/> with a readable message.
+    /// Reloaded when the file changed. Throws <see cref="ModelException"/> with a readable message. <paramref name="display"/>
+    /// is the name used in logs and messages (default: <paramref name="file"/>).
     /// </summary>
-    public static ModelAsset Model(string file)
+    public static ModelAsset Model(string file, string? display = null)
     {
         if (string.IsNullOrWhiteSpace(file))
             throw new ModelException("no model file given");
@@ -158,7 +159,7 @@ public static class MeshLibrary
                 return hit.Model;
         }
         var sw = Stopwatch.StartNew();
-        var model = GltfModelLoader.Load(path, file.Replace('\\', '/'));
+        var model = GltfModelLoader.Load(path, (display ?? file).Replace('\\', '/'));
         model.LoadMs = sw.Elapsed.TotalMilliseconds;
         Console.WriteLine($"[mesh] model {model.File}: {model.Nodes.Length} nodes, {model.Meshes.Length} meshes, {model.Triangles} triangles, "
             + $"{model.Materials.Length} materials, {model.Textures} textures, LODs {string.Join("/", model.Meshes.Select(m => m.Lods.Length))}, {model.LoadMs:0.0} ms"

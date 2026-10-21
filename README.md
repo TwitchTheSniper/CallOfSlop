@@ -548,7 +548,7 @@ Things built from parts are held as a tree of parented nodes (`Source/Scene`, se
 
 ```
 CallOfSlop.csproj   Start.bat   README.md   NOTICE.txt
-Maps/                map packs (one folder each, e.g. Maps/Classic: *.json maps + pack.json) and the map makers' guide - copied next to the game on build
+Maps/                map packs (one folder each, e.g. Maps/Classic: *.json maps + pack.json, plus Props/ and Models/ for assets only that pack uses) and the map makers' guide - copied next to the game on build
 Weapons/             weapon files (*.json, one subfolder per class) and the weapon guide - copied next to the game
 Props/               map props (*.json, one subfolder per category) and the prop guide - copied next to the game
 Models/              glTF models for the Model map op (*.glb, *.gltf) and the model guide - copied next to the game

@@ -48,17 +48,18 @@ public sealed class PropBatches
         Array.Fill(b.SlotOf, -1);
         if (all.Count == 0)
             return b;
-        // By name: after "Reload map files" a map kept in play still points at the old library's objects.
+        // By key (the name, "Pack/Name" for a pack prop): after "Reload map files" a map kept in play still points at the
+        // old library's objects, and a pack prop may share its name with a global one it shadows.
         var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < meshes.Defs.Length; i++)
-            index[meshes.Defs[i].Name] = i;
+            index[meshes.Defs[i].Key] = i;
         var ncx = Math.Max(1, (int)MathF.Ceiling(map.HalfX * 2 / ChunkSize) + 1);
         var ncz = Math.Max(1, (int)MathF.Ceiling(map.HalfZ * 2 / ChunkSize) + 1);
         var keys = new List<long>(all.Count);
         for (var i = 0; i < all.Count; i++)
         {
             var p = all[i];
-            if (!index.TryGetValue(p.Def.Name, out var d))
+            if (!index.TryGetValue(p.Def.Key, out var d))
                 continue;
             var cx = Math.Clamp((int)MathF.Floor((p.Position.X + map.HalfX) / ChunkSize), 0, ncx - 1);
             var cz = Math.Clamp((int)MathF.Floor((p.Position.Z + map.HalfZ) / ChunkSize), 0, ncz - 1);
@@ -80,7 +81,7 @@ public sealed class PropBatches
         {
             var i = (int)(keys[k] & 0xFFFFFF);
             var p = all[i];
-            var d = index[p.Def.Name];
+            var d = index[p.Def.Key];
             types.Add(d);
             b.SlotOf[i] = k;
             b._scales[k] = p.Scale;

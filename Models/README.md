@@ -4,6 +4,12 @@ This folder holds 3D models that maps can place with the `Model` op (see [Maps/R
 Everything in it is copied next to the game when it's built, and a map refers to a model by its path from the game
 folder, for example `"file": "Models/barrel.glb"`.
 
+Models that can be reused belong here. A model that only one map pack needs goes in that pack's own `Models` folder,
+`Maps/<Pack>/Models`: a map in the pack finds `"Models/my_door.glb"` there first and here second, and
+`"global:Models/my_door.glb"` always means this folder. Pack models a map uses count towards its fingerprint. See
+[Maps/README.md](../Maps/README.md#where-assets-go); `Maps/Dev/Models/dev_beacon.glb` (written by
+`tools/models/make_pack_models.py`) is an example.
+
 The game reads **glTF 2.0**, the open standard that Blender, Maya, 3ds Max, SketchUp (with a plugin), Substance and most
 online model stores export. Both kinds of glTF file work:
 
