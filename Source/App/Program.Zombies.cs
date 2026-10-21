@@ -313,8 +313,8 @@ public static unsafe partial class Program
                 _zSmokeStage = 2;
                 break;
             case 2 when g.Phase == MatchPhase.Playing && g.Local is { Alive: true } || t > 20:
-                if (g.Local is { } me)
-                    me.ImmuneUntil = now + 600; // the smoke run never goes down
+                if (g.Local is { } host)
+                    host.ImmuneUntil = now + 600; // the smoke run never goes down
                 _zSmokeStart = now;
                 _zSmokeFrames = _smokeFrames;
                 _zSmokeStage = 3;

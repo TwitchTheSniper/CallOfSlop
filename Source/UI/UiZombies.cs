@@ -121,7 +121,7 @@ public sealed partial class Ui
                     ImGui.ProgressBar(me2.BeingRevived, new float2(320 * _scale, 10 * _scale), "being revived"u8);
             }
             else if (!me.Alive && game.Phase == MatchPhase.Playing)
-                ImGuiSafe.TextColored(Red, "You bled out. You'll be back at the start of the next round.");
+                ImGuiSafe.TextColored(Red, "You bled out. You'll be back at the start of the next round."u8);
             else if (game.FindZUse(me) is { } use)
             {
                 var text = use.Text.Replace("[E]", key);

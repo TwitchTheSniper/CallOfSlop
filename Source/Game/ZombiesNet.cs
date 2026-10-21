@@ -165,7 +165,7 @@ public sealed partial class Game
     /// <summary>Server: <paramref name="p"/>'s loose parts and scrap (to that player).</summary>
     private void SendZRun(Player p)
     {
-        if (p.Id == LocalId || p.Bot != null || Net.IsOffline || _clients.Values.FirstOrDefault(c => c.Id == p.Id) is not { Guid: var g } || g.G == 0)
+        if (p.Id == LocalId || p.Bot != null || Net.IsOffline || GuidOf(p) is not { } g)
             return;
         var zp = ZP(p);
         _w.Begin(Msg.ZRun).U32((uint)zp.Scrap).U8((byte)Math.Min(zp.Parts.Count, 200));
@@ -174,9 +174,18 @@ public sealed partial class Game
         Net.SendTo(g, _w.Span, PacketReliability.ReliableOrdered);
     }
 
+    /// <summary>The connection of a remote person, or null (the host, bots, unknown).</summary>
+    private RakNetGUID? GuidOf(Player p)
+    {
+        foreach (var c in _clients.Values)
+            if (c.Id == p.Id && c.Guid.G != 0)
+                return c.Guid;
+        return null;
+    }
+
     private void SendZEvent(Player p, ZEventKind kind, ushort arg, string text, Sfx sound = Sfx.HitTick)
     {
-        if (Net.IsOffline || _clients.Values.FirstOrDefault(c => c.Id == p.Id) is not { Guid: var g } || g.G == 0)
+        if (Net.IsOffline || GuidOf(p) is not { } g)
             return;
         _w.Begin(Msg.ZEvent).U8((byte)kind).U16(arg).U8((byte)sound).Str(text.Length > 200 ? text[..200] : text);
         Net.SendTo(g, _w.Span, PacketReliability.ReliableOrdered);
