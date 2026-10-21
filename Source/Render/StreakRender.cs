@@ -13,6 +13,14 @@ public static class StreakRender
     private static readonly Vector3 Gunmetal = new(0.22f, 0.24f, 0.26f);
     private static readonly Vector3 DarkMetal = new(0.12f, 0.13f, 0.14f);
     private static readonly Vector3 Danger = new(1f, 0.18f, 0.12f);
+    private static readonly Vector3 Friendly = new(0.2f, 0.8f, 1f);
+
+    /// <summary>
+    /// Is a strike called by <paramref name="owner"/> friendly to the local viewer (their own, or a teammate's in a team
+    /// mode)? Hostile, unknown, or no local player: false, so the marker stays the red danger colour.
+    /// </summary>
+    public static bool StrikeIsFriendly(Game game, byte owner) =>
+        game.Local is { } me && (owner == me.Id || (game.Players.TryGetValue(owner, out var o) && !game.StreakIsEnemy(o, me)));
 
     public static void Draw(Renderer gfx, Game game, double now)
     {
@@ -44,13 +52,16 @@ public static class StreakRender
         foreach (var m in game.StrikeMarkers)
         {
             var pulse = 0.5f + 0.5f * MathF.Sin((float)(now - m.Born) * 9f);
-            // A red flare column where it was called in, seen from anywhere.
-            gfx.Draw(Matrix4x4.CreateScale(0.18f, 5f, 0.18f) * Matrix4x4.CreateTranslation(m.Pos + new Vector3(0, 2.5f, 0)), Danger, 0.35f + 0.3f * pulse, mode: 2);
-            gfx.Draw(Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateTranslation(m.Pos + new Vector3(0, 0.2f, 0)), new Vector3(1f, 0.4f, 0.3f), 0.8f, mode: 2);
+            // A flare column where it was called in, seen from anywhere: red for a hostile strike, cyan for your own
+            // or your team's (decided from the viewer's team, see StrikeIsFriendly).
+            var friendly = StrikeIsFriendly(game, m.Owner);
+            var c = friendly ? Friendly : Danger;
+            gfx.Draw(Matrix4x4.CreateScale(0.18f, 5f, 0.18f) * Matrix4x4.CreateTranslation(m.Pos + new Vector3(0, 2.5f, 0)), c, 0.35f + 0.3f * pulse, mode: 2);
+            gfx.Draw(Matrix4x4.CreateScale(0.4f) * Matrix4x4.CreateTranslation(m.Pos + new Vector3(0, 0.2f, 0)), friendly ? new Vector3(0.45f, 0.9f, 1f) : new Vector3(1f, 0.4f, 0.3f), 0.8f, mode: 2);
             if (m.Kind == StreakId.MortarBarrage)
-                Ring(gfx, m.Pos, KillStreaks.MortarSpread, Danger, 0.25f + 0.25f * pulse);
+                Ring(gfx, m.Pos, KillStreaks.MortarSpread, c, 0.25f + 0.25f * pulse);
             else
-                LineMarks(gfx, m.Pos, m.Yaw, Danger, 0.2f + 0.25f * pulse, exact: true);
+                LineMarks(gfx, m.Pos, m.Yaw, c, 0.2f + 0.25f * pulse, exact: true);
         }
         foreach (var s in game.Strikes)
         {

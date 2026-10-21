@@ -45,7 +45,7 @@ public static class Throwables
             Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },
         new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
-        new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls.",
+        new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
             Fuse = 8f, Radius = 18f, PerLife = 1, Color = new(0.2f, 0.85f, 0.95f) },
     ];
 
@@ -426,13 +426,19 @@ public sealed partial class Game
         Shake *= MathF.Exp(-4f * dt);
     }
 
-    /// <summary>Is <paramref name="p"/> revealed to the local player by one of their Recon Pulses?</summary>
+    /// <summary>
+    /// Is <paramref name="p"/> revealed to the local player by one of their Recon Pulses or a friendly Recon Sweep?
+    /// Only the viewer's enemies are ever revealed (teammates keep their normal look); the overlay is drawn in the
+    /// revealed player's own team colour (<see cref="ReconOverlay.ColorFor"/>).
+    /// </summary>
     public bool IsRevealed(Player p, double now)
     {
         if (p.Perks.Has(PerkId.LowProfile) && p.RenderStance != Stance.Stand)
             return false; // Low Profile: hidden from Recon while low
-        if (p.Id == LocalId || !p.Alive)
+        if (Local is not { } me || p.Id == LocalId || !p.Alive)
             return false;
+        if (!AreEnemies(me, p))
+            return false; // the viewer's teammates are never "revealed" (this used to colour allies near your pulse red)
         if (StreakJammed(Local, now))
             return false; // an enemy Counter Sweep blinds your recon
         if (StreakSweepReveals(p, now))

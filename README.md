@@ -140,7 +140,7 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 
 | Streak | Kills | Unlock | What it does |
 | --- | --- | --- | --- |
-| **Recon Sweep** | 3 | start | Every enemy on the map shows to you as a red silhouette through walls for 10 s (Low Profile still hides people who are crouched or prone). |
+| **Recon Sweep** | 3 | start | Every enemy on the map shows through walls for 10 s, to you and (in team modes) your whole team. The see-through silhouette is drawn in each revealed player's team colour (orange in free-for-all modes) and sits just inside their body, so you still see the model. Teammates are never revealed. Low Profile still hides people who are crouched or prone. |
 | **Counter Sweep** | 4 | level 5 | Jams your enemies for 15 s: their Recon Pulses and Recon Sweeps show nothing, and their HUD fills with static. |
 | **Overdrive** | 4 | start | 12 s of moving 35% faster and reloading twice as fast. Ends if you die. |
 | **Mortar Barrage** | 5 | start | Look at a spot and fire. After 2.4 s, 7 shells land within 5 m of it, each whistling on the way in. Up to 160 damage each, falling off over 6.5 m; walls and roofs shield you, going prone helps, Flak Jacket works. |
@@ -392,7 +392,7 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 | Frag Grenade | Level 3 | 2.2 s fuse, bounces. Up to 150 damage, kills within about 1.5 m, hurts out to 7 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
 | Impact Grenade | Level 8 | Explodes on first contact. Up to 110 damage within 4.5 m. |
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s. Blocks vision, and bots can't see through it. |
-| **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you as a red silhouette through walls. It beeps once a second, so enemies can hear where it is. |
+| **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you through walls as a silhouette in their team colour (orange in free-for-all modes); teammates are never revealed. It beeps once a second, so enemies can hear where it is. |
 
 Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, using a proper ballistic arc; Tacticians throw more, also at where an enemy just ducked out of sight. Explosions shake your screen when they're close.
 
