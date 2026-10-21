@@ -1528,6 +1528,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
                 break;
+            case (byte)Msg.TeamPick:
+            case (byte)Msg.TeamReply:
+                OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
+                break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);
                 break;

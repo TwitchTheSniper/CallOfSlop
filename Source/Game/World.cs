@@ -374,6 +374,8 @@ public sealed class Player
     public ushort Kills;
     public ushort Deaths;
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
+    public byte TeamChoice = Game.NoTeam; // team modes: the team this player picked (NoTeam: Auto, autobalance may move them); replicated (TeamPick.cs)
+    public double TeamSwitchAt = -100; // when this player last changed team by choice (the switch cooldown, TeamPick.cs)
     public byte GunLevel; // Gun Game: step on the weapon ladder (replicated)
     public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
     public byte ShieldCharges; // Last Stand: bullet hits the shield still blocks (server-owned, replicated in the snapshot)

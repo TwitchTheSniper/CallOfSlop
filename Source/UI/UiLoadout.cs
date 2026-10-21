@@ -209,7 +209,9 @@ public sealed partial class Ui
     {
         if (!MenuOpen)
             return false;
-        return DrawLoadoutScreen(game, game.Audio, now);
+        var deployed = DrawLoadoutScreen(game, game.Audio, now);
+        DrawTeamsWindow(game, now); // the TEAMS window beside it, when open (UiTeams.cs)
+        return deployed;
     }
 
     /// <summary>From the main menu.</summary>
@@ -302,6 +304,7 @@ public sealed partial class Ui
                     }
                     ImGui.SameLine();
                 }
+                TeamsButton(game, backBtn); // team modes: opens the TEAMS window (UiTeams.cs)
                 ReadyButton(game, backBtn); // warmup only (UiModes.cs)
                 if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
                     GoBack();

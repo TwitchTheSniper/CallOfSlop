@@ -180,6 +180,7 @@ public sealed partial class Ui
                 case Page.SinglePlayer:
                     Title("Single player - you against bots");
                     ModePicker(s);
+                    TeamRulesPicker(s); // (UiTeams.cs)
                     MapPicker(s);
                     var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
                     s.Bots = Math.Clamp(s.Bots, 0, spMax - 1);
@@ -251,6 +252,7 @@ public sealed partial class Ui
                         break;
                     }
                     ModePicker(s);
+                    TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
                     MapPicker(s);
                     AutoStartPicker(s);
                     ImGui.SetNextItemWidth(200 * _scale);
@@ -795,14 +797,19 @@ public sealed partial class Ui
     public PauseAction DrawPauseMenu(Game game, Settings s)
     {
         if (!PauseOpen)
+        {
+            _pauseTeams = false;
             return PauseAction.None;
+        }
         var action = PauseAction.None;
 
         CenterNext();
         ImGui.SetNextWindowBgAlpha(0.92f);
         if (ImGui.Begin("##pause"u8, Panel))
         {
-            if (_pauseSettings)
+            if (_pauseTeams)
+                DrawPauseTeams(game, s); // UiTeams.cs
+            else if (_pauseSettings)
             {
                 Title("Settings");
                 SettingsPanel(s, game.Audio);
@@ -820,6 +827,8 @@ public sealed partial class Ui
                     action = PauseAction.Resume;
                 if (BigButton("CHANGE LOADOUT"))
                     action = PauseAction.Loadout;
+                if (game.IsTeamMode && BigButton("TEAMS"))
+                    _pauseTeams = true; // Join Blue / Join Red / Auto and the rosters (UiTeams.cs)
                 ImGui.BeginDisabled(!game.CanRequestSuicide);
                 if (BigButton("KILL YOURSELF (respawn)"))
                     action = PauseAction.Suicide;
@@ -847,6 +856,7 @@ public sealed partial class Ui
         {
             PauseOpen = false;
             _pauseSettings = false;
+            _pauseTeams = false;
         }
         return action;
     }
