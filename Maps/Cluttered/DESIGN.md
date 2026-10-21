@@ -263,3 +263,58 @@ worst server tick under 1 ms. The smoke run's `cluttered_dockside` (the bay from
 
 `tools/cluttered/dockside.py` regenerates the map and a top-down preview PNG (it also checks the quay edge, that the
 ground inside the outline is level, and spawn-to-spawn sight lines).
+## 06 Old Town (large, noisy smooth outline, about 141 x 124 m, 19,970 m2, 16 players): overgrown town centre
+
+**Theme.** A small-town centre left to the weeds, at dusk (`dusk` preset, sun at 18:36, a few stars), so the neon, the
+flickering street lamps, the cycling traffic lights and the crossing lamps read. Main Street with its shops, the town
+square, a town hall and a church, a park with a duck pond, a gas station, a car park, houses with back gardens, a vacant
+lot and two railway lines along the edge.
+
+**Shape.** A `smooth` outline through 19 control points with `noise` (1.6 m, 18 m bumps), following the town: a lobe for
+the park in the NW, the rail yard pushing out in the NE, the car park in the SE, the gardens in the SW. No visible
+`edge` style: the edge is dressed by `townkit.edge_run` in runs that fit what's next to it, tall leafy hedges (cosmetic
+meshes outside the barrier, bushes inside) along the park and the churchyard, chain-link fences along the car park and the
+rail yard, wooden fence panels and picket fences along the gardens, brick building backs (cosmetic, with windows) where
+Main Street runs out of the map. Road-works fences and an arrow board close Main Street short of each spawn.
+
+**Layout and routes.** The street skeleton is point-symmetric about the centre: West Main Street (z -9..-1) is offset north,
+East Main Street (z 1..9) south, so no line runs down the town, and they meet across the square. Shop rows line both
+sides, each with a back lane behind it (bins and junk), a cut-through passage in the middle of each north/south row, a
+side road off each half (Mill Road going south from West Main, Station Road going north from East Main, each with a
+traffic-light junction and a level crossing at the edge). The town hall closes the square's north side and the church
+its south side, each with front, side and back doors. Blue spawns west of the diner and the cinema, Red east of the
+laundromat and the gas station. Routes: Main Street (long, parked cars and street furniture for cover), the back lanes
+(close, cluttered), and the park / car park flanks, plus the walk-in shops: the diner, barber, arcade, laundromat,
+corner store, two offices, two flats (kitchen and living room with a door between), the gas station kiosk, the hall and
+the church all have front and back doors, so fights go through them.
+**Hills:** the square round the statue (radius 5.5), inside the town hall (4.5) and inside the church (4.5).
+**Flags:** at the west and east ends of Main Street.
+
+**Fairness.** The buildings, lanes and roads are each other's 180-degree twins, the dressing isn't. The generator walks a
+0.5 m grid from each team's spawns (Blue/Red: square 83/83 m, town hall 87/91 m, church 91/87 m, enemy flag 178/177 m)
+and checks that no Blue spawn sees a Red one; the self-test measures the same on the game's nav graph (within 10%).
+
+**Logical placement** (all in `tools/cluttered/townkit.py`, reusable): street lamps at the kerb every 14 m with the arm
+over the road, street trees in tree pits between them, benches with a bin beside them, hydrants, mailboxes, newspaper
+boxes and sandwich boards on the shop side, all kept off doorways, junctions and crossings; cars parked nose to tail along
+the kerbs and square in the car park's bays, with parking meters beside some; a dumpster against the back wall beside
+every back door, wheelie bins next to it, trash bags heaped in front and a ring of litter; crates, pallets, drums and
+meters lined up against the back walls, off the walking lanes; AC condensers, HVAC units, turbine vents, satellite
+dishes, hatches and chimneys on the flat roofs, kept off the edges; window AC units, vent grilles and electric meters
+up the back walls; furniture against the walls facing into each room with an aisle kept from the front door to the back
+door (diner counter and stools, booths, kitchen behind; washers and dryers down both walls; barber chairs facing mirrors;
+arcade cabinets and slot machines in rows; shelving aisles and fridges; desks with chairs, monitors and filing cabinets;
+pews and an altar; chairs facing the hall's table); ducks on and round the pond with reeds, a bench facing it; garden
+furniture, sheds and gnomes in the gardens; junk in the vacant lot; pumps on islands under the canopy. Every doorway is
+kept clear for 1.1 m each side.
+
+**Foliage.** Grass and weeds everywhere, removed by the no-go rules on intact paving (`Concrete`: Main Street, sidewalks)
+and indoors, thinned to 10% on busted paving (`"surfaces": {"Tiles": 0.1, "Plain": 0.1}`: the square, the side roads, the
+back lanes, the car park, the forecourt), lush in the park, the gardens, the lot, the churchyard and the yards, weeds
+along the foot of the walls, along the kerbs and between the rail sleepers, hedges of bushes along the gardens and the
+park, ivy (cosmetic leafy slabs) up the walls.
+
+**Performance.** Buildings are a few hundred boxes (walls with door and window openings, one roof slab each); facades,
+paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
+frustum-culled, litter fades out with distance and animated props hold still past 80 m.
+`tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).

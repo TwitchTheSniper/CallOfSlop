@@ -27,6 +27,8 @@ public static unsafe partial class Program
         // The Cluttered pack's large map (thousands of props and plants): overview from the south-west, then the market at eye height.
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
+        ("cluttered_oldtown", "Old Town", new Vector3(-70f, 38f, 52f), new Vector3(0f, 0f, -4f), false), // 06 Old Town from the south-west: smoke_cluttered_oldtown.bmp
+        ("cluttered_oldtown_street", "Old Town", new Vector3(-58f, 1.7f, -5f), new Vector3(-16f, 1.6f, -4f), false), // West Main Street at eye height
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
