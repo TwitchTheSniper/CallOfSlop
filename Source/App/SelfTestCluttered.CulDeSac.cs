@@ -73,7 +73,7 @@ public static partial class SelfTest
             Fail($"{m.Name}: {unmatched.Count} solid prop(s) without a twin across the street's axis: {string.Join(", ", unmatched.Take(5))}");
 
         // ---- The shared small-map checks: density, outline, objectives, nav, bot matches ----
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 1200, SolidProps: 200, CosmeticProps: 850, Breakable: 350, Plants: 9000, Trees: 18, Boxes: 250));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 1500, SolidProps: 220, CosmeticProps: 1200, Breakable: 800, Plants: 12500, Trees: 20, Boxes: 500));
 
         // ---- Equal walks for both teams (the nav graph is built by the shared checks above) ----
         World.SetMap(m);

@@ -265,7 +265,7 @@ def walkin_house():
         S.prop(name, x, z, yaw, y=0.94, check=False)
     S.prop("Metal Shelving", -8.45, -25.0, 90.0)
     S.prop("Running Washer", -8.4, -20.7, 90.0)
-    for name, x, z, yaw in (("Car Wheel", -7.6, -24.8, 30), ("Jerry Can", -6.5, -26.0, 200), ("Bucket", -7.1, -21.3, 0),
+    for name, x, z, yaw in (("Car Wheel", -7.6, -24.8, 30), ("Paint Cans", -6.5, -26.0, 200), ("Bucket", -7.1, -21.3, 0),
                             ("Broom", -7.9, -22.4, 75)):
         S.prop(name, x, z, yaw)
     S.prop("Ceiling Fan", -6.25, -23.5, 0, y=1.75, check=False)
@@ -400,7 +400,7 @@ S.occupy((POND[0] - POND[2], POND[1] - POND[2] * 0.85, POND[0] + POND[2], POND[1
 # fences between the yards (wooden panels, solid and breakable) with gaps on the routes; a low picket fence in front
 S.rule("fences")
 S.along(["Fence Panel"], [(-2.6, -27.9), (-2.6, -30.4)], spacing=2.04, start=1.02, face="along", lanes=True, gap=0.0)   # N yard | NE back
-S.along(["Fence Panel"], [(-41.4, -0.2), (-44.2, -0.2)], spacing=2.04, start=1.02, face="along", lanes=True, mirror=False, gap=0.0)  # duplex yards
+S.along(["Fence Panel"], [(-41.4, 0.0), (-44.2, 0.0)], spacing=2.04, start=1.02, face="along", lanes=True, mirror=False, gap=0.0)  # duplex yards
 S.along(["Fence Panel"], [(7.9, -21.0), (7.9, -25.2)], spacing=2.04, start=1.02, face="along", lanes=True, gap=0.0)    # NE back | pocket park
 S.along(["Picket Fence"], [(-0.9, -12.1), (-0.9, -6.1)], spacing=2.02, start=1.01, face="along", lanes=True, gap=0.0)    # NE front lawn
 S.along(["Picket Fence"], [(7.9, -12.1), (7.9, -6.1)], spacing=2.02, start=1.01, face="along", lanes=True, gap=0.0)
@@ -581,7 +581,7 @@ TREES = [(20.5, -8.2, 7.5), (34.5, -8.3, 6.5), (15.7, -15.4, 8.0), (-20.6, -32.9
 for x, z, h in TREES:
     fol.tree(x, z, h)
 fol.surfaces(Tiles=0.1, Concrete=0.0, Plain=0.0, Wood=0.0, Metal=0.0)
-fol.region("grass", 4.5, (-50.0, -36.0, 41.0, 36.0), mirror=False, color="#5f8f3a", scale=[0.55, 0.95], patchiness=0.15)
+fol.region("grass", 5.5, (-50.0, -36.0, 41.0, 36.0), mirror=False, color="#5f8f3a", scale=[0.55, 0.95], patchiness=0.15)
 BACKYARDS = [[(-20.5, -28.2), (-2.6, -27.8), (-2.6, -33.6), (-12.0, -35.0), (-20.5, -34.4)],
              [(-27.3, -12.6), (-20.2, -13.0), (-20.2, -28.2), (-27.0, -32.0), (-36.3, -25.0), (-36.3, -20.6), (-27.3, -20.6)],
              [(-36.3, -12.0), (-36.3, -25.0), (-41.0, -22.0), (-46.0, -12.0), (-48.5, -8.0), (-41.0, -8.0)],
@@ -591,8 +591,9 @@ BACKYARDS = [[(-20.5, -28.2), (-2.6, -27.8), (-2.6, -33.6), (-12.0, -35.0), (-20
 for poly in BACKYARDS:
     fol.region("grass", 3.0, poly, color="#6f9a44", scale=[0.8, 1.35], patchiness=0.55)   # longer, uncut grass out back
     fol.region("shrub", 0.35, poly, patchiness=0.6)
+    fol.region("bush", 0.12, poly, patchiness=0.7, scale=[0.8, 1.4])
 # a hedge row inside the boundary hedge behind the yards, and flower beds along the house fronts
-fol.strip("bush", 0.9, pl.arc(C[0], C[1], RAD - 1.6, 196, 300, step=8), 1.6, scale=[1.0, 1.7], color="#355f2a")
+fol.strip("bush", 1.6, pl.arc(C[0], C[1], RAD - 1.6, 196, 300, step=8), 1.8, scale=[1.0, 1.7], color="#355f2a")
 fol.strip("shrub", 1.2, pl.arc(C[0], C[1], RAD - 1.4, 196, 300, step=8), 1.2)
 fol.strip("shrub", 2.2, [(-20.0, -18.55), (-17.9, -18.55)], 0.8, color="#a35d7a", scale=[0.6, 0.9])
 fol.strip("shrub", 2.2, [(-16.1, -18.55), (-9.2, -18.55)], 0.8, color="#c9a33a", scale=[0.6, 0.9])
