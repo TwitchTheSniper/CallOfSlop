@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Rowing Boat",
+  "category": "Harbour",
+  "description": "A small wooden rowing boat with its oars shipped, rocking on the water.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 260,
+  "parts": [
+    {"size": [0.3, 0.05, 0.3], "offset": [0, -0.4, 0], "color": "darkgrey", "anim": {"type": "bob", "distance": 0.05, "period": 2.8, "jitter": 0.2, "freezeDistance": 120}},
+    {"size": [0.2, 0.05, 0.2], "offset": [0, -0.35, 0], "color": "darkgrey", "anim": {"type": "swing", "axis": "x", "pivot": [0, 0, 0], "angle": 5, "period": 3.3, "wind": 0.6, "jitter": 0.25, "parent": 1}},
+    {"size": [2.675, 0.62, 1.25], "offset": [-0.312, 0.01, 0], "color": "#a8442c", "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.884, 0.57, 0.884], "offset": [1.025, 0.005, 0], "color": "#a8442c", "rotation": [0, 45, 0], "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [2.695, 0.1, 1.29], "offset": [-0.312, 0.24, 0], "color": "white", "anim": {"type": "follow", "parent": 2}},
+    {"size": [2.375, 0.04, 1.05], "offset": [-0.312, 0.22, 0], "color": "wood", "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [2.621, 0.06, 1.28], "offset": [-0.312, 0.05, 0], "color": "#c8c8c0", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.22, 0.05, 1.1], "offset": [0.5, 0.26, 0], "color": "lightwood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.22, 0.05, 1.1], "offset": [-0.7, 0.26, 0], "color": "lightwood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [2.2, 0.04, 0.06], "offset": [-0.1, 0.36, 0.46], "color": "lightwood", "rotation": [0, 12, 0], "anim": {"type": "follow", "parent": 2}},
+    {"size": [2.2, 0.04, 0.06], "offset": [-0.1, 0.36, -0.46], "color": "lightwood", "rotation": [0, -12, 0], "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.4, 0.2, 0.06], "offset": [-1.6, 0.25, 0], "color": "darkwood", "anim": {"type": "follow", "parent": 2}}
+  ]
+}

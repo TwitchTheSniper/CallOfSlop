@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Harbour Launch",
+  "category": "Harbour",
+  "description": "A white motor launch with a red stripe and a little cabin, bobbing at its mooring.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 260,
+  "parts": [
+    {"size": [0.3, 0.05, 0.3], "offset": [0, -0.4, 0], "color": "darkgrey", "anim": {"type": "bob", "distance": 0.08, "period": 3.4, "jitter": 0.2, "freezeDistance": 120}},
+    {"size": [0.2, 0.05, 0.2], "offset": [0, -0.35, 0], "color": "darkgrey", "anim": {"type": "swing", "axis": "x", "pivot": [0, 0, 0], "angle": 3.5, "period": 4.1, "wind": 0.6, "jitter": 0.25, "parent": 1}},
+    {"size": [4.5, 1.2, 2.2], "offset": [-0.55, 0.15, 0], "color": "white", "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [1.556, 1.104, 1.556], "offset": [1.7, 0.122, 0], "color": "white", "rotation": [0, 45, 0], "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [4.52, 0.1, 2.24], "offset": [-0.55, 0.67, 0], "color": "#c03028", "anim": {"type": "follow", "parent": 2}},
+    {"size": [4.2, 0.04, 2.0], "offset": [-0.55, 0.65, 0], "color": "lightwood", "material": "wood", "anim": {"type": "follow", "parent": 2}},
+    {"size": [4.41, 0.06, 2.23], "offset": [-0.55, 0.05, 0], "color": "#c8c8c0", "anim": {"type": "follow", "parent": 2}},
+    {"size": [1.6, 1.0, 1.7], "offset": [-0.3, 1.25, 0], "color": "white", "anim": {"type": "follow", "parent": 2}},
+    {"size": [1.7, 0.08, 1.8], "offset": [-0.3, 1.79, 0], "color": "#c03028", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.04, 0.45, 1.4], "offset": [0.52, 1.4, 0], "color": "glass", "anim": {"type": "follow", "parent": 2}},
+    {"size": [1.2, 0.4, 0.04], "offset": [-0.3, 1.4, 0.86], "color": "glass", "anim": {"type": "follow", "parent": 2}},
+    {"size": [1.2, 0.4, 0.04], "offset": [-0.3, 1.4, -0.86], "color": "glass", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.08, 1.4, 0.08], "offset": [-0.6, 2.5, 0], "color": "darkgrey", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.9, 0.3, 0.9], "offset": [-2.2, 0.9, 0], "color": "darkgrey", "anim": {"type": "follow", "parent": 2}},
+    {"size": [0.5, 0.25, 0.35], "offset": [1.6, 0.9, 0], "color": "orange", "anim": {"type": "follow", "parent": 2}}
+  ]
+}

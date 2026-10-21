@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Upturned Dinghy",
+  "category": "Harbour",
+  "description": "A green dinghy lying upside down on two trestles for painting. Waist-high cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [3.4, 0.95, 1.3]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.08, 0.4]}},
+  "parts": [
+    {"size": [2.8, 0.42, 1.15], "offset": [0, 0.72, 0], "color": "#3c7a5a", "material": "wood"},
+    {"size": [0.8, 0.38, 0.8], "offset": [1.4, 0.71, 0], "color": "#3c7a5a", "rotation": [0, 45, 0], "material": "wood"},
+    {"size": [2.8, 0.06, 1.2], "offset": [0, 0.5, 0], "color": "white"},
+    {"size": [2.6, 0.05, 0.12], "offset": [0, 0.95, 0], "color": "#2a5a40"},
+    {"size": [0.12, 0.5, 1.3], "offset": [-0.8, 0.25, 0], "color": "darkwood"},
+    {"size": [0.12, 0.5, 1.3], "offset": [0.8, 0.25, 0], "color": "darkwood"},
+    {"size": [1.9, 0.12, 0.12], "offset": [0, 0.4, 0.55], "color": "darkwood"},
+    {"size": [1.9, 0.12, 0.12], "offset": [0, 0.4, -0.55], "color": "darkwood"}
+  ]
+}
