@@ -65,7 +65,7 @@ public static partial class SelfTest
         }
         finally
         {
-            Line("::notice title=Zombies mode::" + string.Join("%0A", ZNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            Line("::warning title=Zombies mode (results)::" + string.Join("%0A", ZNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
@@ -117,6 +117,7 @@ public static partial class SelfTest
         if (!GameModes.Fits(GameMode.Zombies, map) || GameModes.Fits(GameMode.Zombies, Maps.All.First(m => m.Zombies == null)) || GameModes.All.Contains(GameMode.Zombies)
             || !GameModes.ForMap(map).Contains(GameMode.Zombies))
             Fail("Zombies should be pickable on Zombies maps only");
+        map.CloseAllDoors(); // (other modes open them: one big map)
         var copy = MapFile.Load(MapFile.ToJson(map), "zombies round trip", map.PackDir ?? "");
         if (copy.Zombies is not { } zc || zc.Doors.Count != zm.Doors.Count || zc.Windows.Count != zm.Windows.Count || copy.ContentHash != map.ContentHash || !copy.Solid.SequenceEqual(map.Solid))
             Fail("the zombies section didn't survive a map file round trip");
@@ -232,6 +233,7 @@ public static partial class SelfTest
             g.SelfTestUse(me, now);
             var smgSlot = Game.OwnsBuild(me, "Wall SMG");
             var afterSmg = zp.Points;
+            var inHand = g.Active.Def.Name;
             var rifle = zm.WallBuys.First(w => w.Build == "Wall Rifle");
             var rifleSlot = Game.OwnsBuild(me, "Wall Rifle");
             if (rifleSlot >= 0)
@@ -244,9 +246,9 @@ public static partial class SelfTest
             g.SelfTestUse(me, now);
             var ammoPaid = afterSmg - zp.Points;
             var refilled = rifleSlot >= 0 && g.Slots[rifleSlot].Reserve > 0 && g.Slots[rifleSlot].Ammo == g.Slots[rifleSlot].Def.Mag;
-            ZLine($"wall buy: Wall SMG in slot {smgSlot + 1} for {3000 - afterSmg}; Wall Rifle owned (slot {rifleSlot + 1}): '{prompt?.Text}', paid {ammoPaid}, refilled {refilled}; in hand {g.Active.Def.Name}");
-            if (smgSlot < 0 || 3000 - afterSmg != g.WallCost(smg) || g.Active.Def.Name != "Wall SMG")
-                Fail($"buying a wall gun should cost its price and put it in your hands (slot {smgSlot}, paid {3000 - afterSmg}, in hand {g.Active.Def.Name}, prompt there '{smgPrompt?.Text}')");
+            ZLine($"wall buy: Wall SMG in slot {smgSlot + 1} for {3000 - afterSmg}; Wall Rifle owned (slot {rifleSlot + 1}): '{prompt?.Text}', paid {ammoPaid}, refilled {refilled}; in hand {inHand}");
+            if (smgSlot < 0 || 3000 - afterSmg != g.WallCost(smg) || inHand != "Wall SMG")
+                Fail($"buying a wall gun should cost its price and put it in your hands (slot {smgSlot}, paid {3000 - afterSmg}, in hand {inHand}, prompt there '{smgPrompt?.Text}')");
             if (prompt?.Kind != ZUseKind.WallAmmo || ammoPaid != g.WallAmmoCost(rifle) || ammoPaid >= g.WallCost(rifle) || !refilled)
                 Fail($"a wall gun you already have should sell ammo (cheaper) and refill it ('{prompt?.Text}', paid {ammoPaid}, refilled {refilled})");
 

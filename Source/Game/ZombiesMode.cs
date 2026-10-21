@@ -437,7 +437,7 @@ public sealed partial class Game
         p.BuiltExtra[0] = p.BuiltExtra[1] = null;
         zp.Slots[2] = zp.Slots[3] = null;
         var starts = StandardBuilds.From("start").ToList();
-        var guns = starts.Where(b => !b.IsMelee).ToList();
+        var guns = starts.Where(b => !b.IsMelee).OrderBy(b => AssembleCached(b.Build()).Def?.Class == WeaponClass.Pistol ? 1 : 0).ToList(); // a pistol goes second
         var slot = 0;
         foreach (var b in guns.Take(2))
             GiveBuild(p, slot++, b.Build(), full: true, start: true);
