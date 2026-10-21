@@ -951,6 +951,8 @@ public static unsafe partial class Program
                 DrawGunsmithPreview(showcase, now);
 
             Ui.BeginFrame();
+            if (_settings.ShowFps)
+                FpsCounter.Draw(now);
             if (_session is { } g)
             {
                 Ui.DrawHud(g, now, _joinAddress, _settings);

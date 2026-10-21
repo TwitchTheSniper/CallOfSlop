@@ -29,6 +29,9 @@ public sealed class Settings
     public float Volume = 0.8f;
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
     public bool VSync = true;
+
+    /// <summary>A small fps counter in the top-right corner.</summary>
+    public bool ShowFps = true;
     public bool ShowNetStats = true;
     public DisplayMode Display = DisplayMode.Windowed;
     public int Width = 1600; // windowed size, or fullscreen resolution
@@ -162,6 +165,7 @@ public sealed class Settings
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
+                    case "show_fps": s.ShowFps = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
                     case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
@@ -215,6 +219,7 @@ public sealed class Settings
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
+                    $"show_fps={(ShowFps ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
                     $"bots={Bots}",
                     $"difficulty={Difficulty}",

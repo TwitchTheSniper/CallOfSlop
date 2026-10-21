@@ -750,6 +750,7 @@ public sealed partial class Ui
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
+            ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
