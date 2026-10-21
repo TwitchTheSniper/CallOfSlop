@@ -34,8 +34,19 @@ public sealed partial class Map
     }
 
     public float FarPlane => MathF.Max(300f, MathF.Sqrt(HalfX * HalfX + HalfZ * HalfZ) * 2.4f);
-    public float FogStart => Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : 400f;
-    public float FogEnd => Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : 0f; // small maps: no fog
+    /// <summary>
+    /// Distance fog. Small rectangular maps have none (their floor slab reaches the far plane and stays lit like the map).
+    /// A small map with a boundary gets fog that starts past the whole playable area, so nothing inside it is touched,
+    /// and fades the darker far ground beyond the outline into the sky's horizon (without it, that ground ran unfogged to
+    /// the far plane and read as a black void under the horizon on a dark sky such as "dusk").
+    /// </summary>
+    public float FogStart => Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
+
+    /// <inheritdoc cref="FogStart"/>
+    public float FogEnd => Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
+
+    /// <summary>A small shaped map's fog start: past the widest view across the playable area (at least the medium maps' 90 m).</summary>
+    private float SmallBoundaryFogStart => MathF.Min(MathF.Max(90f, ViewRadius * 2f + 10f), FarPlane * 0.6f);
 
     // ---- Building blocks ------------------------------------------------------------
 

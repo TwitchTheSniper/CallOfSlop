@@ -1,0 +1,202 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// Checks for findings from the real-GPU smoke run: shaped maps have ground (fogged into the horizon) beyond their
+/// outline out to the far plane, maps without a boundary keep their old fog, the timestamp GPU timer the prop renderer
+/// uses reads every pass back exactly once and only when ready, and the scene graph stats can tell build frames apart.
+/// </summary>
+public static partial class SelfTest
+{
+    /// <summary>Map horizons: ground and fog beyond a boundary, older packs' fog unchanged.</summary>
+    private static void CheckMapHorizons()
+    {
+        var shaped = 0;
+        foreach (var m in Maps.All)
+        {
+            if (m.Boundary is not { } b)
+            {
+                // No boundary (every Classic, Collision Point and High Ground map): exactly the fog maps always had.
+                var (start, end) = m.Size switch
+                {
+                    MapSize.Large => (70f, m.FarPlane * 0.9f),
+                    MapSize.Medium => (90f, 260f),
+                    _ => (400f, 0f),
+                };
+                if (m.FogStart != start || m.FogEnd != end)
+                    Fail($"{m.Name}: fog {m.FogStart:0.#}-{m.FogEnd:0.#} m, was {start:0.#}-{end:0.#} m (a map without a boundary changed its look)");
+                continue;
+            }
+            shaped++;
+            // Fog must reach its full strength by the far plane, where the far ground is cut off, so the cut never shows.
+            if (!(m.FogEnd > m.FogStart) || m.FogEnd > m.FarPlane)
+                Fail($"{m.Name}: shaped map with fog {m.FogStart:0.#}-{m.FogEnd:0.#} m (needs start < end <= far plane {m.FarPlane:0} m)");
+            // Small shaped maps: nothing inside the outline is fogged.
+            var across = 0f;
+            foreach (var p in b.Outline)
+            foreach (var q in b.Outline)
+                across = MathF.Max(across, Vector2.Distance(p, q));
+            if (m.Size == MapSize.Small && m.FogStart < across)
+                Fail($"{m.Name}: fog starts at {m.FogStart:0} m, inside the {across:0} m wide playable area");
+            if (m.HasTerrain)
+                continue; // terrain maps: the land itself runs past the outline (shaded darker)
+            // Flat shaped maps: the floor plus a far ground covering the far plane's reach from anywhere inside the outline.
+            var floor = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary floor");
+            var far = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary far ground");
+            if (floor == null || far?.Mesh == null)
+            {
+                Fail($"{m.Name}: shaped flat map without {(floor == null ? "a boundary floor" : "a far ground")} (the view past the edge would be empty)");
+                continue;
+            }
+            var bb = far.Mesh.Bounds;
+            Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+            for (var c = 0; c < 8; c++)
+            {
+                var corner = new Vector3((c & 1) != 0 ? bb.Max.X : bb.Min.X, (c & 2) != 0 ? bb.Max.Y : bb.Min.Y, (c & 4) != 0 ? bb.Max.Z : bb.Min.Z);
+                var w = Vector3.Transform(corner, far.Transform);
+                lo = Vector3.Min(lo, w);
+                hi = Vector3.Max(hi, w);
+            }
+            var reach = m.FarPlane;
+            if (lo.X > b.Min.X - reach || lo.Z > b.Min.Y - reach || hi.X < b.Max.X + reach || hi.Z < b.Max.Y + reach)
+                Fail($"{m.Name}: far ground covers x {lo.X:0}..{hi.X:0}, z {lo.Z:0}..{hi.Z:0}; needs the outline plus the far plane ({reach:0} m) on every side");
+            if (hi.Y > 0.001f || hi.Y < -1f)
+                Fail($"{m.Name}: far ground top at y {hi.Y:0.00} (should sit just under the floor)");
+            if (far.Color.X + far.Color.Y + far.Color.Z <= 0.01f)
+                Fail($"{m.Name}: far ground is black");
+            Line($"{m.Name}: {b.Spec.Shape} outline {across:0} m across ({m.Size}), far ground {hi.X - lo.X:0} x {hi.Z - lo.Z:0} m, "
+                 + $"fog {m.FogStart:0}-{m.FogEnd:0} m, far plane {m.FarPlane:0} m");
+        }
+        if (shaped == 0)
+            Fail("no map has a boundary (the Cluttered pack should)");
+        var carousel = Maps.All.FirstOrDefault(x => x.Name == "Carousel");
+        if (carousel != null && (carousel.Size != MapSize.Small || !(carousel.FogEnd > carousel.FogStart)))
+            Fail("Carousel: a small circle map without fog over its far ground (the smoke run's black void below the horizon)");
+        Line($"{shaped} shaped maps have ground and fog past the outline; maps without a boundary keep their fog");
+    }
+
+    /// <summary>A fake timestamp backend: stamps take the current fake time; results come back <see cref="Latency"/> frames later.</summary>
+    private sealed class FakeStamps : IGpuStamps
+    {
+        public ulong Now;
+        public int Frame, Latency = 2, Reads, EarlyReads;
+        private readonly ulong[] _value;
+        private readonly int[] _stampedAt;
+
+        public FakeStamps(int count)
+        {
+            _value = new ulong[count];
+            _stampedAt = new int[count];
+            Array.Fill(_stampedAt, int.MaxValue);
+        }
+
+        public void Stamp(int index)
+        {
+            _value[index] = Now;
+            _stampedAt[index] = Frame;
+        }
+
+        public bool Ready(int index) => Frame - _stampedAt[index] >= Latency;
+
+        public ulong Read(int index)
+        {
+            Reads++;
+            if (!Ready(index))
+                EarlyReads++;
+            return _value[index];
+        }
+    }
+
+    /// <summary>The prop renderer's GPU timer: per-pass times from timestamps, read once, never early, skipped passes give no sample.</summary>
+    private static void CheckGpuStampRing()
+    {
+        const int ring = 4;
+        var fake = new FakeStamps(GpuStampRing.QueryCount(2, ring));
+        double sum0 = 0, sum1 = 0;
+        int n0 = 0, n1 = 0;
+        var timer = new GpuStampRing(2, ring, fake, (pass, ms) =>
+        {
+            if (pass == 0)
+            {
+                sum0 += ms;
+                n0++;
+            }
+            else
+            {
+                sum1 += ms;
+                n1++;
+            }
+        });
+        var recorded = 0;
+        var animFrames = 0;
+        void RunFrame(int f, ulong plainNs, ulong animNs, bool anim)
+        {
+            fake.Frame = f;
+            fake.Now = (ulong)f * 4_000_000UL + 1_000_000_000UL;
+            timer.BeginFrame();
+            if (timer.Recording)
+            {
+                recorded++;
+                if (anim)
+                    animFrames++;
+            }
+            fake.Now += plainNs;
+            timer.EndPass(0);
+            if (anim)
+            {
+                fake.Now += animNs;
+                timer.EndPass(1);
+            }
+            timer.EndFrame();
+        }
+
+        // 1. Results two frames late: every frame timed, plain 0.25 ms, animated 0.05 ms on every other frame.
+        for (var f = 0; f < 200; f++)
+            RunFrame(f, 250_000, 50_000, f % 2 == 0);
+        for (var f = 200; f < 210; f++)
+        {
+            fake.Frame = f;
+            timer.Collect();
+        }
+        if (fake.EarlyReads > 0)
+            Fail($"GPU timer: {fake.EarlyReads} results read before they were ready (would stall)");
+        if (n0 != recorded || n1 != animFrames)
+            Fail($"GPU timer: {n0} plain / {n1} animated samples from {recorded} timed frames ({animFrames} with the animated pass)");
+        var avg0 = n0 > 0 ? sum0 / n0 : -1;
+        var avg1 = n1 > 0 ? sum1 / n1 : -1;
+        if (Math.Abs(avg0 - 0.25) > 1e-9 || Math.Abs(avg1 - 0.05) > 1e-9)
+            Fail($"GPU timer: plain {avg0:0.000000} ms (expected 0.25), animated {avg1:0.000000} ms (expected 0.05)");
+        var firstRecorded = recorded;
+
+        // 2. A slow GPU (results 6 frames late, more than the ring): frames are skipped, never double counted or read early.
+        fake.Latency = 6;
+        sum0 = sum1 = 0;
+        n0 = n1 = 0;
+        recorded = animFrames = 0;
+        for (var f = 300; f < 400; f++)
+            RunFrame(f, 400_000, 100_000, true);
+        for (var f = 400; f < 410; f++)
+        {
+            fake.Frame = f;
+            timer.Collect();
+        }
+        if (fake.EarlyReads > 0 || n0 != recorded || n1 != recorded || recorded == 0 || recorded >= 100)
+            Fail($"GPU timer with a slow GPU: {recorded} of 100 frames timed, {n0}/{n1} samples, {fake.EarlyReads} early reads");
+        else if (Math.Abs(sum0 / n0 - 0.4) > 1e-9 || Math.Abs(sum1 / n1 - 0.1) > 1e-9)
+            Fail($"GPU timer with a slow GPU: plain {sum0 / n0:0.000000} ms, animated {sum1 / n1:0.000000} ms (expected 0.4 / 0.1)");
+        Line($"GPU timer (timestamps): {firstRecorded} of 200 frames timed at 2 frames latency, plain 0.250 / animated 0.050 ms read back exactly; "
+             + $"slow GPU: {recorded} of 100 frames timed, no early or double reads");
+
+        // 3. Scene graph stats: a gun build is counted (build frames stay out of the steady-state worst).
+        var rig = new GunRig("smoke test gun");
+        var def = Weapons.DefaultPrimary;
+        var before = GunRig.Builds;
+        rig.Ensure(def);
+        rig.Ensure(def);
+        if (GunRig.Builds != before + 1)
+            Fail($"scene graph: {GunRig.Builds - before} gun builds counted for one new weapon and one repeat (expected 1)");
+        if (!ScenePresentation.Stats.Contains("build/GC frames", StringComparison.Ordinal))
+            Fail("scene graph: the stats line doesn't report build/GC frames apart from the worst");
+    }
+}

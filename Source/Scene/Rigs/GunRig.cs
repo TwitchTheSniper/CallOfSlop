@@ -62,6 +62,9 @@ public sealed class GunRig : GunModel.IPartSink
 
     public GunRig(string name = "gun") => Root = new SceneNode(name);
 
+    /// <summary>Guns (re)built so far, all rigs together (the scene stats tell build frames from steady ones by it).</summary>
+    public static int Builds { get; private set; }
+
     /// <summary>Number of box nodes (for stats and tests).</summary>
     public int PartCount => _slotCount;
 
@@ -78,6 +81,7 @@ public sealed class GunRig : GunModel.IPartSink
     /// <summary>(Re)builds the gun's nodes. Allocates: done only when the weapon changes.</summary>
     public void Build(WeaponDef def)
     {
+        Builds++;
         Root.ClearChildren();
         Def = def;
         _mesh = GunModel.Mesh(def);
