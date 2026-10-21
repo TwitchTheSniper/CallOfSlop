@@ -224,8 +224,9 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
   changes two of them: `CartUse` carries one byte (0 tap, 1 hold) and `CartState` carries the manned gun's aim (yaw
   offset from the cart's facing and pitch, 30 bytes per cart) instead of turret seconds; cart mode 2 is now "manned".
   Built
-  weapons and melee builds are still host-local in the Workbench Range (single player); co-op will need builds sent to
-  clients (their text form) so they can draw and predict them. Until then, clients draw other players' carts as a bare
+  weapons and melee builds are still host-local in the Workbench Range (single player). **In the Zombies mode
+  (protocol 18) they replicate**: the server sends every build's text in `ZBuild` and each client assembles the same
+  weapon (see ZOMBIES-MODE.md). Until then, clients draw other players' carts as a bare
   Push Cart, and a remote pusher's own movement isn't predicted against the cart (the server corrects it).
 
 ## Rarity tiers and scrap hooks

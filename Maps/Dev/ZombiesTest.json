@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Zombies Test",
+  "description": "Zombies test map: a start room and three areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade and the power switch.",
+  "author": "Call of Slop",
+  "order": 985,
+  "halfX": 24,
+  "halfZ": 24,
+  "maxPlayers": 8,
+  "sky": "#2b2f3a",
+  "teamSpawns": [[[-2, -2], [2, -2], [0, 2]], [[-3, 14], [3, 14], [0, 11]]],
+  "flags": [[0, 0, -3], [0, 0, 15]],
+  "ops": [
+    {"op": "Ground", "color": "#4a4640"},
+    {"op": "Perimeter", "height": 4, "color": "#3c3a36"},
+
+    {"op": "WallX", "x0": -8.3, "x1": 8.3, "z": -6.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#7a6e5c", "holes": [{"center": -4, "width": 1.6, "bottom": 0.9, "top": 2.1}, {"center": 4, "width": 1.6, "bottom": 0.9, "top": 2.1}]},
+    {"op": "WallX", "x0": -8.3, "x1": 8.3, "z": 6, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#7a6e5c", "holes": [{"center": 0, "width": 3, "bottom": 0, "top": 2.6}]},
+    {"op": "WallZ", "z0": -6.3, "z1": 6.3, "x": -8.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#7a6e5c", "holes": [{"center": 0, "width": 3, "bottom": 0, "top": 2.6}]},
+    {"op": "WallZ", "z0": -6.3, "z1": 6.3, "x": 8, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#7a6e5c", "holes": [{"center": 2, "width": 3, "bottom": 0, "top": 2.6}]},
+
+    {"op": "WallX", "x0": -8.3, "x1": 8.3, "z": 18, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#6b6a62", "holes": [{"center": 0, "width": 1.6, "bottom": 0.9, "top": 2.1}]},
+    {"op": "WallZ", "z0": 6, "z1": 18.3, "x": -8.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#6b6a62"},
+    {"op": "WallZ", "z0": 6, "z1": 18.3, "x": 8, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#6b6a62", "holes": [{"center": 8, "width": 2.4, "bottom": 0, "top": 2.6}]},
+
+    {"op": "WallZ", "z0": -6.3, "z1": 6.3, "x": -20.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5f6b5a", "holes": [{"center": 0, "width": 1.6, "bottom": 0.9, "top": 2.1}]},
+    {"op": "WallX", "x0": -20.3, "x1": -8.3, "z": -6.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5f6b5a"},
+    {"op": "WallX", "x0": -20.3, "x1": -8.3, "z": 6, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5f6b5a"},
+
+    {"op": "WallZ", "z0": -6.3, "z1": 10.3, "x": 20, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5a5f6b", "holes": [{"center": 2, "width": 1.6, "bottom": 0.9, "top": 2.1}]},
+    {"op": "WallX", "x0": 8, "x1": 20.3, "z": -6.3, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5a5f6b"},
+    {"op": "WallX", "x0": 8, "x1": 20.3, "z": 10, "t": 0.3, "y0": 0, "y1": 3.5, "color": "#5a5f6b"},
+
+    {"op": "Block", "x0": -3, "y0": 0, "z0": -1, "x1": -1.8, "y1": 0.9, "z1": 0.2, "color": "#5a4632"},
+    {"op": "Block", "x0": 2.5, "y0": 0, "z0": 9, "x1": 4.5, "y1": 1.0, "z1": 10, "color": "#5a4632"},
+    {"op": "Block", "x0": -14, "y0": 0, "z0": 0.5, "x1": -13, "y1": 1.1, "z1": 2.5, "color": "#5a4632"},
+    {"op": "Block", "x0": 12, "y0": 0, "z0": 2, "x1": 14, "y1": 0.9, "z1": 3, "color": "#5a4632"},
+
+    {"op": "Spawn", "x": -2, "z": -3},
+    {"op": "Spawn", "x": 2, "z": -3},
+    {"op": "Spawn", "x": -2, "z": 3},
+    {"op": "Spawn", "x": 2, "z": 3},
+    {"op": "Spawn", "x": -5, "z": -1},
+    {"op": "Spawn", "x": 5, "z": -1},
+    {"op": "Spawn", "x": -0.5, "z": 4.5},
+    {"op": "Spawn", "x": 1, "z": -4.5},
+    {"op": "AutoWaypoints", "spacing": 4}
+  ],
+  "zombies": {
+    "start": "Start Room",
+    "areas": [
+      {"name": "Start Room", "rect": [-8, -6, 8, 6]},
+      {"name": "Hall", "rect": [-8, 6.3, 8, 18]},
+      {"name": "West Wing", "rect": [-20, -6, -8.3, 6]},
+      {"name": "Power Room", "rect": [8.3, -6, 20, 10]}
+    ],
+    "doors": [
+      {"name": "the Hall Door", "kind": "door", "cost": 750, "box": [-1.5, 0, 6, 1.5, 2.6, 6.3], "areas": ["Start Room", "Hall"]},
+      {"name": "the West Debris", "kind": "debris", "cost": 1000, "box": [-8.6, 0, -1.5, -7.7, 2.6, 1.5], "areas": ["Start Room", "West Wing"]},
+      {"name": "the Power Room Door", "kind": "door", "cost": 1250, "box": [8, 0, 0.5, 8.3, 2.6, 3.5], "areas": ["Start Room", "Power Room"]},
+      {"name": "the Hall Shutter", "kind": "door", "cost": 500, "power": true, "box": [8, 0, 6.8, 8.3, 2.6, 9.2], "areas": ["Hall", "Power Room"]}
+    ],
+    "windows": [
+      {"area": "Start Room", "box": [-4.8, 0.9, -6.3, -3.2, 2.1, -6.0], "outside": [-4, -7.4], "inside": [-4, -5.1], "boards": 6},
+      {"area": "Start Room", "box": [3.2, 0.9, -6.3, 4.8, 2.1, -6.0], "outside": [4, -7.4], "inside": [4, -5.1], "boards": 6},
+      {"area": "Hall", "box": [-0.8, 0.9, 18, 0.8, 2.1, 18.3], "outside": [0, 19.4], "inside": [0, 17.1], "boards": 6},
+      {"area": "West Wing", "box": [-20.3, 0.9, -0.8, -20, 2.1, 0.8], "outside": [-21.4, 0], "inside": [-19.1, 0], "boards": 6},
+      {"area": "Power Room", "box": [20, 0.9, 1.2, 20.3, 2.1, 2.8], "outside": [21.4, 2], "inside": [19.1, 2], "boards": 6}
+    ],
+    "spawners": [
+      {"window": 0, "at": [-4.5, -10.5]},
+      {"window": 1, "at": [4.5, -10.5]},
+      {"window": 2, "at": [0, 22]},
+      {"window": 3, "at": [-22.5, -3]},
+      {"area": "West Wing", "at": [-11.5, -3.5]},
+      {"window": 4, "at": [22.5, 5]}
+    ],
+    "wallBuys": [
+      {"build": "Wall SMG", "at": [7.97, -3], "yaw": -90, "cost": 1000},
+      {"build": "Wall Pump", "at": [-7.97, 12], "yaw": 90, "cost": 900},
+      {"build": "Wall Rifle", "at": [-14, 5.97], "yaw": 0, "cost": 500, "ammoCost": 250},
+      {"build": "Burst Marksman", "at": [14, -5.97], "yaw": 180, "cost": 1200}
+    ],
+    "box": {
+      "cost": 950,
+      "start": 0,
+      "spots": [
+        {"at": [-5, 3.5], "yaw": 0},
+        {"at": [5, 15], "yaw": 90},
+        {"at": [-16, -3.5], "yaw": 0}
+      ]
+    },
+    "workbenches": [
+      {"at": [5, 4], "yaw": 0},
+      {"at": [12, 7.5], "yaw": 0}
+    ],
+    "perks": [
+      {"perk": "revive", "at": [-6.5, -4.5], "yaw": 90},
+      {"perk": "jugg", "at": [-6, 16], "yaw": 90, "power": true},
+      {"perk": "speed", "at": [-18.5, 4.5], "yaw": 90, "power": true},
+      {"perk": "doubletap", "at": [17.5, -4.5], "yaw": -90, "power": true}
+    ],
+    "slotUpgrade": {"at": [17.5, 7.5], "yaw": -90, "cost": 4000},
+    "power": {"at": [19.5, 8.5], "yaw": -90},
+    "salvage": [
+      {"at": [-5, 9]},
+      {"at": [11.5, -4.5]}
+    ]
+  }
+}

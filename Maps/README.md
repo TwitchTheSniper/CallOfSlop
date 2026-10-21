@@ -738,3 +738,12 @@ A map needs **one spawn per player**. If it has fewer, the game adds spawns when
 - `CallOfSlop.exe --export-maps SomeFolder` rewrites every loaded map in the standard tidy layout, in its pack folder, which is handy after hand-editing.
 - Keep cover near spawns, and leave sightlines under ~60 m on Small maps.
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.
+
+## Zombies maps
+
+A map with a `"zombies"` section can be played in the Zombies mode (and only those maps offer it in the lobby): its
+areas, doors and debris, boarded windows, zombie spawners, wall buys, mystery box spots, workbenches, perk machines,
+the weapon-slot upgrade, the power switch and salvage piles. The format is in
+[docs/zombies/ZOMBIES-MODE.md](../docs/zombies/ZOMBIES-MODE.md) ("Map format"); `Dev/ZombiesTest.json` is a worked
+example. Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
+unchanged when a map is saved, and opening doors never changes the map's fingerprint.

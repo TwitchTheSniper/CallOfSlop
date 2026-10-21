@@ -60,6 +60,11 @@ public sealed partial class Ui
     /// <summary>Switches the editor to the melee slot (or back to the selected gun slot).</summary>
     private void LoadWorkbenchMelee(bool melee)
     {
+        if (BenchRun != null)
+        {
+            BenchLoad(melee ? 4 : 0); // a Zombies workbench: your own slots (UiWorkbenchRun.cs)
+            return;
+        }
         _wbMelee = melee;
         _wbPart = null;
         if (!melee)
@@ -77,6 +82,11 @@ public sealed partial class Ui
 
     private void LoadWorkbenchSlot(int slot)
     {
+        if (BenchRun != null)
+        {
+            BenchLoad(slot);
+            return;
+        }
         BuildStore.Selected = slot;
         _wbMelee = false;
         if (MeleeCategories.Contains(_wbCat))
@@ -183,14 +193,19 @@ public sealed partial class Ui
 
             // ---- Right: stats, problems, slots ----
             if (ImGui.BeginChild("##wbstats"u8, new float2(rightW, bodyH), ImGuiChildFlags.Borders))
-                launch = DrawWorkbenchSide(b);
+                launch = BenchRun != null ? DrawBenchRunSide(b) : DrawWorkbenchSide(b); // Zombies: your slots, parts and scrap (UiWorkbenchRun.cs)
             ImGui.EndChild();
 
             // ---- Footer ----
             if (ImGui.Button("BACK"u8, new float2(160 * _scale, 34 * _scale)) || ImGui.IsKeyPressed(ImGuiKey.Escape, false))
+            {
                 WorkbenchOpen = false;
+                BenchRun = null;
+            }
             ImGui.SameLine();
-            ImGuiSafe.TextColored(Dim, _wbMessage.Length > 0 ? _wbMessage : "Click a socket in the tree, then a part (or a part, then a socket). Sandbox: every part is unlocked.");
+            ImGuiSafe.TextColored(Dim, _wbMessage.Length > 0 ? _wbMessage
+                : BenchRun != null ? "Click a socket in the tree, then a part. Only the parts you own this run are listed."
+                : "Click a socket in the tree, then a part (or a part, then a socket). Sandbox: every part is unlocked.");
         }
         ImGui.End();
         return launch;
@@ -226,7 +241,11 @@ public sealed partial class Ui
         var socketParent = _wbSocketParent != null ? b.At(_wbSocketParent) : null;
         foreach (var p in Parts.InCategory(_wbCat))
         {
+            if (!BenchShows(p, b))
+                continue; // a Zombies workbench lists only the parts you own this run
             string? why = null;
+            if (BenchRun != null && BenchAvailable(p, b) <= 0)
+                why = "you have none left to fit (zombies drop parts; or craft one with scrap)";
             if (!p.IsRoot && socketParent != null && _wbSocketName != null)
                 why = BuildRules.WhyNot(b, _wbSocketParent!, _wbSocketName, p);
             ImGui.PushStyleColor(ImGuiCol.Text, why != null ? new float4(0.5f, 0.5f, 0.52f, 1f) : WbCol(PartDef.RarityColor(p.Rarity)));
@@ -241,6 +260,11 @@ public sealed partial class Ui
             }
             if (!clicked)
                 continue;
+            if (BenchRun != null && BenchAvailable(p, b) <= 0)
+            {
+                _wbMessage = $"You have no {p.Name} left to fit.";
+                continue;
+            }
             _wbPart = p;
             if (p.IsRoot)
             {
@@ -257,7 +281,7 @@ public sealed partial class Ui
     {
         if (_wbSocketParent == null || _wbSocketName == null)
             return;
-        var why = BuildRules.WhyNot(b, _wbSocketParent, _wbSocketName, p);
+        var why = BenchRun != null && BenchAvailable(p, b) <= 0 ? $"You have no {p.Name} left to fit." : BuildRules.WhyNot(b, _wbSocketParent, _wbSocketName, p);
         if (why != null)
         {
             _wbMessage = why;

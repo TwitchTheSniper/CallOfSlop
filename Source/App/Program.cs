@@ -200,6 +200,13 @@ public static unsafe partial class Program
             WorkbenchSmokeTick(now); // Program.Workbench.cs
             return;
         }
+        if (ZombiesSmokeActive)
+        {
+            ZombiesSmokeTick(now); // Program.Zombies.cs
+            if (!ZombiesSmokeActive)
+                StartMoversSmoke(now); // the usual chain carries on
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -867,7 +874,7 @@ public static unsafe partial class Program
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
-            _session.Mode = _settings.Mode; // clients learn the host's mode from the server
+            _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
             if (kind == LobbyAction.Host)
@@ -993,6 +1000,7 @@ public static unsafe partial class Program
             if (_session is { } g)
             {
                 Ui.DrawHud(g, now, _joinAddress, _settings);
+                DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1140,7 +1148,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen;
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null; // (a Zombies workbench too)
 
     private static void SetMouseCaptured(bool captured)
     {
@@ -1391,6 +1399,7 @@ public static unsafe partial class Program
         if (_game.Local is { Alive: false })
             _crouchToggle = _proneToggle = false; // respawn standing
 
+        ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         var buttons = Buttons.None;
         if (_mouseCaptured)
         {
@@ -1679,6 +1688,7 @@ public static unsafe partial class Program
 
         StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
+        DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         _worldView = view;
 
         // ---- Tracers --------------------------------------------------------

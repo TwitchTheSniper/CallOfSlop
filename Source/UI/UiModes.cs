@@ -23,13 +23,19 @@ public sealed partial class Ui
         ImGui.SetNextItemWidth(260 * _scale);
         if (ImGui.BeginCombo("Game mode"u8, GameModes.Name(s.Mode)))
         {
-            foreach (var m in GameModes.All)
+            foreach (var m in GameModes.ForMap(s.MapRandom ? null : Maps.Find(s.MapName))) // Zombies only on maps made for it
                 if (ImGui.Selectable(GameModes.Name(m), m == s.Mode))
                     s.Mode = m;
             ImGui.EndCombo();
         }
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 620 * _scale);
-        ImGuiSafe.TextColored(Dim, $"{GameModes.Rules(s.Mode)} {Game.MatchSeconds / 60:0} minutes max.");
+        if (s.Mode == GameMode.Zombies)
+            ImGuiSafe.TextColored(GameModes.Fits(s.Mode, s.MapRandom ? null : Maps.Find(s.MapName)) ? Dim : Orange,
+                GameModes.Fits(s.Mode, s.MapRandom ? null : Maps.Find(s.MapName))
+                    ? GameModes.Rules(s.Mode)
+                    : "Zombies needs a Zombies map: pick one (Dev pack: Zombies Test), or it plays Free-for-all.");
+        else
+            ImGuiSafe.TextColored(Dim, $"{GameModes.Rules(s.Mode)} {Game.MatchSeconds / 60:0} minutes max.");
         ImGui.PopTextWrapPos();
     }
 
@@ -209,6 +215,8 @@ public sealed partial class Ui
     {
         if (game.Mode == GameMode.FreeForAll)
             return false;
+        if (DrawZombiesBar(game))
+            return true; // the round instead of a clock (UiZombies.cs)
         ImGui.PushFont(default, 24);
         ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
         ImGui.SameLine(0, 24 * _scale);

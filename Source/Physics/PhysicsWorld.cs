@@ -25,6 +25,7 @@ public sealed class PhysicsWorld : IWorldQuery
     private readonly Box[] _boxes;
     private readonly Vector3[] _bmin, _bmax; // each box's corners (Box.Min / Box.Max), computed once
     private readonly bool[] _isProp;
+    private readonly bool[] _isClip; // Zombies window openings (QueryLayers.Clip)
     private readonly bool[] _enabled;
     private readonly int _boxCount;
     private readonly List<Obb> _obbs = new();
@@ -101,6 +102,7 @@ public sealed class PhysicsWorld : IWorldQuery
         _bmin = new Vector3[_boxCount];
         _bmax = new Vector3[_boxCount];
         _isProp = new bool[_boxCount];
+        _isClip = new bool[_boxCount];
         _enabled = new bool[_boxCount];
         for (var i = 0; i < _boxCount; i++)
         {
@@ -108,6 +110,7 @@ public sealed class PhysicsWorld : IWorldQuery
             _bmin[i] = boxes[i].Min;
             _bmax[i] = boxes[i].Max;
             _isProp[i] = map != null && map.IsPropCollider(i);
+            _isClip[i] = map != null && map.IsClipBox(i);
             _enabled[i] = !Parked(boxes[i]);
         }
         Terrain = terrain;
@@ -238,8 +241,8 @@ public sealed class PhysicsWorld : IWorldQuery
         if (!_enabled[i])
             return false;
         var prop = _isProp[i];
-        if ((layers & (prop ? QueryLayers.Props : QueryLayers.Boxes)) == 0)
-            return false;
+        if ((layers & (_isClip[i] ? QueryLayers.Clip : prop ? QueryLayers.Props : QueryLayers.Boxes)) == 0)
+            return false; // a Zombies window opening is on its own layer (bullets pass, bodies don't)
         return ignore == null || !Ignored(ignore, prop ? ShapeKind.Prop : ShapeKind.Box, i);
     }
 

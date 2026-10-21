@@ -63,7 +63,7 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 
 ### Game modes
 
-Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode has the same 10-minute limit.
+Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode but Zombies has the same 10-minute limit.
 
 | Mode | Rules |
 | --- | --- |
@@ -72,6 +72,7 @@ Pick the mode on the Single player or Host screen. It stays the same from match 
 | **King of the Hill** | Two teams. A glowing ring marks the hill. Hold it with **only your team** inside for **1 point a second**; while both teams are in it (contested) nobody scores. The hill moves to the next zone every **60 s**. First to **150 points**. |
 | **Capture the Flag** | Two teams, a flag at each base. Touch the enemy flag to take it; bring it to **your own flag** to capture, which only works while your flag is at home. A carrier who dies drops it; a teammate touching a dropped flag sends it home, otherwise it returns by itself after **20 s**. Carriers keep their guns, and a light beam over them (and over a dropped flag) shows through walls. First to **3 captures**. |
 | **Gun Game** | Everyone starts with the same gun, the first one in the unlock order, whatever they've unlocked. Each kill moves you to the next gun; a **melee kill also sets the victim back one gun**. The first kill with the last gun wins (a melee kill on the last gun doesn't count). Loadouts, grenades, perks and kill streaks are off. The ladder is 20 guns, evenly spaced through the 50-odd weapons in unlock order. |
+| **Zombies** | Co-op for 1-4 against endless rounds of zombies (World at War style), only on maps with a Zombies layout (today the dev map **Zombies Test**). No time limit: the run ends when everyone is down. See "Zombies" below. |
 
 Team modes colour everyone blue or red (players, scoreboard, kill card). King of the Hill is played by teams. The HUD shows the hill's holder, its distance and direction and when it moves; the state of both flags; or your Gun Game weapon, the next one and the leader. The scoreboard groups players by team (or by gun level). If a player leaves and the teams end up two apart, a bot switches sides.
 
@@ -471,6 +472,15 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 - New keys: **E** interact (cart, slot station) and **3** for weapon slot 3 (slot 4 is unbound by default); the swap key and mouse wheel cycle through every slot you have.
 - Every barrel fires from its own muzzle, minigun receivers spin up, and one trigger pull counts as one hit per target (a Last Stand shield loses one charge, however many barrels hit). The standard weapons are unchanged.
 - The design (component model, rules, stat pipeline, the user's decisions, rarity tiers, run progression and drop tables, the cart, the melee slot, example builds and the open questions) is in [docs/zombies/WEAPON-BUILDER.md](docs/zombies/WEAPON-BUILDER.md).
+
+**The Zombies mode (milestone 2)** is playable on the dev map **Zombies Test**: pick that map, then the game mode **Zombies** (single player with bots, or host for up to 4).
+
+- **Rounds**: a handful of slow zombies in round 1, more and tougher every round (health +100 a round to round 9, then +10 percent), runners from round 3 and sprinters from round 5; at most 24 alive at once. A 10 s break between rounds. The round is the red tally bottom-left.
+- **Zombies** come through **boarded windows**: they tear the boards off, climb in and chase the nearest player standing, through open doors. **Hold E** at a window to put boards back (10 points each).
+- **Points** (personal): 10 a hit, 60 a kill, 100 a headshot kill, 130 a melee kill. Spend them on **doors and debris** (unlock the next area and its spawners), **wall guns** (chalk outlines; ammo if you already have it), the **mystery box** (a complete build; the teddy bear moves it), **perk machines** (Juggernog, Speed Cola, Double Tap, Quick Revive), the **weapon-slot upgrade** (2 -> 4 slots) and the **power switch** (some buyables need it). Hold E to buy; the prompt shows the price.
+- It's a **roguelite run**: you start with the Wall Rifle, the Wall Pistol and a Machete; zombies drop **parts**, salvage piles give **scrap**, and a **workbench** (E) lets you rebuild your guns with the parts you own this run, break parts down and craft new ones.
+- **Downed** at 0 health: a teammate revives you by holding E on you; you lose your perks; after 30 s you bleed out and come back next round with the start gear. Alone, Quick Revive gets you up once. Guns have **reserve ammo** in Zombies (magazine | reserve).
+- Co-op: built guns replicate to every player (protocol 18). The design, every number and the map format are in [docs/zombies/ZOMBIES-MODE.md](docs/zombies/ZOMBIES-MODE.md).
 
 ## Development and version control
 

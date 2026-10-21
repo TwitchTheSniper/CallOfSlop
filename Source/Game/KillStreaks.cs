@@ -691,7 +691,7 @@ public sealed partial class Game
     }
 
     /// <summary>Reload time multiplier (Overdrive halves it).</summary>
-    public float StreakReloadMult(Player? p, double now) => p != null && OverdriveActive(p, now) ? KillStreaks.OverdriveReloadMult : 1f;
+    public float StreakReloadMult(Player? p, double now) => (p != null && OverdriveActive(p, now) ? KillStreaks.OverdriveReloadMult : 1f) * ZombieReloadMult(p); // and Zombies' Speed Cola
 
     /// <summary>Seconds left on an effect of this kind owned by <paramref name="owner"/> (0 if none).</summary>
     public double StreakEffectLeft(StreakId kind, byte owner, double now)

@@ -18,6 +18,9 @@ public sealed class WeaponState(WeaponDef def)
 {
     public WeaponDef Def = def;
     public int Ammo = def.Mag;
+
+    /// <summary>Rounds left outside the magazine (-1: endless, every mode but Zombies).</summary>
+    public int Reserve = -1;
     public double ReloadUntil;
     public double ReloadStarted;
 }
@@ -146,6 +149,7 @@ public sealed partial class Game : IDisposable
         if (net.IsServer)
         {
             World.SetMap(Maps.Get(mapId)); // clients get the map from the server's Welcome
+            World.Map.OpenAllDoors(); // a Zombies map in another mode is one big map (the Zombies mode shuts them again)
             // Work these out now, not in a tick: generated objectives probe the map ~10 ms (first needed when match 2 starts).
             _ = World.Map.Objectives;
             _ = World.Physics;
@@ -230,6 +234,7 @@ public sealed partial class Game : IDisposable
 
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
         UpdateRenderStates((float)frameDt);
+        UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
@@ -242,7 +247,7 @@ public sealed partial class Game : IDisposable
         return new InputCmd
         {
             Seq = seq,
-            Buttons = CartInputButtons(HeldButtons), // no walking while you man a cart (GameZombies.cs)
+            Buttons = ZombieButtons(Local, CartInputButtons(HeldButtons)), // no walking while you man a cart (GameZombies.cs) or lie downed (ZombieBots.cs)
             Yaw = LookYaw,
             Pitch = LookPitch,
             Weapon = def.Id,
@@ -327,7 +332,14 @@ public sealed partial class Game : IDisposable
         var w = Active;
         if (w.ReloadUntil > 0 && now >= w.ReloadUntil)
         {
-            w.Ammo = w.Def.Mag;
+            if (w.Reserve < 0)
+                w.Ammo = w.Def.Mag;
+            else
+            {
+                var take = Math.Min(w.Def.Mag - w.Ammo, w.Reserve); // Zombies: the reload comes out of the reserve
+                w.Ammo += take;
+                w.Reserve -= take;
+            }
             w.ReloadUntil = 0;
         }
 
@@ -427,7 +439,7 @@ public sealed partial class Game : IDisposable
         var def = w.Def;
 
         w.Ammo--;
-        NextFireTime += SpooledInterval(def); // FireInterval unless the gun spools up
+        NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Double Tap
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
@@ -456,7 +468,7 @@ public sealed partial class Game : IDisposable
         {
             var o = ray.Origin;
             var d = ray.Dir;
-            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.All);
+            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots);
             foreach (var other in Players.Values)
             {
                 if (other.Id == LocalId || !other.Alive)
@@ -466,6 +478,11 @@ public sealed partial class Game : IDisposable
                     dist = t;
                     predictedHit = true;
                 }
+            }
+            if (Horde.Count > 0)
+            {
+                dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
+                predictedHit |= zHit;
             }
             AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now);
         }
@@ -480,8 +497,8 @@ public sealed partial class Game : IDisposable
     public void StartReload(double now)
     {
         var w = Active;
-        if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true })
-            return;
+        if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true } || w.Reserve == 0)
+            return; // (Zombies: no reserve left, nothing to reload with)
         w.ReloadStarted = now;
         w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now); // Overdrive halves it
         _burstLeft = 0;
@@ -610,6 +627,9 @@ public sealed partial class Game : IDisposable
             Slots[1] = new WeaponState(secondary);
             Slots[2] = new WeaponState(p.BuiltExtra[0] ?? primary); // slots 3-4 (GameCart.cs): only reachable once unlocked
             Slots[3] = new WeaponState(p.BuiltExtra[1] ?? secondary);
+            if (Mode == GameMode.Zombies)
+                for (var i = 0; i < Slots.Length; i++)
+                    Slots[i].Reserve = Slots[i].Def.Mag * ZRules.StartReserveMags; // Zombies: reserve ammo (wall ammo refills it)
             ActiveSlot = 0;
             _burstLeft = 0;
             Bloom = 0;
@@ -857,7 +877,7 @@ public sealed partial class Game : IDisposable
             }
 
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
-            if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt)
+            if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
                 Spawn(p, ServerTick, now);
                 if (p.Id == LocalId)
@@ -867,7 +887,7 @@ public sealed partial class Game : IDisposable
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw };
         }
 
-        if (Carts.Count > 0 || BuilderRange)
+        if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
             SendSnapshots();
@@ -887,6 +907,7 @@ public sealed partial class Game : IDisposable
         cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
+        cmd.Buttons = ZombieButtons(p, cmd.Buttons); // downed in Zombies: no walking (ZombieBots.cs)
         p.Yaw = cmd.Yaw;
         p.Pitch = cmd.Pitch;
         if (p.Owns(cmd.Weapon))
@@ -1130,7 +1151,7 @@ public sealed partial class Game : IDisposable
         shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
         if (shooter.ShotClock > now + 0.05)
             return;
-        shooter.ShotClock += def.FireInterval * 0.85;
+        shooter.ShotClock += def.FireInterval * 0.85 * ZombieFireIntervalMult(shooter); // Zombies' Double Tap fires faster
         shooter.LastShotTime = now;
         shooter.LastCombatTime = now;
         if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
@@ -1159,12 +1180,13 @@ public sealed partial class Game : IDisposable
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
         var ends = new List<Vector3>(rays.Count);
         var laterals = new List<Vector2>(rays.Count);
+        var zHead = false;
 
         foreach (var ray in rays)
         {
             var o = ray.Origin;
             var d = ray.Dir;
-            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.All);
+            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
@@ -1176,7 +1198,14 @@ public sealed partial class Game : IDisposable
                     turret = null;
                 }
             }
-            if (hit == null && turret == null)
+            var zombie = Horde.Count > 0 ? ZombieRayHit(o, d, ref dist, rewindTo, out zHead) : null; // Zombies (ZombieAI.cs)
+            if (zombie != null)
+            {
+                hit = null;
+                turret = null;
+                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f), zHead);
+            }
+            if (hit == null && turret == null && zombie == null)
                 ShotProps(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
             var end = o + d * dist;
             ends.Add(end);
@@ -1207,6 +1236,9 @@ public sealed partial class Game : IDisposable
             if (DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet))
                 flags |= 4;
         }
+
+        if (Horde.Count > 0)
+            flags |= ZombieShotApply(shooter, now); // one damage event per zombie per trigger pull
 
         // Host-side feedback
         if (shooter.Id == LocalId)
@@ -1472,6 +1504,15 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.CartState:
             case (byte)Msg.RunState:
                 OnCartPacket(id, ref r, sender, now); // push carts and the weapon-slot upgrade (GameCart.cs)
+                break;
+            case (byte)Msg.ZUse:
+            case (byte)Msg.ZEnts:
+            case (byte)Msg.ZWorld:
+            case (byte)Msg.ZEvent:
+            case (byte)Msg.ZRun:
+            case (byte)Msg.ZBuild:
+            case (byte)Msg.ZBench:
+                OnZombiesPacket(id, ref r, sender, now); // the Zombies mode (ZombiesNet.cs)
                 break;
             case (byte)Msg.Ready:
             case (byte)Msg.ModeState:

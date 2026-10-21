@@ -228,6 +228,8 @@ public static partial class MapFile
             sb.Append(",\n  \"foliage\": ").Append(FoliageToJson(foliage));
         if (m.Movers.Count > 0)
             sb.Append(",\n  \"movers\": ").Append(MoversToJson(m.Movers));
+        if (m.Zombies is { } zombies)
+            sb.Append(",\n  \"zombies\": ").Append(zombies.Raw); // written back as it was read (MapZombies.cs)
         sb.Append("\n}\n");
         return sb.ToString();
     }
@@ -384,6 +386,8 @@ public static partial class MapFile
                 map.Movers.AddRange(ReadMovers(movers, source));
                 CheckMoverSweeps(map, source); // before the objectives: automatic hills are picked from the waypoints
             }
+            if (Prop(root, "zombies") is { ValueKind: not JsonValueKind.Null } zombies)
+                map.Zombies = ZombiesMap.Read(zombies, map, source); // the Zombies mode: areas, doors, windows, buyables (MapZombies.cs)
             MapObjectiveJson.Read(root, map, source);
             map.CheckInsideBoundary(source);
             map.FinishProps(); // last: Clutter keeps clear of the spawns, waypoints, objectives and movers above

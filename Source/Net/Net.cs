@@ -44,6 +44,13 @@ public enum Msg : byte
     CartUse, // client -> server: the interact key + 1 byte (0 tap, 1 hold): park / man / push my push cart, buy the weapon-slot upgrade (reliable)
     CartState, // server -> all: every push cart (owner, pushed / idle / manned, position, yaw, gun aim) with snapshots while any exist (unreliable)
     RunState, // server -> one client: per-run flags (the weapon-slot upgrade) (reliable)
+    ZUse, // client -> server: Zombies: the interact key went down (1) or up (0) (reliable)
+    ZEnts, // server -> all: Zombies: every zombie (id, position, yaw, state, health) with snapshots while any exist (unreliable sequenced)
+    ZWorld, // server -> all: Zombies: round, doors, boards, mystery box, every player's points / downs / perks, parts on the floor (~10 Hz, unreliable)
+    ZEvent, // server -> one client or all: Zombies: a feed line, an ammo refill, a banner (reliable)
+    ZRun, // server -> one client: Zombies: your loose parts and scrap (reliable)
+    ZBuild, // server -> all: Zombies: a built weapon went into player X's slot (the build's text) (reliable)
+    ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, salvage a part, craft a part) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

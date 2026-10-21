@@ -96,7 +96,7 @@ public sealed partial class Game
             if (!aimed)
                 continue;
             // No hitting through walls.
-            if (toCenter.Length() > 0.3f && World.Query.Raycast(origin, Vector3.Normalize(toCenter), toCenter.Length(), QueryFilter.All) < toCenter.Length() - 0.35f)
+            if (toCenter.Length() > 0.3f && World.Query.Raycast(origin, Vector3.Normalize(toCenter), toCenter.Length(), QueryFilter.Shots) < toCenter.Length() - 0.35f)
                 continue;
             if (dist < best)
             {
@@ -118,7 +118,7 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
-        else
+        else if ((flags = ZombieMelee(attacker, origin, dir, MeleeRange, MeleeConeCos, MeleeDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
             MeleeProps(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs)
 
         if (attacker.Id == LocalId)

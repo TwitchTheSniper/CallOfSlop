@@ -330,6 +330,7 @@ public sealed partial class Game
             }
             StreakBlastEntities(owner, center, def.Radius, def.MaxDamage, now); // enemy turrets and drones too
             BlastProps(owner, center, def.Radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
+            BlastZombies(owner, center, def.Radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
         }
 
         _w.Begin(Msg.Explode).U16(proj.Id).U8((byte)proj.Kind).U8(proj.Owner).Vec(proj.Pos).U8(flags);
