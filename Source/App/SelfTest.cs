@@ -59,6 +59,7 @@ public static partial class SelfTest
             Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
+            Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
