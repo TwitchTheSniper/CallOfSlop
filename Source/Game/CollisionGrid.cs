@@ -7,8 +7,8 @@ namespace CallOfSlop;
 /// or movement step tests the few boxes nearby instead of every box on the map (big maps have well over a thousand).
 /// It gives exactly the answers of the every-box scans it replaces (same box tests, same terrain, and boxes visited in
 /// map order where the order matters).
-/// <para>Superseded by <see cref="PhysicsWorld"/> (a BVH, measured faster for rays and as fast for body checks; see the
-/// README's Physics section). Kept only for <see cref="LegacyCollision"/>, the frozen old code the "Collision parity"
+/// <para>Superseded by <see cref="PhysicsWorld"/> (a BVH: faster for rays, a little slower for tiny body checks, and it
+/// holds every shape kind, not just boxes; see the README's Physics section). Kept only for <see cref="LegacyCollision"/>, the frozen old code the "Collision parity"
 /// self-test compares the new world against (<see cref="LegacyCollision.Grid"/>).</para>
 /// </summary>
 public sealed class CollisionGrid
