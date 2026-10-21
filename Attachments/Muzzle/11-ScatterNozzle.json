@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Scatter Nozzle",
+  "slot": "Muzzle",
+  "order": 11,
+  "unlockOrder": 193,
+  "blurb": "A flared nozzle that splits every shot three ways. A shotgun nobody asked for.",
+  "pros": ["Fires 3 at once", "More damage up close"],
+  "cons": ["-55% damage per projectile", "2.2x hip spread", "-50% range"],
+  "fits": { "classes": ["Special"], "notSounds": ["Boom"] },
+  "model": "nozzle",
+  "effects": [
+    { "stat": "pellets", "set": 3 },
+    { "stat": "damage", "mul": 0.45 },
+    { "stat": "hipSpreadDeg", "mul": 2.2 },
+    { "stat": "rangeM", "mul": 0.5 }
+  ]
+}

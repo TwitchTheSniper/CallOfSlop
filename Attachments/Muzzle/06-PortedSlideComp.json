@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Ported Slide Comp",
+  "slot": "Muzzle",
+  "order": 6,
+  "unlockOrder": 85,
+  "blurb": "A chunky pistol compensator that keeps the muzzle flat between shots.",
+  "pros": ["-35% vertical recoil", "-25% first-shot kick"],
+  "cons": ["+10% draw time", "+20% camera shake"],
+  "fits": { "classes": ["Pistol"] },
+  "model": "slideComp",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.65 },
+    { "stat": "recoilFirstShot", "mul": 0.75 },
+    { "stat": "equipTime", "mul": 1.1 },
+    { "stat": "recoilShake", "mul": 1.2 }
+  ]
+}

@@ -161,7 +161,29 @@ public sealed class GunBuilder
         return mesh;
     }
 
-    private string? Att(AttachSlot slot) => Attachments.Get(slot, Attachments.Slot(_w.Kit, slot))?.Name;
+    /// <summary>The model ("look") of the attachment in a slot: its file's "model", or its name (see <see cref="Looks"/>).</summary>
+    private string? Att(AttachSlot slot) => Attachments.LookIn(_w.Kit, slot);
+
+    /// <summary>
+    /// Every attachment model the builder draws, for an attachment file's "model" key. The first ones are the names of the
+    /// attachments that shipped before "model" existed (they're still drawn by name); the rest are the newer looks.
+    /// Mirrored in tools/gunviz/gm.py.
+    /// </summary>
+    public static readonly string[] Looks =
+    [
+        "Suppressor", "Compensator", "Muzzle Brake", "Choke", "Long Barrel", "Short Barrel", "Heavy Barrel", "Vertical Grip", "Angled Grip", "Laser",
+        "Extended Mag", "Fast Mag", "Drum Mag", "Hollow Point Mag", "Light Stock", "Heavy Stock", "No Stock",
+        // muzzle
+        "flashHider", "slideComp", "longSuppressor", "fullChoke", "tankBrake", "focuser", "nozzle", "bell", "weight",
+        // barrel
+        "extendedBarrel", "snubBarrel", "slugBarrel", "quickChange", "matchBarrel", "straightPull", "overclock", "precisionBore", "sawnOff",
+        // underbarrel
+        "handstop", "bipod", "light", "foldingGrip", "gyro", "weightedGrip",
+        // magazine / ammunition
+        "shotgunDrum", "apRounds", "incendiary", "overcharged", "stripper", "fastLoader",
+        // stock
+        "pistolBrace", "holsterStock", "shoulderBrace", "collapsedStock", "cheekRiser", "recoilPad", "shellHolder",
+    ];
 
     private static float Sum(Vector3 c) => c.X + c.Y + c.Z;
 
@@ -174,6 +196,13 @@ public sealed class GunBuilder
     {
         Box(wd, wd, len, x, y, z, c, flags: flags);
         Box(wd, wd, len, x, y, z, c * 0.93f, rz: PI / 4, flags: flags);
+    }
+
+    /// <summary>A glowing ring or rod along Z (unlit, like the coils and cells).</summary>
+    private void GlowRod(float wd, float len, float x, float y, float z, Vector3 c)
+    {
+        Box(wd, wd, len, x, y, z, c, mode: 2);
+        Box(wd, wd, len, x, y, z, c, rz: PI / 4, mode: 2);
     }
 
     private GunMesh Run()
@@ -216,8 +245,19 @@ public sealed class GunBuilder
             BL += 0.08f;
         else if (barrelAtt == "Short Barrel")
             BL -= MathF.Min(0.06f, BL * 0.35f);
+        else if (barrelAtt == "extendedBarrel")
+            BL += 0.04f;
+        else if (barrelAtt == "snubBarrel")
+            BL -= MathF.Min(0.03f, BL * 0.4f);
+        else if (barrelAtt is "matchBarrel" or "precisionBore")
+            BL += 0.05f;
+        else if (barrelAtt == "sawnOff")
+        {
+            BL -= MathF.Min(0.3f, BL * 0.45f);
+            HL = MathF.Min(HL, BL * 0.7f); // the forend is cut back with it
+        }
         BL = MathF.Max(BL, MathF.Max(HL + 0.015f, 0.02f));
-        BW = p.BarrelWidth * (barrelAtt == "Heavy Barrel" ? 1.4f : 1f);
+        BW = p.BarrelWidth * (barrelAtt == "Heavy Barrel" ? 1.4f : barrelAtt is "slugBarrel" or "precisionBore" ? 1.15f : 1f);
         HH = p.HandguardHeight;
 
         // ---- Receiver ----
@@ -251,6 +291,7 @@ public sealed class GunBuilder
 
         // ---- Gas block / tube, ramrod, coils ----
         BarrelExtras(bstart);
+        BarrelAttachment(barrelAtt, bstart);
 
         // ---- Muzzle device (built in, unless an attachment is fitted) ----
         var muzzleAtt = Att(AttachSlot.Muzzle);
@@ -267,6 +308,7 @@ public sealed class GunBuilder
         var magPt = Magazine(bstart);
         _flags = 0;
         StockPart(style);
+        StockExtras();
         ReceiverExtras(style, top);
         _flags = GunPartFlags.Underbarrel;
         var support = UnderbarrelPart(ubZ, ubY, bstart);
@@ -679,8 +721,97 @@ public sealed class GunBuilder
                 Rod(BW * 0.75f * 1.7f, 0.05f, 0, _bore, z - 0.025f, Metal);
                 Rod(BW * 0.8f * 1.7f, 0.008f, 0, _bore, z - 0.012f, A);
                 return z - 0.05f;
+            case "longSuppressor":
+            {
+                const float ln = 0.26f;
+                var r = MathF.Max(BW * 1.35f, 0.026f);
+                Rod(r * 1.7f, ln, 0, _bore, z - ln / 2, Metal * 0.6f);
+                for (var i = 1; i < 6; i++)
+                    Rod(r * 1.06f * 1.7f, 0.006f, 0, _bore, z - ln * i / 6, Metal * 0.45f);
+                return z - ln;
+            }
+            case "flashHider":
+                Rod(BW * 1.4f, 0.05f, 0, _bore, z - 0.025f, Metal * 0.8f);
+                for (var i = 0; i < 3; i++)
+                    Box(BW * 1.45f, BW * 0.3f, 0.012f, 0, _bore, z - 0.014f - i * 0.013f, Dark * 0.5f);
+                return z - 0.05f;
+            case "slideComp":
+                Box(BW * 2.2f, BW * 1.9f, 0.035f, 0, _bore + BW * 0.15f, z - 0.0175f, Metal);
+                for (var i = 0; i < 3; i++)
+                    Box(BW * 1.1f, BW * 0.5f, 0.006f, 0, _bore + BW * 0.9f, z - 0.007f - i * 0.01f, Dark);
+                return z - 0.035f;
+            case "fullChoke":
+                Rod(BW * 1.3f, 0.07f, 0, _bore, z - 0.035f, Metal);
+                Rod(BW * 1.42f, 0.008f, 0, _bore, z - 0.015f, A);
+                Rod(BW * 1.42f, 0.008f, 0, _bore, z - 0.05f, A);
+                return z - 0.07f;
+            case "tankBrake":
+                Box(BW * 3.6f, BW * 1.9f, 0.09f, 0, _bore, z - 0.045f, Metal * 0.95f);
+                for (var i = 0; i < 3; i++)
+                    Box(BW * 3.7f, BW * 0.45f, 0.012f, 0, _bore, z - 0.02f - i * 0.025f, Dark);
+                return z - 0.09f;
+            case "focuser":
+                Rod(BW * 1.6f, 0.04f, 0, _bore, z - 0.02f, Metal * 0.8f);
+                GlowRod(BW * 2f, 0.008f, 0, _bore, z - 0.032f, A);
+                Box(BW, BW, 0.006f, 0, _bore, z - 0.043f, A, mode: 2); // lens
+                return z - 0.046f;
+            case "nozzle":
+                for (var i = 0; i < 3; i++)
+                    Box(BW * (1.3f + 0.4f * i), BW * (1.1f + 0.25f * i), 0.018f, 0, _bore, z - 0.009f - 0.018f * i, Metal * (0.85f - 0.05f * i));
+                return z - 0.054f;
+            case "bell":
+                for (var i = 0; i < 3; i++)
+                    Rod(BW * (1.4f + 0.5f * i), 0.02f, 0, _bore, z - 0.01f - 0.02f * i, Named("brass") * (1f - 0.06f * i));
+                return z - 0.06f;
+            case "weight":
+                Rod(BW * 2.3f, 0.05f, 0, _bore, z - 0.025f, Dark * 1.2f);
+                Rod(BW * 2.4f, 0.006f, 0, _bore, z - 0.006f, Metal);
+                return z - 0.05f;
             default:
                 return z;
+        }
+    }
+
+    /// <summary>Barrel attachments' extra parts (their length and width changes are made in <see cref="Run"/>).</summary>
+    private void BarrelAttachment(string? name, float bstart)
+    {
+        var mz = bstart - BL;
+        switch (name)
+        {
+            case "extendedBarrel":
+                Rod(BW * 1.25f, 0.008f, 0, _bore, mz + 0.004f, Metal); // thread collar
+                break;
+            case "slugBarrel":
+                Box(BW * 0.5f, 0.006f, BL * 0.8f, 0, _bore + BW * 0.55f + 0.003f, bstart - BL * 0.45f, Metal); // cantilever rib
+                break;
+            case "matchBarrel":
+                for (var i = 0; i < 3; i++)
+                    Box(BW * 1.12f, BW * 0.3f, BL * 0.15f, 0, _bore, bstart - BL * (0.3f + i * 0.2f), Dark * 0.6f); // flutes
+                break;
+            case "quickChange":
+            {
+                // carrying handle clamped to the left of the barrel, for hot swaps
+                var hx = -(BW * 0.5f + 0.03f);
+                var hz = bstart - BL * 0.3f;
+                Box(0.014f, 0.014f, 0.06f, hx, _bore + 0.006f, hz, Dark * 1.3f);
+                Box(0.03f, 0.008f, 0.008f, hx / 2, _bore + 0.006f, hz - 0.024f, Metal * 0.7f);
+                Box(0.03f, 0.008f, 0.008f, hx / 2, _bore + 0.006f, hz + 0.024f, Metal * 0.7f);
+                break;
+            }
+            case "straightPull":
+                Box(0.012f, 0.012f, 0.045f, RW * 0.5f + 0.008f, _bore + 0.004f, _back - 0.04f, Metal);
+                Box(0.02f, 0.02f, 0.02f, RW * 0.5f + 0.014f, _bore + 0.004f, _back - 0.012f, Metal * 0.8f); // T-handle
+                break;
+            case "overclock":
+                for (var i = 0; i < 3; i++)
+                    Box(BW * 2.6f, BW * 2.6f, 0.01f, 0, _bore, bstart - BL * (0.25f + 0.2f * i), A, mode: 2);
+                break;
+            case "precisionBore":
+                Rod(BW * 1.5f, 0.01f, 0, _bore, mz + 0.02f, A);
+                break;
+            case "snubBarrel":
+                Rod(BW * 1.15f, 0.006f, 0, _bore, mz + 0.003f, Metal * 0.8f); // recessed crown
+                break;
         }
     }
 
@@ -725,7 +856,42 @@ public sealed class GunBuilder
 
     // ---- Magazine -------------------------------------------------------------------------------
 
+    /// <summary>The magazine (or feed), plus the marker an ammunition attachment puts on it.</summary>
     private Vector3 Magazine(float bstart)
+    {
+        var pt = MagazineBody(bstart, out var hanging);
+        AmmoMarker(pt, hanging);
+        return pt;
+    }
+
+    /// <summary>
+    /// Ammunition attachments show on the gun: a coloured band at the top of a magazine that hangs under the gun, or a
+    /// few rounds held on the right side of the receiver (tube, top and side feeds, and guns loaded by hand).
+    /// </summary>
+    private void AmmoMarker(Vector3 pt, bool hanging)
+    {
+        var look = Att(AttachSlot.Magazine);
+        var (c, mode) = look switch
+        {
+            "apRounds" => (new Vector3(0.25f, 0.45f, 0.85f), 0),
+            "incendiary" => (new Vector3(1f, 0.35f, 0.1f), 2),
+            "overcharged" => (A, 2),
+            "stripper" => (Named("brass"), 0),
+            "fastLoader" => (Named("tan"), 0),
+            _ => (Vector3.Zero, -1),
+        };
+        if (mode < 0)
+            return;
+        if (hanging && look is not ("stripper" or "fastLoader"))
+        {
+            Box(RW * 0.75f, 0.01f, 0.032f, pt.X, pt.Y - 0.012f, pt.Z, c, mode: mode);
+            return;
+        }
+        for (var i = 0; i < 3; i++)
+            Box(0.008f, 0.012f, 0.026f, RW / 2 + 0.004f, -RH * 0.1f, _back - RL * 0.3f - i * 0.016f, c, mode: mode);
+    }
+
+    private Vector3 MagazineBody(float bstart, out bool hanging)
     {
         var mt = p.Mag;
         var att = Att(AttachSlot.Magazine);
@@ -741,6 +907,12 @@ public sealed class GunBuilder
         var ln = p.MagLength;
         if (att == "Drum Mag" && mt is "box" or "curved" or "stick" or "beltbox" or "side" or "cell" or "topbox" or "pan" or "helical")
             mt = "drum";
+        if (att == "shotgunDrum" && mt == "tube")
+        {
+            mt = "drum"; // a drum under the receiver instead of the tube, and it comes out on a reload
+            _flags = GunPartFlags.Mag;
+        }
+        hanging = mt is "box" or "curved" or "stick" or "cell" or "strip" or "drum" or "grip" or "internal" or "beltbox";
         if (att == "Fast Mag" && mt is "box" or "curved" or "stick" or "cell")
         {
             var h = ln > 0 ? ln : 0.15f * size;
@@ -789,7 +961,7 @@ public sealed class GunBuilder
             }
             case "drum":
             {
-                var r = cap < 60 || att == "Drum Mag" ? 0.13f : 0.15f;
+                var r = (cap < 60 || att == "Drum Mag" ? 0.13f : 0.15f) * (att == "Extended Mag" ? 1.12f : 1f);
                 Box(0.06f, r, r, 0, my - 0.02f - r * 0.5f, mz, c);
                 Box(0.06f, r, r, 0, my - 0.02f - r * 0.5f, mz, c * 0.92f, rx: PI / 4);
                 Box(0.066f, r * 0.3f, r * 0.3f, 0, my - 0.02f - r * 0.5f, mz, Metal * 0.6f);
@@ -870,7 +1042,7 @@ public sealed class GunBuilder
             }
             case "striker":
             {
-                var dr = 0.135f * (att == "Extended Mag" ? 1.12f : 1f);
+                var dr = 0.135f * (att == "Extended Mag" ? 1.12f : att == "shotgunDrum" ? 1.25f : 1f);
                 var dz = _front + 0.065f;
                 var dy = _bore - dr * 0.32f;
                 Rod(dr, 0.1f, 0, dy, dz, c);
@@ -920,6 +1092,28 @@ public sealed class GunBuilder
                 Box(RW * 1.1f, RH * 1.05f, ln, 0, y - 0.005f, back + ln / 2, Metal * 0.7f);
                 Box(RW * 0.9f, RH * 0.3f, ln * 0.6f, 0, y + RH * 0.55f, back + ln * 0.55f, Metal * 0.6f, flags: GunPartFlags.Comb);
                 Box(RW * 1.15f, RH * 1.15f, 0.03f, 0, y - 0.005f, back + ln, Pad);
+                return;
+            case "pistolBrace":
+                // a light wire brace off the back of the frame
+                Box(0.01f, 0.01f, 0.16f, 0, y + RH * 0.1f, back + 0.08f, Dark * 1.3f);
+                Box(0.01f, 0.01f, 0.17f, 0, y - RH * 0.9f, back + 0.075f, Dark * 1.3f, rx: 0.25f);
+                Box(RW * 0.7f, RH * 1.6f, 0.015f, 0, y - RH * 0.35f, back + 0.16f, Rubber);
+                return;
+            case "holsterStock":
+                // the old wooden holster that clips onto the grip and doubles as a shoulder stock
+                Box(RW * 0.8f, RH * 0.9f, 0.06f, 0, y - RH * 0.2f, back + 0.03f, Named("darkwood"));
+                Box(RW * 0.8f, RH * 1.3f, 0.13f, 0, y - RH * 0.45f, back + 0.115f, Named("darkwood") * 1.1f, rx: -0.2f);
+                Box(RW * 0.85f, RH * 1.4f, 0.012f, 0, y - RH * 0.55f, back + 0.185f, Dark);
+                return;
+            case "shoulderBrace":
+                Box(0.014f, 0.014f, 0.2f, 0, y + RH * 0.2f, back + 0.1f, Dark * 1.3f);
+                Box(0.014f, 0.014f, 0.2f, 0, y - RH * 0.35f, back + 0.1f, Dark * 1.3f);
+                Box(RW * 0.7f, RH * 0.85f, 0.025f, 0, y - RH * 0.07f, back + 0.2f, A * 0.8f);
+                return;
+            case "collapsedStock":
+                Box(0.012f, 0.012f, 0.07f, RW * 0.3f, y + RH * 0.2f, back + 0.035f, Dark * 1.4f);
+                Box(0.012f, 0.012f, 0.07f, -RW * 0.3f, y + RH * 0.2f, back + 0.035f, Dark * 1.4f);
+                Box(RW * 0.7f, RH * 0.9f, 0.015f, 0, y, back + 0.07f, Dark * 1.3f);
                 return;
         }
         if (st == "none")
@@ -1003,6 +1197,63 @@ public sealed class GunBuilder
             Box(RW * 0.84f, RH * 0.3f, 0.014f, 0, y + RH * 0.2f, back + ln * 0.97f, A);
     }
 
+    /// <summary>Stock attachments that add to the gun's own stock instead of replacing it: a cheek riser, a recoil pad, a shell holder.</summary>
+    private void StockExtras()
+    {
+        var att = Att(AttachSlot.Stock);
+        if (att is not ("cheekRiser" or "recoilPad" or "shellHolder"))
+            return;
+        var ln = p.StockLength;
+        var y = -RH * 0.05f;
+        var st = p.Stock;
+        var drop = p.StockDrop * PI / 180;
+        var dy = -MathF.Sin(drop) * ln * 0.5f;
+        var back = _back;
+        switch (att)
+        {
+            case "cheekRiser":
+            {
+                if (st is "bullpup" or "none")
+                {
+                    Box(RW * 0.6f, RH * 0.2f, RL * 0.22f, 0, RH * 0.42f, back - RL * 0.15f, Metal * 0.7f, flags: GunPartFlags.Comb);
+                    break;
+                }
+                // sits on whatever is highest along the middle of the stock
+                var z0 = back + ln * 0.4f;
+                var z1 = back + ln * 0.8f;
+                var seat = y;
+                foreach (var pt in _parts)
+                {
+                    if ((pt.Flags & (GunPartFlags.Top | GunPartFlags.Blend)) != 0)
+                        continue;
+                    var (lo, hi) = pt.Bounds();
+                    if (hi.X > -0.01f && lo.X < 0.01f && hi.Z > z0 && lo.Z < z1)
+                        seat = MathF.Max(seat, hi.Y);
+                }
+                Box(RW * 0.55f, RH * 0.18f, ln * 0.4f, 0, seat + RH * 0.09f, back + ln * 0.6f, Metal * 0.7f, flags: GunPartFlags.Comb);
+                break;
+            }
+            case "recoilPad":
+            {
+                var end = st switch { "none" or "bullpup" => back + 0.012f, "chassis" => back + ln * 0.92f + 0.027f, _ => back + ln + 0.012f };
+                var py = st is "none" or "bullpup" ? y - RH * 0.07f : y - 0.01f + dy * 1.6f;
+                Box(RW * 0.86f, RH * 1.1f, 0.024f, 0, py, end, Pad, rx: st is "none" or "bullpup" ? 0 : drop);
+                break;
+            }
+            case "shellHolder":
+            {
+                var sx = RW * 0.42f + 0.008f;
+                var sy = st == "bullpup" ? -RH * 0.12f : y - RH * 0.05f + dy;
+                var z0 = st is "none" or "bullpup" ? back - RL * 0.35f : back + ln * 0.35f;
+                var len = st is "none" or "bullpup" ? RL * 0.25f : ln * 0.5f;
+                Box(0.006f, 0.04f, len, sx - 0.006f, sy, z0 + len / 2, Dark * 1.2f); // carrier
+                for (var i = 0; i < 5; i++)
+                    Box(0.012f, 0.03f, 0.014f, sx, sy, z0 + len * (0.1f + i * 0.2f), ShellRed);
+                break;
+            }
+        }
+    }
+
     // ---- Receiver extras ------------------------------------------------------------------------
 
     private void ReceiverExtras(string style, float top)
@@ -1069,6 +1320,40 @@ public sealed class GunBuilder
                 Box(0.014f, 0.014f, 0.004f, 0, y - 0.02f, z - 0.037f, RedGlow, mode: 2);
                 Box(0.004f, 0.004f, 6f, 0, y - 0.02f, z - 3.04f, RedGlow, mode: 2, alpha: 0.35f, flags: GunPartFlags.Blend);
                 break;
+            case "handstop":
+            {
+                var hz = z - MathF.Min(0.05f, MathF.Max(0.01f, (z - (bstart - BL)) * 0.5f)); // in front of the hand, short of the muzzle
+                Box(0.03f, 0.022f, 0.018f, 0, y - 0.011f, hz, Metal * 0.8f, rx: 0.35f);
+                break;
+            }
+            case "bipod":
+            {
+                var bz = bstart - BL * 0.62f;
+                Box(0.009f, 0.009f, 0.15f, 0.02f, y - 0.008f, bz + 0.075f, Metal * 0.75f);
+                Box(0.009f, 0.009f, 0.15f, -0.02f, y - 0.008f, bz + 0.075f, Metal * 0.75f);
+                Box(0.05f, 0.016f, 0.022f, 0, y - 0.006f, bz, Metal * 0.6f); // hinge
+                break;
+            }
+            case "light":
+                Rod(0.026f, 0.07f, 0, y - 0.018f, z - 0.01f, Metal * 0.7f);
+                Box(0.02f, 0.02f, 0.004f, 0, y - 0.018f, z - 0.047f, new Vector3(1f, 0.95f, 0.75f), mode: 2); // lens
+                break;
+            case "foldingGrip":
+                Box(0.024f, 0.075f, 0.024f, 0, y - 0.035f, z, Metal * 0.8f, rx: 0.35f);
+                return new Vector3(0, y - 0.04f, z - 0.01f);
+            case "gyro":
+            {
+                var gz = z - MathF.Min(0.04f, MathF.Max(0.01f, (z - (bstart - BL)) * 0.5f));
+                Box(0.04f, 0.03f, 0.06f, 0, y - 0.016f, gz, Dark * 1.3f); // housing
+                Box(0.05f, 0.05f, 0.008f, 0, y - 0.045f, gz, Metal); // flywheel
+                Box(0.05f, 0.05f, 0.008f, 0, y - 0.045f, gz, Metal * 0.93f, rz: PI / 4);
+                Box(0.014f, 0.014f, 0.01f, 0, y - 0.045f, gz, A, mode: 2); // hub
+                break;
+            }
+            case "weightedGrip":
+                Box(0.04f, 0.115f, 0.04f, 0, y - 0.0575f, z, Metal * 0.65f);
+                Box(0.05f, 0.03f, 0.05f, 0, y - 0.125f, z, Dark * 1.2f); // weight
+                return new Vector3(0, y - 0.055f, z);
         }
         if (att == null)
         {

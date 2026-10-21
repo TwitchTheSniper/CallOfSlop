@@ -67,6 +67,15 @@ public sealed class AttachmentDef
     /// <summary>An optic's "sight" block: how it looks when aiming (null = the default for its optic kind).</summary>
     public SightSpec? Sight;
 
+    /// <summary>
+    /// How it's drawn on the gun: one of <see cref="GunBuilder.Looks"/> (the file's "model"), e.g. "Drum Mag" or "bipod".
+    /// Null = by its own name, which is how the shipped attachments from before "model" existed are drawn.
+    /// </summary>
+    public string? Look;
+
+    /// <summary>The model the gun builder draws for it: <see cref="Look"/>, or its name.</summary>
+    public string Model => Look ?? Name;
+
     /// <summary>The file it was loaded from, relative to the Attachments folder.</summary>
     public string? SourceFile;
 }
@@ -164,6 +173,9 @@ public static class Attachments
     public static AttachmentDef? Get(AttachSlot slot, int index) =>
         index <= 0 || index > BySlot[(int)slot].Length ? null : BySlot[(int)slot][index - 1];
 
+    /// <summary>The model ("look") drawn for the attachment in a kit's slot (see <see cref="AttachmentDef.Model"/>), or null when the slot is empty.</summary>
+    public static string? LookIn(uint kit, AttachSlot slot) => Get(slot, Slot(kit, slot))?.Model;
+
     public static AttachmentDef? Find(string name) => BySlot.SelectMany(s => s).FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Attachments that fit this weapon, in unlock order.</summary>
@@ -180,25 +192,63 @@ public static class Attachments
     private static readonly Dictionary<byte, AttachmentDef[]> _forCache = new();
 
     /// <summary>
-    /// Weapon XP to unlock everything on this gun. A typical match earns ~1,000 weapon XP for the gun
-    /// you use, so 3 attachments = ~2.7 matches and 23 attachments (a sniper with every optic) = ~7 matches.
+    /// Weapon XP to unlock everything on this gun. A typical match earns ~1,000 weapon XP for the gun you use, so the
+    /// fewest attachments (15, a derringer) take ~3.7 matches and the most (33, a sniper) ~6.9 matches.
     /// </summary>
-    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (2000 + 220 * For(w).Count) / 50 * 50; // multiple of 50
+    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (1000 + 180 * For(w).Count) / 50 * 50; // multiple of 50
 
     /// <summary>
     /// Weapon XP for the k-th attachment (in unlock order) on a gentle curve: the first few come fast,
     /// the last ones take a while. 60% of a gun's attachments needs about half its max XP.
+    /// An attachment that shipped before the bigger attachment set (<see cref="LegacyNames"/>) never needs more XP than it
+    /// used to, so nothing a player already unlocked gets locked again.
     /// </summary>
     public static int UnlockXp(WeaponDef w, AttachmentDef a)
     {
+        if (_unlockCache.TryGetValue((w.Id, a), out var cached))
+            return cached;
+        var xp = int.MaxValue;
         var list = For(w);
         for (var i = 0; i < list.Count; i++)
             if (list[i] == a)
             {
                 var f = MathF.Pow((i + 1f) / list.Count, 1.3f);
-                return Math.Min(MaxXp(w), (int)(MathF.Round(MaxXp(w) * f / 50f) * 50f)); // round to 50 XP; the last one = max
+                xp = Math.Min(MaxXp(w), (int)(MathF.Round(MaxXp(w) * f / 50f) * 50f)); // round to 50 XP; the last one = max
+                xp = Math.Min(xp, LegacyUnlockXp(w, a));
+                break;
             }
-        return int.MaxValue;
+        _unlockCache[(w.Id, a)] = xp;
+        return xp;
+    }
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<(byte, AttachmentDef), int> _unlockCache = new();
+
+    /// <summary>
+    /// The 27 attachments that shipped before the class-specific ones (2026-10). Their unlock XP is capped at what it was
+    /// then (<see cref="LegacyUnlockXp"/>), since adding attachments to a gun moves everything along its unlock curve.
+    /// </summary>
+    public static readonly string[] LegacyNames =
+    [
+        "Red Dot", "Holographic", "2.5x ACOG", "4x Scope", "8x Sniper Scope", "Pinhole Reflex", "Brick 2x Prism", "Tandem 3x Hybrid", "Variant 6x LPVO",
+        "Longshot 12x", "Suppressor", "Compensator", "Muzzle Brake", "Choke", "Long Barrel", "Short Barrel", "Heavy Barrel", "Vertical Grip", "Angled Grip",
+        "Laser", "Extended Mag", "Fast Mag", "Drum Mag", "Hollow Point Mag", "Light Stock", "Heavy Stock", "No Stock",
+    ];
+
+    /// <summary>
+    /// What a shipped-before attachment cost under the old rules: the old curve over only the legacy attachments that fit
+    /// the gun, with the old total (2000 + 220 per attachment). int.MaxValue for anything newer.
+    /// </summary>
+    public static int LegacyUnlockXp(WeaponDef w, AttachmentDef a)
+    {
+        if (!LegacyNames.Contains(a.Name, StringComparer.OrdinalIgnoreCase))
+            return int.MaxValue;
+        var old = For(w).Where(x => LegacyNames.Contains(x.Name, StringComparer.OrdinalIgnoreCase)).ToList();
+        var i = old.IndexOf(a);
+        if (i < 0)
+            return int.MaxValue;
+        var max = (2000 + 220 * old.Count) / 50 * 50;
+        var f = MathF.Pow((i + 1f) / old.Count, 1.3f);
+        return Math.Min(max, (int)(MathF.Round(max * f / 50f) * 50f));
     }
 
     // ---- Kits ---------------------------------------------------------------------------

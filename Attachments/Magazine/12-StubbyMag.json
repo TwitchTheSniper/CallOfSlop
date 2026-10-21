@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Stubby Mag",
+  "slot": "Magazine",
+  "order": 12,
+  "unlockOrder": 87,
+  "blurb": "A short rifle magazine. Lighter and quicker to swap, with fewer rounds.",
+  "pros": ["15% faster reload", "+3% speed", "8% faster to aim"],
+  "cons": ["-33% magazine"],
+  "fits": { "classes": ["AssaultRifle"] },
+  "model": "Hollow Point Mag",
+  "effects": [
+    { "stat": "mag", "mul": 0.67, "min": 5 },
+    { "stat": "reload", "mul": 0.85 },
+    { "stat": "mobility", "add": 0.03 },
+    { "stat": "adsTime", "mul": 0.92 }
+  ]
+}

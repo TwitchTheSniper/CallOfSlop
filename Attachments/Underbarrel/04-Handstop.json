@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Handstop",
+  "slot": "Underbarrel",
+  "order": 4,
+  "unlockOrder": 65,
+  "blurb": "A small stop at the front of the handguard to push against.",
+  "pros": ["-20% first-shot kick", "10% faster to aim"],
+  "cons": ["+10% horizontal recoil"],
+  "fits": { "classes": ["AssaultRifle", "SMG", "DMR"] },
+  "model": "handstop",
+  "effects": [
+    { "stat": "recoilFirstShot", "mul": 0.8 },
+    { "stat": "adsTime", "mul": 0.9 },
+    { "stat": "recoilHorizontal", "mul": 1.1 }
+  ]
+}

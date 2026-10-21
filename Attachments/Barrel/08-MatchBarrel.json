@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Match Barrel",
+  "slot": "Barrel",
+  "order": 8,
+  "unlockOrder": 197,
+  "blurb": "A fluted, hand-lapped sniper barrel. Every shot lands where the crosshair was.",
+  "pros": ["-20% aimed spread", "+15% range"],
+  "cons": ["+12% draw time", "-3% speed", "Slower to aim"],
+  "fits": { "classes": ["Sniper"] },
+  "model": "matchBarrel",
+  "effects": [
+    { "stat": "adsSpreadMult", "mul": 0.8 },
+    { "stat": "rangeM", "mul": 1.15 },
+    { "stat": "equipTime", "mul": 1.12 },
+    { "stat": "mobility", "add": -0.03 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

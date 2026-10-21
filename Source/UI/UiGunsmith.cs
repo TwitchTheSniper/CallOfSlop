@@ -170,6 +170,15 @@ public sealed partial class Ui
 
     private float2 _pickerPos;
 
+    /// <summary>Smoke test: opens the attachment showcase for any gun (a preview when it isn't in the loadout).</summary>
+    public void SmokeGunsmith(byte weaponId)
+    {
+        _nav.Reset();
+        _wsSmoke = false;
+        OpenPage(Weapons.Get(weaponId).Slot == Slot.Primary ? LoadoutPage.Primary : LoadoutPage.Secondary);
+        OpenPage(LoadoutPage.Attachments, weaponId);
+    }
+
     /// <summary>The list that opens under a slot card: Empty, then each attachment (locked ones greyed with their XP).</summary>
     private void DrawAttachmentPicker(Audio audio, WeaponDef w, uint kit, int wxp)
     {

@@ -415,6 +415,11 @@ public static class AttachmentFile
                 case "pros": a.Pros = WeaponFile.TextList(p.Value, where); break;
                 case "cons": a.Cons = WeaponFile.TextList(p.Value, where); break;
                 case "fits": fits = ReadFits(p.Value, where); break;
+                case "model":
+                    var look = WeaponFile.Text(p.Value, where);
+                    a.Look = GunBuilder.Looks.FirstOrDefault(known => known.Equals(look, StringComparison.OrdinalIgnoreCase))
+                             ?? throw new WeaponFileException($"{where}: unknown model \"{look}\". Known: {string.Join(", ", GunBuilder.Looks)}");
+                    break;
                 case "effects":
                     if (p.Value.ValueKind != JsonValueKind.Array)
                         throw new WeaponFileException($"{where}: expected a list of effects like [ {{ \"stat\": \"recoilDeg\", \"mul\": 0.8 }} ]");
@@ -423,7 +428,7 @@ public static class AttachmentFile
                         effects.Add(ReadEffect(e, $"{source}, effect #{++i}"));
                     break;
                 default:
-                    throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, slot, order, unlockOrder, author, blurb, pros, cons, fits, effects, sight");
+                    throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, slot, order, unlockOrder, author, blurb, pros, cons, fits, model, effects, sight");
             }
         }
         if (name == null || slot == null)
@@ -573,6 +578,8 @@ public static class AttachmentFile
         Rule("weapons", r.OnlyWeapons);
         Rule("notWeapons", r.NotWeapons);
         Add("fits", rules.Count == 0 ? "{}" : "{ " + string.Join(", ", rules) + " }");
+        if (a.Look != null)
+            Add("model", WeaponFile.Str(a.Look));
         var effects = a.Effects.Select(e =>
         {
             var parts = new List<string> { $"\"stat\": {WeaponFile.Str(WeaponFile.Key(e.Field))}", $"\"{e.Op}\": {(e.Op == "set" ? WeaponFile.Fmt(e.Value) : Num((float)e.Value))}" };

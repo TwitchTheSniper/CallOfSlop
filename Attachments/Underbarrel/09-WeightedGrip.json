@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Weighted Grip",
+  "slot": "Underbarrel",
+  "order": 9,
+  "unlockOrder": 185,
+  "blurb": "A vertical grip with a steel weight in the base. Rock steady and heavy.",
+  "pros": ["-22% recoil", "Recovers from recoil 20% faster"],
+  "cons": ["-7% speed", "Slower to aim", "+12% draw time"],
+  "fits": { "classes": ["AssaultRifle"] },
+  "model": "weightedGrip",
+  "effects": [
+    { "stat": "recoilDeg", "mul": 0.78 },
+    { "stat": "recoilRecovery", "mul": 1.2 },
+    { "stat": "mobility", "add": -0.07 },
+    { "stat": "adsTime", "add": 0.03 },
+    { "stat": "equipTime", "mul": 1.12 }
+  ]
+}

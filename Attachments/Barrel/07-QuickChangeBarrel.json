@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Quick-Change Barrel",
+  "slot": "Barrel",
+  "order": 7,
+  "unlockOrder": 143,
+  "blurb": "A spare barrel with its own handle. Swap it hot and get back to work.",
+  "pros": ["25% faster reload"],
+  "cons": ["-10% range", "+8% vertical recoil"],
+  "fits": { "classes": ["LMG"] },
+  "model": "quickChange",
+  "effects": [
+    { "stat": "reload", "mul": 0.75 },
+    { "stat": "rangeM", "mul": 0.9 },
+    { "stat": "recoilVertical", "mul": 1.08 }
+  ]
+}

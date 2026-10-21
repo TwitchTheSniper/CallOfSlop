@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Rifled Slug Barrel",
+  "slot": "Barrel",
+  "order": 6,
+  "unlockOrder": 187,
+  "blurb": "A rifled barrel for heavy buck-and-ball loads: fewer, bigger pellets that fly true.",
+  "pros": ["2.2x range", "-50% pellet spread", "2.4x damage per pellet"],
+  "cons": ["About a third of the pellets", "+20% recoil"],
+  "fits": { "classes": ["Shotgun"], "notWeapons": ["Slug Pump"] },
+  "model": "slugBarrel",
+  "effects": [
+    { "stat": "pellets", "mul": 0.34, "min": 1 },
+    { "stat": "damage", "mul": 2.4 },
+    { "stat": "hipSpreadDeg", "mul": 0.5 },
+    { "stat": "rangeM", "mul": 2.2 },
+    { "stat": "recoilDeg", "mul": 1.2 }
+  ]
+}

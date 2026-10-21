@@ -83,7 +83,7 @@ public struct ArmAnchorSet
 /// </summary>
 public static class ArmAnchors
 {
-    private static string? Att(WeaponDef d, AttachSlot slot) => Attachments.Get(slot, Attachments.Slot(d.Kit, slot))?.Name;
+    private static string? Att(WeaponDef d, AttachSlot slot) => Attachments.LookIn(d.Kit, slot);
 
     /// <summary>The reload animation a weapon uses.</summary>
     public static ReloadStyle StyleOf(WeaponDef d) =>

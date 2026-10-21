@@ -3,7 +3,7 @@
   "name": "Tandem 3x Hybrid",
   "slot": "Optic",
   "order": 8,
-  "unlockOrder": 14,
+  "unlockOrder": 145,
   "blurb": "Reflex sight with a 3x magnifier behind it. Circle-dot reticle with holdover ticks.",
   "pros": ["3x zoom", "Circle-dot with drop ticks", "-42% aimed spread"],
   "cons": ["Slower to aim", "-1% speed"],

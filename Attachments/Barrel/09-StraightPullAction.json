@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Straight-Pull Action",
+  "slot": "Barrel",
+  "order": 9,
+  "unlockOrder": 215,
+  "blurb": "A barrel and bolt kit that cycles with a straight pull instead of a turn. Lighter loads keep it reliable.",
+  "pros": ["+30% fire rate"],
+  "cons": ["+15% recoil", "-7% damage"],
+  "fits": { "classes": ["Sniper"] },
+  "model": "straightPull",
+  "effects": [
+    { "stat": "rpm", "mul": 1.3 },
+    { "stat": "recoilDeg", "mul": 1.15 },
+    { "stat": "damage", "mul": 0.93 }
+  ]
+}

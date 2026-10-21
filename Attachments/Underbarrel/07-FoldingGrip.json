@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Folding Grip",
+  "slot": "Underbarrel",
+  "order": 7,
+  "unlockOrder": 125,
+  "blurb": "A flip-down grip for small guns. Steadier sprays, a jumpier first shot.",
+  "pros": ["-20% vertical recoil"],
+  "cons": ["+15% first-shot kick"],
+  "fits": { "classes": ["SMG"] },
+  "model": "foldingGrip",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.8 },
+    { "stat": "recoilFirstShot", "mul": 1.15 }
+  ]
+}

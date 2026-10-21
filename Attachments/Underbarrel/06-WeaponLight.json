@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Weapon Light",
+  "slot": "Underbarrel",
+  "order": 6,
+  "unlockOrder": 45,
+  "blurb": "A compact light that helps you snap onto targets from the hip. It's a stat change: it doesn't light up the map.",
+  "pros": ["-15% hip spread"],
+  "cons": ["+8% draw time", "-1% speed"],
+  "fits": { "classes": ["Pistol", "SMG", "Shotgun"] },
+  "model": "light",
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.85 },
+    { "stat": "equipTime", "mul": 1.08 },
+    { "stat": "mobility", "add": -0.01 }
+  ]
+}

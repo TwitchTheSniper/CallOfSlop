@@ -307,6 +307,11 @@ public static unsafe partial class Program
             _smokeStepStart = now - 3.4; // the stage clock waits too
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 3 && SmokeOddGunsmithTick(now))
+        {
+            _smokeStepStart = now - 1.7; // the stage clock waits (Program.Attachments.cs)
+            return;
+        }
         switch (_smokeStage)
         {
             case 0 when t > 0.8:

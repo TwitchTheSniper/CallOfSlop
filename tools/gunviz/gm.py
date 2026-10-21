@@ -325,6 +325,10 @@ class B:
         self.box(wd, wd, length, x, y, z, c, flags=flags)
         self.box(wd, wd, length, x, y, z, mul(c, 0.93), rz=PI / 4, flags=flags)
 
+    def glow_rod(self, wd, length, x, y, z, c):
+        self.box(wd, wd, length, x, y, z, c, mode=2)
+        self.box(wd, wd, length, x, y, z, c, rz=PI / 4, mode=2)
+
     def att(self, slot):
         return self.kit.get(slot)
 
@@ -373,8 +377,17 @@ class B:
             BL += 0.08
         elif barrel_att == "Short Barrel":
             BL -= min(0.06, BL * 0.35)
+        elif barrel_att == "extendedBarrel":
+            BL += 0.04
+        elif barrel_att == "snubBarrel":
+            BL -= min(0.03, BL * 0.4)
+        elif barrel_att in ("matchBarrel", "precisionBore"):
+            BL += 0.05
+        elif barrel_att == "sawnOff":
+            BL -= min(0.3, BL * 0.45)
+            HL = min(HL, BL * 0.7)  # the forend is cut back with it
         BL = max(BL, HL + 0.015, 0.02)
-        BW = p["barrelWidth"] * (1.4 if barrel_att == "Heavy Barrel" else 1.0)
+        BW = p["barrelWidth"] * (1.4 if barrel_att == "Heavy Barrel" else 1.15 if barrel_att in ("slugBarrel", "precisionBore") else 1.0)
         self.BL, self.BW, self.HL = BL, BW, HL
         HH = p["handguardHeight"]
         self.HH = HH
@@ -413,6 +426,7 @@ class B:
         # ---- Gas block / tube, ramrod, coils ----
         self.node = "barrel"
         self.barrel_extras(bstart, BL, BW)
+        self.barrel_attachment(barrel_att, bstart, BL, BW)
 
         # ---- Muzzle device (built in, unless an attachment is fitted) ----
         self.node = "muzzle"
@@ -434,6 +448,7 @@ class B:
         # ---- Stock ----
         self.node = "stock"
         self.stock(style)
+        self.stock_extras()
 
         # ---- Extras on the receiver ----
         self.node = "receiver"
@@ -770,7 +785,80 @@ class B:
             self.rod(BW * 0.75 * 1.7, 0.05, 0, bore, z - 0.025, METAL)
             self.rod(BW * 0.8 * 1.7, 0.008, 0, bore, z - 0.012, self.A)
             return z - 0.05
+        A = self.A
+        if name == "longSuppressor":
+            ln = 0.26
+            r = max(BW * 1.35, 0.026)
+            self.rod(r * 1.7, ln, 0, bore, z - ln / 2, mul(METAL, 0.6))
+            for i in range(1, 6):
+                self.rod(r * 1.06 * 1.7, 0.006, 0, bore, z - ln * i / 6, mul(METAL, 0.45))
+            return z - ln
+        if name == "flashHider":
+            self.rod(BW * 1.4, 0.05, 0, bore, z - 0.025, mul(METAL, 0.8))
+            for i in range(3):
+                self.box(BW * 1.45, BW * 0.3, 0.012, 0, bore, z - 0.014 - i * 0.013, mul(DARK, 0.5))
+            return z - 0.05
+        if name == "slideComp":
+            self.box(BW * 2.2, BW * 1.9, 0.035, 0, bore + BW * 0.15, z - 0.0175, METAL)
+            for i in range(3):
+                self.box(BW * 1.1, BW * 0.5, 0.006, 0, bore + BW * 0.9, z - 0.007 - i * 0.01, DARK)
+            return z - 0.035
+        if name == "fullChoke":
+            self.rod(BW * 1.3, 0.07, 0, bore, z - 0.035, METAL)
+            self.rod(BW * 1.42, 0.008, 0, bore, z - 0.015, A)
+            self.rod(BW * 1.42, 0.008, 0, bore, z - 0.05, A)
+            return z - 0.07
+        if name == "tankBrake":
+            self.box(BW * 3.6, BW * 1.9, 0.09, 0, bore, z - 0.045, mul(METAL, 0.95))
+            for i in range(3):
+                self.box(BW * 3.7, BW * 0.45, 0.012, 0, bore, z - 0.02 - i * 0.025, DARK)
+            return z - 0.09
+        if name == "focuser":
+            self.rod(BW * 1.6, 0.04, 0, bore, z - 0.02, mul(METAL, 0.8))
+            self.glow_rod(BW * 2.0, 0.008, 0, bore, z - 0.032, A)
+            self.box(BW, BW, 0.006, 0, bore, z - 0.043, A, mode=2)  # lens
+            return z - 0.046
+        if name == "nozzle":
+            for i in range(3):
+                self.box(BW * (1.3 + 0.4 * i), BW * (1.1 + 0.25 * i), 0.018, 0, bore, z - 0.009 - 0.018 * i, mul(METAL, 0.85 - 0.05 * i))
+            return z - 0.054
+        if name == "bell":
+            for i in range(3):
+                self.rod(BW * (1.4 + 0.5 * i), 0.02, 0, bore, z - 0.01 - 0.02 * i, mul(COLORS["brass"], 1.0 - 0.06 * i))
+            return z - 0.06
+        if name == "weight":
+            self.rod(BW * 2.3, 0.05, 0, bore, z - 0.025, mul(DARK, 1.2))
+            self.rod(BW * 2.4, 0.006, 0, bore, z - 0.006, METAL)
+            return z - 0.05
         return z
+
+    def barrel_attachment(self, name, bstart, BL, BW):
+        """Barrel attachments' extra parts (their length and width changes are made in build)."""
+        bore, RW, A = self.bore, self.RW, self.A
+        mz = bstart - BL
+        if name == "extendedBarrel":
+            self.rod(BW * 1.25, 0.008, 0, bore, mz + 0.004, METAL)  # thread collar
+        elif name == "slugBarrel":
+            self.box(BW * 0.5, 0.006, BL * 0.8, 0, bore + BW * 0.55 + 0.003, bstart - BL * 0.45, METAL)  # cantilever rib
+        elif name == "matchBarrel":
+            for i in range(3):
+                self.box(BW * 1.12, BW * 0.3, BL * 0.15, 0, bore, bstart - BL * (0.3 + i * 0.2), mul(DARK, 0.6))  # flutes
+        elif name == "quickChange":
+            hx = -(BW * 0.5 + 0.03)
+            hz = bstart - BL * 0.3
+            self.box(0.014, 0.014, 0.06, hx, bore + 0.006, hz, mul(DARK, 1.3))
+            self.box(0.03, 0.008, 0.008, hx / 2, bore + 0.006, hz - 0.024, mul(METAL, 0.7))
+            self.box(0.03, 0.008, 0.008, hx / 2, bore + 0.006, hz + 0.024, mul(METAL, 0.7))
+        elif name == "straightPull":
+            self.box(0.012, 0.012, 0.045, RW * 0.5 + 0.008, bore + 0.004, self.back - 0.04, METAL)
+            self.box(0.02, 0.02, 0.02, RW * 0.5 + 0.014, bore + 0.004, self.back - 0.012, mul(METAL, 0.8))  # T-handle
+        elif name == "overclock":
+            for i in range(3):
+                self.box(BW * 2.6, BW * 2.6, 0.01, 0, bore, bstart - BL * (0.25 + 0.2 * i), A, mode=2)
+        elif name == "precisionBore":
+            self.rod(BW * 1.5, 0.01, 0, bore, mz + 0.02, A)
+        elif name == "snubBarrel":
+            self.rod(BW * 1.15, 0.006, 0, bore, mz + 0.003, mul(METAL, 0.8))  # recessed crown
 
     # ---- Grip -----------------------------------------------------------------------------------
 
@@ -808,6 +896,30 @@ class B:
     # ---- Magazine -------------------------------------------------------------------------------
 
     def magazine(self, bstart, BL, BW):
+        """The magazine (or feed), plus the marker an ammunition attachment puts on it."""
+        pt, hanging = self.magazine_body(bstart, BL, BW)
+        self.ammo_marker(pt, hanging)
+        return pt
+
+    def ammo_marker(self, pt, hanging):
+        look = self.att("Magazine")
+        table = {"apRounds": ((0.25, 0.45, 0.85), 0), "incendiary": ((1.0, 0.35, 0.1), 2), "overcharged": (self.A, 2),
+                 "stripper": (COLORS["brass"], 0), "fastLoader": (COLORS["tan"], 0)}
+        if look not in table:
+            return
+        c, mode = table[look]
+        RL, RH, RW = self.RL, self.RH, self.RW
+        if hanging and look not in ("stripper", "fastLoader"):
+            self.box(RW * 0.75, 0.01, 0.032, pt[0], pt[1] - 0.012, pt[2], c, mode=mode)
+            return
+        for i in range(3):
+            self.box(0.008, 0.012, 0.026, RW / 2 + 0.004, -RH * 0.1, self.back - RL * 0.3 - i * 0.016, c, mode=mode)
+
+    def magazine_body(self, bstart, BL, BW):
+        r = self._magazine_body(bstart, BL, BW)
+        return r, self._hanging
+
+    def _magazine_body(self, bstart, BL, BW):
         p, w = self.p, self.w
         RL, RH, RW, front, back, bore = self.RL, self.RH, self.RW, self.front, self.back, self.bore
         mt = p["mag"]
@@ -820,10 +932,13 @@ class B:
         mz = (back - RL * 0.3 if self.p["receiver"] == "bullpup" else front + RL * 0.22) + p["magOffset"]
         my = -RH * 0.5
         ang = p["magAngle"] * PI / 180
-        ext = 1.5 if att == "Extended Mag" else 1.0
+        ext = 1.5 if att == "Extended Mag" else 0.68 if att == "Hollow Point Mag" else 1.0  # hollow points: a short magazine
         ln = p["magLength"]
         if att == "Drum Mag" and mt in ("box", "curved", "stick", "beltbox", "side", "cell", "topbox", "pan", "helical"):
             mt = "drum"
+        if att == "shotgunDrum" and mt == "tube":
+            mt = "drum"  # a drum under the receiver instead of the tube (it comes out on a reload: Mag flag in C#)
+        self._hanging = mt in ("box", "curved", "stick", "cell", "strip", "drum", "grip", "internal", "beltbox")
         if att == "Fast Mag" and mt in ("box", "curved", "stick", "cell"):
             h = (ln if ln > 0 else 0.15 * size)
             self.box(RW * 0.55, h, depth * 0.85, -RW * 0.3, my - h / 2 * math.cos(ang), mz - h / 2 * math.sin(ang), c, rx=ang)
@@ -858,7 +973,7 @@ class B:
                 z -= seg * math.sin(a)
             return (0.0, my, mz)
         if mt == "drum":
-            r = 0.13 if cap < 60 or att == "Drum Mag" else 0.15
+            r = (0.13 if cap < 60 or att == "Drum Mag" else 0.15) * (1.12 if att == "Extended Mag" else 1.0)
             self.box(0.06, r, r, 0, my - 0.02 - r * 0.5, mz, c)
             self.box(0.06, r, r, 0, my - 0.02 - r * 0.5, mz, mul(c, 0.92), rx=PI / 4)
             self.box(0.066, r * 0.3, r * 0.3, 0, my - 0.02 - r * 0.5, mz, mul(METAL, 0.6))
@@ -921,7 +1036,7 @@ class B:
                 self.box(RW, 0.016, 0.058, 0, by + 0.005, gz, c, rx=-p["gripAngle"] * PI / 180)
             return (0.0, -RH * 0.47, self.grip_z)
         if mt == "striker":
-            dr = 0.135 * (1.12 if att == "Extended Mag" else 1.0)
+            dr = 0.135 * (1.12 if att == "Extended Mag" else 1.25 if att == "shotgunDrum" else 1.0)
             dz = front + 0.065
             dy = bore - dr * 0.32
             self.rod(dr, 0.1, 0, dy, dz, c)
@@ -964,6 +1079,26 @@ class B:
             self.box(RW * 1.1, RH * 1.05, ln, 0, y - 0.005, back + ln / 2, mul(METAL, 0.7))
             self.box(RW * 0.9, RH * 0.3, ln * 0.6, 0, y + RH * 0.55, back + ln * 0.55, mul(METAL, 0.6), flags=F_COMB)
             self.box(RW * 1.15, RH * 1.15, 0.03, 0, y - 0.005, back + ln, PAD)
+            return
+        if att == "pistolBrace":
+            self.box(0.01, 0.01, 0.16, 0, y + RH * 0.1, back + 0.08, mul(DARK, 1.3))
+            self.box(0.01, 0.01, 0.17, 0, y - RH * 0.9, back + 0.075, mul(DARK, 1.3), rx=0.25)
+            self.box(RW * 0.7, RH * 1.6, 0.015, 0, y - RH * 0.35, back + 0.16, RUBBER)
+            return
+        if att == "holsterStock":
+            self.box(RW * 0.8, RH * 0.9, 0.06, 0, y - RH * 0.2, back + 0.03, COLORS["darkwood"])
+            self.box(RW * 0.8, RH * 1.3, 0.13, 0, y - RH * 0.45, back + 0.115, mul(COLORS["darkwood"], 1.1), rx=-0.2)
+            self.box(RW * 0.85, RH * 1.4, 0.012, 0, y - RH * 0.55, back + 0.185, DARK)
+            return
+        if att == "shoulderBrace":
+            self.box(0.014, 0.014, 0.2, 0, y + RH * 0.2, back + 0.1, mul(DARK, 1.3))
+            self.box(0.014, 0.014, 0.2, 0, y - RH * 0.35, back + 0.1, mul(DARK, 1.3))
+            self.box(RW * 0.7, RH * 0.85, 0.025, 0, y - RH * 0.07, back + 0.2, mul(self.A, 0.8))
+            return
+        if att == "collapsedStock":
+            self.box(0.012, 0.012, 0.07, RW * 0.3, y + RH * 0.2, back + 0.035, mul(DARK, 1.4))
+            self.box(0.012, 0.012, 0.07, -RW * 0.3, y + RH * 0.2, back + 0.035, mul(DARK, 1.4))
+            self.box(RW * 0.7, RH * 0.9, 0.015, 0, y, back + 0.07, mul(DARK, 1.3))
             return
         if st == "none":
             if style not in ("slide", "revolver", "break", "tool"):
@@ -1029,6 +1164,46 @@ class B:
         if p["accentStyle"] == "tips":
             self.box(RW * 0.84, RH * 0.3, 0.014, 0, y + RH * 0.2, back + ln * 0.97, self.A)
 
+    def stock_extras(self):
+        """Stock attachments that add to the gun's own stock: a cheek riser, a recoil pad, a shell holder."""
+        p = self.p
+        att = self.att("Stock")
+        if att not in ("cheekRiser", "recoilPad", "shellHolder"):
+            return
+        RL, RH, RW, back = self.RL, self.RH, self.RW, self.back
+        ln = p["stockLength"]
+        y = -RH * 0.05
+        st = p["stock"]
+        drop = p["stockDrop"] * PI / 180
+        dy = -math.sin(drop) * ln * 0.5
+        if att == "cheekRiser":
+            if st in ("bullpup", "none"):
+                self.box(RW * 0.6, RH * 0.2, RL * 0.22, 0, RH * 0.42, back - RL * 0.15, mul(METAL, 0.7), flags=F_COMB)
+                return
+            z0, z1 = back + ln * 0.4, back + ln * 0.8
+            seat = y
+            for pt in self.mesh.parts:
+                if pt.flags & (F_TOP | F_BLEND):
+                    continue
+                lo, hi = pt.bounds()
+                if hi[0] > -0.01 and lo[0] < 0.01 and hi[2] > z0 and lo[2] < z1:
+                    seat = max(seat, hi[1])
+            self.box(RW * 0.55, RH * 0.18, ln * 0.4, 0, seat + RH * 0.09, back + ln * 0.6, mul(METAL, 0.7), flags=F_COMB)
+        elif att == "recoilPad":
+            end = back + 0.012 if st in ("none", "bullpup") else back + ln * 0.92 + 0.027 if st == "chassis" else back + ln + 0.012
+            flat = st in ("none", "bullpup")
+            py = y - RH * 0.07 if flat else y - 0.01 + dy * 1.6
+            self.box(RW * 0.86, RH * 1.1, 0.024, 0, py, end, PAD, rx=0.0 if flat else drop)
+        else:
+            sx = RW * 0.42 + 0.008
+            flat = st in ("none", "bullpup")
+            sy = -RH * 0.12 if st == "bullpup" else y - RH * 0.05 + dy
+            z0 = back - RL * 0.35 if flat else back + ln * 0.35
+            length = RL * 0.25 if flat else ln * 0.5
+            self.box(0.006, 0.04, length, sx - 0.006, sy, z0 + length / 2, mul(DARK, 1.2))  # carrier
+            for i in range(5):
+                self.box(0.012, 0.03, 0.014, sx, sy, z0 + length * (0.1 + i * 0.2), SHELL_RED)
+
     # ---- Receiver extras ------------------------------------------------------------------------
 
     def receiver_extras(self, style, top):
@@ -1079,6 +1254,30 @@ class B:
             self.box(0.035, 0.035, 0.07, 0, y - 0.02, z, mul(METAL, 0.7))
             self.box(0.014, 0.014, 0.004, 0, y - 0.02, z - 0.037, RED_GLOW, mode=2)
             self.box(0.004, 0.004, 6.0, 0, y - 0.02, z - 3.04, RED_GLOW, mode=2, alpha=0.35, flags=F_BLEND)
+        if att == "handstop":
+            hz = z - min(0.05, max(0.01, (z - (bstart - BL)) * 0.5))  # in front of the hand, short of the muzzle
+            self.box(0.03, 0.022, 0.018, 0, y - 0.011, hz, mul(METAL, 0.8), rx=0.35)
+        if att == "bipod":
+            bz = bstart - BL * 0.62
+            self.box(0.009, 0.009, 0.15, 0.02, y - 0.008, bz + 0.075, mul(METAL, 0.75))
+            self.box(0.009, 0.009, 0.15, -0.02, y - 0.008, bz + 0.075, mul(METAL, 0.75))
+            self.box(0.05, 0.016, 0.022, 0, y - 0.006, bz, mul(METAL, 0.6))  # hinge
+        if att == "light":
+            self.rod(0.026, 0.07, 0, y - 0.018, z - 0.01, mul(METAL, 0.7))
+            self.box(0.02, 0.02, 0.004, 0, y - 0.018, z - 0.047, (1.0, 0.95, 0.75), mode=2)  # lens
+        if att == "foldingGrip":
+            self.box(0.024, 0.075, 0.024, 0, y - 0.035, z, mul(METAL, 0.8), rx=0.35)
+            return (0.0, y - 0.04, z - 0.01)
+        if att == "gyro":
+            gz = z - min(0.04, max(0.01, (z - (bstart - BL)) * 0.5))
+            self.box(0.04, 0.03, 0.06, 0, y - 0.016, gz, mul(DARK, 1.3))  # housing
+            self.box(0.05, 0.05, 0.008, 0, y - 0.045, gz, METAL)  # flywheel
+            self.box(0.05, 0.05, 0.008, 0, y - 0.045, gz, mul(METAL, 0.93), rz=PI / 4)
+            self.box(0.014, 0.014, 0.01, 0, y - 0.045, gz, self.A, mode=2)  # hub
+        if att == "weightedGrip":
+            self.box(0.04, 0.115, 0.04, 0, y - 0.0575, z, mul(METAL, 0.65))
+            self.box(0.05, 0.03, 0.05, 0, y - 0.125, z, mul(DARK, 1.2))  # weight
+            return (0.0, y - 0.055, z)
         if att is None:
             fg = p["foregrip"]
             if fg == "vertical":
@@ -1474,7 +1673,7 @@ def apply(w, atts):
     d = dict(w)
     kit = {}
     for a in atts:
-        kit[a["slot"]] = a["name"]
+        kit[a["slot"]] = a.get("model", a["name"])  # the look the builder draws (the name for the older attachments)
         for e in a.get("effects", []):
             st = e["stat"]
             if "set" in e:
