@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Table Lamp",
+  "category": "Household",
+  "description": "A ceramic table lamp with a shade (put it on a table or the floor).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 2, "breakBy": "all", "sound": "glass", "debris": {"count": 6, "size": [0.02, 0.08], "speed": 2.5}},
+  "parts": [
+    {"size": [0.16, 0.18, 0.066], "offset": [0.0, 0.09, 0.0], "color": "#3a6a8a"},
+    {"size": [0.16, 0.18, 0.066], "offset": [0.0, 0.09, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.16, 0.18, 0.066], "offset": [0.0, 0.09, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.16, 0.18, 0.066], "offset": [0.0, 0.09, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.1, 0.06, 0.041], "offset": [0.0, 0.21, 0.0], "color": "#3a6a8a"},
+    {"size": [0.1, 0.06, 0.041], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.1, 0.06, 0.041], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.1, 0.06, 0.041], "offset": [0.0, 0.21, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#3a6a8a"},
+    {"size": [0.02, 0.1, 0.02], "offset": [0.0, 0.29, 0.0], "color": "#b89a50"},
+    {"size": [0.3, 0.2, 0.124], "offset": [0.0, 0.4, 0.0], "color": "#f0e8d0"},
+    {"size": [0.3, 0.2, 0.124], "offset": [0.0, 0.4, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#f0e8d0"},
+    {"size": [0.3, 0.2, 0.124], "offset": [0.0, 0.4, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#f0e8d0"},
+    {"size": [0.3, 0.2, 0.124], "offset": [0.0, 0.4, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#f0e8d0"},
+    {"size": [0.24, 0.005, 0.099], "offset": [0.0, 0.502, 0.0], "color": "#fff8e0"},
+    {"size": [0.24, 0.005, 0.099], "offset": [0.0, 0.502, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#fff8e0"},
+    {"size": [0.24, 0.005, 0.099], "offset": [0.0, 0.502, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#fff8e0"},
+    {"size": [0.24, 0.005, 0.099], "offset": [0.0, 0.502, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#fff8e0"}
+  ]
+}

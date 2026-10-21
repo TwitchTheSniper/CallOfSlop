@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cat",
+  "category": "Misc",
+  "description": "A ginger cat sitting and watching.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "parts": [
+    {"size": [0.32, 0.16, 0.16], "offset": [0.0, 0.08, 0.0], "color": "#d08030"},
+    {"size": [0.14, 0.22, 0.14], "offset": [0.1, 0.19, 0.0], "color": "#d08030"},
+    {"size": [0.13, 0.12, 0.13], "offset": [0.13, 0.34, 0.0], "color": "#d08030"},
+    {"size": [0.04, 0.05, 0.03], "offset": [0.13, 0.425, 0.04], "color": "#d08030"},
+    {"size": [0.04, 0.05, 0.03], "offset": [0.13, 0.425, -0.04], "color": "#d08030"},
+    {"size": [0.02, 0.02, 0.006], "offset": [0.195, 0.35, 0.03], "color": "#30a040"},
+    {"size": [0.02, 0.02, 0.006], "offset": [0.195, 0.35, -0.03], "color": "#30a040"},
+    {"size": [0.02, 0.03, 0.02], "offset": [0.2, 0.325, 0.0], "color": "#e09080"},
+    {"size": [0.06, 0.03, 0.08], "offset": [0.17, 0.015, 0.0], "color": "white"},
+    {"size": [0.24, 0.035, 0.035], "offset": [-0.2, 0.02, 0.08], "rotation": [0.0, -30.0, 0.0], "color": "#d08030"},
+    {"size": [0.02, 0.02, 0.17], "offset": [0.0, 0.09, 0.0], "color": "#a05a20"}
+  ]
+}

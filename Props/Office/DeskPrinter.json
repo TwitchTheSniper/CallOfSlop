@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Desk Printer",
+  "category": "Office",
+  "description": "An inkjet printer with paper in the tray.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "yawJitter": 20},
+  "breakable": {"health": 15, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.03, 0.1], "speed": 3}},
+  "parts": [
+    {"size": [0.44, 0.2, 0.36], "offset": [0.0, 0.1, 0.0], "color": "#3a3a3e"},
+    {"size": [0.38, 0.02, 0.2], "offset": [0.0, 0.21, -0.04], "color": "#2a2a2e"},
+    {"size": [0.3, 0.004, 0.22], "offset": [0.0, 0.26, -0.14], "rotation": [-30.0, 0.0, 0.0], "color": "white"},
+    {"size": [0.3, 0.004, 0.18], "offset": [0.0, 0.082, 0.24], "color": "white"},
+    {"size": [0.34, 0.02, 0.14], "offset": [0.0, 0.07, 0.22], "color": "#2a2a2e"},
+    {"size": [0.04, 0.01, 0.01], "offset": [0.16, 0.175, 0.182], "color": "#30f060"}
+  ]
+}

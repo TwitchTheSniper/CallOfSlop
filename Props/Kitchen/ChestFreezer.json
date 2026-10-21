@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Chest Freezer",
+  "category": "Kitchen",
+  "description": "A big white chest freezer. Waist-high cover.",
+  "collision": "solid",
+  "collider": [{"size": [1.22, 0.94, 0.71], "offset": [0.0, 0.47, 0.01]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 280, "breakBy": "all", "sound": "metal", "debris": {"count": 16, "size": [0.06, 0.35], "speed": 3.5}},
+  "parts": [
+    {"size": [1.2, 0.82, 0.65], "offset": [0.0, 0.45, 0.0], "color": "#f0f0ec", "material": "metal"},
+    {"size": [1.22, 0.08, 0.67], "offset": [0.0, 0.9, 0.0], "color": "#e4e4e0"},
+    {"size": [0.3, 0.04, 0.05], "offset": [0.0, 0.86, 0.345], "color": "#888888"},
+    {"size": [0.06, 0.03, 0.005], "offset": [0.45, 0.715, 0.328], "color": "#30f060"},
+    {"size": [1.16, 0.04, 0.61], "offset": [0.0, 0.02, 0.0], "color": "#333333"}
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Garden Shed",
+  "category": "Garden",
+  "description": "A wooden garden shed with a felt roof. Big, solid cover.",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 2.1, 1.84], "offset": [0.0, 1.05, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 3},
+  "breakable": {"health": 450, "breakBy": ["explosions", "streaks"], "sound": "wood", "debris": {"count": 24, "size": [0.1, 0.7], "speed": 4}},
+  "parts": [
+    {"size": [2.2, 0.12, 1.8], "offset": [0.0, 0.06, 0.0], "color": "#5a4428"},
+    {"size": [2.2, 1.88, 1.8], "offset": [0.0, 1.06, 0.0], "color": "#7a5a38", "material": "wood", "texScale": 2},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 0.31, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 0.51, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 0.71, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 0.91, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 1.11, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 1.31, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 1.51, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 1.71, 0.0], "color": "#6a4c2e"},
+    {"size": [2.21, 0.02, 1.81], "offset": [0.0, 1.91, 0.0], "color": "#6a4c2e"},
+    {"size": [2.5, 0.05, 1.2], "offset": [0.0, 2.25, 0.53], "rotation": [29.0, 0.0, 0.0], "color": "#2a2a2c"},
+    {"size": [2.5, 0.05, 1.2], "offset": [0.0, 2.25, -0.53], "rotation": [-29.0, 0.0, 0.0], "color": "#2a2a2c"},
+    {"size": [2.2, 0.5, 0.9], "offset": [0.0, 2.25, 0.0], "color": "#7a5a38"},
+    {"size": [0.8, 1.7, 0.03], "offset": [-0.4, 1.0, 0.91], "color": "#8a6a44", "material": "wood"},
+    {"size": [0.04, 0.04, 0.05], "offset": [-0.1, 0.97, 0.93], "color": "#222222"},
+    {"size": [0.6, 0.45, 0.03], "offset": [0.55, 1.225, 0.91], "color": "#a8c0c8"},
+    {"size": [0.66, 0.05, 0.05], "offset": [0.55, 1.005, 0.92], "color": "white"},
+    {"size": [0.04, 0.45, 0.04], "offset": [0.55, 1.225, 0.92], "color": "white"}
+  ]
+}

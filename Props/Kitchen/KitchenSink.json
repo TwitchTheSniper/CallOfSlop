@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Kitchen Sink",
+  "category": "Kitchen",
+  "description": "A kitchen unit with a steel sink, washing-up liquid and plates.",
+  "collision": "solid",
+  "collider": [{"size": [1.22, 0.9, 0.62]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 2},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.05, 0.35], "speed": 3.5, "colors": ["#f0ece0", "#4a4a4e", "#2a2a2a"]}},
+  "parts": [
+    {"size": [1.2, 0.78, 0.58], "offset": [0.0, 0.49, -0.02], "color": "#f0ece0"},
+    {"size": [1.16, 0.1, 0.52], "offset": [0.0, 0.05, -0.04], "color": "#2a2a2a"},
+    {"size": [1.22, 0.04, 0.62], "offset": [0.0, 0.88, 0.0], "color": "#4a4a4e", "material": "tiles", "texScale": 2},
+    {"size": [0.58, 0.6, 0.02], "offset": [-0.3, 0.42, 0.28], "color": "#e8e4d8"},
+    {"size": [0.12, 0.02, 0.03], "offset": [-0.3, 0.63, 0.3], "color": "chrome"},
+    {"size": [0.58, 0.6, 0.02], "offset": [0.3, 0.42, 0.28], "color": "#e8e4d8"},
+    {"size": [0.12, 0.02, 0.03], "offset": [0.3, 0.63, 0.3], "color": "chrome"},
+    {"size": [1.18, 0.1, 0.02], "offset": [0.0, 0.79, 0.28], "color": "#e0dccf"},
+    {"size": [0.5, 0.005, 0.4], "offset": [-0.2, 0.902, 0.0], "color": "#b8bcc0"},
+    {"size": [0.44, 0.004, 0.34], "offset": [-0.2, 0.908, 0.0], "color": "#8a8e94"},
+    {"size": [0.03, 0.22, 0.03], "offset": [-0.2, 1.01, -0.24], "color": "chrome"},
+    {"size": [0.03, 0.03, 0.16], "offset": [-0.2, 1.115, -0.17], "color": "chrome"},
+    {"size": [0.2, 0.1, 0.06], "offset": [0.35, 0.95, -0.18], "color": "#3080d0"},
+    {"size": [0.24, 0.015, 0.099], "offset": [0.35, 0.907, 0.08], "color": "white"},
+    {"size": [0.24, 0.015, 0.099], "offset": [0.35, 0.907, 0.08], "rotation": [0.0, 45.0, 0.0], "color": "white"},
+    {"size": [0.24, 0.015, 0.099], "offset": [0.35, 0.907, 0.08], "rotation": [0.0, 90.0, 0.0], "color": "white"},
+    {"size": [0.24, 0.015, 0.099], "offset": [0.35, 0.907, 0.08], "rotation": [0.0, 135.0, 0.0], "color": "white"},
+    {"size": [0.22, 0.015, 0.091], "offset": [0.35, 0.922, 0.08], "color": "white"},
+    {"size": [0.22, 0.015, 0.091], "offset": [0.35, 0.922, 0.08], "rotation": [0.0, 45.0, 0.0], "color": "white"},
+    {"size": [0.22, 0.015, 0.091], "offset": [0.35, 0.922, 0.08], "rotation": [0.0, 90.0, 0.0], "color": "white"},
+    {"size": [0.22, 0.015, 0.091], "offset": [0.35, 0.922, 0.08], "rotation": [0.0, 135.0, 0.0], "color": "white"}
+  ]
+}

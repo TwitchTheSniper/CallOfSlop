@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mallard Duck",
+  "category": "Misc",
+  "description": "A drake mallard sitting on the ground.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 45,
+  "parts": [
+    {"size": [0.42, 0.18, 0.24], "offset": [0.0, 0.14, 0.0], "color": "#8a8a86"},
+    {"size": [0.34, 0.06, 0.2], "offset": [0.0, 0.06, 0.0], "color": "#8a8a86"},
+    {"size": [0.14, 0.16, 0.12], "offset": [0.16, 0.27, 0.0], "color": "#1e5a2e"},
+    {"size": [0.13, 0.12, 0.12], "offset": [0.2, 0.36, 0.0], "color": "#1e5a2e"},
+    {"size": [0.1, 0.03, 0.07], "offset": [0.3, 0.35, 0.0], "color": "#e0c030"},
+    {"size": [0.025, 0.025, 0.006], "offset": [0.23, 0.39, 0.061], "color": "#111111"},
+    {"size": [0.025, 0.025, 0.006], "offset": [0.23, 0.39, -0.061], "color": "#111111"},
+    {"size": [0.12, 0.08, 0.16], "offset": [-0.24, 0.2, 0.0], "rotation": [0.0, 0.0, -30.0], "color": "#222222"},
+    {"size": [0.28, 0.1, 0.02], "offset": [-0.03, 0.18, 0.125], "rotation": [0.0, 0.0, 8.0], "color": "#5a4a3a"},
+    {"size": [0.28, 0.1, 0.02], "offset": [-0.03, 0.18, -0.125], "rotation": [0.0, 0.0, 8.0], "color": "#5a4a3a"},
+    {"size": [0.145, 0.02, 0.125], "offset": [0.17, 0.30000000000000004, 0.0], "color": "white"},
+    {"size": [0.03, 0.03, 0.03], "offset": [0.03, 0.015, 0.05], "color": "#f08020"},
+    {"size": [0.03, 0.03, 0.03], "offset": [0.03, 0.015, -0.05], "color": "#f08020"},
+    {"size": [0.12, 0.04, 0.2], "offset": [-0.05, 0.1, 0.0], "color": "#6a4a3a"}
+  ]
+}

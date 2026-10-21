@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fish Tank",
+  "category": "Household",
+  "description": "An aquarium on a cabinet, with fish.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 1.28, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 8, "breakBy": "all", "sound": "glass", "debris": {"count": 20, "size": [0.03, 0.15], "speed": 4, "colors": ["#5aa0c0", "#a0d0e0", "#2a2a2c", "#f08020"]}},
+  "parts": [
+    {"size": [1.0, 0.75, 0.42], "offset": [0.0, 0.375, 0.0], "color": "#2a2a2c", "material": "wood"},
+    {"size": [0.46, 0.6, 0.01], "offset": [-0.24, 0.38, 0.21], "color": "#3a3a3c"},
+    {"size": [0.46, 0.6, 0.01], "offset": [0.24, 0.38, 0.21], "color": "#3a3a3c"},
+    {"size": [1.0, 0.04, 0.42], "offset": [0.0, 0.77, 0.0], "color": "#111111"},
+    {"size": [0.96, 0.46, 0.38], "offset": [0.0, 1.02, 0.0], "color": "#5aa0c0"},
+    {"size": [1.0, 0.03, 0.42], "offset": [0.0, 1.265, 0.0], "color": "#111111"},
+    {"size": [0.9, 0.04, 0.34], "offset": [0.0, 0.81, 0.0], "color": "#d8c8a0"},
+    {"size": [0.04, 0.2, 0.04], "offset": [-0.3, 0.93, -0.08], "color": "#2a7a3a"},
+    {"size": [0.04, 0.26, 0.04], "offset": [-0.25, 0.96, -0.1], "color": "#3a8a3a"},
+    {"size": [0.08, 0.04, 0.02], "offset": [0.1, 1.02, 0.05], "color": "#f08020"},
+    {"size": [0.06, 0.03, 0.02], "offset": [0.25, 0.935, -0.05], "color": "#f0d040"},
+    {"size": [0.1, 0.08, 0.08], "offset": [0.3, 0.87, -0.05], "color": "#7a7a7a"}
+  ]
+}

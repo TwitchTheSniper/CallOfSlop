@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "TV Stand",
+  "category": "Household",
+  "description": "A low media unit with a flat-screen TV and a games console.",
+  "collision": "solid",
+  "collider": [{"size": [1.42, 1.34, 0.44]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.04, 0.3], "speed": 3.5, "colors": ["#2a2a2c", "#141416", "#1e2a3a", "#e8e8e8"]}},
+  "parts": [
+    {"size": [1.4, 0.45, 0.42], "offset": [0.0, 0.275, 0.0], "color": "#2a2a2c", "material": "wood"},
+    {"size": [1.42, 0.03, 0.44], "offset": [0.0, 0.515, 0.0], "color": "#1c1c1e"},
+    {"size": [0.42, 0.32, 0.01], "offset": [-0.46, 0.26, 0.212], "color": "#3a3a3e"},
+    {"size": [0.42, 0.32, 0.01], "offset": [0.46, 0.26, 0.212], "color": "#3a3a3e"},
+    {"size": [0.4, 0.08, 0.3], "offset": [0.0, 0.16, 0.02], "color": "#111111"},
+    {"size": [0.04, 0.01, 0.01], "offset": [0.12, 0.175, 0.172], "color": "#30c030"},
+    {"size": [0.36, 0.06, 0.26], "offset": [0.0, 0.28, 0.02], "color": "#e8e8e8"},
+    {"size": [0.05, 0.05, 0.05], "offset": [-0.655, 0.025, -0.165], "color": "#111111"},
+    {"size": [0.05, 0.05, 0.05], "offset": [-0.655, 0.025, 0.165], "color": "#111111"},
+    {"size": [0.05, 0.05, 0.05], "offset": [0.655, 0.025, -0.165], "color": "#111111"},
+    {"size": [0.05, 0.05, 0.05], "offset": [0.655, 0.025, 0.165], "color": "#111111"},
+    {"size": [0.3, 0.02, 0.2], "offset": [0.0, 0.54, 0.0], "color": "#111111"},
+    {"size": [0.06, 0.12, 0.04], "offset": [0.0, 0.61, -0.02], "color": "#111111"},
+    {"size": [1.25, 0.72, 0.05], "offset": [0.0, 0.98, -0.02], "color": "#141416"},
+    {"size": [1.19, 0.66, 0.005], "offset": [0.0, 0.98, 0.008], "color": "#1e2a3a"}
+  ]
+}

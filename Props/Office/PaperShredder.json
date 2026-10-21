@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Paper Shredder",
+  "category": "Office",
+  "description": "A bin-style paper shredder, half full.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 18, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.02, 0.08], "speed": 3, "colors": ["#2a2a2e", "white", "paper"]}},
+  "parts": [
+    {"size": [0.36, 0.5, 0.26], "offset": [0.0, 0.25, 0.0], "color": "#2a2a2e"},
+    {"size": [0.38, 0.12, 0.28], "offset": [0.0, 0.56, 0.0], "color": "#1a1a1e"},
+    {"size": [0.24, 0.005, 0.01], "offset": [0.0, 0.622, 0.0], "color": "black"},
+    {"size": [0.04, 0.02, 0.04], "offset": [0.12, 0.63, 0.06], "color": "#30f060"},
+    {"size": [0.34, 0.35, 0.005], "offset": [0.0, 0.235, 0.13], "color": "#8a9aa8"},
+    {"size": [0.02, 0.01, 0.12], "offset": [0.072, 0.065, 0.06], "rotation": [0.0, -13.928, 0.0], "color": "white"},
+    {"size": [0.02, 0.01, 0.12], "offset": [-0.062, 0.105, 0.06], "rotation": [0.0, 25.804, 0.0], "color": "white"},
+    {"size": [0.02, 0.01, 0.12], "offset": [-0.092, 0.145, 0.06], "rotation": [0.0, -1.901, 0.0], "color": "white"},
+    {"size": [0.02, 0.01, 0.12], "offset": [0.014, 0.185, 0.06], "rotation": [0.0, 8.907, 0.0], "color": "white"},
+    {"size": [0.02, 0.01, 0.12], "offset": [-0.085, 0.225, 0.06], "rotation": [0.0, 10.452, 0.0], "color": "white"},
+    {"size": [0.02, 0.01, 0.12], "offset": [0.0, 0.265, 0.06], "rotation": [0.0, 28.09, 0.0], "color": "white"}
+  ]
+}

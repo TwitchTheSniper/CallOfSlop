@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hose Reel",
+  "category": "Garden",
+  "description": "A garden hose on a green reel.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 20, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.03, 0.12], "speed": 3}},
+  "parts": [
+    {"size": [0.04, 0.5, 0.04], "offset": [-0.2, 0.25, 0.0], "color": "#3a8a3a"},
+    {"size": [0.04, 0.5, 0.04], "offset": [0.2, 0.25, 0.0], "color": "#3a8a3a"},
+    {"size": [0.44, 0.04, 0.3], "offset": [0.0, 0.02, 0.0], "color": "#2e7a2e"},
+    {"size": [0.03, 0.42, 0.174], "offset": [-0.15, 0.36, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [-0.15, 0.36, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [-0.15, 0.36, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [-0.15, 0.36, 0.0], "rotation": [135.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [0.15, 0.36, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [0.15, 0.36, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [0.15, 0.36, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.03, 0.42, 0.174], "offset": [0.15, 0.36, 0.0], "rotation": [135.0, 0.0, 0.0], "color": "#3a8a3a"},
+    {"size": [0.27, 0.32, 0.133], "offset": [0.0, 0.36, 0.0], "color": "#e0c020"},
+    {"size": [0.27, 0.32, 0.133], "offset": [0.0, 0.36, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "#e0c020"},
+    {"size": [0.27, 0.32, 0.133], "offset": [0.0, 0.36, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#e0c020"},
+    {"size": [0.27, 0.32, 0.133], "offset": [0.0, 0.36, 0.0], "rotation": [135.0, 0.0, 0.0], "color": "#e0c020"},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.24, 0.36, 0.0], "color": "#2e7a2e"},
+    {"size": [0.04, 0.04, 0.6], "offset": [0.05, 0.03, 0.35], "rotation": [0.0, 20.0, 0.0], "color": "#e0c020"},
+    {"size": [0.04, 0.04, 0.4], "offset": [0.2, 0.03, 0.75], "rotation": [0.0, 60.0, 0.0], "color": "#e0c020"},
+    {"size": [0.06, 0.06, 0.1], "offset": [0.38, 0.03, 0.86], "color": "#3a8a3a"}
+  ]
+}

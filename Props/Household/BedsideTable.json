@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bedside Table",
+  "category": "Household",
+  "description": "A small bedside cabinet with a lamp and a book.",
+  "collision": "solid",
+  "collider": [{"size": [0.47, 0.58, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
+  "breakable": {"health": 45, "breakBy": "all", "sound": "wood", "debris": {"count": 10, "size": [0.04, 0.2], "speed": 3}},
+  "parts": [
+    {"size": [0.45, 0.5, 0.4], "offset": [0.0, 0.3, 0.0], "color": "#a07a50", "material": "wood"},
+    {"size": [0.47, 0.03, 0.42], "offset": [0.0, 0.565, 0.0], "color": "#8a6440"},
+    {"size": [0.41, 0.18, 0.02], "offset": [0.0, 0.39, 0.205], "color": "#b08a5a"},
+    {"size": [0.06, 0.03, 0.03], "offset": [0.0, 0.395, 0.225], "color": "chrome"},
+    {"size": [0.04, 0.05, 0.04], "offset": [-0.195, 0.025, -0.17], "color": "#6a4a2e"},
+    {"size": [0.04, 0.05, 0.04], "offset": [-0.195, 0.025, 0.17], "color": "#6a4a2e"},
+    {"size": [0.04, 0.05, 0.04], "offset": [0.195, 0.025, -0.17], "color": "#6a4a2e"},
+    {"size": [0.04, 0.05, 0.04], "offset": [0.195, 0.025, 0.17], "color": "#6a4a2e"},
+    {"size": [0.12, 0.02, 0.05], "offset": [-0.1, 0.59, -0.05], "color": "#444444"},
+    {"size": [0.12, 0.02, 0.05], "offset": [-0.1, 0.59, -0.05], "rotation": [0.0, 45.0, 0.0], "color": "#444444"},
+    {"size": [0.12, 0.02, 0.05], "offset": [-0.1, 0.59, -0.05], "rotation": [0.0, 90.0, 0.0], "color": "#444444"},
+    {"size": [0.12, 0.02, 0.05], "offset": [-0.1, 0.59, -0.05], "rotation": [0.0, 135.0, 0.0], "color": "#444444"},
+    {"size": [0.02, 0.2, 0.02], "offset": [-0.1, 0.7, -0.05], "color": "#444444"},
+    {"size": [0.2, 0.15, 0.083], "offset": [-0.1, 0.855, -0.05], "color": "#e8dcc0"},
+    {"size": [0.2, 0.15, 0.083], "offset": [-0.1, 0.855, -0.05], "rotation": [0.0, 45.0, 0.0], "color": "#e8dcc0"},
+    {"size": [0.2, 0.15, 0.083], "offset": [-0.1, 0.855, -0.05], "rotation": [0.0, 90.0, 0.0], "color": "#e8dcc0"},
+    {"size": [0.2, 0.15, 0.083], "offset": [-0.1, 0.855, -0.05], "rotation": [0.0, 135.0, 0.0], "color": "#e8dcc0"},
+    {"size": [0.15, 0.03, 0.2], "offset": [0.12, 0.595, 0.05], "rotation": [0.0, -12.0, 0.0], "color": "#2a4a7a"}
+  ]
+}

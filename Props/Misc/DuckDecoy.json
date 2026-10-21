@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Duck Decoy",
+  "category": "Misc",
+  "description": "A carved and painted wooden mallard decoy.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 40,
+  "breakable": {"health": 5, "breakBy": "all", "sound": "wood", "debris": {"count": 6, "size": [0.02, 0.08], "speed": 2.5}},
+  "parts": [
+    {"size": [0.378, 0.162, 0.216], "offset": [0.0, 0.129, 0.0], "color": "#6a5a48"},
+    {"size": [0.306, 0.054, 0.18], "offset": [0.0, 0.056999999999999995, 0.0], "color": "#6a5a48"},
+    {"size": [0.126, 0.144, 0.108], "offset": [0.144, 0.246, 0.0], "color": "#2a5a3a"},
+    {"size": [0.117, 0.108, 0.108], "offset": [0.18, 0.32699999999999996, 0.0], "color": "#2a5a3a"},
+    {"size": [0.09, 0.027, 0.063], "offset": [0.27, 0.31799999999999995, 0.0], "color": "#d8c040"},
+    {"size": [0.023, 0.023, 0.005], "offset": [0.207, 0.354, 0.055], "color": "#111111"},
+    {"size": [0.023, 0.023, 0.005], "offset": [0.207, 0.354, -0.055], "color": "#111111"},
+    {"size": [0.108, 0.072, 0.144], "offset": [-0.216, 0.183, 0.0], "rotation": [0.0, 0.0, -30.0], "color": "#2a2a2a"},
+    {"size": [0.252, 0.09, 0.018], "offset": [-0.027, 0.165, 0.113], "rotation": [0.0, 0.0, 8.0], "color": "#4a3a2a"},
+    {"size": [0.252, 0.09, 0.018], "offset": [-0.027, 0.165, -0.113], "rotation": [0.0, 0.0, 8.0], "color": "#4a3a2a"},
+    {"size": [0.131, 0.018, 0.113], "offset": [0.153, 0.273, 0.0], "color": "white"},
+    {"size": [0.32, 0.03, 0.18], "offset": [0.0, 0.015, 0.0], "color": "#4a3a2a"}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Rug",
+  "category": "Household",
+  "description": "A big patterned rug (flat).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "fadeDistance": 60,
+  "parts": [
+    {"size": [2.4, 0.008, 1.6], "offset": [0.0, 0.004, 0.0], "color": "#3a2a4a"},
+    {"size": [2.28, 0.003, 1.48], "offset": [0.0, 0.009, 0.0], "color": "#8a2a2a"},
+    {"size": [0.72, 0.002, 0.72], "offset": [0.0, 0.012, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3a2a4a"},
+    {"size": [0.384, 0.002, 0.384], "offset": [0.0, 0.014, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#d8c8a0"},
+    {"size": [0.02, 0.004, 1.6], "offset": [-1.22, 0.002, 0.0], "color": "#e0d8c0"},
+    {"size": [0.02, 0.004, 1.6], "offset": [1.22, 0.002, 0.0], "color": "#e0d8c0"}
+  ]
+}

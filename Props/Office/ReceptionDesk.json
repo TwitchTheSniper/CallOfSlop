@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Reception Desk",
+  "category": "Office",
+  "description": "A reception counter with a computer behind it.",
+  "collision": "solid",
+  "collider": [{"size": [2.5, 1.09, 0.76], "offset": [0.0, 0.545, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 2},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "wood", "debris": {"count": 18, "size": [0.06, 0.45], "speed": 3.5}},
+  "parts": [
+    {"size": [2.4, 1.05, 0.12], "offset": [0.0, 0.525, 0.3], "color": "#e8e4dc"},
+    {"size": [2.5, 0.04, 0.32], "offset": [0.0, 1.07, 0.26], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.12, 1.05, 0.7], "offset": [-1.14, 0.525, 0.0], "color": "#e8e4dc"},
+    {"size": [0.12, 1.05, 0.7], "offset": [1.14, 0.525, 0.0], "color": "#e8e4dc"},
+    {"size": [2.2, 0.04, 0.6], "offset": [0.0, 0.74, -0.02], "color": "#d8ccb0"},
+    {"size": [2.4, 0.18, 0.01], "offset": [0.0, 0.69, 0.365], "color": "#3a5a8a"},
+    {"size": [0.5, 0.32, 0.03], "offset": [-0.4, 0.94, -0.05], "color": "#18181a"},
+    {"size": [0.46, 0.28, 0.005], "offset": [-0.4, 0.94, -0.034], "color": "#2a4a6a"},
+    {"size": [0.2, 0.08, 0.12], "offset": [0.6, 1.13, 0.26], "color": "#c8b070"},
+    {"size": [0.08, 0.02, 0.06], "offset": [0.3, 1.1, 0.24], "color": "#222222"}
+  ]
+}

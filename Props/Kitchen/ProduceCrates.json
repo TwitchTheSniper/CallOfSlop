@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Produce Crates",
+  "category": "Kitchen",
+  "description": "Stacked crates of tomatoes, oranges, limes and lemons.",
+  "collision": "solid",
+  "collider": [{"size": [0.64, 0.9, 0.44], "offset": [0.01, 0.45, 0.01]}, {"size": [0.64, 0.34, 0.46], "offset": [0.64, 0.17, 0.05]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "wood", "debris": {"count": 18, "size": [0.04, 0.25], "speed": 3.5, "colors": ["#c8a070", "#c02a20", "#f08a20", "#5aa030"]}},
+  "parts": [
+    {"size": [0.6, 0.26, 0.4], "offset": [0.0, 0.13, 0.0], "color": "#c8a070", "material": "wood"},
+    {"size": [0.61, 0.04, 0.41], "offset": [0.0, 0.28, 0.0], "color": "#b08a5a"},
+    {"size": [0.6, 0.26, 0.4], "offset": [0.02, 0.43, 0.0], "rotation": [0.0, 4.0, 0.0], "color": "#c8a070", "material": "wood"},
+    {"size": [0.61, 0.04, 0.41], "offset": [0.02, 0.58, 0.0], "rotation": [0.0, 4.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.6, 0.26, 0.4], "offset": [0.0, 0.73, 0.02], "rotation": [0.0, -5.0, 0.0], "color": "#c8a070", "material": "wood"},
+    {"size": [0.61, 0.04, 0.41], "offset": [0.0, 0.88, 0.02], "rotation": [0.0, -5.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.1, 0.06, 0.3], "offset": [-0.199, 0.91, 0.003], "rotation": [0.0, -5.0, 0.0], "color": "#5aa030"},
+    {"size": [0.1, 0.06, 0.3], "offset": [-0.07, 0.91, 0.014], "rotation": [0.0, -5.0, 0.0], "color": "#5aa030"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.06, 0.91, 0.025], "rotation": [0.0, -5.0, 0.0], "color": "#5aa030"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.189, 0.91, 0.037], "rotation": [0.0, -5.0, 0.0], "color": "#5aa030"},
+    {"size": [0.6, 0.26, 0.4], "offset": [0.64, 0.13, 0.05], "rotation": [0.0, 8.0, 0.0], "color": "#c8a070", "material": "wood"},
+    {"size": [0.61, 0.04, 0.41], "offset": [0.64, 0.28, 0.05], "rotation": [0.0, 8.0, 0.0], "color": "#b08a5a"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.442, 0.31, 0.078], "rotation": [0.0, 8.0, 0.0], "color": "#e0c040"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.571, 0.31, 0.06], "rotation": [0.0, 8.0, 0.0], "color": "#e0c040"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.699, 0.31, 0.042], "rotation": [0.0, 8.0, 0.0], "color": "#e0c040"},
+    {"size": [0.1, 0.06, 0.3], "offset": [0.828, 0.31, 0.024], "rotation": [0.0, 8.0, 0.0], "color": "#e0c040"}
+  ]
+}

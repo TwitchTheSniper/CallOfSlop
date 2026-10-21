@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Floor Lamp",
+  "category": "Household",
+  "description": "A standing lamp with a cream shade.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 4, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.03, 0.1], "speed": 3, "colors": ["#efe2c0", "#b89a50", "white"]}},
+  "parts": [
+    {"size": [0.3, 0.03, 0.124], "offset": [0.0, 0.015, 0.0], "color": "#2a2a2a"},
+    {"size": [0.3, 0.03, 0.124], "offset": [0.0, 0.015, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#2a2a2a"},
+    {"size": [0.3, 0.03, 0.124], "offset": [0.0, 0.015, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#2a2a2a"},
+    {"size": [0.3, 0.03, 0.124], "offset": [0.0, 0.015, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#2a2a2a"},
+    {"size": [0.03, 1.45, 0.03], "offset": [0.0, 0.755, 0.0], "color": "#b89a50"},
+    {"size": [0.42, 0.28, 0.174], "offset": [0.0, 1.54, 0.0], "color": "#efe2c0"},
+    {"size": [0.42, 0.28, 0.174], "offset": [0.0, 1.54, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#efe2c0"},
+    {"size": [0.42, 0.28, 0.174], "offset": [0.0, 1.54, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#efe2c0"},
+    {"size": [0.42, 0.28, 0.174], "offset": [0.0, 1.54, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#efe2c0"},
+    {"size": [0.36, 0.01, 0.149], "offset": [0.0, 1.685, 0.0], "color": "#fff4d8"},
+    {"size": [0.36, 0.01, 0.149], "offset": [0.0, 1.685, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#fff4d8"},
+    {"size": [0.36, 0.01, 0.149], "offset": [0.0, 1.685, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#fff4d8"},
+    {"size": [0.36, 0.01, 0.149], "offset": [0.0, 1.685, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#fff4d8"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.0, 1.39, 0.0], "color": "#b89a50"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.0, 1.39, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#b89a50"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.0, 1.39, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#b89a50"},
+    {"size": [0.08, 0.06, 0.033], "offset": [0.0, 1.39, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#b89a50"}
+  ]
+}
