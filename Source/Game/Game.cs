@@ -204,7 +204,7 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacket(sender, data, now));
+        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
@@ -243,7 +243,7 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         var def = Active.Def;
-        var speed = def.Mobility * (Aiming ? World.AdsSpeedMult : 1f);
+        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, def.Mobility, Aiming); // Lightweight, Stalker
         return new InputCmd
         {
             Seq = seq,
@@ -361,6 +361,7 @@ public sealed partial class Game : IDisposable
         var spread = float.Lerp(def.HipSpreadRad, def.HipSpreadRad * def.AdsSpreadMult, AimT);
         if (Local is { } me)
         {
+            spread *= Perks.SpreadMult(me.Perks, AimT); // Steady Aim
             var v = me.Sim.Velocity;
             var moving = MathF.Min(new Vector2(v.X, v.Z).Length() / World.WalkSpeed, 1.5f);
             spread += moving * 0.014f * (Aiming ? 0.5f : 1f);
@@ -450,7 +451,7 @@ public sealed partial class Game : IDisposable
         var seed = _shotSeed++;
 
         // Recoil (the gun's pattern, see Recoil.cs) + bloom
-        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw);
+        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT)); // Tight Grip
         LookPitch = Math.Clamp(LookPitch + kickPitch, -1.5f, 1.5f);
         LookYaw = World.WrapAngle(LookYaw + kickYaw);
         var kick = def.RecoilDeg * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
@@ -500,7 +501,7 @@ public sealed partial class Game : IDisposable
         if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true } || w.Reserve == 0)
             return; // (Zombies: no reserve left, nothing to reload with)
         w.ReloadStarted = now;
-        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now); // Overdrive halves it
+        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks); // Overdrive halves it, Sleight of Hand
         _burstLeft = 0;
         Audio.Reload(w.Def, null);
 
@@ -1130,6 +1131,7 @@ public sealed partial class Game : IDisposable
                 attacker.Sim.BoostTicks = Perks.BoostTicks;
                 attacker.AfterburnerReadyTick = ServerTick + Perks.BoostTicks + Perks.AfterburnerCooldownTicks;
             }
+            ScavengeOnKill(attacker); // Scavenger (PerksMore.cs)
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
             attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
@@ -1351,7 +1353,7 @@ public sealed partial class Game : IDisposable
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 int count = Math.Min((int)r.U8(), 16);
-                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(MathF.Max(p.DefFor(p.Primary).Mobility, p.DefFor(p.Secondary).Mobility) * 100), 1, 200);
+                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(p.DefFor(p.Primary).Mobility, p.DefFor(p.Secondary).Mobility), false) * 100), 1, 200); // (Lightweight lifts a slow pair of guns)
                 Span<InputCmd> cmds = stackalloc InputCmd[count];
                 var read = 0;
                 for (; read < count && r.Has(15); read++)
@@ -1445,7 +1447,7 @@ public sealed partial class Game : IDisposable
                 if (!p.Owns(weapon))
                     break;
                 Audio.Reload(Weapons.Get(weapon), p.RenderEye);
-                ThirdPersonArms.OnReload(p.Id, p.DefFor(weapon).Reload, now);
+                ThirdPersonArms.OnReload(p.Id, p.DefFor(weapon).Reload * Perks.ReloadMult(p.Perks), now);
                 Net.Broadcast(ReloadFx(p.Id, weapon), PacketReliability.Unreliable);
                 break;
             }
@@ -1528,6 +1530,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.VoteState:
                 OnVotePacket(id, ref r, sender);
                 break;
+            case (byte)Msg.TeamPick:
+            case (byte)Msg.TeamReply:
+                OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
+                break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);
                 break;
@@ -1557,7 +1563,7 @@ public sealed partial class Game : IDisposable
                 if (who != LocalId && Players.TryGetValue(who, out var p))
                 {
                     Audio.Reload(Weapons.Get(weapon), p.RenderEye);
-                    ThirdPersonArms.OnReload(who, p.DefFor(weapon).Reload, now);
+                    ThirdPersonArms.OnReload(who, p.DefFor(weapon).Reload * Perks.ReloadMult(p.Perks), now);
                 }
                 break;
             }

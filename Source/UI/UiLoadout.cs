@@ -209,7 +209,9 @@ public sealed partial class Ui
     {
         if (!MenuOpen)
             return false;
-        return DrawLoadoutScreen(game, game.Audio, now);
+        var deployed = DrawLoadoutScreen(game, game.Audio, now);
+        DrawTeamsWindow(game, now); // the TEAMS window beside it, when open (UiTeams.cs)
+        return deployed;
     }
 
     /// <summary>From the main menu.</summary>
@@ -302,6 +304,7 @@ public sealed partial class Ui
                     }
                     ImGui.SameLine();
                 }
+                TeamsButton(game, backBtn); // team modes: opens the TEAMS window (UiTeams.cs)
                 ReadyButton(game, backBtn); // warmup only (UiModes.cs)
                 if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
                     GoBack();
@@ -515,14 +518,23 @@ public sealed partial class Ui
                 if (ImGui.Button("Rename"u8))
                 {
                     _renameInput ??= new ImInputString(25);
-                    _renameInput.SetValue(l.Name.AsSpan());
+                    ImGuiSafe.SetInput(_renameInput, l.Name);
                     _renaming = true;
                 }
             }
             else
             {
                 ImGui.SetNextItemWidth(240 * _scale);
-                var enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                bool enter;
+                try
+                {
+                    enter = ImGui.InputText("##rename"u8, _renameInput!, ImGuiInputTextFlags.EnterReturnsTrue);
+                }
+                catch (Exception ex)
+                {
+                    ImGuiSafe.FieldFailed("loadout name", ex);
+                    enter = false;
+                }
                 ImGui.SameLine();
                 if (ImGui.Button("OK"u8) || enter)
                 {
@@ -1057,6 +1069,129 @@ public sealed partial class Ui
                     Line(dl, c + dir * (u * 0.35f), c + dir * (u * (i % 2 == 0 ? 1.25f : 0.85f)), col, t);
                 }
                 break;
+            case PerkId.DeadSilence: // a footprint, struck through
+            {
+                var heel = P(-0.25f, 0.65f);
+                var sole = P(0.1f, -0.3f);
+                ImDrawListExtensions.AddCircleFilled(dl, in heel, u * 0.35f, col, 14);
+                ImDrawListExtensions.AddCircleFilled(dl, in sole, u * 0.5f, col, 16);
+                Line(dl, P(-1f, -1f), P(1f, 1f), new ImColor8(18, 20, 26, 255), t * 2f);
+                Line(dl, P(-1f, -1f), P(1f, 1f), col, t * 0.8f);
+                break;
+            }
+            case PerkId.Ghost: // a sheet ghost
+            {
+                var head = P(0, -0.3f);
+                ImDrawListExtensions.AddCircleFilled(dl, in head, u * 0.75f, col, 18);
+                var a = P(-0.75f, -0.3f);
+                var b = P(0.75f, 0.6f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 0f, ImDrawFlags.None);
+                Tri(dl, P(-0.75f, 0.55f), P(-0.25f, 0.55f), P(-0.5f, 1.05f), col);
+                Tri(dl, P(-0.25f, 0.55f), P(0.25f, 0.55f), P(0, 1.05f), col);
+                Tri(dl, P(0.25f, 0.55f), P(0.75f, 0.55f), P(0.5f, 1.05f), col);
+                var e1 = P(-0.3f, -0.35f);
+                var e2 = P(0.3f, -0.35f);
+                ImDrawListExtensions.AddCircleFilled(dl, in e1, u * 0.14f, new ImColor8(18, 20, 26, 255), 8);
+                ImDrawListExtensions.AddCircleFilled(dl, in e2, u * 0.14f, new ImColor8(18, 20, 26, 255), 8);
+                break;
+            }
+            case PerkId.Stalker: // a sight with arrows out to the sides
+            {
+                ImDrawListExtensions.AddCircle(dl, in center, u * 0.5f, col, 16, t * 0.8f);
+                ImDrawListExtensions.AddCircleFilled(dl, in center, u * 0.15f, col, 8);
+                Line(dl, P(-0.7f, 0), P(-1.2f, 0), col, t);
+                Tri(dl, P(-1.45f, 0), P(-1.05f, -0.3f), P(-1.05f, 0.3f), col);
+                Line(dl, P(0.7f, 0), P(1.2f, 0), col, t);
+                Tri(dl, P(1.45f, 0), P(1.05f, -0.3f), P(1.05f, 0.3f), col);
+                break;
+            }
+            case PerkId.Lightweight: // a feather
+                Line(dl, P(-0.9f, 1f), P(0.8f, -1f), col, t);
+                for (var i = 0; i < 4; i++)
+                {
+                    var f = 0.2f + i * 0.2f;
+                    var at = P(-0.9f + 1.7f * f, 1f - 2f * f);
+                    Line(dl, at, at + new float2(-0.55f, -0.15f) * u, col, t * 0.7f);
+                    Line(dl, at, at + new float2(0.15f, 0.55f) * u, col, t * 0.7f);
+                }
+                break;
+            case PerkId.Hardline: // "-1"
+                Line(dl, P(-1.1f, 0), P(-0.3f, 0), col, t * 1.2f);
+                Line(dl, P(0.4f, -0.5f), P(0.75f, -0.9f), col, t);
+                Line(dl, P(0.75f, -0.9f), P(0.75f, 0.9f), col, t * 1.2f);
+                Line(dl, P(0.35f, 0.9f), P(1.15f, 0.9f), col, t);
+                break;
+            case PerkId.Scavenger: // a supply crate with a plus
+                Line(dl, P(-1f, -0.6f), P(1f, -0.6f), col, t);
+                Line(dl, P(1f, -0.6f), P(1f, 0.9f), col, t);
+                Line(dl, P(1f, 0.9f), P(-1f, 0.9f), col, t);
+                Line(dl, P(-1f, 0.9f), P(-1f, -0.6f), col, t);
+                Line(dl, P(0, -0.25f), P(0, 0.55f), col, t);
+                Line(dl, P(-0.4f, 0.15f), P(0.4f, 0.15f), col, t);
+                Line(dl, P(-0.6f, -0.6f), P(-0.3f, -1.05f), col, t * 0.8f);
+                Line(dl, P(-0.3f, -1.05f), P(0.3f, -1.05f), col, t * 0.8f);
+                Line(dl, P(0.3f, -1.05f), P(0.6f, -0.6f), col, t * 0.8f);
+                break;
+            case PerkId.ColdBlooded: // snowflake
+                for (var i = 0; i < 3; i++)
+                {
+                    var a = i * MathF.PI / 3 + MathF.PI / 2;
+                    var dir = new float2(MathF.Cos(a), MathF.Sin(a)) * u;
+                    Line(dl, c - dir * 1.2f, c + dir * 1.2f, col, t);
+                    foreach (var sgn in new[] { 1f, -1f })
+                    {
+                        var tip = c + dir * (0.75f * sgn);
+                        var side = new float2(-dir.Y, dir.X) * 0.3f;
+                        Line(dl, tip, tip + dir * (0.3f * sgn) + side, col, t * 0.7f);
+                        Line(dl, tip, tip + dir * (0.3f * sgn) - side, col, t * 0.7f);
+                    }
+                }
+                break;
+            case PerkId.QuickFix: // medical cross
+            {
+                var a = P(-0.3f, -1f);
+                var b = P(0.3f, 1f);
+                var a2 = P(-1f, -0.3f);
+                var b2 = P(1f, 0.3f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 2 * _scale, ImDrawFlags.None);
+                ImDrawListExtensions.AddRectFilled(dl, in a2, in b2, col, 2 * _scale, ImDrawFlags.None);
+                break;
+            }
+            case PerkId.SleightOfHand: // a magazine sliding up
+            {
+                var a = P(-0.45f, -0.2f);
+                var b = P(0.45f, 1.1f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 2 * _scale, ImDrawFlags.None);
+                Line(dl, P(-0.5f, -0.55f), P(0, -0.95f), col, t);
+                Line(dl, P(0, -0.95f), P(0.5f, -0.55f), col, t);
+                Line(dl, P(-0.5f, -0.95f), P(0, -1.35f), col, t);
+                Line(dl, P(0, -1.35f), P(0.5f, -0.95f), col, t);
+                break;
+            }
+            case PerkId.SteadyAim: // a crosshair with its arms pulled in tight
+                ImDrawListExtensions.AddCircleFilled(dl, in center, u * 0.16f, col, 8);
+                Line(dl, P(-1.1f, 0), P(-0.4f, 0), col, t);
+                Line(dl, P(0.4f, 0), P(1.1f, 0), col, t);
+                Line(dl, P(0, -1.1f), P(0, -0.4f), col, t);
+                Line(dl, P(0, 0.4f), P(0, 1.1f), col, t);
+                break;
+            case PerkId.TightGrip: // kick marks shrinking to a steady line
+                Line(dl, P(-1f, -0.8f), P(1f, -0.8f), col, t);
+                Line(dl, P(-0.7f, -0.2f), P(0.7f, -0.2f), col, t);
+                Line(dl, P(-0.4f, 0.4f), P(0.4f, 0.4f), col, t);
+                Line(dl, P(-0.15f, 1f), P(0.15f, 1f), col, t);
+                break;
+            case PerkId.Demolitions: // a grenade with blast rings
+            {
+                var body = P(0, 0.25f);
+                ImDrawListExtensions.AddCircleFilled(dl, in body, u * 0.6f, col, 16);
+                var a = P(-0.25f, -0.65f);
+                var b = P(0.25f, -0.3f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 0f, ImDrawFlags.None);
+                Line(dl, P(0.25f, -0.55f), P(0.75f, -0.2f), col, t * 0.8f);
+                ImDrawListExtensions.AddCircle(dl, in body, u * 1.05f, col, 22, t * 0.6f);
+                break;
+            }
         }
     }
 
@@ -1070,6 +1205,9 @@ public sealed partial class Ui
         PerkId.Parkour => p.Sim.MantleTicks > 0,
         PerkId.Entrenched => Game.IsDugIn(p),
         PerkId.LastStand => p.ShieldCharges > 0 || p.Health == 1,
+        PerkId.Ghost or PerkId.DeadSilence => p.Sim.Velocity.X * p.Sim.Velocity.X + p.Sim.Velocity.Z * p.Sim.Velocity.Z > Perks.GhostMinSpeed * Perks.GhostMinSpeed,
+        PerkId.Lightweight => p.WeaponDef.Mobility < Perks.LightweightMinMobility,
+        PerkId.QuickFix => p.Regenerating,
         _ => false,
     };
 }

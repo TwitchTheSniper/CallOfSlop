@@ -53,7 +53,8 @@ public sealed partial class Ui
         _wb = b.Clone();
         _wbMelee = b.IsMelee;
         _wbCat = b.IsMelee ? PartCategory.Head : PartCategory.Grip;
-        _wbNameInput?.SetValue(_wb.Name.AsSpan());
+        if (_wbNameInput != null)
+            ImGuiSafe.SetInput(_wbNameInput, _wb.Name);
         WorkbenchChanged();
     }
 
@@ -75,7 +76,7 @@ public sealed partial class Ui
         _wbCat = PartCategory.Head;
         _wb = BuildStore.Melee?.Clone() ?? new WeaponBuild("Melee", Parts.InCategory(PartCategory.Hilt).First(p => p.IsRoot));
         _wbNameInput ??= new ImInputString(33);
-        _wbNameInput.SetValue(_wb.Name.AsSpan());
+        ImGuiSafe.SetInput(_wbNameInput, _wb.Name);
         _wbSocketParent = _wbSocketName = null;
         WorkbenchChanged();
     }
@@ -93,7 +94,7 @@ public sealed partial class Ui
             _wbCat = PartCategory.Grip;
         _wb = BuildStore.Slots[slot]?.Clone() ?? new WeaponBuild($"Build {slot + 1}", Parts.InCategory(PartCategory.Grip).First(p => p.Frame != null));
         _wbNameInput ??= new ImInputString(33);
-        _wbNameInput.SetValue(_wb.Name.AsSpan());
+        ImGuiSafe.SetInput(_wbNameInput, _wb.Name);
         _wbSocketParent = _wbSocketName = null;
         WorkbenchChanged();
     }
@@ -434,10 +435,17 @@ public sealed partial class Ui
         WorkbenchLaunch? launch = null;
         ImGui.TextColored(Orange, _wbMelee ? "MELEE SLOT"u8 : "BUILD"u8);
         ImGui.SetNextItemWidth(-1);
-        if (ImGui.InputText("##wbname"u8, _wbNameInput!))
+        try
         {
-            b.Name = WeaponBuild.CleanName(_wbNameInput!.ToString());
-            WorkbenchChanged();
+            if (ImGui.InputText("##wbname"u8, _wbNameInput!))
+            {
+                b.Name = WeaponBuild.CleanName(_wbNameInput!.ToString());
+                WorkbenchChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            ImGuiSafe.FieldFailed("build name", ex);
         }
         if (b.Frame is { } frame)
             ImGuiSafe.TextColored(Dim, $"Fire style: {frame.Style.ToString().ToUpperInvariant()} (fixed by the {b.Root!.Part.Name}): "
@@ -621,7 +629,8 @@ public sealed partial class Ui
             if (!clicked)
                 continue;
             _wb = sb.Build();
-            _wbNameInput?.SetValue(_wb.Name.AsSpan());
+            if (_wbNameInput != null)
+                ImGuiSafe.SetInput(_wbNameInput, _wb.Name);
             _wbSocketParent = _wbSocketName = null;
             _wbMessage = $"Loaded the standard build '{sb.Name}' (save it to keep it).";
             WorkbenchChanged();

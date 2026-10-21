@@ -178,6 +178,8 @@ public sealed partial class Ui
             var (ready, humans) = game.ReadyCount;
             ImGui.TextColored(Orange, "WARMUP"u8);
             ImGuiSafe.TextColored(Dim, $"{ready}/{humans} ready");
+            if (game.IsTeamMode && game.Local is { Team: < 2 } mine)
+                ImGuiSafe.TextColored(TeamRgba(mine.Team), game.ManualTeams ? $"You: {GameModes.TeamNames[mine.Team]} - TEAMS to switch" : $"You: {GameModes.TeamNames[mine.Team]}"); // TEAMS window: UiTeams.cs
             foreach (var p in game.Players.Values.OrderBy(p => p.Team).ThenBy(p => p.Bot != null).ThenBy(p => p.Id))
             {
                 var ok = p.Ready || p.Bot != null;
@@ -281,7 +283,8 @@ public sealed partial class Ui
                     {
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
-                        var carrier = game.Mode == GameMode.CaptureTheFlag && game.CarriedFlagOf(p) >= 0 ? "  [FLAG]" : "";
+                        var carrier = (game.Mode == GameMode.CaptureTheFlag && game.CarriedFlagOf(p) >= 0 ? "  [FLAG]" : "")
+                                      + (game.IsTeamMode && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
                         ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + carrier);
                         ImGui.TableNextColumn();
                         ImGui.Text(gun ? $"{p.GunLevel + 1}/{GunGame.Ladder.Length}" : $"{p.Kills}");
@@ -295,6 +298,8 @@ public sealed partial class Ui
                 }
                 ImGui.EndTable();
             }
+            if (game.ManualTeams)
+                ImGui.TextColored(Dim, "* picked their team. Switch sides: Esc > TEAMS, or TEAMS on the loadout screen."u8);
         }
         ImGui.End();
         return true;

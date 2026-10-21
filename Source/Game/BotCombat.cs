@@ -87,7 +87,7 @@ public sealed partial class Game
                     b.HeardTime = now;
                 }
                 var flat = Vector3.Normalize(new Vector3(to.X, 0, to.Z) + new Vector3(1e-4f, 0, 0));
-                var inView = alert || Vector3.Dot(flat, fwd) > -0.2f || dist < 7f; // ~200 deg vision, plus "hearing" up close
+                var inView = alert || Vector3.Dot(flat, fwd) > -0.2f || dist < Perks.BotSenseRange(o.Perks); // ~200 deg vision, plus "hearing" up close (Dead Silence: closer)
                 if (!inView || !HasLineOfSight(p.Eye, o.Chest))
                     continue;
                 var score = dist + (o.Id == b.Target ? -5f : 0f); // stick with the current target a little
@@ -186,7 +186,7 @@ public sealed partial class Game
             || (dist >= def.RangeM * 3f && def.Class != WeaponClass.Sniper))
             return;
 
-        var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : 1f) + (b.Skill == BotDifficulty.Easy ? 0.02f : 0f);
+        var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : Perks.SpreadMult(p.Perks, 0f)) + (b.Skill == BotDifficulty.Easy ? 0.02f : 0f); // Steady Aim
         ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);

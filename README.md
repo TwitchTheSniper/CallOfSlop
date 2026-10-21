@@ -26,7 +26,7 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | **Single player** | You against up to 31 bots (as many as the map takes, see [Lobby size](#lobby-size); Easy, Normal or Hard), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, head bob, VSync. **Audio:** master, music, effects and footstep volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, VSync. **Audio:** master, music, effects and footstep volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -39,6 +39,7 @@ To test on one PC: run `Start.bat` twice. Host in one window and join `127.0.0.1
 - If the host's address says "LAN only - UPnP unavailable", turn on UPnP in your router's settings or forward UDP 60000. Same-network play works either way.
 - "Behind a second NAT" means a second router or your ISP's carrier-grade NAT. Use a LAN or a virtual LAN tool like Tailscale or ZeroTier.
 - The game has no console window; its log is written to `callofslop.log` next to the exe.
+- Text boxes take plain text only: pasting an image or a file does nothing (the log says `[ui] paste ignored: the clipboard has no text`), and pasted text is cut to printable ASCII. Names, server names and other text from other players are cleaned the same way, and a broken or hostile network packet is dropped with a `[net] dropped a bad ... packet` log line instead of closing the game.
 
 Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSlop.exe join <ip> [port]`, plus `--no-upnp`, `--lag=ms`, `--loss=%` for testing.
 
@@ -68,13 +69,20 @@ Pick the mode on the Single player or Host screen. It stays the same from match 
 | Mode | Rules |
 | --- | --- |
 | **Free-for-all** | First to 11 kills, win by 2 (above). |
-| **Team Deathmatch** | Two teams (Blue and Red), auto-balanced, bots included. First team to **40 kills** (5 per player in bigger lobbies, up to 100). No friendly fire, grenades and streaks included (your own grenade can still hurt you). You spawn on your team's side of the map. |
+| **Team Deathmatch** | Two teams (Blue and Red), pick your side or let the game balance them (see *Picking teams* below), bots included. First team to **40 kills** (5 per player in bigger lobbies, up to 100). No friendly fire, grenades and streaks included (your own grenade can still hurt you). You spawn on your team's side of the map. |
 | **King of the Hill** | Two teams. A glowing ring marks the hill. Hold it with **only your team** inside for **1 point a second**; while both teams are in it (contested) nobody scores. The hill moves to the next zone every **60 s**. First to **150 points**. |
 | **Capture the Flag** | Two teams, a flag at each base. Touch the enemy flag to take it; bring it to **your own flag** to capture, which only works while your flag is at home. A carrier who dies drops it; a teammate touching a dropped flag sends it home, otherwise it returns by itself after **20 s**. Carriers keep their guns, and a light beam over them (and over a dropped flag) shows through walls. First to **3 captures**. |
 | **Gun Game** | Everyone starts with the same gun, the first one in the unlock order, whatever they've unlocked. Each kill moves you to the next gun; a **melee kill also sets the victim back one gun**. The first kill with the last gun wins (a melee kill on the last gun doesn't count). Loadouts, grenades, perks and kill streaks are off. The ladder is 20 guns, evenly spaced through the 50-odd weapons in unlock order. |
 | **Zombies** | Co-op for 1-4 against endless rounds of zombies (World at War style), only on maps with a Zombies layout (today the dev map **Zombies Test**). No time limit: the run ends when everyone is down. See "Zombies" below. |
 
 Team modes colour everyone blue or red (players, scoreboard, kill card). King of the Hill is played by teams. The HUD shows the hill's holder, its distance and direction and when it moves; the state of both flags; or your Gun Game weapon, the next one and the leader. The scoreboard groups players by team (or by gun level). If a player leaves and the teams end up two apart, a bot switches sides.
+
+**Picking teams (play with your friends).** In every team mode you can choose **Join Blue**, **Join Red** or **Auto**:
+- **Where:** the **TEAMS** window beside the loadout screen (it opens by itself in the warmup; the **TEAMS** button in the loadout footer opens or hides it, also on the respawn screen and when you join a match in progress) and **Esc > TEAMS**. Both show each team's roster, so you can see where your friends are; **Join** next to a person on the other side puts you on their team. A `*` after a name (also on the scoreboard) means they picked their team.
+- **Size rule:** a side may be at most **2 players bigger** than the other (host setting *Max team size difference*, 0-4). Only people who picked a side count: bots and people on Auto fill the smaller side, so a group of friends can stack a little but not 6v2. A full side's button is greyed out with the reason. **Bots never block you:** join a side that has a bot and that bot moves to the other side.
+- **Switching:** before the match (warmup, countdown, results) or while dead, at most once every **10 s**, never while carrying the flag. It's a respawn, not a suicide: no death, no score or kill streak change. While alive in a live match the buttons say to switch while dead.
+- **Autobalance** only moves bots and people on **Auto** (people only while dead or between matches). Someone who picked a team is never moved; a new match keeps everyone's pick. People who join get the smaller side on Auto.
+- **Host settings** (Host and Single player screens, shown for team modes; the host can also change them in Esc > TEAMS): **Team selection: Manual / Auto only** (default Manual; Auto only is the old automatic split) and **Max team size difference** (default 2). Saved in `settings.txt` as `team_select=manual|auto` and `team_max_diff=2`; older files get the defaults. Online, a client asks the server, which checks the rules and answers (protocol 20).
 
 Maps can place team spawns, hills and flags by hand; otherwise the game works them out from the map (see Maps/README.md).
 
@@ -114,17 +122,29 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Movement | **Low Profile** (start) | Crouched or prone | Move 80% faster; Recon Pulses can't reveal you while you're low |
 | Movement | **Head Start** (level 3) | Just spawned | 35% faster for the first 4 s of every life |
 | Movement | **Parkour** (19) | Walls, windows, roofs | Reach ledges 0.6 m higher, climb twice as fast, jump about 55% higher |
-| Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after each kill |
+| Movement | **Stalker** (11) | Aiming down sights | Keep 95% of your speed while aiming instead of 70% |
+| Movement | **Dead Silence** (23) | Sneaking up | Others hear your steps, jumps and landings 75% quieter and from half as far; bots notice you behind them within 3 m instead of 7 m |
+| Movement | **Lightweight** (33) | Carrying a heavy gun | Your gun never slows you below full speed (LMGs, snipers); no effect with light guns |
+| Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after a kill; no refresh during the boost, 6 s cooldown after it |
+| Movement | **Ghost** (45) | On the move | Recon Pulses and Recon Sweeps can't reveal you while you're moving (faster than 1 m/s) |
 | Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own |
+| Survival | **Quick Fix** (7) | Between fights | Health starts coming back 2.5 s after the last damage instead of 5 s |
 | Survival | **Bloodthirst** (9) | Just got a kill | Each kill heals you to full |
+| Survival | **Scavenger** (21) | Just got a kill | Each kill gives back one grenade and one equipment charge, up to what you spawn with |
 | Survival | **Entrenched** (25) | Crouched/prone and still | 40% less bullet damage |
+| Survival | **Hardline** (29) | Earning kill streaks | Every streak costs one kill less (never below 2) |
 | Survival | **Last Stand** (41) | Once per life | The first lethal hit leaves you on 1 HP, and a shield blocks your next 3 bullet hits (up to 8 s) |
+| Survival | **Cold Blooded** (43) | Turrets and drones | Enemy Sentry Turrets and Attack Drones can't lock onto you (stray rounds still hurt) |
 | Damage | **Point Blank** (start) | Within 8 m | Bullets and melee hit 40% harder |
+| Damage | **Sleight of Hand** (5) | Reloading | Reload 35% faster (stacks with Overdrive) |
 | Damage | **Opener** (14) | Enemy on full health | Bullets and melee hit 50% harder |
+| Damage | **Steady Aim** (16) | Hip fire | 35% tighter hip-fire spread; aimed fire unchanged |
+| Damage | **Demolitions** (27) | Grenades | Your Frag and Impact blasts reach 25% farther (Frag 9 m -> 11 m), same centre damage |
 | Damage | **Deadeye** (31) | Beyond 30 m | Bullets hit 40% harder |
+| Damage | **Tight Grip** (38) | Aiming down sights | 30% less recoil while aimed; hip fire unchanged |
 | Damage | **Flanker** (47) | Hitting their back | Bullets and melee hit 60% harder |
 
-Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality.
+Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality. Handling perks (Sleight of Hand, Steady Aim, Tight Grip, Stalker) work on your own client like Overdrive does, and bots get Sleight of Hand, Steady Aim, Stalker and Lightweight too. Saved loadouts store perks by name, so older `loadout.txt` files load unchanged; the original perks keep their unlock levels.
 
 **Last Stand in detail.** Once per life, the first hit that would kill you (bullets, melee or a blast) leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
 
@@ -144,12 +164,12 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 | **Counter Sweep** | 4 | level 5 | Jams your enemies for 15 s: their Recon Pulses and Recon Sweeps show nothing, and their HUD fills with static. |
 | **Overdrive** | 4 | start | 12 s of moving 35% faster and reloading twice as fast. Ends if you die. |
 | **Mortar Barrage** | 5 | start | Look at a spot and fire. After 2.4 s, 7 shells land within 5 m of it, each whistling on the way in. Up to 160 damage each, falling off over 6.5 m; walls and roofs shield you, going prone helps, Flak Jacket works. |
-| **Sentry Turret** | 6 | level 19 | Drops an auto-turret just in front of you, facing where you look. It covers a 150-degree arc out to 40 m, warms up for half a second on a new target, and fires 12-damage rounds. 45 s, 260 HP. |
+| **Sentry Turret** | 6 | level 19 | Drops an auto-turret just in front of you, facing where you look. It covers a 150-degree arc out to 40 m, warms up for half a second on a new target, and fires 12-damage rounds. 45 s, 520 HP, armoured: bullets do 60% damage (a Vanguard AR needs 38 hits, more than a full magazine), explosives 150%. |
 | **Attack Drone** | 8 | level 32 | A drone circles the map above the rooftops for 40 s, firing 3-round bursts (26 damage each) at any enemy it can see. 200 HP. |
 | **Strafe Run** | 11 | level 46 | Look at a spot and fire: 2.6 s later a jet strafes a 50 m line through it, along the way you're facing (12 hits, up to 110 damage each). Roofs shield you. |
 
 - **Everyone sees it coming.** A banner names whoever called in what ("Brick called in a Mortar Barrage", red when it's an enemy's), strikes put a red flare and danger marks where they'll land, and the turret and drone carry a light: green for yours, red for an enemy's.
-- **Turrets and drones can be destroyed** with bullets, grenades and enemy strikes. Your own bullets pass through yours. The kill feed shows who destroyed what.
+- **Turrets and drones can be destroyed** with bullets, grenades and enemy strikes (no headshot bonus on machines). Your own bullets pass through yours. The kill feed shows who destroyed what. A health bar floats over yours and your team's at all times (over an enemy's once it's damaged), and while yours is up your HUD shows its health and seconds left above the streak icons.
 - **The HUD** shows your three streaks at the bottom centre: key, kill cost, a pip per kill and a glow when it's ready, plus your current streak count. A banner announces each one you earn.
 - **Bots** carry three random streaks and use them: mortars and strafe runs on the last enemy they saw or the biggest group, turrets facing where the enemies are.
 - Streaks unlock with your level like perks: three to start, the others spread evenly. They're saved in `loadout.txt` (`loadout1.streaks=Recon Sweep, Mortar Barrage, Sentry Turret`); older files get the three starters, and a locked streak is swapped for a starter.
@@ -178,6 +198,7 @@ Personalities also change engagement range, aggression, retreat health, strafing
 
 - **Loadouts only change between lives.** During a life you can still edit loadouts, and the changes apply the next time you spawn. The exceptions are the warmup and the 5-second pre-match countdown, when changes apply immediately.
 - **Death cam and kill card.** When you die, the camera rises over your body, then turns to face whoever killed you and zooms in a little, following them for about 3 seconds. A **kill card** shows the killer's name, their gun with its attachments (optic marked), headshot, distance, how much health they had left and their streak (melee, grenades, streak rewards and killing yourself get their own versions). Click, or press the loadout key, to skip straight to the loadout screen. On wide screens the card stays next to the loadout window.
+- **Kill notices.** When you kill someone, **KILLED <name>** appears under your crosshair in their colour (team colour in team modes), with tags under it: HEADSHOT, MELEE, the grenade or streak that did it (FRAG GRENADE, SENTRY TURRET...), LONGSHOT and the distance for gun kills from 40 m, DOUBLE / TRIPLE / QUAD KILL for kills within 2.5 s of each other (their lines stack), REVENGE on whoever killed you last, and every 5 kills in a row. It fades about 2 s after your last kill, next to the +XP popups. Only the killer sees it (not in Zombies); everyone's kill feed (top right) names both players and fades out.
 - **Nobody is force-respawned.** When you die, the loadout screen opens after the death cam. Pick a loadout, then click **RESPAWN**. The button counts down the 3-second respawn delay, and clicking early queues it. You also start every session on this screen.
 - Close the screen to just watch. Press the loadout key to reopen it.
 
@@ -350,6 +371,13 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 - **Foliage:** **Off / Low / Medium** (default) **/ High**. How much grass, how many bushes and shrubs, and how far away they're drawn, on maps that have foliage (try the **Dev** pack's **Foliage Test** map). Off draws none of it and costs nothing. Tree trunks are always there, because they're solid: they stop players and bullets. Grass, bushes and tree tops never do. The game logs a `[foliage]` line every 5 seconds on foliage maps (plants drawn, draw calls, CPU and GPU time) in callofslop.log.
 - **Head bob:** 0-100% (default 100%). How much the camera bobs as you move: two small dips per stride, timed to your legs' footfalls, and a slight side-to-side sway and roll once per stride. It grows with ground speed, from about 1 cm and 0.2 degrees at a walk to about 4.5 cm and 0.8 degrees at a full sprint. There's none in the air (jumping, falling, mantling) or while prone, half while crouch-walking, and it fades out as you aim down sights, so scopes stay steady. It eases back in after you land. Only the picture moves: your aim and your bullets always come from the steady eye, and nothing is sent over the network. 0% is the old, perfectly steady camera. Saved as `head_bob` in `settings.txt`; older settings files load with 100%.
 - **HUD width:** on ultra-wide monitors the in-match HUD (session info, kill feed, health, ammo, match bar, banners, scoreboard) stays inside a centred area so it's easy to read. **16:9** (default) keeps it 2560 px wide on a 3440x1440 or 5120x1440 screen; **21:9** allows 3360 px; **Full width** uses the screen edges. On 16:9 or narrower screens all three are the same. The crosshair is always centred, and the damage effects always cover the whole screen (a scope's lens is sized from the screen height, so on an ultra-wide screen more of the eyepiece shows at the sides).
+
+- **Name tags:** **All** (default) **/ Team only / Off**, plus **Teammate health bars** (off by default). Names float over players' heads, CoD style:
+  - **Teammates** (everyone in Zombies) are tagged whenever they're on screen within 60 m, *through walls*, so you can find your friends. In their team colour, fading from 30 m to 60 m.
+  - **Enemies** (everyone in free-for-all and Gun Game) are tagged only while your crosshair is on them, they're within 40 m and you can actually see them: walls and smoke hide the tag, so it never gives anyone away. The tag lingers half a second (fading) after your crosshair leaves, and drops at once if they step behind cover. An enemy shown through walls by your Recon Pulse or Recon Sweep can be tagged by aiming at their outline. In the enemy team's colour (red without teams).
+  - Bots show their names ("[BOT] ..."). Never your own tag, never on dead players. Through a magnified scope tags stay but are a quarter smaller. While you're dead, teammates stay tagged from the death camera and your killer is tagged.
+  - Tags shrink with distance and scale with the window height like the HUD (so they're the same size on 1080p, 1440p, 21:9 and 32:9), stay inside the screen, and a tag that would cover a nearer one stacks above it or fades.
+  - Cheap: one ray-box test per enemy and at most one line-of-sight ray every 0.1 s (for the enemy you're aiming at), no allocations. Saved as `name_tags` and `name_tag_health` in `settings.txt`; older files get All. The distances and sizes are data in `UI/NameTags.cs` (`NameTagRules`).
 
 ### Stances
 
@@ -538,6 +566,7 @@ All collision goes through one module, `Source/Physics`:
 Your gun is held by box arms (sleeves in your player colour, tan gloves). Everything is procedural, with no animation files:
 - `Render/ArmAnchors.cs` knows where the hands go on each gun model (grip, handguard or pump, magazine well, bolt or slide, muzzle), including foregrips, lasers and magazine attachments, and picks the reload style: box magazine, pistol mag drop, revolver speedloader, shell-by-shell tube, break-open, bolt action, LMG box or muzzle loader.
 - `Render/ViewModelAnimator.cs` moves the gun (hip and ADS, breathing sway, walk bob, sprint, jump and landing dip, equip, a rifle-butt or pistol-whip melee, the reload of each style timed to the weapon's reload time, the ledge plant while mantling, recoil kick) and works out where both hands are.
+- `UI/WorldLabels.cs` (`Hud.Project`, `Hud.WorldLabel`) puts HUD text at 3D positions: the frame's real view and projection, drawn on ImGui's background list (over the world, under the HUD). The name tags (`UI/NameTags.cs`, drawn by `UI/UiNameTags.cs`) and the Zombies dropped-build labels use it.
 - `Render/HeadBob.cs` is the camera head bob (see **Head bob** under Display). With it on, the gun's own walk bob follows the camera's footfalls and is smaller, so the two don't fight or double up.
 - `Render/Arms.cs` solves each arm with two-bone IK (shoulder, elbow pole, wrist) as a small hierarchy: shoulder, upper arm, forearm, hand.
 - `Render/ThirdPersonArms.cs` gives other players the same arms, with simple reload, sprint and melee poses from the game's reload and melee events.

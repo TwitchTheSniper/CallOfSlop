@@ -49,14 +49,14 @@ public sealed partial class Ui
         if (_nameInput != null)
             return;
         _nameInput = new ImInputString(32);
-        _nameInput.SetValue(s.Name.AsSpan());
+        ImGuiSafe.SetInput(_nameInput, s.Name);
         _addressInput = new ImInputString(128);
-        _addressInput.SetValue(s.JoinAddress.AsSpan());
+        ImGuiSafe.SetInput(_addressInput, s.JoinAddress);
         _portInput = s.Port;
         _serverNameInput = new ImInputString(33);
-        _serverNameInput.SetValue(s.ServerName.AsSpan());
+        ImGuiSafe.SetInput(_serverNameInput, s.ServerName);
         _masterInput = new ImInputString(128);
-        _masterInput.SetValue(s.MasterServer.AsSpan());
+        ImGuiSafe.SetInput(_masterInput, s.MasterServer);
     }
 
     private ImInputString? _serverNameInput, _masterInput;
@@ -180,6 +180,7 @@ public sealed partial class Ui
                 case Page.SinglePlayer:
                     Title("Single player - you against bots");
                     ModePicker(s);
+                    TeamRulesPicker(s); // (UiTeams.cs)
                     MapPicker(s);
                     var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
                     s.Bots = Math.Clamp(s.Bots, 0, spMax - 1);
@@ -251,6 +252,7 @@ public sealed partial class Ui
                         break;
                     }
                     ModePicker(s);
+                    TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
                     MapPicker(s);
                     AutoStartPicker(s);
                     ImGui.SetNextItemWidth(200 * _scale);
@@ -267,8 +269,15 @@ public sealed partial class Ui
                     else
                         TestModeHint();
                     ImGui.SetNextItemWidth(360 * _scale);
-                    if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
-                        s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                    try
+                    {
+                        if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
+                            s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                    }
+                    catch (Exception ex)
+                    {
+                        ImGuiSafe.FieldFailed("server name", ex);
+                    }
                     ImGui.Checkbox("Advertise server (list it publicly in the server browser)"u8, ref s.Advertise);
                     if (s.Advertise && s.Master == null)
                         ImGui.TextColored(Orange, "No master server set (Settings > Player), so only people on your network will see it."u8);
@@ -381,14 +390,21 @@ public sealed partial class Ui
     private void DrawDirectJoin(Settings s, ref LobbyAction action)
     {
         ImGui.SetNextItemWidth(360 * _scale);
-        ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+        try
+        {
+            ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+        }
+        catch (Exception ex)
+        {
+            ImGuiSafe.FieldFailed("address", ex);
+        }
         ImGui.SetNextItemWidth(200 * _scale);
         if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
             _portInput = Math.Clamp(_portInput, 1024, 65535);
         ImGui.TextColored(Dim, "Ask the host for the address shown at the top-left of their screen."u8);
         if (BigButton("JOIN GAME"))
         {
-            var addr = _addressInput!.ToString().Trim();
+            var addr = Settings.CleanAddress(_addressInput!.ToString());
             s.JoinAddress = addr.Length > 0 ? addr : "127.0.0.1";
             s.Port = (ushort)_portInput;
             s.Save();
@@ -519,12 +535,26 @@ public sealed partial class Ui
         {
             ImGui.BeginChild("##player"u8, panel);
             ImGui.SetNextItemWidth(w);
-            if (ImGui.InputText("Name"u8, _nameInput!))
-                s.Name = Settings.Clean(_nameInput!.ToString());
+            try
+            {
+                if (ImGui.InputText("Name"u8, _nameInput!))
+                    s.Name = Settings.Clean(_nameInput!.ToString());
+            }
+            catch (Exception ex)
+            {
+                ImGuiSafe.FieldFailed("player name", ex);
+            }
             ImGui.TextColored(Dim, "Name changes apply to your next match."u8);
             ImGui.SetNextItemWidth(w);
-            if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
-                s.MasterServer = _masterInput!.ToString().Trim();
+            try
+            {
+                if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
+                    s.MasterServer = Settings.CleanAddress(_masterInput!.ToString());
+            }
+            catch (Exception ex)
+            {
+                ImGuiSafe.FieldFailed("master server", ex);
+            }
             ImGui.TextColored(Dim, "Public server list. Anyone can run one with: CallOfSlop.exe --master  (UDP 27050). Leave empty for LAN only."u8);
             ImGui.Spacing();
             ImGui.SetNextItemWidth(w);
@@ -673,6 +703,20 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "On ultra-wide monitors, keeps the in-match HUD in a centred area this wide. The crosshair is always centred."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Name tags"u8);
+            var tagMode = (int)s.NameTags;
+            for (var i = 0; i <= (int)NameTagMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{NameTagRules.Label((NameTagMode)i)}##nametags", ref tagMode, i))
+                    s.NameTags = (NameTagMode)tagMode;
+            }
+            ImGui.SameLine();
+            ImGui.Checkbox("Teammate health bars"u8, ref s.NameTagHealth);
+            ImGui.TextColored(Dim, "Names over heads. Teammates show within 60 m, through walls. Enemies show only while you aim at one you can see (40 m)."u8);
+
+            ImGui.Spacing();
             ImGui.SetNextItemWidth(w);
             ImGui.SliderInt("Head bob"u8, ref s.HeadBob, 0, 100, "%d%%"u8, ImGuiSliderFlags.AlwaysClamp);
             ImGui.TextColored(Dim, "How much the camera bobs as you walk and sprint. At 0 the view stays perfectly steady. Never affects your aim."u8);
@@ -781,14 +825,19 @@ public sealed partial class Ui
     public PauseAction DrawPauseMenu(Game game, Settings s)
     {
         if (!PauseOpen)
+        {
+            _pauseTeams = false;
             return PauseAction.None;
+        }
         var action = PauseAction.None;
 
         CenterNext();
         ImGui.SetNextWindowBgAlpha(0.92f);
         if (ImGui.Begin("##pause"u8, Panel))
         {
-            if (_pauseSettings)
+            if (_pauseTeams)
+                DrawPauseTeams(game, s); // UiTeams.cs
+            else if (_pauseSettings)
             {
                 Title("Settings");
                 SettingsPanel(s, game.Audio);
@@ -806,6 +855,8 @@ public sealed partial class Ui
                     action = PauseAction.Resume;
                 if (BigButton("CHANGE LOADOUT"))
                     action = PauseAction.Loadout;
+                if (game.IsTeamMode && BigButton("TEAMS"))
+                    _pauseTeams = true; // Join Blue / Join Red / Auto and the rosters (UiTeams.cs)
                 ImGui.BeginDisabled(!game.CanRequestSuicide);
                 if (BigButton("KILL YOURSELF (respawn)"))
                     action = PauseAction.Suicide;
@@ -833,6 +884,7 @@ public sealed partial class Ui
         {
             PauseOpen = false;
             _pauseSettings = false;
+            _pauseTeams = false;
         }
         return action;
     }

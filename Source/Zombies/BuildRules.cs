@@ -156,8 +156,13 @@ public sealed class WeaponBuild
         return b;
     }
 
-    private static BuildNode? ReadNode(string s, ref int pos, Func<string, PartDef?> find, List<string>? dropped)
+    /// <summary>How deep <see cref="Parse"/> nests before calling the text garbage (far past <see cref="BuildRules.MaxParts"/>), so a hostile build can't overflow the stack.</summary>
+    public const int MaxParseDepth = 256;
+
+    private static BuildNode? ReadNode(string s, ref int pos, Func<string, PartDef?> find, List<string>? dropped, int depth = 0)
     {
+        if (depth > MaxParseDepth)
+            throw new FormatException($"parts nested more than {MaxParseDepth} deep");
         var start = pos;
         while (pos < s.Length && s[pos] is not ('{' or '}' or ','))
             pos++;
@@ -178,7 +183,7 @@ public sealed class WeaponBuild
                     throw new FormatException($"expected socket:part at {pos}");
                 var socket = s[pos..colon].Trim();
                 pos = colon + 1;
-                var child = ReadNode(s, ref pos, find, dropped);
+                var child = ReadNode(s, ref pos, find, dropped, depth + 1);
                 if (node != null && child != null)
                 {
                     if (node.Part.Sockets.FirstOrDefault(x => x.Name.Equals(socket, StringComparison.OrdinalIgnoreCase)) is { } sock && sock.Type == child.Part.Mount)

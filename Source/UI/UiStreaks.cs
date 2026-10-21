@@ -312,14 +312,15 @@ public sealed partial class Ui
                 // Key above, cost and progress below
                 var key = Keybinds.Name(settings.Bind(GameAction.Streak1 + i));
                 SizedText(dl, new float2(c.X, c.Y - r - font - 4 * _scale), font, ready ? new ImColor8(255, 255, 255, 240) : Dim8, ready ? $"[{key}] READY" : $"[{key}]", 0.5f);
-                var got = Math.Min(s.ProgressOf(id), def.Kills);
+                var cost = Perks.StreakCost(me.Perks, def.Kills); // Hardline: one less
+                var got = Math.Min(s.ProgressOf(id), cost);
                 var py = c.Y + r + 7 * _scale;
-                if (def.Kills <= 8)
+                if (cost <= 8)
                 {
                     var pip = 6 * _scale;
                     var pg = 2.5f * _scale;
-                    var total = def.Kills * pip + (def.Kills - 1) * pg;
-                    for (var k = 0; k < def.Kills; k++)
+                    var total = cost * pip + (cost - 1) * pg;
+                    for (var k = 0; k < cost; k++)
                     {
                         var a = new float2(c.X - total / 2 + k * (pip + pg), py);
                         var filled = ready || k < got;
@@ -331,9 +332,9 @@ public sealed partial class Ui
                     var bw = 54 * _scale;
                     var a = new float2(c.X - bw / 2, py);
                     dl.AddRectFilled(a, a + new float2(bw, 5 * _scale), new ImColor8(60, 62, 70, 200), 2 * _scale);
-                    dl.AddRectFilled(a, a + new float2(bw * (ready ? 1f : got / (float)def.Kills), 5 * _scale), Col(def.Color), 2 * _scale);
+                    dl.AddRectFilled(a, a + new float2(bw * (ready ? 1f : got / (float)cost), 5 * _scale), Col(def.Color), 2 * _scale);
                 }
-                SizedText(dl, new float2(c.X, py + 8 * _scale), font * 0.85f, ready ? Col(def.Color) : Dim8, ready ? def.Name : $"{def.Kills} kills", 0.5f);
+                SizedText(dl, new float2(c.X, py + 8 * _scale), font * 0.85f, ready ? Col(def.Color) : Dim8, ready ? def.Name : $"{cost} kills", 0.5f);
             }
             if (me.Alive)
                 SizedText(dl, new float2(pos.X + size.X / 2, baseY - r - font * 2 - 8 * _scale), font * 0.9f, Dim8, $"STREAK {s.Count}", 0.5f);
