@@ -24,7 +24,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // older builds stop reading before it and newer ones read "" from older hosts, so it needs no version bump.)
     // 14: terrain slope rules (SlopeRules: footprint slope, walkable to 45 degrees, slower uphill, grip and terrain steps,
     //     capped steerable slides) in both movers: client prediction must run the same movement as the server
-    public const byte ProtocolVersion = 14;
+    // 15: Last Stand shield charges and a regenerating flag in the snapshot's per-player flags byte, shield hit message
+    public const byte ProtocolVersion = 15;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

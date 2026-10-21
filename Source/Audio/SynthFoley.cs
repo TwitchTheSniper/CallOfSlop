@@ -197,6 +197,19 @@ public static partial class Synth
                 Tone(b, 0, 0.3f, 120, 80, 0.02f, 0.001f, 0.02f);
                 Click(b, rng, R(0.04f, 0.07f), 0.08f, 0.9f);
                 return Finish(b, 0.45f);
+            case Sfx.ShieldBlock:
+                // Last Stand's shield taking a bullet: a falling energy zap, a soft low thunk and a glassy, wobbling ring
+                // (a fifth apart, slightly detuned), so it can't be mistaken for a flesh hit or a turret ping.
+                b = new Buf(0.75f);
+                Tone(b, 0, 0.55f, 3200, 700, 0.09f, 0.001f, 0.06f, harmonics: 0.4f);
+                Tone(b, 0, 0.6f, 260, 150, 0.06f, 0.002f, 0.07f);
+                Noise(b, rng, 0, 0.3f, 0.0005f, 0.02f, 5500, highpass: true);
+                Band(b, rng, 0.01f, 0.25f, 0.005f, 0.12f, 1800, 4200, tremolo: 22);
+                Tone(b, 0.015f, 0.4f, 990, 990, 1, 0.003f, 0.22f, harmonics: 0.25f);
+                Tone(b, 0.015f, 0.3f, 1487, 1487, 1, 0.003f, 0.18f);
+                Tone(b, 0.015f, 0.18f, 1003, 1003, 1, 0.003f, 0.2f);
+                Echo(b, 0.2f, 0.6f);
+                return Finish(b, 0.6f);
         }
         return null;
     }

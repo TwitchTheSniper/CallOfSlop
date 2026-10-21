@@ -80,7 +80,11 @@ public static class Perks
     public const float ParkourReach = 2.3f; // highest ledge you can climb (normally 1.7 m)
     public const float ParkourJump = 1.25f; // jump speed multiplier (about 1.55 m high instead of 1.0 m)
     public const float FlakMult = 0.25f; // explosive damage taken
-    public const double LastStandImmunity = 1.5;
+    // Last Stand: the lethal hit leaves you on 1 HP and a shield blocks the next LastStandCharges bullet hits
+    // (a shotgun blast is one hit however many pellets land; melee and explosions go straight through it).
+    // The shield runs out after LastStandShieldTime even if charges are left, so it can't stack with a full regen.
+    public const byte LastStandCharges = 3;
+    public const double LastStandShieldTime = 8.0;
     public const float EntrenchedMult = 0.6f; // bullet damage taken while dug in
     public const float PointBlankRange = 8f, PointBlankMult = 1.4f;
     public const float DeadeyeRange = 30f, DeadeyeMult = 1.4f;
@@ -103,7 +107,7 @@ public static class Perks
         new() { Id = PerkId.FlakJacket, Category = PerkCategory.Survival, Name = "Flak Jacket", When = "Against grenades",
             Effect = "Take 75% less damage from explosions, including your own grenades." },
         new() { Id = PerkId.LastStand, Category = PerkCategory.Survival, Name = "Last Stand", When = "Once per life",
-            Effect = "The first hit that would kill you leaves you on 1 HP instead, and you can't be hurt for 1.5 seconds." },
+            Effect = "The first hit that would kill you leaves you on 1 HP instead, and a shield blocks the next 3 bullet hits (a shotgun blast counts as one) for up to 8 seconds. Melee and explosions go straight through it." },
         new() { Id = PerkId.Bloodthirst, Category = PerkCategory.Survival, Name = "Bloodthirst", When = "Right after a kill",
             Effect = "Every kill instantly heals you back to full health." },
         new() { Id = PerkId.Entrenched, Category = PerkCategory.Survival, Name = "Entrenched", When = "Crouched or prone and holding still",

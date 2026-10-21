@@ -117,13 +117,19 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own |
 | Survival | **Bloodthirst** (9) | Just got a kill | Each kill heals you to full |
 | Survival | **Entrenched** (25) | Crouched/prone and still | 40% less bullet damage |
-| Survival | **Last Stand** (41) | Once per life | The first lethal hit leaves you on 1 HP and immune for 1.5 s |
+| Survival | **Last Stand** (41) | Once per life | The first lethal hit leaves you on 1 HP, and a shield blocks your next 3 bullet hits (up to 8 s) |
 | Damage | **Point Blank** (start) | Within 8 m | Bullets and melee hit 40% harder |
 | Damage | **Opener** (14) | Enemy on full health | Bullets and melee hit 50% harder |
 | Damage | **Deadeye** (31) | Beyond 30 m | Bullets hit 40% harder |
 | Damage | **Flanker** (47) | Hitting their back | Bullets and melee hit 60% harder |
 
 Movement perks run inside the shared movement code (client prediction and the server agree). The server applies survival and damage perks, and bots carry perks that suit their personality.
+
+**Last Stand in detail.** Once per life, the first hit that would kill you (bullets, melee or a blast) leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
+
+### Health regeneration
+
+Health comes back on its own once you're out of the fight: **5 seconds** after you last took or dealt damage, you regenerate **8 HP a second** up to full (about 12 s from 1 HP to 100). Taking a hit, or landing one (a hit a Last Stand shield blocks counts too), restarts the 5 seconds; firing and missing doesn't. The health bar pulses and glows green while you regenerate. The server runs it, so it's the same for people and bots, in every game mode (including Gun Game and solo test matches), and dead players don't regenerate.
 
 ### Kill streaks
 

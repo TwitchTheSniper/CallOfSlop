@@ -13,6 +13,8 @@ public struct SnapPlayer
     public Stance Stance;
     public byte Weapon, Boost, MantleTicks;
     public Vector3 MantleTo;
+    public byte Shield; // Last Stand shield charges left (0-3)
+    public bool Regen; // health regenerating
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
@@ -45,11 +47,12 @@ public struct SnapHeader
 }
 
 /// <summary>
-/// Snapshot wire format (protocol 11), built to fit 32 players in one ~1200-byte datagram:
+/// Snapshot wire format (protocol 11; 15 adds shield charges and regen to the flags), built to fit 32 players in one ~1200-byte datagram:
 ///   header (20 bytes): tick, input ack, phase, time left, winner, part (low nibble) / parts (high nibble), presence mask;
 ///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target) and slow fields;
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
-///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling), weapon, boost;
+///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
+///   shield charges, regenerating), weapon, boost;
 ///   slow entries (16 bytes): id, kills, deaths, primary, secondary, kits, perks.
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -102,7 +105,8 @@ public static class Snapshot
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
             .U16(QYaw(p.Yaw)).U16(Q16(p.Pitch, PitchScale))
             .U8(p.Health)
-            .U8((byte)((p.Alive ? 1 : 0) | (p.Grounded ? 2 : 0) | ((int)p.Stance << 2) | (mantling ? 16 : 0)))
+            .U8((byte)((p.Alive ? 1 : 0) | (p.Grounded ? 2 : 0) | ((int)p.Stance << 2) | (mantling ? 16 : 0) | (Math.Min((int)p.Shield, 3) << 5)
+                       | (p.Regen ? 128 : 0)))
             .U8(p.Weapon).U8(p.Boost);
         if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
@@ -120,6 +124,8 @@ public static class Snapshot
         p.Alive = (flags & 1) != 0;
         p.Grounded = (flags & 2) != 0;
         p.Stance = (Stance)((flags >> 2) & 3);
+        p.Shield = (byte)((flags >> 5) & 3);
+        p.Regen = (flags & 128) != 0;
         p.Weapon = r.U8();
         p.Boost = r.U8();
         if ((flags & 16) != 0 && r.Has(MantleBytes))
