@@ -70,6 +70,8 @@ public static partial class SelfTest
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("More perks", CheckMorePerks); // SelfTestMorePerks.cs: the 12 later perks, unlocks, old loadouts, Gun Game, bots, effects
             Section("Melee", CheckMelee);
+            Section("Melee one-hit kill", CheckMeleeOneHit); // SelfTestMeleeMusket.cs: perks vs the one-hit melee kill
+            Section("Musket", CheckMusket); // SelfTestMeleeMusket.cs: the Old Faithful Musket's one-shot ranges
             Section("Grenade range", CheckGrenadeRange); // SelfTestGrenades.cs: throw range, fuse vs flight time, bot throw aim
             Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
@@ -653,6 +655,14 @@ public static partial class SelfTest
         var normal = _matchBotStats;
         Line($"headshots: normal {normal.GunHeadshots}/{normal.GunKills} ({normal.HeadshotRatio:P1}), hard {hard.GunHeadshots}/{hard.GunKills} ({hard.HeadshotRatio:P1})"
              + " (before this change: normal 51.4%, hard 51.0%)");
+        // Melee kills in one hit: bots should still mostly shoot (they need a short wind-up in reach before swinging).
+        foreach (var (stats, label) in new[] { (normal, "Normal"), (hard, "Hard") })
+        {
+            var share = stats.MeleeKills / (float)Math.Max(1, stats.MeleeKills + stats.GunKills);
+            Line($"{label} bots: {stats.MeleeKills} melee kills vs {stats.GunKills} gun kills ({share:P1} melee)");
+            if (share > 0.25f)
+                Fail($"{label} bots: {share:P1} of their kills are melee, too many (at most 25%)");
+        }
         foreach (var (stats, label) in new[] { (normal, "Normal"), (hard, "Hard") })
             if (stats.GunKills < 40)
                 Fail($"{label} bots: only {stats.GunKills} gun kills, too few to judge");
@@ -1039,7 +1049,9 @@ public static partial class SelfTest
         game.SelfTestPlace(a, new Vector3(5, 0, 5), MathF.PI);
         game.SelfTestPlace(v, new Vector3(5, 0, 6.3f), 0); // facing the attacker
         game.SelfTestMelee(a, MathF.PI, 0, 1);
-        var front = World.MaxHealth - v.Health;
+        var front = World.MaxHealth - (v.Alive ? v.Health : 0);
+        var frontKill = !v.Alive;
+        game.SelfTestPlace(v, new Vector3(5, 0, 6.3f), 0); // back on full health
         game.SelfTestMelee(a, MathF.PI, 0, 1.2); // still cooling down
         var spam = World.MaxHealth - v.Health;
 
@@ -1057,10 +1069,10 @@ public static partial class SelfTest
         game.SelfTestMelee(a, 0, 0, 7); // facing the wrong way
         var behind = World.MaxHealth - v.Health;
 
-        Line($"front hit {front} dmg (second swing during cooldown adds {spam - front}), backstab kills {backstabKill}, 4 m away {far} dmg, facing away {behind} dmg, kill name '{Throwables.KillName(Game.MeleeKillId)}'");
-        if (front != (int)Game.MeleeDamage)
-            Fail($"a front melee hit did {front} (expected {Game.MeleeDamage})");
-        if (spam != front)
+        Line($"front hit {front} dmg, kills {frontKill} (second swing during cooldown does {spam}), backstab kills {backstabKill}, 4 m away {far} dmg, facing away {behind} dmg, kill name '{Throwables.KillName(Game.MeleeKillId)}'");
+        if (!frontKill)
+            Fail($"a front melee hit did {front} and didn't kill (melee should kill in one hit)");
+        if (spam != 0)
             Fail("melee cooldown not enforced");
         if (!backstabKill)
             Fail("melee from behind didn't kill");
