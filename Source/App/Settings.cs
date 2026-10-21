@@ -47,6 +47,12 @@ public sealed class Settings
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
     public int HeadBob = 100;
 
+    /// <summary>Name tags over players' heads: All (teammates + the enemy you aim at), Team only, or Off. See NameTags.</summary>
+    public NameTagMode NameTags = NameTagMode.All;
+
+    /// <summary>A small health bar under teammates' name tags (off by default).</summary>
+    public bool NameTagHealth;
+
     /// <summary>Set by the settings screen when display options change; Program applies them.</summary>
     [NonSerialized] public bool DisplayDirty;
 
@@ -195,6 +201,8 @@ public sealed class Settings
                     case "height" when int.TryParse(v, out var i): s.Height = Math.Clamp(i, 360, 16384); break;
                     case "ui_scale" when float.TryParse(v, inv, out var f): s.UiScale = Math.Clamp(f, 0.6f, 2.5f); break;
                     case "hud_width" when Enum.TryParse<HudWidth>(v, out var hw) && Enum.IsDefined(hw): s.HudWidth = hw; break;
+                    case "name_tags" when Enum.TryParse<NameTagMode>(v, out var nt) && Enum.IsDefined(nt): s.NameTags = nt; break;
+                    case "name_tag_health": s.NameTagHealth = v == "1"; break;
                     case "head_bob" when int.TryParse(v, out var i): s.HeadBob = Math.Clamp(i, 0, 100); break;
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
@@ -257,6 +265,8 @@ public sealed class Settings
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
                     $"head_bob={HeadBob}",
+                    $"name_tags={NameTags}",
+                    $"name_tag_health={(NameTagHealth ? 1 : 0)}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
             );

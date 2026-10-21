@@ -287,6 +287,11 @@ public static unsafe partial class Program
             SmokeStreaks(now);
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeNameTagStep < 3)
+        {
+            SmokeNameTags(now); // Program.NameTags.cs
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -999,6 +1004,7 @@ public static unsafe partial class Program
                 FpsCounter.Draw(now);
             if (_session is { } g)
             {
+                DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1652,6 +1658,7 @@ public static unsafe partial class Program
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         Gfx.SetCamera(view, proj);
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
+        UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
 
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
