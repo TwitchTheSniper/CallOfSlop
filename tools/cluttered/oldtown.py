@@ -340,10 +340,11 @@ for xx in (-12.15, 12.15):
         t.mesh("box", xx, zz, (0.25, 0.3, 0.45), y=2.2, width=0.08, height=2.6, depth=1.2)            # stained glass
 
 # ================================================================ the town square: monument, fountain, clock, benches, bus stops
-t.block(-1.3, 0, -1.3, 1.3, 0.9, 1.3, STONE)                    # plinth (mantle-able)
-t.block(-0.85, 0.9, -0.85, 0.85, 3.8, 0.85, (0.42, 0.48, 0.40))   # the statue's core and pedestal
-t.mesh("capsule", 0, 0, (0.40, 0.50, 0.42), y=2.6, radius=0.42, height=2.2, segments=12)
-t.mesh("sphere", 0, 0, (0.40, 0.50, 0.42), y=4.6, width=0.6, height=0.7, depth=0.6, segments=12, detail=6)
+for sx in (-4.0, 4.0):   # two statues either side of the middle (the hill's centre stays open), on plinths you can mantle
+    t.block(sx - 1.3, 0, -1.3, sx + 1.3, 0.9, 1.3, STONE)
+    t.block(sx - 0.85, 0.9, -0.85, sx + 0.85, 3.8, 0.85, (0.42, 0.48, 0.40))
+    t.mesh("capsule", sx, 0, (0.40, 0.50, 0.42), y=3.4, radius=0.42, height=2.2, segments=12)
+    t.mesh("sphere", sx, 0, (0.40, 0.50, 0.42), y=5.4, width=0.6, height=0.7, depth=0.6, segments=12, detail=6)
 t.prop("Fountain", 0, -17.0, 0, tag="square")
 t.prop("Ticking Street Clock", 0, 17.0, 0, tag="square")
 for (bx, bz, by) in ((-4.5, -17.0, 90), (4.5, -17.0, 270), (-4.5, 17.0, 90), (4.5, 17.0, 270)):
@@ -748,8 +749,8 @@ for k, (room, kind, du, bu) in enumerate(ROOMS):
     t.clutter(["Book Pile", "Paint Cans", "Newspaper", "Litter", "Cardboard Box Small", "Plastic Bag", "Bottles", "Soda Cans", "Backpack", "Broom", "Mop and Bucket", "Bucket", "Toolbox"],
               ix0 + 0.4, iz0 + 0.4, ix1 - 0.4, iz1 - 0.4, 16, 80 + k)
 # the car park, the gas station forecourt, the square, the park and the lot
-t.clutter(["Litter", "Soda Cans", "Plastic Bag", "Car Wheel", "Tyre", "Jerry Can", "Car Door", "Road Plate"], 28, 31, 76, 57, 120, 90)
-t.clutter(["Litter", "Jerry Can", "Soda Cans", "Plastic Bag", "Tyre", "Newspaper"], 44, -36, 82, -2, 80, 91)
+t.clutter(["Litter", "Soda Cans", "Plastic Bag", "Car Wheel", "Tyre", "Car Door", "Road Plate"], 28, 31, 76, 57, 120, 90)
+t.clutter(["Litter", "Soda Cans", "Plastic Bag", "Tyre", "Newspaper"], 44, -36, 82, -2, 80, 91)
 t.clutter(["Litter", "Newspaper", "Pigeons", "Soda Cans", "Plastic Bag", "Bottle"], -16, -24, 16, 24, 120, 92)
 t.clutter(["Litter", "Plastic Bag", "Bottle", "Newspaper", "Sports Balls", "Duck Decoy", "Log", "Tree Stump"], -88, -62, -16, -30, 120, 93)
 t.clutter(["Rubble", "Loose Bricks", "Cinder Blocks", "Plank", "Tyre", "Litter", "Bottles", "Rubble Pile", "Brick Pile"], -29, 20, -15, 50, 60, 94)
