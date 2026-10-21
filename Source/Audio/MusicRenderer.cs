@@ -27,6 +27,9 @@ public sealed class MusicRenderer
     private readonly BassVoice _bass = new();
     private readonly SawSynth _lead = new(), _pad = new(), _arp = new();
     private readonly FxVoices _fx = new();
+    private readonly ReverseBassVoice _rev = new();
+    private readonly VocalVoice _vox = new();
+    private readonly MasterLimiter _limiter = new();
     private readonly PingPongDelay _delay = new();
     private readonly RoomReverb _verb = new();
 
@@ -41,6 +44,14 @@ public sealed class MusicRenderer
     private float _gKick, _gSnare, _gHat, _gBass, _gLead, _gPad, _gArp, _duckDepth, _leadDelay, _leadVerb;
     private int _harmony1, _harmony2; // extra lead voices as scale-degree offsets (0 = none)
     private bool _arpInDrop, _introPad, _rollingBuildBass;
+
+    // Hardbass: bass notes per 16th (0 rest, 1 root, 2 octave, 3 fifth), chants per 16th over two bars (-1 none),
+    // the lead sound in use, extra levels, the separate bass sidechain and the drive into the master limiter.
+    private bool _hb;
+    private HardbassFlavor _flavor = MusicTracks.DefaultHardbass;
+    private readonly sbyte[] _hbBassA = new sbyte[16], _hbBassB = new sbyte[16], _chants = new sbyte[32];
+    private HardbassLead _leadKind;
+    private float _gRev, _gVox, _bassDuck, _masterGain = 1f, _voxHz = 150f;
 
     // Sequencer
     private double _samplesPerStep, _toNextStep;
@@ -60,6 +71,7 @@ public sealed class MusicRenderer
     private readonly float[] _bArpL = new float[MaxChunk], _bArpR = new float[MaxChunk], _bFxL = new float[MaxChunk], _bFxR = new float[MaxChunk];
     private readonly float[] _bDelayIn = new float[MaxChunk], _bVerbIn = new float[MaxChunk];
     private readonly float[] _bDelayL = new float[MaxChunk], _bDelayR = new float[MaxChunk], _bVerbL = new float[MaxChunk], _bVerbR = new float[MaxChunk];
+    private readonly float[] _bRev = new float[MaxChunk], _bVox = new float[MaxChunk];
 
     public MusicRenderer()
     {
@@ -108,6 +120,9 @@ public sealed class MusicRenderer
         _pad.Reset();
         _arp.Reset();
         _fx.Reset();
+        _rev.Reset();
+        _vox.Reset();
+        _limiter.Reset();
         _delay.Reset();
         _verb.Reset();
         _delay.SetTime((float)(_samplesPerStep * 3 / Sr)); // dotted eighth
@@ -187,8 +202,17 @@ public sealed class MusicRenderer
         "x-x-x---x-x-x---x-x-x-x-x-------",
     ];
 
+    private static readonly string[] HardbassRhythms =
+    [
+        "x.x.x.x.x--.x.x.x.x.x.x.x--.x...",
+        "x--x--x-x-x-x---x--x--x-x-x-x---",
+        "x.xx.xx.x.xx.x..x.xx.xx.x.x.x...",
+        "x---x-x-x--x--x-x---x-x-x-x-x---",
+    ];
+
     private static string[] LeadRhythms(MusicStyle s) => s switch
     {
+        MusicStyle.Hardbass => HardbassRhythms,
         MusicStyle.Hardstyle => HardstyleRhythms,
         MusicStyle.Hardcore => HardcoreRhythms,
         MusicStyle.Industrial => IndustrialRhythms,
@@ -208,6 +232,16 @@ public sealed class MusicRenderer
         _bass.Release = 0.03f;
         _snare.Clap = false;
         _snare.PitchMul = 1f;
+        _lead.BendSemis = 0;
+        _lead.Vibrato = 0;
+        _lead.FilterLfo = 0;
+        _lead.BandPass = false;
+        _bass.Bounce = 0;
+        _bass.Resonance = 0.3f;
+        _kick.Clip = 0;
+        _kick.Punch = 0;
+        _hb = false;
+        _masterGain = 1f;
         _harmony1 = _harmony2 = 0;
         _arpInDrop = _introPad = _rollingBuildBass = false;
         _gKick = 0.85f;
@@ -322,6 +356,53 @@ public sealed class MusicRenderer
                 _leadDelay = 0.35f;
                 break;
 
+            case MusicStyle.Hardbass:
+            {
+                var hb = _flavor = _track.Hardbass ?? MusicTracks.DefaultHardbass;
+                _hb = true;
+                var beat = 60f / _track.Bpm;
+                // A short, hard-clipped, pounding kick with a punchy click; short enough at any tempo that it never
+                // smears into the off-beat bass (it ends well before the next 8th).
+                // Driven 7x, the kick only falls silent ~4.3 time constants after its hold, so that has to land before the 8th.
+                var kickHold = beat * 0.06f;
+                Kick(300 + 12 * (_track.Root % 7), kickRoot, 0.016f, kickHold, (0.42f * beat - kickHold) / 4.3f, 7f, 4200, 0.22f);
+                _kick.Clip = hb.KickClip;
+                _kick.Punch = 0.3f;
+                _kick.PunchHz = 1900 + 120 * (_track.Root % 6);
+                _kickA = _kickB = FourFloor;
+                _snare.Clap = true;
+                Snare(225, 1650, 0.11f, 0.035f, 1.9f, 0.3f);
+                _snareA = Backbeat;
+                _snareB = P("....x.......x.x.");
+                _hatA = P("xxxxxxxxxxxxxxxx");
+                _hatB = P("x.xxx.xxx.xxx.xx");
+                _openA = _openB = Offbeat8;
+                Bass(620, 5f, 0.04f, 6f, 0.45f * beat / 3.5f, 0.45f, 0.009f); // each off-beat note is gone (-30 dB) before the next kick
+                _bass.Resonance = 0.4f;
+                _bass.Release = 0.015f;
+                _bass.Bounce = hb.Bounce;
+                _bassA = ParseBass(hb.BassA, _hbBassA);
+                _bassB = ParseBass(hb.BassB, _hbBassB);
+                for (var i = 0; i < 32; i++)
+                    _chants[i] = (sbyte)(i < hb.Chants.Length ? hb.Chants[i] switch { 'h' => 0, 'o' => 1, 'a' => 2, 'y' => 3, _ => -1 } : -1);
+                ApplyLead(hb.Lead);
+                _rollingBuildBass = true;
+                _duckDepth = 0.55f;
+                _bassDuck = 0.85f;
+                _gKick = 0.95f;
+                _gSnare = 0.5f;
+                _gHat = 0.14f;
+                _gBass = 0.45f;
+                _gPad = 0.12f;
+                _gRev = 0.5f;
+                _gVox = 0.45f;
+                _leadDelay = 0.2f;
+                _leadVerb = 0.12f;
+                _masterGain = 1.5f;
+                _voxHz = Dsp.MidiHz(48 + _track.Root % 12);
+                break;
+            }
+
             default: // Darksynth
                 Kick(160, 62, 0.015f, 0f, 0.07f, 2f, 5000, 0.45f);
                 _kickA = P("x.x.x.x.x.x.x.x.");
@@ -383,6 +464,74 @@ public sealed class MusicRenderer
         _pad.Configure();
         _arp.Configure();
         _fx.Configure();
+        _rev.Configure();
+        _limiter.Configure();
+    }
+
+    private static ushort ParseBass(string pattern, sbyte[] notes)
+    {
+        ushort mask = 0;
+        for (var i = 0; i < 16; i++)
+        {
+            notes[i] = (sbyte)(i < pattern.Length ? pattern[i] switch { 'x' => 1, 'o' => 2, 'f' => 3, _ => 0 } : 0);
+            if (notes[i] != 0)
+                mask |= (ushort)(1 << i);
+        }
+        return mask;
+    }
+
+    /// <summary>Sets up the lead synth for a hardbass lead sound (call _lead.Configure() after).</summary>
+    private void ApplyLead(HardbassLead kind)
+    {
+        _leadKind = kind;
+        _lead.Glide = 0;
+        _lead.Square = false;
+        _lead.Resonance = 0.15f;
+        _lead.BendSemis = 0;
+        _lead.Vibrato = 0;
+        _lead.FilterLfo = 0;
+        _lead.BandPass = false;
+        _harmony1 = _harmony2 = 0;
+        switch (kind)
+        {
+            case HardbassLead.Supersaw:
+                Lead(7, 0.024f, 0.002f, 0.35f, 0.75f, 0.1f, 3200, 1.2f, 0.2f, 2.2f);
+                _harmony1 = 2;
+                _harmony2 = -7;
+                _gLead = 0.3f;
+                break;
+            case HardbassLead.Hoover:
+                Lead(5, 0.04f, 0.004f, 0.4f, 0.85f, 0.12f, 2600, 0.8f, 0.3f, 3f);
+                _lead.BendSemis = 5f;
+                _lead.BendTime = 0.07f;
+                _lead.Glide = 0.04f;
+                _lead.Vibrato = 0.3f;
+                _lead.VibratoHz = 5.5f;
+                _harmony1 = -7;
+                _gLead = 0.3f;
+                break;
+            case HardbassLead.Screech:
+                Lead(3, 0.012f, 0.002f, 0.2f, 0.8f, 0.08f, 1500, 2f, 0.12f, 6f);
+                _lead.Resonance = 0.88f;
+                _lead.BandPass = true;
+                _lead.FilterLfo = 1.1f;
+                _lead.FilterLfoHz = _track.Bpm / 60f * 2f; // wah in 8ths
+                _lead.Vibrato = 0.5f;
+                _lead.VibratoHz = 7f;
+                _lead.BendSemis = -4f;
+                _lead.BendTime = 0.05f;
+                _harmony1 = 7;
+                _gLead = 0.26f;
+                break;
+            default: // Rave
+                Lead(3, 0.01f, 0.001f, 0.12f, 0.35f, 0.06f, 2200, 4f, 0.08f, 4f);
+                _lead.Square = true;
+                _lead.Resonance = 0.4f;
+                _harmony1 = 2;
+                _harmony2 = 4;
+                _gLead = 0.26f;
+                break;
+        }
     }
 
     private void Kick(float start, float end, float pitchTime, float hold, float decay, float drive, float tone, float click)
@@ -609,6 +758,50 @@ public sealed class MusicRenderer
                 _bass.NoteOff();
                 break;
         }
+        if (_hb)
+        {
+            // Later drops can bring a different lead sound; every other section goes back to the first one.
+            var want = _part == MusicPart.Drop && _drops >= 2 ? _flavor.LaterLead : _flavor.Lead;
+            if (want != _leadKind)
+            {
+                ApplyLead(want);
+                _lead.Configure();
+            }
+        }
+    }
+
+    /// <summary>A hardbass chant on this 16th of the two-bar chant pattern, if there is one.</summary>
+    private void ChantStep(int barIn, int s)
+    {
+        var w = _chants[((barIn & 1) << 4) | s];
+        if (w >= 0)
+            _vox.Trigger((VocalWord)w, _voxHz, 1f);
+    }
+
+    /// <summary>The first word of the chant pattern (for the hits before a drop).</summary>
+    private VocalWord FirstChant()
+    {
+        foreach (var w in _chants)
+            if (w >= 0)
+                return (VocalWord)w;
+        return VocalWord.Hey;
+    }
+
+    private bool ReverseBassNow(int barIn) => _flavor.Reverse switch
+    {
+        ReverseBassUse.LaterDrops => _drops >= 2,
+        ReverseBassUse.Alternate => ((barIn >> 2) & 1) == 1,
+        _ => false,
+    };
+
+    private float ReverseHz(int chord)
+    {
+        var hz = Hz(chord, 0);
+        while (hz > 95f)
+            hz *= 0.5f;
+        while (hz < 45f)
+            hz *= 2f;
+        return hz;
     }
 
     private void OnStep()
@@ -656,6 +849,8 @@ public sealed class MusicRenderer
                 PadStep(s, chord, _introPad ? 0.7f : 0.45f);
                 if (_arpInDrop && secondHalf)
                     ArpStep(s, chord);
+                if (_hb && lastBar && s == 12)
+                    _vox.Trigger(FirstChant(), _voxHz, 0.8f);
                 break;
             }
 
@@ -689,6 +884,8 @@ public sealed class MusicRenderer
                 {
                     if (s == 0 || s == 8)
                         _lead.AllOff();
+                    if (_hb && lastBar && (s == 8 || s == 12))
+                        _vox.Trigger(FirstChant(), _voxHz, s == 12 ? 1f : 0.8f); // "HEY! HEY!" into the drop
                 }
                 else
                 {
@@ -711,7 +908,7 @@ public sealed class MusicRenderer
                 {
                     _snare.PitchMul = 1f + 0.08f * (s - 12);
                     _snare.Trigger(0.6f + 0.1f * (s - 12));
-                    if (_style == MusicStyle.Darksynth || _style == MusicStyle.Hardcore)
+                    if (_style == MusicStyle.Darksynth || _style == MusicStyle.Hardcore || _hb)
                         _kick.Trigger(0.9f);
                     _hat.Trigger(0.6f, false);
                 }
@@ -724,10 +921,19 @@ public sealed class MusicRenderer
                 {
                     _bass.NoteOff();
                 }
+                else if (_hb && ReverseBassNow(barIn))
+                {
+                    // Hardstyle reverse bass: swells from just after each kick and cuts just before the next.
+                    _bass.NoteOff();
+                    if (s % 4 == 1)
+                        _rev.Trigger(ReverseHz(chord), (float)(_samplesPerStep * 2.6 / Sr), 1f);
+                }
                 else
                 {
                     BassStep(s, chord, dv);
                 }
+                if (_hb && !(lastBar && _gapAfter && s >= 12))
+                    ChantStep(barIn, s);
                 LeadStep(phrase, barIn, s);
                 if (_arpInDrop && dv == 1)
                     ArpStep(s, chord);
@@ -749,6 +955,14 @@ public sealed class MusicRenderer
                 }
                 if (secondHalf && s % 4 == 0)
                     _hat.Trigger(0.25f + 0.3f * prog, true); // a pulse to keep the time
+                if (_hb && _flavor.HalfTimeBreak && secondHalf)
+                {
+                    // Half time: the kick on 1 and the clap on 3, so a fast track can breathe.
+                    if (s == 0)
+                        _kick.Trigger(0.75f, 0.5f);
+                    else if (s == 8)
+                        _snare.Trigger(0.6f);
+                }
                 if (_gapAfter && barIn >= _secBars - 2)
                 {
                     _fx.RiserLevel = 0.2f * (barIn - _secBars + 2 + s / 16f) / 2f;
@@ -809,6 +1023,15 @@ public sealed class MusicRenderer
         var mask = variant == 0 ? _bassA : _bassB;
         if (mask == 0)
             return;
+        if (_hb)
+        {
+            // The bouncy off-beat bass: root, octave or fifth per 16th, accents on the off-beats.
+            var code = (variant == 0 ? _hbBassA : _hbBassB)[s];
+            if (code == 0)
+                return;
+            _bass.NoteOn(Hz(code == 3 ? chord + 4 : chord, code == 2 ? 12 : 0), (s & 3) == 2 ? 1f : 0.82f);
+            return;
+        }
         if (_style == MusicStyle.DrumAndBass)
         {
             // Reese: long notes that glide; variant B moves to the fifth halfway through the bar.
@@ -912,6 +1135,8 @@ public sealed class MusicRenderer
         var delayR = _bDelayR.AsSpan(0, n);
         var verbL = _bVerbL.AsSpan(0, n);
         var verbR = _bVerbR.AsSpan(0, n);
+        var rev = _bRev.AsSpan(0, n);
+        var vox = _bVox.AsSpan(0, n);
 
         _kick.Render(kick, duck, ref _noise);
         _snare.Render(snare, ref _noise);
@@ -921,12 +1146,15 @@ public sealed class MusicRenderer
         _pad.Render(padL, padR);
         _arp.Render(arpL, arpR);
         _fx.Render(fxL, fxR, ref _noise);
+        _rev.Render(rev);
+        _vox.Render(vox, ref _noise);
 
         // Levels, then the delay and reverb sends.
         float gKick = _gKick, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
-        float leadDelay = _leadDelay, leadVerb = _leadVerb;
+        float leadDelay = _leadDelay, leadVerb = _leadVerb, gVox = _gVox;
         for (var i = 0; i < n; i++)
         {
+            var vx = vox[i] *= gVox;
             kick[i] *= gKick;
             var sn = snare[i] *= gSnare;
             var ht = hat[i] *= gHat;
@@ -937,11 +1165,16 @@ public sealed class MusicRenderer
             var pr = padR[i] *= gPad;
             var al = arpL[i] *= gArp;
             var ar = arpR[i] *= gArp;
-            delayIn[i] = (ll + lr) * leadDelay + (al + ar) * 0.4f;
-            verbIn[i] = sn * 0.5f + (pl + pr) * 0.5f + (ll + lr) * leadVerb + (al + ar) * 0.2f + ht * 0.2f;
+            delayIn[i] = (ll + lr) * leadDelay + (al + ar) * 0.4f + vx * 0.25f;
+            verbIn[i] = sn * 0.5f + (pl + pr) * 0.5f + (ll + lr) * leadVerb + (al + ar) * 0.2f + ht * 0.2f + vx * 0.5f;
         }
         _delay.Render(delayIn, delayL, delayR);
         _verb.Render(verbIn, verbL, verbR);
+        if (_hb)
+        {
+            MixHardbass(stereo, n);
+            return;
+        }
 
         // Sidechain ducking, the mix, a DC blocker and the soft limiter.
         float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth;
@@ -973,4 +1206,91 @@ public sealed class MusicRenderer
         _dcOutL = dcOutL;
         _dcOutR = dcOutR;
     }
+
+    /// <summary>
+    /// The hardbass mix: the bass pumps harder than the leads (its own sidechain depth), the reverse bass and chants
+    /// sit on top, and the whole bus is driven into the look-ahead limiter: loud, never clipped.
+    /// </summary>
+    private void MixHardbass(Span<float> stereo, int n)
+    {
+        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev, master = _masterGain;
+        for (var i = 0; i < n; i++)
+        {
+            var dk = _bDuck[i];
+            var d = 1f - duckDepth * dk;
+            var bs = _bBass[i] * (1f - bassDuck * dk) + _bRev[i] * gRev;
+            var synthL = bs + (_bLeadL[i] + _bPadL[i] + _bArpL[i] + _bDelayL[i] * 0.5f) * d;
+            var synthR = bs + (_bLeadR[i] + _bPadR[i] + _bArpR[i] + _bDelayR[i] * 0.5f) * d;
+            var k = _bKick[i];
+            var sn = _bSnare[i];
+            var ht = _bHat[i];
+            var vx = _bVox[i];
+            var l = k + sn + ht * 0.8f + synthL + _bFxL[i] * 0.22f + _bVerbL[i] + vx;
+            var r = k + sn + ht + synthR + _bFxR[i] * 0.22f + _bVerbR[i] + vx;
+
+            var hl = l - dcInL + 0.9985f * dcOutL;
+            dcInL = l;
+            dcOutL = hl;
+            var hr = r - dcInR + 0.9985f * dcOutR;
+            dcInR = r;
+            dcOutR = hr;
+            if (MathF.Abs(hl) + MathF.Abs(hr) < 1e-15f)
+                dcOutL = dcOutR = 0;
+            stereo[i * 2] = hl * master;
+            stereo[i * 2 + 1] = hr * master;
+        }
+        _dcInL = dcInL;
+        _dcInR = dcInR;
+        _dcOutL = dcOutL;
+        _dcOutR = dcOutR;
+        _limiter.Process(stereo[..(n * 2)]);
+    }
+
+    /// <summary>
+    /// For the self-test: loads a track and plays its kick and its bass alone, returning how loud the kick still is at
+    /// the next 8th and how loud an off-beat bass note still is at the next kick, both relative to their peaks. Small
+    /// numbers mean the two never smear into each other. Reload the renderer afterwards.
+    /// </summary>
+    internal (float KickAtOffbeat, float BassAtNextKick) GrooveTails(MusicTrack track)
+    {
+        Load(track, 1);
+        var half = (int)(Sr * 30.0 / track.Bpm); // an 8th note in samples
+        _kick.Trigger(1f);
+        var kickPeak = 0f;
+        var kickTail = 0f;
+        for (var done = 0; done < half;)
+        {
+            var n = Math.Min(MaxChunk, half - done);
+            _kick.Render(_bKick.AsSpan(0, n), _bDuck.AsSpan(0, n), ref _noise);
+            for (var i = 0; i < n; i++)
+            {
+                var a = MathF.Abs(_bKick[i]);
+                kickPeak = MathF.Max(kickPeak, a);
+                if (done + i >= half - 64)
+                    kickTail = MathF.Max(kickTail, a);
+            }
+            done += n;
+        }
+        _bass.NoteOn(Hz(_track.Chords[0], 0), 1f);
+        var bassPeak = 0f;
+        var bassTail = 0f;
+        for (var done = 0; done < half;)
+        {
+            var n = Math.Min(MaxChunk, half - done);
+            _bass.Render(_bBass.AsSpan(0, n));
+            for (var i = 0; i < n; i++)
+            {
+                var a = MathF.Abs(_bBass[i]);
+                bassPeak = MathF.Max(bassPeak, a);
+                if (done + i >= half - 64)
+                    bassTail = MathF.Max(bassTail, a);
+            }
+            done += n;
+        }
+        Load(track, 1);
+        return (kickPeak > 0 ? kickTail / kickPeak : 1f, bassPeak > 0 ? bassTail / bassPeak : 1f);
+    }
+
+    /// <summary>The lowest gain the master limiter has applied since the load (1 = never limited; hardbass only).</summary>
+    public float LimiterMinGain => _limiter.MinGain;
 }
