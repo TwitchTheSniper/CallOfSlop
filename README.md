@@ -414,16 +414,16 @@ The lobby shows your level and next unlock, and the level bar at the bottom of t
 
 ### Grenades and equipment
 
-The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per life), both refilled when you respawn. Projectiles are simulated by the server: they bounce off walls and floors, and blasts are blocked by walls.
+The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per life), both refilled when you respawn. Projectiles are simulated by the server: they bounce off walls and floors, and blasts are blocked by walls. Everything is thrown at 22.5 m/s (plus a little lift and half your own speed), which carries about **34 m** on flat ground at the best angle (about 40 degrees up); a frag thrown that far lands with a few tenths of a second to spare before it goes off.
 
 | Item | Unlock | What it does |
 | --- | --- | --- |
-| Frag Grenade | Level 3 | 2.2 s fuse, bounces. Up to 150 damage, kills within about 1.5 m, hurts out to 7 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
+| Frag Grenade | Level 3 | 2.5 s fuse, bounces. Up to 200 damage, kills within about 4 m, hurts out to 9 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
 | Impact Grenade | Level 8 | Explodes on first contact. Up to 110 damage within 4.5 m. |
-| Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s. Blocks vision, and bots can't see through it. |
+| Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s where it lands (1.2 s after the throw, or on landing if it's still in the air then). Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you through walls as a silhouette in their team colour (orange in free-for-all modes); teammates are never revealed. It beeps once a second, so enemies can hear where it is. |
 
-Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, using a proper ballistic arc; Tacticians throw more, also at where an enemy just ducked out of sight. Explosions shake your screen when they're close.
+Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, picking the angle that makes the grenade go off at the target (bounces and roll included); Tacticians throw more, also at where an enemy just ducked out of sight (up to 22 m away). Explosions shake your screen when they're close.
 
 ### Loadouts and weapons
 
