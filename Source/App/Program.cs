@@ -195,6 +195,11 @@ public static unsafe partial class Program
             SkySmokeTick(now); // Program.Sky.cs
             return;
         }
+        if (WorkbenchSmokeActive)
+        {
+            WorkbenchSmokeTick(now); // Program.Workbench.cs
+            return;
+        }
         if (_smokeMap < 0)
         {
             // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
@@ -243,7 +248,7 @@ public static unsafe partial class Program
             else if (_smokeGallery == 4 && SmokeMapSelectTick(now, t - 2.8))
             {
                 _smokeGallery = 0;
-                StartMoversSmoke(now); // then foliage, then on to the maps
+                StartWorkbenchSmoke(now); // the weapon workbench and its range (Program.Workbench.cs), then movers, foliage, the maps
             }
             return;
         }
@@ -821,7 +826,7 @@ public static unsafe partial class Program
             {
                 case LobbyAction.SinglePlayer:
                     net = NetPeer.Offline();
-                    bots = _settings.Bots;
+                    bots = _rangeLaunch != null ? 0 : _settings.Bots; // the Workbench Range is just you
                     break;
                 case LobbyAction.Host:
                     net = NetPeer.Host(_settings.Port, Game.MaxPlayers - 1);
@@ -856,7 +861,7 @@ public static unsafe partial class Program
                     ? $"[test] simulating {_lagMs} ms latency and {_lossPct}% loss"
                     : "[test] network simulator not available in this RakNet build");
 
-            var map = kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1); // joiners get the host's map; random picks a map that fits everyone
+            var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
@@ -873,6 +878,8 @@ public static unsafe partial class Program
                 if (_settings.Advertise && _settings.Master is { } m)
                     Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
             }
+            if (_rangeLaunch != null)
+                ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
             Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
             if (!_session.SkipsLoadout)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
@@ -1022,6 +1029,10 @@ public static unsafe partial class Program
                 if (Ui.LobbyLoadouts)
                 {
                     Ui.DrawLobbyLoadouts(AudioSystem, now);
+                }
+                else if (DrawWorkbenchLobby(now))
+                {
+                    // the weapon workbench (Zombies preview) is up instead of the main menu (Program.Workbench.cs)
                 }
                 else
                 {
@@ -1483,7 +1494,7 @@ public static unsafe partial class Program
             down = false;
         }
         var pressed = down && Pressed(GameAction.Fire);
-        _game.UpdateTrigger(now, down, pressed);
+        _game.UpdateTrigger(now, down || _smokeFireHeld, pressed); // (_smokeFireHeld: the workbench smoke step's minigun)
     }
 
     // =====================================================================

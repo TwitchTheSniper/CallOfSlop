@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Laser Sight",
+  "category": "utility",
+  "rarity": "uncommon",
+  "flavor": "A red laser. Hip fire goes where it points (more or less).",
+  "weight": 0.1,
+  "model": [
+    {"size": [0.02, 0.02, 0.05], "pos": [0.01, 0, 0], "color": "black"},
+    {"size": [0.006, 0.006, 0.006], "pos": [0.01, 0, -0.026], "color": "#c83228", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "mul": 0.8}
+  ]
+}

@@ -173,7 +173,7 @@ public sealed partial class Game
     public bool ModeAllowsStreaks => Mode != GameMode.GunGame;
 
     /// <summary>Gun Game: no loadout screen at all; you spawn straight in with the ladder's gun and the shared perks.</summary>
-    public bool SkipsLoadout => Mode == GameMode.GunGame;
+    public bool SkipsLoadout => Mode == GameMode.GunGame || BuilderRange; // the Workbench Range has no loadout screen either
 
     /// <summary>Team Deathmatch kills to win this match (set from the player count when play starts; replicated).</summary>
     public int TdmLimit = GameModes.TdmScoreLimit;

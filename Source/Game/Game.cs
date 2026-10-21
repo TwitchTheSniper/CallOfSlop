@@ -331,7 +331,7 @@ public sealed partial class Game : IDisposable
         }
 
         var alive = Local is { Alive: true };
-        Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil;
+        Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil && !w.Def.NoAds; // carts and briefcases are hip fire only
         AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime, 0f, 1f); // optics and grips change aim speed
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
         if (alive)
@@ -387,6 +387,7 @@ public sealed partial class Game : IDisposable
 
         // Don't bank up shots while idle, but allow several per frame for very fast guns at low FPS.
         NextFireTime = Math.Max(NextFireTime, now - 0.02);
+        UpdateSpool(def, held, now); // miniguns wind up (GameBuilder.cs); 1 for everything else
 
         switch (def.Mode)
         {
@@ -423,7 +424,7 @@ public sealed partial class Game : IDisposable
         var def = w.Def;
 
         w.Ammo--;
-        NextFireTime += def.FireInterval;
+        NextFireTime += SpooledInterval(def); // FireInterval unless the gun spools up
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
@@ -448,21 +449,22 @@ public sealed partial class Game : IDisposable
 
         // Predict every pellet against what we see; the server rewinds to the same tick.
         var predictedHit = false;
-        for (var i = 0; i < def.Pellets; i++)
+        foreach (var ray in ShotRays(def, origin, dir, spread, seed)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
         {
-            var d = Weapons.SpreadDirection(dir, spread, seed, i);
-            var dist = World.Query.Raycast(origin, d, World.Range, QueryFilter.All);
+            var o = ray.Origin;
+            var d = ray.Dir;
+            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.All);
             foreach (var other in Players.Values)
             {
                 if (other.Id == LocalId || !other.Alive)
                     continue;
-                if (World.Hitbox(other.RenderPosition, other.RenderStance, other.RenderYaw).Raycast(origin, d, dist) is { } t)
+                if (World.Hitbox(other.RenderPosition, other.RenderStance, other.RenderYaw).Raycast(o, d, dist) is { } t)
                 {
                     dist = t;
                     predictedHit = true;
                 }
             }
-            AddTracer(MuzzleWorld(me), origin + d * dist, def, now);
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now);
         }
         if (predictedHit)
             HitMarkerUntil = now + 0.12;
@@ -1143,17 +1145,22 @@ public sealed partial class Game : IDisposable
         var damage = new Dictionary<Player, float>();
         var headshotOn = new HashSet<Player>();
         byte flags = 0;
-        var ends = new List<Vector3>(def.Pellets);
+        var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        if (rays.Count > 255)
+            rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
+        var ends = new List<Vector3>(rays.Count);
+        var laterals = new List<Vector2>(rays.Count);
 
-        for (var i = 0; i < def.Pellets; i++)
+        foreach (var ray in rays)
         {
-            var d = Weapons.SpreadDirection(dir, spread, seed, i);
-            var dist = World.Query.Raycast(origin, d, World.Range, QueryFilter.All);
-            var turret = StreakRaycast(origin, d, ref dist, shooter); // enemy turrets and drones stop bullets too
+            var o = ray.Origin;
+            var d = ray.Dir;
+            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.All);
+            var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
-                if (t.Hitbox.Raycast(origin, d, dist) is { } td && td < dist)
+                if (t.Hitbox.Raycast(o, d, dist) is { } td && td < dist)
                 {
                     dist = td;
                     hit = t;
@@ -1161,19 +1168,20 @@ public sealed partial class Game : IDisposable
                 }
             }
             if (hit == null && turret == null)
-                ShotProps(shooter, origin, d, dist, def.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
-            var end = origin + d * dist;
+                ShotProps(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
+            var end = o + d * dist;
             ends.Add(end);
+            laterals.Add(ray.Lateral);
             if (turret != null)
                 flags |= ShotHitMachine;
-            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(def.Damage * def.DamageMultAt(dist)), now))
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
                 flags |= 4;
             else if (turret != null)
                 flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
-                var dmg = def.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f)
+                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f)
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
                 if (head)
@@ -1196,8 +1204,8 @@ public sealed partial class Game : IDisposable
             OnOwnShotConfirmed(flags, now);
         else
             Audio.Shot(def, shooter.RenderEye);
-        foreach (var end in ends)
-            AddTracer(MuzzleWorld(shooter), end, def, now, flags);
+        for (var i = 0; i < ends.Count; i++)
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)

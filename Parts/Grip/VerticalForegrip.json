@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Vertical Foregrip",
+  "category": "grip",
+  "rarity": "common",
+  "flavor": "Somewhere to put your other hand. Tames the climb.",
+  "mount": "foregrip",
+  "weight": 0.2,
+  "hand": [0, -0.06, 0],
+  "model": [
+    {"size": [0.03, 0.1, 0.03], "pos": [0, -0.05, 0], "color": "polymer"},
+    {"size": [0.036, 0.01, 0.036], "pos": [0, -0.1, 0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 0.75}
+  ]
+}

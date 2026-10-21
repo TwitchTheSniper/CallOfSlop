@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Coil Barrel",
+  "category": "barrel",
+  "rarity": "epic",
+  "flavor": "Magnetic coils wrapped round an energy channel. Hits harder, reaches further.",
+  "bores": ["energy"],
+  "weight": 0.8,
+  "hand": [0, -0.03, -0.128],
+  "muzzles": [[0, 0, -0.32]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.32]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.022, 0.022, 0.32], "pos": [0, 0, -0.16], "color": "white"},
+    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.06], "color": "accent", "tag": "glow"},
+    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.12], "color": "accent", "tag": "glow"},
+    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.18], "color": "accent", "tag": "glow"},
+    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.24], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 2.0},
+    {"stat": "damage", "mul": 1.15}
+  ]
+}

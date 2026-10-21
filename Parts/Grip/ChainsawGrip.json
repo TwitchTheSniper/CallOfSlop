@@ -1,0 +1,35 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Chainsaw Grip",
+  "category": "grip",
+  "rarity": "legendary",
+  "flavor": "Rear handle on the trigger, front hand on the wrap bar, six receivers where the chain used to be. Do not rev indoors.",
+  "weight": 3.0,
+  "flags": ["chainsaw"],
+  "hand": [0, -0.02, 0.12],
+  "gripAngle": 0,
+  "frame": {"fireStyles": ["volley"], "hands": "chainsaw", "carry": 14, "mobility": 0.92, "ironHeight": 0.24, "support": [0, 0.2, -0.03], "reloadPerReceiver": 0.35},
+  "sockets": [
+    {"name": "receiver_1", "type": "receiver", "pos": [0, 0.04, -0.16]},
+    {"name": "receiver_2", "type": "receiver", "pos": [-0.068, 0.04, -0.16]},
+    {"name": "receiver_3", "type": "receiver", "pos": [0.068, 0.04, -0.16]},
+    {"name": "receiver_4", "type": "receiver", "pos": [0, 0.115, -0.16]},
+    {"name": "receiver_5", "type": "receiver", "pos": [-0.068, 0.115, -0.16]},
+    {"name": "receiver_6", "type": "receiver", "pos": [0.068, 0.115, -0.16]}
+  ],
+  "model": [
+    {"size": [0.16, 0.14, 0.2], "pos": [0, 0.04, -0.02], "color": "orange"},
+    {"size": [0.12, 0.04, 0.12], "pos": [0, 0.13, 0.0], "color": "black"},
+    {"size": [0.03, 0.03, 0.12], "pos": [0, -0.02, 0.12], "color": "black"},
+    {"size": [0.03, 0.07, 0.02], "pos": [0, 0.0, 0.18], "color": "black"},
+    {"size": [0.2, 0.02, 0.02], "pos": [0, 0.2, -0.03], "color": "black"},
+    {"size": [0.02, 0.12, 0.02], "pos": [-0.09, 0.15, -0.03], "color": "black"},
+    {"size": [0.02, 0.12, 0.02], "pos": [0.09, 0.15, -0.03], "color": "black"},
+    {"size": [0.23, 0.012, 0.04], "pos": [0, 0.028, -0.16], "color": "steel"},
+    {"size": [0.24, 0.02, 0.02], "pos": [0, 0.03, -0.1], "color": "yellow"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "mul": 1.25},
+    {"stat": "equipTime", "add": 0.3}
+  ]
+}

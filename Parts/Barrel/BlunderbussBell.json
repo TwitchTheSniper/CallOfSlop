@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Blunderbuss Bell",
+  "category": "barrel",
+  "rarity": "uncommon",
+  "flavor": "Flared like a trumpet. Half again as many pellets, all of them in a hurry to leave.",
+  "bores": ["shell"],
+  "weight": 0.7,
+  "hand": [0, -0.03, -0.08],
+  "muzzles": [[0, 0, -0.2]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.2]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.036, 0.036, 0.2], "pos": [0, 0, -0.1], "color": "brass"},
+    {"size": [0.07, 0.07, 0.04], "pos": [0, 0, -0.2], "color": "brass"}
+  ],
+  "stats": [
+    {"stat": "pellets", "grow": 1.5},
+    {"stat": "hipSpreadDeg", "mul": 1.6},
+    {"stat": "rangeM", "mul": 0.6}
+  ]
+}

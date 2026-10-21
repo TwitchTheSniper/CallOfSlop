@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "2.5x ACOG",
+  "category": "optic",
+  "rarity": "rare",
+  "flavor": "A compact 2.5x prism with a chevron.",
+  "weight": 0.35,
+  "optic": "Acog",
+  "stats": [
+    {"stat": "adsZoom", "set": 2.5},
+    {"stat": "adsSpreadMult", "mul": 0.65},
+    {"stat": "adsTime", "add": 0.05}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Holographic",
+  "category": "optic",
+  "rarity": "uncommon",
+  "flavor": "A ring and a dot floating in a window.",
+  "weight": 0.2,
+  "optic": "Holo",
+  "stats": [
+    {"stat": "adsZoom", "set": 1.6},
+    {"stat": "adsSpreadMult", "mul": 0.78},
+    {"stat": "adsTime", "add": 0.02}
+  ]
+}

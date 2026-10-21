@@ -83,6 +83,9 @@ public sealed class GunMesh
 
     public Vector3 Grip, Support, MagWell, Underbarrel, StockPoint;
 
+    /// <summary>Built weapons (Zombies weapon builder): every barrel's muzzle, for one flash each. Empty for standard guns.</summary>
+    public Vector3[] Muzzles = [];
+
     // What the mesh was built from (rebuilt when any of these change on the same WeaponDef).
     internal GunSpec? Spec;
     internal uint Kit;

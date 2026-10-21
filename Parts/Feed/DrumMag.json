@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Drum Mag",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "Seventy-five rounds in a drum. Heavy, slow to swap, worth it.",
+  "bores": ["pistol", "rifle"],
+  "weight": 1.0,
+  "hand": [0, -0.055, 0],
+  "feed": "drum",
+  "model": [
+    {"size": [0.05, 0.11, 0.11], "pos": [0, -0.055, 0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 75},
+    {"stat": "reload", "set": 3.4},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

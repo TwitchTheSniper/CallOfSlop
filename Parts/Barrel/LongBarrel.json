@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Long Barrel",
+  "category": "barrel",
+  "rarity": "uncommon",
+  "flavor": "More barrel, more reach, slower to swing.",
+  "bores": ["pistol", "rifle", "heavy"],
+  "weight": 0.6,
+  "hand": [0, -0.03, -0.144],
+  "muzzles": [[0, 0, -0.36]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.36]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.022, 0.022, 0.36], "pos": [0, 0, -0.18], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.4},
+    {"stat": "hipSpreadDeg", "mul": 0.85},
+    {"stat": "adsTime", "add": 0.03},
+    {"stat": "mobility", "add": -0.02}
+  ]
+}

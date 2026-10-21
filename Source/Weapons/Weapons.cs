@@ -146,6 +146,68 @@ public sealed class WeaponDef
     /// <summary>The gun's model (the file's "model" block; see GunSpec and Weapons/README.md). Null: drawn by the per-class model.</summary>
     public GunSpec? Model { get; set; }
 
+    // ---- Built weapons (Zombies weapon builder, Source/Zombies). Properties, so they're never weapon-file keys. ----
+    // Every one is null/off on the weapons from the Weapons folder, which keeps them firing exactly as before.
+
+    /// <summary>
+    /// The barrels of a built weapon (null = one barrel at the usual muzzle: every standard weapon). Each fires its own
+    /// pellets from its own muzzle with its own damage and spread multipliers; see <see cref="Game.ShotRays"/>.
+    /// </summary>
+    public BarrelPoint[]? MuzzlePoints { get; set; }
+
+    /// <summary>Built weapons on a "rotate" grip: the receivers (barrel groups) take turns, one per shot.</summary>
+    public bool RotateGroups { get; set; }
+
+    /// <summary>Seconds of held trigger to reach the full fire rate (miniguns, chain guns); 0 = none.</summary>
+    public float SpoolTime { get; set; }
+
+    /// <summary>Fraction of the fire rate a spool-up starts from.</summary>
+    public float SpoolStart { get; set; } = 1f;
+
+    /// <summary>No aiming down sights (hip fire only: push carts, briefcases).</summary>
+    public bool NoAds { get; set; }
+
+    /// <summary>A built weapon's body (from its parts), drawn instead of a class or "model" block body.</summary>
+    public GunMesh? BuiltMesh { get; set; }
+
+    /// <summary>Special-effect flags from a built weapon's parts (incendiary, explosive...): carried, gameplay later.</summary>
+    public string[] BuildFlags { get; set; } = [];
+
+    /// <summary>Barrels in all (1 for standard weapons).</summary>
+    public int BarrelCount => MuzzlePoints?.Length ?? 1;
+
+    /// <summary>
+    /// Damage one shot puts out at close range if every projectile lands: Damage x Pellets for standard weapons; for
+    /// built weapons the sum over the barrels that fire together (rotary receivers and rotating grips average their turns).
+    /// </summary>
+    public float ShotDamage
+    {
+        get
+        {
+            if (MuzzlePoints is not { Length: > 0 } pts)
+                return Damage * Pellets;
+            var groups = 0;
+            foreach (var p in pts)
+                groups = Math.Max(groups, p.Group + 1);
+            float total = 0;
+            for (var g = 0; g < groups; g++)
+            {
+                float sum = 0;
+                var n = 0;
+                var rotary = false;
+                foreach (var p in pts)
+                    if (p.Group == g)
+                    {
+                        sum += Damage * p.DamageMult * p.Pellets;
+                        n++;
+                        rotary |= p.Rotary;
+                    }
+                total += rotary && n > 0 ? sum / n : sum;
+            }
+            return RotateGroups && groups > 0 ? total / groups : total;
+        }
+    }
+
     // ---- Look ----------------------------------------------------------------
     public float Length = 0.42f;
     public float Bulk = 1f;
@@ -177,7 +239,7 @@ public sealed class WeaponDef
     {
         get
         {
-            var perShot = Damage * Pellets;
+            var perShot = ShotDamage;
             if (Mode != FireMode.Burst)
                 return perShot / FireInterval;
             var cycle = BurstCount * FireInterval + BurstDelay;
@@ -186,7 +248,7 @@ public sealed class WeaponDef
     }
 
     public int ShotsToKill(bool head) =>
-        (int)Math.Ceiling(World.MaxHealth / (Damage * Pellets * (head ? HeadMult : 1f)));
+        (int)Math.Ceiling(World.MaxHealth / (ShotDamage * (head ? HeadMult : 1f)));
 
     public string ClassName =>
         Class switch

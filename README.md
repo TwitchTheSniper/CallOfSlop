@@ -459,6 +459,15 @@ The **hardbass** tracks are the hardest in the set: a short, hard-clipped kick w
 - **Settings > Audio > Music style**: **Mixed** (default, every track) or **Hardbass only** (only the hardbass tracks, in both the menu and the lobby; switching it on crossfades straight into one). Saved as `music_style` in `settings.txt`; older files load as Mixed.
 - The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs about 1% of one CPU core (the self-test measures it).
 
+### Zombies (in development)
+
+A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. Milestone 1, the **modular weapon builder**, is playable now as a sandbox: main menu > **WORKBENCH (ZOMBIES PREVIEW)**.
+
+- A weapon is a tree of **parts** (75 so far, in `Parts/`): the **grip** is the root and holds one or more **receivers** (a pistol grip 3, a rifle grip 9, plus a chainsaw grip, a push cart, a steering wheel and a briefcase), and each receiver has its own barrels, **splitters** (one shot in, several barrels out), feed (box, drum, belt...) and ammo. Stocks, optics, foregrips and utility parts go on the grip.
+- The workbench shows every part (all unlocked in the sandbox) with its tier colour, a live 3D preview, the receiver slots, stat changes before you fit a part, and a plain reason when something doesn't fit. Four build slots (3 and 4 will be an unlock in Zombies) are saved in `workbench.txt`; **Test fire** opens the **Workbench Range** with the selected build and the second slot.
+- Every barrel fires from its own muzzle, minigun receivers spin up, and one trigger pull counts as one hit per target (a Last Stand shield loses one charge, however many barrels hit). The standard weapons are unchanged.
+- The design (component model, rules, stat pipeline, rarity tiers, scrap, example builds and the open questions) is in [docs/zombies/WEAPON-BUILDER.md](docs/zombies/WEAPON-BUILDER.md).
+
 ## Development and version control
 
 The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.

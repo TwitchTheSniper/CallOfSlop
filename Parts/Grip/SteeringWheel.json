@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Steering Wheel",
+  "category": "grip",
+  "rarity": "epic",
+  "flavor": "Eight receivers round the rim and they fire in turn, like the wheel is spinning. Hands at nine and three.",
+  "weight": 2.0,
+  "hand": [0.17, 0, 0.03],
+  "gripAngle": 0,
+  "frame": {"fireStyles": ["rotate"], "hands": "wheel", "carry": 10, "mobility": 0.95, "ironHeight": 0.2, "support": [-0.17, 0, 0.03]},
+  "sockets": [
+    {"name": "receiver_1", "type": "receiver", "pos": [0.0, 0.1, -0.02]},
+    {"name": "receiver_2", "type": "receiver", "pos": [-0.0707, 0.0619, -0.02]},
+    {"name": "receiver_3", "type": "receiver", "pos": [-0.1, -0.03, -0.02]},
+    {"name": "receiver_4", "type": "receiver", "pos": [-0.0707, -0.1219, -0.02]},
+    {"name": "receiver_5", "type": "receiver", "pos": [-0.0, -0.16, -0.02]},
+    {"name": "receiver_6", "type": "receiver", "pos": [0.0707, -0.1219, -0.02]},
+    {"name": "receiver_7", "type": "receiver", "pos": [0.1, -0.03, -0.02]},
+    {"name": "receiver_8", "type": "receiver", "pos": [0.0707, 0.0619, -0.02]}
+  ],
+  "model": [
+    {"size": [0.02, 0.075, 0.022], "pos": [0.17, 0.0, 0.03], "color": "black", "rot": [0, 0, 0.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [0.1472, 0.085, 0.03], "color": "black", "rot": [0, 0, 29.999999999999996]},
+    {"size": [0.02, 0.075, 0.022], "pos": [0.085, 0.1472, 0.03], "color": "black", "rot": [0, 0, 59.99999999999999]},
+    {"size": [0.02, 0.075, 0.022], "pos": [0.0, 0.17, 0.03], "color": "black", "rot": [0, 0, 90.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.085, 0.1472, 0.03], "color": "black", "rot": [0, 0, 119.99999999999999]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.1472, 0.085, 0.03], "color": "black", "rot": [0, 0, 150.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.17, 0.0, 0.03], "color": "black", "rot": [0, 0, 180.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.1472, -0.085, 0.03], "color": "black", "rot": [0, 0, 210.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.085, -0.1472, 0.03], "color": "black", "rot": [0, 0, 239.99999999999997]},
+    {"size": [0.02, 0.075, 0.022], "pos": [-0.0, -0.17, 0.03], "color": "black", "rot": [0, 0, 270.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [0.085, -0.1472, 0.03], "color": "black", "rot": [0, 0, 300.0]},
+    {"size": [0.02, 0.075, 0.022], "pos": [0.1472, -0.085, 0.03], "color": "black", "rot": [0, 0, 330.0]},
+    {"size": [0.05, 0.05, 0.06], "pos": [0, 0, 0.04], "color": "gunmetal"},
+    {"size": [0.3, 0.015, 0.015], "pos": [0, 0, 0.03], "color": "gunmetal"},
+    {"size": [0.015, 0.3, 0.015], "pos": [0, 0, 0.03], "color": "gunmetal"}
+  ]
+}

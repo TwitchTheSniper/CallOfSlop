@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Thumper Chain Gun Receiver",
+  "category": "receiver",
+  "rarity": "epic",
+  "flavor": "An electric chain drive for heavy rounds. Short spin-up, long argument.",
+  "weight": 3.0,
+  "receiver": {"action": "chain", "class": "LMG", "bore": "heavy", "soundOf": "Anvil LMG", "rpm": 450, "spoolTime": 0.4, "spoolStart": 0.5},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.0558, -0.22], "accepts": ["barrel", "splitter"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.099], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.045, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.042, 0.045, -0.132]}
+  ],
+  "model": [
+    {"size": [0.08, 0.09, 0.32], "pos": [0, 0.045, -0.06], "color": "gunmetal"},
+    {"size": [0.04, 0.014, 0.16], "pos": [0, 0.094, -0.048], "color": "black"},
+    {"size": [0.082, 0.01, 0.04], "pos": [0, 0.054, 0.07], "color": "accent"},
+    {"size": [0.05, 0.04, 0.08], "pos": [0.05, 0.03, -0.05], "color": "olive"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 3.0},
+    {"stat": "reload", "set": 4.5},
+    {"stat": "headMult", "set": 1.6}
+  ]
+}
