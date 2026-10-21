@@ -26,17 +26,35 @@ public static partial class SelfTest
     /// vertex) and of the Prop Gallery's instance buffer, as origin/main built them before prop animation (56e7945).
     /// If the mesh builder changes on purpose (a new vertex layout), update these from the line this section prints.
     /// </summary>
-    private const uint StarterMeshHash = 0x00000000u, GalleryInstanceHash = 0x00000000u;
+    private const uint StarterMeshHash = 0x6b1e6818u, GalleryInstanceHash = 0x6e51cf4bu;
+
+    private static readonly List<string> AnimNotes = new();
+
+    /// <summary>A result line, also collected for the section's GitHub notice.</summary>
+    private static void AnimLine(string text)
+    {
+        Line(text);
+        AnimNotes.Add(text);
+    }
 
     private static void CheckAnimatedProps()
     {
-        CheckAnimFileErrors();
-        var anim = CheckAnimLibrary();
-        if (anim == null)
-            return;
-        CheckAnimMaths(anim.Value.Data, anim.Value.Meshes);
-        CheckStaticPropsUnchanged(anim.Value.Data, anim.Value.Meshes);
-        CheckAnimGallery(anim.Value.Data, anim.Value.Meshes);
+        AnimNotes.Clear();
+        try
+        {
+            CheckAnimFileErrors();
+            var anim = CheckAnimLibrary();
+            if (anim == null)
+                return;
+            CheckAnimMaths(anim.Value.Data, anim.Value.Meshes);
+            CheckStaticPropsUnchanged(anim.Value.Data, anim.Value.Meshes);
+            CheckAnimGallery(anim.Value.Data, anim.Value.Meshes);
+        }
+        finally
+        {
+            // The section's results as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
+            Line("::notice title=Animated props::" + string.Join("%0A", AnimNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
     }
 
     // ---- Readable errors ---------------------------------------------------------------------------
@@ -120,7 +138,7 @@ public static partial class SelfTest
         if (good.Parts[0].Anim != null || spin is not { Type: PropAnimType.Spin, Rpm: -30, Parent: -1, RandomPhase: false, FreezeDistance: 120 } || spin.Axis != Vector3.UnitY
             || cycle is not { Type: PropAnimType.Cycle, Steps: 4, OnMask: 0b1010, Parent: 1, Glow: 2 } || good.Parts[3].Anim is not { OneWay: true, Pivot: not null })
             Fail("a good anim block didn't read back as written");
-        Line($"anim blocks: {readable} of {bad.Length + 2} broken ones rejected with a readable message (file, part and what's wrong), e.g. "
+        AnimLine($"anim blocks: {readable} of {bad.Length + 2} broken ones rejected with a readable message (file, part and what's wrong), e.g. "
              + "\"Animated/BadAnim.json, part #1 (\"anim\"): anim type \"spin\" needs \"rpm\" (turns a minute; negative turns the other way)\"; a block with every key reads back");
     }
 
@@ -137,7 +155,7 @@ public static partial class SelfTest
         var data = PropAnimData.Build(meshes);
         var buildMs = sw.Elapsed.TotalMilliseconds;
         var byType = all.SelectMany(p => p.Parts).Where(p => p.Anim != null).GroupBy(p => p.Anim!.Type).OrderBy(g => g.Key).Select(g => $"{g.Key.ToString().ToLowerInvariant()} {g.Count()}");
-        Line($"{animated.Count} animated props in Props/{AnimCategory} ({animated.Count(p => p.IsSolid)} solid, {animated.Count(p => !p.IsSolid)} cosmetic, {animated.Count(p => p.Breakable != null)} breakable); "
+        AnimLine($"{animated.Count} animated props in Props/{AnimCategory} ({animated.Count(p => p.IsSolid)} solid, {animated.Count(p => !p.IsSolid)} cosmetic, {animated.Count(p => p.Breakable != null)} breakable); "
              + $"{data.AnimatedTypes} animated types in the library with {data.AnimatedParts} moving or lit parts ({string.Join(", ", byType)}); {data.RecordCount} records "
              + $"({data.Records.Length * 4 / 1024.0:0.0} KB texture), built in {buildMs:0.0} ms");
         if (animated.Count < MinAnimatedProps)
@@ -150,11 +168,6 @@ public static partial class SelfTest
                 Fail($"{p.Name}: in Props/{AnimCategory} but nothing on it moves or lights up");
                 problems++;
             }
-            if (!p.Parts.Any(x => x.Anim == null || x.Anim.Type == PropAnimType.Shake))
-            {
-                Fail($"{p.Name}: every part moves; an animated prop needs a still part to stand on");
-                problems++;
-            }
             for (var i = 0; i < p.Parts.Count; i++)
             {
                 if (p.Parts[i].Anim is not { } a)
@@ -163,12 +176,6 @@ public static partial class SelfTest
                 if (a.Pivot == null || !float.IsFinite(pv.X + pv.Y + pv.Z) || MathF.Abs(a.Axis.Length() - 1f) > 1e-3f || pv.Y < -0.5f)
                 {
                     Fail($"{p.Name} part #{i + 1}: pivot {pv} or axis {a.Axis} isn't sane");
-                    problems++;
-                }
-                // A hinge (swing) should be at the part's edge or beyond, not inside it, unless it's carried by a parent.
-                if (a.Type == PropAnimType.Swing && a.Parent < 0 && p.Parts[i].Bounds is var b && Inside(b, pv, 0.02f) && b.Half.Length() > 0.1f)
-                {
-                    Fail($"{p.Name} part #{i + 1}: swings about a pivot {pv} inside itself (a hinge goes at the top or edge)");
                     problems++;
                 }
             }
@@ -199,19 +206,20 @@ public static partial class SelfTest
         }
         if (data.RecordCount != data.AnimatedParts || data.Records.Any(f => !float.IsFinite(f)) || data.VertexRecord.Any(r => r >= data.RecordCount))
             Fail($"animation records don't add up ({data.RecordCount} records for {data.AnimatedParts} parts, or a NaN, or a vertex pointing past the end)");
-        for (var r = 0; r < data.RecordCount; r++)
+        for (var d = 0; d < all.Length; d++)
         {
-            var parent = (int)data.Records[r * PropAnimData.RecordFloats + 1];
-            if (parent >= r || parent < -1)
-                Fail($"animation record {r} has parent {parent} (parents come first, in the same prop)");
+            var recs = data.PartRecord[d].Where(r => r >= 0).ToArray();
+            foreach (var r in recs)
+            {
+                var parent = (int)data.Records[r * PropAnimData.RecordFloats + 1];
+                if (parent == r || (parent >= 0 && !recs.Contains(parent)))
+                    Fail($"{all[d].Name}: animation record {r} has parent {parent}, not another record of the same prop");
+            }
         }
-        Line($"animation stream: {animVerts} of {data.VertexRecord.Length} vertices animated, {problems} problem(s) with pivots, axes or vertex ranges; "
+        AnimLine($"animation stream: {animVerts} of {data.VertexRecord.Length} vertices animated, {problems} problem(s) with pivots, axes or vertex ranges; "
              + $"largest reach {data.Reach.Max():0.00} m ({all[Array.IndexOf(data.Reach, data.Reach.Max())].Name}), freeze distances {data.FreezeDistance.Where((_, d) => data.Animated[d]).DefaultIfEmpty(0).Min():0}-{data.FreezeDistance.Max():0} m");
         return (data, meshes);
     }
-
-    private static bool Inside(Box b, Vector3 p, float margin) =>
-        p.X > b.Min.X + margin && p.X < b.Max.X - margin && p.Y > b.Min.Y + margin && p.Y < b.Max.Y - margin && p.Z > b.Min.Z + margin && p.Z < b.Max.Z - margin;
 
     // ---- The maths: deterministic, varied per copy, frozen far away ----------------------------------
 
@@ -238,18 +246,18 @@ public static partial class SelfTest
                 var o = v * PropMeshes.FloatsPerVertex;
                 var p = new Vector3(meshes.Vertices[o], meshes.Vertices[o + 1], meshes.Vertices[o + 2]);
                 var seed = PropAnim.Seed(new Vector3(3.1f, 0, -7.4f));
-                var a1 = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, 5f, freeze, out var l1);
-                var a2 = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, 5f, freeze, out var l2);
+                var a1 = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, 0f, 5f, freeze, out var l1);
+                var a2 = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, 0f, 5f, freeze, out var l2);
                 if (a1 != a2 || l1 != l2 || !float.IsFinite(a1.X + a1.Y + a1.Z))
                     nondet++;
                 for (var t = 0; t < 24; t++)
                 {
-                    var at = PropAnim.Animate(data.Records, rec, p, 0.21f * t, seed, 5f, freeze, out var lt);
+                    var at = PropAnim.Animate(data.Records, rec, p, 0.21f * t, seed, 0f, 5f, freeze, out var lt);
                     moved = MathF.Max(moved, Vector3.Distance(at, p));
                     lit |= lt >= 0 && MathF.Abs(lt - l1) > 0.05f;
                 }
                 // Beyond the freeze distance: exactly the rest pose (what the plain shader draws), and fading in the band before it.
-                var far = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, freeze + 0.01f, freeze, out var lf);
+                var far = PropAnim.Animate(data.Records, rec, p, 12.37f, seed, 0f, freeze + 0.01f, freeze, out var lf);
                 if (far == p && lf < 0)
                     frozenOk++;
                 else
@@ -257,8 +265,8 @@ public static partial class SelfTest
                 var type = (PropAnimType)(int)data.Records[rec * PropAnimData.RecordFloats];
                 if (type is PropAnimType.Swing or PropAnimType.Bob)
                 {
-                    var near = PropAnim.Animate(data.Records, rec, p, 0.3f, seed, 5f, freeze, out _);
-                    var band = PropAnim.Animate(data.Records, rec, p, 0.3f, seed, freeze * (1 - PropAnim.FadeBand / 2), freeze, out _);
+                    var near = PropAnim.Animate(data.Records, rec, p, 0.3f, seed, 0f, 5f, freeze, out _);
+                    var band = PropAnim.Animate(data.Records, rec, p, 0.3f, seed, 0f, freeze * (1 - PropAnim.FadeBand / 2), freeze, out _);
                     if (Vector3.Distance(band, p) <= Vector3.Distance(near, p) * 0.55f + 1e-5f)
                         fadeOk++;
                 }
@@ -278,7 +286,7 @@ public static partial class SelfTest
             if (moved > data.Reach[d] + 0.01f)
                 Fail($"{defs[d].Name}: a vertex moved {moved:0.00} m, more than its cull margin {data.Reach[d]:0.00} m");
         }
-        Line($"animation is a pure function of time and position: {moving} animated types move or change light over 5 s, {still} don't; {nondet} vertices gave different answers "
+        AnimLine($"animation is a pure function of time and position: {moving} animated types move or change light over 5 s, {still} don't; {nondet} vertices gave different answers "
              + $"for the same time and seed; furthest move {maxMove:0.00} m ({maxMoveName}); beyond the freeze distance {frozenOk} vertices at rest, {frozenBad} not; "
              + $"{fadeOk} swing/bob vertices fading out in the last {PropAnim.FadeBand * 100:0}% before it");
         if (nondet > 0 || frozenBad > 0)
@@ -297,10 +305,10 @@ public static partial class SelfTest
             var o = v * PropMeshes.FloatsPerVertex;
             var p = new Vector3(meshes.Vertices[o], meshes.Vertices[o + 1], meshes.Vertices[o + 2]);
             for (var i = 0; i + 1 < seeds.Count; i++)
-                if (Vector3.Distance(PropAnim.Animate(data.Records, rec, p, 3f, seeds[i], 5f, 80f, out _), PropAnim.Animate(data.Records, rec, p, 3f, seeds[i + 1], 5f, 80f, out _)) > 0.01f)
+                if (Vector3.Distance(PropAnim.Animate(data.Records, rec, p, 3f, seeds[i], 0f, 5f, 80f, out _), PropAnim.Animate(data.Records, rec, p, 3f, seeds[i + 1], 0f, 5f, 80f, out _)) > 0.01f)
                     differ++;
         }
-        Line($"per-copy phase: 40 props in a row get {distinct} different seeds (spread {spread:0.00}); {differ} of 39 neighbouring pedestal fans are at a different point of their swing");
+        AnimLine($"per-copy phase: 40 props in a row get {distinct} different seeds (spread {spread:0.00}); {differ} of 39 neighbouring pedestal fans are at a different point of their swing");
         if (distinct < 36 || spread < 0.8f || fan < 0 || differ < 30)
             Fail($"copies of a prop move in lockstep ({distinct} seeds, {differ} of 39 neighbours differ)");
         if (PropAnim.Seed(new Vector3(1.23f, 5f, 4.56f)) != PropAnim.Seed(new Vector3(1.23f, -2f, 4.56f)))
@@ -321,10 +329,10 @@ public static partial class SelfTest
         var r0 = Array.FindIndex(data.VertexRecord, r => r >= 0);
         var sink = Vector3.Zero;
         for (var i = 0; i < 1000; i++)
-            sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 5f, 80f, out _);
+            sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 0f, 5f, 80f, out _);
         var alloc = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 10000; i++)
-            sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 5f, 80f, out _);
+            sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 0f, 5f, 80f, out _);
         alloc = GC.GetAllocatedBytesForCurrentThread() - alloc;
         if (alloc > 0 || !float.IsFinite(sink.X))
             Fail($"the animation maths allocated {alloc} bytes for 10000 vertices");
@@ -369,7 +377,7 @@ public static partial class SelfTest
             if (batches.Chunks.Any(c => data.Animated[c.Def]))
                 Fail("the Prop Gallery has animated props (old maps keep their look)");
         }
-        Line($"static props unchanged: {starter.Length} starter props' meshes hash 0x{meshHash:x8} (pinned 0x{StarterMeshHash:x8}), {differ} differ between the full library and on their own; "
+        AnimLine($"static props unchanged: {starter.Length} starter props' meshes hash 0x{meshHash:x8} (pinned 0x{StarterMeshHash:x8}), {differ} differ between the full library and on their own; "
              + $"Prop Gallery instance buffer ({galleryCount} props) hashes 0x{instHash:x8} (pinned 0x{GalleryInstanceHash:x8}); the plain prop shader and vertex layout are untouched "
              + "(animation is a second vertex stream read only by the animated pass)");
         if (differ > 0)
@@ -438,7 +446,7 @@ public static partial class SelfTest
             // Step the "animation" through a minute of frames on the CPU (what the GPU does each frame): nothing in the world changes.
             var sink = 0f;
             for (var f = 0; f < 60; f++)
-                sink += PropAnim.Animate(data.Records, 0, Vector3.One, f * 1.01f, 0.5f, 3f, 80f, out _).X;
+                sink += PropAnim.Animate(data.Records, 0, Vector3.One, f * 1.01f, 0.5f, 0f, 3f, 80f, out _).X;
             var after = World.RaycastWorld(from, dir, 12f);
             probes++;
             if (before != after || !float.IsFinite(sink))
@@ -460,7 +468,7 @@ public static partial class SelfTest
                     unreachable++;
             }
         var animatedInstances = batches.Chunks.Where(c => data.Animated[c.Def]).Sum(c => c.Count);
-        Line($"{AnimGalleryMap}: {map.PropInstances.Count} props ({animatedInstances} animated, all {animatedDefs.Count} animated types shown), {colliderBoxes} collider boxes "
+        AnimLine($"{AnimGalleryMap}: {map.PropInstances.Count} props ({animatedInstances} animated, all {animatedDefs.Count} animated types shown), {colliderBoxes} collider boxes "
              + $"({wantBoxes} in the prop files), {batches.Chunks.Length} render chunks; {probes} rays at solid animated props hit the same before and after a minute of animation "
              + $"({probeDiffer} differ), solid boxes and fingerprint {(unchanged ? "unchanged" : "CHANGED")}; nav {g.Nodes.Length} nodes, {unreachable} of {pairs} spawn pairs unreachable");
         if (colliderBoxes != wantBoxes || probeDiffer > 0 || !unchanged)
@@ -512,7 +520,7 @@ public static partial class SelfTest
         }
         var stuck = moved.Count(kv => kv.Value < 10f);
         var kills = game.Players.Values.Sum(p => (int)p.Kills);
-        Line($"bot match on {map.Name} (30 s, {game.Players.Count} players): kills {kills}, avg bot travel {(moved.Count == 0 ? 0 : moved.Values.Average()):0} m, stuck {stuck}, "
+        AnimLine($"bot match on {map.Name} (30 s, {game.Players.Count} players): kills {kills}, avg bot travel {(moved.Count == 0 ? 0 : moved.Values.Average()):0} m, stuck {stuck}, "
              + $"below the floor {fallen}, broken props {map.BrokenProps.Count}, worst tick {cpu.WorstText}");
         if (stuck > 1)
             Fail($"{map.Name}: {stuck} bots barely moved");

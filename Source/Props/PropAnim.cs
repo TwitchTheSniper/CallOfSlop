@@ -378,6 +378,12 @@ public static class PropAnim
         return Fract(52.9829189f * Fract(x * 0.06711056f + z * 0.00583715f));
     }
 
+    /// <summary>
+    /// Where a prop is in the foliage's gust waves (they travel across the map), so flags and turbines gust with the grass
+    /// next to them. Add the seed's share (seed * 2) for the phase the shader uses.
+    /// </summary>
+    public static float GustWave(Vector3 pos) => pos.X * 0.11f + pos.Z * 0.07f;
+
     /// <summary>The speed multiplier from a part's jitter (0..0.5) and the seed.</summary>
     public static float SpeedMul(float jitter, float seed) => 1f + jitter * (2f * Fract(seed * 7.13f + 0.37f) - 1f);
 
@@ -390,10 +396,10 @@ public static class PropAnim
 
     /// <summary>
     /// A vertex of an animated part, in the prop's frame: where it is at time <paramref name="t"/> (shader time) for an
-    /// instance with this seed, <paramref name="dist"/> metres from the camera. <paramref name="light"/> is the light
+    /// instance with this seed and gust wave (<see cref="GustWave"/>), <paramref name="dist"/> metres from the camera. <paramref name="light"/> is the light
     /// level 0..1 of the part's own light type, or -1. Beyond the freeze distance everything is the rest pose.
     /// </summary>
-    public static Vector3 Animate(float[] records, int record, Vector3 p, float t, float seed, float dist, float freeze, out float light)
+    public static Vector3 Animate(float[] records, int record, Vector3 p, float t, float seed, float wave, float dist, float freeze, out float light)
     {
         light = -1f;
         if (record < 0 || dist >= freeze)
@@ -417,7 +423,7 @@ public static class PropAnim
             var wind = records[o + 22] * k;
             var randomPhase = records[o + 23];
             var u = t * rate * SpeedMul(jitter, seed) + phase + randomPhase * seed;
-            var gustPhase = seed * 2f;
+            var gustPhase = wave + seed * 2f;
             var gust = MathF.Sin(t * 1.3f - gustPhase) * 0.6f + MathF.Sin(t * 2.7f - gustPhase * 1.7f) * 0.3f;
             switch (type)
             {

@@ -148,7 +148,7 @@ public sealed unsafe class PropRenderer
             {
                 float k = clamp((uFreeze - dist) / (uFreeze * 0.15), 0.0, 1.0);
                 float seed = fract(52.9829189 * fract(dot(floor(iPosScale.xz * 8.0 + 0.5), vec2(0.06711056, 0.00583715))));
-                float gp = seed * 2.0;
+                float gp = dot(iPosScale.xz, vec2(0.11, 0.07)) + seed * 2.0; // the foliage's gust waves, plus this copy's offset
                 float gust = sin(uTime * 1.3 - gp) * 0.6 + sin(uTime * 2.7 - gp * 1.7) * 0.3;
                 int r = int(aAnim + 0.5);
                 for (int depth = 0; depth < 4 && r >= 0; depth++)
