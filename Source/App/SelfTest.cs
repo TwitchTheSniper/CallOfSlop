@@ -73,6 +73,7 @@ public static partial class SelfTest
             Section("Melee", CheckMelee);
             Section("Melee one-hit kill", CheckMeleeOneHit); // SelfTestMeleeMusket.cs: perks vs the one-hit melee kill
             Section("Musket", CheckMusket); // SelfTestMeleeMusket.cs: the Old Faithful Musket's one-shot ranges
+            Section("Grenade range", CheckGrenadeRange); // SelfTestGrenades.cs: throw range, fuse vs flight time, bot throw aim
             Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
