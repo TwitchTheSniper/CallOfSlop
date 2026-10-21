@@ -11,6 +11,8 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
+    private static readonly List<string> TmpNotice = new(); // TEMP: CI visibility
+
     private static void CheckSightPictures()
     {
         const float aspect = 16f / 9f;
@@ -43,6 +45,7 @@ public static partial class SelfTest
             var cover = Sights.Coverage(v, aspect);
             var spec = Sights.Spec(d);
             var e = Sights.EyeDistance(d);
+            TmpNotice.Add($"{name} {d.AdsZoom:0.#}x {cover * 100:0.0}% r{v.HalfH:0.00} e{e * 100:0.00}cm");
             Line($"  {name} ({d.Optic}, {d.AdsZoom:0.#}x): lens covers {cover * 100:0.0}% of a 16:9 screen at full aim (radius {v.HalfH:0.00} of half the height, "
                 + $"{e * 100:0.0} cm from the eye), reticle {spec.Reticle}");
             if (!v.Valid || v.Center.Length() > 1e-3f || v.Reticle.Length() > 1e-3f)
@@ -128,6 +131,7 @@ public static partial class SelfTest
             if (MathF.Abs(prev - full) > full * 0.01f)
                 Fail($"{name}: the animated lens ends at {prev:0.000}, the aimed lens is {full:0.000}");
             if (d.Optic is OpticKind.RedDot or OpticKind.Hybrid3 or OpticKind.Scope12 || ReferenceEquals(d, setups[^1].Def))
+                TmpNotice.Add($"CONT {name}: {at50:0.00}/{at90:0.00}/{prev:0.00}");
                 Line($"  {name}: lens radius {at50:0.00} at half aim, {at90:0.00} at 90%, {prev:0.00} aimed (half screen heights)");
         }
 
@@ -143,6 +147,7 @@ public static partial class SelfTest
             anim.Update(input);
             var kicked = Sights.Project(d, anim.GunPose, aspect);
             var shift = (kicked.Center - rest.Center) * new Vector2(aspect, 1);
+            TmpNotice.Add($"KICK {name}: {rest.Depth * 100:0.0}->{kicked.Depth * 100:0.0}cm shift {shift.Length():0.00}");
             Line($"  {name} under a hard kick: lens {rest.Depth * 100:0.0} -> {kicked.Depth * 100:0.0} cm from the eye, centre moves {shift.Length():0.00} half heights, "
                 + $"reticle {(kicked.Reticle - rest.Reticle).Length():0.000}");
             if (!kicked.Valid || kicked.Depth < MathF.Max(Sights.NearPlane * 1.5f, rest.Depth * 0.5f))
@@ -152,6 +157,9 @@ public static partial class SelfTest
         }
 
         CheckSightFiles();
+        Line($"::notice title=Sights A::{string.Join("; ", TmpNotice.Take(12))}");
+        Line($"::notice title=Sights B::{string.Join("; ", TmpNotice.Skip(12).Take(12))}");
+        Line($"::notice title=Sights C::{string.Join("; ", TmpNotice.Skip(24))}");
     }
 
     /// <summary>
