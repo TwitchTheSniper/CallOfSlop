@@ -54,6 +54,14 @@ jobs:
           echo "::notice title=Exit code::$code"
           [ "$code" -eq 0 ] || exit 1
 
+      - name: Failure context
+        if: failure()
+        shell: bash
+        run: |
+          # Each failed check with the five log lines before it, as warnings (artifacts can't be read from every client).
+          log=bin/Release/net10.0/selftest.log
+          [ -f "$log" ] && grep -n -B5 "FAIL:" "$log" | grep -v "FAIL:" | tail -40 | while IFS= read -r l; do echo "::warning title=Context::$l"; done || true
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v6
