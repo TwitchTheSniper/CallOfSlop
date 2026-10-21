@@ -100,6 +100,21 @@ def rect_seg_dist(r, ax, az, bx, bz):
     return best
 
 
+def poly_seg_dist(poly, ax, az, bx, bz):
+    """Distance between a convex polygon and a segment (0 when they touch)."""
+    if point_in_poly(ax, az, poly) or point_in_poly(bx, bz, poly):
+        return 0.0
+    n = len(poly)
+    best = 1e9
+    for i in range(n):
+        cx, cz = poly[i]
+        ex, ez = poly[(i + 1) % n]
+        if _segs_cross(ax, az, bx, bz, cx, cz, ex, ez):
+            return 0.0
+        best = min(best, seg_dist(cx, cz, ax, az, bx, bz), seg_dist(ax, az, cx, cz, ex, ez), seg_dist(bx, bz, cx, cz, ex, ez))
+    return best
+
+
 def _segs_cross(ax, az, bx, bz, cx, cz, dx, dz):
     def o(px, pz, qx, qz, rx, rz):
         return (qx - px) * (rz - pz) - (qz - pz) * (rx - px)
@@ -175,6 +190,21 @@ def R(v, nd=2):
 # ------------------------------------------------------------------------------------------------ the prop library
 
 
+def _turned_half(hx, hy, hz, pitch, yaw, roll):
+    """Half extents of the axis-aligned box round a centred box turned by roll (Z), pitch (X), then yaw (Y)."""
+    p, y, r = (math.radians(v) for v in (pitch, yaw, roll))
+    out = [0.0, 0.0, 0.0]
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                x, yy, z = sx * hx, sy * hy, sz * hz
+                x, yy = x * math.cos(r) - yy * math.sin(r), x * math.sin(r) + yy * math.cos(r)
+                yy, z = yy * math.cos(p) - z * math.sin(p), yy * math.sin(p) + z * math.cos(p)
+                x, z = x * math.cos(y) + z * math.sin(y), -x * math.sin(y) + z * math.cos(y)
+                out = [max(out[0], abs(x)), max(out[1], abs(yy)), max(out[2], abs(z))]
+    return out
+
+
 class PropInfo:
     """A prop file reduced to what placement needs. Bounds are in the prop's frame (origin on the ground at its
     centre): x0..x1 along +X, z0..z1 along +Z (front), h = the top. `top` is the height of the surface things can be
@@ -196,10 +226,8 @@ class PropInfo:
             o = p.get("offset", [0, s[1] / 2, 0])
             rotn = p.get("rotation", [p.get("pitch", 0), p.get("yaw", 0), p.get("roll", 0)])
             pitch, yaw, roll = (rotn + [0, 0, 0])[:3]
-            if pitch or roll:  # tipped parts: a conservative cube round the part
-                r = max(s) / 2
-                hx = hz = r
-                hy = r
+            if pitch or roll:  # tipped parts: the exact bounds of the turned box (roll, then pitch, then yaw)
+                hx, hy, hz = _turned_half(s[0] / 2, s[1] / 2, s[2] / 2, pitch, yaw, roll)
             else:
                 a = math.radians(yaw)
                 c, sn = abs(math.cos(a)), abs(math.sin(a))
@@ -227,6 +255,15 @@ class PropInfo:
         self.w = self.x1 - self.x0
         self.d = self.z1 - self.z0
 
+    def outline(self, x, z, yaw=0.0, scale=1.0, full=False):
+        """The turned footprint as 4 corners (an oriented rectangle), for exact overlap tests."""
+        x0, x1, z0, z1 = (self.x0, self.x1, self.z0, self.z1) if full else self.low
+        out = []
+        for lx, lz in ((x0, z0), (x1, z0), (x1, z1), (x0, z1)):
+            dx, dz = rot(lx * scale, lz * scale, yaw)
+            out.append((x + dx, z + dz))
+        return out
+
     def footprint(self, x, z, yaw=0.0, scale=1.0, full=False):
         """World rectangle (x0, z0, x1, z1) round the prop placed at (x, z) turned by yaw degrees: the parts near
         the ground (below 1.9 m, so a street lamp's arm or a sign's board can hang over things), or all of it."""
@@ -238,6 +275,29 @@ class PropInfo:
             for lz in (z0 * scale, z1 * scale):
                 pts.append((x + lx * c + lz * s, z - lx * s + lz * c))
         return (min(p[0] for p in pts), min(p[1] for p in pts), max(p[0] for p in pts), max(p[1] for p in pts))
+
+
+def _sep(pa, pb):
+    """The largest gap between two convex polygons along their edge normals (negative when they overlap)."""
+    best = -1e9
+    for poly in (pa, pb):
+        n = len(poly)
+        for i in range(n):
+            ax, az = poly[i]
+            bx, bz = poly[(i + 1) % n]
+            nx, nz = bz - az, ax - bx
+            L = math.hypot(nx, nz)
+            if L < 1e-9:
+                continue
+            nx, nz = nx / L, nz / L
+            a = [px * nx + pz * nz for px, pz in pa]
+            b = [px * nx + pz * nz for px, pz in pb]
+            best = max(best, min(b) - max(a), min(a) - max(b))
+    return best
+
+
+def rect_poly(r):
+    return [(r[0], r[1]), (r[2], r[1]), (r[2], r[3]), (r[0], r[3])]
 
 
 class PropLib:
@@ -306,16 +366,19 @@ class Site:
     mirror    None, "x" (twin at -x), "z" (twin at -z) or "point" (twin at -x, -z); every primitive makes the twin
               unless called with mirror=False (for things on the mirror line, built once)
     margin    how far solid props keep from the outline (the game's Clutter keeps 1.1 m)
+    cosmetic_margin  the same for cosmetic props (more than the outline noise, or one can end up outside)
     """
 
-    def __init__(self, lib, outline=None, mirror=None, margin=1.2):
+    def __init__(self, lib, outline=None, mirror=None, margin=1.2, cosmetic_margin=0.4):
         assert mirror in MIRRORS, mirror
         self.lib = lib
         self.outline = outline
         self.mirror = mirror
         self.margin = margin
+        self.cosmetic_margin = cosmetic_margin  # keep above the outline's noise amplitude
         self.ops = []
         self.occ = []        # (rect, y0, y1, kind): solid things (boxes, solid props, trunks)
+        self.polys = {}      # id(occ entry) -> turned outline, for props not square to the axes
         self.cosm = []       # rects of cosmetic props on the ground (so litter doesn't pile up on itself)
         self.lanes = []      # (points, width, bbox)
         self.keep = []       # (x, z, r)
@@ -324,6 +387,7 @@ class Site:
         self.by_rule = {}
         self._rule = "prop"
         self.skipped = 0
+        self.skips = []      # (rule, name, x, z, why) for every placement that didn't fit (see why())
 
     # ---- mirror transforms ---------------------------------------------------------------------------------
 
@@ -383,19 +447,27 @@ class Site:
     def rect_inside(self, r, margin=0.0):
         return all(self.inside(cx, cz, margin) for cx, cz in ((r[0], r[1]), (r[2], r[1]), (r[0], r[3]), (r[2], r[3])))
 
-    def blocked(self, rect, gap=0.1, y0=0.0, y1=3.0):
-        """Does the rectangle (over heights y0..y1) hit anything solid already placed?"""
-        for r, a, b, _ in self.occ:
+    def blocked(self, rect, gap=0.1, y0=0.0, y1=3.0, poly=None):
+        """Does the rectangle (over heights y0..y1) hit anything solid already placed? With `poly` (a turned
+        outline inside rect) the test is exact against turned things too, so a car parked at 45 degrees can stand
+        close to a wall."""
+        for e in self.occ:
+            r, a, b, _ = e
             if a < y1 and y0 < b and rects_overlap(rect, r, gap):
-                return True
+                q = self.polys.get(id(e))
+                if poly is None and q is None:
+                    return True
+                if _sep(poly or rect_poly(rect), q or rect_poly(r)) < gap:
+                    return True
         return False
 
-    def on_lane(self, rect, extra=0.0):
+    def on_lane(self, rect, extra=0.0, poly=None):
         for pts, w, bb in self.lanes:
             if not rects_overlap(rect, bb):
                 continue
             for i in range(len(pts) - 1):
-                if rect_seg_dist(rect, *pts[i], *pts[i + 1]) < w / 2 + extra:
+                d = poly_seg_dist(poly, *pts[i], *pts[i + 1]) if poly else rect_seg_dist(rect, *pts[i], *pts[i + 1])
+                if d < w / 2 + extra:
                     return True
         return False
 
@@ -411,18 +483,38 @@ class Site:
         p = self.lib[name]
         r = p.footprint(x, z, yaw, scale)
         m = self.margin if margin is None else margin
-        if not self.rect_inside(r, m if p.solid else 0.3):
+        if not self.rect_inside(r, m if p.solid else self.cosmetic_margin):
             return False
         base = 0.0 if y is None else y
+        poly = p.outline(x, z, yaw, scale) if abs(yaw % 90) > 0.5 else None
         if p.solid:
-            if self.blocked(r, gap, base, base + p.h * scale):
+            if self.blocked(r, gap, base, base + p.h * scale, poly):
                 return False
-            if y is None and lanes and (self.on_lane(r) or self.in_keepout(r)):
+            if y is None and lanes and (self.on_lane(r, poly=poly) or self.in_keepout(r)):
                 return False
             return True
-        if self.blocked(r, 0.0, base, base + max(0.05, p.h * scale)):
+        if self.blocked(r, 0.0, base, base + max(0.05, p.h * scale), poly):
             return False
         return y is not None or not self.cosmetic_blocked(r)
+
+    def why(self, name, x, z, yaw=0.0, scale=1.0, y=None, gap=0.1, lanes=True, margin=None):
+        """Why free() says no: "outline", "solid", "lane", "keepout", "cosmetic" or "" (it fits)."""
+        p = self.lib[name]
+        r = p.footprint(x, z, yaw, scale)
+        m = self.margin if margin is None else margin
+        if not self.rect_inside(r, m if p.solid else self.cosmetic_margin):
+            return "outline"
+        base = 0.0 if y is None else y
+        poly = p.outline(x, z, yaw, scale) if abs(yaw % 90) > 0.5 else None
+        if self.blocked(r, gap if p.solid else 0.0, base, base + max(0.05, p.h * scale), poly):
+            return "solid"
+        if p.solid and y is None and lanes and self.on_lane(r, poly=poly):
+            return "lane"
+        if p.solid and y is None and lanes and self.in_keepout(r):
+            return "keepout"
+        if not p.solid and y is None and self.cosmetic_blocked(r):
+            return "cosmetic"
+        return ""
 
     # ---- primitives (each makes its twin) --------------------------------------------------------------------
 
@@ -466,8 +558,8 @@ class Site:
             else:
                 kw2["yaw"], kw2["pitch"], kw2["roll"] = float((yaw + 180) % 360), float(pitch), float(roll)
             for k in ("yaw", "pitch", "roll"):
-                if not kw2[k]:
-                    kw2.pop(k)
+                if not kw2.get(k):
+                    kw2.pop(k, None)
             if abs(tx - x) > 0.01 or abs(tz - z) > 0.01 or kw2 != {k: v for k, v in kw.items()}:
                 self.mesh(kind, tx, tz, color, mirror=False, **kw2)
 
@@ -485,6 +577,7 @@ class Site:
         if check:
             if not self.free(name, x, z, yaw, scale, y, gap, lanes, margin):
                 self.skipped += 1
+                self.skips.append((self._rule, name, round(x, 2), round(z, 2), self.why(name, x, z, yaw, scale, y, gap, lanes, margin)))
                 return None
             if twin and not self.free(name, tx, tz, tyaw, scale, y, gap, lanes, margin):
                 self.skipped += 1
@@ -511,7 +604,10 @@ class Site:
         r = p.footprint(x, z, yaw, scale)
         base = 0.0 if y is None else y
         if p.solid:
-            self.occ.append((r, base, base + p.h * scale, "prop"))
+            e = (r, base, base + p.h * scale, "prop")
+            self.occ.append(e)
+            if abs(yaw % 90) > 0.5:
+                self.polys[id(e)] = p.outline(x, z, yaw, scale)
         elif y is None:
             self.cosm.append(r)
         pl = Placed(name, x, z, yaw, y, r, seed, is_twin)
@@ -760,7 +856,7 @@ class Site:
                     (["Kitchen Counter"], "wall", 2, ["Microwave", "Toaster", "Kettle", "Coffee Maker", "Knife Block"]),
                     (["Dishwasher"], "wall", 1, None), (["Pedal Bin"], "corner", 1, None),
                     (["Dining Table"], "middle", 1, ["Stacked Plates", "Book Pile"]), (["Dining Chair"], "chairs", 4, None)],
-        "living": [(["Fabric Sofa"], "wall", 1, None), (["TV Stand"], "wall", 1, ["Flickering TV"]), (["Armchair"], "wall", 1, None),
+        "living": [(["Fabric Sofa"], "wall", 1, None), (["TV Stand"], "wall", 1, None), (["Armchair"], "wall", 1, None),
                    (["Bookshelf"], "wall", 1, None), (["Floor Lamp"], "corner", 1, None), (["Coffee Table"], "middle", 1, ["Book Pile", "Laptop"]),
                    (["Rug", "Striped Rug"], "floor", 1, None), (["Fireplace"], "wall", 1, None), (["Office Plant"], "corner", 1, None),
                    (["Radiator"], "wall", 1, None), (["Toy Blocks", "Teddy Bear", "Sports Balls", "Acoustic Guitar"], "floor", 2, None)],
@@ -933,10 +1029,25 @@ class Site:
             return ((x - bx0) * scale, (z - bz0) * scale)
         if self.outline:
             d.polygon([P(*p) for p in self.outline], fill=(96, 128, 80))
+        for op in self.ops:  # flat meshes on the ground (roads, pavements, drives, ponds), in their own colours
+            if op["op"] != "Mesh" or op.get("y", 0) > 0.2 or op.get("height", 1) > 0.2 or op["mesh"] not in ("box", "cylinder", "tube"):
+                continue
+            col = op["color"]
+            rgb = tuple(int(col[i:i + 2], 16) for i in (1, 3, 5)) if isinstance(col, str) else tuple(int(v * 255) for v in col)
+            x, z = op["x"], op["z"]
+            if op["mesh"] == "box":
+                w, dd = op.get("width", 1) / 2, op.get("depth", 1) / 2
+                pts = [(x + a, z + b) for a, b in (rot(-w, -dd, op.get("yaw", 0)), rot(w, -dd, op.get("yaw", 0)), rot(w, dd, op.get("yaw", 0)), rot(-w, dd, op.get("yaw", 0)))]
+                d.polygon([P(*q) for q in pts], fill=rgb)
+            else:
+                rx = op.get("radius", op.get("width", 1) / 2)
+                rz = op.get("radius", op.get("depth", 1) / 2)
+                d.ellipse([P(x - rx, z - rz), P(x + rx, z + rz)], outline=rgb if op["mesh"] == "tube" else None, fill=None if op["mesh"] == "tube" else rgb, width=3)
         if extra:
             extra(d, P)
-        for pts, w, _ in self.lanes:
-            d.line([P(*p) for p in pts], fill=(150, 150, 120), width=max(1, int(w * scale * 0.5)))
+        for pts, w, _ in self.lanes:  # the clear strips (full width, faint) and their centre lines
+            d.line([P(*p) for p in pts], fill=(124, 150, 104), width=max(1, int(w * scale)))
+            d.line([P(*p) for p in pts], fill=(200, 200, 150), width=1)
         for r in self.cosm:
             d.rectangle([P(r[0], r[1]), P(r[2], r[3])], outline=(220, 220, 200))
         for r, y0, y1, k in self.occ:

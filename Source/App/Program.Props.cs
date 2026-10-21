@@ -28,6 +28,9 @@ public static unsafe partial class Program
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
+        // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
+        ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
+        ("cluttered_culdesac_street", "Cul-de-sac", new Vector3(-9f, 1.7f, -6f), new Vector3(-17f, 1.2f, -20f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
