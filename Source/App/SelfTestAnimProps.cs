@@ -40,6 +40,7 @@ public static partial class SelfTest
     private static void CheckAnimatedProps()
     {
         AnimNotes.Clear();
+        var failuresBefore = _failures;
         try
         {
             CheckAnimFileErrors();
@@ -52,8 +53,10 @@ public static partial class SelfTest
         }
         finally
         {
-            // The section's results as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
-            Line("::notice title=Animated props::" + string.Join("%0A", AnimNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            // The section's results as one GitHub Actions notice when something failed (the workflow prints selftest.log;
+            // "::notice" lines become annotations). Only then: a run shows at most 10 notices and the summary must stay one of them.
+            if (_failures > failuresBefore)
+                Line("::notice title=Animated props::" + string.Join("%0A", AnimNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 

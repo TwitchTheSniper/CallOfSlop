@@ -474,8 +474,9 @@ public sealed unsafe class PropRenderer
                 if (_batches.TypeChunkCount[d] == 0 || !IsAnimated(d))
                     continue;
                 Native.glUniform1f(_aLocFreeze, _anim.FreezeDistance[d]);
-                // Moving parts can leave the rest-pose bounds: grow the cull box by how far they reach (times the largest scale).
-                DrawChunks(d, cam, _meshes.Defs[d].FadeDistance, 0f, _anim.FreezeDistance[d], _anim.Reach[d] * 4f, ref animDraws, ref animInstances);
+                // Moving parts can leave the rest-pose bounds: grow the cull box by how far they reach (times the largest scatter scale).
+                var def = _meshes.Defs[d];
+                DrawChunks(d, cam, def.FadeDistance, 0f, _anim.FreezeDistance[d], _anim.Reach[d] * MathF.Max(def.ScaleMax, 1f), ref animDraws, ref animInstances);
             }
             if (animTiming)
             {
