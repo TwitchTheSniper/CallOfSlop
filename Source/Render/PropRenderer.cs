@@ -19,8 +19,9 @@ namespace CallOfSlop;
 /// are collapsed in the vertex shader so they cost no pixels. Solid props never fade.</item>
 /// <item>Debris pieces are one cube instanced per piece, streamed from a preallocated array (at most <see cref="PropDebris.Capacity"/>).</item>
 /// </list>
-/// Lighting, fog and the surface textures are the same as the map boxes'. GPU time is measured with GL_TIME_ELAPSED
-/// queries read a few frames later (never stalling), and one "[props]" stat line is logged every few seconds.
+/// Lighting, fog and the surface textures are the same as the map boxes'. GPU time is measured with timestamp queries
+/// (<see cref="GpuStampRing"/>: one before the plain pass, one after it and the debris, one after the animated pass) read
+/// a few frames later (never stalling), and one "[props]" stat line is logged every few seconds.
 /// </summary>
 public sealed unsafe class PropRenderer
 {
@@ -294,8 +295,6 @@ public sealed unsafe class PropRenderer
     private uint _animTex;
     private int _aLocViewProj, _aLocCam, _aLocFog, _aLocFogRange, _aLocTime, _aLocFreeze;
     private PropAnimData _anim = new();
-    private readonly GlQuery[] _animQueries = new GlQuery[QueryRing];
-    private readonly bool[] _animQueryPending = new bool[QueryRing];
 
     private PropMeshes? _meshes;
     private int _meshGeneration = -1;
@@ -306,11 +305,9 @@ public sealed unsafe class PropRenderer
     private readonly float[] _debrisData = new float[PropDebris.Capacity * PropDebris.FloatsPerPiece];
     private double _lastNow;
 
-    private const int QueryRing = 4;
-    private readonly GlQuery[] _queries = new GlQuery[QueryRing];
-    private readonly bool[] _queryPending = new bool[QueryRing];
-    private int _queryFrame;
-    private bool _timers;
+    // GPU timing: timestamps around the plain pass (pass 0, with debris) and the animated pass (pass 1).
+    private const int QueryRing = 4, PassPlain = 0, PassAnim = 1;
+    private GpuStampRing? _timer;
 
     /// <summary>Averages over a window of frames (the periodic log line, and one the smoke test can reset and read).</summary>
     public struct Stats
@@ -400,8 +397,7 @@ public sealed unsafe class PropRenderer
         var fog = gfx.FogColor;
         var fogRange = gfx.FogRange;
 
-        var slot = _queryFrame % QueryRing;
-        var timing = BeginTimer(slot);
+        _timer?.BeginFrame();
         long draws = 0, instances = 0, frozen = 0, animDraws = 0, animInstances = 0;
         var animNear = false;
 
@@ -450,17 +446,12 @@ public sealed unsafe class PropRenderer
             draws++;
         }
 
-        if (timing)
-        {
-            Native.glEndQuery(GL_TIME_ELAPSED);
-            _queryPending[slot] = true;
-        }
+        _timer?.EndPass(PassPlain);
 
-        // Animated pass: animated types' chunks within their freeze distance, moved and lit in the vertex shader. Its own
-        // GPU timer (after the first one has ended: timer queries can't nest).
+        // Animated pass: animated types' chunks within their freeze distance, moved and lit in the vertex shader, timed
+        // from the plain pass's end stamp to its own.
         if (animNear && _meshes != null)
         {
-            var animTiming = BeginAnimTimer(slot);
             _animProgram.Use();
             Native.glUniformMatrix4fv(_aLocViewProj, 1, false, &vp.M11);
             Native.glUniform3f(_aLocCam, cam.X, cam.Y, cam.Z);
@@ -481,14 +472,10 @@ public sealed unsafe class PropRenderer
                 var def = _meshes.Defs[d];
                 DrawChunks(d, cam, def.FadeDistance, 0f, _anim.FreezeDistance[d], _anim.Reach[d] * MathF.Max(def.ScaleMax, 1f), ref animDraws, ref animInstances);
             }
-            if (animTiming)
-            {
-                Native.glEndQuery(GL_TIME_ELAPSED);
-                _animQueryPending[slot] = true;
-            }
+            _timer?.EndPass(PassAnim);
             draws += animDraws;
         }
-        _queryFrame++;
+        _timer?.EndFrame();
         gfx.Rebind();
 
         var cpuMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -516,50 +503,23 @@ public sealed unsafe class PropRenderer
         }
     }
 
-    private bool BeginTimer(int slot)
+    /// <summary>One pass read back from the GPU timer (pass 0: plain props and debris; pass 1: animated props).</summary>
+    private void OnGpuSample(int pass, double ms)
     {
-        if (!_timers)
-            return false;
-        var q = _queries[slot];
-        if (_queryPending[slot])
+        if (pass == PassPlain)
         {
-            int available;
-            Native.glGetQueryObjectiv(q.Id, GL_QUERY_RESULT_AVAILABLE, &available);
-            if (available == 0)
-                return false;
-            ulong ns;
-            Native.glGetQueryObjectui64v(q.Id, GL_QUERY_RESULT, &ns);
-            _log.GpuMs += ns / 1e6;
+            _log.GpuMs += ms;
             _log.GpuSamples++;
-            Window.GpuMs += ns / 1e6;
+            Window.GpuMs += ms;
             Window.GpuSamples++;
-            _queryPending[slot] = false;
         }
-        Native.glBeginQuery(GL_TIME_ELAPSED, q);
-        return true;
-    }
-
-    private bool BeginAnimTimer(int slot)
-    {
-        if (!_timers)
-            return false;
-        var q = _animQueries[slot];
-        if (_animQueryPending[slot])
+        else
         {
-            int available;
-            Native.glGetQueryObjectiv(q.Id, GL_QUERY_RESULT_AVAILABLE, &available);
-            if (available == 0)
-                return false;
-            ulong ns;
-            Native.glGetQueryObjectui64v(q.Id, GL_QUERY_RESULT, &ns);
-            _log.AnimGpuMs += ns / 1e6;
+            _log.AnimGpuMs += ms;
             _log.AnimGpuSamples++;
-            Window.AnimGpuMs += ns / 1e6;
+            Window.AnimGpuMs += ms;
             Window.AnimGpuSamples++;
-            _animQueryPending[slot] = false;
         }
-        Native.glBeginQuery(GL_TIME_ELAPSED, q);
-        return true;
     }
 
     private bool IsAnimated(int d) => _animReady && d < _anim.Animated.Length && _anim.Animated[d];
@@ -774,18 +734,12 @@ public sealed unsafe class PropRenderer
 
             InitAnim();
 
-            if (Native.glGenQueries != null && Native.glBeginQuery != null && Native.glGetQueryObjectui64v != null && Native.glGetQueryObjectiv != null)
-            {
-                fixed (GlQuery* q = _queries)
-                    Native.glGenQueries(QueryRing, q);
-                fixed (GlQuery* q = _animQueries)
-                    Native.glGenQueries(QueryRing, q);
-                _timers = true;
-            }
+            if (GlGpuStamps.Create(GpuStampRing.QueryCount(2, QueryRing)) is { } stamps)
+                _timer = new GpuStampRing(2, QueryRing, stamps, OnGpuSample);
             var err = (uint)Native.glGetError();
             if (err != 0)
                 Console.WriteLine($"[props] GL error 0x{err:X} while setting up (continuing)");
-            Console.WriteLine($"[props] renderer ready, GPU timer {(_timers ? "on" : "unavailable")}, animated props {(_animReady ? "on" : "off (drawn still)")}");
+            Console.WriteLine($"[props] renderer ready, GPU timer {(_timer != null ? "on (timestamps)" : "unavailable")}, animated props {(_animReady ? "on" : "off (drawn still)")}");
             _ready = true;
             return true;
         }
