@@ -53,6 +53,7 @@ public static partial class SelfTest
             Section("Map reload", CheckMapReload);
             Section("Map packs", CheckMapPacks);
             Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
+            Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the dense non-rectangular maps
             Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
