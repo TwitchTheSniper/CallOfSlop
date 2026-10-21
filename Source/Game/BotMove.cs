@@ -178,7 +178,7 @@ public sealed partial class Game
                 b.NextShortcut = now + 0.25;
                 var next = nav.Nodes[b.Path[b.PathIdx + 1]];
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
-                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && MathF.Abs(next.Y - pos.Y) < 0.4f && NavGraph.Clear(pos, next))
+                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && CanShortcut(pos, next))
                     BotAdvance(b, nav);
             }
             aimAt = nav.Nodes[b.Path[b.PathIdx]];
@@ -196,10 +196,28 @@ public sealed partial class Game
                 }
             }
         }
+        b.FollowAim = aimAt;
+        b.FollowNode = b.PathIdx < b.PathLen ? b.Path[b.PathIdx] : -1;
+        b.FollowTime = now;
         var d = aimAt - pos;
         d.Y = 0;
         var len = d.Length();
         return len > 0.01f ? d / len : Vector3.Zero;
+    }
+
+    /// <summary>
+    /// Can a bot head straight for a node further along its path? Level and in plain view, or, on terrain, along a line the
+    /// slope rules let a player walk (<see cref="World.CanWalkStraight"/>): path smoothing across hillsides, so bots don't
+    /// zigzag from grid node to grid node up a slope.
+    /// </summary>
+    private static bool CanShortcut(Vector3 pos, Vector3 next)
+    {
+        if (!NavGraph.Clear(pos, next))
+            return false;
+        if (MathF.Abs(next.Y - pos.Y) < 0.4f)
+            return true;
+        return World.Map.TerrainCollision is { } t && pos.Y - t.HeightAt(pos.X, pos.Z) < 0.3f && next.Y - t.HeightAt(next.X, next.Z) < 0.3f
+            && World.CanWalkStraight(pos, next);
     }
 
     private static bool EdgeIs(NavGraph nav, int edge, byte flags) => edge >= 0 && (nav.EdgeFlags[edge] & flags) != 0;
@@ -242,7 +260,7 @@ public sealed partial class Game
         {
             var n0 = nav.Nodes[b.Path[0]];
             var n1 = nav.Nodes[b.Path[1]];
-            if (Flat(n1 - p.Position) < Flat(n1 - n0) && MathF.Abs(n1.Y - p.Position.Y) < 0.4f && NavGraph.Clear(p.Position, n1))
+            if (Flat(n1 - p.Position) < Flat(n1 - n0) && CanShortcut(p.Position, n1))
                 BotAdvance(b, nav);
         }
     }
@@ -264,25 +282,36 @@ public sealed partial class Game
 
     /// <summary>
     /// Not getting anywhere? First hop/mantle, then avoid the edge we're stuck on and re-plan, then give up on the goal.
+    /// "Not getting anywhere" is moving less than 0.45 m in 0.8 s, or, on terrain while following a path, getting no closer to
+    /// the next node (walking up a slope and sliding back down it counts as stuck, so the bot re-plans another way up).
     /// </summary>
     private void BotUnstick(Player p, BotBrain b, ref BotIntent s, double now)
     {
+        var following = now - b.FollowTime < 0.05 && b.FollowNode >= 0 && b.Mode != BotMode.Engage;
+        var aimDist = Flat(b.FollowAim - p.Position);
         if (s.Wish.LengthSquared() < 0.05f || s.Stationary || p.Sim.MantleTicks > 0)
         {
             b.StuckCheckPos = p.Position;
             b.StuckCheckTime = now;
+            b.StuckCheckNode = -1;
             return;
         }
         if (now - b.StuckCheckTime < 0.8)
             return;
         var moved = Vector3.Distance(p.Position, b.StuckCheckPos);
+        // No closer to the same path node (on terrain): sliding back and forth on a slope.
+        var noProgress = following && World.Map.HasTerrain && b.FollowNode == b.StuckCheckNode && aimDist > 2f && b.StuckCheckAim - aimDist < 0.3f;
         b.StuckCheckPos = p.Position;
         b.StuckCheckTime = now;
-        if (moved >= 0.45f)
+        b.StuckCheckNode = following ? b.FollowNode : -1;
+        b.StuckCheckAim = aimDist;
+        if (moved >= 0.45f && !noProgress)
         {
             b.StuckCount = 0;
             return;
         }
+        if (noProgress && moved >= 0.45f)
+            b.SlopeStalls++;
         b.StuckCount++;
         b.StrafeDir = -b.StrafeDir;
         switch (b.StuckCount)

@@ -13,7 +13,8 @@ namespace CallOfSlop;
 /// that if it lands on walkable ground further along;</item>
 /// <item>ground snap: walking off a stair or down a slope keeps it on the ground (down to <see cref="SnapDown"/>);</item>
 /// <item>slopes: ground whose normal is within <see cref="World.MaxSlopeDeg"/> of "up" is walkable; steeper ground is a wall
-/// when walking and something you slide down otherwise;</item>
+/// when walking and something you slide down otherwise. Terrain follows <see cref="SlopeRules"/> instead (the footprint's
+/// slope, grip, slower uphill, capped and steerable slides), exactly like the classic mover;</item>
 /// <item>stances: stand and crouch are capsules of radius <see cref="World.PlayerRadius"/>, 1.8 and 1.2 m tall; prone is a
 /// 0.6 m ball of radius 0.3. Getting up needs room for the taller capsule;</item>
 /// <item>mantling: the classic ledge search with capsule room checks, then the same glide;</item>
@@ -50,6 +51,9 @@ public sealed class SweptMover : IMover
     private readonly Func<Vector3, Stance, bool> _roomForLedge;
     private Vector3 _up = Vector3.UnitY;
     private uint _tick;
+
+    /// <summary>The terrain this tick, when its slope rules apply (gravity straight down); null otherwise.</summary>
+    private ITerrainCollision? _terrain;
 
     /// <summary>Optional per-tick statistics for the self-test (casts made).</summary>
     public int Casts;
@@ -95,6 +99,7 @@ public sealed class SweptMover : IMover
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
         _up = up;
+        _terrain = up == Vector3.UnitY ? phys.Terrain : null;
         var dt = World.TickDt;
 
         // Everything the capsule can touch this tick, gathered once.
@@ -120,10 +125,19 @@ public sealed class SweptMover : IMover
         var wish = Flatten(MoveInput.Wish(b, cmd.Yaw), up);
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.Grounded ? 14f : 3f;
+        var target = wish * speed;
+        // On terrain (just above it, not on a box or mesh over it): the slope rules' uphill speed and slide steering.
+        var onTerrain = _terrain != null && Cast(s.Position, s.Stance, -up, 0.3f, out _, out _, out _, out var below) && Shapes[below].Id.Kind == ShapeKind.Terrain;
+        if (onTerrain)
+        {
+            float tx = target.X, tz = target.Z;
+            ClassicMover.SlopeSteer(_terrain!, s, wish, speed, ref tx, ref tz, ref control);
+            target = new Vector3(tx, 0, tz);
+        }
         var blend = 1f - MathF.Exp(-control * dt);
         var vUp = Vector3.Dot(s.Velocity, up);
         var vFlat = s.Velocity - up * vUp;
-        vFlat += (wish * speed - vFlat) * blend;
+        vFlat += (target - vFlat) * blend;
         s.Velocity = vFlat + up * vUp;
 
         if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone
@@ -146,16 +160,22 @@ public sealed class SweptMover : IMover
             // Walking: no gravity builds up; move across the ground, step up, then stay on the ground.
             s.Velocity = vFlat;
             s.Position = Walk(s.Position, vFlat * dt, s.Stance, ref s.Velocity);
-            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown);
+            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown, s.Velocity, true);
         }
         else
         {
             s.Velocity += g * dt;
             s.Position = Fly(s.Position, s.Velocity * dt, s.Stance, ref s.Velocity, ref s.Grounded);
+            if (onTerrain && !s.Grounded && _terrain is { } slope)
+            {
+                var n = SlopeRules.SupportNormal(slope, s.Position.X, s.Position.Z);
+                if (!SlopeRules.Walkable(n))
+                    SlopeRules.CapSlide(n, ref s.Velocity); // sliding: no faster than the cap
+            }
             if (!s.Grounded && !jumped && Vector3.Dot(s.Velocity, up) <= 0)
             {
                 // Resting on something walkable a hair below?
-                if (Snap(ref s.Position, s.Stance, Skin * 2))
+                if (Snap(ref s.Position, s.Stance, Skin * 2, s.Velocity, false))
                 {
                     s.Grounded = true;
                     var down = Vector3.Dot(s.Velocity, up);
@@ -202,11 +222,26 @@ public sealed class SweptMover : IMover
         return true;
     }
 
-    private bool Cast(Vector3 feet, Stance stance, Vector3 dir, float dist, out float toi, out Vector3 normal)
+    private bool Cast(Vector3 feet, Stance stance, Vector3 dir, float dist, out float toi, out Vector3 normal) =>
+        Cast(feet, stance, dir, dist, out toi, out normal, out _, out _);
+
+    private bool Cast(Vector3 feet, Stance stance, Vector3 dir, float dist, out float toi, out Vector3 normal, out Vector3 point, out int index)
     {
         Casts++;
         var c = CapsuleAt(feet, stance, _up);
-        return CapsuleContact.Cast(Shapes, c.A, c.B, c.Radius, dir, dist, out toi, out normal, out _, out _);
+        return CapsuleContact.Cast(Shapes, c.A, c.B, c.Radius, dir, dist, out toi, out normal, out point, out index);
+    }
+
+    /// <summary>
+    /// Can the player stand on what a cast touched (normal <paramref name="n"/> at <paramref name="point"/>, shape
+    /// <paramref name="index"/>)? Terrain by <see cref="SlopeRules"/> at the contact point (with grip along
+    /// <paramref name="dir"/> when <paramref name="grip"/>); everything else by <see cref="World.MinWalkNormalY"/>.
+    /// </summary>
+    private bool WalkableHit(Vector3 n, int index, Vector3 point, Vector3 dir, bool grip)
+    {
+        if (_terrain is { } t && index >= 0 && Shapes[index].Id.Kind == ShapeKind.Terrain)
+            return grip ? SlopeRules.CanStand(t, point.X, point.Z, dir.X, dir.Z) : SlopeRules.Walkable(t, point.X, point.Z);
+        return Vector3.Dot(n, _up) >= World.MinWalkNormalY;
     }
 
     /// <summary>Out of anything the capsule overlaps; if squeezed, lifted until it fits (up to 4 m), like the classic mover's Unstick.</summary>
@@ -247,7 +282,7 @@ public sealed class SweptMover : IMover
         var fwd = MathF.Max(len, MinStepForward);
         var stepVel = velocity;
         var ahead = Slide(raised, dir * fwd, stance, true, ref stepVel, out _);
-        if (!Cast(ahead, stance, -up, rise + World.StepHeight, out var down, out var n) || Vector3.Dot(n, up) < World.MinWalkNormalY)
+        if (!Cast(ahead, stance, -up, rise + World.StepHeight, out var down, out var n, out var at, out var hit) || !WalkableHit(n, hit, at, dir, true))
             return slid;
         var landed = ahead - up * down;
         // Only worth it if it got further along than the plain slide.
@@ -269,14 +304,14 @@ public sealed class SweptMover : IMover
             if (len < 1e-6f)
                 break;
             var dir = disp / len;
-            if (!Cast(feet, stance, dir, len, out var toi, out var n))
+            if (!Cast(feet, stance, dir, len, out var toi, out var n, out var at, out var hit))
             {
                 feet += disp;
                 break;
             }
             feet += dir * toi;
             disp = dir * (len - toi);
-            if (Vector3.Dot(n, up) >= World.MinWalkNormalY && Vector3.Dot(velocity, up) <= 0)
+            if (WalkableHit(n, hit, at, velocity, false) && Vector3.Dot(velocity, up) <= 0)
             {
                 // Landed: the fall stops, the rest of the move carries on along the ground.
                 grounded = true;
@@ -307,7 +342,7 @@ public sealed class SweptMover : IMover
             if (len < 1e-6f)
                 break;
             var dir = disp / len;
-            if (!Cast(feet, stance, dir, len, out var toi, out var n))
+            if (!Cast(feet, stance, dir, len, out var toi, out var n, out var at, out var hit))
             {
                 feet += disp;
                 break;
@@ -315,7 +350,7 @@ public sealed class SweptMover : IMover
             feet += dir * toi;
             disp = dir * (len - toi);
             var ny = Vector3.Dot(n, up);
-            if (walking && ny < World.MinWalkNormalY)
+            if (walking && ny < World.MinWalkNormalY && !WalkableHit(n, hit, at, dir, true))
             {
                 // Walls and too-steep slopes: slide along them horizontally (a ceiling edge: straight back).
                 var flat = n - up * ny;
@@ -364,13 +399,14 @@ public sealed class SweptMover : IMover
 
     /// <summary>
     /// Keeps a walking player on the ground: casts down up to <paramref name="dist"/>; on walkable ground it moves there and
-    /// returns true. Nothing walkable below: the player is falling (or sliding).
+    /// returns true. Nothing walkable below: the player is falling (or sliding). On terrain, <paramref name="grip"/> lets a
+    /// player moving along <paramref name="moveDir"/> keep walking over a narrow steep patch (<see cref="SlopeRules.Grip"/>).
     /// </summary>
-    private bool Snap(ref Vector3 feet, Stance stance, float dist)
+    private bool Snap(ref Vector3 feet, Stance stance, float dist, Vector3 moveDir, bool grip)
     {
-        if (!Cast(feet, stance, -_up, dist, out var t, out var n))
+        if (!Cast(feet, stance, -_up, dist, out var t, out var n, out var at, out var hit))
             return false;
-        if (Vector3.Dot(n, _up) >= World.MinWalkNormalY)
+        if (WalkableHit(n, hit, at, moveDir, grip))
         {
             feet -= _up * t;
             return true;
@@ -389,7 +425,7 @@ public sealed class SweptMover : IMover
             step = t2;
         var q = p + along * step;
         var left = dist - Vector3.Dot(feet - q, _up);
-        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3) || Vector3.Dot(n3, _up) < World.MinWalkNormalY)
+        if (left < 0 || !Cast(q, stance, -_up, left + Skin, out var t3, out var n3, out var at3, out var hit3) || !WalkableHit(n3, hit3, at3, moveDir, grip))
             return false;
         feet = q - _up * t3;
         return true;

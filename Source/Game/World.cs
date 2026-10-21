@@ -141,7 +141,10 @@ public static class World
 
     public const float StepHeight = 0.55f; // walk up anything this tall (stairs are 0.4 m)
 
-    /// <summary>Terrain steeper than this can't be walked up: you slide down it, and cliffs are walls.</summary>
+    /// <summary>
+    /// Boxes, oriented boxes and meshes steeper than this can't be walked up (the swept mover's slopes). Terrain has its own,
+    /// smoother rules: <see cref="SlopeRules"/> (walkable to 45 degrees over the footprint, slower uphill, grip, capped slides).
+    /// </summary>
     public const float MaxSlopeDeg = 42f;
 
     /// <summary>cos(<see cref="MaxSlopeDeg"/>): ground whose normal points up less than this is too steep.</summary>
@@ -227,8 +230,9 @@ public static class World
 
     /// <summary>
     /// Could a player walk in a straight line from <paramref name="from"/> to <paramref name="to"/> (feet positions)?
-    /// No box in the way at knee (0.5 m) or chest (1.3 m) height and, on terrain, no stretch steeper than
-    /// <see cref="MaxSlopeDeg"/> (up or down, so the answer is the same both ways) and no hill in between.
+    /// No box in the way at knee (0.5 m) or chest (1.3 m) height and, on terrain, no stretch players can't walk by
+    /// <see cref="SlopeRules"/> (steeper than its limit up or down, so the answer is the same both ways, apart from a
+    /// single lip or narrow steep patch the movers' grip gets over) and no hill in between.
     /// Meant for bot navigation (waypoint picking, nav graphs). Pure geometry: smoke etc. is up to the caller.
     /// </summary>
     public static bool CanWalkStraight(Vector3 from, Vector3 to)
@@ -249,17 +253,25 @@ public static class World
         var step = MathF.Min(0.5f, terrain.Data.Cell * 0.5f);
         var n = Math.Max(1, (int)MathF.Ceiling(len / step));
         var run = len / n;
-        var maxRise = run * (1f / MinWalkNormalY) * MathF.Sqrt(1 - MinWalkNormalY * MinWalkNormalY) + 0.02f; // run * tan(max slope)
+        var maxRise = run * SlopeRules.TanWalkLimit + 0.02f;
         var prev = new Vector3(from.X, terrain.HeightAt(from.X, from.Z), from.Z);
         var segStart = prev;
+        var steep = 0;
+        var gripSamples = Math.Max(1, (int)(0.5f / MathF.Max(run, 1e-3f))); // a steep stretch up to half a metre (the movers' grip)
         for (var k = 1; k <= n; k++)
         {
             var t = k / (float)n;
             var x = from.X + flat.X * t;
             var z = from.Z + flat.Y * t;
             var p = new Vector3(x, terrain.HeightAt(x, z), z);
-            if (MathF.Abs(p.Y - prev.Y) > maxRise)
-                return false; // a cliff or a drop
+            var rise = MathF.Abs(p.Y - prev.Y);
+            if (rise > maxRise || !SlopeRules.Walkable(terrain, x, z))
+            {
+                if (rise > StepHeight || ++steep > gripSamples)
+                    return false; // a cliff, a drop or a slope too steep to walk
+            }
+            else
+                steep = 0;
             // Boxes: check the path in pieces of about 4 m that follow the ground.
             if (k % 8 == 0 || k == n)
             {

@@ -71,6 +71,12 @@ public sealed class BotBrain
     public Vector3 StuckCheckPos;
     public double StuckCheckTime;
     public int StuckCount;
+    public int StuckCheckNode = -1; // the path node being walked to at the last stuck check (-1: none)
+    public float StuckCheckAim; // flat distance to it then
+    public Vector3 FollowAim; // where path following last steered (BotFollow), the node it heads for and when
+    public int FollowNode = -1;
+    public double FollowTime = -100;
+    public int SlopeStalls; // times this bot made no progress up a slope while moving (self-test statistics)
     public bool JumpNext;
     public double CrouchUntil;
     public double NextGlance, GlanceUntil;

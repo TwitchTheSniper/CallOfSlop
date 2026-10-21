@@ -15,10 +15,11 @@ public interface IMover
 }
 
 /// <summary>
-/// The original movement, unchanged in behaviour: a box-shaped body moved one axis at a time against the map's boxes (land on
-/// anything, bump heads, slide along walls, walk up steps of up to <see cref="World.StepHeight"/>), the terrain sampled at
-/// the feet, mantling onto ledges and the movers. Ported onto <see cref="PhysicsWorld"/>: the boxes come from its BVH in map
-/// order, so every answer is bit-identical to the old full scans (the "Collision parity" self-test checks it on every map).
+/// The original movement: a box-shaped body moved one axis at a time against the map's boxes (land on anything, bump heads,
+/// slide along walls, walk up steps of up to <see cref="World.StepHeight"/>), the terrain under the feet with the slope rules of
+/// <see cref="SlopeRules"/> (since protocol 14), mantling onto ledges and the movers. Ported onto <see cref="PhysicsWorld"/>:
+/// the boxes come from its BVH in map order, so on maps without terrain every answer is bit-identical to the old full scans
+/// (the "Collision parity" self-test checks it; on terrain maps it checks the queries, and "Slopes" checks the movement).
 /// </summary>
 public sealed class ClassicMover : IMover
 {
@@ -70,9 +71,13 @@ public sealed class ClassicMover : IMover
 
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.Grounded ? 14f : 3f; // snappy on the ground, floaty in the air
+        var targetX = wish.X * speed;
+        var targetZ = wish.Z * speed;
+        if (map.TerrainCollision is { } ground && s.Position.Y - ground.HeightAt(s.Position.X, s.Position.Z) < SlopeRules.OnGround)
+            SlopeSteer(ground, s, wish, speed, ref targetX, ref targetZ, ref control);
         var blend = 1f - MathF.Exp(-control * World.TickDt);
-        s.Velocity.X += (wish.X * speed - s.Velocity.X) * blend;
-        s.Velocity.Z += (wish.Z * speed - s.Velocity.Z) * blend;
+        s.Velocity.X += (targetX - s.Velocity.X) * blend;
+        s.Velocity.Z += (targetZ - s.Velocity.Z) * blend;
 
         // Jump facing a ledge or window sill (while moving forward) = mantle instead of jumping.
         if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && TryMantle(ref s, cmd.Yaw))
@@ -84,6 +89,28 @@ public sealed class ClassicMover : IMover
         s.Position = Move(s.Position, ref s.Velocity, ref s.Grounded, World.TickDt, World.HeightOf(s.Stance));
         if (movers)
             MoverPhysics.EndTick(ref s, _moverTick, carried, platformVel);
+    }
+
+    /// <summary>
+    /// On terrain (<see cref="SlopeRules"/>): walking up a slope is slower, and sliding down ground too steep to stand on
+    /// steers across and down it (never up). Shared with the swept mover.
+    /// </summary>
+    internal static void SlopeSteer(ITerrainCollision ground, in MoveState s, Vector3 wish, float speed, ref float targetX, ref float targetZ, ref float control)
+    {
+        var n = SlopeRules.SupportNormal(ground, s.Position.X, s.Position.Z);
+        if (s.Grounded)
+        {
+            var f = SlopeRules.SpeedFactor(n, wish);
+            targetX *= f;
+            targetZ *= f;
+        }
+        else if (!SlopeRules.Walkable(n))
+        {
+            var t = SlopeRules.SlideTarget(n, wish, speed, s.Velocity);
+            targetX = t.X;
+            targetZ = t.Y;
+            control = SlopeRules.SlideControl;
+        }
     }
 
     /// <summary>One tick of a mantle in progress (shared with the swept mover: the glide is the same for both).</summary>
@@ -159,7 +186,8 @@ public sealed class ClassicMover : IMover
             {
                 // A terrain ledge counts if its top is flat enough to stand on (so you can't mantle up a cliff face).
                 var g = terrain.HeightAt(probe.X, probe.Z);
-                if (g > feet.Y + World.StepHeight && g <= feet.Y + maxReach && terrain.NormalAt(probe.X, probe.Z).Y >= World.MinWalkNormalY)
+                if (g > feet.Y + World.StepHeight && g <= feet.Y + maxReach
+                    && (terrain.NormalAt(probe.X, probe.Z).Y >= World.MinWalkNormalY || SlopeRules.Walkable(terrain, probe.X, probe.Z)))
                     top = g;
             }
             if (d <= 1.05f)
@@ -326,13 +354,14 @@ public sealed class ClassicMover : IMover
                 all = true; // out of the strip: every remaining box from here on
         }
 
-        // Terrain rising in front: walk up it if it's gentle (and there's headroom), otherwise it's a wall.
+        // Terrain rising in front: walk up it if it's walkable or a lip within a step (and there's headroom), otherwise it's
+        // a wall (SlopeRules).
         if (phys.Terrain is { } terrain)
         {
             var g = terrain.HeightAt(p.X, p.Z);
             if (g > p.Y + 0.001f)
             {
-                if (g - p.Y <= World.StepHeight && terrain.NormalAt(p.X, p.Z).Y >= World.MinWalkNormalY && !World.BlockedByBoxes(p with { Y = g }, height))
+                if (g - p.Y <= World.StepHeight && SlopeRules.CanStand(terrain, p.X, p.Z, velocity.X, velocity.Z) && !World.BlockedByBoxes(p with { Y = g }, height))
                     p.Y = g;
                 else
                 {
@@ -348,8 +377,9 @@ public sealed class ClassicMover : IMover
     }
 
     /// <summary>
-    /// The ground under a player after the vertical move: land on it, stick to it walking downhill (so you don't
-    /// hop down slopes), and slide off anything steeper than <see cref="World.MaxSlopeDeg"/>.
+    /// The ground under a player after the vertical move: land on it, stick to it walking over crests and downhill (so you
+    /// don't hop down slopes), and slide off anything too steep to stand on (<see cref="SlopeRules"/>: the footprint's slope,
+    /// with grip while walking; the slide is capped).
     /// </summary>
     private static void TerrainVertical(ITerrainCollision terrain, ref Vector3 feet, ref Vector3 velocity, ref bool grounded, bool wasGrounded, float height, float dt)
     {
@@ -361,21 +391,22 @@ public sealed class ClassicMover : IMover
             var speed = MathF.Sqrt(velocity.X * velocity.X + velocity.Z * velocity.Z);
             if (grounded || !wasGrounded || velocity.Y > 0 || gap > 0.12f + speed * dt * 1.2f)
                 return;
-            if (terrain.NormalAt(feet.X, feet.Z).Y < World.MinWalkNormalY || World.BlockedByBoxes(feet with { Y = g }, height))
+            if (!SlopeRules.CanStand(terrain, feet.X, feet.Z, velocity.X, velocity.Z) || World.BlockedByBoxes(feet with { Y = g }, height))
                 return;
         }
-        var n = terrain.NormalAt(feet.X, feet.Z);
+        var n = SlopeRules.SupportNormal(terrain, feet.X, feet.Z);
         feet.Y = g;
         if (velocity.Y < 0)
             velocity.Y = 0;
-        if (n.Y >= World.MinWalkNormalY)
+        if (SlopeRules.Walkable(n) || (wasGrounded && SlopeRules.Grip(terrain, feet.X, feet.Z, velocity.X, velocity.Z)))
             grounded = true;
         else if (!grounded)
         {
-            // Too steep to stand on: gravity pulls you down the slope.
+            // Too steep to stand on: gravity pulls you down the slope (no faster than the slide cap).
             var push = World.Gravity * n.Y * dt;
             velocity.X += n.X * push;
             velocity.Z += n.Z * push;
+            SlopeRules.CapSlide(n, ref velocity);
         }
     }
 

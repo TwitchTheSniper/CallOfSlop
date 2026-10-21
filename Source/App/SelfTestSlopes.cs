@@ -558,7 +558,7 @@ public static partial class SelfTest
             var lowTravel = travel.Count(kv => kv.Value < 15f);
             var stuck = travel.Count(kv => kv.Value < 15f && unstick.GetValueOrDefault(kv.Key) >= 3);
             var cover = cells.Count * 36f / (4 * m.HalfX * m.HalfZ) * 100f;
-            var stalls = 0; // baseline: no slope re-plans yet
+            var stalls = game.Players.Values.Where(p => p.Bot != null).Sum(p => p.Bot!.SlopeStalls);
             var kills = game.Players.Values.Sum(p => (int)p.Kills);
             SlopeNote("bots", $"{m.Name,-12} bots 60 s: kills {kills}, avg travel {(travel.Count > 0 ? travel.Values.Average() : 0):0} m, stuck {stuck} (under 15 m: {lowTravel}), "
                  + $"unstick tries {unstick.Values.Sum()}, slope re-plans {stalls}, sliding {slideTicks} bot-ticks, slow on slopes {slopeSlow}/{botSeconds} bot-seconds, "

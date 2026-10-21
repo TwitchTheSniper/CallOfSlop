@@ -22,7 +22,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 13: physics mode (classic | swept movement) in the Welcome and at the end of this info
     // (Rotation, the host's map rotation such as "True Random", rides after the physics byte as an optional trailing string:
     // older builds stop reading before it and newer ones read "" from older hosts, so it needs no version bump.)
-    public const byte ProtocolVersion = 13;
+    // 14: terrain slope rules (SlopeRules: footprint slope, walkable to 45 degrees, slower uphill, grip and terrain steps,
+    //     capped steerable slides) in both movers: client prediction must run the same movement as the server
+    public const byte ProtocolVersion = 14;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
