@@ -102,6 +102,7 @@ public static unsafe partial class Program
             AudioSystem.Init();
             AudioSystem.MasterVolume = _settings.Volume;
             AudioSystem.Music.Volume = _settings.MusicVolume;
+            (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             CreateWindow();
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
@@ -187,6 +188,11 @@ public static unsafe partial class Program
         if (LegsSmokeActive)
         {
             LegsSmokeTick(now); // Program.Legs.cs
+            return;
+        }
+        if (SkySmokeActive)
+        {
+            SkySmokeTick(now); // Program.Sky.cs
             return;
         }
         if (_smokeMap < 0)
@@ -672,6 +678,7 @@ public static unsafe partial class Program
     /// <summary>Every weapon in a grid, side-on (smoke test): 1 = stock, 2 = with a full kit.</summary>
     private static void DrawGunGallery(int mode)
     {
+        SkyRenderer.UseDefaultLight(); // guns are lit the same whatever the map's sky
         var fb = _window.FramebufferSize;
         Gfx.BeginFrame(fb.X, fb.Y, new Vector3(0.06f, 0.07f, 0.09f));
         const int cols = 10;
@@ -965,6 +972,8 @@ public static unsafe partial class Program
                 DrawMeshSmoke();
             else if (LegsSmokeActive)
                 DrawLegsSmoke();
+            else if (SkySmokeActive)
+                DrawSkySmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -1007,7 +1016,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive && !SkySmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -1103,6 +1112,7 @@ public static unsafe partial class Program
     private static void DrawArena()
     {
         var map = World.Map;
+        SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         for (var i = 0; i < map.Solid.Count; i++)
             if (map.IsDrawnBox(i)) // props are drawn as models by the prop renderer (a shaped map's floor as a mesh)
                 Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
@@ -1111,6 +1121,7 @@ public static unsafe partial class Program
         PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
         MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
         FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
+        SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
     }
 
     // =====================================================================
@@ -1730,6 +1741,7 @@ public static unsafe partial class Program
         if (fb.X <= 0 || fb.Y <= 0 || ws.X <= 0 || ws.Y <= 0)
             return;
         float sx = fb.X / (float)ws.X, sy = fb.Y / (float)ws.Y;
+        SkyRenderer.UseDefaultLight(); // the showcase gun is lit the same whatever the map's sky
 
         // Backdrop over the whole window, with a soft "stage" behind the gun
         Gfx.SetCamera(Matrix4x4.Identity, Matrix4x4.CreateOrthographicOffCenter(0, fb.X, 0, fb.Y, -1, 1));
@@ -1773,6 +1785,7 @@ public static unsafe partial class Program
         if (fb.X <= 0 || fb.Y <= 0 || ws.X <= 0 || ws.Y <= 0)
             return;
         float sx = fb.X / (float)ws.X, sy = fb.Y / (float)ws.Y;
+        SkyRenderer.UseDefaultLight(); // gun pictures are lit the same whatever the map's sky
         var scissor = false;
         foreach (var th in Ui.Thumbs)
         {

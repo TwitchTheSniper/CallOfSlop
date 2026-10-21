@@ -686,6 +686,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Grass, bushes and tree tops on maps that have them. Lower it for more fps. Tree trunks are always there (they stop bullets)."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Sky quality"u8);
+            var skyQ = (int)s.SkyQuality;
+            for (var i = 0; i <= (int)SkyQuality.High; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(SkyQuality)i}##sky", ref skyQ, i))
+                    s.SkyQuality = (SkyQuality)skyQ;
+            }
+            ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();
@@ -705,6 +717,18 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Music volume"u8, ref s.MusicVolume, 0f, 1f, "%.2f"u8))
                 audio.Music.Volume = s.MusicVolume;
+            ImGui.SetNextItemWidth(w);
+            if (ImGui.SliderFloat("Effects volume"u8, ref s.EffectsVolume, 0f, 1f, "%.2f"u8))
+                audio.EffectsVolume = s.EffectsVolume;
+            ImGui.SameLine();
+            if (ImGui.Button("Test##fx"u8))
+                audio.Effect(Sfx.Headshot, 0.8f);
+            ImGui.SetNextItemWidth(w);
+            if (ImGui.SliderFloat("Footstep volume"u8, ref s.FootstepVolume, 0f, 1f, "%.2f"u8))
+                audio.FootstepVolume = s.FootstepVolume;
+            ImGui.SameLine();
+            if (ImGui.Button("Test##steps"u8))
+                audio.Footstep(new StepEvent(0, StepKind.Run, FootSurface.Concrete, default, 1f), self: true);
             ImGui.TextColored(Dim, "Generated hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
             ImGui.EndChild();
             ImGui.EndTabItem();
