@@ -469,20 +469,20 @@ public static partial class SelfTest
             p.HardbassOnly = true;
             Mix(4);
             if (p.Current is not { Style: MusicStyle.Hardbass, Set: MusicSet.Menu })
-                Fail($"Hardbass only: the menu still plays "{p.Current?.Name}" ({p.Current?.Style})");
+                Fail($"Hardbass only: the menu still plays \"{p.Current?.Name}\" ({p.Current?.Style})");
             else if (first?.Style == MusicStyle.Hardbass && p.Current != first)
-                Fail($"Hardbass only: "{first.Name}" was already hardbass but got replaced");
+                Fail($"Hardbass only: \"{first.Name}\" was already hardbass but got replaced");
             p.SetMood(MusicMood.Lobby);
             Mix(4);
             if (p.Current is not { Style: MusicStyle.Hardbass, Set: MusicSet.Lobby })
-                Fail($"Hardbass only: the lobby plays "{p.Current?.Name}" ({p.Current?.Style})");
+                Fail($"Hardbass only: the lobby plays \"{p.Current?.Name}\" ({p.Current?.Style})");
             var held = p.Current;
             p.HardbassOnly = false;
             Mix(1);
             if (p.Current != held)
                 Fail("switching back to Mixed shouldn't cut the hardbass track short");
             if (seed == 1)
-                Line($"Hardbass only: menu "{first?.Name}" -> hardbass, lobby "{held?.Name}"");
+                Line($"Hardbass only: menu \"{first?.Name}\" -> hardbass, lobby \"{held?.Name}\"");
         }
     }
 
