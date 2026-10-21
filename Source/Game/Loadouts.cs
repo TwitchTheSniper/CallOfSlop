@@ -265,7 +265,8 @@ public static class LoadoutStore
 
     public static string CleanName(string name)
     {
-        var clean = new string(name.Where(c => !char.IsControl(c) && c != '=').ToArray()).Trim();
+        // Printable ASCII (the font draws nothing else, and a pasted emoji could overflow the rename box's byte buffer).
+        var clean = new string(name.Where(c => c is >= ' ' and <= '~' && c != '=').ToArray()).Trim();
         return clean.Length == 0 ? "Loadout" : clean.Length > 24 ? clean[..24] : clean;
     }
 

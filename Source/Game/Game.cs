@@ -204,7 +204,7 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacket(sender, data, now));
+        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
 
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)

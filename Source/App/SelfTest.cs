@@ -109,6 +109,7 @@ public static partial class SelfTest
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
+            Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }

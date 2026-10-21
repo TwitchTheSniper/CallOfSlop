@@ -216,6 +216,7 @@ public sealed partial class Game
             {
                 int n = r.U8();
                 var names = new string[n];
+                Array.Fill(names, ""); // a short packet leaves the rest empty, never null
                 for (var i = 0; i < n && r.Has(1); i++)
                     names[i] = r.Str();
                 if (!r.Has(n))

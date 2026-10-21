@@ -294,8 +294,10 @@ public sealed partial class Game
         var left = r.F32();
         var owner = r.U8();
         var flags = r.U8();
-        var name = r.Str();
+        var name = r.Text(32);
         var text = ReadLong(ref r);
+        if (!float.IsFinite(at.X + at.Y + at.Z + left))
+            return; // garbage
         WeaponBuild b;
         try
         {

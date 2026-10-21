@@ -701,7 +701,7 @@ public sealed partial class Game
             case (byte)Msg.ModeEvent when !IsServer && r.Has(2):
             {
                 var sound = (Sfx)r.U8();
-                Log(r.Str(), true);
+                Log(r.Text(), true); // printable ASCII from the host
                 if (sound < Sfx.COUNT)
                     Audio.Effect(sound, 0.6f);
                 break;

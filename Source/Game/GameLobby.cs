@@ -82,7 +82,7 @@ public sealed partial class Game
         if (IsServer || !r.Has(2))
             return;
         int n = r.U8(), max = r.U8();
-        var map = r.Has(1) ? r.Str() : "the map";
+        var map = r.Has(1) ? r.Text(40) : "the map";
         Status = $"The server is full: {n}/{max} players on {map}";
         Disconnected = true;
         Log(Status, true);

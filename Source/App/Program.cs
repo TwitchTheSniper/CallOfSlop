@@ -116,7 +116,7 @@ public static unsafe partial class Program
             else if (plain.Length > 0 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1)
-                    _settings.JoinAddress = plain[1];
+                    _settings.JoinAddress = Settings.CleanAddress(plain[1]);
                 if (plain.Length > 2 && ushort.TryParse(plain[2], out var jp))
                     _settings.Port = jp;
                 StartSession(LobbyAction.Join);
@@ -763,7 +763,7 @@ public static unsafe partial class Program
 
     private static void CreateWindow()
     {
-        Glfw.ErrorCallback += (code, desc) => Console.WriteLine($"GLFW {code}: {desc}");
+        Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 
