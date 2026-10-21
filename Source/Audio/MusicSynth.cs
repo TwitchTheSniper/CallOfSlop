@@ -133,7 +133,13 @@ internal sealed class KickVoice
 {
     public float StartHz = 200, EndHz = 50, PitchTime = 0.03f, Hold = 0.02f, DecayTime = 0.15f, Drive = 2f, ToneHz = 3000, Click = 0.3f;
 
-    private float _phase, _pitch, _amp, _ampCoef, _pitchCoef, _click, _lpA, _lp, _duck, _duckCoef;
+    /// <summary>Hard clipping after the soft clipper (0 = off; e.g. 1.6 squares the waveform off): the pounding hardbass kick.</summary>
+    public float Clip;
+
+    /// <summary>Level and pitch of a short sine "tok" at the start of each hit (0 = none): a punchy click that cuts through.</summary>
+    public float Punch, PunchHz = 2500;
+
+    private float _phase, _pitch, _amp, _ampCoef, _pitchCoef, _click, _lpA, _lp, _duck, _duckCoef, _punch, _punchPhase, _punchCoef;
     private int _hold;
 
     public void Configure(float duckTime)
@@ -142,11 +148,12 @@ internal sealed class KickVoice
         _pitchCoef = Dsp.Decay(PitchTime);
         _lpA = Dsp.OnePole(ToneHz);
         _duckCoef = Dsp.Decay(duckTime);
+        _punchCoef = Dsp.Decay(0.005f);
     }
 
     public void Reset()
     {
-        _phase = _pitch = _amp = _click = _lp = _duck = 0;
+        _phase = _pitch = _amp = _click = _lp = _duck = _punch = _punchPhase = 0;
         _hold = 0;
         _lpA = Dsp.OnePole(ToneHz);
     }
@@ -161,6 +168,8 @@ internal sealed class KickVoice
         _click = Click * vel * muffle;
         _lpA = Dsp.OnePole(ToneHz * muffle);
         _duck = 1;
+        _punch = Punch * vel * muffle;
+        _punchPhase = 0;
     }
 
     /// <summary>Renders the kick into dst and its sidechain envelope (1 on every hit, falling back) into duck.</summary>
@@ -168,7 +177,7 @@ internal sealed class KickVoice
     {
         var n = dst.Length;
         var d = _duck;
-        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f && _click <= 1e-4f)
+        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f && _click <= 1e-4f && _punch <= 1e-4f)
         {
             // Silent: only the sidechain envelope moves.
             for (var i = 0; i < n; i++)
@@ -183,6 +192,7 @@ internal sealed class KickVoice
         }
         float phase = _phase, pitch = _pitch, amp = _amp, click = _click, lp = _lp;
         float lpA = _lpA, startHz = StartHz, endHz = EndHz, drive = Drive, ampCoef = _ampCoef, pitchCoef = _pitchCoef, duckCoef = _duckCoef;
+        float clip = Clip, punch = _punch, punchPhase = _punchPhase, punchCoef = _punchCoef, punchDt = PunchHz * Dsp.InvSr;
         var hold = _hold;
         for (var i = 0; i < n; i++)
         {
@@ -199,6 +209,8 @@ internal sealed class KickVoice
             else if ((amp *= ampCoef) < 1e-4f)
                 amp = 0;
             s = Dsp.Tanh(s * drive);
+            if (clip > 0)
+                s = Math.Clamp(s * clip, -1f, 1f);
             lp += lpA * (s - lp);
             if (MathF.Abs(lp) < 1e-15f)
                 lp = 0; // no denormals in the tail
@@ -208,12 +220,22 @@ internal sealed class KickVoice
                 c = rng.Noise() * click;
                 click *= 0.95f;
             }
+            if (punch > 1e-4f)
+            {
+                punchPhase += punchDt;
+                if (punchPhase >= 1f)
+                    punchPhase -= 1f;
+                c += MathF.Sin(punchPhase * Dsp.TwoPi) * punch;
+                punch *= punchCoef;
+            }
             dst[i] = lp + c;
         }
         _phase = phase;
         _pitch = pitch;
         _amp = amp < 1e-4f ? 0 : amp;
         _click = click;
+        _punch = punch <= 1e-4f ? 0 : punch;
+        _punchPhase = punchPhase;
         _lp = MathF.Abs(lp) < 1e-15f ? 0 : lp;
         _hold = hold;
         _duck = d < 1e-4f ? 0 : d;
@@ -380,6 +402,18 @@ internal sealed class SawSynth
     /// <summary>Filter automation from the arrangement (a build opens it from nearly closed to 1).</summary>
     public float CutoffMul = 1f;
 
+    /// <summary>Every note starts this many semitones off and slides to its pitch over <see cref="BendTime"/> (0 = off): the hoover swoop.</summary>
+    public float BendSemis, BendTime = 0.06f;
+
+    /// <summary>Pitch vibrato depth in semitones (0 = off) and rate.</summary>
+    public float Vibrato, VibratoHz = 5.5f;
+
+    /// <summary>Filter cutoff LFO depth in octaves (0 = off) and rate: the wah of a screech.</summary>
+    public float FilterLfo, FilterLfoHz = 4f;
+
+    /// <summary>Band-pass instead of low-pass output: a nasal, screaming tone (with high resonance).</summary>
+    public bool BandPass;
+
     private readonly float[] _phase = new float[MaxNotes * MaxSaws];
     private readonly float[] _hz = new float[MaxNotes], _target = new float[MaxNotes], _env = new float[MaxNotes], _vel = new float[MaxNotes];
     private readonly byte[] _stage = new byte[MaxNotes]; // 0 off, 1 attack, 2 decay/sustain, 3 release
@@ -387,7 +421,9 @@ internal sealed class SawSynth
     private readonly float[] _hSpread = new float[MaxSaws], _hPanL = new float[MaxSaws], _hPanR = new float[MaxSaws];
     private readonly float[] _amp = new float[MaxBlock], _dt = new float[MaxBlock];
     private readonly float[] _rawL = new float[MaxBlock], _rawR = new float[MaxBlock], _outL = new float[MaxBlock], _outR = new float[MaxBlock];
+    private readonly float[] _vib = new float[MaxBlock];
     private float _fenv, _fCoef, _aInc, _dCoef, _rCoef, _gCoef, _g, _k, _norm, _hNorm, _dtMul = 1f, _curL, _curR;
+    private float _bendRatio = 1f, _vibPhase, _flfoPhase;
     private int _ctl;
     private bool _odd;
     private Svf _l, _r;
@@ -407,7 +443,8 @@ internal sealed class SawSynth
         _aInc = 1f / MathF.Max(1f, Attack * Dsp.Sr * t);
         _dCoef = Dsp.Decay(DecayTime * t);
         _rCoef = Dsp.Decay(Release * t);
-        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide * t) : 1f;
+        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide * t) : BendSemis != 0 ? 1f - Dsp.Decay(BendTime * t) : 1f;
+        _bendRatio = BendSemis != 0 ? MathF.Pow(2f, BendSemis / 12f) : 1f;
         _k = 2f - 2f * Math.Clamp(Resonance, 0f, 0.95f);
         _ctl = 0;
     }
@@ -432,7 +469,7 @@ internal sealed class SawSynth
         Array.Clear(_hz);
         Array.Clear(_target);
         Array.Clear(_vel);
-        _fenv = _g = _curL = _curR = 0;
+        _fenv = _g = _curL = _curR = _vibPhase = _flfoPhase = 0;
         _ctl = 0;
         _odd = false;
         _l.Reset();
@@ -446,7 +483,7 @@ internal sealed class SawSynth
     {
         _target[slot] = hz;
         if (_stage[slot] == 0 || Glide <= 0)
-            _hz[slot] = hz;
+            _hz[slot] = hz * _bendRatio;
         if (_stage[slot] == 0)
             for (var j = 0; j < Saws; j++)
                 _phase[slot * MaxSaws + j] = (j * 0.618034f + slot * 0.37f) % 1f; // spread phases: a fat start, no phase-cancel thump
@@ -520,6 +557,25 @@ internal sealed class SawSynth
         var any = false;
         var amps = _amp.AsSpan(0, m);
         var dts = _dt.AsSpan(0, m);
+        var vibOn = Vibrato != 0;
+        if (vibOn)
+        {
+            // One shared LFO for every note, stepped every 16 samples (inaudible at this rate). ln(2)/12 = 0.05776.
+            var vib = _vib.AsSpan(0, m);
+            float vp = _vibPhase, vdt = VibratoHz * Dsp.InvSr * _dtMul * 16f, depth = Vibrato * 0.05776f, cur = 1f;
+            for (var i = 0; i < m; i++)
+            {
+                if ((i & 15) == 0)
+                {
+                    vp += vdt;
+                    if (vp >= 1f)
+                        vp -= 1f;
+                    cur = 1f + depth * MathF.Sin(vp * Dsp.TwoPi);
+                }
+                vib[i] = cur;
+            }
+            _vibPhase = vp;
+        }
         for (var note = 0; note < MaxNotes; note++)
         {
             var stage = _stage[note];
@@ -558,6 +614,9 @@ internal sealed class SawSynth
                 amps[i] = e * vel;
                 dts[i] = hz * dtScale;
             }
+            if (vibOn)
+                for (var i = 0; i < m; i++)
+                    dts[i] *= _vib[i];
             _env[note] = e;
             _hz[note] = hz;
             _stage[note] = stage;
@@ -612,18 +671,45 @@ internal sealed class SawSynth
         float g = _g, fenv = _fenv, fCoef = _fCoef, k = _k, drive = Drive, cutoff = Cutoff * CutoffMul * _dtMul, envAmount = EnvAmount;
         Svf.Coefs(g, k, out var a1, out var a2, out var a3);
         var ctl = _ctl;
-        for (var i = 0; i < m; i++)
+        if (FilterLfo == 0 && !BandPass)
         {
-            if ((ctl++ & 15) == 0)
+            for (var i = 0; i < m; i++)
             {
-                g = Dsp.SvfG(cutoff * (1f + envAmount * fenv));
-                Svf.Coefs(g, k, out a1, out a2, out a3);
+                if ((ctl++ & 15) == 0)
+                {
+                    g = Dsp.SvfG(cutoff * (1f + envAmount * fenv));
+                    Svf.Coefs(g, k, out a1, out a2, out a3);
+                }
+                fenv *= fCoef;
+                l.Process(Dsp.Tanh(rawL[i] * drive), k, a1, a2, a3);
+                r.Process(Dsp.Tanh(rawR[i] * drive), k, a1, a2, a3);
+                outL[i] = l.Low;
+                outR[i] = r.Low;
             }
-            fenv *= fCoef;
-            l.Process(Dsp.Tanh(rawL[i] * drive), k, a1, a2, a3);
-            r.Process(Dsp.Tanh(rawR[i] * drive), k, a1, a2, a3);
-            outL[i] = l.Low;
-            outR[i] = r.Low;
+        }
+        else
+        {
+            // Screech: the cutoff wobbles with an LFO, and the band-pass output screams at the resonance.
+            float fp = _flfoPhase, fdt = FilterLfoHz * Dsp.InvSr * _dtMul * 16f, depth = FilterLfo * 0.6931f, bpGain = 1.5f * k;
+            var bandPass = BandPass;
+            for (var i = 0; i < m; i++)
+            {
+                if ((ctl++ & 15) == 0)
+                {
+                    fp += fdt;
+                    if (fp >= 1f)
+                        fp -= 1f;
+                    var lfo = depth != 0 ? MathF.Exp(depth * MathF.Sin(fp * Dsp.TwoPi)) : 1f;
+                    g = Dsp.SvfG(cutoff * (1f + envAmount * fenv) * lfo);
+                    Svf.Coefs(g, k, out a1, out a2, out a3);
+                }
+                fenv *= fCoef;
+                l.Process(Dsp.Tanh(rawL[i] * drive), k, a1, a2, a3);
+                r.Process(Dsp.Tanh(rawR[i] * drive), k, a1, a2, a3);
+                outL[i] = bandPass ? l.Band * bpGain : l.Low;
+                outR[i] = bandPass ? r.Band * bpGain : r.Low;
+            }
+            _flfoPhase = fp;
         }
         _l = l;
         _r = r;
@@ -644,6 +730,11 @@ internal sealed class BassVoice
     public float Glide, Detune = 0.006f, Sub = 0.5f, Resonance = 0.3f, Wobble; // wobble: filter LFO depth (0..1)
     public float CutoffMul = 1f;
 
+    /// <summary>Each note starts this many semitones high and drops onto its pitch in a few ms (0 = off): the bouncy hardbass "boing".</summary>
+    public float Bounce, BounceTime = 0.014f;
+
+    private float _bounceRatio = 1f;
+
     private float _p1, _p2, _ps, _hz, _target, _env, _vel, _fenv, _lfo;
     private float _dCoef, _rCoef, _fCoef, _gCoef, _g, _k;
     private byte _stage;
@@ -655,7 +746,8 @@ internal sealed class BassVoice
         _dCoef = Dsp.Decay(DecayTime);
         _rCoef = Dsp.Decay(Release);
         _fCoef = Dsp.Decay(FilterTime);
-        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide) : 1f;
+        _gCoef = Glide > 0 ? 1f - Dsp.Decay(Glide) : Bounce > 0 ? 1f - Dsp.Decay(BounceTime) : 1f;
+        _bounceRatio = Bounce > 0 ? MathF.Pow(2f, Bounce / 12f) : 1f;
         _k = 2f - 2f * Math.Clamp(Resonance, 0f, 0.95f);
     }
 
@@ -672,7 +764,7 @@ internal sealed class BassVoice
     {
         _target = hz;
         if (_stage == 0 || Glide <= 0)
-            _hz = hz;
+            _hz = hz * _bounceRatio;
         _stage = 1;
         _vel = vel;
         _fenv = 1f;
@@ -1009,5 +1101,332 @@ internal sealed class RoomReverb
             io[i] = b - x;
         }
         index = idx;
+    }
+}
+
+/// <summary>
+/// Hardstyle reverse bass: a heavily driven sine on the chord root that swells up between two kicks (the kick's tail
+/// played backwards), bends up at the very end and cuts off just before the next kick, so the two never smear.
+/// </summary>
+internal sealed class ReverseBassVoice
+{
+    public float Drive = 5f, ToneHz = 1400f, BendSemis = 7f;
+
+    private float _phase, _hz, _vel, _lp, _lpA, _fade, _bend;
+    private int _t, _len;
+    private bool _on;
+
+    public void Configure()
+    {
+        _lpA = Dsp.OnePole(ToneHz);
+        _bend = MathF.Pow(2f, BendSemis / 12f) - 1f;
+    }
+
+    public void Reset()
+    {
+        _phase = _hz = _vel = _lp = _fade = 0;
+        _t = _len = 0;
+        _on = false;
+    }
+
+    /// <summary>Starts a swell at hz lasting the given seconds (then a 2 ms cut).</summary>
+    public void Trigger(float hz, float seconds, float vel)
+    {
+        _hz = hz;
+        _vel = vel;
+        _t = 0;
+        _len = Math.Max(64, (int)(seconds * Dsp.Sr));
+        _fade = 1f;
+        _on = true;
+    }
+
+    public void Render(Span<float> dst)
+    {
+        if (!_on && MathF.Abs(_lp) < 1e-6f)
+        {
+            dst.Clear();
+            _lp = 0;
+            return;
+        }
+        float phase = _phase, lp = _lp, lpA = _lpA, fade = _fade, hz = _hz, vel = _vel, drive = Drive, bend = _bend;
+        int t = _t, len = _len;
+        var on = _on;
+        var invLen = 1f / len;
+        for (var i = 0; i < dst.Length; i++)
+        {
+            var s = 0f;
+            if (on)
+            {
+                var x = MathF.Min(1f, t * invLen);
+                var x2 = x * x;
+                var x4 = x2 * x2;
+                phase += hz * (1f + bend * x4 * x4) * Dsp.InvSr;
+                if (phase >= 1f)
+                    phase -= 1f;
+                if (t >= len)
+                {
+                    fade -= 1f / 88f;
+                    if (fade <= 0)
+                    {
+                        fade = 0;
+                        on = false;
+                    }
+                }
+                t++;
+                var env = (0.08f + 0.92f * x2 * x) * fade * vel;
+                s = Dsp.Tanh(MathF.Sin(phase * Dsp.TwoPi) * drive * (0.4f + env)) * env;
+            }
+            lp += lpA * (s - lp);
+            if (MathF.Abs(lp) < 1e-15f)
+                lp = 0;
+            dst[i] = lp;
+        }
+        _phase = phase;
+        _lp = lp;
+        _fade = fade;
+        _t = t;
+        _on = on;
+    }
+}
+
+/// <summary>A word the vocal stab voice can shout.</summary>
+public enum VocalWord : byte
+{
+    Hey,
+    Oi,
+    Ha,
+    Yah,
+}
+
+/// <summary>
+/// Synthesised chant stabs ("HEY!", "OI!", "HA!", "YAH!"): a small crowd of three detuned buzzing saws with a falling
+/// shouted pitch, plus breath noise for an "h", through three formant band-passes that glide from one vowel to the
+/// next. No samples: it's a cartoon of a crowd shouting, which is exactly right for hardbass.
+/// </summary>
+internal sealed class VocalVoice
+{
+    // Formants (F1, F2, F3 in Hz) of the vowels a, e, i, o.
+    private static readonly float[] VowelA = [780, 1220, 2600], VowelE = [480, 1850, 2550], VowelI = [300, 2250, 3000], VowelO = [520, 860, 2500];
+    private static readonly float[] FormantGain = [1f, 0.7f, 0.35f], FormantBw = [90f, 130f, 190f];
+
+    public float Drive = 2.2f;
+
+    private readonly float[] _from = new float[3], _to = new float[3];
+    private Svf _f1, _f2, _f3;
+    private float _p1, _p2, _p3, _hz, _hzEnd, _pitchCoef, _env, _vel, _breath, _x, _xInc, _k1, _k2, _k3;
+    private float _a11, _a12, _a13, _a21, _a22, _a23, _a31, _a32, _a33;
+    private int _t, _attack, _hold, _ctl;
+    private float _decay;
+    private bool _on;
+
+    public void Reset()
+    {
+        _f1.Reset();
+        _f2.Reset();
+        _f3.Reset();
+        _p1 = _p2 = _p3 = _env = _breath = _x = 0;
+        _on = false;
+        _t = _ctl = 0;
+    }
+
+    /// <summary>Shouts a word at a base pitch.</summary>
+    public void Trigger(VocalWord word, float hz, float vel)
+    {
+        float[] a, b;
+        float breath, length;
+        switch (word)
+        {
+            case VocalWord.Hey: a = VowelE; b = VowelI; breath = 0.9f; length = 0.2f; break;
+            case VocalWord.Oi: a = VowelO; b = VowelI; breath = 0f; length = 0.24f; break;
+            case VocalWord.Ha: a = VowelA; b = VowelO; breath = 1f; length = 0.15f; break;
+            default: a = VowelI; b = VowelA; breath = 0.2f; length = 0.22f; break;
+        }
+        for (var i = 0; i < 3; i++)
+        {
+            _from[i] = a[i];
+            _to[i] = b[i];
+        }
+        _breath = breath * vel;
+        _hz = hz * 1.19f; // shouted: starts three semitones high and falls
+        _hzEnd = hz * 0.89f;
+        _pitchCoef = 1f - Dsp.Decay(length * 0.6f);
+        _vel = vel;
+        _env = 0;
+        _t = 0;
+        _ctl = 0;
+        _attack = (int)(0.006f * Dsp.Sr) + (breath > 0 ? (int)(0.03f * Dsp.Sr) : 0); // the "h" comes before the vowel
+        _hold = _attack + (int)(length * 0.35f * Dsp.Sr);
+        _decay = Dsp.Decay(length * 0.2f);
+        _x = 0;
+        _xInc = 1f / (length * 0.7f * Dsp.Sr);
+        _on = true;
+    }
+
+    public void Render(Span<float> dst, ref MusicRng rng)
+    {
+        if (!_on)
+        {
+            dst.Clear();
+            return;
+        }
+        Svf f1 = _f1, f2 = _f2, f3 = _f3;
+        float p1 = _p1, p2 = _p2, p3 = _p3, hz = _hz, hzEnd = _hzEnd, pitchCoef = _pitchCoef, env = _env, vel = _vel, breath = _breath, x = _x, xInc = _xInc;
+        float k1 = _k1, k2 = _k2, k3 = _k3, decay = _decay, drive = Drive;
+        float a11 = _a11, a12 = _a12, a13 = _a13, a21 = _a21, a22 = _a22, a23 = _a23, a31 = _a31, a32 = _a32, a33 = _a33;
+        int t = _t, attack = _attack, hold = _hold, ctl = _ctl;
+        var on = true;
+        float g1 = FormantGain[0], g2 = FormantGain[1], g3 = FormantGain[2];
+        for (var i = 0; i < dst.Length; i++)
+        {
+            if ((ctl++ & 15) == 0)
+            {
+                // Formants glide from the first vowel to the second (smoothstep).
+                var sx = x * x * (3f - 2f * x);
+                var c1 = _from[0] + (_to[0] - _from[0]) * sx;
+                var c2 = _from[1] + (_to[1] - _from[1]) * sx;
+                var c3 = _from[2] + (_to[2] - _from[2]) * sx;
+                k1 = FormantBw[0] / c1;
+                k2 = FormantBw[1] / c2;
+                k3 = FormantBw[2] / c3;
+                Svf.Coefs(Dsp.SvfG(c1), k1, out a11, out a12, out a13);
+                Svf.Coefs(Dsp.SvfG(c2), k2, out a21, out a22, out a23);
+                Svf.Coefs(Dsp.SvfG(c3), k3, out a31, out a32, out a33);
+            }
+            // Envelope: breath first (for an "h"), a quick attack, a hold, then the decay.
+            var voiced = t >= attack - (int)(0.006f * Dsp.Sr);
+            if (t < attack)
+                env = MathF.Min(1f, env + 1f / 200f);
+            else if (t > hold)
+                env *= decay;
+            t++;
+            if (t > attack)
+                x = MathF.Min(1f, x + xInc);
+            hz += (hzEnd - hz) * pitchCoef;
+            var dt = hz * Dsp.InvSr;
+            float d1 = dt * 1.012f, d2 = dt * 0.991f, d3 = dt * 1.003f;
+            p1 += d1;
+            if (p1 >= 1f)
+                p1 -= 1f;
+            p2 += d2;
+            if (p2 >= 1f)
+                p2 -= 1f;
+            p3 += d3;
+            if (p3 >= 1f)
+                p3 -= 1f;
+            var src = 0f;
+            if (voiced)
+                src = (Dsp.Saw(p1, d1) + Dsp.Saw(p2, d2) + Dsp.Saw(p3, d3)) * 0.33f;
+            var noise = rng.Noise() * (t < attack ? breath : breath * 0.15f);
+            var exc = src + noise;
+            f1.Process(exc, k1, a11, a12, a13);
+            f2.Process(exc, k2, a21, a22, a23);
+            f3.Process(exc, k3, a31, a32, a33);
+            var y = (f1.Band * k1 * g1 + f2.Band * k2 * g2 + f3.Band * k3 * g3) * 3f;
+            dst[i] = Dsp.Tanh(y * drive) * env * vel;
+            if (t > hold && env < 1e-3f)
+            {
+                on = false;
+                for (var j = i + 1; j < dst.Length; j++)
+                    dst[j] = 0;
+                break;
+            }
+        }
+        if (!on)
+        {
+            f1.Reset();
+            f2.Reset();
+            f3.Reset();
+        }
+        _f1 = f1;
+        _f2 = f2;
+        _f3 = f3;
+        _p1 = p1;
+        _p2 = p2;
+        _p3 = p3;
+        _hz = hz;
+        _env = env;
+        _x = x;
+        _k1 = k1;
+        _k2 = k2;
+        _k3 = k3;
+        (_a11, _a12, _a13, _a21, _a22, _a23, _a31, _a32, _a33) = (a11, a12, a13, a21, a22, a23, a31, a32, a33);
+        _t = t;
+        _ctl = ctl;
+        _on = on;
+    }
+}
+
+/// <summary>
+/// Master bus limiter: a 2 ms look-ahead peak limiter (fast attack, smooth release) followed by a soft safety clipper
+/// that never goes past <see cref="SafetyCeiling"/>. It lets a track be driven loud without hard clipping.
+/// </summary>
+internal sealed class MasterLimiter
+{
+    public const int Lookahead = 88; // 2 ms
+    public const float SafetyCeiling = 0.985f;
+    private const float Knee = 0.9f;
+
+    /// <summary>Peak level the limiter aims for (before the safety clipper).</summary>
+    public float Ceiling = 0.93f, ReleaseTime = 0.06f;
+
+    private readonly float[] _dl = new float[Lookahead], _dr = new float[Lookahead];
+    private float _gain = 1f, _attackCoef, _releaseCoef;
+    private int _pos;
+
+    /// <summary>The lowest gain applied since the last reset (for the self-test).</summary>
+    public float MinGain { get; private set; } = 1f;
+
+    public void Configure()
+    {
+        _attackCoef = 1f - MathF.Exp(-5f / Lookahead);
+        _releaseCoef = 1f - Dsp.Decay(ReleaseTime);
+    }
+
+    public void Reset()
+    {
+        Array.Clear(_dl);
+        Array.Clear(_dr);
+        _gain = 1f;
+        _pos = 0;
+        MinGain = 1f;
+    }
+
+    /// <summary>Limits an interleaved stereo block in place (delays it by <see cref="Lookahead"/> samples).</summary>
+    public void Process(Span<float> stereo)
+    {
+        var dl = _dl;
+        var dr = _dr;
+        float gain = _gain, ceiling = Ceiling, attack = _attackCoef, release = _releaseCoef, minGain = MinGain;
+        var pos = _pos;
+        for (var i = 0; i < stereo.Length; i += 2)
+        {
+            float l = stereo[i], r = stereo[i + 1];
+            var peak = MathF.Max(MathF.Abs(l), MathF.Abs(r));
+            var target = peak > ceiling ? ceiling / peak : 1f;
+            gain += (target - gain) * (target < gain ? attack : release);
+            if (gain < minGain)
+                minGain = gain;
+            float ol = dl[pos] * gain, or = dr[pos] * gain;
+            dl[pos] = l;
+            dr[pos] = r;
+            if (++pos >= Lookahead)
+                pos = 0;
+            stereo[i] = SoftClip(ol);
+            stereo[i + 1] = SoftClip(or);
+        }
+        _gain = gain;
+        _pos = pos;
+        MinGain = minGain;
+    }
+
+    /// <summary>Linear below the knee, then a tanh curve into <see cref="SafetyCeiling"/>.</summary>
+    public static float SoftClip(float x)
+    {
+        var a = MathF.Abs(x);
+        if (a <= Knee)
+            return x;
+        const float room = SafetyCeiling - Knee;
+        var y = Knee + room * Dsp.Tanh((a - Knee) / room);
+        return x < 0 ? -y : y;
     }
 }
