@@ -231,6 +231,7 @@ public sealed partial class Game : IDisposable
         UpdateRenderStates((float)frameDt);
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
+        UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
     }
 
     private InputCmd SampleLocalInput(uint seq)
@@ -624,8 +625,9 @@ public sealed partial class Game : IDisposable
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1)
     {
+        TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
@@ -1159,6 +1161,8 @@ public sealed partial class Game : IDisposable
                 ShotProps(shooter, origin, d, dist, def.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
             var end = origin + d * dist;
             ends.Add(end);
+            if (turret != null)
+                flags |= ShotHitMachine;
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(def.Damage * def.DamageMultAt(dist)), now))
                 flags |= 4;
             else if (turret != null)
@@ -1176,7 +1180,7 @@ public sealed partial class Game : IDisposable
 
         foreach (var (victim, dmg) in damage)
         {
-            flags |= 1;
+            flags |= 1 | ShotHitPlayer;
             var head = headshotOn.Contains(victim);
             if (head)
                 flags |= 2;
@@ -1190,7 +1194,7 @@ public sealed partial class Game : IDisposable
         else
             Audio.Shot(def, shooter.RenderEye);
         foreach (var end in ends)
-            AddTracer(MuzzleWorld(shooter), end, def, now);
+            AddTracer(MuzzleWorld(shooter), end, def, now, flags);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
@@ -1204,12 +1208,7 @@ public sealed partial class Game : IDisposable
             return;
         HitMarkerUntil = now + 0.15;
         HitMarkerHead = (flags & 2) != 0;
-        if ((flags & 4) != 0)
-            Audio.Effect(Sfx.Kill, 0.7f);
-        else if (HitMarkerHead)
-            Audio.Effect(Sfx.Headshot, 0.6f);
-        else
-            Audio.Effect(Sfx.HitTick, 0.6f);
+        PlayHitConfirm(flags); // GameSounds.cs
     }
 
     private byte? FreeId()
@@ -1474,7 +1473,7 @@ public sealed partial class Game : IDisposable
                     break;
                 Audio.Shot(def, sp.RenderEye);
                 for (var i = 0; i < n && r.Has(12); i++)
-                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now);
+                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):
