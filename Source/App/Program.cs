@@ -244,7 +244,7 @@ public static unsafe partial class Program
         }
 
         var game = _session;
-        // Map 0, after the play screenshot: scoped ADS shots (on their own clock, 6.3-8.4 s), then the arms
+        // Map 0, after the play screenshot: scoped ADS shots (on their own clock, 6.3-9.8 s), then the arms
         // (reload, sprint, melee; own clock), then kill streaks (needs you alive), then the death cam (gets you killed).
         // Map 0: the bots mustn't kill you before the ADS, arms and streak shots (the death cam step kills you on purpose).
         if (_smokeMap == 0 && _smokeStage is 7 or 8 && _smokeDeathCam == 0 && game is { IsServer: true, Local: { Alive: true } me })
@@ -531,12 +531,13 @@ public static unsafe partial class Program
     private static int _smokeAdsStep;
     private static bool _smokeAimHeld;
     private static WeaponDef? _smokeAdsKeep;
-    private static readonly (OpticKind Kind, string Shot)[] SmokeAdsOptics = [(OpticKind.RedDot, "ads_reddot"), (OpticKind.Hybrid3, "ads_3x"), (OpticKind.Scope12, "ads_12x")];
+    private static readonly (OpticKind Kind, string Shot)[] SmokeAdsOptics =
+        [(OpticKind.RedDot, "ads_reddot"), (OpticKind.Hybrid3, "ads_3x"), (OpticKind.Scope4, "ads_4x"), (OpticKind.Scope8, "ads_8x"), (OpticKind.Scope12, "ads_12x")];
 
     /// <summary>
-    /// Smoke step on the first map: a sniper rifle with a red dot, then the 3x hybrid, then the 12x scope,
-    /// each held at full ADS and screenshotted (smoke_ads_reddot/ads_3x/ads_12x.bmp). Runs inside the
-    /// usual play window, then puts the real weapon back.
+    /// Smoke step on the first map: a sniper rifle with a red dot, then the 3x hybrid, the 4x, 8x and 12x scopes,
+    /// each held at full ADS and screenshotted (smoke_ads_reddot/ads_3x/ads_4x/ads_8x/ads_12x.bmp) with the lens's
+    /// screen coverage logged. Runs inside the usual play window, then puts the real weapon back.
     /// </summary>
     private static void SmokeAds(double t)
     {
@@ -578,7 +579,9 @@ public static unsafe partial class Program
             var d = game.Active.Def;
             SmokeShot(SmokeAdsOptics[i].Shot);
             Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
-                + $"full scope view {Scoped}, lens {GunModel.Look(d).LensRadius:0.00} of screen height, reticle {GunModel.Look(d).Reticle}, alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                + $"lens covers {SightLens.LastCoverage * 100:0.0}% of the screen (radius {SightLens.LastView.HalfH:0.00} of half the height, {Sights.EyeDistance(d) * 100:0.0} cm from the eye; "
+                + $"design {Sights.Coverage(Sights.ProjectAimed(d, 16f / 9f), 16f / 9f) * 100:0.0}% at 16:9), see-through {SightLens.SeeThrough}, reticle {Sights.Spec(d).Reticle}, "
+                + $"alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
         }
     }
 
@@ -1526,9 +1529,6 @@ public static unsafe partial class Program
 
     private static float CurrentFov() => BaseFov / float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
 
-    /// <summary>Full scope view (black surround, no viewmodel): only optics of 4x and up (GunModel.FullScope), once mostly aimed.</summary>
-    private static bool Scoped => GunModel.FullScope(_game.Active.Def) && _game.AimT > 0.85f;
-
     private static void Render(double now)
     {
         var fb = _window.FramebufferSize;
@@ -1582,6 +1582,7 @@ public static unsafe partial class Program
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
 
         // ---- Arena ----------------------------------------------------------
+        SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
         ScenePresentation.BeginFrame(MeshGfx);
         DrawArena();
 
@@ -1679,9 +1680,9 @@ public static unsafe partial class Program
         Gfx.SetFog(World.Map.Sky, 0, 0); // no haze on the viewmodel and HUD
 
         // ---- First-person gun -----------------------------------------------
-        if (local is { Alive: true } && !Scoped)
+        if (local is { Alive: true })
         {
-            GunModel.AdsCutaway = GunModel.CutawayFor(_game.AimT); // see-through optics: housing fades out as you aim
+            GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
             GunModel.AdsCutaway = 0;
         }
@@ -1822,7 +1823,7 @@ public static unsafe partial class Program
         Gfx.ClearDepthBuffer();
         // The viewmodel always uses the un-zoomed FOV so the gun doesn't balloon when aiming.
         var fb = _window.FramebufferSize;
-        var vmProj = Matrix4x4.CreatePerspectiveFieldOfView(70f * MathF.PI / 180f, fb.X / (float)fb.Y, 0.01f, 10f);
+        var vmProj = Sights.ViewModelProjection(fb.X / (float)fb.Y);
         Gfx.SetCamera(Matrix4x4.Identity, vmProj); // camera space: -Z forward, +X right, +Y up
 
         var def = _game.Active.Def;
@@ -1836,17 +1837,23 @@ public static unsafe partial class Program
             Eye = me.RenderEye, Yaw = _game.LookYaw, Pitch = _game.LookPitch, SprintHeld = (_game.HeldButtons & Buttons.Sprint) != 0,
         });
         var pose = _vmAnim.GunPose;
+        // The view through the optic's lens: the world behind it is copied now, the lens is drawn over the gun below.
+        var lens = SightLens.Begin(def, _game.AimT, pose, vmProj, fb.X, fb.Y);
 
         var armColors = ArmColors.For(_game.Local!.Color * 0.5f + new Vector3(0.06f));
         if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
         {
             ScenePresentation.DrawViewModel(Gfx, _vmAnim, def, GunModel.AdsCutaway, now < _game.MuzzleFlashUntil, (float)Glfw.Time, armColors);
+            if (lens)
+                SightLens.Draw(Gfx);
             return;
         }
         (GunModel.MagOffset, GunModel.MagHidden) = (_vmAnim.MagOffset, _vmAnim.MagHidden); // the magazine comes out during a reload
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
         (GunModel.MagOffset, GunModel.MagHidden) = (Vector3.Zero, false);
         _vmAnim.DrawArms(Gfx, armColors);
+        if (lens)
+            SightLens.Draw(Gfx);
     }
 
     private static void DrawHud(double now, float w, float h, Player? local, float fov)
@@ -1862,8 +1869,8 @@ public static unsafe partial class Program
 
         if (local is { Alive: true })
         {
-            // Optic view (lens, reticle, and the black surround at 4x+): see Source/Render/ScopeOverlay.cs.
-            if (!ScopeOverlay.Draw(Gfx, _game.Active.Def, _game.AimT, w, h))
+            // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT))
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();
