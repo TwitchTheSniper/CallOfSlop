@@ -251,12 +251,12 @@ public static partial class SelfTest
         if (disagree > tests / 100 || worst > 1e-3f || worstCast > CapsuleContact.Skin * 0.6f)
             Fail($"oriented box and mesh colliders disagree ({disagree} of {tests}, ray {worst} m, cast {worstCast} m)");
 
-        // A mesh from the mesh pipeline (a 2 x 1 x 3 box primitive, turned and moved) collides like the same oriented box.
+        // A mesh from the mesh pipeline (a 2 x 1 x 3 box primitive standing on its base, turned and moved) collides like the same oriented box.
         {
             var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.7f);
             var place = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(3, 1, -2);
             var mesh = TriangleMeshCollider.FromMesh(MeshCollision.From(MeshPrimitives.Box(2, 1, 3)), place);
-            var box = new Obb(new Vector3(3, 1, -2), new Vector3(1, 0.5f, 1.5f), rot);
+            var box = new Obb(new Vector3(3, 1.5f, -2), new Vector3(1, 0.5f, 1.5f), rot); // primitives stand on their base (y 0..h)
             var asMesh = new PhysicsWorld(new List<Box>(), null, 50, 50);
             asMesh.AddMesh(mesh);
             var asBox = new PhysicsWorld(new List<Box>(), null, 50, 50);
