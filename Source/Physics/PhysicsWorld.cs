@@ -30,6 +30,7 @@ public sealed class PhysicsWorld : IWorldQuery
     private readonly List<Obb> _obbs = new();
     private readonly List<IMeshCollider> _meshes = new();
     private readonly Box[] _sweeps;
+    private readonly Obb[] _barrier; // the map boundary's invisible barrier (items after the meshes in the BVH)
     private Bvh _tree = null!;
     private bool _dirty = true;
     private int[] _collect = new int[64];
@@ -59,8 +60,16 @@ public sealed class PhysicsWorld : IWorldQuery
     public int ObbCount => _obbs.Count;
     public int MeshCount => _meshes.Count;
 
-    /// <summary>Static items in the BVH (boxes, oriented boxes, meshes).</summary>
-    public int StaticCount => _boxCount + _obbs.Count + _meshes.Count;
+    /// <summary>Pieces of the map boundary's invisible barrier (<see cref="ShapeKind.Boundary"/> ids).</summary>
+    public int BarrierCount => _barrier.Length;
+
+    /// <summary>Static items in the BVH (boxes, oriented boxes, meshes, boundary barrier pieces).</summary>
+    public int StaticCount => _boxCount + _obbs.Count + _meshes.Count + _barrier.Length;
+
+    /// <summary>Index of the first barrier piece in the BVH's item space.</summary>
+    private int BarrierStart => _boxCount + _obbs.Count + _meshes.Count;
+
+    public Obb GetBarrier(int index) => _barrier[index];
 
     public Bvh Tree
     {
@@ -105,6 +114,7 @@ public sealed class PhysicsWorld : IWorldQuery
         HalfX = halfX;
         HalfZ = halfZ;
         _sweeps = map != null ? MoverPhysics.SweepPillars(map) : [];
+        _barrier = map != null ? map.BoundaryBarriers.ToArray() : [];
         EnsureTree();
     }
 
@@ -138,12 +148,14 @@ public sealed class PhysicsWorld : IWorldQuery
         }
         else if (item < _boxCount + _obbs.Count)
             _obbs[item - _boxCount].Bounds(out min, out max);
-        else
+        else if (item < BarrierStart)
         {
             var m = _meshes[item - _boxCount - _obbs.Count];
             min = m.Min;
             max = m.Max;
         }
+        else
+            _barrier[item - BarrierStart].Bounds(out min, out max);
     }
 
     // ---- Changes ----------------------------------------------------------------------------------------------
@@ -259,6 +271,13 @@ public sealed class PhysicsWorld : IWorldQuery
                     return best;
                 hit = Geometry.RayObb(w._obbs[k], O, D, best);
             }
+            else if (item >= w.BarrierStart)
+            {
+                var k = item - w.BarrierStart;
+                if ((Layers & QueryLayers.Boundary) == 0 || Ignored(Ignore, ShapeKind.Boundary, k))
+                    return best;
+                hit = Geometry.RayObb(w._barrier[k], O, D, best);
+            }
             else
             {
                 var k = item - w._boxCount - w._obbs.Count;
@@ -312,7 +331,7 @@ public sealed class PhysicsWorld : IWorldQuery
         var best = maxDist;
         var kind = ShapeKind.None;
         int index = 0, sub = 0;
-        if ((filter.Layers & QueryLayers.StaticShapes) != 0 && StaticCount > 0)
+        if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
             var v = new RayVisitor { W = this, O = o, D = d, Layers = filter.Layers, Ignore = filter.Ignore, Item = -1 };
@@ -328,6 +347,11 @@ public sealed class PhysicsWorld : IWorldQuery
                 {
                     kind = ShapeKind.Obb;
                     index = v.Item - _boxCount;
+                }
+                else if (v.Item >= BarrierStart)
+                {
+                    kind = ShapeKind.Boundary;
+                    index = v.Item - BarrierStart;
                 }
                 else
                 {
@@ -387,6 +411,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Mesh => TriangleHitNormal(_meshes[index], sub, d),
                 ShapeKind.Terrain => best <= 0 ? -d : Terrain!.NormalAt(hit.Point.X, hit.Point.Z),
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
+                ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
                 _ => Geometry.BoxEntryNormal(_sweeps[index].Min, _sweeps[index].Max, o, d, best),
             };
         }
@@ -463,6 +488,11 @@ public sealed class PhysicsWorld : IWorldQuery
             var k = item - _boxCount;
             return (layers & QueryLayers.Obbs) != 0 && !Ignored(ignore, ShapeKind.Obb, k) && Geometry.ObbOverlap(box, _obbs[k]);
         }
+        if (item >= BarrierStart)
+        {
+            var k = item - BarrierStart;
+            return (layers & QueryLayers.Boundary) != 0 && !Ignored(ignore, ShapeKind.Boundary, k) && Geometry.ObbOverlap(box, _barrier[k]);
+        }
         var m = item - _boxCount - _obbs.Count;
         if ((layers & QueryLayers.Meshes) == 0 || Ignored(ignore, ShapeKind.Mesh, m))
             return false;
@@ -488,7 +518,7 @@ public sealed class PhysicsWorld : IWorldQuery
     {
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null && Terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
             return true;
-        if ((filter.Layers & QueryLayers.StaticShapes) != 0 && StaticCount > 0)
+        if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
             const float r = World.PlayerRadius;
@@ -548,6 +578,15 @@ public sealed class PhysicsWorld : IWorldQuery
                 var l = Vector3.Abs(o.ToLocal(p));
                 return l.X < o.Half.X + r && l.Y < o.Half.Y + r && l.Z < o.Half.Z + r;
             }
+            if (item >= w.BarrierStart)
+            {
+                var k = item - w.BarrierStart;
+                if ((Layers & QueryLayers.Boundary) == 0 || Ignored(Ignore, ShapeKind.Boundary, k))
+                    return false;
+                var o = w._barrier[k];
+                var l = Vector3.Abs(o.ToLocal(p));
+                return l.X < o.Half.X + r && l.Y < o.Half.Y + r && l.Z < o.Half.Z + r;
+            }
             var m = item - w._boxCount - w._obbs.Count;
             if ((Layers & QueryLayers.Meshes) == 0 || Ignored(Ignore, ShapeKind.Mesh, m))
                 return false;
@@ -572,7 +611,7 @@ public sealed class PhysicsWorld : IWorldQuery
 
     public bool PointInside(Vector3 point, float radius, in QueryFilter filter)
     {
-        if ((filter.Layers & QueryLayers.StaticShapes) != 0 && StaticCount > 0)
+        if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
             var v = new PointVisitor { W = this, P = point, R = radius, Layers = filter.Layers, Ignore = filter.Ignore };
@@ -610,7 +649,7 @@ public sealed class PhysicsWorld : IWorldQuery
     public bool OverlapBox(in Obb box, in QueryFilter filter)
     {
         box.Bounds(out var lo, out var hi);
-        if ((filter.Layers & QueryLayers.StaticShapes) != 0 && StaticCount > 0)
+        if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
             var v = new ObbVisitor { W = this, Box = box, Layers = filter.Layers, Ignore = filter.Ignore };
@@ -728,7 +767,7 @@ public sealed class PhysicsWorld : IWorldQuery
     {
         into.Clear();
         var layers = filter.Layers;
-        if ((layers & QueryLayers.StaticShapes) != 0 && StaticCount > 0)
+        if ((layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
             _sortScratch.Clear();
@@ -747,6 +786,12 @@ public sealed class PhysicsWorld : IWorldQuery
                     var k = item - _boxCount;
                     if ((layers & QueryLayers.Obbs) != 0 && !Ignored(filter.Ignore, ShapeKind.Obb, k))
                         into.Add(ContactShape.FromObb(_obbs[k], new ShapeId(ShapeKind.Obb, k)));
+                }
+                else if (item >= BarrierStart)
+                {
+                    var k = item - BarrierStart;
+                    if ((layers & QueryLayers.Boundary) != 0 && !Ignored(filter.Ignore, ShapeKind.Boundary, k))
+                        into.Add(ContactShape.FromObb(_barrier[k], new ShapeId(ShapeKind.Boundary, k)));
                 }
                 else
                 {
@@ -836,6 +881,7 @@ public sealed class PhysicsWorld : IWorldQuery
     {
         EnsureTree();
         return $"{_boxCount} boxes ({_isProp.Count(p => p)} prop colliders), {_obbs.Count} oriented boxes, {_meshes.Count} meshes, "
+            + (_barrier.Length > 0 ? $"{_barrier.Length} boundary barrier pieces, " : "")
             + $"terrain {(Terrain != null ? "yes" : "no")}, {(_map?.Movers.Count ?? 0)} movers; BVH {_tree.NodeCount} nodes, depth {_tree.Depth}, built in {BuildMs:0.00} ms";
     }
 }

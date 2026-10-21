@@ -40,6 +40,9 @@ public enum ShapeKind : byte
 
     /// <summary>Reserved for capsule colliders (characters are capsules in the swept mover, but aren't in the world).</summary>
     Capsule,
+
+    /// <summary>A piece of a map boundary's invisible barrier (<see cref="Map.BoundaryBarriers"/>; <see cref="ShapeId.Index"/> = segment).</summary>
+    Boundary,
 }
 
 /// <summary>Identifies one collision shape: its kind, an index in that kind's list and a sub-part (triangle, mover part).</summary>
@@ -63,6 +66,9 @@ public enum QueryLayers : ushort
     Obbs = 32,
     Meshes = 64,
 
+    /// <summary>A map boundary's invisible barrier (<see cref="Map.BoundaryBarriers"/>). Not in <see cref="Static"/>: the classic body check stays exactly as it was, and movement is held inside by the boundary clamp.</summary>
+    Boundary = 128,
+
     /// <summary>Everything static except the terrain.</summary>
     StaticShapes = Boxes | Props | Obbs | Meshes,
 
@@ -70,10 +76,13 @@ public enum QueryLayers : ushort
     Static = StaticShapes | Terrain,
 
     /// <summary>Everything solid as it is now: static geometry and movers at their pose. Bullets, line of sight, grenades.</summary>
-    World = Static | Movers,
+    World = Static | Movers | Boundary,
 
     /// <summary>Bot navigation: static geometry with every mover's whole sweep as a pillar (never where a mover happens to be).</summary>
-    Nav = Static | MoverSweeps,
+    Nav = Static | MoverSweeps | Boundary,
+
+    /// <summary>Everything that lives in the physics world's BVH.</summary>
+    Tree = StaticShapes | Boundary,
 }
 
 /// <summary>

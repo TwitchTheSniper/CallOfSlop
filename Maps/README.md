@@ -50,7 +50,8 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `description` | no | One line, shown in the map list. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. |
 | `author` | no | Shown as "(by ...)" in the map list. |
 | `order` | no | Sort position in the list (the shipped maps use 1–24). Ties sort by name. Default 0. |
-| `halfX`, `halfZ` | **yes** | Half the map's width (X) and depth (Z) in metres. The playable area runs from `-halfX..halfX` and `-halfZ..halfZ`. The size class is worked out from these: Small up to ~75 m across, Medium up to ~135 m, Large beyond that. Large and Medium maps get distance fog. |
+| `halfX`, `halfZ` | **yes** (no, with a `boundary`) | Half the map's width (X) and depth (Z) in metres. The playable area runs from `-halfX..halfX` and `-halfZ..halfZ`. The size class is worked out from these: Small up to ~75 m across, Medium up to ~135 m, Large beyond that. Large and Medium maps get distance fog. With a `boundary` they're worked out from its outline (and ignored if given), except as the default size of a `rect` boundary. |
+| `boundary` | no | A playable area that isn't a rectangle: a circle, an ellipse, a polygon or a smooth blob, optionally wobbly, with a wall, cliff, fence, hedge, rocks or props round it. See [Boundaries](#boundaries). |
 | `maxPlayers` | no | The most players (people + bots) the map takes, 2-32. Leave it out to get the default for the map's size (see [Player limits](#player-limits)). |
 | `sky` | no | Sky and fog colour. |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
@@ -379,6 +380,90 @@ Movement eases into and out of every point (no jolts), and a map may have up to 
 - A platform top 0.3 to 0.5 m above the floor can simply be stepped onto. Parts that stick up more than 0.55 m (a bar on a disc) are walls that sweep players along; players can jump 0.95 m.
 - Overlapping boxes with the same top look fine when they're the same colour. Different colours on the same top surface flicker, so make markers stick up (posts) instead.
 - Movers are drawn lit but without the surface texture (a texture would slide over a moving surface), so use colours and posts to make the motion visible.
+
+## Boundaries
+
+Without a `boundary` section a map is the classic rectangle `-halfX..halfX` by `-halfZ..halfZ`, exactly as before (same looks, same movement, same fingerprint). Add a top-level `"boundary"` to make the playable area any shape: a circle, an oval, a polygon, a smooth blob such as a bean, with an optional seeded wobble so the edge isn't regular. `Maps/Dev/ShapeTest.json` (the **Dev** pack's "Shape Test") is a complete example: a bean with a curved wall round it.
+
+```
+"boundary": {
+  "shape": "smooth",
+  "points": [[-38, 0], [-32, -15], [-14, -22], [8, -22], [28, -16], [40, -2], [34, 13], [18, 18], [4, 11], [-10, 18], [-28, 16]],
+  "noise": { "amplitude": 1.5, "scale": 10, "seed": 3 },
+  "edge": { "style": "wall", "height": 4, "thickness": 0.8, "color": [0.56, 0.58, 0.6], "material": "Concrete" }
+}
+```
+
+**What a boundary does**
+
+- **The outline is the map.** `halfX` and `halfZ` become the outline's bounding box (around the origin), so leave them out. The size class, the player limit and the automatic spawns use the area **inside** the outline: a circle 60 m across counts as about 53 x 53 m, not 60 x 60.
+- **Nobody leaves.** An invisible barrier runs exactly along the outline: players (both movement modes), bots, grenades, debris and kill-streak strikes all stay inside, at any height. Bullets and sight lines stop at the barrier up to the edge's height (at least 2.5 m), and fly out over it above that, so a shot over a low fence doesn't spark off thin air.
+- **Everything stays inside.** Spawns and waypoints that end up outside (or closer than a player's width to the edge) are moved in like spawns inside a wall. `RingSpawns` follows the outline (its `frac` is a fraction of the way from the middle to the edge in each direction), `AutoWaypoints`, generated spawns, foliage regions and `Clutter` only fill the inside (plants keep 0.3 m from the edge, trees 1 m, clutter 1.1 m), bots never plan a route outside, and hand-placed `hills`, `flags` and `teamSpawns` outside the outline are an error.
+- **Looks:** on a flat map the `Ground` op's floor follows the outline plus `groundMargin` metres, with a darker ground beyond that fades into the fog; on terrain the land more than `groundMargin` outside the outline is shaded darker. Map thumbnails frame the outline.
+- `Perimeter` is an error on a map with a boundary: use `"edge": { "style": "wall" }` instead.
+
+**Shapes** (`"shape"`, required). Points are `[x, z]`, in order round the outline, either direction.
+
+| Shape | Fields | Example |
+|---|---|---|
+| `rect` | `halfX`, `halfZ` (default: the top-level ones), `center` `[x, z]` (default `[0, 0]`), `round` (corner radius, default 0) | `{ "shape": "rect", "halfX": 40, "halfZ": 25, "round": 10 }` |
+| `circle` | `radius`, `center` | `{ "shape": "circle", "center": [0, 0], "radius": 35 }` |
+| `ellipse` | `radiusX`, `radiusZ`, `rotation` (degrees, turned like a prop's `yaw`), `center` | `{ "shape": "ellipse", "radiusX": 50, "radiusZ": 30, "rotation": 20 }` |
+| `polygon` | `points` (3 or more corners; straight edges, concave is fine) | `{ "shape": "polygon", "points": [[-30, -25], [30, -25], [30, 25], [10, 25], [10, -5], [-10, -5], [-10, 25], [-30, 25]] }` |
+| `smooth` | `points` (3 or more control points; a closed curve passes through every one) | `{ "shape": "smooth", "points": [[-30, 0], [0, -20], [30, 0], [8, 10], [0, 4], [-8, 10]] }` |
+
+`smooth` is a closed centripetal Catmull-Rom curve: it goes through each point in turn and never forms loops or cusps however the points are spaced. 6 to 14 points make good beans, kidneys and blobs. A bean: an oval of points with one or two pulled in towards the middle on one side (the Shape Test's point `[4, 11]` makes its dent).
+
+**Noise** (optional, any shape): `"noise": { "amplitude": 2, "scale": 12, "seed": 1, "octaves": 2 }` pushes the outline in and out along its normal by up to `amplitude` metres (0-30), with bumps about `scale` metres apart (1-200), plus `octaves - 1` finer layers (1-4), each half as long and half as strong. The wobble joins up seamlessly all the way round, and the same `seed` gives the same outline on every PC. Keep `amplitude` well under the tightest curve's radius and under about `scale / 3`, or the outline crosses itself (that's an error naming where).
+
+```
+"boundary": { "shape": "circle", "radius": 40, "noise": { "amplitude": 3, "scale": 14, "seed": 7 }, "edge": "rocks" }
+```
+
+**Edges** (`"edge"`, optional, default `"none"`): how the boundary is shown. Either a style name, `"edge": "wall"`, or an object with `style` and settings. Fields left out take the style's default.
+
+| `style` | What it is | Settings (default) |
+|---|---|---|
+| `none` | Nothing visible, only the invisible barrier (use it with your own walls, water, a drop...). | |
+| `wall` | A solid-looking wall just outside the outline, one straight piece per outline segment, lengthened at outward corners so the top closes. On terrain each piece reaches from below the lowest ground under it to `height` above the highest. | `height` (4), `thickness` (0.8), `color` (grey), `material` ("Concrete") |
+| `cliff` | **Terrain maps only.** The ground outside the outline rises by `height` over `width` metres (level at the outline, steepest half way out), so the edge is a natural cliff or berm. Runs after every terrain feature. Make the terrain `margin` at least `width` + a few metres. | `height` (10), `width` (5) |
+| `fence` | Posts every `spacing` metres just outside the outline, with two rails between them. | `height` (1.4), `thickness` (post size, 0.14), `spacing` (2.5), `color` (wood brown), `material` ("Wood") |
+| `hedge` | A tall green hedge, like `wall` with a slightly uneven top and shade. | `height` (2.4), `thickness` (1.4), `color` (dark green), `material` ("Dirt"), `seed` |
+| `rocks` | Boulders every `spacing` metres, straddling the outline (mostly outside), random sizes up to `height`. | `height` (2.6), `spacing` (2.4), `color` (grey), `material` ("Concrete"), `seed` |
+| `props` | Props from the Props folder lined up along the outline, just outside it, each turned to follow it. `props` takes prop names and category names like `Clutter`. Solid props are real cover (and can break; the barrier stays). | `props` (required), `spacing` (3), `seed` |
+
+`material` is one of the box textures (`Concrete`, `Brick`, `Wood`, `Metal`, `Tiles`, `Dirt`, `Grid`) or `""` for plain colour, as on [meshes](#meshes-and-models). Walls, fences, hedges and rocks are drawn as instanced meshes (a few draw calls for the whole edge); they aren't boxes, so they don't count as cover from inside: the barrier is what stops you.
+
+```
+"edge": { "style": "cliff", "height": 8, "width": 5 }
+"edge": { "style": "fence", "height": 1.2, "spacing": 3 }
+"edge": { "style": "hedge", "height": 2.8 }
+"edge": { "style": "rocks", "height": 3, "spacing": 2, "seed": 4 }
+"edge": { "style": "props", "props": ["Road Barrier", "Sandbag Wall"], "spacing": 3.5 }
+```
+
+**Other boundary fields**
+
+| Field | Default | Meaning |
+|---|---|---|
+| `groundMargin` | 6 | Flat maps: how far the floor is drawn past the outline; terrain maps: where the shading starts. 0-64. |
+| `barrierHeight` | the edge's height, at least 2.5 | How high above the ground bullets and sight lines meet the invisible barrier (movement is held in at any height regardless). 0-100. |
+| `tolerance` | 0.05 | How far (metres) the straight outline segments may stray from the true curve, 0.005-1. Smaller makes more segments. |
+
+**How the outline is built.** The shape is sampled densely (every 0.25 m on curves), the noise is added, and the result is simplified to the fewest straight segments that stay within `tolerance` of it, so tight curves get many short segments and gentle ones few. Segments are then cut to at most 8 m (walls and the barrier follow the terrain piece by piece) and the outline is checked: closed, not crossing itself, at least 100 m² inside, within 500 m of the centre, at most 4096 segments. That polygon is the one truth: the barrier, the wall pieces, the movement clamp and every "is this inside" test use exactly its vertices. `--check-map` prints the shape, segment count, area and edge.
+
+**Design tips**
+
+- **Odd shapes play differently.** A bean's dent makes a natural pinch point; a long ellipse plays like a lane map; a noisy circle feels like a clearing. Put cover where the shape funnels players, and keep at least 6-8 m between the outline and important cover so nobody gets wedged in a curve.
+- **Concave bits block sight.** The barrier is solid up to the edge height, so a dent in a walled bean blocks shots across it just like a wall would. With a low `fence` or `rocks` edge, set `barrierHeight` low (2.5) so players can see and shoot over the dent's tip.
+- **Fair halves:** for a point-symmetric map, make the outline symmetric too (for every point `[x, z]` there's a `[-x, -z]`), and use `"mirror": true` on Clutter.
+- **Terrain + cliff:** put the map's own hills well inside; the cliff edge rises from the ground as it is at the outline. A `wall` edge on terrain follows the ground segment by segment, so on steep slopes its top steps.
+- **Spawns:** `RingSpawns` with `frac` 0.7-0.8 works for any roundish shape. For a U or L shape, place `Spawn` ops yourself.
+- **Cost:** the barrier is one collider per segment in the physics world's BVH, and the inside test is a grid lookup away from the edge, so outlines of a few hundred segments cost nothing measurable. The Shape Test bean has 65 segments.
+
+### For tools
+
+The outline is generated in single precision from the spec, deterministically (same file, same outline on every PC). Maps with a boundary mix a fingerprint of the outline and barrier into the map's fingerprint; maps without one keep theirs. The `cliff` edge isn't part of the Python terrain port (`terrain.py`): a map with a cliff boundary gets its terrain fingerprint from the game.
 
 ## Props
 

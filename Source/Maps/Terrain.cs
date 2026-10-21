@@ -409,7 +409,7 @@ public static class TerrainGen
         public (int, int, int, int) All => (0, Nx - 1, 0, Nz - 1);
     }
 
-    public static TerrainData Generate(TerrainSpec spec, float halfX, float halfZ)
+    public static TerrainData Generate(TerrainSpec spec, float halfX, float halfZ, MapBoundary? boundary = null)
     {
         var cell = spec.Cell;
         var extX = Math.Ceiling((halfX + spec.Margin) / cell) * cell;
@@ -429,6 +429,8 @@ public static class TerrainGen
 
         foreach (var f in spec.Features)
             Apply(g, f);
+        if (boundary is { Spec.Edge.Style: BoundaryEdgeStyle.Cliff })
+            BoundaryCliff(g, boundary);
 
         var heights = new float[g.H.Length];
         for (var k = 0; k < g.H.Length; k++)
@@ -442,6 +444,28 @@ public static class TerrainGen
             heights[k] = (float)g.H[k];
         }
         return new TerrainData(g.Nx, g.Nz, (float)cell, (float)g.Ox, (float)g.Oz, heights, Materials(g, spec.Surface), spec.Surface);
+    }
+
+    /// <summary>
+    /// A boundary's "cliff" edge: the ground outside the outline rises by the edge height over the cliff width (a
+    /// smoothstep of the distance outside, so it starts level at the outline and is steepest half way out). Runs after
+    /// every feature. Not part of the Python tools' port: maps with a cliff boundary get their fingerprint from the game.
+    /// </summary>
+    private static void BoundaryCliff(Grid g, MapBoundary b)
+    {
+        double height = b.EdgeHeight, width = b.CliffWidth;
+        for (var j = 0; j < g.Nz; j++)
+        for (var i = 0; i < g.Nx; i++)
+        {
+            float x = (float)(g.Ox + i * g.Cell), z = (float)(g.Oz + j * g.Cell);
+            double d;
+            if (b.QuickClearance(x, z) > width)
+                d = b.Contains(x, z) ? -1 : width; // far from the edge: fully inside or fully raised
+            else
+                d = b.SignedDistance(x, z);
+            if (d > 0)
+                g.H[j * g.Nx + i] += height * Smoothstep(d / width);
+        }
     }
 
     // ---- Shared maths (ported 1:1 to the Python map tools) ------------------------------------

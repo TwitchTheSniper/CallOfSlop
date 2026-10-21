@@ -42,7 +42,7 @@ public sealed partial class Map
         if (Solid.Count > 0 || Spawns.Count > 0 || Waypoints.Count > 0)
             throw new InvalidOperationException("SetTerrain must be called before any op");
         TerrainSpec = spec;
-        Terrain = spec == null ? null : TerrainGen.Generate(spec, HalfX, HalfZ);
+        Terrain = spec == null ? null : TerrainGen.Generate(spec, HalfX, HalfZ, Boundary);
         TerrainCollision = Terrain == null ? null : new HeightfieldCollision(Terrain);
     }
 

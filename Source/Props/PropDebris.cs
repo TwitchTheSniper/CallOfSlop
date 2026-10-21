@@ -127,6 +127,8 @@ public static class PropDebris
                 p.Floor = FloorUnder(p.Pos); // flew over a kerb or off a ledge
             p.Vel.Y -= World.Gravity * dt;
             p.Pos += p.Vel * dt;
+            if (World.Map.Boundary is { } boundary)
+                boundary.KeepInside(ref p.Pos, ref p.Vel, 0.05f, 0.3f); // pieces stay inside a shaped map
             p.Rot = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(p.SpinAxis, p.Spin * dt) * p.Rot);
             var low = MathF.Min(p.Size.X, MathF.Min(p.Size.Y, p.Size.Z)) * 0.5f;
             if (p.Pos.Y - low <= p.Floor)
