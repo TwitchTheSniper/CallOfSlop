@@ -16,7 +16,7 @@ public static partial class SelfTest
     }
 
     /// <summary>Most a big map's planting may take (ms) on the CI runner, no-go rules included.</summary>
-    private const double NoGoPlantBudgetMs = 3000;
+    private const double NoGoPlantBudgetMs = 1500;
 
     /// <summary>
     /// A flat lab with a closed building (a rooftop planter on it), an open-sided shed (half of it an "include" garden), a
@@ -201,7 +201,8 @@ public static partial class SelfTest
 
         // "auto": false switches the automatic rules off (explicit zones still apply).
         var manual = MapFile.Load(NoGoLabJson.Replace("\"seed\": 3,", "\"seed\": 3, \"auto\": false,"), "No-go Lab (auto off)");
-        var manualInside = Count(manual.FoliageInstances, -29.7f, -29.7f, -18.3f, -18.3f, Ground);
+        var manualInside = Count(manual.FoliageInstances, -29.7f, -29.7f, -18.3f, -18.3f, Ground)
+            + manual.FoliageInstances.Count(f => f.Position.Y > 3.2f); // the rooftop planter (an explicit include) still applies
         var manualExcluded = manual.FoliageInstances.Count(f => Vector2.Distance(new(f.Position.X, f.Position.Z), new(15, 6)) < 4.9f);
         if (manualInside != insideBefore || manualExcluded > 0)
             Fail($"\"auto\": false: {manualInside} plants in the building (expected {insideBefore}), {manualExcluded} in the exclude zone (expected 0)");
@@ -248,8 +249,11 @@ public static partial class SelfTest
             if (st.BySurface.Count > 0)
                 NoGoLine($"  {m.Name} pavement drops by surface: {string.Join(", ", st.BySurface.Select(kv => $"{kv.Key} {kv.Value}"))}");
             total = (total.Before + before.FoliageInstances.Length, total.After + again.FoliageInstances.Length, total.Indoors + st.Indoors);
-            if (!again.FoliageInstances.AsSpan().SequenceEqual(m.FoliageInstances) || again.ContentHash != m.ContentHash)
-                Fail($"{m.Name}: foliage differs between two loads (fingerprint {m.ContentHash:x8} vs {again.ContentHash:x8})");
+            var third = MapFile.Load(text, m.SourceFile);
+            if (!again.FoliageInstances.AsSpan().SequenceEqual(third.FoliageInstances) || again.ContentHash != third.ContentHash)
+                Fail($"{m.Name}: foliage differs between two loads (fingerprint {again.ContentHash:x8} vs {third.ContentHash:x8})");
+            if (again.FoliageHash != m.FoliageHash)
+                Fail($"{m.Name}: the foliage loaded now differs from the one loaded at start-up ({m.FoliageInstances.Length} plants, {m.FoliageHash:x8} vs {again.FoliageInstances.Length}, {again.FoliageHash:x8})");
             if (again.FoliageInstances.Length > before.FoliageInstances.Length)
                 Fail($"{m.Name}: the no-go rules added plants ({before.FoliageInstances.Length} -> {again.FoliageInstances.Length})");
             if (st.PlantMs > NoGoPlantBudgetMs)

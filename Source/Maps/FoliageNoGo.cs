@@ -68,6 +68,7 @@ public sealed partial class Map
     /// by the map's "surfaces") thins or removes the plant. Without such a surface it's the terrain's surface type, or
     /// "Ground" on a flat map.</item>
     /// </list>
+    /// Things lying on the ground (their top at most <see cref="FoliageNoGo.LieHeight"/> above the base) are surfaces, not cover.
     /// Everything is a pure function of the map (fixed BVH build, closest-hit queries with index tie breaks), so every PC
     /// places the same plants. Boxes are axis-aligned and the rays vertical, so box tests are exact comparisons.
     /// </summary>
@@ -83,6 +84,12 @@ public sealed partial class Map
         private readonly float[] _terrainAllow = new float[4];
         private readonly float _groundAllow;
         public readonly FoliageNoGoStats Stats;
+
+        /// <summary>
+        /// Things whose top is at most this far above a plant's base lie on the ground (a paving slab, a floor mesh draped
+        /// over gentle terrain): they're surfaces (rule "surface"), not cover. The cover ray starts here.
+        /// </summary>
+        public const float LieHeight = 0.12f;
 
         public FoliageNoGo(Map map, FoliageSpec spec, FoliageNoGoStats stats)
         {
@@ -107,6 +114,8 @@ public sealed partial class Map
             {
                 if (IsCanopy(p))
                     continue; // mesh-built trees: plants grow under them
+                if (p.Source is "boundary floor" or "boundary far ground")
+                    continue; // the drawn ground of a map with an outline (MapEdges.cs): it is the ground
                 MeshCollision col;
                 try
                 {
@@ -146,7 +155,7 @@ public sealed partial class Map
         public bool Covered(float x, float z, float y)
         {
             Stats.Rays++;
-            return _world.Raycast(new Vector3(x, y + 0.05f, z), Vector3.UnitY, FoliageRoofReach, _cover) < FoliageRoofReach;
+            return _world.Raycast(new Vector3(x, y + LieHeight, z), Vector3.UnitY, FoliageRoofReach, _cover) < FoliageRoofReach;
         }
 
         /// <summary>Like <see cref="Covered(float, float, float)"/>, also at four points <paramref name="r"/> away (a bush's footprint).</summary>
@@ -163,9 +172,9 @@ public sealed partial class Map
         public float Allowance(float x, float z, float y, out string surface)
         {
             Stats.Rays++;
-            // From 6 cm above the base down to 34 cm below it: a slab lying on (or sunk into) the ground. Anything taller
-            // already counts as cover.
-            if (_world.Raycast(new Vector3(x, y + 0.06f, z), -Vector3.UnitY, 0.4f, _surface, out var hit))
+            // From just above the cover ray's start down to 40 cm below the base: a slab or floor mesh lying on (or sunk
+            // into) the ground. Anything taller already counts as cover.
+            if (_world.Raycast(new Vector3(x, y + LieHeight + 0.01f, z), -Vector3.UnitY, LieHeight + 0.41f, _surface, out var hit))
             {
                 switch (hit.Shape.Kind)
                 {
