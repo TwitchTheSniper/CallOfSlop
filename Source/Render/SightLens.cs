@@ -51,6 +51,7 @@ public static unsafe class SightLens
         uniform vec2 uLens;      // half width, half height (metres)
         uniform float uRim;      // eyepiece rim outer radius (metres; <= lens radius: none)
         uniform float uRound;
+        uniform float uSquareRim; // the rim is a square of half size uRim (square eyecups)
         uniform float uPx;       // pixels per metre on the lens plane
         uniform vec2 uRet;       // reticle centre (pixels)
         uniform float uStyle;
@@ -87,7 +88,8 @@ public static unsafe class SightLens
             if (uRound > 0.5)
             {
                 inLens = clamp((R - r) / px + 0.5, 0.0, 1.0);
-                rim = uRim > R ? clamp((uRim - r) / px + 0.5, 0.0, 1.0) * (1.0 - inLens) : 0.0;
+                float rd = uSquareRim > 0.5 ? max(abs(vP.x), abs(vP.y)) : r;
+                rim = uRim > R ? clamp((uRim - rd) / px + 0.5, 0.0, 1.0) * (1.0 - inLens) : 0.0;
                 rn = r / R;
             }
             else
@@ -201,6 +203,7 @@ public static unsafe class SightLens
     private static GlProgram _program;
     private static GlVertexArray _vao;
     private static bool _ready, _failed;
+    private static int _locSquareRim;
     private static int _locMvp, _locQuad, _locWorld, _locWorldA, _locGlassA, _locLens, _locRim, _locRound, _locPx, _locRet, _locStyle, _locRetColor, _locScale, _locRetA, _locTint, _locTintA, _locVig;
 
     // The copy of the world behind the lens (a screen-sized texture; only the lens's rectangle is filled each frame).
@@ -231,7 +234,7 @@ public static unsafe class SightLens
     private static Matrix4x4 _mvp;
     private static Vector2 _quad, _ret, _lens;
     private static float _rim, _px, _worldA, _glassA, _retA, _scale, _tintA, _vig;
-    private static bool _round;
+    private static bool _round, _squareRim;
     private static SightSpec _spec = new();
     private static OpticKind _kind;
 
@@ -257,6 +260,7 @@ public static unsafe class SightLens
         _kind = d.Optic;
         _mvp = Matrix4x4.CreateTranslation(lens.Center) * pose * vmProj;
         _round = lens.Round;
+        _squareRim = lens.SquareRim;
         _lens = new Vector2(lens.HalfW, lens.HalfH);
         _rim = lens.Round ? MathF.Max(lens.Rim, lens.HalfH) : 0f;
         _quad = lens.Round ? new Vector2(_rim) : _lens;
@@ -303,6 +307,7 @@ public static unsafe class SightLens
         Native.glUniform2f(_locLens, _lens.X, _lens.Y);
         Native.glUniform1f(_locRim, _rim);
         Native.glUniform1f(_locRound, _round ? 1f : 0f);
+        Native.glUniform1f(_locSquareRim, _squareRim ? 1f : 0f);
         Native.glUniform1f(_locPx, MathF.Max(_px, 1e-3f));
         Native.glUniform2f(_locRet, _ret.X, _ret.Y);
         Native.glUniform1f(_locStyle, (float)_spec.Reticle);
@@ -439,6 +444,7 @@ public static unsafe class SightLens
             _locLens = Uniform("uLens\0"u8);
             _locRim = Uniform("uRim\0"u8);
             _locRound = Uniform("uRound\0"u8);
+            _locSquareRim = Uniform("uSquareRim\0"u8);
             _locPx = Uniform("uPx\0"u8);
             _locRet = Uniform("uRet\0"u8);
             _locStyle = Uniform("uStyle\0"u8);

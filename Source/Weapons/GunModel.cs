@@ -145,9 +145,10 @@ public static class GunModel
     /// The lens of a sight in model space: <paramref name="Center"/> is the middle of the plane you look through (a
     /// magnified optic's eyepiece face, a hair behind its rear end; a reflex sight's glass), <paramref name="HalfW"/> /
     /// <paramref name="HalfH"/> its half size in metres, <paramref name="Round"/> for an eyepiece (a reflex window is a
-    /// rectangle) and <paramref name="Rim"/> the outer radius of the eyepiece rim drawn around a round lens.
+    /// rectangle) and <paramref name="Rim"/> the outer radius of the eyepiece rim drawn around a round lens (the half
+    /// size of a square rim when <paramref name="SquareRim"/>: the square eyecups of the prisms).
     /// </summary>
-    public readonly record struct OpticLens(Vector3 Center, float HalfW, float HalfH, bool Round, float Rim);
+    public readonly record struct OpticLens(Vector3 Center, float HalfW, float HalfH, bool Round, float Rim, bool SquareRim = false);
 
     /// <summary>The sight's lens (see <see cref="OpticLens"/>), matching what <see cref="DrawOptic"/> builds. Null for iron sights.</summary>
     public static OpticLens? Lens(WeaponDef d)
@@ -159,14 +160,15 @@ public static class GunModel
         const float eps = 0.0003f; // in front of the eyepiece's rear face
         OpticLens Window(float glassZ, float half) => new(new Vector3(0, y, glassZ + 0.0013f), half, half, false, half);
         OpticLens Eye(float rear, float r, float rim) => new(new Vector3(0, y, rear + eps), r, r, true, rim);
+        OpticLens Cup(float rear, float r, float outer) => new(new Vector3(0, y, rear + eps), r, r, true, outer, true);
         switch (d.Optic)
         {
             case OpticKind.RedDot: return Window(z - 0.018f, 0.014f);
             case OpticKind.MiniDot: return Window(z - 0.008f, 0.011f);
             case OpticKind.Holo: return Window(z - 0.034f, 0.021f);
-            case OpticKind.Prism2: return Eye(z + 0.045f, 0.018f, 0.026f); // square eyecup: the round rim covers its corners
-            case OpticKind.Acog: return Eye(z + 0.05f, 0.016f, 0.023f);
-            case OpticKind.Hybrid3: return Eye(z + 0.071f, 0.016f, 0.023f);
+            case OpticKind.Prism2: return Cup(z + 0.045f, 0.018f, 0.023f); // square eyecups: a round lens in a square rim
+            case OpticKind.Acog: return Cup(z + 0.05f, 0.016f, 0.022f);
+            case OpticKind.Hybrid3: return Cup(z + 0.071f, 0.016f, 0.02f);
             case OpticKind.Lpvo6: return Eye(z + 0.16f, 0.018f, 0.0215f);
             case OpticKind.Scope12: return Eye(z + 0.24f, 0.019f, 0.0225f);
             case OpticKind.Scope4 or OpticKind.Scope8:
