@@ -803,21 +803,6 @@ public static partial class SelfTest
             return (samples[samples.Length / 2], updTicks * 1000.0 / Stopwatch.Frequency / n, flatTicks * 1000.0 / Stopwatch.Frequency / n);
         }
 
-        // TEMP probe: the same walk over 10 roots only (1k nodes, cache resident) to see if 10k is memory bound
-        {
-            var t0 = Stopwatch.GetTimestamp();
-            for (var f = 0; f < 2000; f++)
-            {
-                for (var r = 0; r < 10; r++)
-                    roots[r].SetLocal(new Vector3(r, 0, f * 0.01f), Quaternion.CreateFromAxisAngle(Vector3.UnitY, f * 0.01f + r), Vector3.One);
-                bigList.Clear();
-                for (var r = 0; r < 10; r++)
-                    bigList.UpdateAndFlatten(roots[r]);
-                big.UpdateTransforms();
-            }
-            var ns = (Stopwatch.GetTimestamp() - t0) * 1e9 / Stopwatch.Frequency / 2000 / 1000;
-            Line($"[scene] probe: 1k-node walk {ns:0.0} ns per node");
-        }
         var bigBefore = GC.GetAllocatedBytesForCurrentThread();
         var separate = Median(true, false);
         var sepUpdated = updated;
