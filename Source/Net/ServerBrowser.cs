@@ -31,7 +31,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 18: the Zombies mode: game mode 5, zombie / run / event / parts / build / interact / workbench messages (ZUse..ZBench at
     //     the end of Msg), built weapons replicated to clients as build text, the window-opening collision layer (Clip)
     // 19: Zombies dropped builds: bleeding out drops your built weapons as pickups (ZPickup at the end of Msg: appear / gone)
-    public const byte ProtocolVersion = 19;
+    // 20: score limits scale with the player count (ScoreLimits.cs): the mode state's last U16 is the current mode's score
+    //     limit (free-for-all kills, team kills, hill points or captures), no longer only the TDM kill limit
+    public const byte ProtocolVersion = 20;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

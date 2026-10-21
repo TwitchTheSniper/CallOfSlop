@@ -89,13 +89,7 @@ public static partial class SelfTest
             game.RequestRespawn();
             Run(game, ref now, 15);
             var team = game.Local?.Team ?? 255;
-            var limit = mode switch
-            {
-                GameMode.TeamDeathmatch => GameModes.TdmScoreLimit,
-                GameMode.KingOfTheHill => GameModes.HillScoreLimit,
-                GameMode.CaptureTheFlag => GameModes.CtfCaptureLimit,
-                _ => 0,
-            };
+            var limit = game.IsTeamMode ? game.ScoreLimit : 0; // the Auto limit for one player (ScoreLimits.cs)
             if (limit > 0)
             {
                 game.TeamScore[0] = limit + 3;

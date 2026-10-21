@@ -37,6 +37,25 @@ public sealed partial class Ui
         else
             ImGuiSafe.TextColored(Dim, $"{GameModes.Rules(s.Mode)} {Game.MatchSeconds / 60:0} minutes max.");
         ImGui.PopTextWrapPos();
+        ScoreLimitPicker(s);
+    }
+
+    /// <summary>Score limit: Auto (scales with the player count, ScoreLimits.cs) or Fixed (the classic limits).</summary>
+    private void ScoreLimitPicker(Settings s)
+    {
+        if (!ScoreLimits.HasLimit(s.Mode))
+            return;
+        ImGui.SetNextItemWidth(260 * _scale);
+        if (ImGui.BeginCombo("Score limit"u8, ScoreLimits.ChoiceName(s.ScoreLimit)))
+        {
+            foreach (var c in new[] { ScoreLimitMode.Auto, ScoreLimitMode.Fixed })
+                if (ImGui.Selectable(ScoreLimits.ChoiceName(c), c == s.ScoreLimit))
+                    s.ScoreLimit = c;
+            ImGui.EndCombo();
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 620 * _scale);
+        ImGuiSafe.TextColored(Dim, ScoreLimits.Describe(s.Mode, s.ScoreLimit));
+        ImGui.PopTextWrapPos();
     }
 
     /// <summary>Host screen: auto-start after the first person readies up.</summary>
@@ -231,9 +250,9 @@ public sealed partial class Ui
             var team = game.Local?.Team ?? Game.NoTeam;
             var limit = game.Mode switch
             {
-                GameMode.TeamDeathmatch => $"first to {game.TdmLimit} kills",
-                GameMode.KingOfTheHill => $"first to {GameModes.HillScoreLimit} points",
-                _ => $"first to {GameModes.CtfCaptureLimit} captures",
+                GameMode.TeamDeathmatch => $"first to {game.ScoreLimit} kills",
+                GameMode.KingOfTheHill => $"first to {game.ScoreLimit} points",
+                _ => $"first to {game.ScoreLimit} captures",
             };
             ImGuiSafe.TextColored(team < 2 ? TeamRgba(team) : Dim, team < 2 ? $"{GameModes.Name(game.Mode)} - you're on {GameModes.TeamNames[team]} - {limit}" : $"{GameModes.Name(game.Mode)} - {limit}");
         }
