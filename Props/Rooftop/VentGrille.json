@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Vent Grille",
+  "category": "Rooftop",
+  "description": "A louvred wall vent grille (front faces +Z; mount it on a wall with the Prop op's y).",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.04, 0.16], "speed": 3.5, "colors": ["#9a9c9e"]}},
+  "parts": [
+    {"size": [0.62, 0.62, 0.06], "offset": [0.0, 0.31, 0.0], "color": "#9a9c9e"},
+    {"size": [0.54, 0.54, 0.02], "offset": [0.0, 0.31, 0.03], "color": "#1c1c1e"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.08, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.155, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.23, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.305, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.38, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.455, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"},
+    {"size": [0.54, 0.02, 0.06], "offset": [0.0, 0.53, 0.04], "rotation": [30.0, 0.0, 0.0], "color": "#b4b6b6"}
+  ]
+}

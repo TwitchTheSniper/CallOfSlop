@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Prop Gallery",
-  "description": "Every prop in the Props folder on its own pad, in rows by category (Street, Industrial, Debris, Furniture, Nature from north to south).",
+  "description": "The starter props on their own pads, in rows by category (Street, Industrial, Debris, Furniture, Nature from north to south). Newer props are on Prop Gallery 2 and the galleries after it.",
   "author": "Call of Slop",
   "order": 950,
   "halfX": 42,

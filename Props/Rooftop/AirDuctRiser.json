@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Air Duct Riser",
+  "category": "Rooftop",
+  "description": "An air duct coming up out of the roof and turning along it.",
+  "collision": "solid",
+  "collider": [{"size": [0.64, 2.0, 0.56]}, {"size": [1.6, 0.54, 0.54], "offset": [1.1, 1.75, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 170, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.08, 0.35], "speed": 3.5, "colors": ["galvanized", "#9a9c9e"]}},
+  "parts": [
+    {"size": [0.7, 0.08, 0.6], "offset": [0.0, 0.04, 0.0], "color": "#8a8a86"},
+    {"size": [0.6, 1.9, 0.5], "offset": [0.0, 1.03, 0.0], "color": "galvanized", "material": "metal"},
+    {"size": [0.64, 0.03, 0.54], "offset": [0.0, 0.095, 0.0], "color": "#9a9c9e"},
+    {"size": [0.64, 0.03, 0.54], "offset": [0.0, 0.995, 0.0], "color": "#9a9c9e"},
+    {"size": [0.64, 0.03, 0.54], "offset": [0.0, 1.895, 0.0], "color": "#9a9c9e"},
+    {"size": [1.6, 0.5, 0.5], "offset": [1.1, 1.73, 0.0], "color": "galvanized", "material": "metal"},
+    {"size": [0.03, 0.54, 0.54], "offset": [0.3, 1.73, 0.0], "color": "#9a9c9e"},
+    {"size": [0.03, 0.54, 0.54], "offset": [1.9, 1.73, 0.0], "color": "#9a9c9e"},
+    {"size": [0.62, 0.52, 0.52], "offset": [0.0, 1.73, 0.0], "color": "#b4b6b6"},
+    {"size": [0.05, 1.47, 0.05], "offset": [1.7, 0.735, 0.0], "color": "darkgrey"},
+    {"size": [0.3, 0.04, 0.3], "offset": [1.7, 0.02, 0.0], "color": "#8a8a86"}
+  ]
+}

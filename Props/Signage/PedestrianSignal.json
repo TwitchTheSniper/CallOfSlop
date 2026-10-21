@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pedestrian Signal",
+  "category": "Signage",
+  "description": "A crossing signal with a push button, facing +Z.",
+  "collision": "solid",
+  "collider": [{"size": [0.12, 2.8, 0.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.1, 2.8, 0.1], "offset": [0.0, 1.4, 0.0], "color": "#2a2c2e", "material": "metal"},
+    {"size": [0.16, 0.03, 0.16], "offset": [0.0, 0.015, 0.0], "color": "darkgrey"},
+    {"size": [0.32, 0.6, 0.22], "offset": [0.0, 2.4, 0.16], "color": "#1e2022"},
+    {"size": [0.22, 0.22, 0.02], "offset": [0.0, 2.53, 0.27], "color": "#e04a1a"},
+    {"size": [0.22, 0.22, 0.02], "offset": [0.0, 2.26, 0.27], "color": "#e8f0f0"},
+    {"size": [0.16, 0.24, 0.1], "offset": [0.0, 1.12, 0.1], "color": "#e8c020"},
+    {"size": [0.06, 0.06, 0.02], "offset": [0.0, 1.18, 0.155], "color": "#1c1c1e"}
+  ]
+}

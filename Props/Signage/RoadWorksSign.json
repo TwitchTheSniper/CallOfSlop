@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Road Works Sign",
+  "category": "Signage",
+  "description": "An orange diamond road works sign on a folding stand.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.25], "speed": 3.5, "colors": ["#e8701a", "#9a9c9e"]}},
+  "parts": [
+    {"size": [0.06, 1.05, 0.04], "offset": [-0.3, 0.5, 0.15], "rotation": [-12.0, 0.0, 0.0], "color": "#9a9c9e"},
+    {"size": [0.06, 1.05, 0.04], "offset": [0.3, 0.5, 0.15], "rotation": [-12.0, 0.0, 0.0], "color": "#9a9c9e"},
+    {"size": [0.06, 1.05, 0.04], "offset": [-0.3, 0.5, -0.15], "rotation": [12.0, 0.0, 0.0], "color": "#9a9c9e"},
+    {"size": [0.06, 1.05, 0.04], "offset": [0.3, 0.5, -0.15], "rotation": [12.0, 0.0, 0.0], "color": "#9a9c9e"},
+    {"size": [0.6, 0.6, 0.02], "offset": [0.0, 0.72, 0.13], "rotation": [-12.0, 0.0, 45.0], "color": "#e8701a"},
+    {"size": [0.5, 0.5, 0.012], "offset": [0.0, 0.72, 0.145], "rotation": [-12.0, 0.0, 45.0], "color": "#1c1c1e"},
+    {"size": [0.44, 0.44, 0.012], "offset": [0.0, 0.72, 0.152], "rotation": [-12.0, 0.0, 45.0], "color": "#e8701a"},
+    {"size": [0.06, 0.18, 0.012], "offset": [0.0, 0.72, 0.16], "rotation": [-12.0, 0.0, 0.0], "color": "#1c1c1e"},
+    {"size": [0.12, 0.05, 0.012], "offset": [0.02, 0.83, 0.135], "rotation": [-12.0, 0.0, 0.0], "color": "#1c1c1e"},
+    {"size": [0.3, 0.12, 0.8], "offset": [-0.3, 0.06, 0.0], "color": "#1c1c1e"},
+    {"size": [0.3, 0.12, 0.8], "offset": [0.3, 0.06, 0.0], "color": "#1c1c1e"}
+  ]
+}

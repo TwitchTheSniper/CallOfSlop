@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hanging Shop Sign",
+  "category": "Signage",
+  "description": "A painted wooden pub-style sign hanging from an iron bracket on a post.",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 2.3, 0.14], "offset": [-0.35, 1.15, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 50, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.25], "speed": 4, "colors": ["#7a2a20", "#d4a83a", "darkwood"]}},
+  "parts": [
+    {"size": [0.12, 2.3, 0.12], "offset": [-0.35, 1.15, 0.0], "color": "darkwood", "material": "wood"},
+    {"size": [0.3, 0.08, 0.3], "offset": [-0.35, 0.04, 0.0], "color": "#3a2a1a"},
+    {"size": [1.0, 0.06, 0.06], "offset": [0.1, 2.13, 0.0], "color": "#2a2c2e"},
+    {"size": [0.61, 0.04, 0.04], "offset": [-0.05, 1.925, 0.0], "rotation": [0.0, 0.0, 34.992], "color": "#2a2c2e"},
+    {"size": [0.02, 0.1, 0.02], "offset": [-0.05, 2.05, 0.0], "color": "#2a2c2e"},
+    {"size": [0.02, 0.1, 0.02], "offset": [0.45, 2.05, 0.0], "color": "#2a2c2e"},
+    {"size": [0.65, 0.5, 0.04], "offset": [0.2, 1.75, 0.0], "color": "#7a2a20", "material": "wood"},
+    {"size": [0.69, 0.04, 0.05], "offset": [0.2, 2.0, 0.0], "color": "#d4a83a"},
+    {"size": [0.4, 0.2, 0.05], "offset": [0.2, 1.75, 0.0], "color": "#d4a83a"},
+    {"size": [0.69, 0.04, 0.05], "offset": [0.2, 1.49, 0.0], "color": "#d4a83a"}
+  ]
+}

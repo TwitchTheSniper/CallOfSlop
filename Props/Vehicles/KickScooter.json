@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Kick Scooter",
+  "category": "Vehicles",
+  "description": "A pink kick scooter.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.03, 0.12], "speed": 3.5, "colors": ["#d02a7a", "steel"]}},
+  "parts": [
+    {"size": [0.6, 0.04, 0.14], "offset": [0.0, 0.09, 0.0], "color": "#d02a7a"},
+    {"size": [0.04, 0.04, 0.14], "offset": [0.34, 0.09, 0.0], "color": "darkgrey"},
+    {"size": [0.801, 0.035, 0.035], "offset": [0.34, 0.48, 0.0], "rotation": [0.0, 180.0, 87.138], "color": "steel"},
+    {"size": [0.03, 0.03, 0.4], "offset": [0.32, 0.895, 0.0], "color": "#1c1c1e"},
+    {"size": [0.12, 0.05, 0.03], "offset": [0.36, 0.06, 0.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [0.36, 0.06, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [0.36, 0.06, 0.0], "rotation": [0.0, 0.0, 90.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [0.36, 0.06, 0.0], "rotation": [0.0, 0.0, 135.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [-0.3, 0.06, 0.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [-0.3, 0.06, 0.0], "rotation": [0.0, 0.0, 45.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [-0.3, 0.06, 0.0], "rotation": [0.0, 0.0, 90.0], "color": "rubber"},
+    {"size": [0.12, 0.05, 0.03], "offset": [-0.3, 0.06, 0.0], "rotation": [0.0, 0.0, 135.0], "color": "rubber"}
+  ]
+}

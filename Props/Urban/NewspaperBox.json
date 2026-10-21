@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Newspaper Box",
+  "category": "Urban",
+  "description": "A blue coin-operated newspaper box.",
+  "collision": "solid",
+  "collider": [{"size": [0.47, 1.07, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.06, 0.24], "speed": 3.5, "colors": ["#2a6ab0", "newsprint"]}},
+  "parts": [
+    {"size": [0.45, 0.06, 0.4], "offset": [0.0, 0.03, 0.0], "color": "darkgrey"},
+    {"size": [0.05, 0.3, 0.05], "offset": [0.15, 0.21, 0.13], "color": "darkgrey"},
+    {"size": [0.05, 0.3, 0.05], "offset": [-0.15, 0.21, 0.13], "color": "darkgrey"},
+    {"size": [0.05, 0.3, 0.05], "offset": [0.15, 0.21, -0.13], "color": "darkgrey"},
+    {"size": [0.05, 0.3, 0.05], "offset": [-0.15, 0.21, -0.13], "color": "darkgrey"},
+    {"size": [0.45, 0.65, 0.4], "offset": [0.0, 0.685, 0.0], "color": "#2a6ab0", "material": "metal"},
+    {"size": [0.47, 0.06, 0.42], "offset": [0.0, 1.04, 0.0], "color": "#1e4a8a"},
+    {"size": [0.34, 0.3, 0.012], "offset": [0.0, 0.75, 0.2], "color": "#c8d8e0"},
+    {"size": [0.28, 0.2, 0.014], "offset": [0.0, 0.74, 0.2], "color": "newsprint"},
+    {"size": [0.1, 0.06, 0.02], "offset": [0.12, 0.97, 0.205], "color": "#9a9c9e"},
+    {"size": [0.3, 0.05, 0.03], "offset": [0.0, 0.525, 0.21], "color": "#1e4a8a"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Direction Sign",
+  "category": "Signage",
+  "description": "A big green road direction sign on two posts. Unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 2.2, 0.14], "offset": [-1.1, 1.1, 0.0]}, {"size": [0.14, 2.2, 0.14], "offset": [1.1, 1.1, 0.0]}, {"size": [3.2, 1.6, 0.14], "offset": [0.0, 3.0, 0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.12, 3.8, 0.12], "offset": [-1.1, 1.9, 0.0], "color": "#9a9c9e"},
+    {"size": [0.12, 3.8, 0.12], "offset": [1.1, 1.9, 0.0], "color": "#9a9c9e"},
+    {"size": [3.2, 1.6, 0.05], "offset": [0.0, 3.0, 0.09], "color": "#1e6a3a"},
+    {"size": [3.12, 0.03, 0.055], "offset": [0.0, 2.255, 0.09], "color": "white"},
+    {"size": [3.12, 0.03, 0.055], "offset": [0.0, 3.745, 0.09], "color": "white"},
+    {"size": [1.6, 0.16, 0.06], "offset": [-0.4, 3.38, 0.09], "color": "white"},
+    {"size": [1.2, 0.16, 0.06], "offset": [-0.6, 2.93, 0.09], "color": "white"},
+    {"size": [0.5, 0.36, 0.06], "offset": [1.05, 3.18, 0.09], "color": "#1e4a9a"},
+    {"size": [0.3, 0.12, 0.065], "offset": [1.05, 3.18, 0.09], "color": "white"},
+    {"size": [0.35, 0.06, 0.06], "offset": [0.6, 2.675, 0.12], "rotation": [0.0, 0.0, 90.0], "color": "white"},
+    {"size": [0.198, 0.05, 0.05], "offset": [0.675, 2.785, 0.12], "rotation": [0.0, -0.0, -40.914], "color": "white"},
+    {"size": [0.198, 0.05, 0.05], "offset": [0.525, 2.785, 0.12], "rotation": [0.0, -180.0, -40.914], "color": "white"}
+  ]
+}

@@ -19,6 +19,7 @@ public static unsafe partial class Program
         ("gallery", "Prop Gallery", new Vector3(0f, 17f, 42f), new Vector3(0f, 0f, 2f), false),
         ("gallery_street", "Prop Gallery", new Vector3(-21f, 1.8f, -16.5f), new Vector3(-6f, 0.6f, -24f), false),
         ("gallery3", "Prop Gallery 3", new Vector3(0f, 16f, 34f), new Vector3(0f, 0f, -2f), false), // the indoor set: smoke_props_gallery3.bmp
+        ("gallery2", "Prop Gallery 2", new Vector3(0f, 38f, 50f), new Vector3(0f, 0f, -2f), false), // the outdoor props: smoke_props_gallery2.bmp
         ("yard", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), false),
         ("yard_break", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), true),
         ("yard_overview", "Prop Yard", new Vector3(-30f, 24f, 34f), new Vector3(0f, 0f, 0f), false),

@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "TV Antenna",
+  "category": "Rooftop",
+  "description": "An old roof TV aerial on a guyed mast.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.03, 0.2], "speed": 3.5, "colors": ["#9a9c9e"]}},
+  "parts": [
+    {"size": [0.4, 0.04, 0.4], "offset": [0.0, 0.02, 0.0], "color": "darkgrey"},
+    {"size": [0.04, 2.2, 0.04], "offset": [0.0, 1.14, 0.0], "color": "#9a9c9e"},
+    {"size": [1.4, 0.03, 0.03], "offset": [0.0, 2.015, 0.0], "color": "#9a9c9e"},
+    {"size": [0.02, 0.02, 0.9], "offset": [-0.6, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.82], "offset": [-0.4, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.74], "offset": [-0.2, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.66], "offset": [0.0, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.58], "offset": [0.2, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.5], "offset": [0.4, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.02, 0.02, 0.42], "offset": [0.6, 2.025, 0.0], "color": "#b4b6b6"},
+    {"size": [0.03, 0.03, 0.9], "offset": [0.0, 1.515, 0.0], "color": "#9a9c9e"},
+    {"size": [1.359, 0.015, 0.015], "offset": [0.25, 0.62, 0.25], "rotation": [0.0, -45.0, -58.635], "color": "darkgrey"},
+    {"size": [1.359, 0.015, 0.015], "offset": [-0.25, 0.62, 0.25], "rotation": [0.0, -135.0, -58.635], "color": "darkgrey"},
+    {"size": [1.306, 0.015, 0.015], "offset": [0.0, 0.62, -0.3], "rotation": [0.0, 90.0, -62.65], "color": "darkgrey"}
+  ]
+}

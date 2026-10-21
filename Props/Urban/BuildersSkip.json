@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Builders Skip",
+  "category": "Urban",
+  "description": "A yellow builder's skip full of rubble. Solid cover, unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [3.9, 1.2, 1.72]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "parts": [
+    {"size": [3.4, 0.08, 1.6], "offset": [0.0, 0.04, 0.0], "color": "#e3b81a"},
+    {"size": [2.6, 0.04, 1.5], "offset": [0.0, 0.1, 0.0], "color": "#e3b81a", "material": "metal"},
+    {"size": [0.08, 1.15, 1.6], "offset": [1.52, 0.62, 0.0], "rotation": [0.0, 0.0, -18.0], "color": "#e3b81a", "material": "metal"},
+    {"size": [0.08, 1.15, 1.6], "offset": [-1.52, 0.62, 0.0], "rotation": [0.0, 0.0, 18.0], "color": "#e3b81a", "material": "metal"},
+    {"size": [3.3, 1.05, 0.08], "offset": [0.0, 0.625, 0.78], "color": "#e3b81a", "material": "metal"},
+    {"size": [3.3, 1.05, 0.08], "offset": [0.0, 0.625, -0.78], "color": "#e3b81a", "material": "metal"},
+    {"size": [3.8, 0.08, 0.12], "offset": [0.0, 1.14, 0.79], "color": "#c49a14"},
+    {"size": [3.8, 0.08, 0.12], "offset": [0.0, 1.14, -0.79], "color": "#c49a14"},
+    {"size": [0.12, 0.25, 0.2], "offset": [1.35, 0.975, 0.88], "color": "#c49a14"},
+    {"size": [0.12, 0.25, 0.2], "offset": [-1.35, 0.975, 0.88], "color": "#c49a14"},
+    {"size": [0.12, 0.25, 0.2], "offset": [1.35, 0.975, -0.88], "color": "#c49a14"},
+    {"size": [0.12, 0.25, 0.2], "offset": [-1.35, 0.975, -0.88], "color": "#c49a14"},
+    {"size": [2.4, 0.4, 1.3], "offset": [-0.2, 0.32, 0.0], "color": "#7a6a5a", "material": "dirt"},
+    {"size": [0.8, 0.3, 0.6], "offset": [0.6, 0.65, 0.2], "color": "concrete", "material": "concrete"},
+    {"size": [1.2, 0.08, 0.2], "offset": [-0.6, 0.59, -0.3], "rotation": [0.0, 20.0, 0.0], "color": "pallet"}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Road Plate",
+  "category": "Utility",
+  "description": "A steel road plate covering a trench.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 6},
+  "fadeDistance": 50,
+  "parts": [
+    {"size": [2.4, 0.025, 1.5], "offset": [0.0, 0.013, 0.0], "color": "#5a5c5e", "material": "metal", "texScale": 3},
+    {"size": [0.2, 0.03, 0.2], "offset": [1.0, 0.015, 0.6], "color": "#4a4c4e"},
+    {"size": [0.2, 0.03, 0.2], "offset": [-1.0, 0.015, -0.6], "color": "#4a4c4e"}
+  ]
+}

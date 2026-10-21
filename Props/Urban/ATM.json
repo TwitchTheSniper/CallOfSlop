@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "ATM",
+  "category": "Urban",
+  "description": "A freestanding cash machine. Heavy steel: only explosions and strikes break it.",
+  "collision": "solid",
+  "collider": [{"size": [0.79, 1.85, 0.8], "offset": [0.0, 0.925, 0.04]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 4},
+  "breakable": {"health": 400, "breakBy": ["explosions", "streaks"], "sound": "metal", "debris": {"count": 18, "size": [0.06, 0.3], "speed": 3.5, "colors": ["#5a6068", "#2a3a6a"]}},
+  "parts": [
+    {"size": [0.75, 1.6, 0.7], "offset": [0.0, 0.8, 0.0], "color": "#5a6068", "material": "metal"},
+    {"size": [0.79, 0.25, 0.8], "offset": [0.0, 1.725, 0.04], "color": "#2a3a6a"},
+    {"size": [0.6, 0.16, 0.012], "offset": [0.0, 1.72, 0.445], "color": "#ffe9a8"},
+    {"size": [0.64, 0.5, 0.2], "offset": [0.0, 1.25, 0.38], "rotation": [-20.0, 0.0, 0.0], "color": "#3a4048"},
+    {"size": [0.4, 0.3, 0.012], "offset": [0.0, 1.28, 0.475], "rotation": [-20.0, 0.0, 0.0], "color": "#4ab0d8"},
+    {"size": [0.62, 0.05, 0.25], "offset": [0.0, 0.975, 0.45], "color": "#3a4048"},
+    {"size": [0.24, 0.02, 0.16], "offset": [0.0, 1.01, 0.47], "color": "#9a9c9e"},
+    {"size": [0.2, 0.04, 0.02], "offset": [0.0, 0.87, 0.36], "color": "#1c1c1e"},
+    {"size": [0.1, 0.03, 0.02], "offset": [0.22, 1.135, 0.43], "color": "#1c1c1e"}
+  ]
+}
