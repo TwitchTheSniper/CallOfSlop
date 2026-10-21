@@ -431,7 +431,9 @@ public static unsafe partial class Program
                 break;
             case 3 when now - _smokeArmsAt > 0.9:
                 SmokeShot("arms_sprint");
-                Console.WriteLine($"[smoke] arms: sprinting at {new Vector2(game.Local.Sim.Velocity.X, game.Local.Sim.Velocity.Z).Length():0.0} m/s");
+                Console.WriteLine($"[smoke] arms: sprinting at {new Vector2(game.Local.Sim.Velocity.X, game.Local.Sim.Velocity.Z).Length():0.0} m/s; "
+                    + $"[head bob] dip {_headBob.Amplitude * 100:0.0} cm, sway {_headBob.Offset.X * 100:0.0} cm, roll {_headBob.Roll * 180 / MathF.PI:0.00} deg, "
+                    + $"{_headBob.Cadence:0.0} strides/s, weight {_headBob.Weight:0.00}, setting {_settings.HeadBob}%");
                 _smokeArms++;
                 break;
             case 4 when now - _smokeArmsAt > 1.0:
@@ -1572,6 +1574,18 @@ public static unsafe partial class Program
             var t = (float)now * 40f;
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
+        if (local is { Alive: true })
+        {
+            // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
+            _headBob.Update(new HeadBobInput
+            {
+                Dt = (float)FrameDt, Velocity = local.RenderVelocity, Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
+                Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
+            });
+            eye = _headBob.Apply(eye, _game.LookYaw);
+        }
+        else
+            _headBob.Reset();
 
         var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
         var camUp = Vector3.UnitY;
@@ -1580,7 +1594,7 @@ public static unsafe partial class Program
             // Recoil shake and view punch move only the rendered camera, never the aim.
             var rk = _game.RecoilCamera;
             fwd = World.Forward(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
-            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -rk.Roll));
+            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
         var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);
@@ -1830,6 +1844,7 @@ public static unsafe partial class Program
     }
 
     private static readonly ViewModelAnimator _vmAnim = new();
+    private static readonly HeadBob _headBob = new();
 
     private static void DrawViewModel(double now, Matrix4x4 proj)
     {
@@ -1848,6 +1863,7 @@ public static unsafe partial class Program
             Equip = now < _game.EquipUntil ? Math.Clamp((float)((_game.EquipUntil - now) / def.EquipTime), 0f, 1f) : 0f,
             Kick = _game.WeaponKick, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded, MantleTicks = me.Sim.MantleTicks, MantleTo = me.Sim.MantleTo,
             Eye = me.RenderEye, Yaw = _game.LookYaw, Pitch = _game.LookPitch, SprintHeld = (_game.HeldButtons & Buttons.Sprint) != 0,
+            HeadBob = _headBob.Weight, HeadBobPhase = _headBob.DipPhase,
         });
         var pose = _vmAnim.GunPose;
         // The view through the optic's lens: the world behind it is copied now, the lens is drawn over the gun below.
