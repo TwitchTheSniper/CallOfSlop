@@ -1124,8 +1124,12 @@ public sealed partial class Game : IDisposable
             attacker.Kills++;
             if (attacker.Alive && attacker.Perks.Has(PerkId.Bloodthirst))
                 attacker.Health = World.MaxHealth;
-            if (attacker.Alive && attacker.Perks.Has(PerkId.Afterburner))
+            if (attacker.Alive && attacker.Perks.Has(PerkId.Afterburner) && attacker.Sim.BoostTicks == 0 && ServerTick >= attacker.AfterburnerReadyTick)
+            {
+                // One boost at a time: no refresh during it, then a cooldown (Perks.AfterburnerCooldownTicks).
                 attacker.Sim.BoostTicks = Perks.BoostTicks;
+                attacker.AfterburnerReadyTick = ServerTick + Perks.BoostTicks + Perks.AfterburnerCooldownTicks;
+            }
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
             attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);

@@ -76,6 +76,8 @@ public static class Perks
     // ---- Tuning ----------------------------------------------------------------------
     public const float LowProfileSpeed = 1.8f; // crouch 50% -> 90% of walking speed, prone 22% -> 40%
     public const byte BoostTicks = 240; // Head Start / Afterburner: 4 s
+    /// <summary>After an Afterburner boost ends, kills can't start another for this long (6 s). Kills during a boost don't refresh it.</summary>
+    public const uint AfterburnerCooldownTicks = 360;
     public const float BoostSpeed = 1.35f;
     public const float ParkourReach = 2.3f; // highest ledge you can climb (normally 1.7 m)
     public const float ParkourJump = 1.25f; // jump speed multiplier (about 1.55 m high instead of 1.0 m)
@@ -102,7 +104,7 @@ public static class Perks
         new() { Id = PerkId.Parkour, Category = PerkCategory.Movement, Name = "Parkour", When = "Around walls, windows and roofs",
             Effect = "Reach ledges 0.6 m higher, climb twice as fast and jump about 55% higher: get onto walls and roofs nobody else can." },
         new() { Id = PerkId.Afterburner, Category = PerkCategory.Movement, Name = "Afterburner", When = "Right after a kill",
-            Effect = "Every kill gives you 35% more speed for 4 seconds. Chain your kills together." },
+            Effect = "A kill gives you 35% more speed for 4 seconds. Kills during the boost don't extend it, and it needs 6 seconds to recharge after it ends." },
 
         new() { Id = PerkId.FlakJacket, Category = PerkCategory.Survival, Name = "Flak Jacket", When = "Against grenades",
             Effect = "Take 75% less damage from explosions, including your own grenades." },
