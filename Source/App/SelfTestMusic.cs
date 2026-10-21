@@ -289,7 +289,8 @@ public static partial class SelfTest
         }
 
         CheckHardbassVoices(notes);
-        Line("::notice title=Music (hardbass)::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25"))));
+        foreach (var n in notes)
+            Line("hardbass: " + n); // log lines, not a notice: a CI step shows only 10 notices and the DONE line must stay visible
     }
 
     private static int LastDropBar(MusicTrack t)
