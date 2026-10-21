@@ -243,7 +243,7 @@ public static partial class SelfTest
         var escaped = game.Players.Values.Count(p => p.Alive && !m.Boundary!.Inside(p.Position.X, p.Position.Z, -0.5f));
         var stuck = moved.Count(kv => kv.Value < 15f);
         var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
-        // The host is an idle player (no input) on one team: it only feeds the other side, so team scores lean that way.
+        // The host is an idle player (no input) on one team, which then fights a bot short: team scores lean to the other side.
         var host = game.Local;
         var teams = GameModes.IsTeam(mode)
             ? $"  score blue {game.TeamScore[0]} red {game.TeamScore[1]} (idle host on {(host?.Team == 0 ? "blue" : "red")}, died {host?.Deaths ?? 0} times)"

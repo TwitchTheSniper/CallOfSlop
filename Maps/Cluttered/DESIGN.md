@@ -30,8 +30,8 @@ booths stop anyone looking out of a base down the middle. There are three lanes 
 **Fairness.** The whole map is one half turned 180 degrees about the centre: every block, stair, mesh, hand-placed prop,
 spawn and tree has a twin at (-x, -z), and the scatter uses `"mirror": true`. Team spawn clusters are symmetric about
 z = 0 as well, so each hill is the same walk from both teams. The top-down check found no line of sight between Blue and
-Red spawns. The bot TDM leans to whichever team holds the idle host (the self-test's host player stands still and only
-feeds kills).
+Red spawns. The self-test's bot TDM leans to Red (about 20-30) because its host is an idle player on Blue, so Blue
+fights with four bots against five.
 
 **Density.** The game's `Clutter` keeps solid props off every bot route, which on a map this full left room for only a
 dozen. So the solid cover is hand-placed: 24 mirrored piles of crates, bales, bins and pallets that the generator found
