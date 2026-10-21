@@ -243,7 +243,11 @@ public static partial class SelfTest
         var escaped = game.Players.Values.Count(p => p.Alive && !m.Boundary!.Inside(p.Position.X, p.Position.Z, -0.5f));
         var stuck = moved.Count(kv => kv.Value < 15f);
         var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
-        var teams = GameModes.IsTeam(mode) ? $"  score blue {game.TeamScore[0]} red {game.TeamScore[1]}" : "";
+        // The host is an idle player (no input) on one team: it only feeds the other side, so team scores lean that way.
+        var host = game.Local;
+        var teams = GameModes.IsTeam(mode)
+            ? $"  score blue {game.TeamScore[0]} red {game.TeamScore[1]} (idle host on {(host?.Team == 0 ? "blue" : "red")}, died {host?.Deaths ?? 0} times)"
+            : "";
         ClutteredLine($"  bots {mode,-14} {game.Players.Count} players: kills {kills}{teams}  avg bot travel {avgMove:0} m  stuck {stuck}  fallen {fallen}  outside {escaped}  "
                       + $"worst tick {maxTickMs:0.00} ms (work {cpu.WorstText}; {jitTicks} JIT warm-up ticks not counted)  broken props {m.BrokenProps.Count}  ({sw.Elapsed.TotalSeconds:0.0} s)");
         if (game.Players.Count != bots + 1)
