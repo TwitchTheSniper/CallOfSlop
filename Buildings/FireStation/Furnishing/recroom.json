@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "recroom",
+  "description": "The crew lounge: a sofa, a pool of armchairs round the TV, the station officer's desk.",
+  "items": [
+    {"id": "sofa", "props": ["Fabric Sofa"], "place": "wall", "prefer": "far"},
+    {"props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.35},
+    {"props": ["Armchair"], "place": "wall", "count": [1, 2]},
+    {"props": ["TV Stand"], "place": "wall"},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Bookshelf"], "place": "wall", "chance": 0.7}
+  ]
+}

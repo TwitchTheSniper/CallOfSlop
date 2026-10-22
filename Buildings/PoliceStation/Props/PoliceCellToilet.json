@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Cell Toilet",
+  "description": "A stainless-steel cell toilet with no seat and a push-button flush.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.42, 0.42, 0.5], "offset": [0, 0.21, 0.02], "color": "#c8ccd0", "material": "metal"},
+    {"size": [0.46, 0.04, 0.54], "offset": [0, 0.43, 0.02], "color": "#d8dcdc", "material": "metal"},
+    {"size": [0.42, 0.5, 0.18], "offset": [0, 0.45, -0.24], "color": "#c8ccd0", "material": "metal"},
+    {"size": [0.06, 0.06, 0.02], "offset": [0, 0.6, -0.14], "color": "#606468"}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "motelbath",
+  "description": "A motel bathroom: a shower, a toilet, a sink.",
+  "items": [{"props": ["Shower Cubicle"], "place": "corner"}, {"props": ["Toilet"], "place": "wall"}, {"props": ["Bathroom Sink"], "place": "wall"}]
+}

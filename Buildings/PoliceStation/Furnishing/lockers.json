@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "lockers",
+  "description": "The locker room: rows of lockers, a bench, a coat stand.",
+  "items": [
+    {"props": ["Metal Lockers"], "place": "wall", "count": [3, 5]},
+    {"props": ["Bench"], "place": "centre"},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Duffel Bag", "Backpack"], "place": "floor", "count": [0, 2]}
+  ]
+}

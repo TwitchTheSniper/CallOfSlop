@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "lobby",
+  "description": "The entrance hall: the school secretary's desk, the trophy cabinet, a bench, plants.",
+  "items": [
+    {"id": "desk", "props": ["Reception Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.2},
+    {"props": ["Desk Phone", "Book Pile"], "place": "on", "of": "desk", "y": 1.08, "count": [1, 2]},
+    {"props": ["School Trophy Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bench"], "place": "wall"},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner", "count": [1, 2]}
+  ]
+}

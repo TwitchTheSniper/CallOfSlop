@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Sign",
+  "description": "A lit green-cross sign on a post outside the health centre.",
+  "collision": "solid",
+  "collider": [{"size": [0.2, 2.4, 0.2]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.12, 2.4, 0.12], "offset": [0, 1.2, 0], "color": "#c8ccd0"},
+    {"size": [1.2, 0.8, 0.14], "offset": [0, 2.7, 0], "color": "#f4f4f0"},
+    {"size": [0.5, 0.16, 0.02], "offset": [-0.25, 2.7, 0.08], "color": "#20a040", "anim": {"type": "pulse", "period": 3, "glow": 0.9}},
+    {"size": [0.16, 0.5, 0.02], "offset": [-0.25, 2.7, 0.08], "color": "#20a040", "anim": {"type": "pulse", "period": 3, "glow": 0.9}},
+    {"size": [0.45, 0.1, 0.01], "offset": [0.3, 2.78, 0.075], "color": "#1a3a6a"},
+    {"size": [0.45, 0.06, 0.01], "offset": [0.3, 2.6, 0.075], "color": "#1a3a6a"}
+  ]
+}

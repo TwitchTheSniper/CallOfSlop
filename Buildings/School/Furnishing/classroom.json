@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "classroom",
+  "description": "Round the pupils' desks: bookcases, coat pegs, a globe, a plant, a bin, radiators.",
+  "items": [
+    {"id": "books", "props": ["Bookshelf"], "place": "wall", "count": [1, 2]},
+    {"props": ["Spinning Globe"], "place": "on", "of": "books", "y": 1.9, "chance": 0.6},
+    {"props": ["School Coat Pegs"], "place": "wall", "count": [1, 2]},
+    {"props": ["Radiator"], "place": "wall", "count": [1, 2]},
+    {"props": ["Office Plant", "Pedal Bin"], "place": "corner", "count": [1, 2]},
+    {"props": ["Book Pile", "Backpack", "Sports Balls"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Height Chart",
+  "description": "A wall height chart for mugshots, marked in feet and inches.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1, 2, 0.01], "offset": [0, 1, 0.005], "color": "#e8e8e0"},
+    {"size": [1, 0.015, 0.005], "offset": [0, 0.8, 0.012], "color": "#1a1a1a"},
+    {"size": [0.5, 0.015, 0.005], "offset": [-0.25, 0.95, 0.012], "color": "#1a1a1a"},
+    {"size": [1, 0.015, 0.005], "offset": [0, 1.1, 0.012], "color": "#1a1a1a"},
+    {"size": [0.5, 0.015, 0.005], "offset": [-0.25, 1.25, 0.012], "color": "#1a1a1a"},
+    {"size": [1, 0.015, 0.005], "offset": [0, 1.4, 0.012], "color": "#1a1a1a"},
+    {"size": [0.5, 0.015, 0.005], "offset": [-0.25, 1.55, 0.012], "color": "#1a1a1a"},
+    {"size": [1, 0.015, 0.005], "offset": [0, 1.7, 0.012], "color": "#1a1a1a"},
+    {"size": [0.5, 0.015, 0.005], "offset": [-0.25, 1.85, 0.012], "color": "#1a1a1a"},
+    {"size": [0.4, 0.12, 0.005], "offset": [0, 1.95, 0.012], "color": "#1e2e5a"}
+  ]
+}

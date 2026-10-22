@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Cell Bench",
+  "description": "A concrete sleeping plinth with a thin blue mattress and a grey blanket.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [2, 0.42, 0.8], "offset": [0, 0.21, 0], "color": "#9a9a94", "material": "concrete"},
+    {"size": [1.9, 0.08, 0.7], "offset": [0, 0.46, 0], "color": "#2a4a8a"},
+    {"size": [0.8, 0.06, 0.6], "offset": [0.4, 0.52, 0.02], "color": "#6a6a6a"}
+  ]
+}

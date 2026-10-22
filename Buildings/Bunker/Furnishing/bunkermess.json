@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bunkermess",
+  "description": "The mess: a trestle table, a galley counter, ration crates, a water tank.",
+  "items": [
+    {"id": "table", "props": ["Table"], "place": "centre"},
+    {"props": ["Plastic Chair"], "place": "around", "of": "table", "count": [3, 4]},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Kettle", "Cooking Pot", "Stacked Plates"], "place": "on", "of": "counter", "y": 0.9, "count": [1, 3]},
+    {"props": ["Bunker Ration Crates"], "place": "wall", "count": [1, 2]},
+    {"props": ["Water Cooler"], "place": "corner"},
+    {"props": ["Fridge"], "place": "corner", "chance": 0.6}
+  ]
+}

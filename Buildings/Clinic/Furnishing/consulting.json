@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "consulting",
+  "description": "A GP's consulting room: a couch behind a screen, the doctor's desk and computer, a patient's chair, a sink, an eye chart.",
+  "items": [
+    {"id": "couch", "props": ["Clinic Exam Couch"], "place": "wall", "prefer": "far"},
+    {"props": ["Clinic Privacy Screen"], "place": "front", "of": "couch", "distance": 0.35, "chance": 0.8},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Computer Monitor", "Desk Phone", "Book Pile"], "place": "on", "of": "desk", "y": 0.77, "count": [2, 3]},
+    {"props": ["Plastic Chair"], "place": "wall"},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Clinic Medicine Cabinet"], "place": "wall", "chance": 0.8},
+    {"props": ["Clinic Eye Chart"], "place": "wall", "chance": 0.7},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

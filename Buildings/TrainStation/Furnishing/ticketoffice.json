@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "ticketoffice",
+  "description": "The booking office behind the hatch: the clerk's chair, a safe, ticket stock on shelves.",
+  "items": [
+    {"props": ["Office Chair"], "place": "floor"},
+    {"props": ["Safe"], "place": "corner"},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Archive Boxes", "Cardboard Box Small"], "place": "floor", "count": [0, 1]}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cell",
+  "description": "A police cell: a concrete bench bed and a steel toilet.",
+  "items": [
+    {"props": ["Police Cell Bench"], "place": "wall", "prefer": "far"},
+    {"props": ["Police Cell Toilet"], "place": "corner"},
+    {"props": ["Newspaper", "Plastic Bag"], "place": "floor", "chance": 0.5}
+  ]
+}

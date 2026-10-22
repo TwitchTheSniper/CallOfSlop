@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "School Desk",
+  "description": "A 1960s double pupil desk with a lift-up lid and two tubular-steel chairs behind it.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 0.76, 0.52], "offset": [0, 0.38, 0.22]}, {"size": [1, 0.46, 0.4], "offset": [0, 0.23, -0.32]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.2, 0.04, 0.5], "offset": [0, 0.72, 0.22], "color": "#c49a62", "material": "wood"},
+    {"size": [1.16, 0.12, 0.46], "offset": [0, 0.64, 0.22], "color": "#8a6a40", "material": "wood"},
+    {"size": [0.04, 0.6, 0.04], "offset": [-0.56, 0.3, 0.02], "color": "#4a6a8a"},
+    {"size": [0.04, 0.6, 0.04], "offset": [0.56, 0.3, 0.02], "color": "#4a6a8a"},
+    {"size": [0.04, 0.6, 0.04], "offset": [-0.56, 0.3, 0.44], "color": "#4a6a8a"},
+    {"size": [0.04, 0.6, 0.04], "offset": [0.56, 0.3, 0.44], "color": "#4a6a8a"},
+    {"size": [0.38, 0.03, 0.36], "offset": [-0.3, 0.44, -0.32], "color": "#c49a62", "material": "wood"},
+    {"size": [0.38, 0.28, 0.03], "offset": [-0.3, 0.62, -0.5], "color": "#c49a62", "material": "wood"},
+    {"size": [0.03, 0.44, 0.03], "offset": [-0.47, 0.22, -0.16], "color": "#4a6a8a"},
+    {"size": [0.03, 0.44, 0.03], "offset": [-0.13, 0.22, -0.16], "color": "#4a6a8a"},
+    {"size": [0.03, 0.76, 0.03], "offset": [-0.47, 0.38, -0.49], "color": "#4a6a8a"},
+    {"size": [0.03, 0.76, 0.03], "offset": [-0.13, 0.38, -0.49], "color": "#4a6a8a"},
+    {"size": [0.38, 0.03, 0.36], "offset": [0.3, 0.44, -0.32], "color": "#c49a62", "material": "wood"},
+    {"size": [0.38, 0.28, 0.03], "offset": [0.3, 0.62, -0.5], "color": "#c49a62", "material": "wood"},
+    {"size": [0.03, 0.44, 0.03], "offset": [0.13, 0.22, -0.16], "color": "#4a6a8a"},
+    {"size": [0.03, 0.44, 0.03], "offset": [0.47, 0.22, -0.16], "color": "#4a6a8a"},
+    {"size": [0.03, 0.76, 0.03], "offset": [0.13, 0.38, -0.49], "color": "#4a6a8a"},
+    {"size": [0.03, 0.76, 0.03], "offset": [0.47, 0.38, -0.49], "color": "#4a6a8a"},
+    {"size": [0.2, 0.03, 0.28], "offset": [-0.25, 0.755, 0.22], "color": "#2a5a9a"},
+    {"size": [0.16, 0.02, 0.06], "offset": [0.3, 0.75, 0.3], "color": "#e8c020"}
+  ]
+}

@@ -1,0 +1,203 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "School",
+  "theme": "1960s brick primary school: red brick, big steel-framed classroom windows, green lino corridors, wooden desks and chalkboards, coat pegs and lockers",
+  "category": "special",
+  "description": "A two-storey school round a central corridor: entrance hall, head's study, staff room, classrooms, toilets and a canteen downstairs; classrooms, a science lab, a library, an art room and a music room upstairs; stairs to the flat roof.",
+  "author": "Call of Slop",
+  "seed": 221,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.4,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red brick": {"wall": "#9a4e3a", "interior": "#e8e2c8", "floor": "#7a8a6a", "ceiling": "#f2f0e6", "trim": "#e8e8e0", "door": "#2a5a8a", "roof": "#4a4a4c"},
+    "yellow brick": {"wall": "#c4a868", "interior": "#e2e8e0", "floor": "#8a7a62", "ceiling": "#f2f2ee", "trim": "#2a3a4a", "door": "#a23a2a", "roof": "#505052"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.4, "width": 1.7, "sill": 0.9, "head": 2.8},
+      "rooms": [
+        {"id": "entrance hall", "type": "lobby", "rect": [-2.5, 1, 2.5, 7], "floor": {"color": "#8a5a3a", "material": "wood"}},
+        {"id": "corridor", "type": "corridor", "rect": [-12, -1, 12, 1], "floor": {"color": "#3a6a4a", "material": "tiles"}},
+        {
+          "id": "classroom 1",
+          "type": "classroom",
+          "rect": [-12, 1, -2.5, 7],
+          "props": [
+            {"name": "School Chalkboard", "wall": "E", "along": 0},
+            {"name": "School Teacher Desk", "at": [3.4, 0], "yaw": 270},
+            {"name": "Office Chair", "at": [4.15, 0], "yaw": 270},
+            {"name": "School Desk", "at": [-3.18, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-3.18, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-3.18, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-1.68, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-1.68, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-1.68, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.18, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-0.18, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [1.32, 0], "yaw": 90},
+            {"name": "School Desk", "at": [1.32, 1.5], "yaw": 90}
+          ]
+        },
+        {"id": "head's study", "type": "headoffice", "rect": [2.5, 1, 7, 7], "floor": {"color": "#6a4a32", "material": "wood"}},
+        {"id": "staff room", "type": "staffroom", "rect": [7, 1, 12, 7]},
+        {
+          "id": "classroom 2",
+          "type": "classroom",
+          "rect": [-12, -7, -4, -1],
+          "props": [
+            {"name": "School Chalkboard", "wall": "E", "along": 0},
+            {"name": "School Teacher Desk", "at": [2.65, 0], "yaw": 270},
+            {"name": "Office Chair", "at": [3.4, 0], "yaw": 270},
+            {"name": "School Desk", "at": [-2.43, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, 0], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, 0], "yaw": 90}
+          ]
+        },
+        {"id": "stair hall", "type": "stairhall", "rect": [-4, -7, 0, -1], "floor": {"color": "#5a5a58", "material": "concrete"}, "windows": false},
+        {
+          "id": "toilets",
+          "type": "restroom",
+          "rect": [0, -7, 4, -1],
+          "floor": {"color": "#c8d8d8", "material": "tiles"},
+          "wall": {"color": "#d8e8e4", "material": "tiles"},
+          "autoWindows": {"spacing": 1.8, "width": 1, "sill": 1.7, "head": 2.6}
+        },
+        {
+          "id": "canteen",
+          "type": "canteen",
+          "rect": [4, -7, 12, -1],
+          "props": [
+            {"name": "School Lunch Table", "at": [-2.4, -0.6], "yaw": 0},
+            {"name": "School Lunch Table", "at": [-2.4, 1.4], "yaw": 0},
+            {"name": "School Lunch Table", "at": [0.4, -0.6], "yaw": 0}
+          ],
+          "floor": {"color": "#b8a888", "material": "tiles"}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [0, 7], "width": 1.8, "front": true, "material": "glass", "health": 40},
+        {"type": "arch", "at": [0, 1], "width": 2},
+        {"type": "door", "at": [-7, 1], "width": 1},
+        {"type": "door", "at": [4.5, 1], "width": 0.9},
+        {"type": "door", "at": [9.5, 1], "width": 0.9},
+        {"type": "door", "at": [-8, -1], "width": 1},
+        {"type": "door", "at": [-1.2, -1], "width": 1.2},
+        {"type": "door", "at": [2, -1], "width": 1},
+        {"type": "door", "at": [8, -1], "width": 1.6},
+        {"type": "door", "at": [-12, 0], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [12, 0], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [8, -7], "width": 1.2, "material": "metal"}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.4, "width": 1.7, "sill": 0.9, "head": 2.8},
+      "rooms": [
+        {"id": "corridor", "type": "corridor", "rect": [-12, -1, 12, 1], "floor": {"color": "#3a6a4a", "material": "tiles"}},
+        {"id": "stair hall", "type": "landing", "rect": [-4, -7, 0, -1], "floor": {"color": "#5a5a58", "material": "concrete"}, "windows": false},
+        {
+          "id": "classroom 3",
+          "type": "classroom",
+          "rect": [-12, -7, -4, -1],
+          "props": [
+            {"name": "School Chalkboard", "wall": "E", "along": 0},
+            {"name": "School Teacher Desk", "at": [2.65, 0], "yaw": 270},
+            {"name": "Office Chair", "at": [3.4, 0], "yaw": 270},
+            {"name": "School Desk", "at": [-2.43, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, 0], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, 0], "yaw": 90}
+          ]
+        },
+        {
+          "id": "science lab",
+          "type": "sciencelab",
+          "rect": [0, -7, 6, -1],
+          "props": [
+            {"name": "School Lab Bench", "at": [-0.7, -1.45], "yaw": 270},
+            {"name": "Bar Stool", "at": [0.05, -1.95]},
+            {"name": "Bar Stool", "at": [0.05, -0.95]},
+            {"name": "School Lab Bench", "at": [-0.7, 0.6], "yaw": 270},
+            {"name": "Bar Stool", "at": [0.05, 0.1]},
+            {"name": "Bar Stool", "at": [0.05, 1.1]},
+            {"name": "School Lab Bench", "at": [1.5, -1.45], "yaw": 270},
+            {"name": "Bar Stool", "at": [2.25, -1.95]},
+            {"name": "Bar Stool", "at": [2.25, -0.95]},
+            {"name": "School Lab Bench", "at": [1.5, 0.6], "yaw": 270},
+            {"name": "Bar Stool", "at": [2.25, 0.1]},
+            {"name": "Bar Stool", "at": [2.25, 1.1]},
+            {"name": "School Chalkboard", "wall": "W", "along": 0.4}
+          ],
+          "floor": {"color": "#5a6a72", "material": "tiles"}
+        },
+        {"id": "library", "type": "library", "rect": [6, -7, 12, -1], "floor": {"color": "#7a4a3a", "material": "tiles"}},
+        {
+          "id": "classroom 4",
+          "type": "classroom",
+          "rect": [-12, 1, -4, 7],
+          "props": [
+            {"name": "School Chalkboard", "wall": "E", "along": 0},
+            {"name": "School Teacher Desk", "at": [2.65, 0], "yaw": 270},
+            {"name": "Office Chair", "at": [3.4, 0], "yaw": 270},
+            {"name": "School Desk", "at": [-2.43, -1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-2.43, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, 0], "yaw": 90},
+            {"name": "School Desk", "at": [-0.93, 1.5], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, 0], "yaw": 90},
+            {"name": "School Desk", "at": [0.57, 1.5], "yaw": 90}
+          ]
+        },
+        {"id": "art room", "type": "artroom", "rect": [-4, 1, 4, 7], "floor": {"color": "#9a9a92", "material": "tiles"}},
+        {"id": "music room", "type": "musicroom", "rect": [4, 1, 12, 7], "floor": {"color": "#8a5a3a", "material": "wood"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-8, -1], "width": 1},
+        {"type": "door", "at": [-1, -1], "width": 1.2},
+        {"type": "door", "at": [3, -1], "width": 1},
+        {"type": "door", "at": [9, -1], "width": 1},
+        {"type": "door", "at": [-8, 1], "width": 1},
+        {"type": "door", "at": [0, 1], "width": 1},
+        {"type": "door", "at": [8, 1], "width": 1}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [-3.8, -5.5, -2.7, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}},
+    {"floor": 1, "rect": [-1.25, -5.5, -0.15, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}}
+  ],
+  "roof": {"type": "flat", "parapet": 1, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [-2, 7.15, 2, 8.8], "height": 3, "color": "$trim", "posts": true},
+    {"type": "prop", "name": "School Sign", "at": [5, 9.5], "yaw": 0},
+    {"type": "prop", "name": "Flag on a Pole", "at": [-5, 9.2], "yaw": 0},
+    {"type": "prop", "name": "Bike Rack", "at": [-8.5, 8.3], "yaw": 0},
+    {"type": "prop", "name": "Bench", "at": [8.5, 7.9], "yaw": 0},
+    {"type": "prop", "name": "Post Litter Bin", "at": [3, 7.7], "yaw": 0},
+    {"type": "prop", "name": "Swing Set", "at": [6, -10.5], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [10.5, -7.8], "yaw": 180},
+    {"type": "prop", "name": "Wheelie Bin", "at": [11.4, -7.8], "yaw": 180},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [6, 0, -4], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Plastic Water Tank", "at": [-8, 0, 4], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Exhaust Fan", "at": [9, 0, 4], "yaw": 0, "onRoof": true},
+    {"type": "block", "min": [-12.2, 3.5, 7.15], "max": [12.2, 3.75, 7.3], "color": {"color": "$trim", "material": "concrete"}}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "entrance hall", "at": [0, 4]},
+    {"type": "spawn", "name": "corridor west", "at": [-10, 0]},
+    {"type": "spawn", "name": "corridor east upstairs", "floor": 1, "at": [10, 0]},
+    {"type": "hill", "name": "corridor", "at": [4, 0]}
+  ]
+}

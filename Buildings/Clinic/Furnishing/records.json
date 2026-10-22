@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "records",
+  "description": "The reception office behind the hatch: desks, filing cabinets of patient notes, a photocopier.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall", "count": [1, 2]},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1, "count": [1, 2]},
+    {"props": ["Computer Monitor", "Desk Phone", "Desk Printer"], "place": "on", "of": "desk", "y": 0.77, "count": [1, 3]},
+    {"props": ["Filing Cabinet"], "place": "wall", "count": [3, 5]},
+    {"props": ["Photocopier"], "place": "wall", "chance": 0.8},
+    {"props": ["Archive Boxes"], "place": "floor", "count": [0, 2]}
+  ]
+}

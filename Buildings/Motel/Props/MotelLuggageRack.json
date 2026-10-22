@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Motel Luggage Rack",
+  "description": "A folding luggage rack with webbing straps and a battered suitcase.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.04, 0.5, 0.45], "offset": [-0.32, 0.25, 0], "color": "#6a4a2a", "material": "wood"},
+    {"size": [0.04, 0.5, 0.45], "offset": [0.32, 0.25, 0], "color": "#6a4a2a", "material": "wood"},
+    {"size": [0.66, 0.01, 0.06], "offset": [0, 0.5, -0.15], "color": "#2a2a2a"},
+    {"size": [0.66, 0.01, 0.06], "offset": [0, 0.5, 0], "color": "#2a2a2a"},
+    {"size": [0.66, 0.01, 0.06], "offset": [0, 0.5, 0.15], "color": "#2a2a2a"},
+    {"size": [0.6, 0.18, 0.4], "offset": [0, 0.6, 0], "color": "#7a3a22"},
+    {"size": [0.15, 0.03, 0.03], "offset": [0, 0.71, 0.1], "color": "#1a1a1a"}
+  ]
+}

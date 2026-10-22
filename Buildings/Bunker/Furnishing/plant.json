@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "plant",
+  "description": "The plant room: two running generators, fuel drums, valves and the main switchboard.",
+  "items": [
+    {"props": ["Running Generator"], "place": "wall", "count": [1, 2], "prefer": "far"},
+    {"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Gas Valve"], "place": "wall"},
+    {"props": ["Red Fuel Barrel", "Oil Drum"], "place": "corner", "count": [1, 3]},
+    {"props": ["Toolbox", "Jerry Can"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fire Station Bell",
+  "description": "A big brass alarm bell on a wall bracket, with a pull rope.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.08, 0.08, 0.5], "offset": [0, 1.25, -0.25], "color": "#1a1a1a"},
+    {"size": [0.36, 0.06, 0.36], "offset": [0, 1.17, 0], "color": "#c8a038"},
+    {
+      "size": [0.46, 0.25, 0.46],
+      "offset": [0, 1.01, 0],
+      "color": "#d8b040",
+      "anim": {"type": "swing", "angle": 4, "period": 3, "pivot": [0, 1.25, 0]}
+    },
+    {"size": [0.02, 0.9, 0.02], "offset": [0.05, 0.45, 0.05], "color": "#e8e0c0"}
+  ]
+}

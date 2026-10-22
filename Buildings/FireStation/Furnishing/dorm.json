@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dorm",
+  "description": "The crew dormitory: bunks in a row, lockers, an alarm speaker.",
+  "items": [
+    {"props": ["Bunk Bed"], "place": "wall", "count": [2, 4], "prefer": "far"},
+    {"props": ["Single Bed"], "place": "wall", "count": [0, 1]},
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bedside Table"], "place": "wall", "count": [1, 2]},
+    {"props": ["Duffel Bag", "Laundry Basket"], "place": "floor", "count": [1, 2]}
+  ]
+}

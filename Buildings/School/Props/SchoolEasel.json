@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "School Easel",
+  "description": "A wooden art easel holding a child's painting of a house and the sun.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 1.6, 0.5], "offset": [0, 0.8, -0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 30, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.05, 1.6, 0.05], "offset": [-0.3, 0.8, 0.1], "color": "#a07a48", "material": "wood", "roll": -5},
+    {"size": [0.05, 1.6, 0.05], "offset": [0.3, 0.8, 0.1], "color": "#a07a48", "material": "wood", "roll": 5},
+    {"size": [0.05, 1.5, 0.05], "offset": [0, 0.72, -0.3], "color": "#a07a48", "material": "wood", "pitch": -18},
+    {"size": [0.7, 0.04, 0.08], "offset": [0, 0.75, 0.12], "color": "#a07a48", "material": "wood"},
+    {"size": [0.62, 0.5, 0.02], "offset": [0, 1.05, 0.13], "color": "#f4f0e4"},
+    {"size": [0.22, 0.18, 0.005], "offset": [-0.1, 0.95, 0.142], "color": "#c83a2a"},
+    {"size": [0.1, 0.1, 0.005], "offset": [0.18, 1.18, 0.142], "color": "#f0c020"},
+    {"size": [0.6, 0.08, 0.005], "offset": [0, 0.84, 0.142], "color": "#4a9a3a"}
+  ]
+}

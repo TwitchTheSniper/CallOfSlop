@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "library",
+  "description": "The school library: shelves all round, reading tables, an armchair, a globe.",
+  "items": [
+    {"props": ["Bookshelf"], "place": "wall", "count": [4, 8]},
+    {"id": "table", "props": ["Table"], "place": "centre", "count": [1, 2]},
+    {"props": ["Wooden Chair"], "place": "around", "of": "table", "count": [2, 6]},
+    {"props": ["Book Pile"], "place": "on", "of": "table", "y": 0.75, "count": [1, 3]},
+    {"props": ["Armchair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Spinning Globe"], "place": "floor", "chance": 0.7},
+    {"props": ["Rug"], "place": "centre", "chance": 0.5}
+  ]
+}

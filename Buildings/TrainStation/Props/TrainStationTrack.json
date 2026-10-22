@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Train Station Track",
+  "description": "Six metres of railway: ballast, timber sleepers and two steel rails.",
+  "collision": "solid",
+  "collider": [{"size": [6, 0.32, 3.2]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [6, 0.08, 3.2], "offset": [0, 0.04, 0], "color": "#6a6660", "material": "dirt"},
+    {"size": [0.25, 0.12, 2.6], "offset": [-2.7, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [-2.1, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [-1.5, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [-0.9, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [-0.3, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [0.3, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [0.9, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [1.5, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [2.1, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [0.25, 0.12, 2.6], "offset": [2.7, 0.14, 0], "color": "#4a3a2a", "material": "wood"},
+    {"size": [6, 0.12, 0.08], "offset": [0, 0.26, -0.72], "color": "#8a8a8e", "material": "metal"},
+    {"size": [6, 0.12, 0.08], "offset": [0, 0.26, 0.72], "color": "#8a8a8e", "material": "metal"}
+  ]
+}

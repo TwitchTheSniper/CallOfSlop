@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "watchroom",
+  "description": "The watch room: the turnout desk with phones and the incident printer, a map board, the duty board.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall", "prefer": "far", "count": [1, 2]},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1, "count": [1, 2]},
+    {"props": ["Desk Phone", "Desk Printer", "Computer Monitor"], "place": "on", "of": "desk", "y": 0.77, "count": [2, 3]},
+    {"props": ["Whiteboard"], "place": "wall"},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Office Plant"], "place": "corner", "chance": 0.5}
+  ]
+}

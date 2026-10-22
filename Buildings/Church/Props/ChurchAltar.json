@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Altar",
+  "description": "A stone altar under a white cloth, a red frontal, a brass cross and two candles.",
+  "collision": "solid",
+  "collider": [{"size": [1.92, 1, 0.82]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.8, 0.95, 0.7], "offset": [0, 0.475, 0], "color": "#b8b0a2", "material": "concrete"},
+    {"size": [1.92, 0.04, 0.82], "offset": [0, 0.97, 0], "color": "white"},
+    {"size": [0.7, 0.75, 0.02], "offset": [0, 0.6, 0.42], "color": "#8a1a20"},
+    {"size": [0.08, 0.04, 0.02], "offset": [0, 0.7, 0.43], "color": "#d8b040"},
+    {"size": [0.04, 0.2, 0.02], "offset": [0, 0.7, 0.43], "color": "#d8b040"},
+    {"size": [0.18, 0.06, 0.18], "offset": [0, 1.02, -0.15], "color": "#c8a038"},
+    {"size": [0.05, 0.55, 0.05], "offset": [0, 1.3, -0.15], "color": "#d8b040"},
+    {"size": [0.3, 0.05, 0.05], "offset": [0, 1.42, -0.15], "color": "#d8b040"},
+    {"size": [0.06, 0.32, 0.06], "offset": [-0.7, 1.15, -0.1], "color": "#f4ecd8"},
+    {"size": [0.06, 0.32, 0.06], "offset": [0.7, 1.15, -0.1], "color": "#f4ecd8"},
+    {"size": [0.03, 0.06, 0.03], "offset": [-0.7, 1.34, -0.1], "color": "#ffc860", "anim": {"type": "flicker", "rate": 8, "duty": 0.9, "glow": 1.2}},
+    {"size": [0.03, 0.06, 0.03], "offset": [0.7, 1.34, -0.1], "color": "#ffc860", "anim": {"type": "flicker", "rate": 8, "duty": 0.9, "glow": 1.2}},
+    {"size": [0.3, 0.06, 0.22], "offset": [0.35, 1.02, 0.12], "color": "#7a1e22"}
+  ]
+}

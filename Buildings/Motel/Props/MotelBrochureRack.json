@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Motel Brochure Rack",
+  "description": "A wire rack of local attraction leaflets: caves, a reptile farm, a giant donut.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 30, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.5, 1.5, 0.25], "offset": [0, 0.75, 0], "color": "#8a8e94", "material": "grid"},
+    {"size": [0.14, 0.2, 0.02], "offset": [-0.16, 0.6, 0.14], "color": "#e04040"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0, 0.6, 0.14], "color": "#f0c020"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0.16, 0.6, 0.14], "color": "#40a0e0"},
+    {"size": [0.14, 0.2, 0.02], "offset": [-0.16, 0.9, 0.14], "color": "#40c060"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0, 0.9, 0.14], "color": "#e07020"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0.16, 0.9, 0.14], "color": "#c060c0"},
+    {"size": [0.14, 0.2, 0.02], "offset": [-0.16, 1.2, 0.14], "color": "#20b0a0"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0, 1.2, 0.14], "color": "#e04080"},
+    {"size": [0.14, 0.2, 0.02], "offset": [0.16, 1.2, 0.14], "color": "#a0d040"}
+  ]
+}
