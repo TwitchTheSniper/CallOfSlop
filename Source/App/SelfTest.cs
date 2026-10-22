@@ -100,6 +100,7 @@ public static partial class SelfTest
             Section("Capture the Flag", CheckCaptureTheFlag);
             Section("Gun Game", CheckGunGame);
             Section("Mode state and matches", CheckModeMatches);
+            Section("Mode modules", CheckModeModules); // SelfTestModeModules.cs: the mode registry, each module's rules and state, seeded bot matches per mode
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
