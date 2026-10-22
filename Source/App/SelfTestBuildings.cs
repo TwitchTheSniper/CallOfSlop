@@ -656,7 +656,11 @@ public static partial class SelfTest
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
                         var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
                         detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
-                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
+                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; foot {Why(bottom)}; " // DEBUG (temporary)
+                                   + $"wps near top: {string.Join(" ", yard.Waypoints.Where(w => MathF.Abs(w.Y - top.Y) < 0.6f && Vector2.Distance(new(w.X, w.Z), new(top.X, top.Z)) < 1.3f).Select(w => $"({w.X:0.00},{w.Y:0.00},{w.Z:0.00}){(yard.BuildingNavPoints.Contains(w) ? "x" : "")}"))}; "
+                                   + $"nodes near top: {string.Join(" ", Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - top.Y) < 0.6f && Vector2.Distance(new(g.Nodes[i].X, g.Nodes[i].Z), new(top.X, top.Z)) < 1.3f).Select(i => $"{i}({g.Nodes[i].X:0.00},{g.Nodes[i].Y:0.00},{g.Nodes[i].Z:0.00})"))}; "
+                                   + $"wps near foot: {string.Join(" ", yard.Waypoints.Where(w => MathF.Abs(w.Y - bottom.Y) < 0.6f && Vector2.Distance(new(w.X, w.Z), new(bottom.X, bottom.Z)) < 1.3f).Select(w => $"({w.X:0.00},{w.Y:0.00},{w.Z:0.00}){(yard.BuildingNavPoints.Contains(w) ? "x" : "")}"))}; "
+                                   + $"nodes near foot: {string.Join(" ", Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - bottom.Y) < 0.6f && Vector2.Distance(new(g.Nodes[i].X, g.Nodes[i].Z), new(bottom.X, bottom.Z)) < 1.3f).Select(i => $"{i}({g.Nodes[i].X:0.00},{g.Nodes[i].Y:0.00},{g.Nodes[i].Z:0.00})"))}");
                     }
                 }
             }
