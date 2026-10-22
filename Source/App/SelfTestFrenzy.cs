@@ -13,12 +13,23 @@ public static partial class SelfTest
     /// <summary>The frenzy layer may cost at most this many times the heaviest hardbass track (Music CPU rule: 1.5x).</summary>
     private const double FrenzyCpuRatio = 1.5;
 
+    private static readonly List<string> FrenzyNotes = new();
+
+    private static void FrenzyLine(string s)
+    {
+        Line(s);
+        FrenzyNotes.Add(s);
+    }
+
     private static void CheckFrenzyMusic()
     {
+        FrenzyNotes.Clear();
         CheckFrenzyMeter();
         CheckFrenzyLayer();
         CheckFrenzyCpu();
         CheckFrenzySettings();
+        // The numbers as one annotation on the CI run (the workflow prints selftest.log; notices are already used up).
+        Line("::warning title=Frenzy music (results)::" + string.Join("%0A", FrenzyNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     private static void CheckFrenzyMeter()
@@ -31,7 +42,7 @@ public static partial class SelfTest
             m.OnKill(i, false);
             levels[i] = m.Level;
         }
-        Line($"burst of 5 kills 1 s apart: levels {string.Join(" ", levels)} (heat {m.Heat:0})");
+        FrenzyLine($"burst of 5 kills 1 s apart: levels {string.Join(" ", levels)} (heat {m.Heat:0})");
         if (levels[0] != 0)
             Fail($"a single kill already starts the frenzy (level {levels[0]})");
         if (levels[1] < 1)
@@ -57,7 +68,7 @@ public static partial class SelfTest
             if (toOff < 0 && m.Level == 0)
                 toOff = since;
         }
-        Line($"after the burst: level 3 at +{toL3:0.0} s, 2 at +{toL2:0.0} s, 1 at +{toL1:0.0} s, off at +{toOff:0.0} s; {Program.FrenzyBurstLine(5, 0.8)}");
+        FrenzyLine($"after the burst: level 3 at +{toL3:0.0} s, 2 at +{toL2:0.0} s, 1 at +{toL1:0.0} s, off at +{toOff:0.0} s; {Program.FrenzyBurstLine(5, 0.8)}");
         if (toL3 < 4.5)
             Fail($"level 4 lasts only {toL3:0.0} s after the last kill (want a hold of about 5 s)");
         if (toOff is < 15 or > 26)
@@ -80,7 +91,7 @@ public static partial class SelfTest
                     s.Update(t);
                 top = Math.Max(top, s.Level);
             }
-            Line($"a headshot kill every {gap:0} s for 3 minutes: top level {top} (allowed {max})");
+            FrenzyLine($"a headshot kill every {gap:0} s for 3 minutes: top level {top} (allowed {max})");
             if (top > max)
                 Fail($"a kill every {gap:0} s reaches level {top} (want at most {max})");
         }
@@ -122,7 +133,7 @@ public static partial class SelfTest
         var zFive = z.Level;
         for (var i = 5; i < 12; i++)
             z.OnKill(i, false);
-        Line($"Zombies: 5 kills 1 s apart -> level {zFive}, 12 -> level {z.Level}");
+        FrenzyLine($"Zombies: 5 kills 1 s apart -> level {zFive}, 12 -> level {z.Level}");
         if (zFive >= 4)
             Fail($"Zombies: five zombie kills already reach level {zFive}");
         if (z.Level < 3)
@@ -189,7 +200,7 @@ public static partial class SelfTest
             rms[level] = Run(layer, 3);
             lines.Add($"L{level} rms {rms[level]:0.000} cutoff {layer.Cutoff:0} Hz gain {layer.Gain:0.00}");
         }
-        Line($"frenzy on \"{layer.TrackName}\": {string.Join(", ", lines)}");
+        FrenzyLine($"frenzy on \"{layer.TrackName}\": {string.Join(", ", lines)}");
         if (rms[1] < 0.005)
             Fail($"level 1 is (nearly) silent (rms {rms[1]:0.0000})");
         if (!(rms[1] < rms[2] && rms[2] < rms[3] && rms[3] <= rms[4] * 1.05))
@@ -228,7 +239,7 @@ public static partial class SelfTest
                     Fail($"easing down to level {layer.Level} wasn't on a bar line");
             }
         }
-        Line($"easing down from level 4: {string.Join(" -> ", seq)} in {t:0.0} s");
+        FrenzyLine($"easing down from level 4: {string.Join(" -> ", seq)} in {t:0.0} s");
         if (layer.Active || Run(layer, 0.5) > 0)
             Fail($"the layer didn't fall silent after the heat ran out ({t:0.0} s)");
         for (var i = 1; i < seq.Count; i++)
@@ -383,7 +394,7 @@ public static partial class SelfTest
         FrenzyCost(4); // warm-up
         var l4 = Median(() => FrenzyCost(4));
         var l1 = Median(() => FrenzyCost(1));
-        Line($"frenzy CPU: level 4 {l4:0.00} ms per s of audio, level 1 {l1:0.00}; heaviest hardbass track ({heaviest.Name}) {heaviestCost:0.00}; "
+        FrenzyLine($"frenzy CPU: level 4 {l4:0.00} ms per s of audio, level 1 {l1:0.00}; heaviest hardbass track ({heaviest.Name}) {heaviestCost:0.00}; "
              + $"ratio {l4 / Math.Max(1e-6, heaviestCost):0.00} (allowed {FrenzyCpuRatio}x)");
         if (l4 > heaviestCost * FrenzyCpuRatio)
             Fail($"the frenzy layer costs {l4:0.00} ms per s, more than {FrenzyCpuRatio}x the heaviest track ({heaviestCost:0.00})");
