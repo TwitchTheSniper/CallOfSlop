@@ -372,9 +372,12 @@ public sealed partial class Game : IDisposable
     {
         var def = Active.Def;
         var spread = float.Lerp(def.HipSpreadRad, def.HipSpreadRad * def.AdsSpreadMult, AimT);
+        var sprintMult = 1f;
         if (Local is { } me)
         {
             spread *= Perks.SpreadMult(me.Perks, AimT); // Steady Aim
+            sprintMult = SprintSpread.Mult(def, SprintSpread.Amount(me));
+            spread *= sprintMult; // sprinting or just stopped (SprintSpread.cs)
             var v = me.Sim.Velocity;
             var moving = MathF.Min(new Vector2(v.X, v.Z).Length() / World.WalkSpeed, 1.5f);
             spread += moving * 0.014f * (Aiming ? 0.5f : 1f);
@@ -383,7 +386,7 @@ public sealed partial class Game : IDisposable
             spread *= World.SpreadOf(me.Sim.Stance);
         }
         spread += Bloom;
-        return Math.Clamp(spread, 0f, def.MaxSpreadRad);
+        return Math.Clamp(spread, 0f, def.MaxSpreadRad * sprintMult);
     }
 
     /// <summary>Called every frame with the trigger state. Handles semi, auto and burst fire.</summary>
@@ -723,6 +726,7 @@ public sealed partial class Game : IDisposable
         me.PrevPosition = me.Position;
         if (me.Alive)
             World.Simulate(ref me.Sim, cmd);
+        SprintSpread.Tick(me, cmd.Buttons); // predicted sprint inaccuracy, the same rule as the server's (SprintSpread.cs)
 
         var count = Math.Min(InputRedundancy, _pendingInputs.Count);
         _w.Begin(Msg.Input).U8((byte)count);
@@ -886,6 +890,7 @@ public sealed partial class Game : IDisposable
                 p.Weapon = cmd.Weapon;
                 if (p.Alive)
                     World.Simulate(ref p.Sim, cmd);
+                SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
             else if (p.Bot != null)
             {
@@ -934,6 +939,7 @@ public sealed partial class Game : IDisposable
             p.Weapon = cmd.Weapon;
         if (p.Alive)
             World.Simulate(ref p.Sim, cmd);
+        SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
     }
 
     private void ConsumeClientInput(Player p)
@@ -1184,7 +1190,7 @@ public sealed partial class Game : IDisposable
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
-        spread = Math.Clamp(spread, def.MinSpreadRad, def.MaxSpreadRad);
+        spread = ServerClampSpread(shooter, def, spread); // weapon limits plus the sprint penalty (SprintSpread.cs)
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         var targets = new List<(Player P, Box Hitbox, HistoryEntry At)>();

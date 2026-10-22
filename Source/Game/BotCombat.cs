@@ -186,7 +186,7 @@ public sealed partial class Game
             || (dist >= def.RangeM * 3f && def.Class != WeaponClass.Sniper))
             return;
 
-        var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : Perks.SpreadMult(p.Perks, 0f)) + (b.Skill == BotDifficulty.Easy ? 0.02f : 0f); // Steady Aim
+        var spread = BotShotSpread(p, def, aim.Ads, b.Skill); // Steady Aim, sprint penalty (SprintSpread.cs)
         ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);
