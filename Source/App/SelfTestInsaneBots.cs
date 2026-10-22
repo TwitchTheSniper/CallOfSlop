@@ -82,7 +82,7 @@ public static partial class SelfTest
         return game;
     }
 
-    private static void Tick(Game game, ref double now, double seconds, Func<bool>? stop = null)
+    private static void Tick(Game game, ref double now, double seconds, Func<bool>? stop = null) // stop: checked after every tick
     {
         for (var t = 0.0; t < seconds; t += World.TickDt)
         {
@@ -255,6 +255,7 @@ public static partial class SelfTest
     private static void CheckInsaneFlanks()
     {
         var angles = new List<float>();
+        var flankLines = new List<string>();
         var behind = new List<float>();
         int scenarios = 0, flanked = 0, suppressed = 0, trades = 0, retreats = 0;
         var maps = new[] { InsaneMap("Crossroads", 2), InsaneMap("Ruins", 14), InsaneMap("Office Park", 13), InsaneMap("Quarry", 10) };
@@ -265,7 +266,7 @@ public static partial class SelfTest
             using var owned = game;
             var host = game.Players[0];
             var now = 0.0;
-            Tick(game, ref now, 1.0);
+            Tick(game, ref now, Game.CountdownSeconds + 1.0); // past the countdown (frozen, nobody can be hurt)
             // A spot 20-32 m from the squad that a member can see, with room to go round it on both sides.
             var c = Centroid(squad);
             var nav = NavGraph.Current;
@@ -333,6 +334,7 @@ public static partial class SelfTest
                 return flankShotAt >= 0 && now - flankShotAt > 1;
             });
             var suppressShots = game.SquadStats.SuppressShots - suppressShots0;
+            flankLines.Add($"[{map.Name}: assault {assaultAt:0.0}, push {executeAt:0.0}, shot {flankShotAt:0.0} s, closest {closest:0.0} m, widest {maxAngleSeen:0}, supp {suppWhileFlanking}/{suppressShots}]");
             Line($"{map.Name}: host {FlatOf(at - c).Length():0} m from the squad; assault at {assaultAt:0.0} s, push at {executeAt:0.0} s, flanker's first shot "
                  + (flankShotAt >= 0 ? $"at {flankShotAt:0.0} s from {angle:0} deg off the suppressor ({behindAngle:0} deg off the host's facing)" : $"never (closest {closest:0.0} m, widest view {maxAngleSeen:0} deg)")
                  + $"; suppressor shots while flanking {suppWhileFlanking} (suppressive {suppressShots})");
@@ -380,7 +382,7 @@ public static partial class SelfTest
         var median = angles.Count > 0 ? angles.OrderBy(a => a).ElementAt(angles.Count / 2) : 0;
         InsaneNote($"flanks: {flanked}/{scenarios} flankers fired, angles off the suppressor {string.Join(", ", angles.Select(a => $"{a:0}"))} deg (median {median:0}), "
                    + $"off the target's facing {string.Join(", ", behind.Select(a => $"{a:0}"))} deg; suppressor fired during the flank in {suppressed}/{scenarios}; "
-                   + $"trades {trades}, retreats {retreats}");
+                   + $"trades {trades}, retreats {retreats}; " + string.Join(" ", flankLines));
         if (scenarios < 2)
             Fail($"only {scenarios} flank scenario(s) could be set up");
         else
@@ -403,7 +405,7 @@ public static partial class SelfTest
         using var owned = game;
         var host = game.Players[0];
         var now = 0.0;
-        Tick(game, ref now, 1.0);
+        Tick(game, ref now, Game.CountdownSeconds + 1.0);
         var s = game.Squads.FirstOrDefault(q => q.Team == 0);
         if (s == null)
         {
@@ -487,7 +489,7 @@ public static partial class SelfTest
         var (game, squad) = SquadScenario(map, 1400);
         using var owned = game;
         var now = 0.0;
-        Tick(game, ref now, 3);
+        Tick(game, ref now, Game.CountdownSeconds + 3);
         var s = game.Squads.FirstOrDefault(q => q.Team == 0);
         var lead = s?.Leader;
         if (s == null || lead == null)
@@ -575,9 +577,9 @@ public static partial class SelfTest
             var insaneTeam = i % 2;
             using var game = InsaneVsHard(7000 + i, map, 4, 4, insaneTeam0: insaneTeam == 0, squadsOff);
             var now = 0.0;
-            Tick(game, ref now, seconds, () => game.Phase != MatchPhase.Playing);
+            Tick(game, ref now, seconds, () => game.Phase == MatchPhase.Ended);
             int mine = game.TeamScore[insaneTeam], theirs = game.TeamScore[1 - insaneTeam];
-            if (game.Phase != MatchPhase.Playing && game.Winner >= Game.TeamWinBase)
+            if (game.Phase == MatchPhase.Ended && game.Winner >= Game.TeamWinBase)
             {
                 // Ended on the score limit: the winner is what counts.
                 var w = game.Winner - Game.TeamWinBase;
@@ -655,7 +657,8 @@ public static partial class SelfTest
             InsaneNote($"CPU {game.BotCount} {skill} bots on {map.Name}: tick median {median:0.00} ms, p99 {p99:0.00} ms, worst work {cpu.WorstText}; "
                        + $"squads {game.Squads.Count}, planning {planPerTick * 1000:0} us/tick ({st.Plans - plans0} plans), exposure rays {st.ExposureRays}, "
                        + $"assaults {st.Assaults}, pushes {st.Executes}, suppressive shots {st.SuppressShots}, frags {st.Frags}, trades {st.Trades} ({st.TradedKills} traded), "
-                       + $"flank kills {st.FlankKills}, regroups {st.Regroups}, retreats {st.Retreats}, smokes {st.Smokes}");
+                       + $"flank kills {st.FlankKills}, regroups {st.Regroups}, retreats {st.Retreats}, smokes {st.Smokes}; "
+                       + $"suppress ticks {st.SuppressTicks} / fire {st.SuppressFireTicks} / line {st.SuppressLosTicks}, held-fire ticks {st.HeldFireTicks}");
             if (skill == BotDifficulty.Hard)
             {
                 hardP99 = p99;

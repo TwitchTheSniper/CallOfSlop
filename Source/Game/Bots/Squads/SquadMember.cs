@@ -24,15 +24,22 @@ public sealed partial class Game
             s.NextPlan = Math.Min(s.NextPlan, now + 0.05);
         }
         if (visible && target != null)
+        {
+            if (!s.Board.TryGet(target.Id, out var known) || now - known.Time > 2)
+                s.NextPlan = Math.Min(s.NextPlan, now); // a new contact: plan at once (next tick)
             s.Board.Report(target.Id, target.Position, target.Yaw, now, p.Id, seen: true);
+        }
         else if (b.HeardTime == now)
             s.Board.Report(byte.MaxValue, b.HeardAt, 0, now, p.Id, seen: false);
     }
 
+    /// <summary>A flanker holds its fire until it's at least this far round (degrees off the suppressor's angle), unless hit or right on top of them.</summary>
+    public const float FlankFireAngle = 80f;
+
     /// <summary>
     /// Start of BotDecide: true when the squad order takes over this tick (mode <see cref="BotMode.Squad"/>). With an
-    /// enemy in sight the bot fights normally (bases of fire keep their distance), except a flanker that isn't seen
-    /// yet and has a bad angle: it holds fire and keeps going round.
+    /// enemy in sight the bot fights normally (bases of fire keep their distance), except a flanker that isn't being
+    /// shot at and has a bad angle: it holds fire and keeps going round.
     /// </summary>
     private bool SquadDecide(Player p, BotBrain b, Player? target, bool visible, double now)
     {
@@ -41,21 +48,20 @@ public sealed partial class Game
             return false;
         if (visible)
         {
-            if (target != null && s.Tactic == SquadTactic.Assault && b.Order.Kind is SquadOrderKind.Flank or SquadOrderKind.Hold
-                && (b.Role == SquadRole.Flanker || PincerSupport(b)))
+            if (target != null && (b.Role == SquadRole.Flanker || PincerSupport(b))
+                && (s.Tactic != SquadTactic.Assault || b.Order.Kind is SquadOrderKind.Flank or SquadOrderKind.Hold))
             {
-                var toMe = FlatDir(p.Position - target.Position, Vector3.UnitX);
-                var facingMe = Vector3.Dot(World.FlatForward(target.Yaw), toMe) > 0.5f;
                 var dist = Flat(target.Position - p.Position);
                 var hurt = now - b.HurtTime < 1.5;
-                if (!facingMe && !hurt && dist > 9f && FlankAngle(s, target.Position, p.Position) < 60f)
+                if (!hurt && dist > 5f && FlankAngle(s, target.Position, p.Position) < FlankFireAngle)
                 {
                     b.HoldFire = true;
+                    if (s.Tactic != SquadTactic.Assault)
+                        s.NextPlan = Math.Min(s.NextPlan, now);
                     b.Mode = BotMode.Squad;
+                    SquadStats.HeldFireTicks++;
                     return true;
                 }
-                if (FlankAngle(s, target.Position, p.Position) >= 60f)
-                    SquadStats.FlankShots++;
             }
             return false;
         }
@@ -142,8 +148,16 @@ public sealed partial class Game
     private void SquadSuppress(Player p, BotBrain b, bool visible, WeaponDef def, in BotView aim, double now)
     {
         var o = b.Order;
-        if (visible || b.Squad == null || b.Mode != BotMode.Squad || o.Kind != SquadOrderKind.Suppress || !o.Fire || !b.SuppressLos
-            || b.ReloadUntil != 0 || b.Ammo <= Math.Max(1, def.Mag / 4) || now < b.NextFire || !DamageEnabled)
+        if (visible || b.Squad == null || b.Mode != BotMode.Squad || o.Kind != SquadOrderKind.Suppress)
+            return;
+        SquadStats.SuppressTicks++;
+        if (!o.Fire)
+            return;
+        SquadStats.SuppressFireTicks++;
+        if (!b.SuppressLos)
+            return;
+        SquadStats.SuppressLosTicks++;
+        if (b.ReloadUntil != 0 || b.Ammo <= Math.Max(1, def.Mag / 4) || now < b.NextFire || !DamageEnabled)
             return;
         var d = o.Look - p.Eye;
         var dist = d.Length();

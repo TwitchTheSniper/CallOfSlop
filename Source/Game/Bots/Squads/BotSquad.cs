@@ -267,5 +267,6 @@ public sealed class SquadStats
 {
     public int Plans, Assaults, Executes, Regroups, Retreats, Trades, TradedKills, SuppressShots, Frags, Smokes, ExposureRays;
     public double PlanMs; // wall-clock time spent planning (not used for any decision)
-    public int FlankKills, FlankShots;
+    public int FlankKills;
+    public long HeldFireTicks, SuppressTicks, SuppressFireTicks, SuppressLosTicks; // diagnostics: flankers holding fire; bases of fire with a Suppress order (with Fire set, with a line)
 }
