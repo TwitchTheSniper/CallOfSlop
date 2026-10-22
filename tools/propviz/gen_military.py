@@ -704,20 +704,15 @@ def searchlight():
     p = [At([0.9, 0.08, 0.9], 0.12, color=dk), At([0.12, 0.12, 0.12], 0, 0.38, 0.38, color=dk), At([0.12, 0.12, 0.12], 0, -0.38, 0.38, color=dk),
          At([0.12, 0.12, 0.12], 0, 0.38, -0.38, color=dk), At([0.12, 0.12, 0.12], 0, -0.38, -0.38, color=dk)]
     p += Cyl(0.16, 0.95, 0.2, color=g)[:2] + [At([0.4, 0.3, 0.3], 0.2, -0.2, 0, color=g)]
-    sw = {"type": "swing", "axis": "y", "pivot": [0, 1.2, 0], "angle": 40, "period": 14}
     head = [At([0.16, 0.06, 0.16], 1.15, color=dk), B([0.1, 0.6, 0.06], [0, 1.5, 0.52], color=g), B([0.1, 0.6, 0.06], [0, 1.5, -0.52], color=g),
             B([0.16, 0.06, 1.1], [0, 1.2, 0], color=g)]
     head += HCyl(0.9, 0.8, 1.6, 0.05, 0, color=g) + HCyl(0.95, 0.08, 1.6, 0.45, 0, color=dk)[:2] + HCyl(0.6, 0.1, 1.6, -0.38, 0, color=dk)[:2]
     head += [B([0.3, 0.05, 0.05], [0.0, 2.08, 0], color=dk)]
-    for q in head:
-        q["anim"] = dict(sw)
     p += head
-    lens = HCyl(0.8, 0.02, 1.6, 0.5, 0, color="#fff4cc")
-    for q in lens:  # same swing (same phase on every copy), plus a glow
-        q["anim"] = dict(sw, glow=1.6)
-    p += lens
+    # Still (an animated prop would have to join the Animated Props gallery): a pale lens, unlit.
+    p += HCyl(0.8, 0.02, 1.6, 0.5, 0, color="#f4ecd0")
     p += [tube([-0.2, 0.3, 0.15], [-0.9, 0.02, 0.6], 0.03, color="#1e1e1c")]
-    prop("Field Searchlight", MIL, "A big drum searchlight on a stand, lens lit, slowly sweeping 40 degrees either way. Beam to +X.", p,
+    prop("Field Searchlight", MIL, "A big drum searchlight on a stand, aimed to +X.", p,
          collider=[C([0.9, 1.2, 0.9], [0, 0.6, 0])], scatter=SQ0)
 
 

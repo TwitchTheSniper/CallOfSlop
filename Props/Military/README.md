@@ -45,7 +45,7 @@ Use these exact names in `Prop` and `Clutter` ops. The list is also in `/tmp/cla
 | Fuel Drum Rack | six drums lying in a rack | 2.1 x 1.4 x 0.9 | solid | metal 170, **explodes** (7.5 m, 1.2 s) |
 | Military Fuel Drum | one upright olive drum | 0.6 x 0.9 x 0.6 | solid | metal 60, **explodes** (5 m, 0.8 s) |
 | Jerrycan Rack | shelf of eight jerrycans | 1.4 x 1.1 x 0.4 | solid | metal 90, **explodes** (5.5 m, 1 s) |
-| Field Searchlight | drum lamp on a stand, lit, sweeps 40 degrees | 1.4 x 2.1 x 1.2 | solid (base) | no |
+| Field Searchlight | drum lamp on a stand, aimed to +X | 1.4 x 2.1 x 1.2 | solid (base) | no |
 | Guard Tower | 4 m wooden watchtower, ladder at -X | 3.2 x 7.1 x 3.2 | solid, 5 boxes | no |
 | Medium Tank (WWII), ... Desert | cast turret, sloped glacis | 7.1 x 4.5 x 3.0 | solid, hull 1.6 m (climb on) + turret | no |
 | Heavy Tank | boxy, side skirts, long gun | 9.9 x 4.9 x 3.6 | solid, hull 1.7 m + turret | no |
