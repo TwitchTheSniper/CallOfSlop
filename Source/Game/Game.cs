@@ -502,7 +502,7 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
                 predictedHit |= zHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now);
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me);
         }
         if (predictedHit)
         {
@@ -675,7 +675,7 @@ public sealed partial class Game : IDisposable
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
         var color = def.Sound switch
@@ -688,6 +688,7 @@ public sealed partial class Game : IDisposable
         var width = def.Sound == SoundStyle.Zap ? 0.06f : def.Pellets > 1 ? 0.015f : 0.02f + def.Caliber * 0.02f;
         if (def.Sound == SoundStyle.Suppressed)
             width *= 0.6f; // suppressed shots leave faint, thin tracers
+        FrenzyFx.OnTracer(this, shooter, def, from, to, now, ref color, ref width); // a frenzied shooter's class look (Source/Render/FrenzyFx)
         Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now });
     }
 
@@ -1287,7 +1288,7 @@ public sealed partial class Game : IDisposable
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
@@ -1597,7 +1598,7 @@ public sealed partial class Game : IDisposable
                     break;
                 Audio.Shot(def, sp.RenderEye);
                 for (var i = 0; i < n && r.Has(12); i++)
-                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags);
+                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags, sp);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

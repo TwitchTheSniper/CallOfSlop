@@ -307,6 +307,11 @@ public static unsafe partial class Program
             SmokeFrenzy(now); // Program.Frenzy.cs
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyFxStep < SmokeFrenzyFxClasses.Length)
+        {
+            SmokeFrenzyFx(now); // Program.FrenzyFx.cs: four classes' frenzy visuals at level 6
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -1009,6 +1014,7 @@ public static unsafe partial class Program
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
+            UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
@@ -1795,6 +1801,7 @@ public static unsafe partial class Program
         Gfx.SetDepthTest(true);
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);
+        _frenzyFx.DrawWorld(Gfx, _game, now); // frenzy sparks, trails, others' gun glow: one instanced draw (Program.FrenzyFx.cs)
 
         Gfx.SetFog(World.Map.Sky, 0, 0); // no haze on the viewmodel and HUD
 
@@ -1804,7 +1811,9 @@ public static unsafe partial class Program
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
             GunModel.AdsCutaway = 0;
+            DrawFrenzyFxViewModel(now); // your gun's frenzy glow (Program.FrenzyFx.cs)
         }
+        _frenzyFx.EndFrame(now);
 
         // ---- HUD ------------------------------------------------------------
         DrawHud(now, w, h, local, fov);
