@@ -25,8 +25,8 @@ public sealed partial class BotBrain
     /// <summary>
     /// The squad's extra route cost for one edge (added to <see cref="EdgePenalty"/>): on a flank route, nodes the
     /// target's last known position can see cost a lot more (checked with a ray cast, at most a few dozen per search,
-    /// remembered for the whole plan); on any squad route, nodes a squadmate's route already uses cost a little more,
-    /// so the squad doesn't all pile through the same door.
+    /// remembered for the whole plan), and so do nodes within 9 m of it; on an assault route, nodes a squadmate's route
+    /// already uses cost a little more, so the squad doesn't all pile through the same door.
     /// </summary>
     internal float SquadEdgePenalty(int to, float cost)
     {
@@ -54,6 +54,13 @@ public sealed partial class BotBrain
                 e = 0;
             if (e == 2)
                 extra += cost * 4f;
+            // And keep well off the target itself: going round means going round, not brushing past them.
+            var q = g.Nodes[to];
+            var dx = q.X - s.ExposureEye.X;
+            var dz = q.Z - s.ExposureEye.Z;
+            var near = MathF.Sqrt(dx * dx + dz * dz);
+            if (near < 9f)
+                extra += cost * 5f * (1f - near / 9f);
         }
         if (s.ExposureOn && s.ClaimStamp[to] == s.ClaimGen && s.ClaimBy[to] != SquadSlot)
             extra += cost * 1.2f;

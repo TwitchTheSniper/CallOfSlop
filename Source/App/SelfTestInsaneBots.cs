@@ -55,7 +55,15 @@ public static partial class SelfTest
     /// <paramref name="hard"/> Hard bots on the other, with the same personalities in the same order on both sides.
     /// The host waits (never spawns).
     /// </summary>
-    private static Game InsaneVsHard(int seed, Map map, int insane, int hard, bool insaneTeam0, bool squadsOff = false)
+    private static Game InsaneVsHard(int seed, Map map, int insane, int hard, bool insaneTeam0, bool squadsOff = false) =>
+        Duel(seed, map, BotDifficulty.Insane, insane, BotDifficulty.Hard, hard, insaneTeam0, squadsOff, aFirst: true);
+
+    /// <summary>
+    /// A seeded Team Deathmatch: <paramref name="na"/> bots of skill <paramref name="a"/> on one team (team 0 when
+    /// <paramref name="aTeam0"/>) and <paramref name="nb"/> of skill <paramref name="b"/> on the other, added in pairs with
+    /// the same personality (<paramref name="aFirst"/>: side A's bot of each pair first). The host waits (never spawns).
+    /// </summary>
+    private static Game Duel(int seed, Map map, BotDifficulty a, int na, BotDifficulty b, int nb, bool aTeam0, bool squadsOff, bool aFirst)
     {
         Game.SeedNextGame = seed;
         World.SetMap(map);
@@ -66,17 +74,26 @@ public static partial class SelfTest
         };
         game.Mode = GameMode.TeamDeathmatch;
         NavGraph.Pump(double.MaxValue);
-        for (var i = 0; i < Math.Max(insane, hard); i++)
+        var sideA = new HashSet<byte>();
+        void Add(bool isA, BotPersonality kind)
+        {
+            var before = game.Players.Keys.ToHashSet();
+            if (game.AddBot(isA ? a : b, kind, quiet: true) && isA)
+                sideA.UnionWith(game.Players.Keys.Where(k => !before.Contains(k)));
+        }
+        for (var i = 0; i < Math.Max(na, nb); i++)
         {
             var kind = InsaneMix[(i + seed) % InsaneMix.Length];
-            if (i < insane)
-                game.AddBot(BotDifficulty.Insane, kind, quiet: true);
-            if (i < hard)
-                game.AddBot(BotDifficulty.Hard, kind, quiet: true);
+            if (aFirst && i < na)
+                Add(true, kind);
+            if (i < nb)
+                Add(false, kind);
+            if (!aFirst && i < na)
+                Add(true, kind);
         }
         foreach (var p in game.Players.Values.Where(p => p.Bot != null).ToList())
         {
-            p.Team = (byte)((p.Bot!.Skill == BotDifficulty.Insane) == insaneTeam0 ? 0 : 1);
+            p.Team = (byte)(sideA.Contains(p.Id) == aTeam0 ? 0 : 1);
             game.SelfTestSpawn(p);
         }
         return game;
@@ -566,16 +583,17 @@ public static partial class SelfTest
 
     // ---- 7. Insane vs Hard ---------------------------------------------------------------------------------------------
 
-    private static (int Wins, int Draws, int Losses, int ForKills, int AgainstKills, string Detail) InsaneSeries(int count, bool squadsOff, double seconds)
+    private static (int Wins, int Draws, int Losses, int ForKills, int AgainstKills, string Detail) InsaneSeries(int count, bool squadsOff, double seconds,
+        BotDifficulty a = BotDifficulty.Insane, BotDifficulty b = BotDifficulty.Hard, bool aFirst = true)
     {
         string[] names = ["Courtyard", "Crossroads", "Warehouse 9", "Ruins", "Office Park", "Quarry"];
         int wins = 0, draws = 0, losses = 0, forK = 0, againstK = 0;
         var detail = new List<string>();
         for (var i = 0; i < count; i++)
         {
-            var map = InsaneMap(names[i % names.Length], 1 + i);
-            var insaneTeam = i % 2;
-            using var game = InsaneVsHard(7000 + i, map, 4, 4, insaneTeam0: insaneTeam == 0, squadsOff);
+            var map = InsaneMap(names[i / 2 % names.Length], 1 + i);
+            var insaneTeam = i % 2; // every map from both sides
+            using var game = Duel(7000 + i, map, a, 4, b, 4, aTeam0: insaneTeam == 0, squadsOff, aFirst);
             var now = 0.0;
             Tick(game, ref now, seconds, () => game.Phase == MatchPhase.Ended);
             int mine = game.TeamScore[insaneTeam], theirs = game.TeamScore[1 - insaneTeam];
@@ -600,16 +618,25 @@ public static partial class SelfTest
 
     private static void CheckInsaneWinRate()
     {
-        const int matches = 10;
+        const int matches = 24;
         var sw = Stopwatch.StartNew();
         var (w, d, l, fk, ak, detail) = InsaneSeries(matches, squadsOff: false, seconds: 100);
-        InsaneNote($"Insane v Hard, 4 v 4, {matches} seeded 100 s TDM matches: {w} won, {d} drawn, {l} lost; kills {fk}-{ak} ({detail}; {sw.Elapsed.TotalSeconds:0.0} s)");
+        InsaneNote($"Insane v Hard, 4 v 4, {matches} seeded 100 s TDM matches (6 maps, both sides): {w} won, {d} drawn, {l} lost; kills {fk}-{ak} ({detail}; {sw.Elapsed.TotalSeconds:0.0} s)");
         if (w * 100 < matches * 65)
             Fail($"Insane won only {w} of {matches} matches against Hard (want 65%+)");
-        // What the squads add on top of the Hard+ aim (reported only).
-        sw.Restart();
-        var (w2, d2, l2, fk2, ak2, _) = InsaneSeries(6, squadsOff: true, seconds: 100);
-        InsaneNote($"Insane without squads v Hard, 6 matches: {w2} won, {d2} drawn, {l2} lost; kills {fk2}-{ak2} ({sw.Elapsed.TotalSeconds:0.0} s)");
+        // Controls (reported only): what the squads add on top of the Hard+ aim, and how fair the setup itself is.
+        foreach (var (label, a, b, off, first) in new[]
+                 {
+                     ("Insane without squads v Hard", BotDifficulty.Insane, BotDifficulty.Hard, true, true),
+                     ("Insane v Hard, Hard added first", BotDifficulty.Insane, BotDifficulty.Hard, false, false),
+                     ("Hard v Hard (side A added first)", BotDifficulty.Hard, BotDifficulty.Hard, false, true),
+                     ("Hard v Normal", BotDifficulty.Hard, BotDifficulty.Normal, false, true),
+                 })
+        {
+            sw.Restart();
+            var (w2, d2, l2, fk2, ak2, _) = InsaneSeries(12, squadsOff: off, seconds: 100, a, b, first);
+            InsaneNote($"{label}, 12 matches: {w2} won, {d2} drawn, {l2} lost; kills {fk2}-{ak2} ({sw.Elapsed.TotalSeconds:0.0} s)");
+        }
     }
 
     // ---- 8. CPU ---------------------------------------------------------------------------------------------------------

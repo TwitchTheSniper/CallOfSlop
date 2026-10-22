@@ -482,7 +482,7 @@ public sealed partial class Game
         }
         if (s.Tactic == SquadTactic.Regroup)
         {
-            if (maxD < 10f || now - s.TacticSince > 8)
+            if (maxD < 10f || now - s.TacticSince > 15)
                 SetTactic(s, SquadTactic.Move, now);
         }
         else if (far > 0 && far * 2 >= others)
@@ -520,7 +520,7 @@ public sealed partial class Game
                     continue;
                 if (m == lead)
                 {
-                    m.Bot!.Order = new SquadOrder { Kind = SquadOrderKind.Follow, Goal = s.Goal, Sprint = toGoal > 10f };
+                    m.Bot!.Order = new SquadOrder { Kind = SquadOrderKind.Follow, Goal = s.Goal, Sprint = toGoal > 10f && maxD < 10f }; // walk while they catch up
                     continue;
                 }
                 var off = wedge[Math.Min(k++, wedge.Length - 1)];
