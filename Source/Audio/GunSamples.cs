@@ -394,7 +394,7 @@ public static class GunSamples
         return outv;
     }
 
-    /// <summary>The far layer: the set's mid-distance recording, softened, over the synthesised distant boom. Null stays null.</summary>
+    /// <summary>The far layer: the set's mid-distance recording, thinned to its mids, over the synthesised distant report. Null stays null.</summary>
     public static short[]? Far(GunSampleLibrary lib, WeaponDef w, short[]? synthFar)
     {
         if (synthFar == null || lib.SetFor(w) is not { } set || set.Tails.Count == 0)
@@ -405,7 +405,9 @@ public static class GunSamples
         var tail = set.Tails[0];
         var len = Math.Max(synthF.Length, (int)(tail.Length / pitch));
         var x = Resample(tail, pitch, len);
-        LowPass(x, 2600f);
+        HighPass(x, 200f); // a far shot is its mid crack and echo, not a sub rumble
+        HighPass(x, 160f);
+        LowPass(x, 3400f);
         var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f);
         for (var i = 0; i < len; i++)
             x[i] = x[i] * k + (i < synthF.Length ? synthF[i] * 0.6f : 0f);
@@ -584,6 +586,18 @@ public static class GunSamples
         {
             y += a * (x[i] - y);
             x[i] = y;
+        }
+    }
+
+    /// <summary>One-pole high-pass (the signal minus its one-pole low-pass at <paramref name="cutoff"/>).</summary>
+    private static void HighPass(float[] x, float cutoff)
+    {
+        var a = 1f - MathF.Exp(-2f * MathF.PI * cutoff / Sr);
+        float y = 0;
+        for (var i = 0; i < x.Length; i++)
+        {
+            y += a * (x[i] - y);
+            x[i] -= y;
         }
     }
 
