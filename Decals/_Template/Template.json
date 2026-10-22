@@ -1,0 +1,24 @@
+// Copy this file into a category folder (Decals/Ground, Decals/Wall, a new one...) and rename it. Folders starting
+// with "_" are skipped, so this template is never loaded as a decal. // comments are allowed in decal files.
+// Every key is explained in Decals/README.md.
+{
+  "format": "call-of-slop-decal/1",
+  "name": "My Decal",                 // unique, at most 40 plain ASCII characters; map ops use this name
+  "description": "What it is and where it goes.",
+  "author": "Your name",
+  "size": [1.0, 1.0],                 // metres: [width, height], or one number for a square (0.02 to 16)
+  "sizeVariation": 0.2,               // each placement is up to 20% bigger or smaller
+  "rotation": "random",               // "random", or a fixed number of degrees
+  "tintVariation": 0.1,               // each placement is up to 10% brighter or darker
+  "blend": "alpha",                   // "alpha" (painted on, lit) or "multiply" (darkens: dirt, oil, soot)
+  "surfaces": ["floor", "wall"],      // where it may land: floor, wall, ceiling (or "all")
+  "opacity": 1.0,
+  "fadeDistance": 60,                 // metres; leave it out to pick one from the size
+  // "image": "my_decal.png",         // optional PNG next to this file (at most 512 x 512), drawn under the layers
+  // "impact": { "materials": ["Concrete", "Tiles"], "weight": 1 },  // makes it a bullet-impact mark (at most 1 m, blend alpha)
+  "layers": [
+    { "shape": "splat", "radius": 0.35, "count": 8, "jag": 0.4, "seed": 1, "color": "#3a3530", "alpha": 0.8, "softness": 0.08, "noise": 0.3, "noiseScale": 8 },
+    { "shape": "circle", "at": [0.5, 0.5], "radius": 0.12, "color": "black", "alpha": 0.6, "softness": 0.04 },
+    { "shape": "circle", "at": [0.5, 0.5], "radius": 0.05, "color": "white", "erase": true }
+  ]
+}

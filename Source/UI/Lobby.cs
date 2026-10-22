@@ -751,6 +751,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Bullet impacts"u8);
+            var impacts = (int)s.ImpactDecals;
+            for (var i = 0; i <= (int)ImpactDecalQuality.High; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(ImpactDecalQuality)i}##impacts", ref impacts, i))
+                    s.ImpactDecals = (ImpactDecalQuality)impacts;
+            }
+            ImGui.TextColored(Dim, "Bullet holes left on walls and floors: High keeps 1024, Medium 512, Low 128 (each player at most 64; the oldest fade out)."u8);
+
+            ImGui.Spacing();
             ImGui.Text("Frenzy visuals"u8);
             var frenzyFx = (int)s.FrenzyVisuals;
             for (var i = 0; i <= (int)FrenzyVisualMode.Off; i++)

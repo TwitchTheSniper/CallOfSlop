@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Dent Metal",
+  "description": "A bright dent in metal with a scorched ring and a dark pit.",
+  "author": "Call of Slop",
+  "size": 0.13,
+  "sizeVariation": 0.15,
+  "rotation": "random",
+  "tintVariation": 0.05,
+  "impact": {
+    "materials": [
+      "Metal"
+    ]
+  },
+  "layers": [
+    {
+      "shape": "circle",
+      "radius": 0.34,
+      "color": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "alpha": 0.35,
+      "softness": 0.14
+    },
+    {
+      "shape": "ring",
+      "radius": 0.2,
+      "width": 0.09,
+      "color": [
+        0.92,
+        0.92,
+        0.9
+      ],
+      "alpha": 0.9,
+      "softness": 0.03
+    },
+    {
+      "shape": "circle",
+      "radius": 0.15,
+      "color": [
+        0.55,
+        0.55,
+        0.56
+      ],
+      "alpha": 0.95,
+      "softness": 0.02
+    },
+    {
+      "shape": "circle",
+      "radius": 0.07,
+      "color": [
+        0.08,
+        0.08,
+        0.09
+      ],
+      "softness": 0.02
+    }
+  ]
+}

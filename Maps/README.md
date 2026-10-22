@@ -646,6 +646,30 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 - **Mistakes** give a readable message: an unknown shape suggests the closest name (`"cilinder"`: did you mean "cylinder"?), a missing model file lists the models that exist, and a broken model file says what's wrong with it.
 - **Cost:** every copy of the same shape (same name and parameters) shares one mesh and is drawn instanced, culled outside the view and simplified with distance. Thousands of meshes cost a handful of draw calls; the game log shows a `[mesh]` line every 5 seconds on maps with meshes (parts drawn, draw calls, LODs, CPU and GPU time).
 
+## Decals
+
+Decals are flat pictures projected onto surfaces: oil stains, cracks, manhole covers, road markings, graffiti, posters, soot. They come from the `Decals` folder (one file each, see [Decals/README.md](../Decals/README.md)) and are placed with two ops. The **Decal Test** map in the Dev pack shows them on floors, walls, a kerb, a mesh and the terrain round a hole.
+
+| Op | Parameters | What it makes |
+| --- | --- | --- |
+| `Decal` | decal, x, z, y = 0, onto = "floor", size = 0, rotation = -1, tint = "", reach = 3, seed = 0 | One decal, projected from (x, y, z) `onto` the first surface it finds. |
+| `DecalScatter` | decals, x0, z0, x1, z1, count, seed = 0, onto = "floor", y = 0, minSize = 0, maxSize = 0, tint = "", gap = 0 | `count` decals from the list scattered over the rectangle. |
+
+- **`onto`:** `"floor"` looks down from 1 m above `y` (so give the floor's height: 0 on the ground, 3.2 on an upper floor, 0.8 on a table), `"ceiling"` looks up from `y`, `"wall+x"`, `"wall-x"`, `"wall+z"` and `"wall-z"` look from (x, y, z) towards that side (`"wall-z"` puts a poster on a wall north of the point), and `"wall"` takes the nearest wall in any of the four directions. `reach` is how far it looks (metres). On terrain maps `y` is above the ground at (x, z), like every other op (`"anchor": "world"` makes it absolute).
+- **Size and turn:** `size` is metres across the decal's longer side (0: the decal's own size and its random variation); `rotation` is degrees (-1: the decal file's rule, usually random). On floors the top of the picture points north (-z) before turning; on walls it points up. `tint` (a colour name or `"#rrggbb"`) is multiplied in.
+- **Scatter:** sizes are random between `minSize` and `maxSize` (both 0: each decal's own), at least `gap` metres apart, and deterministic for a `seed`. With `"onto": "wall"` each decal goes at a random height from `y + 0.3` to `y + 2.4` m onto the nearest wall within 3 m. Repeat a name to make it more common. A decal only lands on surfaces its file allows (a floor-only oil stain never goes on a wall), so a scatter can place fewer than `count` (the log says how many).
+- **What they land on:** boxes and buildings (walls, floors, roofs, doors), the terrain, and `Mesh` / `Model` shapes. Not props (they are models; their collider is only a box), glass, Zombies window openings or movers. A decal wraps over edges, kerbs and steps within its depth (about a third of its size), fading where its depth runs out, and never covers a terrain hole. A decal on a door or a breakable box disappears while that box is open, broken or moved, and comes back when it's restored.
+- **Cosmetic:** decals add no collision and are **not part of the map's fingerprint**, so adding, moving or removing decals never stops players with an older copy of the map from joining (they just see different decals). Decals come from the global `Decals` folder only (no pack-local decals yet).
+- **Cost:** a map's decals are baked once into one buffer (the log shows a `[decals] baked` line with the time) and drawn in a few draw calls, culled by 24 m chunk and faded out with distance. A map may ask for up to 6000 decals.
+
+```
+{ "op": "Decal", "decal": "Manhole Cover", "x": 0, "z": 0 },
+{ "op": "Decal", "decal": "Graffiti Tag", "x": -8, "z": -6, "y": 1.8, "onto": "wall-z", "size": 2.6 },
+{ "op": "DecalScatter", "decals": ["Oil Stain", "Oil Stain", "Floor Cracks"], "x0": -20, "z0": -10, "x1": 20, "z1": 10, "count": 20, "seed": 3, "gap": 2.5 }
+```
+
+Bullet impacts are decals too, but they are made by shots during play, not placed by maps (see [Decals/README.md](../Decals/README.md)).
+
 ## Sky
 
 Without a `skybox`, a map has the classic look: the `sky` colour fills the background and the fog, and the sun is the game's usual one. Add a `skybox` and the game draws a real sky, and the map's lighting follows it: the sun's direction and colour, the ambient light and the fog all come from the sky, so distant hills fade into exactly the sky behind them. A `skybox` is looks only: it doesn't change the map's fingerprint, so it never stops anyone joining.

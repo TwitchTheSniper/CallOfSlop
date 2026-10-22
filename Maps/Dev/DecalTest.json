@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Decal Test",
+  "description": "The decal system: map decals on floors, walls, a kerb, a mesh and the terrain (round a hole), and walls of every material for bullet impacts. Not balanced for play.",
+  "author": "Call of Slop",
+  "order": 965,
+  "halfX": 40,
+  "halfZ": 34,
+  "maxPlayers": 8,
+  "sky": [0.56, 0.63, 0.72],
+  "terrain": {
+    "cell": 1,
+    "margin": 15,
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#77736c", "sand": "#b5a577", "dirtSlope": 22, "rockSlope": 36 },
+    "features": [
+      { "type": "noise", "amplitude": 0.15, "scale": 18, "octaves": 2, "seed": 4 },
+      { "type": "hill", "x": -32, "z": -26, "radius": 8, "height": 2.5 },
+      { "type": "flatten", "x": 0, "z": 0, "w": 48, "d": 40, "edge": 6 },
+      { "type": "hole", "shape": "circle", "x": 30, "z": 20, "radius": 3, "depth": 1.5 }
+    ]
+  },
+  "ops": [
+    { "op": "Ground", "color": [0.36, 0.5, 0.25] },
+    { "op": "Perimeter", "height": 3, "color": "#8f8a80" },
+    { "op": "Slab", "x0": -16, "z0": -6, "x1": 16, "z1": 8, "yTop": 0.1, "thick": 0.3, "color": [0.55, 0.55, 0.54] },
+    { "op": "WallX", "x0": -14, "x1": 10, "z": -8, "t": 0.4, "y0": 0, "y1": 3.5, "color": [0.62, 0.62, 0.6], "holes": [ { "center": -2, "width": 1.4, "bottom": 0, "top": 2.2 } ] },
+    { "op": "WallZ", "z0": -6, "z1": 6, "x": 14, "t": 0.4, "y0": 0, "y1": 3, "color": [0.62, 0.3, 0.22] },
+    { "op": "Slab", "x0": -12, "z0": 2, "x1": -6, "z1": 7, "yTop": 0.5, "thick": 0.4, "color": [0.6, 0.6, 0.58] },
+    { "op": "Container", "x": 6, "z": 5, "alongX": true, "color": [0.3, 0.45, 0.6] },
+    { "op": "Block", "x0": -3, "y0": 0.1, "z0": 3, "x1": -1.6, "y1": 1.3, "z1": 4.4, "color": [0.58, 0.4, 0.24] },
+    { "op": "Block", "x0": 0, "y0": 0.1, "z0": -5, "x1": 2.4, "y1": 1.1, "z1": -4.2, "color": [0.7, 0.7, 0.68] },
+    { "op": "Mesh", "mesh": "cylinder", "x": -20, "z": 8, "color": [0.55, 0.57, 0.6], "width": 3, "height": 3, "depth": 3, "segments": 24, "material": "Metal" },
+    { "op": "RingSpawns", "count": 8, "frac": 0.75 },
+    { "op": "AutoWaypoints", "spacing": 6 },
+
+    { "op": "Decal", "decal": "Manhole Cover", "x": 0, "z": 0, "y": 0.1, "rotation": 0 },
+    { "op": "Decal", "decal": "Floor Cracks", "x": 4, "z": -2, "y": 0.1 },
+    { "op": "Decal", "decal": "Water Stain", "x": -4, "z": -2, "y": 0.1 },
+    { "op": "Decal", "decal": "Drain Grate", "x": -7, "z": -7.2, "y": 0.1, "rotation": 0 },
+    { "op": "Decal", "decal": "Oil Stain", "x": -6.3, "z": 4.5, "y": 0.5, "size": 3.2 },
+    { "op": "Decal", "decal": "Road Arrow", "x": 8, "z": 13, "rotation": 0 },
+    { "op": "Decal", "decal": "Hazard Stripes", "x": 12, "z": 0, "y": 0.5, "onto": "wall+x", "size": 2.4 },
+    { "op": "Decal", "decal": "Graffiti Tag", "x": -8, "z": -6, "y": 1.8, "onto": "wall-z", "size": 2.6 },
+    { "op": "Decal", "decal": "Torn Poster", "x": 4, "z": -6, "y": 1.6, "onto": "wall-z" },
+    { "op": "Decal", "decal": "Scorch Mark", "x": 12, "z": -3, "y": 1.2, "onto": "wall+x", "size": 2.2 },
+    { "op": "Decal", "decal": "Scorch Mark", "x": -23, "z": 8, "y": 1.4, "onto": "wall+x", "size": 2 },
+    { "op": "Decal", "decal": "Grime Streaks", "x": 1, "z": -6, "y": 1.8, "onto": "wall" },
+    { "op": "DecalScatter", "decals": ["Oil Stain", "Water Stain", "Floor Cracks"], "x0": -14, "z0": -5, "x1": 14, "z1": 7, "count": 14, "seed": 3, "y": 0.1, "gap": 2.5 },
+    { "op": "DecalScatter", "decals": ["Grime Streaks"], "x0": -13, "z0": -7, "x1": 9, "z1": -6, "count": 4, "seed": 5, "onto": "wall", "gap": 3 },
+    { "op": "DecalScatter", "decals": ["Oil Stain", "Floor Cracks"], "x0": 24, "z0": 14, "x1": 36, "z1": 26, "count": 10, "seed": 9, "minSize": 1.5, "maxSize": 3 },
+    { "op": "Decal", "decal": "Scorch Mark", "x": -32, "z": -26, "size": 4 }
+  ]
+}

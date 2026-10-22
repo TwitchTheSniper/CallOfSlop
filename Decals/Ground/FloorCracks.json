@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Floor Cracks",
+  "description": "Spidering cracks for worn concrete, tarmac and tiles.",
+  "author": "Call of Slop",
+  "size": 2.0,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": [
+    "floor",
+    "wall"
+  ],
+  "layers": [
+    {
+      "shape": "cracks",
+      "count": 6,
+      "length": 0.5,
+      "width": 0.018,
+      "jag": 0.7,
+      "seed": 61,
+      "color": [
+        0.25,
+        0.24,
+        0.23
+      ],
+      "alpha": 0.9
+    },
+    {
+      "shape": "cracks",
+      "count": 3,
+      "length": 0.3,
+      "width": 0.012,
+      "jag": 0.8,
+      "seed": 62,
+      "at": [
+        0.3,
+        0.65
+      ],
+      "color": [
+        0.3,
+        0.29,
+        0.28
+      ],
+      "alpha": 0.8
+    }
+  ]
+}
