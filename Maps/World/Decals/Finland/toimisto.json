@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Toimisto Sign",
+  "description": "A white door board: TOIMISTO (office).",
+  "author": "Call of Slop",
+  "size": [
+    2.4,
+    0.6
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "toimisto.png"
+}

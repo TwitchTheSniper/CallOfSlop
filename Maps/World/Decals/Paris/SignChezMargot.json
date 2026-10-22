@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Paris Sign ChezMargot",
+  "description": "Shop-front lettering for an invented Paris Quarter shop: CHEZ MARGOT.",
+  "author": "Call of Slop",
+  "size": [
+    3.4,
+    0.68
+  ],
+  "rotation": 0,
+  "tintVariation": 0.03,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "image": "ChezMargot.png"
+}

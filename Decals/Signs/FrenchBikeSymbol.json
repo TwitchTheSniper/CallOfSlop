@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "French Bike Lane Symbol",
+  "description": "A white bicycle symbol painted on a cycle lane (the wheels point east-west; turn it with the lane).",
+  "author": "Call of Slop",
+  "size": 1.4,
+  "rotation": 0,
+  "tintVariation": 0.04,
+  "blend": "alpha",
+  "surfaces": [
+    "floor"
+  ],
+  "image": "FrenchBicycle.png"
+}

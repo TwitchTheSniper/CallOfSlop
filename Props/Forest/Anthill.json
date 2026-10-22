@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Anthill",
+  "category": "Forest",
+  "description": "A wood-ant mound of pine needles, knee high.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.8, 1.3]},
+  "fadeDistance": 40,
+  "parts": [
+    {"size": [1.3, 0.35, 0.538], "offset": [0.0, 0.175, 0.0], "color": "#5a4026", "rotation": [0, 0, 0]},
+    {"size": [1.3, 0.35, 0.538], "offset": [0.0, 0.175, 0.0], "color": "#5a4026", "rotation": [0, 45, 0]},
+    {"size": [1.3, 0.35, 0.538], "offset": [0.0, 0.175, 0.0], "color": "#5a4026", "rotation": [0, 90, 0]},
+    {"size": [1.3, 0.35, 0.538], "offset": [0.0, 0.175, 0.0], "color": "#5a4026", "rotation": [0, 135, 0]},
+    {"size": [0.9, 0.3, 0.373], "offset": [0.0, 0.45, 0.0], "color": "#634628", "rotation": [0, 0, 0]},
+    {"size": [0.9, 0.3, 0.373], "offset": [0.0, 0.45, 0.0], "color": "#634628", "rotation": [0, 45, 0]},
+    {"size": [0.9, 0.3, 0.373], "offset": [0.0, 0.45, 0.0], "color": "#634628", "rotation": [0, 90, 0]},
+    {"size": [0.9, 0.3, 0.373], "offset": [0.0, 0.45, 0.0], "color": "#634628", "rotation": [0, 135, 0]},
+    {"size": [0.5, 0.2, 0.207], "offset": [0.0, 0.65, 0.0], "color": "#6e5030", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.2, 0.207], "offset": [0.0, 0.65, 0.0], "color": "#6e5030", "rotation": [0, 45, 0]},
+    {"size": [0.5, 0.2, 0.207], "offset": [0.0, 0.65, 0.0], "color": "#6e5030", "rotation": [0, 90, 0]},
+    {"size": [0.5, 0.2, 0.207], "offset": [0.0, 0.65, 0.0], "color": "#6e5030", "rotation": [0, 135, 0]}
+  ]
+}
