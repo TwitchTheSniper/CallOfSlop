@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bakehouse",
+  "description": "The bakehouse behind the shop: deck ovens on the walls, the bakers' table in the middle, flour and racks.",
+  "items": [
+    {
+      "props": [
+        "Bakery Deck Oven"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Bakers Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Metal Shelving"
+      ],
+      "place": "wall",
+      "chance": 0.8
+    },
+    {
+      "props": [
+        "Potato Sacks",
+        "Cardboard Stack"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Mop and Bucket",
+        "Broom",
+        "Bucket"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    }
+  ]
+}

@@ -17,8 +17,8 @@ public static class PropFile
     public const int MaxParts = 128;
     public const int MaxColliders = 8;
 
-    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale).</summary>
-    public const float MaxSize = 12f;
+    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale). 24 m fits a parked transport plane (Props/Military/Vehicles).</summary>
+    public const float MaxSize = 24f;
 
     /// <summary>Named colours a part can use instead of [r, g, b] or "#rrggbb".</summary>
     public static readonly Dictionary<string, Vector3> Colors = new(StringComparer.OrdinalIgnoreCase)
@@ -146,8 +146,11 @@ public static class PropFile
                     case "flag":
                         flag = p.Value;
                         break;
+                    case "concealment":
+                        def.Concealment = Bool(p.Value, where);
+                        break;
                     default:
-                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable, flag");
+                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable, flag, concealment");
                 }
             }
             if (string.IsNullOrWhiteSpace(name))
@@ -195,6 +198,8 @@ public static class PropFile
             if (!def.IsSolid && collider != null)
                 throw new PropFileException($"{source}: \"collider\" is only for solid props (this one is cosmetic)");
             def.FadeDistance = def.IsSolid ? 0 : fade ?? PropDef.DefaultFade(def.Bounds);
+            if (def.IsSolid && def.Concealment)
+                throw new PropFileException($"{source}: \"concealment\" is only for cosmetic props (solid ones already block sight)");
             if (def.IsSolid && fade != null)
                 throw new PropFileException($"{source}: \"fadeDistance\" is only for cosmetic props (solid ones are always drawn)");
             if (scatter is { } sc)

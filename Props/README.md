@@ -48,6 +48,7 @@ A prop is a model made of boxes, the same style as everything else in the game. 
 | `fadeDistance` | no | Cosmetic props only: how far away (metres) they dither out. Default from the prop's size: 28 m for tiny litter up to 90 m. |
 | `breakable` | no | Makes the prop breakable (below). |
 | `flag` | no | Makes the prop a flag that can fly a national flag from the flag pool instead of its own cloth: `{ "cloth": [4, 7, 10], "default": "random" }`. See [Flags](#flags). |
+| `concealment` | no | Cosmetic props only: `true` makes it hide people from bots (tall crops, see [Concealment](#concealment)). |
 
 Unknown keys, numbers out of range and missing parts are errors with a message saying which file and which part, so typos don't fail silently. A file with an error is skipped and named in the game log (`callofslop.log`).
 
@@ -56,11 +57,15 @@ Unknown keys, numbers out of range and missing parts are errors with a message s
 - **Solid** props block movement, bullets, grenades and bots' line of sight, like a wall. Their collision is the `collider` boxes, not the model, so keep colliders simple: one box is usually right. A street lamp's collider is just the base and the pole, a table's is the top and four legs. A prop turned by an angle that isn't a multiple of 90 degrees gets a few boxes following its turned outline. Anything up to 0.55 m tall can be stepped onto; up to 1.7 m can be mantled.
 - **Cosmetic** props are for looks only, like grass: you walk and shoot straight through them. Use it for litter, newspapers, bottles, loose bricks: anything small enough that bumping into it would feel wrong. Small cosmetic props fade out with distance.
 
+### Concealment
+
+A cosmetic prop with `"concealment": true` (the **Corn Patch A** and **Corn Patch B** in `Farm`) is still walked and shot straight through, but it hides people from bots the way it hides them from players: a bot's sight line that runs through at least 1.2 m of concealing props in total is blocked, unless the two are within 2.5 m of each other. So someone a step inside a cornfield is hidden from the road, a bot right next to you still sees you, and bots also use the corn as cover to hide in. Only the bots' line of sight checks it (server side): it never changes movement, bullets, the nav graph or the map's fingerprint. The props' bounds go in a coarse grid when a bot first looks, so a query costs a few microseconds (`Map.Concealed`, Source/Props/MapConcealment.cs).
+
 ### Parts
 
 | Field | Meaning |
 |---|---|
-| `size` | `[w, h, d]`, each 0.001 to 12 m. |
+| `size` | `[w, h, d]`, each 0.001 to 24 m (the whole model also fits in 24 m each way). |
 | `offset` | `[x, y, z]`, the box centre. Default `[0, h/2, 0]`: centred, standing on the ground. |
 | `rotation` | `[pitch, yaw, roll]` in degrees: about X, Y (turning it on the ground) and Z. Or give any of `pitch`, `yaw`, `roll` on their own. |
 | `color` | A name (below), `[r, g, b]` with values 0-1, or `"#rrggbb"`. Default grey. |
@@ -334,7 +339,14 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 | `Utility` | Power poles and transformers, junction boxes, street cabinets, manholes and drains, meters, fire escape stairs, landing and ladder, ladders, a scaffold tower and boards, generators, a gas valve, a floodlight tower, a road plate. |
 | `Signage` | Traffic lights, a pedestrian signal, road signs (speed limit, yield, one way, no parking, crossing, road works, direction), a parking meter, a bus stop sign, a billboard, shop signs (box, hanging, neon), an arrow board trailer, a price pylon, a street clock. |
 | `Urban` | A bus shelter, a phone booth, a payphone, a newsstand, a newspaper box, an ATM, a ticket machine, a post box, bins, a bike rack, a picnic table, a hot dog cart, a market stall, fences and barriers, a concrete block, a speed bump, a boom gate, a portable toilet, a builder's skip. |
+| `Farm` | Field corn (Corn Patch A and B: 3 x 3 m, taller than you, concealment; Trampled Corn), a scarecrow, a row crop tractor, a hay wagon, a big round bale, a grain bin, a split rail fence, a wheel line irrigator, a roadside farm stand, a stock tank, a pumpkin pile, a farm fuel tank. Written by `tools/world/mainstreet_props.py`. |
+| `Rail` | Railroad track (6 m sections of rails, ties and ballast), a crossbuck sign, a freight boxcar, an open boxcar you can climb through, a covered hopper car (the cars run 11.6 m along X). |
+| `Town` | A town-square bandstand gazebo you can step up into, a granite memorial obelisk. |
+| `Military` | The reusable military set (see [Military/README.md](Military/README.md)): sandbag walls, corners, nests and piles, barbed wire, a steel hedgehog, tank traps, a stake barrier, a field cannon, an anti-tank gun, a howitzer, a mortar pit, a machine gun, ammunition crates, cases and cans, shell crates (explosive), pallets, a camo net, tents (the command tent is walk-in), fuel drum and jerrycan racks (explosive), a searchlight, a guard tower. Its `Vehicles` subfolder is the category `Military Vehicles`: five tanks (WWII medium, heavy, modern main battle tank, light, wrecked), four parked planes (WWII fighter, twin-engine bomber, jet fighter, a walk-in transport plane), a jeep, a covered cargo truck, an armoured car, a fuel tanker and a sidecar motorcycle, with Desert and Winter colour variants. Generated by `tools/propviz/gen_military.py`; shown on the Dev pack's **Military Props** map. |
 | `Animated` | Props with moving or lit parts (see [Animation](#animation)): fans (ceiling, desk, pedestal, drum, exhaust box, AC condenser, cooling unit), a roof turbine vent, a windmill, a small wind turbine, a weather vane, an anemometer, flags, a banner, a swinging shop sign, a hanging lantern, a flickering street lamp, a neon OPEN sign, beacons and alarm lights, a cycling traffic light, railway crossing lights, a police light bar, a lighthouse, radar and satellite dishes, a ticking street clock, a ferris wheel and a carousel, an oil pumpjack, conveyor rollers, a running generator and washer, a cement mixer, a water wheel, a barber pole, a rotating diner sign, a piston pump, a pinwheel, a lawn sprinkler, a rocking chair, a hammock, wind chimes, a grandfather clock, a metronome, a globe, a Newtons cradle, a swing set, a bell frame, a boom gate, a gantry hook, a freight hoist, a buoy, a fishing bobber, a duck on a pond, a bird on a perch, a laundry line, a smoking chimney, a fountain, a TV, a monitor, an arcade cabinet, a slot machine and a glowing vending machine. Most stand on the ground; the Ceiling Fan hangs (use `"y"`: its top is 0.7 m up). |
+| `Forest` | Boreal forest floor and cover (tools/world/finland_props.py): granite boulders and a granite outcrop, a fallen spruce log, a spruce log pile and a birch firewood stack (solid); autumn bracken, birch leaf litter, mossy stones, fly agaric toadstools, a dead pine branch, lingonberry heath and an anthill (cosmetic). |
+| `Mining` | Mine kit: an ore mine cart, mine rail, a tunnel timber frame and cage lamp, a mine timber stack, blasting explosives (they go off), an ore bin hopper, a belt conveyor incline, a jaw crusher, a dump truck, a tracked excavator, a floodlight mast, a diesel tank, a blasting warning sign, a broad-gauge railway track section, a rail buffer stop and an ore hopper wagon. |
+| `Nordic` | Nordic village bits: a roadside mailbox rack, a kicksled, a moose warning sign, a wooden rowing boat, a lifebuoy post, a jetty ladder, a birch log bench and a sauna bucket. |
 
 Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.
 

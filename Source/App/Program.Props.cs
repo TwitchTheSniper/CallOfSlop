@@ -48,25 +48,38 @@ public static unsafe partial class Program
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
         ("cluttered_culdesac_street", "Cul-de-sac", new Vector3(-9f, 1.7f, -6f), new Vector3(-17f, 1.2f, -20f), false),
-        // World Tour, 07 Village: the hillside from above the meadow in the south-west, then up the green from the High Street at eye height.
-        ("world_village", "Cotswold Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
-        ("world_village_street", "Cotswold Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
         // Cluttered pack, Dockside: the bay from above the west horn, then the waterfront road at eye height towards the fish market.
         ("cluttered_dockside", "Dockside", new Vector3(-62f, 24f, 38f), new Vector3(0f, 0f, -16f), false),
         ("cluttered_dockside_street", "Dockside", new Vector3(-27f, 1.7f, 2.5f), new Vector3(2f, 1.4f, 9f), false),
         // Cluttered pack, 08 Truck Stop: the whole stop from above the highway, then the motel courtyard from its balcony.
         ("cluttered_truckstop", "Truck Stop", new Vector3(-6f, 30f, 52f), new Vector3(2f, 0f, -6f), false),
         ("cluttered_truckstop_street", "Truck Stop", new Vector3(-44.8f, 5.1f, 10f), new Vector3(-30f, 0.5f, -10f), false),
+        // World Tour, 01 Main Street: the town and its cornfields from above the south-west corn, then Main Street at eye height looking east.
+        ("world_mainstreet", "Main Street", new Vector3(-50f, 30f, 46f), new Vector3(2f, 0f, -4f), false),
+        ("world_mainstreet_street", "Main Street", new Vector3(-30f, 2.7f, 3.0f), new Vector3(20f, 2.2f, -1.5f), false),
         // Cluttered pack, 10 Timberline: the forest from above the lake in the south-west, then the woods at eye height on Blue's trail to the middle camp.
         ("cluttered_timberline", "Timberline", new Vector3(-96f, 44f, 72f), new Vector3(6f, 0f, -6f), false),
         ("cluttered_timberline_forest", "Timberline", new Vector3(-34f, 2.0f, -6f), new Vector3(0.5f, 1.2f, 2f), false),
+        // World Tour, 06 Vuorikoski (Finland): the mine from above Honkala, the forest at eye height, the shaft station underground.
+        ("world_finland", "Vuorikoski", new Vector3(-118f, 48f, 60f), new Vector3(0f, 6f, -8f), false),
+        ("world_finland_forest", "Vuorikoski", new Vector3(-66f, 5.3f, -46f), new Vector3(-40f, 2.6f, -30f), false),
+        ("world_finland_tunnel", "Vuorikoski", new Vector3(-24f, -6.3f, -4f), new Vector3(0f, -6.5f, -4f), false),
+        // World Tour, 07 Cotswold Village: the hillside from above the meadow in the south-west, then up the green from the High Street at eye height.
+        ("world_village", "Cotswold Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
+        ("world_village_street", "Cotswold Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
+        // World Tour, 04 Paris Quarter: the quarter from above the south-west, then the raised square at eye height towards the fountain and the north row.
+        ("world_paris", "Paris Quarter", new Vector3(-74f, 40f, 52f), new Vector3(0f, 6f, -10f), false),
+        ("world_paris_square", "Paris Quarter", new Vector3(-22f, 4.7f, 3f), new Vector3(6f, 7f, -16f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
         ("flags", "Flag Lineup", new Vector3(-1.5f, 3.4f, 4.5f), new Vector3(-1.2f, 3.9f, -6f), false), // the flag pool: US, UK, France, Finland at the front (smoke_props_flags.bmp)
+        // The Dev pack's Military Props map (Props/Military): every row from above the planes, then the tanks at eye height.
+        ("military_overview", "Military Props", new Vector3(0f, 52f, 100f), new Vector3(0f, 0f, -4f), false),
+        ("military_tanks", "Military Props", new Vector3(-31f, 1.8f, -2f), new Vector3(-12f, 1.4f, -16f), false),
         // Decals (Program.Decals.cs): the Decal Test map's map decals from above, then at eye height after a burst of bullet impacts.
         ("decals", "Decal Test", new Vector3(0f, 26f, 30f), new Vector3(0f, 0f, -2f), false),
         ("decals_impacts", "Decal Test", new Vector3(-2f, 1.7f, 10f), new Vector3(-2f, 1.4f, -6f), false),

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "MS Prairie Savings 2",
+  "category": "MainStreet",
+  "description": "Main Street (World Tour): Prairie Savings, piece 2 of 3 (left to right). Invented for the town of Prairie Hollow.",
+  "author": "Call of Slop",
+  "size": [
+    1.8,
+    0.55
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 150,
+  "image": "MSPrairieSavings2.png"
+}

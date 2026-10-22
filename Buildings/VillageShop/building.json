@@ -1,0 +1,360 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Village Shop",
+  "theme": "A 1950s Finnish wooden village store (kylakauppa): painted boards, white trim, a sign board over the door; shelves and freezers, a store room of crates",
+  "category": "commercial",
+  "description": "A wooden village shop: the shop floor with big front windows, a store room with a loading door, a back office and a WC, a sign board and a bench out front.",
+  "author": "Call of Slop",
+  "seed": 621,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {
+    "color": "$wall",
+    "material": "wood"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "none"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "tiles"
+  },
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "yellow ochre": {
+      "wall": "#d0a44a",
+      "interior": "#eeeadc",
+      "floor": "#d8d2c2",
+      "ceiling": "#f4f2ea",
+      "trim": "#f6f4ee",
+      "door": "#2a4a7a",
+      "roof": "#3a3b3e",
+      "sign": "#2a4a8a"
+    },
+    "red ochre": {
+      "wall": "#8a3424",
+      "interior": "#ece6d6",
+      "floor": "#d4ccba",
+      "ceiling": "#f2f0e8",
+      "trim": "#f2efe6",
+      "door": "#2e5a3a",
+      "roof": "#38393c",
+      "sign": "#e8e4d8"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "shop",
+          "type": "shop",
+          "rect": [
+            -6,
+            -1,
+            6,
+            4.5
+          ],
+          "autoWindows": {
+            "spacing": 3,
+            "width": 1.6,
+            "sill": 0.6,
+            "head": 2.4,
+            "health": 20
+          }
+        },
+        {
+          "id": "store",
+          "type": "storage",
+          "rect": [
+            -6,
+            -4.5,
+            1,
+            -1
+          ],
+          "floor": {
+            "color": "#9a968c",
+            "material": "concrete"
+          },
+          "windows": false
+        },
+        {
+          "id": "office",
+          "type": "office",
+          "rect": [
+            1,
+            -4.5,
+            4,
+            -1
+          ],
+          "autoWindows": {
+            "spacing": 2,
+            "width": 0.9,
+            "sill": 1.0,
+            "head": 2.2
+          }
+        },
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [
+            4,
+            -4.5,
+            6,
+            -1
+          ],
+          "windows": false
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            0,
+            4.5
+          ],
+          "width": 1.2,
+          "front": true,
+          "material": "glass",
+          "health": 40
+        },
+        {
+          "type": "window",
+          "at": [
+            -3.4,
+            4.5
+          ],
+          "width": 3.0,
+          "sill": 0.5,
+          "head": 2.5,
+          "health": 25
+        },
+        {
+          "type": "window",
+          "at": [
+            3.4,
+            4.5
+          ],
+          "width": 3.0,
+          "sill": 0.5,
+          "head": 2.5,
+          "health": 25
+        },
+        {
+          "type": "door",
+          "at": [
+            -2.5,
+            -1
+          ],
+          "width": 1.0
+        },
+        {
+          "type": "door",
+          "at": [
+            2.5,
+            -1
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            5.0,
+            -1
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            -4.0,
+            -4.5
+          ],
+          "width": 1.4,
+          "material": "metal"
+        }
+      ]
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "ridge": "x",
+    "pitch": 26,
+    "overhang": 0.5,
+    "color": {
+      "color": "$roof",
+      "material": "metal"
+    }
+  },
+  "extras": [
+    {
+      "type": "block",
+      "min": [
+        -6.305,
+        0.0,
+        -4.805
+      ],
+      "max": [
+        -6.125,
+        3.3,
+        -4.625
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -6.305,
+        0.0,
+        4.625
+      ],
+      "max": [
+        -6.125,
+        3.3,
+        4.805
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.125,
+        0.0,
+        -4.805
+      ],
+      "max": [
+        6.305,
+        3.3,
+        -4.625
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.125,
+        0.0,
+        4.625
+      ],
+      "max": [
+        6.305,
+        3.3,
+        4.805
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -3.2,
+        2.75,
+        4.63
+      ],
+      "max": [
+        3.2,
+        3.6,
+        4.8
+      ],
+      "color": "$sign"
+    },
+    {
+      "type": "block",
+      "min": [
+        -3.0,
+        2.85,
+        4.8
+      ],
+      "max": [
+        3.0,
+        3.5,
+        4.83
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "awning",
+      "rect": [
+        -1.4,
+        4.63,
+        1.4,
+        5.8
+      ],
+      "height": 2.65,
+      "color": "$trim"
+    },
+    {
+      "type": "prop",
+      "name": "Birch Log Bench",
+      "at": [
+        -3.4,
+        5.6
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Bike Rack",
+      "at": [
+        3.6,
+        5.9
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Kicksled",
+      "at": [
+        2.0,
+        5.4
+      ],
+      "yaw": 340
+    },
+    {
+      "type": "prop",
+      "name": "Post Box",
+      "at": [
+        -5.6,
+        5.4
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Pallet Stack",
+      "at": [
+        -2.2,
+        -5.6
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Wheelie Bin Grey",
+      "at": [
+        0.6,
+        -5.4
+      ],
+      "yaw": 180
+    }
+  ],
+  "anchors": [
+    {
+      "type": "spawn",
+      "name": "store room",
+      "at": [
+        -4.5,
+        -2.8
+      ]
+    },
+    {
+      "type": "flag",
+      "name": "shop counter",
+      "at": [
+        0,
+        1.5
+      ]
+    }
+  ]
+}

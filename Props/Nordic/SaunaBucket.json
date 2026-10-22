@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sauna Bucket",
+  "category": "Nordic",
+  "description": "A wooden sauna bucket with brass bands and a long-handled ladle.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 30,
+  "breakable": {"health": 10, "breakBy": "all", "sound": "wood", "debris": {"count": 6, "size": [0.03, 0.12]}},
+  "parts": [
+    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 0, 0], "material": "wood"},
+    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 45, 0], "material": "wood"},
+    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 90, 0], "material": "wood"},
+    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 135, 0], "material": "wood"},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 0, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 45, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 90, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 135, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.2, 0.0], "color": "#c8a040", "rotation": [0, 0, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.2, 0.0], "color": "#c8a040", "rotation": [0, 45, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.2, 0.0], "color": "#c8a040", "rotation": [0, 90, 0]},
+    {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.2, 0.0], "color": "#c8a040", "rotation": [0, 135, 0]},
+    {"size": [0.03, 0.03, 0.5], "offset": [0.05, 0.3, 0.1], "color": "#8a6a40", "rotation": [30, 0, 0]},
+    {"size": [0.08, 0.04, 0.08], "offset": [0.05, 0.2, -0.08], "color": "#8a6a40"}
+  ]
+}

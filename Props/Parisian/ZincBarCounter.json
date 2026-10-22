@@ -1,0 +1,278 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Zinc Bar Counter",
+  "description": "A bistro bar: dark panelled wood with a zinc top and a brass foot rail, beer taps, an espresso machine and cups.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        3.0,
+        1.06,
+        0.7
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "breakable": {
+    "health": 160,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {
+      "count": 10,
+      "size": [
+        0.06,
+        0.25
+      ],
+      "colors": [
+        "#4a2a18",
+        "#a3a9ad"
+      ]
+    }
+  },
+  "parts": [
+    {
+      "size": [
+        3.0,
+        1.0,
+        0.62
+      ],
+      "offset": [
+        0,
+        0.5,
+        0.0
+      ],
+      "color": "#4a2a18",
+      "material": "wood"
+    },
+    {
+      "size": [
+        0.5,
+        0.6,
+        0.02
+      ],
+      "offset": [
+        -1.2,
+        0.55,
+        0.315
+      ],
+      "color": "#5e3820",
+      "material": "wood"
+    },
+    {
+      "size": [
+        0.5,
+        0.6,
+        0.02
+      ],
+      "offset": [
+        -0.6,
+        0.55,
+        0.315
+      ],
+      "color": "#5e3820",
+      "material": "wood"
+    },
+    {
+      "size": [
+        0.5,
+        0.6,
+        0.02
+      ],
+      "offset": [
+        0.0,
+        0.55,
+        0.315
+      ],
+      "color": "#5e3820",
+      "material": "wood"
+    },
+    {
+      "size": [
+        0.5,
+        0.6,
+        0.02
+      ],
+      "offset": [
+        0.6,
+        0.55,
+        0.315
+      ],
+      "color": "#5e3820",
+      "material": "wood"
+    },
+    {
+      "size": [
+        0.5,
+        0.6,
+        0.02
+      ],
+      "offset": [
+        1.2,
+        0.55,
+        0.315
+      ],
+      "color": "#5e3820",
+      "material": "wood"
+    },
+    {
+      "size": [
+        3.1,
+        0.05,
+        0.74
+      ],
+      "offset": [
+        0,
+        1.03,
+        0.02
+      ],
+      "color": "#a3a9ad",
+      "material": "metal"
+    },
+    {
+      "size": [
+        3.0,
+        0.04,
+        0.04
+      ],
+      "offset": [
+        0,
+        0.18,
+        0.38
+      ],
+      "color": "#b8923a"
+    },
+    {
+      "size": [
+        0.05,
+        0.36,
+        0.05
+      ],
+      "offset": [
+        -0.6,
+        1.23,
+        -0.12
+      ],
+      "color": "#b8923a"
+    },
+    {
+      "size": [
+        0.04,
+        0.06,
+        0.1
+      ],
+      "offset": [
+        -0.6,
+        1.38,
+        -0.06
+      ],
+      "color": "#202020"
+    },
+    {
+      "size": [
+        0.05,
+        0.36,
+        0.05
+      ],
+      "offset": [
+        -0.46,
+        1.23,
+        -0.12
+      ],
+      "color": "#b8923a"
+    },
+    {
+      "size": [
+        0.04,
+        0.06,
+        0.1
+      ],
+      "offset": [
+        -0.46,
+        1.38,
+        -0.06
+      ],
+      "color": "#202020"
+    },
+    {
+      "size": [
+        0.05,
+        0.36,
+        0.05
+      ],
+      "offset": [
+        -0.32,
+        1.23,
+        -0.12
+      ],
+      "color": "#b8923a"
+    },
+    {
+      "size": [
+        0.04,
+        0.06,
+        0.1
+      ],
+      "offset": [
+        -0.32,
+        1.38,
+        -0.06
+      ],
+      "color": "#202020"
+    },
+    {
+      "size": [
+        0.5,
+        0.42,
+        0.38
+      ],
+      "offset": [
+        0.9,
+        1.26,
+        -0.1
+      ],
+      "color": "#b02020"
+    },
+    {
+      "size": [
+        0.42,
+        0.06,
+        0.32
+      ],
+      "offset": [
+        0.9,
+        1.5,
+        -0.1
+      ],
+      "color": "chrome"
+    },
+    {
+      "size": [
+        0.1,
+        0.12,
+        0.1
+      ],
+      "offset": [
+        0.2,
+        1.11,
+        0.1
+      ],
+      "color": "#f0ece0"
+    },
+    {
+      "size": [
+        0.1,
+        0.12,
+        0.1
+      ],
+      "offset": [
+        0.32,
+        1.11,
+        0.12
+      ],
+      "color": "#f0ece0"
+    }
+  ]
+}

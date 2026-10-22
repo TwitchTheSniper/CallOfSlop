@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Korjaamo Sign",
+  "description": "A white board over the workshop door: KORJAAMO (repair shop).",
+  "author": "Call of Slop",
+  "size": [
+    2.6,
+    0.6
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "korjaamo.png"
+}

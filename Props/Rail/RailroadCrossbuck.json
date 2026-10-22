@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Railroad Crossbuck",
+  "category": "Rail",
+  "description": "The white X-shaped railroad crossing sign on a post (faces +Z), with the number-of-tracks plate under it.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 3.6, 0.14], "offset": [0.0, 1.8, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.3], "speed": 3}},
+  "parts": [
+    {"size": [0.14, 3.6, 0.14], "offset": [0.0, 1.8, 0.0], "color": "lightgrey", "material": "metal"},
+    {"size": [1.3, 0.22, 0.03], "offset": [0.0, 3.15, 0.08], "color": "white", "rotation": [0, 0, 35]},
+    {"size": [1.32, 0.03, 0.032], "offset": [0.0, 3.15, 0.08], "color": "black", "rotation": [0, 0, 35]},
+    {"size": [1.3, 0.22, 0.03], "offset": [0.0, 3.15, 0.08], "color": "white", "rotation": [0, 0, -35]},
+    {"size": [1.32, 0.03, 0.032], "offset": [0.0, 3.15, 0.08], "color": "black", "rotation": [0, 0, -35]},
+    {"size": [0.5, 0.36, 0.03], "offset": [0.0, 2.45, 0.08], "color": "white"},
+    {"size": [0.3, 0.06, 0.033], "offset": [0.0, 2.45, 0.081], "color": "black"},
+    {"size": [0.4, 0.06, 0.4], "offset": [0.0, 0.03, 0.0], "color": "concrete"}
+  ]
+}

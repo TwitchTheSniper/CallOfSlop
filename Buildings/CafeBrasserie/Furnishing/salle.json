@@ -1,0 +1,74 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "salle",
+  "description": "The upstairs dining room: a long table for parties, tables for two, a sideboard of plates, a piano.",
+  "items": [
+    {
+      "id": "long",
+      "props": [
+        "Dining Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Dining Chair"
+      ],
+      "place": "around",
+      "of": "long",
+      "count": [
+        4,
+        6
+      ],
+      "distance": 0.1
+    },
+    {
+      "id": "t",
+      "props": [
+        "Bistro Table"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        3
+      ],
+      "gap": 0.7
+    },
+    {
+      "props": [
+        "Bistro Chair"
+      ],
+      "place": "around",
+      "of": "t",
+      "count": [
+        1,
+        2
+      ],
+      "distance": 0.05
+    },
+    {
+      "props": [
+        "Chest of Drawers",
+        "Upright Piano",
+        "Bar Bottle Shelf"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Large Flower Pot",
+        "Floor Lamp"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    }
+  ]
+}

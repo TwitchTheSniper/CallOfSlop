@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sauna Bench",
+  "description": "Two-tier pine sauna benches (lauteet) on a frame, 2 m long along X, facing +Z. You can step up onto them.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 0.45, 1.2], "offset": [0, 0.225, 0]}, {"size": [2.0, 0.95, 0.6], "offset": [0, 0.475, -0.3]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.06, 0.4]}},
+  "author": "Call of Slop",
+  "parts": [
+    {"size": [2.0, 0.06, 0.6], "offset": [0, 0.45, 0.3], "color": "#d8b47a", "material": "wood"},
+    {"size": [2.0, 0.06, 0.6], "offset": [0, 0.95, -0.3], "color": "#d8b47a", "material": "wood"},
+    {"size": [2.0, 0.42, 0.04], "offset": [0, 0.21, 0.58], "color": "#c49a62"},
+    {"size": [2.0, 0.5, 0.04], "offset": [0, 0.7, 0.0], "color": "#c49a62"},
+    {"size": [0.06, 0.95, 1.2], "offset": [-0.97, 0.475, 0], "color": "#a07a48"},
+    {"size": [0.06, 0.95, 1.2], "offset": [0.97, 0.475, 0], "color": "#a07a48"}
+  ]
+}
