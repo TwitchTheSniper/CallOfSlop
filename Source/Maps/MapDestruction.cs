@@ -140,7 +140,7 @@ public sealed class MapDestruction
             ChunkOfSolid[solid] = c;
             var h = Original[c].Half * 2;
             var volume = h.X * h.Y * h.Z;
-            MaxHp[c] = (flags & FlagFixed) != 0 ? float.PositiveInfinity : Table[mat].Hp * Math.Clamp(volume / 0.25f, 0.4f, 2.5f);
+            MaxHp[c] = (flags & FlagFixed) != 0 ? float.PositiveInfinity : Table[mat].Hp * Math.Clamp(MathF.Sqrt(volume / 0.25f), 0.5f, 2f);
             Hp[c] = MaxHp[c];
         }
 
@@ -200,8 +200,8 @@ public sealed class MapDestruction
                         continue;
                     }
                     var dist = Vector3.Distance(ba.Center, bb.Center);
-                    edges.Add((a, b, Supports(bb, ba, ox, oz) ? 0f : dist)); // support flows a <- b ... stored as b -> a below
-                    edges.Add((b, a, Supports(ba, bb, ox, oz) ? 0f : dist));
+                    edges.Add((a, b, Cost(bb, ba, ox, oz, dist))); // b holds a up (stored as the edge b -> a, see below)
+                    edges.Add((b, a, Cost(ba, bb, ox, oz, dist)));
                 }
             foreach (var (skin, (host, _)) in bestHost)
             {
@@ -269,6 +269,16 @@ public sealed class MapDestruction
         }
         BuildMs = sw.Elapsed.TotalMilliseconds;
     }
+
+    /// <summary>Hanging from a chunk above costs this much more than reaching sideways (per metre).</summary>
+    public const float HangCost = 1.5f;
+
+    /// <summary>
+    /// What it costs <paramref name="holder"/> to hold <paramref name="held"/> up: nothing from right under it, the distance
+    /// between their centres sideways, <see cref="HangCost"/> times that hanging from above.
+    /// </summary>
+    private static float Cost(in Box holder, in Box held, float ox, float oz, float dist) =>
+        Supports(holder, held, ox, oz) ? 0f : holder.Center.Y > held.Center.Y + 0.05f ? dist * HangCost : dist;
 
     /// <summary>Does <paramref name="below"/> hold <paramref name="above"/> up from under it (overlapping footprints, lower bottom)?</summary>
     private static bool Supports(in Box below, in Box above, float ox, float oz) =>

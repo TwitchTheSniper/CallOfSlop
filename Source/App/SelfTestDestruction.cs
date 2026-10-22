@@ -37,6 +37,7 @@ public static partial class SelfTest
         CheckDestructionDamage(map);
         CheckDestructionCollapse(map);
         CheckDestructionReplication(map);
+        CheckDestructionNav(map);
         CheckDestructionPacks();
         World.SetMap(Maps.All[0]);
     }
@@ -63,8 +64,8 @@ public static partial class SelfTest
             Fail($"a sliver of {thinnest:0.000} m (minPiece {r.MinPiece})");
         if (!pieces.SequenceEqual(again))
             Fail("cutting the same box twice gave different chunks");
-        if (slab.Count != 20 || tiny.Count != 1)
-            Fail($"a 10 x 8 slab should be 20 slabs of 2 x 2 m and a small box 1 chunk (got {slab.Count}, {tiny.Count})");
+        if (slab.Count != 24 || tiny.Count != 1)
+            Fail($"a 10 x 8 slab from x -5 should be 24 slabs on the 2 m grid and a small box 1 chunk (got {slab.Count}, {tiny.Count})");
         // A wall and its lining are cut in the same places (the grid is fixed in the world).
         var lining = new List<Box>();
         StructureChunker.Split(new Box(new Vector3(3, 1.5f, 0.31f), new Vector3(3, 1.5f, 0.01f)), r, 0, 1, lining);
@@ -126,11 +127,17 @@ public static partial class SelfTest
             Fail($"{falling.Count} chunks fall on a fresh map (first: {d.Original[falling[0]].Center})");
         // Determinism: a second load cuts exactly the same chunks, with the same fingerprint.
         var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!);
-        var same = copy.Destruction is { } cd && cd.Count == d.Count && Enumerable.Range(0, d.Count).All(c => cd.Original[c] == d.Original[c] && cd.Mat[c] == d.Mat[c] && cd.Flags[c] == d.Flags[c])
-                   && cd.AdjTo.SequenceEqual(d.AdjTo) && copy.ContentHash == map.ContentHash;
-        Line($"a second load: the same chunks, links and fingerprint {same} ({map.ContentHash:x8})");
-        if (!same)
-            Fail("loading the Destruction Test twice cut different chunks");
+        var cd = copy.Destruction;
+        var why = cd == null ? "no chunks" : cd.Count != d.Count ? $"{cd.Count} chunks, not {d.Count}"
+            : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Original[c] != d.Original[c], -1) is var c1 and >= 0 ? $"chunk {c1} at {cd.Original[c1].Center} vs {d.Original[c1].Center}"
+            : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Mat[c] != d.Mat[c], -1) is var c2 and >= 0 ? $"chunk {c2} material {cd.Mat[c2]} vs {d.Mat[c2]}"
+            : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Flags[c] != d.Flags[c], -1) is var c3 and >= 0 ? $"chunk {c3} flags {cd.Flags[c3]} vs {d.Flags[c3]}"
+            : !cd.AdjTo.SequenceEqual(d.AdjTo) ? $"links {cd.AdjTo.Length} vs {d.AdjTo.Length}"
+            : copy.ContentHash != map.ContentHash ? $"fingerprint {copy.ContentHash:x8} vs {map.ContentHash:x8} (solid {copy.Solid.Count} vs {map.Solid.Count}, props {copy.PropHash:x8} vs {map.PropHash:x8}, buildings {copy.BuildingHash:x8} vs {map.BuildingHash:x8}, destruction {copy.DestructionHash:x8} vs {map.DestructionHash:x8})"
+            : "";
+        Line($"a second load: the same chunks, links and fingerprint {why.Length == 0} ({map.ContentHash:x8})");
+        if (why.Length > 0)
+            Fail($"loading the Destruction Test twice cut different chunks: {why}");
         // The renderer's static instances: one run per building and block, broken chunks written with no size.
         var (_, runs) = BuildingRenderer.BuildStatic(map);
         if (runs.Length != map.PlacedBuildings.Count + blocks || runs.Sum(x => x.Count) != map.PlacedBuildings.Sum(b => b.ShellCount) + d.Structures.Where(s => s.Building < 0).Sum(s => s.SolidCount))
@@ -246,8 +253,8 @@ public static partial class SelfTest
             game.ShotStructures(me, cfrom, Vector3.UnitZ, 2, 30, Weapons.DefaultPrimary.Id, 0);
             game.SelfTestTickDestruction(1);
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
         var sw = Stopwatch.StartNew();
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 10; k++)
         {
             game.BlastStructures(me, concreteCentre, frag.Radius, frag.MaxDamage, StructureHit.Grenade, fragKill, 0);
@@ -326,7 +333,7 @@ public static partial class SelfTest
         if (floorFell == 0)
             Fail("the floor above didn't fall when the ground floor's walls were gone");
         if (fallen < floor1.Count / 2)
-            Fail($"only {fallen} chunks fell when the ground floor went");
+            Fail($"only {fallen} chunks fell when the ground floor went ({ground.Count} broken, {floorFell} of {floor1.Count} floor-1 slabs, the farthest floor-1 slab {floor1.Max(c => d.LastDistance(c)):0.0} m from support)");
         if (game.FallHits == 0 || (me.Alive && me.Health >= World.MaxHealth))
             Fail("a falling floor didn't hurt the player under it");
         if (ms > 60)
@@ -369,9 +376,20 @@ public static partial class SelfTest
         Line($"a break event ({pick.Count} chunks, {size} bytes) on another copy of the map: {st.BrokenCount} broken or fallen on the server, {cd.Structures[s].BrokenCount} on the copy; same chunks {sameAfterEvent}");
         if (!sameAfterEvent || pick.Count > Game.StructBreakBatch)
             Fail("a client replaying the break event didn't end up with the server's chunks (the collapse isn't deterministic)");
-        // Join in progress: the state packets rebuild every structure on a third copy.
+        // Join in progress: the state packets rebuild every structure on a third copy (in the order a joiner gets them:
+        // broken props, doors and windows, then the chunks).
         game.BlastStructures(me, new Vector3(11, 1.2f, 13.4f), 9, 200, StructureHit.Grenade, 0, 0);
         var join = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!);
+        Game.WritePropState(w, map.BrokenProps, pw =>
+        {
+            var r = new PacketReader(pw.Span[1..]);
+            Game.ReadPropState(join, ref r);
+        });
+        Game.WriteBuildingState(w, map, pw =>
+        {
+            var r = new PacketReader(pw.Span[1..]);
+            Game.ReadBuildingState(join, ref r);
+        });
         var packets = 0;
         var biggest = 0;
         Game.WriteStructureState(w, map, pw =>
@@ -382,10 +400,12 @@ public static partial class SelfTest
             Game.ReadStructureState(join, ref r);
         });
         var jd = join.Destruction!;
-        var same = Enumerable.Range(0, d.Count).All(c => jd.Broken[c] == d.Broken[c]) && Enumerable.Range(0, map.Solid.Count).All(i => join.Solid[i] == map.Solid[i]);
+        var chunksSame = Enumerable.Range(0, d.Count).Count(c => jd.Broken[c] != d.Broken[c]);
+        var boxesSame = Enumerable.Range(0, map.Solid.Count).Count(i => join.Solid[i] != map.Solid[i]);
+        var same = chunksSame == 0 && boxesSame == 0;
         Line($"join in progress: {d.Structures.Count(x => x.BrokenCount > 0)} damaged structures in {packets} packets (biggest {biggest} bytes): chunks and collision boxes match {same}; protocol {ServerInfo.ProtocolVersion}");
         if (!same)
-            Fail("the join-in-progress state doesn't reproduce the broken chunks");
+            Fail($"the join-in-progress state doesn't reproduce the broken chunks ({chunksSame} chunks and {boxesSame} boxes differ)");
         if (biggest > 1400)
             Fail($"a structure state packet is {biggest} bytes (over 1400)");
         if (ServerInfo.ProtocolVersion < 33)
@@ -400,10 +420,80 @@ public static partial class SelfTest
         map.RestoreProps();
     }
 
+    /// <summary>Bots: a blasted wall opens a way in the nav graph (patched in slices), a fallen floor switches its nodes off, the next match undoes it all.</summary>
+    private static void CheckDestructionNav(Map map)
+    {
+        World.SetMap(map);
+        var d = map.Destruction!;
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id);
+        var me = game.Players[0];
+        me.Position = new Vector3(0, 0, -36);
+        for (var wait = 0; wait < 4000 && NavGraph.Current == NavGraph.Empty; wait++)
+            NavGraph.Pump(50);
+        var g = NavGraph.Current;
+        if (g == NavGraph.Empty || g.ExtraHead.Length != g.Nodes.Length || g.SpareCount != NavGraph.SpareNodeCount)
+        {
+            Fail($"the Destruction Test's nav graph has no room for patches ({g.Nodes.Length} nodes, {g.SpareCount} spares)");
+            return;
+        }
+        var search = new NavSearch();
+        var path = new int[4096];
+        float Route(Vector3 from, Vector3 to, out int extra)
+        {
+            extra = 0;
+            int a = g.Nearest(from, needSight: false), b = g.Nearest(to, needSight: false);
+            var n = a < 0 || b < 0 ? 0 : search.Find(g, a, b, path);
+            if (n == 0)
+                return float.PositiveInfinity;
+            var len = Vector3.Distance(from, g.Nodes[path[0]]) + Vector3.Distance(g.Nodes[path[n - 1]], to);
+            for (var k = 1; k < n; k++)
+            {
+                len += Vector3.Distance(g.Nodes[path[k - 1]], g.Nodes[path[k]]);
+                if (path[k] >= g.SpareStart && path[k] < g.SpareStart + g.SpareCount)
+                    extra++;
+            }
+            return len;
+        }
+        // Across the free-standing brick wall (x 0..6 at z 14): round its end, until a rocket blows a hole in it.
+        var from = new Vector3(3, 0, 12.3f);
+        var to = new Vector3(3, 0, 16f);
+        var before = Route(from, to, out _);
+        var rpg = Weapons.All.FirstOrDefault(w => w.IsLauncher && w.Name.Contains("RPG", StringComparison.OrdinalIgnoreCase)) ?? Weapons.All.First(w => w.IsLauncher);
+        var brick = BlockAt(map, new Vector3(3, 0, 14.1f));
+        game.BlastStructures(me, new Vector3(3, 0.9f, 13.9f), rpg.LauncherRadius, rpg.Damage, StructureHit.Launcher, rpg.Id, 0);
+        var sw = Stopwatch.StartNew();
+        game.SelfTestFinishNavPatches();
+        var ms = sw.Elapsed.TotalMilliseconds;
+        var after = Route(from, to, out var through);
+        Line($"nav: {g.Nodes.Length} nodes ({g.SpareCount} spares), {g.BuiltEdges} edges as built; a rocket holes the brick wall ({d.Structures[brick].BrokenCount} chunks): "
+             + $"patched in {ms:0.0} ms ({game.NavPatchesDone} patches, {g.SparesUsed} hole nodes, {g.EdgesAdded} links added, {g.EdgesOff} off), the way across {before:0.0} m -> {after:0.0} m ({through} hole nodes on it)");
+        if (!(after < before - 2f) || through == 0)
+            Fail("bots' nav graph found no way through a blasted wall");
+        // A fallen floor: its nodes go off.
+        var apt = map.PlacedBuildings.First(b => b.Def.Name == "Apartment Block" && b.Structure >= 0);
+        var level1 = apt.Plan.BaseY + BuildingGen.GroundSlab + apt.Def.StoreyHeight;
+        var ground = ChunksOf(d, apt.Structure).Where(c => d.Original[c].Min.Y < level1 - 0.25f && d.Original[c].Max.Y > apt.Plan.BaseY + 0.3f
+                                                             && (d.Flags[c] & (MapDestruction.FlagFixed | MapDestruction.FlagSkin | MapDestruction.FlagFloor)) == 0).ToList();
+        game.SelfTestBreakChunks(ground, StructureHit.Streak, apt.Plan.Bounds.Center, 0);
+        sw.Restart();
+        game.SelfTestFinishNavPatches();
+        var msFloor = sw.Elapsed.TotalMilliseconds;
+        Line($"nav: the apartment block's floors coming down switch {g.NodesOff} nodes and {g.EdgesOff} links off (patched in {msFloor:0.0} ms of slices)");
+        if (g.NodesOff == 0)
+            Fail("nodes on fallen floors stayed on in the nav graph");
+        // The next match: whole again, the graph as built.
+        map.RestoreProps();
+        g.ResetRuntime();
+        var again = Route(from, to, out var through2);
+        if (g.EdgeTo.Length != g.BuiltEdges || g.SparesUsed != 0 || through2 != 0 || MathF.Abs(again - before) > 0.01f)
+            Fail($"the nav graph wasn't back to as built after the reset (way {again:0.0} m, {g.EdgeTo.Length - g.BuiltEdges} extra edges)");
+    }
+
     /// <summary>The World Tour maps are destructible and within budget, stand as built; older packs are untouched.</summary>
     private static void CheckDestructionPacks()
     {
         var budget = MaterialDestruction.Current.Rules.MaxPerMap;
+        var diag = new List<string>(); // TEMP: the numbers as an annotation while tuning
         foreach (var m in Maps.All.Where(m => m.Pack?.Folder == "World"))
         {
             var d = m.Destruction;
@@ -417,11 +507,13 @@ public static partial class SelfTest
                 d.Unsupported(s, falling);
             Line($"  {m.Name,-14} {d.Structures.Count,3} destructible buildings, {d.Count,6} chunks of {m.Solid.Count,6} boxes, {d.EdgeCount,6} links, graph {d.BuildMs,5:0.0} ms, "
                  + $"{m.DestructionOverBudget} over budget, {falling.Count} falling as built");
+            diag.Add($"{m.Name} {d.Structures.Count}b {d.Count}c/{m.Solid.Count} {d.BuildMs:0}ms over{m.DestructionOverBudget}");
             if (d.Count > budget)
                 Fail($"{m.Name}: {d.Count} chunks (budget {budget})");
             if (falling.Count > 0)
                 Fail($"{m.Name}: {falling.Count} chunks fall as built");
         }
+        Fail("DIAG (temporary) " + string.Join("; ", diag));
         var untouched = Maps.All.Where(m => m.Pack?.Folder != "World" && m.Name != "Destruction Test").ToList();
         var touched = untouched.Count(m => m.Destruction != null || m.DestructionHash != 0 || m.Destructible);
         Line($"{untouched.Count} maps in other packs: {touched} with destruction (their fingerprints are pinned in \"Pack assets\")");

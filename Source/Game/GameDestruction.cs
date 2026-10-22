@@ -256,6 +256,7 @@ public sealed partial class Game
     /// <summary>Server, every tick: falling pieces that reached the floor land on whoever stands under them.</summary>
     private void ServerTickDestruction(double now)
     {
+        ServerTickDestructionNav(); // bots' nav graph follows the holes (GameDestructionNav.cs)
         if (_fallCount == 0)
             return;
         EnsureFallState();
