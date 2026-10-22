@@ -234,9 +234,6 @@ public static class GunSamples
     /// <summary>Sample-based shots come out at this times the synthesised shot's RMS (the frenzy calibration measures the result).</summary>
     public const float LoudnessMatch = 1f;
 
-    /// <summary>The gain that matches loudness is capped so the soft limiter never has to squash a peak more than this.</summary>
-    public const float MaxPeakBeforeLimiter = 1.7f;
-
     public const float Ceiling = 0.97f;
 
     /// <summary>
@@ -394,27 +391,73 @@ public static class GunSamples
         return (float)Math.Sqrt(sum / Math.Max(1, n));
     }
 
-    /// <summary>Scales to the target RMS (gain capped by <see cref="MaxPeakBeforeLimiter"/>), soft-limits under <see cref="Ceiling"/>, 2 ms fade-out.</summary>
+    /// <summary>
+    /// Scales to the target RMS through a look-ahead peak limiter (1 ms attack ramp ahead of each peak, 40 ms release,
+    /// so the blast's first milliseconds are turned down smoothly rather than clipped; gain at most
+    /// <see cref="MaxGain"/>), a soft clip under <see cref="Ceiling"/> as a safety net, and a 2 ms fade-out.
+    /// The limiter lowers the RMS, so the gain is corrected once and the limiter run again.
+    /// </summary>
     private static short[] Finish(float[] x, float targetRms)
     {
-        var peak = 1e-6f;
-        foreach (var v in x)
-            peak = MathF.Max(peak, MathF.Abs(v));
-        var gain = MathF.Min(targetRms / MathF.Max(Rms(x, LoudnessWindow), 1e-6f), MaxPeakBeforeLimiter / peak);
-        const float knee = 0.75f, span = Ceiling - knee;
-        var fade = Math.Min(x.Length, Sr / 500);
-        var pcm = new short[x.Length];
-        for (var i = 0; i < x.Length; i++)
+        var y = new float[x.Length];
+        var gain = MathF.Min(targetRms / MathF.Max(Rms(x, LoudnessWindow), 1e-6f), MaxGain);
+        for (var pass = 0; pass < 2; pass++)
         {
-            var v = x[i] * gain;
+            for (var i = 0; i < x.Length; i++)
+                y[i] = x[i] * gain;
+            Limit(y, LimiterThreshold);
+            var got = Rms(y, LoudnessWindow);
+            if (pass == 0 && got > 1e-6f)
+                gain = MathF.Min(gain * targetRms / got, MaxGain);
+        }
+        const float knee = 0.85f, span = Ceiling - knee;
+        var fade = Math.Min(y.Length, Sr / 500);
+        var pcm = new short[y.Length];
+        for (var i = 0; i < y.Length; i++)
+        {
+            var v = y[i];
             var a = MathF.Abs(v);
             if (a > knee)
                 v = MathF.CopySign(knee + span * MathF.Tanh((a - knee) / span), v);
-            if (i >= x.Length - fade)
-                v *= (x.Length - i) / (float)fade;
+            if (i >= y.Length - fade)
+                v *= (y.Length - i) / (float)fade;
             pcm[i] = (short)Math.Clamp((int)MathF.Round(v * 32767f), -32767, 32767);
         }
         return pcm;
+    }
+
+    /// <summary>The most a bake may be turned up (keeps a quiet recording's noise floor in check).</summary>
+    public const float MaxGain = 6f;
+
+    /// <summary>The look-ahead limiter's ceiling (the soft clip above it is only a safety net).</summary>
+    public const float LimiterThreshold = 0.85f;
+
+    /// <summary>
+    /// O(n) look-ahead peak limiter: the gain each sample needs, ramped down over 1 ms ahead of every peak (backward
+    /// pass) and recovered over 40 ms after it (forward pass), so |x| never exceeds <paramref name="threshold"/>.
+    /// </summary>
+    public static void Limit(float[] x, float threshold)
+    {
+        var n = x.Length;
+        if (n == 0)
+            return;
+        var g = new float[n];
+        var attack = 1f / (Sr / 1000f);
+        var release = 1f / (0.04f * Sr);
+        var next = 1f;
+        for (var i = n - 1; i >= 0; i--)
+        {
+            var a = MathF.Abs(x[i]);
+            var need = a > threshold ? threshold / a : 1f;
+            next = MathF.Min(need, next + attack);
+            g[i] = next;
+        }
+        var prev = g[0];
+        for (var i = 0; i < n; i++)
+        {
+            prev = MathF.Min(g[i], prev + release);
+            x[i] *= prev;
+        }
     }
 }
 
