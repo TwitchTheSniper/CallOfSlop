@@ -92,6 +92,7 @@ public sealed partial class Map
             throw new InvalidOperationException($"too many decals (the limit is {MaxDecals} per map)");
         DecalRequests.Add(r);
         _decalMesh = null;
+        _decalBake = null;
     }
 
     private static void CheckDecalNames(string[] names)
@@ -139,6 +140,37 @@ public sealed partial class Map
 
     private DecalMesh? _decalMesh;
     private int _decalGeneration = -1;
+    private Task<DecalMesh>? _decalBake;
+    private int _decalBakeGeneration = -1;
+
+    /// <summary>
+    /// The map's baked decals if they are ready; otherwise starts baking them on a worker thread (once per map and decal
+    /// library) and returns null, so a map with thousands of decals never stalls a frame. The renderer calls this every
+    /// frame and draws the decals from the first frame they are ready (bullet impacts don't wait).
+    /// </summary>
+    public DecalMesh? DecalMeshIfReady()
+    {
+        var generation = CallOfSlop.Decals.Generation;
+        if (_decalMesh != null && _decalGeneration == generation)
+            return _decalMesh;
+        if (_decalBake == null || _decalBakeGeneration != generation)
+        {
+            _decalBakeGeneration = generation;
+            _decalBake = Task.Run(() => DecalBaker.Bake(this));
+        }
+        if (!_decalBake.IsCompleted)
+            return null;
+        if (_decalBake.IsCompletedSuccessfully)
+            _decalMesh = _decalBake.Result;
+        else
+        {
+            Console.WriteLine($"[decals] baking '{Name}' failed: {_decalBake.Exception?.GetBaseException().Message}");
+            _decalMesh = DecalMesh.Empty;
+        }
+        _decalGeneration = generation;
+        _decalBake = null;
+        return _decalMesh;
+    }
 
     /// <summary>
     /// The map's decals projected onto its surfaces (built on first use, again after the decal library reloads).

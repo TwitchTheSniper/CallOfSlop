@@ -258,6 +258,19 @@ public static partial class SelfTest
         var copy = MapFile.Load(json, "Decal Test (round trip)", map.PackDir ?? "");
         if (copy.DecalRequests.Count != map.DecalRequests.Count || copy.DecalCount != map.DecalCount)
             Fail("Decal Test: decal ops changed in a map file round trip");
+        // The renderer's path: the first call starts a worker-thread bake and returns null; later calls get the same mesh.
+        var asyncCopy = MapFile.Load(json, "Decal Test (async)", map.PackDir ?? "");
+        var waited = Stopwatch.StartNew();
+        var firstCall = asyncCopy.DecalMeshIfReady();
+        var ready = firstCall;
+        while (ready == null && waited.Elapsed.TotalSeconds < 20)
+        {
+            Thread.Sleep(2);
+            ready = asyncCopy.DecalMeshIfReady();
+        }
+        DecalLine($"background bake: first call {(firstCall == null ? "returned nothing (baking on a worker thread)" : "already had the mesh")}, ready after {waited.Elapsed.TotalMilliseconds:0} ms");
+        if (ready == null || ready.VertexCount != mesh.VertexCount || !ReferenceEquals(ready, asyncCopy.DecalMeshIfReady()))
+            Fail($"the background decal bake gave {ready?.VertexCount.ToString() ?? "nothing"} vertices (expected {mesh.VertexCount}), or isn't kept");
         var root = JsonNode.Parse(json)!.AsObject();
         var ops = root["ops"]!.AsArray();
         for (var i = ops.Count - 1; i >= 0; i--)

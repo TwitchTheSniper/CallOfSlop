@@ -148,7 +148,8 @@ public sealed unsafe class DecalRenderer
     private uint _atlas, _alive;
     private int _sLocViewProj, _sLocCam, _sLocFog, _sLocFogRange, _sLocMultiply;
     private int _iLocViewProj, _iLocCam, _iLocFog, _iLocFogRange, _iLocMultiply, _iLocTime, _iLocFadeTime, _iLocDrawDist;
-    private int _atlasGeneration = -1, _atlasLayers;
+    private int _atlasGeneration = -1, _atlasLayers, _atlasTaskGeneration = -1;
+    private Task<(DecalDef[] Defs, byte[] Data, double Ms)>? _atlasTask;
     private double _atlasMs;
     private DecalMesh? _mesh;
     private Map? _meshMap;
@@ -198,7 +199,8 @@ public sealed unsafe class DecalRenderer
             pool.Clear(map, now); // a new map: no impacts carried over
         if (_broken)
             return;
-        var mesh = map.DecalRequests.Count > 0 ? map.DecalMesh : DecalMesh.Empty;
+        // Baked on a worker thread the first time (null until ready: impacts are drawn meanwhile).
+        var mesh = map.DecalRequests.Count > 0 ? map.DecalMeshIfReady() ?? DecalMesh.Empty : DecalMesh.Empty;
         if (mesh.VertexCount == 0 && pool.HighWater == 0)
             return;
         var t0 = Stopwatch.GetTimestamp();
@@ -206,8 +208,8 @@ public sealed unsafe class DecalRenderer
             return;
         try
         {
-            if (_atlasGeneration != Decals.Generation)
-                UploadAtlas();
+            if (_atlasGeneration != Decals.Generation && !UploadAtlas())
+                return; // the atlas is still being painted on a worker thread (a few frames at startup)
             if (!ReferenceEquals(mesh, _mesh) || !ReferenceEquals(map, _meshMap))
                 UploadMesh(map, mesh);
             if (_aliveVersion != DecalEvents.Version)
@@ -356,11 +358,31 @@ public sealed unsafe class DecalRenderer
 
     // ---- Uploads ------------------------------------------------------------------------------------------
 
-    private void UploadAtlas()
+    /// <summary>
+    /// Paints the atlas on a worker thread and uploads it once it's done. False while it's still being painted (the decal
+    /// pass is skipped until then, never stalling a frame).
+    /// </summary>
+    private bool UploadAtlas()
     {
+        var generation = Decals.Generation;
+        if (_atlasTask == null || _atlasTaskGeneration != generation)
+        {
+            _atlasTaskGeneration = generation;
+            var defs0 = Decals.All;
+            _atlasTask = Task.Run(() =>
+            {
+                var sw0 = Stopwatch.StartNew();
+                var bytes = DecalAtlas.Build(defs0); // (image problems are logged; the self-test reports them)
+                return (defs0, bytes, sw0.Elapsed.TotalMilliseconds);
+            });
+        }
+        if (!_atlasTask.IsCompleted)
+            return false;
+        var (defs, data, paintMs) = _atlasTask.IsCompletedSuccessfully ? _atlasTask.Result : (Array.Empty<DecalDef>(), new byte[DecalAtlas.BytesPerLayer], 0.0);
+        if (!_atlasTask.IsCompletedSuccessfully)
+            Console.WriteLine($"[decals] painting the atlas failed: {_atlasTask.Exception?.GetBaseException().Message}");
+        _atlasTask = null;
         var sw = Stopwatch.StartNew();
-        var defs = Decals.All;
-        var data = DecalAtlas.Build(defs, Decals.LoadErrors);
         _atlasLayers = Math.Max(1, defs.Length);
         Native.glActiveTexture(GL_TEXTURE0 + AtlasUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _atlas);
@@ -374,9 +396,10 @@ public sealed unsafe class DecalRenderer
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
         Native.glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_ANISOTROPY, 4);
         Native.glActiveTexture(GL_TEXTURE0);
-        _atlasGeneration = Decals.Generation;
+        _atlasGeneration = generation;
         _atlasMs = sw.Elapsed.TotalMilliseconds;
-        Console.WriteLine($"[decals] atlas: {_atlasLayers} layer(s) of {DecalAtlas.LayerSize} px ({data.Length / 1024} KB + mipmaps), painted and uploaded in {_atlasMs:0.0} ms");
+        Console.WriteLine($"[decals] atlas: {_atlasLayers} layer(s) of {DecalAtlas.LayerSize} px ({data.Length / 1024} KB + mipmaps), painted in {paintMs:0.0} ms (worker thread), uploaded in {_atlasMs:0.0} ms");
+        return true;
     }
 
     private void UploadMesh(Map map, DecalMesh mesh)
