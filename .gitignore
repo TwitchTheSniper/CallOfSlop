@@ -11,6 +11,11 @@ obj/
 progress*.txt
 settings.txt
 loadout*.txt
+workbench.txt
+portable.txt
+*.txt.bak
+*.txt.tmp
+*.corrupt
 *.log
 smoke_*.bmp
 tools/run_smoke.flag
