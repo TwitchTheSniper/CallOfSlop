@@ -155,6 +155,6 @@ public static partial class SelfTest
         if (missing.Count > 0)
             Fail($"{m.Name}: the nav graph doesn't reach {string.Join(", ", missing.Take(6))}");
         World.SetMap(Maps.All[0]);
-        Line("::notice title=World Tour: Bocage::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25"))));
+        Line("::error title=World Tour: Bocage (TEMP results)::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25"))));
     }
 }
