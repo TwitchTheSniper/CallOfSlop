@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pallet Jack",
+  "category": "Warehouse",
+  "description": "A red hand pallet jack, forks along +Z.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [1, 1]},
+  "fadeDistance": 60,
+  "parts": [
+    {"size": [0.18, 0.08, 1.15], "offset": [-0.2, 0.06, 0.1], "color": "darkgrey"},
+    {"size": [0.18, 0.08, 1.15], "offset": [0.2, 0.06, 0.1], "color": "darkgrey"},
+    {"size": [0.6, 0.35, 0.22], "offset": [0, 0.2, -0.55], "color": "#c8161d", "material": "metal"},
+    {"size": [0.05, 1.0, 0.05], "offset": [0, 0.75, -0.7], "color": "#c8161d", "rotation": [-15, 0, 0]},
+    {"size": [0.36, 0.05, 0.05], "offset": [0, 1.23, -0.82], "color": "black"},
+    {"size": [0.12, 0.12, 0.12], "offset": [0, 0.06, -0.55], "color": "rubber"}
+  ]
+}

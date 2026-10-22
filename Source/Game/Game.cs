@@ -856,6 +856,7 @@ public sealed partial class Game : IDisposable
         ServerTickMatch(now);
         ServerTickProjectiles(now);
         ServerTickStreaks(now);
+        ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
 
         foreach (var p in Players.Values)

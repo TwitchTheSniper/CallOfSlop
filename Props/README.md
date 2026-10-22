@@ -98,12 +98,13 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
 | `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
-| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. |
+| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. |
 
 How breaking works in a match:
 
 - **The host decides.** It tracks every breakable prop's health and tells everyone when one breaks (players who join mid-match are told which props are already broken). Every PC then hides the prop, drops its collision and throws out its debris.
 - **Bullets stop at solid props**, breakable or not: the shot that breaks a crate stops there too, the next one goes through the gap. Cosmetic breakables (bottles) break as a bullet passes through them.
+- **Chain reactions stay cheap.** At most 4 fused props go off per server tick (the rest wait a tick or two), and at most 20 prop fireballs show in any 0.6 s: more still hurt and break things, with their debris and sound.
 - **Debris is for looks only.** The pieces fly away from the hit (explosions push them outwards), bounce, settle and fade out after 4 to 5 seconds. At most 384 pieces exist at once; the oldest go first.
 - **Every match starts with every prop whole again.**
 - Bots plan their routes as if every prop were whole, so a broken one just gives them a little more room.
@@ -235,6 +236,7 @@ Leave out `breakable` for anything players should be able to trust as cover. The
 |---|---|
 | `Street` | Bins, dumpsters, benches, lamps, hydrants, mailboxes, cones, barriers, the vending machine, signs. |
 | `Industrial` | Crates, pallets, drums (one explosive), pipes, sandbags, tyres, cable spools, gas cylinders. |
+| `Volatile` | Things that go off, with a short fuse: Red Fuel Barrel, Propane Tank, Propane Bulk Tank (an 11 m blast), Gas Bottle, Gas Bottle Cage, Flammables Cabinet; and two that only break: Chemical Drum, IBC Tote. |
 | `Debris` | Bricks, rubble, planks, cardboard, newspapers, bottles, cans, bags, litter. |
 | `Furniture` | Chairs, a table, a sofa, a filing cabinet. |
 | `Nature` | A planter, a log, a stump, a hay bale. |

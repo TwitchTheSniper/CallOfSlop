@@ -84,6 +84,13 @@ public sealed class PropBreakable
 
     /// <summary>An explosive prop (fuel drum) goes off when it breaks: blast radius (0 = it doesn't) and damage at the centre.</summary>
     public float ExplodeRadius, ExplodeDamage;
+
+    /// <summary>
+    /// Seconds an explosive prop burns after the hit that breaks it before it goes off (0 = at once, the old behaviour).
+    /// While lit it stays whole (sparks and a hiss on every PC); one lit by another prop's blast goes off sooner
+    /// (<see cref="Game.ChainFuse"/>), so a cluster ripples instead of popping in one tick.
+    /// </summary>
+    public float ExplodeFuse;
 }
 
 /// <summary>

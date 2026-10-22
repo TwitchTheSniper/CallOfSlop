@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Flammables Cabinet",
+  "category": "Volatile",
+  "description": "A yellow FLAMMABLE safety cabinet full of solvent tins (front faces +Z). Takes a beating, then burns for 1.2 s and blows its doors off.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 1.78, 0.56]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.06, 0.3], "speed": 7, "colors": ["yellow", "red", "darkgrey"]}, "explode": {"radius": 6, "damage": 130, "fuse": 1.2}},
+  "parts": [
+    {"size": [1.1, 1.72, 0.55], "offset": [0, 0.88, 0], "color": "yellow", "material": "metal"},
+    {"size": [1.12, 0.04, 0.57], "offset": [0, 1.76, 0], "color": "#c9a312"},
+    {"size": [1.0, 0.06, 0.5], "offset": [0, 0.03, 0], "color": "darkgrey"},
+    {"size": [0.008, 1.5, 0.01], "offset": [0, 0.9, 0.28], "color": "#8a7010"},
+    {"size": [0.4, 0.14, 0.01], "offset": [0, 1.45, 0.281], "color": "#c8161d"},
+    {"size": [0.32, 0.05, 0.012], "offset": [0, 1.45, 0.283], "color": "white"},
+    {"size": [0.18, 0.18, 0.012], "offset": [-0.27, 1.12, 0.281], "color": "#c8161d", "rotation": [0, 0, 45]},
+    {"size": [0.18, 0.18, 0.012], "offset": [0.27, 1.12, 0.281], "color": "#c8161d", "rotation": [0, 0, 45]},
+    {"size": [0.03, 0.18, 0.03], "offset": [-0.06, 0.95, 0.29], "color": "black"},
+    {"size": [0.03, 0.18, 0.03], "offset": [0.06, 0.95, 0.29], "color": "black"},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.4, 1.8, -0.15], "color": "darkgrey"}
+  ]
+}

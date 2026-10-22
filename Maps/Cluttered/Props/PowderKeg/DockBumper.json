@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Dock Bumper",
+  "category": "Warehouse",
+  "description": "A black rubber dock bumper for the wall beside a dock door (back at -Z).",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 60,
+  "parts": [
+    {"size": [0.25, 0.5, 0.12], "offset": [0, 0.25, 0.06], "color": "rubber"},
+    {"size": [0.29, 0.04, 0.02], "offset": [0, 0.48, 0.01], "color": "darkgrey"}
+  ]
+}
