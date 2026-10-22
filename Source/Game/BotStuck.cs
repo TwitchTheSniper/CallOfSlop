@@ -28,6 +28,7 @@ public sealed partial class BotBrain
     public float OffNavSecs;
 
     public BotStuckCause OffNavCause;
+    internal Vector3 OffNavAnchor; // where the current off-nav spell started
     internal Vector3 StuckAnchor; // where the current stuck spell started (moving well away from it is progress)
     internal int StuckAnchorNode = -1; // the path node it was walking to then, and how far away it was
     internal float StuckAnchorNodeDist;
@@ -69,7 +70,7 @@ public sealed partial class Game
     public float BotOffNavSeconds = 4f;
 
     private const float StuckProgress = 0.6f; // moving this far from the stuck spot is progress...
-    private const float StuckProgressRecovering = 2f; // ...or this far once a recovery started (backing off isn't progress)
+    private const float StuckProgressRecovering = 4f; // ...or this far once a recovery started (backing off isn't progress)
     private const float StuckNodeProgress = 0.5f; // getting this much closer to the same path node is progress too
     private const double StuckLogEvery = 60; // seconds between log lines per bot
 
@@ -110,39 +111,48 @@ public sealed partial class Game
         var nav = b.PathGraph ?? NavGraph.Current;
         var onMover = InMoverSweep(pos);
 
-        // Off the walkable area: checked twice a second, straight to the self-kill after a few seconds.
+        // Standing still on purpose, or something else holds the bot: not stuck.
+        var wants = s.Wish.LengthSquared() >= 0.05f && !s.Stationary;
+        var idle = !wants || onMover || BotHolding(p, b, now);
+
+        // Off the walkable area: checked twice a second, straight to the self-kill after a few seconds of wanting out
+        // and staying within a few metres (a bot running about isn't in a pit; falling out of the map always counts).
         if (now >= b.NextOffNavCheck)
         {
             b.NextOffNavCheck = now + 0.5;
-            var cause = onMover ? BotStuckCause.None : OffNavCause(nav, pos);
-            if (cause == BotStuckCause.None)
+            var cause = onMover ? BotStuckCause.None : OffNavCause(nav, b, pos);
+            if (cause == BotStuckCause.None || (idle && cause != BotStuckCause.Void))
                 b.OffNavSecs = 0;
             else
             {
+                if (b.OffNavSecs == 0 || (cause != BotStuckCause.Void && Vector3.DistanceSquared(pos, b.OffNavAnchor) > StuckProgressRecovering * StuckProgressRecovering))
+                {
+                    b.OffNavAnchor = pos;
+                    b.OffNavSecs = 0;
+                }
                 b.OffNavSecs += 0.5f;
                 b.OffNavCause = cause;
                 if (b.OffNavSecs >= BotOffNavSeconds)
                     return StuckGiveUp(p, b, nav, cause, b.OffNavSecs, now);
             }
         }
-
-        // Standing still on purpose, or something else holds the bot: not stuck.
-        var wants = s.Wish.LengthSquared() >= 0.05f && !s.Stationary;
-        if (!wants || onMover || BotHolding(p, b, now))
+        if (idle)
         {
             StuckReset(b, pos);
             return false;
         }
 
-        // Progress: well away from where the spell started, or clearly closer to the same path node.
+        // Progress: away from where the spell started, or clearly closer to the same path node. Once a recovery has
+        // started only a real move away counts (backing off and walking back into the same corner isn't progress).
         var following = now - b.FollowTime < 0.05 && b.FollowNode >= 0;
         var node = following ? b.FollowNode : -1;
         var nodeDist = following ? Flat(b.FollowAim - pos) : 0f;
-        var radius = b.StuckStage == 0 ? StuckProgress : StuckProgressRecovering;
         var moved = Vector3.DistanceSquared(pos, b.StuckAnchor);
-        var progressed = node >= 0 && node == b.StuckAnchorNode
-            ? b.StuckAnchorNodeDist - nodeDist >= StuckNodeProgress || moved >= 3f * 3f
-            : moved >= radius * radius;
+        var progressed = b.StuckStage > 0
+            ? moved >= StuckProgressRecovering * StuckProgressRecovering
+            : node >= 0 && node == b.StuckAnchorNode
+                ? b.StuckAnchorNodeDist - nodeDist >= StuckNodeProgress || moved >= 3f * 3f
+                : moved >= StuckProgress * StuckProgress;
         if (progressed && now >= b.BackOffUntil)
         {
             StuckReset(b, pos);
@@ -260,8 +270,11 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Is the bot off the walkable area? None when it's fine (or the map's graph is still being built).</summary>
-    private static BotStuckCause OffNavCause(NavGraph nav, Vector3 pos)
+    /// <summary>
+    /// Is the bot off the walkable area? None when it's fine (or the map's graph is still being built). Trap nodes only
+    /// count while the bot has no route out (the nav's trap flags are a hint; a route A* found says otherwise).
+    /// </summary>
+    private static BotStuckCause OffNavCause(NavGraph nav, BotBrain b, Vector3 pos)
     {
         if (nav.Nodes.Length == 0)
             return BotStuckCause.None;
@@ -270,7 +283,7 @@ public sealed partial class Game
         var n = nav.Nearest(pos, needSight: false);
         if (n < 0)
             return BotStuckCause.OffNav;
-        return nav.IsTrapped(n) ? BotStuckCause.Trap : BotStuckCause.None;
+        return nav.IsTrapped(n) && b.PathLen == 0 ? BotStuckCause.Trap : BotStuckCause.None;
     }
 
     /// <summary>The best guess at what's holding the bot, for the log.</summary>

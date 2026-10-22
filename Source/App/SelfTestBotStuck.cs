@@ -46,6 +46,7 @@ public static partial class SelfTest
                 b.ForcedGoal = outside;
                 host.Alive = false; // out of sight, out of the fight (nothing to engage)
                 host.Health = 0;
+                host.WantsRespawn = false;
             }
             Run(game, ref now, 0.5);
             var warm = game.Phase;
@@ -82,7 +83,7 @@ public static partial class SelfTest
                     diedAt = now - start;
             }
             var log = game.LastStuckLog;
-            Line($"pit in play: self-kill after {(diedAt < 0 ? "NEVER" : $"{diedAt:0.00} s")} (timeout {game.BotStuckSuicideSeconds:0} s), recovery stages reached {maxStage}, "
+            Line($"pit in play: self-kill after {(diedAt < 0 ? "NEVER" : $"{diedAt:0.00} s")} (timeout {game.BotStuckSuicideSeconds:0} s), recovery stages reached {maxStage} (mode {b.Mode}), "
                  + $"deaths {deaths}->{bot.Deaths}, kills {kills}->{bot.Kills}, counters {game.BotStuckKills} (this map {game.StuckKillsOn(lab.Name)}, this match {game.BotStuckKillsThisMatch})");
             Line($"log: {log}");
             if (diedAt < 0)
