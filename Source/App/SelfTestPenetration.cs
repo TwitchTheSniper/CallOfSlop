@@ -41,6 +41,15 @@ public static partial class SelfTest
     /// <summary>The lab's oriented slab: 4 m wide, 3 m tall, 10 cm thick, turned 45 degrees about the vertical, centred at (20, 1.5, -10).</summary>
     private static readonly Obb PenSlab = new(new Vector3(20, 1.5f, -10), new Vector3(2, 1.5f, 0.05f), Quaternion.CreateFromAxisAngle(Vector3.UnitY, MathF.PI / 4));
 
+    private static readonly List<string> PenNotes = new();
+
+    /// <summary>A result line, also kept for the section's GitHub annotation.</summary>
+    private static void PenNote(string s)
+    {
+        Line(s);
+        PenNotes.Add(s);
+    }
+
     private static void SetPenLab(Map lab)
     {
         World.SetMap(lab);
@@ -61,6 +70,7 @@ public static partial class SelfTest
             CheckPenBuildingParts();
             CheckPenHedgerowsAndTerrain();
             CheckPenShots();
+            Line("::notice title=Bullet penetration (results)::" + string.Join("%0A", PenNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
         finally
         {
@@ -74,7 +84,7 @@ public static partial class SelfTest
     private static void CheckPenData()
     {
         MaterialPenetration.EnsureLoaded();
-        Line(MaterialPenetration.Describe());
+        PenNote(MaterialPenetration.Describe());
         if (MaterialPenetration.Source == "built-in")
             Fail($"Materials/penetration.json didn't load: {MaterialPenetration.LoadError}");
         if (MaterialPenetration.MaxSurfaces != 3)
@@ -113,7 +123,7 @@ public static partial class SelfTest
             var guns = Weapons.All.Where(w => w.Class == cls).ToArray();
             if (guns.Length == 0)
                 continue;
-            Line($"penetration power {cls}: " + string.Join(", ", guns.Select(w => $"{w.Name} {MaterialPenetration.PowerOf(w):0.#}")));
+            PenNote($"penetration power {cls}: " + string.Join(", ", guns.Select(w => $"{w.Name} {MaterialPenetration.PowerOf(w):0.#}")));
         }
         foreach (var w in Weapons.All)
         {
@@ -136,7 +146,7 @@ public static partial class SelfTest
             var copy = rifle.Clone();
             foreach (var e in ap.Effects)
                 e.ApplyTo(copy);
-            Line($"AP Rounds on {rifle.Name}: power {MaterialPenetration.PowerOf(rifle):0.#} -> {MaterialPenetration.PowerOf(copy):0.#}");
+            PenNote($"AP Rounds on {rifle.Name}: power {MaterialPenetration.PowerOf(rifle):0.#} -> {MaterialPenetration.PowerOf(copy):0.#}");
             if (MaterialPenetration.PowerOf(copy) <= MaterialPenetration.PowerOf(rifle) * 1.4f)
                 Fail("penetration: AP Rounds don't raise the penetration power");
         }
@@ -147,7 +157,7 @@ public static partial class SelfTest
         var plaster = MaterialPenetration.Get(MaterialKey.Plaster);
         var f1 = MaterialPenetration.Kept(wood, p0, p0 - 10);
         var f2 = f1 * MaterialPenetration.Kept(plaster, p0 - 10, p0 - 18);
-        Line($"falloff at {p0}: after 10 cm wood x{f1:0.000}, then 10 cm plaster x{f2:0.000} (95 damage -> {95 * f2:0.0})");
+        PenNote($"falloff at {p0}: after 10 cm wood x{f1:0.000}, then 10 cm plaster x{f2:0.000} (95 damage -> {95 * f2:0.0})");
         if (MathF.Abs(f1 - 0.7553f) > 0.002f || MathF.Abs(f2 - 0.6097f) > 0.002f)
             Fail($"penetration falloff changed: {f1:0.0000}, {f2:0.0000} (want 0.7553, 0.6097)");
     }
@@ -166,7 +176,7 @@ public static partial class SelfTest
 
         // Brick 20 cm: the hand cannon stops at its front, a power-999 round passes.
         var end = t.Run(lab, phys, MaterialPenetration.PowerOf(cannon), Eye(-30), fwd, World.Range, 3);
-        Line($"20 cm brick: {cannon.Name} ends at {end:0.000} m ({t.Stopped}, {t.Surfaces} surfaces)");
+        PenNote($"20 cm brick: {cannon.Name} ends at {end:0.000} m ({t.Stopped}, {t.Surfaces} surfaces)");
         if (MathF.Abs(end - 10f) > 0.01f || t.Surfaces != 0 || t.Stopped != PenetrationTrace.StopReason.Power)
             Fail($"penetration: a pistol got into 20 cm of brick (ended {end}, {t.Stopped})");
         end = t.Run(lab, phys, 999, Eye(-30), fwd, World.Range, 3);
@@ -175,7 +185,7 @@ public static partial class SelfTest
 
         // Wood 10 + plaster 10: the sniper passes both, the pistol neither.
         end = t.Run(lab, phys, MaterialPenetration.PowerOf(needle), Eye(-20), fwd, World.Range, 3);
-        Line($"10 cm wood + 10 cm plaster: {needle.Name} {t.Surfaces} surfaces ({string.Join(", ", t.Pieces.Take(t.PieceCount).Select(p => $"{p.Material} {p.In:0.00}-{p.Out:0.00}"))}), "
+        PenNote($"10 cm wood + 10 cm plaster: {needle.Name} {t.Surfaces} surfaces ({string.Join(", ", t.Pieces.Take(t.PieceCount).Select(p => $"{p.Material} {p.In:0.00}-{p.Out:0.00}"))}), "
              + $"x{t.FactorAt(14):0.000} at 14 m, power left {t.PowerLeft:0.0}");
         if (t.Surfaces != 2 || t.PieceCount != 2 || t.Pieces[0].Material != MaterialKey.Wood || t.Pieces[1].Material != MaterialKey.Plaster || end < World.Range - 0.01f)
             Fail($"penetration: the sniper didn't pass wood then plaster ({t.Surfaces} surfaces, end {end})");
@@ -207,7 +217,7 @@ public static partial class SelfTest
         t.Run(lab, phys, 1e6f, Eye(20), fwd, World.Range, 3);
         var thick = t.PieceCount > 0 ? t.Pieces[0].Out - t.Pieces[0].In : 0;
         var exitLocal = t.PieceCount > 0 ? PenSlab.ToLocal(Eye(20) + fwd * t.Pieces[0].Out) : Vector3.Zero;
-        Line($"oriented slab: {t.PieceCount} piece(s), {thick * 100:0.00} cm along the ray (want {10 / MathF.Cos(MathF.PI / 4):0.00}), exit at local z {exitLocal.Z:0.0000}");
+        PenNote($"oriented slab: {t.PieceCount} piece(s), {thick * 100:0.00} cm along the ray (want {10 / MathF.Cos(MathF.PI / 4):0.00}), exit at local z {exitLocal.Z:0.0000}");
         if (t.PieceCount != 1 || t.Pieces[0].Shape.Kind != ShapeKind.Obb || MathF.Abs(thick - 0.1f / MathF.Cos(MathF.PI / 4)) > 0.001f || MathF.Abs(MathF.Abs(exitLocal.Z) - 0.05f) > 0.0005f)
             Fail($"penetration: wrong exit through the oriented slab (thickness {thick}, local exit {exitLocal})");
         else if (Vector3.Dot(t.Pieces[0].OutNormal, fwd) <= 0 || MathF.Abs(t.Pieces[0].OutNormal.Length() - 1) > 1e-4f)
@@ -219,17 +229,17 @@ public static partial class SelfTest
         var b = t.Run(lab, phys, 89.5f, Eye(-20), fwd, World.Range, 3);
         if (BitConverter.SingleToUInt32Bits(a) != BitConverter.SingleToUInt32Bits(b) || BitConverter.SingleToUInt32Bits(fa) != BitConverter.SingleToUInt32Bits(t.FactorAt(14)))
             Fail("penetration: the same ray gave two answers");
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var sum = 0f;
+        var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 1000; i++)
         {
             sum += t.Run(lab, phys, 89.5f, Eye(-20 + (i % 5) * 10), fwd, World.Range, 3);
             sum += t.FactorAt(14);
         }
-        sw.Stop();
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        Line($"1000 penetration traces: {sw.Elapsed.TotalMilliseconds / 1000 * 1000:0.0} us each, {bytes} bytes allocated (checksum {sum:0})");
+        sw.Stop();
+        PenNote($"1000 penetration traces: {sw.Elapsed.TotalMilliseconds / 1000 * 1000:0.0} us each, {bytes} bytes allocated (checksum {sum:0})");
         if (bytes > 0)
             Fail($"penetration traces allocate ({bytes} bytes for 1000)");
     }
@@ -244,7 +254,7 @@ public static partial class SelfTest
         var origin = new Vector3(-20, 1.5f, 0);
         var end = new Vector3(-20, 1.5f, -30);
         var placed = PenetrationTrace.OnPenetratedTracer(lab, origin, end, 1, 1.0, false, 1f);
-        Line($"wood + plaster wallbang: {placed} marks ({PenetrationTrace.EntryMarks - entry} entry, {PenetrationTrace.ExitMarks - exit} exit), pool {pool.Count}");
+        PenNote($"wood + plaster wallbang: {placed} marks ({PenetrationTrace.EntryMarks - entry} entry, {PenetrationTrace.ExitMarks - exit} exit), pool {pool.Count}");
         if (placed != 4 || PenetrationTrace.EntryMarks - entry != 2 || PenetrationTrace.ExitMarks - exit != 2 || pool.Count != 4)
             Fail($"penetration decals: {placed} marks for two walls (want an entry and an exit mark on each)");
         var before = GC.GetAllocatedBytesForCurrentThread();
@@ -297,7 +307,7 @@ public static partial class SelfTest
                     bad++;
             }
         }
-        Line($"building parts on {map.Name}: {tried} wall boxes shot through, {matched} passed with their exit checked, {bad} wrong");
+        PenNote($"building parts on {map.Name}: {tried} wall boxes shot through, {matched} passed with their exit checked, {bad} wrong");
         if (matched == 0 || bad > 0)
             Fail($"penetration: building part exits ({matched} checked, {bad} wrong)");
     }
@@ -345,7 +355,7 @@ public static partial class SelfTest
                     terrainThrough++;
             }
         }
-        Line($"{map.Name}: {hedges} hedgerow pieces shot side-on, {through} passed; {terrain} terrain hits from above, {terrainThrough} passed");
+        PenNote($"{map.Name}: {hedges} hedgerow pieces shot side-on, {through} passed; {terrain} terrain hits from above, {terrainThrough} passed");
         if (hedges < 5 || through > 0)
             Fail($"penetration: bullets go through the Bocage hedgerows ({through} of {hedges})");
         if (terrain < 5 || terrainThrough > 0)
@@ -387,7 +397,7 @@ public static partial class SelfTest
         var (dmg, flags) = Shoot(needle, -20, new Vector3(-20, 1.2f, -14));
         var f = game.SelfTestLastPen.FactorAt(14f);
         var want = (int)MathF.Round(needle.Damage * f);
-        Line($"{needle.Name} through wood + plaster at a body 14 m out: {dmg} damage (x{f:0.000}), flags {flags}");
+        PenNote($"{needle.Name} through wood + plaster at a body 14 m out: {dmg} damage (x{f:0.000}), flags {flags}");
         if (dmg != want || (flags & Game.ShotWallbang) == 0 || (flags & Game.ShotPenetrated) == 0 || (flags & 1) == 0)
             Fail($"penetration shot: {dmg} damage, flags {flags} (want {want}, a hit with the wallbang and penetrated flags)");
         var packet = game.SelfTestLastPacket;
@@ -424,7 +434,7 @@ public static partial class SelfTest
             now += 2;
             game.SelfTestPenShot(shooter, needle, eye, dir, t0, now);
             var live = World.MaxHealth - target.Health;
-            Line($"lag compensation through a wall: rewound target {rewound} damage, live (moved away) {live}");
+            PenNote($"lag compensation through a wall: rewound target {rewound} damage, live (moved away) {live}");
             if (rewound != want || live != 0)
                 Fail($"penetration with lag compensation: rewound {rewound} (want {want}), live {live} (want 0)");
         }
@@ -443,7 +453,7 @@ public static partial class SelfTest
         var okStale = game.SelfTestBotSuppressThroughWall(shooter, stale);
         game.SelfTestPlace(shooter, new Vector3(-10, 0, 0), 0);
         var okConcrete = game.SelfTestBotSuppressThroughWall(shooter, concrete);
-        Line($"bots: wallbang line {okLine}, fresh spot {okFresh}, no known spot {okStale}, behind thick concrete {okConcrete}");
+        PenNote($"bots: wallbang line {okLine}, fresh spot {okFresh}, no known spot {okStale}, behind thick concrete {okConcrete}");
         if (!okLine || !okFresh || okStale || okConcrete)
             Fail("penetration: bots' through-the-wall suppression rule is wrong (must need a fresh known spot and a wall their gun passes)");
 
@@ -463,7 +473,7 @@ public static partial class SelfTest
         if (MapFile.Load(mini, "penetration test").Penetration || !MapFile.Load(mini.Replace("\"penetration\": false, ", ""), "penetration test").Penetration)
             Fail("penetration: the map file's \"penetration\" key doesn't load (false turns it off, missing keeps it on)");
         if (Maps.All.Any(m => !m.Penetration))
-            Line($"maps with penetration off: {string.Join(", ", Maps.All.Where(m => !m.Penetration).Select(m => m.Name))}");
+            PenNote($"maps with penetration off: {string.Join(", ", Maps.All.Where(m => !m.Penetration).Select(m => m.Name))}");
 
         // Same shot twice: the same damage.
         var (d1, _) = Shoot(needle, -20, new Vector3(-20, 1.2f, -14));
