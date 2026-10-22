@@ -150,9 +150,6 @@ public sealed partial class Ui
             DlText(dl, new float2(min.X + pad, y + 48 * _scale), Dim8, reason, clip);
             ImGui.PopFont();
         }
-        // Leave the cursor under the grid (the window has no scrolling; this keeps ImGui's layout honest).
-        if (rects.Length > 0)
-            ImGui.SetCursorScreenPos(new float2(origin.X, rects[^1].Max.Y + gap));
     }
 
     // ---- The hat drawing -------------------------------------------------------------------------
