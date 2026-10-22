@@ -48,7 +48,7 @@ public static partial class SelfTest
     private static readonly BotPersonality[] InsaneMix =
         [BotPersonality.Tactician, BotPersonality.Flanker, BotPersonality.Marksman, BotPersonality.Rusher, BotPersonality.Anchor, BotPersonality.Chaotic];
 
-    private static Map InsaneMap(string name, int fallback) => Maps.Find(name) ?? Maps.All[fallback % Maps.All.Count];
+    private static Map InsaneMap(string name, int fallback) => Maps.Find(name) ?? Maps.All[fallback % Maps.All.Length];
 
     /// <summary>
     /// A seeded Team Deathmatch on <paramref name="map"/>: <paramref name="insane"/> Insane bots on one team and
@@ -198,7 +198,8 @@ public static partial class SelfTest
         foreach (var name in new[] { "Easy", "Normal", "Hard", "Insane" })
             if (!Enum.TryParse<BotDifficulty>(name, out var d) || d.ToString() != name)
                 Fail($"difficulty '{name}' doesn't round-trip");
-        if ((int)BotDifficulty.Hard != 2 || (int)BotDifficulty.Insane != 3)
+        var order = Enum.GetValues<BotDifficulty>();
+        if (Array.IndexOf(order, BotDifficulty.Hard) != 2 || Array.IndexOf(order, BotDifficulty.Insane) != 3)
             Fail("BotDifficulty values moved (the lobby's radio buttons use them)");
     }
 
