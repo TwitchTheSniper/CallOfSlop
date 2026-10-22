@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Czech Hedgehog",
+  "category": "Beachhead",
+  "description": "A rusty steel anti-tank hedgehog of three crossed girders. Unbreakable cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 1.2, 1.1]}],
+  "scatter": {"randomYaw": true, "scale": [0.9, 1.1]},
+  "parts": [
+    {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 0, 38], "material": "metal"},
+    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 0, 38], "material": "metal"},
+    {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 60, 38], "material": "metal"},
+    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 60, 38], "material": "metal"},
+    {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 120, 38], "material": "metal"},
+    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 120, 38], "material": "metal"},
+    {"size": [0.3, 0.3, 0.3], "offset": [0, 0.62, 0], "color": "#4a3426", "material": "metal"}
+  ]
+}

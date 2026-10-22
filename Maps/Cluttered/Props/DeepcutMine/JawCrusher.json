@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Jaw Crusher",
+  "category": "DeepcutMine",
+  "description": "A blue jaw crusher on a concrete plinth: flywheels turning, the jaw shaking rock down to gravel.",
+  "collision": "solid",
+  "collider": [{"size": [3.6, 0.6, 3.0]}, {"size": [2.6, 2.9, 2.6], "offset": [0, 2.05, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [3.6, 0.6, 3.0], "offset": [0, 0.3, 0], "color": "#8a8680", "material": "concrete"},
+    {"size": [2.6, 2.2, 2.0], "offset": [0, 1.7, 0], "color": "#3c5a7a", "material": "metal"},
+    {"size": [2.2, 0.6, 2.4], "offset": [0, 3.0, 0], "color": "#2f4a66", "material": "metal"},
+    {"size": [1.6, 0.5, 1.6], "offset": [0, 3.15, 0], "color": "#4a4440"},
+    {"size": [0.9, 0.5, 0.5], "offset": [1.8, 1.0, 0], "color": "#3a3a3c"},
+    {"size": [1.0, 0.9, 0.8], "offset": [-1.9, 1.05, 0.9], "color": "#2f5a8a", "material": "metal", "anim": {"type": "shake", "axis": [0.3, 1, 0.2], "distance": 0.008, "period": 0.06}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, 1.15], "color": "#2a2a2c", "rotation": [0, 0, 0], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, 1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, 1.15], "color": "#2a2a2c", "rotation": [0, 0, 45], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, 1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, 1.15], "color": "#2a2a2c", "rotation": [0, 0, 90], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, 1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, 1.15], "color": "#2a2a2c", "rotation": [0, 0, 135], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, 1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [0.81, 0.81, 0.22], "offset": [-0.2, 1.9, 1.15], "color": "#c8a040", "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, 1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, -1.15], "color": "#2a2a2c", "rotation": [0, 0, 0], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, -1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, -1.15], "color": "#2a2a2c", "rotation": [0, 0, 45], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, -1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, -1.15], "color": "#2a2a2c", "rotation": [0, 0, 90], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, -1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [1.8, 0.745, 0.18], "offset": [-0.2, 1.9, -1.15], "color": "#2a2a2c", "rotation": [0, 0, 135], "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, -1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [0.81, 0.81, 0.22], "offset": [-0.2, 1.9, -1.15], "color": "#c8a040", "anim": {"type": "spin", "axis": "z", "pivot": [-0.2, 1.9, -1.15], "rpm": 90, "freezeDistance": 70}},
+    {"size": [0.6, 0.6, 2.6], "offset": [0.4, 1.7, 0], "color": "#2a3e55", "anim": {"type": "shake", "axis": [1, 0.4, 0], "distance": 0.015, "period": 0.12}}
+  ]
+}

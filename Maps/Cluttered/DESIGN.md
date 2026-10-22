@@ -653,3 +653,182 @@ plants (52,000) sit between Old Town's 32,000 and Sprawl's 72,000 and the props 
 
 `tools/cluttered/timberline.py` regenerates the map (with `terrain.py`, the Python port of the game's terrain generator,
 for the heights the bunkers and the water need) and, given a PNG path, a top-down preview with the walks and sight lines.
+## 11 Deepcut Mine (large, noisy smooth outline, about 179 x 120 m, 18,300 m2, 16 players): mine site with tunnels
+
+**Theme.** A working mine on a dusty afternoon (`desert` preset turned dustier: a tan horizon, a strong ochre haze, the
+sun at 16:12). Down low on the west, the workers' camp (portable cabins: a canteen with tables and vending machines, a
+locker room, the site office, toilets, a generator and floodlights) and the processing plant (a walk-in shed with
+conveyor rollers, a jaw crusher, shelving and a forklift; an ore hopper on legs you can walk under, stockpiles, the rail
+line with mine carts coming down from the North Drift). In the middle, the open pit and two spoil dumps either side of
+it. Up on the east, a terraced massif: bench 1 (4.5 m), bench 2 (9 m) and the top (13.5 m) with the headframe over the
+shaft (its two sheave wheels turn), the winder house with its drum and ropes, and the second camp. Haul trucks,
+excavators, conveyors, floodlight masts, timber stacks, fuel tanks in a bund, and the explosives magazine on bench 1.
+
+**Shape.** A `smooth` outline through 17 control points with `noise` (1.5 m, 18 m bumps), wider at the west end. The
+edge is a terrain `cliff` berm (9 m over 7 m) all round, the natural edge of a mine cut into the hills.
+
+**Not mirrored.** The two halves look and play differently: Blue holds the low, open camp and plant side (spawns at
+y = 0), Red the high side, the top of the massif (spawns at y = 13.5). Red has the height: bench 1 and the top's rim
+look down into the pit and the conveyor yard. Blue has the cover (cabins, the plant, stockpiles, the haul truck and the
+excavator in the pit, the dumps) and the tunnels, which give the low side its ways up.
+
+**Tunnels** (the engine's terrain is a heightfield, so they're cut and covered: a terrain `ramp` in `cut` mode carves
+the trench, with a flat floor 4.4 m wide and rock walls, and a box roof closes each stretch at the hillside's own
+height, so the surface carries on over the top; dark timber lagging on the walls and ceiling, a timber set every 2.5 m,
+a flickering mine lamp every 9 m; nothing grows inside, and the plants on the hillside grow on the roofs too):
+
+- **North Drift** (69 m): from the plant's rail head at ground level (y = 0) under the north dump, climbing gently to
+  come out on bench 1 (y = 4.5), with the rails along its floor. A side **adit** branches off half way and drops out
+  into the conveyor yard (y = 0).
+- **South Adit** (48 m): from the pit floor (y = -4) under the haul road and the south dump, out onto bench 1 (y = 4.5).
+- **Main Haulage** (25 m): from bench 1 into the hill to the **shaft station**, a timbered junction room under the
+  headframe. Two branches leave it: **Shaft North**, climbing out onto bench 2 (y = 9), and **Shaft South**, out onto
+  bench 1 south. The **shaft cage** (an elevator) runs from the station up the shaft to the top, through the middle of
+  the headframe (players only; bots take the ramps and tunnels).
+
+Every tunnel has waypoints every 3 m along its floor, so the bots' nav graph runs through them (the self-test checks a
+nav node, a roof and no plants at ten points along them).
+
+**Layout and routes.** Haul roads (dirt ramps, about 17 degrees) join the levels: into the pit from the plant (west) and
+from the conveyor yard (north-east), the pit's south ramp, bench 1 down to the yard and to the strip east of the pit,
+both dumps from both sides, bench 1 up to bench 2 at each end, and the main haul road straight down the massif from the
+top to bench 1 and on down a cutting through the pit's terraced east face to the pit floor, with a blast wall at its
+head so there's no line down it. A low berm runs along the top's west rim.
+**Hills:** the pit's north-east corner, the east end of the conveyor yard, and the south dump's east end. **Flags:** in the camp and
+behind the winder house.
+
+**Balance (by measurement, not mirroring).** Red's spawns sit on the west half of the top, Blue's in the camp, and the
+hills sit on the line of equal walk, found by the generator on a 0.5 m grid over the terrain with the tunnels as a
+second layer (Blue/Red: pit 93/84 m, yard 87/82 m, south dump 102/104 m, enemy flag 176/177 m; the game's nav graph makes Red's
+walks 12-16 m longer than this grid does, so the pit and yard hills are set a little Red-ward of the grid's equal line). Red needs 17.5 m of
+descent to reach the pit (about 60 m of ramp), so its spawns are closer to the middle than Blue's. The self-test measures
+it again on the game's nav graph (within 10%), checks that no Blue spawn can see a Red one (the processing shed, the core
+shed and the top's berm and blast wall are in the way), and counts the solid cover within 6 m of each team's routes to
+the hills: the low side must have at least as much as the high side (that's what pays for the height), and the high
+side at least 30% of it. Waypoints every 3 m down each haul road and tunnel keep the bots' nav graph on the ramps,
+which are narrower than its grid. No spawn stands over a tunnel roof (it would be put on the tunnel floor).
+
+**Explosives.** Four explosives crates at the magazine on bench 1 (three inside, one on the apron: shoot it and the rest
+go too), and three explosive barrels in the yard, the pit and on bench 2, all well over 10 m from any spawn.
+
+**Pack props** (`Maps/Cluttered/Props/DeepcutMine`, written by `tools/cluttered/mine_props.py`): Mine Cart, Rail Track,
+Haul Truck, Excavator, Headframe Tower and Headframe Head (props are at most 12 m, so the 25 m headframe is two: the head with its turning sheave wheels and a beacon stands on the tower), Inclined Conveyor (ore riding the belt, drums
+turning), Jaw Crusher (flywheels and jaw), Ore Hopper, Timber Set, Mine Lamp (flickers), Timber Stack, Explosives Crate
+(explodes), Danger Sign, Fuel Tank and Floodlight Mast (lamps burning).
+
+**Object counts** (from the self-test): about 280 boxes drawn one by one (215 map boxes, 72 of them tunnel roofs, the
+rest cabins, sheds, walls and stockpile cores; plus the tree trunks), about 3,950 props (386 hand-placed, the rest from
+34 Clutter ops; about 290 solid, 750 breakable; the Clutter ops that reach over tunnels are cosmetic only, so nothing
+solid lands on a tunnel floor), about 35,000 plants (dusty patchy grass everywhere, scrub on the dumps, 66 trees, pines
+round the camps), 277 meshes (tunnel lagging, portal frames, stockpile cones, ropes, floors).
+
+**Performance.** Fewer boxes than Old Town, a similar prop count and fewer plants, so it should run at least as fast;
+animated props (the sheaves, conveyors, crushers, generators, lamps) freeze past their freeze distance. The smoke run's
+`cluttered_deepcut` (the pit and terraces from above the camp) and `cluttered_deepcut_tunnel` (inside the North Drift)
+views log fps, props and plants drawn.
+
+`tools/cluttered/deepcut.py` regenerates the map and, given a PNG path, a top-down preview with the equal-walk line and
+any spawn sight lines (it uses `terrain.py`, the Python port of the game's terrain generator).
+## 09 Beachhead (large, noisy smooth outline, about 182 x 124 m, 18,400 m2, 16 players): a beach that leads up into a military base
+
+**Theme.** A landing beach on a clear morning (`clear` preset, sun at 9:18 out over the sea, light clouds drifting
+east). Blue comes ashore among grounded landing craft, a beached fishing boat, czech hedgehogs, stake ramps, concertina
+wire and shell craters, behind a seawall with dunes and beach grass above it. A bluff rises 12 m to the plateau where
+Red holds an army base: two barracks huts, the HQ (operations room with the map table and radios, a radio room, the CO's
+office), a motor pool shed with trucks and jeeps, the supply yard of containers at the front, a fuel depot with tanks and
+stacks of explosive barrels, the comms hut with a turning radar and a sweeping dish, a helipad with blinking lights and
+a wind sock, a mess tent on the parade ground, watchtowers with sweeping searchlights, floodlights on running
+generators, sandbag nests and barbed wire along the edge, and a chain-link fence round the back.
+
+**Shape.** A `smooth` outline through 19 control points with `noise` (1.4 m, 18 m bumps): wide along the shore (the
+south side follows the waterline), narrower round the base, with a lobe for the helipad and the comms hut in the NE.
+No `edge` style: the sea runs out beyond the shore (the beach slopes under the water just outside the outline, and one
+flat box mesh is the water surface, as in Dockside but with a sloping beach instead of a quay drop), the land outside
+the other sides rises into hills (part of the terrain), and the base side has its chain-link fence just inside the
+outline. Out on the water: a half-sunk landing craft, a wreck, buoys and a warship on the horizon (cosmetic meshes).
+
+**Terrain.** One `grid` feature (2 m cells, "set") holds the designed shape: the beach rising 4 degrees from the
+waterline, a band of dunes, the bluff (a 70-degree face 4 m wide along most of the coast, turning in the east into a
+long dune slope of about 20 degrees) and the flat plateau at y = 12, plus the hills outside. Sharp things are ordinary
+features on top: the switchback road and the ravine (`ramp`), the hairpin, the overlook and the west landing (`flatten`), the dune post
+(`plateau`, "fill"), the bunker pads and their trenches, the drainage tunnel's trench (a `ramp` in "cut" mode with no
+edge, so its walls are vertical) and sand ramps through the seawall gaps. `tools/cluttered/beachterrain.py` ports the
+game's grid, plateau/flatten and ramp maths, so the generator knows the ground everywhere and builds at absolute heights
+(`"anchor": "world"`).
+
+**Layout and routes.** Blue spawns on the beach behind the wrecks, Red at the back of the base. Five ways up, all under
+25 degrees (full walking speed):
+- **The switchback road** (centre): leg 1 along the foot of the bluff to the hairpin terrace, leg 2 back across the face
+  to the main gate (boom gate, guard hut, sandbag nests). The **overlook** (hill 2) is a gravel lay-by on leg 2 out over
+  the face.
+- **The ravine** (west flank): a rocky gully cut into the plateau, with logs, rocks and bushes, coming out by the motor pool.
+- **The west bluff path**: a foot path along the foot of the face under the west pillbox's slits, up to the west
+  landing (a terrace cut into the face 2 m below the top), then up a cutting onto the plateau, where the **west bluff
+  top** (hill 1) is.
+- **The drainage tunnel** (east of centre): an open concrete channel through the dunes from an outfall in the seawall,
+  then a 14 m culvert under the face and the plateau (concrete lining, amber lamps, no foliage inside), then an open
+  ramp up into the base between the gate and the fuel depot, behind the defenders' front line.
+- **The dune slope** (east flank): the long gentle slope, with tank traps, sandbags and camo nets, past the **dune post**
+  (hill 3) to the fuel depot.
+Three **pillboxes** are dug into the top of the face (floors 2.4 m down, roofs level with the plateau, firing slits to
+the beach), each entered from the plateau down a trench to its back door. **Flags:** on the beach between the landing
+craft, and behind the HQ.
+
+**Balance (not mirrored).** The two halves look and play differently on purpose, so fairness is measured instead of
+mirrored. The base has the height (Red's spawns stand 11 m above Blue's), the pillboxes and the hard cover (buildings,
+containers, walls); the beach gets more soft cover (hedgehogs, dragon's teeth, sandbags, wrecks, logs, crates) and more
+ways up: five routes, two of them flanks (the ravine and the dune slope) and one (the tunnel) that comes up behind the
+defence. The hills sit where both teams walk the same distance (found on a 0.5 m walk graph over the terrain and its
+obstacles, then nudged a few metres towards the base, because the game's coarser nav graph makes the beach side's
+walks a little longer: on the generator's graph Blue/Red walk 72/91 m to hill 1, 68/73 m to hill 2, 102/103 m to hill 3
+and 115/124 m to the enemy flag; the self-test's nav-graph numbers are in the CI notice), so each team meets the other on the bluff, not in its own camp. The generator found no line
+of sight between a Blue and a Red spawn (the bluff's edge hides the base from the beach). The self-test measures it all
+again in the game: the nav walk and the nav walking time (uphill links cost more) from each team's spawns to every
+objective within 10%, a scripted walker from each team's middle spawn reaching every objective, no Blue/Red spawn pair in
+sight, the share of each team's routes to the hills with cover within 3 m (the beach side gets at least as much soft
+cover, props, as the base side; overall at least 85% of the base side's, which has the walls and containers), and fewer
+than a fifth of the solid props with a mirrored twin. Measured on the game's nav graph (Blue/Red, averaged over each
+team's spawns): hill 1 83/82 m, hill 2 73/72 m, hill 3 98/103 m, the enemy flag 125/129 m (walking times within 2.7%
+of the same); the scripted walkers take 12.2/13.5 s, 11.8/12.0 s, 16.8/16.1 s and 19.9/21.5 s; 42% of the beach side's
+routes have soft cover within 3 m (45% any cover) against 33% (42%) of the base side's; 4 of 493 solid props have a
+mirrored twin.
+
+**Logical placement.** Obstacles in bands up the beach the way they were laid (stake ramps at the waterline, hedgehogs on
+the wet sand, concertina wire above them, dragon's teeth under the seawall), Blue's spawns in the lee of the wrecks,
+flotsam (logs, crates, a dinghy, drums, rope, nets) along the tide line; sandbag walls along the road's first leg; in the
+base, bunks and lockers along the barracks walls with a clear aisle and rifle racks, desks with radios and the map table
+in the HQ, server racks and radios in the comms hut, trucks, a jeep, the bowser, tyres and tools in the motor pool,
+tables and benches in the mess tent with its kitchen at the back, latrines behind it, explosive barrels in stacks in the
+fuel depot (10+ m from every spawn), a generator beside each floodlight, searchlights on the watchtowers, lights round
+the helipad, roof masts and dishes on the HQ, sandbag nests facing the sea along the edge.
+
+**Foliage.** Long beach grass and shrubs on the dunes, a sparse fringe above the tide line, nothing on the wet sand;
+grass, shrubs and bushes on the face (the cliff itself is too steep for scattered plants); grass on the plateau, none on
+the asphalt roads (`Concrete`), 10% on the busted parade ground (`Tiles`), none indoors (in the huts, the pillboxes, the
+tunnel, under the mess tent); bushes in the ravine; pines and broadleaves round the back of the base, on the headland
+side and among the eastern dunes. About 43,000 plants in all.
+
+**Pack props** (`Maps/Cluttered/Props/Beachhead`, written by `tools/cluttered/beachhead_props.py`): Czech Hedgehog,
+Dragons Tooth, Beach Stake Ramp, Concertina Wire and Barbed Wire Fence (both looks only, so bots aren't caught on them),
+Landing Craft Wreck (steel sides to hide behind and mantle over), Beached Fishing Boat, Army Jeep, Army Truck, Fuel
+Bowser, Ammo Crate Stack, Ammo Box, Radio Set (a blinking set light), Map Table, Rifle Rack, Sandbag Nest, Camo Net,
+and three animated ones: Wind Sock (swings round in the wind), Searchlight (sweeps, lens lit) and Helipad Light (blinks).
+
+**Object counts** (from the self-test): 3,744 props (584 by hand, 3,160 from 22 cosmetic Clutter ops; 493 solid, 1,669
+breakable, 47 animated, 13 explosive barrels in the depot), 806 of them from the pack's Beachhead set; 42,968 plants
+(37,450 grass, 4,840 shrubs, 611 bushes, 67 trees); 247
+meshes (the sea, the wrecks and the ship out on the water, the seawall's cap, the tunnel lining, roofs, the mess tent,
+roads and the helipad markings); 392 boxes drawn one by one (huts, the HQ, the pillboxes, the seawall, the tunnel roof,
+containers, the motor pool, tanks, watchtowers, rocks, tree trunks); 24 spawns (9 a team plus 6), 614 waypoints (AutoWaypoints
+plus chains along every route, so the bots' nav graph follows the paths, the road and the tunnel: 1,271 nav nodes, all in
+one area). Bots at 16 players: about 100 kills in 90 s of free-for-all and 50 in team deathmatch, no stuck, fallen or
+escaped bots, worst server tick under 1 ms of work.
+
+**Performance.** About Old Town's budget (3,744 props against its 4,908, 42,968 plants against 43,765, 392 boxes drawn
+against 317; the terrain is 489 x 375 samples, drawn in chunks), everything numerous instanced, animated props still past
+80 m, so it should run at Old Town's frame rate or better on the user's PC (~1,700 fps there). The smoke run's
+`cluttered_beachhead` (the beach and the bluff from over the sea) and `cluttered_beachhead_beach` (the bluff from behind
+a landing craft at eye height) views log fps, props and plants drawn.
+
+`tools/cluttered/beachhead.py` regenerates the map and, given a PNG path, a top-down preview over the terrain (with the
+walk balance, the spawn sight lines and the objective checks printed).

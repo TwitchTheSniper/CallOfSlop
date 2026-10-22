@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mine Lamp",
+  "category": "DeepcutMine",
+  "description": "A caged bulb on a short cable, flickering now and then. Its top is 0.6 m up: hang it from a ceiling with the Prop op's y.",
+  "collision": "cosmetic",
+  "fadeDistance": 120,
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 5, "breakBy": "all", "sound": "glass", "debris": {"count": 5, "size": [0.02, 0.06]}},
+  "parts": [
+    {"size": [0.03, 0.5, 0.03], "offset": [0, 0.35, 0], "color": "#1c1c1e"},
+    {"size": [0.16, 0.08, 0.16], "offset": [0, 0.1, 0], "color": "#2a2a2c"},
+    {"size": [0.12, 0.14, 0.12], "offset": [0, 0.02, 0], "color": "#ffe8a0", "anim": {"type": "flicker", "rate": 6, "duty": 0.93, "color": "#ffe8a0", "off": "#5a5030", "glow": 2.2, "freezeDistance": 90}},
+    {"size": [0.14, 0.02, 0.14], "offset": [0, -0.05, 0], "color": "#2a2a2c"}
+  ]
+}

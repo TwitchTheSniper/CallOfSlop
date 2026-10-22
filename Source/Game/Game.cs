@@ -633,7 +633,7 @@ public sealed partial class Game : IDisposable
     public double RespawnWait(double now) => Math.Max(0, LocalDeathTime + World.RespawnDelay - now);
 
     /// <summary>Makes the local weapon slots match the loadout the server says we have.</summary>
-    private void SyncLocalSlots(Player p, bool refill)
+    internal void SyncLocalSlots(Player p, bool refill)
     {
         var primary = p.DefFor(p.Primary);
         var secondary = p.DefFor(p.Secondary);
@@ -895,7 +895,7 @@ public sealed partial class Game : IDisposable
             }
 
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
-            if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt) // (Zombies: bled out = back next round, see ZombiesMode.cs)
+            if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
                 Spawn(p, ServerTick, now);
                 if (p.Id == LocalId)
@@ -1061,7 +1061,7 @@ public sealed partial class Game : IDisposable
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
         // already standing in the map, frozen, and can still swap.
         var instant = !p.Alive || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
-        if (instant && p.Alive && Mode != GameMode.GunGame)
+        if (instant && p.Alive && !Module.ServerPicksWeapons) // (Gun Game: the server hands out the ladder's gun)
         {
             p.Primary = pw.Id;
             p.Secondary = sw.Id;
@@ -1350,7 +1350,8 @@ public sealed partial class Game : IDisposable
                     if (_clients.Remove(sender.G, out var gone))
                     {
                         Log($"{NameOf(gone.Id)} left");
-                        Players.Remove(gone.Id);
+                        if (Players.Remove(gone.Id, out var left))
+                            OnModePlayerLeave(left);
                         BroadcastRoster();
                     }
                 }
@@ -1539,16 +1540,6 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.RunState:
                 OnCartPacket(id, ref r, sender, now); // push carts and the weapon-slot upgrade (GameCart.cs)
                 break;
-            case (byte)Msg.ZUse:
-            case (byte)Msg.ZEnts:
-            case (byte)Msg.ZWorld:
-            case (byte)Msg.ZEvent:
-            case (byte)Msg.ZRun:
-            case (byte)Msg.ZBuild:
-            case (byte)Msg.ZBench:
-            case (byte)Msg.ZPickup:
-                OnZombiesPacket(id, ref r, sender, now); // the Zombies mode (ZombiesNet.cs)
-                break;
             case (byte)Msg.Ready:
             case (byte)Msg.ModeState:
             case (byte)Msg.ModeEvent:
@@ -1602,6 +1593,11 @@ public sealed partial class Game : IDisposable
                 RecordKill(kill);
                 break;
             }
+            default:
+                foreach (var m in _modules.Values) // a mode's own messages (Zombies: ZUse, ZEnts...; GameModeModule.HandlePacket)
+                    if (m.HandlePacket(this, id, ref r, sender, now))
+                        break;
+                break;
         }
     }
 

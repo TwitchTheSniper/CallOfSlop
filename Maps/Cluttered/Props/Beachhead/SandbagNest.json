@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sandbag Nest",
+  "category": "Beachhead",
+  "description": "A U of sandbags three high, an MG position facing +Z. Unbreakable cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.8, 0.92, 0.55], "offset": [0, 0.46, 1.0]}, {"size": [0.55, 0.92, 1.6], "offset": [-1.35, 0.46, -0.05]}, {"size": [0.55, 0.92, 1.6], "offset": [1.35, 0.46, -0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [2.8, 0.3, 0.55], "offset": [0, 0.16, 1.0], "color": "#9a8a60", "material": "dirt"},
+    {"size": [2.75, 0.3, 0.51], "offset": [0, 0.46, 1.0], "color": "#8a7a52", "material": "dirt"},
+    {"size": [2.7, 0.3, 0.47], "offset": [0, 0.76, 1.0], "color": "#9a8a60", "material": "dirt"},
+    {"size": [0.55, 0.3, 1.6], "offset": [-1.35, 0.16, -0.05], "color": "#8a7a52", "material": "dirt"},
+    {"size": [0.5, 0.3, 1.56], "offset": [-1.35, 0.46, -0.05], "color": "#9a8a60", "material": "dirt"},
+    {"size": [0.45, 0.3, 1.52], "offset": [-1.35, 0.76, -0.05], "color": "#8a7a52", "material": "dirt"},
+    {"size": [0.55, 0.3, 1.6], "offset": [1.35, 0.16, -0.05], "color": "#9a8a60", "material": "dirt"},
+    {"size": [0.5, 0.3, 1.56], "offset": [1.35, 0.46, -0.05], "color": "#8a7a52", "material": "dirt"},
+    {"size": [0.45, 0.3, 1.52], "offset": [1.35, 0.76, -0.05], "color": "#9a8a60", "material": "dirt"},
+    {"size": [0.5, 0.32, 0.3], "offset": [0.2, 1.05, 1.0], "color": "#8a7a52", "material": "dirt"},
+    {"size": [0.6, 0.06, 0.05], "offset": [0.25, 1.0, 0.65], "color": "#2b2b2b"}
+  ]
+}

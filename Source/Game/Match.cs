@@ -131,19 +131,7 @@ public sealed partial class Game
             SoloHoldClock(now); // alone in the match (no bots, nobody joined): the clock stops (TestTools.cs)
             UpdateScoreLimit(); // people joining mid-match raise the limit, never lower it (ScoreLimits.cs)
             TimeLeft = Math.Max(0, MatchSeconds - (now - _matchStart));
-            var (leader, best, second) = Standings();
-            if (Mode != GameMode.FreeForAll)
-                ServerTickModePlaying(now); // objectives and the mode's own win rules (GameModes.cs)
-            else if (leader != null && best >= ScoreLimit && best - second >= WinMargin)
-                EndMatch(leader, $"{NameOf(leader.Id)} wins {best}-{second}", now);
-            else if (TimeLeft <= 0)
-            {
-                var tied = Players.Values.Count(p => p.Kills == best) > 1;
-                if (leader == null || tied)
-                    EndMatch(null, $"Time! Draw at {best}-{best}", now);
-                else
-                    EndMatch(leader, $"Time! {NameOf(leader.Id)} wins {best}-{second}", now);
-            }
+            ServerTickModePlaying(now); // the mode's objectives and win rules (Source/Game/Modes; free-for-all: GameModeModule.FreeForAllWinCheck)
         }
         else
         {
@@ -154,7 +142,7 @@ public sealed partial class Game
         }
     }
 
-    private void EndMatch(Player? winner, string result, double now, byte? winnerCode = null)
+    internal void EndMatch(Player? winner, string result, double now, byte? winnerCode = null)
     {
         Phase = MatchPhase.Ended;
         Winner = winnerCode ?? winner?.Id ?? NoWinner; // winnerCode: TeamWinBase + team for a team win
@@ -168,7 +156,7 @@ public sealed partial class Game
             _w.U8(c);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnMatchEnded(now);
-        if (MapVoteEnabled && Mode != GameMode.Zombies) // a Zombies run restarts on its own map
+        if (MapVoteEnabled && Module.UsesMapVote) // (a Zombies run restarts on its own map)
             StartMapVote(now);
     }
 
@@ -234,7 +222,7 @@ public sealed partial class Game
     {
         World.Map.RestoreProps(); // breakable props are whole again every match
         if (!IsServer)
-            ResetZombiesWorld(); // Zombies: doors shut, boards up, no zombies (the server resets its run in ResetModeForMatch)
+            ClientModeMatchStart(); // every mode's client-side reset (Zombies: doors shut, boards up, no zombies; the server resets its run in ResetModeForMatch)
         PropDebris.Clear();
         ClearVote();
         Feed.Clear();

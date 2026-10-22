@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Explosives Crate",
+  "category": "DeepcutMine",
+  "description": "A wooden crate of blasting explosives with red labels. It goes off when it breaks: keep your distance.",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 0.6, 0.55]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.3], "colors": ["#8a6a3a", "#d02818"]}, "explode": {"radius": 6.0, "damage": 125}},
+  "parts": [
+    {"size": [0.8, 0.55, 0.55], "offset": [0, 0.275, 0], "color": "#8a6a3a", "material": "wood"},
+    {"size": [0.82, 0.06, 0.57], "offset": [0, 0.56, 0], "color": "#5a4424"},
+    {"size": [0.5, 0.2, 0.01], "offset": [0, 0.32, 0.28], "color": "#d02818"},
+    {"size": [0.5, 0.2, 0.01], "offset": [0, 0.32, -0.28], "color": "#d02818"},
+    {"size": [0.12, 0.12, 0.012], "offset": [0.3, 0.42, 0.281], "color": "#f0e8d0"}
+  ]
+}

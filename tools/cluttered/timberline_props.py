@@ -239,7 +239,7 @@ mt += [part((1.6, 0.01, 1.0), (0, 0.885, 0), "#d8cca0"), part((0.5, 0.012, 0.36)
        part((0.4, 0.012, 0.3), (0.4, 0.89, -0.2), "#7a9a6a"), part((0.6, 0.013, 0.04), (0.1, 0.891, 0.0), "#3060a0", rotation=[0, 30, 0]),
        part((0.05, 0.12, 0.05), (0.3, 0.94, 0.15), "#c02020"), part((0.05, 0.12, 0.05), (-0.4, 0.94, -0.2), "#2050c0"),
        part((0.05, 0.12, 0.05), (0.1, 0.94, -0.3), "#c02020"), part((0.25, 0.04, 0.18), (-0.8, 0.9, 0.35), "#1a1a1a")]
-PROPS.append({"name": "Map Table", "description": "A plotting table with a contour map and coloured pins on it.", "collision": "solid",
+PROPS.append({"name": "Bunker Map Table", "description": "A plotting table with a contour map and coloured pins on it.", "collision": "solid",
               "collider": [{"size": [2.2, 0.88, 1.3]}], "scatter": {"randomYaw": False, "yawStep": 90},
               "breakable": {"health": 110, "breakBy": "all", "sound": "wood"}, "parts": mt})
 
