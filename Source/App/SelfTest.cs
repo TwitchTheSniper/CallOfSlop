@@ -118,6 +118,7 @@ public static partial class SelfTest
             Section("Weird hardbass", CheckWeirdHardbass); // SelfTestWeirdHardbass.cs: odd meters, swerves, toys, new voices, CPU vs the heaviest track
             Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
             Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
+            Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
