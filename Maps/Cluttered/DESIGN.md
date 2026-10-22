@@ -339,7 +339,7 @@ outline. Out on the water: a half-sunk landing craft, a wreck, buoys and a warsh
 **Terrain.** One `grid` feature (2 m cells, "set") holds the designed shape: the beach rising 4 degrees from the
 waterline, a band of dunes, the bluff (a 70-degree face 4 m wide along most of the coast, turning in the east into a
 long dune slope of about 20 degrees) and the flat plateau at y = 12, plus the hills outside. Sharp things are ordinary
-features on top: the switchback road and the ravine (`ramp`), the hairpin and the overlook (`flatten`), the dune post
+features on top: the switchback road and the ravine (`ramp`), the hairpin, the overlook and the west landing (`flatten`), the dune post
 (`plateau`, "fill"), the bunker pads and their trenches, the drainage tunnel's trench (a `ramp` in "cut" mode with no
 edge, so its walls are vertical) and sand ramps through the seawall gaps. `tools/cluttered/beachterrain.py` ports the
 game's grid, plateau/flatten and ramp maths, so the generator knows the ground everywhere and builds at absolute heights
@@ -351,8 +351,8 @@ game's grid, plateau/flatten and ramp maths, so the generator knows the ground e
   to the main gate (boom gate, guard hut, sandbag nests). The **overlook** (hill 2) is a gravel lay-by on leg 2 out over
   the face.
 - **The ravine** (west flank): a rocky gully cut into the plateau, with logs, rocks and bushes, coming out by the motor pool.
-- **The west bluff path**: a zigzag foot path up the face between the ravine and the west pillbox, to the **west bluff
-  top** (hill 1).
+- **The west bluff path**: a foot path along the foot of the face under the west pillbox's slits, up to the **west
+  landing** (hill 1, a terrace cut into the face 2 m below the top), then up a cutting onto the plateau.
 - **The drainage tunnel** (east of centre): an open concrete channel through the dunes from an outfall in the seawall,
   then a 14 m culvert under the face and the plateau (concrete lining, amber lamps, no foliage inside), then an open
   ramp up into the base between the gate and the fuel depot, behind the defenders' front line.
@@ -368,8 +368,8 @@ containers, walls); the beach gets more soft cover (hedgehogs, dragon's teeth, s
 ways up: five routes, two of them flanks (the ravine and the dune slope) and one (the tunnel) that comes up behind the
 defence. The hills sit where both teams walk the same distance (found on a 0.5 m walk graph over the terrain and its
 obstacles, then nudged a few metres towards the base, because the game's coarser nav graph makes the beach side's
-walks a little longer: on the generator's graph Blue/Red walk 80/84 m to hill 1, 68/73 m to hill 2, 102/103 m to hill 3
-and 115/124 m to the enemy flag), so each team meets the other on the bluff, not in its own camp. The generator found no line
+walks a little longer: on the generator's graph Blue/Red walk 72/91 m to hill 1, 68/73 m to hill 2, 102/103 m to hill 3
+and 115/124 m to the enemy flag; the self-test's nav-graph numbers are in the CI notice), so each team meets the other on the bluff, not in its own camp. The generator found no line
 of sight between a Blue and a Red spawn (the bluff's edge hides the base from the beach). The self-test measures it all
 again in the game: the nav walk and the nav walking time (uphill links cost more) from each team's spawns to every
 objective within 10%, a scripted walker from each team's middle spawn reaching every objective, no Blue/Red spawn pair in
