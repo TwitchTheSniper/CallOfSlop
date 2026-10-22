@@ -598,7 +598,7 @@ public sealed partial class Game : IDisposable
             .U24(ChosenPrimaryKit).U24(ChosenSecondaryKit)
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
-            .U8((byte)ChosenHat); // protocol 23+: the hat (GameCosmetics.cs)
+            .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -1440,7 +1440,7 @@ public sealed partial class Game : IDisposable
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
                     ReadLoadoutStreaks(p, ref r);
-                    ReadLoadoutHat(p, ref r); // GameCosmetics.cs
+                    ReadLoadoutHat(p, ref r); // GameCosmeticLoadout.cs
                 }
                 break;
             }
@@ -1505,6 +1505,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
+                WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
                 SendLoadout();
                 break;
@@ -1523,6 +1524,7 @@ public sealed partial class Game : IDisposable
                 if (Players.Values.Any(o => o != p && o.Name == name))
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
+                ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
                 LogJoin(name);
                 BroadcastRoster();
                 break;

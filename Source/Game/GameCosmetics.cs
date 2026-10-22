@@ -1,110 +1,111 @@
 namespace CallOfSlop;
 
-/// <summary>
-/// Where the cosmetic loadout reads the local prestige from. One place, so the hat code doesn't care how
-/// prestige is stored (Progression.cs owns it).
-/// </summary>
-public static class CosmeticPrestige
-{
-    /// <summary>The prestige (0..<see cref="Cosmetics.MaxPrestige"/>) of a local profile (null: 0).</summary>
-    public static int Of(Progress? progress) => 0; // TODO(prestige-hats): progress?.Prestige once Progress.Prestige lands
-}
+/// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level and hat.</summary>
+public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat);
 
 /// <summary>
-/// Hats on the network (cosmetic only, nothing else changes):
-/// <list type="bullet">
-/// <item>client -> server: one byte after the kill streaks in <see cref="Msg.Loadout"/> (older clients send none: no hat);</item>
-/// <item>the server keeps a hat only for a person whose reported prestige unlocks it (<see cref="Cosmetics.IsUnlocked"/>),
-/// bots always wear none, anything else becomes None;</item>
-/// <item>server -> all: a trailer on <see cref="Msg.Roster"/> (count, then id + hat per player), sent again whenever a hat
-/// changes, so every client knows every player's <see cref="Player.Hat"/> (the hat renderer draws from it).</item>
-/// </list>
+/// Prestige and hats on the network (Source/Cosmetics/Cosmetics.cs). Cosmetic only: nothing here touches gameplay.
+/// A client reports its prestige and level after its name in <see cref="Msg.Hello"/>; the server believes it only for
+/// what it shows (the scoreboard's "P2 L13") and to check which hats that player may wear. The roster carries
+/// prestige, level and hat for everyone (3 bytes a player). Bots never have a prestige, a level tag or a hat.
 /// </summary>
 public sealed partial class Game
 {
-    private HatId _chosenHat;
+    private readonly Dictionary<byte, PlayerCosmetics> _cosmetics = new();
 
-    /// <summary>Client side of the hat (from the loadout screen). On the host it applies to the local player at once.</summary>
-    public HatId ChosenHat
+    /// <summary>The local profile appended to the Hello: prestige, then level.</summary>
+    private void WriteHelloProfile(PacketWriter w)
     {
-        get => _chosenHat;
-        set
-        {
-            _chosenHat = value;
-            if (IsServer && Local is { } me)
-                ServerSetHat(me, value);
-        }
+        var prog = Progress;
+        w.U8((byte)Math.Clamp(prog?.Prestige ?? 0, 0, Cosmetics.MaxPrestige)).U8((byte)Math.Clamp(prog?.Level ?? 1, 1, 255));
     }
 
-    /// <summary>Hats from the last roster, for players whose snapshot hasn't arrived yet (client).</summary>
-    private readonly Dictionary<byte, HatId> _hats = new();
+    /// <summary>Server: reads the Hello's profile (absent from a bare Hello: 0 / unknown).</summary>
+    private void ReadHelloProfile(Player p, ref PacketReader r)
+    {
+        var prestige = r.Has(1) ? r.U8() : (byte)0;
+        var level = r.Has(1) ? r.U8() : (byte)0;
+        SetProfile(p, prestige, level);
+    }
 
-    /// <summary>The hat player <paramref name="id"/> wears (as far as this side knows; None if unknown).</summary>
-    public HatId HatOf(byte id) => Players.TryGetValue(id, out var p) ? p.Hat : _hats.GetValueOrDefault(id);
+    private static void SetProfile(Player p, int prestige, int level)
+    {
+        if (p.Bot != null)
+        {
+            p.Prestige = p.Level = 0;
+            p.Hat = HatId.None;
+            return;
+        }
+        p.Prestige = (byte)Math.Clamp(prestige, 0, Cosmetics.MaxPrestige);
+        p.Level = (byte)Math.Clamp(level, 0, CallOfSlop.Progress.MaxLevel);
+        if (!Cosmetics.IsUnlocked(p.Hat, p.Prestige))
+            p.Hat = HatId.None;
+    }
 
-    /// <summary>The prestige a player reported (server). The host's own comes from its profile.</summary>
-    private int ReportedPrestige(Player p) =>
-        p.Id == LocalId && IsServer ? CosmeticPrestige.Of(Progress)
-        : 0; // TODO(prestige-hats): the prestige this client sent in its Hello
+    /// <summary>Server: the host's own player takes its prestige and level from the local progression.</summary>
+    private void RefreshHostProfile()
+    {
+        if (IsServer && Players.TryGetValue(LocalId, out var me) && me.Bot == null && Progress is { } prog)
+            SetProfile(me, prog.Prestige, prog.Level);
+    }
+
+    private static void WriteRosterCosmetics(PacketWriter w, Player p)
+    {
+        if (p.Bot != null)
+            w.U8(0).U8(0).U8(0);
+        else
+            w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
+    }
+
+    private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
+    {
+        var prestige = r.Has(1) ? r.U8() : (byte)0;
+        var level = r.Has(1) ? r.U8() : (byte)0;
+        var hat = r.Has(1) ? (HatId)r.U8() : HatId.None;
+        if (isBot)
+            return default;
+        prestige = (byte)Math.Min((int)prestige, Cosmetics.MaxPrestige);
+        if (!Cosmetics.IsUnlocked(hat, prestige))
+            hat = HatId.None; // unknown id or not earned: draw nothing
+        return new PlayerCosmetics(prestige, level, hat);
+    }
+
+    private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
+    {
+        if (p.Bot != null)
+            return;
+        p.Prestige = c.Prestige;
+        p.Level = c.Level;
+        p.Hat = c.Hat;
+    }
 
     /// <summary>
-    /// The hat the server lets a player wear: bots never wear one, people only a known hat their prestige unlocks;
-    /// anything else is None. Pure (checked by the self-test).
+    /// Server: puts a hat on a player if they may wear it (a person, and <see cref="Cosmetics.IsUnlocked"/> for the prestige
+    /// they reported); anything else becomes <see cref="HatId.None"/>. Tells everyone (the roster) when it changes.
+    /// Returns the hat actually worn. For the loadout code (the hat sent with the loadout).
     /// </summary>
-    public static HatId ValidHat(HatId requested, bool isBot, int prestige) =>
-        isBot || !Enum.IsDefined(requested) || !Cosmetics.IsUnlocked(requested, prestige) ? HatId.None : requested;
-
-    /// <summary>Server: a player asked to wear a hat. Checks it, and tells everyone if it changed.</summary>
-    private void ServerSetHat(Player p, HatId requested)
+    public HatId ServerSetHat(Player p, HatId hat)
     {
         if (!IsServer)
-            return;
-        var hat = ValidHat(requested, p.Bot != null, ReportedPrestige(p));
-        if (hat == p.Hat)
-            return;
-        p.Hat = hat;
-        BroadcastRoster();
-    }
-
-    /// <summary>Reads the hat byte a client appends to its loadout packet (older clients send none: no hat).</summary>
-    private void ReadLoadoutHat(Player p, ref PacketReader r) => ServerSetHat(p, r.Has(1) ? (HatId)r.U8() : HatId.None);
-
-    /// <summary>Roster trailer: how many, then id + hat for each player.</summary>
-    private void WriteRosterHats()
-    {
-        _w.U8((byte)Players.Count);
-        foreach (var p in Players.Values)
-            _w.U8(p.Id).U8((byte)(p.Bot != null ? HatId.None : p.Hat));
-    }
-
-    /// <summary>Client: the roster's hat trailer (a roster without one, from an older host: everyone bare-headed).</summary>
-    private void ReadRosterHats(ref PacketReader r)
-    {
-        if (IsServer)
-            return;
-        _hats.Clear();
-        int count = r.Has(1) ? r.U8() : 0;
-        for (var i = 0; i < count && r.Has(2); i++)
+            return p.Hat;
+        if (p.Id == LocalId)
+            RefreshHostProfile();
+        var worn = p.Bot == null && Cosmetics.IsUnlocked(hat, p.Prestige) ? hat : HatId.None;
+        if (worn != p.Hat)
         {
-            var id = r.U8();
-            var hat = (HatId)r.U8();
-            if (!Enum.IsDefined(hat))
-                hat = HatId.None; // a newer or hostile host: draw nothing rather than garbage
-            _hats[id] = hat;
+            p.Hat = worn;
+            BroadcastRoster();
         }
-        foreach (var p in Players.Values)
-            p.Hat = _hats.GetValueOrDefault(p.Id);
+        return worn;
     }
 
-    // ---- Self-test hooks ---------------------------------------------------------------------
-
-    /// <summary>Self-test: the roster packet the server sends right now (with its hat trailer).</summary>
-    public byte[] SelfTestRosterPacket()
+    /// <summary>Scoreboard tag after a person's name: "  [P2 L13]", or "" for bots and players who didn't report a level.</summary>
+    public string RankTag(Player p)
     {
-        BroadcastRoster();
-        return _w.Span.ToArray();
+        if (p.Bot != null)
+            return "";
+        if (p.Id == LocalId && Progress is { } prog)
+            return $"  [{CallOfSlop.Progress.RankLabel(prog.Prestige, prog.Level)}]";
+        return p.Level > 0 ? $"  [{CallOfSlop.Progress.RankLabel(p.Prestige, p.Level)}]" : "";
     }
-
-    /// <summary>Self-test: the server's hat check for a player, as if their loadout packet asked for <paramref name="hat"/>.</summary>
-    public void SelfTestRequestHat(Player p, HatId hat) => ServerSetHat(p, hat);
 }

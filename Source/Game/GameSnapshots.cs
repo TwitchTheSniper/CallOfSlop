@@ -253,7 +253,9 @@ public sealed partial class Game
     {
         if (Players.TryGetValue(id, out var p))
             return p;
-        p = new Player { Id = id, Yaw = e.Yaw, Pitch = e.Pitch, Name = _names.GetValueOrDefault(id) ?? "", Hat = _hats.GetValueOrDefault(id) };
+        p = new Player { Id = id, Yaw = e.Yaw, Pitch = e.Pitch, Name = _names.GetValueOrDefault(id) ?? "" };
+        if (_cosmetics.TryGetValue(id, out var cosmetics))
+            ApplyCosmetics(p, cosmetics); // the roster came first (GameCosmetics.cs)
         p.Teleport(e.Position);
         Players[id] = p;
         return p;

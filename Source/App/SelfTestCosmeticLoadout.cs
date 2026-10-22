@@ -63,12 +63,15 @@ public static partial class SelfTest
 
             // One choice for the profile: every slot wears it, and a locked hat is kept but worn as none.
             LoadoutStore.LoadLines(["hat=fedora"]);
-            var progress = new Progress { ReadOnly = true };
-            var worn = LoadoutStore.Slots.Select(l => LoadoutStore.Effective(l, progress).Hat).Distinct().ToList();
-            var want = Cosmetics.IsUnlocked(HatId.Fedora, CosmeticPrestige.Of(progress)) ? HatId.Fedora : HatId.None;
-            Line($"profile hat Fedora at prestige {CosmeticPrestige.Of(progress)}: every slot wears {string.Join("/", worn)}, kept in the file as {Cosmetics.KeyOf(LoadoutStore.Hat)}");
-            if (worn.Count != 1 || worn[0] != want || LoadoutStore.Hat != HatId.Fedora)
-                Fail($"cosmetic save: the profile hat should apply to every slot as {want} (kept as Fedora), got {string.Join("/", worn)}, kept {LoadoutStore.Hat}");
+            foreach (var prestige in new[] { 0, 2, 3, 5 })
+            {
+                var progress = new Progress { ReadOnly = true, Prestige = prestige };
+                var worn = LoadoutStore.Slots.Select(l => LoadoutStore.Effective(l, progress).Hat).Distinct().ToList();
+                var want = prestige >= 3 ? HatId.Fedora : HatId.None;
+                Line($"profile hat Fedora at prestige {prestige}: every slot wears {string.Join("/", worn)}, kept in the file as {Cosmetics.KeyOf(LoadoutStore.Hat)}");
+                if (worn.Count != 1 || worn[0] != want || LoadoutStore.Hat != HatId.Fedora)
+                    Fail($"cosmetic save: at prestige {prestige} the profile hat should apply to every slot as {want} (kept as Fedora), got {string.Join("/", worn)}, kept {LoadoutStore.Hat}");
+            }
             if (LoadoutStore.Slots.Any(l => l.Hat != HatId.None))
                 Fail("cosmetic save: a loadout slot stores a hat of its own (hats are one choice for the profile)");
         }
@@ -115,56 +118,70 @@ public static partial class SelfTest
         try
         {
             using var server = new Game(NetPeer.Offline(), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
+            server.Progress = new Progress { ReadOnly = true, Prestige = 1 };
             server.SelfTestPacketRaw(HatGuid, [(byte)DefaultMessageIDTypes.NewIncomingConnection], 0);
             var bot = server.Players.Values.First(p => p.Bot != null);
             var guest = server.Players.Values.First(p => p.Bot == null && p.Id != server.LocalId);
-            var prestige = 0; // TODO(prestige-hats): the prestige the pretend client reports in its Hello
+            var host = server.Local!;
 
-            // A locked hat over the wire is refused (none at prestige 0 is the only thing a fresh player may wear).
+            // The guest joins at prestige 3 (the Hello carries prestige and level after the name).
+            var w = new PacketWriter();
+            w.Begin(Msg.Hello).U8(5).Bytes("Guest"u8).U8(3).U8(20);
+            server.SelfTestPacket(HatGuid, w.Span, 0);
+
+            // Over the wire: a hat above their prestige is refused, one they've earned is worn.
             server.SelfTestPacket(HatGuid, HatLoadoutPacket(HatId.TallTopHat), 0);
             var locked = guest.Hat;
             server.SelfTestPacket(HatGuid, HatLoadoutPacket((HatId)200), 0);
             var junk = guest.Hat;
             server.SelfTestPacket(HatGuid, HatLoadoutPacket(null), 0); // an older client: no hat byte
             var older = guest.Hat;
-            Line($"server: guest at prestige {prestige} asked for Ridiculous Top Hat -> {locked}, hat 200 -> {junk}, older client -> {older}");
-            if (locked != Game.ValidHat(HatId.TallTopHat, false, prestige) || junk != HatId.None || older != HatId.None)
-                Fail($"cosmetic server: locked hat -> {locked}, junk hat -> {junk}, no hat byte -> {older} (expected the rule's answer / None / None)");
+            server.SelfTestPacket(HatGuid, HatLoadoutPacket(HatId.Fedora), 0);
+            var earned = guest.Hat;
+            Line($"server: guest at prestige {guest.Prestige} asked for Ridiculous Top Hat -> {locked}, hat 200 -> {junk}, older client -> {older}, Fedora -> {earned}");
+            if (locked != HatId.None || junk != HatId.None || older != HatId.None || earned != HatId.Fedora)
+                Fail($"cosmetic server: locked hat -> {locked}, junk -> {junk}, no hat byte -> {older} (want None), earned Fedora -> {earned}");
 
-            // Bots never wear one, whatever is asked or set.
-            server.SelfTestRequestHat(bot, HatId.Beanie);
-            var botAsked = bot.Hat;
-            bot.Hat = HatId.Fedora; // even if something set it directly, the roster says none
+            // The host's own hat goes through the same check (its prestige comes from its profile).
+            server.ChosenHat = HatId.Beanie;
+            var hostBeanie = host.Hat;
+            server.ChosenHat = HatId.TopHat;
+            var hostTop = host.Hat;
+            server.ChosenHat = HatId.Beanie;
+            Line($"host at prestige 1: Beanie -> {hostBeanie}, Top Hat -> {hostTop}");
+            if (hostBeanie != HatId.Beanie || hostTop != HatId.None)
+                Fail($"cosmetic server: the host at prestige 1 got Beanie -> {hostBeanie}, Top Hat -> {hostTop} (want Beanie / None)");
 
-            // Replication: the guest wears a hat (set as if accepted), the roster carries it to a client.
-            guest.Hat = HatId.Fedora;
+            // Bots never wear one.
+            var botAsked = server.ServerSetHat(bot, HatId.Beanie);
+            Line($"bots: asked for Beanie -> {botAsked} (wears {bot.Hat})");
+            if (botAsked != HatId.None || bot.Hat != HatId.None)
+                Fail($"cosmetic server: a bot was given {bot.Hat}");
+
+            // Replication: the roster carries everyone's hat to a client.
             var roster = server.SelfTestRosterPacket();
-            bot.Hat = HatId.None;
             using var client = new Game(NetPeer.OfflineClient(), new Audio(), "Guest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
             client.SelfTestPacket(default, roster, 0);
             var seenGuest = client.HatOf(guest.Id);
             var seenBot = client.HatOf(bot.Id);
-            var seenHost = client.HatOf(server.LocalId);
-            var trailer = roster.Length - RosterLengthWithoutHats(server);
-            Line($"bots: asked for Beanie -> {botAsked}; roster {roster.Length} bytes ({trailer} for hats): client sees guest {seenGuest}, bot {seenBot}, host {seenHost}");
-            if (botAsked != HatId.None)
-                Fail($"cosmetic server: a bot was given {botAsked}");
-            if (seenGuest != HatId.Fedora || seenBot != HatId.None || seenHost != HatId.None)
-                Fail($"cosmetic replication: the client sees guest {seenGuest} (want Fedora), bot {seenBot}, host {seenHost} (want None)");
-            if (trailer != 1 + 2 * server.Players.Count)
-                Fail($"cosmetic replication: the hat trailer is {trailer} bytes, expected {1 + 2 * server.Players.Count} (count + id/hat per player)");
+            var seenHost = client.HatOf(host.Id);
+            Line($"replication: roster {roster.Length} bytes for {server.Players.Count} players; the client sees guest {seenGuest}, host {seenHost}, bot {seenBot}");
+            if (seenGuest != HatId.Fedora || seenHost != HatId.Beanie || seenBot != HatId.None)
+                Fail($"cosmetic replication: the client sees guest {seenGuest} (want Fedora), host {seenHost} (want Beanie), bot {seenBot} (want None)");
 
-            // A roster from an older host (no trailer) leaves everyone bare-headed; a hostile one can't make up hats.
-            client.SelfTestPacket(default, roster.AsSpan(0, roster.Length - trailer), 0);
-            var afterOld = client.HatOf(guest.Id);
-            var hostile = roster.ToArray();
-            hostile[^1] = 77;
-            hostile[^3] = 250;
-            client.SelfTestPacket(default, hostile, 0);
-            var afterHostile = client.HatOf(server.Players.Keys.Last());
-            Line($"older host's roster -> guest {afterOld}; a made-up hat id -> {afterHostile}");
-            if (afterOld != HatId.None || afterHostile != HatId.None)
-                Fail($"cosmetic replication: older roster -> {afterOld}, made-up hat -> {afterHostile} (want None for both)");
+            // A made-up hat id from a hostile host draws nothing.
+            if (RosterHatOffset(roster, guest.Id) is { } at)
+            {
+                var hostile = roster.ToArray();
+                hostile[at] = 250;
+                client.SelfTestPacket(default, hostile, 0);
+                var afterHostile = client.HatOf(guest.Id);
+                Line($"a made-up hat id in the roster -> {afterHostile}");
+                if (afterHostile != HatId.None)
+                    Fail($"cosmetic replication: a made-up hat id became {afterHostile}");
+            }
+            else
+                Fail("cosmetic replication: the guest isn't in the roster");
         }
         finally
         {
@@ -174,8 +191,20 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>The roster's size without the hat trailer: 2 bytes (id, count) plus id, bot flag, length and name per player.</summary>
-    private static int RosterLengthWithoutHats(Game g) => 2 + g.Players.Values.Sum(p => 3 + System.Text.Encoding.ASCII.GetByteCount(p.Name));
+    /// <summary>Where a player's hat byte is in a roster packet (id, bot flag, name length, name, prestige, level, hat per player).</summary>
+    private static int? RosterHatOffset(byte[] roster, byte id)
+    {
+        var at = 2;
+        for (var i = 0; i < roster[1] && at + 3 <= roster.Length; i++)
+        {
+            var pid = roster[at];
+            var end = at + 3 + roster[at + 2] + 3;
+            if (pid == id && end <= roster.Length)
+                return end - 1;
+            at = end;
+        }
+        return null;
+    }
 
     // ---- Layout --------------------------------------------------------------------------------
 
