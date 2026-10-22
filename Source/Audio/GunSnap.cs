@@ -90,4 +90,61 @@ public static class GunSnap
     /// <summary>"pre 0.3 ms, attack 0.5 ms, early 0.82, crest 9.1 dB, decay 60 ms".</summary>
     public static string Describe(Numbers n) =>
         $"pre {n.PreRollMs:0.0} ms, attack {n.AttackMs:0.0} ms, early {n.Early:0.00}, crest {n.CrestDb:0.0} dB, decay {n.DecayMs:0} ms";
+
+    /// <summary>Band centres of <see cref="Fingerprint"/> (octaves, 125 Hz to 16 kHz).</summary>
+    public static readonly float[] FingerprintBands = [125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+
+    /// <summary>Length of a fingerprint: the band levels, then the log decay time, then the crest factor.</summary>
+    public static int FingerprintLength => FingerprintBands.Length + 2;
+
+    /// <summary>
+    /// A weapon's sonic fingerprint, averaged over its shot variants: the level of each octave band over the first
+    /// 150 ms in dB relative to the loudest band (the timbre, independent of loudness), the body's decay time
+    /// (20 dB per factor of 10) and the crest factor in dB. Compare two with <see cref="Distance"/>.
+    /// </summary>
+    public static float[] Fingerprint(IReadOnlyList<short[]> variants)
+    {
+        var fp = new float[FingerprintLength];
+        if (variants.Count == 0)
+            return fp;
+        var bands = new double[FingerprintBands.Length];
+        foreach (var pcm in variants)
+        {
+            var n = Math.Min(pcm.Length, Audio.SampleRate * 15 / 100);
+            var max = -999.0;
+            for (var b = 0; b < bands.Length; b++)
+            {
+                // RBJ band-pass (one octave), energy of the output.
+                var w0 = 2 * Math.PI * Math.Min(FingerprintBands[b], Audio.SampleRate * 0.45) / Audio.SampleRate;
+                var alpha = Math.Sin(w0) * Math.Sinh(Math.Log(2) / 2 * 1.0 * w0 / Math.Sin(w0));
+                var a0 = 1 + alpha;
+                double b0 = alpha / a0, b2 = -alpha / a0, a1 = -2 * Math.Cos(w0) / a0, a2 = (1 - alpha) / a0;
+                double x1 = 0, x2 = 0, y1 = 0, y2 = 0, e = 0;
+                for (var i = 0; i < n; i++)
+                {
+                    var x = pcm[i] / 32768.0;
+                    var y = b0 * x + b2 * x2 - a1 * y1 - a2 * y2;
+                    (x2, x1, y2, y1) = (x1, x, y1, y);
+                    e += y * y;
+                }
+                bands[b] = 10 * Math.Log10(e / Math.Max(1, n) + 1e-12);
+                max = Math.Max(max, bands[b]);
+            }
+            for (var b = 0; b < bands.Length; b++)
+                fp[b] += (float)(bands[b] - max) / variants.Count;
+            var m = Measure(pcm);
+            fp[bands.Length] += 20f * MathF.Log10(MathF.Max(m.DecayMs, 1f)) / variants.Count;
+            fp[bands.Length + 1] += m.CrestDb / variants.Count;
+        }
+        return fp;
+    }
+
+    /// <summary>RMS difference of two fingerprints in dB (band levels, decay and crest weighted alike).</summary>
+    public static float Distance(float[] a, float[] b)
+    {
+        double sum = 0;
+        for (var i = 0; i < a.Length; i++)
+            sum += (a[i] - b[i]) * (double)(a[i] - b[i]);
+        return (float)Math.Sqrt(sum / Math.Max(1, a.Length));
+    }
 }

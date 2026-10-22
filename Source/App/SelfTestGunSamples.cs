@@ -162,6 +162,25 @@ public static partial class SelfTest
         GunLine($"snappiness (median of baked shots): {GunSnap.Describe(all)}");
         foreach (var (cls, list) in byClass)
             Line($"  snappiness {cls}: {GunSnap.Describe(GunSnap.Median(list))}");
+        // Same-class distinctness: the closest pair of weapons in each class by sonic fingerprint.
+        var prints = Weapons.All.Where(w => w.Sound is SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed)
+            .Select(w => (W: w, F: GunSnap.Fingerprint(GunSamples.Shots(lib, w, Synth.Gunshot(w))))).ToArray();
+        var closest = new List<string>();
+        foreach (var g in prints.GroupBy(p => p.W.Class))
+        {
+            var best = (D: float.MaxValue, A: "", B: "");
+            var arr = g.ToArray();
+            for (var i = 0; i < arr.Length; i++)
+                for (var j = i + 1; j < arr.Length; j++)
+                {
+                    var d = GunSnap.Distance(arr[i].F, arr[j].F);
+                    if (d < best.D)
+                        best = (d, arr[i].W.Name, arr[j].W.Name);
+                }
+            if (arr.Length > 1)
+                closest.Add($"{g.Key} {best.D:0.00} dB ({best.A} / {best.B})");
+        }
+        GunLine("closest same-class pairs: " + string.Join("; ", closest));
     }
 
     private static double PcmRms(short[] s, int window)
