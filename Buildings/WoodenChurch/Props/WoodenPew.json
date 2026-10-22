@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Wooden Pew",
+  "description": "A plain pale-blue painted wooden pew, 3 m long along X, facing +Z.",
+  "collision": "solid",
+  "collider": [{"size": [3.0, 0.95, 0.62]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.06, 0.5]}},
+  "author": "Call of Slop",
+  "parts": [
+    {"size": [3.0, 0.06, 0.42], "offset": [0, 0.45, 0.06], "color": "#9ab4c4", "material": "wood"},
+    {"size": [3.0, 0.5, 0.05], "offset": [0, 0.72, -0.18], "color": "#9ab4c4", "material": "wood"},
+    {"size": [0.06, 0.95, 0.6], "offset": [-1.47, 0.475, -0.01], "color": "#7a96a8"},
+    {"size": [0.06, 0.95, 0.6], "offset": [1.47, 0.475, -0.01], "color": "#7a96a8"},
+    {"size": [3.0, 0.08, 0.06], "offset": [0, 0.97, -0.18], "color": "#6a8494"}
+  ]
+}

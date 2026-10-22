@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Vaara Sign",
+  "description": "A yellow and black danger board: VAARA (danger).",
+  "author": "Call of Slop",
+  "size": [
+    1.2,
+    0.6
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "vaara.png"
+}

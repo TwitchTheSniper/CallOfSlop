@@ -1,0 +1,457 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Finnish Wooden House",
+  "theme": "A 1920s Finnish board-clad house: red or yellow ochre boards, white frames and corner boards, a steep tin roof; birch floors, rag rugs, pine furniture",
+  "category": "residential",
+  "description": "A two-storey wooden house: hall, living room, kitchen, bedroom, bathroom and stair hall downstairs; two bedrooms, a small study and a landing upstairs. Front porch, back door to the yard.",
+  "author": "Call of Slop",
+  "seed": 601,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.9,
+  "exterior": {
+    "color": "$wall",
+    "material": "wood"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "none"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "wood"
+  },
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red ochre": {
+      "wall": "#8c3626",
+      "interior": "#e8e0cc",
+      "floor": "#8a6440",
+      "ceiling": "#f0ece0",
+      "trim": "#f2efe6",
+      "door": "#f2efe6",
+      "roof": "#38393c"
+    },
+    "yellow ochre": {
+      "wall": "#cfa448",
+      "interior": "#e6e8d8",
+      "floor": "#7a5a3a",
+      "ceiling": "#f2efe4",
+      "trim": "#f6f4ee",
+      "door": "#4a6a8a",
+      "roof": "#7a2e22"
+    },
+    "pale green": {
+      "wall": "#9aae8a",
+      "interior": "#ece4d0",
+      "floor": "#8a6a48",
+      "ceiling": "#f0ede2",
+      "trim": "#f4f2ea",
+      "door": "#7a3a2a",
+      "roof": "#3a3e42"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {
+        "spacing": 2.4,
+        "width": 1.0,
+        "sill": 0.9,
+        "head": 2.1
+      },
+      "rooms": [
+        {
+          "id": "hall",
+          "type": "hall",
+          "rect": [
+            -1.5,
+            0.5,
+            1.5,
+            4
+          ]
+        },
+        {
+          "id": "living",
+          "type": "living",
+          "rect": [
+            -5,
+            -1,
+            -1.5,
+            4
+          ]
+        },
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [
+            1.5,
+            -1,
+            5,
+            4
+          ],
+          "floor": {
+            "color": "#c8bfa8",
+            "material": "tiles"
+          }
+        },
+        {
+          "id": "bedroom",
+          "type": "bedroom",
+          "rect": [
+            -5,
+            -4,
+            -1.5,
+            -1
+          ]
+        },
+        {
+          "id": "stairs",
+          "type": "stairhall",
+          "rect": [
+            -1.5,
+            -4,
+            1.5,
+            0.5
+          ],
+          "windows": false
+        },
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [
+            1.5,
+            -4,
+            5,
+            -1
+          ],
+          "floor": {
+            "color": "#a8b8b8",
+            "material": "tiles"
+          },
+          "wall": "#dfe8e6",
+          "autoWindows": {
+            "spacing": 2,
+            "width": 0.6,
+            "sill": 1.4,
+            "head": 2.0
+          }
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            0,
+            4
+          ],
+          "width": 1.0,
+          "front": true
+        },
+        {
+          "type": "arch",
+          "at": [
+            0.5,
+            0.5
+          ],
+          "width": 1.2
+        },
+        {
+          "type": "door",
+          "at": [
+            -1.5,
+            2.2
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            1.5,
+            2.2
+          ],
+          "width": 0.9,
+          "hinge": "right"
+        },
+        {
+          "type": "door",
+          "at": [
+            -3.25,
+            -1
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            3.25,
+            -1
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            5,
+            1.5
+          ],
+          "width": 0.9,
+          "color": "$door"
+        }
+      ]
+    },
+    {
+      "height": 2.7,
+      "autoWindows": {
+        "spacing": 2.4,
+        "width": 0.9,
+        "sill": 0.9,
+        "head": 2.0
+      },
+      "rooms": [
+        {
+          "id": "landing",
+          "type": "corridor",
+          "rect": [
+            -1.5,
+            -4,
+            1.5,
+            0.5
+          ],
+          "windows": false
+        },
+        {
+          "id": "bed1",
+          "type": "bedroom",
+          "rect": [
+            -5,
+            -4,
+            -1.5,
+            4
+          ]
+        },
+        {
+          "id": "bed2",
+          "type": "kidsroom",
+          "rect": [
+            1.5,
+            -4,
+            5,
+            4
+          ]
+        },
+        {
+          "id": "study",
+          "type": "office",
+          "rect": [
+            -1.5,
+            0.5,
+            1.5,
+            4
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -1.5,
+            -3.3
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            1.5,
+            -3.3
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            0.8,
+            0.5
+          ],
+          "width": 0.9
+        }
+      ]
+    }
+  ],
+  "stairs": [
+    {
+      "floor": 0,
+      "rect": [
+        -1.25,
+        -2.9,
+        -0.15,
+        -0.6
+      ],
+      "dir": "-z",
+      "color": {
+        "color": "#8a6440",
+        "material": "wood"
+      }
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "ridge": "x",
+    "pitch": 42,
+    "overhang": 0.5,
+    "color": {
+      "color": "$roof",
+      "material": "metal"
+    }
+  },
+  "extras": [
+    {
+      "type": "block",
+      "min": [
+        -5.305,
+        0.0,
+        -4.305
+      ],
+      "max": [
+        -5.125,
+        5.6,
+        -4.125
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -5.305,
+        0.0,
+        4.125
+      ],
+      "max": [
+        -5.125,
+        5.6,
+        4.305
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        5.125,
+        0.0,
+        -4.305
+      ],
+      "max": [
+        5.305,
+        5.6,
+        -4.125
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        5.125,
+        0.0,
+        4.125
+      ],
+      "max": [
+        5.305,
+        5.6,
+        4.305
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "porch",
+      "rect": [
+        -1.5,
+        4.13,
+        1.5,
+        5.7
+      ],
+      "height": 2.6,
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -0.4,
+        5.75,
+        -1.0
+      ],
+      "max": [
+        0.4,
+        8.6,
+        -0.2
+      ],
+      "color": {
+        "color": "#8a5a44",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "prop",
+      "name": "Birch Firewood Stack",
+      "at": [
+        -6.3,
+        0.0
+      ],
+      "yaw": 90
+    },
+    {
+      "type": "prop",
+      "name": "Wheelie Bin Grey",
+      "at": [
+        6.3,
+        -2.6
+      ],
+      "yaw": 270
+    },
+    {
+      "type": "prop",
+      "name": "Kicksled",
+      "at": [
+        2.4,
+        5.0
+      ],
+      "yaw": 20
+    },
+    {
+      "type": "prop",
+      "name": "Flower Pot",
+      "at": [
+        -2.2,
+        4.8
+      ],
+      "yaw": 0
+    }
+  ],
+  "anchors": [
+    {
+      "type": "spawn",
+      "name": "living room",
+      "at": [
+        -3.3,
+        1.5
+      ]
+    },
+    {
+      "type": "spawn",
+      "name": "upstairs bedroom",
+      "floor": 1,
+      "at": [
+        -3.3,
+        1.0
+      ]
+    },
+    {
+      "type": "point",
+      "name": "front door",
+      "at": [
+        0,
+        6.4
+      ]
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Lakeside Sauna",
+  "theme": "A Finnish log sauna by a lake: tarred logs, a green tin roof, a porch to cool off on; a changing room and the steam room with a wood stove and pine benches",
+  "category": "residential",
+  "description": "A small log sauna: a changing room behind the porch and the steam room with a wood stove and benches, a chimney pipe through the roof.",
+  "author": "Call of Slop",
+  "seed": 641,
+  "wallThickness": 0.3,
+  "storeyHeight": 2.5,
+  "exterior": {
+    "color": "$wall",
+    "material": "wood"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "wood"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "wood"
+  },
+  "ceiling": "$interior",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "tarred log": {
+      "wall": "#4a3424",
+      "interior": "#c49a62",
+      "floor": "#8a6a44",
+      "trim": "#2e2218",
+      "door": "#6a4a2e",
+      "roof": "#3e5a3a"
+    },
+    "red ochre": {
+      "wall": "#7e3022",
+      "interior": "#c8a06a",
+      "floor": "#8a6a44",
+      "trim": "#ece8de",
+      "door": "#ece8de",
+      "roof": "#2e3034"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "changing",
+          "type": "changing",
+          "rules": "hall",
+          "rect": [
+            -2.5,
+            0,
+            2.5,
+            2
+          ],
+          "autoWindows": {
+            "spacing": 2,
+            "width": 0.7,
+            "sill": 1.1,
+            "head": 1.9
+          },
+          "props": [
+            {
+              "name": "Birch Log Bench",
+              "wall": "N",
+              "along": -1.2
+            },
+            {
+              "name": "Coat Stand",
+              "at": [
+                2.0,
+                -0.5
+              ]
+            }
+          ]
+        },
+        {
+          "id": "steam",
+          "type": "sauna",
+          "rect": [
+            -2.5,
+            -2.5,
+            2.5,
+            0
+          ],
+          "furnish": "explicit",
+          "autoWindows": {
+            "spacing": 3,
+            "width": 0.6,
+            "sill": 1.3,
+            "head": 1.8
+          },
+          "props": [
+            {
+              "name": "Sauna Stove",
+              "wall": "N",
+              "along": 1.6
+            },
+            {
+              "name": "Sauna Bench",
+              "wall": "N",
+              "along": -0.9
+            },
+            {
+              "name": "Sauna Bucket",
+              "at": [
+                0.6,
+                0.4
+              ]
+            }
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -1.3,
+            2
+          ],
+          "width": 0.9,
+          "front": true
+        },
+        {
+          "type": "door",
+          "at": [
+            1.6,
+            0
+          ],
+          "width": 0.9
+        }
+      ]
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "ridge": "x",
+    "pitch": 28,
+    "overhang": 0.5,
+    "color": {
+      "color": "$roof",
+      "material": "metal"
+    }
+  },
+  "extras": [
+    {
+      "type": "porch",
+      "rect": [
+        -2.5,
+        2.15,
+        2.5,
+        3.8
+      ],
+      "height": 2.3,
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        1.7,
+        2.2,
+        -1.6
+      ],
+      "max": [
+        2.0,
+        4.6,
+        -1.3
+      ],
+      "color": {
+        "color": "#2a2a2a",
+        "material": "metal"
+      }
+    },
+    {
+      "type": "prop",
+      "name": "Birch Firewood Stack",
+      "at": [
+        -3.9,
+        -0.4
+      ],
+      "yaw": 90
+    },
+    {
+      "type": "prop",
+      "name": "Sauna Bucket",
+      "at": [
+        1.6,
+        3.2
+      ],
+      "yaw": 0
+    }
+  ],
+  "anchors": [
+    {
+      "type": "point",
+      "name": "porch",
+      "at": [
+        0,
+        3.0
+      ]
+    }
+  ]
+}
