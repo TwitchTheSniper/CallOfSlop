@@ -589,6 +589,27 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>
+    /// Hook for other bot logic (harder bots, objectives): bot <paramref name="p"/> uses its tactical item right now,
+    /// aimed at <paramref name="at"/> (thrown items are lobbed to land there; placed ones go down facing it; the stim
+    /// ignores it). Goes through the normal server rules (counts, cooldown, match phase, modes without equipment).
+    /// Returns true if it was used. <see cref="BotWantsTactical"/> says which kind it carries and whether it's ready.
+    /// </summary>
+    public bool BotUseTacticalNow(Player p, Vector3 at, double now)
+    {
+        if (p.Bot is not { } b || !BotWantsTactical(p, now))
+            return false;
+        var before = p.EquipmentLeft;
+        BotUseTactical(p, b, at, now);
+        return p.EquipmentLeft < before;
+    }
+
+    /// <summary>The tactical item bot <paramref name="p"/> could use right now (None if it has none left, or can't use it yet).</summary>
+    public ThrowableKind BotReadyTactical(Player p, double now) => BotWantsTactical(p, now) ? p.Equipment : ThrowableKind.None;
+
+    private bool BotWantsTactical(Player p, double now) =>
+        p.Alive && TacticalGear.Is(p.Equipment) && p.EquipmentLeft > 0 && now >= p.NextThrow && DamageEnabled && Module.UsesThrowables;
+
     private bool EnemyGrenadeNear(Player p, float range)
     {
         foreach (var pr in Projectiles.Values)
@@ -968,6 +989,15 @@ public sealed partial class Game
     public void SelfTestUpdateTacticalEffects(double now, float dt) => UpdateTacticalEffects(now, dt);
 
     public void SelfTestClearTactical() => ClearTactical();
+
+    /// <summary>One server tick with the match over (devices must go).</summary>
+    public void SelfTestEndMatchTactical(double now)
+    {
+        var phase = Phase;
+        Phase = MatchPhase.Ended;
+        ServerTickTactical(now);
+        Phase = phase;
+    }
 
     /// <summary>
     /// Smoke test (host only): lays out one of each device in a fan in front of <paramref name="p"/> (looking along

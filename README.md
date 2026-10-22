@@ -130,8 +130,8 @@ Each loadout carries one perk from each of three categories. Every perk only wor
 | Movement | **Dead Silence** (23) | Sneaking up | Others hear your steps, jumps and landings 75% quieter and from half as far; bots notice you behind them within 3 m instead of 7 m |
 | Movement | **Lightweight** (33) | Carrying a heavy gun | Your gun never slows you below full speed (LMGs, snipers); no effect with light guns |
 | Movement | **Afterburner** (36) | Just got a kill | 35% faster for 4 s after a kill; no refresh during the boost, 6 s cooldown after it |
-| Movement | **Ghost** (45) | On the move | Recon Pulses and Recon Sweeps can't reveal you while you're moving (faster than 1 m/s) |
-| Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own |
+| Movement | **Ghost** (45) | On the move | Recon Pulses and Recon Sweeps can't reveal you while you're moving (faster than 1 m/s), and Motion Sensors never ping you |
+| Survival | **Flak Jacket** (start) | Grenades | 75% less explosive damage, including your own; flashbangs and stun grenades hit you half as hard |
 | Survival | **Quick Fix** (7) | Between fights | Health starts coming back 2.5 s after the last damage instead of 5 s |
 | Survival | **Bloodthirst** (9) | Just got a kill | Each kill heals you to full |
 | Survival | **Scavenger** (21) | Just got a kill | Each kill gives back one grenade and one equipment charge, up to what you spawn with |
@@ -360,7 +360,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | C / hold Left Ctrl | Crouch (C toggles, Ctrl holds) |
 | Z | Go prone (toggle) |
 | G | Throw grenade |
-| F | Use equipment (Recon Pulse) |
+| F | Use equipment (Recon Pulse or a tactical item: throw it, put it down or inject it) |
 | V | Melee |
 | E | Interact: open or shut the building door you're looking at (Zombies: push cart, slot station, buying) |
 | F3 | Ready up (warmup) |
@@ -413,7 +413,7 @@ The pacing is a rough target rather than a hard rule. A typical match is around 
 The lobby shows your level and next unlock, and the level bar at the bottom of the loadout screen opens the progression page, which lists every level. In a match, XP pops up by the crosshair, and banners announce level-ups and new attachments. Progress is saved to `progress.txt`, with weapon XP stored by weapon name (`wx.<name>=...`). Older saves carry over: their numbered weapon XP is converted to names, and old per-weapon kill counts become weapon XP.
 
 - **Level 1:** BR-1 Prototype, Vanguard AR, Hornet SMG, Breacher Pump, Marksman M14, P9 Sidearm, Mk.23 Tactical.
-- **Levels 2-48:** the other 43 weapons plus the Frag Grenade (level 4), Recon Pulse (8), Impact Grenade (13) and Smoke Grenade (20), in a fixed order. The fun ones come last: Grinder Rotary, Railspike, Toy Blaster.
+- **Levels 2-48:** the other 43 weapons plus the Frag Grenade (level 4), Recon Pulse (8), Impact Grenade (13) and Smoke Grenade (20), in a fixed order. The tactical equipment sits on top of that: Stim Shot (5), Flashbang (10), Decoy (13), Motion Sensor (16), Stun Grenade (19), Trophy System (24), Deployable Cover (28), Tactical Insertion (32). The fun ones come last: Grinder Rotary, Railspike, Toy Blaster.
 - Locked items appear as `[LOCKED] ... level N` (weapons) or `[LOCKED] ... N weapon XP` (attachments). Bots ignore progression.
 - Weapons added as files unlock at the level their file asks for (`unlockLevel`), or at level 48.
 - Unlocks are kept on each player's own PC.
@@ -448,8 +448,18 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 | Impact Grenade | Level 8 | Explodes on first contact. Up to 110 damage within 4.5 m. |
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s where it lands (1.2 s after the throw, or on landing if it's still in the air then). Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you through walls as a silhouette in their team colour (orange in free-for-all modes); teammates are never revealed. It beeps once a second, so enemies can hear where it is. |
+| **Flashbang** (equipment, 2) | Level 10 | Goes off 1.4 s after the throw. Anyone facing it within 14 m is whited out for up to 1.6 s and deafened (sounds muffled, a soft ring), then sight fades back over up to 2.6 s. Looking away cuts it to a fifth, walls block it, your own flash hits you at half. The white never flickers and you can always move and shoot. Flashed bots lose their target. |
+| **Stun Grenade** (equipment, 2) | Level 19 | Goes off on contact. Everyone within 8 m with a clear line moves at down to half speed, turns at down to 40% and aims down sights slower, for up to 4 s. |
+| **Decoy Grenade** (equipment) | Level 13 | Lands and fires fake bursts of your primary's sound for 12 s, and enemies see a fake name tag of yours over it. Enemy bots within 45 m go and check it out. No tracers or hits, and one shot breaks it. |
+| **Motion Sensor** (equipment) | Level 16 | Sticks where it lands. For 25 s it pings every enemy moving faster than a crouch-walk within 16 m on your team's HUD (red diamonds). Crouch-walking, prone and Ghost stay off it; it chirps so it can be found, and one shot breaks it. |
+| **Trophy System** (equipment) | Level 24 | Put it down in front of you. It shoots down up to 3 enemy grenades or thrown gadgets within 7 m (lamps show the charges left), then breaks. 60 health; streaks and exploding props aren't stopped. |
+| **Deployable Cover** (equipment) | Level 28 | An energy wall 2 m wide and 1.2 m tall, 1.4 m in front of you, for 40 s: crouch behind it, stand to shoot over it. Stops bullets from both sides and grenade blasts until it takes 350 damage (explosives do double). People walk through it. |
+| **Tactical Insertion** (equipment) | Level 32 | Drop a flare at your feet: your next spawn is right there (one at a time; a new one replaces it). Its glow gives it away and enemies can shoot it out (40 health). |
+| **Stim Shot** (equipment) | Level 5 | Inject it at once: 40 health back, then 15 health a second for 4 s with no wait. It also shakes off a stun. |
 
-Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, picking the angle that makes the grenade go off at the target (bounces and roll included); Tacticians throw more, also at where an enemy just ducked out of sight (up to 22 m away). Explosions shake your screen when they're close.
+Counters to the tactical gear: Flak Jacket halves flashes and stuns; turn away from a flash you hear land; shoot devices (enemy devices stop your bullets and take the damage, and their lamps are red, yours green); a grenade or streak blast tears them down; a Trophy System eats Flashbangs, Stuns, Decoys and Motion Sensors too. Devices vanish when the match ends or their owner leaves. Modes without equipment (Gun Game) hand out none. In Zombies, a flash or stun staggers the zombies it catches.
+
+Bots on Normal and Hard throw frags (and sometimes impacts) at targets 6-15 m away, picking the angle that makes the grenade go off at the target (bounces and roll included); Tacticians throw more, also at where an enemy just ducked out of sight (up to 22 m away). Explosions shake your screen when they're close. Bots carry a tactical item that fits their personality (Rushers: flash, stun or stim; Marksmen: motion sensor, cover or trophy; Tacticians a bit of everything) and use it when it fits: a flash at an enemy in view or where one just ducked out of sight, a stim when hurt, a trophy when a grenade comes in, cover in a long gunfight.
 
 ### Loadouts and weapons
 
