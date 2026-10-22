@@ -128,7 +128,7 @@ BUILDINGS = [
     # name, at, yaw, seed, variant
     ("Church", (-2.0, -25.0), 270, 3, {"palette": "honey limestone"}),
     ("Stone Cottage", (-26.0, -1.0), 90, 5, {"palette": "honey stone"}),
-    ("Row Houses", (29.0, 0.0), 270, 6, {"palette": "yellow stone"}),
+    ("Row Houses", (29.0, 0.0), 270, None, {"palette": "yellow stone"}),
     ("Village Shop", (-16.0, 21.0), 180, 7, {"palette": "honey stone"}),
     ("Pub", (10.0, 21.0), 180, 8, {"palette": "cotswold stone"}),
     ("Thatched Cottage", (28.0, 21.0), 180, 9, {"palette": "honey stone"}),
@@ -136,7 +136,7 @@ BUILDINGS = [
 PLANS = {}
 for name, (bx, bz), yaw, seed, var in BUILDINGS:
     d = blib.find(name)
-    plan = bldgen.generate(blib, d, var, seed, (bx, 0, bz), yaw // 90)
+    plan = bldgen.generate(blib, d, var, seed or 0, (bx, 0, bz), yaw // 90)
     PLANS[name] = plan
     xs = [r[0] for r in plan.footprint] + [r[2] for r in plan.footprint]
     zs = [r[1] for r in plan.footprint] + [r[3] for r in plan.footprint]
@@ -144,7 +144,7 @@ for name, (bx, bz), yaw, seed, var in BUILDINGS:
     if name != "Church":     # the church stands on the churchyard plateau
         PADS.append(((fx0 + fx1) / 2, (fz0 + fz1) / 2, fx1 - fx0 + 2.4, fz1 - fz0 + 2.4, round(H0(bx, bz), 2)))
 
-HILLS = [(0.0, -0.5, 4.0), (-17.0, -1.6, 3.5), (17.0, -0.6, 3.5)]   # x, z, radius (KotH)
+HILLS = [(0.0, -0.5, 4.0), (-16.4, -1.6, 3.0), (16.4, -0.6, 3.0)]   # x, z, radius (KotH)
 
 features = [
     # the hillside: a grid of heights (8 m cells) adding the 9% fall, plus the wooded hills that rise beyond the hedge
@@ -211,6 +211,8 @@ def G(x, z):
 S.raw({"op": "Ground", "color": GRASS})
 for name, (bx, bz), yaw, seed, var in BUILDINGS:
     op = {"op": "Building", "name": name, "at": [bx, bz], "yaw": yaw, "seed": seed, "variant": var}
+    if seed is None:
+        del op["seed"]
     S.raw(op)
     plan = PLANS[name]
     for b in plan.shell:          # building walls are solid for the placement rules (ground floor, below head height)
@@ -227,7 +229,7 @@ for name, (bx, bz), yaw, seed, var in BUILDINGS:
 # ================================================================================================ objectives, spawns
 BLUE_SP = [(-30.0, -27.0), (-24.0, -31.0), (-33.0, -20.5), (26.0, -30.8), (26.0, -22.0), (35.0, -27.6)]
 RED_SP = [(-34.5, 23.0), (-30.5, 29.5), (-17.0, 29.5), (8.0, 29.5), (27.0, 29.5), (35.6, 21.5)]
-FFA_SP = [(-2.0, -32.6), (0.0, 30.0)]
+FFA_SP = [(0.0, -32.8), (0.0, 30.0)]
 FLAGS = [(-25.5, -24.0), (25.5, 29.5)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     S.keepout(x, z, 2.4)
@@ -367,7 +369,7 @@ for x in (25.6, 29.4):
 # West Lane, west side: the cottage's front garden wall with its gate
 wall_props(-19.9, -9.4, -19.9, 9.4, gaps=[(8.1, 1.8)])
 # East Lane, east side: the terrace's front garden walls, a gap at each front door
-wall_props(19.9, -9.2, 19.9, 9.0, gaps=[(1.6, 1.6), (7.3, 1.6), (12.4, 1.6)])
+wall_props(19.9, -9.2, 19.9, 9.0, gaps=[(5.0, 1.6), (10.0, 1.6), (15.0, 1.6)])
 # the High Street, south side: the meadow wall west of the shop, the cottage's front wall east of the pub
 wall_props(-40.0, 17.1, -25.0, 17.1, gaps=[(14.0, 1.0)])
 wall_props(23.0, 17.0, 39.0, 17.0, gaps=[(3.6, 1.4)])
@@ -523,8 +525,8 @@ S.prop("Bicycle", 37.2, 2.8, 90)
 # meadow: a bench by the stream, the field gate on the footpath out
 S.rule("meadow")
 S.prop("Bench", -24.8, 28.0, 250)
-S.prop("Five Bar Gate", -5.5, 40.2, 0, check=False)
-S.prop("Five Bar Gate", 4.5, -41.2, 0, check=False)
+S.prop("Five Bar Gate", -5.5, 38.4, 0, check=False)
+S.prop("Five Bar Gate", 4.5, -39.4, 0, check=False)
 S.prop("Log", -36.5, 19.5, 30)
 S.prop("Hay Bale", -34.0, 27.0, 20)
 
