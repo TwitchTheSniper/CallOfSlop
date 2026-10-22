@@ -169,8 +169,10 @@ public static partial class SelfTest
         }
         int coverBlue = CoverNear(routes[0]), coverRed = CoverNear(routes[1]);
         var ratio = MathF.Min(coverBlue, coverRed) / (float)Math.Max(1, Math.Max(coverBlue, coverRed));
-        ClutteredLine($"{m.Name} balance (Blue/Red nav walk): {string.Join(", ", walks)}; cover near the routes to the hills {coverBlue}/{coverRed} ({ratio:P0}); "
-                      + $"spawn heights {blueY:0.0}/{redY:0.0} m; spawn pairs in sight {seen.Count}");
+        var balance = $"{m.Name} balance (Blue/Red nav walk): {string.Join(", ", walks)}; cover near the routes to the hills {coverBlue}/{coverRed} ({ratio:P0}); "
+                      + $"spawn heights {blueY:0.0}/{redY:0.0} m; spawn pairs in sight {seen.Count}";
+        ClutteredLine(balance);
+        Line("::notice title=Deepcut Mine balance::" + balance.Replace("%", "%25")); // its own notice: the pack's one gets long
         // Not mirrored, so not equal: the low side (Blue) gets at least as much cover as the high side to make up for the
         // height, and the high side's routes aren't bare either.
         if (coverBlue < coverRed || coverRed < coverBlue * 0.3f)

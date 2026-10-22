@@ -69,6 +69,7 @@ ROADS = [
     ("bench 1 south", [[25, 24, B1], [19.5, 24, B1], [14.5, 14.5, L0]], 4.6),
     ("north dump west", [[-46, -27, L0], [-23, -27, NDUMP - 1.2], [-19, -33.5, NDUMP]], 4.4),
     ("north dump east", [[32, -26, B1], [21, -26, NDUMP - 0.6], [15, -33.5, NDUMP]], 4.4),
+    ("pit east", [[24, -6, B1], [19.5, -6, B1], [6.5, 15.5, PIT], [5, 17, PIT]], 4.6),   # the main haul road carries on down into the pit
     ("south dump east", [[32, 32.5, B1], [21, 32.5, SDUMP - 0.6], [14.6, 39.5, SDUMP]], 4.4),
     ("south dump west", [[-44, 31.5, L0], [-20, 31.5, SDUMP - 1.0], [-16.5, 38.5, SDUMP]], 4.4),
     ("bench 2 north", [[42, -40, B1], [60, -40, B2], [64, -33, B2]], 4.6),
@@ -141,7 +142,7 @@ if __name__ == "__main__" and len(sys.argv) > 3 and sys.argv[3] == "terrain":
 BLUE_SP = [(-78, -6), (-78, 0), (-78, 6), (-74, -9), (-74, -3), (-74, 3), (-69, -1), (-74, 8), (-66, -9)]
 RED_SP = [(73, -6), (76, -10), (80, -9.5), (84, -6), (87, 0), (86, 9), (61.5, -15), (61.5, -19), (62, 17)]   # none over a tunnel roof
 FFA_SP = [(-40, -26), (-20, 26), (-16, -22.5), (30, -10), (50, 0), (36, 45)]
-HILLS = [(4.0, 0.5, 5.0), (3.0, -19.0, 5.5), (6.0, 41.5, 4.0)]
+HILLS = [(3.0, 1.0, 5.0), (3.0, -19.0, 5.5), (6.0, 41.5, 4.0)]
 FLAGS = [(-84.0, 2.0), (86.5, 3.0)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
@@ -600,7 +601,7 @@ for (x, z) in ((-28.0, 46.0), (-8.0, 54.0), (-14.0, 41.0)):
 P("Haul Truck", -18.0, 50.0, 0, tag="dump"); P("Floodlight Mast", -7.5, 39.0, 20, tag="dump")
 
 # ---------------------------------------------------------------- bench 1: safety berms of concrete blocks along the rim, plant, the explosives magazine
-for (z0, z1) in ((-50.0, -30.5), (-12.0, 18.0), (36.0, 50.0)):
+for (z0, z1) in ((-50.0, -30.5), (-12.0, -10.0), (1.5, 18.0), (36.0, 50.0)):
     z = z0
     while z < z1:
         P("Concrete Block", 19.4, z, 90, tag="berm")
