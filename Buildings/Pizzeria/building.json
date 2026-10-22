@@ -101,7 +101,7 @@
     {"type": "prop", "name": "Dumpster", "at": [-2.2, -5.4]},
     {"type": "prop", "name": "Trash Bag", "at": [-0.6, -5.2]},
     {"type": "prop", "name": "Pizzeria Flour Sacks", "at": [-6.9, -3.0], "yaw": 90},
-    {"type": "block", "min": [-3.4, 2.6, -3.8], "max": [-2.8, 6.2, -3.2], "color": {"color": "#8a3a26", "material": "brick"}}
+    {"type": "block", "min": [-3.4, 3.15, -3.8], "max": [-2.8, 6.2, -3.2], "color": {"color": "#8a3a26", "material": "brick"}}
   ],
   "anchors": [
     {"type": "spawn", "name": "kitchen", "at": [-1.0, -2.3]},

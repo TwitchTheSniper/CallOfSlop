@@ -3,7 +3,7 @@
   "name": "Hotel",
   "theme": "Art deco grand hotel, the Majestic: cream render with gold fins and a rooftop sign, a black and gold lobby with palms and chandeliers, burgundy carpet, en-suite rooms",
   "category": "commercial",
-  "description": "A grand hotel, three floors by default (2 to 8 with the floors variant): the lobby with reception, a cocktail lounge, a restaurant, kitchen, office and restrooms; guest floors of five en-suite rooms and a linen room on a long corridor; a switchback stair up to the roof.",
+  "description": "A grand hotel, three floors by default (2 to 8 with the floors variant): the lobby with reception, a cocktail lounge, a restaurant, kitchen, office and restrooms; guest floors of five en-suite rooms and a linen room, each with a fire escape balcony; a switchback stair up to the roof.",
   "author": "Call of Slop",
   "seed": 77,
   "wallThickness": 0.25,
@@ -165,7 +165,8 @@
         {"type": "door", "at": [7.2, 1], "width": 0.9},
         {"type": "door", "at": [5.4, 2], "width": 0.9},
         {"type": "door", "at": [2.75, -1], "width": 0.9},
-        {"type": "door", "at": [7.0, -1], "width": 1.0}
+        {"type": "door", "at": [7.0, -1], "width": 1.0},
+        {"type": "door", "at": [7.0, -6], "width": 1.0, "material": "metal"}
       ]
     }
   ],
@@ -192,7 +193,14 @@
     {"type": "prop", "name": "Hotel Palm", "at": [3.2, 6.9]},
     {"type": "prop", "name": "Taxi", "at": [10.8, 3.0], "yaw": 0},
     {"type": "prop", "name": "Hotel Luggage Cart", "at": [-3.0, 7.6], "yaw": 10},
-    {"type": "prop", "name": "Dumpster", "at": [-8.0, -7.0]}
+    {"type": "prop", "name": "Dumpster", "at": [-8.0, -7.0]},
+    {
+      "type": "balcony",
+      "floor": 1,
+      "rect": [5.7, -7.4, 8.3, -6.125],
+      "railing": 1.05,
+      "color": {"color": "#5a5e62", "material": "metal"}
+    }
   ],
   "anchors": [
     {"type": "spawn", "name": "lobby", "at": [2.0, 3.0]},

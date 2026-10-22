@@ -130,7 +130,7 @@
         {"type": "door", "at": [5, 0], "width": 1.0},
         {"type": "door", "at": [0, 3], "width": 0.9},
         {"type": "door", "at": [-5, 0], "width": 0.9},
-        {"type": "door", "at": [2, -3], "width": 0.9}
+        {"type": "door", "at": [-2, -3], "width": 0.9}
       ]
     }
   ],
