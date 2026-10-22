@@ -403,6 +403,8 @@ public static class Ragdolls
     {
         BodyBloodRender.RagdollAmounts(owner, blood, 0f, BodyBloodRender.Mode, body.Blood);
         body.BloodSeed = (BloodMarks.Hash(owner, blood, 7) & 0xFFFF) / 65535f;
+    }
+
     // ---- Gibs (blast kills that blow the body apart) -----------------------------------------------------------
 
     /// <summary>Bodies blown apart into gibs since start-up (players, bots and zombies).</summary>
