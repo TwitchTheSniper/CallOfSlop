@@ -65,6 +65,7 @@ public sealed class GunGameModule : GameModeModule
     public override PerkSet? FixedPerks => GunGame.Perks;
     public override bool UsesThrowables => false;
     public override bool ServerPicksWeapons => true;
+    public override string? LoadoutHint => "Gun Game: everyone gets the same gun, so your loadout isn't used this match.";
 
     private Player? _winner;
 

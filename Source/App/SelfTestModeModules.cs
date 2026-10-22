@@ -102,13 +102,30 @@ public static partial class SelfTest
         (GameMode.Zombies, 2, 0, 4106, 20, 0x740A835A97B6A819),
     ];
 
+    private static readonly List<string> ModeNotes = new();
+
+    /// <summary>A result line, also kept for the section's GitHub annotation (so the numbers can be read from a green run).</summary>
+    private static void ModeNote(string s)
+    {
+        Line(s);
+        ModeNotes.Add(s);
+    }
+
     private static void CheckModeModules()
     {
-        CheckModeRegistry();
-        CheckModeCapabilities();
-        CheckModeStateRoundTrips();
-        CheckModeBotMatches();
-        CheckModeDigests();
+        try
+        {
+            CheckModeRegistry();
+            CheckModeCapabilities();
+            CheckModeStateRoundTrips();
+            CheckModeBotMatches();
+            CheckModeDigests();
+        }
+        finally
+        {
+            if (ModeNotes.Count > 0)
+                Line("::warning title=Mode modules (results)::" + string.Join("%0A", ModeNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
     }
 
     // ---- The registry: every mode, stable ids, where each shows up --------------------------------------------
@@ -116,7 +133,7 @@ public static partial class SelfTest
     private static void CheckModeRegistry()
     {
         var all = GameModeRegistry.All;
-        Line($"{all.Count} modes registered: {string.Join(", ", all.Select(m => $"{m.Name} ({m.Short}, id {(byte)m.Id}{(m.DevOnly ? ", dev" : "")})"))}");
+        ModeNote($"{all.Count} modes registered: {string.Join(", ", all.Select(m => $"{m.Name} ({m.Short}, id {(byte)m.Id}{(m.DevOnly ? ", dev" : "")})"))}");
         // The wire ids are fixed: the shipped six in order, then the template.
         var expected = new[]
         {
@@ -146,7 +163,7 @@ public static partial class SelfTest
         var plain = GameModes.ForMap(null);
         var courtyard = GameModes.ForMap(Maps.All[0]);
         var ztest = ZTestMap != null ? GameModes.ForMap(ZTestMap) : Array.Empty<GameMode>();
-        Line($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {Maps.All[0].Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
+        ModeNote($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {Maps.All[0].Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
         if (!plain.SequenceEqual(GameModes.All) || !courtyard.SequenceEqual(GameModes.All))
             Fail("a plain map should offer exactly the five PvP modes");
         if (ZTestMap != null && (!ztest.Contains(GameMode.Zombies) || !ztest.Contains(GameMode.LastManStanding) || ztest.Length != GameModes.All.Length + 2))
@@ -267,7 +284,7 @@ public static partial class SelfTest
             var got = actual(client);
             var shared = client.Mode == mode && client.TeamScore[0] == 2 && client.TeamScore[1] == 1 && client.Players[1].GunLevel == 7
                          && server.Players.Values.All(p => client.Players[p.Id].Team == p.Team) && client.ScoreLimit == server.ScoreLimit;
-            Line($"{GameModes.Name(mode),-17} mode state {w.Length} bytes (tail v{server.Module.StateVersion}), shared part {shared}, tail '{got}'");
+            ModeNote($"{GameModes.Name(mode),-17} mode state {w.Length} bytes (tail v{server.Module.StateVersion}), shared part {shared}, tail '{got}'");
             if (!shared)
                 Fail($"{GameModes.Name(mode)}: the shared mode state didn't replicate");
             if (got != expect)
@@ -363,7 +380,7 @@ public static partial class SelfTest
                 var kills = game.Players.Values.Sum(p => (int)p.Kills);
                 var alive = game.Players.Values.Count(p => p.Alive);
                 var verdict = game.Module.SelfTestVerify(game);
-                Line($"{proto.Name,-17} on {World.Map.Name}: {sw.Elapsed.TotalSeconds:0.0} s wall, kills {kills}, alive {alive}/{startAlive}, team score {game.TeamScore[0]}-{game.TeamScore[1]}, phase {game.Phase}" +
+                ModeNote($"{proto.Name,-17} on {World.Map.Name}: {sw.Elapsed.TotalSeconds:0.0} s wall, kills {kills}, alive {alive}/{startAlive}, team score {game.TeamScore[0]}-{game.TeamScore[1]}, phase {game.Phase}" +
                      (game.Phase == MatchPhase.Ended ? $" ({game.MatchResult})" : "") + (verdict != null ? $" PROBLEM: {verdict}" : ""));
                 if (game.Module.GetType() != proto.GetType())
                     Fail($"{proto.Name}: the game ran {game.Module.Name} instead");
@@ -393,7 +410,7 @@ public static partial class SelfTest
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var a = ModeMatchDigest(mode, bots, mapId, seed, seconds, out var summary);
             var b = ModeMatchDigest(mode, bots, mapId, seed, seconds, out _);
-            Line($"{GameModes.Name(mode),-17} {bots} bots, map {mapId}, seed {seed}, {seconds:0} s: digest {a:X16} ({summary}; {sw.Elapsed.TotalSeconds:0.0} s)");
+            ModeNote($"{GameModes.Name(mode),-17} {bots} bots, map {mapId}, seed {seed}, {seconds:0} s: digest {a:X16} ({summary}; {sw.Elapsed.TotalSeconds:0.0} s)");
             if (a != b)
                 Fail($"{GameModes.Name(mode)}: the same seeded match gave two digests ({a:X16} vs {b:X16})");
             if (want == 0)

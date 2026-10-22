@@ -103,6 +103,9 @@ public abstract class GameModeModule
         return true; // team spawns, hills and flags are generated for every map
     }
 
+    /// <summary>A line for the loadout screen's footer when the mode makes the loadout moot (null: the normal hints).</summary>
+    public virtual string? LoadoutHint => UsesLoadout ? null : $"{Name}: your loadout isn't used this match.";
+
     /// <summary>The lobby's warning when the picked map can't play this mode (it falls back to free-for-all).</summary>
     public virtual string MapWarning => $"{Name} needs a map made for it, or it plays Free-for-all.";
 
