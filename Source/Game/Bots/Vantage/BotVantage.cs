@@ -178,6 +178,8 @@ public sealed partial class Game
     {
         if (b.Squad != null)
             return SquadOverwatchDecide(p, b, target, visible, now);
+        if (!DamageEnabled)
+            return false; // the countdown (frozen) or the results: nothing to set up yet
         if (Module.CoOp || b.Dummy || b.ForcedGoal != null)
         {
             if (b.VState != VantageState.None)
@@ -300,7 +302,10 @@ public sealed partial class Game
         if (visible && (now - b.HurtTime < 2.5 || dist < VantageHoldFireRange(bnd) || ShootingAt(target!, p, now)))
             return false;
         if (now < b.VantageNextPick)
+        {
+            b.HoldFire = visible && b.VantageNextPick - now < 1.5; // about to pick again: don't open up meanwhile
             return false; // (no spot to be had lately: play normally)
+        }
         if (!TakeVantagePick())
         {
             b.HoldFire = visible; // this tick's pick went to another bot: wait a tick

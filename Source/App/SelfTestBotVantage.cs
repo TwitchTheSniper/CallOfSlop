@@ -55,6 +55,19 @@ public static partial class SelfTest
 
     private static WeaponDef VPistol => Weapons.All.Where(w => w.Class == WeaponClass.Pistol && w.Slot == Slot.Secondary).OrderBy(w => w.Id).First();
 
+    /// <summary>Places a bot like <see cref="Game.SelfTestPlace"/> and starts it on a fresh life's bot state (nothing left over from the countdown).</summary>
+    private static void VPlace(Game game, Player p, Vector3 feet, float yaw)
+    {
+        game.SelfTestPlace(p, feet, yaw);
+        var b = p.Bot!;
+        b.LifeTick = uint.MaxValue; // BotPerceive's per-life reset on the next tick
+        b.VantageLife = uint.MaxValue; // ... and the vantage roll
+        b.VState = VantageState.None;
+        b.VantageSpot = -1;
+        b.StuckCount = 0;
+        b.ClearPath();
+    }
+
     /// <summary>Hands a bot exactly these guns (no attachments) right now.</summary>
     private static void VArm(Player p, WeaponDef primary, WeaponDef secondary)
     {
@@ -234,9 +247,9 @@ public static partial class SelfTest
         var sniper = blue[0];
         var smg = blue[1];
         PlaceHost(game, hostAt, start);
-        game.SelfTestPlace(sniper, start, 0);
+        VPlace(game, sniper, start, 0);
         var smgAt = FindNode(start, 1.5f, 5f, q => MathF.Abs(q.Y - start.Y) < 0.5f) ?? start + new Vector3(1.5f, 0, 0);
-        game.SelfTestPlace(smg, smgAt, 0);
+        VPlace(game, smg, smgAt, 0);
         VArm(sniper, VSniper, VPistol);
         VArm(smg, VGun(WeaponClass.SMG, Slot.Primary), VPistol);
         sniper.Bot!.ForceVantage = true;
@@ -301,11 +314,12 @@ public static partial class SelfTest
         var b = sniper.Bot!;
         var spotIndex = Enumerable.Range(0, vm.Spots.Length).OrderByDescending(i => vm.Spots[i].ScoreLong).First();
         var spot = vm.Spots[spotIndex];
-        game.SelfTestPlace(sniper, spot.Pos, 0);
+        VPlace(game, sniper, spot.Pos, 0);
         VArm(sniper, VSniper, VPistol);
         b.ForceVantage = true;
         Tick(game, ref now, World.TickDt); // the new life's reset
         game.SelfTestVantageHold(sniper, spotIndex, now);
+        b.StuckCount = 0;
         var stuckMax = 0;
         var held = 0;
         var ticks = 0;
@@ -367,7 +381,7 @@ public static partial class SelfTest
             return;
         }
         var sniper = blue[0];
-        game.SelfTestPlace(sniper, start, MathF.Atan2(hostAt.X - start.X, -(hostAt.Z - start.Z)));
+        VPlace(game, sniper, start, MathF.Atan2(hostAt.X - start.X, -(hostAt.Z - start.Z)));
         VArm(sniper, VSniper, VPistol);
         sniper.Bot!.ForceVantage = true;
         PlaceHost(game, hostAt, start);
@@ -413,8 +427,8 @@ public static partial class SelfTest
         using var _ = game;
         var g = NavGraph.Current;
         var start = g.Nodes[LowestMainNode(g)];
-        game.SelfTestPlace(blue[0], start, 0);
-        game.SelfTestPlace(blue[1], FindNode(start, 1.5f, 4f, q => MathF.Abs(q.Y - start.Y) < 0.5f) ?? start + new Vector3(1.5f, 0, 0), 0);
+        VPlace(game, blue[0], start, 0);
+        VPlace(game, blue[1], FindNode(start, 1.5f, 4f, q => MathF.Abs(q.Y - start.Y) < 0.5f) ?? start + new Vector3(1.5f, 0, 0), 0);
         foreach (var p in blue)
         {
             VArm(p, VSniper, VPistol);
@@ -459,7 +473,7 @@ public static partial class SelfTest
         var (game, blue) = VScenario(map, 7305, GameMode.KingOfTheHill, ref now, BotPersonality.Marksman);
         using var _ = game;
         var sniper = blue[0];
-        game.SelfTestPlace(sniper, NavGraph.Current.Nodes[LowestMainNode(NavGraph.Current)], 0);
+        VPlace(game, sniper, NavGraph.Current.Nodes[LowestMainNode(NavGraph.Current)], 0);
         VArm(sniper, VSniper, VPistol);
         sniper.Bot!.ForceVantage = true;
         Tick(game, ref now, World.TickDt * 2);
