@@ -318,3 +318,63 @@ park, ivy (cosmetic leafy slabs) up the walls.
 paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
 frustum-culled, litter fades out with distance and animated props hold still past 80 m.
 `tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).
+## 12 Powder Keg (large, noisy smooth outline, about 195 x 130 m, 21,000 m2, 16 players): a warehouse full of explosives
+
+**Theme.** A distribution warehouse under a grey `overcast` sky, stocked with things that go bang: hundreds of red fuel
+barrels on pallets, in lines along the aisles and on the shelves of the racking, propane bottles and three bulk propane
+tanks, cages of gas cylinders, yellow flammables cabinets, chemical drums and IBC totes.
+
+**Shape.** A `smooth` outline through 19 control points with `noise` (1.8 m, 20 m bumps). No visible edge style: the
+edge is dressed in runs (chain-link fence panels round the yards, tall hedges along the north and east, building backs
+behind the container stack).
+
+**Layout.**
+- **The hall** (64 x 52 m, roof at 9.5 m): six back-to-back rows of 4.4 m pallet racking running east-west (loaded
+  bays are solid cover, about a quarter are open bays you can see and shoot through, with barrels on their shelves), a
+  north-south cross aisle, and a 12 m staging band through the middle with four staggered racking islands (so no line
+  runs from a dock door to the dispatch door). Hill 1 is in the staging band.
+- **The annex** (the hall's east 14 m, two storeys): break room, dispatch and maintenance shop downstairs; two offices
+  and an open mezzanine upstairs (deck at 4.8 m), an inside stair from dispatch and an outside steel stair on the east
+  wall. **Two catwalks** run west from the mezzanine over the two racking aisles, 0.4 m above the rack tops, with yellow
+  railings (only the top rail collides: they keep you on but bullets fly through) and stairs down at their west ends.
+  The catwalks and stairs sit on the game's nav grid lines so bots find them.
+- **West, the loading yard (Blue):** four dock doors (semi trailers backed onto two, a gap behind them), the fuel depot,
+  a container stack two high in places, a truck park and a guard hut, and parked trucks screening the spawn yard.
+- **North:** the walk-in chemical store (hill 2 is in the road in front of it) and the propane tank farm in a low bund.
+- **South:** the rail spur with a boxcar and a flat wagon of crates, the loading canopy at the south roller door,
+  stock in the yard (hill 3).
+- **East (Red):** the staff car park, the entrance canopy, the outside stair up to the offices.
+- **Flags** are at the back of each spawn yard.
+
+**Asymmetry and balance.** Nothing is mirrored. Blue's side is outdoors and full of cover (trucks, containers,
+trailers) with two long flanks round the hall; Red's side is compact with the high ground (the offices' windows over the
+hall, the mezzanine, both catwalks). The catwalks are exposed (railings don't stop bullets) and Blue can climb them from
+their west ends, so the high ground costs exposure. Fairness is by measurement: the generator walks a 0.5 m grid from
+each team's spawns and puts the hills on the line of equal walk (Blue/Red: hall 81/83 m, north 91/91 m, south 89/88 m,
+enemy flag 180/178 m), and the self-test measures it again on the game's nav graph (within 10%), checks that no Blue
+spawn sees a Red one (eye to eye through the world), counts the cover within 6 m of each team's routes to the hills
+(held to a floor of 50%: Blue has more by design) and how much of each route runs on raised floors.
+
+**Explosives.** About 285 explosive props from the global `Props/Volatile` set, all with a short fuse: a hit that
+breaks one lights it (sparks and a clank, it stays whole), it goes off 0.4-1.5 s later (by type), and a blast lights its
+neighbours with a 0.12-0.32 s fuse, so clusters and lines ripple rather than pop in one tick: lines of barrels run along
+the staging band, down the cross aisle, past the trailers and the boxcar, to be lit towards the enemy. None is closer to
+a spawn than its blast radius plus 9.5 m (15 m for a barrel, 20.5 m for a bulk tank). Cost under mass chain
+reactions is bounded in the game code: at most 4 fused props go off per server tick (the rest wait a tick), at most 20
+prop fireballs show in any 0.6 s (more still hurt and break things, with debris and sound), and debris has its fixed
+pool. The self-test shoots one barrel in the biggest cluster and times every tick of the ripple.
+
+**Logical placement.** Barrels on pallets at the dock staging and in the chemical store, on the racks' open shelves, in
+lines where they'd wait to be loaded; propane at the forklift charging bay and the tank farm; gas cylinders by the
+shop's welding bay; flammables cabinets against walls; forklifts and pallet jacks in the aisles; conveyor, packing
+tables and shelving in dispatch; a kitchen, tables and vending machines in the break room; desks, monitors, filing
+cabinets, a photocopier, a safe and a conference table upstairs; high-bay lamps under the roof (a few flicker); trailers
+at the docks with their cabs hitched; dumpsters by the doors; lamps along the car park. Foliage: none indoors (the
+automatic rule), none on the intact roads and car park, about 10% on the busted yard concrete, long grass, shrubs and
+bushes in a band along the edge, weeds at the foot of the walls, trees round the edge.
+
+**Pack props** (`Maps/Cluttered/Props/PowderKeg`, written by `tools/cluttered/powderkeg_props.py`, which also writes the
+global `Props/Volatile` set): Pallet Racking Bay (loaded, wrapped and open), Safety Railing, Semi Trailer, Pallet Jack,
+Dock Bumper, Hazard Placard, High Bay Light (steady and flickering).
+
+`tools/cluttered/powderkeg.py` regenerates the file (and a top-down preview PNG with the walk and sight-line checks).

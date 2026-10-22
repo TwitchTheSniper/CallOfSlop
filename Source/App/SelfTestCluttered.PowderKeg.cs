@@ -18,6 +18,21 @@ public static partial class SelfTest
 
     private static void CheckClutteredPowderKeg()
     {
+        var notesFrom = ClutteredNotes.Count;
+        try
+        {
+            CheckClutteredPowderKegMap();
+        }
+        finally
+        {
+            // The map's own lines as one notice too (the pack's notice is long and gets cut off).
+            if (ClutteredNotes.Count > notesFrom)
+                Line("::notice title=Powder Keg::" + string.Join("%0A", ClutteredNotes.Skip(notesFrom).Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static void CheckClutteredPowderKegMap()
+    {
         var m = Maps.FindPack(ClutteredPack)?.Maps.FirstOrDefault(x => x.Name == ClutteredPowderKegMap);
         if (m == null)
         {
