@@ -58,6 +58,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `order` | Position in the weapon list. Lower comes first, ties sort by name. See "Ids and order" below. | `1000` | any whole number |
 | `unlockLevel` | Account level that unlocks it. See "Unlocking" below. | max level | 1 or more |
 | `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG`, `Special` or `Launcher`. Pistols and launchers go in the **secondary** slot, everything else in the **primary** (a launcher fires projectiles: see [Launchers](#launchers)). The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
+| `defaultOptic` | The optic attachment (by name) the weapon starts with: it's in the default kit, needs no weapon XP and bots always run it, and the gun's iron sights (no optic) become an unlock half-way through its attachment XP. Leave it out: a `Sniper` starts with its first full scope (4x or more) in unlock order, every other class with iron sights. The shipped snipers name the 8x Sniper Scope (Needle, Leviathan, Railspike) or the 4x Scope (Kite, Ghost SD). | none | an optic that fits it |
 | `blurb` | One line shown in the loadout menu. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `""` | |
 
 ### Damage
@@ -85,7 +86,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `recoilDeg` | Overall recoil: view kick per shot, in degrees. The `recoil` block's kicks are fractions of it, and attachments that change it scale everything. | `0.7` | 0.1-5.5 | 0-20 |
 | `recoil` | How the gun kicks: its spray pattern, recovery and camera shake. See "Recoil" below. Any field you leave out (or the whole block) gets the default of the weapon's `class`. | class defaults | | |
 | `mobility` | Movement speed multiplier while holding it. The server also uses it to cap your speed. Attachments can push it, but kitted guns are clamped to 0.6-1.25. | `1` | 0.75-1.12 | 0.3-1.5 |
-| `adsZoom` | Zoom when aiming down sights (the field of view is divided by this). Snipers use 3.5-4.5 for their built-in scope. | `1.35` | 1.1-4.5 | 1-10 |
+| `adsZoom` | Zoom when aiming down sights (the field of view is divided by this) with no optic fitted. 1.8 or more on a long gun means a built-in scope (the DMRs); below that it's iron sights. The snipers use 1.5 for their iron sights, since they start with a scope attachment (`defaultOptic`) that sets its own zoom. | `1.35` | 1.1-2.2 | 1-10 |
 | `equipTime` | Seconds to draw the weapon. | `0.45` | 0.25-1.1 | 0.05-5 |
 | `adsTime` | Seconds to fully aim down sights (kitted guns are clamped to 0.08-0.5). | `0.16` | 0.16 | 0.05-2 |
 
