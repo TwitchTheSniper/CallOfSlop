@@ -240,6 +240,7 @@ public sealed partial class Game
                     flags |= 4;
             }
         }
+        BlastKnockback(attacker, center, br.ExplodeRadius, br.ExplodeKnockback); // pushes the living (Knockback.cs)
         PropDetonations++;
         while (_propBlastTicks.Count > 0 && ServerTick - _propBlastTicks.Peek() >= PropBlastWindowTicks)
             _propBlastTicks.Dequeue();

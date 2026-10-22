@@ -99,7 +99,7 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
 | `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
-| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. |
+| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. |
 
 How breaking works in a match:
 

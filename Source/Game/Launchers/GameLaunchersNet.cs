@@ -211,6 +211,8 @@ public sealed partial class Game
             {
                 var radius = def.LauncherRadius * (Players.TryGetValue(owner, out var shooter) ? Perks.BlastRadiusMult(shooter.Perks) : 1f);
                 BlastFx(pos, radius, MathF.Min(1f, 0.55f + def.Damage / 300f), owner, now);
+                Ragdolls.Blast(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def), now); // corpses fly (Source/Render/Ragdolls.cs)
+                PropDebris.Push(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def)); // and loose debris
                 FrenzyFx.OnLauncherBlast(this, shooter, pos, radius, now); // a frenzied launcher's shockwave (FrenzyFx.Launcher.cs)
                 for (var i = 0; i < def.LauncherCluster; i++)
                     _rocketFx.Add((now + RocketFlight.ClusterDelay(seed, i), RocketFlight.ClusterPoint(pos, def.LauncherRadius, seed, i, def.LauncherCluster),

@@ -404,8 +404,10 @@ public static class PropFile
                             b.ExplodeDamage = Range(Num(q.Value, wq), 1, 300, wq);
                         else if (q.Name.Equals("fuse", StringComparison.OrdinalIgnoreCase))
                             b.ExplodeFuse = Range(Num(q.Value, wq), 0, 5, wq);
+                        else if (q.Name.Equals("knockback", StringComparison.OrdinalIgnoreCase))
+                            b.ExplodeKnockback = Range(Num(q.Value, wq), 0, 20, wq);
                         else
-                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage and fuse)");
+                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage, fuse and knockback)");
                     }
                     if (b.ExplodeRadius <= 0 || b.ExplodeDamage <= 0)
                         throw new PropFileException($"{w}: needs both \"radius\" and \"damage\"");

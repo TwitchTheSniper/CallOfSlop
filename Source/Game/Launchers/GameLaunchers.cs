@@ -52,8 +52,8 @@ public sealed partial class Game
     private readonly Dictionary<byte, (int Used, double Next)> _flares = new();
 
     /// <summary>
-    /// Hook for a blast push (ragdolls, knockback): called on the server for every launcher blast. Nothing implements it
-    /// yet; a partial method, so it costs nothing until something does.
+    /// Hook for anything else a launcher blast should do (called on the server for every one, after the knockback push):
+    /// a partial method, so it costs nothing until something implements it.
     /// </summary>
     partial void OnLauncherBlast(Vector3 center, float radius, float maxDamage, byte owner);
 
@@ -604,6 +604,7 @@ public sealed partial class Game
         if (Horde.Count > 0)
             BlastZombies(owner, center, radius, maxDamage * 3f, now); // Zombies (ZombieAI.cs)
         BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
+        BlastKnockback(owner, center, radius, Knockback.LauncherStrength(d) * damageMult); // pushes the living (Knockback.cs)
         OnLauncherBlast(center, radius, maxDamage, owner.Id);
         if (owner.Id == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);

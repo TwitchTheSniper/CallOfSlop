@@ -80,6 +80,7 @@ public sealed class Zombie
     public float RenderYaw;
     public byte HealthByte = 255;
     public double DiedAt = -1;
+    public bool Ragdolled; // its body became a ragdoll (Source/Render/Ragdolls.cs; drawing only)
     public readonly List<(double Tick, Vector3 Pos, float Yaw)> Snaps = new(4);
     public double HeardAt;
     public float Gait; // walk cycle phase (drawing)

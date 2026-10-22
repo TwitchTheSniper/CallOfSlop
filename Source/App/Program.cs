@@ -317,6 +317,11 @@ public static unsafe partial class Program
             SmokeTactical(now); // Program.Tactical.cs: placed devices and a flashbang, screenshotted
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeRagdollStep < 9)
+        {
+            SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -1716,7 +1721,9 @@ public static unsafe partial class Program
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
         ScenePresentation.BeginFrame(MeshGfx);
+        UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
         DrawArena();
+        DrawRagdollsFallback();
 
         // ---- Players --------------------------------------------------------
         LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)

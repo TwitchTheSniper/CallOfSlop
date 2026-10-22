@@ -19,6 +19,8 @@ public static class PlayerRender
 
         if (!p.Alive)
         {
+            if (Ragdolls.OwnsBody(p.Id))
+                return; // the body is a ragdoll (Source/Render/Ragdolls.cs), drawn with the debris
             g.Draw(Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0) * rot * at, color * 0.4f);
             if (hat != null)
                 HatRender.Draw(g, hat, HatRender.OnGround(hat) * rot * at);

@@ -758,12 +758,18 @@ public sealed partial class Game : IDisposable
     private void Reconcile(Player me, uint ackSeq, MoveState server, bool alive, bool respawned)
     {
         _pendingInputs.RemoveAll(c => c.Seq <= ackSeq);
+        DropAckedKnocks(ackSeq); // blast pushes the server's state already includes (Knockback.cs)
+        (_lastServerMove, _lastAckSeq, _haveServerMove) = (server, ackSeq, alive);
 
         var predicted = me.Position;
         var state = server;
         if (alive)
             foreach (var cmd in _pendingInputs)
+            {
                 World.Simulate(ref state, cmd);
+                if (_pendingKnocks.Count > 0)
+                    ApplyPendingKnocks(cmd.Seq, ref state); // a push the server put in right after this input
+            }
 
         var error = predicted - state.Position;
         LastCorrection = error.Length();
@@ -1679,6 +1685,9 @@ public sealed partial class Game : IDisposable
                 RecordKill(kill);
                 break;
             }
+            case (byte)Msg.Knock when !IsServer && r.Has(KnockBytes):
+                OnKnock(r.U32(), r.Vec()); // a blast pushed the local player (Knockback.cs)
+                break;
             default:
                 foreach (var m in _modules.Values) // a mode's own messages (Zombies: ZUse, ZEnts...; GameModeModule.HandlePacket)
                     if (m.HandlePacket(this, id, ref r, sender, now))

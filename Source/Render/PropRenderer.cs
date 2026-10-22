@@ -302,7 +302,7 @@ public sealed unsafe class PropRenderer
     private int _breakVersion = -1;
     private PropBatches _batches = new();
     private readonly Vector4[] _planes = new Vector4[6];
-    private readonly float[] _debrisData = new float[PropDebris.Capacity * PropDebris.FloatsPerPiece];
+    private readonly float[] _debrisData = new float[(PropDebris.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece]; // debris, then ragdoll boxes (Ragdolls.cs)
     private double _lastNow;
 
     // GPU timing: timestamps around the plain pass (pass 0, with debris) and the animated pass (pass 1).
@@ -355,6 +355,9 @@ public sealed unsafe class PropRenderer
 
     public void ResetWindow(double now) => Window = new Stats { Start = now };
 
+    /// <summary>Can this renderer draw instanced boxes (its programs built)? If not, ragdolls are drawn immediately (Ragdolls.DrawImmediate).</summary>
+    public bool Instanced => _ready && !_broken;
+
     /// <summary>
     /// Draws the props of <paramref name="map"/> and any flying debris, with the camera, fog and depth buffer
     /// <paramref name="gfx"/> has set up. Call after the opaque boxes. Also steps the debris simulation (frame time).
@@ -366,7 +369,7 @@ public sealed unsafe class PropRenderer
         PropDebris.Update(dt);
         if (_broken)
             return;
-        if (map.PropInstances.Count == 0 && PropDebris.Count == 0)
+        if (map.PropInstances.Count == 0 && PropDebris.Count == 0 && !Ragdolls.HasInstances)
         {
             if (_batches.Count > 0)
                 Free();
@@ -429,6 +432,7 @@ public sealed unsafe class PropRenderer
         }
 
         var debris = PropDebris.Write(_debrisData);
+        debris = Ragdolls.WriteInstances(_debrisData, debris); // the ragdolls' boxes ride in the same instanced draw
         if (debris > 0)
         {
             _debrisProgram.Use();
