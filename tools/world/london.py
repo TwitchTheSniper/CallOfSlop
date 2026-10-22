@@ -9,7 +9,7 @@ An East London neighbourhood on a grey afternoon. From north to south:
     and at each end;
   - canal-side yards: a boatyard and a council tower block in each half, the lock yard in the middle;
   - the railway viaduct (two "Railway Arches" buildings and an iron bridge over the station hall in the middle): its
-    deck, 6.6 m up, has two tracks, a short platform with a shelter and parked trains; it runs out onto a grassy
+    deck, 5.4 m up, has two tracks, a short platform with a shelter and parked trains; it runs out onto a grassy
     embankment at each end, which the teams climb from their spawns;
   - Arches Lane along the arches' front (a garage, a workshop, an arch bar, the station's tiled entrance);
   - the high street (UK left-hand traffic, a zebra crossing with Belisha beacons, double yellows, bus stops, a
@@ -47,7 +47,8 @@ R = pl.R
 TOW_Y = -2.4          # towpath (world height)
 WATER_Y = -2.88       # canal water surface
 CANAL_BED = -3.5
-DECK_Y = 6.6          # viaduct deck (Railway Arches roof top)
+DECK_Y = 5.4          # viaduct deck (Railway Arches roof top)
+UNDER = DECK_Y - 0.7  # underside of the iron bridge
 TERRACE_Y = 0.3       # the south terraces' pad
 ALLEY_Y = 0.75        # the back alley behind them
 PARK_Y = 1.5          # the raised park
@@ -488,28 +489,28 @@ def viaduct():
     site.rule("viaduct")
     iron, iron2 = "#2e3a46", "#283039"
     # the iron bridge over the station hall: deck, parapet girders, cross girders under the deck
-    B(-7.7, 5.9, VIA_Z0, 7.7, DECK_Y, VIA_Z1, iron2, mirror=False)
+    B(-7.7, UNDER, VIA_Z0, 7.7, DECK_Y, VIA_Z1, iron2, mirror=False)
     B(-7.7, DECK_Y, VIA_Z0, 7.7, DECK_Y + 1.25, VIA_Z0 + 0.6, iron, mirror=False)
     B(-7.7, DECK_Y, VIA_Z1 - 0.6, 7.7, DECK_Y + 1.25, VIA_Z1, iron, mirror=False)
     for x in (-6.0, -3.0, 0.0, 3.0, 6.0):  # rivet ribs on the girder faces
         for z in (VIA_Z0 - 0.03, VIA_Z1 + 0.03):
-            M("box", x, z, "#3a4652", yw=5.9, mirror=False, width=0.16, depth=0.06, height=3.15)
-    M("box", 0, VIA_Z1 + 0.04, "#3a4652", yw=7.6, mirror=False, width=15.4, depth=0.1, height=0.12)
-    M("box", 0, VIA_Z0 - 0.04, "#3a4652", yw=7.6, mirror=False, width=15.4, depth=0.1, height=0.12)
+            M("box", x, z, "#3a4652", yw=UNDER, mirror=False, width=0.16, depth=0.06, height=DECK_Y + 1.25 - UNDER)
+    M("box", 0, VIA_Z1 + 0.04, "#3a4652", yw=DECK_Y + 1.0, mirror=False, width=15.4, depth=0.1, height=0.12)
+    M("box", 0, VIA_Z0 - 0.04, "#3a4652", yw=DECK_Y + 1.0, mirror=False, width=15.4, depth=0.1, height=0.12)
     # the hall: tiled facades north and south with an entrance in each, iron columns inside
     for zf, zb in ((VIA_Z1 - 0.6, VIA_Z1), (VIA_Z0, VIA_Z0 + 0.6)):
-        B(3.0, 0, zf, 7.7, 5.9, zb, "#6a2420")
-        B(-3.0, 3.5, zf, 3.0, 5.9, zb, "#6a2420", mirror=False)
+        B(3.0, 0, zf, 7.7, UNDER, zb, "#6a2420")
+        B(-3.0, 3.0, zf, 3.0, UNDER, zb, "#6a2420", mirror=False)
     for z in (-17.0, -12.0):
-        B(-0.2, 0, z - 0.2, 0.2, 5.9, z + 0.2, iron, mirror=False)
-        M("cylinder", 0, z, "#2e3a46", mirror=False, width=0.5, depth=0.5, height=5.9, material="Metal")
+        B(-0.2, 0, z - 0.2, 0.2, UNDER, z + 0.2, iron, mirror=False)
+        M("cylinder", 0, z, "#2e3a46", mirror=False, width=0.5, depth=0.5, height=UNDER, material="Metal")
     # Tube-style frontage on Arches Lane: oxblood tiles, a cream band, a canopy over the doors, the name board
     zf = VIA_Z1 + 0.03
-    M("box", 5.35, zf, "#7a2a22", width=4.7, depth=0.06, height=5.9, material="Tiles")
-    M("box", 0, zf, "#7a2a22", yw=3.5, mirror=False, width=6.0, depth=0.06, height=2.4, material="Tiles")
-    M("box", 0, zf + 0.02, "#e4dcc4", yw=3.5, mirror=False, width=15.4, depth=0.06, height=0.22, material="Tiles")
-    M("box", 0, zf + 0.9, "#20242c", yw=3.42, mirror=False, width=7.4, depth=1.8, height=0.16, material="Metal")
-    M("box", 0, zf + 0.05, "#1a2a52", yw=4.25, mirror=False, width=6.6, depth=0.08, height=0.9)
+    M("box", 5.35, zf, "#7a2a22", width=4.7, depth=0.06, height=UNDER, material="Tiles")
+    M("box", 0, zf, "#7a2a22", yw=3.0, mirror=False, width=6.0, depth=0.06, height=UNDER - 3.0, material="Tiles")
+    M("box", 0, zf + 0.02, "#e4dcc4", yw=3.0, mirror=False, width=15.4, depth=0.06, height=0.22, material="Tiles")
+    M("box", 0, zf + 0.9, "#20242c", yw=2.9, mirror=False, width=7.4, depth=1.8, height=0.16, material="Metal")
+    M("box", 0, zf + 0.05, "#1a2a52", yw=3.45, mirror=False, width=6.6, depth=0.08, height=0.9)
     # inside: ticket gates across the hall, machines, a kiosk, benches
     for x in (1.15, 3.45, 5.75):
         P("Ticket Gate", x, -14.6, 0, lanes=False, gap=0.05)
@@ -524,9 +525,9 @@ def viaduct():
             P("Railway Track", x, z, 0, yw=DECK_Y, check=False)
     # the platform (north side) with a gap at each stair head, its canopy and shelter
     B(-9.0, DECK_Y, -18.7, 9.0, DECK_Y + 0.45, -16.45, "#8a8680", mirror=False)
-    B(15.0, DECK_Y, -18.7, 30.0, DECK_Y + 0.45, -16.45, "#8a8680")
+    B(16.4, DECK_Y, -18.7, 30.0, DECK_Y + 0.45, -16.45, "#8a8680")
     M("box", 0, -16.52, "#e8d040", yw=DECK_Y + 0.45, mirror=False, width=18.0, depth=0.14, height=0.02)
-    M("box", 22.5, -16.52, "#e8d040", yw=DECK_Y + 0.45, width=15.0, depth=0.14, height=0.02)
+    M("box", 23.2, -16.52, "#e8d040", yw=DECK_Y + 0.45, width=13.6, depth=0.14, height=0.02)
     for x in (3.0, 7.5):
         B(x - 0.1, DECK_Y + 0.45, -18.4, x + 0.1, DECK_Y + 3.3, -18.2, "#1e3a2a")
     M("box", 0, -17.6, "#2a4a36", yw=DECK_Y + 3.3, mirror=False, width=18.4, depth=2.8, height=0.14, material="Metal")
@@ -536,7 +537,7 @@ def viaduct():
         P("Bench", x, -18.45, 0, yw=DECK_Y + 0.45, check=False)
     for x in (18.0, 25.0):
         P("Post Litter Bin", x, -18.5, 0, yw=DECK_Y + 0.45, check=False)
-    P("Ticket Machine", 16.0, -18.45, 0, yw=DECK_Y + 0.45, check=False)
+    P("Ticket Machine", 17.2, -18.45, 0, yw=DECK_Y + 0.45, check=False)
     # trains: two cars standing at the platform's far side (south line), a car on each north line by the embankment
     P("Commuter Train Car", 10.0, -11.9, 0, yw=DECK_Y + 0.38, check=False)
     P("Commuter Train Car", 38.0, -15.0, 0, yw=DECK_Y + 0.38, check=False)
@@ -850,7 +851,7 @@ def more_dressing():
 
 
 def signs():
-    sign("station", 0.0, 4.7, -9.58, "wall-z")
+    sign("station", 0.0, 3.9, -9.58, "wall-z")
     for sx in (1, -1):
         sign("barber", sx * 10.2, 3.025, 8.22, "wall-z")
         sign("shop", sx * 18.6, 3.72, 8.125, "wall-z")
@@ -923,11 +924,11 @@ def objectives():
     for x, z in FFA:
         site.keepout(x, z, 2.0)
         site.spawn(x, z)
-    hills = [{"x": 0.0, "z": -37.8, "radius": 4.5}, {"x": 0.0, "z": -13.9, "y": DECK_Y, "radius": 4.0}, {"x": 0.0, "z": 27.0, "radius": 4.5}]
+    hills = [{"x": 0.0, "z": -37.8, "radius": 4.5}, {"x": 0.0, "z": -13.9, "y": DECK_Y + 0.05, "radius": 4.0}, {"x": 0.0, "z": 27.0, "radius": 4.5}]
     for h in hills:
         site.keepout(h["x"], h["z"], h["radius"] + 0.5, mirror=False)
-    flags = [[-64.5, 14.0], [64.5, 14.0]]
-    for x, z in flags:
+    flags = [[-64.5, 0.12, 14.0], [64.5, 0.12, 14.0]]
+    for x, _, z in flags:
         site.keepout(x, z, 2.0, mirror=False)
     team = [[[R(-x), R(z)] for x, z in TEAM_E], [[R(x), R(z)] for x, z in TEAM_E]]
     return {"teamSpawns": team, "hills": hills, "flags": flags}

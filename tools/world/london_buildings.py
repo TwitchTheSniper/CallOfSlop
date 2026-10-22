@@ -38,9 +38,9 @@ def write(folder, d, rules=None):
 
 # ============================================================================================ Railway Arches
 
-ARCH_STOREY = 6.5          # ground floor 0.1 + 6.5 = deck (roof top) at 6.6 m above the ground
+ARCH_STOREY = 5.3          # ground floor 0.1 + 5.3 = deck (roof top) at 5.4 m above the ground
 DECK = 0.1 + ARCH_STOREY
-BAYS = [-20, -12, -4, 4, 12, 20]   # bay boundaries (pier centre lines) along local X
+BAYS = [-20, -11, -4, 4, 12, 20]   # bay boundaries (pier centre lines) along local X
 HALF_D = 4.5
 
 
@@ -50,8 +50,8 @@ def railway_arches():
     brick = {"color": "$wall", "material": "brick"}
     arch = {"color": "$arch", "material": "brick"}
     rooms = [
-        {"id": "stairs", "type": "stairhall", "rect": [-20, -HALF_D, -12, HALF_D], "floor": {"color": "#6a6a66", "material": "concrete"}},
-        {"id": "bar", "type": "archbar", "rect": [-12, -HALF_D, -4, HALF_D], "floor": {"color": "#5a3e2a", "material": "wood"}},
+        {"id": "stairs", "type": "stairhall", "rect": [-20, -HALF_D, -11, HALF_D], "floor": {"color": "#6a6a66", "material": "concrete"}},
+        {"id": "bar", "type": "archbar", "rect": [-11, -HALF_D, -4, HALF_D], "floor": {"color": "#5a3e2a", "material": "wood"}},
         {"id": "passage", "type": "passage", "rect": [-4, -HALF_D, 4, HALF_D], "floor": {"color": "#5e5c58", "material": "concrete"}},
         {"id": "garage", "type": "garage", "rect": [4, -HALF_D, 12, HALF_D], "floor": {"color": "#605e5a", "material": "concrete"}},
         {"id": "workshop", "type": "industrial-workshop", "rect": [12, -HALF_D, 20, HALF_D], "floor": {"color": "#625f5a", "material": "concrete"}},
@@ -60,7 +60,7 @@ def railway_arches():
         # stair bay: an arch from the end (a station hall or a yard) and a wide doorway to the front lane
         {"type": "arch", "at": [-20, 0.6], "width": 2.6, "head": 3.4},
         {"type": "arch", "at": [-15.6, HALF_D], "width": 2.0, "head": 3.2, "front": True},
-        {"type": "door", "at": [-12, 2.2], "width": 1.0, "material": "wood", "color": "$door"},
+        {"type": "door", "at": [-11, 2.2], "width": 1.0, "material": "wood", "color": "$door"},
         # arch bar: a glazed shopfront and a back door
         {"type": "door", "at": [-9.6, HALF_D], "width": 1.2, "material": "glass", "health": 60},
         {"type": "window", "at": [-6.2, HALF_D], "width": 2.6, "sill": 0.6, "head": 3.0, "health": 20},
@@ -69,8 +69,8 @@ def railway_arches():
         # the open through-arch, with side doors into the bar and the garage
         {"type": "door", "at": [-4, -2.6], "width": 1.0, "material": "wood"},
         {"type": "door", "at": [4, -2.6], "width": 1.0, "material": "metal", "color": "$door"},
-        {"type": "arch", "at": [0, HALF_D], "width": 6.0, "head": 4.6},
-        {"type": "arch", "at": [0, -HALF_D], "width": 6.0, "head": 4.6},
+        {"type": "arch", "at": [0, HALF_D], "width": 6.0, "head": 3.8},
+        {"type": "arch", "at": [0, -HALF_D], "width": 6.0, "head": 3.8},
         # garage: a wide steel door, a back door, a door through to the workshop
         {"type": "door", "at": [8.2, HALF_D], "width": 3.0, "material": "metal", "color": "$shutter", "open": True},
         {"type": "door", "at": [10.0, -HALF_D], "width": 1.0, "material": "metal", "color": "$door"},
@@ -81,7 +81,7 @@ def railway_arches():
         {"type": "window", "at": [17.6, HALF_D], "width": 2.0, "sill": 1.0, "head": 2.8, "health": 10},
         {"type": "door", "at": [16.0, -HALF_D], "width": 1.0, "material": "metal", "color": "$door"},
     ]
-    stairs = [{"floor": 0, "rect": [-18.7, -4.05, -13.6, -2.85], "dir": "+x", "color": {"color": "#5c5a56", "material": "concrete"}}]
+    stairs = [{"floor": 0, "rect": [-18.75, -4.05, -12.25, -2.85], "dir": "+x", "color": {"color": "#5c5a56", "material": "concrete"}}]
 
     extras = []
     # deck parapets along both long sides (the ends stay open onto the next span or the embankment), with a coping
@@ -101,24 +101,27 @@ def railway_arches():
         zs0, zs1 = sorted((s * face, s * (face + 0.1)))
         for i in range(len(BAYS) - 1):
             cx = (BAYS[i] + BAYS[i + 1]) / 2
-            r, spring = 3.45, 2.5
+            hw = (BAYS[i + 1] - BAYS[i]) / 2 - 0.55
+            r = hw
+            spring = DECK - 0.6 - r
             y = spring + 0.6
             while y < spring + r - 0.05:
                 y1 = min(y + 0.45, DECK - 0.55)
                 w = math.sqrt(max(0.0, r * r - ((y + y1) / 2 - spring) ** 2))
-                if 3.45 - w > 0.08:
-                    extras.append(block(cx - 3.45, y, zs0, cx - w, y1, zs1, arch))
-                    extras.append(block(cx + w, y, zs0, cx + 3.45, y1, zs1, arch))
+                if hw - w > 0.08:
+                    extras.append(block(cx - hw, y, zs0, cx - w, y1, zs1, arch))
+                    extras.append(block(cx + w, y, zs0, cx + hw, y1, zs1, arch))
                 y = y1
-            extras.append(block(cx - 3.45, spring + r - 0.05, zs0, cx + 3.45, DECK - 0.55, zs1, arch))
+            if DECK - 0.55 - (spring + r - 0.05) > 0.02:
+                extras.append(block(cx - hw, spring + r - 0.05, zs0, cx + hw, DECK - 0.55, zs1, arch))
             # a keystone
             zk0, zk1 = sorted((s * face, s * (face + 0.2)))
             extras.append(block(cx - 0.3, spring + r - 0.45, zk0, cx + 0.3, spring + r + 0.15, zk1, "$coping"))
     # outside dressing: bar sign board and lamps, garage oil drums, workshop sign
     extras += [
-        block(-11.4, 3.3, face, -4.6, 3.9, face + 0.12, "$sign"),
+        block(-10.3, 3.3, face, -4.7, 3.9, face + 0.12, "$sign"),
         block(4.6, 3.6, face, 11.8, 4.1, face + 0.12, "$sign"),
-        {"type": "prop", "name": "Hanging Lantern", "at": [-10.8, 3.1, face + 0.3]},
+        {"type": "prop", "name": "Hanging Lantern", "at": [-10.0, 3.1, face + 0.3]},
         {"type": "prop", "name": "Hanging Lantern", "at": [-5.0, 3.1, face + 0.3]},
         {"type": "prop", "name": "Tyre Stack", "at": [5.4, face + 0.7]},
         {"type": "prop", "name": "Oil Drum", "at": [11.0, face + 0.55]},

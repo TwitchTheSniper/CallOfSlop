@@ -7,7 +7,7 @@
  "author": "Call of Slop",
  "seed": 508,
  "wallThickness": 0.6,
- "storeyHeight": 6.5,
+ "storeyHeight": 5.3,
  "doorHeight": 2.3,
  "exterior": {
   "color": "$wall",
@@ -57,7 +57,7 @@
      "rect": [
       -20,
       -4.5,
-      -12,
+      -11,
       4.5
      ],
      "floor": {
@@ -69,7 +69,7 @@
      "id": "bar",
      "type": "archbar",
      "rect": [
-      -12,
+      -11,
       -4.5,
       -4,
       4.5
@@ -145,7 +145,7 @@
     {
      "type": "door",
      "at": [
-      -12,
+      -11,
       2.2
      ],
      "width": 1.0,
@@ -219,7 +219,7 @@
       4.5
      ],
      "width": 6.0,
-     "head": 4.6
+     "head": 3.8
     },
     {
      "type": "arch",
@@ -228,7 +228,7 @@
       -4.5
      ],
      "width": 6.0,
-     "head": 4.6
+     "head": 3.8
     },
     {
      "type": "door",
@@ -308,9 +308,9 @@
   {
    "floor": 0,
    "rect": [
-    -18.7,
+    -18.75,
     -4.05,
-    -13.6,
+    -12.25,
     -2.85
    ],
    "dir": "+x",
@@ -333,12 +333,12 @@
    "type": "block",
    "min": [
     -20.3,
-    6.6,
+    5.4,
     4.2
    ],
    "max": [
     20.3,
-    7.7,
+    6.5,
     4.8
    ],
    "color": {
@@ -350,12 +350,12 @@
    "type": "block",
    "min": [
     -20.3,
-    7.7,
+    6.5,
     4.15
    ],
    "max": [
     20.3,
-    7.8,
+    6.6,
     4.85
    ],
    "color": "$coping"
@@ -364,12 +364,12 @@
    "type": "block",
    "min": [
     -20.3,
-    6.05,
+    4.85,
     4.8
    ],
    "max": [
     20.3,
-    6.55,
+    5.35,
     5.02
    ],
    "color": "$coping"
@@ -378,12 +378,12 @@
    "type": "block",
    "min": [
     -20.3,
-    6.6,
+    5.4,
     -4.8
    ],
    "max": [
     20.3,
-    7.7,
+    6.5,
     -4.2
    ],
    "color": {
@@ -395,12 +395,12 @@
    "type": "block",
    "min": [
     -20.3,
-    7.7,
+    6.5,
     -4.85
    ],
    "max": [
     20.3,
-    7.8,
+    6.6,
     -4.15
    ],
    "color": "$coping"
@@ -409,12 +409,12 @@
    "type": "block",
    "min": [
     -20.3,
-    6.05,
+    4.85,
     -5.02
    ],
    "max": [
     20.3,
-    6.55,
+    5.35,
     -4.8
    ],
    "color": "$coping"
@@ -428,7 +428,7 @@
    ],
    "max": [
     -19.45,
-    6.05,
+    4.85,
     4.96
    ],
    "color": {
@@ -439,13 +439,13 @@
   {
    "type": "block",
    "min": [
-    -12.55,
+    -11.55,
     0,
     4.8
    ],
    "max": [
-    -11.45,
-    6.05,
+    -10.45,
+    4.85,
     4.96
    ],
    "color": {
@@ -462,7 +462,7 @@
    ],
    "max": [
     -3.45,
-    6.05,
+    4.85,
     4.96
    ],
    "color": {
@@ -479,7 +479,7 @@
    ],
    "max": [
     4.55,
-    6.05,
+    4.85,
     4.96
    ],
    "color": {
@@ -496,7 +496,7 @@
    ],
    "max": [
     12.55,
-    6.05,
+    4.85,
     4.96
    ],
    "color": {
@@ -513,7 +513,7 @@
    ],
    "max": [
     20.55,
-    6.05,
+    4.85,
     4.96
    ],
    "color": {
@@ -525,12 +525,12 @@
    "type": "block",
    "min": [
     -19.45,
-    3.1,
+    1.45,
     4.8
    ],
    "max": [
-    -19.35,
-    3.55,
+    -19.363,
+    1.9,
     4.9
    ],
    "color": {
@@ -541,47 +541,13 @@
   {
    "type": "block",
    "min": [
-    -12.65,
-    3.1,
+    -11.637,
+    1.45,
     4.8
    ],
    "max": [
-    -12.55,
-    3.55,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    3.55,
-    4.8
-   ],
-   "max": [
-    -19.206,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -12.794,
-    3.55,
-    4.8
-   ],
-   "max": [
-    -12.55,
-    4.0,
+    -11.55,
+    1.9,
     4.9
    ],
    "color": {
@@ -593,12 +559,12 @@
    "type": "block",
    "min": [
     -19.45,
-    4.0,
+    1.9,
     4.8
    ],
    "max": [
-    -18.988,
-    4.45,
+    -19.239,
+    2.35,
     4.9
    ],
    "color": {
@@ -609,47 +575,13 @@
   {
    "type": "block",
    "min": [
-    -13.012,
-    4.0,
+    -11.761,
+    1.9,
     4.8
    ],
    "max": [
-    -12.55,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    4.45,
-    4.8
-   ],
-   "max": [
-    -18.678,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -13.322,
-    4.45,
-    4.8
-   ],
-   "max": [
-    -12.55,
-    4.9,
+    -11.55,
+    2.35,
     4.9
    ],
    "color": {
@@ -661,12 +593,12 @@
    "type": "block",
    "min": [
     -19.45,
-    4.9,
+    2.35,
     4.8
    ],
    "max": [
-    -18.239,
-    5.35,
+    -19.053,
+    2.8,
     4.9
    ],
    "color": {
@@ -677,47 +609,13 @@
   {
    "type": "block",
    "min": [
-    -13.761,
-    4.9,
+    -11.947,
+    2.35,
     4.8
    ],
    "max": [
-    -12.55,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    5.35,
-    4.8
-   ],
-   "max": [
-    -17.564,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -14.436,
-    5.35,
-    4.8
-   ],
-   "max": [
-    -12.55,
-    5.8,
+    -11.55,
+    2.8,
     4.9
    ],
    "color": {
@@ -729,12 +627,12 @@
    "type": "block",
    "min": [
     -19.45,
-    5.8,
+    2.8,
     4.8
    ],
    "max": [
-    -16.415,
-    6.05,
+    -18.797,
+    3.25,
     4.9
    ],
    "color": {
@@ -745,13 +643,13 @@
   {
    "type": "block",
    "min": [
-    -15.585,
-    5.8,
+    -12.203,
+    2.8,
     4.8
    ],
    "max": [
-    -12.55,
-    6.05,
+    -11.55,
+    3.25,
     4.9
    ],
    "color": {
@@ -763,12 +661,12 @@
    "type": "block",
    "min": [
     -19.45,
-    5.9,
+    3.25,
     4.8
    ],
    "max": [
-    -12.55,
-    6.05,
+    -18.452,
+    3.7,
     4.9
    ],
    "color": {
@@ -779,13 +677,149 @@
   {
    "type": "block",
    "min": [
-    -16.3,
-    5.5,
+    -12.548,
+    3.25,
     4.8
    ],
    "max": [
-    -15.7,
-    6.1,
+    -11.55,
+    3.7,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.7,
+    4.8
+   ],
+   "max": [
+    -17.979,
+    4.15,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.021,
+    3.7,
+    4.8
+   ],
+   "max": [
+    -11.55,
+    4.15,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.15,
+    4.8
+   ],
+   "max": [
+    -17.282,
+    4.6,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.718,
+    4.15,
+    4.8
+   ],
+   "max": [
+    -11.55,
+    4.6,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.6,
+    4.8
+   ],
+   "max": [
+    -16.266,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.734,
+    4.6,
+    4.8
+   ],
+   "max": [
+    -11.55,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.75,
+    4.8
+   ],
+   "max": [
+    -11.55,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.8,
+    4.35,
+    4.8
+   ],
+   "max": [
+    -15.2,
+    4.95,
     5.0
    ],
    "color": "$coping"
@@ -793,13 +827,13 @@
   {
    "type": "block",
    "min": [
-    -11.45,
-    3.1,
+    -10.45,
+    2.45,
     4.8
    ],
    "max": [
-    -11.35,
-    3.55,
+    -10.332,
+    2.9,
     4.9
    ],
    "color": {
@@ -810,13 +844,13 @@
   {
    "type": "block",
    "min": [
-    -4.65,
-    3.1,
+    -4.668,
+    2.45,
     4.8
    ],
    "max": [
     -4.55,
-    3.55,
+    2.9,
     4.9
    ],
    "color": {
@@ -827,13 +861,13 @@
   {
    "type": "block",
    "min": [
-    -11.45,
-    3.55,
+    -10.45,
+    2.9,
     4.8
    ],
    "max": [
-    -11.206,
-    4.0,
+    -10.16,
+    3.35,
     4.9
    ],
    "color": {
@@ -844,47 +878,13 @@
   {
    "type": "block",
    "min": [
-    -4.794,
-    3.55,
-    4.8
-   ],
-   "max": [
-    -4.55,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    4.0,
-    4.8
-   ],
-   "max": [
-    -10.988,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -5.012,
-    4.0,
+    -4.84,
+    2.9,
     4.8
    ],
    "max": [
     -4.55,
-    4.45,
+    3.35,
     4.9
    ],
    "color": {
@@ -895,13 +895,13 @@
   {
    "type": "block",
    "min": [
-    -11.45,
-    4.45,
+    -10.45,
+    3.35,
     4.8
    ],
    "max": [
-    -10.678,
-    4.9,
+    -9.893,
+    3.8,
     4.9
    ],
    "color": {
@@ -912,47 +912,13 @@
   {
    "type": "block",
    "min": [
-    -5.322,
-    4.45,
-    4.8
-   ],
-   "max": [
-    -4.55,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    4.9,
-    4.8
-   ],
-   "max": [
-    -10.239,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -5.761,
-    4.9,
+    -5.107,
+    3.35,
     4.8
    ],
    "max": [
     -4.55,
-    5.35,
+    3.8,
     4.9
    ],
    "color": {
@@ -963,13 +929,13 @@
   {
    "type": "block",
    "min": [
-    -11.45,
-    5.35,
+    -10.45,
+    3.8,
     4.8
    ],
    "max": [
-    -9.564,
-    5.8,
+    -9.493,
+    4.25,
     4.9
    ],
    "color": {
@@ -980,47 +946,13 @@
   {
    "type": "block",
    "min": [
-    -6.436,
-    5.35,
-    4.8
-   ],
-   "max": [
-    -4.55,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    5.8,
-    4.8
-   ],
-   "max": [
-    -8.415,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -7.585,
-    5.8,
+    -5.507,
+    3.8,
     4.8
    ],
    "max": [
     -4.55,
-    6.05,
+    4.25,
     4.9
    ],
    "color": {
@@ -1031,13 +963,30 @@
   {
    "type": "block",
    "min": [
-    -11.45,
-    5.9,
+    -10.45,
+    4.25,
+    4.8
+   ],
+   "max": [
+    -8.846,
+    4.7,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.154,
+    4.25,
     4.8
    ],
    "max": [
     -4.55,
-    6.05,
+    4.7,
     4.9
    ],
    "color": {
@@ -1048,13 +997,64 @@
   {
    "type": "block",
    "min": [
-    -8.3,
-    5.5,
+    -10.45,
+    4.7,
     4.8
    ],
    "max": [
-    -7.7,
-    6.1,
+    -7.883,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.117,
+    4.7,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    4.75,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.8,
+    4.35,
+    4.8
+   ],
+   "max": [
+    -7.2,
+    4.95,
     5.0
    ],
    "color": "$coping"
@@ -1063,12 +1063,12 @@
    "type": "block",
    "min": [
     -3.45,
-    3.1,
+    1.95,
     4.8
    ],
    "max": [
     -3.35,
-    3.55,
+    2.4,
     4.9
    ],
    "color": {
@@ -1080,12 +1080,12 @@
    "type": "block",
    "min": [
     3.35,
-    3.1,
+    1.95,
     4.8
    ],
    "max": [
     3.45,
-    3.55,
+    2.4,
     4.9
    ],
    "color": {
@@ -1097,12 +1097,12 @@
    "type": "block",
    "min": [
     -3.45,
-    3.55,
+    2.4,
     4.8
    ],
    "max": [
     -3.206,
-    4.0,
+    2.85,
     4.9
    ],
    "color": {
@@ -1114,12 +1114,12 @@
    "type": "block",
    "min": [
     3.206,
-    3.55,
+    2.4,
     4.8
    ],
    "max": [
     3.45,
-    4.0,
+    2.85,
     4.9
    ],
    "color": {
@@ -1131,12 +1131,12 @@
    "type": "block",
    "min": [
     -3.45,
-    4.0,
+    2.85,
     4.8
    ],
    "max": [
     -2.988,
-    4.45,
+    3.3,
     4.9
    ],
    "color": {
@@ -1148,12 +1148,12 @@
    "type": "block",
    "min": [
     2.988,
-    4.0,
+    2.85,
     4.8
    ],
    "max": [
     3.45,
-    4.45,
+    3.3,
     4.9
    ],
    "color": {
@@ -1165,2163 +1165,2163 @@
    "type": "block",
    "min": [
     -3.45,
-    4.45,
-    4.8
-   ],
-   "max": [
-    -2.678,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    2.678,
-    4.45,
-    4.8
-   ],
-   "max": [
-    3.45,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    4.9,
-    4.8
-   ],
-   "max": [
-    -2.239,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    2.239,
-    4.9,
-    4.8
-   ],
-   "max": [
-    3.45,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.35,
-    4.8
-   ],
-   "max": [
-    -1.564,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    1.564,
-    5.35,
-    4.8
-   ],
-   "max": [
-    3.45,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.8,
-    4.8
-   ],
-   "max": [
-    -0.415,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    0.415,
-    5.8,
-    4.8
-   ],
-   "max": [
-    3.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.9,
-    4.8
-   ],
-   "max": [
-    3.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -0.3,
-    5.5,
-    4.8
-   ],
-   "max": [
-    0.3,
-    6.1,
-    5.0
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    3.1,
-    4.8
-   ],
-   "max": [
-    4.65,
-    3.55,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    11.35,
-    3.1,
-    4.8
-   ],
-   "max": [
-    11.45,
-    3.55,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    3.55,
-    4.8
-   ],
-   "max": [
-    4.794,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    11.206,
-    3.55,
-    4.8
-   ],
-   "max": [
-    11.45,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.0,
-    4.8
-   ],
-   "max": [
-    5.012,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.988,
-    4.0,
-    4.8
-   ],
-   "max": [
-    11.45,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.45,
-    4.8
-   ],
-   "max": [
-    5.322,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.678,
-    4.45,
-    4.8
-   ],
-   "max": [
-    11.45,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.9,
-    4.8
-   ],
-   "max": [
-    5.761,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.239,
-    4.9,
-    4.8
-   ],
-   "max": [
-    11.45,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.35,
-    4.8
-   ],
-   "max": [
-    6.436,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    9.564,
-    5.35,
-    4.8
-   ],
-   "max": [
-    11.45,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.8,
-    4.8
-   ],
-   "max": [
-    7.585,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    8.415,
-    5.8,
-    4.8
-   ],
-   "max": [
-    11.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.9,
-    4.8
-   ],
-   "max": [
-    11.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    7.7,
-    5.5,
-    4.8
-   ],
-   "max": [
-    8.3,
-    6.1,
-    5.0
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    3.1,
-    4.8
-   ],
-   "max": [
-    12.65,
-    3.55,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    19.35,
-    3.1,
-    4.8
-   ],
-   "max": [
-    19.45,
-    3.55,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    3.55,
-    4.8
-   ],
-   "max": [
-    12.794,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    19.206,
-    3.55,
-    4.8
-   ],
-   "max": [
-    19.45,
-    4.0,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.0,
-    4.8
-   ],
-   "max": [
-    13.012,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.988,
-    4.0,
-    4.8
-   ],
-   "max": [
-    19.45,
-    4.45,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.45,
-    4.8
-   ],
-   "max": [
-    13.322,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.678,
-    4.45,
-    4.8
-   ],
-   "max": [
-    19.45,
-    4.9,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.9,
-    4.8
-   ],
-   "max": [
-    13.761,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.239,
-    4.9,
-    4.8
-   ],
-   "max": [
-    19.45,
-    5.35,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.35,
-    4.8
-   ],
-   "max": [
-    14.436,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    17.564,
-    5.35,
-    4.8
-   ],
-   "max": [
-    19.45,
-    5.8,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.8,
-    4.8
-   ],
-   "max": [
-    15.585,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    16.415,
-    5.8,
-    4.8
-   ],
-   "max": [
-    19.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.9,
-    4.8
-   ],
-   "max": [
-    19.45,
-    6.05,
-    4.9
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    15.7,
-    5.5,
-    4.8
-   ],
-   "max": [
-    16.3,
-    6.1,
-    5.0
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    -20.55,
-    0,
-    -4.96
-   ],
-   "max": [
-    -19.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -12.55,
-    0,
-    -4.96
-   ],
-   "max": [
-    -11.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -4.55,
-    0,
-    -4.96
-   ],
-   "max": [
-    -3.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    3.45,
-    0,
-    -4.96
-   ],
-   "max": [
-    4.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    11.45,
-    0,
-    -4.96
-   ],
-   "max": [
-    12.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    19.45,
-    0,
-    -4.96
-   ],
-   "max": [
-    20.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$wall",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    -19.35,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -12.65,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    -19.206,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -12.794,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    -18.988,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -13.012,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    -18.678,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -13.322,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    -18.239,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -13.761,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    -17.564,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -14.436,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    -16.415,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -15.585,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -19.45,
-    5.9,
-    -4.9
-   ],
-   "max": [
-    -12.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -16.3,
-    5.5,
-    -5.0
-   ],
-   "max": [
-    -15.7,
-    6.1,
-    -4.8
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    -11.35,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -4.65,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    -11.206,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -4.794,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    -10.988,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -5.012,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    -10.678,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -5.322,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    -10.239,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -5.761,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    -9.564,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -6.436,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    -8.415,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -7.585,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.45,
-    5.9,
-    -4.9
-   ],
-   "max": [
-    -4.55,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -8.3,
-    5.5,
-    -5.0
-   ],
-   "max": [
-    -7.7,
-    6.1,
-    -4.8
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    -3.35,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    3.35,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    -3.206,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    3.206,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    -2.988,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    2.988,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    -2.678,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    2.678,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    -2.239,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    2.239,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    -1.564,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    1.564,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    -0.415,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    0.415,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -3.45,
-    5.9,
-    -4.9
-   ],
-   "max": [
-    3.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    -0.3,
-    5.5,
-    -5.0
-   ],
-   "max": [
-    0.3,
-    6.1,
-    -4.8
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    4.65,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    11.35,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    4.794,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    11.206,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    5.012,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.988,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    5.322,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.678,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    5.761,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    10.239,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    6.436,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    9.564,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    7.585,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    8.415,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    4.55,
-    5.9,
-    -4.9
-   ],
-   "max": [
-    11.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    7.7,
-    5.5,
-    -5.0
-   ],
-   "max": [
-    8.3,
-    6.1,
-    -4.8
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    12.65,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    19.35,
-    3.1,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    3.55,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    12.794,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    19.206,
-    3.55,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    4.0,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    13.012,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.988,
-    4.0,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    4.45,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    13.322,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.678,
-    4.45,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    4.9,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    13.761,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    18.239,
-    4.9,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    5.35,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    14.436,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    17.564,
-    5.35,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    5.8,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    15.585,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    16.415,
-    5.8,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    12.55,
-    5.9,
-    -4.9
-   ],
-   "max": [
-    19.45,
-    6.05,
-    -4.8
-   ],
-   "color": {
-    "color": "$arch",
-    "material": "brick"
-   }
-  },
-  {
-   "type": "block",
-   "min": [
-    15.7,
-    5.5,
-    -5.0
-   ],
-   "max": [
-    16.3,
-    6.1,
-    -4.8
-   ],
-   "color": "$coping"
-  },
-  {
-   "type": "block",
-   "min": [
-    -11.4,
     3.3,
     4.8
    ],
    "max": [
-    -4.6,
+    -2.678,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.678,
+    3.3,
+    4.8
+   ],
+   "max": [
+    3.45,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.75,
+    4.8
+   ],
+   "max": [
+    -2.239,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.239,
+    3.75,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.2,
+    4.8
+   ],
+   "max": [
+    -1.564,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    1.564,
+    4.2,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.65,
+    4.8
+   ],
+   "max": [
+    -0.585,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    0.585,
+    4.65,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.75,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -0.3,
+    4.35,
+    4.8
+   ],
+   "max": [
+    0.3,
+    4.95,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    1.95,
+    4.8
+   ],
+   "max": [
+    4.65,
+    2.4,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.35,
+    1.95,
+    4.8
+   ],
+   "max": [
+    11.45,
+    2.4,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    2.4,
+    4.8
+   ],
+   "max": [
+    4.794,
+    2.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.206,
+    2.4,
+    4.8
+   ],
+   "max": [
+    11.45,
+    2.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    2.85,
+    4.8
+   ],
+   "max": [
+    5.012,
+    3.3,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.988,
+    2.85,
+    4.8
+   ],
+   "max": [
+    11.45,
+    3.3,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.3,
+    4.8
+   ],
+   "max": [
+    5.322,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.678,
+    3.3,
+    4.8
+   ],
+   "max": [
+    11.45,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.75,
+    4.8
+   ],
+   "max": [
+    5.761,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.239,
+    3.75,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.2,
+    4.8
+   ],
+   "max": [
+    6.436,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    9.564,
+    4.2,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.65,
+    4.8
+   ],
+   "max": [
+    7.415,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    8.585,
+    4.65,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.75,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.7,
+    4.35,
+    4.8
+   ],
+   "max": [
+    8.3,
+    4.95,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    1.95,
+    4.8
+   ],
+   "max": [
+    12.65,
+    2.4,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.35,
+    1.95,
+    4.8
+   ],
+   "max": [
+    19.45,
+    2.4,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    2.4,
+    4.8
+   ],
+   "max": [
+    12.794,
+    2.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.206,
+    2.4,
+    4.8
+   ],
+   "max": [
+    19.45,
+    2.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    2.85,
+    4.8
+   ],
+   "max": [
+    13.012,
+    3.3,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.988,
+    2.85,
+    4.8
+   ],
+   "max": [
+    19.45,
+    3.3,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.3,
+    4.8
+   ],
+   "max": [
+    13.322,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.678,
+    3.3,
+    4.8
+   ],
+   "max": [
+    19.45,
+    3.75,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.75,
+    4.8
+   ],
+   "max": [
+    13.761,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.239,
+    3.75,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.2,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.2,
+    4.8
+   ],
+   "max": [
+    14.436,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.564,
+    4.2,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.65,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.65,
+    4.8
+   ],
+   "max": [
+    15.415,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.585,
+    4.65,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.75,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.85,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.7,
+    4.35,
+    4.8
+   ],
+   "max": [
+    16.3,
+    4.95,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -19.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -10.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -3.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    4.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    12.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    20.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    1.45,
+    -4.9
+   ],
+   "max": [
+    -19.363,
+    1.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.637,
+    1.45,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    1.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    1.9,
+    -4.9
+   ],
+   "max": [
+    -19.239,
+    2.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.761,
+    1.9,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    2.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    2.35,
+    -4.9
+   ],
+   "max": [
+    -19.053,
+    2.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.947,
+    2.35,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    2.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    2.8,
+    -4.9
+   ],
+   "max": [
+    -18.797,
+    3.25,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.203,
+    2.8,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    3.25,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.25,
+    -4.9
+   ],
+   "max": [
+    -18.452,
+    3.7,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.548,
+    3.25,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    3.7,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.7,
+    -4.9
+   ],
+   "max": [
+    -17.979,
+    4.15,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.021,
+    3.7,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    4.15,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.15,
+    -4.9
+   ],
+   "max": [
+    -17.282,
+    4.6,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.718,
+    4.15,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    4.6,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.6,
+    -4.9
+   ],
+   "max": [
+    -16.266,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.734,
+    4.6,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.75,
+    -4.9
+   ],
+   "max": [
+    -11.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.8,
+    4.35,
+    -5.0
+   ],
+   "max": [
+    -15.2,
+    4.95,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    2.45,
+    -4.9
+   ],
+   "max": [
+    -10.332,
+    2.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.668,
+    2.45,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    2.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    2.9,
+    -4.9
+   ],
+   "max": [
+    -10.16,
+    3.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.84,
+    2.9,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    3.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    3.35,
+    -4.9
+   ],
+   "max": [
+    -9.893,
+    3.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.107,
+    3.35,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    3.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    3.8,
+    -4.9
+   ],
+   "max": [
+    -9.493,
+    4.25,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.507,
+    3.8,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.25,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    4.25,
+    -4.9
+   ],
+   "max": [
+    -8.846,
+    4.7,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.154,
+    4.25,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.7,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    4.7,
+    -4.9
+   ],
+   "max": [
+    -7.883,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.117,
+    4.7,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.45,
+    4.75,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.8,
+    4.35,
+    -5.0
+   ],
+   "max": [
+    -7.2,
+    4.95,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    -3.35,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.35,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    -3.206,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.206,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    -2.988,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.988,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    -2.678,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.678,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    -2.239,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.239,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    -1.564,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    1.564,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    -0.585,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    0.585,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.75,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -0.3,
+    4.35,
+    -5.0
+   ],
+   "max": [
+    0.3,
+    4.95,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    4.65,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.35,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    4.794,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.206,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    5.012,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.988,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    5.322,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.678,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    5.761,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.239,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    6.436,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    9.564,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    7.415,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    8.585,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.75,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.7,
+    4.35,
+    -5.0
+   ],
+   "max": [
+    8.3,
+    4.95,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    12.65,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.35,
+    1.95,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    2.4,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    12.794,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.206,
+    2.4,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    2.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    13.012,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.988,
+    2.85,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    3.3,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    13.322,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.678,
+    3.3,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    3.75,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    13.761,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.239,
+    3.75,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.2,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    14.436,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.564,
+    4.2,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.65,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    15.415,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.585,
+    4.65,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.75,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.85,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.7,
+    4.35,
+    -5.0
+   ],
+   "max": [
+    16.3,
+    4.95,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.3,
+    3.3,
+    4.8
+   ],
+   "max": [
+    -4.7,
     3.9,
     4.92
    ],
@@ -3345,7 +3345,7 @@
    "type": "prop",
    "name": "Hanging Lantern",
    "at": [
-    -10.8,
+    -10.0,
     3.1,
     5.1
    ]

@@ -331,14 +331,14 @@
    "name": "Railway Track",
    "x": -10,
    "z": -12.8,
-   "y": 6.6
+   "y": 5.4
   },
   {
    "op": "Prop",
    "name": "Railway Track",
    "x": -16,
    "z": -12.8,
-   "y": 6.6
+   "y": 5.4
   },
   {
    "op": "Spawn",

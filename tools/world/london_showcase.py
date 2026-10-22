@@ -33,8 +33,8 @@ def main():
     ops.append({"op": "Prop", "name": "Double Decker Bus", "x": -30, "z": 1.0})
     ops.append({"op": "Prop", "name": "Commuter Train Car", "x": 30, "z": 2.6})
     ops.append({"op": "Prop", "name": "Canal Narrowboat", "x": 34, "z": 13.0})
-    ops.append({"op": "Prop", "name": "Railway Track", "x": -10, "z": -12.8, "y": 6.6})
-    ops.append({"op": "Prop", "name": "Railway Track", "x": -16, "z": -12.8, "y": 6.6})
+    ops.append({"op": "Prop", "name": "Railway Track", "x": -10, "z": -12.8, "y": 5.4})
+    ops.append({"op": "Prop", "name": "Railway Track", "x": -16, "z": -12.8, "y": 5.4})
     for s in ([-50, -24], [-50, 30], [50, -24], [50, 30], [-40, 10], [40, 10], [0, 10], [-20, 10], [20, 10], [0, -24]):
         ops.append({"op": "Spawn", "x": s[0], "z": s[1]})
     ops.append({"op": "AutoWaypoints", "spacing": 6})
