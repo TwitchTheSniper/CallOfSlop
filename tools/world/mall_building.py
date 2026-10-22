@@ -239,7 +239,7 @@ for (b0, b1) in BRIDGES:
 # escalators: from the walkway up to the bridges' outer sides
 ESC = []
 for (b0, b1) in BRIDGES:
-    top_x = b0 if b0 > 0 else b1          # the bridge edge the escalators arrive at
+    top_x = b1 if b0 > 0 else b0          # the bridge's outer edge, where the escalators arrive
     d = 1 if top_x > 0 else -1             # escalators run away from the middle: foot further out
     foot_x = top_x + d * ESC_RUN
     for (z0, z1) in ESC_LANES:

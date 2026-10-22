@@ -119,11 +119,12 @@ for (foot_x, top_x, zc) in MB.ESC:
     d = 1 if foot_x > top_x else -1
     ESC_TOP.append((top_x - d * 0.9, zc, L1))
 HILLS = [{"x": -6.5, "z": 0, "radius": 3.6}, {"x": 33, "z": 0, "radius": 5}, {"x": -33, "z": 0, "y": L1, "radius": 5}]
-FLAGS = [[0, 50.5], [-1.5, -46.5]]
+FLAGS = [[0, 50.5], [-20, -40.5]]
 
 # ================================================================ the buildings
 op("Ground", color=[0.36, 0.42, 0.3])
-ops.append({"op": "Building", "name": "Shopping Mall", "at": [0, 0], "seed": 502, "variant": {"palette": "sandstone", "doors": "random"}})
+# "world": the pad is level at y = 0, and the sunken court under the atrium must not get a foundation slab filling it
+ops.append({"op": "Building", "name": "Shopping Mall", "at": [0, 0, 0], "anchor": "world", "seed": 502, "variant": {"palette": "sandstone", "doors": "random"}})
 ops.append({"op": "Building", "name": "Multi-Storey Car Park", "at": [-54, 4], "yaw": 90, "seed": 52, "variant": {"floors": 2}})
 
 # sidewalks round the mall (kerbs: a step up from the asphalt)

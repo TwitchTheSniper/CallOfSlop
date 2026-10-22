@@ -884,5 +884,30 @@ def gallery():
     print("wrote", path)
 
 
+def animated_gallery():
+    """Adds the animated Retail props to the Dev pack's Animated Props map (Maps/Dev/AnimatedProps.json: the self-test
+    wants every animated prop shown there), in rows north of its own, just before its spawns. Re-running replaces them."""
+    path = os.path.join(REPO, "Maps/Dev/AnimatedProps.json")
+    lines = open(path).read().split("\n")
+    names = sorted(d["name"] for d in RETAIL if any("anim" in q for q in d["parts"]))
+    mine = set(d["name"] for d in RETAIL)
+    lines = [ln for ln in lines if not any(f'"name": "{n}"' in ln for n in mine)]
+    at = next(i for i, ln in enumerate(lines) if '"op": "Spawn"' in ln)
+    hung = ("Mall Ceiling Light", "Mall Pendant Light")
+    new = []
+    k = 0
+    for n in names:
+        if n == "Cinema Big Screen":
+            new.append("    " + json.dumps({"op": "Prop", "name": n, "x": 0.0, "z": 31.0}) + ",")
+            continue
+        x, z = -36.0 + (k % 9) * 9.0, 14.0 + (k // 9) * 7.0
+        k += 1
+        new.append("    " + json.dumps({"op": "Prop", "name": n, "x": x, "z": z} | ({"y": 1.5} if n in hung else {})) + ",")
+    lines[at:at] = new
+    open(path, "w").write("\n".join(lines))
+    print("animated gallery:", len(new), "retail props on", path)
+
+
 gallery()
+animated_gallery()
 write(MALL, OUT_MALL, "Mall")
