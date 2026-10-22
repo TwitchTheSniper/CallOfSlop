@@ -147,7 +147,11 @@ public sealed class DecalDef
     /// <summary>How likely this impact is picked among the others for the same material (1 = normal).</summary>
     public float ImpactWeight = 1f;
 
-    /// <summary>Its layer in the decal atlas: the position in <see cref="Decals.All"/> for a global decal, in <see cref="Decals.AtlasDefs"/> for a pack decal.</summary>
+    /// <summary>
+    /// A global decal: its position in <see cref="Decals.All"/>, which is also its atlas layer (for map decals and impacts).
+    /// A pack decal: its position in its pack; its atlas layer comes from the bake of the map using it
+    /// (<see cref="DecalMesh.PackDefs"/>), since only the pack decals a map places are painted.
+    /// </summary>
     public int Index;
 
     /// <summary>

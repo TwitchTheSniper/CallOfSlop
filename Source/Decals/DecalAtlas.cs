@@ -19,11 +19,12 @@ public static class DecalAtlas
     public const int LayerSize = 128;
 
     /// <summary>
-    /// The most layers the atlas holds: the global library (<see cref="Decals.MaxGlobal"/>) plus every loaded pack's decals
-    /// (<see cref="Decals.MaxPerPack"/> each). GL 4.1 guarantees 2048 array texture layers. Only the layers in use are
-    /// allocated (64 KB each plus a third for mipmaps), so the cap costs nothing by itself.
+    /// The most layers a map's atlas may need: the global library (<see cref="Decals.MaxGlobal"/>, always loaded: impacts
+    /// can land anywhere) plus the pack decals that map places (<see cref="Decals.MaxPackDecalsPerMap"/>). OpenGL 4.1
+    /// guarantees 2048 array texture layers; the renderer also asks the driver and logs if a map would go past it. Only
+    /// the layers in use are allocated (64 KB each plus a third for mipmaps).
     /// </summary>
-    public const int MaxLayers = 1024;
+    public const int MaxLayers = 2048;
 
     public const int BytesPerLayer = LayerSize * LayerSize * 4;
 
