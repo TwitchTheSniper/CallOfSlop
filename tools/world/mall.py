@@ -118,7 +118,14 @@ ESC_TOP = []   # spawns at the escalator tops (on the bridges): nav nodes that j
 for (foot_x, top_x, zc) in MB.ESC:
     d = 1 if foot_x > top_x else -1
     ESC_TOP.append((top_x - d * 0.9, zc, L1))
-HILLS = [{"x": -6.5, "z": 0, "radius": 3.6}, {"x": 33, "z": 0, "radius": 5}, {"x": -33, "z": 0, "y": L1, "radius": 5}]
+    ESC_TOP.append((foot_x + d * 0.9, zc, 0.1))         # the foot, on the walkway slab (a Waypoint would sit on the terrain under it)
+# the bridges' ends and the balcony just past them, so the bridges join the balcony ring in the nav graph
+for bx in (-12.0, 12.0):
+    for sz in (-1, 1):
+        ESC_TOP.append((bx, sz * 4.2, L1))
+        ESC_TOP.append((bx, sz * 6.4, L1))
+# the department store hill is just inside its upper arch (the doorway strip there is always kept free of furniture)
+HILLS = [{"x": -6.5, "z": 0, "radius": 3.6}, {"x": 33, "z": 0, "radius": 5}, {"x": -25.0, "z": 0, "y": L1, "radius": 4.5}]
 FLAGS = [[0, 50.5], [-20, -40.5]]
 
 # ================================================================ the buildings
@@ -347,10 +354,7 @@ for x, z, y in FFA_SP + ESC_TOP:
         op("Spawn", x=float(x), z=float(z), y=float(y))
     else:
         op("Spawn", x=float(x), z=float(z))
-for (foot_x, top_x, zc) in MB.ESC:
-    d = 1 if foot_x > top_x else -1
-    op("Waypoint", x=float(foot_x + d * 0.9), z=float(zc))
-for (x, z) in ((0, -3.6), (0, 3.6), (-9.5, 0), (9.5, 0), (-12.0, -6.5), (12.0, 6.5), (0, 28), (3, -32), (-1.5, -50), (44, 60), (-70, 29), (51, -36), (51, 36)):
+for (x, z) in ((0, -3.6), (0, 3.6), (-9.5, 0), (9.5, 0), (-6.5, 0), (-4.5, -2.0), (4.5, 2.0), (-12.0, -6.5), (12.0, 6.5), (0, 28), (3, -32), (-1.5, -50), (44, 60), (-70, 29), (51, -36), (51, 36)):
     op("Waypoint", x=float(x), z=float(z))
 op("AutoWaypoints", spacing=5)
 

@@ -99,12 +99,21 @@ public static partial class SelfTest
             return start >= 0 && search.Find(g, start, k, path, maxExpand: 80000) > 0 ? k : -2;
         }
         var bad = new List<string>();
+        string Near(Vector3 p)
+        {
+            var k = g.Nearest(p, needSight: false);
+            return k < 0 ? "no node" : $"nearest node ({g.Nodes[k].X:0.#}, {g.Nodes[k].Y:0.##}, {g.Nodes[k].Z:0.#}) component {g.Component[k]} (main {g.MainComponent})";
+        }
         foreach (var s in m.Spawns)
-            if (Reach(s) < 0)
-                bad.Add($"spawn ({s.X:0.#}, {s.Y:0.#}, {s.Z:0.#}) [{MallBlockers(m, s)}]");
+            if (Reach(s) is var rs and < 0)
+                bad.Add($"spawn ({s.X:0.#}, {s.Y:0.#}, {s.Z:0.#}) {(rs == -1 ? "no node" : "no path")}, {Near(s)} [{MallBlockers(m, s)}]");
         foreach (var h in m.Objectives.Hills)
-            if (Reach(h.Center) < 0)
-                bad.Add($"hill ({h.Center.X:0.#}, {h.Center.Y:0.#}, {h.Center.Z:0.#}) [{MallBlockers(m, h.Center)}]");
+        {
+            if (Reach(h.Center) is var rh and < 0)
+                bad.Add($"hill ({h.Center.X:0.#}, {h.Center.Y:0.#}, {h.Center.Z:0.#}) {(rh == -1 ? "no node" : "no path")}, {Near(h.Center)} [{MallBlockers(m, h.Center)}]");
+            if (m.IsBlocked(h.Center))
+                bad.Add($"hill ({h.Center.X:0.#}, {h.Center.Y:0.#}, {h.Center.Z:0.#}) inside geometry [{MallBlockers(m, h.Center)}]");
+        }
         foreach (var f in m.Objectives.Flags)
             if (Reach(f) < 0)
                 bad.Add($"flag ({f.X:0.#}, {f.Z:0.#})");
