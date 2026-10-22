@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// (<see cref="Player.FrenzyBuffsOn"/>, replicated with the class). Everything reads the replicated level, so the
 /// server and the predicting client agree: draw time, ADS time, spread and recoil are predicted on the client; move
 /// speed is checked by the server with the same multiplier; the Special heal happens on the server. Bots get them too
-/// (their reload, spread and speed go through the same calls), and so does Zombies (with its half-weight kills).
+/// (their reload, spread and speed go through the same calls), and so does Zombies (with its lighter zombie kills).
 /// </summary>
 public static class FrenzyBuffs
 {

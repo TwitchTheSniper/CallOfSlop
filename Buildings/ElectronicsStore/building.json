@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Electronics Store",
+  "theme": "1990s electronics superstore, ZapMart: blue metal cladding with a yellow band and a flashing roof sign, grey carpet, a wall of TVs, glowing laptops, hi-fi stacks",
+  "category": "commercial",
+  "description": "An electronics store: a big sales floor with TV walls, laptop tables, aisles and two checkouts behind plate glass; a repair workshop, an office and the stock room with a loading door and stairs to the roof.",
+  "author": "Call of Slop",
+  "seed": 80,
+  "wallThickness": 0.25,
+  "storeyHeight": 4.0,
+  "exterior": {"color": "$wall", "material": "metal"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "zapmart blue": {
+      "wall": "#1f4aa8",
+      "interior": "#eef0f2",
+      "floor": "#6a6e74",
+      "ceiling": "#f4f6f8",
+      "trim": "#c8ccd0",
+      "door": "#3a3e44",
+      "roof": "#4a4c50",
+      "band": "#f2c230"
+    },
+    "red tech": {
+      "wall": "#b82a2a",
+      "interior": "#f2f2f2",
+      "floor": "#5a5e64",
+      "ceiling": "#f8f8f8",
+      "trim": "#e8e8e8",
+      "door": "#2a2a2e",
+      "roof": "#45474a",
+      "band": "#f4f4f0"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "sales floor",
+          "type": "electronics",
+          "rect": [-9, -1, 9, 6],
+          "windows": false,
+          "props": [
+            {"name": "Electronics TV Wall", "wall": "W", "along": -1.2},
+            {"name": "Electronics TV Wall", "wall": "W", "along": 1.4},
+            {"name": "Electronics Hi-Fi Shelf", "wall": "E", "along": -1.1},
+            {"name": "Electronics Hi-Fi Shelf", "wall": "E", "along": 1.1},
+            {"name": "Electronics Display Table", "at": [-3.5, -0.1]},
+            {"name": "Electronics Display Table", "at": [3.5, -0.1]},
+            {"name": "Electronics Gondola", "at": [-3.5, -2.0]},
+            {"name": "Electronics Gondola", "at": [1.6, -2.0]},
+            {"name": "Electronics Checkout", "at": [-2.6, 1.8]},
+            {"name": "Electronics Checkout", "at": [2.6, 1.8]},
+            {"name": "Office Chair", "at": [-2.6, 2.55], "yaw": 180},
+            {"name": "Office Chair", "at": [2.6, 2.55], "yaw": 180}
+          ]
+        },
+        {
+          "id": "repair",
+          "type": "repairshop",
+          "rect": [-9, -6, -3, -1],
+          "floor": {"color": "#8a8a86", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 1.2, "sill": 1.3, "head": 2.6}
+        },
+        {
+          "id": "office",
+          "type": "office",
+          "rect": [-3, -6, 1, -1],
+          "autoWindows": {"spacing": 3, "width": 1.2, "sill": 1.1, "head": 2.6}
+        },
+        {
+          "id": "stock room",
+          "type": "electronicsstock",
+          "rect": [1, -6, 9, -1],
+          "floor": {"color": "#8a8478", "material": "concrete"},
+          "windows": false
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [0, 6], "width": 2.0, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-5, 6], "width": 6.0, "sill": 0.4, "head": 3.2, "health": 15},
+        {"type": "window", "at": [5, 6], "width": 6.0, "sill": 0.4, "head": 3.2, "health": 15},
+        {"type": "door", "at": [-6, -1], "width": 1.0},
+        {"type": "door", "at": [-1, -1], "width": 0.9},
+        {"type": "door", "at": [5, -1], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [9, -3.3], "width": 1.6, "material": "metal", "health": 500},
+        {"type": "door", "at": [-3, -3.5], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [4.6, -5.75, 7.4, -4.65], "dir": "+x", "color": {"color": "#7a7a76", "material": "metal"}}],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "block", "min": [-9.15, 3.4, 6.12], "max": [9.15, 4.1, 6.24], "color": "$band"},
+    {"type": "block", "min": [-1.5, 3.2, 6.13], "max": [1.5, 3.4, 7.6], "color": "$trim"},
+    {"type": "prop", "name": "Electronics Roof Sign", "at": [0, 0, 4.6], "onRoof": true},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [-5.0, 0, -2.5], "onRoof": true},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [-1.0, 0, -3.5], "onRoof": true},
+    {"type": "prop", "name": "Satellite Dish", "at": [-7.5, 0, 3.5], "onRoof": true},
+    {"type": "prop", "name": "Shopping Cart", "at": [3.0, 7.2], "yaw": 30},
+    {"type": "prop", "name": "Shopping Cart", "at": [3.6, 7.4], "yaw": 25},
+    {"type": "prop", "name": "Box Truck", "at": [12.5, -2.5], "yaw": 0},
+    {"type": "prop", "name": "Trash Can", "at": [-1.8, 6.6]},
+    {"type": "prop", "name": "Bollard", "at": [-3.0, 7.0]},
+    {"type": "prop", "name": "Bollard", "at": [3.0, 6.6]}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "stock room", "at": [3.0, -3.0]},
+    {"type": "spawn", "name": "sales floor", "at": [-6.0, 2.5]},
+    {"type": "hill", "name": "sales floor", "at": [0, 2.5]}
+  ]
+}

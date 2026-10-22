@@ -29,8 +29,8 @@ public sealed partial class Game
     private int _botPathBudget;
     private uint _botBudgetTick = uint.MaxValue;
 
-    /// <summary>Once per server tick (from the first bot's tick): refill the search budget, advance a nav graph build.</summary>
-    private void BotTickShared()
+    /// <summary>Once per server tick (from the first bot's tick): refill the search budget, advance a nav graph build, plan an Insane squad.</summary>
+    private void BotTickShared(double now)
     {
         if (_botBudgetTick == ServerTick)
             return;
@@ -38,6 +38,7 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
+        SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
 
     /// <summary>Where the bot wants to move this tick, and what to look at, for its current mode.</summary>
@@ -56,7 +57,7 @@ public sealed partial class Game
                 var dir = dist > 0.01f ? to / dist : Vector3.Zero;
                 var pref = MathF.Max(3f, PreferredRange(def) * prof.RangeMult);
                 var hurt = p.Health <= prof.RetreatHealth && prof.Aggression < 0.9f;
-                var holdBack = prof.Holds ? dist < pref * 2f : prof.Kind == BotPersonality.Marksman && dist < 60f;
+                var holdBack = (prof.Holds ? dist < pref * 2f : prof.Kind == BotPersonality.Marksman && dist < 60f) || b.Order.HoldBack;
                 if (dist > pref + 3 && !hurt && !holdBack)
                     s.Wish += BotFollow(p, b, nav, target.Position, now, ref s); // close in along the path (around cover)
                 else if (dist < pref - 3 || hurt)
@@ -96,6 +97,9 @@ public sealed partial class Game
                 }
                 break;
             }
+            case BotMode.Squad:
+                SquadSteer(p, b, nav, now, ref s);
+                break;
             case BotMode.Objective when b.Objective is { } goal:
             {
                 var spot = goal;
@@ -252,9 +256,13 @@ public sealed partial class Game
             return;
         b.SearchGraph = nav;
         b.SearchNow = now;
-        if (b.Mode != BotMode.Roam)
+        if (b.Mode is not (BotMode.Roam or BotMode.Squad))
             b.FlankWidth = 0; // flank routes only while sneaking around, not when chasing or retreating
+        if (b.Squad != null)
+            SquadBeforeSearch(b);
         b.PathLen = _botSearch.Find(nav, start, end, b.Path, b.EdgePenaltyFn);
+        if (b.Squad != null)
+            SquadAfterSearch(b);
         // Already past the first node (it's behind us on the way)? Start with the second.
         if (b.PathLen >= 2)
         {

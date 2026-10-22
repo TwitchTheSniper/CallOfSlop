@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Barber Shop Station",
+  "description": "A barber's mirror station: a mahogany counter with drawers, a big mirror, tonic bottles, combs in blue Barbicide.",
+  "collision": "solid",
+  "collider": [{"size": [1.04, 0.92, 0.52]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 110,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#4a2416", "#bcd6e0"]}
+  },
+  "parts": [
+    {"size": [1.0, 0.86, 0.48], "offset": [0, 0.43, 0], "color": "#4a2416", "material": "wood"},
+    {"size": [1.04, 0.05, 0.52], "offset": [0, 0.885, 0], "color": "#e8e4dc"},
+    {"size": [0.44, 0.2, 0.02], "offset": [-0.24, 0.66, 0.245], "color": "#5e3020"},
+    {"size": [0.44, 0.2, 0.02], "offset": [0.24, 0.66, 0.245], "color": "#5e3020"},
+    {"size": [0.44, 0.34, 0.02], "offset": [-0.24, 0.32, 0.245], "color": "#5e3020"},
+    {"size": [0.44, 0.34, 0.02], "offset": [0.24, 0.32, 0.245], "color": "#5e3020"},
+    {"size": [0.06, 0.02, 0.02], "offset": [-0.24, 0.66, 0.26], "color": "#c9a24a"},
+    {"size": [0.06, 0.02, 0.02], "offset": [0.24, 0.66, 0.26], "color": "#c9a24a"},
+    {"size": [0.96, 1.0, 0.04], "offset": [0, 1.5, -0.2], "color": "#4a2416", "material": "wood"},
+    {"size": [0.86, 0.9, 0.02], "offset": [0, 1.5, -0.175], "color": "#bcd6e0"},
+    {"size": [0.07, 0.2, 0.07], "offset": [-0.36, 1.0, 0.0], "color": "#3a7bd5"},
+    {"size": [0.06, 0.18, 0.06], "offset": [-0.26, 0.99, 0.05], "color": "#d8a830"},
+    {"size": [0.06, 0.22, 0.06], "offset": [-0.17, 1.01, -0.02], "color": "#2e8a4a"},
+    {"size": [0.1, 0.16, 0.1], "offset": [0.3, 0.98, 0.04], "color": "#1fb3d0"},
+    {"size": [0.02, 0.1, 0.02], "offset": [0.29, 1.1, 0.04], "color": "black"},
+    {"size": [0.02, 0.1, 0.02], "offset": [0.32, 1.1, 0.05], "color": "black"},
+    {"size": [0.22, 0.04, 0.12], "offset": [0.06, 0.93, 0.08], "color": "white"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "barberback",
+  "description": "The Barber Shop's back room: towel washing, a tea counter, lockers, stock.",
+  "items": [
+    {"id": "wm", "props": ["Washing Machine"], "place": "wall", "prefer": "far"},
+    {"props": ["Tumble Dryer"], "place": "beside", "of": "wm"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall"},
+    {"props": ["Kettle", "Microwave", "Coffee Maker"], "place": "on", "of": "counter", "y": 0.9, "count": [1, 2]},
+    {"props": ["Barber Shop Towel Shelf"], "place": "wall"},
+    {"props": ["Metal Lockers"], "place": "wall", "chance": 0.8},
+    {"props": ["Cardboard Box", "Cardboard Box Small"], "place": "floor", "count": [1, 2]},
+    {"props": ["Mop and Bucket", "Laundry Basket"], "place": "corner", "count": [1, 2]}
+  ]
+}

@@ -67,10 +67,23 @@ public static class LoadoutStore
         Perks = new PerkSet(Perks.Starters[0], Perks.Starters[1], Perks.Starters[2]),
     };
 
+    /// <summary>How many slots you can see and use at your level (always at least 1). Slots unlock in order, so these are slots 0..n-1.</summary>
+    public static int UnlockedSlots(Progress progress) => Math.Clamp(progress.LoadoutSlots, 1, Slots.Length);
+
+    /// <summary>
+    /// <paramref name="slot"/> if it's unlocked, otherwise the highest unlocked slot (a locked pick after a
+    /// prestige or level reset, or an edited file). Only the choice moves: a locked slot's contents stay saved.
+    /// </summary>
+    public static int UnlockedSlot(int slot, Progress progress) => Math.Clamp(slot, 0, UnlockedSlots(progress) - 1);
+
+    /// <summary>The level the next loadout slot unlocks at, or null once every slot is unlocked.</summary>
+    public static int? NextSlotLevel(Progress progress) =>
+        UnlockedSlots(progress) < Slots.Length ? Progress.LoadoutSlotLevel(UnlockedSlots(progress)) : null;
+
     /// <summary>The selected slot as you'd actually spawn with it (locked items swapped for defaults).</summary>
     public static Loadout Active(Progress progress)
     {
-        Selected = Math.Clamp(Selected, 0, Math.Max(0, progress.LoadoutSlots - 1));
+        Selected = UnlockedSlot(Selected, progress);
         return Effective(Slots[Selected], progress);
     }
 

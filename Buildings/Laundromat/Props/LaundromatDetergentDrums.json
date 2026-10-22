@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laundromat Detergent Drums",
+  "description": "Blue drums of washing powder and jugs of fabric softener.",
+  "collision": "solid",
+  "collider": [{"size": [0.95, 0.7, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.44, 0.7, 0.44], "offset": [-0.25, 0.35, 0], "color": "#2a6ac8"},
+    {"size": [0.44, 0.04, 0.44], "offset": [-0.25, 0.72, 0], "color": "white"},
+    {"size": [0.44, 0.6, 0.44], "offset": [0.25, 0.3, 0.05], "color": "#2a6ac8"},
+    {"size": [0.2, 0.3, 0.14], "offset": [0.2, 0.75, 0.0], "color": "#e86aa8"},
+    {"size": [0.2, 0.3, 0.14], "offset": [0.35, 0.75, 0.1], "color": "#7ad0a8"}
+  ]
+}

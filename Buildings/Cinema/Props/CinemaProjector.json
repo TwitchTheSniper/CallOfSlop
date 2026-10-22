@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cinema Projector",
+  "description": "A 35 mm carbon-arc projector on its pedestal, two film reels on top, a beam of light at the lens.",
+  "collision": "solid",
+  "collider": [{"size": [0.5, 1.4, 0.9], "offset": [0, 0.7, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.5, 0.9, 0.5], "offset": [0, 0.45, 0], "color": "#3a4a3a", "material": "metal"},
+    {"size": [0.42, 0.5, 0.9], "offset": [0, 1.15, 0], "color": "#4a5a4a", "material": "metal"},
+    {"size": [0.16, 0.16, 0.3], "offset": [0, 1.2, 0.55], "color": "#202020"},
+    {
+      "size": [0.1, 0.1, 0.02],
+      "offset": [0, 1.2, 0.71],
+      "color": "#fff8e0",
+      "anim": {"type": "flicker", "rate": 12, "duty": 0.85, "color": "#fffae8", "glow": 1.6}
+    },
+    {"size": [0.06, 0.7, 0.7], "offset": [0, 1.75, 0.2], "color": "#8a8e92", "anim": {"type": "spin", "axis": "x", "rpm": 20}},
+    {"size": [0.06, 0.7, 0.7], "offset": [0, 1.75, -0.4], "color": "#8a8e92", "anim": {"type": "spin", "axis": "x", "rpm": 20}},
+    {"size": [0.2, 0.3, 0.1], "offset": [0, 1.25, -0.5], "color": "#2a2a2a"}
+  ]
+}

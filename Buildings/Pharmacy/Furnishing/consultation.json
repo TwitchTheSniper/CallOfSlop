@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "consultation",
+  "description": "The Pharmacy's consultation room: a couch, a desk and two chairs.",
+  "items": [
+    {"props": ["Pharmacy Exam Couch"], "place": "wall", "prefer": "far"},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Plastic Chair"], "place": "wall"},
+    {"props": ["Computer Monitor", "Desk Phone"], "place": "on", "of": "desk", "y": 0.77},
+    {"props": ["Office Plant", "Pedal Bin"], "place": "corner"}
+  ]
+}

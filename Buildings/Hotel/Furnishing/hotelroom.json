@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotelroom",
+  "description": "A Majestic guest room: a double bed with bedside tables and lamps, a wardrobe, a writing desk, a TV, an armchair, luggage.",
+  "items": [
+    {"id": "bed", "props": ["Double Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bs", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": 2},
+    {"props": ["Table Lamp"], "place": "on", "of": "bs", "y": 0.6},
+    {"props": ["Wardrobe"], "place": "wall"},
+    {"id": "desk", "props": ["Hotel Writing Desk"], "place": "wall"},
+    {"props": ["Dining Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["TV Stand"], "place": "front", "of": "bed", "distance": 1.0, "chance": 0.8},
+    {"props": ["Hotel Luggage Rack"], "place": "wall"},
+    {"props": ["Armchair"], "place": "corner", "chance": 0.8},
+    {"props": ["Floor Lamp"], "place": "corner", "chance": 0.6},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Suitcase", "Duffel Bag", "Backpack"], "place": "floor", "count": [0, 2]}
+  ]
+}

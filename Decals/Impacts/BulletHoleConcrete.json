@@ -1,0 +1,74 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Concrete",
+  "description": "A chipped crater in concrete or tiles: dark hole, pale dust ring, hairline cracks.",
+  "author": "Call of Slop",
+  "size": 0.16,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "surfaces": "all",
+  "impact": {
+    "materials": [
+      "Concrete",
+      "Tiles",
+      "Grid"
+    ]
+  },
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.36,
+      "count": 9,
+      "jag": 0.35,
+      "seed": 3,
+      "color": [
+        0.78,
+        0.76,
+        0.72
+      ],
+      "alpha": 0.55,
+      "softness": 0.06,
+      "noise": 0.4,
+      "noiseScale": 10
+    },
+    {
+      "shape": "cracks",
+      "count": 5,
+      "length": 0.42,
+      "width": 0.03,
+      "jag": 0.6,
+      "seed": 5,
+      "color": [
+        0.18,
+        0.17,
+        0.16
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "splat",
+      "radius": 0.17,
+      "count": 7,
+      "jag": 0.3,
+      "seed": 8,
+      "color": [
+        0.32,
+        0.31,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.02
+    },
+    {
+      "shape": "circle",
+      "radius": 0.085,
+      "color": [
+        0.05,
+        0.05,
+        0.05
+      ],
+      "softness": 0.02
+    }
+  ]
+}

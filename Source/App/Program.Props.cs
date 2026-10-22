@@ -64,6 +64,9 @@ public static unsafe partial class Program
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
         ("flags", "Flag Lineup", new Vector3(-1.5f, 3.4f, 4.5f), new Vector3(-1.2f, 3.9f, -6f), false), // the flag pool: US, UK, France, Finland at the front (smoke_props_flags.bmp)
+        // Decals (Program.Decals.cs): the Decal Test map's map decals from above, then at eye height after a burst of bullet impacts.
+        ("decals", "Decal Test", new Vector3(0f, 26f, 30f), new Vector3(0f, 0f, -2f), false),
+        ("decals_impacts", "Decal Test", new Vector3(-2f, 1.7f, 10f), new Vector3(-2f, 1.4f, -6f), false),
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running
@@ -101,6 +104,8 @@ public static unsafe partial class Program
                 World.SetMap(map);
             if (view.Break)
                 SmokeBreakProps(map, view.Eye, view.Target);
+            if (view.Name == "decals_impacts")
+                SmokeDecalImpacts(map, view.Eye, view.Target); // Program.Decals.cs
         }
     }
 
@@ -171,6 +176,7 @@ public static unsafe partial class Program
                 _propsSmokeMeasureStart = now;
                 PropGfx.ResetWindow(now);
                 FoliageGfx.ResetWindow(now);
+                DecalGfx.ResetWindow(now);
             }
             return;
         }
@@ -190,6 +196,8 @@ public static unsafe partial class Program
                 : ""));
         if (view.Name.StartsWith("buildings_", StringComparison.Ordinal))
             LogBuildingSmoke(view.Name); // the Dev pack's Building Yard (Program.Buildings.cs)
+        if (view.Name.StartsWith("decals", StringComparison.Ordinal))
+            LogDecalSmoke(view.Name); // Program.Decals.cs
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))
         {
             // Cluttered pack maps: the foliage and box side of the same frames (boxes are still one draw call each).

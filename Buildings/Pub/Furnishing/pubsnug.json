@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pubsnug",
+  "description": "The Pub's snug: a fire, armchairs and a sofa, a table, the pub dog.",
+  "items": [
+    {"id": "fire", "props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"id": "chair", "props": ["Armchair"], "place": "front", "of": "fire", "distance": 1.2},
+    {"props": ["Old Sofa"], "place": "wall"},
+    {"props": ["Pub Table"], "place": "centre"},
+    {"props": ["Pub Settle"], "place": "wall", "chance": 0.7},
+    {"props": ["Grandfather Clock"], "place": "wall", "chance": 0.6},
+    {"props": ["Bookshelf"], "place": "wall", "chance": 0.6},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Dog"], "place": "floor"}
+  ]
+}

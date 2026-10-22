@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pub Table",
+  "description": "A small round-topped pub table on a cast-iron base, with beer mats and a half-drunk pint.",
+  "collision": "solid",
+  "collider": [{"size": [0.72, 0.76, 0.72]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#4e2e1c"]}},
+  "parts": [
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.02, 0], "color": "#202020"},
+    {"size": [0.08, 0.68, 0.08], "offset": [0, 0.36, 0], "color": "#202020"},
+    {"size": [0.72, 0.04, 0.5], "offset": [0, 0.72, 0], "color": "#4e2e1c", "material": "wood"},
+    {"size": [0.5, 0.04, 0.72], "offset": [0, 0.72, 0], "color": "#4e2e1c", "material": "wood"},
+    {"size": [0.1, 0.005, 0.1], "offset": [0.12, 0.743, 0.1], "color": "white"},
+    {"size": [0.08, 0.14, 0.08], "offset": [0.12, 0.81, 0.1], "color": "#b8741e"},
+    {"size": [0.08, 0.02, 0.08], "offset": [0.12, 0.89, 0.1], "color": "#f4ecd8"},
+    {"size": [0.1, 0.005, 0.1], "offset": [-0.15, 0.743, -0.12], "color": "#c8202a"}
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Water Stain",
+  "description": "A dried puddle: a faint darker patch with a tide-mark rim.",
+  "author": "Call of Slop",
+  "size": 2.2,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.36,
+      "count": 6,
+      "jag": 0.3,
+      "seed": 71,
+      "color": [
+        0.68,
+        0.68,
+        0.7
+      ],
+      "alpha": 0.75,
+      "softness": 0.04,
+      "noise": 0.3,
+      "noiseScale": 4
+    },
+    {
+      "shape": "splat",
+      "radius": 0.32,
+      "count": 6,
+      "jag": 0.3,
+      "seed": 71,
+      "color": [
+        1,
+        1,
+        1
+      ],
+      "alpha": 0.6,
+      "softness": 0.06,
+      "erase": true
+    },
+    {
+      "shape": "splat",
+      "radius": 0.3,
+      "count": 6,
+      "jag": 0.3,
+      "seed": 71,
+      "color": [
+        0.9,
+        0.9,
+        0.92
+      ],
+      "alpha": 0.35,
+      "softness": 0.15
+    }
+  ]
+}

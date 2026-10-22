@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laundromat Laundry Cart",
+  "description": "A wheeled chrome laundry cart with a canvas basket and a hanging rail.",
+  "collision": "solid",
+  "collider": [{"size": [0.74, 1.42, 0.52]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.7, 0.4, 0.5], "offset": [0, 0.5, 0], "color": "#e8e0c8"},
+    {"size": [0.72, 0.04, 0.52], "offset": [0, 0.7, 0], "color": "chrome"},
+    {"size": [0.04, 1.4, 0.04], "offset": [-0.35, 0.7, 0], "color": "chrome"},
+    {"size": [0.04, 1.4, 0.04], "offset": [0.35, 0.7, 0], "color": "chrome"},
+    {"size": [0.74, 0.04, 0.04], "offset": [0, 1.4, 0], "color": "chrome"},
+    {"size": [0.1, 0.08, 0.1], "offset": [-0.3, 0.04, 0.2], "color": "rubber"},
+    {"size": [0.1, 0.08, 0.1], "offset": [0.3, 0.04, -0.2], "color": "rubber"},
+    {"size": [0.36, 0.5, 0.04], "offset": [0.1, 1.12, 0.02], "color": "#4a8ac8"},
+    {"size": [0.5, 0.2, 0.36], "offset": [0, 0.78, 0], "color": "#c86a8a"}
+  ]
+}

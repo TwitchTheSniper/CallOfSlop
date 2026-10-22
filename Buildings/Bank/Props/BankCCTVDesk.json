@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank CCTV Desk",
+  "description": "A security desk under a bank of flickering CCTV monitors, a radio and a log book.",
+  "collision": "solid",
+  "collider": [{"size": [1.64, 1.7, 0.74]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.6, 0.74, 0.7], "offset": [0, 0.37, 0], "color": "#5a5a5e"},
+    {"size": [1.64, 0.04, 0.74], "offset": [0, 0.76, 0], "color": "#2a2a2e"},
+    {"size": [1.5, 0.9, 0.3], "offset": [0, 1.25, -0.2], "color": "#202024"},
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [-0.48, 1.05, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [0.0, 1.05, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [0.48, 1.05, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [-0.48, 1.47, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [0.0, 1.47, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {
+      "size": [0.44, 0.32, 0.01],
+      "offset": [0.48, 1.47, -0.045],
+      "color": "#28323a",
+      "anim": {"type": "flicker", "rate": 7, "duty": 0.9, "color": "#8ab0c0", "off": "#203038", "glow": 0.7}
+    },
+    {"size": [0.5, 0.03, 0.2], "offset": [0, 0.795, 0.15], "color": "#3a3a3e"},
+    {"size": [0.08, 0.2, 0.06], "offset": [0.6, 0.88, 0.1], "color": "black"},
+    {"size": [0.24, 0.03, 0.32], "offset": [-0.5, 0.79, 0.12], "color": "#2a4a8a"}
+  ]
+}

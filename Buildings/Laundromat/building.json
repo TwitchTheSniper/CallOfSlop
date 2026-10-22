@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Laundromat",
+  "theme": "1970s coin laundromat: cream tiles with an orange and avocado band, a big plate-glass front, rows of steel washers, stacked dryers, plastic chairs",
+  "category": "commercial",
+  "description": "A laundromat: an island of coin-op washers, a wall of stacked dryers, folding tables and the change machine out front; an office, a WC and the boiler room behind.",
+  "author": "Call of Slop",
+  "seed": 75,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "tiles"},
+  "interior": {"color": "$interior", "material": "tiles"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "seventies": {
+      "wall": "#e6e0cc",
+      "interior": "#efe4c4",
+      "floor": "#c8b890",
+      "ceiling": "#f6f0e0",
+      "trim": "#8a8e92",
+      "door": "#d8762a",
+      "roof": "#4a4a4a",
+      "band": "#d8762a",
+      "band2": "#7a8a3a"
+    },
+    "aqua": {
+      "wall": "#d8eef0",
+      "interior": "#e8f4f4",
+      "floor": "#b8c8c8",
+      "ceiling": "#f4f8f8",
+      "trim": "#8a8e92",
+      "door": "#2a9ab0",
+      "roof": "#45484a",
+      "band": "#2a9ab0",
+      "band2": "#f0c030"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "hall",
+          "type": "laundromat",
+          "rect": [-6, -1, 6, 4],
+          "windows": false,
+          "props": [
+            {"name": "Laundromat Washer", "at": [-3.6, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [-3.6, 0.34]},
+            {"name": "Laundromat Washer", "at": [-2.8, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [-2.8, 0.34]},
+            {"name": "Laundromat Washer", "at": [-2.0, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [-2.0, 0.34]},
+            {"name": "Laundromat Washer", "at": [-1.2, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [-1.2, 0.34]},
+            {"name": "Laundromat Washer", "at": [-0.4, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [-0.4, 0.34]},
+            {"name": "Laundromat Washer", "at": [0.4, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [0.4, 0.34]},
+            {"name": "Laundromat Washer", "at": [1.2, -0.34], "yaw": 180},
+            {"name": "Laundromat Washer", "at": [1.2, 0.34]},
+            {"name": "Laundromat Dryer Stack", "wall": "E", "along": -1.6},
+            {"name": "Laundromat Dryer Stack", "wall": "E", "along": -0.75},
+            {"name": "Laundromat Dryer Stack", "wall": "E", "along": 0.1},
+            {"name": "Laundromat Dryer Stack", "wall": "E", "along": 0.95},
+            {"name": "Laundromat Folding Table", "wall": "W", "along": -0.2}
+          ]
+        },
+        {
+          "id": "office",
+          "type": "laundryoffice",
+          "rect": [-6, -4, -1, -1],
+          "floor": {"color": "#8a7a5a", "material": "none"},
+          "wall": "#e8dcc0",
+          "autoWindows": {"spacing": 3, "width": 1.0, "sill": 1.2, "head": 2.2}
+        },
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [-1, -4, 1.5, -1],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "windows": false
+        },
+        {
+          "id": "plant room",
+          "type": "laundryback",
+          "rect": [1.5, -4, 6, -1],
+          "floor": {"color": "#8a8a86", "material": "concrete"},
+          "wall": "#c8c4b8",
+          "windows": false
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [3.8, 4], "width": 1.2, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-2.4, 4], "width": 5.6, "sill": 0.6, "head": 2.5, "health": 10},
+        {"type": "window", "at": [-6, 1.5], "width": 1.4, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "door", "at": [-3.5, -1], "width": 0.9},
+        {"type": "door", "at": [0.25, -1], "width": 0.9},
+        {"type": "door", "at": [3.75, -1], "width": 0.9},
+        {"type": "door", "at": [6, -2.5], "width": 1.0, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "block", "min": [-6.15, 2.6, 4.12], "max": [6.15, 2.9, 4.22], "color": "$band"},
+    {"type": "block", "min": [-6.15, 2.9, 4.12], "max": [6.15, 3.2, 4.22], "color": "$band2"},
+    {"type": "prop", "name": "Shop Sign", "at": [-2.4, 2.62, 4.22]},
+    {"type": "prop", "name": "Neon Sign", "at": [3.8, 2.15, 4.13]},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [-2.0, 0, -2.0], "onRoof": true},
+    {"type": "prop", "name": "Exhaust Fan", "at": [3.0, 0, -2.5], "onRoof": true},
+    {"type": "prop", "name": "Metal Flue", "at": [4.5, 0, -2.0], "onRoof": true},
+    {"type": "prop", "name": "Bench", "at": [-2.4, 5.0]},
+    {"type": "prop", "name": "Laundromat Laundry Cart", "at": [1.6, 5.0], "yaw": 15},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [6.8, 0.8], "yaw": 270},
+    {"type": "prop", "name": "Gas Meter", "at": [6.14, -0.8], "yaw": 90}
+  ],
+  "anchors": [{"type": "spawn", "name": "plant room", "at": [3.8, -2.5]}, {"type": "point", "name": "washers", "at": [-1.0, 1.5]}]
+}

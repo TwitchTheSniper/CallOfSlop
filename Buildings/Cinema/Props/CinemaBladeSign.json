@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cinema Blade Sign",
+  "description": "The tall vertical ROXY blade sign: red with gold edges and letters lit in sequence.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.3, 0.3, 0.6], "offset": [0, 0.0, 0.3], "color": "steel"},
+    {"size": [0.3, 0.3, 0.6], "offset": [0, 3.6, 0.3], "color": "steel"},
+    {"size": [0.2, 4.4, 1.2], "offset": [0, 1.8, 0.9], "color": "#8a1a1e"},
+    {"size": [0.24, 4.5, 0.08], "offset": [0, 1.8, 1.5], "color": "#c9a24a"},
+    {"size": [0.24, 4.5, 0.08], "offset": [0, 1.8, 0.3], "color": "#c9a24a"},
+    {
+      "size": [0.26, 0.7, 0.7],
+      "offset": [0, 3.2, 0.9],
+      "color": "#fff0b0",
+      "anim": {"type": "cycle", "period": 2.4, "steps": 5, "on": [0, 4], "color": "#fff4c0", "off": "#a08040", "glow": 1.3}
+    },
+    {
+      "size": [0.26, 0.7, 0.7],
+      "offset": [0, 2.25, 0.9],
+      "color": "#fff0b0",
+      "anim": {"type": "cycle", "period": 2.4, "steps": 5, "on": [1, 4], "color": "#fff4c0", "off": "#a08040", "glow": 1.3}
+    },
+    {
+      "size": [0.26, 0.7, 0.7],
+      "offset": [0, 1.3, 0.9],
+      "color": "#fff0b0",
+      "anim": {"type": "cycle", "period": 2.4, "steps": 5, "on": [2, 4], "color": "#fff4c0", "off": "#a08040", "glow": 1.3}
+    },
+    {
+      "size": [0.26, 0.7, 0.7],
+      "offset": [0, 0.35, 0.9],
+      "color": "#fff0b0",
+      "anim": {"type": "cycle", "period": 2.4, "steps": 5, "on": [3, 4], "color": "#fff4c0", "off": "#a08040", "glow": 1.3}
+    }
+  ]
+}

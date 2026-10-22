@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pizzacounter",
+  "description": "The Pizzeria's takeaway counter: the counter, pizza boxes, a drinks fridge, a bench to wait on.",
+  "items": [
+    {"props": ["Pizzeria Pizza Boxes"], "place": "wall", "chance": 0.6},
+    {"props": ["Fridge", "Glowing Vending Machine"], "place": "wall"},
+    {"props": ["Bench"], "place": "wall", "prefer": "near", "chance": 0.8},
+    {"props": ["Pizzeria Pizza Boxes"], "place": "floor", "count": [1, 2]},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

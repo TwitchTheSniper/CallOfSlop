@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Barber Shop Product Shelf",
+  "description": "A glass-fronted display of pomades, tonics, razors and shaving brushes.",
+  "collision": "solid",
+  "collider": [{"size": [0.9, 1.8, 0.34]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.9, 1.8, 0.34], "offset": [0, 0.9, 0], "color": "#4a2416", "material": "wood"},
+    {"size": [0.82, 0.02, 0.28], "offset": [0, 0.6, 0.02], "color": "#e0e8ea"},
+    {"size": [0.82, 0.02, 0.28], "offset": [0, 1.0, 0.02], "color": "#e0e8ea"},
+    {"size": [0.82, 0.02, 0.28], "offset": [0, 1.4, 0.02], "color": "#e0e8ea"},
+    {"size": [0.12, 0.08, 0.12], "offset": [-0.28, 0.65, 0.03], "color": "#c8102e"},
+    {"size": [0.12, 0.08, 0.12], "offset": [-0.12, 0.65, 0.03], "color": "#1f2d4a"},
+    {"size": [0.12, 0.08, 0.12], "offset": [0.04, 0.65, 0.03], "color": "#c8102e"},
+    {"size": [0.12, 0.08, 0.12], "offset": [0.22, 0.65, 0.03], "color": "#d8a830"},
+    {"size": [0.06, 0.22, 0.06], "offset": [-0.3, 1.12, 0.03], "color": "#2e8a4a"},
+    {"size": [0.06, 0.22, 0.06], "offset": [-0.2, 1.12, 0.03], "color": "#2e8a4a"},
+    {"size": [0.06, 0.2, 0.06], "offset": [-0.05, 1.11, 0.03], "color": "#8a5a20"},
+    {"size": [0.06, 0.2, 0.06], "offset": [0.08, 1.11, 0.03], "color": "#8a5a20"},
+    {"size": [0.1, 0.12, 0.1], "offset": [0.26, 1.07, 0.03], "color": "white"},
+    {"size": [0.22, 0.06, 0.1], "offset": [-0.2, 1.44, 0.03], "color": "black"},
+    {"size": [0.22, 0.06, 0.1], "offset": [0.14, 1.44, 0.03], "color": "chrome"},
+    {"size": [0.86, 1.2, 0.01], "offset": [0, 1.0, 0.17], "color": "glass"}
+  ]
+}
