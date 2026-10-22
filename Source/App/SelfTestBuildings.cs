@@ -211,7 +211,7 @@ public static partial class SelfTest
     private static void CheckBuildingYard(Map yard)
     {
         var sw = Stopwatch.StartNew();
-        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!) // (same source path: the same pack, so the same props);
+        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!); // (same source path: the same pack, so the same props)
         var loadMs = sw.Elapsed.TotalMilliseconds;
         var names = yard.PlacedBuildings.Select(b => b.Def.Name).Distinct().ToList();
         var shell = yard.PlacedBuildings.Sum(b => b.ShellCount);
