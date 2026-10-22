@@ -274,6 +274,7 @@ public sealed partial class Game
         var aim = BotAim(p, b, target, visible, def, steer, now);
         BotShoot(p, b, target, visible, def, aim, now);
         BotGrenade(p, b, target, visible, aim.Distance, now);
+        BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
 
         var cmd = new InputCmd

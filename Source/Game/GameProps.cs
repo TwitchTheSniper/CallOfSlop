@@ -252,6 +252,7 @@ public sealed partial class Game
             OnDetonated(ThrowableKind.Frag, attacker?.Id ?? byte.MaxValue, center, flags, now);
         }
         BlastProps(attacker, center, br.ExplodeRadius, br.ExplodeDamage, PropDamage.Explosion, now);
+        BlastTactical(attacker, center, br.ExplodeRadius, br.ExplodeDamage, now); // tactical devices (GameTactical.cs)
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------

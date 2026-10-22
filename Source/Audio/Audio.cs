@@ -49,6 +49,14 @@ public enum Sfx
     JumpPush, // jump push-off
     ShieldBlock, // Last Stand's shield blocking a bullet hit (an energy zap and a glassy ring)
     FriendlyHit, // shooter feedback: hitting a teammate (no damage): a muted low bonk and a soft double beep
+    FlashBang, // tactical equipment (SynthTactical.cs): a flashbang's sharp crack
+    StunPop, // a stun grenade's thump and warble
+    Tinnitus, // the ringing after a flash (played to the flashed player only)
+    TrophyZap, // a Trophy System shooting a grenade down
+    MotionPing, // a Motion Sensor ping on your HUD
+    SensorBeep, // a Motion Sensor's own beep in the world (so it can be found)
+    StimHiss, // a Stim Shot going in
+    DeployDevice, // a device clicking down (trophy, cover, insertion, a landed decoy)
     COUNT,
 }
 
@@ -310,7 +318,7 @@ public sealed partial class Audio : IDisposable
             }
         }
 
-        Start(_sources[pick], buffer, position, gain * EffectsVolume, pitch, falloff);
+        Start(_sources[pick], buffer, position, gain * EffectsVolume * DeafenGain, pitch, falloff); // muffled after a flash (Audio.Tactical.cs)
         _startedAt[pick] = now;
         _played++;
         _cpuTicks += Stopwatch.GetTimestamp() - t0;
@@ -815,6 +823,8 @@ public static partial class Synth
     {
         if (Foley(sfx, variant) is { } foley)
             return foley;
+        if (TacticalFoley(sfx, variant) is { } tactical)
+            return tactical; // SynthTactical.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

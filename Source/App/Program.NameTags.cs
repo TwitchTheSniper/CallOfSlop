@@ -26,8 +26,8 @@ public static unsafe partial class Program
     /// <summary>Draws the name tags (ImGui pass, before the HUD windows so they sit under them).</summary>
     private static void DrawNameTags(Game g)
     {
-        if (Ui.MenuOpen || _nameTags.Count == 0)
-            return;
+        if (Ui.MenuOpen || _nameTags.Count == 0 || g.LocalFlashHidesHud(Brutal.GlfwApi.Glfw.Time))
+            return; // (flashed: washed out, GameTactical.cs)
         var scoped = g.Local is { Alive: true } && g.AimT > 0.5f && Sights.Magnified(g.Active.Def);
         Ui.DrawNameTags(g, _nameTags, _settings.NameTagHealth, scoped);
     }

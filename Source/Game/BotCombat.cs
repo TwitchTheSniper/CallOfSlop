@@ -50,6 +50,13 @@ public sealed partial class Game
             b.ClearPath();
         }
 
+        if (BotBlinded(p, now))
+        {
+            b.Target = byte.MaxValue; // flashed: sees nothing until it clears (GameTactical.cs)
+            visible = false;
+            return null;
+        }
+
         var target = Players.GetValueOrDefault(b.Target);
         if (target != null && (!target.Alive || !IsEnemy(p, target)))
         {
@@ -154,7 +161,7 @@ public sealed partial class Game
             wantYaw = MathF.Atan2(steer.Wish.X, -steer.Wish.Z);
         }
 
-        var maxTurn = b.TurnSpeed * dt;
+        var maxTurn = b.TurnSpeed * dt * BotStunTurn(p, now); // a stun slows turning (GameTactical.cs)
         aim.Yaw = World.WrapAngle(p.Yaw + Math.Clamp(World.WrapAngle(wantYaw - p.Yaw), -maxTurn, maxTurn));
         aim.Pitch = p.Pitch + Math.Clamp(wantPitch - p.Pitch, -maxTurn, maxTurn);
         if (visible)

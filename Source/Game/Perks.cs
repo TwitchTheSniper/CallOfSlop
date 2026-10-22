@@ -137,7 +137,7 @@ public static class Perks
             Effect = "A kill gives you 35% more speed for 4 seconds. Kills during the boost don't extend it, and it needs 6 seconds to recharge after it ends." },
 
         new() { Id = PerkId.FlakJacket, Category = PerkCategory.Survival, Name = "Flak Jacket", When = "Against grenades",
-            Effect = "Take 75% less damage from explosions, including your own grenades." },
+            Effect = "Take 75% less damage from explosions, including your own grenades, and flashbangs and stun grenades hit you half as hard." },
         new() { Id = PerkId.LastStand, Category = PerkCategory.Survival, Name = "Last Stand", When = "Once per life",
             Effect = "The first bullet or blast that would kill you leaves you on 1 HP instead, and a shield blocks the next 3 bullet hits (a shotgun blast counts as one) for up to 8 seconds. Explosions go straight through the shield, and it never saves you from melee." },
         new() { Id = PerkId.Bloodthirst, Category = PerkCategory.Survival, Name = "Bloodthirst", When = "Right after a kill",
@@ -158,7 +158,7 @@ public static class Perks
         new() { Id = PerkId.DeadSilence, Category = PerkCategory.Movement, Name = "Dead Silence", When = "Sneaking up on enemies",
             Effect = "Everyone else hears your footsteps, jumps and landings 75% quieter and only from half as far. Bots only notice you behind them within 3 m instead of 7 m." },
         new() { Id = PerkId.Ghost, Category = PerkCategory.Movement, Name = "Ghost", When = "While on the move",
-            Effect = "Recon Pulses and Recon Sweeps can't reveal you while you're moving. Stop and they see you as normal." },
+            Effect = "Recon Pulses and Recon Sweeps can't reveal you while you're moving, and Motion Sensors never ping you. Stop and recon sees you as normal." },
         new() { Id = PerkId.Stalker, Category = PerkCategory.Movement, Name = "Stalker", When = "Aiming down sights",
             Effect = "Aiming down sights barely slows you: you keep 95% of your speed instead of 70%. Strafe while you aim." },
         new() { Id = PerkId.Lightweight, Category = PerkCategory.Movement, Name = "Lightweight", When = "Carrying a heavy gun",

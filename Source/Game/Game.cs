@@ -222,6 +222,7 @@ public sealed partial class Game : IDisposable
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
 
@@ -256,7 +257,7 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, def.Mobility, Aiming); // Lightweight, Stalker
+        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, def.Mobility, Aiming) * LocalStunMove(); // Lightweight, Stalker; a stun slows you (GameTactical.cs)
         return new InputCmd
         {
             Seq = seq,
@@ -358,7 +359,7 @@ public sealed partial class Game : IDisposable
 
         var alive = Local is { Alive: true };
         Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil && !w.Def.NoAds; // carts and briefcases are hip fire only
-        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime, 0f, 1f); // optics and grips change aim speed
+        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime * TacticalAdsMult(now), 0f, 1f); // optics and grips change aim speed; a stun slows it
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
         if (alive)
         {
@@ -493,6 +494,7 @@ public sealed partial class Game : IDisposable
                     predictedHit |= AreEnemies(me, other); // a teammate waits for the server's friendly marker (FriendlyHits.cs)
                 }
             }
+            dist = TacticalRayDrawn(o, d, dist); // Deployable Cover and enemy devices stop it (GameTactical.cs)
             if (Horde.Count > 0)
             {
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
@@ -870,6 +872,7 @@ public sealed partial class Game : IDisposable
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         ServerTickMatch(now);
         ServerTickProjectiles(now);
+        ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
@@ -924,6 +927,7 @@ public sealed partial class Game : IDisposable
     private void ApplyCmd(Player p, InputCmd cmd)
     {
         cmd = FreezeFilter(cmd);
+        cmd = TacticalFilter(p, cmd); // stunned: slower (GameTactical.cs)
         cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
@@ -1006,6 +1010,7 @@ public sealed partial class Game : IDisposable
             }
         }
 
+        best = TacticalSpawnPoint(p, best, now); // a Tactical Insertion waiting for them (GameTactical.cs)
         p.Teleport(best);
         p.Yaw = MathF.Atan2(-best.X, best.Z);
         p.Pitch = 0;
@@ -1223,6 +1228,12 @@ public sealed partial class Game : IDisposable
                     turret = null;
                 }
             }
+            var device = TacticalRaycast(o, d, ref dist, shooter); // Deployable Cover and enemy devices (GameTactical.cs)
+            if (device != null)
+            {
+                hit = null;
+                turret = null;
+            }
             var zombie = Horde.Count > 0 ? ZombieRayHit(o, d, ref dist, rewindTo, out zHead) : null; // Zombies (ZombieAI.cs)
             if (zombie != null)
             {
@@ -1236,6 +1247,8 @@ public sealed partial class Game : IDisposable
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
+            if (device != null)
+                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist), now);
             if (turret != null)
                 flags |= ShotHitMachine;
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
@@ -1469,6 +1482,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ProjSpawn:
             case (byte)Msg.Explode:
                 OnThrowablePacket(id, ref r, sender, now);
+                break;
+            case (byte)Msg.TacState:
+            case (byte)Msg.TacEvent:
+                OnTacticalPacket(id, ref r, now); // GameTactical.cs
                 break;
             case (byte)Msg.StreakUse:
             case (byte)Msg.StreakEvent:
