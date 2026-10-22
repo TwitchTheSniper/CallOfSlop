@@ -19,7 +19,7 @@ public sealed class BuildingInstance
     public int DoorStart, DoorCount, WindowStart, WindowCount;
 }
 
-/// <summary>A door in a building: open or shut (E), and it breaks after enough damage. Runtime state lives here.</summary>
+/// <summary>A door in a building: open or shut (the interact key), and it breaks after enough damage. Runtime state lives here.</summary>
 public sealed class BuildingDoor
 {
     public required PlannedDoor Plan;

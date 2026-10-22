@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Zombies HUD (World at War style): the round number in red tally marks (a number from round 6), everyone's points
-/// with +N popups, the interact prompt ("Hold E to buy ... [cost]"), perks, the downed / bleeding out / revive bars, the
+/// with +N popups, the interact prompt ("Hold F to buy ... [cost]", with the bound interact key), perks, the downed / bleeding out / revive bars, the
 /// round banner and the break countdown. Every player-visible line is plain ASCII.
 /// </summary>
 public sealed partial class Ui

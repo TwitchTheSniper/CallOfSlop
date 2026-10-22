@@ -93,6 +93,7 @@ public static partial class SelfTest
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
+            Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)

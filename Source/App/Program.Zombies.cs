@@ -396,7 +396,7 @@ public static unsafe partial class Program
             }
             case 6 when t > 0.7:
             {
-                // The box: walk there (teleport), buy a spin with points, look at it, hold E (through the normal input path).
+                // The box: walk there (teleport), buy a spin with points, look at it, hold interact (through the normal input path).
                 if (World.Map.Zombies is { BoxSpots.Count: > 0 } zm && g.Local is { } me)
                 {
                     var spot = zm.BoxSpots[g.BoxSpot];
@@ -405,7 +405,7 @@ public static unsafe partial class Program
                     g.ZP(me).Points += 2000;
                     SmokeLookAt(g, spot.At + new Vector3(0, 1.1f, 0), stand + new Vector3(0, World.EyeHeight, 0));
                     _zSmokeUseHeld = true;
-                    Console.WriteLine($"[smoke] zombies box: holding E at the box, prompt \"{g.FindZUse(me)?.Text}\", points {g.ZP(me).Points}");
+                    Console.WriteLine($"[smoke] zombies box: holding interact at the box, prompt \"{g.FindZUse(me)?.Text}\", points {g.ZP(me).Points}");
                 }
                 _zSmokeStart = now;
                 _zSmokeStage = 7;

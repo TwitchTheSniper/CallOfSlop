@@ -14,7 +14,7 @@ public enum BuildingEventKind : byte
 }
 
 /// <summary>
-/// Building doors and windows, server-authoritative (the way breakable props are, GameProps.cs). The interact key (E)
+/// Building doors and windows, server-authoritative (the way breakable props are, GameProps.cs). The interact key (F by default)
 /// opens or shuts the door you're looking at (<see cref="Msg.BuildingUse"/>); bullets, melee and blasts wear doors down
 /// and shatter glass; the server decides and tells everyone (<see cref="Msg.BuildingEvent"/>), and a player who joins
 /// mid-match gets every door's state and health and the broken windows (<see cref="Msg.BuildingState"/>). Every PC then

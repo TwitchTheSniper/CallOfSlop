@@ -33,7 +33,7 @@ public sealed class ZWeaponDrop
     public bool Melee;
 }
 
-/// <summary>Dropped builds in Zombies: bleeding out drops every built weapon where you went down; hold E to pick one up.</summary>
+/// <summary>Dropped builds in Zombies: bleeding out drops every built weapon where you went down; hold the interact key to pick one up.</summary>
 public sealed partial class Game
 {
     /// <summary>Built weapons on the floor (both sides).</summary>
