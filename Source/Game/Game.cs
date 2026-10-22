@@ -561,6 +561,7 @@ public sealed partial class Game : IDisposable
     public void ChooseLoadout(Loadout l, double now)
     {
         ChosenStreaks = l.Streaks.Sanitized();
+        ChosenHat = l.Hat; // cosmetic: the server checks it and tells everyone (GameCosmetics.cs)
         ChooseLoadout(l.Primary, l.Secondary, l.Grenade, l.Equipment, l.PrimaryKit, l.SecondaryKit, now, l.Perks);
     }
 
@@ -596,7 +597,8 @@ public sealed partial class Game : IDisposable
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
             .U24(ChosenPrimaryKit).U24(ChosenSecondaryKit)
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
-            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C);
+            .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
+            .U8((byte)ChosenHat); // protocol 23+: the hat (GameCosmetics.cs)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -1438,6 +1440,7 @@ public sealed partial class Game : IDisposable
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
                     ReadLoadoutStreaks(p, ref r);
+                    ReadLoadoutHat(p, ref r); // GameCosmetics.cs
                 }
                 break;
             }

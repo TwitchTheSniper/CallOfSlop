@@ -335,6 +335,7 @@ public sealed partial class Game
             foreach (var c in bytes)
                 _w.U8(c);
         }
+        WriteRosterHats(); // trailer: every player's hat (GameCosmetics.cs)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -355,6 +356,7 @@ public sealed partial class Game
             if (Players.TryGetValue(id, out var p))
                 p.Name = name;
         }
+        ReadRosterHats(ref r); // trailer: every player's hat (GameCosmetics.cs)
     }
 
     private static string CleanBotName(string name)

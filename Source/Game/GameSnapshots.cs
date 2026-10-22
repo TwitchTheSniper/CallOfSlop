@@ -253,7 +253,7 @@ public sealed partial class Game
     {
         if (Players.TryGetValue(id, out var p))
             return p;
-        p = new Player { Id = id, Yaw = e.Yaw, Pitch = e.Pitch, Name = _names.GetValueOrDefault(id) ?? "" };
+        p = new Player { Id = id, Yaw = e.Yaw, Pitch = e.Pitch, Name = _names.GetValueOrDefault(id) ?? "", Hat = _hats.GetValueOrDefault(id) };
         p.Teleport(e.Position);
         Players[id] = p;
         return p;

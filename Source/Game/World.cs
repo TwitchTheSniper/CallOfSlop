@@ -393,6 +393,9 @@ public sealed class Player
     public uint PrimaryKit, SecondaryKit; // attachments on each gun (replicated)
     public PerkSet Perks = PerkSet.Empty; // replicated
 
+    /// <summary>The hat this player wears (cosmetic only). Server-validated (people only, unlocked at their prestige; bots never) and replicated in the roster (GameCosmetics.cs).</summary>
+    public HatId Hat;
+
     // Throwables (server-authoritative counts, refilled on spawn)
     public ThrowableKind Grenade, Equipment, WantGrenade, WantEquipment;
     public int GrenadesLeft, EquipmentLeft;
