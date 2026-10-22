@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Cask",
+  "description": "An oak beer cask with iron hoops, lying on its side.",
+  "collision": "solid",
+  "collider": [{"size": [0.85, 0.6, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 60,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 12, "size": [0.06, 0.3], "colors": ["#7a5230", "darkgrey"]}
+  },
+  "parts": [
+    {"size": [0.85, 0.6, 0.248], "offset": [0, 0.3, 0], "color": "#7a5230", "material": "wood", "pitch": 0},
+    {"size": [0.85, 0.6, 0.248], "offset": [0, 0.3, 0], "color": "#7a5230", "material": "wood", "pitch": 45},
+    {"size": [0.85, 0.6, 0.248], "offset": [0, 0.3, 0], "color": "#7a5230", "material": "wood", "pitch": 90},
+    {"size": [0.85, 0.6, 0.248], "offset": [0, 0.3, 0], "color": "#7a5230", "material": "wood", "pitch": 135},
+    {"size": [0.05, 0.624, 0.258], "offset": [-0.272, 0.3, 0], "color": "darkgrey", "pitch": 0},
+    {"size": [0.05, 0.624, 0.258], "offset": [-0.272, 0.3, 0], "color": "darkgrey", "pitch": 45},
+    {"size": [0.05, 0.624, 0.258], "offset": [-0.272, 0.3, 0], "color": "darkgrey", "pitch": 90},
+    {"size": [0.05, 0.624, 0.258], "offset": [-0.272, 0.3, 0], "color": "darkgrey", "pitch": 135},
+    {"size": [0.05, 0.624, 0.258], "offset": [0.272, 0.3, 0], "color": "darkgrey", "pitch": 0},
+    {"size": [0.05, 0.624, 0.258], "offset": [0.272, 0.3, 0], "color": "darkgrey", "pitch": 45},
+    {"size": [0.05, 0.624, 0.258], "offset": [0.272, 0.3, 0], "color": "darkgrey", "pitch": 90},
+    {"size": [0.05, 0.624, 0.258], "offset": [0.272, 0.3, 0], "color": "darkgrey", "pitch": 135}
+  ]
+}

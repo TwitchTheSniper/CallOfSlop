@@ -1,0 +1,44 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Print Shop Folding Machine",
+  "description": "A cream paper folder: sheets fed in on top, folded leaflets riding out on the belt.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 1.4, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.6, 0.9, 0.8], "offset": [0, 0.45, 0], "color": "#d8cfb0", "material": "metal"},
+    {"size": [0.8, 0.4, 0.7], "offset": [-0.3, 1.1, 0], "color": "#d8cfb0", "material": "metal"},
+    {"size": [0.6, 0.1, 0.5], "offset": [-0.3, 1.35, 0], "color": "paper"},
+    {
+      "size": [0.05, 0.12, 0.6],
+      "offset": [0.35, 0.95, 0],
+      "color": "#3a3a3a",
+      "roll": 0,
+      "anim": {"type": "spin", "axis": "z", "rpm": 120, "pivot": [0.35, 0.95, 0]}
+    },
+    {
+      "size": [0.05, 0.12, 0.6],
+      "offset": [0.35, 0.95, 0],
+      "color": "#3a3a3a",
+      "roll": 45,
+      "anim": {"type": "spin", "axis": "z", "rpm": 120, "pivot": [0.35, 0.95, 0]}
+    },
+    {
+      "size": [0.05, 0.12, 0.6],
+      "offset": [0.35, 0.95, 0],
+      "color": "#3a3a3a",
+      "roll": 90,
+      "anim": {"type": "spin", "axis": "z", "rpm": 120, "pivot": [0.35, 0.95, 0]}
+    },
+    {
+      "size": [0.05, 0.12, 0.6],
+      "offset": [0.35, 0.95, 0],
+      "color": "#3a3a3a",
+      "roll": 135,
+      "anim": {"type": "spin", "axis": "z", "rpm": 120, "pivot": [0.35, 0.95, 0]}
+    },
+    {"size": [0.7, 0.04, 0.5], "offset": [0.75, 0.92, 0], "color": "#2a2a2a"},
+    {"size": [0.2, 0.04, 0.15], "offset": [0.8, 0.96, 0], "color": "paper", "anim": {"type": "bob", "axis": "x", "distance": 0.2, "period": 1.2}}
+  ]
+}

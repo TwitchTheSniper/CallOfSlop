@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Machine Shop Welding Bench",
+  "description": "A heavy steel welding table: a vice, a part clamped down, the welder cabinet beside it crackling blue.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.92, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 240, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.6, 0.1, 0.9], "offset": [0, 0.85, 0], "color": "#3a3a3a", "material": "metal"},
+    {"size": [0.08, 0.8, 0.08], "offset": [-0.75, 0.4, -0.4], "color": "#3a3a3a"},
+    {"size": [0.08, 0.8, 0.08], "offset": [0.75, 0.4, -0.4], "color": "#3a3a3a"},
+    {"size": [0.08, 0.8, 0.08], "offset": [-0.75, 0.4, 0.4], "color": "#3a3a3a"},
+    {"size": [0.08, 0.8, 0.08], "offset": [0.75, 0.4, 0.4], "color": "#3a3a3a"},
+    {"size": [0.2, 0.15, 0.2], "offset": [0.6, 0.97, 0.3], "color": "#2a5aa0"},
+    {"size": [0.6, 0.12, 0.3], "offset": [-0.1, 0.96, 0.0], "color": "steel"},
+    {"size": [0.5, 0.7, 0.4], "offset": [-0.5, 0.35, -0.1], "color": "#2a5aa0", "material": "metal"},
+    {
+      "size": [0.08, 0.08, 0.08],
+      "offset": [0.1, 1.05, 0.05],
+      "color": "#a0c8ff",
+      "anim": {"type": "flicker", "rate": 20, "duty": 0.4, "color": "#c0e0ff", "off": "#203040", "glow": 3.0}
+    },
+    {"size": [0.04, 0.4, 0.04], "offset": [0.3, 1.1, -0.2], "color": "rubber"}
+  ]
+}

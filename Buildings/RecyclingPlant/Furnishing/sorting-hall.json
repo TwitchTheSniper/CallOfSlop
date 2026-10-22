@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "sorting-hall",
+  "description": "The Recycling Plant's sorting hall: picking bays along the line, bins, a fan.",
+  "items": [
+    {"props": ["Recycling Picking Bay"], "place": "wall", "count": [2, 4]},
+    {"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Drum Fan"], "place": "corner"},
+    {"props": ["Wheelie Bin", "Recycling Bin"], "place": "floor", "count": [1, 3], "gap": 0.4},
+    {"props": ["Trash Bag", "Soda Cans", "Litter"], "place": "floor", "count": [2, 4]}
+  ]
+}

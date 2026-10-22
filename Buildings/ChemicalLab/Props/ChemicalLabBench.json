@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Chemical Lab Bench",
+  "description": "A blue lab bench with a black epoxy top, a reagent shelf, a tap, and flasks of something bubbly.",
+  "collision": "solid",
+  "collider": [{"size": [2.04, 0.92, 0.8]}, {"size": [2.0, 0.7, 0.32], "offset": [0, 1.25, -0.25]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 150,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 16, "size": [0.04, 0.25], "colors": ["#3a6ea8", "#2a3a4a", "glass"]}
+  },
+  "parts": [
+    {"size": [2.0, 0.86, 0.75], "offset": [0, 0.43, 0], "color": "#3a6ea8", "material": "metal"},
+    {"size": [2.04, 0.05, 0.8], "offset": [0, 0.885, 0], "color": "#2a3a4a"},
+    {"size": [2.0, 0.05, 0.3], "offset": [0, 1.5, -0.25], "color": "#d8d8d0"},
+    {"size": [0.05, 0.62, 0.05], "offset": [-0.95, 1.2, -0.3], "color": "steel"},
+    {"size": [0.05, 0.62, 0.05], "offset": [0.95, 1.2, -0.3], "color": "steel"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.6, 1.615, -0.25], "color": "#60c0ff"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.6, 1.755, -0.25], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.2, 1.615, -0.25], "color": "#80ff90"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.2, 1.755, -0.25], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.3, 1.615, -0.25], "color": "#ffb040"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.3, 1.755, -0.25], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.7, 1.615, -0.25], "color": "#ff6080"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.7, 1.755, -0.25], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.7, 1.0, 0.1], "color": "#60c0ff"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.7, 1.14, 0.1], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.45, 1.0, 0.1], "color": "#80ff90"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.45, 1.14, 0.1], "color": "glass"},
+    {"size": [0.04, 0.3, 0.04], "offset": [0.6, 1.05, -0.2], "color": "chrome"},
+    {"size": [0.2, 0.04, 0.04], "offset": [0.6, 1.2, -0.12], "color": "chrome"},
+    {"size": [0.4, 0.02, 0.3], "offset": [0.6, 0.915, 0.05], "color": "#a8b0b4"},
+    {
+      "size": [0.12, 0.12, 0.12],
+      "offset": [-0.45, 1.05, 0.1],
+      "color": "#80ff90",
+      "anim": {"type": "pulse", "period": 1.8, "color": "#90ffa0", "glow": 1.0}
+    }
+  ]
+}

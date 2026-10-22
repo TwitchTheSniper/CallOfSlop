@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "plant-room",
+  "description": "Cold Storage's plant room: compressors, a cooling unit, switch boxes, refrigerant cylinders.",
+  "items": [
+    {"props": ["Cold Storage Compressor"], "place": "wall", "count": [2, 3]},
+    {"props": ["Cooling Unit"], "place": "wall"},
+    {"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Gas Bottle Cage"], "place": "corner"},
+    {"props": ["Toolbox", "Oil Drum"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "ink-store",
+  "description": "The Print Shop's ink and solvent store: a flammables cabinet, tins of ink, a chemical drum.",
+  "items": [
+    {"props": ["Flammables Cabinet"], "place": "wall"},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Chemical Drum"], "place": "corner"},
+    {"props": ["Paint Cans"], "place": "floor", "count": [1, 3]}
+  ]
+}

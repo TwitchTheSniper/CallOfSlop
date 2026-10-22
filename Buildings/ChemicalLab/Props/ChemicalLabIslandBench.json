@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Chemical Lab Island Bench",
+  "description": "A double-sided island bench with a centre shelf of reagent bottles, a sink and gas taps.",
+  "collision": "solid",
+  "collider": [{"size": [2.44, 0.92, 1.44]}, {"size": [2.4, 1.0, 0.3], "offset": [0, 1.42, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 180,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 18, "size": [0.04, 0.25], "colors": ["#3a6ea8", "#2a3a4a", "glass"]}
+  },
+  "parts": [
+    {"size": [2.4, 0.86, 1.4], "offset": [0, 0.43, 0], "color": "#3a6ea8", "material": "metal"},
+    {"size": [2.44, 0.05, 1.44], "offset": [0, 0.885, 0], "color": "#2a3a4a"},
+    {"size": [2.4, 0.04, 0.3], "offset": [0, 1.4, 0], "color": "#d8d8d0"},
+    {"size": [2.4, 0.04, 0.3], "offset": [0, 1.8, 0], "color": "#d8d8d0"},
+    {"size": [0.05, 1.0, 0.05], "offset": [-1.15, 1.4, 0], "color": "steel"},
+    {"size": [0.05, 1.0, 0.05], "offset": [1.15, 1.4, 0], "color": "steel"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.9, 1.51, 0.0], "color": "#60c0ff"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.9, 1.65, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.5, 1.51, 0.0], "color": "#80ff90"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.5, 1.65, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.1, 1.51, 0.0], "color": "#ffb040"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.1, 1.65, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.4, 1.51, 0.0], "color": "#ff6080"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.4, 1.65, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.8, 1.51, 0.0], "color": "#60c0ff"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.8, 1.65, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [-0.7, 1.91, 0.0], "color": "#60c0ff"},
+    {"size": [0.04, 0.1, 0.04], "offset": [-0.7, 2.05, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.2, 1.91, 0.0], "color": "#80ff90"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.2, 2.05, 0.0], "color": "glass"},
+    {"size": [0.1, 0.18, 0.1], "offset": [0.6, 1.91, 0.0], "color": "#ffb040"},
+    {"size": [0.04, 0.1, 0.04], "offset": [0.6, 2.05, 0.0], "color": "glass"},
+    {"size": [0.5, 0.02, 0.4], "offset": [0.7, 0.915, 0.45], "color": "#a8b0b4"},
+    {"size": [0.05, 0.2, 0.05], "offset": [-0.6, 1.0, 0.55], "color": "#e8c020"},
+    {"size": [0.05, 0.2, 0.05], "offset": [-0.6, 1.0, -0.55], "color": "#e8c020"}
+  ]
+}

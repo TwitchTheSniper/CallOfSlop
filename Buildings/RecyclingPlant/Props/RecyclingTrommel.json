@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Recycling Trommel",
+  "description": "A rotating trommel screen: a 4 m perforated steel drum turning slowly on its rollers, sorting the fines out.",
+  "collision": "solid",
+  "collider": [{"size": [4.0, 2.45, 1.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.3, 1.2, 1.6], "offset": [-1.8, 0.6, 0], "color": "#3a3a3a"},
+    {"size": [0.3, 1.4, 1.6], "offset": [1.8, 0.7, 0], "color": "#3a3a3a"},
+    {"size": [4.0, 0.15, 1.8], "offset": [0, 0.07, 0], "color": "#3a3a3a"},
+    {
+      "size": [3.6, 1.6, 0.662],
+      "offset": [0, 1.6, 0],
+      "color": "#7a8a90",
+      "material": "metal",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [3.6, 1.6, 0.662],
+      "offset": [0, 1.6, 0],
+      "color": "#7a8a90",
+      "material": "metal",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [3.6, 1.6, 0.662],
+      "offset": [0, 1.6, 0],
+      "color": "#7a8a90",
+      "material": "metal",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [3.6, 1.6, 0.662],
+      "offset": [0, 1.6, 0],
+      "color": "#7a8a90",
+      "material": "metal",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [-1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [-1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [-1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [-1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {
+      "size": [0.12, 1.66, 0.687],
+      "offset": [1.2, 1.6, 0],
+      "color": "#e8c020",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 12, "pivot": [0, 1.6, 0]}
+    },
+    {"size": [1.0, 0.5, 1.2], "offset": [0.5, 0.45, 0], "color": "#6a6050"}
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Recycling Plastic Bale",
+  "description": "A bale of crushed plastic bottles in every colour.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.1, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 90,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 18, "size": [0.05, 0.3], "colors": ["#5a9ac8", "#e8e8e8", "#3a9a4a", "#c83a2a"]}
+  },
+  "parts": [
+    {"size": [1.2, 1.1, 1.0], "offset": [0, 0.55, 0], "color": "#5a9ac8"},
+    {"size": [1.22, 0.03, 1.02], "offset": [0, 0.3, 0], "color": "#2a2a2a"},
+    {"size": [1.22, 0.03, 1.02], "offset": [0, 0.8, 0], "color": "#2a2a2a"},
+    {"size": [0.28, 0.16, 0.02], "offset": [-0.3, 0.7, 0.505], "color": "#e8e8e8"},
+    {"size": [0.02, 0.14, 0.24], "offset": [0.605, 0.7, -0.24], "color": "#3a9a4a"},
+    {"size": [0.28, 0.16, 0.02], "offset": [0.35, 0.4, 0.505], "color": "#3a9a4a"},
+    {"size": [0.02, 0.14, 0.24], "offset": [0.605, 0.4, 0.28], "color": "#c83a2a"},
+    {"size": [0.28, 0.16, 0.02], "offset": [0.1, 0.95, 0.505], "color": "#c83a2a"},
+    {"size": [0.02, 0.14, 0.24], "offset": [0.605, 0.95, 0.08], "color": "#e8e8e8"},
+    {"size": [0.28, 0.16, 0.02], "offset": [-0.4, 0.25, 0.505], "color": "#3a9a4a"},
+    {"size": [0.02, 0.14, 0.24], "offset": [0.605, 0.25, -0.32], "color": "#c83a2a"},
+    {"size": [0.28, 0.16, 0.02], "offset": [0.42, 0.85, 0.505], "color": "#e8e8e8"},
+    {"size": [0.02, 0.14, 0.24], "offset": [0.605, 0.85, 0.336], "color": "#3a9a4a"}
+  ]
+}

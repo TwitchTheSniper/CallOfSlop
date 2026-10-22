@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Machine Shop Bench Grinder",
+  "description": "A double-ended grinder on a pedestal, both wheels spinning, sparks flying.",
+  "collision": "solid",
+  "collider": [{"size": [0.45, 1.1, 0.4]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.12, 0.9, 0.05], "offset": [0, 0.45, 0], "color": "#5e6e62", "yaw": 0},
+    {"size": [0.12, 0.9, 0.05], "offset": [0, 0.45, 0], "color": "#5e6e62", "yaw": 45},
+    {"size": [0.12, 0.9, 0.05], "offset": [0, 0.45, 0], "color": "#5e6e62", "yaw": 90},
+    {"size": [0.12, 0.9, 0.05], "offset": [0, 0.45, 0], "color": "#5e6e62", "yaw": 135},
+    {"size": [0.45, 0.06, 0.4], "offset": [0, 0.03, 0], "color": "#5e6e62"},
+    {"size": [0.24, 0.2, 0.2], "offset": [0, 1.0, 0], "color": "#5e6e62"},
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [-0.2, 1.0, 0],
+      "color": "#c8c0a8",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [-0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [-0.2, 1.0, 0],
+      "color": "#c8c0a8",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [-0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [-0.2, 1.0, 0],
+      "color": "#c8c0a8",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [-0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [-0.2, 1.0, 0],
+      "color": "#c8c0a8",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [-0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [0.2, 1.0, 0],
+      "color": "#8a8a8a",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [0.2, 1.0, 0],
+      "color": "#8a8a8a",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [0.2, 1.0, 0],
+      "color": "#8a8a8a",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.04, 0.22, 0.091],
+      "offset": [0.2, 1.0, 0],
+      "color": "#8a8a8a",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 360, "pivot": [0.2, 1.0, 0]}
+    },
+    {
+      "size": [0.05, 0.05, 0.05],
+      "offset": [-0.2, 0.9, 0.12],
+      "color": "#ffa030",
+      "anim": {"type": "flicker", "rate": 16, "duty": 0.45, "color": "#ffc040", "glow": 2.0}
+    }
+  ]
+}

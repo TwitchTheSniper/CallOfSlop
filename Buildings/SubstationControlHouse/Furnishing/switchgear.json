@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "switchgear",
+  "description": "The Substation's switchgear room: lines of metal-clad switchgear, a cable drum, warning signs.",
+  "items": [
+    {"props": ["Substation Switchgear"], "place": "wall", "count": [4, 6], "gap": 0.02},
+    {"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cable Spool"], "place": "floor", "gap": 0.5},
+    {"props": ["Toolbox", "Aluminium Step Ladder"], "place": "corner"}
+  ]
+}
