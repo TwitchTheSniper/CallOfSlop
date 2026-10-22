@@ -91,7 +91,7 @@ public static partial class SelfTest
             ("{ \"parts\": [ { \"size\": [1, 1, 1] } ] }", "missing \"name\""),
             ("{ \"name\": \"X\", \"collision\": \"bouncy\", \"parts\": [ { \"size\": [1, 1, 1] } ] }", "\"solid\" or \"cosmetic\""),
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1] } ], \"breakable\": { \"breakBy\": [\"lasers\"] } }", "unknown damage"),
-            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [20, 1, 1] } ] }", "0.001 to 12"),
+            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [30, 1, 1] } ] }", "0.001 to 24"),
             ("{ \"name\": \"X\", \"format\": \"call-of-slop-prop/9\", \"parts\": [ { \"size\": [1, 1, 1] } ] }", "different version"),
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"material\": \"cheese\" } ] }", "unknown material"),
         ];
