@@ -79,41 +79,41 @@ public sealed class GunSampleLibrary
             lib.ManifestFound = true;
             using var doc = JsonDocument.Parse(File.ReadAllText(manifest));
             var root = doc.RootElement;
-            if (root.TryGetProperty("credits", out var cr))
+            if (root.TryGetProperty("credits"u8, out var cr))
                 lib.Credits = cr.GetString() ?? "";
-            if (root.TryGetProperty("sets", out var sets))
+            if (root.TryGetProperty("sets"u8, out var sets))
                 foreach (var p in sets.EnumerateObject())
                 {
                     var s = new SampleSet { Name = p.Name };
-                    if (p.Value.TryGetProperty("about", out var a))
+                    if (p.Value.TryGetProperty("about"u8, out var a))
                         s.About = a.GetString() ?? "";
-                    if (p.Value.TryGetProperty("refCaliber", out var rc))
+                    if (p.Value.TryGetProperty("refCaliber"u8, out var rc))
                         s.RefCaliber = rc.GetSingle();
-                    if (p.Value.TryGetProperty("synthBlend", out var sb))
+                    if (p.Value.TryGetProperty("synthBlend"u8, out var sb))
                         s.SynthBlend = Math.Clamp(sb.GetSingle(), 0f, 1f);
                     lib.Sets[p.Name] = s;
                 }
-            if (root.TryGetProperty("rules", out var rules))
+            if (root.TryGetProperty("rules"u8, out var rules))
                 foreach (var r in rules.EnumerateArray())
                 {
-                    if (!Enum.TryParse<WeaponClass>(r.GetProperty("class").GetString(), out var cls))
+                    if (!Enum.TryParse<WeaponClass>(r.GetProperty("class"u8).GetString(), out var cls))
                     {
-                        lib.Problems.Add($"rule with unknown class {r.GetProperty("class")}");
+                        lib.Problems.Add($"rule with unknown class {r.GetProperty("class"u8)}");
                         continue;
                     }
-                    var sounds = r.TryGetProperty("sounds", out var ss)
+                    var sounds = r.TryGetProperty("sounds"u8, out var ss)
                         ? ss.EnumerateArray().Select(e => Enum.TryParse<SoundStyle>(e.GetString(), out var st) ? st : (SoundStyle?)null).OfType<SoundStyle>().ToArray()
                         : [SoundStyle.Gun, SoundStyle.Boom, SoundStyle.Suppressed];
                     float F(string name, float def) => r.TryGetProperty(name, out var v) ? v.GetSingle() : def;
-                    var set = r.GetProperty("set").GetString() ?? "";
+                    var set = r.GetProperty("set"u8).GetString() ?? "";
                     if (!lib.Sets.ContainsKey(set))
                         lib.Problems.Add($"rule for {cls} names unknown set '{set}'");
                     lib.Rules.Add(new Rule(cls, sounds, F("minCaliber", float.NegativeInfinity), F("maxCaliber", float.PositiveInfinity), F("maxRpm", float.PositiveInfinity), set));
                 }
-            if (root.TryGetProperty("samples", out var samples))
+            if (root.TryGetProperty("samples"u8, out var samples))
             {
                 var entries = samples.EnumerateArray().ToArray();
-                var files = entries.Select(e => e.GetProperty("file").GetString() ?? "").ToArray();
+                var files = entries.Select(e => e.GetProperty("file"u8).GetString() ?? "").ToArray();
                 lib.FilesListed = entries.Length;
                 // Decode in parallel (the files are small; this keeps start-up cost to a few ms).
                 var decoded = new (float[]? Pcm, long Bytes, string? Error)[entries.Length];
@@ -150,20 +150,20 @@ public sealed class GunSampleLibrary
                         lib.Problems.Add(err);
                         continue;
                     }
-                    var setName = e.GetProperty("set").GetString() ?? "";
+                    var setName = e.GetProperty("set"u8).GetString() ?? "";
                     if (!lib.Sets.TryGetValue(setName, out var set))
                     {
                         lib.Problems.Add($"{file}: unknown set '{setName}'");
                         continue;
                     }
                     var pcm = decoded[i].Pcm!;
-                    if (e.TryGetProperty("gain", out var g) && Math.Abs(g.GetSingle() - 1f) > 1e-4f)
+                    if (e.TryGetProperty("gain"u8, out var g) && Math.Abs(g.GetSingle() - 1f) > 1e-4f)
                     {
                         var k = g.GetSingle();
                         for (var j = 0; j < pcm.Length; j++)
                             pcm[j] *= k;
                     }
-                    var role = e.TryGetProperty("role", out var ro) ? ro.GetString() : "shot";
+                    var role = e.TryGetProperty("role"u8, out var ro) ? ro.GetString() : "shot";
                     if (role == "tail")
                         set.Tails.Add(pcm);
                     else if (role == "shot")
