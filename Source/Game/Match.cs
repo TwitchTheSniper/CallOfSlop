@@ -9,6 +9,7 @@ public enum MatchPhase : byte
     Playing,
     Ended, // results screen; nobody can be hurt; a new match starts automatically
     Warmup, // before the countdown: waiting for every person to ready up; nobody can be hurt (see ReadyUp.cs)
+    Lobby, // the pre-match lobby room before the map is played (hosting; see PreMatchLobby.cs): nobody is in the map
 }
 
 /// <summary>
@@ -101,14 +102,22 @@ public sealed partial class Game
         if (!_matchClockStarted)
         {
             _matchClockStarted = true;
-            BeginPreMatch(now);
+            if (LobbyEnabled)
+                BeginLobby(now); // hosting: everyone gathers in the lobby room first (PreMatchLobby.cs)
+            else
+                BeginPreMatch(now);
         }
         ServerTickMode(now);
+        ServerTickLobbyState(now); // the lobby room's settings and pings (PreMatchLobby.cs)
 
-        if (Phase is MatchPhase.Warmup or MatchPhase.Countdown)
+        if (Phase is MatchPhase.Warmup or MatchPhase.Countdown or MatchPhase.Lobby)
             UpdateScoreLimit(); // before play the limit follows whoever is there
 
-        if (Phase == MatchPhase.Warmup)
+        if (Phase == MatchPhase.Lobby)
+        {
+            ServerTickLobby(now); // PreMatchLobby.cs
+        }
+        else if (Phase == MatchPhase.Warmup)
         {
             ServerTickWarmup(now);
         }
@@ -122,7 +131,7 @@ public sealed partial class Game
                 ScoreLimit = ScoreLimitFor(Players.Count); // everyone who made it to the start counts (ScoreLimits.cs)
                 _matchStart = now;
                 _soloElapsed = 0;
-                TimeLeft = MatchSeconds;
+                TimeLeft = MatchLength;
                 OnPlayStarted();
             }
         }
@@ -130,7 +139,7 @@ public sealed partial class Game
         {
             SoloHoldClock(now); // alone in the match (no bots, nobody joined): the clock stops (TestTools.cs)
             UpdateScoreLimit(); // people joining mid-match raise the limit, never lower it (ScoreLimits.cs)
-            TimeLeft = Math.Max(0, MatchSeconds - (now - _matchStart));
+            TimeLeft = Math.Max(0, MatchLength - (now - _matchStart)); // the host's time limit (PreMatchLobby.cs)
             ServerTickModePlaying(now); // the mode's objectives and win rules (Source/Game/Modes; free-for-all: GameModeModule.FreeForAllWinCheck)
         }
         else
@@ -184,7 +193,10 @@ public sealed partial class Game
         Winner = NoWinner;
         MatchResult = "";
         MatchNumber++;
-        BeginPreMatch(now);
+        if (LobbyEnabled && ReturnToLobby)
+            BeginLobby(now); // the host's "Return to lobby between matches" (PreMatchLobby.cs)
+        else
+            BeginPreMatch(now);
         ResetModeForMatch(respawn: false); // new teams, scores and objectives before everyone spawns
 
         Projectiles.Clear();
@@ -199,6 +211,8 @@ public sealed partial class Game
                 OnLocalSpawn(p);
             if (p.Bot != null)
                 p.Bot.Waypoint = Vector3.Zero;
+            if (InLobby)
+                PlaceWaiting(p, now); // back in the lobby room: out of the map until it starts
         }
 
         _w.Begin(Msg.MatchStart).U16((ushort)MatchNumber).Str(World.Map.Name).U32(World.Map.ContentHash).U8((byte)Phase);
