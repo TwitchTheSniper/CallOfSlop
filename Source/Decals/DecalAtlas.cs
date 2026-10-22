@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace CallOfSlop;
 
@@ -27,8 +28,9 @@ public static class DecalAtlas
     {
         var layers = Math.Max(1, defs.Count);
         var data = new byte[layers * BytesPerLayer];
-        var scratch = new Vector4[LayerSize * LayerSize];
-        for (var i = 0; i < defs.Count; i++)
+        var problems = new string?[defs.Count];
+        // Decals are independent: paint them on all cores (each layer is the same whichever thread paints it).
+        Parallel.For(0, defs.Count, () => new Vector4[LayerSize * LayerSize], (i, _, scratch) =>
         {
             try
             {
@@ -36,9 +38,16 @@ public static class DecalAtlas
             }
             catch (Exception ex) when (ex is InvalidDataException or IOException or UnauthorizedAccessException)
             {
-                errors?.Add($"{defs[i].SourceFile}: image: {ex.Message}");
-                Console.WriteLine($"[decals] {defs[i].Name}: image not used ({ex.Message})");
+                problems[i] = ex.Message;
             }
+            return scratch;
+        }, _ => { });
+        for (var i = 0; i < defs.Count; i++)
+        {
+            if (problems[i] is not { } problem)
+                continue;
+            errors?.Add($"{defs[i].SourceFile}: image: {problem}");
+            Console.WriteLine($"[decals] {defs[i].Name}: image not used ({problem})");
         }
         return data;
     }
@@ -107,6 +116,7 @@ public static class DecalAtlas
     // ---- Shapes ------------------------------------------------------------------------------------------
 
     /// <summary>Draws one layer over (or erases from) the premultiplied pixels.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)] // straight to optimised code: it runs once, at startup
     private static void DrawShape(DecalShape s, Vector4[] px)
     {
         var geo = Prepare(s);
@@ -210,6 +220,7 @@ public static class DecalAtlas
     }
 
     /// <summary>Signed distance from <paramref name="p"/> to the shape's edge (negative inside), in the square's units.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]
     private static float Distance(DecalShape s, Geometry g, Vector2 p)
     {
         switch (s.Kind)

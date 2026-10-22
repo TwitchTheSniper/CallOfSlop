@@ -198,7 +198,8 @@ public static partial class SelfTest
         // Vertices: finite, uvs in range, owners are decal surfaces, terrain vertices never over the hole.
         const int f = DecalMesh.FloatsPerVertex;
         var v = mesh.Vertices;
-        int owned = 0, onTerrain = 0, overHole = 0, onMesh = 0, kerbTop = 0, kerbGround = 0, walls = 0;
+        int owned = 0, onTerrain = 0, overHole = 0, onMesh = 0, walls = 0;
+        var kerbYs = new List<float>(); // floor-facing decal vertices round the kerb's edge
         var terrain = map.Terrain;
         for (var i = 0; i < mesh.VertexCount; i++)
         {
@@ -221,21 +222,18 @@ public static partial class SelfTest
                 onTerrain++;
             if (owner < 0 && MathF.Abs(p.X + 20f) < 1.7f && MathF.Abs(p.Z - 8f) < 1.7f && p.Y > map.GroundHeight(-20, 8) + 0.3f)
                 onMesh++;
-            if (owner >= 0 && p.X is > -7.9f and < -4.7f && p.Z is > 2.5f and < 6.5f)
-            {
-                var g = map.GroundHeight(p.X, p.Z);
-                if (MathF.Abs(p.Y - (g + 0.5f)) < 0.05f)
-                    kerbTop++;
-                else if (MathF.Abs(p.Y - (g + 0.1f)) < 0.08f)
-                    kerbGround++;
-            }
+            if (owner >= 0 && p.X is > -7.9f and < -4.7f && p.Z is > 2.5f and < 6.5f && n.Y > 0.9f)
+                kerbYs.Add(p.Y);
             if (MathF.Abs(n.Y) < 0.3f)
                 walls++;
         }
         if (onTerrain < 30 || onMesh < 3 || walls < 30)
             Fail($"Decal Test: decals missing from the terrain ({onTerrain}), the mesh ({onMesh}) or the walls ({walls})");
-        if (kerbTop < 3 || kerbGround < 3)
-            Fail($"the Oil Stain over the kerb should wrap onto both levels ({kerbTop} top, {kerbGround} below)");
+
+        // The kerb: decal vertices on its top and on the slab 0.4 m below it.
+        var kerbMax = kerbYs.Count > 0 ? kerbYs.Max() : 0f;
+        var kerbTop = kerbYs.Count(y => y > kerbMax - 0.05f);
+        var kerbGround = kerbYs.Count(y => y < kerbMax - 0.3f);
 
         // Hole cells really get no triangles: every terrain decal triangle's centre is over solid ground.
         for (var i = 0; i + 2 < mesh.VertexCount; i += 3)
@@ -251,6 +249,8 @@ public static partial class SelfTest
              + $"kerb wrap {kerbTop} top / {kerbGround} below");
         if (overHole > 0)
             Fail($"{overHole} decal triangles lie over the terrain hole");
+        if (kerbTop < 3 || kerbGround < 3)
+            Fail($"the Oil Stain over the kerb should wrap onto both levels ({kerbTop} top, {kerbGround} below)");
 
         // Cosmetic: no boxes added, the fingerprint is the same without the decal ops, and the ops survive a file round trip.
         var json = MapFile.ToJson(map);
@@ -401,8 +401,8 @@ public static partial class SelfTest
         pool.Clear(map, now);
         for (var i = 0; i < 2000; i++)
             pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, 0, 0, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);
+        var sw = Stopwatch.StartNew(); // (before the count: the stopwatch itself is an allocation)
         var bytes = GC.GetAllocatedBytesForCurrentThread();
-        var sw = Stopwatch.StartNew();
         const int adds = 50000;
         for (var i = 0; i < adds; i++)
             pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, i * 0.1f, i % 6, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);

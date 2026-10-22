@@ -133,7 +133,7 @@ public sealed class ImpactPool
     public void Clear(Map? map, double now)
     {
         _map = map;
-        _epoch = now;
+        _epoch = now - 16.0; // shader time starts at 16 s, so every fade time (even one set a little in the past) is positive
         _now = now;
         Array.Clear(_slots);
         Array.Clear(_instances);

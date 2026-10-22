@@ -14,8 +14,8 @@
     "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#77736c", "sand": "#b5a577", "dirtSlope": 22, "rockSlope": 36 },
     "features": [
       { "type": "noise", "amplitude": 0.15, "scale": 18, "octaves": 2, "seed": 4 },
-      { "type": "hill", "x": -28, "z": -22, "radius": 10, "height": 2.5 },
-      { "type": "flatten", "x": 0, "z": 0, "w": 44, "d": 36, "edge": 6 },
+      { "type": "hill", "x": -32, "z": -26, "radius": 8, "height": 2.5 },
+      { "type": "flatten", "x": 0, "z": 0, "w": 48, "d": 40, "edge": 6 },
       { "type": "hole", "shape": "circle", "x": 30, "z": 20, "radius": 3, "depth": 1.5 }
     ]
   },
@@ -37,7 +37,7 @@
     { "op": "Decal", "decal": "Floor Cracks", "x": 4, "z": -2, "y": 0.1 },
     { "op": "Decal", "decal": "Water Stain", "x": -4, "z": -2, "y": 0.1 },
     { "op": "Decal", "decal": "Drain Grate", "x": -7, "z": -7.2, "y": 0.1, "rotation": 0 },
-    { "op": "Decal", "decal": "Oil Stain", "x": -6.3, "z": 4.5, "y": 0.5, "size": 3 },
+    { "op": "Decal", "decal": "Oil Stain", "x": -6.3, "z": 4.5, "y": 0.5, "size": 3.2 },
     { "op": "Decal", "decal": "Road Arrow", "x": 8, "z": 13, "rotation": 0 },
     { "op": "Decal", "decal": "Hazard Stripes", "x": 12, "z": 0, "y": 0.5, "onto": "wall+x", "size": 2.4 },
     { "op": "Decal", "decal": "Graffiti Tag", "x": -8, "z": -6, "y": 1.8, "onto": "wall-z", "size": 2.6 },
@@ -48,6 +48,6 @@
     { "op": "DecalScatter", "decals": ["Oil Stain", "Water Stain", "Floor Cracks"], "x0": -14, "z0": -5, "x1": 14, "z1": 7, "count": 14, "seed": 3, "y": 0.1, "gap": 2.5 },
     { "op": "DecalScatter", "decals": ["Grime Streaks"], "x0": -13, "z0": -7, "x1": 9, "z1": -6, "count": 4, "seed": 5, "onto": "wall", "gap": 3 },
     { "op": "DecalScatter", "decals": ["Oil Stain", "Floor Cracks"], "x0": 24, "z0": 14, "x1": 36, "z1": 26, "count": 10, "seed": 9, "minSize": 1.5, "maxSize": 3 },
-    { "op": "Decal", "decal": "Scorch Mark", "x": -28, "z": -22, "size": 4 }
+    { "op": "Decal", "decal": "Scorch Mark", "x": -32, "z": -26, "size": 4 }
   ]
 }
