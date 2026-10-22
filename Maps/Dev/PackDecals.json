@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Pack Decals",
+  "description": "Pack-local decals: the Dev pack's own blue Exit Sign (Maps/Dev/Decals, shadowing the global green one) next to global:Exit Sign, and the pack-only Dev Pack Badge (a PNG image). Not balanced for play.",
+  "author": "Call of Slop",
+  "order": 964,
+  "halfX": 20,
+  "halfZ": 20,
+  "maxPlayers": 8,
+  "sky": [0.58, 0.64, 0.72],
+  "ops": [
+    { "op": "Ground", "color": [0.4, 0.41, 0.4] },
+    { "op": "Perimeter", "height": 3, "color": [0.55, 0.55, 0.57] },
+    { "op": "WallX", "x0": -10, "x1": 10, "z": -2, "t": 0.4, "y0": 0, "y1": 3, "color": [0.75, 0.74, 0.7] },
+    { "op": "Decal", "decal": "Exit Sign", "x": -7, "z": 0, "y": 2.2, "onto": "wall-z" },
+    { "op": "Decal", "decal": "Exit Sign", "x": -4, "z": 0, "y": 2.2, "onto": "wall-z", "size": 1.2 },
+    { "op": "Decal", "decal": "global:Exit Sign", "x": 4, "z": 0, "y": 2.2, "onto": "wall-z" },
+    { "op": "Decal", "decal": "global:Exit Sign", "x": 7, "z": 0, "y": 2.2, "onto": "wall-z", "size": 1.2 },
+    { "op": "Decal", "decal": "Dev Pack Badge", "x": 0, "z": 0, "y": 1.4, "onto": "wall-z", "size": 1.4 },
+    { "op": "Decal", "decal": "Dev Pack Badge", "x": 0, "z": 4, "rotation": 0, "size": 2.5 },
+    { "op": "DecalScatter", "decals": ["Dev Pack Badge", "Oil Stain"], "x0": -14, "z0": 8, "x1": 14, "z1": 14, "count": 8, "seed": 3, "gap": 1.5 },
+    { "op": "CoverLine", "x0": -12, "z0": -12, "x1": 12, "z1": -12, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "RingSpawns", "count": 8, "frac": 0.8 },
+    { "op": "AutoWaypoints", "spacing": 6 }
+  ]
+}

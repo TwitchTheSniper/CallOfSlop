@@ -600,13 +600,14 @@ public static partial class Maps
     }
 
     /// <summary>
-    /// Is <paramref name="file"/> inside the pack's own Props folder (Maps/&lt;Pack&gt;/Props)? Those are prop files, not
-    /// maps. (Models hold no .json files.)
+    /// Is <paramref name="file"/> inside the pack's own Props or Decals folder (Maps/&lt;Pack&gt;/Props, Maps/&lt;Pack&gt;/Decals)?
+    /// Those are prop and decal files, not maps. (Models hold no .json files.)
     /// </summary>
     private static bool InPackAssetFolder(string packDir, string file)
     {
         var rel = Path.GetRelativePath(packDir, file).Replace('\\', '/');
-        return rel.StartsWith(Props.PackFolderName + "/", StringComparison.OrdinalIgnoreCase);
+        return rel.StartsWith(Props.PackFolderName + "/", StringComparison.OrdinalIgnoreCase)
+               || rel.StartsWith(Decals.PackFolderName + "/", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>The only map defined in code: used when the Maps folder is missing or empty.</summary>
