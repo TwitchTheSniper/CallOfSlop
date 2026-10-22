@@ -18,8 +18,10 @@ The quarter climbs from south to north in three levels joined by stone retaining
 - **B, Place de la Fontaine (y 3).** The raised square with the tiered fountain (hill 1), plane trees, benches, a cafe
   terrace, a kiosk, a flower stall and an advertising column; an island apartment block on each side (its shop is the
   Petit Zinc cafe-tabac); the team plazas at both ends with a cul-de-sac (the flags) and the **metro**: a railed
-  trench with a cast-iron arch in each plaza drops into a zig-zag tunnel and a station hall under the square
-  (pillars, benches, ticket and vending machines, posters). It is the underground flank between the plazas.
+  stairwell (an open trench with stone treads, railings and a cast-iron arch with its MÉTRO plate) in each plaza drops
+  into a zig-zag tunnel and a roofed station hall under the square; nothing is laid over the openings (the self-test
+  checks every open cell against the map's boxes and meshes). The station has pillars, benches, ticket and vending
+  machines and posters. It is the underground flank between the plazas.
 - **C, Rue des Lilas (y 6).** The north street and the north row: two Haussmann blocks, a boulangerie and a corner
   cafe-brasserie per side; the two brasseries face each other across the Passage des Artistes (terraces, and a plank
   sky bridge between their roofs). Behind them the north courtyards, an alley out to a dead end, and the belvedere

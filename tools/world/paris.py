@@ -179,6 +179,9 @@ def inside(x, z):
 
 
 # ============================================================================ terrain
+STATION = -2.2    # the metro's floor (tunnels and the station hall)
+CAVE_LINE = [[-63, -3.5], [-53, -3.5, STATION], [-39, 3.0, STATION], [-25, -3.0, STATION], [-12, 0, STATION], [12, 0, STATION],
+             [25, -3.0, STATION], [39, 3.0, STATION], [53, -3.5, STATION], [63, -3.5]]
 TERRAIN = {
     "cell": 1,
     "margin": 18,
@@ -194,9 +197,8 @@ TERRAIN = {
         {"type": "ramp", "points": [[-55, 6.5, LB], [-55, 14.5, LA]], "width": 8, "edge": 1.5, "material": "dirt"},
         {"type": "ramp", "points": [[55, 6.5, LB], [55, 14.5, LA]], "width": 8, "edge": 1.5, "material": "dirt"},
         # Metro line 2bis: entrance trenches in both team plazas, a zig-zag tunnel and a station hall under the square
-        {"type": "cave", "points": [[-65, -3.5], [-53, -3.5, -2.5], [-39, 3.0, -2.5], [-25, -3.0, -2.5], [-12, 0, -2.5], [12, 0, -2.5],
-                                    [25, -3.0, -2.5], [39, 3.0, -2.5], [53, -3.5, -2.5], [65, -3.5]], "width": 5, "height": 3.6, "open": "both"},
-        {"type": "cave", "points": [[-13, 0, -2.5], [13, 0, -2.5]], "width": 13, "height": 4.6, "open": "none"},
+        {"type": "cave", "points": CAVE_LINE, "width": 5, "height": 3.6, "open": "both"},
+        {"type": "cave", "points": [[-13, 0, STATION], [13, 0, STATION]], "width": 13, "height": 3.95, "open": "none"},
     ],
 }
 
@@ -241,7 +243,7 @@ for h in HILLS:
 for x, z in FLAGS:
     solid(x - 1.5, z - 1.5, x + 1.5, z + 1.5)
 # the metro trenches and the stair runs stay clear of props
-solid(-66, -6.8, -51, -0.2)
+solid(-67, -6.8, -51, -0.2)
 
 # ============================================================================ retaining walls and stairs
 GAPS = [(-4.0, 4.0), (-25.5, -22.5), (22.5, 25.5)]   # stair gaps along both walls
@@ -337,7 +339,7 @@ mesh("box", -1.5, -29.8, COBBLE, LC, width=3.0, height=0.04, depth=17.4, materia
 mesh("box", -1.5, 29.8, COBBLE, LA, width=3.0, height=0.04, depth=17.4, material="Tiles")
 # road surfaces (cosmetic, flush on the terrain)
 mesh("box", -27, -16.9, ASPHALT, LC, width=48.0, height=0.03, depth=5.0, material="Concrete")
-mesh("box", -27, 16.0, ASPHALT, LA, width=48.0, height=0.03, depth=6.0, material="Concrete")
+mesh("box", -26, 16.0, ASPHALT, LA, width=46.0, height=0.03, depth=6.0, material="Concrete")
 # French markings: white dashed edge lines (no centre line on a one-way street), zebra crossings, bike symbols
 for x in range(-49, -3, 4):
     decal("Lane Dash", x + 0.5, -18.9, y=LC, rotation=90, size=2.0)
@@ -403,14 +405,28 @@ for x in (-31.0, -43.0):
 scatter(["Floor Cracks", "Water Stain", "Dirt Patch", "Paper Litter", "Cigarette Butts", "Leaf Litter"], -50, -10, -3, 10, 26, 41, y=LB, gap=2.0)
 
 # ============================================================================ team plazas (level B) with the metro entrances
-mesh("box", -60.0, 0.0, [0.60, 0.57, 0.52], LB, width=18.0, height=0.04, depth=17.0, material="Tiles")
-# railings along the open metro trench, the arch at its mouth, a sign
-for x in (-63.5, -60.5, -57.5, -54.5):
-    prop("Metro Railing", x, -6.7, foot=(3.1, 0.2))
-    prop("Metro Railing", x, -0.3, foot=(3.1, 0.2))
-prop("Metro Entrance Arch", -66.4, -3.5, yaw=90, foot=(0.3, 3.4))
-block(-66.5, LB + 2.2, -4.35, -66.32, LB + 2.62, -2.65, GREEN, solid_mark=False)
-decal("French Sign Metro", -66.2, -3.5, y=LB + 2.42, onto="wall-x", size=1.5)
+# plaza paving: only on the level part (the Rue de la Butte ramps climb and fall away at x -59..-51 beyond z +-6.5), and cut
+# round the open metro stairwell (the trench's open cells, see open_cells(): x -65..-54, z -6..-1)
+PLAZA = (0.60, 0.57, 0.52)
+for (x0, z0, x1, z1) in ((-69.0, -8.5, -60.6, -6.6), (-69.0, -0.4, -60.6, 8.5), (-69.0, -6.6, -66.6, -0.4), (-59.0, -6.4, -51.0, -6.6 + 0.2),
+                         (-59.0, -0.4, -51.0, 6.4)):
+    if x1 - x0 > 0.2 and z1 - z0 > 0.15:
+        mesh("box", (x0 + x1) / 2, (z0 + z1) / 2, list(PLAZA), LB, width=x1 - x0, height=0.04, depth=z1 - z0, material="Tiles")
+# railings along both sides of the open stairwell, the arch over its mouth (just west of the opening) with the sign
+for x in (-64.6, -61.6, -58.6, -55.6):
+    prop("Metro Railing", x, -6.75, foot=(3.1, 0.2))
+    prop("Metro Railing", x, -0.25, foot=(3.1, 0.2))
+prop("Metro Railing", -53.5, -3.5, yaw=90, foot=(0.2, 3.1))
+# stone treads down the stairwell's sloped floor (looks: the floor itself is the terrain's cave ramp, 3 m -> -2.2 m over x -63..-53)
+for k in range(17):
+    xa = -63.0 + k * 0.6
+    fa = 3.0 - 5.2 * (xa + 63.0) / 10.0
+    fb = 3.0 - 5.2 * min(10.0, xa + 0.6 + 63.0) / 10.0
+    mesh("box", xa + 0.3, -3.5, [0.70, 0.67, 0.60], fb - 0.06, width=0.6, height=fa - fb + 0.06, depth=1.7, material="Concrete")
+prop("Metro Entrance Arch", -66.9, -3.5, yaw=90, foot=(0.3, 3.4))
+block(-67.0, LB + 2.2, -4.35, -66.82, LB + 2.62, -2.65, GREEN, solid_mark=False)
+decal("French Sign Metro", -66.6, -3.5, y=LB + 2.42, onto="wall-x", size=1.5)
+decal("French Sign Metro", -67.3, -3.5, y=LB + 2.42, onto="wall+x", size=1.5)
 prop("Lantern Street Lamp", -67.5, -7.4, foot=(0.4, 0.4))
 prop("Lantern Street Lamp", -51.5, 7.6, foot=(0.4, 0.4))
 prop("Advertising Column", -52.0, -7.6, foot=(1.2, 1.2))
@@ -424,12 +440,13 @@ decal("Puddle", -61, 3, y=LB)
 scatter(["Floor Cracks", "Dirt Patch", "Cigarette Butts", "Paper Litter"], -69, -8, -51, 8, 10, 51, y=LB, gap=2.0)
 
 # the metro station under the square: platform edges, pillars, benches, ticket machines, lamps, posters
-STATION_Y = -2.5
+STATION_Y = STATION
 for x in (-9.5, -4.5):
-    block(x - 0.35, STATION_Y, -0.35, x + 0.35, STATION_Y + 4.2, 0.35, [0.86, 0.84, 0.78])
+    for zc in (-2.7, 2.7):
+        block(x - 0.3, STATION_Y, zc - 0.3, x + 0.3, STATION_Y + 3.9, zc + 0.3, [0.86, 0.84, 0.78])
 mesh("box", -6.5, 0.0, [0.86, 0.84, 0.78], STATION_Y, width=13.0, height=0.03, depth=4.2, material="Tiles")
-prop("Bench", -7.0, -1.3, yaw=180, y=STATION_Y, world=True, foot=(1.6, 0.6))
-prop("Bench", -7.0, 1.3, yaw=0, y=STATION_Y, world=True, foot=(1.6, 0.6))
+prop("Bench", -7.0, -1.6, yaw=180, y=STATION_Y, world=True, foot=(1.6, 0.6))
+prop("Bench", -7.0, 1.6, yaw=0, y=STATION_Y, world=True, foot=(1.6, 0.6))
 prop("Ticket Machine", -11.8, -1.6, yaw=0, y=STATION_Y, world=True, foot=(0.8, 0.6))
 prop("Glowing Vending Machine", -11.8, 1.7, yaw=180, y=STATION_Y, world=True, foot=(1.0, 0.8))
 prop("Lantern Street Lamp", -2.0, -1.8, y=STATION_Y, world=True, foot=(0.4, 0.4))
@@ -712,6 +729,98 @@ with open(OUT, "w") as f:
 n_dec = sum(1 for o in ops if o["op"] == "Decal") + sum(o["count"] for o in ops if o["op"] == "DecalScatter")
 print(f"{OUT}: {len(ops)} ops, {sum(1 for o in ops if o['op'] == 'Block')} blocks, {sum(1 for o in ops if o['op'] == 'Prop')} props, "
       f"{sum(1 for o in ops if o['op'] == 'Mesh')} meshes, ~{n_dec} decals, {sum(1 for o in ops if o['op'] == 'Building')} buildings, {len(items)} trees")
+
+# ============================================================================ checks: open metro cells vs everything placed
+def open_cells():
+    """A port of TerrainVoidGen's cave cells (Source/Maps/TerrainVoids.cs): the terrain cells that are open holes (cave
+    mouths, where the tunnel's ceiling comes within 1 m of the surface). Returns (terrain, set of (i, j) cells, floor)."""
+    sys.path.insert(0, os.path.join(REPO, "tools/cluttered"))
+    import numpy as np
+    import terrain as tr
+    t = tr.generate(dict(TERRAIN, features=[f for f in TERRAIN["features"] if f["type"] != "cave"]), 78, 52)
+    h = t.h
+    nz, nx = h.shape
+    floor = np.full(h.shape, np.nan)
+    ceil = np.full(h.shape, np.nan)
+    for f in TERRAIN["features"]:
+        if f["type"] != "cave":
+            continue
+        src = f["points"]
+        pts = []
+        for k, q in enumerate(src):
+            end = f.get("open", "both") == "both" and (k == 0 or k == len(src) - 1)
+            y = q[2] if len(q) > 2 else float(t.sample(np.array([q[0]]), np.array([q[1]]))[0]) - (0 if end else 6)
+            pts.append((q[0], q[1], y))
+        half = f["width"] / 2
+        X, Z = np.meshgrid(t.xs, t.zs)
+        best = np.full(X.shape, np.inf)
+        f0 = np.zeros(X.shape)
+        for a, b in zip(pts, pts[1:] if len(pts) > 1 else pts):
+            dx, dz = b[0] - a[0], b[1] - a[1]
+            L2 = dx * dx + dz * dz
+            tt = np.clip(((X - a[0]) * dx + (Z - a[1]) * dz) / L2, 0, 1) if L2 > 0 else np.zeros(X.shape)
+            d2 = (X - a[0] - tt * dx) ** 2 + (Z - a[1] - tt * dz) ** 2
+            m = d2 < best
+            best = np.where(m, d2, best)
+            f0 = np.where(m, a[2] + (b[2] - a[2]) * tt, f0)
+        u = np.sqrt(best) / half
+        ok = u <= 1.5
+        c = f0 + f["height"] * (1 - u ** 4)
+        e = np.clip((u - 0.6) / 0.5, 0, 1)
+        fl = f0 + f["height"] * 0.4 * e * e * (3 - 2 * e)
+        newf = np.where(ok, fl, np.nan)
+        newc = np.where(ok, c, np.nan)
+        floor = np.where(np.isnan(floor), newf, np.where(np.isnan(newf), floor, np.minimum(floor, newf)))
+        ceil = np.where(np.isnan(ceil), newc, np.where(np.isnan(newc), ceil, np.maximum(ceil, newc)))
+    floor = np.minimum(floor, h)
+    cells = set()
+    for j in range(nz - 1):
+        for i in range(nx - 1):
+            fs = floor[j:j + 2, i:i + 2]
+            cs = ceil[j:j + 2, i:i + 2]
+            if np.isnan(fs).any() or np.isnan(cs).any():
+                continue
+            fc, cc, hc = fs.mean(), cs.mean(), h[j:j + 2, i:i + 2].mean()
+            if cc - fc > 0.25 and cc >= hc - 1.0:
+                cells.add((i, j))
+    return t, cells, floor
+
+
+T_, OPEN, FLOOR_ = open_cells()
+xs_ = [T_.ox + i * T_.cell for i, _ in OPEN]
+zs_ = [T_.oz + j * T_.cell for _, j in OPEN]
+west = [(x, z) for x, z in zip(xs_, zs_) if x < 0]
+print(f"  open metro cells: {len(OPEN)}; west mouth x {min(x for x, _ in west):.1f}..{max(x for x, _ in west) + 1:.1f}, z {min(z for _, z in west):.1f}..{max(z for _, z in west) + 1:.1f}")
+
+
+def over_open(x0, z0, x1, z1):
+    for (i, j) in OPEN:
+        cx0, cz0 = T_.ox + i * T_.cell, T_.oz + j * T_.cell
+        if x1 > cx0 + 0.05 and x0 < cx0 + T_.cell - 0.05 and z1 > cz0 + 0.05 and z0 < cz0 + T_.cell - 0.05:
+            return True
+    return False
+
+
+import numpy as _np
+for o in ops:
+    if o["op"] == "Block":
+        if o["y0"] < 6.5 and over_open(o["x0"], o["z0"], o["x1"], o["z1"]):
+            print("  OPEN: block over the metro opening", o)
+    elif o["op"] == "Mesh" and o["mesh"] in ("box", "cylinder"):
+        w, d = o.get("width", 1), o.get("depth", 1)
+        fi = int(round((o["x"] - T_.ox) / T_.cell)); fj = int(round((o["z"] - T_.oz) / T_.cell))
+        fl_here = FLOOR_[fj, fi] if not _np.isnan(FLOOR_[fj, fi]) else -99
+        if over_open(o["x"] - w / 2, o["z"] - d / 2, o["x"] + w / 2, o["z"] + d / 2) and fl_here + 0.6 < o["y"] < 6.5:
+            print("  OPEN: mesh over the metro opening", o["x"], o["z"], w, d)
+        if o.get("height", 1) <= 0.12 and o["y"] > -1 and o["y"] <= float(T_.sample(_np.array([o["x"]]), _np.array([o["z"]]))[0]) + 0.3:
+            gx = _np.array([o["x"] - w / 2 + 0.3, o["x"] + w / 2 - 0.3, o["x"] - w / 2 + 0.3, o["x"] + w / 2 - 0.3, o["x"]])
+            gz = _np.array([o["z"] - d / 2 + 0.3, o["z"] - d / 2 + 0.3, o["z"] + d / 2 - 0.3, o["z"] + d / 2 - 0.3, o["z"]])
+            g = T_.sample(gx, gz)
+            if _np.abs(g - o["y"]).max() > 0.12:
+                print("  FLOAT: flat mesh off the ground", o["x"], o["z"], w, d, "y", o["y"], "ground", [round(float(v), 2) for v in g])
+    elif o["op"] == "Prop" and o.get("anchor") != "world":
+        if over_open(o["x"] - 0.3, o["z"] - 0.3, o["x"] + 0.3, o["z"] + 0.3):
+            print("  OPEN: prop over the metro opening", o["name"], o["x"], o["z"])
 
 if PNG:
     sys.path.insert(0, os.path.join(REPO, "tools/cluttered"))
