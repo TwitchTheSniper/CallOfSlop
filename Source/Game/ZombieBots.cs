@@ -62,6 +62,8 @@ public sealed partial class Game
                 if (z.State == ZState.Dead)
                     continue;
                 var d = Vector3.DistanceSquared(z.Position, p.Position);
+                if (b.Insane && d > 36f && ZTargetTaken(p, z.Id))
+                    d *= 2.5f; // Insane: spread the fire, a zombie a teammate already shoots at counts as further away
                 if (d < best && d < 45f * 45f && ZClearShot(p.Eye, z.Position + new Vector3(0, 1.2f, 0)))
                 {
                     best = d;
@@ -80,6 +82,8 @@ public sealed partial class Game
         Vector3? goal = null;
         var use = false;
         var downed = Players.Values.Where(o => o != p && o.Alive && IsDowned(o)).OrderBy(o => Vector3.DistanceSquared(o.Position, p.Position)).FirstOrDefault();
+        if (downed != null && b.Insane && ZCloserReviver(p, downed))
+            downed = null; // Insane: the nearest bot revives, the rest keep the zombies off them
         if (nearest != null && nearD < 3.2f && nearest.State is ZState.Chase or ZState.Attack)
         {
             var away = p.Position - nearest.Position;
@@ -116,7 +120,7 @@ public sealed partial class Game
         var aimed = false;
         if (target != null)
         {
-            var aimAt = target.Position + new Vector3(0, b.Skill == BotDifficulty.Hard ? 1.6f : 1.25f, 0);
+            var aimAt = target.Position + new Vector3(0, b.Skill >= BotDifficulty.Hard ? 1.6f : 1.25f, 0);
             var to = aimAt - p.Eye;
             var wantYaw = MathF.Atan2(to.X, -to.Z);
             var wantPitch = MathF.Atan2(to.Y, Flat(to));
@@ -168,4 +172,23 @@ public sealed partial class Game
     }
 
     private readonly Dictionary<byte, ushort> _zBotTarget = new();
+
+    /// <summary>Insane co-op: is another Insane bot already shooting at zombie <paramref name="id"/>?</summary>
+    private bool ZTargetTaken(Player p, ushort id)
+    {
+        foreach (var o in Players.Values)
+            if (o != p && o.Alive && o.Bot is { Insane: true } && _zBotTarget.TryGetValue(o.Id, out var t) && t == id)
+                return true;
+        return false;
+    }
+
+    /// <summary>Insane co-op: is another bot (up and alive) closer to the downed player than this one?</summary>
+    private bool ZCloserReviver(Player p, Player downed)
+    {
+        var mine = Vector3.DistanceSquared(p.Position, downed.Position);
+        foreach (var o in Players.Values)
+            if (o != p && o != downed && o.Alive && o.Bot != null && !IsDowned(o) && Vector3.DistanceSquared(o.Position, downed.Position) < mine)
+                return true;
+        return false;
+    }
 }

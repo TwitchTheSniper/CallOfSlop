@@ -140,6 +140,7 @@ public static partial class SelfTest
             Section("Body model", CheckBodyModel); // SelfTestBody.cs: torso and head parts vs the old boxes and hit boxes, hat fit, seeded variants, cost
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
+            Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Line("");
