@@ -514,11 +514,11 @@ gprop("Belt Conveyor Incline", -9.0, RAIL_Z - 8.0, 0, tag="loadout", check=False
 gprop("Belt Conveyor Incline", 9.0, RAIL_Z - 8.0, 180, tag="loadout", check=False)
 
 # ================================================================ the rail spur: track, wagons, buffers
-for k in range(34):
+for k in range(33):
     x = -66 + 2 + k * 4.0
     wprop("Railway Track Section", x, RAIL_Z, 0, PAD, tag="rail")
 for sx in (-1, 1):
-    wprop("Rail Buffer Stop", sx * 67.0, RAIL_Z, 0 if sx > 0 else 180, PAD, tag="rail", mark=True)
+    wprop("Rail Buffer Stop", sx * 66.6, RAIL_Z, 0 if sx > 0 else 180, PAD, tag="rail", mark=True)
     for k, x in enumerate((11.5, 23.0, 34.5, 50.0)):
         if k == 3 and sx > 0:
             continue
@@ -559,35 +559,134 @@ for sx in (-1, 1):
     gprop("Mine Timber Stack", sx * 21.0, 66.0, 90, tag="pit")
     gprop("Granite Boulder", sx * 6.0, 62.0, rng.uniform(0, 360), tag="pit")
     gprop("Granite Outcrop", sx * 20.5, 52.0, 90, tag="pit")
-    gprop("Ore Mine Cart", sx * 3.0, 50.5, 0, tag="pit")
 
 # ================================================================ inside the tunnels
+# Everything underground stands on the real cave floor: tools/world/caves.py is a port of the game's cave generator
+# (TerrainVoids.cs), so floor and ceiling heights here are the game's own.
+import caves as _caves
+VOIDS = _caves.Voids(T, CAVE_FEATS + [HOLE])
 TUN_TAG = "tunnel"
 
 
-def tunnel_dress(pts, every_rail=3.0, every_frame=6.5, every_lamp=8.0, width=5.5, height=3.6, skip=()):
-    """Rails down the middle, timber frames and cage lamps along a drift ([x, z, floor] points)."""
+def floor_at(x, z, y=F + 1.0):
+    return float(VOIDS.ground_below(x, z, y))
+
+
+def ceiling_at(x, z, y=F + 1.0):
+    return float(VOIDS.ceiling_above(x, z, y))
+
+
+def cprop(name, x, z, yaw, tag, lift=0.0, mark=True):
+    """A prop on the cave floor under (x, z) (the highest floor under its footprint, so nothing sinks into a wall)."""
+    if name in t.P:
+        r = t.foot(name, x, z, yaw)
+        ys = [floor_at(a, b) for a in (r[0], (r[0] + r[2]) / 2, r[2]) for b in (r[1], (r[1] + r[3]) / 2, r[3])]
+        wprop(name, x, z, yaw, max(ys) + lift, tag=tag, mark=mark)
+
+
+# --- the mine railway: continuous track along every drift, through the chambers, sleepers and rails lying on the floor
+SLEEPER = dict(width=1.4, height=0.09, depth=0.22)     # across the track x along it
+RAIL_W, RAIL_H, GAUGE = 0.07, 0.1, 0.46
+SLEEPER_C, RAIL_C = (0.291, 0.226, 0.161), (0.411, 0.397, 0.384)    # unique colours: the self-test finds the track by them
+RAIL_TOP = SLEEPER["height"] - 0.01 + RAIL_H           # rail top above the floor (sleepers sit 1 cm into it)
+ROUTES_W = [
+    ("main line", [(-61.0, -21.0), (-50, -14), (-40, -4), (0, -4)]),
+    ("haulage loop", [(-40, -4), (-22, 14), (0, 18)]),
+    ("village line", [(-40, -4), (-48, 10), (-58, 22), (-64.5, 28.5)]),
+    ("church line", [(0, -38), (-16, -50), (-32.5, -55.5)]),
+]
+ROUTES = []
+for n, pts in ROUTES_W:
+    ROUTES.append((n + " west", pts))
+    ROUTES.append((n + " east", [(-x, z) for x, z in pts]))
+ROUTES += [("north line", [(0, -4), (0, -38)]), ("pit line", [(0, -4), (0, 36), (0, 46), (0, 49.5)])]
+N_SLEEPERS = N_RAILS = 0
+
+
+def lay_track(pts):
+    global N_SLEEPERS, N_RAILS
     for k in range(len(pts) - 1):
-        ax, az, ay = pts[k]; bx, bz, by = pts[k + 1]
+        (ax, az), (bx, bz) = pts[k], pts[k + 1]
         L = math.hypot(bx - ax, bz - az); ux, uz = (bx - ax) / L, (bz - az) / L
-        yaw_r = yaw_along(ux, uz); yaw_f = yaw_facing(ux, uz)
-        s = 1.5
-        while s < L - 1.0:
-            x, z, y = ax + ux * s, az + uz * s, ay + (by - ay) * s / L
-            if not any(math.hypot(x - a, z - b) < r for a, b, r in skip):
-                wprop("Mine Rail Section", x, z, yaw_r, y + 0.01, tag=TUN_TAG)
-            s += every_rail
+        nx_, nz_ = -uz, ux
+        yaw = yaw_facing(ux, uz)
+        # rails: pieces of equal length (a few distinct lengths in all: one shared mesh each), pitched to the floor
+        n = max(1, math.ceil(L / 1.5)); piece = math.ceil(L / n / 0.05) * 0.05
+        for i in range(n):
+            s0, s1 = L * i / n, L * (i + 1) / n
+            for side in (-1, 1):
+                ox_, oz_ = nx_ * GAUGE * side, nz_ * GAUGE * side
+                x0, z0 = ax + ux * s0 + ox_, az + uz * s0 + oz_
+                x1, z1 = ax + ux * s1 + ox_, az + uz * s1 + oz_
+                y0, y1 = floor_at(x0, z0), floor_at(x1, z1)
+                pitch = -math.degrees(math.atan2(y1 - y0, s1 - s0))
+                wmesh("box", (x0 + x1) / 2, (z0 + z1) / 2, RAIL_C, (y0 + y1) / 2 + SLEEPER["height"] - 0.01, width=RAIL_W, height=RAIL_H, depth=piece,
+                      yaw=yaw, pitch=round(pitch, 2), material="Metal")
+                N_RAILS += 1
+        # sleepers every 0.65 m, each tipped to the slope under it
+        m_ = max(1, int(L / 0.65))
+        for i in range(m_):
+            sm = (i + 0.5) * L / m_
+            x, z = ax + ux * sm, az + uz * sm
+            ya, yb = floor_at(x - ux * 0.11, z - uz * 0.11), floor_at(x + ux * 0.11, z + uz * 0.11)
+            pitch = -math.degrees(math.atan2(yb - ya, 0.22))
+            wmesh("box", x, z, SLEEPER_C, (ya + yb) / 2 - 0.01, yaw=yaw, pitch=round(pitch, 2), material="Wood", **SLEEPER)
+            N_SLEEPERS += 1
+
+
+for n, pts in ROUTES:
+    lay_track(pts)
+
+
+def on_route(name, s):
+    """(x, z, yaw along the track) at arc length s along a route."""
+    pts = dict(ROUTES)[name]
+    for k in range(len(pts) - 1):
+        (ax, az), (bx, bz) = pts[k], pts[k + 1]
+        L = math.hypot(bx - ax, bz - az)
+        if s <= L:
+            return ax + (bx - ax) * s / L, az + (bz - az) * s / L, yaw_along(bx - ax, bz - az)
+        s -= L
+    raise ValueError(f"{name}: past the end")
+
+
+def cart_on_rails(name, s):
+    x, z, yaw = on_route(name, s)
+    a = math.radians(yaw); ux, uz = math.cos(a), -math.sin(a)
+    y = max(floor_at(x + ux * 0.5, z + uz * 0.5), floor_at(x - ux * 0.5, z - uz * 0.5)) + RAIL_TOP - 0.01
+    wprop("Ore Mine Cart", x, z, yaw, y, tag="cart", mark=True)
+
+
+# carts standing on the rails (cover in the drifts), mirrored pairs
+for side in ("west", "east"):
+    cart_on_rails("main line " + side, 32.0)          # 10 m short of the shaft station
+    cart_on_rails("haulage loop " + side, 34.0)       # between the pump/magazine chamber and the junction
+    cart_on_rails("village line " + side, 9.0)          # carts stand only on level track (a cart is a rigid box)
+    cart_on_rails("haulage loop " + side, 12.0)
+cart_on_rails("north line", 4.0)                      # in the shaft station, beside the cage
+cart_on_rails("north line", 29.0)                     # at the crusher
+cart_on_rails("pit line", 32.0)
+cart_on_rails("pit line", 52.5)                       # at the end of the line on the pit floor
+
+
+# --- timber frames and cage lamps along the drifts (not in the chambers): on the floor, hung from the ceiling
+def tunnel_dress(pts, every_frame=6.5, every_lamp=8.0, skip=()):
+    for k in range(len(pts) - 1):
+        (ax, az), (bx, bz) = pts[k][:2], pts[k + 1][:2]
+        L = math.hypot(bx - ax, bz - az); ux, uz = (bx - ax) / L, (bz - az) / L
+        yaw_f = yaw_facing(ux, uz)
         s = 3.0
         while s < L - 2.0:
-            x, z, y = ax + ux * s, az + uz * s, ay + (by - ay) * s / L
+            x, z = ax + ux * s, az + uz * s
             if not any(math.hypot(x - a, z - b) < r for a, b, r in skip):
-                wprop("Tunnel Timber Frame", x, z, yaw_f, y, tag=TUN_TAG)
+                wprop("Tunnel Timber Frame", x, z, yaw_f, floor_at(x, z), tag=TUN_TAG)
             s += every_frame
         s = 5.0
         while s < L - 2.0:
-            x, z, y = ax + ux * s, az + uz * s, ay + (by - ay) * s / L
-            if not any(math.hypot(x - a, z - b) < r for a, b, r in skip):
-                wprop("Tunnel Cage Lamp", x, z, 0, y + height - 1.0, tag=TUN_TAG)
+            x, z = ax + ux * s, az + uz * s
+            c = ceiling_at(x, z)
+            if not any(math.hypot(x - a, z - b) < r for a, b, r in skip) and math.isfinite(c):
+                wprop("Tunnel Cage Lamp", x, z, 0, c - 0.6, tag=TUN_TAG)        # its cable meets the ceiling
             s += every_lamp
 
 
@@ -595,43 +694,32 @@ STATIONS = [(0, -5, 8.0), (-22, 14, 5.5), (22, 14, 5.5), (0, -38, 7.0), (0, 18, 
 for (n, pts, w, h, op) in CAVES:
     if len(pts) < 2 or n == "shaft station":
         continue
-    P = []
-    for k, p in enumerate(pts):
-        if len(p) > 2:
-            P.append(tuple(p))
-        else:
-            P.append((p[0], p[1], gy(p[0], p[1])))
+    P = [tuple(p[:2]) for p in pts]
     if op == "end":
-        P = P[:-1] + [(P[-2][0] + (P[-1][0] - P[-2][0]) * 0.75, P[-2][1] + (P[-1][1] - P[-2][1]) * 0.75, P[-2][2] + (P[-1][2] - P[-2][2]) * 0.75)]
+        P = P[:-1] + [(P[-2][0] + (P[-1][0] - P[-2][0]) * 0.75, P[-2][1] + (P[-1][1] - P[-2][1]) * 0.75)]
     if n == "pit drift":
         P = P[:2]
-    tunnel_dress(P, width=w, height=h, skip=STATIONS)
-# the shaft station: lockers, a tool bench, carts at the cage, signs, lamps
-ST = [("Ore Mine Cart", -2.8, -7.5, 0), ("Ore Mine Cart", 2.8, -7.5, 0), ("Metal Lockers", -5.6, -10.0, 90), ("Metal Lockers", -5.6, -8.0, 90),
-      ("Workbench" if "Workbench" in t.P else "Table", 5.4, -9.0, 270), ("Toolbox", 5.4, -9.0, 270), ("Mine Timber Stack", -5.0, 6.0, 0), ("Wooden Crate", 4.6, 5.5, 0),
-      ("Wooden Crate", 5.4, 6.4, 30), ("Oil Drum", -5.6, 1.0, 0), ("Fire Extinguisher" if "Fire Extinguisher" in t.P else "Gas Cylinders", 5.6, 1.5, 0)]
+    tunnel_dress(P, skip=STATIONS)
+# the shaft station: lockers, a tool bench, timber, crates, lamps (all on the floor under them)
+ST = [("Metal Lockers", -5.6, -10.0, 90), ("Metal Lockers", -5.6, -8.0, 90), ("Table", 5.4, -9.0, 270), ("Mine Timber Stack", -5.0, 6.0, 0),
+      ("Wooden Crate", 4.6, 5.5, 0), ("Wooden Crate", 5.4, 6.4, 30), ("Oil Drum", -5.6, 1.0, 0), ("Gas Cylinders", 5.6, 1.5, 0)]
 for name, x, z, yaw in ST:
-    if name in t.P:
-        wprop(name, x, z, yaw, F + (0.85 if name == "Toolbox" else 0.0), tag="station", mark=True)
-for (x, z) in ((-3, -3), (3, -3), (-3, 4), (3, 4), (0, -9)):
-    wprop("Tunnel Cage Lamp", x, z, 0, F + 4.3, tag="station")
+    cprop(name, x, z, yaw, "station")
+cprop("Toolbox", 5.4, -9.0, 270, "station", lift=0.77, mark=False)
+for (x, z) in ((-3, -3), (3, -3), (-3, 4), (3, 4), (-3, -9), (3, -9)):
+    wprop("Tunnel Cage Lamp", x, z, 0, ceiling_at(x, z) - 0.6, tag="station")
 # the pump station (west) and the magazine (east)
-for name, x, z, yaw in (("Diesel Generator", -24.5, 12.0, 0), ("Running Generator", -19.5, 16.5, 90), ("Concrete Pipe", -22.0, 17.5, 0),
-                        ("Gas Cylinders", -25.5, 16.0, 0), ("Oil Drum", -18.6, 11.0, 0), ("Rusty Drum", -18.0, 12.2, 0)):
-    wprop(name, x, z, yaw, F, tag="pump", mark=True)
+for name, x, z, yaw in (("Diesel Generator", -24.5, 11.6, 0), ("Running Generator", -19.5, 16.5, 90), ("Concrete Pipe", -24.6, 17.0, 0),
+                        ("Gas Cylinders", -25.5, 15.6, 0), ("Oil Drum", -18.6, 11.0, 0), ("Rusty Drum", -18.0, 12.2, 0)):
+    cprop(name, x, z, yaw, "pump")
 for name, x, z, yaw in (("Blasting Explosives Crate", 24.6, 11.4, 0), ("Blasting Explosives Crate", 25.0, 12.4, 90), ("Blasting Explosives Crate", 24.4, 16.6, 0),
-                        ("Wooden Crate", 19.4, 16.4, 0), ("Wooden Crate", 19.6, 11.6, 20), ("Mine Timber Stack", 22.0, 17.6, 0), ("Supply Crate" if "Supply Crate" in t.P else "Small Crate", 19.4, 14.0, 90)):
-    wprop(name, x, z, yaw, F, tag="magazine", mark=True)
+                        ("Wooden Crate", 19.4, 16.4, 0), ("Wooden Crate", 19.6, 11.6, 20), ("Mine Timber Stack", 25.2, 14.2, 90), ("Small Crate", 19.4, 14.0, 90)):
+    cprop(name, x, z, yaw, "magazine")
 for (x, z) in ((-22, 14), (22, 14), (0, -38)):
-    wprop("Tunnel Cage Lamp", x, z, 0, F + 3.4, tag="chamber")
-# the crusher chamber: the crusher under the ore pass, a hopper, carts
-for name, x, z, yaw in (("Jaw Crusher Unit", -2.5, -41.5, 0), ("Ore Bin Hopper", 3.2, -41.0, 0), ("Ore Mine Cart", -3.5, -35.0, 90), ("Mine Timber Stack", 4.0, -35.0, 90)):
-    wprop(name, x, z, yaw, F, tag="crusher", mark=True)
-# carts parked in the drifts (cover)
-for (x, z, yaw) in ((-30.0, -5.5, 0), (30.0, -2.5, 0), (-12.0, 17.6, 10), (12.0, 17.6, 350), (-46.0, 6.0, 70), (46.0, 6.0, 290), (1.5, 28.0, 90), (-1.5, -26.0, 90)):
-    fl = cave_floor(x, z)
-    if fl:
-        wprop("Ore Mine Cart", x, z, yaw, fl[0], tag="cart", mark=True)
+    wprop("Tunnel Cage Lamp", x, z, 0, ceiling_at(x, z) - 0.6, tag="chamber")
+# the crusher chamber: the crusher under the ore pass, a hopper beside the line, timber
+for name, x, z, yaw in (("Jaw Crusher Unit", -3.0, -41.5, 0), ("Ore Bin Hopper", 3.4, -41.0, 0), ("Mine Timber Stack", 4.0, -35.0, 90)):
+    cprop(name, x, z, yaw, "crusher")
 # portals: concrete adit frames at each tunnel mouth (look back down the tunnel)
 for (n, pts, w, h, op) in CAVES:
     if op != "end":
@@ -997,6 +1085,7 @@ cats = Counter()
 for name, x, z, yaw, y, tag in t.props:
     cats[t.P[name]["cat"]] += 1
 blocks = sum(1 for o in t.ops if o["op"] == "Block")
+print(f"track: {N_RAILS} rail pieces, {N_SLEEPERS} sleepers")
 print(f"area {t.area():.0f} m2, half {HALF_X:.1f} x {HALF_Z:.1f}, blocks {blocks}, buildings {len(BUILDINGS)}, hand trees {len(t.items)}, meshes {t.meshes} "
       f"(scenery trees {N_SCENERY}), hand props {len(t.props)}, cover {n_cover}x2, decal ops {sum(1 for o in t.ops if o['op'] == 'Decal')}")
 print("props by category:", dict(sorted(cats.items())))
@@ -1004,7 +1093,7 @@ print("props by rule:", dict(sorted(t.notes.items())))
 print("clutter asked:", sum(o["count"] for o in t.ops if o["op"] == "Clutter"), "in", sum(1 for o in t.ops if o["op"] == "Clutter"), "ops")
 print(f"terrain {T.nx} x {T.nz}, heights {T.min:.2f}..{T.max:.2f}")
 for (x, z, y, r) in HILLS:
-    print(f"hill ({x},{z}) ground {gy(x, z):.2f} cave {cave_floor(x, z)}")
+    print(f"hill ({x},{z}) ground {gy(x, z):.2f} cave floor {floor_at(x, z):.2f}")
 for (n, pts, w, h, op) in CAVES:
     if op == "end":
         print(f"{n}: portal ground {gy(pts[-1][0], pts[-1][1]):.2f}, previous point floor {pts[-2][2]} at ground {gy(pts[-2][0], pts[-2][1]):.2f}")

@@ -21,7 +21,7 @@ copper mine in a spruce and birch forest, two wooden lake villages and a church 
   main drift east-west, a haulage loop south with the pump station (west) and the explosives magazine (east), the
   north drift to the crusher chamber under the concentrator, the pit drift out onto the pit floor, and adits up to the
   forest behind the ridges, to each village's lake shore and to the church hill. Rails, timber frames, cage lamps,
-  carts as cover, signs (TASO 120, HISSI, RAJAHDE, ULOS).
+  a continuous mine railway (sleepers and rails meshes laid on the real cave floor and tipped to every ramp, via tools/world/caves.py, a port of the game's cave generator) with carts standing on it, signs (TASO 120, HISSI, RAJAHDE, ULOS).
 - **Elevation:** forest hills up to 8 m with granite crowns, a ridge screening each village from the mine, slag cones,
   the church hill, the pit down to -9 m, the tunnels at -8 m; the wavy noise outline rises into a cliff of forested
   hills (instanced mesh spruces and birches beyond the edge).
