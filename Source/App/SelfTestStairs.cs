@@ -104,8 +104,20 @@ public static partial class SelfTest
         if (problems.Count > 30)
             Fail($"stairs: {problems.Count - 30} more problem(s) (see the log)");
         Line("::notice title=Stairs (results)::" + summary.Replace("%", "%25"));
-        if (problems.Count > 0)
-            Line("::error title=Stairs report::" + string.Join("%0A", problems.Take(400)).Replace("\r", "").Replace("\n", " "));
+        foreach (var g in problems.GroupBy(p => p.Split(':')[0].Split(" / ")[0].Split(' ')[0]).Take(8)) // TEMP: dev report, one annotation per pack
+        {
+            var text = "";
+            var shapes = new HashSet<string>();
+            foreach (var p in g)
+            {
+                if (!shapes.Add(System.Text.RegularExpressions.Regex.Replace(p, "[-0-9.]+", "#")))
+                    continue;
+                if (text.Length + p.Length > 3900)
+                    break;
+                text += (text.Length > 0 ? "%0A" : "") + p.Replace("%", "%25");
+            }
+            Line($"::error title=Stairs {g.Key} ({g.Count()})::" + text);
+        }
     }
 
     /// <summary>Finds and checks every flight on one map (and, on maps with caves, the tunnel paths' headroom).</summary>
@@ -258,8 +270,29 @@ public static partial class SelfTest
                     (f.C0, f.C1) = (c0, c1);
                     f.Treads.Add(k);
                 }
+                // The foot: leading treads a body can stand on whole (0.8 m deep or more) are the landing in front of the
+                // flight, and one flush with the floor in front of it isn't a step.
+                while (f.Treads.Count >= 3)
+                {
+                    var b = solid[f.Treads[0]];
+                    var front = StairPoint(f, AlongLo(b, f.Axis, f.Dir) - 0.45f, (f.C0 + f.C1) / 2, 0);
+                    if (AlongHi(b, f.Axis, f.Dir) - AlongLo(b, f.Axis, f.Dir) < 2 * World.PlayerRadius
+                        && SupportAt(m, phys, front.X, front.Z, b.Max.Y + 0.02f, b.Max.Y - 3f) < b.Max.Y - 0.04f)
+                        break;
+                    f.Treads.RemoveAt(0);
+                }
                 if (f.Treads.Count < 3)
                     continue;
+                (f.C0, f.C1) = (float.MinValue, float.MaxValue);
+                f.MaxRise = 0;
+                for (var k = 0; k < f.Treads.Count; k++)
+                {
+                    var b = solid[f.Treads[k]];
+                    f.C0 = MathF.Max(f.C0, AcrossLo(b, f.Axis));
+                    f.C1 = MathF.Min(f.C1, AcrossHi(b, f.Axis));
+                    if (k > 0)
+                        f.MaxRise = MathF.Max(f.MaxRise, b.Max.Y - solid[f.Treads[k - 1]].Max.Y);
+                }
                 var first = solid[f.Treads[0]];
                 var last = solid[f.Treads[^1]];
                 if (last.Max.Y - first.Max.Y < 0.6f)

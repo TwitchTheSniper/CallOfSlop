@@ -631,6 +631,10 @@ public static partial class SelfTest
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
                                    + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
                                    + NoPathTrace(g, search, path, start, goal));
+                    if (detail.Count < 10) // TEMP (stair-headroom): walks through the doors near the room
+                        foreach (var dd in b.Plan.Doors.Where(dd => dd.Floor == r.Floor && Vector3.Distance(dd.SwingSide, r.Waypoint) < 4f))
+                            detail.Add($"{key} {r.Floor}:{r.Id} door at ({dd.Closed.Center.X:0.0}, {dd.Closed.Center.Z:0.0}): nodes {Node(dd.SwingSide)}/{Node(dd.OtherSide)} walk {WalkTrace(dd.SwingSide, dd.OtherSide)}; props near: "
+                                       + string.Join(" ", Enumerable.Range(0, yard.Solid.Count).Where(i => yard.IsPropCollider(i) && Vector3.Distance(yard.Solid[i].Center, dd.OtherSide) < 1.6f).Select(i => $"[{yard.Solid[i].Min.X:0.00},{yard.Solid[i].Min.Z:0.00}..{yard.Solid[i].Max.X:0.00},{yard.Solid[i].Max.Z:0.00} y{yard.Solid[i].Max.Y:0.0}]")));
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
