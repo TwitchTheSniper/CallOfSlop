@@ -56,6 +56,8 @@ public static class WeaponFile
         [nameof(WeaponDef.Caliber)] = (0, 1),
         [nameof(WeaponDef.Bright)] = (0, 1),
         [nameof(WeaponDef.Tail)] = (0, 1),
+        [nameof(WeaponDef.Penetration)] = (-1, 500),
+        [nameof(WeaponDef.PenetrationMult)] = (0, 5),
     };
 
     /// <summary>The JSON key for a field: its name with a lower-case first letter ("RangeM" -> "rangeM").</summary>

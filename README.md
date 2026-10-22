@@ -245,6 +245,36 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 - **Netcode**: the host simulates every projectile. A 38-byte spawn message starts it everywhere, each client flies its own copy with the same deterministic steps, guided and stuck ones get a 29-byte correction with the snapshots, and a 25-byte message ends it with the server's result. Your own rocket appears the moment you fire (predicted) and the server's copy takes over without a jump; a new rocket is flown forward by the shooter's latency (up to 100 ms) so it is where the shooter saw it. Protocol 30.
 - **Modding**: launchers are weapon files in `Weapons/Launchers` with a `"launcher"` block (projectile, guidance, speeds, blast, arming, fuses, lock-on, cluster, thermobaric; see [Weapons/README.md](Weapons/README.md#launchers)). New flying kill streaks register how launchers treat them (`LauncherTargets.Register`: airborne, lock-on hits to kill, flares).
 
+### Bullet penetration
+
+**Bullets go through thin or soft walls when the round is big enough.** Every gun has a penetration power (from its class and calibre: pistols and SMGs low, rifles medium, DMRs and LMGs high, snipers very high; shotgun pellets almost none, slugs medium; launchers, the Toy Blaster and the Arc Carbine none, the Railspike most). Passing a box costs its thickness along the bullet's path (so an angled shot goes through more) times its material's resistance; the round goes on with the power it has left, its damage cut after each surface (it keeps the material's share, less the harder the wall was), and passes at most **3 surfaces** (touching boxes, such as a wall's core and its plaster linings, are one surface). A surface it can't get all the way through stops it at its front. **Never:** the terrain, the ground, rock, asphalt, the map's boundary, moving platforms, the Bocage hedgerows (earth banks), anything thicker than its material's limit (25 cm of concrete, 35 cm of brick, 6 cm of metal), crates and cars thicker than that. Headshots still count through a wall. **AP Rounds** (magazine slot) give 1.6x the power, the **Hollow Point Mag** 0.6x.
+
+How much of each material (cm, one surface) a gun can pass, from `Materials/penetration.json`:
+
+| Material | Pistol (P9) | Hand cannon | SMG (Hornet) | AR (Vanguard) | AR (Bulldog) | LMG (Anvil) | DMR (M14) | Sniper (Needle) | .50 (Leviathan) | Railspike | Slug | Buckshot |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| *power* | 8 | 14 | 8 | 20 | 24 | 31 | 40 | 90 | 100 | 140 | 27 | 2 |
+| Wood | 8 | 14 | 8 | 20 | 24 | 31 | 40 | 45 | 45 | 45 | 27 | 2 |
+| Plaster | 10 | 18 | 10 | 25 | 30 | 39 | 40 | 40 | 40 | 40 | 34 | 2 |
+| Glass | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 |
+| Soft (cardboard, plastic) | 27 | 47 | 27 | 68 | 81 | 105 | 120 | 120 | 120 | 120 | 90 | 7 |
+| Tiles (floors, roofs) | 3 | 6 | 3 | 8 | 10 | 13 | 16 | 25 | 25 | 25 | 11 | - |
+| Snow | 4 | 7 | 4 | 10 | 12 | 16 | 20 | 45 | 50 | 70 | 14 | 1 |
+| Brick | 2 | 3 | 2 | 5 | 5 | 7 | 9 | 20 | 22 | 31 | 6 | - |
+| Concrete | 1 | 2 | 1 | 3 | 4 | 5 | 6 | 14 | 15 | 22 | 4 | - |
+| Prototype grid | 2 | 3 | 2 | 5 | 5 | 7 | 9 | 20 | 22 | 30 | 6 | - |
+| Metal | 1 | 2 | 1 | 3 | 3 | 4 | 5 | 6 | 6 | 6 | 3 | - |
+| Dirt, grass (earthy boxes) | 1 | 2 | 1 | 3 | 4 | 5 | 7 | 15 | 17 | 20 | 4 | - |
+| Sand (sandbags) | - | 2 | - | 2 | 3 | 3 | 4 | 10 | 11 | 15 | 3 | - |
+| Rock, asphalt, hedgerow | never | never | never | never | never | never | never | never | never | never | never | never |
+
+So a building's plaster interior walls (25 cm + linings) stop pistols and SMGs but not LMGs, DMRs and snipers, wooden floors and doors let most rifles through, and brick or concrete outside walls stop everything but the heaviest rifles (the 10 cm wood + 10 cm plaster check: the Needle passes both with 61% of its damage).
+
+- **What a surface is made of** is the bullet-impact surface (the box's texture refined by colour and facing, a building part's own material, a door's wood or metal, the terrain's ground); props by their name (`"props"` rules in the file: sandbags are sand, crates and pallets wood, cars and trucks metal, the Bocage hedgerows earth that stops everything), else their biggest textured parts, else how they break.
+- **Server-authoritative**: the host extends each pellet's ray through what it can pass and hits players behind with the rewound positions of lag compensation; breakable props, doors and glass along the way take the hit too. The shooter predicts the same tracer and hit marker; a hit through a wall shows a second, inner set of marker ticks. Bots get no wallhacks: they only shoot at people they see, except that an Insane base of fire may now put its suppressive fire on a fresh last known spot through a wall its gun goes through.
+- **Both sides of the wall** get an impact mark (the exit hole 30% bigger) and a puff of dust (sparks off metal), the same on every screen: a shot that went through something sends its origin after the tracer ends (12 bytes; flag 64 in the Shot message, 128 = a hit through a wall). Older clients ignore it. No protocol change of its own.
+- **Data**: `Materials/penetration.json` (`call-of-slop-penetration/1`): per material `resistPerCm`, `maxCm` (0 = never) and `damageKept`; per weapon class `base` + `perCalibre` x calibre; `shotgunPellets`; `maxSurfaces`; `props` rules. A weapon file can give `"penetration"` (an absolute power, -1 = derived) and attachments can change `"penetrationMult"` (see [Weapons/README.md](Weapons/README.md)). A map can switch it off with a top-level `"penetration": false` (on everywhere by default; see [Maps/README.md](Maps/README.md)).
+
 ### Melee
 
 Press **V** for a quick rifle-butt. It reaches about 2.4 m and **kills in one hit** (150 damage against 100 health), from the front or behind. Entrenched (bullets only) and Flak Jacket (explosions only) don't reduce it, and Last Stand doesn't save you from it. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Zombies and breakable props still take 55 damage from it (a built Zombies melee weapon has its own stats). Bots use it when you stay right up close to them: they need a moment in reach first (0.6 s on Easy, 0.35 s on Normal, 0.2 s on Hard, 0.18 s on Insane), so running past one isn't instant death.
