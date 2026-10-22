@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "press-room",
+  "description": "The Print Shop's press room: presses, a guillotine, pallets of paper, ink tins and rags.",
+  "items": [
+    {"props": ["Print Shop Guillotine"], "place": "wall"},
+    {"props": ["Print Shop Paper Pallet"], "place": "wall", "count": [2, 3]},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Print Shop Paper Pallet", "Cardboard Stack"], "place": "floor", "count": [1, 2], "gap": 0.5},
+    {
+      "props": ["Paint Cans", "Newspaper Stack", "Cardboard Box Small", "Mop and Bucket"],
+      "place": "floor",
+      "count": [2, 4]
+    }
+  ]
+}

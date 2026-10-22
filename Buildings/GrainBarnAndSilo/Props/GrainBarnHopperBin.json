@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Grain Barn Hopper Bin",
+  "description": "A galvanized hopper-bottom grain bin on legs, a slide gate and a sack under the chute.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 3.4, 2.0], "offset": [0, 1.7, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.1, 1.2, 0.1], "offset": [-0.9, 0.6, -0.9], "color": "#5a5a5a"},
+    {"size": [0.1, 1.2, 0.1], "offset": [0.9, 0.6, -0.9], "color": "#5a5a5a"},
+    {"size": [0.1, 1.2, 0.1], "offset": [-0.9, 0.6, 0.9], "color": "#5a5a5a"},
+    {"size": [0.1, 1.2, 0.1], "offset": [0.9, 0.6, 0.9], "color": "#5a5a5a"},
+    {"size": [0.5, 0.4, 0.207], "offset": [0, 1.0, 0], "color": "#a8b0b4", "material": "metal", "yaw": 0},
+    {"size": [0.5, 0.4, 0.207], "offset": [0, 1.0, 0], "color": "#a8b0b4", "material": "metal", "yaw": 45},
+    {"size": [0.5, 0.4, 0.207], "offset": [0, 1.0, 0], "color": "#a8b0b4", "material": "metal", "yaw": 90},
+    {"size": [0.5, 0.4, 0.207], "offset": [0, 1.0, 0], "color": "#a8b0b4", "material": "metal", "yaw": 135},
+    {"size": [1.2, 0.4, 0.497], "offset": [0, 1.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 0},
+    {"size": [1.2, 0.4, 0.497], "offset": [0, 1.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 45},
+    {"size": [1.2, 0.4, 0.497], "offset": [0, 1.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 90},
+    {"size": [1.2, 0.4, 0.497], "offset": [0, 1.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 135},
+    {"size": [2.0, 1.6, 0.828], "offset": [0, 2.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 0},
+    {"size": [2.0, 1.6, 0.828], "offset": [0, 2.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 45},
+    {"size": [2.0, 1.6, 0.828], "offset": [0, 2.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 90},
+    {"size": [2.0, 1.6, 0.828], "offset": [0, 2.4, 0], "color": "#a8b0b4", "material": "metal", "yaw": 135},
+    {"size": [1.4, 0.2, 0.58], "offset": [0, 3.3, 0], "color": "#a8b0b4", "yaw": 0},
+    {"size": [1.4, 0.2, 0.58], "offset": [0, 3.3, 0], "color": "#a8b0b4", "yaw": 45},
+    {"size": [1.4, 0.2, 0.58], "offset": [0, 3.3, 0], "color": "#a8b0b4", "yaw": 90},
+    {"size": [1.4, 0.2, 0.58], "offset": [0, 3.3, 0], "color": "#a8b0b4", "yaw": 135},
+    {"size": [0.2, 0.4, 0.2], "offset": [0, 0.6, 0.0], "color": "#5a5a5a"},
+    {"size": [0.45, 0.5, 0.35], "offset": [0, 0.25, 0.1], "color": "#c8b07a"}
+  ]
+}

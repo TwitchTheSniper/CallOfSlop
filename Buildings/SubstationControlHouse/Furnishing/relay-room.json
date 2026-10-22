@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "relay-room",
+  "description": "The Substation's relay room: tall protection cabinets, a server rack, spare relays in boxes.",
+  "items": [
+    {"props": ["Substation Relay Cabinet"], "place": "wall", "count": [3, 5], "gap": 0.02},
+    {"props": ["Server Rack"], "place": "wall"},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [1, 2]}
+  ]
+}

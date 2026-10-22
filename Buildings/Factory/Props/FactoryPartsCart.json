@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Factory Parts Cart",
+  "description": "A blue steel trolley loaded with motor housings and a tray of screws.",
+  "collision": "solid",
+  "collider": [{"size": [1.06, 1.17, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.0, 0.04, 0.6], "offset": [0, 0.2, 0], "color": "#2a5aa0", "material": "metal"},
+    {"size": [1.0, 0.04, 0.6], "offset": [0, 0.85, 0], "color": "#2a5aa0", "material": "metal"},
+    {"size": [0.04, 0.8, 0.04], "offset": [-0.48, 0.5, -0.28], "color": "#2a5aa0"},
+    {"size": [0.04, 0.8, 0.04], "offset": [0.48, 0.5, -0.28], "color": "#2a5aa0"},
+    {"size": [0.04, 0.8, 0.04], "offset": [-0.48, 0.5, 0.28], "color": "#2a5aa0"},
+    {"size": [0.04, 0.8, 0.04], "offset": [0.48, 0.5, 0.28], "color": "#2a5aa0"},
+    {"size": [0.04, 0.3, 0.6], "offset": [-0.52, 1.0, 0], "color": "chrome"},
+    {"size": [0.3, 0.3, 0.124], "offset": [-0.2, 1.02, 0], "color": "steel", "yaw": 0},
+    {"size": [0.3, 0.3, 0.124], "offset": [-0.2, 1.02, 0], "color": "steel", "yaw": 45},
+    {"size": [0.3, 0.3, 0.124], "offset": [-0.2, 1.02, 0], "color": "steel", "yaw": 90},
+    {"size": [0.3, 0.3, 0.124], "offset": [-0.2, 1.02, 0], "color": "steel", "yaw": 135},
+    {"size": [0.3, 0.3, 0.124], "offset": [0.22, 1.02, 0], "color": "steel", "yaw": 0},
+    {"size": [0.3, 0.3, 0.124], "offset": [0.22, 1.02, 0], "color": "steel", "yaw": 45},
+    {"size": [0.3, 0.3, 0.124], "offset": [0.22, 1.02, 0], "color": "steel", "yaw": 90},
+    {"size": [0.3, 0.3, 0.124], "offset": [0.22, 1.02, 0], "color": "steel", "yaw": 135},
+    {"size": [0.5, 0.08, 0.4], "offset": [0, 0.26, 0], "color": "#c8a040"},
+    {"size": [0.1, 0.1, 0.1], "offset": [-0.42, 0.05, -0.22], "color": "rubber"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.42, 0.05, -0.22], "color": "rubber"},
+    {"size": [0.1, 0.1, 0.1], "offset": [-0.42, 0.05, 0.22], "color": "rubber"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.42, 0.05, 0.22], "color": "rubber"}
+  ]
+}

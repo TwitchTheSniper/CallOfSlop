@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Factory Product Pallet",
+  "description": "Four boxed washing machines shrink-wrapped on a pallet, ready to ship.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.07, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 70,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 14, "size": [0.08, 0.35], "colors": ["cardboard", "white", "pallet"]}
+  },
+  "parts": [
+    {"size": [1.2, 0.14, 1.0], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [0.56, 0.9, 0.46], "offset": [-0.3, 0.6, -0.24], "color": "cardboard"},
+    {"size": [0.56, 0.9, 0.46], "offset": [0.3, 0.6, -0.24], "color": "cardboard"},
+    {"size": [0.56, 0.9, 0.46], "offset": [-0.3, 0.6, 0.24], "color": "cardboard"},
+    {"size": [0.56, 0.9, 0.46], "offset": [0.3, 0.6, 0.24], "color": "cardboard"},
+    {"size": [1.14, 0.02, 0.94], "offset": [0, 1.06, 0], "color": "#e8f0f0"},
+    {"size": [0.3, 0.2, 0.01], "offset": [-0.3, 0.75, 0.475], "color": "#3f7a4e"},
+    {"size": [0.3, 0.2, 0.01], "offset": [0.3, 0.75, 0.475], "color": "#3f7a4e"}
+  ]
+}

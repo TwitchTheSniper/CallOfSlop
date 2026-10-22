@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "chem-lab",
+  "description": "The Chemical Lab's main lab: fume hoods and benches round the walls, an island bench, stools, a safety shower.",
+  "items": [
+    {"props": ["Chemical Lab Fume Hood"], "place": "wall", "count": [2, 3]},
+    {"props": ["Chemical Lab Island Bench"], "place": "centre"},
+    {"props": ["Chemical Lab Bench"], "place": "wall", "count": [2, 4]},
+    {"props": ["Chemical Lab Safety Shower"], "place": "corner"},
+    {"props": ["Bar Stool"], "place": "floor", "count": [2, 3], "gap": 0.3},
+    {"props": ["Pedal Bin", "Cardboard Box Small"], "place": "floor", "count": [1, 2]}
+  ]
+}

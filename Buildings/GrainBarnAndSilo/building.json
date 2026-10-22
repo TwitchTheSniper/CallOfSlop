@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Grain Barn and Silo",
+  "theme": "Midwest red timber grain barn with galvanized silos: white trim, a steep tin roof, hay, sacks, a tractor and augers",
+  "category": "industrial",
+  "description": "A red barn with double barn doors front and back, a threshing floor with the tractor, a hopper-bin room, a tool room, a farm office and a hayloft, beside two tall grain silos.",
+  "author": "Call of Slop",
+  "seed": 310,
+  "wallThickness": 0.25,
+  "storeyHeight": 4.5,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "wood"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "barn red": {"wall": "#9a2e22", "interior": "#8a6a48", "floor": "#7a6040", "ceiling": "#6a5038", "trim": "#ece6d8", "door": "#9a2e22", "roof": "#8a9296"},
+    "weathered grey": {"wall": "#7a746a", "interior": "#8a7a62", "floor": "#7a6448", "ceiling": "#6a5a44", "trim": "#d8d0c0", "door": "#5a3a2a", "roof": "#6a4a38"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "barn",
+          "type": "barn-floor",
+          "rect": [-9, -6, 4, 6],
+          "autoWindows": {"spacing": 3.0, "width": 1.0, "sill": 1.8, "head": 2.8},
+          "floor": {"color": "#7a6a50", "material": "dirt"},
+          "props": [{"name": "Grain Barn Tractor", "at": [1.2, 0.6], "yaw": 90}]
+        },
+        {"id": "bins", "type": "grain-bins", "rect": [4, -6, 9, 0], "windows": false},
+        {"id": "workshop", "type": "farm-workshop", "rect": [4, 0, 9, 3], "autoWindows": {"spacing": 2.4, "width": 1.0, "sill": 1.4, "head": 2.4}},
+        {"id": "office", "type": "farm-office", "rect": [4, 3, 9, 6], "autoWindows": {"spacing": 2.4, "width": 1.1, "sill": 1.0, "head": 2.3}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-3.6, 6], "width": 2.0, "head": 3.8, "material": "wood", "swing": "out", "hinge": "right"},
+        {"type": "door", "at": [-1.4, 6], "width": 2.0, "head": 3.8, "material": "wood", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [-3.6, -6], "width": 2.0, "head": 3.8, "material": "wood", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [-1.4, -6], "width": 2.0, "head": 3.8, "material": "wood", "swing": "out", "hinge": "right"},
+        {"type": "door", "at": [4, -3], "width": 1.2},
+        {"type": "door", "at": [4, 1.5], "width": 1.0},
+        {"type": "door", "at": [6.5, 3], "width": 0.9},
+        {"type": "door", "at": [6.5, 6], "width": 1.0, "front": true}
+      ]
+    },
+    {
+      "height": 3.2,
+      "rooms": [{"id": "loft", "type": "hayloft", "rect": [-9, -6, 9, 6], "autoWindows": {"spacing": 4.0, "width": 1.0, "sill": 1.0, "head": 2.2}}],
+      "openings": [{"type": "hole", "at": [-2.5, 6], "width": 1.6, "sill": 0.0, "head": 2.4}]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-8.6, -4.8, -7.6, -1.6], "dir": "+z", "color": {"color": "#7a5a3a", "material": "wood"}}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 42, "overhang": 0.5, "color": {"color": "$roof", "material": "metal"}},
+  "anchors": [
+    {"type": "spawn", "name": "farm office", "floor": 0, "at": [6.5, 4.5]},
+    {"type": "spawn", "name": "threshing floor", "floor": 0, "at": [-5, 2]},
+    {"type": "spawn", "name": "hayloft", "floor": 1, "at": [3, 0]},
+    {"type": "hill", "name": "threshing floor", "floor": 0, "at": [-3, 0]},
+    {"type": "point", "name": "hayloft", "floor": 1, "at": [-3, 0]}
+  ],
+  "extras": [
+    {"type": "prop", "name": "Grain Barn Silo", "at": [14.0, -3.0]},
+    {"type": "prop", "name": "Grain Barn Silo", "at": [14.0, 2.6]},
+    {"type": "prop", "name": "Grain Barn Auger", "at": [11.0, -6.6], "yaw": 0},
+    {"type": "block", "min": [9.12, 4.4, -0.3], "max": [11.9, 4.8, 0.3], "color": {"color": "#a8b0b4", "material": "metal"}},
+    {"type": "prop", "name": "Hay Bale", "at": [-11.0, 3.0], "yaw": 90},
+    {"type": "prop", "name": "Hay Bale", "at": [-11.0, 4.2], "yaw": 90},
+    {"type": "prop", "name": "Hay Bale", "at": [-11.0, 3.6, 0.5], "yaw": 90},
+    {"type": "prop", "name": "Utility Trailer", "at": [-6.0, 12.0], "yaw": 0},
+    {"type": "prop", "name": "Pickup Truck", "at": [8.5, 11.0], "yaw": 90},
+    {"type": "prop", "name": "Wheelbarrow", "at": [-11.2, -2.0], "yaw": 30},
+    {"type": "prop", "name": "Chicken", "at": [-7.0, 10.0]},
+    {"type": "prop", "name": "Chicken", "at": [-6.0, 10.6], "yaw": 120},
+    {"type": "prop", "name": "Chicken", "at": [-0.5, 10.4], "yaw": 250},
+    {"type": "prop", "name": "Weather Vane", "at": [0.0, 0.0], "onRoof": true},
+    {"type": "block", "min": [-9.13, 0, 6.13], "max": [-8.9, 4.4, 6.25], "color": "$trim"},
+    {"type": "block", "min": [3.9, 0, 6.13], "max": [4.13, 4.4, 6.25], "color": "$trim"},
+    {"type": "block", "min": [-9.13, 4.3, 6.13], "max": [9.13, 4.5, 6.25], "color": "$trim"},
+    {"type": "prop", "name": "Rusty Drum", "at": [10.0, 5.2]}
+  ]
+}

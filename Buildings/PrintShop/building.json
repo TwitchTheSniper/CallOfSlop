@@ -1,0 +1,92 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Print Shop",
+  "theme": "1930s high-street printing works: cream render, bottle-green trim, ink-stained floorboards, presses rattling behind the shop counter",
+  "category": "industrial",
+  "description": "Two floors: a front shop, a press room with offset presses and a guillotine, a bindery and an ink store below; a composing room, a design studio, an office and a paper store above.",
+  "author": "Call of Slop",
+  "seed": 307,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.5,
+  "exterior": {"color": "$wall", "material": "none"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "cream and green": {"wall": "#e2d8bc", "interior": "#e8e0c8", "floor": "#6a4a30", "ceiling": "#f0ead8", "trim": "#2f5a3e", "door": "#2f5a3e", "roof": "#3e3a38"},
+    "red brick": {"wall": "#8a4434", "interior": "#e4dcc4", "floor": "#6a4a30", "ceiling": "#efe8d6", "trim": "#1f3f6a", "door": "#1f3f6a", "roof": "#3a3a3e"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {"id": "shop", "type": "print-counter", "rect": [-8, 2, -1, 6], "windows": false},
+        {
+          "id": "press",
+          "type": "press-room",
+          "rect": [-8, -6, 4, 2],
+          "autoWindows": {"spacing": 2.8, "width": 1.4, "sill": 1.2, "head": 2.8},
+          "floor": {"color": "#6a6660", "material": "concrete"},
+          "props": [{"name": "Print Shop Offset Press", "at": [-2.2, -0.6]}, {"name": "Print Shop Offset Press", "at": [2.2, -0.6]}]
+        },
+        {"id": "bindery", "type": "bindery", "rect": [4, -6, 8, 2], "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 1.2, "head": 2.6}},
+        {"id": "stairhall", "type": "corridor", "rect": [-1, 2, 4, 6], "windows": false},
+        {"id": "ink", "type": "ink-store", "rect": [4, 2, 8, 6], "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.8, "head": 2.6}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-4.5, 6], "width": 1.1, "front": true, "material": "glass", "health": 50},
+        {"type": "window", "at": [-6.9, 6], "width": 1.6, "sill": 0.6, "head": 2.7, "health": 20},
+        {"type": "window", "at": [-2.1, 6], "width": 1.6, "sill": 0.6, "head": 2.7, "health": 20},
+        {"type": "window", "at": [-8, 4], "width": 1.6, "sill": 0.6, "head": 2.7, "health": 20},
+        {"type": "window", "at": [1.5, 6], "width": 1.4, "sill": 1.0, "head": 2.5},
+        {"type": "door", "at": [-4.5, 2], "width": 1.0},
+        {"type": "door", "at": [-1, 4], "width": 0.9},
+        {"type": "door", "at": [1.5, 2], "width": 1.0},
+        {"type": "door", "at": [4, 4], "width": 0.9, "material": "metal"},
+        {"type": "arch", "at": [4, -2], "width": 1.6},
+        {"type": "door", "at": [8, -4], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [-6, -6], "width": 1.0}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 0.9, "head": 2.4},
+      "rooms": [
+        {"id": "typesetting", "type": "typesetting", "rect": [-8, -6, 0, 2]},
+        {"id": "office", "type": "office", "rect": [0, -6, 8, 2]},
+        {"id": "landing", "type": "corridor", "rect": [-1, 2, 4, 6], "windows": false},
+        {"id": "studio", "type": "studio", "rect": [-8, 2, -1, 6]},
+        {"id": "paper", "type": "paper-store", "rect": [4, 2, 8, 6]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-1, 3.2], "width": 0.9},
+        {"type": "door", "at": [2, 2], "width": 1.0},
+        {"type": "door", "at": [0, -2], "width": 1.0},
+        {"type": "door", "at": [4, 3.5], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [0.2, 4.8, 2.4, 5.75], "dir": "-x"}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.35, "color": {"color": "$roof", "material": "tiles"}},
+  "anchors": [
+    {"type": "spawn", "name": "front shop", "floor": 0, "at": [-4.5, 4]},
+    {"type": "spawn", "name": "studio", "floor": 1, "at": [-4.5, 4]},
+    {"type": "spawn", "name": "office", "floor": 1, "at": [4, -2]},
+    {"type": "hill", "name": "press room", "floor": 0, "at": [-2, -2]},
+    {"type": "point", "name": "composing room", "floor": 1, "at": [-4, -2]}
+  ],
+  "extras": [
+    {"type": "block", "min": [-8.13, 2.9, 6.13], "max": [-1.0, 3.3, 6.3], "color": "$trim"},
+    {"type": "prop", "name": "Shop Sign", "at": [-4.5, 2.95, 6.3], "yaw": 0},
+    {"type": "awning", "rect": [-8.0, 6.13, -1.0, 7.3], "height": 2.75, "color": "$trim"},
+    {"type": "prop", "name": "Sandwich Board", "at": [-2.6, 7.6], "yaw": 10},
+    {"type": "prop", "name": "Newspaper Box", "at": [-0.4, 7.0]},
+    {"type": "prop", "name": "Bike Rack", "at": [2.5, 7.2], "yaw": 90},
+    {"type": "prop", "name": "Print Shop Paper Pallet", "at": [10.0, -6.5], "yaw": 0},
+    {"type": "prop", "name": "Print Shop Paper Pallet", "at": [10.0, -1.6], "yaw": 0},
+    {"type": "prop", "name": "Van", "at": [12.5, -4.0], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-3.0, -6.8], "yaw": 180},
+    {"type": "prop", "name": "Recycling Bin", "at": [-2.0, -6.8], "yaw": 180},
+    {"type": "block", "min": [5.6, 6.0, -1.6], "max": [6.6, 8.6, -0.6], "color": {"color": "#8a4434", "material": "brick"}}
+  ]
+}

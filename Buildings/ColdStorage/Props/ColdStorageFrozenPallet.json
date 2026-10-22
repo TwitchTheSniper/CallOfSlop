@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cold Storage Frozen Pallet",
+  "description": "A pallet of frozen food cartons, shrink-wrapped, white with frost.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.17, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 60,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 14, "size": [0.06, 0.3], "colors": ["cardboard", "#e4eef4"]}
+  },
+  "parts": [
+    {"size": [1.2, 0.14, 1.0], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.1, 0.5, 0.9], "offset": [0, 0.39, 0], "color": "cardboard"},
+    {"size": [1.1, 0.5, 0.9], "offset": [0, 0.89, 0], "color": "#d8d0b8"},
+    {"size": [1.14, 0.03, 0.94], "offset": [0, 1.15, 0], "color": "#e4eef4"},
+    {"size": [0.4, 0.25, 0.01], "offset": [0.2, 0.6, 0.455], "color": "#3a70b0"}
+  ]
+}

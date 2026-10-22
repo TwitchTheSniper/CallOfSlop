@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Factory Assembly Bench",
+  "description": "A steel assembly bench: parts bins, a lamp, a half-built washing machine on a jig.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 0.93, 0.8]}, {"size": [2.0, 0.75, 0.06], "offset": [0, 1.3, -0.38]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.05, 0.3]}},
+  "parts": [
+    {"size": [2.0, 0.06, 0.8], "offset": [0, 0.9, 0], "color": "#9aa3a8", "material": "metal"},
+    {"size": [0.06, 0.87, 0.06], "offset": [-0.95, 0.435, -0.35], "color": "darkgrey"},
+    {"size": [0.06, 0.87, 0.06], "offset": [0.95, 0.435, -0.35], "color": "darkgrey"},
+    {"size": [0.06, 0.87, 0.06], "offset": [-0.95, 0.435, 0.35], "color": "darkgrey"},
+    {"size": [0.06, 0.87, 0.06], "offset": [0.95, 0.435, 0.35], "color": "darkgrey"},
+    {"size": [1.9, 0.03, 0.7], "offset": [0, 0.25, 0], "color": "#9aa3a8"},
+    {"size": [2.0, 0.7, 0.04], "offset": [0, 1.3, -0.38], "color": "#6f7a80"},
+    {"size": [0.25, 0.14, 0.2], "offset": [-0.8, 1.3, -0.27], "color": "blue"},
+    {"size": [0.25, 0.14, 0.2], "offset": [-0.5, 1.3, -0.27], "color": "yellow"},
+    {"size": [0.25, 0.14, 0.2], "offset": [-0.2, 1.3, -0.27], "color": "red"},
+    {"size": [0.25, 0.14, 0.2], "offset": [0.1, 1.3, -0.27], "color": "blue"},
+    {"size": [0.6, 0.62, 0.55], "offset": [0.55, 1.24, 0.05], "color": "white", "material": "metal"},
+    {"size": [0.36, 0.36, 0.02], "offset": [0.55, 1.26, 0.335], "color": "#2a2a2a"},
+    {"size": [0.04, 0.6, 0.04], "offset": [-0.9, 1.25, -0.2], "color": "darkgrey"},
+    {"size": [0.25, 0.08, 0.16], "offset": [-0.8, 1.55, -0.1], "color": "#2a2a2a"},
+    {
+      "size": [0.2, 0.02, 0.12],
+      "offset": [-0.8, 1.505, -0.1],
+      "color": "#fff6d0",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.97, "color": "#fff6d0", "glow": 0.8}
+    },
+    {"size": [0.3, 0.05, 0.2], "offset": [-0.2, 0.955, 0.15], "color": "red"}
+  ]
+}

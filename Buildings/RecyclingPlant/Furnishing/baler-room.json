@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "baler-room",
+  "description": "The Recycling Plant's baler room: finished bales stacked by the walls.",
+  "items": [
+    {
+      "props": ["Recycling Can Bale", "Recycling Paper Bale", "Recycling Plastic Bale"],
+      "place": "wall",
+      "count": [3, 5]
+    },
+    {"props": ["Pallet"], "place": "floor", "count": [1, 2]},
+    {"props": ["Broom", "Litter"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Factory Control Panel",
+  "description": "A grey wall control cabinet: rows of buttons and lamps, a red emergency stop, a yellow danger label.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 1.86, 0.4]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.0, 1.8, 0.4], "offset": [0, 0.9, 0], "color": "#b8bcb4", "material": "metal"},
+    {"size": [0.9, 0.06, 0.36], "offset": [0, 1.83, 0], "color": "#8a8e88"},
+    {"size": [0.8, 0.5, 0.02], "offset": [0, 1.4, 0.205], "color": "#3a3d3a"},
+    {
+      "size": [0.12, 0.08, 0.03],
+      "offset": [-0.25, 1.5, 0.215],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 1.1, "duty": 0.6, "color": "#40ff70", "glow": 0.9}
+    },
+    {
+      "size": [0.12, 0.08, 0.03],
+      "offset": [0.0, 1.5, 0.215],
+      "color": "#ffb020",
+      "anim": {"type": "blink", "period": 2.3, "duty": 0.4, "color": "#ffc040", "glow": 0.9}
+    },
+    {
+      "size": [0.12, 0.08, 0.03],
+      "offset": [0.25, 1.5, 0.215],
+      "color": "#30ff60",
+      "anim": {"type": "cycle", "period": 3, "steps": 3, "on": [0, 2], "color": "#40ff70", "glow": 0.9}
+    },
+    {
+      "size": [0.6, 0.08, 0.03],
+      "offset": [0, 1.28, 0.215],
+      "color": "#40a0ff",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.9, "color": "#60b0ff", "glow": 0.6}
+    },
+    {"size": [0.16, 0.16, 0.08], "offset": [0.25, 0.95, 0.23], "color": "red"},
+    {"size": [0.24, 0.24, 0.02], "offset": [0.25, 0.95, 0.205], "color": "yellow"},
+    {"size": [0.3, 0.2, 0.02], "offset": [-0.22, 0.95, 0.205], "color": "yellow"},
+    {"size": [0.04, 0.6, 0.04], "offset": [-0.35, 0.3, 0.22], "color": "darkgrey"}
+  ]
+}

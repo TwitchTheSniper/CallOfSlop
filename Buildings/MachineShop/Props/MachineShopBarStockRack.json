@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Machine Shop Bar Stock Rack",
+  "description": "A steel rack of round and square bar stock and offcuts.",
+  "collision": "solid",
+  "collider": [{"size": [2.9, 1.2, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.08, 1.2, 0.8], "offset": [-1.4, 0.6, 0], "color": "#3a3a3a"},
+    {"size": [0.08, 1.2, 0.8], "offset": [0, 0.6, 0], "color": "#3a3a3a"},
+    {"size": [0.08, 1.2, 0.8], "offset": [1.4, 0.6, 0], "color": "#3a3a3a"},
+    {"size": [2.9, 0.06, 0.8], "offset": [0, 0.4, 0], "color": "#3a3a3a"},
+    {"size": [2.9, 0.06, 0.8], "offset": [0, 0.9, 0], "color": "#3a3a3a"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, -0.3], "color": "steel"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, -0.18], "color": "chrome"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, -0.06], "color": "#b8693a"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, 0.06], "color": "steel"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, 0.18], "color": "#c8a040"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.46, 0.3], "color": "steel"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, -0.3], "color": "steel"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, -0.18], "color": "chrome"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, -0.06], "color": "#b8693a"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, 0.06], "color": "steel"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, 0.18], "color": "#c8a040"},
+    {"size": [2.9, 0.06, 0.06], "offset": [0, 0.96, 0.3], "color": "steel"}
+  ]
+}
