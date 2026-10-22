@@ -56,6 +56,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
+| `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
@@ -546,7 +547,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 
 | Op | Parameters | What it makes |
 |---|---|---|
-| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0 | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. |
+| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0, flag = "" | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. `flag` is for flag props only: `"us"`, `"uk"`, `"france"`, `"finland"`, `"random"` or `"none"` (see [Flags](#flags)). |
 | `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15, mirror = false | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). With `"mirror": true` every prop also gets a twin turned 180 degrees about the map's centre (see below). |
 
 ```
@@ -567,6 +568,20 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **Fingerprint:** props count towards the map's fingerprint, so host and players need the same map file and the same Props folder. Maps without props keep their old fingerprint.
 - **Pack props:** a pack can carry props of its own in `Maps/<Pack>/Props`, seen only by that pack's maps; `"global:Name"` always means the prop from the `Props` folder. See [Where assets go](#where-assets-go).
 - **Cost:** props are drawn instanced, a few hundred on a map cost well under a millisecond. Hand-placed solid props are best for cover you design around; Clutter is best for litter and dressing.
+
+### Flags
+
+Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Banner**) fly a national flag from the flag pool in `Props/Flags/flags.json`: the US, UK, French and Finnish flags. A **Flag on a Pole** picks one at random by default; the pick comes from the flag's position, so it's the same on every PC and the same every match, and flags mirrored across a symmetric map fly the same flag. To choose:
+
+```
+{ "op": "Prop", "name": "Flag on a Pole", "x": 4, "z": -6, "flag": "france" },
+{ "op": "Prop", "name": "Hanging Banner", "x": 0, "z": -24, "y": 3.3, "flag": "uk" },
+{ "op": "Prop", "name": "Flag on a Pole", "x": 9, "z": -6, "flag": "none" }
+```
+
+- **`flag`** on a placement: a flag id, `"random"` (from the map's pool) or `"none"` (the prop's own striped cloth). Leave it out for the prop's default (random for a Flag on a Pole, its own cloth for pennants and banners).
+- **`"flagPool"`** at the top of the map file limits the random ones, e.g. `"flagPool": ["uk", "us"]` for a map set in one place, or `"flagPool": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
+- Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
 
 ## Meshes and models
 

@@ -34,6 +34,7 @@
     "randomYaw": false,
     "yawStep": 90
   },
+  "flag": {"cloth": [4, 7], "default": "none"},
   "parts": [
     {"size": [0.08, 3.2, 0.08], "offset": [-0.8, 1.6, 0.0], "color": "black"},
     {"size": [0.08, 3.2, 0.08], "offset": [0.8, 1.6, 0.0], "color": "black"},

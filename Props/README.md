@@ -47,6 +47,7 @@ A prop is a model made of boxes, the same style as everything else in the game. 
 | `scatter` | no | Hints for the `Clutter` op (below). |
 | `fadeDistance` | no | Cosmetic props only: how far away (metres) they dither out. Default from the prop's size: 28 m for tiny litter up to 90 m. |
 | `breakable` | no | Makes the prop breakable (below). |
+| `flag` | no | Makes the prop a flag that can fly a national flag from the flag pool instead of its own cloth: `{ "cloth": [4, 7, 10], "default": "random" }`. See [Flags](#flags). |
 
 Unknown keys, numbers out of range and missing parts are errors with a message saying which file and which part, so typos don't fail silently. A file with an error is skipped and named in the game log (`callofslop.log`).
 
@@ -229,6 +230,64 @@ Pick a prop's `health` and `sound` from what it's made of, then nudge it for siz
 | Concrete, brick, vehicles, structures | | unbreakable | never | cars, buses, trucks, chimneys, poles, billboards, bus shelters, scaffolding, concrete blocks |
 
 Leave out `breakable` for anything players should be able to trust as cover. The self-test holds the outdoor folders to these bands (glass up to 25, soft up to 60, wood 30-150, metal 60-450) and checks that each material's middle value is in the order glass, soft, wood, metal.
+
+## Flags
+
+Decorative flags fly national flags from the **flag pool**: the designs in `Props/Flags/flags.json` (the US, UK, French and Finnish flags). A flag prop says which of its parts are the cloth; the game builds one copy of the prop per design, replacing the cloth with the design's stripes, crosses and stars, and maps pick which one each flag flies. The `Flags` folder holds designs, not props (the prop loader skips it).
+
+### Making a prop a flag
+
+Add a `flag` block naming the cloth's **segments**: the parts that swing in the wind (each with an `anim` block), listed from the pole outwards. Each segment's `follow` parts are its stripes in the prop's own look; together they are the cloth, a flat upright sheet (thin along z or x).
+
+```json
+"flag": { "cloth": [4, 7, 10], "default": "random" },
+```
+
+- `cloth`: part numbers (1 = the first part) of the segments. Parts outside the cloth (the pole, the base, the finial) stay exactly as they are, and nothing outside the cloth may move with a part of it.
+- `default`: `"random"` (pick from the map's pool; right for decorative flags), `"none"` (keep the prop's own cloth unless a map asks for a flag) or a flag id. **Flag on a Pole** defaults to random; **Pennant Pole** and **Hanging Banner** keep their own colours unless a placement names a flag.
+
+The design is **letterboxed**: it keeps its own shape (US 10:19, UK 1:2, France 2:3, Finland 11:18), as large as fits in the cloth, tied on at the top of the hoist (the pole side). Each segment carries the slice of the design that falls on it, so the wind moves the stripes and crosses with the cloth; the segments keep their swing, pivot and phase.
+
+### Adding a flag design
+
+Add an entry to `Props/Flags/flags.json` and press **Reload map files**:
+
+```json
+{
+  "id": "france",
+  "name": "France",
+  "aspect": [2, 3],
+  "field": "#e4e4e0",
+  "shapes": [
+    { "color": "#0055a4", "rects": [[0, 0, 0.333333, 1]] },
+    { "color": "#ef4135", "rects": [[0.666667, 0, 1, 1]] }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `id` | Lowercase letters, digits or `-`, unique. It's what maps write (`"flag": "france"`). |
+| `name` | Plain ASCII, for the log and tools. |
+| `aspect` | `[height, width]` of the real flag, e.g. `[10, 19]`. Height / width must be 0.3 to 1.5. |
+| `field` | The background colour (named colour, `"#rrggbb"` or `[r, g, b]`). |
+| `shapes` | Coloured pieces drawn in order on top of the field. Each is `{ "color": ..., "rects": [[u0, v0, u1, v1], ...] }` or `{ "color": ..., "lines": [[u0, v0, u1, v1], ...], "width": w }`. |
+
+- **Flag space:** `u` runs from the hoist (0, at the pole) to the fly (1), `v` from the top (0) to the bottom (1), whatever the flag's shape. Everything must stay inside 0..1.
+- **`rects`** are rectangles. A rect with 8 numbers `[u0, v0, u1, v1, countU, countV, stepU, stepV]` repeats as a grid (the US flag's 7 red stripes are one rect repeated 7 times 2/13 apart; its 28 stars are two grids).
+- **`lines`** are straight bands from (u0, v0) to (u1, v1), `width` a fraction of the flag's height wide, cut square at the flag's edges (the Union Jack's saltires).
+- **Layers:** a shape that overlaps an earlier one is drawn a little thicker (2.5 mm more on each face per layer), so overlapping colours never flicker; shapes side by side share a layer. At most 6 layers and 80 pieces per flag: simplified patterns read better at game distances anyway.
+- Bad entries are skipped and named in the log; the self-test ("Flag pool") checks every design.
+
+### Which flag a placed flag flies
+
+1. The placement's own `"flag"` (`{ "op": "Prop", "name": "Flag on a Pole", "x": 4, "z": -6, "flag": "uk" }`): a flag id, `"random"` or `"none"`.
+2. Otherwise the prop's `default`.
+3. `"random"` picks from the map's pool: every design, or the map file's `"flagPool": ["uk", "us"]` list (for location-specific maps), or none at all with `"flagPool": "none"`.
+
+The random pick hashes the flag's position (rounded to 1/8 m, measured from the map's centre lines), so it's the same on the server and every client, the same every match and after a reload, and flags mirrored across a symmetric map fly the same flag. Flags are looks only: the prop's name, colliders and the map's fingerprint don't change. See [Maps/README.md](../Maps/README.md#flags).
+
+**Cost:** a flag flying a design is one more prop type in the instanced mesh library (one draw per design per chunk, no new shader). The UK and US flags on a Flag on a Pole are about 1,100 and 1,400 vertices (France and Finland a few hundred) against 288 for the plain striped flag: thousands of times fewer than the grass on a Cluttered map. The **Flag Lineup** map in the Dev pack shows all four.
 
 ## Categories
 

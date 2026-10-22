@@ -2,7 +2,7 @@
   "format": "call-of-slop-prop/1",
   "name": "Flag on a Pole",
   "category": "Animated",
-  "description": "A tall flagpole with a striped flag waving in the wind.",
+  "description": "A tall flagpole with a flag waving in the wind.",
   "collision": "solid",
   "collider": [
     {
@@ -20,6 +20,7 @@
       ]
     }
   ],
+  "flag": {"cloth": [4, 7, 10], "default": "random"},
   "parts": [
     {"size": [0.4, 0.15, 0.4], "offset": [0.0, 0.075, 0.0], "color": "concrete"},
     {"size": [0.08, 4.6, 0.08], "offset": [0.0, 2.3, 0.0], "color": "white"},

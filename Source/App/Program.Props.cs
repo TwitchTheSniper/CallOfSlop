@@ -43,6 +43,7 @@ public static unsafe partial class Program
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
+        ("flags", "Flag Lineup", new Vector3(-1.5f, 3.4f, 4.5f), new Vector3(-1.2f, 3.9f, -6f), false), // the flag pool: US, UK, France, Finland at the front (smoke_props_flags.bmp)
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running

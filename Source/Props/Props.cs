@@ -51,6 +51,7 @@ public static partial class Props
         {
             LoadErrors.Clear();
             _all = LoadAll(Folder, LoadErrors);
+            FlagPool.Reload();
             ClearPacks();
             Generation++;
         }
@@ -96,6 +97,8 @@ public static partial class Props
                 var rel = Path.GetRelativePath(folder, file);
                 var dir = Path.GetDirectoryName(rel);
                 var category = string.IsNullOrEmpty(dir) ? "Misc" : dir.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)[0];
+                if (category.Equals(FlagPool.FolderName, StringComparison.OrdinalIgnoreCase))
+                    continue; // Props/Flags holds the flag pool's designs, not props (FlagPool.cs)
                 try
                 {
                     var def = PropFile.Load(File.ReadAllText(file), rel, category);
