@@ -310,6 +310,7 @@ public sealed partial class Game
             buttons |= Buttons.Crouch; // waiting on a perch
         if ((buttons & Buttons.Crouch) != 0)
             buttons &= ~Buttons.Sprint;
+        VantageButtons(p, b, visible, steer, ref buttons, now); // at a vantage point: duck and peek, steady shots (BotVantage.cs)
 
         // World-space wish -> buttons relative to where the bot is facing.
         if (wish.LengthSquared() > 0.01f)

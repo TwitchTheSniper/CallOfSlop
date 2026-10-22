@@ -19,6 +19,8 @@ public sealed partial class Game
             // With a nav graph, A* finds the way to the objective itself; while it's still building, use the waypoint routing.
             b.Objective = NavGraph.Current.Nodes.Length > 0 ? ObjectiveSpot(p) : ObjectiveGoal(p, now);
         }
+        if (VantageDecide(p, b, target, visible, now))
+            return; // a long gun: to a vantage point, or holding one (Source/Game/Bots/Vantage)
 
         var low = p.Health <= prof.RetreatHealth;
         if (visible)

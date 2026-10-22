@@ -112,6 +112,14 @@ public sealed class NavGraph
     /// </summary>
     public static void Pump(double budgetMs)
     {
+        PumpGraph(budgetMs);
+        // A "build it now" pump (self-tests) also finishes the vantage points, so seeded matches play the same every run.
+        if (budgetMs >= double.MaxValue && Current is { } g && g != Empty)
+            VantageMap.Ensure(World.Map, g, wait: true);
+    }
+
+    private static void PumpGraph(double budgetMs)
+    {
         var map = World.Map;
         if (_last != null && ReferenceEquals(_lastMap, map))
             return;
