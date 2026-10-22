@@ -1129,11 +1129,14 @@ public sealed partial class MusicRenderer
     {
         var frames = stereo.Length / 2;
         var i = 0;
+        StepLogCount = 0;
         while (i < frames)
         {
             if (_toNextStep <= 0)
             {
                 OnStep();
+                if (StepLogOn)
+                    LogStep(i); // the frenzy's class styles (MusicRenderer.FrenzyClass.cs)
                 _toNextStep += _samplesPerStep;
             }
             var n = Math.Min(Math.Min(frames - i, MaxChunk), Math.Max(1, (int)Math.Ceiling(_toNextStep)));
