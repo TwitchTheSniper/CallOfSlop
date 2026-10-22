@@ -13,9 +13,15 @@ public static partial class SelfTest
     {
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 1);
         var me = game.Local!;
+        var notes = new List<string>();
+        void L(string text)
+        {
+            Line(text);
+            notes.Add(text);
+        }
         game.SelfTestPerks(me, PerkSet.Empty);
         game.SelfTestPlace(me, new Vector3(5, 0, 5), 0);
-        Line($"recovery window {SprintSpread.RecoverySeconds:0.00} s = {SprintSpread.RecoveryTicks} ticks; ADS while sprinting: impossible (aiming drops the Sprint button), the server floor treats a sprinting shot as hip fire");
+        L($"recovery window {SprintSpread.RecoverySeconds:0.00} s = {SprintSpread.RecoveryTicks} ticks; ADS while sprinting: impossible (aiming drops the Sprint button), the server floor treats a sprinting shot as hip fire");
 
         // Puts the local player in a movement state and returns CurrentSpread.
         float Spread(WeaponDef def, float speed, bool sprint, float aimT = 0, PerkSet? perks = null)
@@ -56,7 +62,7 @@ public static partial class SelfTest
             var standAds = Spread(def, 0, false, 1f);
             var ratio = sprint / walk;
             multByClass[c] = SprintSpread.ClassMult(c);
-            Line($"{c,-12} {def.Name,-22} stand {Deg(stand),5:0.00} deg  walk {Deg(walk),5:0.00} deg  sprint {Deg(sprint),5:0.00} deg (x{ratio:0.00} of walking, class x{SprintSpread.ClassMult(c):0.00})  crosshair gap {Gap(walk),4:0} -> {Gap(sprint),4:0} px");
+            L($"{c,-12} {def.Name,-22} stand {Deg(stand),5:0.00} deg  walk {Deg(walk),5:0.00} deg  sprint {Deg(sprint),5:0.00} deg (x{ratio:0.00} of walking, class x{SprintSpread.ClassMult(c):0.00})  crosshair gap {Gap(walk),4:0} -> {Gap(sprint),4:0} px");
             if (MathF.Abs(stand - OldSpread(def, 0, 0)) > 1e-6f || MathF.Abs(walk - OldSpread(def, World.WalkSpeed, 0)) > 1e-6f
                 || MathF.Abs(standAds - OldSpread(def, 0, 1f)) > 1e-6f)
                 Fail($"{def.Name}: standing / walking spread changed ({stand} / {walk} vs {OldSpread(def, 0, 0)} / {OldSpread(def, World.WalkSpeed, 0)})");
@@ -76,7 +82,7 @@ public static partial class SelfTest
             me.SprintRecoverTicks = 0;
             var normal = Game.ServerClampSpread(me, def, 0.0005f);
             if (c is WeaponClass.Sniper or WeaponClass.SMG)
-                Line($"  server: a 0.03 deg cone while sprinting -> {Deg(widened):0.00} deg (not sprinting -> {Deg(normal):0.000} deg, the old floor)");
+                L($"  server: a 0.03 deg cone while sprinting -> {Deg(widened):0.00} deg (not sprinting -> {Deg(normal):0.000} deg, the old floor)");
             if (widened < def.HipSpreadRad * SprintSpread.ClassMult(c) * SprintSpread.ServerSlack - 1e-6f)
                 Fail($"{def.Name}: the server let a tight cone through while sprinting ({Deg(widened):0.000} deg)");
             if (MathF.Abs(honest - sprint) > 1e-6f)
@@ -101,7 +107,7 @@ public static partial class SelfTest
         var sprintNone = game.CurrentSpread();
         game.SelfTestPerks(me, steady);
         var sprintSteady = game.CurrentSpread();
-        Line($"Steady Aim while sprinting ({ar.Name}): {Deg(sprintNone):0.00} -> {Deg(sprintSteady):0.00} deg (x{sprintSteady / sprintNone:0.00}); not sprinting {Deg(sNone):0.00} deg");
+        L($"Steady Aim while sprinting ({ar.Name}): {Deg(sprintNone):0.00} -> {Deg(sprintSteady):0.00} deg (x{sprintSteady / sprintNone:0.00}); not sprinting {Deg(sNone):0.00} deg");
         if (MathF.Abs(sprintSteady / sprintNone - Perks.SteadyAimHipMult) > 1e-3f)
             Fail("Steady Aim doesn't compose multiplicatively with the sprint penalty");
         game.SelfTestPerks(me, PerkSet.Empty);
@@ -125,7 +131,7 @@ public static partial class SelfTest
                 trace.Add($"{ticks * World.TickDt:0.00} s: {Deg(s):0.00} deg");
         }
         var walkSniper = Spread(sniper, World.WalkSpeed, false);
-        Line($"recovery ({sniper.Name}): sprint {Deg(Spread(sniper, World.SprintSpeed, true)):0.00} deg, then {string.Join(", ", trace)}; back to walking ({Deg(walkSniper):0.00} deg) after {ticks} ticks = {ticks * World.TickDt:0.000} s");
+        L($"recovery ({sniper.Name}): sprint {Deg(Spread(sniper, World.SprintSpeed, true)):0.00} deg, then {string.Join(", ", trace)}; back to walking ({Deg(walkSniper):0.00} deg) after {ticks} ticks = {ticks * World.TickDt:0.000} s");
         if (ticks != SprintSpread.RecoveryTicks || !monotonic || MathF.Abs(last - walkSniper) > 1e-6f)
             Fail($"recovery took {ticks} ticks (expected {SprintSpread.RecoveryTicks}), monotonic {monotonic}");
         // The server forgives the start of the window (shots and inputs arrive at different times).
@@ -137,7 +143,7 @@ public static partial class SelfTest
             me.SprintRecoverTicks = SprintSpread.RecoveryTicks - i * 6;
             amounts.Add($"{SprintSpread.ServerAmount(me):0.00}/{SprintSpread.Amount(me):0.00}");
         }
-        Line($"server sprint amount every 0.1 s of the window (server/client): {string.Join("  ", amounts)}");
+        L($"server sprint amount every 0.1 s of the window (server/client): {string.Join("  ", amounts)}");
         for (var t = 0; t <= SprintSpread.RecoveryTicks; t++)
         {
             me.SprintRecoverTicks = t;
@@ -171,7 +177,7 @@ public static partial class SelfTest
         var devSprint = MaxDeviation(true);
         me.Sprinting = false;
         var floor = sniper.HipSpreadRad * SprintSpread.ClassMult(sniper) * SprintSpread.ServerSlack;
-        Line($"server path ({sniper.Name}, 40 shots sent with a 0 cone): widest pellet {Deg(devStand):0.000} deg standing, {Deg(devSprint):0.00} deg sprinting (floor {Deg(floor):0.00} deg)");
+        L($"server path ({sniper.Name}, 40 shots sent with a 0 cone): widest pellet {Deg(devStand):0.000} deg standing, {Deg(devSprint):0.00} deg sprinting (floor {Deg(floor):0.00} deg)");
         if (devStand > sniper.MinSpreadRad + 1e-3f || devSprint < floor * 0.6f || devSprint > floor + 1e-3f)
             Fail("ServerResolveShot doesn't apply the sprint floor to a tight cone");
 
@@ -198,9 +204,10 @@ public static partial class SelfTest
             game.SelfTestApplyCmd(bot, new InputCmd { Seq = seq++, Yaw = 0, Weapon = bot.Weapon, SpeedPct = 100 });
         var botAfter = Game.BotShotSpread(bot, botDef, false, BotDifficulty.Normal);
         var botSpeed = new Vector2(bot.Sim.Velocity.X, bot.Sim.Velocity.Z).Length();
-        Line($"bot ({botDef.Name}, {botDef.Class}): hip {Deg(botRest):0.00} deg at rest, {Deg(botSprint):0.00} deg sprinting (sprinted: {sprinted}), aimed-while-sprinting {Deg(botAds):0.00} -> server {Deg(botServer):0.00} deg, {Deg(botAfter):0.00} deg after stopping");
+        L($"bot ({botDef.Name}, {botDef.Class}): hip {Deg(botRest):0.00} deg at rest, {Deg(botSprint):0.00} deg sprinting (sprinted: {sprinted}), aimed-while-sprinting {Deg(botAds):0.00} -> server {Deg(botServer):0.00} deg, {Deg(botAfter):0.00} deg after stopping");
         if (!sprinted || MathF.Abs(botSprint - botRest * SprintSpread.ClassMult(botDef)) > 1e-5f || MathF.Abs(botAfter - botRest) > 1e-6f
             || botServer < botDef.HipSpreadRad * SprintSpread.ClassMult(botDef) * SprintSpread.ServerSlack - 1e-6f)
             Fail($"bots: sprint penalty not applied or not recovered (sprinted {sprinted}, speed {botSpeed:0.0}, phase {game.Phase})");
+        Line("::warning title=Sprint spread (results)::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 }
