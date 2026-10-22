@@ -156,6 +156,7 @@ public sealed partial class Game
             _w.U8(c);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnMatchEnded(now);
+        LogStuckMatchSummary(); // [bots] stuck self-kills this match and on this map (BotStuck.cs)
         if (MapVoteEnabled && Module.UsesMapVote) // (a Zombies run restarts on its own map)
             StartMapVote(now);
     }
