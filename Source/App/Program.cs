@@ -297,6 +297,11 @@ public static unsafe partial class Program
             SmokeNameTags(now); // Program.NameTags.cs
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 3)
+        {
+            SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyStep < SmokeFrenzyKills + 2)
         {
             SmokeFrenzy(now); // Program.Frenzy.cs
