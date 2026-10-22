@@ -898,9 +898,10 @@ def animated_gallery():
     k = 0
     for n in names:
         if n == "Cinema Big Screen":
-            new.append("    " + json.dumps({"op": "Prop", "name": n, "x": 0.0, "z": 31.0}) + ",")
+            new.append("    " + json.dumps({"op": "Prop", "name": n, "x": 36.5, "z": 32.5}) + ",")
             continue
-        x, z = -36.0 + (k % 9) * 9.0, 14.0 + (k // 9) * 7.0
+        # two rows along the north side (clear of the other packs' additions round z 20 and of the spawns at z 36)
+        x, z = -36.0 + (k % 10) * 8.0, 27.5 + (k // 10) * 5.0
         k += 1
         new.append("    " + json.dumps({"op": "Prop", "name": n, "x": x, "z": z} | ({"y": 1.5} if n in hung else {})) + ",")
     lines[at:at] = new
