@@ -357,10 +357,13 @@ ends (closed by water barriers, road works signs and arrow boards).
 lot gives cover (trailers you can only see over from their roofs) and flanks (aisles, gaps between paired trailers, the
 garage roof). The hills sit on the line of equal walk, found by walking a 0.5 m grid from each team's spawns in the
 generator (Blue/Red: canopy 60/59 m, diner lot 57/58 m, diner 67/63 m, enemy flag 119/119 m), and the self-test measures
-it again on the game's nav graph, averaged over each team's spawns (all within 10%), together with the solid cover within
-6 m of each team's routes to the hills (at least 70% of the other team's) and the eye-height line of sight between every
-Blue and every Red spawn (none: the motel, the store and the trailers are in the way). The pool, the balconies and the
-tire shop roof are all reachable by bots (the self-test counts nav nodes on each level in the main nav area).
+it again on the game's nav graph, averaged over each team's spawns: canopy 70/69 m (+0.7%), diner lot 69/70 m (-2.4%),
+diner 83/86 m (-2.9%), enemy flag 131/130 m (+0.7%), all well inside the 10% the test allows. Solid cover within 6 m of
+each team's routes to the hills: Blue 117, Red 123 (95%; the test wants 70%). No Blue spawn sees a Red one at eye height
+(the motel, the store and the trailers are in the way). Bots reach every level (nav nodes in the main nav area: 12 on the
+balconies, 4 on the pool floor, 33 on the tire shop roof, 27 on trailer roofs). In the 12-player bot matches (90 s) the
+free-for-all had 70 kills and team deathmatch 47 (Blue 28, Red 19, with the idle host on Blue), no stuck bots, worst
+server tick 0.75 ms.
 
 **Placement** (with `townkit.py`): rooms furnished against their walls with the doorways and an aisle clear; bins and a
 dumpster by every back door with trash bags and litter round them; AC units, vents and dishes on the flat roofs, wall
@@ -378,9 +381,13 @@ Car Lift Raised (walk under the car), Tool Chest, Tire Changer, Air Compressor, 
 Housekeeping Cart, Pool Ladder, Diesel Dispenser, Motel Neon Sign, Billboard Diner and Billboard Motel. The map also uses
 Old Town's fuel pump (`Maps/Cluttered/Props/OldTown`).
 
-**Object counts** (from the self-test): 3,140 props (517 by hand, about 2,620 clutter; 417 solid, about 2,720 cosmetic,
-1,467 breakable, 4 explosive, 53 animated), 14,013 plants (16 trees), 566 meshes, 241 boxes drawn one by one (walls,
-slabs, stairs, pillars, tree trunks), 22 spawns (8 + 8 team spawns, 6 more for free-for-all), about 200 waypoints.
+**Object counts** (from the self-test): 3,140 props (517 by hand, 2,623 clutter; 417 solid, 2,723 cosmetic, 1,467
+breakable, 4 explosive, 53 animated). By set (solid/cosmetic): Truck Stop 48/2, Household 81/24, Industrial 70/185,
+Animated 24/11, Kitchen 24/5, Street 25/0, Rooftop 23/16, Vehicles 23/123, Office 22/4, Garden 18/1, Nature 14/0, Urban
+14/0, Utility 14/30, Old Town 8/0, Signage 5/6, Furniture 3/0, Misc 0/94, Debris 1/2,222. 14,013 plants (12,459 grass,
+1,465 shrubs, 73 bushes, 16 trees), 566 meshes, 241 boxes drawn one by one (walls, slabs, stairs, pillars, tree trunks;
+1,110 solid boxes with the prop colliders), 22 spawns (8 + 8 team spawns, 6 more for free-for-all), 202 waypoints, a
+1,066-node nav graph.
 
 **Performance.** About two thirds of Old Town's props and a third of its plants (Old Town draws 4,908 props and about
 31,800 plants at about 1,690 fps on the user's PC), with fewer boxes than Old Town or Sprawl, so it should run at or above
