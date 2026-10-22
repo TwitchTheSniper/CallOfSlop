@@ -73,7 +73,7 @@ for k in range(6):
     for a in range(8):
         ang = a * 45.0
         cy = 0.42 + 0.38 * math.cos(math.radians(ang)); cz = 0.38 * math.sin(math.radians(ang))
-        cw.append(part((0.025, 0.3, 0.025), (x + 0.06 * (a % 2), cy, cz), "#7a7a76", rotation=[ang + 90, 0, 0]))
+        cw.append(part((0.025, 0.3, 0.025), (x + 0.06 * (a % 2), cy, cz), "#7a7a76", rotation=[(ang + 90) % 360, 0, 0]))
 cw += [part((3.0, 0.02, 0.02), (0, 0.8, 0), "#6a6a66"), part((3.0, 0.02, 0.02), (0, 0.06, 0.3), "#6a6a66"), part((3.0, 0.02, 0.02), (0, 0.06, -0.3), "#6a6a66"),
        part((0.05, 0.95, 0.05), (-1.45, 0.47, 0), "darkgrey"), part((0.05, 0.95, 0.05), (1.45, 0.47, 0), "darkgrey")]
 PROPS.append({"name": "Concertina Wire", "category": "Beachhead", "description": "A 3 m roll of razor wire on two pickets (along X). Looks only: you push through it.",
@@ -87,24 +87,24 @@ PROPS.append({"name": "Barbed Wire Fence", "category": "Beachhead", "description
               "collision": "cosmetic", "fadeDistance": 80, "scatter": {"randomYaw": False, "yawStep": 90, "yawJitter": 6}, "parts": bw})
 
 # ---------------------------------------------------------------- wrecks
-lc = [part((10.0, 0.3, 3.6), (0, 0.15, 0), HULL, material="metal"),                          # floor
-      part((10.0, 1.7, 0.25), (0, 0.85, 1.675), HULL, material="metal"),                     # sides
-      part((10.0, 1.7, 0.25), (0, 0.85, -1.675), HULL, material="metal"),
-      part((10.04, 0.12, 0.3), (0, 1.72, 1.675), "#4a4e54"), part((10.04, 0.12, 0.3), (0, 1.72, -1.675), "#4a4e54"),
-      part((0.35, 2.5, 3.6), (-4.85, 1.25, 0), HULL, material="metal"),                      # stern
-      part((1.4, 1.0, 1.6), (-4.3, 3.0, 0.6), "#565b60", material="metal"),                  # coxswain's shelter
-      part((0.05, 0.4, 1.2), (-3.58, 3.1, 0.6), "#26292c"),
-      part((3.0, 0.14, 3.3), (6.25, 0.6, 0), "#666b70", rotation=[0, 0, -24], material="metal"),  # the bow ramp, down
-      part((0.2, 1.8, 0.35), (5.0, 0.9, 1.6), "#4a4e54"), part((0.2, 1.8, 0.35), (5.0, 0.9, -1.6), "#4a4e54"),
-      part((4.0, 0.9, 0.04), (-1.5, 1.0, 1.82), RUST), part((2.5, 0.6, 0.04), (2.6, 0.7, -1.82), RUST),   # rust streaks
-      part((1.1, 0.8, 0.06), (0.8, 0.75, 1.82), "#26292c"),                                  # shell hole
-      part((0.5, 0.5, 0.5), (-2.4, 0.55, -1.0), OLIVE_D), part((0.6, 0.35, 0.4), (-1.6, 0.48, 1.1), OLIVE),  # kit left aboard
-      part((0.3, 0.6, 0.3), (-4.4, 2.8, -1.2), "#2b2b2b")]
+lc = [part((9.0, 0.3, 3.6), (0, 0.15, 0), HULL, material="metal"),                           # floor
+      part((9.0, 1.7, 0.25), (0, 0.85, 1.675), HULL, material="metal"),                      # sides
+      part((9.0, 1.7, 0.25), (0, 0.85, -1.675), HULL, material="metal"),
+      part((9.04, 0.12, 0.3), (0, 1.72, 1.675), "#4a4e54"), part((9.04, 0.12, 0.3), (0, 1.72, -1.675), "#4a4e54"),
+      part((0.35, 2.5, 3.6), (-4.35, 1.25, 0), HULL, material="metal"),                      # stern
+      part((1.4, 1.0, 1.6), (-3.8, 3.0, 0.6), "#565b60", material="metal"),                  # coxswain's shelter
+      part((0.05, 0.4, 1.2), (-3.08, 3.1, 0.6), "#26292c"),
+      part((2.6, 0.14, 3.3), (5.65, 0.6, 0), "#666b70", rotation=[0, 0, -24], material="metal"),  # the bow ramp, down
+      part((0.2, 1.8, 0.35), (4.5, 0.9, 1.6), "#4a4e54"), part((0.2, 1.8, 0.35), (4.5, 0.9, -1.6), "#4a4e54"),
+      part((3.6, 0.9, 0.04), (-1.4, 1.0, 1.82), RUST), part((2.3, 0.6, 0.04), (2.3, 0.7, -1.82), RUST),   # rust streaks
+      part((1.1, 0.8, 0.06), (0.7, 0.75, 1.82), "#26292c"),                                  # shell hole
+      part((0.5, 0.5, 0.5), (-2.2, 0.55, -1.0), OLIVE_D), part((0.6, 0.35, 0.4), (-1.4, 0.48, 1.1), OLIVE),  # kit left aboard
+      part((0.3, 0.6, 0.3), (-3.9, 2.8, -1.2), "#2b2b2b")]
 PROPS.append({"name": "Landing Craft Wreck", "category": "Beachhead", "description": "A grounded landing craft with its bow ramp down: steel sides to hide behind, mantle in over the side.",
               "collision": "solid",
-              "collider": [{"size": [10.0, 0.3, 3.6]}, {"size": [10.0, 1.7, 0.3], "offset": [0, 0.85, 1.65]}, {"size": [10.0, 1.7, 0.3], "offset": [0, 0.85, -1.65]},
-                           {"size": [0.35, 2.5, 3.6], "offset": [-4.85, 1.25, 0]}, {"size": [1.4, 1.0, 1.6], "offset": [-4.3, 3.0, 0.6]},
-                           {"size": [2.4, 0.45, 3.2], "offset": [6.3, 0.225, 0]}],
+              "collider": [{"size": [9.0, 0.3, 3.6]}, {"size": [9.0, 1.7, 0.3], "offset": [0, 0.85, 1.65]}, {"size": [9.0, 1.7, 0.3], "offset": [0, 0.85, -1.65]},
+                           {"size": [0.35, 2.5, 3.6], "offset": [-4.35, 1.25, 0]}, {"size": [1.4, 1.0, 1.6], "offset": [-3.8, 3.0, 0.6]},
+                           {"size": [2.2, 0.45, 3.2], "offset": [5.7, 0.225, 0]}],
               "scatter": {"randomYaw": False}, "parts": lc})
 
 fb = [part((6.4, 1.3, 2.3), (0, 0.95, 0), "#2f5872", rotation=[13, 0, 0], material="wood"),
@@ -242,7 +242,7 @@ PROPS.append({"name": "Wind Sock", "category": "Beachhead", "description": "An o
 sl = [part((0.7, 0.08, 0.7), (0, 0.04, 0), "darkgrey"), part((0.12, 1.3, 0.12), (0, 0.69, 0), "darkgrey"),
       part((0.3, 0.12, 0.3), (0, 1.36, 0), STEEL_D, anim={"type": "swing", "axis": "y", "pivot": [0, 1.4, 0], "angle": 55, "period": 11.0, "jitter": 0.3}),
       part((0.56, 0.56, 0.6), (0, 1.75, 0.05), STEEL_D, material="metal", anim={"type": "follow", "parent": 3}),
-      part((0.46, 0.46, 0.03), (0, 1.75, 0.36), "#fff4c8", anim={"type": "follow", "parent": 3, "glow": 2.2}),
+      part((0.46, 0.46, 0.03), (0, 1.75, 0.36), "#fff4c8", anim={"type": "flicker", "rate": 1.5, "duty": 0.97, "color": "#fff4c8", "off": "#cfc6a0", "glow": 2.2, "parent": 3}),
       part((0.06, 0.3, 0.06), (0.32, 1.6, 0.05), "darkgrey", anim={"type": "follow", "parent": 3})]
 PROPS.append({"name": "Searchlight", "category": "Beachhead", "description": "A searchlight on a post, sweeping slowly from side to side (faces +Z).",
               "collision": "solid", "collider": [{"size": [0.7, 0.08, 0.7]}, {"size": [0.2, 1.5, 0.2], "offset": [0, 0.75, 0]}], "scatter": {"randomYaw": False}, "parts": sl})

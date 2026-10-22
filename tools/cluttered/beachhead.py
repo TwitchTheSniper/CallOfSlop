@@ -135,7 +135,7 @@ T.ramp([list(p) for p in ROAD2], width=6.5, edge=2.2, material="dirt")
 OVERLOOK = (1.0, 9.0, 10.0)
 T.flatten(OVERLOOK[0], OVERLOOK[1], height=OVERLOOK[2], radius=5.4, edge=2.0, material="dirt")
 # the dune observation post: a level hollow half way up the long dune slope in the east (hill 3)
-DUNE_OP = (70.0, 13.0)
+DUNE_OP = (70.0, 15.0)
 T.plateau(DUNE_OP[0], DUNE_OP[1], height=round(T.sample(*DUNE_OP), 2), radius=4.2, edge=5.0, mode="fill", material="sand")
 # The west bluff path: a zigzag foot path up the face between the ravine and the west pillbox.
 WPATH = [(-39.0, 17.5, 3.7), (-53.0, 14.0, 8.0), (-46.0, 9.5, PY), (-45.0, 7.0, PY)]
@@ -287,7 +287,7 @@ for pts, w in LANES:
     t.add_lane(pts, w)
 
 # ============================================================================ the sea and the coast beyond the outline (cosmetic)
-wmesh("box", 0.0, 190.0, WATER, WATER_Y - 0.3, width=700.0, height=0.3, depth=300.0)
+wmesh("box", 0.0, 190.0, WATER, WATER_Y - 0.3, width=500.0, height=0.3, depth=300.0)
 # a grounded landing craft half under water, a wrecked one further out, buoys, and a warship on the horizon
 for (x, z, yaw, tilt) in [(-38.0, 74.0, 76.0, 9.0), (34.0, 82.0, 101.0, -14.0)]:
     wmesh("box", x, z, (0.36, 0.38, 0.40), -1.2, width=10.0, height=2.2, depth=3.6, yaw=yaw, roll=tilt, material="Metal")
@@ -637,10 +637,10 @@ for name, x, z, yaw in WRECKS:
 # seawall, concertina wire (looks only) between them
 NB = {}
 NB["stakes"] = scatter(["Beach Stake Ramp"], (-80, 44, 80, 64), 16, 501, gap=1.2, yaws=[80, 90, 100, 270, 260], ok=lambda x, z: 1.5 < dz_at(x, z) < 5.5)
-NB["hedgehogs"] = scatter(["Czech Hedgehog"], (-80, 36, 80, 62), 46, 502, gap=1.3, ok=lambda x, z: 5.5 < dz_at(x, z) < 15.0)
+NB["hedgehogs"] = scatter(["Czech Hedgehog"], (-80, 36, 80, 62), 62, 502, gap=1.3, ok=lambda x, z: 5.5 < dz_at(x, z) < 15.0)
 NB["teeth"] = scatter(["Dragons Tooth"], (-60, 30, 66, 50), 22, 503, gap=1.0, yaws=[0, 90], ok=lambda x, z: 18.0 < dz_at(x, z) < 20.6)
-NB["sandbags"] = scatter(["Sandbag Wall", "Sandbag Wall", "Sandbag Nest"], (-70, 36, 70, 60), 10, 504, gap=1.0, yaws=[170, 180, 190], ok=lambda x, z: 8.0 < dz_at(x, z) < 18.0)
-NB["flotsam"] = scatter(["Log", "Log", "Wooden Crate", "Upturned Dinghy", "Ammo Crate Stack", "Oil Drum", "Rusty Drum", "Tyre Stack"], (-80, 36, 80, 64), 22, 505,
+NB["sandbags"] = scatter(["Sandbag Wall", "Sandbag Wall", "Sandbag Nest"], (-70, 36, 70, 60), 22, 504, gap=1.0, yaws=[170, 180, 190], ok=lambda x, z: 8.0 < dz_at(x, z) < 18.0)
+NB["flotsam"] = scatter(["Log", "Log", "Wooden Crate", "Upturned Dinghy", "Ammo Crate Stack", "Oil Drum", "Rusty Drum", "Tyre Stack"], (-80, 36, 80, 64), 34, 505,
                         gap=1.0, ok=lambda x, z: 1.0 < dz_at(x, z) < 19.0)
 _wire = 0
 _rw = random.Random(506)
@@ -655,18 +655,27 @@ for k, (x, z) in enumerate([(-36.0, 50.0), (2.0, 47.0), (30.0, 50.0), (-8.0, 43.
     wmesh("cylinder", x, z, (0.46, 0.40, 0.30), ground(x, z) - 0.02, width=3.4 + k % 3, height=0.06, depth=3.0 + k % 2, segments=12, material="Dirt")   # shell craters
 
 # ============================================================================ the dunes and the bluff
-NB["dune_teeth"] = scatter(["Dragons Tooth", "Czech Hedgehog", "Concrete Block"], (-60, 14, 75, 36), 24, 511, gap=1.1, yaws=[0, 90],
+NB["dune_teeth"] = scatter(["Dragons Tooth", "Czech Hedgehog", "Concrete Block"], (-60, 14, 75, 36), 30, 511, gap=1.1, yaws=[0, 90],
                            ok=lambda x, z: dz_at(x, z) > 24.0 and z > float(bt.interp(TOP, x)) + float(bt.interp(FACE, x)) + 1.5)
 NB["dune_cover"] = scatter(["Sandbag Wall", "Sandbag Nest", "Log", "Rubble Pile", "Picket Fence", "Burnt Out Car", "Wooden Crate", "Ammo Crate Stack"],
-                           (-62, 12, 80, 36), 26, 512, gap=1.1, yaws=[0, 90, 180, 270, 170, 190],
+                           (-62, 12, 80, 36), 42, 512, gap=1.1, yaws=[0, 90, 180, 270, 170, 190],
                            ok=lambda x, z: dz_at(x, z) > 23.0 and z > float(bt.interp(TOP, x)) + float(bt.interp(FACE, x)) + 1.0)
-NB["dune_slope"] = scatter(["Sandbag Wall", "Sandbag Nest", "Czech Hedgehog", "Log", "Picket Fence", "Concrete Block", "Rubble Pile"], (58, -2, 86, 30), 22, 513,
+NB["dune_slope"] = scatter(["Sandbag Wall", "Sandbag Nest", "Czech Hedgehog", "Log", "Picket Fence", "Concrete Block", "Rubble Pile"], (58, -2, 86, 30), 32, 513,
                            gap=1.1, yaws=[0, 90, 180, 270], ok=lambda x, z: x > 60 and z > float(bt.interp(TOP, x)) + 2.0)
 place("Camo Net", -2.0, 22.0, 0, check=False, tag="dunes"); place("Sandbag Nest", -2.0, 22.4, 180, tag="dunes")
 place("Camo Net", 58.0, 22.0, 90, check=False, tag="dunes")
 # the hairpin: a burnt-out truck, sandbags and a road sign
 place("Burnt Out Car", -24.5, 17.0, 60, tag="hairpin"); place("Sandbag Nest", -16.5, 14.0, 200, tag="hairpin")
 place("Direction Sign", -14.0, 18.5, 120, tag="hairpin"); place("Ammo Crate Stack", -23.5, 12.5, 90, tag="hairpin")
+# sandbag walls along both sides of the road's first leg (the beach side's way up), a gap every few metres
+for (xa, za, _), (xb, zb, _) in zip(ROAD1, ROAD1[1:]):
+    L = math.hypot(xb - xa, zb - za); ux, uz = (xb - xa) / L, (zb - za) / L
+    for k in range(1, int(L / 4.5)):
+        for side in (-1, 1):
+            if (k + (side > 0)) % 2:
+                continue
+            px, pz = xa + ux * k * 4.5 - uz * side * 3.6, za + uz * k * 4.5 + ux * side * 3.6
+            place("Sandbag Wall", px, pz, yaw_along(ux, uz), tag="road")
 # rocks at the foot of the face and in the ravine (real cover: boxes)
 for k, (x, z, size) in enumerate([(-68.0, 20.0, 2.2), (-58.0, 18.0, 1.8), (-47.0, 21.0, 1.6), (-6.0, 15.0, 1.7), (30.0, 16.0, 1.8), (46.0, 18.5, 1.5),
                                   (-64.0, 6.0, 1.4), (-60.5, 0.0, 1.2), (66.0, 12.0, 1.6), (76.0, 4.0, 1.8)]):
@@ -675,7 +684,7 @@ for k, (x, z, size) in enumerate([(-68.0, 20.0, 2.2), (-58.0, 18.0, 1.8), (-47.0
         r = (x - size * 0.8, z - size * 0.8, x + size * 0.8, z + size * 0.8)
         t.mark(t.occ, r); t.mark(t.walk, r); t.mark(t.tall, r)
         t.boxes.append((r[0], r[1], r[2], r[3], 0.0, size, (0.5, 0.47, 0.42)))
-NB["ravine"] = scatter(["Log", "Tree Stump", "Rubble Pile", "Sandbag Wall"], (-75, -8, -52, 34), 10, 514, gap=1.0,
+NB["ravine"] = scatter(["Log", "Tree Stump", "Rubble Pile", "Sandbag Wall"], (-75, -8, -52, 34), 18, 514, gap=1.0,
                        ok=lambda x, z: abs(ground(x, z) - min(ground(x + 1, z), ground(x - 1, z))) < 0.6)
 
 # ============================================================================ the base: scattered cover and kit
@@ -697,7 +706,7 @@ for x, z in BLUE_SP + RED_SP + FFA_SP:
 t.ops.append({"op": "AutoWaypoints", "spacing": 7})
 EXTRA_WP = [(-63.0, 14.0), (-60.0, 3.0), (-50.0, 13.0), (-44.0, 15.5), (-20.0, 15.0), (-8.0, 7.5), (20.0, 2.0), (2.0, 26.0), (40.0, 28.0),
             (70.0, 14.0), (64.0, 2.0), (-13.0, -2.0), (-21.0, -6.0), (46.0, -12.5), (52.0, -19.0), (-17.0, -27.5), (36.0, -38.0),
-            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (-46.0, 2.0)]
+            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (-46.0, 2.0), (-62.5, 10.0)]
 for x, z in EXTRA_WP:
     t.ops.append({"op": "Waypoint", "x": x, "z": z})
 

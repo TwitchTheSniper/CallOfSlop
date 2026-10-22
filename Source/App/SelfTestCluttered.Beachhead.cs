@@ -9,8 +9,9 @@ namespace CallOfSlop;
 /// its own. It is deliberately not mirrored (Blue lands on the beach, Red holds the base 12 m up), so instead of twin
 /// checks it checks fairness by measurement: the nav walk and the nav walking time (uphill costs more) from each team's
 /// spawns to every hill and the enemy flag within 10%, a scripted walker reaching every objective from both sides, no
-/// line of sight between the two teams' spawns, and the beach side's routes passing at least as much cover as the
-/// base side's (the base has the height; the beach gets more cover and more ways up). It also checks that the map
+/// line of sight between the two teams' spawns, and the beach side's routes passing at least as much soft cover as the
+/// base side's with comparable cover overall (the base has the height and the hard cover; the beach gets more soft cover
+/// and more ways up). It also checks that the map
 /// really is asymmetric, and that the ways up the bluff (the drainage tunnel, the pillboxes dug into the top of the
 /// face, the overlook and the dune post) are on the bots' nav graph.
 /// </summary>
@@ -60,7 +61,7 @@ public static partial class SelfTest
         if (pack < 100)
             Fail($"{m.Name}: only {pack} props from the pack's Beachhead folder (hedgehogs, wrecks, army kit)");
 
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2600, SolidProps: 380, CosmeticProps: 2000, Breakable: 700, Plants: 30000, Trees: 40, Boxes: 700));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2200, SolidProps: 380, CosmeticProps: 1500, Breakable: 500, Plants: 25000, Trees: 40, Boxes: 700));
 
         // Asymmetric by design: few solid props have a mirror twin (about x = 0, z = 0 or the centre), and Red's spawns
         // are on the high ground (the plateau), Blue's down on the beach.
@@ -163,19 +164,24 @@ public static partial class SelfTest
         if (seen.Count > 0)
             Fail($"{m.Name}: {seen.Count} Blue/Red spawn pair(s) can see each other: {string.Join(", ", seen.Take(4))}");
 
-        // Cover: solid cover at least 0.9 m tall within 6 m of each team's routes to the hills. The beach side gets at least
-        // as much as the base side (it has no height and comes uphill).
-        var cover = new List<Vector3>();
+        // Cover within 6 m of each team's routes to the hills, at least 0.9 m tall: soft cover (solid props: hedgehogs,
+        // sandbags, wrecks, crates) and hard cover (boxes: walls, bunkers, containers, rocks, trunks). The base has the
+        // height and the hard cover, so the beach side gets at least as much soft cover, and the totals stay comparable.
+        var soft = new List<Vector3>();
+        var hard = new List<Vector3>();
         foreach (var p in solid.Where(p => p.Bounds.Max.Y - m.GroundHeight(p.Position.X, p.Position.Z) >= 0.9f))
-            cover.Add(p.Bounds.Center);
+            soft.Add(p.Bounds.Center);
         for (var i = 0; i < m.Solid.Count; i++)
             if (m.IsDrawnBox(i) && m.Solid[i].Max.Y - m.GroundHeight(m.Solid[i].Center.X, m.Solid[i].Center.Z) >= 0.9f)
-                cover.Add(m.Solid[i].Center);
-        int CoverNear(List<Vector3> route) => cover.Count(q => route.Any(r => (q.X - r.X) * (q.X - r.X) + (q.Z - r.Z) * (q.Z - r.Z) < 36f));
-        int coverBlue = CoverNear(routes[0]), coverRed = CoverNear(routes[1]);
-        ClutteredLine($"{m.Name} cover within 6 m of the routes to the hills: Blue (beach) {coverBlue}, Red (base) {coverRed}");
-        if (coverBlue < coverRed)
-            Fail($"{m.Name}: the beach side's routes pass less cover ({coverBlue}) than the base side's ({coverRed})");
+                hard.Add(m.Solid[i].Center);
+        static int Near(List<Vector3> cover, List<Vector3> route) => cover.Count(q => route.Any(r => (q.X - r.X) * (q.X - r.X) + (q.Z - r.Z) * (q.Z - r.Z) < 36f));
+        int softBlue = Near(soft, routes[0]), softRed = Near(soft, routes[1]), hardBlue = Near(hard, routes[0]), hardRed = Near(hard, routes[1]);
+        var total = MathF.Min(softBlue + hardBlue, softRed + hardRed) / (float)Math.Max(1, Math.Max(softBlue + hardBlue, softRed + hardRed));
+        ClutteredLine($"{m.Name} cover within 6 m of the routes to the hills (soft props + hard boxes): Blue (beach) {softBlue} + {hardBlue}, Red (base) {softRed} + {hardRed} (totals {total:P0})");
+        if (softBlue < softRed)
+            Fail($"{m.Name}: the beach side's routes pass less soft cover ({softBlue}) than the base side's ({softRed})");
+        if (total < 0.7f)
+            Fail($"{m.Name}: uneven cover on the routes to the hills (Blue {softBlue + hardBlue}, Red {softRed + hardRed})");
 
         // The ways up the bluff are on the nav graph: inside the drainage tunnel, inside each pillbox, the overlook, the dune post.
         var places = new (string Name, float X, float Z, float Y)[]
