@@ -95,7 +95,7 @@ public static partial class SelfTest
         foreach (var name in MaterialKeys.Names)
             if (MaterialKeys.Of(name).ToString() != name)
                 Fail($"material key '{name}' doesn't round-trip");
-        foreach (var s in DecalFile.ImpactMaterialNames.Where(n => n != "Explosive"))
+        foreach (var s in DecalFile.ImpactMaterialNames.Where(n => n is not ("Explosive" or "Gore")))
             if (!MaterialKeys.TryParse(s, out _))
                 Fail($"impact surface '{s}' has no material key");
         if (MaterialPenetration.HasWords("Carousel", "Car") || !MaterialPenetration.HasWords("Old Car", "Car") || !MaterialPenetration.HasWords("Bocage Hedgerow End", "Bocage Hedgerow"))

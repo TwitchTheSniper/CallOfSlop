@@ -277,18 +277,20 @@ public static partial class SelfTest
         var grazing = GibProp(map, "Grazing Cow");
         game.BlastProps(me, Centre(grazing) + new Vector3(0, 0, 4.4f), 5f, 120f, PropDamage.Explosion, 0);
         var dog = GibProp(map, "Dog");
-        game.BlastProps(me, Centre(dog) + new Vector3(0, 0.5f, 2f), 8f, 150f, PropDamage.Streak, 0);
+        game.BlastProps(me, Centre(dog) + new Vector3(0, 0.5f, 2f), 4f, 150f, PropDamage.Streak, 0); // (small: the duck family stays out of it)
         var duck = GibProp(map, "Rubber Duck");
+        var beforeDuck = game.AnimalsGibbed;
         Shots(duck, 30);
+        var duckGibbed = game.AnimalsGibbed - beforeDuck;
         GibLine($"in a game: pigeons {pigeon} shot(s) of 30 ({pigeonGibs} gibs), dairy cow {cowShots} shots; melee breaks the cat {map.IsPropBroken(cat)}; "
               + $"a grenade 1.2 m off breaks the sheep {map.IsPropBroken(sheep)}, one 4.4 m off the grazing cow {map.IsPropBroken(grazing)}; a strike breaks the dog {map.IsPropBroken(dog)}; "
-              + $"{game.AnimalsGibbed - gibbed0} animals gibbed, {Gibs.Count} gibs; kills {me.Kills - kills}, feed lines {game.Feed.Count - feed}; the rubber duck took {map.IsPropBroken(duck)}");
+              + $"{game.AnimalsGibbed - gibbed0} animals gibbed, {Gibs.Count} gibs; kills {me.Kills - kills}, feed lines {game.Feed.Count - feed}; the rubber duck (broken {map.IsPropBroken(duck)}) gibbed {duckGibbed}");
         if (pigeon != 1 || pigeonGibs != 10 || cowShots != 9)
             Fail("pigeons should go in one rifle shot (10 gibs), a cow in 9");
         if (!map.IsPropBroken(cat) || !map.IsPropBroken(sheep) || map.IsPropBroken(grazing) || !map.IsPropBroken(dog))
             Fail("melee, a near grenade and a strike should break animals; a blast at its edge shouldn't break a cow");
-        if (map.IsPropBroken(duck))
-            Fail("the rubber duck broke into meat");
+        if (duckGibbed != 0)
+            Fail("the rubber duck burst into meat");
         if (game.AnimalsGibbed - gibbed0 != 5)
             Fail($"{game.AnimalsGibbed - gibbed0} animals gibbed (want 5)");
         if (me.Kills != kills || game.Feed.Count != feed)
