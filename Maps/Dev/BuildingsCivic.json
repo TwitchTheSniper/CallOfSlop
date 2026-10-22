@@ -3,7 +3,7 @@
   "name": "Civic Buildings",
   "description": "The ten civic and special buildings on three streets: station, church, castle ruin, bunker, school, police, fire station, clinic, motel and car park.",
   "author": "Call of Slop",
-  "order": 957,
+  "order": 959,
   "halfX": 62,
   "halfZ": 52,
   "sky": [0.58, 0.68, 0.8],
