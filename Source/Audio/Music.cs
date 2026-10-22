@@ -101,10 +101,19 @@ public sealed class MusicPlayer : IDisposable
         _menuHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Menu, hardbassOnly: true), _seed * 17u + 3u);
         _lobbyHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby, hardbassOnly: true), _seed * 13u + 5u);
         Frenzy = new FrenzyLayer(_seed * 29u + 1u);
+        _frenzyLimiter.Configure();
     }
 
     /// <summary>The in-match kill-frenzy layer (MusicFrenzy.cs); it only plays while the mood is Off (a live match).</summary>
     public readonly FrenzyLayer Frenzy;
+
+    // The frenzy's levels 5 and 6 push the bus past full scale at loud settings: a limiter after the music volume, on
+    // while the frenzy plays (the menu and lobby music never reach it and stay bit-for-bit as before).
+    private readonly MasterLimiter _frenzyLimiter = new() { Ceiling = FrenzyLayer.LimiterCeiling };
+    private bool _limiting;
+
+    /// <summary>The lowest gain the frenzy limiter has applied since the frenzy started (1 = never limited).</summary>
+    public float FrenzyLimiterMinGain => _frenzyLimiter.MinGain;
 
     /// <summary>
     /// Settings > Audio > Music style: true plays only the hardbass tracks. Switching it on while another style plays
@@ -210,6 +219,19 @@ public sealed class MusicPlayer : IDisposable
             a += da;
         }
         _appliedGain = target;
+        if (Frenzy.Active)
+        {
+            if (!_limiting)
+            {
+                _frenzyLimiter.Reset(); // starts from silence: the frenzy fades in from 0
+                _limiting = true;
+            }
+            _frenzyLimiter.Process(output);
+        }
+        else
+        {
+            _limiting = false;
+        }
         var name = _lead is { Active: true } l ? l.R.Track.Name : null;
         if (!ReferenceEquals(name, _nowPlaying))
             Volatile.Write(ref _nowPlaying, name);

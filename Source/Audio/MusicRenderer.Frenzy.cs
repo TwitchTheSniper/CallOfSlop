@@ -33,6 +33,9 @@ public sealed partial class MusicRenderer
     /// <summary>True while a jump is waiting for the next bar line.</summary>
     public bool JumpPending => _jumpBar >= 0;
 
+    /// <summary>Hits the crash cymbal now (the frenzy's level-6 hit); <paramref name="vel"/> 0..1.</summary>
+    public void FrenzyCrash(float vel) => _fx.Crash(vel);
+
     /// <summary>The section playing now (Intro before the first bar).</summary>
     public MusicPart Part => _part;
 
