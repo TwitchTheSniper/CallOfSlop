@@ -45,7 +45,7 @@ WALL_H = 2.7
 BLUE_SP = [(-84, -14), (-80, -18), (-86, -6), (-81, -9), (-85, 4), (-81, 8), (-86, 12), (-85, 18), (-82, -1)]
 RED_SP = [(82, -12), (86, -6), (79, -18), (84, 2), (80, 8), (86, 12), (77, 14), (88, -16), (81, -3)]
 FFA_SP = [(-40, -52), (34, -56), (-46, 54), (42, 52), (-10, -20), (22, 16)]
-HILLS = [(0.5, 2.0, 6.0), (0.0, -44.0, 6.0), (2.5, 47.0, 6.0)]
+HILLS = [(1.5, 2.0, 6.0), (0.0, -44.0, 6.0), (2.5, 47.0, 6.0)]
 FLAGS = [(-89.0, 3.0), (90.0, -2.0)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
@@ -235,15 +235,13 @@ def cabin(name, cx, cz, w, d, doors, windows=(), world_y=None, porch=None, chimn
 # heights (B is higher up the hill) and the dressing differ: A's trench door is under brush on a slope, B's opens as a
 # concrete culvert in the creek bank.
 B_DEPTH = 3.5         # surface to floor (S is a multiple of 0.5, so the floor height is exact in the heightfield)
-B_RISE_N = 14         # 0.25 m risers: the nav graph samples every 0.6 m and steps up at most 0.55 m
-# The plan (bunker A; x grows east, z south). The stairs climb west from the room to x = -51 (a heightfield sample line:
-# the pit is cut no further, so the ground under the landing beyond stays at the surface); a landing box covers the
-# last metre of the pit's slope, and the landing strip itself (x -53.7..-52, open in the roof) is the ground, so a
-# waypoint there lands on it: the bots' way down. The rest of the cabin's floor is the roof.
+# The plan (bunker A; x grows east, z south). The way down from the hatch is the ground itself: a "cut" ramp (28
+# degrees) from the landing strip inside the cabin (x -53.7..-52, open in the roof, left at the surface) down to the room,
+# with a plank stair (a cosmetic wedge) on it. Box steps over a pit would hide the slope from the bots' nav graph (its
+# links check the ground under the line) and a box landing would bury its waypoint; on the ground both just work.
 BUNKER_PLAN = {
     "cabin": (-49.5, -29.5, 9.0, 6.0),
-    "shaft": (-51.0, -31.3, -45.5, -29.5),        # the stair run (top at x = -51)
-    "landing": (-52.0, -51.0),                    # the landing box over the end of the pit
+    "shaft": (-52.0, -31.3, -45.5, -29.5),        # the stair ramp (top at x = -52, on the surface)
     "hole": (-53.7, -31.3, -45.5, -29.5),         # the opening in the roof (the cabin's floor): landing strip + stairs
     "room": (-45.5, -34.5, -32.5, -24.5),
     "corr": (-32.5, -30.0, -21.0, -27.6),
@@ -282,11 +280,16 @@ def bunker_cuts(b):
     s, F = b["s"], b["F"]
     P = BUNKER_PLAN
     sx0, sz0, sx1, sz1 = P["shaft"]
-    plan_cuts = [(sx0, sz0 - 0.7, sx1 + 0.7, sz1 + 0.7)] + [(r[0] - 1.0, r[1] - 1.0, r[2] + 1.0, r[3] + 1.0) for r in (P["room"], P["corr"])]
+    rm = P["room"]
+    # 1 m wider than the rooms, except towards the stairs: the room's cut stops at x = -46 (a sample line), where the ramp ends
+    plan_cuts = [(rm[0] - 0.5, rm[1] - 1.0, rm[2] + 1.0, rm[3] + 1.0)] + [(r[0] - 1.0, r[1] - 1.0, r[2] + 1.0, r[3] + 1.0) for r in (P["corr"],)]
     for r in plan_cuts:
         r = TR(r, s)
         FEAT.append({"type": "flatten", "x": R((r[0] + r[2]) / 2), "z": R((r[1] + r[3]) / 2), "w": R(r[2] - r[0]), "d": R(r[3] - r[1]),
                      "height": F, "edge": 0.6, "mode": "cut"})
+    # the stair ramp, a little wider than the shaft so the ground is flat across it between the walls
+    ta, tb = T((sx0, (sz0 + sz1) / 2), s), T((sx1 - 0.5, (sz0 + sz1) / 2), s)
+    FEAT.append({"type": "ramp", "points": [[R(ta[0]), R(ta[1]), b["S"]], [R(tb[0]), R(tb[1]), F]], "width": 3.0, "edge": 0.6, "mode": "cut", "material": "dirt"})
     dx, dz = T((P["door_x"], (P["corr"][1] + P["corr"][3]) / 2), s)
     ex, ez = T(P["trench_end"], s)
     FEAT.append({"type": "ramp", "points": [[R(dx), R(dz), F], [R(ex), R(ez)]], "width": 2.6, "edge": 1.0, "mode": "cut", "material": "dirt"})
@@ -307,7 +310,6 @@ def bunker_build(b, culvert):
         a = TR((x0, z0, x1, z1), s)
         wblock(a[0], y0, a[1], a[2], y1, a[3], BUNKER)
     rx0, rz0, rx1, rz1 = P["room"]; sx0, sz0, sx1, sz1 = P["shaft"]; cx0, cz0, cx1, cz1 = P["corr"]
-    lx0, lx1 = P["landing"]
     wall(rx0 - 0.3, rz0 - 0.3, rx1 + 0.3, rz0)                 # room north
     wall(rx0 - 0.3, rz1, rx1 + 0.3, rz1 + 0.3)                 # room south
     wall(rx0 - 0.3, rz0, rx0, sz0 - 0.3)                       # room west, either side of the shaft
@@ -320,16 +322,12 @@ def bunker_build(b, culvert):
     wall(cx1, cz0 - 0.3, cx1 + 0.3, dz0)
     wall(cx1, dz1, cx1 + 0.3, cz1 + 0.3)
     wall(cx1, dz0, cx1 + 0.3, dz1, y0=F + 2.3)
-    wall(lx0, sz0 - 0.3, rx0 - 0.3, sz0, y1=top)               # shaft sides, up to the cabin floor
-    wall(lx0, sz1, rx0 - 0.3, sz1 + 0.3, y1=top)
-    # stairs: B_RISE_N steps from the floor up to the surface, climbing west; the landing box at the top
-    rise = (S - F) / B_RISE_N; run = (sx1 - sx0) / B_RISE_N
-    for k in range(1, B_RISE_N + 1):
-        xa, xb = sx1 - (k - 1) * run, sx1 - k * run
-        a = TR((xb, sz0, xa, sz1), s)
-        wblock(a[0], F, a[1], a[2], F + k * rise, a[3], (0.38, 0.37, 0.35))
-    a = TR((lx0, sz0, lx1, sz1), s)
-    wblock(a[0], F, a[1], a[2], S, a[3], (0.38, 0.37, 0.35))
+    wall(sx0, sz0 - 0.3, rx0 - 0.3, sz0, y1=top)               # shaft sides, up to the cabin floor
+    wall(sx0, sz1, rx0 - 0.3, sz1 + 0.3, y1=top)
+    # the plank stair on the ramp (cosmetic: the ground is what you walk on), rising west to the landing
+    a = TR((sx0, sz0, sx1 - 0.5, sz1), s)
+    wmesh("wedge", (a[0] + a[2]) / 2, (a[1] + a[3]) / 2, PLANK, F + 0.02, width=sz1 - sz0, height=S - F, depth=sx1 - 0.5 - sx0,
+          yaw=270.0 if s > 0 else 90.0, material="Wood")
     # roof: the bounding box less the opening (4 slabs), dirt-coloured
     X0, Z0, X1, Z1 = b["roof"]
     hx0, hz0, hx1, hz1 = b["hole"]
@@ -341,7 +339,7 @@ def bunker_build(b, culvert):
         cxr, czr, wr, dr = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2, r[2] - r[0], r[3] - r[1]
         wmesh("box", cxr, czr, (0.30, 0.30, 0.29), ceil - 0.02, width=wr, height=0.02, depth=dr, material="Concrete")
         wmesh("box", cxr, czr, (0.36, 0.35, 0.33), F, width=wr, height=0.015, depth=dr, material="Concrete")
-    a = TR((P["hole"][0], sz0, lx0, sz1), s)
+    a = TR((P["hole"][0], sz0, sx0, sz1), s)
     wmesh("box", (a[0] + a[2]) / 2, (a[1] + a[3]) / 2, PLANK, S, width=a[2] - a[0], height=0.03, depth=a[3] - a[1], material="Wood")
     # lamps (caged bulbs on the generator, flickering), every few metres
     lamp_y = ceil - 0.7 - F
@@ -376,7 +374,7 @@ def bunker_build(b, culvert):
                 rng.uniform(-44.5, -33.5), rng.uniform(-32.0, -26.8), 0.0)
     # waypoints: the rooms, the corridor, the bottom of the stairs and the landing strip at the top (on the ground)
     for (px, pz) in ((-43.5, -30.4), (-40.0, -31.8), (-41.0, -27.2), (-35.0, -29.6), (-30.0, -28.8), (-25.0, -28.8), (-22.0, -28.8),
-                     (-44.9, -30.4), (-52.9, -30.4)):
+                     (-44.9, -30.4), (-48.8, -30.4), (-52.9, -30.4)):
         x, z = T((px, pz), s)
         t.ops.append({"op": "Waypoint", "x": R(x), "z": R(z)})
     # the trench door's dressing
@@ -798,13 +796,13 @@ for x, z, kind in TREES_BY_HAND:
     t.tree(x + rng.uniform(-0.8, 0.8), z + rng.uniform(-0.8, 0.8), rng.uniform(8, 13) if kind == "pine" else rng.uniform(7, 10), kind)
 
 # forest regions: mixed pines and broadleaf; thinner in the clearings (hills, camps, lake, cabins: no-go zones below)
-t.region("pine", 0.016, rect=[BX0, BZ0, BX1, BZ1], height=[9, 15])
-t.region("tree", 0.007, rect=[BX0, BZ0, BX1, BZ1], height=[7, 11])
+t.region("pine", 0.027, rect=[BX0, BZ0, BX1, BZ1], height=[9, 15])
+t.region("tree", 0.012, rect=[BX0, BZ0, BX1, BZ1], height=[7, 11])
 t.region("pine", 0.012, polygon=[[-94, -60], [0, -66], [0, -36], [-94, -24]], height=[10, 16])     # the dark north-west wood (Blue's cover)
 t.region("tree", 0.008, polygon=[[-60, 40], [-10, 30], [-10, 66], [-60, 66]], height=[7, 11])
 # the understory: grass and shrubs everywhere, ferns (shrubs) and bushes in the woods, lusher by the water
-t.region("grass", 2.6, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.55, scale=[0.8, 1.4], color=[0.36, 0.48, 0.22])
-t.region("shrub", 0.55, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.5, color=[0.27, 0.42, 0.18])
+t.region("grass", 3.4, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.55, scale=[0.8, 1.4], color=[0.36, 0.48, 0.22])
+t.region("shrub", 0.8, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.5, color=[0.27, 0.42, 0.18])
 t.region("bush", 0.12, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.7, scale=[0.9, 1.6], color=[0.22, 0.36, 0.15])
 t.region("bush", 0.14, polygon=[[-94, -60], [0, -66], [0, -36], [-94, -24]], patchiness=0.6, scale=[1.0, 1.7], color=[0.20, 0.34, 0.14])
 t.region("bush", 0.10, polygon=[[-60, 20], [-6, 20], [-6, 66], [-60, 66]], patchiness=0.6, scale=[1.0, 1.6])
@@ -826,10 +824,12 @@ for (x, z, r) in HILLS:
 for (x, z) in BLUE_SP + RED_SP + FFA_SP:
     t.exclude.append({"shape": "circle", "center": [R(x), R(z)], "radius": 1.6, "density": 0.3})
 for b in BUNKERS:
-    X0, Z0, X1, Z1 = b["roof"]
-    t.exclude_rect(X0 - 0.3, Z0 - 0.3, X1 + 0.3, Z1 + 0.3)
-    # grass on the roof (over the rooms and the corridor, not over the cabin or the shaft opening)
+    # nothing in the cabin or the opening; under the rest of the roof the indoor rule keeps the pit clear, and the roof
+    # over the rooms and the corridor grows grass (include zones with onTop: plants stand on the roof slab)
     cab = b["cabin"]
+    t.exclude_rect(cab[0] - 0.4, cab[1] - 0.4, cab[2] + 0.4, cab[3] + 0.4)
+    hx0, hz0, hx1, hz1 = b["hole"]
+    t.exclude_rect(hx0 - 0.4, hz0 - 0.4, hx1 + 0.4, hz1 + 0.4)
     for r in b["rects"][1:]:
         t.include.append({"shape": "rect", "center": [R((r[0] + r[2]) / 2), R((r[1] + r[3]) / 2)], "halfX": R((r[2] - r[0]) / 2 + 0.6),
                           "halfZ": R((r[3] - r[1]) / 2 + 0.6), "onTop": True})
