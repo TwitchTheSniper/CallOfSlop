@@ -323,6 +323,11 @@ public static unsafe partial class Program
             SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeBloodStep < 9)
+        {
+            SmokeBlood(now); // Program.Blood.cs: the blood overlay at 30% health, a bot's body blood at 20%
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -2029,6 +2034,7 @@ public static unsafe partial class Program
         var black = Vector3.Zero;
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
+        DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
 
         if (local is { Alive: true })
         {

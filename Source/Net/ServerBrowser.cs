@@ -55,7 +55,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     RocketBoom / RocketDetonate at the end, and the Fire packet's trailing lock-on byte.
     // 31: landmines and prop respawns (GameMines.cs): Msg.PropBreak's kind byte gains Game.PropRestoreFlag (0x40, a prop
     //     placed with "respawn" is back), and kill id 254 (Game.LandmineKillId, "Landmine") for neutral blasts.
-    public const byte ProtocolVersion = 31;
+    // 32: blood marks (BodyBlood.cs): every snapshot fast entry ends with the player's 32-bit blood word (hit body parts,
+    //     generation, last hit direction; Snapshot.FastBytes 24 -> 28).
+    public const byte ProtocolVersion = 32;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

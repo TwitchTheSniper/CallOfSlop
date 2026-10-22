@@ -64,6 +64,10 @@ public sealed class RagdollBody
     public ArmColors Arms;
     public Vector3 ZShirt, ZSkin, ZPants;
 
+    /// <summary>The body's final blood marks: an amount per <see cref="BloodPart"/> (0-1; BodyBloodRender.RagdollAmounts) and a pattern seed.</summary>
+    public readonly float[] Blood = new float[8];
+    public float BloodSeed;
+
     // The prestige hat: on the head, or knocked off (flying, then lying on its side).
     public HatDef? Hat;
     public bool HatOff, HatResting;
@@ -329,6 +333,7 @@ public static class Ragdolls
         body.Owner = p.Id;
         body.Hat = HatRender.HatFor(p);
         BuildSoldierLook(body, p.Name, p.Id, p.Color);
+        SetBlood(body, p.Id, p.Blood); // the body keeps its final blood marks (Source/Render/BodyBloodRender.cs)
         Spawn(body, d, now, PlayerLife);
     }
 
@@ -371,7 +376,15 @@ public static class Ragdolls
         body.Owner = 255;
         body.Hat = null;
         (body.ZShirt, body.ZSkin, body.ZPants) = (ZombieShirt, ZombieSkin, ZombiePants);
+        SetBlood(body, 0x10000u + z.Id, 0);
         Spawn(body, d, now, ZombieLife);
+    }
+
+    /// <summary>A dead body's blood: every mark shows (health 0), by the owner's recorded hits; Off: none.</summary>
+    public static void SetBlood(RagdollBody body, uint owner, uint blood)
+    {
+        BodyBloodRender.RagdollAmounts(owner, blood, 0f, BodyBloodRender.Mode, body.Blood);
+        body.BloodSeed = (BloodMarks.Hash(owner, blood, 7) & 0xFFFF) / 65535f;
     }
 
     /// <summary>Zombie colours (set once by the game, the same as the living zombies).</summary>
@@ -482,6 +495,8 @@ public static class Ragdolls
             BuildSoldierLook(body, "Test", d.Victim, color);
         else
             (body.ZShirt, body.ZSkin, body.ZPants) = (ZombieShirt, ZombieSkin, ZombiePants);
+        Array.Clear(body.Blood); // clean unless the test sets some (SetBlood)
+        body.BloodSeed = 0;
         Spawn(body, d, now, look == RagdollLook.Zombie ? ZombieLife : PlayerLife);
         return body;
     }
@@ -665,6 +680,9 @@ public static class Ragdolls
         public Renderer? G;
         public float Fade;
 
+        /// <summary>Blood amount for the next boxes (negative: zombie ichor) and the body's pattern seed (instance floats 15 and 11).</summary>
+        public float Blood, Seed;
+
         public void Box(Vector3 size, Vector3 center, in Matrix4x4 frame, Vector3 color)
         {
             if (G != null)
@@ -693,7 +711,10 @@ public static class Ragdolls
             if (Out == null || Count >= Max || !Matrix4x4.Decompose(local, out var scale, out var rot, out var at))
                 return;
             var o = (Start + Count) * PropDebris.FloatsPerPiece;
+            var keep = Blood;
+            Blood = 0; // hats stay clean
             Write(o, Vector3.Transform(at, frame), Quaternion.Concatenate(rot, Quaternion.CreateFromRotationMatrix(frame)), scale, color);
+            Blood = keep;
         }
 
         private void Write(int o, Vector3 c, Quaternion q, Vector3 size, Vector3 color)
@@ -710,11 +731,11 @@ public static class Ragdolls
             s[8] = size.X;
             s[9] = size.Y;
             s[10] = size.Z;
-            s[11] = 0;
+            s[11] = Seed;
             s[12] = color.X;
             s[13] = color.Y;
             s[14] = color.Z;
-            s[15] = 0;
+            s[15] = Blood;
             Count++;
         }
     }
@@ -815,6 +836,10 @@ public static class Ragdolls
         var midHip = (q[RagdollRig.HipR] + q[RagdollRig.HipL]) * 0.5f;
         var midSh = (q[RagdollRig.ShoulderR] + q[RagdollRig.ShoulderL]) * 0.5f;
         var fwd = -back;
+        var zombie = b.Look == RagdollLook.Zombie;
+        var bl = b.Blood;
+        float Bleed(BloodPart part) => zombie ? -bl[(int)part] : bl[(int)part];
+        sink.Seed = b.BloodSeed;
 
         // Legs (both looks): thigh, shin and a foot pointing the way the body faces.
         var bones = Bones;
@@ -830,6 +855,7 @@ public static class Ragdolls
             var toes = fwd - shinUp * Vector3.Dot(fwd, shinUp);
             toes = toes.LengthSquared() > 1e-6f ? Vector3.Normalize(toes) : -up;
             bones[2] = Arms.BoneFrame(foot, foot + toes, shinUp);
+            sink.Blood = Bleed(side == 0 ? BloodPart.LegR : BloodPart.LegL);
             if (b.Look == RagdollLook.Zombie)
             {
                 var thigh = Vector3.Distance(hip, knee);
@@ -853,6 +879,7 @@ public static class Ragdolls
             var ua = Arms.BoneFrame(sh, el, pole);
             var fa = Arms.BoneFrame(el, ha, pole);
             float u = RagdollRig.UpperArm, fl = RagdollRig.Forearm;
+            sink.Blood = Bleed(side == 0 ? BloodPart.ArmR : BloodPart.ArmL);
             if (b.Look == RagdollLook.Zombie)
             {
                 var skin = b.ZSkin * 0.92f;
@@ -879,17 +906,23 @@ public static class Ragdolls
             var upper = Frame(right, up, back, midHip);
             var zc = BodyColors.Zombie(b.ZShirt, b.ZSkin);
             foreach (var p in BodyModel.ZombieParts)
+            {
+                sink.Blood = Bleed(p.Center.Y > 0.6f ? BloodPart.Head : bl[(int)BloodPart.Front] >= bl[(int)BloodPart.Back] ? BloodPart.Front : BloodPart.Back);
                 sink.Box(p.Size, p.Center, upper, zc.Of(p.Paint));
+            }
+            sink.Blood = 0;
             return;
         }
 
         // Pelvis, torso and head (the living body's parts, stance 0).
         var pp = LegAnimator.PelvisPart;
+        sink.Blood = 0.5f * MathF.Max(bl[(int)BloodPart.LegR], bl[(int)BloodPart.LegL]);
         sink.Box(pp.Size, pp.Center, Frame(right, up, back, midHip + up * 0.04f), b.Legs.Of(pp.Paint));
         var torso = Frame(right, up, back, Vector3.Lerp(midHip, midSh, RagdollRig.TorsoAlong));
-        EmitParts(b.Torso, torso, ref sink);
+        EmitParts(b.Torso, torso, ref sink, bl, torsoParts: true);
         HeadFrame(q, out var head);
-        EmitParts(b.Head, head, ref sink);
+        EmitParts(b.Head, head, ref sink, bl, torsoParts: false);
+        sink.Blood = 0;
 
         // The hat: on the head, flying, or lying on its side.
         if (b.Hat is not { } hat)
@@ -907,11 +940,17 @@ public static class Ragdolls
             sink.Box(box.Local, hf, box.Color);
     }
 
-    private static void EmitParts(BodyParts parts, in Matrix4x4 frame, ref Sink sink)
+    private static void EmitParts(BodyParts parts, in Matrix4x4 frame, ref Sink sink, float[] blood, bool torsoParts)
     {
+        float front = blood[(int)BloodPart.Front], backB = blood[(int)BloodPart.Back];
+        var sides = 0.6f * MathF.Max(blood[(int)BloodPart.ArmL], blood[(int)BloodPart.ArmR]);
         for (var i = 0; i < parts.Count; i++)
         {
             ref readonly var l = ref parts.Local[i];
+            // Torso boxes: front plate and pouches take the front's blood, the back plate the back's, the rest the worse of both (and the arms');
+            // head boxes the head's.
+            var z = l.Translation.Z;
+            sink.Blood = !torsoParts ? blood[(int)BloodPart.Head] : z < -0.12f ? front : z > 0.12f ? backB : MathF.Max(MathF.Max(front, backB), sides);
             sink.Box(new Vector3(l.M11, l.M22, l.M33), l.Translation, frame, parts.Draws[i].Color);
         }
     }

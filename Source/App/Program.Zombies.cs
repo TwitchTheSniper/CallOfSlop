@@ -234,6 +234,9 @@ public static unsafe partial class Program
         var at = body * Matrix4x4.CreateTranslation(pos);
         var swing = MathF.Sin(z.Gait) * (z.Speed == ZSpeed.Walk ? 0.35f : 0.7f);
         var hunch = z.Speed == ZSpeed.Sprint ? 0.35f : 0.15f;
+        var upper = Matrix4x4.CreateRotationX(-hunch) * Matrix4x4.CreateTranslation(0, 0.86f, 0) * at;
+        BodyBloodRender.PlaceZombie(z, at, upper, swing); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
+        BodyBloodRender.Bind(Gfx);
         // Legs (about the hips).
         for (var side = -1; side <= 1; side += 2)
         {
@@ -241,7 +244,6 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.22f, 0.85f, 0.24f) * Matrix4x4.CreateTranslation(0, -0.42f, 0) * Matrix4x4.CreateRotationX(a) * Matrix4x4.CreateTranslation(side * 0.15f, 0.86f, 0) * at, ZPants);
         }
         // Torso and head, leaning forward.
-        var upper = Matrix4x4.CreateRotationX(-hunch) * Matrix4x4.CreateTranslation(0, 0.86f, 0) * at;
         BodyModel.DrawZombieUpper(Gfx, upper, ZShirt, ZSkin, BodyModel.WantsDetail(pos)); // torn shirt, belly, head (Source/Render/BodyModel.cs)
         if (z.State != ZState.Dead)
             for (var side = -1; side <= 1; side += 2)
@@ -255,6 +257,7 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.13f, 0.66f, 0.13f) * Matrix4x4.CreateTranslation(0, -0.33f, 0) * Matrix4x4.CreateRotationX(raise) * Matrix4x4.CreateRotationY(attack * side * 0.5f)
                      * Matrix4x4.CreateTranslation(side * 0.38f, 0.55f, 0) * upper, ZSkin * 0.92f);
         }
+        BodyBloodRender.Unbind(Gfx);
     }
 
     // ---- Input -------------------------------------------------------------------------------------------

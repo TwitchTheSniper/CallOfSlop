@@ -385,6 +385,7 @@ public sealed class Player
     public float Yaw;
     public float Pitch;
     public int Health = World.MaxHealth;
+    public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks, BodyBlood.cs); server-owned, replicated
     public bool Alive = true;
     public ushort Kills;
     public ushort Deaths;
