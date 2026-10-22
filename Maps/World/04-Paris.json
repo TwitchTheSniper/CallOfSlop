@@ -357,51 +357,51 @@
     "type": "cave",
     "points": [
      [
-      -65,
+      -63,
       -3.5
      ],
      [
       -53,
       -3.5,
-      -2.5
+      -2.2
      ],
      [
       -39,
       3.0,
-      -2.5
+      -2.2
      ],
      [
       -25,
       -3.0,
-      -2.5
+      -2.2
      ],
      [
       -12,
       0,
-      -2.5
+      -2.2
      ],
      [
       12,
       0,
-      -2.5
+      -2.2
      ],
      [
       25,
       -3.0,
-      -2.5
+      -2.2
      ],
      [
       39,
       3.0,
-      -2.5
+      -2.2
      ],
      [
       53,
       -3.5,
-      -2.5
+      -2.2
      ],
      [
-      65,
+      63,
       -3.5
      ]
     ],
@@ -415,16 +415,16 @@
      [
       -13,
       0,
-      -2.5
+      -2.2
      ],
      [
       13,
       0,
-      -2.5
+      -2.2
      ]
     ],
     "width": 13,
-    "height": 4.6,
+    "height": 3.95,
     "open": "none"
    }
   ]
@@ -2994,7 +2994,7 @@
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": -27,
+   "x": -26,
    "z": 16.0,
    "y": 0.0,
    "color": [
@@ -3002,7 +3002,7 @@
     0.27,
     0.29
    ],
-   "width": 48.0,
+   "width": 46.0,
    "height": 0.03,
    "depth": 6.0,
    "material": "Concrete",
@@ -3011,7 +3011,7 @@
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": 27,
+   "x": 26,
    "z": 16.0,
    "y": 0.0,
    "color": [
@@ -3019,7 +3019,7 @@
     0.27,
     0.29
    ],
-   "width": 48.0,
+   "width": 46.0,
    "height": 0.03,
    "depth": 6.0,
    "material": "Concrete",
@@ -4984,153 +4984,847 @@
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": -60.0,
-   "z": 0.0,
+   "x": -64.8,
+   "z": -7.55,
    "y": 3.0,
    "color": [
     0.6,
     0.57,
     0.52
    ],
-   "width": 18.0,
+   "width": 8.4,
    "height": 0.04,
-   "depth": 17.0,
+   "depth": 1.9,
    "material": "Tiles",
    "anchor": "world"
   },
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": 60.0,
-   "z": 0.0,
+   "x": 64.8,
+   "z": -7.55,
    "y": 3.0,
    "color": [
     0.6,
     0.57,
     0.52
    ],
-   "width": 18.0,
+   "width": 8.4,
    "height": 0.04,
-   "depth": 17.0,
+   "depth": 1.9,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -64.8,
+   "z": 4.05,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 8.4,
+   "height": 0.04,
+   "depth": 8.9,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 64.8,
+   "z": 4.05,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 8.4,
+   "height": 0.04,
+   "depth": 8.9,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -67.8,
+   "z": -3.5,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 2.4,
+   "height": 0.04,
+   "depth": 6.2,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 67.8,
+   "z": -3.5,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 2.4,
+   "height": 0.04,
+   "depth": 6.2,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -55.0,
+   "z": 3.0,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 8.0,
+   "height": 0.04,
+   "depth": 6.8,
+   "material": "Tiles",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 55.0,
+   "z": 3.0,
+   "y": 3.0,
+   "color": [
+    0.6,
+    0.57,
+    0.52
+   ],
+   "width": 8.0,
+   "height": 0.04,
+   "depth": 6.8,
    "material": "Tiles",
    "anchor": "world"
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -63.5,
-   "z": -6.7
+   "x": -64.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 63.5,
-   "z": -6.7
+   "x": 64.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -63.5,
-   "z": -0.3
+   "x": -64.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 63.5,
-   "z": -0.3
+   "x": 64.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -60.5,
-   "z": -6.7
+   "x": -61.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 60.5,
-   "z": -6.7
+   "x": 61.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -60.5,
-   "z": -0.3
+   "x": -61.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 60.5,
-   "z": -0.3
+   "x": 61.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -57.5,
-   "z": -6.7
+   "x": -58.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 57.5,
-   "z": -6.7
+   "x": 58.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -57.5,
-   "z": -0.3
+   "x": -58.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 57.5,
-   "z": -0.3
+   "x": 58.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -54.5,
-   "z": -6.7
+   "x": -55.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 54.5,
-   "z": -6.7
+   "x": 55.6,
+   "z": -6.75
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": -54.5,
-   "z": -0.3
+   "x": -55.6,
+   "z": -0.25
   },
   {
    "op": "Prop",
    "name": "Metro Railing",
-   "x": 54.5,
-   "z": -0.3
+   "x": 55.6,
+   "z": -0.25
+  },
+  {
+   "op": "Prop",
+   "name": "Metro Railing",
+   "x": -53.5,
+   "z": -3.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Metro Railing",
+   "x": 53.5,
+   "z": -3.5,
+   "yaw": 270
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -62.7,
+   "z": -3.5,
+   "y": 2.628,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 62.7,
+   "z": -3.5,
+   "y": 2.628,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -62.1,
+   "z": -3.5,
+   "y": 2.316,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 62.1,
+   "z": -3.5,
+   "y": 2.316,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -61.5,
+   "z": -3.5,
+   "y": 2.004,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 61.5,
+   "z": -3.5,
+   "y": 2.004,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -60.9,
+   "z": -3.5,
+   "y": 1.692,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 60.9,
+   "z": -3.5,
+   "y": 1.692,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -60.3,
+   "z": -3.5,
+   "y": 1.38,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 60.3,
+   "z": -3.5,
+   "y": 1.38,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -59.7,
+   "z": -3.5,
+   "y": 1.068,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 59.7,
+   "z": -3.5,
+   "y": 1.068,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -59.1,
+   "z": -3.5,
+   "y": 0.756,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 59.1,
+   "z": -3.5,
+   "y": 0.756,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -58.5,
+   "z": -3.5,
+   "y": 0.444,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 58.5,
+   "z": -3.5,
+   "y": 0.444,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -57.9,
+   "z": -3.5,
+   "y": 0.132,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 57.9,
+   "z": -3.5,
+   "y": 0.132,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -57.3,
+   "z": -3.5,
+   "y": -0.18,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 57.3,
+   "z": -3.5,
+   "y": -0.18,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -56.7,
+   "z": -3.5,
+   "y": -0.492,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 56.7,
+   "z": -3.5,
+   "y": -0.492,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -56.1,
+   "z": -3.5,
+   "y": -0.804,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 56.1,
+   "z": -3.5,
+   "y": -0.804,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -55.5,
+   "z": -3.5,
+   "y": -1.116,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 55.5,
+   "z": -3.5,
+   "y": -1.116,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -54.9,
+   "z": -3.5,
+   "y": -1.428,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 54.9,
+   "z": -3.5,
+   "y": -1.428,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -54.3,
+   "z": -3.5,
+   "y": -1.74,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 54.3,
+   "z": -3.5,
+   "y": -1.74,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -53.7,
+   "z": -3.5,
+   "y": -2.052,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 53.7,
+   "z": -3.5,
+   "y": -2.052,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.372,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -53.1,
+   "z": -3.5,
+   "y": -2.26,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.268,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 53.1,
+   "z": -3.5,
+   "y": -2.26,
+   "color": [
+    0.7,
+    0.67,
+    0.6
+   ],
+   "width": 0.6,
+   "height": 0.268,
+   "depth": 1.7,
+   "material": "Concrete",
+   "anchor": "world"
   },
   {
    "op": "Prop",
    "name": "Metro Entrance Arch",
-   "x": -66.4,
+   "x": -66.9,
    "z": -3.5,
    "yaw": 90
   },
   {
    "op": "Prop",
    "name": "Metro Entrance Arch",
-   "x": 66.4,
+   "x": 66.9,
    "z": -3.5,
    "yaw": 270
   },
   {
    "op": "Block",
-   "x0": -66.5,
+   "x0": -67.0,
    "y0": 5.2,
    "z0": -4.35,
-   "x1": -66.32,
+   "x1": -66.82,
    "y1": 5.62,
    "z1": -2.65,
    "color": [
@@ -5142,10 +5836,10 @@
   },
   {
    "op": "Block",
-   "x0": 66.32,
+   "x0": 66.82,
    "y0": 5.2,
    "z0": -4.35,
-   "x1": 66.5,
+   "x1": 67.0,
    "y1": 5.62,
    "z1": -2.65,
    "color": [
@@ -5158,7 +5852,7 @@
   {
    "op": "Decal",
    "decal": "French Sign Metro",
-   "x": -66.2,
+   "x": -66.6,
    "z": -3.5,
    "y": 5.42,
    "onto": "wall-x",
@@ -5167,10 +5861,28 @@
   {
    "op": "Decal",
    "decal": "French Sign Metro",
-   "x": 66.2,
+   "x": 66.6,
    "z": -3.5,
    "y": 5.42,
    "onto": "wall+x",
+   "size": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Metro",
+   "x": -67.3,
+   "z": -3.5,
+   "y": 5.42,
+   "onto": "wall+x",
+   "size": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Metro",
+   "x": 67.3,
+   "z": -3.5,
+   "y": 5.42,
+   "onto": "wall-x",
    "size": 1.5
   },
   {
@@ -5341,12 +6053,12 @@
   },
   {
    "op": "Block",
-   "x0": -9.85,
-   "y0": -2.5,
-   "z0": -0.35,
-   "x1": -9.15,
+   "x0": -9.8,
+   "y0": -2.2,
+   "z0": -3.0,
+   "x1": -9.2,
    "y1": 1.7,
-   "z1": 0.35,
+   "z1": -2.4,
    "color": [
     0.86,
     0.84,
@@ -5356,12 +6068,12 @@
   },
   {
    "op": "Block",
-   "x0": 9.15,
-   "y0": -2.5,
-   "z0": -0.35,
-   "x1": 9.85,
+   "x0": 9.2,
+   "y0": -2.2,
+   "z0": -3.0,
+   "x1": 9.8,
    "y1": 1.7,
-   "z1": 0.35,
+   "z1": -2.4,
    "color": [
     0.86,
     0.84,
@@ -5371,12 +6083,12 @@
   },
   {
    "op": "Block",
-   "x0": -4.85,
-   "y0": -2.5,
-   "z0": -0.35,
-   "x1": -4.15,
+   "x0": -9.8,
+   "y0": -2.2,
+   "z0": 2.4,
+   "x1": -9.2,
    "y1": 1.7,
-   "z1": 0.35,
+   "z1": 3.0,
    "color": [
     0.86,
     0.84,
@@ -5386,12 +6098,72 @@
   },
   {
    "op": "Block",
-   "x0": 4.15,
-   "y0": -2.5,
-   "z0": -0.35,
-   "x1": 4.85,
+   "x0": 9.2,
+   "y0": -2.2,
+   "z0": 2.4,
+   "x1": 9.8,
    "y1": 1.7,
-   "z1": 0.35,
+   "z1": 3.0,
+   "color": [
+    0.86,
+    0.84,
+    0.78
+   ],
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": -4.8,
+   "y0": -2.2,
+   "z0": -3.0,
+   "x1": -4.2,
+   "y1": 1.7,
+   "z1": -2.4,
+   "color": [
+    0.86,
+    0.84,
+    0.78
+   ],
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": 4.2,
+   "y0": -2.2,
+   "z0": -3.0,
+   "x1": 4.8,
+   "y1": 1.7,
+   "z1": -2.4,
+   "color": [
+    0.86,
+    0.84,
+    0.78
+   ],
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": -4.8,
+   "y0": -2.2,
+   "z0": 2.4,
+   "x1": -4.2,
+   "y1": 1.7,
+   "z1": 3.0,
+   "color": [
+    0.86,
+    0.84,
+    0.78
+   ],
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": 4.2,
+   "y0": -2.2,
+   "z0": 2.4,
+   "x1": 4.8,
+   "y1": 1.7,
+   "z1": 3.0,
    "color": [
     0.86,
     0.84,
@@ -5404,7 +6176,7 @@
    "mesh": "box",
    "x": -6.5,
    "z": 0.0,
-   "y": -2.5,
+   "y": -2.2,
    "color": [
     0.86,
     0.84,
@@ -5421,7 +6193,7 @@
    "mesh": "box",
    "x": 6.5,
    "z": 0.0,
-   "y": -2.5,
+   "y": -2.2,
    "color": [
     0.86,
     0.84,
@@ -5437,34 +6209,34 @@
    "op": "Prop",
    "name": "Bench",
    "x": -7.0,
-   "z": -1.3,
+   "z": -1.6,
    "yaw": 180,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
    "op": "Prop",
    "name": "Bench",
    "x": 7.0,
-   "z": -1.3,
+   "z": -1.6,
    "yaw": 180,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
    "op": "Prop",
    "name": "Bench",
    "x": -7.0,
-   "z": 1.3,
-   "y": -2.5,
+   "z": 1.6,
+   "y": -2.2,
    "anchor": "world"
   },
   {
    "op": "Prop",
    "name": "Bench",
    "x": 7.0,
-   "z": 1.3,
-   "y": -2.5,
+   "z": 1.6,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5472,7 +6244,7 @@
    "name": "Ticket Machine",
    "x": -11.8,
    "z": -1.6,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5480,7 +6252,7 @@
    "name": "Ticket Machine",
    "x": 11.8,
    "z": -1.6,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5489,7 +6261,7 @@
    "x": -11.8,
    "z": 1.7,
    "yaw": 180,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5498,7 +6270,7 @@
    "x": 11.8,
    "z": 1.7,
    "yaw": 180,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5506,7 +6278,7 @@
    "name": "Lantern Street Lamp",
    "x": -2.0,
    "z": -1.8,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5514,7 +6286,7 @@
    "name": "Lantern Street Lamp",
    "x": 2.0,
    "z": -1.8,
-   "y": -2.5,
+   "y": -2.2,
    "anchor": "world"
   },
   {
@@ -5522,7 +6294,7 @@
    "decal": "Poster Diagonal",
    "x": -10.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5532,7 +6304,7 @@
    "decal": "Poster Diagonal",
    "x": 10.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5542,7 +6314,7 @@
    "decal": "Torn Poster",
    "x": -11.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5552,7 +6324,7 @@
    "decal": "Torn Poster",
    "x": 11.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5562,7 +6334,7 @@
    "decal": "Poster Circles",
    "x": -5.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5572,7 +6344,7 @@
    "decal": "Poster Circles",
    "x": 5.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5582,7 +6354,7 @@
    "decal": "Torn Poster",
    "x": -6.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5592,7 +6364,7 @@
    "decal": "Torn Poster",
    "x": 6.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5602,7 +6374,7 @@
    "decal": "Poster Circles",
    "x": -1.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5612,7 +6384,7 @@
    "decal": "Poster Circles",
    "x": 1.0,
    "z": 2.0,
-   "y": -1.0,
+   "y": -0.7,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5622,7 +6394,7 @@
    "decal": "Torn Poster",
    "x": -2.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5632,7 +6404,7 @@
    "decal": "Torn Poster",
    "x": 2.2,
    "z": -2.0,
-   "y": -1.1,
+   "y": -0.8,
    "onto": "wall-z",
    "reach": 5,
    "anchor": "world"
@@ -5642,7 +6414,7 @@
    "decal": "Grime Streaks",
    "x": -7.5,
    "z": 2.0,
-   "y": -0.5,
+   "y": -0.2,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5652,7 +6424,7 @@
    "decal": "Grime Streaks",
    "x": 7.5,
    "z": 2.0,
-   "y": -0.5,
+   "y": -0.2,
    "onto": "wall+z",
    "reach": 5,
    "anchor": "world"
@@ -5662,7 +6434,7 @@
    "decal": "Hazard Stripes",
    "x": -6.5,
    "z": -2.1,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "rotation": 0,
    "size": 6.0,
@@ -5673,7 +6445,7 @@
    "decal": "Hazard Stripes",
    "x": 6.5,
    "z": -2.1,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "rotation": 0,
    "size": 6.0,
@@ -5684,7 +6456,7 @@
    "decal": "Hazard Stripes",
    "x": -6.5,
    "z": 2.1,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "rotation": 0,
    "size": 6.0,
@@ -5695,7 +6467,7 @@
    "decal": "Hazard Stripes",
    "x": 6.5,
    "z": 2.1,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "rotation": 0,
    "size": 6.0,
@@ -5715,7 +6487,7 @@
    "z1": 3,
    "count": 10,
    "seed": 61,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "anchor": "world"
   },
@@ -5733,7 +6505,7 @@
    "z1": 3,
    "count": 10,
    "seed": 1061,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "anchor": "world"
   },
@@ -5750,7 +6522,7 @@
    "z1": 5,
    "count": 10,
    "seed": 62,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "anchor": "world"
   },
@@ -5767,7 +6539,7 @@
    "z1": 5,
    "count": 10,
    "seed": 1062,
-   "y": -2.5,
+   "y": -2.2,
    "onto": "floor",
    "anchor": "world"
   },
