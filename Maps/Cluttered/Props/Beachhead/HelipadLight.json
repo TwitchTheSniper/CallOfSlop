@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Helipad Light",
+  "category": "Beachhead",
+  "description": "A blinking amber edge light for a helipad.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [0.22, 0.1, 0.22], "offset": [0, 0.05, 0], "color": "darkgrey"},
+    {"size": [0.14, 0.1, 0.14], "offset": [0, 0.15, 0], "color": "#e0a020", "anim": {"type": "blink", "period": 1.6, "duty": 0.4, "color": "#ffc040", "off": "#5a4010", "glow": 1.6}}
+  ]
+}
