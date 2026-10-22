@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Tile Shattered",
+  "description": "A tile shattered by a hit: a web of cracks and missing glaze flakes.",
+  "author": "Call of Slop",
+  "size": 0.2,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Tiles"], "weight": 0.8},
+  "layers": [
+    {"shape": "cracks", "count": 9, "length": 0.48, "width": 0.018, "jag": 0.25, "seed": 221, "color": [0.14, 0.14, 0.14], "alpha": 0.85},
+    {"shape": "ring", "radius": 0.24, "width": 0.015, "color": [0.18, 0.18, 0.18], "alpha": 0.6, "softness": 0.01, "noise": 0.5, "noiseScale": 6},
+    {"shape": "speckle", "radius": 0.3, "count": 9, "width": 0.04, "seed": 222, "color": [0.6, 0.58, 0.55], "alpha": 0.85},
+    {"shape": "splat", "radius": 0.14, "count": 7, "jag": 0.5, "seed": 223, "color": [0.38, 0.37, 0.35], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.075, "color": [0.05, 0.05, 0.05], "softness": 0.02}
+  ]
+}

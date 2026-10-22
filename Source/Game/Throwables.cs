@@ -515,6 +515,7 @@ public sealed partial class Game
             case ThrowableKind.Impact:
                 Blasts.Add(new Blast(pos, now, def.Radius * (Players.TryGetValue(owner, out var thrower) ? Perks.BlastRadiusMult(thrower.Perks) : 1f), kind));
                 Audio.Effect3D(Sfx.Explosion, pos, kind == ThrowableKind.Frag ? 1f : 0.8f);
+                ImpactDecals.OnBlast(World.Map, pos, owner, now); // a scorch on the nearest surface (Source/Decals)
                 if (Local is { } me)
                 {
                     var d = Vector3.Distance(me.RenderEye, pos);

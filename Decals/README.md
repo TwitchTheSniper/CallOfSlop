@@ -4,7 +4,7 @@ Decals are flat pictures projected onto the world: stains, cracks, markings, sig
 
 - **Maps** place decals with the `Decal` and `DecalScatter` ops: see [Maps/README.md](../Maps/README.md#decals).
 - **Bullet impacts** are decals with an `"impact"` section: shots pick one for the surface they hit (below).
-- The **Decal Test** map in the Dev pack shows the starter set on floors, walls, a kerb, a mesh and the terrain.
+- The **Decal Test** map in the Dev pack shows the starter set on floors, walls, a kerb, a mesh and the terrain; the **Decal Impacts** map has a target of every impact surface.
 
 ## A decal file
 
@@ -76,15 +76,46 @@ The atlas holds 128 x 128 pixels per decal, so fine detail on a big decal goes s
 
 ## Bullet impacts
 
-A decal with an `"impact"` section is a bullet-hole mark for the surfaces it lists:
+A decal with an `"impact"` section is a bullet-hole mark for the surfaces it lists. Every shot works out the surface it ended on from the map alone (so every client agrees):
 
 | Material | Surfaces |
 | --- | --- |
-| `Concrete`, `Brick`, `Wood`, `Metal`, `Tiles`, `Dirt`, `Grid` | Boxes and building parts with that texture (the game picks a box's texture from its shape and colour). |
-| `Terrain` | The terrain. |
-| `Default` | Anything with no impact of its own (meshes, and any material above that has none). |
+| `Concrete`, `Brick`, `Wood`, `Metal`, `Tiles`, `Dirt`, `Grid` | Boxes with that texture (the game picks a box's texture from its shape and colour; a building part uses its own texture, a building door its material). |
+| `Asphalt` | Dark grey concrete floors: roads, car parks, yards (and a mid-grey map floor). |
+| `Plaster` | Pale concrete walls: rendered, painted and interior walls. |
+| `Grass`, `Sand`, `Snow` | Earthy boxes by colour (green hills and hedges, sand slabs; pale ones snow), and the terrain where it is grass or sand (snow where the map paints its sand white). |
+| `Rock`, `Dirt` | The terrain where it is rock (or steep enough to draw as rock) or dirt. |
+| `Terrain` | Any terrain or earth surface whose own material has no impact decals. |
+| `Default` | Anything else (and any material whose chain has none). |
+| `Explosive` | Not a surface: the scorch a grenade, launcher round, mortar or strafing run (or an exploding prop) leaves on the nearest floor, wall or ceiling within about 1.5 m. |
 
-When several impacts list the same material, each hit picks one, weighted by `weight` (default 1), from the hit position, so **every player sees the same mark in the same place** (the server sends every client the same hit points; impacts add no network traffic). Impact decals must use `"blend": "alpha"` and be at most 1 m across; real bullet holes are 0.1 to 0.25 m. Size and turn variation apply per hit. A mark that would hang over the edge of a box slides inwards, shrinks on a narrow face, and isn't placed on a sliver (a thin rail).
+A material with no impact decal of its own borrows its parent's: `Asphalt`, `Plaster`, `Rock`, `Tiles` and `Grid` use `Concrete`; `Grass`, `Sand` and `Snow` use `Terrain`, which uses `Dirt`; everything ends at `Default`. `Explosive` never falls back (no scorch decal: blasts leave nothing).
+
+When several impacts list the same material, each hit picks one, weighted by `weight` (default 1), from the hit position, so **every player sees the same mark in the same place** (the server sends every client the same hit points; impacts add no network traffic). Give the plain look of a material the biggest weight so it dominates, and its rarer variants (a glancing gouge, a big chunk) smaller ones. Impact decals must use `"blend": "alpha"` and be at most 1 m across; real bullet holes are 0.1 to 0.25 m. Size and turn variation apply per hit. A mark that would hang over the edge of a box slides inwards, shrinks on a narrow face, and isn't placed on a sliver (a thin rail).
+
+**Calibre:** marks are scaled by the weapon's `caliber` (0 to 1 in its weapon file): from 0.7 times the decal's size for light pistols to 1.35 times for heavy rifles and slugs; shotgun pellets are 0.8 times (and merge under pressure, below). Blast scorches use the decal's own size.
+
+The impact set (`Decals/Impacts`, 46 files):
+
+| Material | Variants (weight, size in m) |
+| --- | --- |
+| `Concrete` | Bullet Hole Concrete (2, 0.16), Bullet Chip Concrete (1.2, 0.12), Bullet Hole Concrete Spalled (0.9, 0.18), Bullet Hole Concrete Deep (0.8, 0.21) |
+| `Plaster` | Bullet Hole Plaster (2, 0.15), Bullet Hole Plaster Cracked (1, 0.18), Bullet Hole Plaster Torn (0.6, 0.22) |
+| `Asphalt` | Bullet Hole Asphalt (2, 0.15), Bullet Chip Asphalt (1, 0.14), Bullet Scar Asphalt (0.7, 0.2) |
+| `Brick` | Bullet Hole Brick (2, 0.17), Bullet Chip Brick (1.2, 0.12), Bullet Hole Brick Cracked (0.9, 0.17), Bullet Hole Brick Chunk (0.8, 0.21) |
+| `Wood` | Bullet Hole Wood (1.5, 0.15), Bullet Hole Wood Splintered (1, 0.2), Bullet Hole Wood Dark (0.8, 0.14), Bullet Gouge Wood (0.7, 0.19) |
+| `Metal` | Bullet Dent Metal (1.5, 0.13), Bullet Dent Metal Paint (1, 0.15), Bullet Hole Metal Pierced (1, 0.1), Bullet Ricochet Metal (0.6, 0.17) |
+| `Tiles` | Bullet Hole Tile (2, 0.15), Bullet Chip Tile (1.2, 0.1), Bullet Hole Tile Shattered (0.8, 0.2) |
+| `Dirt` | Bullet Scuff Dirt (1.5, 0.24), Bullet Puff Dirt (1, 0.22), Bullet Furrow Dirt (0.6, 0.26) |
+| `Terrain` | Bullet Scuff Dirt (1.5, 0.24), Bullet Puff Dirt (1, 0.22), Bullet Furrow Dirt (0.6, 0.26) |
+| `Grass` | Bullet Divot Grass (2, 0.22), Bullet Puff Grass (1, 0.16), Bullet Scar Grass (0.6, 0.28) |
+| `Sand` | Bullet Puff Sand (2, 0.2), Bullet Spray Sand (1, 0.2), Bullet Crater Sand (0.7, 0.28) |
+| `Rock` | Bullet Chip Rock (2, 0.13), Bullet Spall Rock (0.8, 0.19), Bullet Scar Rock (0.7, 0.18) |
+| `Snow` | Bullet Hole Snow (2, 0.17), Bullet Puff Snow (1, 0.22), Bullet Slush Snow (0.8, 0.16) |
+| `Default` | Bullet Hole (1.5, 0.14), Bullet Hole Small (1, 0.1), Bullet Hole Scuffed (0.8, 0.16) |
+| `Explosive` | Blast Scorch (2, 0.95), Blast Scorch Pitted (1, 0.8), Blast Scorch Rays (1, 1) |
+
+The Dev pack's **Decal Impacts** map has one target per surface (concrete, plaster, brick, metal and wood walls; asphalt, tile, sand, dirt and grass boxes; grass, dirt, rock and snow terrain) for trying them out; the self-test shoots every target and checks it gets its own set, the same marks twice, and no allocation.
 
 **The impact pool** (Settings > Video > **Bullet impacts**):
 
@@ -110,7 +141,7 @@ Impacts are separate from impact particles and sounds (those are drawn and playe
 2. Draw the picture with layers (and/or a small PNG next to the file). Use `multiply` for dirt and stains, `alpha` for paint and objects.
 3. Set `surfaces` so scatters can't put it somewhere silly (puddles on floors only, posters on walls only).
 4. Place it on a test map with a `Decal` op (or look at it on the Dev pack's **Decal Test** map), and run the self-test: every decal file is loaded and painted, and a broken one fails it with the file and the problem.
-5. For a new bullet impact, add `"impact": { "materials": [...] }`; for more variety on a material, add several impact decals listing it (the pick is weighted by `weight`).
+5. For a new bullet impact, add `"impact": { "materials": [...] }`; for more variety on a material, add several impact decals listing it (the pick is weighted by `weight`). The self-test wants at least 3 variants for every material (fallbacks count) and checks the pick matches the weights.
 
 Decals live in this top-level folder so every map and pack can use them (packs can't have their own decals yet). Decals are cosmetic and never part of a map's fingerprint.
 

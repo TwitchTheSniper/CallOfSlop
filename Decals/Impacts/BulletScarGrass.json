@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Scar Grass",
+  "description": "A shot skimming across grass: a strip of bare earth ripped through the turf.",
+  "author": "Call of Slop",
+  "size": 0.28,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Grass"], "weight": 0.6},
+  "layers": [
+    {"shape": "line", "at": [0.15, 0.5], "to": [0.72, 0.5], "width": 0.1, "color": [0.2, 0.15, 0.1], "alpha": 0.75, "softness": 0.03},
+    {"shape": "splat", "at": [0.74, 0.5], "radius": 0.15, "count": 8, "jag": 0.6, "seed": 341, "color": [0.22, 0.17, 0.11], "alpha": 0.85, "softness": 0.04, "noise": 0.3, "noiseScale": 8},
+    {"shape": "speckle", "at": [0.8, 0.5], "radius": 0.18, "count": 10, "width": 0.025, "seed": 342, "color": [0.18, 0.14, 0.09], "alpha": 0.85}
+  ]
+}

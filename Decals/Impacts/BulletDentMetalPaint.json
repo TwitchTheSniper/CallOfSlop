@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Dent Metal Paint",
+  "description": "A dent in painted metal: the paint flaked off round it, bare steel inside.",
+  "author": "Call of Slop",
+  "size": 0.15,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.05,
+  "impact": {"materials": ["Metal"], "weight": 1},
+  "layers": [
+    {"shape": "splat", "radius": 0.36, "count": 9, "jag": 0.55, "seed": 201, "color": [0.2, 0.2, 0.21], "alpha": 0.45, "softness": 0.04},
+    {"shape": "splat", "radius": 0.27, "count": 8, "jag": 0.5, "seed": 202, "color": [0.78, 0.78, 0.76], "alpha": 0.95, "softness": 0.02},
+    {"shape": "ring", "radius": 0.13, "width": 0.05, "color": [0.95, 0.95, 0.93], "alpha": 0.85, "softness": 0.03},
+    {"shape": "circle", "radius": 0.09, "color": [0.4, 0.4, 0.42], "alpha": 0.95, "softness": 0.03}
+  ]
+}

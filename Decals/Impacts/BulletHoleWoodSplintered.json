@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Wood Splintered",
+  "description": "A hole in wood with long pale splinters torn out along the grain to both sides.",
+  "author": "Call of Slop",
+  "size": 0.2,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Wood"], "weight": 1},
+  "layers": [
+    {"shape": "line", "at": [0.5, 0.5], "to": [0.9, 0.56], "width": 0.05, "color": [0.88, 0.75, 0.54], "alpha": 0.85},
+    {"shape": "line", "at": [0.5, 0.5], "to": [0.12, 0.45], "width": 0.045, "color": [0.88, 0.75, 0.54], "alpha": 0.85},
+    {"shape": "line", "at": [0.5, 0.52], "to": [0.78, 0.66], "width": 0.03, "color": [0.8, 0.66, 0.45], "alpha": 0.8},
+    {"shape": "line", "at": [0.5, 0.48], "to": [0.24, 0.34], "width": 0.03, "color": [0.8, 0.66, 0.45], "alpha": 0.8},
+    {"shape": "splat", "radius": 0.15, "count": 9, "jag": 0.6, "seed": 161, "color": [0.32, 0.21, 0.12], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.07, "color": [0.06, 0.04, 0.03], "softness": 0.02}
+  ]
+}

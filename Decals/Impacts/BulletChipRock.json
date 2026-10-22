@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Chip Rock",
+  "description": "A chip knocked off stone: a pale fresh scar with a small dark pit.",
+  "author": "Call of Slop",
+  "size": 0.13,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Rock"], "weight": 2},
+  "layers": [
+    {"shape": "splat", "radius": 0.32, "count": 7, "jag": 0.55, "seed": 371, "color": [0.84, 0.82, 0.78], "alpha": 0.7, "softness": 0.03, "noise": 0.3, "noiseScale": 9},
+    {"shape": "splat", "radius": 0.13, "count": 6, "jag": 0.4, "seed": 372, "color": [0.4, 0.39, 0.37], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.05, "color": [0.08, 0.08, 0.08], "softness": 0.02}
+  ]
+}

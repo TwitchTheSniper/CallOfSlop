@@ -1,0 +1,40 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Decal Impacts",
+  "description": "A range for bullet-impact decals: a target of every impact surface (concrete, plaster, brick, metal, wood, asphalt, tiles, sand, dirt, grass boxes, and grass, dirt, rock and snow terrain). Shoot them to see the variants. Not balanced for play.",
+  "author": "Call of Slop",
+  "order": 967,
+  "halfX": 34,
+  "halfZ": 30,
+  "maxPlayers": 8,
+  "sky": [0.6, 0.66, 0.74],
+  "terrain": {
+    "cell": 1,
+    "margin": 12,
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#7d7a74", "sand": "#e8edf0", "dirtSlope": 30, "rockSlope": 44 },
+    "features": [
+      { "type": "flatten", "x": -6, "z": 22, "w": 8, "d": 8, "height": 0, "edge": 1, "material": "dirt" },
+      { "type": "flatten", "x": 6, "z": 22, "w": 8, "d": 8, "height": 0, "edge": 1, "material": "rock" },
+      { "type": "flatten", "x": 18, "z": 22, "w": 8, "d": 8, "height": 0, "edge": 1, "material": "sand" }
+    ]
+  },
+  "ops": [
+    { "op": "Ground", "color": [0.36, 0.5, 0.25] },
+    { "op": "Perimeter", "height": 3, "color": "#8f8a80" },
+
+    { "op": "Block", "x0": -22, "y0": 0, "z0": -10, "x1": -18, "y1": 3, "z1": -9.6, "color": [0.55, 0.55, 0.53] },
+    { "op": "Block", "x0": -16, "y0": 0, "z0": -10, "x1": -12, "y1": 3, "z1": -9.6, "color": [0.86, 0.84, 0.8] },
+    { "op": "Block", "x0": -10, "y0": 0, "z0": -10, "x1": -6, "y1": 3, "z1": -9.6, "color": [0.6, 0.28, 0.26] },
+    { "op": "Block", "x0": -4, "y0": 0, "z0": -11.6, "x1": 0, "y1": 3, "z1": -9.6, "color": [0.35, 0.45, 0.6] },
+    { "op": "Block", "x0": 2.5, "y0": 0, "z0": -12.6, "x1": 5.5, "y1": 3, "z1": -9.6, "color": [0.58, 0.4, 0.24] },
+
+    { "op": "Block", "x0": -23, "y0": 0, "z0": 6, "x1": -17, "y1": 0.15, "z1": 12, "color": [0.25, 0.25, 0.27] },
+    { "op": "Block", "x0": -16.5, "y0": 0.6, "z0": 6.5, "x1": -11.5, "y1": 0.9, "z1": 11.5, "color": [0.7, 0.7, 0.68] },
+    { "op": "Block", "x0": -8.5, "y0": 0, "z0": 6.5, "x1": -3.5, "y1": 0.4, "z1": 11.5, "color": [0.82, 0.72, 0.5] },
+    { "op": "Block", "x0": -0.5, "y0": 0, "z0": 6.5, "x1": 4.5, "y1": 0.4, "z1": 11.5, "color": [0.45, 0.34, 0.24] },
+    { "op": "Block", "x0": 8, "y0": 0, "z0": 7, "x1": 12, "y1": 1, "z1": 11, "color": [0.36, 0.5, 0.25] },
+
+    { "op": "RingSpawns", "count": 8, "frac": 0.6 },
+    { "op": "AutoWaypoints", "spacing": 6 }
+  ]
+}

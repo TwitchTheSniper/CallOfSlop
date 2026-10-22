@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Puff Snow",
+  "description": "Snow thrown up by a hit: white lumps scattered round a blue-shadowed dimple.",
+  "author": "Call of Slop",
+  "size": 0.22,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.06,
+  "impact": {"materials": ["Snow"], "weight": 1},
+  "layers": [
+    {"shape": "circle", "radius": 0.22, "color": [0.66, 0.72, 0.8], "alpha": 0.55, "softness": 0.12},
+    {"shape": "speckle", "radius": 0.44, "count": 18, "width": 0.035, "seed": 401, "color": [1.0, 1.0, 1.0], "alpha": 0.9},
+    {"shape": "circle", "radius": 0.06, "color": [0.45, 0.5, 0.58], "softness": 0.05}
+  ]
+}

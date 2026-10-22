@@ -21,6 +21,7 @@ public static partial class SelfTest
         CheckDecalBake();
         CheckImpactPool();
         CheckImpactPlacement();
+        CheckImpactVariety(); // impact variants, surfaces, the Decal Impacts range (SelfTestDecalImpacts.cs)
         CheckDecalSettings();
         // The section's results as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
         Line("::notice title=Decals (results)::" + string.Join("%0A", DecalNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
@@ -477,7 +478,7 @@ public static partial class SelfTest
             var k = 0;
             var layer = (int)pool.Instances[k + 8];
             var def = layer >= 0 && layer < Decals.All.Length ? Decals.All[layer] : null;
-            var wallMaterial = map.Materials[hit.Shape.Index].ToString();
+            var wallMaterial = ImpactDecals.SurfaceOf(map, hit);
             if (!placed || pool.Count != 1 || def == null || !Decals.ImpactsFor(wallMaterial).Contains(def) || pool.Instances[k + 6] < 0.99f)
                 Fail($"a tracer ending on the {wallMaterial} back wall should leave one {wallMaterial} impact facing +z (placed {placed}, {pool.Count} in pool, decal {def?.Name})");
             // The same tracer on another client gives exactly the same mark.
@@ -499,7 +500,7 @@ public static partial class SelfTest
             {
                 ImpactDecals.OnTracer(map, feet, feet + down * th.Distance, 4, 10.3, false);
                 var tl = (int)pool.Instances[(pool.HighWater - 1) * ImpactPool.FloatsPerInstance + 8];
-                if (pool.Count != count + 1 || !Decals.ImpactsFor("Terrain").Contains(Decals.All[tl]))
+                if (pool.Count != count + 1 || !Decals.ImpactsFor(ImpactDecals.SurfaceOf(map, th)).Contains(Decals.All[tl]))
                     Fail("a shot into the terrain should leave a terrain impact");
             }
             else

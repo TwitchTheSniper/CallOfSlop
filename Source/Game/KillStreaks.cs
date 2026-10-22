@@ -751,6 +751,7 @@ public sealed partial class Game
                 var radius = s.Kind == StreakId.MortarBarrage ? KillStreaks.MortarRadius : KillStreaks.StrafeRadius;
                 Blasts.Add(new Blast(s.Pos + new Vector3(0, 0.3f, 0), now, radius, ThrowableKind.Frag));
                 Audio.Effect3D(Sfx.Explosion, s.Pos, s.Kind == StreakId.MortarBarrage ? 1f : 0.75f);
+                ImpactDecals.OnBlast(World.Map, s.Pos, s.Owner, now); // a scorch where it landed (Source/Decals)
                 if (Local is { } me)
                 {
                     var d = Vector3.Distance(me.RenderEye, s.Pos);
