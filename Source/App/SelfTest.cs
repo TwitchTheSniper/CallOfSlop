@@ -48,6 +48,7 @@ public static partial class SelfTest
         {
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
+            Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
