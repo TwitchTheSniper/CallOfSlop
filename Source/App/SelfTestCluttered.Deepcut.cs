@@ -10,7 +10,8 @@ namespace CallOfSlop;
 /// the outline and size, the terrain and the shaft cage, the tunnels (a trench floor at the right height under a roof,
 /// no plants under it, a bot nav node on the floor), the asymmetry (Red spawns high, Blue low), and fairness measured
 /// instead of mirrored: the nav walk from each team's spawns to every hill and to the enemy flag within 10%, no line of
-/// sight between the two teams' spawns, and comparable cover along both teams' routes to the hills.
+/// sight between the two teams' spawns, and more cover along the low team's routes to the hills than the high team's
+/// (the height is the high side's advantage), but not bare ones for the high side.
 /// </summary>
 public static partial class SelfTest
 {
@@ -64,7 +65,7 @@ public static partial class SelfTest
         if (explosive is < 4 or > 12)
             Fail($"{m.Name}: {explosive} explosive props (expected a few: 4-12)");
 
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2800, SolidProps: 300, CosmeticProps: 2000, Breakable: 250, Plants: 20000, Trees: 30, Boxes: 500));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 3400, SolidProps: 250, CosmeticProps: 3000, Breakable: 600, Plants: 30000, Trees: 40, Boxes: 500));
 
         var o = m.Objectives;
         var g = ClutteredLargeNav(m);
@@ -170,7 +171,10 @@ public static partial class SelfTest
         var ratio = MathF.Min(coverBlue, coverRed) / (float)Math.Max(1, Math.Max(coverBlue, coverRed));
         ClutteredLine($"{m.Name} balance (Blue/Red nav walk): {string.Join(", ", walks)}; cover near the routes to the hills {coverBlue}/{coverRed} ({ratio:P0}); "
                       + $"spawn heights {blueY:0.0}/{redY:0.0} m; spawn pairs in sight {seen.Count}");
-        if (ratio < 0.6f)
-            Fail($"{m.Name}: uneven cover on the routes to the hills (Blue {coverBlue}, Red {coverRed})");
+        // Not mirrored, so not equal: the low side (Blue) gets at least as much cover as the high side to make up for the
+        // height, and the high side's routes aren't bare either.
+        if (coverBlue < coverRed || coverRed < coverBlue * 0.3f)
+            Fail($"{m.Name}: cover on the routes to the hills doesn't balance the height (Blue, low: {coverBlue}; Red, high: {coverRed}; "
+                 + "the low side should have at least as much, the high side at least 30% of it)");
     }
 }

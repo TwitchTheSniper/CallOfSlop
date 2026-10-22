@@ -363,10 +363,13 @@ behind the winder house.
 
 **Balance (by measurement, not mirroring).** Red's spawns sit on the west half of the top, Blue's in the camp, and the
 hills sit on the line of equal walk, found by the generator on a 0.5 m grid over the terrain with the tunnels as a
-second layer (Blue/Red: pit 91/95 m, yard 84/84 m, south dump 102/97 m, enemy flag 180/179 m). Red needs 17.5 m of
+second layer (Blue/Red: pit 91/96 m, yard 84/85 m, south dump 102/104 m, enemy flag 179/180 m). Red needs 17.5 m of
 descent to reach the pit (about 60 m of ramp), so its spawns are closer to the middle than Blue's. The self-test measures
 it again on the game's nav graph (within 10%), checks that no Blue spawn can see a Red one (the processing shed, the core
-shed and the top's berm and blast wall are in the way), and compares the cover near both teams' routes to the hills.
+shed and the top's berm and blast wall are in the way), and counts the solid cover within 6 m of each team's routes to
+the hills: the low side must have at least as much as the high side (that's what pays for the height), and the high
+side at least 30% of it. Waypoints every 3 m down each haul road and tunnel keep the bots' nav graph on the ramps,
+which are narrower than its grid. No spawn stands over a tunnel roof (it would be put on the tunnel floor).
 
 **Explosives.** Four explosives crates at the magazine on bench 1 (three inside, one on the apron: shoot it and the rest
 go too), and three explosive barrels in the yard, the pit and on bench 2, all well over 10 m from any spawn.
@@ -376,11 +379,11 @@ Haul Truck, Excavator, Headframe Tower and Headframe Head (props are at most 12 
 turning), Jaw Crusher (flywheels and jaw), Ore Hopper, Timber Set, Mine Lamp (flickers), Timber Stack, Explosives Crate
 (explodes), Danger Sign, Fuel Tank and Floodlight Mast (lamps burning).
 
-**Object counts** (from the generator; the self-test prints what the game placed): 215 boxes (72 of them tunnel roofs,
-the rest cabins, sheds, walls and stockpile cores), 377 hand-placed props and about 3,700 asked of 32 Clutter ops (the
-ones that reach over tunnels are cosmetic only, so nothing solid lands on a tunnel floor), 277 meshes (tunnel lagging,
-portal frames, stockpile cones, ropes, floors), dusty grass with patches everywhere, scrub on the dumps, pines round the
-camps.
+**Object counts** (from the self-test): about 280 boxes drawn one by one (215 map boxes, 72 of them tunnel roofs, the
+rest cabins, sheds, walls and stockpile cores; plus the tree trunks), about 3,950 props (386 hand-placed, the rest from
+34 Clutter ops; about 290 solid, 750 breakable; the Clutter ops that reach over tunnels are cosmetic only, so nothing
+solid lands on a tunnel floor), about 35,000 plants (dusty patchy grass everywhere, scrub on the dumps, 66 trees, pines
+round the camps), 277 meshes (tunnel lagging, portal frames, stockpile cones, ropes, floors).
 
 **Performance.** Fewer boxes than Old Town, a similar prop count and fewer plants, so it should run at least as fast;
 animated props (the sheaves, conveyors, crushers, generators, lamps) freeze past their freeze distance. The smoke run's

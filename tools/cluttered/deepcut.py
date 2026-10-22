@@ -139,7 +139,7 @@ if __name__ == "__main__" and len(sys.argv) > 3 and sys.argv[3] == "terrain":
 
 # ================================================================ objectives (decided first: everything keeps clear of them)
 BLUE_SP = [(-78, -6), (-78, 0), (-78, 6), (-74, -9), (-74, -3), (-74, 3), (-69, -1), (-74, 8), (-66, -9)]
-RED_SP = [(66, -10), (70, -4), (72, -10), (76, -7), (80, -9), (70, 12), (64, 11), (66, 17), (68.5, 19.5)]
+RED_SP = [(73, -6), (76, -10), (80, -9.5), (84, -6), (87, 0), (86, 9), (61.5, -15), (61.5, -19), (62, 17)]   # none over a tunnel roof
 FFA_SP = [(-40, -26), (-20, 26), (-16, -22.5), (30, -10), (50, 0), (36, 45)]
 HILLS = [(4.0, 0.5, 5.0), (3.0, -19.0, 5.5), (6.0, 41.5, 4.0)]
 FLAGS = [(-84.0, 2.0), (86.5, 3.0)]
@@ -614,6 +614,16 @@ for (x, z, rr, hh, c) in ((28.0, 40.0, 2.6, 2.2, ORE), (34.0, -45.0, 2.4, 2.0, G
     gy = ground(x, z)
     meshw("cone", x, z, c, gy - 0.2, width=rr * 2, height=hh + 0.2, depth=rr * 2, segments=10, material="Dirt")
     blockw(x - rr * 0.45, gy - 0.2, z - rr * 0.45, x + rr * 0.45, gy + hh * 0.55, z + rr * 0.45, c)
+# cover along Red's routes down the benches (the high side has the height, the low side the clutter, but nobody walks open ground)
+for (name, x, z, yy) in (("Concrete Block", 32.0, -13.5, 0), ("Timber Stack", 34.0, -2.5, 90), ("Cable Spool", 29.0, 5.5, 0), ("Concrete Block", 36.0, 14.0, 90),
+                         ("Water Barrier", 23.0, 10.0, 0), ("Pallet Stack", 30.0, -29.0, 0), ("Concrete Block", 25.0, -31.0, 0), ("Concrete Block", 34.0, 37.0, 0),
+                         ("Timber Stack", 27.5, 30.0, 0), ("Sandbag Wall", 36.0, -20.0, 0), ("Sandbag Wall", 26.0, 16.0, 90), ("Concrete Block", 38.0, 45.0, 90)):
+    P(name, x, z, yy, tag="cover")
+pad_y = B2
+for (name, x, z, yy) in (("Sandbag Wall", 47.0, -12.0, 0), ("Concrete Block", 51.0, -0.5, 0), ("Timber Stack", 44.5, 10.5, 90), ("Cable Spool", 55.0, -14.0, 0),
+                         ("Concrete Block", 49.0, 20.5, 90), ("Sandbag Wall", 56.0, 13.5, 90)):
+    P(name, x, z, yy, tag="cover")
+pad_y = B1
 # explosives magazine: a squat concrete bunker behind a blast wall, crates inside and on the apron (well away from spawns)
 pad_y = B1
 MAG = (24.0, -54.0, 30.0, -49.0)
@@ -672,15 +682,14 @@ for k in range(int(5.0 // LW)):
     wp("Metal Lockers", r, "S", 74.0 + LW / 2 + k * LW, tag="lamproom")
 P("Bench", 76.5, 16.0, 0, tag="lamproom"); wp("Metal Shelving", r, "W", 17.4, tag="lamproom")
 closed_cabin(84, 13, 88.5, 16.5, CABIN_G)
-P("Fuel Tank", 66.0, -17.5, 0, tag="fuel"); P("Portable Toilet", 61.2, 14.2, 90, tag="camp"); P("Portable Toilet", 61.2, 15.7, 90, tag="camp")
-P("Floodlight Mast", 60.5, -12.0, 120, tag="camp"); P("Running Generator", 61.0, -9.5, 0, tag="camp")
+P("Fuel Tank", 52.0, -30.5, 0, tag="fuel"); P("Portable Toilet", 82.0, 20.4, 0, tag="camp"); P("Portable Toilet", 83.4, 20.4, 0, tag="camp")
+P("Floodlight Mast", 78.5, 21.0, 300, tag="camp")
 P("Floodlight Mast", 87.0, -10.0, 270, margin=0.4, tag="camp")
 P("Pickup Truck", 86.0, -14.0, 90, margin=0.4, tag="vehicles")
-P("Plastic Water Tank", 75.0, 20.6, 0, tag="camp"); P("Flag on a Pole", 87.0, -1.5, 0, margin=0.3, tag="camp")
+P("Plastic Water Tank", 75.0, 20.6, 0, tag="camp"); P("Flag on a Pole", 88.0, 6.0, 0, margin=0.3, tag="camp")
 tk.bins_by_door(t, (82.0, -19.0), (-1, 0), (0, -1), rng, side=1, seed=4112, tag="bins")
 # a safety berm (concrete blocks, sandbags) along the top's west rim, where it overlooks bench 2
-block(63.0, 0, -11.0, 63.5, 2.2, -2.0, CONCRETE)          # blast wall at the head of the haul road (no line down it)
-P("Sandbag Wall", 62.4, -12.6, 90, tag="berm"); P("Sandbag Wall", 62.4, -0.6, 90, tag="berm")
+block(64.6, 0, -8.8, 65.1, 2.2, -3.2, CONCRETE)           # blast wall at the head of the haul road (no line down it; walk round either end)
 
 # ================================================================ edge dressing: the berm is a terrain cliff; scattered junk along its foot
 for k in range(0, len(t.outline), 37):
@@ -695,6 +704,17 @@ for x, z in BLUE_SP + RED_SP + FFA_SP:
 t.ops.append({"op": "AutoWaypoints", "spacing": 7})
 for name, room in ROOMS:
     WAYPOINTS.append(((room.rect[0] + room.rect[2]) / 2, (room.rect[1] + room.rect[3]) / 2))
+# waypoints every 3 m down the middle of every haul road too (a ramp is narrower than the nav grid's spacing)
+for name, pts, w in ROADS:
+    acc = 0.0
+    for k in range(len(pts) - 1):
+        (ax, az, _), (bx, bz, _) = pts[k], pts[k + 1]
+        L = math.hypot(bx - ax, bz - az)
+        n = max(1, int(L / 3.0))
+        for i in range(n + (1 if k == len(pts) - 2 else 0)):
+            x, z = ax + (bx - ax) * i / n, az + (bz - az) * i / n
+            if t.inside(x, z, 1.0) and t.free((x - 0.3, z - 0.3, x + 0.3, z + 0.3)):
+                WAYPOINTS.append((x, z))
 for (x, z) in WAYPOINTS:
     t.ops.append({"op": "Waypoint", "x": R(x), "z": R(z)})
 
@@ -821,7 +841,7 @@ for i in range(NZ):
     for j in range(NX):
         if not BLOCK[i, j]:
             ii = int((gz[i] - t.z0) / t.res); jj = int((gx[j] - t.x0) / t.res)
-            if 0 <= ii < t.nz and 0 <= jj < t.nx and walk_grid[ii, jj] and not ROOFED[i, j]:
+            if 0 <= ii < t.nz and 0 <= jj < t.nx and walk_grid[ii, jj]:
                 BLOCK[i, j] = True
 INSIDE = np.vectorize(lambda x, z: t.edge(x, z) >= 0.45)(GX, GZ)
 OK = INSIDE & ~BLOCK
@@ -921,6 +941,12 @@ for w in WALLS:
 
 if __name__ == "__main__":
     from collections import Counter
+    for x, z in BLUE_SP + RED_SP + FFA_SP + FLAGS:
+        if any(q[0] - 0.5 <= x <= q[2] + 0.5 and q[1] - 0.5 <= z <= q[3] + 0.5 for q in ROOFS):
+            print("WARN spawn/flag over a tunnel roof (it would land in the tunnel)", x, z)
+    for x, z, rr in HILLS:
+        if any(max(q[0] - x, 0, x - q[2]) ** 2 + max(q[1] - z, 0, z - q[3]) ** 2 < (rr + 0.3) ** 2 for q in ROOFS):
+            print("WARN hill zone touches a tunnel roof", x, z)
     for x, z in BLUE_SP + RED_SP + FFA_SP + [(h[0], h[1]) for h in HILLS] + FLAGS:
         if not t.inside(x, z, 1.5):
             print("WARN objective near/outside the edge", x, z)
