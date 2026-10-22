@@ -908,6 +908,7 @@ public sealed partial class Game : IDisposable
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
+        ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
@@ -1324,6 +1325,7 @@ public sealed partial class Game : IDisposable
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
             PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
+            ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
@@ -1442,6 +1444,7 @@ public sealed partial class Game : IDisposable
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
+                SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
@@ -1659,6 +1662,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.BuildingEvent:
             case (byte)Msg.BuildingState:
                 OnBuildingPacket(id, ref r, sender, now); // building doors and windows (GameBuildings.cs)
+                break;
+            case (byte)Msg.StructBreak:
+            case (byte)Msg.StructState:
+                OnStructurePacket(id, ref r); // destructible buildings (GameDestruction.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

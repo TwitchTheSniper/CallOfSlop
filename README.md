@@ -594,6 +594,19 @@ When anyone dies (a player, a bot or a zombie) their blocky body goes limp as a 
 
 Gibs bounce, slide to a stop, lie there for about 15 s and dither out; meat that lands leaves a small blood splat (it counts as a bullet impact, so the **Bullet impacts** setting has to be on). Later blasts throw them about again. Everything is built on every PC from the break or kill message it already gets (the same burst on every screen, no extra traffic), at most 320 pieces exist at once (the oldest go first), and they're drawn in the same instanced call as prop debris and ragdolls. **Settings > Video > Gore:** **Full** (everything), **Reduced** (about half the gibs, no blood), **Off** (animals just poof into feathers or dust; blast kills are ragdolls).
 
+### Destructible buildings
+
+On the **World Tour** maps (and the Dev pack's **Destruction Test**) buildings can be blown apart. Every wall is made of panels about 1 x 1.25 m (door and window openings kept), every floor and roof of 2 x 2 m slabs, and each panel has health by its material (`Materials/destruction.json`):
+
+- **Explosives do the work.** Frag and impact grenades, launcher rockets, kill-streak strikes (mortars, strafe runs, napalm), exploding props (barrels, gas bottles, shell crates) and landmines break the panels in reach that the blast can see (a wall in front shields the one behind). A frag next to a plastered or wooden wall blows a hole in it; brick needs a rocket (or a few frags); concrete takes several rockets or a strike.
+- **Bullets** only chip the weak stuff: wood and plaster give way after a magazine or so, tiles barely notice, brick, concrete and metal don't care. **Melee** knocks through wood and plaster in a few blows.
+- **What's left has to stand on something.** Support runs up from the ground through the panels, and a little way sideways (each material has a reach: plaster about 2.5 m, brick 3.5 m, concrete 4.5 m). Take out the wall under a floor and the floor sags and drops in slabs; take out a storey and what's above comes down. The ground-floor corners of every building are load-bearing (they never break), so a building is never wiped off the map.
+- **Falling slabs hurt.** A piece that comes down on you lands with its weight: a concrete floor slab from a storey up kills, a plaster panel stings. The kill goes to whoever brought it down.
+- Holes are real: bullets, grenades and sight go through them, you can walk and mantle through, decals on broken panels vanish, doors and glass set in a broken wall go with it, and furniture on a fallen floor is gone. Bots find the new ways through holes (and stop walking on floors that fell).
+- Everything is whole again at the start of every match. The host decides what breaks (online it's the same for everyone; a player joining mid-match sees the damage done so far). The host's **Destruction** checkbox (Host page) turns it off; Zombies never breaks buildings.
+
+Map makers switch it on per map (`"destructible": true`, or per building) and can add `DestructibleBox` blocks: see [Maps/README.md](Maps/README.md#buildings) and [Buildings/README.md](Buildings/README.md#destruction).
+
 ### Loadouts and weapons
 
 The **loadout menu** opens when a match starts (and any time with **B**, or from the Esc menu). Pick a **primary** and a **secondary** from **58 weapons** (50 guns and 8 launchers). Hover a weapon to compare damage, fire rate, DPS, range, accuracy, recoil, mobility, magazine, reload and draw time, see shots-to-kill and damage at range, and use **Test fire / Test reload / Test equip** to hear it. Click **Deploy**. If you're out of combat (no shots fired or taken for 4 s), the change applies instantly; otherwise it applies when you respawn. Your loadout is saved to `loadout.txt` in the [save folder](#where-your-saves-live).

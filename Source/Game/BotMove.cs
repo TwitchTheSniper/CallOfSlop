@@ -239,6 +239,9 @@ public sealed partial class Game
         for (var e = nav.EdgeStart[from]; e < nav.EdgeStart[from + 1]; e++)
             if (nav.EdgeTo[e] == to)
                 return e;
+        for (var e = nav.ExtraHead.Length != 0 ? nav.ExtraHead[from] : -1; e >= 0; e = nav.ExtraNext[e - nav.BuiltEdges])
+            if (nav.EdgeTo[e] == to)
+                return e; // a way destruction opened (BotNavPatch.cs)
         return -1;
     }
 

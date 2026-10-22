@@ -28,6 +28,10 @@ public static unsafe partial class Program
         ("buildings_overview", "Building Yard", new Vector3(-62f, 42f, 58f), new Vector3(2f, 0f, -4f), false),
         ("buildings_room", "Building Yard", new Vector3(44.0f, 1.7f, -7.6f), new Vector3(41.0f, 0.8f, -10.5f), false),
         ("buildings_interact", "Building Yard", new Vector3(31f, 1.7f, -0.5f), new Vector3(31f, 1.4f, -7.5f), true),
+        // Destructible buildings (Program.Buildings.cs): a hole blown in the Destruction Test's corner shop, then its four-storey
+        // apartment block coming down once its ground-floor walls are gone (slabs in the air): smoke_props_destruction_*.bmp.
+        ("destruction_blast", "Destruction Test", new Vector3(-4f, 1.8f, -4.5f), new Vector3(-4f, 1.4f, -12f), true),
+        ("destruction_collapse", "Destruction Test", new Vector3(24f, 7f, 6f), new Vector3(46f, 5f, -16f), true),
         // The residential set's showcase (Maps/Dev/BuildingsResidential.json): the whole street, then the Modern Villa's great room.
         ("buildings_residential", "Residential Street", new Vector3(-72f, 40f, 52f), new Vector3(0f, 0f, 0f), false),
         ("buildings_residential_villa", "Residential Street", new Vector3(19f, 1.8f, -15f), new Vector3(13f, 0.9f, -18f), false),
@@ -143,6 +147,8 @@ public static unsafe partial class Program
                 SmokeDecalImpacts(map, view.Eye, view.Target); // Program.Decals.cs
             if (view.Name == "gibs_cow")
                 SmokeGibCow(map);
+            if (view.Name.StartsWith("destruction_", StringComparison.Ordinal))
+                SmokeDestruction(map, view.Name); // Program.Buildings.cs
         }
     }
 
@@ -280,8 +286,8 @@ public static unsafe partial class Program
                 ? $"; animated {PropGfx.UploadedAnimated} ({(PropGfx.AnimationOn ? "on" : "off")}, {PropGfx.AnimatedTypes} types): {w.AvgAnimInstances:0} moving + {w.AvgFrozenInstances:0} still in "
                   + $"{w.AvgAnimDraws:0.0} draw calls, anim GPU {(w.AvgAnimGpuMs >= 0 ? $"{w.AvgAnimGpuMs:0.000} ms" : "n/a")}"
                 : ""));
-        if (view.Name.StartsWith("buildings_", StringComparison.Ordinal))
-            LogBuildingSmoke(view.Name); // the Dev pack's Building Yard (Program.Buildings.cs)
+        if (view.Name.StartsWith("buildings_", StringComparison.Ordinal) || view.Name.StartsWith("destruction_", StringComparison.Ordinal))
+            LogBuildingSmoke(view.Name); // the Dev pack's Building Yard and Destruction Test (Program.Buildings.cs)
         if (view.Name.StartsWith("decals", StringComparison.Ordinal))
             LogDecalSmoke(view.Name); // Program.Decals.cs
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))

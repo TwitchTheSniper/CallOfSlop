@@ -518,6 +518,7 @@ public sealed partial class Game
             StreakBlastEntities(owner, center, radius, def.MaxDamage, now); // enemy turrets and drones too
             BlastProps(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
             BlastBuildings(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
+            BlastStructures(owner, center, radius, def.MaxDamage, StructureHit.Grenade, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now); // destructible buildings (GameDestruction.cs)
             BlastZombies(owner, center, radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
             BlastTactical(owner, center, radius, def.MaxDamage, now); // enemy tactical devices (GameTactical.cs)
         }
