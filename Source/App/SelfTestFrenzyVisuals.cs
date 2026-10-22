@@ -11,7 +11,7 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>CPU budget per frame for a 16-player lobby all at frenzy level 6 firing LMGs (particles, glows, tracer hooks).</summary>
-    private const double FrenzyFxCpuBudgetMs = 0.15;
+    private const double FrenzyFxCpuBudgetMs = 0.1;
 
     private static readonly List<string> FrenzyFxNotes = [];
 
@@ -248,7 +248,10 @@ public static partial class SelfTest
     // ---- A real offline match: the tracer hook, Off/Subtle/Full, allocations, cost ----
     private static void FrenzyVisualsMatch()
     {
-        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 15, mapId: 0);
+        // A map that takes 16 players, so the cost check below is a full 16-player lobby at level 6.
+        var map = Maps.All.Where(m => m.MaxPlayers >= 16).OrderBy(m => m.MaxPlayers).FirstOrDefault()
+            ?? Maps.All.OrderByDescending(m => m.MaxPlayers).First();
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 15, mapId: map.Id);
         game.SelfTestStreakTick(0);
         if (game.Local is not { } me)
         {
@@ -256,6 +259,8 @@ public static partial class SelfTest
             return;
         }
         var players = game.Players.Values.ToArray();
+        if (players.Length < 16)
+            Fail($"frenzy visuals: the cost check has {players.Length} players on {map.Name}, want 16");
         FrenzyFx.Camera = me.RenderEye;
 
         // Tracer colours per class at level 6, and nothing at level 0 / Off.
