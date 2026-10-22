@@ -228,8 +228,12 @@ public static class GunSamples
 {
     private const int Sr = Audio.SampleRate;
 
-    /// <summary>The loudness window: RMS over the first 250 ms is matched to the synthesised shot's.</summary>
-    public const int LoudnessWindow = Sr / 4;
+    /// <summary>
+    /// The loudness window: RMS over the first 80 ms (the blast and its body, what the ear judges a shot's loudness by)
+    /// is matched to the synthesised shot's. A longer window would chase the synth's dense noise tail and over-squash
+    /// the recordings, whose tails die away naturally.
+    /// </summary>
+    public const int LoudnessWindow = Sr * 80 / 1000;
 
     /// <summary>Sample-based shots come out at this times the synthesised shot's RMS (the frenzy calibration measures the result).</summary>
     public const float LoudnessMatch = 1f;
