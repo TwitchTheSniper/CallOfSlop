@@ -2058,6 +2058,8 @@ public static unsafe partial class Program
                     var sx = (i & 1) == 0 ? -1 : 1;
                     var sy = (i & 2) == 0 ? -1 : 1;
                     Gfx.Rect(cx + sx * 14 * k - 3 * k, cy + sy * 14 * k - 3 * k, 6 * k, 6 * k, c);
+                    if (_game.HitMarkerWallbang) // through a wall: a second, inner set of ticks (GamePenetration.cs)
+                        Gfx.Rect(cx + sx * 7 * k - 1.5f * k, cy + sy * 7 * k - 1.5f * k, 3 * k, 3 * k, c);
                 }
             }
 
