@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Landing Craft Wreck",
+  "category": "Beachhead",
+  "description": "A grounded landing craft with its bow ramp down: steel sides to hide behind, mantle in over the side.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [9.0, 0.3, 3.6]}, {"size": [9.0, 1.7, 0.3], "offset": [0, 0.85, 1.65]}, {"size": [9.0, 1.7, 0.3], "offset": [0, 0.85, -1.65]}, {"size": [0.35, 2.5, 3.6], "offset": [-4.35, 1.25, 0]}, {"size": [1.4, 1.0, 1.6], "offset": [-3.8, 3.0, 0.6]}, {"size": [2.2, 0.45, 3.2], "offset": [5.7, 0.225, 0]}],
+  "scatter": {"randomYaw": false},
+  "parts": [
+    {"size": [9.0, 0.3, 3.6], "offset": [0, 0.15, 0], "color": "#5d6268", "material": "metal"},
+    {"size": [9.0, 1.7, 0.25], "offset": [0, 0.85, 1.675], "color": "#5d6268", "material": "metal"},
+    {"size": [9.0, 1.7, 0.25], "offset": [0, 0.85, -1.675], "color": "#5d6268", "material": "metal"},
+    {"size": [9.04, 0.12, 0.3], "offset": [0, 1.72, 1.675], "color": "#4a4e54"},
+    {"size": [9.04, 0.12, 0.3], "offset": [0, 1.72, -1.675], "color": "#4a4e54"},
+    {"size": [0.35, 2.5, 3.6], "offset": [-4.35, 1.25, 0], "color": "#5d6268", "material": "metal"},
+    {"size": [1.4, 1.0, 1.6], "offset": [-3.8, 3.0, 0.6], "color": "#565b60", "material": "metal"},
+    {"size": [0.05, 0.4, 1.2], "offset": [-3.08, 3.1, 0.6], "color": "#26292c"},
+    {"size": [2.6, 0.14, 3.3], "offset": [5.65, 0.6, 0], "color": "#666b70", "rotation": [0, 0, -24], "material": "metal"},
+    {"size": [0.2, 1.8, 0.35], "offset": [4.5, 0.9, 1.6], "color": "#4a4e54"},
+    {"size": [0.2, 1.8, 0.35], "offset": [4.5, 0.9, -1.6], "color": "#4a4e54"},
+    {"size": [3.6, 0.9, 0.04], "offset": [-1.4, 1.0, 1.82], "color": "#5a3d2b"},
+    {"size": [2.3, 0.6, 0.04], "offset": [2.3, 0.7, -1.82], "color": "#5a3d2b"},
+    {"size": [1.1, 0.8, 0.06], "offset": [0.7, 0.75, 1.82], "color": "#26292c"},
+    {"size": [0.5, 0.5, 0.5], "offset": [-2.2, 0.55, -1.0], "color": "#3b4219"},
+    {"size": [0.6, 0.35, 0.4], "offset": [-1.4, 0.48, 1.1], "color": "#4b5320"},
+    {"size": [0.3, 0.6, 0.3], "offset": [-3.9, 2.8, -1.2], "color": "#2b2b2b"}
+  ]
+}
