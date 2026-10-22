@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Hissi Sign",
+  "description": "A stencilled board by the shaft: HISSI (lift).",
+  "author": "Call of Slop",
+  "size": [
+    1.4,
+    0.5
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "hissi.png"
+}

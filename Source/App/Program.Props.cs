@@ -57,6 +57,10 @@ public static unsafe partial class Program
         // Cluttered pack, 10 Timberline: the forest from above the lake in the south-west, then the woods at eye height on Blue's trail to the middle camp.
         ("cluttered_timberline", "Timberline", new Vector3(-96f, 44f, 72f), new Vector3(6f, 0f, -6f), false),
         ("cluttered_timberline_forest", "Timberline", new Vector3(-34f, 2.0f, -6f), new Vector3(0.5f, 1.2f, 2f), false),
+        // World Tour, 06 Vuorikoski (Finland): the mine from above Honkala, the forest at eye height, the shaft station underground.
+        ("world_finland", "Vuorikoski", new Vector3(-118f, 48f, 60f), new Vector3(0f, 6f, -8f), false),
+        ("world_finland_forest", "Vuorikoski", new Vector3(-66f, 5.3f, -46f), new Vector3(-40f, 2.6f, -30f), false),
+        ("world_finland_tunnel", "Vuorikoski", new Vector3(-24f, -6.3f, -4f), new Vector3(0f, -6.5f, -4f), false),
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
