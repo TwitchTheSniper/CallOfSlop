@@ -190,7 +190,7 @@ public static partial class SelfTest
         Place(human, PerkSet.Empty, bot, PerkSet.Empty);
         human.Health = 50;
         human.LastHurtTime = 90; // the human was last hurt earlier: regen would start at 95, but dealing damage at 100 restarts the wait
-        game.SelfTestDamage(human, bot, 60, DamageKind.Bullet, 100); // bot on 40
+        game.SelfTestDamage(human, bot, World.MaxHealth - 40, DamageKind.Bullet, 100); // bot on 40
         TickFor(100, Regen.Delay - 0.05);
         var duringDelay = bot.Health;
         var regenDuringDelay = bot.Regenerating;
@@ -202,12 +202,13 @@ public static partial class SelfTest
         var regenFlag = bot.Regenerating;
         var humanAfter = human.Health;
         var rate = (afterTwo - start) / 2.0;
-        Line($"regen: {Regen.Rate:0} HP/s after {Regen.Delay:0} s; bot on 40 -> {duringDelay} HP after {Regen.Delay - 0.05:0.00} s (regenerating {regenDuringDelay}), "
+        var wantTwo = Regen.HealedBy(2); // 12 HP/s ramping up by 4 HP/s a second: 32 HP in the first 2 s
+        Line($"regen: {Regen.Rate:0} -> {Regen.MaxRate:0} HP/s (+{Regen.Ramp:0}/s) after {Regen.Delay:0} s; bot on 40 -> {duringDelay} HP after {Regen.Delay - 0.05:0.00} s (regenerating {regenDuringDelay}), "
              + $"{start} -> {afterTwo} HP over the next 2 s ({rate:0.0} HP/s, flag {regenFlag}); the attacker (dealt damage) {humanDuringDelay} -> {humanAfter} HP");
         if (duringDelay != 40 || regenDuringDelay)
             Fail("regen: health came back within the delay");
-        if (Math.Abs(afterTwo - start - 2 * Regen.Rate) > 1 || !regenFlag)
-            Fail($"regen: {rate:0.0} HP/s instead of {Regen.Rate}");
+        if (Math.Abs(afterTwo - start - wantTwo) > 1 || !regenFlag)
+            Fail($"regen: {afterTwo - start} HP in the first 2 s instead of {wantTwo:0}");
         if (humanDuringDelay != 50 || humanAfter <= 50)
             Fail("regen: dealing damage didn't restart the wait, or the person doesn't regenerate after it");
 
@@ -224,6 +225,34 @@ public static partial class SelfTest
             Fail("regen: taking damage didn't stop it");
         if (full != World.MaxHealth || bot.Regenerating)
             Fail($"regen: ended on {full} HP, not capped at {World.MaxHealth}");
+
+        // Max health and how fast a full heal is (user: "slightly higher" health, and faster healing once it starts).
+        bot.Health = 1;
+        bot.LastHurtTime = 300;
+        bot.Regenerating = false;
+        bot.RegenCarry = 0;
+        var healStart = -1.0;
+        var healEnd = -1.0;
+        var tick0 = 300 * Hz;
+        for (var i = 1; i <= 20 * Hz && healEnd < 0; i++)
+        {
+            var now = (tick0 + i) / (double)Hz;
+            game.SelfTestHealthTick(now);
+            if (bot.Regenerating && healStart < 0)
+                healStart = now;
+            if (bot.Health >= World.MaxHealth)
+                healEnd = now;
+        }
+        var healSecs = healEnd - healStart;
+        var wantSecs = Regen.FullHealSeconds(World.MaxHealth - 1);
+        Line($"regen: max health {World.MaxHealth}; 1 -> {World.MaxHealth} HP starts {healStart - 300:0.00} s after the hit and takes {healSecs:0.00} s "
+             + $"(formula {wantSecs:0.00} s; it was 8 HP/s flat, 1 -> 100 in 12.4 s)");
+        int maxHp = World.MaxHealth; // (locals: a constant condition would warn as unreachable)
+        double delay = Regen.Delay, quickFix = Perks.QuickFixDelay;
+        if (maxHp != 120 || delay != 5.0 || quickFix != 2.5)
+            Fail($"health: max {World.MaxHealth} (want 120), regen delay {Regen.Delay} s (want 5), Quick Fix {Perks.QuickFixDelay} s (want 2.5)");
+        if (Math.Abs(healStart - 300 - Regen.Delay) > 0.05 || healEnd < 0 || Math.Abs(healSecs - wantSecs) > 0.15 || healSecs < 4.5 || healSecs > 6.5)
+            Fail($"regen: a full heal took {healSecs:0.00} s after a {healStart - 300:0.00} s wait (want about {wantSecs:0.0} s after {Regen.Delay} s)");
 
         // Dead players don't regenerate (and lose any shield).
         game.SelfTestDamage(human, bot, 500, DamageKind.Bullet, 200);

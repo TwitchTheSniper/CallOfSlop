@@ -583,7 +583,7 @@ public sealed partial class Game
                     BotUseTactical(p, b, p.Position, now);
                 break;
             case ThrowableKind.Stim:
-                if (p.Health < 45 && (!visible || roll < 0.02))
+                if (p.Health < World.HealthAt(45) && (!visible || roll < 0.02))
                     BotUseTactical(p, b, p.Position, now);
                 break;
         }

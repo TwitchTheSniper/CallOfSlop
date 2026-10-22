@@ -56,7 +56,7 @@ public sealed partial class Game
                 var dist = to.Length();
                 var dir = dist > 0.01f ? to / dist : Vector3.Zero;
                 var pref = MathF.Max(3f, PreferredRange(def) * prof.RangeMult);
-                var hurt = p.Health <= prof.RetreatHealth && prof.Aggression < 0.9f;
+                var hurt = p.Health <= World.HealthAt(prof.RetreatHealth) && prof.Aggression < 0.9f;
                 var holdBack = (prof.Holds ? dist < pref * 2f : prof.Kind == BotPersonality.Marksman && dist < 60f) || b.Order.HoldBack;
                 if (dist > pref + 3 && !hurt && !holdBack)
                     s.Wish += BotFollow(p, b, nav, target.Position, now, ref s); // close in along the path (around cover)

@@ -171,7 +171,17 @@ public static class World
     public const float SprintSpeed = 13.5f; // 2.25x walking (was 9 m/s before protocol 10)
     public const float JumpSpeed = 6f;
     public const float Gravity = 18f;
-    public const int MaxHealth = 100;
+    /// <summary>
+    /// Full health for players and bots (was 100; raised to 120 so fights last a little longer). It rides in the
+    /// snapshot as one byte, so keep it at 255 or less. Zombies have their own health (ZombiesRules).
+    /// </summary>
+    public const int MaxHealth = 120;
+
+    /// <summary>
+    /// <paramref name="percent"/>% of <see cref="MaxHealth"/>, rounded. Health thresholds (bots retreating, the HUD's
+    /// low-health colour) are written as percentages so they follow <see cref="MaxHealth"/>.
+    /// </summary>
+    public static int HealthAt(int percent) => (percent * MaxHealth + 50) / 100;
     public const float RespawnDelay = 3f;
 
     // ---- Shooting (per-weapon stats live in Weapons.cs) -------------------------

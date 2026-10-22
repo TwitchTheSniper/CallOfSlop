@@ -4,14 +4,41 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Health regeneration tuning. After <see cref="Delay"/> seconds without taking or dealing damage, health comes back
-/// at <see cref="Rate"/> points a second up to <see cref="World.MaxHealth"/> (1 -> 100 takes about 12 s). Taking or
-/// dealing damage (a hit Last Stand's shield blocks counts too) restarts the wait; just firing doesn't.
+/// Health regeneration tuning. After <see cref="Delay"/> seconds without taking or dealing damage, health comes back up
+/// to <see cref="World.MaxHealth"/>: at <see cref="Rate"/> points a second at first, speeding up by <see cref="Ramp"/>
+/// every second to at most <see cref="MaxRate"/> (reached after 3 s). 1 -> 120 takes about 5.7 s once it starts
+/// (<see cref="FullHealSeconds"/>; it was 8 HP/s flat before, 1 -> 100 in about 12 s). Taking or dealing damage
+/// (a hit Last Stand's shield blocks counts too) restarts the wait; just firing doesn't.
 /// </summary>
 public static class Regen
 {
     public const double Delay = 5.0;
-    public const float Rate = 8f;
+    public const float Rate = 12f; // HP/s the moment regen starts
+    public const float Ramp = 4f; // HP/s gained per second of regenerating
+    public const float MaxRate = 24f; // HP/s cap
+
+    /// <summary>Regen speed (HP/s) <paramref name="elapsed"/> seconds after it started.</summary>
+    public static float RateAt(double elapsed) => MathF.Min(MaxRate, Rate + Ramp * (float)Math.Max(0, elapsed));
+
+    /// <summary>Health regained in the first <paramref name="elapsed"/> seconds of regenerating (the integral of <see cref="RateAt"/>).</summary>
+    public static float HealedBy(double elapsed)
+    {
+        var t = (float)Math.Max(0, elapsed);
+        var rampEnd = (MaxRate - Rate) / Ramp;
+        if (t <= rampEnd)
+            return Rate * t + 0.5f * Ramp * t * t;
+        return Rate * rampEnd + 0.5f * Ramp * rampEnd * rampEnd + MaxRate * (t - rampEnd);
+    }
+
+    /// <summary>Seconds of regenerating to get <paramref name="hp"/> back (the inverse of <see cref="HealedBy"/>).</summary>
+    public static float FullHealSeconds(float hp)
+    {
+        var rampEnd = (MaxRate - Rate) / Ramp;
+        var rampHeal = HealedBy(rampEnd);
+        if (hp >= rampHeal)
+            return rampEnd + (hp - rampHeal) / MaxRate;
+        return (-Rate + MathF.Sqrt(Rate * Rate + 2f * Ramp * hp)) / Ramp;
+    }
 }
 
 /// <summary>
@@ -84,7 +111,9 @@ public sealed partial class Game
             return;
         }
         p.Regenerating = true;
-        p.RegenCarry += Regen.Rate * World.TickDt;
+        // Faster the longer it has been going: the regen started when the wait ran out (stateless, so it's deterministic).
+        var elapsed = now - p.LastHurtTime - Perks.RegenDelay(p.Perks);
+        p.RegenCarry += Regen.RateAt(elapsed) * World.TickDt;
         var whole = (int)p.RegenCarry;
         if (whole > 0)
         {
