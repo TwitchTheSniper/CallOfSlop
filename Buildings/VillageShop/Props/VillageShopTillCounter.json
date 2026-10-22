@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Village Shop Till Counter",
+  "description": "The shop counter: a till, jars of sweets and a stack of newspapers on a wooden counter.",
+  "collision": "solid",
+  "collider": [{"size": [1.66, 1.0, 0.66]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.6, 0.95, 0.6], "offset": [0.0, 0.475, 0.0], "color": "#7a5432", "material": "wood"},
+    {"size": [1.66, 0.05, 0.66], "offset": [0.0, 0.975, 0.0], "color": "#4a2e1c"},
+    {"size": [0.4, 0.22, 0.3], "offset": [-0.35, 1.11, 0.0], "color": "#3a3a3a"},
+    {"size": [0.3, 0.08, 0.15], "offset": [-0.35, 1.26, -0.025], "color": "#5a8a6a"},
+    {"size": [0.2, 0.24, 0.2], "offset": [0.15, 1.12, -0.1], "color": "#d8e8e8"},
+    {"size": [0.2, 0.2, 0.2], "offset": [0.4, 1.1, -0.1], "color": "#d8e8e8"},
+    {"size": [0.16, 0.14, 0.16], "offset": [0.15, 1.09, -0.1], "color": "#e84a7a"},
+    {"size": [0.16, 0.1, 0.16], "offset": [0.4, 1.07, -0.1], "color": "#f0c43a"},
+    {"size": [0.2, 0.05, 0.25], "offset": [0.65, 1.025, 0.125], "color": "#c8282a"},
+    {"size": [1.56, 0.6, 0.01], "offset": [0.0, 0.5, 0.305], "color": "#5a3a22"}
+  ]
+}

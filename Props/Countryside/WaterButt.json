@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Water Butt",
+  "category": "Countryside",
+  "description": "A green plastic water butt on a brick stand, with a tap, for sheds and allotments.",
+  "collision": "solid",
+  "collider": [{"size": [0.66, 1.27, 0.66]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 45, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.05, 0.3], "speed": 3}},
+  "parts": [
+    {"size": [0.2, 0.3, 0.44], "offset": [-0.22, 0.15, 0.0], "color": "#8a4a36", "material": "brick"},
+    {"size": [0.2, 0.3, 0.44], "offset": [0.22, 0.15, 0.0], "color": "#8a4a36", "material": "brick"},
+    {"size": [0.62, 0.92, 0.257], "offset": [0.0, 0.76, 0.0], "color": "#2f4a2a"},
+    {"size": [0.62, 0.92, 0.257], "offset": [0.0, 0.76, 0.0], "rotation": [0, 45, 0], "color": "#2f4a2a"},
+    {"size": [0.62, 0.92, 0.257], "offset": [0.0, 0.76, 0.0], "rotation": [0, 90, 0], "color": "#2f4a2a"},
+    {"size": [0.62, 0.92, 0.257], "offset": [0.0, 0.76, 0.0], "rotation": [0, 135, 0], "color": "#2f4a2a"},
+    {"size": [0.66, 0.05, 0.273], "offset": [0.0, 1.24, 0.0], "color": "#283e24"},
+    {"size": [0.66, 0.05, 0.273], "offset": [0.0, 1.24, 0.0], "rotation": [0, 45, 0], "color": "#283e24"},
+    {"size": [0.66, 0.05, 0.273], "offset": [0.0, 1.24, 0.0], "rotation": [0, 90, 0], "color": "#283e24"},
+    {"size": [0.66, 0.05, 0.273], "offset": [0.0, 1.24, 0.0], "rotation": [0, 135, 0], "color": "#283e24"},
+    {"size": [0.08, 0.08, 0.1], "offset": [0.0, 0.46, 0.31], "color": "#202020"},
+    {"size": [0.03, 0.9, 0.03], "offset": [0.0, 1.45, -0.285], "color": "#3a3a3a"}
+  ]
+}

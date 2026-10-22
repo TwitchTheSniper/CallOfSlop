@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Five Bar Gate",
+  "category": "Countryside",
+  "description": "A 3 m wooden five-bar field gate with a diagonal brace. You can climb over it; it splinters if shot to bits.",
+  "collision": "solid",
+  "collider": [{"size": [3.0, 1.2, 0.14]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 2},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "wood", "debris": {"count": 18, "size": [0.05, 0.6], "speed": 3.5}},
+  "parts": [
+    {"size": [0.12, 1.2, 0.12], "offset": [-1.44, 0.6, 0.0], "color": "#8a7a62", "material": "wood"},
+    {"size": [0.12, 1.2, 0.12], "offset": [1.44, 0.6, 0.0], "color": "#8a7a62", "material": "wood"},
+    {"size": [2.8, 0.08, 0.06], "offset": [0.0, 0.22, 0.0], "color": "#9a8a70", "material": "wood"},
+    {"size": [2.8, 0.08, 0.06], "offset": [0.0, 0.435, 0.0], "color": "#9a8a70", "material": "wood"},
+    {"size": [2.8, 0.08, 0.06], "offset": [0.0, 0.65, 0.0], "color": "#9a8a70", "material": "wood"},
+    {"size": [2.8, 0.08, 0.06], "offset": [0.0, 0.865, 0.0], "color": "#9a8a70", "material": "wood"},
+    {"size": [2.8, 0.08, 0.06], "offset": [0.0, 1.08, 0.0], "color": "#9a8a70", "material": "wood"},
+    {"size": [2.8337, 0.07, 0.05], "offset": [0.0, 0.65, 0.045], "rotation": [0, 0, 17.6676], "color": "#8a7a62", "material": "wood"},
+    {"size": [0.06, 0.95, 0.05], "offset": [0.0, 0.65, 0.045], "color": "#8a7a62", "material": "wood"},
+    {"size": [0.1, 0.1, 0.04], "offset": [-1.43, 1.03, 0.08], "color": "#2a2a2a"},
+    {"size": [0.1, 0.1, 0.04], "offset": [-1.43, 0.33, 0.08], "color": "#2a2a2a"},
+    {"size": [0.12, 0.06, 0.06], "offset": [1.4, 0.93, 0.09], "color": "#2a2a2a"}
+  ]
+}

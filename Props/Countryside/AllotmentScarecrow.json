@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Allotment Scarecrow",
+  "category": "Countryside",
+  "description": "A scarecrow in an old blue coat and hat, on a post among the vegetable beds.",
+  "collision": "solid",
+  "collider": [{"size": [0.1, 1.86, 0.1]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.04, 0.3], "speed": 3, "colors": ["#d8c890", "#5a6a8a", "#6a4e30"]}},
+  "parts": [
+    {"size": [0.08, 1.75, 0.08], "offset": [0.0, 0.875, 0.0], "color": "#6a4e30", "material": "wood"},
+    {"size": [1.4, 0.07, 0.07], "offset": [0.0, 1.315, 0.0], "color": "#6a4e30", "material": "wood"},
+    {"size": [0.48, 0.57, 0.26], "offset": [0.0, 1.135, 0.0], "color": "#5a6a8a"},
+    {"size": [0.38, 0.18, 0.2], "offset": [-0.43, 1.29, 0.0], "color": "#5a6a8a"},
+    {"size": [0.38, 0.18, 0.2], "offset": [0.43, 1.29, 0.0], "color": "#5a6a8a"},
+    {"size": [0.13, 0.38, 0.2], "offset": [-0.095, 0.69, 0.0], "color": "#6a5a40"},
+    {"size": [0.13, 0.38, 0.2], "offset": [0.095, 0.69, 0.0], "color": "#6a5a40"},
+    {"size": [0.26, 0.26, 0.24], "offset": [0.0, 1.56, 0.0], "color": "#d8c890"},
+    {"size": [0.5, 0.03, 0.48], "offset": [0.0, 1.695, 0.0], "color": "#6a5a3a"},
+    {"size": [0.28, 0.15, 0.26], "offset": [0.0, 1.785, 0.0], "color": "#6a5a3a"},
+    {"size": [0.1, 0.1, 0.14], "offset": [-0.65, 1.15, 0.0], "color": "#d8c890"},
+    {"size": [0.1, 0.1, 0.14], "offset": [0.65, 1.15, 0.0], "color": "#d8c890"},
+    {"size": [0.1, 0.06, 0.01], "offset": [0.0, 1.53, 0.125], "color": "#2a2a2a"},
+    {"size": [0.04, 0.04, 0.01], "offset": [-0.06, 1.62, 0.125], "color": "#2a2a2a"},
+    {"size": [0.04, 0.04, 0.01], "offset": [0.06, 1.62, 0.125], "color": "#2a2a2a"}
+  ]
+}
