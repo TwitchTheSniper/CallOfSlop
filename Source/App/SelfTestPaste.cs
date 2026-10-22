@@ -197,6 +197,7 @@ public static partial class SelfTest
             ("master server", 128, x => Settings.CleanAddress(x), 127, false),
             ("loadout name", 25, x => LoadoutStore.CleanName(x), 24, true),
             ("build name", 33, x => WeaponBuild.CleanName(x), 32, true),
+            ("lobby chat", ChatRules.BoxCapacity, x => ChatRules.Clean(x), ChatRules.MaxLength, true),
         };
         var rng = new Random(7001);
         var pastes = PasteSamples.Select(x => (x.Name, x.Source)).ToList();

@@ -333,7 +333,7 @@ public static partial class SelfTest
                 trips++;
         }
         Line($"blood word round trips {trips}/4 in a {Snapshot.FastBytes}-byte fast entry, protocol {ServerInfo.ProtocolVersion}");
-        if (trips != 4 || ServerInfo.ProtocolVersion < 32)
+        if (trips != 4 || ServerInfo.ProtocolVersion < 33)
             Fail("body blood: the blood word doesn't survive the snapshot, or the protocol wasn't bumped");
 
         // ---- Ragdolls keep the final marks ----

@@ -94,6 +94,10 @@ public sealed class Settings
     public int TeamMaxDiff = TeamRules.DefaultMaxDiff; // team modes: how much bigger a side may get by picks (0-4)
     public PhysicsMode Physics = PhysicsMode.Classic; // hosting: player movement (classic, or the swept capsule controller); joiners use the host's
     public ScoreLimitMode ScoreLimit = ScoreLimitMode.Auto; // single player and hosting: Auto scales the limit with the player count; files without it get Auto
+    public TeamBalance TeamBalance = TeamBalance.Auto; // team modes: Auto / Off / Humans vs Bots (TeamBalance.cs); files without it get Auto
+    public byte HumansTeam; // Humans vs Bots: the people's side (0 Blue, 1 Red)
+    public bool LobbyReturn; // hosting: back to the lobby room between matches (off: straight into the next warmup; PreMatchLobby.cs)
+    public int MatchMinutes = 10; // hosting: the time limit, set in the lobby room (files without it get 10)
 
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
 
@@ -143,7 +147,10 @@ public sealed class Settings
         return pool.Count == 0 ? Game.ClassicPlayers : pool.Max(m => m.MaxPlayers);
     }
 
-    private static string FilePath => Path.Combine(AppContext.BaseDirectory, "settings.txt");
+    private static string FilePath => SavePaths.PathOf("settings.txt");
+
+    /// <summary>The <c>version=</c> line written to settings.txt (separate from binds_version; files without one load the same).</summary>
+    public const int SaveVersion = 1;
 
     private static string DefaultName()
     {
@@ -173,10 +180,10 @@ public sealed class Settings
         var s = new Settings();
         try
         {
-            if (!File.Exists(path))
+            if (SavePaths.ReadLines(path, SaveVersion) is not { } fileLines)
                 return s;
             var bindsVersion = 1; // files without a binds_version line have the first defaults (Keybinds.Migrate)
-            foreach (var line in File.ReadAllLines(path))
+            foreach (var line in fileLines)
             {
                 var kv = line.Split('=', 2);
                 if (kv.Length != 2)
@@ -219,6 +226,10 @@ public sealed class Settings
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;
                     case "team_max_diff" when int.TryParse(v, out var i): s.TeamMaxDiff = Math.Clamp(i, 0, TeamRules.MaxDiffLimit); break;
                     case "physics" when Enum.TryParse<PhysicsMode>(v, true, out var pm) && Enum.IsDefined(pm): s.Physics = pm; break;
+                    case "team_balance": s.TeamBalance = Game.ParseTeamBalance(v); break;
+                    case "humans_team": s.HumansTeam = v == "1" ? (byte)1 : (byte)0; break;
+                    case "lobby_return": s.LobbyReturn = v == "1"; break;
+                    case "match_minutes" when int.TryParse(v, out var mm): s.MatchMinutes = Math.Clamp(mm, 1, 60); break;
                     case "score_limit" when Enum.TryParse<ScoreLimitMode>(v, true, out var sl) && Enum.IsDefined(sl): s.ScoreLimit = sl; break;
                     case "display" when Enum.TryParse<DisplayMode>(v, out var dm): s.Display = dm; break;
                     case "width" when int.TryParse(v, out var i): s.Width = Math.Clamp(i, 640, 16384); break;
@@ -260,7 +271,7 @@ public sealed class Settings
         var inv = CultureInfo.InvariantCulture;
         try
         {
-            File.WriteAllLines(
+            SavePaths.WriteLines(
                 path,
                 [
                     $"name={Name}",
@@ -297,6 +308,10 @@ public sealed class Settings
                     $"team_max_diff={TeamMaxDiff}",
                     $"physics={Physics.ToString().ToLowerInvariant()}",
                     $"score_limit={ScoreLimit.ToString().ToLowerInvariant()}",
+                    $"team_balance={Game.TeamBalanceKey(TeamBalance)}",
+                    $"humans_team={HumansTeam}",
+                    $"lobby_return={(LobbyReturn ? 1 : 0)}",
+                    $"match_minutes={MatchMinutes}",
                     $"display={Display}",
                     $"width={Width}",
                     $"height={Height}",
@@ -314,7 +329,8 @@ public sealed class Settings
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
-                ]
+                ],
+                SaveVersion
             );
         }
         catch

@@ -22,7 +22,7 @@ public enum BloodColour : byte
 
 /// <summary>
 /// The replicated blood state of one player: a 32-bit word (<see cref="Player.Blood"/>, in every snapshot fast entry since
-/// protocol 32) the server writes on each hit and everyone draws the same way.
+/// protocol 33) the server writes on each hit and everyone draws the same way.
 ///   bits 0-23: 8 hit slots, 3 bits each (<see cref="BloodPart"/>; filled in order, 0 = empty, full slots keep the first 8 hits);
 ///   bits 24-27: generation (bumped each time the marks clear: back to full health or a new life; seeds the mark layout);
 ///   bits 28-31: the direction the most recent hit came from, in 16 sectors of the victim's facing (0 = in front, 4 = right).

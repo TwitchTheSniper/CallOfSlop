@@ -26,7 +26,7 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | **Single player** | You against up to 31 bots (as many as the map takes, see [Lobby size](#lobby-size); Easy, Normal, Hard or Insane), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt` (in the [save folder](#where-your-saves-live)); the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -50,7 +50,7 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 - **Score limit: Auto (default) or Fixed** (Single player and Host screens, under the game mode). Auto scales the limit with the number of players (people + bots) so a 24-player match takes about as long as an 8-player one: 11 kills is the limit at 8 players, more above that, fewer below (never under 7). It's set from everyone present when the match starts and only ever goes **up** if people join mid-match (never down when they leave). Fixed keeps the classic limits (11 kills, 40 team kills, 150 points, 3 captures). The match bar always shows the current limit. Formulas and measurements: [docs/SCORE-SCALING.md](docs/SCORE-SCALING.md). Saved in `settings.txt` as `score_limit`.
 - **Warmup and ready-up** before every match (the first one and each one after the map vote): see *Ready-up* below.
 - **5-second countdown** once everyone is ready: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
-- **10 minutes max.** When the clock runs out, the kill leader wins; a tie at the top is a draw.
+- **10 minutes max** (the host can pick 5, 10, 15, 20 or 30 in the lobby room; saved as `match_minutes`). When the clock runs out, the kill leader wins; a tie at the top is a draw.
 - The clock and the score (you vs. the best other player) sit at the top of the screen. It turns orange with "Win by 2!" when the match goes to deuce.
 - At the end you get VICTORY / DEFEAT / DRAW and the final scoreboard. Nobody can be hurt on that screen, and a new match starts on the same map after 12 seconds.
 - Same rules in single player and multiplayer; the host's game decides when a match ends.
@@ -62,6 +62,23 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 - **Single player:** Ready, Deploy or Respawn starts the countdown straight away.
 - **Hosting:** the panel has a **FORCE START** button. The Host screen also has *Auto-start the match once someone is ready* (off by default): when it's on, the match starts that many seconds after the first person readies up, even if others haven't.
 - When the countdown starts, everyone is put back at a spawn point. People who join during the warmup start not ready. People who join mid-match, or who leave, never hold anyone up.
+- The warmup panel also shows the **map and mode**, and in team modes the players are listed under a **BLUE / RED** heading each.
+
+### Pre-match lobby
+
+When you **host or join** a game you land in the **lobby room** first, a menu in front of the map (drawn slowly orbiting behind it), before anyone is in the match:
+- **Players:** name, rank (prestige/level) and hat, team (`*` = picked), ping, ready tick, a crown for the host. Bots are listed as filler.
+- **Teams** (team modes): Join Blue / Join Red / Auto with the usual rules (*Picking teams*), but **no switch cooldown** in the lobby. The host has **SHUFFLE** (everyone on Auto, random even split) and **BALANCE** (picks kept, the rest split evenly).
+- **Next match:** the map with its size, player limit and description, the mode and its goal, the pack (which the vote draws from) and the settings. The **host** changes them live and everyone sees it at once: mode, pack and map (maps too small for the people here, or not for this mode, are greyed out: the same rule as the map vote), **Random map**, score limit, **time limit**, auto-start, **Return to lobby between matches**, frenzy buffs, bots and their difficulty, team rules and team balance. The host's choices are saved to `settings.txt` when the match starts.
+- **LOADOUT** opens the loadout screen (you spawn with the selected loadout; it can still change during the countdown). Your hat is shown beside it.
+- **Chat:** type and press Enter. Lines are printable ASCII, at most 120 characters (pasting an image or anything odd is safe), at most 4 lines at once then one every 1.5 s each (checked by the server too); the last 50 lines are kept.
+- **READY UP** (or F3). The host's **START** works once every other person is ready (it readies the host too); **FORCE START** works any time. With *Auto-start* on, the countdown starts by itself once everyone is ready, or that many seconds after the first person readies. A **5-second countdown** follows; if someone un-readies it's cancelled (not a forced one; the host can **CANCEL** any). People leaving never stall it.
+- At zero the match starts: everyone spawns, and the normal 5-second match countdown runs with the loadout screen open (the lobby replaces the first warmup). The map was already loaded and drawn in the lobby, so the start is quick.
+- **People who join during a match** skip the lobby and join the match, as before.
+- **Return to lobby between matches** (host setting, Host screen and lobby room, default **off**, saved as `lobby_return`): on, everyone comes back to the lobby after the results screen and the map vote (with the voted map); off, the next match's warmup starts straight away.
+- **Single player** has no lobby room: its menu page already has every setting, and the in-map warmup starts the match.
+- The **server browser** shows what a game is doing: **In lobby** (green: join now and ready up), Warmup, Starting, In match or Results.
+- Online it's server-authoritative: the lobby state (map, settings, every player's ping, ~30 bytes + 3 per player) is sent on every change and once a second; chat goes through the server (protocol 33).
 
 ### Game modes
 
@@ -85,6 +102,10 @@ On dev-pack maps (Zombies Test) the mode list also offers **Last Man Standing** 
 - **Size rule:** a side may be at most **2 players bigger** than the other (host setting *Max team size difference*, 0-4). Only people who picked a side count: bots and people on Auto fill the smaller side, so a group of friends can stack a little but not 6v2. A full side's button is greyed out with the reason. **Bots never block you:** join a side that has a bot and that bot moves to the other side.
 - **Switching:** before the match (warmup, countdown, results) or while dead, at most once every **10 s**, never while carrying the flag. It's a respawn, not a suicide: no death, no score or kill streak change. While alive in a live match the buttons say to switch while dead.
 - **Autobalance** only moves bots and people on **Auto** (people only while dead or between matches). Someone who picked a team is never moved; a new match keeps everyone's pick. People who join get the smaller side on Auto.
+- **Team balance** (host setting: Host and Single player screens, the lobby room and Esc > TEAMS; saved as `team_balance=auto|off|humans_vs_bots` and `humans_team=0|1`; older files get Auto):
+  - **Auto** (default): everything above.
+  - **Off:** no autobalance and no size limit on picks, so a group of friends can all stack one side; bots stay wherever they were put (a new match still splits people on Auto and bots evenly, then nobody is moved).
+  - **Humans vs Bots:** every person on one side (pick **People on Blue** or **People on Red**, default Blue), every bot on the other; the bot slider sets how many bots you face. People who join mid-match go to the people's side, new bots to the bots' side; picking the bots' side is refused, and autobalance, SHUFFLE and BALANCE are off. Score limits, team spawns and map player limits work as in any team match.
 - **Host settings** (Host and Single player screens, shown for team modes; the host can also change them in Esc > TEAMS): **Team selection: Manual / Auto only** (default Manual; Auto only is the old automatic split) and **Max team size difference** (default 2). Saved in `settings.txt` as `team_select=manual|auto` and `team_max_diff=2`; older files get the defaults. Online, a client asks the server, which checks the rules and answers (protocol 20).
 
 Maps can place team spawns, hills and flags by hand; otherwise the game works them out from the map (see Maps/README.md).
@@ -164,7 +185,7 @@ How hurt someone is shows as blood, more the lower their health (always as a fra
 - **On bodies (everyone, bots and zombies too):** players and bots show up to 8 blood marks on their body model, more as their health drops, each placed on the body part a hit landed on (head, chest, back, arms, legs; the server records the part from the bullet's exact hit point, and blasts, melee and zombie swipes by the side they came from). Every PC places the marks in the same spots, from the hit parts the server sends in each snapshot. They fade as health regenerates, clear at full health, and a ragdoll keeps its final marks. Zombies bleed a darker ichor, spread over the torso and head as they get hurt.
 - **Settings > Video > Blood overlay:** **Full** (default), **Subtle** (fewer, fainter, smaller splatters and body marks) or **Off** (none on screen or on bodies); **Blood colour:** **Red** (default) or **Dark** (a dark maroon, easier on the eyes and for colour-blind players). Saved as `blood_overlay` and `blood_colour` in `settings.txt`; older settings files load as Full / Red.
 - Cost: the screen overlay is one instanced draw call (splatter masks generated at startup, no image files; the vignette is four thin bands along the edges, so the middle of the screen isn't touched). Body marks add **no draw calls**: up to 8 small spheres per body go to the box shader as uniforms right before that body's own boxes, which paint a ragged, blocky splat where a sphere touches them; ragdolls carry a blood amount per box in their existing instanced draw. No per-frame allocations. The game log has a `[blood]` line every 10 s while the overlay shows (instances, GPU ms, marked bodies and CPU per frame). The self-test sections **Blood overlay** and **Body blood** check the steps against health, the hit direction, fading on regen and Stim, clearing on death, Subtle / Off, the masks, no allocations, the settings save, the recorded hit parts and directions, armour, two clients placing identical marks from the same snapshot, the packet round trip and the CPU for 32 bodies (budget 0.1 ms per frame).
-- Network: the blood marks are one 32-bit word per player in every snapshot (protocol 32): 8 hit parts, a generation and the direction of the latest hit.
+- Network: the blood marks are one 32-bit word per player in every snapshot (protocol 33): 8 hit parts, a generation and the direction of the latest hit.
 
 ### Kill streaks
 
@@ -535,7 +556,7 @@ When anyone dies (a player, a bot or a zombie) their blocky body goes limp as a 
 
 ### Loadouts and weapons
 
-The **loadout menu** opens when a match starts (and any time with **B**, or from the Esc menu). Pick a **primary** and a **secondary** from **58 weapons** (50 guns and 8 launchers). Hover a weapon to compare damage, fire rate, DPS, range, accuracy, recoil, mobility, magazine, reload and draw time, see shots-to-kill and damage at range, and use **Test fire / Test reload / Test equip** to hear it. Click **Deploy**. If you're out of combat (no shots fired or taken for 4 s), the change applies instantly; otherwise it applies when you respawn. Your loadout is saved to `loadout.txt` next to the game.
+The **loadout menu** opens when a match starts (and any time with **B**, or from the Esc menu). Pick a **primary** and a **secondary** from **58 weapons** (50 guns and 8 launchers). Hover a weapon to compare damage, fire rate, DPS, range, accuracy, recoil, mobility, magazine, reload and draw time, see shots-to-kill and damage at range, and use **Test fire / Test reload / Test equip** to hear it. Click **Deploy**. If you're out of combat (no shots fired or taken for 4 s), the change applies instantly; otherwise it applies when you respawn. Your loadout is saved to `loadout.txt` in the [save folder](#where-your-saves-live).
 
 | Class | Weapons |
 | --- | --- |
@@ -700,9 +721,20 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 - **Downed** at 0 health: a teammate revives you by holding F on you; you lose your perks; after 30 s you bleed out and come back next round with the start gear, and your **built weapons drop where you went down**: anyone can pick them up (hold F) for 5 minutes. **Second Wind** (start room) gets you back up on your own once, solo or co-op. Guns have **reserve ammo** in Zombies (magazine | reserve).
 - Co-op: built guns and dropped builds replicate to every player (protocol 19). The design, every number and the map format are in [docs/zombies/ZOMBIES-MODE.md](docs/zombies/ZOMBIES-MODE.md).
 
+## Where your saves live
+
+Your own files (`progress.txt` with level, XP, weapon XP and prestige; `loadout.txt` with loadouts and hat; `settings.txt`; `workbench.txt`; audio mixes `audio_mix.json` and `AudioMixes/`) are kept in a **save folder outside the game**, so they **carry over to every new build automatically**:
+
+- **Windows:** `%APPDATA%\CallOfSlop\` (paste that into Explorer's address bar), **Linux:** `~/.local/share/CallOfSlop/`.
+- **Settings > Player > Saves** shows the folder and has an **Open save folder** button.
+- **Portable mode:** put an empty `portable.txt` next to `CallOfSlop.exe` and the saves stay next to the game (USB sticks, dev copies). **`--save-dir <path>`** on the command line uses any folder (it wins over both).
+- **Moving from an older build:** older builds kept the saves next to the game. On startup, any save the save folder doesn't have yet is **copied** from next to the game (`[saves] migrated progress.txt from <folder>` in `callofslop.log`); on the very first run of a freshly unzipped build it also looks for your most recent other Call of Slop build beside it (sibling folders, e.g. the previous tester zip) and copies from there. The originals are never moved or deleted. If both have a file, the save folder's copy wins and the other one is left alone (logged).
+- **Safe saving:** every save is written to a temp file and swapped in, so a crash can't leave half a file, and the previous save is kept as `NAME.bak` (e.g. `progress.txt.bak`). A damaged save loads its backup (the damaged copy is kept as `NAME.corrupt`). Each file starts with a `version=1` line; files without one (older builds) load exactly as before, and a save written by a *newer* build than the one you're running is never saved over (the lobby and Settings > Player say so).
+- Game data (maps, weapons, props, `classes.json`, `hats.json`, ...) stays next to the game, as does `callofslop.log`. The smoke test (`--smoketest`) plays with a throwaway copy of your saves in the temp folder, and the self-test uses its own temp folder, so neither can change your progress.
+
 ## Development and version control
 
-The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.
+The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. Your personal game files live in the save folder (see [Where your saves live](#where-your-saves-live)), not in the repo; if you run in portable mode from the project folder, `.gitignore` keeps them (and their `.bak` copies) out of commits.
 
 - **Get started:** clone the repo, then run `Start.bat` (or `dotnet build -c Release`). NuGet fetches the BRUTAL packages on the first build.
 - **Automatic checks:** with `.github/workflows/build.yml` in the repo, every push runs **Build and self-test** on GitHub Actions. It builds on Windows, runs `CallOfSlop.exe --selftest` and attaches the logs to the run. A red X on a commit means it didn't build or a check failed; open the run to see which.

@@ -44,6 +44,7 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
+        SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -124,6 +125,8 @@ public static partial class SelfTest
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
+            Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
+            Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
@@ -165,6 +168,7 @@ public static partial class SelfTest
             Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+            Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
