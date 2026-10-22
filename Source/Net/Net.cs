@@ -67,6 +67,8 @@ public enum Msg : byte
     LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
     ChatSay, // client -> server: a lobby chat line (reliable; the server cleans and rate-limits it, LobbyChat.cs)
     ChatLine, // server -> all: player X said this in the lobby chat (reliable)
+    StructBreak, // server -> all: destructible chunks a hit broke (structure, hit kind, from, chunk ids); every PC runs the same collapse (reliable; GameDestruction.cs)
+    StructState, // server -> joining client: a structure's broken chunks, a bit each (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

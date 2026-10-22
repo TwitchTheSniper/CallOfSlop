@@ -57,6 +57,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `penetration` | no | `false` stops bullets going through thin walls on this map (on by default; see the main README, "Bullet penetration"). |
+| `destructible` | no | `true`: the map's buildings (named Building ops) can be blown apart; `false`: they can't. Without it, the pack's `pack.json` decides (the World Tour has `"destructible": true`; every other pack is off). See [Buildings/README.md](../Buildings/README.md#destruction). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
@@ -345,7 +346,7 @@ A map can have grass, bushes, shrubs and trees, described in an optional top-lev
 | `avoidSolid` | `false` lets plants grow into boxes. Default `true`: they keep out of walls, crates and trunks. |
 | `avoidPaths` | `false` lets plants grow on paths. Default `true`. |
 
-Placement is deterministic: the same file gives exactly the same plants and trunks on every PC, so multiplayer collision matches. The foliage counts towards the map's fingerprint, so changing it is a new version of the map online. Scattered trees also keep 1.5 m away from spawn points. Plants are placed after the ops, so they see everything the ops built.
+Placement is deterministic: the same file gives exactly the same plants and trunks on every PC, so multiplayer collision matches. **Plants hide people from bots** (only bots: bullets and movement pass through): lying in tall grass, crouching behind a chest-high bush, or behind a tree's crown, someone is out of a bot's sight beyond 2.5 m, while a head above the grass is seen. Bushes count about 1 m of leaves per metre, grass a fraction depending on its density, so dense grass (6+ per m²) hides someone lying in it from a standing bot 15 m away and a lawn (2 per m²) mostly doesn't. Bots fire blind into cover where they think you are (see the main README, "Bots and foliage"). The foliage counts towards the map's fingerprint, so changing it is a new version of the map online. Scattered trees also keep 1.5 m away from spawn points. Plants are placed after the ops, so they see everything the ops built.
 
 **Cost.** Foliage is drawn in big instanced batches, so tens of thousands of plants are cheap, but not free. As a guide, a 100 x 100 m map with 4 grass clumps per m² everywhere (about 30,000 plants) plus a few hundred bushes and a grove of 40 trees is fine on any recent GPU at High. Grass is by far the most numerous: put dense grass where players look (meadows, along paths) rather than everywhere on a huge map. Trees cost one box each, so keep a map's trees in the hundreds, not thousands. A map may have at most 400,000 plants in total.
 
@@ -602,6 +603,9 @@ Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Ba
 | `seed` | Reshuffles the furniture (default: the building's own). |
 | `spawns` | `true`: the building's spawn anchors become spawn points. |
 | `variant` | `palette` (one of the building's), `floors` (buildings with a repeating floor), `mirror`, `roof` (`flat`, `gable`, `hip`, `shed`, `none`), `furnish` (`false`: empty), `doors` (`closed`, `open`, `random`). |
+| `destructible` | `true` / `false`: this building can (can't) be blown apart, whatever the map's `destructible` says. |
+
+`{ "op": "DestructibleBox", "x0": ..., "y0": ..., "z0": ..., "x1": ..., "y1": ..., "z1": ..., "color": ..., "material": "Brick" }` is a block that breaks like a building's wall (cut into chunks, drawn with the buildings): `material` is a key of `Materials/destruction.json` (`Brick`, `Concrete`, `Wood`, `Plaster`, `Metal`, `Tiles`...) and picks its texture. It stands on whatever is under its lowest chunks. It works on any map (it doesn't need `destructible`).
 
 Everything a building makes counts towards the map's fingerprint: its boxes, its props, its waypoints and its files (building.json, its own props and the furnishing rules it used), so players need the same Buildings folder as the host. Maps without named Building ops keep the fingerprint they always had. Keep buildings apart (and off the map's edge): the op doesn't check for overlaps; `python3 tools/buildings/buildings.py anchors NAME X Z YAW` prints where a placement's doors and footprint land. The Dev pack's **Building Yard** shows every starter building with variants.
 
@@ -773,6 +777,7 @@ Maps/
 | `author` | Shown as "(by ...)". |
 | `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 | `trueRandom` | `false` keeps the pack out of **True Random** (random from every pack), like the Dev test maps. Its maps can still be picked directly. Default `true`. Packs with `false` are listed last. |
+| `destructible` | `true`: the pack's maps have destructible buildings unless a map says `"destructible": false` (the World Tour). Default `false`. See [Buildings/README.md](../Buildings/README.md#destruction). |
 
 Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps, and which [pack-local assets](#where-assets-go) a map can use.
 

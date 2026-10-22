@@ -238,17 +238,8 @@ public sealed partial class Game
             _ => 14f,
         };
 
-    private bool HasLineOfSight(Vector3 from, Vector3 to)
-    {
-        var d = to - from;
-        var dist = d.Length();
-        if (dist < 0.01f)
-            return true;
-        if (World.Query.Raycast(from, d / dist, dist, QueryFilter.All) < dist - 0.05f)
-            return false;
-        return !SmokeBlocks(from, to, Brutal.GlfwApi.Glfw.Time) // bots can't see through smoke either
-               && !World.Map.Concealed(from, to); // ... or through a cornfield (concealment props, MapConcealment.cs)
-    }
+    /// <summary>Can a bot see from here to there? Not through walls, smoke, foliage or a cornfield (BotFoliage.cs: SightLine).</summary>
+    private bool HasLineOfSight(Vector3 from, Vector3 to) => SightLine(from, to) == BotSightLine.Clear;
 
     /// <summary>One simulation tick of bot thinking: perceive, decide, steer, aim, shoot, move.</summary>
     private void BotTick(Player p, double now)
@@ -288,9 +279,13 @@ public sealed partial class Game
         if (BotStuckWatch(p, b, ref steer, visible, now))
             return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
+        BotBlindPlan(p, b, visible, def, now); // fire blind into foliage at an estimate? (BotFoliage.cs)
         var aim = BotAim(p, b, target, visible, def, steer, now);
         if (!BotLauncherTick(p, b, target, visible, ref aim, now)) // a launcher at an enemy kill streak or a group (BotLaunchers.cs)
+        {
             BotShoot(p, b, target, visible, def, aim, now);
+            BotBlindFire(p, b, def, aim, now);
+        }
         SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
         BotGrenade(p, b, target, visible, aim.Distance, now);
         BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)
