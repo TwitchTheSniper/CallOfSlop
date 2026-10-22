@@ -161,6 +161,7 @@
     {"op": "Prop", "name": "Slot Machine", "x": 9.87, "z": 6.89, "yaw": 0},
     {"op": "Block", "x0": 11.86, "y0": 0, "z0": 5.81, "x1": 14.46, "y1": 0.05, "z1": 8.24, "color": [0.48, 0.48, 0.5]},
     {"op": "Prop", "name": "Glowing Vending Machine", "x": 13.16, "z": 7.01, "yaw": 0},
+    {"op": "Prop", "name": "Belisha Beacon", "x": 0, "z": 20, "yaw": 0},
     {"op": "Spawn", "x": -36, "z": -36},
     {"op": "Spawn", "x": -36, "z": 36},
     {"op": "Spawn", "x": -24, "z": -36},
