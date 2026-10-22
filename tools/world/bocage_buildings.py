@@ -136,7 +136,7 @@ def farmhouse():
         {"type": "door", "at": [2, 2.3], "width": 0.9, "hinge": "right"},
         win([-5.6, 3.5]), win([-2.6, 3.5]), win([4.0, 3.5]), win([5.9, 3.5]),
         win([-6.0, -3.5], 0.7, 1.1, 1.9), win([4.5, -3.5], 0.8),
-        win([-7, 0.0], 0.8), win([7, -1.0], 0.8),
+        win([-7, 2.0], 0.8), win([7, -1.0], 0.8),
     ]
     u_ops = [
         {"type": "door", "at": [-1, -1.0], "width": 0.9},
@@ -190,10 +190,10 @@ def farmhouse():
         "stairs": [{"floor": 0, "rect": [0.75, -1.95, 1.65, 1.05], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 50, "overhang": 0.35, "color": {"color": "$roof", "material": "tiles"}},
         "extras": [
-            {"type": "block", "min": [-7.2, 0, -0.6], "max": [-6.0, 11.8, 0.6], "color": {"color": "$wall", "material": "brick"}},
-            {"type": "block", "min": [-7.3, 11.8, -0.7], "max": [-5.9, 12.0, 0.7], "color": "$trim"},
-            {"type": "block", "min": [6.0, 5.0, -0.6], "max": [7.2, 11.8, 0.6], "color": {"color": "$wall", "material": "brick"}},
-            {"type": "block", "min": [5.9, 11.8, -0.7], "max": [7.3, 12.0, 0.7], "color": "$trim"},
+            {"type": "block", "min": [-7.95, 0, -0.6], "max": [-7.25, 11.8, 0.6], "color": {"color": "$wall", "material": "brick"}},
+            {"type": "block", "min": [-8.05, 11.8, -0.7], "max": [-7.15, 12.0, 0.7], "color": "$trim"},
+            {"type": "block", "min": [7.25, 5.0, -0.6], "max": [7.95, 11.8, 0.6], "color": {"color": "$wall", "material": "brick"}},
+            {"type": "block", "min": [7.15, 11.8, -0.7], "max": [8.05, 12.0, 0.7], "color": "$trim"},
             {"type": "block", "min": [-0.95, 0, 3.75], "max": [0.55, 0.12, 4.5], "color": {"color": "#8a857a", "material": "concrete"}},
             {"type": "prop", "name": "Firewood Stack", "at": [-5.2, 4.1], "yaw": 0},
             {"type": "prop", "name": "Bench", "at": [2.9, 4.25], "yaw": 0},
@@ -435,7 +435,7 @@ def cottage():
         "stairs": [{"floor": 0, "rect": [-4.6, -1.75, -3.7, 0.65], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 55, "overhang": 0.55, "color": {"color": "$roof", "material": "dirt"}},
         "extras": [
-            {"type": "block", "min": [-5.3, 2.0, -0.5], "max": [-4.5, 11.8, 0.4], "color": {"color": "$plinth", "material": "brick"}},
+            {"type": "block", "min": [-5.85, 0, -0.5], "max": [-5.17, 11.8, 0.4], "color": {"color": "$plinth", "material": "brick"}},
             {"type": "prop", "name": "Flower Pots", "at": [-0.2, 3.85]},
             {"type": "prop", "name": "Bench", "at": [-3.4, 3.95], "yaw": 0},
             {"type": "prop", "name": "Firewood Stack", "at": [6.0, -1.0], "yaw": 90},
