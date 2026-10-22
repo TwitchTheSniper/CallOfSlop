@@ -1,0 +1,188 @@
+using System.Diagnostics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// Pack-local decals (Source/Decals/DecalPacks.cs): a map pack's own Decals folder comes before the global one, a pack
+/// decal shadows a global one of the same name for that pack's maps only, "global:" forces the global decal, other packs
+/// can't see them, names are unique within a scope, pack decals stay out of the fingerprint, and the atlas budget (pack
+/// layers are appended and painted alone).
+/// </summary>
+public static partial class SelfTest
+{
+    private static void CheckPackDecals()
+    {
+        // 1. The Dev pack's example: Maps/Dev/Decals/Dev (a blue Exit Sign shadowing the global one, the Dev Pack Badge PNG).
+        CheckDevPackDecals();
+
+        // 2. Made-up packs: two packs with the same decal name, an impact decal (global only), a duplicate name, fingerprints.
+        var dir = Path.Combine(Path.GetTempPath(), "callofslop-packdecals-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            CheckPackDecalFolders(dir);
+        }
+        finally
+        {
+            foreach (var pack in new[] { "DecalPackA", "DecalPackB" })
+                Decals.ForgetPack(Path.Combine(dir, pack));
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+
+        // 3. Atlas budget: global library, per pack, total; new pack layers paint alone and match a full repaint.
+        CheckPackDecalAtlas();
+    }
+
+    private static void CheckDevPackDecals()
+    {
+        if (Maps.Find("Pack Decals") is not { } map)
+        {
+            Fail("Maps/Dev/PackDecals.json ('Pack Decals') didn't load");
+            return;
+        }
+        var scope = map.DecalScope;
+        var packSign = scope.Find("Exit Sign");
+        var globalSign = scope.Find("global:Exit Sign");
+        var badge = scope.Find("Dev Pack Badge");
+        if (scope.Pack != "Dev" || !scope.Shadowed.Contains("Exit Sign", StringComparer.OrdinalIgnoreCase))
+            Fail($"Dev decal scope: pack {scope.Pack ?? "(none)"}, shadows [{string.Join(", ", scope.Shadowed)}] (expected Dev, Exit Sign)");
+        if (packSign is not { Pack: "Dev" } || globalSign is not { Pack: null } || ReferenceEquals(packSign, globalSign))
+            Fail($"Dev pack: Exit Sign is {packSign?.SourceFile ?? "missing"}, global:Exit Sign is {globalSign?.SourceFile ?? "missing"}");
+        if (badge is not { Pack: "Dev", ImagePath: not null })
+            Fail($"Dev pack: the Dev Pack Badge (with its PNG) didn't load: {badge?.SourceFile ?? "missing"}");
+        if (Decals.Find("Exit Sign") is not { Pack: null } || Decals.Find("Dev Pack Badge") != null || Decals.All.Any(d => d.Pack != null))
+            Fail("the global decal library holds a pack decal (or lost its own Exit Sign)");
+        var atlas = Decals.AtlasDefs;
+        foreach (var d in new[] { packSign, badge })
+            if (d != null && (d.Index < Decals.All.Length || d.Index >= atlas.Length || !ReferenceEquals(atlas[d.Index], d)))
+                Fail($"pack decal {d.Name}: atlas layer {d.Index} isn't its own (global layers 0..{Decals.All.Length - 1}, atlas {atlas.Length})");
+        // Bake: the pack signs use the pack layer, global: the global one, the badge its pack layer.
+        var mesh = DecalBaker.Bake(map);
+        var layers = new HashSet<int>();
+        for (var v = 0; v < mesh.VertexCount; v++)
+            layers.Add((int)mesh.Vertices[v * DecalMesh.FloatsPerVertex + 8]);
+        if (packSign != null && globalSign != null && badge != null
+            && (!layers.Contains(packSign.Index) || !layers.Contains(globalSign.Index) || !layers.Contains(badge.Index)))
+            Fail($"Pack Decals bake: layers [{string.Join(", ", layers.Order())}] miss the pack sign {packSign.Index}, global sign {globalSign.Index} or badge {badge.Index}");
+        if (mesh.Placed < mesh.Requested - 1)
+            Fail($"Pack Decals: only {mesh.Placed}/{mesh.Requested} decals placed");
+        // Cosmetic: no pack-asset fingerprint from decals.
+        if (map.PackAssetHash != 0)
+            Fail($"Pack Decals: pack decals changed the fingerprint ({map.PackAssetHash:x8}); decals are cosmetic");
+        // Maps outside the Dev pack can't see its decals, and see the green Exit Sign.
+        try
+        {
+            MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Dev Pack Badge\", \"x\": 0, \"z\": 0 }"), "Classic/DecalLeakTest.json");
+            Fail("a Classic map could use the Dev Pack Badge from the Dev pack");
+        }
+        catch (MapFileException ex)
+        {
+            if (!ex.Message.Contains("Dev Pack Badge", StringComparison.Ordinal))
+                Fail($"unknown decal message doesn't name it: {ex.Message}");
+        }
+        var classic = MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Exit Sign\", \"x\": 0, \"z\": 0 }"), "Classic/DecalLeakTest.json");
+        if (classic.DecalScope.Find("Exit Sign") is not { Pack: null })
+            Fail("a Classic map sees the Dev pack's Exit Sign");
+        Line($"Dev pack decals: {scope.Local.Length} pack decal(s) ({string.Join(", ", scope.Local.Select(d => $"{d.Name} layer {d.Index}"))}), "
+             + $"shadowing [{string.Join(", ", scope.Shadowed)}]; Pack Decals placed {mesh.Placed}/{mesh.Requested}; Classic maps can't see them");
+    }
+
+    private static void CheckPackDecalFolders(string dir)
+    {
+        void Write(string rel, string text)
+        {
+            var path = Path.Combine(dir, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, text);
+        }
+        string Sign(string name, string color, string extra = "") => $$"""
+            { "format": "call-of-slop-decal/1", "name": "{{name}}", "size": [1.2, 0.5], "rotation": 0, "surfaces": "all"{{extra}},
+              "layers": [ { "shape": "rect", "size": [0.9, 0.8], "color": "{{color}}" } ] }
+            """;
+        // Both packs have a "Test Sign" (different colours); PackA also has an impact decal (global only) and a duplicate name.
+        Write("DecalPackA/Decals/Signs/Sign.json", Sign("Test Sign", "red"));
+        Write("DecalPackA/Decals/Signs/SignAgain.json", Sign("test sign", "blue"));
+        Write("DecalPackA/Decals/Impacts/Hole.json", Sign("Test Hole", "black", ", \"impact\": { \"materials\": [\"Concrete\"] }").Replace("[1.2, 0.5]", "0.2"));
+        Write("DecalPackB/Decals/Sign.json", Sign("Test Sign", "green"));
+        var op = "{ \"op\": \"Decal\", \"decal\": \"Test Sign\", \"x\": 0, \"z\": 0 }";
+        Write("DecalPackA/a.json", PackTestMap("Decal Pack A Map", op));
+        Write("DecalPackB/b.json", PackTestMap("Decal Pack B Map", op));
+        var errorsBefore = Decals.LoadErrors.Count;
+        var errors = new List<string>();
+        var (all, _) = Maps.LoadFolder(dir, errors);
+        var a = all.FirstOrDefault(m => m.Name == "Decal Pack A Map");
+        var b = all.FirstOrDefault(m => m.Name == "Decal Pack B Map");
+        if (errors.Count > 0 || a == null || b == null || all.Length != 2)
+        {
+            Fail($"decal test packs: {all.Length} maps (expected 2: decal files in Decals aren't maps), errors: {string.Join(" | ", errors)}");
+            return;
+        }
+        var sa = a.DecalScope;
+        var sb = b.DecalScope;
+        var da = sa.Find("Test Sign");
+        var db = sb.Find("Test Sign");
+        if (da is not { Pack: "DecalPackA" } || db is not { Pack: "DecalPackB" } || da.Index == db.Index || da.Layers[0].Color == db.Layers[0].Color)
+            Fail($"two packs with a \"Test Sign\" clash: {da?.SourceFile} layer {da?.Index} vs {db?.SourceFile} layer {db?.Index}");
+        if (sa.Local.Length != 1)
+            Fail($"DecalPackA: {sa.Local.Length} decals loaded (expected 1: the duplicate name and the impact decal are skipped)");
+        var newErrors = Decals.LoadErrors.Skip(errorsBefore).ToList();
+        if (!newErrors.Any(e => e.Contains("already called", StringComparison.Ordinal)) || !newErrors.Any(e => e.Contains("impact decals are global", StringComparison.Ordinal)))
+            Fail($"DecalPackA's duplicate name / impact decal weren't reported: {string.Join(" | ", newErrors)}");
+        if (sa.Find("Test Hole") != null || Decals.ImpactsFor("Concrete").Any(d => d.Pack != null))
+            Fail("a pack impact decal got in");
+        // Cosmetic: the same map in two packs with different decal files has the same fingerprint.
+        var a2 = Validated(MapFile.Load(File.ReadAllText(Path.Combine(dir, "DecalPackA", "a.json")), "DecalPackB/a.json", Path.Combine(dir, "DecalPackB")));
+        var a1 = Validated(MapFile.Load(File.ReadAllText(Path.Combine(dir, "DecalPackA", "a.json")), "DecalPackA/a.json", Path.Combine(dir, "DecalPackA")));
+        if (a1.ContentHash != a2.ContentHash || a1.PackAssetHash != 0)
+            Fail($"pack decals change the map fingerprint: {a1.ContentHash:x8} vs {a2.ContentHash:x8} (pack assets {a1.PackAssetHash:x8})");
+        // Typos suggest pack names.
+        try
+        {
+            MapFile.Load(PackTestMap("Typo", "{ \"op\": \"Decal\", \"decal\": \"Test Sigm\", \"x\": 0, \"z\": 0 }"), "DecalPackA/typo.json", Path.Combine(dir, "DecalPackA"));
+            Fail("a misspelt pack decal loaded");
+        }
+        catch (MapFileException ex)
+        {
+            if (!ex.Message.Contains("Test Sign", StringComparison.Ordinal))
+                Fail($"misspelt pack decal: the message doesn't suggest \"Test Sign\": {ex.Message}");
+        }
+        Line($"made-up decal packs: each \"Test Sign\" its own (layers {da?.Index} and {db?.Index}), duplicate and impact decals skipped and reported, same fingerprint either way");
+    }
+
+    private static void CheckPackDecalAtlas()
+    {
+        var global = Decals.All;
+        var atlasDefs = Decals.AtlasDefs;
+        if (global.Length > Decals.MaxGlobal * 3 / 4)
+            Fail($"{global.Length} global decals: the library holds {Decals.MaxGlobal}; leave a quarter free or raise MaxGlobal");
+        if (atlasDefs.Length > DecalAtlas.MaxLayers)
+            Fail($"the atlas has {atlasDefs.Length} layers, more than {DecalAtlas.MaxLayers}");
+        foreach (var p in Decals.LoadedPacks)
+            if (p.Local.Length > Decals.MaxPerPack)
+                Fail($"pack {p.Pack}: {p.Local.Length} decals, more than {Decals.MaxPerPack}");
+        for (var i = 0; i < atlasDefs.Length; i++)
+            if (atlasDefs[i].Index != i)
+            {
+                Fail($"atlas layer {i} is {atlasDefs[i].Name}, whose Index is {atlasDefs[i].Index}");
+                break;
+            }
+        // The renderer's path: the global layers painted first, then the pack layers alone.
+        var sw = Stopwatch.StartNew();
+        var first = DecalAtlas.Build(global);
+        var globalMs = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        var grown = DecalAtlas.Build(atlasDefs, null, global, first, out var painted);
+        var packMs = sw.Elapsed.TotalMilliseconds;
+        var full = DecalAtlas.Build(atlasDefs);
+        if (painted != atlasDefs.Length - global.Length || !grown.AsSpan().SequenceEqual(full))
+            Fail($"growing the atlas painted {painted} layers (expected {atlasDefs.Length - global.Length}) or differs from a full repaint");
+        var mb = atlasDefs.Length * DecalAtlas.BytesPerLayer * 4 / 3 / (1024.0 * 1024.0);
+        Line($"decal atlas budget: {global.Length}/{Decals.MaxGlobal} global, {atlasDefs.Length - global.Length} pack layer(s) from {Decals.LoadedPacks.Length} pack(s), "
+             + $"{atlasDefs.Length}/{DecalAtlas.MaxLayers} layers ({mb:0.0} MB with mipmaps); global painted in {globalMs:0.0} ms, pack layers added in {packMs:0.0} ms");
+    }
+}

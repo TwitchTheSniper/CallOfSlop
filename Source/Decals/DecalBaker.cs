@@ -124,9 +124,10 @@ public static class DecalBaker
     {
         var list = new List<Placement>();
         var placedAt = new List<Vector3>();
+        var scope = map.DecalScope; // the map's pack decals first, then the global ones
         foreach (var r in map.DecalRequests)
         {
-            var defs = r.Names.Select(n => Decals.Find(n)).Where(d => d != null).Select(d => d!).ToArray();
+            var defs = r.Names.Select(n => scope.Find(n)).Where(d => d != null).Select(d => d!).ToArray();
             if (defs.Length == 0)
             {
                 mesh.Missed += r.Scatter ? r.Count : 1;
