@@ -47,8 +47,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Stairs: Silo Access Bunker (2 floors)", 2.9f, -1.9f), ("Stairs: Bunker (2 floors)", -3.0f, -3.7f), ("Sky Test", 23.0f, 24.2f), ("Sky Test", 0.0f, 5.4f),
-        ("Sprawl", -65.0f, -42.3f), ("Hillfort", 5.2f, -6.5f), ("Prop Gallery 2", -25.6f, 3.8f),
+        ("Courtyard", -26.0f, -23.3f), ("Warehouse 9", -25.0f, -16.8f), ("Riverbend", -7.0f, -40.3f), ("Adobe Mesa", -11.4f, -1.7f), ("Adobe Mesa", -8.4f, -5.2f), ("Gravel Pit", -33.0f, -8.3f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -653,7 +652,7 @@ public static partial class SelfTest
         for (var k = 0.45f; k < depth; k += 0.15f)
         {
             var p = StairPoint(f, edge + s * k, c, 0);
-            if (!float.IsFinite(SupportAt(m, phys, p.X, p.Z, y + World.StepHeight, y - 0.3f)))
+            if (!float.IsFinite(SupportAt(m, phys, p.X, p.Z, y + World.StepHeight + k * 0.9f, y - 0.3f))) // (ground rising at a walkable slope is fine)
             {
                 depth = k - 0.45f + World.PlayerRadius;
                 break;
@@ -671,13 +670,13 @@ public static partial class SelfTest
         issues.Add($"the {(top ? "top" : "foot")} landing is {depth * 100:0} cm deep (need {StairLandingMin * 100:0}) with no room to turn off it");
     }
 
-    /// <summary>Does a standing body fit (on the floor at <paramref name="y"/>) all the way from across <paramref name="c0"/> + <paramref name="from"/> to 1 m out to <paramref name="side"/>, at along <paramref name="u"/>?</summary>
+    /// <summary>Does a standing body fit (on the floor at <paramref name="y"/>, or ground rising at a walkable slope) all the way from across <paramref name="c0"/> + <paramref name="from"/> to a body width further out to <paramref name="side"/>, at along <paramref name="u"/>?</summary>
     private static bool StairRoomAlong(Map m, PhysicsWorld phys, StairFlight f, float u, float c0, int side, float y, float from)
     {
-        for (var k = from; k <= from + 1.0f + 0.001f; k += 0.25f)
+        for (var k = from; k <= from + 2 * World.PlayerRadius + 0.001f; k += 0.2f)
         {
             var p = StairPoint(f, u, c0 + side * k, 0);
-            var floor = SupportAt(m, phys, p.X, p.Z, y + World.StepHeight, y - 0.3f);
+            var floor = SupportAt(m, phys, p.X, p.Z, y + World.StepHeight + k * 0.9f, y - 0.3f);
             if (!float.IsFinite(floor) || phys.Blocked(p with { Y = floor + 0.002f }, World.PlayerHeight))
                 return false;
         }
@@ -767,13 +766,14 @@ public static partial class SelfTest
         var stall = 0;
         var lastU = Along(f, s.Position);
         var lastLo = AlongLo(m.Solid[f.Treads[^1]], f.Axis, f.Dir); // up: done once standing on the last tread
+        var firstTop = m.Solid[f.Treads[0]].Max.Y; // down: done once on the first tread or below it, at the foot
         for (var t = 0; t < ticks; t++)
         {
             World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = yaw, SpeedPct = 100 });
             var u = Along(f, s.Position);
             if (s.Stance != Stance.Stand)
                 return $"had to leave the standing stance at ({s.Position.X:0.0}, {s.Position.Y:0.0}, {s.Position.Z:0.0})";
-            if (up ? u >= lastLo - 0.3f && s.Position.Y >= f.Y1 - 0.05f : u <= f.U0 + 0.1f && s.Position.Y <= f.Y0 + 0.05f)
+            if (up ? u >= lastLo - 0.3f && s.Position.Y >= f.Y1 - 0.05f : u <= f.U0 + 0.1f && s.Position.Y <= firstTop + 0.05f)
                 return null;
             stall = MathF.Abs(u - lastU) < 0.004f ? stall + 1 : 0; // under 0.25 m/s
             lastU = u;
