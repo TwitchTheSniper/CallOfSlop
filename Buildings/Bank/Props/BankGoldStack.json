@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Gold Stack",
+  "description": "Gold bars stacked in a pyramid on a steel trolley.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 0.7, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.0, 0.06, 0.6], "offset": [0, 0.4, 0], "color": "steel", "material": "metal"},
+    {"size": [0.06, 0.4, 0.06], "offset": [-0.46, 0.2, -0.26], "color": "steel"},
+    {"size": [0.06, 0.4, 0.06], "offset": [0.46, 0.2, -0.26], "color": "steel"},
+    {"size": [0.06, 0.4, 0.06], "offset": [-0.46, 0.2, 0.26], "color": "steel"},
+    {"size": [0.06, 0.4, 0.06], "offset": [0.46, 0.2, 0.26], "color": "steel"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.33, 0.47, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.33, 0.47, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.33, 0.47, 0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.47, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.47, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.47, 0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.21, 0.47, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.21, 0.47, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.21, 0.47, 0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.195, 0.55, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.195, 0.55, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.195, 0.55, 0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.075, 0.55, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.075, 0.55, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [0.075, 0.55, 0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.63, -0.14], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.63, 0.0], "color": "#e8b830", "material": "metal"},
+    {"size": [0.25, 0.08, 0.12], "offset": [-0.06, 0.63, 0.14], "color": "#e8b830", "material": "metal"}
+  ]
+}

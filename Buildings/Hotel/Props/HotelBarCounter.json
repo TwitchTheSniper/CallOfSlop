@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Bar Counter",
+  "description": "A length of the Majestic's cocktail bar: black lacquer, a gold rail, cocktail shakers and a lit glass shelf.",
+  "collision": "solid",
+  "collider": [{"size": [1.44, 1.11, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 150,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#1a1a1e", "#c9a24a"]}
+  },
+  "parts": [
+    {"size": [1.4, 1.05, 0.62], "offset": [0, 0.525, 0], "color": "#1a1a1e"},
+    {"size": [1.44, 0.06, 0.7], "offset": [0, 1.08, 0.02], "color": "#e6e0d2"},
+    {"size": [1.4, 0.05, 0.05], "offset": [0, 0.95, 0.34], "color": "#c9a24a"},
+    {"size": [1.4, 0.04, 0.04], "offset": [0, 0.18, 0.4], "color": "#c9a24a"},
+    {
+      "size": [1.3, 0.04, 0.02],
+      "offset": [0, 0.6, 0.315],
+      "color": "#ffd890",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.7}
+    },
+    {"size": [0.08, 0.2, 0.08], "offset": [-0.4, 1.21, 0.0], "color": "chrome"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.3, 1.19, -0.1], "color": "#3a6a8a"},
+    {"size": [0.1, 0.12, 0.1], "offset": [0.45, 1.17, 0.1], "color": "#d8e4e8"}
+  ]
+}

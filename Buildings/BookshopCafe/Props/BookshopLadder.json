@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bookshop Ladder",
+  "description": "A library ladder leaning on a bookcase.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.05, 2.4, 0.05], "offset": [-0.22, 1.15, 0.2], "color": "#7a5232", "rotation": [-12, 0, 0]},
+    {"size": [0.05, 2.4, 0.05], "offset": [0.22, 1.15, 0.2], "color": "#7a5232", "rotation": [-12, 0, 0]},
+    {"size": [0.44, 0.04, 0.05], "offset": [0, 0.3, 0.39], "color": "#7a5232"},
+    {"size": [0.44, 0.04, 0.05], "offset": [0, 0.7, 0.305], "color": "#7a5232"},
+    {"size": [0.44, 0.04, 0.05], "offset": [0, 1.1, 0.22], "color": "#7a5232"},
+    {"size": [0.44, 0.04, 0.05], "offset": [0, 1.5, 0.135], "color": "#7a5232"},
+    {"size": [0.44, 0.04, 0.05], "offset": [0, 1.9, 0.05], "color": "#7a5232"}
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Queue Posts",
+  "description": "Two brass queue posts with a red velvet rope slung between them.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.3, 0.04, 0.3], "offset": [-0.8, 0.02, 0], "color": "#c9a24a"},
+    {"size": [0.06, 0.92, 0.06], "offset": [-0.8, 0.48, 0], "color": "#c9a24a"},
+    {"size": [0.1, 0.06, 0.1], "offset": [-0.8, 0.96, 0], "color": "#c9a24a"},
+    {"size": [0.3, 0.04, 0.3], "offset": [0.8, 0.02, 0], "color": "#c9a24a"},
+    {"size": [0.06, 0.92, 0.06], "offset": [0.8, 0.48, 0], "color": "#c9a24a"},
+    {"size": [0.1, 0.06, 0.1], "offset": [0.8, 0.96, 0], "color": "#c9a24a"},
+    {"size": [0.56, 0.04, 0.04], "offset": [-0.48, 0.86, 0], "color": "#8a1020", "rotation": [0, 0, -12]},
+    {"size": [0.56, 0.04, 0.04], "offset": [0.48, 0.86, 0], "color": "#8a1020", "rotation": [0, 0, 12]},
+    {"size": [0.44, 0.04, 0.04], "offset": [0, 0.8, 0], "color": "#8a1020"}
+  ]
+}

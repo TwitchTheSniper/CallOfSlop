@@ -1,0 +1,174 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Pub",
+  "theme": "Traditional English pub, the Red Lion: red brick over green glazed tiles, a swinging pub sign, dark oak panelling, burgundy carpet, brass beer pumps, a dartboard and a fire",
+  "category": "commercial",
+  "description": "A two-storey pub: the saloon bar with a long oak bar, a snug with a fire, a kitchen, gents and ladies downstairs; the landlord's flat (living room, bedroom, bathroom) and the cellar store upstairs.",
+  "author": "Call of Slop",
+  "seed": 74,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "wood"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red lion": {
+      "wall": "#8a3a2a",
+      "interior": "#5a3a24",
+      "floor": "#5a1a22",
+      "ceiling": "#e8dcc0",
+      "trim": "#e8e0cc",
+      "door": "#3a2216",
+      "roof": "#3e3a3a",
+      "tile": "#1f4a34",
+      "flat": "#e6dcc4"
+    },
+    "black horse": {
+      "wall": "#3a3a3c",
+      "interior": "#4e3420",
+      "floor": "#2a3a5a",
+      "ceiling": "#e4dcc8",
+      "trim": "#d8d0bc",
+      "door": "#1a1a1a",
+      "roof": "#2e2e32",
+      "tile": "#5a1a1a",
+      "flat": "#e0e4dc"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "bar",
+          "type": "pubbar",
+          "rect": [-7, -0.5, 3, 5],
+          "props": [
+            {"name": "Pub Back Bar", "wall": "N", "along": -2.9},
+            {"name": "Pub Back Bar", "wall": "N", "along": -1.45},
+            {"name": "Pub Back Bar", "wall": "N", "along": 0.0},
+            {"name": "Pub Bar Counter", "at": [-2.8, -0.95]},
+            {"name": "Bar Stool", "at": [-2.8, -0.15], "yaw": 180},
+            {"name": "Pub Bar Counter", "at": [-1.6, -0.95]},
+            {"name": "Bar Stool", "at": [-1.6, -0.15], "yaw": 180},
+            {"name": "Pub Bar Counter", "at": [-0.4, -0.95]},
+            {"name": "Bar Stool", "at": [-0.4, -0.15], "yaw": 180},
+            {"name": "Pub Bar Counter", "at": [0.8, -0.95]},
+            {"name": "Bar Stool", "at": [0.8, -0.15], "yaw": 180}
+          ]
+        },
+        {"id": "snug", "type": "pubsnug", "rect": [3, -0.5, 7, 5]},
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [-7, -5, -1, -0.5],
+          "floor": {"color": "#b8b4a8", "material": "tiles"},
+          "wall": {"color": "#e8e4d8", "material": "tiles"},
+          "autoWindows": {"spacing": 2.8, "width": 1.0, "sill": 1.3, "head": 2.3}
+        },
+        {"id": "stairs", "type": "corridor", "rect": [-1, -5, 2, -0.5], "windows": false},
+        {
+          "id": "gents",
+          "type": "restroom",
+          "rect": [2, -5, 4.5, -0.5],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "wall": {"color": "#e4ece8", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 0.7, "sill": 1.6, "head": 2.2}
+        },
+        {
+          "id": "ladies",
+          "type": "restroom",
+          "rect": [4.5, -5, 7, -0.5],
+          "floor": {"color": "#d8c8d0", "material": "tiles"},
+          "wall": {"color": "#ece4e8", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 0.7, "sill": 1.6, "head": 2.2}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-2.2, 5], "width": 1.1, "front": true, "material": "wood", "health": 180},
+        {"type": "window", "at": [-5.2, 5], "width": 2.0, "sill": 0.9, "head": 2.4, "health": 3},
+        {"type": "window", "at": [0.6, 5], "width": 2.0, "sill": 0.9, "head": 2.4, "health": 3},
+        {"type": "door", "at": [5, 5], "width": 1.0, "material": "wood"},
+        {"type": "window", "at": [-7, 2.4], "width": 1.6, "sill": 0.9, "head": 2.4, "health": 3},
+        {"type": "window", "at": [7, 2.4], "width": 1.4, "sill": 0.9, "head": 2.4, "health": 3},
+        {"type": "arch", "at": [3, 2.6], "width": 1.4},
+        {"type": "door", "at": [-0.25, -0.5], "width": 0.9},
+        {"type": "door", "at": [-6.3, -0.5], "width": 0.9, "swing": "out"},
+        {"type": "door", "at": [-1, -2.6], "width": 0.9},
+        {"type": "door", "at": [2, -4.2], "width": 0.9},
+        {"type": "door", "at": [5.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [-4, -5], "width": 1.0, "material": "metal"}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2, "health": 1},
+      "rooms": [
+        {
+          "id": "living",
+          "type": "living",
+          "rect": [-7, -0.5, 1, 5],
+          "wall": "$flat",
+          "floor": {"color": "#6a4a30", "material": "wood"}
+        },
+        {
+          "id": "bedroom",
+          "type": "bedroom",
+          "rect": [1, -0.5, 7, 5],
+          "wall": "$flat",
+          "floor": {"color": "#7a6a5a", "material": "none"}
+        },
+        {"id": "landing", "type": "hall", "rect": [-1, -5, 2, -0.5], "windows": false, "wall": "$flat"},
+        {
+          "id": "bathroom",
+          "type": "bathroom",
+          "rect": [2, -5, 7, -0.5],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "wall": {"color": "#e8eef0", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 0.9, "sill": 1.4, "head": 2.2}
+        },
+        {
+          "id": "store",
+          "type": "pubstore",
+          "rect": [-7, -5, -1, -0.5],
+          "floor": {"color": "#8a8478", "material": "wood"},
+          "wall": "#b8ac98",
+          "autoWindows": {"spacing": 3, "width": 0.9, "sill": 1.3, "head": 2.2}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-0.2, -0.5], "width": 0.9},
+        {"type": "door", "at": [1, 2.5], "width": 0.9},
+        {"type": "door", "at": [2, -1.3], "width": 0.9},
+        {"type": "door", "at": [-1, -2.6], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [0.6, -3.9, 1.7, -1.85], "dir": "+z", "color": {"color": "#4e2e1c", "material": "wood"}}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 34, "overhang": 0.4, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "block", "min": [-7.15, 0, 5.12], "max": [7.15, 0.85, 5.22], "color": {"color": "$tile", "material": "tiles"}},
+    {"type": "block", "min": [-7.15, 2.45, 5.12], "max": [7.15, 3.1, 5.24], "color": {"color": "$tile", "material": "tiles"}},
+    {"type": "block", "min": [-7.15, 3.1, 5.12], "max": [7.15, 3.2, 5.28], "color": "#c9a24a"},
+    {"type": "prop", "name": "Shop Sign", "at": [-2.2, 2.5, 5.24]},
+    {"type": "prop", "name": "Hanging Shop Sign", "at": [-5.6, 0, 5.75]},
+    {"type": "block", "min": [-6.6, 5.0, -0.4], "max": [-5.8, 10.8, 0.4], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [5.8, 5.0, -0.4], "max": [6.6, 10.8, 0.4], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "prop", "name": "Park Picnic Table", "at": [9.4, 2.0], "yaw": 90},
+    {"type": "prop", "name": "Park Picnic Table", "at": [9.4, -1.6], "yaw": 90},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-3.4, 5.6]},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-1.0, 5.6]},
+    {"type": "prop", "name": "Cigarette Bin", "at": [3.6, 5.5]},
+    {"type": "prop", "name": "Pub Beer Keg", "at": [-6.0, -5.6]},
+    {"type": "prop", "name": "Pub Beer Keg", "at": [-5.5, -5.7]},
+    {"type": "prop", "name": "Pub Bottle Crate", "at": [-2.4, -5.6]},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-1.2, -5.8]},
+    {"type": "prop", "name": "Bench", "at": [3.0, 6.0], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "snug", "at": [5.0, 2.0]},
+    {"type": "spawn", "name": "living", "floor": 1, "at": [-3.0, 2.0]},
+    {"type": "hill", "name": "bar", "at": [-2.0, 3.2]}
+  ]
+}

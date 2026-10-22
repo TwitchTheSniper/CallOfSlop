@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bankhall",
+  "description": "The Bank's banking hall: queue posts, writing desks, benches, an ATM, palms, a clock and chandeliers.",
+  "items": [
+    {"props": ["Bank Writing Desk"], "place": "centre"},
+    {"props": ["Bank Queue Posts"], "place": "floor", "count": [2, 3]},
+    {"props": ["Bench"], "place": "wall", "count": [1, 2]},
+    {"props": ["ATM"], "place": "wall"},
+    {"props": ["Grandfather Clock"], "place": "wall", "chance": 0.8},
+    {"props": ["Large Flower Pot", "Planter"], "place": "corner", "count": [2, 3]},
+    {"props": ["Bank Chandelier"], "place": "ceiling", "count": 3, "y": 0.05},
+    {"props": ["Post Litter Bin"], "place": "corner", "chance": 0.5}
+  ]
+}

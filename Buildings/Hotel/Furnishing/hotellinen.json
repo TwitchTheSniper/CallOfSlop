@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotellinen",
+  "description": "The Majestic's linen room: shelves of sheets, laundry, a housekeeping cart.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 3]},
+    {"props": ["Hotel Luggage Cart"], "place": "wall"},
+    {"props": ["Laundry Basket", "Laundry Basket", "Vacuum Cleaner", "Mop and Bucket"], "place": "floor", "count": [2, 3]},
+    {"props": ["Washing Machine"], "place": "wall", "chance": 0.6}
+  ]
+}

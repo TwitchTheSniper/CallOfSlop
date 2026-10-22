@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Reception Desk",
+  "description": "The Majestic's art deco reception desk: black lacquer with gold chevrons and a marble top, a brass bell and the guest ledger.",
+  "collision": "solid",
+  "collider": [{"size": [3.06, 1.11, 0.76]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 160,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#1a1a1e", "#c9a24a"]}
+  },
+  "parts": [
+    {"size": [3.0, 1.05, 0.7], "offset": [0, 0.525, 0], "color": "#1a1a1e"},
+    {"size": [3.06, 0.06, 0.76], "offset": [0, 1.08, 0], "color": "#e6e0d2"},
+    {"size": [3.0, 0.08, 0.02], "offset": [0, 0.2, 0.355], "color": "#c9a24a"},
+    {"size": [3.0, 0.04, 0.02], "offset": [0, 0.9, 0.355], "color": "#c9a24a"},
+    {"size": [0.3, 0.05, 0.02], "offset": [-1.2, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, 35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [-0.6, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, 35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [0.0, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, 35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [0.6, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, 35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [1.2, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, 35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [-1.2, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, -35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [-0.6, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, -35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [0.0, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, -35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [0.6, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, -35]},
+    {"size": [0.3, 0.05, 0.02], "offset": [1.2, 0.55, 0.36], "color": "#c9a24a", "rotation": [0, 0, -35]},
+    {"size": [0.12, 0.06, 0.12], "offset": [0.9, 1.14, 0.15], "color": "#c9a24a"},
+    {"size": [0.44, 0.04, 0.3], "offset": [-0.3, 1.13, 0.05], "color": "#5a1a1a"},
+    {"size": [0.4, 0.26, 0.3], "offset": [-1.1, 1.24, -0.1], "color": "#d8d4c4"}
+  ]
+}

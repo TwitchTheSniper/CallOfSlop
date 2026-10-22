@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Cash Cart",
+  "description": "A steel cash trolley stacked with banded bundles of notes and sealed bags.",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 1.0, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 160, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.8, 0.04, 0.5], "offset": [0, 0.3, 0], "color": "steel", "material": "metal"},
+    {"size": [0.8, 0.04, 0.5], "offset": [0, 0.8, 0], "color": "steel", "material": "metal"},
+    {"size": [0.04, 0.95, 0.04], "offset": [-0.38, 0.475, -0.23], "color": "steel"},
+    {"size": [0.04, 0.95, 0.04], "offset": [0.38, 0.475, -0.23], "color": "steel"},
+    {"size": [0.04, 0.95, 0.04], "offset": [-0.38, 0.475, 0.23], "color": "steel"},
+    {"size": [0.04, 0.95, 0.04], "offset": [0.38, 0.475, 0.23], "color": "steel"},
+    {"size": [0.12, 0.08, 0.12], "offset": [-0.34, 0.06, 0.2], "color": "rubber"},
+    {"size": [0.12, 0.08, 0.12], "offset": [0.34, 0.06, -0.2], "color": "rubber"},
+    {"size": [0.16, 0.1, 0.08], "offset": [-0.2, 0.87, -0.1], "color": "#6a9a6a"},
+    {"size": [0.16, 0.1, 0.08], "offset": [0.0, 0.87, -0.1], "color": "#6a9a6a"},
+    {"size": [0.16, 0.1, 0.08], "offset": [0.2, 0.87, -0.1], "color": "#8aaa7a"},
+    {"size": [0.16, 0.1, 0.08], "offset": [-0.1, 0.87, 0.1], "color": "#6a9a6a"},
+    {"size": [0.16, 0.1, 0.08], "offset": [0.1, 0.97, 0.0], "color": "#6a9a6a"},
+    {"size": [0.3, 0.3, 0.24], "offset": [-0.1, 0.47, 0.0], "color": "#a8a090"},
+    {"size": [0.28, 0.26, 0.22], "offset": [0.22, 0.45, 0.05], "color": "#b8b0a0"}
+  ]
+}

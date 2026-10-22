@@ -1,0 +1,203 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Hotel",
+  "theme": "Art deco grand hotel, the Majestic: cream render with gold fins and a rooftop sign, a black and gold lobby with palms and chandeliers, burgundy carpet, en-suite rooms",
+  "category": "commercial",
+  "description": "A grand hotel, three floors by default (2 to 8 with the floors variant): the lobby with reception, a cocktail lounge, a restaurant, kitchen, office and restrooms; guest floors of five en-suite rooms and a linen room on a long corridor; a switchback stair up to the roof.",
+  "author": "Call of Slop",
+  "seed": 77,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "floorCount": 3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$carpet", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "majestic cream": {
+      "wall": "#e8dcc0",
+      "interior": "#efe4cc",
+      "carpet": "#6a1a24",
+      "ceiling": "#f8f2e4",
+      "trim": "#c9a24a",
+      "door": "#3a2214",
+      "roof": "#56565a",
+      "lobby": "#e6e0d2"
+    },
+    "jade": {
+      "wall": "#cfe0d4",
+      "interior": "#eef4ee",
+      "carpet": "#1f4a4a",
+      "ceiling": "#f6faf6",
+      "trim": "#c0c4c8",
+      "door": "#1a1a1e",
+      "roof": "#4a4e4e",
+      "lobby": "#dfe6e0"
+    }
+  },
+  "floors": [
+    {
+      "height": 3.8,
+      "autoWindows": {"spacing": 2.6, "width": 1.4, "sill": 0.9, "head": 2.8, "health": 2},
+      "rooms": [
+        {
+          "id": "lobby",
+          "type": "hotellobby",
+          "rect": [-4, 0, 5, 6],
+          "floor": {"color": "$lobby", "material": "tiles"},
+          "props": [
+            {"name": "Hotel Reception Desk", "at": [-2.8, -1.4]},
+            {"name": "Hotel Key Rack", "wall": "N", "along": -2.8},
+            {"name": "Office Chair", "at": [-2.8, -2.25], "yaw": 180}
+          ]
+        },
+        {"id": "lounge", "type": "hotelbar", "rect": [-9, 0, -4, 6], "floor": {"color": "#2a1a1a", "material": "wood"}},
+        {"id": "restaurant", "type": "hotelrestaurant", "rect": [5, -1, 9, 6]},
+        {
+          "id": "hall",
+          "type": "corridor",
+          "rect": [-4, -2.6, 5, 0],
+          "windows": false,
+          "floor": {"color": "$lobby", "material": "tiles"}
+        },
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [-9, -6, -4, 0],
+          "floor": {"color": "#b8b4a8", "material": "tiles"},
+          "wall": "#ecece4",
+          "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.4, "head": 2.6}
+        },
+        {
+          "id": "restrooms",
+          "type": "restroom",
+          "rect": [-4, -6, 0, -2.6],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "windows": false
+        },
+        {"id": "office", "type": "office", "rect": [0, -6, 5, -2.6], "floor": {"color": "#7c7f84", "material": "none"}},
+        {"id": "stairhall", "type": "corridor", "rect": [5, -6, 9, -1], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [0.5, 6], "width": 1.8, "front": true, "material": "glass", "health": 40},
+        {"type": "arch", "at": [-4, 3], "width": 1.6},
+        {"type": "arch", "at": [5, 3], "width": 1.6},
+        {"type": "arch", "at": [0.5, 0], "width": 2.0},
+        {"type": "door", "at": [5, -1.8], "width": 0.9},
+        {"type": "door", "at": [-4, -1.3], "width": 1.0, "swing": "out"},
+        {"type": "door", "at": [-6.5, 0], "width": 0.9},
+        {"type": "door", "at": [-2, -2.6], "width": 0.9},
+        {"type": "door", "at": [2.5, -2.6], "width": 0.9},
+        {"type": "door", "at": [-6.5, -6], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [7.0, -6], "width": 1.0, "material": "metal"}
+      ]
+    },
+    {
+      "repeat": true,
+      "autoWindows": {"spacing": 3.4, "width": 1.3, "sill": 0.9, "head": 2.3, "health": 1},
+      "rooms": [
+        {
+          "id": "bath 1",
+          "type": "hotelbath",
+          "rect": [-9, -3, -6.6, -1],
+          "floor": {"color": "#e8ece8", "material": "tiles"},
+          "wall": "#f0f2f0",
+          "windows": false
+        },
+        {"id": "room 1", "type": "hotelroom", "rects": [[-6.6, -3, -4, -1], [-9, -6, -4, -3]]},
+        {
+          "id": "bath 2",
+          "type": "hotelbath",
+          "rect": [-4, -3, -1.6, -1],
+          "floor": {"color": "#e8ece8", "material": "tiles"},
+          "wall": "#f0f2f0",
+          "windows": false
+        },
+        {"id": "room 2", "type": "hotelroom", "rects": [[-1.6, -3, 0.5, -1], [-4, -6, 0.5, -3]]},
+        {
+          "id": "bath 3",
+          "type": "hotelbath",
+          "rect": [-9, 1, -6.6, 3],
+          "floor": {"color": "#e8ece8", "material": "tiles"},
+          "wall": "#f0f2f0",
+          "windows": false
+        },
+        {"id": "room 3", "type": "hotelroom", "rects": [[-6.6, 1, -3, 3], [-9, 3, -3, 6]]},
+        {
+          "id": "bath 4",
+          "type": "hotelbath",
+          "rect": [-3, 1, -0.6000000000000001, 3],
+          "floor": {"color": "#e8ece8", "material": "tiles"},
+          "wall": "#f0f2f0",
+          "windows": false
+        },
+        {"id": "room 4", "type": "hotelroom", "rects": [[-0.6000000000000001, 1, 3, 3], [-3, 3, 3, 6]]},
+        {
+          "id": "bath 5",
+          "type": "hotelbath",
+          "rect": [3, 1, 5.4, 3],
+          "floor": {"color": "#e8ece8", "material": "tiles"},
+          "wall": "#f0f2f0",
+          "windows": false
+        },
+        {"id": "room 5", "type": "hotelroom", "rects": [[5.4, 1, 9, 3], [3, 3, 9, 6]]},
+        {
+          "id": "linen",
+          "type": "hotellinen",
+          "rect": [0.5, -6, 5, -1],
+          "floor": {"color": "#9a968c", "material": "none"},
+          "wall": "#e0dcd0"
+        },
+        {"id": "corridor", "type": "hotelcorridor", "rect": [-9, -1, 9, 1]},
+        {"id": "stairhall", "type": "corridor", "rect": [5, -6, 9, -1], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-5.3, -1], "width": 0.9},
+        {"type": "door", "at": [-6.6, -2], "width": 0.9},
+        {"type": "door", "at": [-0.55, -1], "width": 0.9},
+        {"type": "door", "at": [-1.6, -2], "width": 0.9},
+        {"type": "door", "at": [-4.8, 1], "width": 0.9},
+        {"type": "door", "at": [-6.6, 2], "width": 0.9},
+        {"type": "door", "at": [1.2, 1], "width": 0.9},
+        {"type": "door", "at": [-0.6000000000000001, 2], "width": 0.9},
+        {"type": "door", "at": [7.2, 1], "width": 0.9},
+        {"type": "door", "at": [5.4, 2], "width": 0.9},
+        {"type": "door", "at": [2.75, -1], "width": 0.9},
+        {"type": "door", "at": [7.0, -1], "width": 1.0}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [7.55, -4.9, 8.7, -2.05], "dir": "-z", "color": {"color": "#5a1a24", "material": "none"}},
+    {
+      "floor": 1,
+      "rect": [5.3, -4.9, 6.45, -2.05],
+      "dir": "+z",
+      "alt": {"rect": [7.55, -4.9, 8.7, -2.05], "dir": "-z"},
+      "color": {"color": "#5a1a24", "material": "none"}
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [-1.6, 6.13, 2.6, 8.4], "height": 3.4, "color": "$trim", "posts": true},
+    {"type": "block", "min": [-9.15, 3.85, 6.12], "max": [9.15, 4.05, 6.3], "color": "$trim"},
+    {"type": "block", "min": [-4.3, 0.1, 6.12], "max": [-4.0, 4.0, 6.4], "color": "$trim"},
+    {"type": "block", "min": [5.0, 0.1, 6.12], "max": [5.3, 4.0, 6.4], "color": "$trim"},
+    {"type": "prop", "name": "Hotel Roof Sign", "at": [0, 0, 4.4], "onRoof": true},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [-5.0, 0, -3.5], "onRoof": true},
+    {"type": "prop", "name": "Water Tower", "at": [-6.5, 0, 2.0], "onRoof": true},
+    {"type": "prop", "name": "Hotel Palm", "at": [-2.2, 6.9]},
+    {"type": "prop", "name": "Hotel Palm", "at": [3.2, 6.9]},
+    {"type": "prop", "name": "Taxi", "at": [10.8, 3.0], "yaw": 0},
+    {"type": "prop", "name": "Hotel Luggage Cart", "at": [-3.0, 7.6], "yaw": 10},
+    {"type": "prop", "name": "Dumpster", "at": [-8.0, -7.0]}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "lobby", "at": [2.0, 3.0]},
+    {"type": "spawn", "name": "corridor", "floor": 1, "at": [-5.0, 0]},
+    {"type": "spawn", "name": "lounge", "at": [-6.5, 3.0]},
+    {"type": "hill", "name": "lobby", "at": [0.5, 3.0]}
+  ]
+}

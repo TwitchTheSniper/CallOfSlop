@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotelbar",
+  "description": "The Majestic's cocktail lounge: the black and gold bar with stools, cocktail tables with armchairs, the piano, palms.",
+  "items": [
+    {"id": "bar", "props": ["Hotel Bar Counter"], "place": "wall", "count": [2, 3], "prefer": "far"},
+    {"props": ["Bar Stool"], "place": "front", "of": "bar", "count": [2, 3], "distance": 0.25},
+    {"id": "t", "props": ["Hotel Cocktail Table"], "place": "floor", "count": [2, 3], "gap": 0.8},
+    {"props": ["Armchair"], "place": "around", "of": "t", "count": [1, 2], "distance": 0.15},
+    {"props": ["Upright Piano"], "place": "wall", "chance": 0.8},
+    {"props": ["Hotel Palm"], "place": "corner", "count": [1, 2]},
+    {"props": ["Hotel Chandelier"], "place": "ceiling", "y": 0.05}
+  ]
+}

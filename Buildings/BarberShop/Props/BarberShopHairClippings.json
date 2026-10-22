@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Barber Shop Hair Clippings",
+  "description": "Swept-up tufts of hair round a barber's chair.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.08, 0.01, 0.05], "offset": [0, 0.005, 0], "color": "#2a1c12"},
+    {"size": [0.06, 0.01, 0.07], "offset": [0.18, 0.005, 0.1], "color": "#6a4a2a"},
+    {"size": [0.1, 0.01, 0.04], "offset": [-0.15, 0.005, 0.12], "color": "#1a1410"},
+    {"size": [0.05, 0.01, 0.05], "offset": [0.1, 0.005, -0.16], "color": "#8a8a86"},
+    {"size": [0.07, 0.01, 0.06], "offset": [-0.2, 0.005, -0.1], "color": "#2a1c12"},
+    {"size": [0.04, 0.01, 0.08], "offset": [0.25, 0.005, -0.05], "color": "#c8a060"}
+  ]
+}

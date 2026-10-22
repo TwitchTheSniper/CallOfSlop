@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pharmacy Cross Sign",
+  "description": "A glowing green pharmacy cross on a wall bracket.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.1, 0.1, 0.4], "offset": [0, 0.0, 0.2], "color": "#8a8e8a"},
+    {
+      "size": [0.7, 0.22, 0.12],
+      "offset": [0, 0.0, 0.46],
+      "color": "#1f9a4a",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30e070", "off": "#0a5a2a", "glow": 1.4}
+    },
+    {
+      "size": [0.22, 0.7, 0.12],
+      "offset": [0, 0.0, 0.46],
+      "color": "#1f9a4a",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30e070", "off": "#0a5a2a", "glow": 1.4}
+    },
+    {"size": [0.74, 0.26, 0.1], "offset": [0, 0.0, 0.45], "color": "white"}
+  ]
+}

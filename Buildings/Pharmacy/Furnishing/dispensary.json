@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dispensary",
+  "description": "The Pharmacy's dispensary: round its drug drawers, bench and desk (placed by the building): a medicine fridge, a safe, boxes.",
+  "items": [
+    {"props": ["Pharmacy Drug Drawers"], "place": "wall", "count": [2, 4], "prefer": "far"},
+    {"props": ["Fridge"], "place": "corner"},
+    {"props": ["Filing Cabinet", "Safe"], "place": "wall"},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [0, 2]}
+  ]
+}

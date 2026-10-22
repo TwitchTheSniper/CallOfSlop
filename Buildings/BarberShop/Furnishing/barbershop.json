@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "barbershop",
+  "description": "The Barber Shop's floor round its stations: waiting seats and a coffee table of magazines, a product display, coat stand, fans.",
+  "items": [
+    {"id": "bench", "props": ["Barber Shop Waiting Bench"], "place": "wall", "prefer": "near"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "bench", "distance": 0.35, "chance": 0.8},
+    {"props": ["Newspaper Stack", "Book Pile"], "place": "on", "of": "table", "y": 0.45},
+    {"props": ["Barber Shop Product Shelf"], "place": "wall", "count": [1, 2]},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Large Flower Pot", "Office Plant"], "place": "corner"},
+    {"props": ["Pedestal Fan"], "place": "corner", "chance": 0.6},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.6},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2},
+    {"props": ["Barber Shop Hair Clippings"], "place": "floor", "count": [2, 3]},
+    {"props": ["Broom", "Pedal Bin"], "place": "corner"}
+  ]
+}

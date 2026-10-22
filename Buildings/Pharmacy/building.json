@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Pharmacy",
+  "theme": "Modern high-street chemist: white panels with a green fascia and a glowing green cross, bright white tiles, aisles of colourful medicines, a dispensary behind the counter",
+  "category": "commercial",
+  "description": "A pharmacy: the shop floor with aisles and the counter in front of the dispensary hatch, a consultation room; the dispensary, its WC and a stock room behind.",
+  "author": "Call of Slop",
+  "seed": 76,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "none"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "white and green": {
+      "wall": "#eef0ee",
+      "interior": "#f6f8f6",
+      "floor": "#e4e8e4",
+      "ceiling": "#fbfcfb",
+      "trim": "#9aa09a",
+      "door": "#5a6a5a",
+      "roof": "#4a4c4e",
+      "fascia": "#1f9a4a"
+    },
+    "blue chemist": {
+      "wall": "#c8ccd4",
+      "interior": "#f2f4f8",
+      "floor": "#dce0e8",
+      "ceiling": "#fbfcfd",
+      "trim": "#7a8090",
+      "door": "#2a3a6a",
+      "roof": "#45484e",
+      "fascia": "#1f4aa8"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "shop",
+          "type": "pharmacy",
+          "rect": [-6, -0.5, 6, 4.5],
+          "props": [
+            {"name": "Pharmacy Counter", "at": [2.2, -1.25]},
+            {"name": "Pharmacy Gondola", "at": [-4.3, 0.6]},
+            {"name": "Pharmacy Gondola", "at": [-0.7, 0.6]}
+          ]
+        },
+        {
+          "id": "dispensary",
+          "type": "dispensary",
+          "rect": [-1, -4.5, 6, -0.5],
+          "windows": false,
+          "props": [
+            {"name": "Pharmacy Drug Drawers", "wall": "N", "along": -1.4},
+            {"name": "Pharmacy Drug Drawers", "wall": "N", "along": -0.15},
+            {"name": "Pharmacy Drug Drawers", "wall": "N", "along": 1.1},
+            {"name": "Kitchen Counter", "wall": "S", "along": -0.85},
+            {"name": "Kitchen Counter", "wall": "S", "along": 0.37},
+            {"name": "Office Desk", "at": [0.5, 0.0], "yaw": 180},
+            {"name": "Office Chair", "at": [0.5, -0.75]},
+            {"name": "Computer Monitor", "at": [0.5, 0.1], "yaw": 180, "y": 0.77},
+            {"name": "Desk Printer", "at": [0.3700000000000001, 1.65], "yaw": 180, "y": 0.9}
+          ]
+        },
+        {
+          "id": "consultation",
+          "type": "consultation",
+          "rect": [-6, -4.5, -3.5, -0.5],
+          "autoWindows": {"spacing": 3, "width": 1.0, "sill": 1.5, "head": 2.2},
+          "floor": {"color": "#c8d0d8", "material": "none"}
+        },
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [-3.5, -2.5, -1, -0.5],
+          "windows": false,
+          "floor": {"color": "#c8d4d8", "material": "tiles"}
+        },
+        {
+          "id": "stock",
+          "type": "pharmstock",
+          "rect": [-3.5, -4.5, -1, -2.5],
+          "floor": {"color": "#9a968c", "material": "concrete"},
+          "autoWindows": {"spacing": 3, "width": 0.7, "sill": 1.6, "head": 2.2}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-2.5, 4.5], "width": 1.4, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-4.6, 4.5], "width": 2.0, "sill": 0.6, "head": 2.5, "health": 12},
+        {"type": "window", "at": [1.6, 4.5], "width": 4.0, "sill": 0.6, "head": 2.5, "health": 12},
+        {"type": "window", "at": [5.0, 4.5], "width": 1.2, "sill": 0.6, "head": 2.5, "health": 12},
+        {"type": "window", "at": [6, 2.0], "width": 1.4, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "hole", "at": [2.2, -0.5], "width": 1.4, "sill": 1.1, "head": 2.0},
+        {"type": "door", "at": [4.6, -0.5], "width": 0.9},
+        {"type": "door", "at": [-4.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [-1, -1.5], "width": 0.9},
+        {"type": "door", "at": [-1, -3.5], "width": 0.9},
+        {"type": "door", "at": [5.15, -4.5], "width": 1.0, "material": "metal"},
+        {"type": "window", "at": [6, -3.0], "width": 1.0, "sill": 1.3, "head": 2.3, "health": 2}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.6, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "block", "min": [-6.15, 2.6, 4.62], "max": [6.15, 3.3, 4.74], "color": "$fascia"},
+    {"type": "prop", "name": "Shop Sign", "at": [0.6, 2.64, 4.74]},
+    {"type": "prop", "name": "Pharmacy Cross Sign", "at": [-5.0, 2.95, 4.74]},
+    {"type": "prop", "name": "Pharmacy Cross Sign", "at": [6.13, 2.6, 3.4], "yaw": 90},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [1.5, 0, -2.5], "onRoof": true},
+    {"type": "prop", "name": "Sandwich Board", "at": [0.0, 5.2], "yaw": -10},
+    {"type": "prop", "name": "Bike Rack", "at": [4.0, 5.6]},
+    {"type": "prop", "name": "Wheelie Bin", "at": [1.5, -5.4]},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [0.6, -5.4]}
+  ],
+  "anchors": [{"type": "spawn", "name": "dispensary", "at": [2.0, -2.5]}, {"type": "point", "name": "counter", "at": [2.2, 2.0]}]
+}

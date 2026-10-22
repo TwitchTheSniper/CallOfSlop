@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pizzeria Flour Sacks",
+  "description": "Tipo 00 flour sacks stacked on a pallet.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 0.56, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 50, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#ece6d6", "pallet"]}},
+  "parts": [
+    {"size": [1.0, 0.14, 0.8], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [0.46, 0.2, 0.36], "offset": [-0.24, 0.24, -0.19], "color": "#ece6d6"},
+    {"size": [0.46, 0.2, 0.36], "offset": [0.24, 0.24, -0.19], "color": "#ece6d6"},
+    {"size": [0.46, 0.2, 0.36], "offset": [-0.24, 0.24, 0.19], "color": "#ece6d6"},
+    {"size": [0.46, 0.2, 0.36], "offset": [0.24, 0.24, 0.19], "color": "#ece6d6"},
+    {"size": [0.46, 0.2, 0.36], "offset": [0.0, 0.44, -0.05], "color": "#ece6d6", "rotation": [0, 12, 0]},
+    {"size": [0.2, 0.08, 0.005], "offset": [-0.24, 0.24, 0.372], "color": "#c8202a"},
+    {"size": [0.2, 0.08, 0.005], "offset": [0.24, 0.24, 0.372], "color": "#2f6b3a"}
+  ]
+}

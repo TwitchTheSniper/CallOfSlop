@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Chandelier",
+  "description": "A brass chandelier with frosted glass shades.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.04, 0.5, 0.04], "offset": [0, 0.75, 0], "color": "#c9a24a"},
+    {"size": [0.8, 0.04, 0.04], "offset": [0, 0.5, 0], "color": "#c9a24a"},
+    {"size": [0.04, 0.04, 0.8], "offset": [0, 0.5, 0], "color": "#c9a24a"},
+    {
+      "size": [0.14, 0.14, 0.14],
+      "offset": [0.4, 0.42, 0],
+      "color": "#fff4d8",
+      "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#e8d8b0", "glow": 0.9}
+    },
+    {
+      "size": [0.14, 0.14, 0.14],
+      "offset": [-0.4, 0.42, 0],
+      "color": "#fff4d8",
+      "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#e8d8b0", "glow": 0.9}
+    },
+    {
+      "size": [0.14, 0.14, 0.14],
+      "offset": [0, 0.42, 0.4],
+      "color": "#fff4d8",
+      "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#e8d8b0", "glow": 0.9}
+    },
+    {
+      "size": [0.14, 0.14, 0.14],
+      "offset": [0, 0.42, -0.4],
+      "color": "#fff4d8",
+      "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#e8d8b0", "glow": 0.9}
+    },
+    {"size": [0.2, 0.2, 0.2], "offset": [0, 0.4, 0], "color": "#c9a24a"}
+  ]
+}
