@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pizzastore",
+  "description": "The Pizzeria's store room: flour, tins of tomatoes, onions and spare boxes.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Pizzeria Flour Sacks"], "place": "wall", "count": [1, 2]},
+    {"props": ["Potato Sacks", "Produce Crates", "Cardboard Stack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Pizzeria Pizza Boxes", "Small Crate"], "place": "floor", "count": [1, 3]},
+    {"props": ["Mop and Bucket"], "place": "corner", "chance": 0.7}
+  ]
+}

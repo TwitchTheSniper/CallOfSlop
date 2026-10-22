@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "repairshop",
+  "description": "ZapMart's repair workshop: benches, shelves of sets waiting for parts, test gear.",
+  "items": [
+    {"id": "bench", "props": ["Electronics Repair Bench"], "place": "wall", "count": [2, 3]},
+    {"props": ["Office Chair"], "place": "front", "of": "bench", "count": [1, 2], "distance": -0.1},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["CRT Television", "CRT Television", "Toolbox", "Cardboard Box"], "place": "floor", "count": [2, 4]},
+    {"props": ["Server Rack"], "place": "wall", "chance": 0.5}
+  ]
+}

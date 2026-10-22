@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotellobby",
+  "description": "The Majestic's lobby round its reception desk: armchairs and a sofa round a coffee table, palms, a luggage cart, the clock, chandeliers.",
+  "items": [
+    {"id": "sofa", "props": ["Fabric Sofa"], "place": "wall", "prefer": "far"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile"], "place": "on", "of": "table", "y": 0.45, "chance": 0.6},
+    {"props": ["Armchair"], "place": "around", "of": "table", "count": 2, "distance": 0.4},
+    {"props": ["Hotel Palm"], "place": "corner", "count": [2, 4]},
+    {"props": ["Grandfather Clock"], "place": "wall"},
+    {"props": ["Hotel Luggage Cart"], "place": "wall", "chance": 0.9},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Hotel Chandelier"], "place": "ceiling", "count": 2, "y": 0.05}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "auditorium",
+  "description": "The Roxy's auditorium extras (the seats and screen are placed by the building): spilt popcorn, litter.",
+  "items": [{"props": ["Cinema Popcorn Spill", "Soda Cans", "Litter"], "place": "floor", "count": [2, 4]}]
+}

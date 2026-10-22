@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pharmacy Wall Shelf",
+  "description": "A tall white wall shelf with a green header, full of boxed remedies.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 2.05, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 100,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {
+      "count": 8,
+      "size": [0.05, 0.2],
+      "colors": ["#e83a3a", "#3a7ae8", "#f2c230", "#ffffff", "#7ad06a", "#e86ab0", "#f28a2a", "#5ac8d8"]
+    }
+  },
+  "parts": [
+    {"size": [1.2, 2.0, 0.4], "offset": [0, 1.0, 0], "color": "#f2f4f2"},
+    {"size": [1.22, 0.14, 0.42], "offset": [0, 2.0, 0], "color": "#1f9a4a"},
+    {"size": [1.16, 0.02, 0.36], "offset": [0, 0.12, 0.02], "color": "#e0e4e0"},
+    {"size": [0.147, 0.2, 0.18], "offset": [-0.458, 0.22, 0.06], "color": "#f2c230"},
+    {"size": [0.147, 0.15, 0.18], "offset": [-0.275, 0.22, 0.06], "color": "#e86ab0"},
+    {"size": [0.147, 0.175, 0.18], "offset": [-0.092, 0.22, 0.06], "color": "#e83a3a"},
+    {"size": [0.147, 0.2, 0.18], "offset": [0.092, 0.22, 0.06], "color": "#ffffff"},
+    {"size": [0.147, 0.15, 0.18], "offset": [0.275, 0.22, 0.06], "color": "#f28a2a"},
+    {"size": [0.147, 0.175, 0.18], "offset": [0.458, 0.22, 0.06], "color": "#3a7ae8"},
+    {"size": [1.16, 0.02, 0.36], "offset": [0, 0.52, 0.02], "color": "#e0e4e0"},
+    {"size": [0.147, 0.15, 0.18], "offset": [-0.458, 0.62, 0.06], "color": "#ffffff"},
+    {"size": [0.147, 0.175, 0.18], "offset": [-0.275, 0.62, 0.06], "color": "#f28a2a"},
+    {"size": [0.147, 0.2, 0.18], "offset": [-0.092, 0.62, 0.06], "color": "#3a7ae8"},
+    {"size": [0.147, 0.15, 0.18], "offset": [0.092, 0.62, 0.06], "color": "#7ad06a"},
+    {"size": [0.147, 0.175, 0.18], "offset": [0.275, 0.62, 0.06], "color": "#5ac8d8"},
+    {"size": [0.147, 0.2, 0.18], "offset": [0.458, 0.62, 0.06], "color": "#f2c230"},
+    {"size": [1.16, 0.02, 0.36], "offset": [0, 0.92, 0.02], "color": "#e0e4e0"},
+    {"size": [0.147, 0.175, 0.18], "offset": [-0.458, 1.02, 0.06], "color": "#7ad06a"},
+    {"size": [0.147, 0.2, 0.18], "offset": [-0.275, 1.02, 0.06], "color": "#5ac8d8"},
+    {"size": [0.147, 0.15, 0.18], "offset": [-0.092, 1.02, 0.06], "color": "#f2c230"},
+    {"size": [0.147, 0.175, 0.18], "offset": [0.092, 1.02, 0.06], "color": "#e86ab0"},
+    {"size": [0.147, 0.2, 0.18], "offset": [0.275, 1.02, 0.06], "color": "#e83a3a"},
+    {"size": [0.147, 0.15, 0.18], "offset": [0.458, 1.02, 0.06], "color": "#ffffff"},
+    {"size": [1.16, 0.02, 0.36], "offset": [0, 1.32, 0.02], "color": "#e0e4e0"},
+    {"size": [0.147, 0.2, 0.18], "offset": [-0.458, 1.42, 0.06], "color": "#e86ab0"},
+    {"size": [0.147, 0.15, 0.18], "offset": [-0.275, 1.42, 0.06], "color": "#e83a3a"},
+    {"size": [0.147, 0.175, 0.18], "offset": [-0.092, 1.42, 0.06], "color": "#ffffff"},
+    {"size": [0.147, 0.2, 0.18], "offset": [0.092, 1.42, 0.06], "color": "#f28a2a"},
+    {"size": [0.147, 0.15, 0.18], "offset": [0.275, 1.42, 0.06], "color": "#3a7ae8"},
+    {"size": [0.147, 0.175, 0.18], "offset": [0.458, 1.42, 0.06], "color": "#7ad06a"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bookshop",
+  "description": "The Bookshop: tall green bookcases on every wall, display tables, a reading armchair under a lamp, a ladder, the shop cat.",
+  "items": [
+    {"props": ["Bookshop Tall Bookcase"], "place": "wall", "count": [4, 7]},
+    {"props": ["Bookshop Display Table"], "place": "floor", "count": [1, 2], "gap": 0.6},
+    {"id": "chair", "props": ["Armchair"], "place": "corner"},
+    {"props": ["Floor Lamp"], "place": "beside", "of": "chair", "chance": 0.8},
+    {"props": ["Bookshop Ladder"], "place": "wall", "chance": 0.7},
+    {"props": ["Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Book Pile"], "place": "floor", "count": [1, 3]},
+    {"props": ["Cat"], "place": "floor", "chance": 0.7}
+  ]
+}

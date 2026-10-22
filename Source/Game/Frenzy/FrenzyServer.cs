@@ -3,7 +3,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Server-authoritative kill frenzy per player (the same heat model as the client's music meter,
 /// <see cref="FrenzyMeterCore"/>). Kills feed the killer's meter as they happen (<see cref="DamagePlayer"/>, and
-/// zombie kills at half weight via the meter's Zombies tuning); dying, or being downed in Zombies, wipes it; outside a
+/// zombie kills at reduced weight (x0.4) via the meter's Zombies tuning); dying, or being downed in Zombies, wipes it; outside a
 /// live match it's off. The level (0-6) and the frenzy class go to everyone in the snapshot's slow fields (2 bytes,
 /// protocol 26), so other features can show any player's frenzy, and the buffs (FrenzyBuffs.cs) are predicted.
 /// The class rule: the class of the weapon that got the most recent kill. Kills without a gun (grenades and other
@@ -114,7 +114,7 @@ public sealed partial class Game
         FrenzyAddKill(attacker, head, FrenzyGunKill(killId) ? attacker.DefFor(killId) : null, now);
     }
 
-    /// <summary>Server: a zombie kill (half weight). <paramref name="noGun"/>: melee or an explosion, which keep the class.</summary>
+    /// <summary>Server: a zombie kill (reduced weight, <see cref="FrenzyMeterCore.ZombieScale"/>). <paramref name="noGun"/>: melee or an explosion, which keep the class.</summary>
     private void FrenzyOnZombieKill(Player attacker, bool head, bool noGun, double now) =>
         FrenzyAddKill(attacker, head, noGun ? null : attacker.WeaponDef, now);
 

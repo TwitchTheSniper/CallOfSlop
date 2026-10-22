@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "electronics",
+  "description": "ZapMart's sales floor round its TV walls, aisles and checkouts: arcade demo cabinets, a vending machine, trolleys, plants.",
+  "items": [
+    {"props": ["Arcade Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.7},
+    {"props": ["Electronics Boxed TVs"], "place": "wall", "chance": 0.7},
+    {"props": ["Office Plant", "Pedal Bin"], "place": "corner", "count": [1, 2]},
+    {"props": ["Shopping Cart"], "place": "floor", "count": [1, 2]},
+    {"props": ["Cardboard Box", "PC Tower", "Cardboard Box Small"], "place": "floor", "count": [1, 2]}
+  ]
+}

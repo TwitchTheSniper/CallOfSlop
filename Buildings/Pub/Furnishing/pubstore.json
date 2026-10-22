@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pubstore",
+  "description": "The Pub's store: kegs, crates of bottles, crisps and spare glasses.",
+  "items": [
+    {"props": ["Pub Beer Keg"], "place": "wall", "count": [3, 5]},
+    {"props": ["Pub Bottle Crate"], "place": "wall", "count": [2, 3]},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Chest Freezer"], "place": "wall", "chance": 0.6},
+    {"props": ["Cardboard Box", "Cardboard Stack", "Pub Beer Keg"], "place": "floor", "count": [1, 3]},
+    {"props": ["Mop and Bucket"], "place": "corner"}
+  ]
+}

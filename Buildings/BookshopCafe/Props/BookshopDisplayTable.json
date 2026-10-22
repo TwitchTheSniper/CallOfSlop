@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bookshop Display Table",
+  "description": "A display table of piled new books, a staff-picks card and a little globe.",
+  "collision": "solid",
+  "collider": [{"size": [1.4, 0.76, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.4, 0.04, 0.8], "offset": [0, 0.73, 0], "color": "#7a5232", "material": "wood"},
+    {"size": [0.08, 0.71, 0.08], "offset": [-0.64, 0.355, -0.34], "color": "#4a2e1c"},
+    {"size": [0.08, 0.71, 0.08], "offset": [0.64, 0.355, -0.34], "color": "#4a2e1c"},
+    {"size": [0.08, 0.71, 0.08], "offset": [-0.64, 0.355, 0.34], "color": "#4a2e1c"},
+    {"size": [0.08, 0.71, 0.08], "offset": [0.64, 0.355, 0.34], "color": "#4a2e1c"},
+    {"size": [0.22, 0.04, 0.3], "offset": [-0.5, 0.77, -0.12], "color": "#8a1a1e"},
+    {"size": [0.22, 0.08, 0.3], "offset": [-0.25, 0.79, 0.12], "color": "#1f3a6a"},
+    {"size": [0.22, 0.12, 0.3], "offset": [0.0, 0.81, -0.12], "color": "#2a5a3a"},
+    {"size": [0.22, 0.04, 0.3], "offset": [0.25, 0.77, 0.12], "color": "#c8a050"},
+    {"size": [0.22, 0.08, 0.3], "offset": [0.5, 0.79, -0.12], "color": "#5a2a5a"},
+    {"size": [0.14, 0.18, 0.02], "offset": [0.55, 0.84, 0.25], "color": "white"},
+    {"size": [0.12, 0.12, 0.12], "offset": [0.55, 0.82, -0.2], "color": "#3a6a9a"}
+  ]
+}

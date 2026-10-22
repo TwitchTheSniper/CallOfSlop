@@ -1,0 +1,45 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Scuff Dirt",
+  "description": "A puff mark in earth or sand: a dark, soft splash.",
+  "author": "Call of Slop",
+  "size": 0.24,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {
+    "materials": [
+      "Dirt",
+      "Terrain"
+    ]
+  },
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.34,
+      "count": 11,
+      "jag": 0.6,
+      "seed": 31,
+      "color": [
+        0.2,
+        0.16,
+        0.11
+      ],
+      "alpha": 0.6,
+      "softness": 0.1,
+      "noise": 0.45,
+      "noiseScale": 7
+    },
+    {
+      "shape": "circle",
+      "radius": 0.11,
+      "color": [
+        0.08,
+        0.06,
+        0.05
+      ],
+      "alpha": 0.85,
+      "softness": 0.05
+    }
+  ]
+}

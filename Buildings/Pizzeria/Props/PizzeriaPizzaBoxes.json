@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pizzeria Pizza Boxes",
+  "description": "A leaning stack of flat white pizza boxes printed in red.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.02, 0], "color": "#e8e0d0"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.065, 0], "color": "white"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.11, 0], "color": "white"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.155, 0], "color": "#e8e0d0"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.2, 0], "color": "white"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.245, 0], "color": "white"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.29, 0], "color": "#e8e0d0"},
+    {"size": [0.4, 0.04, 0.4], "offset": [0, 0.335, 0], "color": "white"},
+    {"size": [0.2, 0.002, 0.2], "offset": [0, 0.361, 0], "color": "#c8202a"}
+  ]
+}

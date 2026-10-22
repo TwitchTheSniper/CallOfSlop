@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotelcorridor",
+  "description": "A Majestic guest corridor: carpet runners, palms, a room service cart.",
+  "items": [
+    {"props": ["Hotel Carpet Runner"], "place": "centre", "count": 2},
+    {"props": ["Hotel Palm"], "place": "corner", "count": [1, 2]},
+    {"props": ["Hotel Room Service Cart"], "place": "wall", "chance": 0.6},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.5}
+  ]
+}

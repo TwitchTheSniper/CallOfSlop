@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laundromat Washer",
+  "description": "A coin-op front-loading washer in brushed steel: a porthole with the wash going round, a coin slot and a dial.",
+  "collision": "solid",
+  "collider": [{"size": [0.68, 1.11, 0.66]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 200,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#c8ccd0", "#2a3440"]}
+  },
+  "parts": [
+    {"size": [0.68, 0.95, 0.66], "offset": [0, 0.475, 0], "color": "#c8ccd0", "material": "metal"},
+    {"size": [0.68, 0.16, 0.66], "offset": [0, 1.03, 0], "color": "#e8e4d8"},
+    {"size": [0.5, 0.08, 0.02], "offset": [0, 1.03, 0.335], "color": "#d8762a"},
+    {"size": [0.06, 0.06, 0.02], "offset": [-0.22, 1.03, 0.345], "color": "#2a2a2a"},
+    {"size": [0.12, 0.05, 0.02], "offset": [0.2, 1.03, 0.345], "color": "#a0a4a8"},
+    {"size": [0.46, 0.46, 0.03], "offset": [0, 0.55, 0.335], "color": "#8a8e92"},
+    {"size": [0.46, 0.46, 0.03], "offset": [0, 0.55, 0.335], "color": "#8a8e92", "rotation": [0, 0, 45]},
+    {"size": [0.36, 0.36, 0.02], "offset": [0, 0.55, 0.345], "color": "#2a3440"},
+    {
+      "size": [0.22, 0.12, 0.01],
+      "offset": [0, 0.55, 0.355],
+      "color": "#4a7ac8",
+      "anim": {"type": "spin", "axis": "z", "rpm": 60, "jitter": 0.3}
+    },
+    {
+      "size": [0.12, 0.22, 0.01],
+      "offset": [0, 0.55, 0.356],
+      "color": "#e85a8a",
+      "anim": {"type": "spin", "axis": "z", "rpm": 60, "jitter": 0.3, "parent": 9}
+    },
+    {
+      "size": [0.04, 0.03, 0.01],
+      "offset": [0.26, 0.86, 0.34],
+      "color": "#40e070",
+      "anim": {"type": "blink", "period": 1.6, "duty": 0.5, "glow": 0.8}
+    }
+  ]
+}

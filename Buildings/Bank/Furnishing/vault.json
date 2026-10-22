@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "vault",
+  "description": "The Bank's vault: safe-deposit boxes, gold, cash carts, safes.",
+  "items": [
+    {"props": ["Bank Deposit Boxes"], "place": "wall", "count": [3, 5], "prefer": "far"},
+    {"props": ["Bank Gold Stack"], "place": "centre"},
+    {"props": ["Bank Cash Cart"], "place": "floor", "count": [1, 2]},
+    {"props": ["Safe"], "place": "corner", "count": [1, 2]},
+    {"props": ["Small Crate", "Archive Boxes"], "place": "floor", "count": [0, 1]}
+  ]
+}

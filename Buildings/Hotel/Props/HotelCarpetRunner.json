@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Carpet Runner",
+  "description": "A long corridor carpet runner, burgundy with a gold border.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [3.6, 0.01, 0.9], "offset": [0, 0.005, 0], "color": "#c9a24a"},
+    {"size": [3.5, 0.012, 0.8], "offset": [0, 0.006, 0], "color": "#6a1a24"},
+    {"size": [3.3, 0.014, 0.1], "offset": [0, 0.007, 0], "color": "#8a2a34"}
+  ]
+}

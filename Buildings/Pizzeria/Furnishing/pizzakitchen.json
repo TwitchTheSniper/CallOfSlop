@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pizzakitchen",
+  "description": "The Pizzeria's kitchen round its oven: prep tables, the dough mixer, fridges, a sink and pans.",
+  "items": [
+    {"id": "prep", "props": ["Pizzeria Prep Table"], "place": "wall", "count": [1, 2]},
+    {"props": ["Fridge"], "place": "corner", "count": [1, 2]},
+    {"props": ["Pizzeria Dough Mixer"], "place": "wall"},
+    {"id": "sink", "props": ["Kitchen Sink"], "place": "wall"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {
+      "props": ["Cooking Pot", "Frying Pan", "Stacked Plates", "Knife Block"],
+      "place": "on",
+      "of": "counter",
+      "y": 0.9,
+      "count": [2, 3]
+    },
+    {"props": ["Pizzeria Pizza Boxes"], "place": "on", "of": "prep", "y": 0.88, "chance": 0.5},
+    {"props": ["Pizzeria Pizza Boxes"], "place": "floor", "count": [1, 2]},
+    {"props": ["Pedal Bin", "Mop and Bucket"], "place": "corner", "count": [1, 2]}
+  ]
+}
