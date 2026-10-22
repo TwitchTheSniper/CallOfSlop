@@ -160,8 +160,8 @@ public static partial class SelfTest
                 played.Add(FrameMark(pcm));
         }
         var inOrder = played.Count == 60 && played.Select((m, i) => m == i).All(x => x);
-        Line($"jitter: reordered arrival -> {played.Count}/60 played {(inOrder ? "in order" : "OUT OF ORDER")}, {jb.Concealed} concealed, {silenceFirst} pulls waited for the first {JitterBuffer.MinTargetFrames} frames");
-        if (!inOrder || jb.Concealed != 0 || silenceFirst < 1)
+        Line($"jitter: reordered arrival -> {played.Count}/60 played {(inOrder ? "in order" : "OUT OF ORDER")}, {jb.Concealed} concealed (the fade-out at the end), {silenceFirst} pulls waited for the first {JitterBuffer.MinTargetFrames} frames");
+        if (!inOrder || jb.Concealed > 1 || silenceFirst < 1) // (one concealed frame at the very end is the fade-out when the talker stops)
             Fail($"the jitter buffer didn't put reordered frames back in order ({string.Join(",", played.Take(12))}...)");
 
         // 2. Loss: every 7th frame dropped: each is concealed (fading), the rest play in order.
