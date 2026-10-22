@@ -64,6 +64,9 @@ public static unsafe partial class Program
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
+        // World Tour, 04 Paris Quarter: the quarter from above the south-west, then the raised square at eye height towards the fountain and the north row.
+        ("world_paris", "Paris Quarter", new Vector3(-74f, 40f, 52f), new Vector3(0f, 6f, -10f), false),
+        ("world_paris_square", "Paris Quarter", new Vector3(-22f, 4.7f, 3f), new Vector3(6f, 7f, -16f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

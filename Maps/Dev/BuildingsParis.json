@@ -1,0 +1,388 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Paris Street",
+ "description": "The Parisian buildings (Haussmann apartment, cafe brasserie, boulangerie) with variants, and the Parisian street props.",
+ "author": "Call of Slop",
+ "order": 968,
+ "halfX": 60,
+ "halfZ": 60,
+ "flagPool": [
+  "france"
+ ],
+ "sky": [
+  0.62,
+  0.7,
+  0.8
+ ],
+ "ops": [
+  {
+   "op": "Ground",
+   "color": [
+    0.42,
+    0.4,
+    0.37
+   ]
+  },
+  {
+   "op": "Perimeter",
+   "height": 5,
+   "color": [
+    0.72,
+    0.67,
+    0.57
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -60,
+   "y0": 0,
+   "z0": -4,
+   "x1": 60,
+   "y1": 0.03,
+   "z1": 4,
+   "color": [
+    0.27,
+    0.27,
+    0.29
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -60,
+   "y0": 0,
+   "z0": -6,
+   "x1": 60,
+   "y1": 0.14,
+   "z1": -4,
+   "color": [
+    0.62,
+    0.59,
+    0.54
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -60,
+   "y0": 0,
+   "z0": 4,
+   "x1": 60,
+   "y1": 0.14,
+   "z1": 6,
+   "color": [
+    0.62,
+    0.59,
+    0.54
+   ]
+  },
+  {
+   "op": "Building",
+   "name": "Haussmann Apartment",
+   "at": [
+    -40,
+    -11.2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Haussmann Apartment",
+   "at": [
+    -28,
+    -11.2
+   ],
+   "seed": 3,
+   "variant": {
+    "palette": "grey limestone",
+    "mirror": true
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Haussmann Apartment",
+   "at": [
+    -16,
+    -11.2
+   ],
+   "seed": 5,
+   "variant": {
+    "palette": "honey stone"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Boulangerie",
+   "at": [
+    -6.5,
+    -11.2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Cafe Brasserie",
+   "at": [
+    6,
+    -11.2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Cafe Brasserie",
+   "at": [
+    24,
+    11.2
+   ],
+   "yaw": 180,
+   "seed": 4,
+   "variant": {
+    "palette": "bottle green",
+    "mirror": true
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Boulangerie",
+   "at": [
+    38,
+    11.2
+   ],
+   "yaw": 180,
+   "seed": 2,
+   "variant": {
+    "palette": "burgundy"
+   },
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Haussmann Apartment",
+   "at": [
+    -30,
+    15
+   ],
+   "yaw": 180,
+   "seed": 8,
+   "variant": {
+    "palette": "cream limestone",
+    "mirror": true
+   }
+  },
+  {
+   "op": "Prop",
+   "name": "Bistro Table",
+   "x": -14.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Bistro Chair",
+   "x": -11.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Cafe Parasol",
+   "x": -8.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Advertising Column",
+   "x": -5.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Cast Iron Drinking Fountain",
+   "x": -2.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Tiered Square Fountain",
+   "x": 1.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "News Kiosk",
+   "x": 4.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Metro Railing",
+   "x": 7.0,
+   "z": 12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Metro Entrance Arch",
+   "x": -14.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Lantern Street Lamp",
+   "x": -11.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Cast Iron Bollard",
+   "x": -8.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Stall",
+   "x": -5.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chimney Pot Stack",
+   "x": -2.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Window Flower Box",
+   "x": 1.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Zinc Bar Counter",
+   "x": 4.0,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Bar Bottle Shelf",
+   "x": 7.0,
+   "z": 18.5
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Boulangerie",
+   "x": -50.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Patisserie",
+   "x": -46.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Brasserie",
+   "x": -42.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Cafe",
+   "x": -38.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Tabac",
+   "x": -34.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Pharmacie",
+   "x": -30.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Librairie",
+   "x": -26.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Fromagerie",
+   "x": -22.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Sign Metro",
+   "x": -18.0,
+   "z": -58.5,
+   "y": 2.0,
+   "onto": "wall-z"
+  },
+  {
+   "op": "Decal",
+   "decal": "French Bike Lane Symbol",
+   "x": -20,
+   "z": 0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "French Livraison Marking",
+   "x": -10,
+   "z": -5.0
+  },
+  {
+   "op": "RingSpawns",
+   "count": 12,
+   "frac": 0.85
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ],
+ "foliage": {
+  "regions": [
+   {
+    "type": "grass",
+    "density": 2,
+    "rect": [
+     -58,
+     24,
+     58,
+     58
+    ]
+   }
+  ],
+  "items": [
+   {
+    "type": "tree",
+    "x": 0,
+    "z": 40
+   },
+   {
+    "type": "tree",
+    "x": -30,
+    "z": 45
+   }
+  ]
+ }
+}

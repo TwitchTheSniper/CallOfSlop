@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "boulangerie",
+  "description": "The bakery shop: bread racks on the walls, a basket of baguettes, a chalkboard; the counter is placed by the building.",
+  "items": [
+    {
+      "props": [
+        "Bread Wall Rack"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Bistro Table"
+      ],
+      "place": "corner",
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Sandwich Board",
+        "Large Flower Pot"
+      ],
+      "place": "corner",
+      "chance": 0.7
+    },
+    {
+      "props": [
+        "Cardboard Box"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        1
+      ]
+    }
+  ]
+}
