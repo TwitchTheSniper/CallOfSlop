@@ -240,8 +240,7 @@ public static unsafe partial class Program
         }
         // Torso and head, leaning forward.
         var upper = Matrix4x4.CreateRotationX(-hunch) * Matrix4x4.CreateTranslation(0, 0.86f, 0) * at;
-        Gfx.Draw(Matrix4x4.CreateScale(0.62f, 0.62f, 0.36f) * Matrix4x4.CreateTranslation(0, 0.3f, 0) * upper, ZShirt);
-        Gfx.Draw(Matrix4x4.CreateScale(0.36f, 0.38f, 0.36f) * Matrix4x4.CreateTranslation(0, 0.8f, -0.04f) * upper, ZSkin);
+        BodyModel.DrawZombieUpper(Gfx, upper, ZShirt, ZSkin, BodyModel.WantsDetail(pos)); // torn shirt, belly, head (Source/Render/BodyModel.cs)
         if (z.State != ZState.Dead)
             for (var side = -1; side <= 1; side += 2)
                 Gfx.Draw(Matrix4x4.CreateScale(0.07f, 0.05f, 0.02f) * Matrix4x4.CreateTranslation(side * 0.09f, 0.84f, -0.23f) * upper, new Vector3(1f, 0.55f, 0.1f), 1f, mode: 2);
