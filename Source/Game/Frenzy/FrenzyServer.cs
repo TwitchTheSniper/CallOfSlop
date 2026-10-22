@@ -17,6 +17,45 @@ public sealed partial class Game
 
     private readonly bool[] _frenzyAlive = new bool[256];
 
+    /// <summary>
+    /// Server ticks a frenzy the player just lost (a lower level, another class, buffs switched off) is still allowed
+    /// for in the checks against client prediction (move speed, minimum spread): the client hears about the change one
+    /// snapshot and a ping later.
+    /// </summary>
+    public const uint FrenzyGraceTicks = 90;
+
+    private readonly (WeaponClass Cls, byte Level, bool On)[] _frenzyNow = new (WeaponClass, byte, bool)[256], _frenzyPrev = new (WeaponClass, byte, bool)[256];
+    private readonly uint[] _frenzyPrevUntil = new uint[256];
+
+    /// <summary>Remembers the frenzy a player had before a change, for <see cref="FrenzyGraceTicks"/>.</summary>
+    private void FrenzyNoteChange(Player p)
+    {
+        var cur = (p.FrenzyClass, p.FrenzyLevel, p.FrenzyBuffsOn);
+        if (cur == _frenzyNow[p.Id])
+            return;
+        _frenzyPrev[p.Id] = _frenzyNow[p.Id];
+        _frenzyPrevUntil[p.Id] = ServerTick + FrenzyGraceTicks;
+        _frenzyNow[p.Id] = cur;
+    }
+
+    /// <summary>Server: the highest mobility <paramref name="p"/>'s client may predict with <paramref name="def"/> (now, or just before a frenzy change).</summary>
+    private float FrenzyAllowedMobility(Player p, WeaponDef def)
+    {
+        var m = FrenzyBuffs.Mobility(p, def);
+        if (ServerTick <= _frenzyPrevUntil[p.Id] && _frenzyPrev[p.Id] is var (c, l, on))
+            m = MathF.Max(m, FrenzyBuffs.MobilityWith(def, FrenzyBuffs.Value(c, l, on, def, FrenzyStat.MovePenalty)));
+        return m;
+    }
+
+    /// <summary>Server: the smallest cone multiplier <paramref name="p"/>'s client may use with <paramref name="def"/> (now, or just before a frenzy change).</summary>
+    private float FrenzyAllowedConeMult(Player p, WeaponDef def)
+    {
+        var m = FrenzyBuffs.MinSpreadMult(p.FrenzyClass, p.FrenzyLevel, p.FrenzyBuffsOn, def);
+        if (ServerTick <= _frenzyPrevUntil[p.Id] && _frenzyPrev[p.Id] is var (c, l, on))
+            m = MathF.Min(m, FrenzyBuffs.MinSpreadMult(c, l, on, def));
+        return m;
+    }
+
     /// <summary>True when a kill id is a gun (not a streak, melee or throwable): only those set the frenzy class.</summary>
     public static bool FrenzyGunKill(byte killId) => killId < KillInfo.StreakKillIdFirst;
 
@@ -49,6 +88,7 @@ public sealed partial class Game
                 m.Reset();
                 p.FrenzyLevel = 0;
                 _frenzyAlive[p.Id] = alive;
+                FrenzyNoteChange(p);
                 continue;
             }
             m.Zombies = zombies;
@@ -57,6 +97,7 @@ public sealed partial class Game
             _frenzyAlive[p.Id] = alive;
             m.Update(now);
             p.FrenzyLevel = alive ? (byte)m.Level : (byte)0;
+            FrenzyNoteChange(p);
         }
     }
 
@@ -67,6 +108,7 @@ public sealed partial class Game
         vm.OnDeath(now);
         victim.FrenzyLevel = 0;
         _frenzyAlive[victim.Id] = false;
+        FrenzyNoteChange(victim);
         if (attacker == victim)
             return; // suicides don't count (the client meter ignores them too)
         FrenzyAddKill(attacker, head, FrenzyGunKill(killId) ? attacker.DefFor(killId) : null, now);
@@ -88,6 +130,7 @@ public sealed partial class Game
         p.FrenzyBuffsOn = FrenzyBuffsEnabled;
         var alive = p.Alive && !(m.Zombies && IsDowned(p));
         p.FrenzyLevel = alive ? (byte)m.Level : (byte)0;
+        FrenzyNoteChange(p);
         // Special's novelty buff: a kill with a Special weapon gives health back (from frenzy level 3).
         if (gun != null && alive)
         {
@@ -99,4 +142,14 @@ public sealed partial class Game
 
     /// <summary>Self-test: run the frenzy tick now.</summary>
     public void SelfTestFrenzyTick(double now) => ServerTickFrenzy(now);
+
+    /// <summary>Self-test: <paramref name="attacker"/> kills <paramref name="victim"/> with <paramref name="killId"/> through the normal damage path.</summary>
+    public bool SelfTestFrenzyKill(Player attacker, Player victim, byte killId, bool head, double now) =>
+        DamagePlayer(attacker, victim, 10000, head, killId, now, killId == MeleeKillId ? DamageKind.Melee : DamageKind.Bullet);
+
+    /// <summary>Self-test: what the server allows <paramref name="p"/>'s client to predict with <paramref name="def"/> (mobility, cone multiplier).</summary>
+    public (float Mobility, float Cone) SelfTestFrenzyAllowed(Player p, WeaponDef def) => (FrenzyAllowedMobility(p, def), FrenzyAllowedConeMult(p, def));
+
+    /// <summary>Self-test: advance the server tick (for the grace window) without simulating anything.</summary>
+    public void SelfTestAdvanceTicks(uint ticks) => ServerTick += ticks;
 }

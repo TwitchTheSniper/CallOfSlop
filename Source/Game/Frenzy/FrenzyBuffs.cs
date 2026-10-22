@@ -13,37 +13,36 @@ namespace CallOfSlop;
 public static class FrenzyBuffs
 {
     /// <summary>The value of <paramref name="stat"/> for <paramref name="p"/> using <paramref name="def"/> (the identity when no buff applies).</summary>
-    public static float Value(Player? p, WeaponDef? def, FrenzyStat stat)
+    public static float Value(Player? p, WeaponDef? def, FrenzyStat stat) =>
+        p == null ? (stat == FrenzyStat.KillHeal ? 0f : 1f) : Value(p.FrenzyClass, p.FrenzyLevel, p.FrenzyBuffsOn, def, stat);
+
+    /// <summary>The value of <paramref name="stat"/> for <paramref name="def"/> under a frenzy of <paramref name="cls"/> at <paramref name="level"/>.</summary>
+    public static float Value(WeaponClass cls, int level, bool on, WeaponDef? def, FrenzyStat stat)
     {
-        var identity = stat == FrenzyStat.KillHeal ? 0f : 1f;
-        if (p == null || def == null || !p.FrenzyBuffsOn || p.FrenzyLevel == 0 || def.Class != p.FrenzyClass)
-            return identity;
-        return FrenzyClasses.Get(p.FrenzyClass).Buffs.Value(stat, p.FrenzyLevel);
+        if (def == null || !on || level <= 0 || def.Class != cls)
+            return stat == FrenzyStat.KillHeal ? 0f : 1f;
+        return FrenzyClasses.Get(cls).Buffs.Value(stat, level);
     }
 
     /// <summary>The value of <paramref name="stat"/> for a weapon of <paramref name="cls"/> at <paramref name="level"/>, buffs on (tables, self-test).</summary>
     public static float At(WeaponClass cls, int level, FrenzyStat stat) => FrenzyClasses.Get(cls).Buffs.Value(stat, level);
 
     /// <summary>A weapon's mobility after the LMG "less move penalty" buff: the slowdown below 1 shrinks.</summary>
-    public static float Mobility(Player? p, WeaponDef def)
-    {
-        var m = Value(p, def, FrenzyStat.MovePenalty);
-        return m >= 1f || def.Mobility >= 1f ? def.Mobility : 1f - (1f - def.Mobility) * m;
-    }
+    public static float Mobility(Player? p, WeaponDef def) => MobilityWith(def, Value(p, def, FrenzyStat.MovePenalty));
+
+    /// <summary>A weapon's mobility with a "movePenalty" multiplier <paramref name="m"/>.</summary>
+    public static float MobilityWith(WeaponDef def, float m) => m >= 1f || def.Mobility >= 1f ? def.Mobility : 1f - (1f - def.Mobility) * m;
 
     /// <summary>
-    /// A spread cone after the spread buffs: <paramref name="baseSpread"/> is the aimed/hip cone, <paramref name="moveSpread"/>
-    /// the extra from moving, <paramref name="aimT"/> how far the aim is in (0 hip .. 1 aimed).
+    /// The multiplier on the whole spread cone: the Shotgun "spread" buff, times the Sniper "aimedSpread" buff blended
+    /// in by <paramref name="aimT"/> (0 hip .. 1 fully aimed).
     /// </summary>
-    public static float Spread(Player? p, WeaponDef def, float baseSpread, float moveSpread, float aimT)
-    {
-        var all = Value(p, def, FrenzyStat.Spread) * float.Lerp(1f, Value(p, def, FrenzyStat.AimedSpread), Math.Clamp(aimT, 0f, 1f));
-        return (baseSpread + moveSpread * Value(p, def, FrenzyStat.MoveSpread)) * all;
-    }
+    public static float ConeMult(Player? p, WeaponDef def, float aimT) =>
+        Value(p, def, FrenzyStat.Spread) * float.Lerp(1f, Value(p, def, FrenzyStat.AimedSpread), Math.Clamp(aimT, 0f, 1f));
 
     /// <summary>How far the buffs can shrink a weapon's cone at most (the server's minimum-spread check allows for it).</summary>
-    public static float MinSpreadMult(Player? p, WeaponDef def) =>
-        Value(p, def, FrenzyStat.Spread) * Value(p, def, FrenzyStat.AimedSpread);
+    public static float MinSpreadMult(WeaponClass cls, int level, bool on, WeaponDef def) =>
+        Value(cls, level, on, def, FrenzyStat.Spread) * Value(cls, level, on, def, FrenzyStat.AimedSpread);
 
     /// <summary>One line describing a class's buff at every level, e.g. "Quick draw: equipTime x1.00/.../0.70 (L0..L6)".</summary>
     public static string Describe(WeaponClass cls)

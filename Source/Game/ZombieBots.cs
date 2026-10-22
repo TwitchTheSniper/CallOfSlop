@@ -134,7 +134,8 @@ public sealed partial class Game
         if (aimed && target != null && b.Ammo > 0 && b.ReloadUntil == 0 && now >= b.NextFire && DamageEnabled && !use)
         {
             var dir = World.Forward(yaw, pitch);
-            var spread = def.HipSpreadRad * (Flat(target.Position - p.Position) > 8f ? def.AdsSpreadMult : 1f);
+            var aimed = Flat(target.Position - p.Position) > 8f;
+            var spread = def.HipSpreadRad * (aimed ? def.AdsSpreadMult : 1f) * FrenzyBuffs.ConeMult(p, def, aimed ? 1f : 0f); // the frenzy buffs
             ServerResolveShot(p, def, p.Eye, dir, spread, ZNext(), ServerTick, now);
             b.Ammo--;
             b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p) + (def.Mode == FireMode.Semi ? b.TriggerDelay : 0);
@@ -162,7 +163,7 @@ public sealed partial class Game
             Yaw = yaw,
             Pitch = Math.Clamp(pitch, -1.5f, 1.5f),
             Weapon = p.Weapon,
-            SpeedPct = (byte)Math.Clamp((int)(def.Mobility * 100), 1, 200),
+            SpeedPct = (byte)Math.Clamp((int)(FrenzyBuffs.Mobility(p, def) * 100), 1, 200), // the LMG frenzy buff
         });
     }
 
