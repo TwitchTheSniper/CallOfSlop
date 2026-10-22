@@ -38,8 +38,9 @@ public sealed partial class Game
 
     /// <summary>
     /// Start of BotDecide: true when the squad order takes over this tick (mode <see cref="BotMode.Squad"/>). With an
-    /// enemy in sight the bot fights normally (bases of fire keep their distance), except a flanker that isn't being
-    /// shot at and has a bad angle: it holds fire and keeps going round.
+    /// enemy in sight the bot fights normally (bases of fire keep their distance), except a flanker that sees the
+    /// assault's target from a bad angle while the target isn't fighting it (not hit, not being shot at from the front):
+    /// it holds fire and keeps going round.
     /// </summary>
     private bool SquadDecide(Player p, BotBrain b, Player? target, bool visible, double now)
     {
@@ -49,11 +50,14 @@ public sealed partial class Game
         if (visible)
         {
             if (target != null && (b.Role == SquadRole.Flanker || PincerSupport(b))
-                && (s.Tactic != SquadTactic.Assault || b.Order.Kind is SquadOrderKind.Flank or SquadOrderKind.Hold))
+                && (s.Tactic != SquadTactic.Assault || (target.Id == s.Target && b.Order.Kind is SquadOrderKind.Flank or SquadOrderKind.Hold)))
             {
                 var dist = Flat(target.Position - p.Position);
                 var hurt = now - b.HurtTime < 1.5;
-                if (!hurt && dist > 5f && FlankAngle(s, target.Position, p.Position) < FlankFireAngle)
+                // Shooting this way (its muzzle flashes facing us): it's fighting us, fight back.
+                var fightingMe = now - target.LastShotTime < 0.6
+                                 && Vector3.Dot(World.FlatForward(target.Yaw), FlatDir(p.Position - target.Position, Vector3.UnitX)) > 0.9f;
+                if (!hurt && !fightingMe && dist > 6f && FlankAngle(s, target.Position, p.Position) < FlankFireAngle)
                 {
                     b.HoldFire = true;
                     if (s.Tactic != SquadTactic.Assault)

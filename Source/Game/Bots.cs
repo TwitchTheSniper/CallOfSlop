@@ -155,11 +155,11 @@ public sealed partial class BotBrain
     }
 
     // Tuning per difficulty
-    public double Reaction => Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, BotDifficulty.Insane => 0.16, _ => 0.2 };
-    public float AimError => Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, BotDifficulty.Insane => 0.024f, _ => 0.03f }; // radians
-    public float TurnSpeed => Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, BotDifficulty.Insane => 12f, _ => 10f }; // rad/s
-    public float Settle => Skill switch { BotDifficulty.Easy => 1.2f, BotDifficulty.Normal => 2.4f, BotDifficulty.Insane => 5.2f, _ => 4.5f }; // aim error decay /s
-    public double TriggerDelay => Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, BotDifficulty.Insane => 0.04, _ => 0.05 }; // extra delay on semi-autos
+    public double Reaction => Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, BotDifficulty.Insane => 0.13, _ => 0.2 };
+    public float AimError => Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, BotDifficulty.Insane => 0.02f, _ => 0.03f }; // radians
+    public float TurnSpeed => Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, BotDifficulty.Insane => 13f, _ => 10f }; // rad/s
+    public float Settle => Skill switch { BotDifficulty.Easy => 1.2f, BotDifficulty.Normal => 2.4f, BotDifficulty.Insane => 6f, _ => 4.5f }; // aim error decay /s
+    public double TriggerDelay => Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, BotDifficulty.Insane => 0.035, _ => 0.05 }; // extra delay on semi-autos
 }
 
 /// <summary>

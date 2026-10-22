@@ -61,7 +61,9 @@ public static partial class SelfTest
     /// <summary>
     /// A seeded Team Deathmatch: <paramref name="na"/> bots of skill <paramref name="a"/> on one team (team 0 when
     /// <paramref name="aTeam0"/>) and <paramref name="nb"/> of skill <paramref name="b"/> on the other, added in pairs with
-    /// the same personality (<paramref name="aFirst"/>: side A's bot of each pair first). The host waits (never spawns).
+    /// the same personality. Join order matters (the later of two otherwise equal bots wins most fights: see the Hard v
+    /// Hard control), so pairs alternate which side joins first (A B, B A, A B...), starting with A when
+    /// <paramref name="aFirst"/>. The host waits (never spawns).
     /// </summary>
     private static Game Duel(int seed, Map map, BotDifficulty a, int na, BotDifficulty b, int nb, bool aTeam0, bool squadsOff, bool aFirst)
     {
@@ -84,11 +86,12 @@ public static partial class SelfTest
         for (var i = 0; i < Math.Max(na, nb); i++)
         {
             var kind = InsaneMix[(i + seed) % InsaneMix.Length];
-            if (aFirst && i < na)
+            var first = aFirst == (i % 2 == 0);
+            if (first && i < na)
                 Add(true, kind);
             if (i < nb)
                 Add(false, kind);
-            if (!aFirst && i < na)
+            if (!first && i < na)
                 Add(true, kind);
         }
         foreach (var p in game.Players.Values.Where(p => p.Bot != null).ToList())
@@ -522,13 +525,15 @@ public static partial class SelfTest
         var spread0 = s.Members.Max(m => FlatOf(m.Position - lead.Position).Length());
         var gathered = -1.0;
         var t0 = now;
+        var regrouped = false;
         Tick(game, ref now, 20, () =>
         {
-            if (s.Members.Max(m => FlatOf(m.Position - lead.Position).Length()) < 12f)
+            regrouped |= s.Tactic == SquadTactic.Regroup && now - t0 > 0.1;
+            if (regrouped && s.Members.Max(m => FlatOf(m.Position - lead.Position).Length()) < 12f)
                 gathered = now - t0;
             return gathered >= 0;
         });
-        var regrouped = game.SquadStats.Regroups > regroups0;
+        regrouped |= game.SquadStats.Regroups > regroups0;
         Line($"spread the squad {spread0:0} m from its leader: regroup {(regrouped ? "called" : "NOT called")}, together within 12 m "
              + (gathered >= 0 ? $"after {gathered:0.0} s" : "never (20 s)"));
         InsaneNote($"regroup: spread {spread0:0} m, together after " + (gathered >= 0 ? $"{gathered:0.0} s" : "never"));
@@ -618,7 +623,7 @@ public static partial class SelfTest
 
     private static void CheckInsaneWinRate()
     {
-        const int matches = 24;
+        const int matches = 36;
         var sw = Stopwatch.StartNew();
         var (w, d, l, fk, ak, detail) = InsaneSeries(matches, squadsOff: false, seconds: 100);
         InsaneNote($"Insane v Hard, 4 v 4, {matches} seeded 100 s TDM matches (6 maps, both sides): {w} won, {d} drawn, {l} lost; kills {fk}-{ak} ({detail}; {sw.Elapsed.TotalSeconds:0.0} s)");
@@ -628,14 +633,14 @@ public static partial class SelfTest
         foreach (var (label, a, b, off, first) in new[]
                  {
                      ("Insane without squads v Hard", BotDifficulty.Insane, BotDifficulty.Hard, true, true),
-                     ("Insane v Hard, Hard added first", BotDifficulty.Insane, BotDifficulty.Hard, false, false),
-                     ("Hard v Hard (side A added first)", BotDifficulty.Hard, BotDifficulty.Hard, false, true),
+                     ("Insane v Hard, Hard joining first", BotDifficulty.Insane, BotDifficulty.Hard, false, false),
+                     ("Hard v Hard (the fairness control)", BotDifficulty.Hard, BotDifficulty.Hard, false, true),
                      ("Hard v Normal", BotDifficulty.Hard, BotDifficulty.Normal, false, true),
                  })
         {
             sw.Restart();
-            var (w2, d2, l2, fk2, ak2, _) = InsaneSeries(12, squadsOff: off, seconds: 100, a, b, first);
-            InsaneNote($"{label}, 12 matches: {w2} won, {d2} drawn, {l2} lost; kills {fk2}-{ak2} ({sw.Elapsed.TotalSeconds:0.0} s)");
+            var (w2, d2, l2, fk2, ak2, _) = InsaneSeries(24, squadsOff: off, seconds: 100, a, b, first);
+            InsaneNote($"{label}, 24 matches: {w2} won, {d2} drawn, {l2} lost; kills {fk2}-{ak2} ({sw.Elapsed.TotalSeconds:0.0} s)");
         }
     }
 

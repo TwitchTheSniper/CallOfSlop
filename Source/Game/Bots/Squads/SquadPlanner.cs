@@ -504,7 +504,7 @@ public sealed partial class Game
 
         var toGoal = Flat(s.Goal - centroid);
         var heading = FlatDir(s.Goal - lead.Position, World.FlatForward(lead.Yaw));
-        var bounding = others > 0 && toGoal > 22f && (now - s.LastContactTime < 30 || s.GoalIsObjective);
+        var bounding = others > 0 && toGoal > 22f && (now - s.LastContactTime < 15 || s.GoalIsObjective);
         if (bounding)
             PlanBounds(s, centroid, heading, nav, now);
         else
