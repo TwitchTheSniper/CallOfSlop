@@ -347,38 +347,57 @@ public static partial class SelfTest
         var color = new Vector3(0.25f, 0.9f, 0.35f);
         var arena = RagdollScene([Floor, new Box(new Vector3(0, 1.5f, -9), new Vector3(9, 1.5f, 0.3f)), new Box(new Vector3(0, 1.5f, 9), new Vector3(9, 1.5f, 0.3f)),
             new Box(new Vector3(-9, 1.5f, 0), new Vector3(0.3f, 1.5f, 9)), new Box(new Vector3(9, 1.5f, 0), new Vector3(0.3f, 1.5f, 9)), new Box(new Vector3(2, 0.5f, 1), new Vector3(1, 0.5f, 1))]);
-        Ragdolls.Clear();
         Ragdolls.WorldOverride = arena.World;
         var bodies = new List<RagdollBody>();
-        for (var i = 0; i < Ragdolls.MaxAwake; i++)
-        {
-            var feet = new Vector3(i % 4 * 3f - 4.5f, 0, i / 4 * 3f - 4.5f);
-            bodies.Add(Ragdolls.SpawnForTest(new RagdollDeath { Feet = feet, Yaw = i, Victim = (byte)i, Killer = 99, KillId = (byte)(Throwables.KillIdBase + 1),
-                BlastAt = feet + new Vector3(0.7f, 0.2f, 0.4f), BlastStrength = 11, BlastRadius = 9 }, RagdollLook.Soldier, 0, color));
-        }
-        for (var s = 0; s < 5; s++)
-            Ragdolls.StepAll(); // warm up (JIT, the gathers)
         var buf = new float[(PropDebris.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece];
-        Ragdolls.WriteInstances(buf, 0);
         var times = new List<double>(64);
         var poseTimes = new List<double>(64); // (sized up front: growing them would count as the ragdolls' allocations)
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var s = 0; s < 40; s++)
+        var medians = new List<double>(4);
+        var poseMedians = new List<double>(4);
+        var worst = 0.0;
+        long bytes = 0;
+        var awake = 0;
+        // Four identical runs: the first only warms up (JIT, first gathers); the median of the other three counts.
+        for (var run = 0; run < 4; run++)
         {
-            var t0 = Stopwatch.GetTimestamp();
-            Ragdolls.StepAll();
-            var t1 = Stopwatch.GetTimestamp();
+            Ragdolls.Clear();
+            bodies.Clear();
+            for (var i = 0; i < Ragdolls.MaxAwake; i++)
+            {
+                var feet = new Vector3(i % 4 * 3f - 4.5f, 0, i / 4 * 3f - 4.5f);
+                bodies.Add(Ragdolls.SpawnForTest(new RagdollDeath { Feet = feet, Yaw = i, Victim = (byte)i, Killer = 99, KillId = (byte)(Throwables.KillIdBase + 1),
+                    BlastAt = feet + new Vector3(0.7f, 0.2f, 0.4f), BlastStrength = 11, BlastRadius = 9 }, RagdollLook.Soldier, 0, color));
+            }
+            for (var s = 0; s < 3; s++)
+                Ragdolls.StepAll(); // the first steps gather each body's shapes
             Ragdolls.WriteInstances(buf, 0);
-            var t2 = Stopwatch.GetTimestamp();
-            times.Add((t1 - t0) * 1000.0 / Stopwatch.Frequency);
-            poseTimes.Add((t2 - t1) * 1000.0 / Stopwatch.Frequency);
+            times.Clear();
+            poseTimes.Clear();
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var s = 0; s < 40; s++)
+            {
+                var t0 = Stopwatch.GetTimestamp();
+                Ragdolls.StepAll();
+                var t1 = Stopwatch.GetTimestamp();
+                Ragdolls.WriteInstances(buf, 0);
+                var t2 = Stopwatch.GetTimestamp();
+                times.Add((t1 - t0) * 1000.0 / Stopwatch.Frequency);
+                poseTimes.Add((t2 - t1) * 1000.0 / Stopwatch.Frequency);
+            }
+            if (run == 0)
+                continue;
+            bytes += GC.GetAllocatedBytesForCurrentThread() - before;
+            awake = bodies.Count(b => !b.Sim.Asleep);
+            times.Sort();
+            poseTimes.Sort();
+            medians.Add(times[times.Count / 2]);
+            poseMedians.Add(poseTimes[poseTimes.Count / 2]);
+            worst = Math.Max(worst, times[^1]);
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        var awake = bodies.Count(b => !b.Sim.Asleep);
-        times.Sort();
-        poseTimes.Sort();
-        var median = times[times.Count / 2];
-        var poseMedian = poseTimes[poseTimes.Count / 2];
+        medians.Sort();
+        poseMedians.Sort();
+        var median = medians[1];
+        var poseMedian = poseMedians[1];
         // Then let them all settle: sleeping bodies cost nothing to step and a copy to draw.
         for (var s = 0; s < 700 && bodies.Any(b => !b.Sim.Asleep); s++)
             Ragdolls.StepAll();
@@ -391,14 +410,16 @@ public static partial class SelfTest
         var sleepMs = (Stopwatch.GetTimestamp() - t3) * 1000.0 / Stopwatch.Frequency / 20;
         var asleep = bodies.Count(b => b.Sim.Asleep);
         var settled = bodies.Average(b => b.Sim.AwakeSteps) / 60.0;
-        RLine($"cost: {awake} of {bodies.Count} bodies awake: one 60 Hz step {median:0.000} ms median ({times[^1]:0.000} worst), posing their boxes {poseMedian:0.000} ms; "
-              + $"{bytes} bytes allocated over 40 steps; all {asleep} asleep (after {settled:0.0} s on average): step + draw {sleepMs:0.0000} ms; target under 0.3 ms per step");
+        var costLine = $"cost: {awake} of {bodies.Count} bodies awake: one 60 Hz step {median:0.000} ms (median of 3 runs: {string.Join(" / ", medians.Select(m => m.ToString("0.000")))}; {worst:0.000} worst step), "
+              + $"posing their boxes {poseMedian:0.000} ms; {bytes} bytes allocated over 3 x 40 steps; all {asleep} asleep (after {settled:0.0} s on average): step + draw {sleepMs:0.0000} ms; target under 0.3 ms per step";
+        RLine(costLine);
+        Line("::error title=Ragdoll cost (TEMPORARY, not a failure)::" + costLine);
         if (awake < bodies.Count - 2)
             Fail($"ragdolls: only {awake} of {bodies.Count} bodies were awake for the cost test");
         if (median > 0.6)
-            Fail($"ragdolls: one step of {bodies.Count} awake bodies takes {median:0.000} ms (budget 0.3 ms, 0.6 ms with CI slack)");
+            Fail($"ragdolls: one step of {bodies.Count} awake bodies takes {median:0.000} ms, median of 3 runs (budget 0.3 ms, 0.6 ms with CI slack)");
         if (bytes > 0)
-            Fail($"ragdolls: stepping and posing allocate ({bytes} bytes over 40 steps)");
+            Fail($"ragdolls: stepping and posing allocate ({bytes} bytes over 3 x 40 steps)");
         if (asleep != bodies.Count || sleepMs > 0.1)
             Fail($"ragdolls: sleeping bodies aren't nearly free ({asleep} asleep, {sleepMs:0.000} ms)");
     }
