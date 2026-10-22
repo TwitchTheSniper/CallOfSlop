@@ -342,7 +342,7 @@ par.append(part((0.14, 0.12, 0.14), (0, 2.42, 0), "#2f5a3a"))
 for k in range(8):   # the valance round the rim
     a = k * 45
     x, z = math.cos(math.radians(a)) * 1.0, -math.sin(math.radians(a)) * 1.0
-    par.append(part((0.8, 0.16, 0.02), (x, 1.97, z), "#e8e2cc" if k % 2 else "#2f5a3a", None, (0, a + 90, 0)))
+    par.append(part((0.8, 0.16, 0.02), (x, 1.97, z), "#e8e2cc" if k % 2 else "#2f5a3a", None, (0, (a + 90) % 360, 0)))
 write("Beer Garden Parasol", "BeerGardenParasol.json",
       "A big green-and-cream pub garden parasol on a pole (stands through a picnic table). Looks only.",
       par, collision="cosmetic", scatter={"randomYaw": True}, fade=90)
