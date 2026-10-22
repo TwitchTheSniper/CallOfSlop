@@ -107,6 +107,8 @@ public static partial class SelfTest
             game.FrenzyBuffsEnabled = buffsOn;
             var me = game.Players[0];
             var bot = game.Players.Values.First(x => x.Id != 0);
+            game.SelfTestPerks(me, PerkSet.Empty); // no Last Stand saves, no Bloodthirst heals (bots pick random perks)
+            game.SelfTestPerks(bot, PerkSet.Empty);
             var client = new FrenzyMeter();
             var rng = new Random(seed);
             var smg = FirstOfClass(WeaponClass.SMG)!;
@@ -168,6 +170,8 @@ public static partial class SelfTest
         {
             var me = game.Players[0];
             var bot = game.Players.Values.First(x => x.Id != 0);
+            game.SelfTestPerks(me, PerkSet.Empty); // no Last Stand saves, no Bloodthirst heals (bots pick random perks)
+            game.SelfTestPerks(bot, PerkSet.Empty);
             var t = 10.0;
             void Kill(Player a, Player v, byte id, bool head = false)
             {
