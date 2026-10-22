@@ -47,7 +47,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Train Yard", 20.0f, -27.8f), ("Powder Keg", -25.3f, -14.2f), ("Alpine Pass", -19.0f, -80.3f), ("Sprawl", -16.0f, -16.3f), ("Truck Stop", -45.2f, 14.1f),
+        ("Train Yard", 20.0f, -27.8f), ("Old Town", 26.1f, 24.9f), ("Blueprint", 5.2f, -26.5f), ("Sprawl", -65.0f, -42.3f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -504,12 +504,13 @@ public static partial class SelfTest
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
             var edge = side < 0 ? f.C0 : f.C1;
-            // As near the foot as there's room (stepping on over the first tread or two; the walks tell whether the movers can).
-            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.05f)
+            // As near the foot as there's room (stepping on over the first tread or two; the walks tell whether the movers
+            // can), with a clear way across the treads to the lane.
+            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.02f)
             {
                 var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
                 var floor = SupportAt(m, phys, p.X, p.Z, top - StepMinRise + 0.01f, lowest, 0.15f); // firm footing under the middle
-                if (float.IsFinite(floor) && StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f))
+                if (float.IsFinite(floor) && StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f) && StairAcrossClear(m, phys, f, u, edge, c))
                     return (p with { Y = floor + 0.002f }, true);
             }
         }
@@ -557,10 +558,11 @@ public static partial class SelfTest
         Span<float> lanes = stackalloc float[3];
         var laneCount = 0;
         lanes[laneCount++] = centre;
-        if (width >= 2 * World.PlayerRadius + 0.1f)
+        if (width >= 2 * World.PlayerRadius + 0.2f)
         {
-            lanes[laneCount++] = lo + World.PlayerRadius + 0.02f;
-            lanes[laneCount++] = hi - World.PlayerRadius - 0.02f;
+            // Near each side (5 cm off it: walking by a wall or a railing, not grinding along it).
+            lanes[laneCount++] = lo + World.PlayerRadius + 0.05f;
+            lanes[laneCount++] = hi - World.PlayerRadius - 0.05f;
         }
 
         // Headroom: a standing body along each lane, from just before the foot to just past the top, feet on the highest
@@ -681,6 +683,25 @@ public static partial class SelfTest
             if (!float.IsFinite(floor) || phys.Blocked(p with { Y = floor + 0.002f }, World.PlayerHeight))
                 return false;
         }
+        return true;
+    }
+
+    /// <summary>Can a body standing on the treads under it at along <paramref name="u"/> move across from the flight's edge to the lane?</summary>
+    private static bool StairAcrossClear(Map m, PhysicsWorld phys, StairFlight f, float u, float edge, float c)
+    {
+        var y = float.NegativeInfinity;
+        foreach (var k in f.Treads)
+        {
+            var b = m.Solid[k];
+            if (AlongLo(b, f.Axis, f.Dir) < u + World.PlayerRadius && AlongHi(b, f.Axis, f.Dir) > u - World.PlayerRadius)
+                y = MathF.Max(y, b.Max.Y);
+        }
+        if (!float.IsFinite(y))
+            return false;
+        var n = Math.Max(1, (int)MathF.Ceiling(MathF.Abs(c - edge) / 0.2f));
+        for (var i = 0; i <= n; i++)
+            if (phys.Blocked(StairPoint(f, u, edge + (c - edge) * i / n, y + 0.002f), World.PlayerHeight))
+                return false;
         return true;
     }
 
