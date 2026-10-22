@@ -195,7 +195,7 @@ The hands follow the model (grip, handguard or pump, magazine). `tools/gunviz/vi
 
 ### Sound
 
-The gunshot is synthesised from these when the game starts.
+The gunshot is synthesised from these when the game starts. Real firearms (`Gun`, `Boom`, `Suppressed`) also get recorded gunshot layers: the weapon's `class`, `sound`, `caliber` and `rpm` pick a sample set by the rules in `Audio/Samples/Guns/manifest.json`, `caliber` and `bright` set its pitch and `tail` its length (see `Audio/Samples/Guns/README.md`).
 
 | Field | Meaning | Default | Allowed |
 | --- | --- | --- | --- |
