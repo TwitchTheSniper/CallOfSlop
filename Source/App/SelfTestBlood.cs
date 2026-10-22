@@ -194,6 +194,7 @@ public static partial class SelfTest
         finally
         {
             File.Delete(path);
+            File.Delete(path + ".bak");
         }
     }
 
