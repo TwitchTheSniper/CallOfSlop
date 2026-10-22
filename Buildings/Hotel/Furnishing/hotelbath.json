@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotelbath",
+  "description": "A Majestic en-suite: toilet, basin, towels.",
+  "items": [
+    {"props": ["Toilet"], "place": "wall", "prefer": "far"},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Laundry Basket"], "place": "corner", "chance": 0.6}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laundromat Change Machine",
+  "description": "A wall-standing change and soap machine: note slot, coin cup, little boxes of powder behind glass.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 1.7, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 300, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.7, 1.7, 0.42], "offset": [0, 0.85, 0], "color": "#d8762a", "material": "metal"},
+    {"size": [0.6, 0.6, 0.02], "offset": [0, 1.25, 0.215], "color": "#d8e4e8"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.2, 1.08, 0.205], "color": "#2a6ac8"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.07, 1.08, 0.205], "color": "#e8c830"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.06, 1.08, 0.205], "color": "#c83030"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.19, 1.08, 0.205], "color": "#2a6ac8"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.2, 1.26, 0.205], "color": "#e8c830"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.07, 1.26, 0.205], "color": "#c83030"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.06, 1.26, 0.205], "color": "#2a6ac8"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.19, 1.26, 0.205], "color": "#e8c830"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.2, 1.44, 0.205], "color": "#c83030"},
+    {"size": [0.1, 0.14, 0.02], "offset": [-0.07, 1.44, 0.205], "color": "#2a6ac8"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.06, 1.44, 0.205], "color": "#e8c830"},
+    {"size": [0.1, 0.14, 0.02], "offset": [0.19, 1.44, 0.205], "color": "#c83030"},
+    {"size": [0.2, 0.06, 0.02], "offset": [0, 0.82, 0.215], "color": "#202020"},
+    {"size": [0.18, 0.1, 0.1], "offset": [0, 0.4, 0.25], "color": "chrome"},
+    {
+      "size": [0.16, 0.06, 0.02],
+      "offset": [0, 1.62, 0.215],
+      "color": "#ffe080",
+      "anim": {"type": "pulse", "period": 3, "glow": 0.8}
+    }
+  ]
+}

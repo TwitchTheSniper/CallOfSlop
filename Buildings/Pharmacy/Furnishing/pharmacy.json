@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pharmacy",
+  "description": "The Pharmacy's shop floor round its aisles and counter: wall shelves, a drinks fridge, the blood pressure kiosk, chairs to wait on.",
+  "items": [
+    {"props": ["Pharmacy Wall Shelf"], "place": "wall", "count": [3, 5]},
+    {"props": ["Fridge"], "place": "wall"},
+    {"props": ["Pharmacy BP Kiosk"], "place": "wall", "chance": 0.85},
+    {"props": ["Plastic Chair"], "place": "wall", "count": [2, 3], "gap": 0.1},
+    {"props": ["Office Plant", "Pedal Bin"], "place": "corner", "count": [1, 2]},
+    {"props": ["Cardboard Box Small", "Shopping Cart"], "place": "floor", "count": [0, 1]}
+  ]
+}

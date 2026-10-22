@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "electronicsstock",
+  "description": "ZapMart's stock room: pallets of boxed TVs, shelving, cartons.",
+  "items": [
+    {"props": ["Electronics Boxed TVs"], "place": "wall", "count": [2, 4]},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 3]},
+    {"props": ["Cardboard Stack", "Pallet Stack", "Cardboard Box Large"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Cardboard Box Large", "Shopping Cart"], "place": "floor", "count": [1, 3]}
+  ]
+}

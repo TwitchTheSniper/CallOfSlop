@@ -1,0 +1,233 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cinema Marquee",
+  "description": "The ROXY marquee: a deep canopy over the doors with rows of chasing bulbs and letter boards.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [7.0, 1.2, 1.6], "offset": [0, 0.6, 0.8], "color": "#8a1a1e"},
+    {"size": [7.1, 0.1, 1.7], "offset": [0, 1.25, 0.8], "color": "#c9a24a"},
+    {"size": [7.1, 0.1, 1.7], "offset": [0, -0.05, 0.8], "color": "#c9a24a"},
+    {"size": [6.4, 0.7, 0.02], "offset": [0, 0.6, 1.61], "color": "#f4ecd8"},
+    {"size": [0.5, 0.3, 0.01], "offset": [-2.0, 0.65, 1.625], "color": "#1a1a1a"},
+    {"size": [0.5, 0.3, 0.01], "offset": [-1.2, 0.65, 1.625], "color": "#1a1a1a"},
+    {"size": [0.5, 0.3, 0.01], "offset": [0.6, 0.65, 1.625], "color": "#1a1a1a"},
+    {"size": [0.5, 0.3, 0.01], "offset": [1.4, 0.65, 1.625], "color": "#1a1a1a"},
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-3.4, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-3.4, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-3.0, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-3.0, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-2.6, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-2.6, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-2.2, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-2.2, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.8, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.8, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.4, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.4, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.0, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-1.0, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-0.6, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-0.6, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-0.2, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [-0.2, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [0.2, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [0.2, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [0.6, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [0.6, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.0, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.0, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.4, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.4, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.8, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [1.8, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [2.2, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [2.2, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [2.6, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [2.6, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [3.0, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [1], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [3.0, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [3.4, 0.08, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [2], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    },
+    {
+      "size": [0.08, 0.08, 0.04],
+      "offset": [3.4, 1.12, 1.63],
+      "color": "#fff0c0",
+      "anim": {"type": "cycle", "period": 0.9, "steps": 3, "on": [0], "color": "#fff4c0", "off": "#806a40", "glow": 1.5}
+    }
+  ]
+}

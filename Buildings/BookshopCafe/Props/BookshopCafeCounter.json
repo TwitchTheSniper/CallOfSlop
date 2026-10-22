@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bookshop Cafe Counter",
+  "description": "The cafe counter: dark green tiles, a marble top, a red espresso machine, a glass dome of cakes and stacked cups.",
+  "collision": "solid",
+  "collider": [{"size": [2.44, 1.05, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 140,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#24402e", "#b8202a"]}
+  },
+  "parts": [
+    {"size": [2.4, 1.0, 0.66], "offset": [0, 0.5, 0], "color": "#24402e", "material": "tiles"},
+    {"size": [2.44, 0.05, 0.7], "offset": [0, 1.025, 0], "color": "#e6e0d2"},
+    {"size": [0.6, 0.42, 0.44], "offset": [-0.75, 1.26, -0.08], "color": "#b8202a"},
+    {"size": [0.5, 0.06, 0.4], "offset": [-0.75, 1.5, -0.08], "color": "chrome"},
+    {"size": [0.08, 0.1, 0.08], "offset": [-0.9, 1.1, 0.18], "color": "chrome"},
+    {"size": [0.5, 0.3, 0.4], "offset": [0.3, 1.2, 0.05], "color": "glass"},
+    {"size": [0.36, 0.12, 0.3], "offset": [0.3, 1.11, 0.05], "color": "#c8885a"},
+    {"size": [0.08, 0.2, 0.08], "offset": [0.85, 1.15, -0.1], "color": "white"},
+    {"size": [0.08, 0.15, 0.08], "offset": [0.98, 1.12, -0.1], "color": "white"}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pizzeria",
+  "description": "The Pizzeria's dining room: checked-cloth tables with chairs, a wine rack, plants, a coat stand.",
+  "items": [
+    {"id": "table", "props": ["Pizzeria Table"], "place": "floor", "count": [4, 6], "gap": 0.9},
+    {"props": ["Wooden Chair"], "place": "around", "of": "table", "count": [2, 4], "distance": 0.12},
+    {"props": ["Pizzeria Wine Rack"], "place": "wall", "count": [1, 2], "prefer": "far"},
+    {"props": ["Large Flower Pot", "Large Flower Pot", "Office Plant"], "place": "corner", "count": [2, 3]},
+    {"props": ["Coat Stand"], "place": "corner", "prefer": "near"},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.5}
+  ]
+}

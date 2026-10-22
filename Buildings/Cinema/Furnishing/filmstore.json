@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "filmstore",
+  "description": "The Roxy's film store: shelves and stacks of film cans, a rewind bench, posters rolled in boxes.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cinema Film Reels"], "place": "wall", "count": [2, 3]},
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Cinema Film Reels"], "place": "floor", "count": [1, 2]},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [1, 2]},
+    {"props": ["Cinema Poster Stand"], "place": "wall", "chance": 0.6}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pubbar",
+  "description": "The Pub's saloon round its bar: tables with chairs and stools, a settle, a fruit machine, a dartboard, a piano.",
+  "items": [
+    {"id": "table", "props": ["Pub Table"], "place": "floor", "count": [3, 4], "gap": 0.7},
+    {"props": ["Wooden Chair", "Bar Stool", "Wooden Chair"], "place": "around", "of": "table", "count": [2, 3], "distance": 0.12},
+    {"props": ["Pub Settle"], "place": "wall", "count": [1, 2]},
+    {"props": ["Slot Machine"], "place": "wall"},
+    {"props": ["Pub Dartboard"], "place": "wall"},
+    {"props": ["Upright Piano"], "place": "wall", "chance": 0.6},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.6},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bookcafe",
+  "description": "The Bookshop Cafe: little marble tables with chairs, a sofa, a bookcase of loan copies, the chalkboard.",
+  "items": [
+    {"id": "t", "props": ["Bookshop Cafe Table"], "place": "floor", "count": [3, 4], "gap": 0.7},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [1, 2], "distance": 0.12},
+    {"props": ["Fabric Sofa"], "place": "wall", "chance": 0.7},
+    {"props": ["Bookshop Tall Bookcase"], "place": "wall"},
+    {"props": ["Bookshop Chalkboard"], "place": "corner"},
+    {"props": ["Large Flower Pot", "Pedal Bin"], "place": "corner"}
+  ]
+}
