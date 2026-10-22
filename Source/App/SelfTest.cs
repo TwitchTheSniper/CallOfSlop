@@ -26,6 +26,7 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     private static StreamWriter _log = null!;
+    private static readonly bool DevStairsOnly = true; // TEMP
     private static int _failures;
 
     private static void Line(string s)
@@ -48,6 +49,15 @@ public static partial class SelfTest
         {
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
+            if (DevStairsOnly) // TEMP (stair-headroom dev runs): only the stairs and buildings sections
+            {
+                Section("Stairs", CheckStairs);
+                Section("Buildings", CheckBuildings);
+                Line("");
+                Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
+                Brutal.GlfwApi.Glfw.Terminate();
+                return _failures;
+            }
             Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
@@ -64,6 +74,7 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
+            Section("Stairs", CheckStairs); // SelfTestStairs.cs: every flight on every map and building walkable standing (2.1 m headroom, risers, width, landings)
             Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map

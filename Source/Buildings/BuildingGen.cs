@@ -26,6 +26,13 @@ public static class BuildingGen
 
     /// <summary>The least room at the foot and the top of a flight of stairs, step to wall.</summary>
     public const float StairEndClear = 0.9f;
+
+    /// <summary>
+    /// The least clear height over every step a standing body (1.8 m tall, 0.8 m wide) can be on, ceiling and floor
+    /// slab above included: the generator lengthens each stairwell in the slab above until a flight gives it (the
+    /// "Stairs" self-test walks every flight standing and enforces it for map stairs too).
+    /// </summary>
+    public const float StairHeadroom = 2.1f;
     public const float DoorClearDepth = 1.25f;
 
     /// <summary>Default door health by material: about 5 rifle hits for wood, a magazine for metal, two for glass.</summary>
@@ -647,6 +654,28 @@ internal sealed partial class BuildingGenerator
 
     private readonly List<(BStair S, int F, BRect R, Vector2 Bottom, Vector2 Top)> _stairPlans = new();
 
+    /// <summary>Each planned flight's stairwell in the slab above (same order as <see cref="_stairPlans"/>).</summary>
+    private readonly List<BRect> _stairHoles = new();
+
+    /// <summary>
+    /// The stairwell over a flight of <paramref name="steps"/> climbing <paramref name="rise"/> along (dx, dz): its rect,
+    /// lengthened at the foot until a standing body on any step still under the slab's edge keeps
+    /// <see cref="BuildingGen.StairHeadroom"/> below the ceiling. A body's 0.8 m footprint reaches 0.8 m further up the
+    /// flight than its back, so a hole that starts right at the first step would leave the head 1.8 m under the slab
+    /// edge on the third step of a 3 m storey (stuck, or a forced crouch).
+    /// </summary>
+    private static BRect StairHole(BRect r, int dx, int dz, float rise, int steps, float len)
+    {
+        var run = len / steps;
+        var step = rise / steps;
+        var ceiling = rise - Slab - BuildingGen.LiningT; // the ceiling's underside, above the flight's foot
+        var under = Math.Max(0, (int)MathF.Floor((ceiling - BuildingGen.StairHeadroom) / step + 1e-4f)); // steps a body may stand on under the edge
+        var extra = 2 * World.PlayerRadius + 0.05f - under * run;
+        if (extra <= 0)
+            return r;
+        return dx > 0 ? r with { X0 = r.X0 - extra } : dx < 0 ? r with { X1 = r.X1 + extra } : dz > 0 ? r with { Z0 = r.Z0 - extra } : r with { Z1 = r.Z1 + extra };
+    }
+
     /// <summary>Waypoints 0.55 m out from each corner of <paramref name="r"/> on floor <paramref name="f"/>, where a body fits (in a room, clear of its walls, stairs and holes).</summary>
     private void CornerWaypoints(int f, BRect r)
     {
@@ -730,12 +759,14 @@ internal sealed partial class BuildingGenerator
                 throw new BuildingFileException($"{w}: only {footRoom:0.##} m between the first step and the wall; leave at least {BuildingGen.StairEndClear} m");
             if (f + 1 < n && ClearAhead(f + 1, highEdge, d) is var topRoom && topRoom < BuildingGen.StairEndClear)
                 throw new BuildingFileException($"{w}: only {topRoom:0.##} m between the last step and the wall on the floor above; leave at least {BuildingGen.StairEndClear} m");
-            _holesIn[f + 1].Add(r);
+            var hole = StairHole(r, s.Dx, s.Dz, rise, steps, len);
+            _holesIn[f + 1].Add(hole);
             var width = s.Dx != 0 ? r.D : r.W;
             // Furniture keeps off the stairs and the spaces at both ends.
             _reserved[f].Add(Grow(r, bottom, width));
-            _reserved[f + 1].Add(Grow(r.Inset(-0.1f), top, width));
+            _reserved[f + 1].Add(Grow(hole.Inset(-0.1f), top, width));
             _stairPlans.Add((s, f, r, bottom, top));
+            _stairHoles.Add(hole);
         }
     }
 
@@ -749,8 +780,10 @@ internal sealed partial class BuildingGenerator
     private void EmitStairs()
     {
         var n = _floors.Count;
-        foreach (var (s, f, r, bottom, top) in _stairPlans)
+        for (var si = 0; si < _stairPlans.Count; si++)
         {
+            var (s, f, r, bottom, top) = _stairPlans[si];
+            var hole = _stairHoles[si];
             var lf = _level[f];
             var rise = _level[f + 1] - lf;
             var steps = (int)MathF.Ceiling(rise / BuildingGen.StepRiseMax);
@@ -787,7 +820,7 @@ internal sealed partial class BuildingGenerator
             // Round the flight (below) and its hole's railing (above): a waypoint off each corner, so the nav can get past.
             CornerWaypoints(f, r);
             if (f + 1 < _floors.Count)
-                CornerWaypoints(f + 1, r);
+                CornerWaypoints(f + 1, hole);
             _plan.Stairs.Add((pb, pt));
             var upperRoom = f + 1 < n ? RoomAt(f + 1, top.X, top.Y) : -1;
             _plan.Links.Add(($"{f}:{_floors[f].Rooms[RoomAt(f, bottom.X, bottom.Y)].Id}", f + 1 < n ? $"{f + 1}:{_floors[f + 1].Rooms[upperRoom].Id}" : "roof"));
@@ -796,18 +829,20 @@ internal sealed partial class BuildingGenerator
             // Railings round the hole on the floor above: the two long sides and the low end, unless a wall is already there.
             var upper = f + 1 < n ? f + 1 : f;
             var yr = _level[f + 1];
+            // (round the hole, which may start further back than the flight's first step)
             var sides = new List<(bool AlongX, float C, float A, float B, float Out)>();
+            var h = hole;
             if (s.Dx != 0)
             {
-                sides.Add((true, r.Z0, r.X0, r.X1, -1));
-                sides.Add((true, r.Z1, r.X0, r.X1, 1));
-                sides.Add((false, s.Dx > 0 ? r.X0 : r.X1, r.Z0, r.Z1, s.Dx > 0 ? -1 : 1));
+                sides.Add((true, h.Z0, h.X0, h.X1, -1));
+                sides.Add((true, h.Z1, h.X0, h.X1, 1));
+                sides.Add((false, s.Dx > 0 ? h.X0 : h.X1, h.Z0, h.Z1, s.Dx > 0 ? -1 : 1));
             }
             else
             {
-                sides.Add((false, r.X0, r.Z0, r.Z1, -1));
-                sides.Add((false, r.X1, r.Z0, r.Z1, 1));
-                sides.Add((true, s.Dz > 0 ? r.Z0 : r.Z1, r.X0, r.X1, s.Dz > 0 ? -1 : 1));
+                sides.Add((false, h.X0, h.Z0, h.Z1, -1));
+                sides.Add((false, h.X1, h.Z0, h.Z1, 1));
+                sides.Add((true, s.Dz > 0 ? h.Z0 : h.Z1, h.X0, h.X1, s.Dz > 0 ? -1 : 1));
             }
             foreach (var (ax, c, a0, b0, o) in sides)
             {

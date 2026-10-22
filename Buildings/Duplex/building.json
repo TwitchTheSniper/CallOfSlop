@@ -85,7 +85,7 @@
       ]
     }
   ],
-  "stairs": [{"floor": 0, "rect": [-2.625, -3.15, -1.625, -1.05], "dir": "-z"}, {"floor": 0, "rect": [1.625, -3.15, 2.625, -1.05], "dir": "-z"}],
+  "stairs": [{"floor": 0, "rect": [-2.7, -3.15, -1.65, -1.05], "dir": "-z"}, {"floor": 0, "rect": [1.65, -3.15, 2.7, -1.05], "dir": "-z"}],
   "roof": {"type": "gable", "ridge": "x", "pitch": 26, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
     {"type": "porch", "rect": [-1.4, 4.63, 1.4, 5.9], "height": 2.5, "color": "$trim"},

@@ -160,9 +160,9 @@
     }
   ],
   "stairs": [
-    {"floor": 0, "rect": [-6.05, -0.05, -3.65, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
-    {"floor": 0, "rect": [-1.05, -0.05, 1.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
-    {"floor": 0, "rect": [3.95, -0.05, 6.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}}
+    {"floor": 0, "rect": [-6.05, -0.2, -3.65, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [-1.05, -0.2, 1.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [3.95, -0.2, 6.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}}
   ],
   "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.3, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
