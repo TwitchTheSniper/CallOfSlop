@@ -57,18 +57,26 @@ public static partial class SelfTest
             Fail($"Dev pack: the Dev Pack Badge (with its PNG) didn't load: {badge?.SourceFile ?? "missing"}");
         if (Decals.Find("Exit Sign") is not { Pack: null } || Decals.Find("Dev Pack Badge") != null || Decals.All.Any(d => d.Pack != null))
             Fail("the global decal library holds a pack decal (or lost its own Exit Sign)");
-        var atlas = Decals.AtlasDefs;
-        foreach (var d in new[] { packSign, badge })
-            if (d != null && (d.Index < Decals.All.Length || d.Index >= atlas.Length || !ReferenceEquals(atlas[d.Index], d)))
-                Fail($"pack decal {d.Name}: atlas layer {d.Index} isn't its own (global layers 0..{Decals.All.Length - 1}, atlas {atlas.Length})");
-        // Bake: the pack signs use the pack layer, global: the global one, the badge its pack layer.
+        // Bake: the map's atlas is the global library then just the pack decals it places (map-scoped layers).
         var mesh = DecalBaker.Bake(map);
         var layers = new HashSet<int>();
         for (var v = 0; v < mesh.VertexCount; v++)
             layers.Add((int)mesh.Vertices[v * DecalMesh.FloatsPerVertex + 8]);
-        if (packSign != null && globalSign != null && badge != null
-            && (!layers.Contains(packSign.Index) || !layers.Contains(globalSign.Index) || !layers.Contains(badge.Index)))
-            Fail($"Pack Decals bake: layers [{string.Join(", ", layers.Order())}] miss the pack sign {packSign.Index}, global sign {globalSign.Index} or badge {badge.Index}");
+        int LayerOf(DecalDef d)
+        {
+            if (d.Pack == null)
+                return d.Index;
+            var k = Array.IndexOf(mesh.PackDefs, d);
+            return k < 0 ? -1 : mesh.GlobalLayers + k;
+        }
+        if (mesh.GlobalLayers != Decals.All.Length || mesh.PackDefs.Length != 2 || packSign == null || badge == null
+            || !mesh.PackDefs.Contains(packSign) || !mesh.PackDefs.Contains(badge))
+            Fail($"Pack Decals bake: pack layers [{string.Join(", ", mesh.PackDefs.Select(d => d.Name))}] after {mesh.GlobalLayers} global (expected the pack Exit Sign and the badge after {Decals.All.Length})");
+        else if (globalSign != null && (!layers.Contains(LayerOf(packSign)) || !layers.Contains(LayerOf(globalSign)) || !layers.Contains(LayerOf(badge))
+                 || layers.Any(l => l < 0 || l >= mesh.GlobalLayers + mesh.PackDefs.Length)))
+            Fail($"Pack Decals bake: layers [{string.Join(", ", layers.Order())}] miss the pack sign {LayerOf(packSign)}, global sign {LayerOf(globalSign)} or badge {LayerOf(badge)}, or run past the map's atlas");
+        if (map.PackDecalsNamed != 2)
+            Fail($"Pack Decals names {map.PackDecalsNamed} different pack decals (expected 2)");
         if (mesh.Placed < mesh.Requested - 1)
             Fail($"Pack Decals: only {mesh.Placed}/{mesh.Requested} decals placed");
         // Cosmetic: no pack-asset fingerprint from decals.
@@ -126,8 +134,8 @@ public static partial class SelfTest
         var sb = b.DecalScope;
         var da = sa.Find("Test Sign");
         var db = sb.Find("Test Sign");
-        if (da is not { Pack: "DecalPackA" } || db is not { Pack: "DecalPackB" } || da.Index == db.Index || da.Layers[0].Color == db.Layers[0].Color)
-            Fail($"two packs with a \"Test Sign\" clash: {da?.SourceFile} layer {da?.Index} vs {db?.SourceFile} layer {db?.Index}");
+        if (da is not { Pack: "DecalPackA" } || db is not { Pack: "DecalPackB" } || ReferenceEquals(da, db) || da.Layers[0].Color == db.Layers[0].Color)
+            Fail($"two packs with a \"Test Sign\" clash: {da?.SourceFile} vs {db?.SourceFile}");
         if (sa.Local.Length != 1)
             Fail($"DecalPackA: {sa.Local.Length} decals loaded (expected 1: the duplicate name and the impact decal are skipped)");
         var newErrors = Decals.LoadErrors.Skip(errorsBefore).ToList();
@@ -152,38 +160,111 @@ public static partial class SelfTest
             if (!ex.Message.Contains("Test Sign", StringComparison.Ordinal))
                 Fail($"misspelt pack decal: the message doesn't suggest \"Test Sign\": {ex.Message}");
         }
-        Line($"made-up decal packs: each \"Test Sign\" its own (layers {da?.Index} and {db?.Index}), duplicate and impact decals skipped and reported, same fingerprint either way");
+        Line("made-up decal packs: each \"Test Sign\" its own, duplicate and impact decals skipped and reported, same fingerprint either way");
     }
 
     private static void CheckPackDecalAtlas()
     {
         var global = Decals.All;
-        var atlasDefs = Decals.AtlasDefs;
         if (global.Length > Decals.MaxGlobal * 3 / 4)
             Fail($"{global.Length} global decals: the library holds {Decals.MaxGlobal}; leave a quarter free or raise MaxGlobal");
-        if (atlasDefs.Length > DecalAtlas.MaxLayers)
-            Fail($"the atlas has {atlasDefs.Length} layers, more than {DecalAtlas.MaxLayers}");
+        if (Decals.MaxGlobal + Decals.MaxPackDecalsPerMap > DecalAtlas.MaxLayers || DecalAtlas.MaxLayers > 2048)
+            Fail($"a map's atlas could need {Decals.MaxGlobal + Decals.MaxPackDecalsPerMap} layers; OpenGL 4.1 guarantees 2048 ({DecalAtlas.MaxLayers} allowed)");
         foreach (var p in Decals.LoadedPacks)
             if (p.Local.Length > Decals.MaxPerPack)
                 Fail($"pack {p.Pack}: {p.Local.Length} decals, more than {Decals.MaxPerPack}");
-        for (var i = 0; i < atlasDefs.Length; i++)
-            if (atlasDefs[i].Index != i)
-            {
-                Fail($"atlas layer {i} is {atlasDefs[i].Name}, whose Index is {atlasDefs[i].Index}");
-                break;
-            }
-        // The renderer's path: the global layers painted first, then the pack layers alone.
+        // Every shipped map's atlas: global layers plus the pack decals it places.
+        var worst = (Name: "", Layers: 0);
+        foreach (var m in Maps.All)
+            if (m.PackDecalsNamed > Decals.MaxPackDecalsPerMap)
+                Fail($"{m.Name}: {m.PackDecalsNamed} different pack decals (at most {Decals.MaxPackDecalsPerMap})");
+            else if (global.Length + m.PackDecalsNamed > worst.Layers)
+                worst = (m.Name, global.Length + m.PackDecalsNamed);
+        // The renderer's path: global layers copied from the last build, only the map's pack decals painted.
+        var dev = Maps.Find("Pack Decals");
+        var pack = dev != null ? DecalBaker.Bake(dev).PackDefs : Array.Empty<DecalDef>();
         var sw = Stopwatch.StartNew();
         var first = DecalAtlas.Build(global);
         var globalMs = sw.Elapsed.TotalMilliseconds;
+        var defs = global.Concat(pack).ToArray();
         sw.Restart();
-        var grown = DecalAtlas.Build(atlasDefs, null, global, first, out var painted);
+        var grown = DecalAtlas.Build(defs, null, global, first, out var painted);
         var packMs = sw.Elapsed.TotalMilliseconds;
-        var full = DecalAtlas.Build(atlasDefs);
-        if (painted != atlasDefs.Length - global.Length || !grown.AsSpan().SequenceEqual(full))
-            Fail($"growing the atlas painted {painted} layers (expected {atlasDefs.Length - global.Length}) or differs from a full repaint");
-        var mb = atlasDefs.Length * DecalAtlas.BytesPerLayer * 4 / 3 / (1024.0 * 1024.0);
-        Line($"decal atlas budget: {global.Length}/{Decals.MaxGlobal} global, {atlasDefs.Length - global.Length} pack layer(s) from {Decals.LoadedPacks.Length} pack(s), "
-             + $"{atlasDefs.Length}/{DecalAtlas.MaxLayers} layers ({mb:0.0} MB with mipmaps); global painted in {globalMs:0.0} ms, pack layers added in {packMs:0.0} ms");
+        if (painted != pack.Length || !grown.AsSpan().SequenceEqual(DecalAtlas.Build(defs)))
+            Fail($"the map atlas painted {painted} layers (expected {pack.Length}) or differs from a full repaint");
+        var mb = worst.Layers * DecalAtlas.BytesPerLayer * 4 / 3 / (1024.0 * 1024.0);
+        Line($"decal atlas: {global.Length}/{Decals.MaxGlobal} global layers ({global.Length * DecalAtlas.BytesPerLayer / 1024} KB CPU copy) painted in {globalMs:0.0} ms; "
+             + $"Pack Decals adds {pack.Length} pack layer(s) in {packMs:0.0} ms; biggest map atlas {worst.Layers} layers ({worst.Name}, {mb:0.0} MB with mipmaps); "
+             + $"limits {Decals.MaxPerPack} per pack, {Decals.MaxPackDecalsPerMap} per map, {DecalAtlas.MaxLayers} layers");
+
+        // Parse speed: a synthetic pack of 2000 decal files (temp dir) must load fast; only placed ones are painted.
+        var dir = Path.Combine(Path.GetTempPath(), "callofslop-bigdecalpack-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            CheckBigDecalPack(dir, 2000);
+        }
+        finally
+        {
+            Decals.ForgetPack(Path.Combine(dir, "BigPack"));
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+    }
+
+    private static void CheckBigDecalPack(string dir, int count)
+    {
+        var folder = Path.Combine(dir, "BigPack", Decals.PackFolderName);
+        for (var i = 0; i < count; i++)
+        {
+            var sub = Path.Combine(folder, $"Brand{i / 100:00}");
+            Directory.CreateDirectory(sub);
+            var r = (i * 37 % 255) / 255f;
+            File.WriteAllText(Path.Combine(sub, $"Sign{i:0000}.json"), $$"""
+                { "format": "call-of-slop-decal/1", "name": "Big Sign {{i}}", "size": [1.6, 0.6], "rotation": 0, "surfaces": "all",
+                  "layers": [ { "shape": "rect", "size": [0.94, 0.8], "color": [{{r.ToString(System.Globalization.CultureInfo.InvariantCulture)}}, 0.3, 0.5] },
+                              { "shape": "circle", "at": [0.25, 0.5], "radius": 0.18, "color": "white" },
+                              { "shape": "line", "at": [0.5, 0.5], "to": [0.9, 0.5], "width": 0.08, "color": "white" } ] }
+                """);
+        }
+        var sw = Stopwatch.StartNew();
+        var scope = Decals.ForPack(Path.Combine(dir, "BigPack"));
+        var parseMs = sw.Elapsed.TotalMilliseconds;
+        if (scope.Local.Length != count || scope.Find("Big Sign 1999") is not { Pack: "BigPack" })
+            Fail($"big decal pack: {scope.Local.Length}/{count} decals loaded");
+        // Lookups by name are a dictionary (a map with many ops names decals often).
+        sw.Restart();
+        var found = 0;
+        for (var i = 0; i < 20000; i++)
+            if (scope.Find($"Big Sign {i % count}") != null)
+                found++;
+        var findMs = sw.Elapsed.TotalMilliseconds;
+        // A map placing 40 of them gets 40 pack layers, not 2000.
+        var ops = Enumerable.Range(0, 40).Select(i => $"{{ \"op\": \"Decal\", \"decal\": \"Big Sign {i * 50}\", \"x\": {-14 + i % 8 * 4}, \"z\": {-14 + i / 8 * 6} }}");
+        var map = Validated(MapFile.Load(PackTestMap("Big Pack Map", ops.ToArray()), "BigPack/big.json", Path.Combine(dir, "BigPack")));
+        var mesh = DecalBaker.Bake(map);
+        if (map.PackDecalsNamed != 40 || mesh.PackDefs.Length > 40 || mesh.PackDefs.Length < 30)
+            Fail($"big decal pack map: names {map.PackDecalsNamed} pack decals, atlas gets {mesh.PackDefs.Length} pack layers (expected 40 and 30-40)");
+        // Too many different pack decals on one map is refused at load.
+        try
+        {
+            var names = string.Join(", ", Enumerable.Range(0, Decals.MaxPackDecalsPerMap + 1).Select(i => $"\"Big Sign {i}\""));
+            MapFile.Load(PackTestMap("Too Many", $"{{ \"op\": \"DecalScatter\", \"decals\": [{names}], \"x0\": -5, \"z0\": -5, \"x1\": 5, \"z1\": 5, \"count\": 10 }}"),
+                "BigPack/many.json", Path.Combine(dir, "BigPack"));
+            Fail($"a map naming {Decals.MaxPackDecalsPerMap + 1} different pack decals loaded");
+        }
+        catch (MapFileException)
+        {
+        }
+        Line($"big decal pack: {count} decal files parsed in {parseMs:0} ms ({parseMs * 1000 / count:0} us each), 20000 lookups in {findMs:0.0} ms; "
+             + $"a map placing {map.PackDecalsNamed} of them gets {mesh.PackDefs.Length} pack atlas layers ({mesh.Placed}/{mesh.Requested} placed)");
+        if (parseMs > 3000)
+            Fail($"parsing {count} decal files took {parseMs:0} ms (budget 3000 ms)");
+        if (found != 20000 || findMs > 200)
+            Fail($"pack decal lookups: {found}/20000 found in {findMs:0} ms");
     }
 }
