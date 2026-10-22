@@ -24,6 +24,7 @@ public static partial class SelfTest
             Fail($"{ClutteredPack}: no map \"{ClutteredTruckStopMap}\" (08-TruckStop.json)");
             return;
         }
+        var notesFrom = ClutteredNotes.Count; // this map's lines also go in a notice of their own (the pack's notice gets long)
         if (m.SourceFile == null || !Path.GetFileName(m.SourceFile).StartsWith("08-", StringComparison.Ordinal))
             Fail($"{m.Name}: file should be Maps/Cluttered/08-TruckStop.json (is {m.SourceFile})");
         if (m.Boundary is not { } bd || bd.Spec.Shape != BoundaryShape.Smooth || bd.Spec.Noise is not { Amplitude: > 0 })
@@ -142,5 +143,6 @@ public static partial class SelfTest
         ClutteredLine($"{m.Name} levels (nav nodes in the main area): balconies {balcony}, motel upstairs in all {upstairs}, pool floor {pool}, tire shop roof {roof}, trailer roofs {trailerTops}");
         if (balcony < 6 || pool < 3)
             Fail($"{m.Name}: bots can't get round the levels (balcony nodes {balcony}, pool floor nodes {pool} in the main nav area)");
+        Line("::notice title=Truck Stop::" + string.Join("%0A", ClutteredNotes.Skip(notesFrom).Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 }

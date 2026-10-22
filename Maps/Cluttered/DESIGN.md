@@ -318,6 +318,80 @@ park, ivy (cosmetic leafy slabs) up the walls.
 paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
 frustum-culled, litter fades out with distance and animated props hold still past 80 m.
 `tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).
+## 08 Truck Stop (medium, noisy smooth outline, about 121 x 81 m, 8,750 m2, 12 players): desert highway truck stop at dusk
+
+**Theme.** A truck stop on a desert highway at dusk (`dusk` preset with an orange desert haze and the first stars; the
+sun sits low in the north-west, so neither team looks straight into it along the east-west fights). A two-storey
+L-shaped motel round a courtyard with a drained pool, a diner, a gas station with its convenience store, a water tower,
+a tire shop and a big lot full of semis and trailers, with the highway along the south edge. The neon MOTEL sign lights
+letter by letter with a chasing arrow and a flickering NO in VACANCY, the billboards' lamps flicker, the pumps' price
+panels and the ice machines glow. Terrain is flat desert (sand) inside a ranch fence, with red mesas, low hills and buttes
+beyond it.
+
+**Shape.** A `smooth` outline through 22 control points with `noise` (1.2 m, 16 m bumps) and a weathered wooden `fence`
+edge. It follows the buildings: tight behind the motel, the diner and the tire shop, a long straight run along the far
+side of the highway, the south-west and south-east corners cut off diagonally, so the highway leaves the map at both
+ends (closed by water barriers, road works signs and arrow boards).
+
+**Layout and routes.** Blue spawns in the service yard behind the motel (west), Red at the east end of the truck lot.
+- **The motel (Blue's side, vertical).** Two wings of rooms (8 and 5 a floor) with 2 m walkways under balconies, joined
+  at the lobby (reception, TV corner, ice and vending machines, a back door to Blue's yard). 13 rooms are walk-in and
+  furnished (bed, TV, bedside table and lamp, a bathroom behind a partition with toilet, sink and shower), the others are
+  locked (painted doors, curtained windows). A breezeway runs through the west wing from the yard to the walkway. Two
+  staircases lead up to the balconies (south end of the west wing, east end of the north wing), which look over the
+  courtyard, the car park and the approach from the middle. The courtyard has a drained pool (a terrain pit: 1 m deep,
+  1.8 m at the deep end, a ramp cut into the shallow end, a step at the drop) with loungers, umbrellas and a tired lawn.
+- **The middle (contested).** The diner (booths along the front windows, a counter with stools, the kitchen behind,
+  dumpsters by its back door), the diner lot, the water tower, the convenience store (shelving aisles, fridges, the
+  counter) and the gas canopy over two pump islands, with the closed highway beyond (a jack-knifed semi, a crash with a
+  police car and cones, street lamps along the sidewalk, two billboards).
+- **The truck lot (Red's side, cover maze).** Three double rows of trailers in bays (box trailers, reefers, flatbeds
+  with lumber, pipes or machinery, half of them coupled to semi tractors), aisles between the rows, a cross aisle, a
+  truck fuel island under its own canopy with a semi filling up. The flatbeds are a mantle up (1.4 m deck, cargo on top),
+  two box trailers have crate steps up to their roofs (3.76 m). The tire shop (three bays with a car up on a lift, tire
+  racks, tool chests, a tire changer, an office) has a fire escape on its east wall up to its roof, which looks over the lot.
+- **Hills:** under the gas canopy (between the pump islands), the diner lot, and inside the diner by the counter (a small
+  zone, 3 m). **Flags:** at the back of each team's spawn.
+
+**Balance (not mirrored).** Blue's motel gives height (balconies 3.4 m up over the courtyard and the car park), Red's
+lot gives cover (trailers you can only see over from their roofs) and flanks (aisles, gaps between paired trailers, the
+garage roof). The hills sit on the line of equal walk, found by walking a 0.5 m grid from each team's spawns in the
+generator (Blue/Red: canopy 60/59 m, diner lot 57/58 m, diner 67/63 m, enemy flag 119/119 m), and the self-test measures
+it again on the game's nav graph, averaged over each team's spawns (all within 10%), together with the solid cover within
+6 m of each team's routes to the hills (at least 70% of the other team's) and the eye-height line of sight between every
+Blue and every Red spawn (none: the motel, the store and the trailers are in the way). The pool, the balconies and the
+tire shop roof are all reachable by bots (the self-test counts nav nodes on each level in the main nav area).
+
+**Placement** (with `townkit.py`): rooms furnished against their walls with the doorways and an aisle clear; bins and a
+dumpster by every back door with trash bags and litter round them; AC units, vents and dishes on the flat roofs, wall
+units on the outside walls; pumps on their islands under the canopies; cars square in their bays in the motel car park
+and the diner lot; street lamps along the sidewalk every 15 m with the arm over the road; trailers aligned with their bays
+and tractors coupled to them; junk (pallets, drums, tire stacks, crates, cable spools) scattered off the walking lanes;
+litter, tires, wheels and cans scattered by `Clutter`. Explosive barrels (4) stand in the tire shop and the truck lot,
+more than 10 m from every spawn. Foliage: dry desert grass and sage everywhere (none indoors or on intact paving, 10% on
+the busted asphalt of the lots), thicker scrub along the edges and the motel's back wall, a lawn in the courtyard, nothing
+in the pool, a few hand-placed trees.
+
+**Pack props** (`Maps/Cluttered/Props/TruckStop`, written by `tools/cluttered/truckstop_props.py`): Semi Tractor (red,
+blue, white), Box Trailer, Box Trailer Rusty, Reefer Trailer, Flatbed Lumber, Flatbed Pipes, Flatbed Machinery, Car Lift,
+Car Lift Raised (walk under the car), Tool Chest, Tire Changer, Air Compressor, Tire Rack, Diner Booth, Ice Machine,
+Housekeeping Cart, Pool Ladder, Diesel Dispenser, Motel Neon Sign, Billboard Diner and Billboard Motel. The map also uses
+Old Town's fuel pump (`Maps/Cluttered/Props/OldTown`).
+
+**Object counts** (from the self-test): 3,140 props (517 by hand, about 2,620 clutter; 417 solid, about 2,720 cosmetic,
+1,467 breakable, 4 explosive, 53 animated), 14,013 plants (16 trees), 566 meshes, 241 boxes drawn one by one (walls,
+slabs, stairs, pillars, tree trunks), 22 spawns (8 + 8 team spawns, 6 more for free-for-all), about 200 waypoints.
+
+**Performance.** About two thirds of Old Town's props and a third of its plants (Old Town draws 4,908 props and about
+31,800 plants at about 1,690 fps on the user's PC), with fewer boxes than Old Town or Sprawl, so it should run at or above
+Old Town's frame rate. Props, meshes and plants are instanced; animated props freeze past 80 m (the neon sign and the
+billboard lamps at 160 m). The 12-player bot matches keep the worst server tick under 1 ms. The smoke run's
+`cluttered_truckstop` (the whole stop from above the highway) and `cluttered_truckstop_street` (the courtyard from the
+west balcony) views log fps, props, plants and draw calls.
+
+`tools/cluttered/truckstop.py` regenerates the map and, given a PNG path, a top-down preview with the spawns, hills and any
+spawn-to-spawn sight lines; it prints the walk check and the counts.
+
 ## 12 Powder Keg (large, noisy smooth outline, about 195 x 130 m, 21,000 m2, 16 players): a warehouse full of explosives
 
 **Theme.** A distribution warehouse under a grey `overcast` sky, stocked with things that go bang: hundreds of red fuel
