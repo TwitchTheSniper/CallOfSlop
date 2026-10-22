@@ -34,19 +34,22 @@ public static class ReconOverlay
     {
         var n = 0;
         void Add(Span<Box> into, Vector3 center, Vector3 size) => into[n++] = new Box(center, size * (0.5f * Inset));
+        // Torso and head: the body model's boxes (Source/Render/BodyModel.cs), the torso as wide as the chest (the shoulders
+        // are thin), the head as wide as the cranium.
+        var s = BodyModel.Stances[BodyModel.StanceIndex(stance)];
+        var chest = BodyModel.TorsoParts[1].Size.X / BodyModel.RefTorso.X;
+        var skull = BodyModel.Cranium.Size.X / BodyModel.RefHead.X;
+        Add(parts, s.TorsoAt, s.TorsoSize * new Vector3(chest, 1, 1));
+        Add(parts, s.HeadAt, s.HeadSize * new Vector3(skull, 1, skull));
         switch (stance)
         {
             case Stance.Prone:
-                Add(parts, new Vector3(0, 0.2f, -0.27f), new Vector3(0.6f, 0.4f, 0.6f)); // body
-                Add(parts, new Vector3(0, 0.3f, -0.75f), new Vector3(0.4f, 0.38f, 0.4f)); // head, out front
                 Add(parts, new Vector3(-0.15f, 0.13f, 0.4f), new Vector3(0.25f, 0.25f, 0.75f)); // legs, behind
                 Add(parts, new Vector3(0.15f, 0.13f, 0.4f), new Vector3(0.25f, 0.25f, 0.75f));
                 break;
             case Stance.Crouch:
             {
-                const float chest = 0.85f, top = 1.2f, hip = LegAnimator.CrouchPelvis - 0.04f;
-                Add(parts, new Vector3(0, (chest + hip) / 2, 0), new Vector3(0.8f, chest - hip, 0.6f));
-                Add(parts, new Vector3(0, (chest + top) / 2, -0.05f), new Vector3(0.45f, top - chest, 0.45f));
+                const float hip = LegAnimator.CrouchPelvis - 0.04f;
                 Add(parts, new Vector3(-0.2f, hip / 2, 0), new Vector3(0.3f, hip, 0.5f));
                 Add(parts, new Vector3(0.2f, hip / 2, 0), new Vector3(0.3f, hip, 0.5f));
                 break;
@@ -54,9 +57,6 @@ public static class ReconOverlay
             default:
             {
                 const float hip = LegAnimator.StandPelvis;
-                var headH = World.PlayerHeight - World.HeadStart;
-                Add(parts, new Vector3(0, (World.HeadStart + hip) / 2, 0), new Vector3(0.8f, World.HeadStart - hip, 0.5f));
-                Add(parts, new Vector3(0, World.HeadStart + headH / 2, 0), new Vector3(0.45f, headH, 0.45f));
                 Add(parts, new Vector3(-0.2f, hip / 2, 0), new Vector3(0.3f, hip, 0.3f));
                 Add(parts, new Vector3(0.2f, hip / 2, 0), new Vector3(0.3f, hip, 0.3f));
                 break;
