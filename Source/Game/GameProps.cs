@@ -98,7 +98,11 @@ public sealed partial class Game
     private void DamageProp(Player? attacker, int i, float amount, PropDamage kind, Vector3 from, double now)
     {
         if (IsPropLit(i))
+        {
+            if (attacker != null && World.Map.PropInstances[i].Def.Breakable is { IsMine: true } lb && (lb.BreakBy & kind) != 0)
+                CreditLitMine(i, attacker); // shot while clicking (even in the tick it was stepped on): the blast is the shooter's (GameMines.cs)
             return; // already burning: it goes off on its own
+        }
         if (attacker != null && World.Map.PropInstances[i].Def.Breakable is { IsMine: true } mb && (mb.BreakBy & kind) != 0)
             NoteMineHit(i, attacker); // whoever last hit a mine gets its kills, even if someone steps on it later (GameMines.cs)
         if (!World.Map.DamageProp(i, Math.Max(1, (int)MathF.Round(amount)), kind))
@@ -270,7 +274,11 @@ public sealed partial class Game
                     continue;
                 flags |= 1;
                 var by = attacker != null && CanDamage(attacker, victim) ? attacker : neutral ? victim : attacker!; // neutral: the victim's own death
-                if (DamagePlayer(by, victim, amount, false, killId, now, DamageKind.Explosive, center) && victim != by)
+                if (!DamagePlayer(by, victim, amount, false, killId, now, DamageKind.Explosive, center))
+                    continue;
+                PropBlastKills++;
+                LastPropBlastKill = (by.Id, victim.Id, killId);
+                if (victim != by)
                     flags |= 4;
             }
         }

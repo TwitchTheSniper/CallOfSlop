@@ -46,6 +46,12 @@ public sealed partial class Game
     /// <inheritdoc cref="PropsRespawned"/>
     public int ZombiesKilledByMines { get; private set; }
 
+    /// <summary>Players killed by prop blasts (barrels, mines) since this game started, and the last one (killer, victim, kill id; self-test).</summary>
+    public int PropBlastKills { get; private set; }
+
+    /// <inheritdoc cref="PropBlastKills"/>
+    public (byte Killer, byte Victim, byte KillId) LastPropBlastKill { get; private set; }
+
     private readonly Dictionary<int, byte> _mineLastHit = new();
     private readonly List<(int Index, double At)> _propRespawns = new();
 
@@ -63,6 +69,18 @@ public sealed partial class Game
     {
         EnsurePropFuseState();
         _mineLastHit[i] = by.Id;
+    }
+
+    /// <summary>
+    /// Server: <paramref name="by"/> hit mine <paramref name="i"/> while it was already clicking. If nobody had set it off
+    /// (stepped on, or lit by a neutral blast), the blast becomes theirs; one that's already someone's stays theirs.
+    /// </summary>
+    private void CreditLitMine(int i, Player by)
+    {
+        NoteMineHit(i, by);
+        for (var k = 0; k < _propFuses.Count; k++)
+            if (_propFuses[k].Index == i && _propFuses[k].Attacker == byte.MaxValue)
+                _propFuses[k] = _propFuses[k] with { Attacker = by.Id, Env = false };
     }
 
     // ---- Server: pressure plates ----------------------------------------------------------------------------
@@ -302,7 +320,15 @@ public sealed partial class Game
             var n = d > 0.01f ? new Vector3(dx / d, 0, dz / d) : new Vector3(1, 0, 0);
             var into = Vector3.Dot(wish, n);
             if (into > 0)
-                wish -= n * into; // no closer
+            {
+                // No closer: the part of the walk towards the mine turns sideways instead (the side the bot already
+                // leans to; head-on, the same side every time), so a bot with the mine dead ahead slides round it
+                // rather than stopping and backing off forever.
+                wish -= n * into;
+                var side = new Vector3(-n.Z, 0, n.X);
+                var lean = Vector3.Dot(wish, side);
+                wish += side * (lean < -1e-3f ? -into : into);
+            }
             wish -= n * ((reach - d) / reach * 2.5f); // and away
         }
     }
