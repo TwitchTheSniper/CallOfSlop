@@ -89,6 +89,7 @@ public static partial class SelfTest
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
@@ -549,7 +550,7 @@ public static partial class SelfTest
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -558,6 +559,10 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
+            if (game.BotStuckKills > 0)
+                StuckNotes.Add($"{m.Name}: {game.BotStuckKills} stuck self-kill(s) in the 90 s match; last: {game.LastStuckLog}");
+            if (game.BotStuckKills > 5)
+                Fail($"{m.Name}: {game.BotStuckKills} stuck bot self-kills in 90 s (the stuck watch misfires, or a bad map problem; last: {game.LastStuckLog})");
             // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
             // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
@@ -679,9 +684,12 @@ public static partial class SelfTest
                 }
             }
             Line($"{name,-14} walk {Vector3.Distance(from, to),5:0} m straight, {route,5:0} m route: "
-                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)"));
+                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
+                + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
                 Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+            if (game.BotStuckKills > 0)
+                Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }
 
         // Hard bots: the headshot share with the most accurate aim.

@@ -278,6 +278,8 @@ public sealed partial class Game
         SquadPerceive(p, b, target, visible, now); // Insane squads: report to the blackboard (Source/Game/Bots/Squads)
         BotDecide(p, b, target, visible, def, now);
         var steer = BotSteer(p, b, target, visible, def, now);
+        if (BotStuckWatch(p, b, ref steer, visible, now))
+            return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
         var aim = BotAim(p, b, target, visible, def, steer, now);
         if (!BotLauncherTick(p, b, target, visible, ref aim, now)) // a launcher at an enemy kill streak or a group (BotLaunchers.cs)
