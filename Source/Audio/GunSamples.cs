@@ -307,8 +307,12 @@ public static class GunSamples
     /// <summary>Baked shot variants per weapon (picked from its set's recordings by its <see cref="GunVoice"/>; a repeat take is treated a little differently).</summary>
     public const int Variants = 4;
 
-    /// <summary>The most a near shot's peak is turned down by the limiter (dB): beyond it the bake gives up loudness to keep the transient sharp.</summary>
-    public const float MaxPeakReductionDb = 5f;
+    /// <summary>
+    /// The most a near shot's peak is turned down by the limiter (dB): beyond it the bake gives up loudness to keep the
+    /// transient sharp. Near shots use a fast release (<see cref="SnapRelease"/>), so the limiter only shaves the crack's
+    /// first milliseconds and the body right after it isn't ducked.
+    /// </summary>
+    public const float MaxPeakReductionDb = 8f;
 
     /// <summary>
     /// The synthesised layer under a recording only keeps its first <see cref="SynthWindow"/> seconds (crack, thump and
@@ -316,6 +320,9 @@ public static class GunSamples
     /// Boom guns (the .50, the musket) keep more of their synthesised boom.
     /// </summary>
     public const float SynthWindow = 0.045f;
+
+    /// <summary>Limiter release (s) for near shots: fast, so it acts like a transient shaver rather than ducking the body.</summary>
+    public const float SnapRelease = 0.008f;
 
     /// <summary>The weapon's shot variants (<see cref="Variants"/> of them), or just <paramref name="synth"/> without a set.</summary>
     public static short[][] Shots(GunSampleLibrary lib, WeaponDef w, short[] synth)
@@ -341,7 +348,7 @@ public static class GunSamples
             Shape(x, voice, w, repeat ? 0.75f : 1f);
             FadeTail(x, 0.35f);
             Blend(x, synthF, blend);
-            outv[v] = Finish(x, target, MaxPeakReductionDb);
+            outv[v] = Finish(x, target, MaxPeakReductionDb, SnapRelease);
         }
         return outv;
     }
@@ -368,7 +375,6 @@ public static class GunSamples
             LowPass(x, 900f);
             LowPass(x, 1400f);
             Decay(x, 0.07f); // a suppressor kills the blast's ring-out
-            Body(x, voice.BodyHz * 0.5f, voice.BodyQ, voice.BodyGain * 1.5f); // what's left is the gun's own body
             Tilt(x, MathF.Min(voice.Tilt, 0f) * 0.6f); // darker only (it stays muffled), on the recording only
             var mix = new float[len];
             var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f) * 0.7f;
@@ -597,7 +603,7 @@ public static class GunSamples
     /// <see cref="MaxGain"/>), a soft clip under <see cref="Ceiling"/> as a safety net, and a 2 ms fade-out.
     /// The limiter lowers the RMS, so the gain is corrected once and the limiter run again.
     /// </summary>
-    private static short[] Finish(float[] x, float targetRms, float maxReductionDb = float.PositiveInfinity)
+    private static short[] Finish(float[] x, float targetRms, float maxReductionDb = float.PositiveInfinity, float release = 0.04f)
     {
         var peak = 1e-6f;
         foreach (var s in x)
@@ -610,14 +616,14 @@ public static class GunSamples
         var probe = new float[Math.Min(x.Length, LoudnessWindow + Sr / 500)];
         for (var i = 0; i < probe.Length; i++)
             probe[i] = x[i] * gain;
-        Limit(probe, LimiterThreshold);
+        Limit(probe, LimiterThreshold, release);
         var got = Rms(probe, LoudnessWindow);
         if (got > 1e-6f)
             gain = MathF.Min(gain * targetRms / got, cap);
         var y = new float[x.Length];
         for (var i = 0; i < x.Length; i++)
             y[i] = x[i] * gain;
-        Limit(y, LimiterThreshold);
+        Limit(y, LimiterThreshold, release);
         const float knee = 0.85f, span = Ceiling - knee;
         var fade = Math.Min(y.Length, Sr / 500);
         var pcm = new short[y.Length];
@@ -644,14 +650,14 @@ public static class GunSamples
     /// O(n) look-ahead peak limiter: the gain each sample needs, ramped down over 1 ms ahead of every peak (backward
     /// pass) and recovered over 40 ms after it (forward pass), so |x| never exceeds <paramref name="threshold"/>.
     /// </summary>
-    public static void Limit(float[] x, float threshold)
+    public static void Limit(float[] x, float threshold, float releaseSeconds = 0.04f)
     {
         var n = x.Length;
         if (n == 0)
             return;
         var g = new float[n];
         var attack = 1f / (Sr / 1000f);
-        var release = 1f / (0.04f * Sr);
+        var release = 1f / (releaseSeconds * Sr);
         var next = 1f;
         for (var i = n - 1; i >= 0; i--)
         {

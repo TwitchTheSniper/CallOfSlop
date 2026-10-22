@@ -165,17 +165,17 @@ public sealed class GunVoice
     public static uint SeedOf(WeaponDef w) => w.Voice?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
 
     /// <summary>
-    /// Characters the weapons sharing a main recording rotate through (tone tilt, body length, body resonance amount,
+    /// Characters the weapons on a set rotate through by rank (tone tilt, body length, body resonance amount,
     /// crack), so weapons on the same recorded firearm still sound clearly apart: bright and tight, dark and heavy,
     /// neutral with a sharp crack, then two in-betweens.
     /// </summary>
     private static readonly (float Tilt, float Tail, float Body, float Crack)[] Characters =
     [
-        (0.7f, 0.8f, 0.25f, 0.8f),
-        (-0.7f, 1.2f, 0.9f, 0.35f),
+        (0.8f, 0.75f, 0.2f, 0.8f),
+        (-0.8f, 1.25f, 0.95f, 0.3f),
         (0.05f, 1.0f, 0.55f, 0.95f),
-        (0.4f, 1.12f, 0.75f, 0.55f),
-        (-0.4f, 0.88f, 0.4f, 0.7f),
+        (0.45f, 1.15f, 0.8f, 0.5f),
+        (-0.45f, 0.85f, 0.35f, 0.7f),
     ];
 
     /// <summary>
@@ -198,7 +198,7 @@ public sealed class GunVoice
         var onRoster = set != null && set.Roster.TryGetValue(w.Name, out rank);
         var turn = onRoster && g > 0 ? rank / g : -1; // how many weapons before this one got the same main firearm
         (float Tilt, float Tail, float Body, float Crack) ch = turn >= 0
-            ? Characters[(turn + set!.Index) % Characters.Length]
+            ? Characters[(rank + set!.Index) % Characters.Length] // neighbours differ in recording, same-recording ones in character
             : (S(-0.7f, 0.7f, 3), S(0.8f, 1.2f, 12), S(0.25f, 0.9f, 6), S(0.3f, 0.95f, 7));
 
         // Recordings: main and second firearm of the set (or the voice block's).
