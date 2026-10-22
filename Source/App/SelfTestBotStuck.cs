@@ -35,7 +35,7 @@ public static partial class SelfTest
         {
             if (StuckNotes.Count == 0)
                 StuckNotes.Add("no stuck self-kills in the every-map matches");
-            Line("::error title=Bot stuck watch (results, TEMP)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            Line("::notice title=Bot stuck watch (results)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
