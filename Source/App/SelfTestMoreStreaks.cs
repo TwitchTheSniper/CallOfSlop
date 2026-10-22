@@ -65,8 +65,9 @@ public static partial class SelfTest
             { "name": "More streaks test", "halfX": 40, "halfZ": 40, "ops": [
               { "op": "Ground", "color": [0.4, 0.4, 0.4] }, { "op": "Spawn", "x": 30, "z": 30 } ] }
             """, "morestreakstest.json");
-        World.SetMap(flat);
+        World.SetMap(Maps.All[0]);
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2);
+        World.SetMap(flat); // (after the game: it loads its own map)
         game.ScoreLimitOverride = game.ScoreLimit = int.MaxValue; // the kills here must never end the match
         game.SelfTestStreakTick(0);
         var me = game.Players[0];
