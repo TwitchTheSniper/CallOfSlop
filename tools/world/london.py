@@ -945,6 +945,14 @@ def waypoints():
         site.waypoint(x, -37.8)
     for x, z in ((6.0, 30.0), (10.0, 36.0), (6.0, 23.4)):
         site.waypoint(x, z)
+    # the embankments, up from the high street end and from the towpath, onto the deck (exact twins, so both teams'
+    # climbs are the same to the bots)
+    for x, z in ((58.0, 6.0), (58.0, 2.0), (58.0, -2.0), (58.0, -6.0), (58.0, -9.0), (57.0, -12.0), (52.0, -14.5),
+                 (58.5, -33.0), (58.0, -29.0), (58.0, -25.0), (58.0, -21.5), (57.0, -17.0)):
+        site.waypoint(x, z)
+    # the station: hall, the arch into each stair bay, Station Approach
+    for x, z in ((0.0, -12.0), (0.0, -16.5), (6.0, -13.9), (0.0, -2.0), (0.0, 4.0)):
+        site.waypoint(x, z)
     site.raw({"op": "AutoWaypoints", "spacing": 6})
 
 
