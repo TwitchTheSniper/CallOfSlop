@@ -7,7 +7,7 @@ public static partial class SelfTest
 {
     private static readonly List<string> GibNotes = new();
 
-    private static void GLine(string s)
+    private static void GibLine(string s)
     {
         Line("  " + s);
         GibNotes.Add(s);
@@ -83,7 +83,7 @@ public static partial class SelfTest
         int Hp(string n) => Props.Find(n)?.Breakable?.Health ?? 0;
         if (!(Hp("Pigeons") < Hp("Cat") && Hp("Cat") < Hp("Dog") && Hp("Dog") < Hp("Sheep") && Hp("Sheep") < Hp("Dairy Cow")))
             Fail("animal health should rise with size: birds < cat < dog < sheep < cow");
-        GLine($"animals: {string.Join(", ", parts)}; toys stay unbroken meat-free ({string.Join(", ", NotAnimals)})");
+        GibLine($"animals: {string.Join(", ", parts)}; toys stay unbroken meat-free ({string.Join(", ", NotAnimals)})");
 
         // The "gibs" block's errors.
         string File(string gibs, string extra = "") => $$"""
@@ -117,7 +117,7 @@ public static partial class SelfTest
             }
         }
         var good = PropFile.Load(File("{ \"style\": \"wool\" }"), "Misc/GoodGib.json");
-        GLine($"\"gibs\" errors: {rejected} of {bad.Length} rejected with the right message; a block without a count gives {good.Breakable?.GibCount} {good.Breakable?.GibStyle} gibs");
+        GibLine($"\"gibs\" errors: {rejected} of {bad.Length} rejected with the right message; a block without a count gives {good.Breakable?.GibCount} {good.Breakable?.GibStyle} gibs");
         if (good.Breakable is not { GibCount: 8, GibStyle: GibStyle.Wool, Sound: PropBreakSound.Meat })
             Fail("a \"gibs\" block without a count should give 8 gibs and the meat sound");
     }
@@ -169,7 +169,7 @@ public static partial class SelfTest
                 Fail($"{name}: {got[0]} / {got[1]} / {got[2]} gibs on Full / Reduced / Off (want {gibs} / {Math.Max(3, (gibs + 1) / 2)} / 0)");
         }
         PropDebris.Clear();
-        GLine($"gibs per animal (Full/Reduced/Off): {string.Join(", ", sizes)}");
+        GibLine($"gibs per animal (Full/Reduced/Off): {string.Join(", ", sizes)}");
 
         // A cow burst: flies, lands, bleeds, slides, settles, lies there, then fades and is gone; no allocation per frame.
         Gibs.Mode = GoreMode.Full;
@@ -198,7 +198,7 @@ public static partial class SelfTest
         var at14 = Gibs.Count;
         for (var f = 0; f < 60 * 4; f++)
             Gibs.Update(dt, now += dt);
-        GLine($"cow burst: {thrown} gibs; after 3 s {resting} resting, lowest {lowest:0.000} m above its floor, {splats} blood splats ({gore} impact decals); "
+        GibLine($"cow burst: {thrown} gibs; after 3 s {resting} resting, lowest {lowest:0.000} m above its floor, {splats} blood splats ({gore} impact decals); "
               + $"after 14 s {at14} still lying there, after 18 s {Gibs.Count}; {alloc} bytes allocated in 2 s of updates");
         if (resting < thrown * 3 / 4 || lowest < -0.01f)
             Fail("gibs should settle on the floor within 3 s (not sink into it)");
@@ -226,7 +226,7 @@ public static partial class SelfTest
         }
         var buffer = new float[(PropDebris.Capacity + Gibs.Capacity) * PropDebris.FloatsPerPiece];
         var written = Gibs.Write(buffer, 7);
-        GLine($"Reduced: {reducedSplats} splats; 20 cow bursts: {Gibs.Count} alive (cap {Gibs.Capacity}), {Gibs.Recycled - recycled0} oldest recycled; written after 7 debris -> {written}");
+        GibLine($"Reduced: {reducedSplats} splats; 20 cow bursts: {Gibs.Count} alive (cap {Gibs.Capacity}), {Gibs.Recycled - recycled0} oldest recycled; written after 7 debris -> {written}");
         if (reducedSplats != 0)
             Fail("Reduced gore shouldn't leave blood splats");
         if (Gibs.Count != Gibs.Capacity || Gibs.Recycled - recycled0 != 20 * 24 - Gibs.Capacity || written != 7 + Gibs.Capacity)
@@ -280,7 +280,7 @@ public static partial class SelfTest
         game.BlastProps(me, Centre(dog) + new Vector3(0, 0.5f, 2f), 8f, 150f, PropDamage.Streak, 0);
         var duck = GibProp(map, "Rubber Duck");
         Shots(duck, 30);
-        GLine($"in a game: pigeons {pigeon} shot(s) of 30 ({pigeonGibs} gibs), dairy cow {cowShots} shots; melee breaks the cat {map.IsPropBroken(cat)}; "
+        GibLine($"in a game: pigeons {pigeon} shot(s) of 30 ({pigeonGibs} gibs), dairy cow {cowShots} shots; melee breaks the cat {map.IsPropBroken(cat)}; "
               + $"a grenade 1.2 m off breaks the sheep {map.IsPropBroken(sheep)}, one 4.4 m off the grazing cow {map.IsPropBroken(grazing)}; a strike breaks the dog {map.IsPropBroken(dog)}; "
               + $"{game.AnimalsGibbed - gibbed0} animals gibbed, {Gibs.Count} gibs; kills {me.Kills - kills}, feed lines {game.Feed.Count - feed}; the rubber duck took {map.IsPropBroken(duck)}");
         if (pigeon != 1 || pigeonGibs != 10 || cowShots != 9)
@@ -304,7 +304,7 @@ public static partial class SelfTest
         game.SelfTestTickPropRespawns(12.1);
         var back = !map.IsPropBroken(hen);
         typeof(Game).GetMethod("OnMatchStarted", BindingFlags.NonPublic | BindingFlags.Instance)?.Invoke(game, null);
-        GLine($"respawn: the chicken broke {gone}, still gone at 1 s {early}, back at 2.1 s {back}; a new match: {map.BrokenProps.Count} animals still broken, {Gibs.Count} gibs");
+        GibLine($"respawn: the chicken broke {gone}, still gone at 1 s {early}, back at 2.1 s {back}; a new match: {map.BrokenProps.Count} animals still broken, {Gibs.Count} gibs");
         if (!gone || !early || !back)
             Fail("an animal placed with \"respawn\" didn't come back on time");
         if (map.BrokenProps.Count != 0 || Gibs.Count != 0)
@@ -331,7 +331,7 @@ public static partial class SelfTest
             if (!map.IsPropBroken(pi) || client.AnimalsGibbed != 1)
                 Fail($"client {c}: the break packet didn't break and gib the duck family");
         }
-        GLine($"loopback: one break packet ({packet.Length} bytes) on two clients: {counts[1]} and {counts[2]} gibs, hashes {hashes[1]:x8} / {hashes[2]:x8} (server {hashes[0]:x8})");
+        GibLine($"loopback: one break packet ({packet.Length} bytes) on two clients: {counts[1]} and {counts[2]} gibs, hashes {hashes[1]:x8} / {hashes[2]:x8} (server {hashes[0]:x8})");
         if (counts[1] != 12 || hashes[1] != hashes[2] || hashes[1] != hashes[0])
             Fail("two clients given the same break event should throw the same gib burst");
         World.SetMap(map);
@@ -371,7 +371,7 @@ public static partial class SelfTest
             game.SelfTestPlace(bot, spot, 0);
             game.DebugKill(me, bot, frag, false, 6);
             var debug = game.LastKill.Gibbed;
-            GLine($"server (phase {game.Phase}): a strike shell 0.3 m away kills {nearDead}, gibbed {near}; one 3.2 m above finishing a 10 hp bot kills {edgeDead}, gibbed {edge}; a frag DebugKill gibbed {debug}");
+            GibLine($"server (phase {game.Phase}): a strike shell 0.3 m away kills {nearDead}, gibbed {near}; one 3.2 m above finishing a 10 hp bot kills {edgeDead}, gibbed {edge}; a frag DebugKill gibbed {debug}");
             if (!near || !nearDead || edge || !edgeDead || !debug)
                 Fail("a blast kill next to the explosion should gib, one at the edge give a ragdoll");
         }
@@ -384,7 +384,7 @@ public static partial class SelfTest
         new KillPacket(1, 5, true, 3).Write(w);
         var r2 = new PacketReader(w.Span[1..]);
         var head = KillPacket.Read(ref r2);
-        GLine($"kill packet: {w.Length} bytes; gibbed round-trips {back.Gibbed} (headshot {back.Headshot}); a headshot stays a headshot {head.Headshot}, not gibbed {!head.Gibbed}; protocol {ServerInfo.ProtocolVersion}");
+        GibLine($"kill packet: {w.Length} bytes; gibbed round-trips {back.Gibbed} (headshot {back.Headshot}); a headshot stays a headshot {head.Headshot}, not gibbed {!head.Gibbed}; protocol {ServerInfo.ProtocolVersion}");
         if (!back.Gibbed || back.Headshot || !head.Headshot || head.Gibbed || ServerInfo.ProtocolVersion < 33)
             Fail("the kill packet's gibbed flag doesn't round-trip (or protocol not bumped)");
 
@@ -438,7 +438,7 @@ public static partial class SelfTest
             Ragdolls.SpawnPlayerForTest(client, p, kill with { Gibbed = false }, 1);
             var edgeGibs = Gibs.Count;
             var edgeBodies = Ragdolls.LiveCount;
-            GLine($"body burst: {counts[0]} pieces ({fullParts} parts + meat and bone) on two clients, hashes {hashes[0]:x8} / {hashes[1]:x8}; the death camera's torso at {torso[0]} then {landed}; "
+            GibLine($"body burst: {counts[0]} pieces ({fullParts} parts + meat and bone) on two clients, hashes {hashes[0]:x8} / {hashes[1]:x8}; the death camera's torso at {torso[0]} then {landed}; "
                   + $"Reduced {reduced} ({reducedParts} parts); Off: {offGibs} gibs, {offBodies} ragdoll; not gibbed: {edgeGibs} gibs, {edgeBodies} ragdoll");
             if (counts[0] != fullParts + 18 || hashes[0] != hashes[1] || torso[0] is null || landed is null)
                 Fail("a gibbed body should burst the same on two clients, and the death camera should find its torso");
@@ -457,7 +457,7 @@ public static partial class SelfTest
             for (var s = 0; s < 300; s++)
                 Ragdolls.StepAll();
             var boxes = Ragdolls.CountBoxes(hb, new float[RagdollBody.MaxBoxes * PropDebris.FloatsPerPiece]);
-            GLine($"hat gib ({hat.Name}): off {hb.HatOff}, landed {hb.HatResting} {Vector3.Distance(hb.HatPos, feet):0.0} m away, draws {boxes} boxes (the hat has {hat.Boxes.Count}); body asleep {hb.Sim.Asleep}");
+            GibLine($"hat gib ({hat.Name}): off {hb.HatOff}, landed {hb.HatResting} {Vector3.Distance(hb.HatPos, feet):0.0} m away, draws {boxes} boxes (the hat has {hat.Boxes.Count}); body asleep {hb.Sim.Asleep}");
             if (!hb.HatOff || !hb.HatResting || boxes != hat.Boxes.Count || !hb.Gibbed)
                 Fail("a gibbed player's hat should fly off, land and be all that body slot draws");
             Ragdolls.Clear();
@@ -470,7 +470,7 @@ public static partial class SelfTest
         var zEdge = Ragdolls.ZombieGibbed(new Vector3(4f, 0.5f, 0), 5f, zfeet);
         Gibs.Mode = GoreMode.Off;
         var zOff = Ragdolls.ZombieGibbed(new Vector3(0.5f, 0.5f, 0), 5f, zfeet);
-        GLine($"zombies: a blast 0.8 m off gibs {zNear}, at 4 m {zEdge}, on Off {zOff}; {Ragdolls.GibbedBodies} bodies gibbed so far");
+        GibLine($"zombies: a blast 0.8 m off gibs {zNear}, at 4 m {zEdge}, on Off {zOff}; {Ragdolls.GibbedBodies} bodies gibbed so far");
         if (!zNear || zEdge || zOff)
             Fail("zombies: near blasts gib, edge blasts and Off gore don't");
         Gibs.Mode = GoreMode.Full;
