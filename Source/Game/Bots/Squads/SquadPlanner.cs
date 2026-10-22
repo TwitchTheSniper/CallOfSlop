@@ -498,7 +498,6 @@ public sealed partial class Game
                     ? new SquadOrder { Kind = SquadOrderKind.Hold, Goal = lead.Position, Look = s.Goal + new Vector3(0, 1.2f, 0), HasLook = true }
                     : new SquadOrder { Kind = SquadOrderKind.Follow, Goal = lead.Position, Sprint = true };
             }
-            SquadOverwatch(s, nav, now); // the long gun keeps its vantage point (BotVantage.cs)
             ApplyTrade(s, nav, now);
             return;
         }

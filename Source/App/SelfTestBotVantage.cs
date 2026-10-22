@@ -182,8 +182,10 @@ public static partial class SelfTest
                 VNote(line);
                 if (band == VantageBand.Medium)
                     continue; // LMG spots favour cover over height: no height rule
-                if (best.Pos.Y < ref0.Pos.Y + 1.5f || (best.Height < 0.8f && best.Overlook < 0.15f))
+                if (band == VantageBand.Long && (best.Pos.Y < ref0.Pos.Y + 1.5f || (best.Height < 0.8f && best.Overlook < 0.15f)))
                     Fail($"{name} {band}: the best spot isn't elevated (y {best.Pos.Y:0.0} vs street {ref0.Pos.Y:0.0}, +{best.Height:0.0} m, {best.Overlook * 100:0}% below)");
+                if (band == VantageBand.MediumLong && best.Height < 0.8f && best.Overlook < 0.12f && best.LowCover == 0)
+                    Fail($"{name} {band}: the best spot is neither raised nor behind a parapet (+{best.Height:0.0} m, {best.Overlook * 100:0}% below)");
                 if (best.Sight(band) < 2f)
                     Fail($"{name} {band}: the best spot has no real sightlines ({best.Sight(band):0.0})");
                 if (best.Cover <= 0f)

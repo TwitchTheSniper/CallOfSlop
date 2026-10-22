@@ -275,38 +275,53 @@ public sealed class VantageMap
     private static float Flat(Vector3 d) => MathF.Sqrt(d.X * d.X + d.Z * d.Z);
 
     /// <summary>
-    /// Main-area nodes reachable from, and able to get back to, the main-area node nearest the map's middle (following
-    /// edges one way: drops can't be climbed back up). O(edges).
+    /// The nodes of the graph's biggest strongly connected group: every one can be walked to from every other, following
+    /// edges one way (a drop can't be climbed back up, so a roof you can only jump off isn't in it). Kosaraju's two passes,
+    /// iterative, O(edges).
     /// </summary>
     private static bool[] TwoWayReach(NavGraph g)
     {
         var n = g.Nodes.Length;
-        var seed = -1;
-        var best = float.MaxValue;
-        foreach (var i in g.MainNodes)
-        {
-            var p = g.Nodes[i];
-            var d = p.X * p.X + p.Z * p.Z + p.Y * p.Y * 4f; // the middle, at ground level
-            if (d < best)
-                (best, seed) = (d, i);
-        }
         var both = new bool[n];
-        if (seed < 0)
+        if (n == 0)
             return both;
-        var fwd = new bool[n];
-        var stack = new Stack<int>();
-        fwd[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
+        // Pass 1: finish order of a depth-first walk over the edges.
+        var order = new int[n];
+        var oc = 0;
+        var seen = new bool[n];
+        var stackNode = new int[n];
+        var stackEdge = new int[n];
+        for (var s0 = 0; s0 < n; s0++)
         {
-            var i = stack.Pop();
-            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
-                if (!fwd[g.EdgeTo[e]])
+            if (seen[s0])
+                continue;
+            seen[s0] = true;
+            stackNode[0] = s0;
+            stackEdge[0] = g.EdgeStart[s0];
+            var sp = 1;
+            while (sp > 0)
+            {
+                var v = stackNode[sp - 1];
+                var e = stackEdge[sp - 1];
+                if (e < g.EdgeStart[v + 1])
                 {
-                    fwd[g.EdgeTo[e]] = true;
-                    stack.Push(g.EdgeTo[e]);
+                    stackEdge[sp - 1]++;
+                    var w = g.EdgeTo[e];
+                    if (seen[w])
+                        continue;
+                    seen[w] = true;
+                    stackNode[sp] = w;
+                    stackEdge[sp] = g.EdgeStart[w];
+                    sp++;
                 }
+                else
+                {
+                    order[oc++] = v;
+                    sp--;
+                }
+            }
         }
+        // Pass 2: over the reversed edges, latest finisher first; each walk is one group.
         var rstart = new int[n + 1];
         foreach (var to in g.EdgeTo)
             rstart[to + 1]++;
@@ -317,21 +332,37 @@ public sealed class VantageMap
         for (var i = 0; i < n; i++)
             for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
                 rfrom[fill[g.EdgeTo[e]]++] = i;
-        var bwd = new bool[n];
-        bwd[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
+        var comp = new int[n];
+        Array.Fill(comp, -1);
+        int groups = 0, biggest = -1, biggestSize = 0;
+        for (var k = n - 1; k >= 0; k--)
         {
-            var i = stack.Pop();
-            for (var e = rstart[i]; e < rstart[i + 1]; e++)
-                if (!bwd[rfrom[e]])
+            var v = order[k];
+            if (comp[v] >= 0)
+                continue;
+            comp[v] = groups;
+            stackNode[0] = v;
+            var sp = 1;
+            var size = 0;
+            while (sp > 0)
+            {
+                var u = stackNode[--sp];
+                size++;
+                for (var r = rstart[u]; r < rstart[u + 1]; r++)
                 {
-                    bwd[rfrom[e]] = true;
-                    stack.Push(rfrom[e]);
+                    var x = rfrom[r];
+                    if (comp[x] >= 0)
+                        continue;
+                    comp[x] = groups;
+                    stackNode[sp++] = x;
                 }
+            }
+            if (size > biggestSize)
+                (biggestSize, biggest) = (size, groups);
+            groups++;
         }
         for (var i = 0; i < n; i++)
-            both[i] = fwd[i] && bwd[i];
+            both[i] = comp[i] == biggest;
         return both;
     }
 
