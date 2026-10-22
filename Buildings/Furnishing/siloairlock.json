@@ -1,0 +1,28 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloairlock",
+ "description": "A blast lock between two blast doors: gas masks, a hazmat rack, a bench.",
+ "items": [
+  {
+   "props": [
+    "Hazmat Suit Rack"
+   ],
+   "place": "wall",
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Bench"
+   ],
+   "place": "wall",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Bucket"
+   ],
+   "place": "corner",
+   "chance": 0.5
+  }
+ ]
+}

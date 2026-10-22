@@ -1,0 +1,413 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Silo Power Plant",
+ "theme": "The missile complex's own power plant: a small military reactor glowing blue in a tall concrete hall, coolant pumps, a turbine and the switchgear",
+ "category": "special",
+ "description": "A tall reactor hall (the vessel in the middle, a catwalk along the back wall, the operator's desk) between the switchgear room and the turbine hall, a corridor in front with blast doors at both ends.",
+ "author": "Call of Slop",
+ "seed": 504,
+ "wallThickness": 0.4,
+ "storeyHeight": 7.0,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "reactor hall",
+     "type": "siloreactor",
+     "rect": [
+      -6.5,
+      -8,
+      6.5,
+      3.5
+     ],
+     "windows": false,
+     "furnish": "explicit",
+     "props": [
+      {
+       "name": "Reactor Vessel",
+       "at": [
+        0,
+        -1.6
+       ]
+      },
+      {
+       "name": "Reactor Control Desk",
+       "wall": "S",
+       "along": 0.0
+      },
+      {
+       "name": "Coolant Pump",
+       "at": [
+        -4.6,
+        -3.2
+       ],
+       "yaw": 90
+      },
+      {
+       "name": "Coolant Pump",
+       "at": [
+        4.6,
+        -3.2
+       ],
+       "yaw": 270
+      },
+      {
+       "name": "Wall Pipe Run",
+       "wall": "N",
+       "along": -3.5,
+       "y": 4.4
+      },
+      {
+       "name": "Wall Pipe Run",
+       "wall": "N",
+       "along": 3.5,
+       "y": 4.4
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "S",
+       "along": 2.0,
+       "y": 1.8
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "W",
+       "along": 1.5,
+       "y": 1.8
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "E",
+       "along": 1.5,
+       "y": 1.8
+      },
+      {
+       "name": "Status Board",
+       "wall": "S",
+       "along": 3.6,
+       "y": 1.4
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "W",
+       "along": -2,
+       "y": 3.0
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "E",
+       "along": -2,
+       "y": 3.0
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 0,
+       "y": 6.1
+      }
+     ],
+     "floor": {
+      "color": "#565a56",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "switchgear",
+     "type": "siloswitchgear",
+     "rect": [
+      -12,
+      -8,
+      -6.5,
+      3.5
+     ],
+     "windows": false
+    },
+    {
+     "id": "turbine hall",
+     "type": "siloturbine",
+     "rect": [
+      6.5,
+      -8,
+      12,
+      3.5
+     ],
+     "windows": false,
+     "furnish": "explicit",
+     "props": [
+      {
+       "name": "Turbine Generator",
+       "at": [
+        0.3,
+        -0.6
+       ],
+       "yaw": 90
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "E",
+       "along": -3,
+       "y": 3.2
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "E",
+       "along": 3,
+       "y": 3.2
+      },
+      {
+       "name": "Wall Pipe Run",
+       "wall": "E",
+       "along": 0,
+       "y": 4.8
+      }
+     ]
+    },
+    {
+     "id": "corridor",
+     "type": "silocorridor",
+     "rect": [
+      -12,
+      3.5,
+      12,
+      8
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": -8.8,
+       "y": 2.8
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": -4.4,
+       "y": 2.8
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": 0.0,
+       "y": 2.8
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": 4.4,
+       "y": 2.8
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": 8.8,
+       "y": 2.8
+      },
+      {
+       "name": "Wall Cable Tray",
+       "wall": "N",
+       "along": -6,
+       "y": 3.4
+      },
+      {
+       "name": "Wall Cable Tray",
+       "wall": "N",
+       "along": 6,
+       "y": 3.4
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "N",
+       "along": -9.3,
+       "y": 1.7
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "N",
+       "along": 9.3,
+       "y": 1.7
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      8
+     ],
+     "width": 1.6,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      -12,
+      5.75
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      12,
+      5.75
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -3.2,
+      3.5
+     ],
+     "width": 1.6,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      3.2,
+      3.5
+     ],
+     "width": 1.6,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -9.25,
+      3.5
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      9.25,
+      3.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -6.5,
+      -0.5
+     ],
+     "width": 1.4
+    },
+    {
+     "type": "arch",
+     "at": [
+      6.5,
+      -0.5
+     ],
+     "width": 1.4
+    }
+   ]
+  }
+ ],
+ "extras": [
+  {
+   "type": "platform",
+   "rect": [
+    -6.3,
+    -7.8,
+    6.3,
+    -5.6
+   ],
+   "height": 3.4,
+   "railing": 1.0,
+   "stairs": {
+    "rect": [
+     4.6,
+     -5.6,
+     5.8,
+     -1.6
+    ],
+    "dir": "-z"
+   }
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "anchors": [
+  {
+   "type": "hill",
+   "name": "reactor floor",
+   "at": [
+    0,
+    1.6
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "corridor west",
+   "at": [
+    -8,
+    5.75
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "corridor east",
+   "at": [
+    8,
+    5.75
+   ]
+  }
+ ]
+}

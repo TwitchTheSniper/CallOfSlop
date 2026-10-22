@@ -92,6 +92,7 @@ public static partial class SelfTest
             Section("Map vote: player fit", CheckMapVotePlayerFit); // SelfTestMapVote.cs: never a map too small for the humans here
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
+            Section("World Tour: Silo", CheckWorldSilo); // SelfTestWorldSilo.cs: the missile-silo map (caves, buried buildings, nav reach, fairness)
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);

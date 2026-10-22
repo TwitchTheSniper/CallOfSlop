@@ -1,0 +1,196 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Blast Door Leaf",
+ "category": "Facility",
+ "description": "A massive steel blast door leaf standing open on its hinge (the hinge at x = 0, the leaf along +X).",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.8,
+    3.0,
+    0.5
+   ],
+   "offset": [
+    1.4,
+    1.5,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "size": [
+    2.8,
+    3.0,
+    0.45
+   ],
+   "offset": [
+    1.4,
+    1.5,
+    0
+   ],
+   "color": "#5a6048",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.5,
+    2.7,
+    0.06
+   ],
+   "offset": [
+    1.4,
+    1.5,
+    0.25
+   ],
+   "color": "#4a5038",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.18,
+    0.1,
+    0.5
+   ],
+   "offset": [
+    2.55,
+    0.6,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.18,
+    0.1,
+    0.5
+   ],
+   "offset": [
+    2.55,
+    1.2,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.18,
+    0.1,
+    0.5
+   ],
+   "offset": [
+    2.55,
+    1.8,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.18,
+    0.1,
+    0.5
+   ],
+   "offset": [
+    2.55,
+    2.4,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.3,
+    0.4,
+    0.55
+   ],
+   "offset": [
+    0.05,
+    0.4,
+    0
+   ],
+   "color": "#3a3d40",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.3,
+    0.4,
+    0.55
+   ],
+   "offset": [
+    0.05,
+    2.6,
+    0
+   ],
+   "color": "#3a3d40",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.5,
+    0.08
+   ],
+   "offset": [
+    1.4,
+    1.5,
+    0.3
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.08,
+    0.6,
+    0.08
+   ],
+   "offset": [
+    1.4,
+    1.5,
+    0.35
+   ],
+   "color": "#7e8286",
+   "rotation": [
+    0,
+    0,
+    45
+   ]
+  },
+  {
+   "size": [
+    2.5,
+    0.25,
+    0.01
+   ],
+   "offset": [
+    1.4,
+    2.6,
+    0.29
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    2.5,
+    0.25,
+    0.01
+   ],
+   "offset": [
+    1.4,
+    0.4,
+    0.29
+   ],
+   "color": "#e8c020"
+  }
+ ]
+}

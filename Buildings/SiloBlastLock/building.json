@@ -1,0 +1,171 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Silo Blast Lock",
+ "theme": "The entry blast lock of a missile complex: two steel blast doors either side of a tiled decontamination room",
+ "category": "special",
+ "description": "Outer lock, decontamination (spray arches, showers, suit racks) and inner lock, four blast doors in a row.",
+ "author": "Call of Slop",
+ "seed": 505,
+ "wallThickness": 0.4,
+ "storeyHeight": 3.6,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "outer lock",
+     "type": "siloairlock",
+     "rect": [
+      -6,
+      -3.5,
+      -2,
+      3.5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 0,
+       "y": 2.4
+      }
+     ]
+    },
+    {
+     "id": "decontamination",
+     "type": "silodecon",
+     "rect": [
+      -2,
+      -3.5,
+      2,
+      3.5
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#7a8080",
+      "material": "tiles"
+     },
+     "wall": {
+      "color": "#8a948a",
+      "material": "tiles"
+     },
+     "props": [
+      {
+       "name": "Decon Shower Arch",
+       "at": [
+        0,
+        0
+       ],
+       "yaw": 90
+      }
+     ]
+    },
+    {
+     "id": "inner lock",
+     "type": "siloairlock",
+     "rect": [
+      2,
+      -3.5,
+      6,
+      3.5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": 0,
+       "y": 2.4
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      -6,
+      0
+     ],
+     "width": 1.4,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      -2,
+      0
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      2,
+      0
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      6,
+      0
+     ],
+     "width": 1.4,
+     "material": "metal"
+    }
+   ]
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ }
+}

@@ -1,0 +1,237 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Guard Tower",
+ "theme": "A Cold War perimeter guard tower: a plain concrete shaft, a glazed-open lookout on top, a searchlight on the roof",
+ "category": "special",
+ "description": "A three-level concrete tower: a door at the foot, switchback stairs, a lookout with wide openings all round and stairs onto the roof.",
+ "author": "Call of Slop",
+ "seed": 512,
+ "wallThickness": 0.3,
+ "storeyHeight": 3.0,
+ "exterior": {
+  "color": "#9a9a92",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "#a8a89c",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "grey concrete": {
+   "wall": "#9a9a92",
+   "interior": "#a8a89c",
+   "floor": "#6e6e68",
+   "ceiling": "#9a9a90",
+   "trim": "#4a5232",
+   "door": "#4a5232",
+   "roof": "#6a6a64",
+   "stripe": "#c8a820"
+  },
+  "olive": {
+   "wall": "#7a7c66",
+   "interior": "#9a9c86",
+   "floor": "#5e6252",
+   "ceiling": "#8a8c7a",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#5a5c4e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "foot",
+     "type": "siloguardpost",
+     "rect": [
+      -2.5,
+      -2.5,
+      2.5,
+      2.5
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      -1.2,
+      2.5
+     ],
+     "width": 1.0,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "hole",
+     "at": [
+      -2.5,
+      -1.0
+     ],
+     "width": 0.8,
+     "sill": 1.2,
+     "head": 1.6
+    }
+   ]
+  },
+  {
+   "rooms": [
+    {
+     "id": "stair",
+     "type": "silotower",
+     "rect": [
+      -2.5,
+      -2.5,
+      2.5,
+      2.5
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "hole",
+     "at": [
+      -2.5,
+      0
+     ],
+     "width": 0.8,
+     "sill": 1.2,
+     "head": 1.6
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.5,
+      0
+     ],
+     "width": 0.8,
+     "sill": 1.2,
+     "head": 1.6
+    }
+   ]
+  },
+  {
+   "rooms": [
+    {
+     "id": "lookout",
+     "type": "siloguardpost",
+     "rect": [
+      -2.5,
+      -2.5,
+      2.5,
+      2.5
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "hole",
+     "at": [
+      0,
+      -2.5
+     ],
+     "width": 3.2,
+     "sill": 1.0,
+     "head": 2.3
+    },
+    {
+     "type": "hole",
+     "at": [
+      0,
+      2.5
+     ],
+     "width": 3.2,
+     "sill": 1.0,
+     "head": 2.3
+    },
+    {
+     "type": "hole",
+     "at": [
+      -2.5,
+      0
+     ],
+     "width": 3.2,
+     "sill": 1.0,
+     "head": 2.3
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.5,
+      0
+     ],
+     "width": 3.2,
+     "sill": 1.0,
+     "head": 2.3
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    1.0,
+    -1.4,
+    2.05,
+    1.3
+   ],
+   "dir": "-z"
+  },
+  {
+   "floor": 1,
+   "rect": [
+    -2.05,
+    -1.4,
+    -1.0,
+    1.3
+   ],
+   "dir": "+z"
+  },
+  {
+   "floor": 2,
+   "rect": [
+    1.0,
+    -1.4,
+    2.05,
+    1.3
+   ],
+   "dir": "-z"
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 1.0,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "extras": [
+  {
+   "type": "prop",
+   "name": "Floodlight Tower",
+   "at": [
+    -1.4,
+    0,
+    -1.4
+   ],
+   "scale": 0.35,
+   "onRoof": true
+  }
+ ]
+}

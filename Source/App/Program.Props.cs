@@ -60,6 +60,11 @@ public static unsafe partial class Program
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
+        // World Tour, 03 Silo: the forested hill and the open silo from over Blue's motor pool, down the shaft past the missile from
+        // the top gantry, and the launch control room at eye height.
+        ("world_silo", "Silo", new Vector3(-112f, 46f, 66f), new Vector3(0f, 8f, 0f), false),
+        ("world_silo_shaft", "Silo", new Vector3(0f, -2.1f, -11.2f), new Vector3(0f, -15f, 4f), false),
+        ("world_silo_control", "Silo", new Vector3(0f, -2.2f, -41.6f), new Vector3(0f, -2.4f, -52f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

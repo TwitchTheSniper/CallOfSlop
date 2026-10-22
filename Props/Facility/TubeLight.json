@@ -1,0 +1,74 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Tube Light",
+ "category": "Facility",
+ "description": "A hanging fluorescent tube fitting (its top is 0.48 m up: hang it under a ceiling).",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "fadeDistance": 70,
+ "parts": [
+  {
+   "size": [
+    1.5,
+    0.08,
+    0.16
+   ],
+   "offset": [
+    0,
+    0.04,
+    0
+   ],
+   "color": "#d0d0c8",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.4,
+    0.05,
+    0.08
+   ],
+   "offset": [
+    0,
+    0.025,
+    0
+   ],
+   "color": "#fff8e0",
+   "anim": {
+    "type": "flicker",
+    "rate": 3,
+    "duty": 0.97,
+    "glow": 1.4,
+    "color": "#fffbe8"
+   }
+  },
+  {
+   "size": [
+    0.02,
+    0.4,
+    0.02
+   ],
+   "offset": [
+    -0.6,
+    0.28,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.02,
+    0.4,
+    0.02
+   ],
+   "offset": [
+    0.6,
+    0.28,
+    0
+   ],
+   "color": "#3a3d40"
+  }
+ ]
+}

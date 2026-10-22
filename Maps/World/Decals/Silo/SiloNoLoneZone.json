@@ -1,0 +1,54 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Silo No Lone Zone",
+ "description": "The red two-person zone painted round launch equipment: a red border, red hatching.",
+ "author": "Call of Slop",
+ "size": [
+  4.0,
+  3.0
+ ],
+ "rotation": 0,
+ "surfaces": "floor",
+ "fadeDistance": 80,
+ "layers": [
+  {
+   "shape": "rect",
+   "size": [
+    0.96,
+    0.94
+   ],
+   "color": [
+    0.7,
+    0.1,
+    0.08
+   ],
+   "noise": 0.2,
+   "noiseScale": 12
+  },
+  {
+   "shape": "rect",
+   "size": [
+    0.86,
+    0.8
+   ],
+   "color": "white",
+   "erase": true
+  },
+  {
+   "shape": "stripes",
+   "size": [
+    0.86,
+    0.8
+   ],
+   "rotation": 45,
+   "period": 0.16,
+   "duty": 0.25,
+   "color": [
+    0.7,
+    0.1,
+    0.08
+   ],
+   "alpha": 0.8
+  }
+ ]
+}

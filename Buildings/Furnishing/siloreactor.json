@@ -1,0 +1,17 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloreactor",
+ "description": "A reactor hall (normally explicit).",
+ "items": [
+  {
+   "props": [
+    "Coolant Pump"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  }
+ ]
+}

@@ -1,0 +1,66 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloswitchgear",
+ "description": "Switchgear: transformers, switchboards, a standby generator, cable reels.",
+ "items": [
+  {
+   "props": [
+    "Pad Transformer"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Running Generator"
+   ],
+   "place": "wall",
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Junction Box",
+    "Electric Meter"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Patch Panel Cabinet",
+    "Server Rack"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Cable Spool",
+    "Gas Cylinders"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}

@@ -1,0 +1,93 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Silo Floor Trefoil",
+ "description": "A big yellow radiation trefoil painted on a concrete floor.",
+ "author": "Call of Slop",
+ "size": 3.0,
+ "rotation": 0,
+ "tintVariation": 0.08,
+ "surfaces": "floor",
+ "fadeDistance": 90,
+ "layers": [
+  {
+   "shape": "circle",
+   "radius": 0.47,
+   "color": [
+    0.86,
+    0.72,
+    0.12
+   ],
+   "noise": 0.25,
+   "noiseScale": 10
+  },
+  {
+   "shape": "circle",
+   "radius": 0.08,
+   "color": [
+    0.08,
+    0.08,
+    0.08
+   ]
+  },
+  {
+   "shape": "rect",
+   "at": [
+    0.5,
+    0.71
+   ],
+   "size": [
+    0.2,
+    0.22
+   ],
+   "color": [
+    0.08,
+    0.08,
+    0.08
+   ]
+  },
+  {
+   "shape": "rect",
+   "at": [
+    0.318,
+    0.395
+   ],
+   "size": [
+    0.2,
+    0.22
+   ],
+   "rotation": 120,
+   "color": [
+    0.08,
+    0.08,
+    0.08
+   ]
+  },
+  {
+   "shape": "rect",
+   "at": [
+    0.682,
+    0.395
+   ],
+   "size": [
+    0.2,
+    0.22
+   ],
+   "rotation": 240,
+   "color": [
+    0.08,
+    0.08,
+    0.08
+   ]
+  },
+  {
+   "shape": "ring",
+   "radius": 0.44,
+   "width": 0.025,
+   "color": [
+    0.08,
+    0.08,
+    0.08
+   ]
+  }
+ ]
+}

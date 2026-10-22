@@ -1,0 +1,59 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silocomms",
+ "description": "A comms room: radio consoles, patch cabinets, a teletype.",
+ "items": [
+  {
+   "id": "r",
+   "props": [
+    "Radio Console"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Office Chair"
+   ],
+   "place": "front",
+   "of": "r",
+   "distance": 0.15,
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Patch Panel Cabinet"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Teletype Printer"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}
