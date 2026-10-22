@@ -498,7 +498,7 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
                 predictedHit |= zHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now);
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, owner: me.Id);
         }
         if (predictedHit)
         {
@@ -671,9 +671,10 @@ public sealed partial class Game : IDisposable
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, byte owner = 255)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
+        ImpactDecals.OnTracer(World.Map, from, to, owner, now, def.Pellets > 1); // a bullet-impact decal where it ends on a surface (Source/Decals)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
@@ -1277,7 +1278,7 @@ public sealed partial class Game : IDisposable
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags);
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter.Id);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
@@ -1587,7 +1588,7 @@ public sealed partial class Game : IDisposable
                     break;
                 Audio.Shot(def, sp.RenderEye);
                 for (var i = 0; i < n && r.Has(12); i++)
-                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags);
+                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags, shooter);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

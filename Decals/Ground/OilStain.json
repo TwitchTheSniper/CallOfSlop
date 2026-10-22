@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Oil Stain",
+  "description": "A dark oily patch for car parks, garages and roads.",
+  "author": "Call of Slop",
+  "size": 1.6,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.33,
+      "count": 7,
+      "jag": 0.4,
+      "seed": 51,
+      "color": [
+        0.35,
+        0.33,
+        0.3
+      ],
+      "alpha": 0.75,
+      "softness": 0.12,
+      "noise": 0.35,
+      "noiseScale": 5
+    },
+    {
+      "shape": "splat",
+      "radius": 0.18,
+      "count": 5,
+      "jag": 0.35,
+      "seed": 52,
+      "at": [
+        0.56,
+        0.46
+      ],
+      "color": [
+        0.22,
+        0.21,
+        0.2
+      ],
+      "alpha": 0.7,
+      "softness": 0.08
+    }
+  ]
+}

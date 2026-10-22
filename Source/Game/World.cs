@@ -108,6 +108,7 @@ public static class World
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.UpdateBox(index, map.Solid[index]);
         LegacyCollision.SolidChanged(map, index);
+        DecalEvents.SolidChanged(map, index); // impacts on it fade, map decals on it hide (Source/Decals)
     }
 
     /// <summary>Boxes of the current map grew back (broken props restored): the physics world reads them again.</summary>
@@ -116,6 +117,7 @@ public static class World
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.RefreshBoxes();
         LegacyCollision.Invalidate(map);
+        DecalEvents.BoxesRestored(map); // map decals on restored boxes show again
     }
 
     private static PhysicsWorld? _physics;
