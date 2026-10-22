@@ -45,6 +45,7 @@ public static partial class SelfTest
         CheckClutteredCulDeSac(); // SelfTestCluttered.CulDeSac.cs: 04 Cul-de-sac
         CheckClutteredDockside(); // SelfTestCluttered.Dockside.cs: Dockside
         CheckClutteredOldTown(); // SelfTestCluttered.OldTown.cs: 06 Old Town
+        CheckClutteredTimberline(); // SelfTestCluttered.Timberline.cs: 10 Timberline
         World.SetMap(Maps.All[0]);
         if (ClutteredNotes.Count > 0)
             Line("::notice title=Cluttered pack::" + string.Join("%0A", ClutteredNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
@@ -63,4 +64,6 @@ public static partial class SelfTest
     static partial void CheckClutteredDockside();
     /// <summary>06 Old Town's checks: SelfTestCluttered.OldTown.cs.</summary>
     static partial void CheckClutteredOldTown();
+    /// <summary>10 Timberline's checks: SelfTestCluttered.Timberline.cs.</summary>
+    static partial void CheckClutteredTimberline();
 }

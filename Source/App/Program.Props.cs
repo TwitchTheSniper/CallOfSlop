@@ -36,6 +36,9 @@ public static unsafe partial class Program
         // Cluttered pack, Dockside: the bay from above the west horn, then the waterfront road at eye height towards the fish market.
         ("cluttered_dockside", "Dockside", new Vector3(-62f, 24f, 38f), new Vector3(0f, 0f, -16f), false),
         ("cluttered_dockside_street", "Dockside", new Vector3(-27f, 1.7f, 2.5f), new Vector3(2f, 1.4f, 9f), false),
+        // Cluttered pack, 10 Timberline: the forest from above the lake in the south-west, then the woods at eye height on Blue's trail to the middle camp.
+        ("cluttered_timberline", "Timberline", new Vector3(-96f, 44f, 72f), new Vector3(6f, 0f, -6f), false),
+        ("cluttered_timberline_forest", "Timberline", new Vector3(-34f, 2.0f, -6f), new Vector3(0.5f, 1.2f, 2f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

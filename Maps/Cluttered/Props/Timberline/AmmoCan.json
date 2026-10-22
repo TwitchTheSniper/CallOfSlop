@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ammo Can",
+  "category": "Timberline",
+  "description": "A green steel ammo can.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.32, 0.2, 0.16], "offset": [0, 0.1, 0], "color": "#4a5a30"},
+    {"size": [0.06, 0.03, 0.04], "offset": [0, 0.215, 0], "color": "#2a2a22"},
+    {"size": [0.2, 0.06, 0.005], "offset": [0, 0.12, 0.081], "color": "#e0d090"}
+  ]
+}

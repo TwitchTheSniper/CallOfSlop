@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Map Table",
+  "category": "Timberline",
+  "description": "A plotting table with a contour map and coloured pins on it.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 0.88, 1.3]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "wood"},
+  "parts": [
+    {"size": [2.2, 0.08, 1.3], "offset": [0, 0.84, 0], "color": "#5a4a34", "material": "wood"},
+    {"size": [0.1, 0.8, 0.1], "offset": [1.0, 0.4, 0.55], "color": "#3a3026"},
+    {"size": [0.1, 0.8, 0.1], "offset": [1.0, 0.4, -0.55], "color": "#3a3026"},
+    {"size": [0.1, 0.8, 0.1], "offset": [-1.0, 0.4, 0.55], "color": "#3a3026"},
+    {"size": [0.1, 0.8, 0.1], "offset": [-1.0, 0.4, -0.55], "color": "#3a3026"},
+    {"size": [1.6, 0.01, 1.0], "offset": [0, 0.885, 0], "color": "#d8cca0"},
+    {"size": [0.5, 0.012, 0.36], "offset": [-0.3, 0.89, 0.1], "color": "#7a9a6a"},
+    {"size": [0.4, 0.012, 0.3], "offset": [0.4, 0.89, -0.2], "color": "#7a9a6a"},
+    {"size": [0.6, 0.013, 0.04], "offset": [0.1, 0.891, 0.0], "color": "#3060a0", "rotation": [0, 30, 0]},
+    {"size": [0.05, 0.12, 0.05], "offset": [0.3, 0.94, 0.15], "color": "#c02020"},
+    {"size": [0.05, 0.12, 0.05], "offset": [-0.4, 0.94, -0.2], "color": "#2050c0"},
+    {"size": [0.05, 0.12, 0.05], "offset": [0.1, 0.94, -0.3], "color": "#c02020"},
+    {"size": [0.25, 0.04, 0.18], "offset": [-0.8, 0.9, 0.35], "color": "#1a1a1a"}
+  ]
+}

@@ -318,3 +318,79 @@ park, ivy (cosmetic leafy slabs) up the walls.
 paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
 frustum-culled, litter fades out with distance and animated props hold still past 80 m.
 `tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).
+
+## 10 Timberline (large, noisy smooth outline, about 191 x 137 m, 20,700 m2, 16 players): forest, cabins and hidden bunkers
+
+**Theme.** A pine forest on rolling ground under the `alpine` sky (mid-morning sun): little log cabins all over (11 on
+the ground plus two over the bunkers), a creek running down from the north-east hills into a lake in the south-west with
+a dock, canoes, a rowing boat and ducks, dirt trails between clearings, campsites with tents and campfires, picnic tables,
+fallen logs, boulders, toadstools and ferns. Blue holds the **ranger station** by the lake (the radio, the fire danger
+board, the flag, a generator shed, the lake cabin and the fishing shack); Red holds the **logging camp** up the hill (a
+sawmill shed, the log landing with its piles, a bunkhouse, a tool shed, a truck and trailer on the logging road, a
+floodlight). In between: a fire lookout on a knoll (hill 2), the middle campsite (hill 1), the meadow below the creek
+(hill 3), a woodcutter's cabin and woodshed (axe in the chopping block, firewood racks), an old cabin, a hermit's cabin,
+a trail hut and a south cabin, each with a porch and a rocking chair that rocks.
+
+**Shape.** A `smooth` outline through 18 control points with `noise` (1.8 m, 20 m bumps), wider than it's deep. The edge
+is a terrain `cliff` berm (5 m over 7 m) with cosmetic pines on it and beyond (about 460 mesh trees), so the woods carry
+on past the barrier.
+
+**Not mirrored.** The two halves look and play differently: Blue's west is low (spawns about 0 m) with the lake, the
+creek bed and the densest woods (the dark north-west wood: extra pines and bushes); Red's east is the high ground (spawns
+about 8 m up the long rise to the camp) with more open ground round the landing. Fairness comes from measurement:
+- **Walks.** The hills sit where both teams walk the same distance. The generator walks a 0.5 m grid over the terrain
+  (walls, props, trunks and slopes too steep to walk block; the bunker tunnels are links) from every team spawn: Blue/Red
+  89/89 m to hill 1, 104/102 m to hill 2, 107/108 m to hill 3, 183/179 m to the enemy flag (all within 3%). The
+  self-test measures the same on the game's nav graph and fails past 10%.
+- **Sight.** Wooded berms screen each team's spawns (staggered, so the trails through them don't open a straight line),
+  and a few big erratic boulders (the Mossy Boulder prop scaled to over head height) break the long lines across the
+  middle. The generator finds no Blue spawn that sees a Red spawn over the terrain and the tall things; the self-test
+  casts every eye-to-eye ray in the game world.
+- **Cover for the high ground.** Red looks down on the middle; Blue gets more solid cover in its half (about 130 fallen
+  logs, boulders and stumps against 110) and the covered flanks: the creek bed, the lake shore and the north-west wood.
+  The self-test counts solid cover 0.9 m or taller within 6 m of each team's nav routes to the hills and requires Blue
+  to have at least as much as Red (and Red at least 70% of Blue's).
+- **Bunkers.** The two bunkers are the same plan turned 180 degrees about the centre, so neither team has a better
+  tunnel: Blue's runs from the hunting cabin (north-west) to a trench that comes up towards hill 2 and the middle, Red's
+  from the trapper cabin (south-east) to the creek towards hill 3 and the middle.
+
+**Bunkers (how they're built).** The terrain is a heightfield without holes, so each bunker is a pit cut into a level pad
+(`cut` flattens, 3.5 m deep, 1 m wider than the rooms) with concrete walls of boxes inside, and a roof slab at the surface
+(a dirt-coloured box 6 cm proud of the ground, grass growing on it through an `include` zone with `onTop`). The floor is
+the pit's own ground under a cosmetic concrete mesh: a box floor would bury the waypoints the bots need. Inside: a 13 x
+10 m room (three bunk beds, lockers, a map table with pins, a desk with a field radio, a running generator, gas cylinders,
+supply shelves and crates, ammo cans, flickering caged lamps every few metres on dark concrete), and a 2.4 m corridor to
+a door. Two ways in each:
+- **The hatch.** Stairs (14 risers of 25 cm, under the nav graph's step limit at its 0.6 m sampling) climb from the room
+  to a landing strip inside the cabin above, where the roof is open; the hatch lid stands propped beside it. The landing
+  strip is the ground itself (the pit is cut exactly to a heightfield sample line there), so a waypoint lands on it.
+- **The trench.** A `cut` ramp runs from the door up to the surface 13 m away: Blue's comes up on the slope under brush
+  (a timber door frame, a steel door hanging open), Red's runs down a gully into the creek through a big concrete
+  culvert pipe.
+The self-test checks each bunker: the floor is more than 2.8 m under the surface, a roof covers the room, the nav graph's
+main area reaches the room, and both the hatch landing and the trench end have a nav route to it.
+
+**Placement.** Cabins are built from the pack's log-wall kit (`Maps/Cluttered/Props/Timberline`: 3 m walls plain, with
+a door or with a window, 1.5 m walls, pitched roofs for 4.5 to 9 m cabins, a porch, a stone chimney), so they're
+instanced props, not boxes, and furnished as rooms (the ranger's office with the radio, living rooms with a fireplace,
+bunk rooms, sheds with shelving and a generator). Solid forest cover keeps off the trails, doorways, spawns, hills and
+flags; litter and camp things lie round the campfires and tables; logs lie at the landing and in the sawmill; ducks
+on the lake (on the water, `"anchor": "world"`) and on the shore; reeds and long grass round the lake and along the creek;
+the roofs of the bunkers carry fallen branches, ferns and logs at the roof height. Foliage: grass and shrubs everywhere,
+bushes in the woods, more in the north-west wood and along the creek, brush over the trench mouths, none indoors (the
+roof rule), none in the water (the water meshes are roofs to it), thinned on the trails (12%) and the hill clearings.
+
+**Pack props** (`tools/cluttered/timberline_props.py`): Ridge Tent, Dome Tent, Campfire Ring (flickering), Sleeping
+Bag, Camp Chair, Camp Cooler, Camp Lantern, Canoe, Axe Stump, Pine Log Pile, Firewood Rack, Mossy Fallen Log, Fallen
+Branch, Mossy Boulder, Forest Stones, Toadstools, Leaf Litter, Fern Clump, Trail Sign, Fire Danger Sign, Outhouse, Bird
+Box Post, Field Radio (blinking), Map Table, Bunker Cage Lamp (flickering), Supply Crate, Ammo Can, Bunker Hatch Lid,
+and the cabin kit.
+
+**Performance.** About 80 boxes plus the trunks are drawn one by one (the cabins are instanced props); props, plants and
+meshes are instanced and culled; litter fades with distance; animated props hold still past 80 m. The plant count is in
+Sprawl's range and the props about Old Town's, so it should run near their ~1,700 fps on the user's PC. The smoke run's
+`cluttered_timberline` (from above the lake) and `cluttered_timberline_forest` (eye height on Blue's trail) views log fps,
+props, plants and draw calls.
+
+`tools/cluttered/timberline.py` regenerates the map (with `terrain.py`, the Python port of the game's terrain generator,
+for the heights the bunkers and the water need) and, given a PNG path, a top-down preview with the walks and sight lines.

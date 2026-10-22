@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cabin Roof 6x6",
+  "category": "Timberline",
+  "description": "A pitched roof and ceiling for a 6 x 6 m log cabin (ridge along X). Place it at the cabin's centre.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [6.0, 0.16, 6.0], "offset": [0, 2.7800000000000002, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [5.8, 0.14, 5.8], "offset": [0, 2.77, 0], "color": "#5a4630", "material": "wood"},
+    {"size": [6.7, 0.12, 3.631], "offset": [0, 3.54, 1.675], "color": "#3c3a34", "rotation": [22.680559607024914, 0, 0], "material": "wood"},
+    {"size": [6.7, 0.12, 3.631], "offset": [0, 3.54, -1.675], "color": "#3c3a34", "rotation": [-22.680559607024914, 0, 0], "material": "wood"},
+    {"size": [6.74, 0.16, 0.24], "offset": [0, 4.24, 0], "color": "#2c2a26"},
+    {"size": [0.3, 0.35, 4.987], "offset": [2.85, 3.015, 0], "color": "#6b4a2c", "material": "wood"},
+    {"size": [0.3, 0.35, 4.987], "offset": [-2.85, 3.015, 0], "color": "#6b4a2c", "material": "wood"},
+    {"size": [0.3, 0.35, 3.562], "offset": [2.85, 3.365, 0], "color": "#5e4126", "material": "wood"},
+    {"size": [0.3, 0.35, 3.562], "offset": [-2.85, 3.365, 0], "color": "#5e4126", "material": "wood"},
+    {"size": [0.3, 0.35, 2.138], "offset": [2.85, 3.715, 0], "color": "#73502f", "material": "wood"},
+    {"size": [0.3, 0.35, 2.138], "offset": [-2.85, 3.715, 0], "color": "#73502f", "material": "wood"},
+    {"size": [0.3, 0.35, 0.713], "offset": [2.85, 4.065, 0], "color": "#6b4a2c", "material": "wood"},
+    {"size": [0.3, 0.35, 0.713], "offset": [-2.85, 4.065, 0], "color": "#6b4a2c", "material": "wood"}
+  ]
+}

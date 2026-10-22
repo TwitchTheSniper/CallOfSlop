@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Stone Chimney",
+  "category": "Timberline",
+  "description": "A fieldstone chimney stack for a cabin's gable end, a wisp of smoke over it.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.9, 1.2, 0.9]}, {"size": [0.7, 3.4, 0.7], "offset": [0, 2.9, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.9, 1.2, 0.9], "offset": [0, 0.6, 0], "color": "#77726a", "material": "concrete"},
+    {"size": [0.7, 3.2, 0.7], "offset": [0, 2.8, 0], "color": "#6e6a62", "material": "concrete"},
+    {"size": [0.8, 0.2, 0.8], "offset": [0, 4.45, 0], "color": "#5a5650"},
+    {"size": [0.3, 0.3, 0.3], "offset": [0, 4.75, 0], "color": "#9a9a9a", "anim": {"type": "bob", "distance": 0.25, "period": 3.5, "jitter": 0.3}},
+    {"size": [0.22, 0.22, 0.22], "offset": [0.05, 5.2, 0.05], "color": "#b0b0b0", "anim": {"type": "bob", "distance": 0.35, "period": 4.1, "jitter": 0.3}}
+  ]
+}
