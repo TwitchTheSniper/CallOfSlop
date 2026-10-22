@@ -55,6 +55,7 @@ public static unsafe class MapThumbs
 
     private static readonly TerrainRenderer TerrainR = new();
     private static readonly PropRenderer PropR = new();
+    private static readonly BuildingRenderer BuildingR = new();
     private static readonly MeshRenderer MeshR = new();
     private static readonly FoliageRenderer FoliageR = new();
 
@@ -303,6 +304,7 @@ public static unsafe class MapThumbs
         for (var i = 0; i < map.Solid.Count; i++)
             if (map.IsDrawnBox(i))
                 gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        BuildingR.Draw(map, gfx, now); // buildings (instanced)
         MoverRender.DrawImmediate(gfx, map, 0); // movers at their start pose
         TerrainR.Draw(gfx, map);
         PropR.Draw(map, gfx, now);

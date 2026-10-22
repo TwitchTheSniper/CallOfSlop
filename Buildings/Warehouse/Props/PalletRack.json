@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pallet Rack",
+  "description": "Heavy warehouse racking, 2.7 m wide: orange beams on blue uprights, two levels of loaded pallets.",
+  "collision": "solid",
+  "collider": [{"size": [2.72, 3.5, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.08, 3.0, 1.0], "offset": [-1.32, 1.5, 0], "color": "#2a4f9e", "material": "metal"},
+    {"size": [0.08, 3.0, 1.0], "offset": [1.32, 1.5, 0], "color": "#2a4f9e", "material": "metal"},
+    {"size": [2.6, 0.12, 0.08], "offset": [0, 1.4, -0.46], "color": "orange"},
+    {"size": [2.6, 0.12, 0.08], "offset": [0, 1.4, 0.46], "color": "orange"},
+    {"size": [2.6, 0.12, 0.08], "offset": [0, 2.8, -0.46], "color": "orange"},
+    {"size": [2.6, 0.12, 0.08], "offset": [0, 2.8, 0.46], "color": "orange"},
+    {"size": [1.2, 0.14, 0.95], "offset": [-0.62, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.1, 0.8, 0.85], "offset": [-0.62, 0.55, 0], "color": "cardboard"},
+    {"size": [1.2, 0.14, 0.95], "offset": [0.62, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.0, 1.0, 0.8], "offset": [0.62, 0.64, 0], "color": "#3d6b4a"},
+    {"size": [1.2, 0.14, 0.95], "offset": [-0.62, 1.53, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.1, 0.7, 0.85], "offset": [-0.62, 1.95, 0], "color": "cardboard"},
+    {"size": [1.2, 0.14, 0.95], "offset": [0.62, 1.53, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.05, 0.55, 0.8], "offset": [0.62, 1.88, 0], "color": "tape"},
+    {"size": [1.2, 0.14, 0.95], "offset": [0.62, 2.93, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.0, 0.5, 0.8], "offset": [0.62, 3.25, 0], "color": "cardboard"}
+  ]
+}

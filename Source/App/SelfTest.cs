@@ -62,6 +62,7 @@ public static partial class SelfTest
             Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
+            Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Flag pool", CheckFlagPool); // SelfTestFlags.cs: flag designs (Props/Flags), flag props flying them, random picks, overrides, map pools
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles

@@ -106,7 +106,7 @@ public static class Keybinds
             GameAction.Streak2 => "Kill streak 2",
             GameAction.Streak3 => "Kill streak 3 (biggest)",
             GameAction.Ready => "Ready up (warmup)",
-            GameAction.Interact => "Interact (Zombies: cart, slot upgrade)",
+            GameAction.Interact => "Interact (doors; Zombies: cart, slot upgrade)",
             GameAction.Weapon3 => "Weapon slot 3 (Zombies)",
             GameAction.Weapon4 => "Weapon slot 4 (Zombies)",
             _ => a.ToString(),

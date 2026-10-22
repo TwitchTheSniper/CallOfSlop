@@ -54,6 +54,9 @@ public enum Msg : byte
     ZPickup, // server -> all (and each joiner): Zombies: a dropped build appeared (where, seconds left, owner, build text) or went (picked up by X / despawned) (reliable)
     TeamPick, // client -> server: put me on Blue (0), Red (1) or Auto (255) (reliable; the server checks the rules, TeamPick.cs)
     TeamReply, // server -> one client: the answer to a team pick (accepted / moved flags, team, pick, text) (reliable)
+    BuildingUse, // client -> server: the interact key at building door N (reliable; GameBuildings.cs)
+    BuildingEvent, // server -> all: a building door opened / shut / took damage / broke, or a window broke (kind, index, health, from)
+    BuildingState, // server -> joining client: every door's state and health and the broken windows (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

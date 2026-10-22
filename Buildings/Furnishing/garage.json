@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "garage",
+  "description": "A garage or workshop: a car or two, shelving and tool chests on the walls, tyres, cans, a workbench.",
+  "items": [
+    {
+      "props": [
+        "Hatchback",
+        "Sedan",
+        "Car On Bricks",
+        "Pickup Truck"
+      ],
+      "place": "centre",
+      "area": [
+        30,
+        10000
+      ]
+    },
+    {
+      "id": "bench",
+      "props": [
+        "Table"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Toolbox",
+        "Paint Cans"
+      ],
+      "place": "on",
+      "of": "bench",
+      "y": 0.76,
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Metal Shelving",
+        "Metal Lockers"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Tyre Stack",
+        "Oil Drum",
+        "Gas Cylinders",
+        "Engine Block"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Tyre",
+        "Jerry Can",
+        "Car Wheel",
+        "Toolbox",
+        "Paint Cans"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        4
+      ]
+    },
+    {
+      "props": [
+        "Aluminium Step Ladder",
+        "Portable Generator"
+      ],
+      "place": "corner",
+      "chance": 0.6
+    }
+  ]
+}

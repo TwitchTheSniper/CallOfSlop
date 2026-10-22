@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "storage",
+  "description": "A store room: metal shelving on the walls, crates, boxes, sacks and a step ladder.",
+  "items": [
+    {
+      "props": [
+        "Metal Shelving"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Cardboard Stack",
+        "Wooden Crate",
+        "Archive Boxes",
+        "Pallet Stack",
+        "Potato Sacks"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Cardboard Box",
+        "Cardboard Box Large",
+        "Small Crate",
+        "Paint Cans",
+        "Toolbox"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        4
+      ]
+    },
+    {
+      "props": [
+        "Step Ladder",
+        "Mop and Bucket",
+        "Broom"
+      ],
+      "place": "corner",
+      "chance": 0.8
+    }
+  ]
+}

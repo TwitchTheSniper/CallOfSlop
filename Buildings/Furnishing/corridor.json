@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "A corridor or landing: mostly bare, a plant or a radiator.",
+  "items": [
+    {
+      "props": [
+        "Office Plant",
+        "Large Flower Pot"
+      ],
+      "place": "corner",
+      "chance": 0.5
+    },
+    {
+      "props": [
+        "Radiator"
+      ],
+      "place": "wall",
+      "chance": 0.4
+    }
+  ]
+}

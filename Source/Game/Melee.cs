@@ -126,7 +126,7 @@ public sealed partial class Game
                 flags |= 4;
         }
         else if ((flags = ZombieMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
-            MeleeProps(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs)
+            _ = MeleeProps(attacker, origin, dir, now) || MeleeBuildings(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs), else a door or window (GameBuildings.cs)
 
         if (attacker.Id == LocalId)
             OnOwnMelee(flags, now);

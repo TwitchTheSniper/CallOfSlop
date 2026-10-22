@@ -270,6 +270,7 @@ public sealed partial class Game
         var target = BotPerceive(p, b, now, out var visible);
         BotDecide(p, b, target, visible, def, now);
         var steer = BotSteer(p, b, target, visible, def, now);
+        BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
         var aim = BotAim(p, b, target, visible, def, steer, now);
         BotShoot(p, b, target, visible, def, aim, now);
         BotGrenade(p, b, target, visible, aim.Distance, now);

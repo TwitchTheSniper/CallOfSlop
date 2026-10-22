@@ -1230,6 +1230,7 @@ public sealed partial class Game : IDisposable
             }
             if (hit == null && turret == null && zombie == null)
                 ShotProps(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
+            ShotBuildings(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // building doors and window glass (GameBuildings.cs)
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
@@ -1337,6 +1338,7 @@ public sealed partial class Game : IDisposable
                     .U8((byte)World.PhysicsMode); // protocol 13: which movement to predict with
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
+                SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
@@ -1534,6 +1536,11 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.PropBreak:
             case (byte)Msg.PropState:
                 OnPropPacket(id, ref r); // breakable props (GameProps.cs)
+                break;
+            case (byte)Msg.BuildingUse:
+            case (byte)Msg.BuildingEvent:
+            case (byte)Msg.BuildingState:
+                OnBuildingPacket(id, ref r, sender, now); // building doors and windows (GameBuildings.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

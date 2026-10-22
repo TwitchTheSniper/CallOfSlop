@@ -1,0 +1,113 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Two-Storey House",
+  "theme": "1970s suburban family home: white render, teal trim and door, brown hip roof, orange carpet, wood-panel and avocado interiors",
+  "category": "residential",
+  "description": "A two-storey family home: hall with stairs, living room, dining room, kitchen, utility and WC downstairs; three bedrooms, a bathroom and a front balcony upstairs.",
+  "author": "Call of Slop",
+  "seed": 21,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.9,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "white and teal": {
+      "wall": "#e6e2d6",
+      "interior": "#e8d9b8",
+      "floor": "#b0683a",
+      "ceiling": "#f2eee4",
+      "trim": "#2e8a86",
+      "door": "#2e8a86",
+      "roof": "#5a3e2e",
+      "panel": "#8a6236"
+    },
+    "cream and brown": {
+      "wall": "#d9c9a0",
+      "interior": "#dccfae",
+      "floor": "#7a5a3a",
+      "ceiling": "#f1ede2",
+      "trim": "#5c3d24",
+      "door": "#5c3d24",
+      "roof": "#3e3a36",
+      "panel": "#9a7a4a"
+    },
+    "pale blue": {
+      "wall": "#b9c9d4",
+      "interior": "#e4e0d0",
+      "floor": "#6a7f4a",
+      "ceiling": "#f0efe8",
+      "trim": "#f4f4f4",
+      "door": "#b03a2e",
+      "roof": "#454a52",
+      "panel": "#7a6a52"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "hall", "type": "hall", "rect": [-1.5, -1, 1.5, 4.5], "floor": {"color": "$panel", "material": "wood"}},
+        {"id": "living", "type": "living", "rect": [-5, -1, -1.5, 4.5]},
+        {"id": "dining", "type": "dining", "rect": [1.5, 0.5, 5, 4.5], "floor": {"color": "$panel", "material": "wood"}},
+        {"id": "wc", "type": "wc", "rect": [1.5, -1, 5, 0.5], "floor": {"color": "#9db08a", "material": "tiles"}, "windows": false},
+        {"id": "kitchen", "type": "kitchen", "rect": [-1.5, -4.5, 5, -1], "floor": {"color": "#c9c08a", "material": "tiles"}, "wall": "#d8e0a8"},
+        {"id": "utility", "type": "laundry", "rect": [-5, -4.5, -1.5, -1], "floor": {"color": "#9a9a92", "material": "tiles"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [0.6, 4.5], "width": 1.0, "front": true, "hinge": "right"},
+        {"type": "door", "at": [-1.5, 3.75], "width": 0.9},
+        {"type": "door", "at": [1.5, 2.5], "width": 0.9},
+        {"type": "door", "at": [1.5, -0.25], "width": 0.9},
+        {"type": "door", "at": [0.0, -1], "width": 0.9},
+        {"type": "door", "at": [-1.5, -2.75], "width": 0.9},
+        {"type": "door", "at": [3.5, -4.5], "width": 0.9, "hinge": "right"},
+        {"type": "window", "at": [-3.25, 4.5], "width": 1.8, "sill": 0.9, "head": 2.2}
+      ]
+    },
+    {
+      "height": 2.8,
+      "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 0.85, "head": 2.2},
+      "rooms": [
+        {"id": "landing", "type": "corridor", "rects": [[-1.5, -1, 1.5, 4.5], [1.5, -1, 5, 0.5]], "floor": {"color": "$floor", "material": "none"}},
+        {"id": "master", "type": "bedroom", "rect": [-5, -1, -1.5, 4.5]},
+        {"id": "bedroom2", "type": "bedroom", "rect": [1.5, 0.5, 5, 4.5]},
+        {"id": "bedroom3", "type": "kidsroom", "rect": [-5, -4.5, 1.5, -1]},
+        {
+          "id": "bathroom",
+          "type": "bathroom",
+          "rect": [1.5, -4.5, 5, -1],
+          "floor": {"color": "#7fb3b0", "material": "tiles"},
+          "wall": "#cfe4e2",
+          "autoWindows": {"spacing": 2, "width": 0.7, "sill": 1.3, "head": 2.0}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, -0.3], "width": 0.9},
+        {"type": "door", "at": [1.5, 2.6], "width": 0.9},
+        {"type": "door", "at": [-0.4, -1], "width": 0.9},
+        {"type": "door", "at": [3.25, -1], "width": 0.9},
+        {"type": "door", "at": [-3.25, 4.5], "width": 0.9, "hinge": "right"}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-1.33, 0.35, -0.33, 3.3], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
+  "roof": {"type": "hip", "pitch": 28, "overhang": 0.45, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "balcony", "floor": 1, "rect": [-4.6, 4.63, -1.9, 6.0], "railing": 1.0, "color": "$trim"},
+    {"type": "awning", "rect": [-0.4, 4.63, 1.6, 5.6], "height": 2.5, "color": "$trim"},
+    {"type": "prop", "name": "Wheelie Bin", "at": [5.9, -3.2], "yaw": 270},
+    {"type": "prop", "name": "Kettle BBQ", "at": [1.0, -5.8], "yaw": 180},
+    {"type": "prop", "name": "Bicycle", "at": [2.4, 5.4], "yaw": 90},
+    {"type": "prop", "name": "Garden Gnome", "at": [-2.2, 6.3], "yaw": 20},
+    {"type": "prop", "name": "Electric Meter", "at": [5.15, 0.0, 2.5], "yaw": 90}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "master bedroom", "floor": 1, "at": [-3.2, 1.5]},
+    {"type": "spawn", "name": "kitchen", "at": [1.5, -2.8]},
+    {"type": "point", "name": "balcony", "floor": 1, "at": [-3.25, 5.3]}
+  ]
+}

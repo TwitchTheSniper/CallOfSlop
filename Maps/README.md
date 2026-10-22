@@ -119,7 +119,7 @@ Wall openings are written as `"holes": [ { "center": 4, "width": 1.5, "bottom": 
 
 | Op | Parameters | What it makes |
 |---|---|---|
-| `Building` | cx, cz, w, d, stories, wall, floor, doors, roofAccess, parapet = 1 | A walk-in building with windows on every floor, inside stairs, and optional stairs onto the roof. `doors` is any of `"NSEW"`. It needs a depth of at least 10 m. |
+| `Building` | cx, cz, w, d, stories, wall, floor, doors, roofAccess, parapet = 1 | A walk-in building with windows on every floor, inside stairs, and optional stairs onto the roof. `doors` is any of `"NSEW"`. It needs a depth of at least 10 m. With a `name` instead, it places a furnished building from the Buildings folder: see [Buildings](#buildings). |
 | `Tower` | cx, cz, w, d, h, wall, roof | A solid city block you can't enter. |
 | `Hangar` | cx, cz, w, d, h, wall, roof, doorsOnX | A big open shed with wide doors on two ends. |
 | `Watchtower` | x, z, height, color, stairDir = 1 | Legs, a railed platform and stairs. |
@@ -582,6 +582,26 @@ Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Ba
 - **`flag`** on a placement: a flag id, `"random"` (from the map's pool) or `"none"` (the prop's own striped cloth). Leave it out for the prop's default (random for a Flag on a Pole, its own cloth for pennants and banners).
 - **`"flagPool"`** at the top of the map file limits the random ones, e.g. `"flagPool": ["uk", "us"]` for a map set in one place, or `"flagPool": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
 - Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
+
+## Buildings
+
+`{ "op": "Building", "name": ..., "at": [x, z] }` places a whole building from the `Buildings` folder (see [Buildings/README.md](../Buildings/README.md)): walls with door and window openings, floors and ceilings, stairs, a roof, porches and balconies, doors that open, shut and break, shootable window glass, and furniture placed room by room.
+
+```json
+{ "op": "Building", "name": "Small House", "at": [46, -11], "yaw": 180, "seed": 5, "spawns": true,
+  "variant": { "palette": "yellow brick", "mirror": true, "floors": 1, "roof": "hip", "furnish": true, "doors": "closed" } }
+```
+
+| Parameter | Meaning |
+|---|---|
+| `name` | The building's name (or its folder's name). Without a `name`, `Building` is the old blocky building op above. |
+| `at` | `[x, z]` or `[x, y, z]` (y above the ground): where the building's origin goes. On terrain it stands on the highest ground under its footprint, with a foundation down to the lowest. |
+| `yaw` | 0, 90, 180 or 270. At 0 the front faces south (+Z); like a prop's yaw. |
+| `seed` | Reshuffles the furniture (default: the building's own). |
+| `spawns` | `true`: the building's spawn anchors become spawn points. |
+| `variant` | `palette` (one of the building's), `floors` (buildings with a repeating floor), `mirror`, `roof` (`flat`, `gable`, `hip`, `shed`, `none`), `furnish` (`false`: empty), `doors` (`closed`, `open`, `random`). |
+
+Everything a building makes counts towards the map's fingerprint: its boxes, its props, its waypoints and its files (building.json, its own props and the furnishing rules it used), so players need the same Buildings folder as the host. Maps without named Building ops keep the fingerprint they always had. Keep buildings apart (and off the map's edge): the op doesn't check for overlaps; `python3 tools/buildings/buildings.py anchors NAME X Z YAW` prints where a placement's doors and footprint land. The Dev pack's **Building Yard** shows every starter building with variants.
 
 ## Meshes and models
 

@@ -1,0 +1,62 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "warehouse",
+  "description": "A warehouse floor: pallet racks along the walls, pallet stacks and crates in rows, a forklift.",
+  "items": [
+    {
+      "props": [
+        "Metal Shelving"
+      ],
+      "place": "wall",
+      "count": [
+        3,
+        8
+      ]
+    },
+    {
+      "props": [
+        "Pallet Stack",
+        "Wooden Crate",
+        "Cardboard Stack"
+      ],
+      "place": "wall",
+      "count": [
+        2,
+        5
+      ]
+    },
+    {
+      "props": [
+        "Forklift"
+      ],
+      "place": "floor",
+      "chance": 0.8
+    },
+    {
+      "props": [
+        "Pallet Stack",
+        "Wooden Crate",
+        "Cardboard Stack",
+        "Pallet"
+      ],
+      "place": "floor",
+      "count": [
+        4,
+        10
+      ]
+    },
+    {
+      "props": [
+        "Cardboard Box",
+        "Small Crate",
+        "Pallet",
+        "Oil Drum"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        5
+      ]
+    }
+  ]
+}

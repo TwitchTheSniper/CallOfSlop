@@ -561,6 +561,11 @@ public sealed partial class Map
                 continue; // only inside the map's outline (MapEdges.cs)
             if (HasTerrainVoids && TerrainHoleNear(x, z, margin + (tree ? 1.5f : 0.4f)))
                 continue; // nothing grows over (or hanging over the edge of) a terrain hole
+            if (PlacedBuildings.Count > 0 && InsideBuilding(x, z))
+            {
+                stats.Indoors++;
+                continue; // never inside a building, roof or not (MapBuildings.cs)
+            }
             // How much of the normal density may grow here (1 = all; busted paths, thinned zones and pavement are less).
             var allow = 1f;
             var why = 0; // what set the allowance: 1 path, 2 exclude zone, 3 surface

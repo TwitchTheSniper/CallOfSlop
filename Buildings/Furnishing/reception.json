@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "reception",
+  "description": "A reception or lobby: a reception desk, a sofa or chairs for waiting, plants, a water cooler.",
+  "items": [
+    {
+      "id": "desk",
+      "props": [
+        "Reception Desk"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Office Chair"
+      ],
+      "place": "front",
+      "of": "desk",
+      "distance": -0.2
+    },
+    {
+      "props": [
+        "Desk Phone",
+        "Laptop"
+      ],
+      "place": "on",
+      "of": "desk",
+      "y": 1.08,
+      "chance": 0.7
+    },
+    {
+      "props": [
+        "Fabric Sofa",
+        "Armchair"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Coffee Table"
+      ],
+      "place": "centre",
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Office Plant",
+        "Large Flower Pot"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Water Cooler"
+      ],
+      "place": "corner",
+      "chance": 0.7
+    }
+  ]
+}

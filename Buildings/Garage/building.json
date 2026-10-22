@@ -1,0 +1,59 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Garage",
+  "theme": "Backstreet car repair workshop: soot-stained red brick, an oily concrete floor, green steel doors, a car up on the lift, tools everywhere",
+  "category": "industrial",
+  "description": "A car repair workshop: one big bay with a car lift and an open roller-door opening, a parts store and a small office with its own front door.",
+  "author": "Call of Slop",
+  "seed": 91,
+  "wallThickness": 0.3,
+  "storeyHeight": 4.4,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "sooty brick": {"wall": "#7a4436", "interior": "#bdb8a8", "floor": "#6e6a62", "ceiling": "#a8a69c", "trim": "#2e5a3a", "door": "#2e5a3a", "roof": "#4a4f52"},
+    "white block": {"wall": "#cfcfc8", "interior": "#c8c6bc", "floor": "#74706a", "ceiling": "#b0aea6", "trim": "#1f4f8a", "door": "#1f4f8a", "roof": "#55595c"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "workshop",
+          "type": "garage",
+          "rect": [-6, -5, 3, 5],
+          "autoWindows": {"spacing": 3.5, "width": 1.8, "sill": 2.2, "head": 3.4},
+          "props": [
+            {"name": "Car Lift", "at": [-1.6, -1.6]},
+            {"name": "Sedan", "at": [-1.6, -1.6], "y": 1.2},
+            {"name": "Workbench", "wall": "W", "along": 1.0, "yaw": 0},
+            {"name": "Tool Chest", "wall": "W", "along": -1.2}
+          ]
+        },
+        {"id": "office", "type": "office", "rect": [3, 0, 6, 5], "autoWindows": {"spacing": 2.2, "width": 1.1, "sill": 0.95, "head": 2.3}},
+        {"id": "parts", "type": "storage", "rect": [3, -5, 6, 0], "windows": false}
+      ],
+      "openings": [
+        {"type": "arch", "at": [-1.5, 5], "width": 3.8, "head": 3.6},
+        {"type": "door", "at": [4.5, 5], "width": 0.9, "front": true, "material": "metal"},
+        {"type": "door", "at": [3, 2.5], "width": 0.9},
+        {"type": "door", "at": [3, -2.5], "width": 0.9},
+        {"type": "door", "at": [-6, -3.5], "width": 1.0, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "shed", "dir": "-z", "pitch": 9, "overhang": 0.35, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {"type": "block", "min": [-3.65, 3.65, 5.15], "max": [0.65, 4.2, 5.45], "color": "$trim"},
+    {"type": "prop", "name": "Car On Bricks", "at": [-3.5, 8.0], "yaw": 90},
+    {"type": "prop", "name": "Tyre Stack", "at": [1.6, 6.0]},
+    {"type": "prop", "name": "Oil Drum", "at": [2.4, 6.2]},
+    {"type": "prop", "name": "Engine Block", "at": [-5.0, 6.3], "yaw": 30},
+    {"type": "prop", "name": "Hanging Shop Sign", "at": [3.0, 2.6, 5.15], "yaw": 0},
+    {"type": "prop", "name": "Builders Skip", "at": [-8.2, -2.0], "yaw": 90}
+  ],
+  "anchors": [{"type": "spawn", "name": "office", "at": [4.5, 2.5]}, {"type": "hill", "name": "workshop", "at": [-2, 1]}]
+}

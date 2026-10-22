@@ -1,0 +1,56 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kiosk",
+  "description": "A small kiosk shop: a counter, a drinks fridge, a rack of snacks, a newspaper stand.",
+  "items": [
+    {
+      "id": "counter",
+      "props": [
+        "Reception Desk"
+      ],
+      "place": "wall",
+      "prefer": "near"
+    },
+    {
+      "props": [
+        "Desk Phone"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 1.08
+    },
+    {
+      "props": [
+        "Fridge",
+        "Glowing Vending Machine"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Metal Shelving"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Newspaper Stack",
+        "Cardboard Box"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        2
+      ]
+    }
+  ]
+}

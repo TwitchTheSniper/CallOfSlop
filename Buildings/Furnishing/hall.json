@@ -1,0 +1,45 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hall",
+  "description": "An entrance hall: a coat stand, a rug, a radiator, maybe a bench and a plant.",
+  "items": [
+    {
+      "props": [
+        "Coat Stand"
+      ],
+      "place": "corner"
+    },
+    {
+      "props": [
+        "Striped Rug",
+        "Rug"
+      ],
+      "place": "centre",
+      "chance": 0.7
+    },
+    {
+      "props": [
+        "Radiator"
+      ],
+      "place": "wall",
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Office Plant",
+        "Large Flower Pot",
+        "Grandfather Clock"
+      ],
+      "place": "corner",
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Backpack",
+        "Suitcase"
+      ],
+      "place": "floor",
+      "chance": 0.4
+    }
+  ]
+}
