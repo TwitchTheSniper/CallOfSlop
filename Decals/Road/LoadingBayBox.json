@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Loading Bay Box",
+  "description": "A yellow loading-bay box: an outline filled with diagonal hatching.",
+  "author": "Call of Slop",
+  "size": 4.0,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 110,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.97
+      ],
+      "size": [
+        0.97,
+        0.03
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 481
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.03
+      ],
+      "size": [
+        0.97,
+        0.03
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 482
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.03,
+        0.5
+      ],
+      "size": [
+        0.03,
+        0.97
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 483
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.97,
+        0.5
+      ],
+      "size": [
+        0.03,
+        0.97
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 484
+    },
+    {
+      "shape": "stripes",
+      "size": [
+        0.9,
+        0.9
+      ],
+      "period": 0.14,
+      "duty": 0.25,
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 485
+    }
+  ]
+}

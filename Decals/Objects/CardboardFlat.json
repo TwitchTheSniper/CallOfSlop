@@ -1,0 +1,94 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Cardboard Flat",
+  "description": "A flattened cardboard box with fold lines and a strip of tape.",
+  "author": "Call of Slop",
+  "size": [
+    1.2,
+    0.9
+  ],
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "surfaces": "floor",
+  "fadeDistance": 45,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.94,
+        0.9
+      ],
+      "color": [
+        0.66,
+        0.5,
+        0.32
+      ],
+      "noise": 0.2,
+      "noiseScale": 10,
+      "seed": 761
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.3,
+        0.5
+      ],
+      "size": [
+        0.014,
+        0.9
+      ],
+      "color": [
+        0.52,
+        0.38,
+        0.22
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.5
+      ],
+      "size": [
+        0.014,
+        0.9
+      ],
+      "color": [
+        0.52,
+        0.38,
+        0.22
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.94,
+        0.09
+      ],
+      "color": [
+        0.78,
+        0.7,
+        0.52
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.6,
+        0.3
+      ],
+      "radius": 0.12,
+      "count": 6,
+      "jag": 0.5,
+      "seed": 762,
+      "color": [
+        0.4,
+        0.3,
+        0.2
+      ],
+      "alpha": 0.35,
+      "softness": 0.06
+    }
+  ]
+}

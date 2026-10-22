@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Lane Dash",
+  "description": "One worn white lane dash (runs north-south; turn it 90 for east-west roads).",
+  "author": "Call of Slop",
+  "size": [
+    0.15,
+    3.0
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 120,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.9,
+        0.96
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 401
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Moss Patch",
+  "description": "Damp green moss creeping over stone, concrete or brick.",
+  "author": "Call of Slop",
+  "size": 1.4,
+  "sizeVariation": 0.4,
+  "rotation": "random",
+  "tintVariation": 0.12,
+  "blend": "multiply",
+  "surfaces": [
+    "floor",
+    "wall"
+  ],
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.34,
+      "count": 12,
+      "jag": 0.6,
+      "seed": 341,
+      "color": [
+        0.48,
+        0.6,
+        0.34
+      ],
+      "alpha": 0.85,
+      "softness": 0.1,
+      "noise": 0.55,
+      "noiseScale": 10
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.38,
+      "count": 30,
+      "width": 0.032,
+      "seed": 342,
+      "color": [
+        0.3,
+        0.42,
+        0.2
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

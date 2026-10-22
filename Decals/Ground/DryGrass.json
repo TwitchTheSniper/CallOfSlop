@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Dry Grass",
+  "description": "A patch of dead, straw-coloured grass and stalks.",
+  "author": "Call of Slop",
+  "size": 2.0,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.12,
+  "surfaces": "floor",
+  "fadeDistance": 50,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.36,
+      "count": 10,
+      "jag": 0.6,
+      "seed": 331,
+      "color": [
+        0.62,
+        0.55,
+        0.3
+      ],
+      "alpha": 0.75,
+      "softness": 0.12,
+      "noise": 0.5,
+      "noiseScale": 9
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 50,
+      "width": 0.014,
+      "seed": 332,
+      "color": [
+        0.74,
+        0.66,
+        0.38
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.38,
+      "count": 30,
+      "width": 0.012,
+      "seed": 333,
+      "color": [
+        0.48,
+        0.42,
+        0.22
+      ]
+    }
+  ]
+}

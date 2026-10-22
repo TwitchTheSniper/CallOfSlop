@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Oil Drips",
+  "description": "Oil dripped under a parked vehicle: engine and gearbox spots.",
+  "author": "Call of Slop",
+  "size": [
+    1.2,
+    2.2
+  ],
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.3,
+      "count": 7,
+      "jag": 0.4,
+      "seed": 811,
+      "color": [
+        0.62,
+        0.6,
+        0.57
+      ],
+      "alpha": 0.5,
+      "softness": 0.2
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.5,
+        0.7
+      ],
+      "radius": 0.12,
+      "count": 7,
+      "jag": 0.4,
+      "seed": 812,
+      "color": [
+        0.22,
+        0.21,
+        0.2
+      ],
+      "alpha": 0.85,
+      "softness": 0.04
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.46,
+        0.32
+      ],
+      "radius": 0.08,
+      "count": 6,
+      "jag": 0.4,
+      "seed": 813,
+      "color": [
+        0.28,
+        0.27,
+        0.25
+      ],
+      "alpha": 0.8,
+      "softness": 0.04
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.32,
+      "count": 14,
+      "width": 0.022,
+      "seed": 814,
+      "color": [
+        0.25,
+        0.24,
+        0.22
+      ],
+      "alpha": 0.8
+    }
+  ]
+}

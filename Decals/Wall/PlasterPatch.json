@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Plaster Patch",
+  "description": "A smoothed-over patch of fresh plaster with trowel marks.",
+  "author": "Call of Slop",
+  "size": 1.4,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "surfaces": [
+    "wall",
+    "ceiling"
+  ],
+  "fadeDistance": 60,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.36,
+      "count": 8,
+      "jag": 0.3,
+      "seed": 641,
+      "color": [
+        0.82,
+        0.8,
+        0.76
+      ],
+      "softness": 0.02,
+      "noise": 0.12,
+      "noiseScale": 8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.25,
+        0.35
+      ],
+      "to": [
+        0.65,
+        0.7
+      ],
+      "width": 0.08,
+      "color": [
+        0.88,
+        0.86,
+        0.82
+      ],
+      "alpha": 0.6,
+      "softness": 0.03
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.35,
+        0.25
+      ],
+      "to": [
+        0.75,
+        0.6
+      ],
+      "width": 0.08,
+      "color": [
+        0.76,
+        0.74,
+        0.7
+      ],
+      "alpha": 0.5,
+      "softness": 0.03
+    }
+  ]
+}

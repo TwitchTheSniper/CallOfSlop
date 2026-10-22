@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Wall Cracks",
+  "description": "Settlement cracks running across plaster or concrete.",
+  "author": "Call of Slop",
+  "size": 2.2,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "wall",
+  "layers": [
+    {
+      "shape": "cracks",
+      "at": [
+        0.22,
+        0.78
+      ],
+      "count": 3,
+      "length": 0.8,
+      "width": 0.022,
+      "jag": 0.6,
+      "seed": 541,
+      "color": [
+        0.25,
+        0.24,
+        0.23
+      ],
+      "alpha": 0.9
+    },
+    {
+      "shape": "cracks",
+      "at": [
+        0.68,
+        0.32
+      ],
+      "count": 4,
+      "length": 0.38,
+      "width": 0.016,
+      "jag": 0.7,
+      "seed": 542,
+      "color": [
+        0.3,
+        0.29,
+        0.28
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

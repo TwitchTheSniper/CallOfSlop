@@ -1,0 +1,103 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Poster Circles",
+  "description": "An abstract gig-style poster: a big sun over bars of blank text.",
+  "author": "Call of Slop",
+  "size": [
+    0.7,
+    1.0
+  ],
+  "rotation": 0,
+  "tintVariation": 0.1,
+  "surfaces": "wall",
+  "fadeDistance": 60,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.9,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.86,
+        0.74
+      ],
+      "noise": 0.2,
+      "noiseScale": 10,
+      "seed": 571
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.5,
+        0.62
+      ],
+      "radius": 0.26,
+      "color": [
+        0.86,
+        0.36,
+        0.16
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.6,
+        0.7
+      ],
+      "radius": 0.12,
+      "color": [
+        0.96,
+        0.8,
+        0.3
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.24
+      ],
+      "size": [
+        0.7,
+        0.07
+      ],
+      "color": [
+        0.15,
+        0.15,
+        0.18
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.42,
+        0.14
+      ],
+      "size": [
+        0.54,
+        0.04
+      ],
+      "color": [
+        0.15,
+        0.15,
+        0.18
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.08,
+        0.95
+      ],
+      "radius": 0.12,
+      "count": 7,
+      "jag": 0.6,
+      "seed": 572,
+      "color": "white",
+      "erase": true
+    }
+  ]
+}

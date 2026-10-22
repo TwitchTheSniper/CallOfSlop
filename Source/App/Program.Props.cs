@@ -67,6 +67,9 @@ public static unsafe partial class Program
         // Decals (Program.Decals.cs): the Decal Test map's map decals from above, then at eye height after a burst of bullet impacts.
         ("decals", "Decal Test", new Vector3(0f, 26f, 30f), new Vector3(0f, 0f, -2f), false),
         ("decals_impacts", "Decal Test", new Vector3(-2f, 1.7f, 10f), new Vector3(-2f, 1.4f, -6f), false),
+        // The Dev pack's Decal Surfaces map: the street, car park and yard from above, then the wall gallery and ground sampler at eye height.
+        ("decals_surfaces", "Decal Surfaces", new Vector3(-4f, 30f, 44f), new Vector3(-4f, 0f, 14f), false),
+        ("decals_surfaces_gallery", "Decal Surfaces", new Vector3(8f, 1.8f, -18f), new Vector3(18f, 1.2f, -29f), false),
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running

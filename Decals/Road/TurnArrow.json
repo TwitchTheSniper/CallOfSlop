@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Turn Arrow",
+  "description": "A worn white arrow bending right, for junction lanes.",
+  "author": "Call of Slop",
+  "size": [
+    1.6,
+    3.0
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 110,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.33,
+        0.34
+      ],
+      "size": [
+        0.16,
+        0.58
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 441
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.47,
+        0.62
+      ],
+      "size": [
+        0.44,
+        0.1
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 441
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.72,
+        0.62
+      ],
+      "size": 0.3,
+      "rotation": 45,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 441
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.56,
+        0.62
+      ],
+      "size": [
+        0.32,
+        0.5
+      ],
+      "color": "white",
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.47,
+        0.62
+      ],
+      "size": [
+        0.2,
+        0.1
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 441
+    }
+  ]
+}

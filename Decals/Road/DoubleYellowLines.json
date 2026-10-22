@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Double Yellow Lines",
+  "description": "Two parallel yellow no-parking lines along a road edge.",
+  "author": "Call of Slop",
+  "size": [
+    4.0,
+    0.35
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 100,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.75
+      ],
+      "size": [
+        0.98,
+        0.3
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 12,
+      "seed": 461
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.25
+      ],
+      "size": [
+        0.98,
+        0.3
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.3,
+      "noiseScale": 12,
+      "seed": 462
+    }
+  ]
+}

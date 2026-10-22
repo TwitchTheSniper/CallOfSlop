@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Rectangular Rug",
+  "description": "A red and gold patterned rug with a navy centre medallion.",
+  "author": "Call of Slop",
+  "size": [
+    2.4,
+    1.6
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 50,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.96,
+        0.94
+      ],
+      "color": [
+        0.55,
+        0.15,
+        0.15
+      ],
+      "noise": 0.15,
+      "noiseScale": 14,
+      "seed": 721
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.84,
+        0.8
+      ],
+      "color": [
+        0.85,
+        0.7,
+        0.42
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.78,
+        0.72
+      ],
+      "color": [
+        0.5,
+        0.13,
+        0.14
+      ],
+      "noise": 0.12,
+      "noiseScale": 14,
+      "seed": 722
+    },
+    {
+      "shape": "rect",
+      "size": 0.36,
+      "rotation": 45,
+      "color": [
+        0.15,
+        0.2,
+        0.38
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": 0.2,
+      "rotation": 45,
+      "color": [
+        0.85,
+        0.7,
+        0.42
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": 0.08,
+      "rotation": 45,
+      "color": [
+        0.5,
+        0.13,
+        0.14
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.2,
+        0.24
+      ],
+      "size": 0.1,
+      "rotation": 45,
+      "color": [
+        0.15,
+        0.2,
+        0.38
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.2,
+        0.76
+      ],
+      "size": 0.1,
+      "rotation": 45,
+      "color": [
+        0.15,
+        0.2,
+        0.38
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.8,
+        0.24
+      ],
+      "size": 0.1,
+      "rotation": 45,
+      "color": [
+        0.15,
+        0.2,
+        0.38
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.8,
+        0.76
+      ],
+      "size": 0.1,
+      "rotation": 45,
+      "color": [
+        0.15,
+        0.2,
+        0.38
+      ]
+    }
+  ]
+}

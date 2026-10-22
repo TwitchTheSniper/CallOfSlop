@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Utility Cover",
+  "description": "A small rectangular utility access plate with hinges and a lift slot.",
+  "author": "Call of Slop",
+  "size": [
+    0.6,
+    0.4
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 50,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.96,
+        0.94
+      ],
+      "color": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.88,
+        0.84
+      ],
+      "color": [
+        0.44,
+        0.45,
+        0.46
+      ],
+      "noise": 0.15,
+      "noiseScale": 10,
+      "seed": 711
+    },
+    {
+      "shape": "stripes",
+      "size": [
+        0.8,
+        0.5
+      ],
+      "period": 0.08,
+      "duty": 0.3,
+      "color": [
+        0.36,
+        0.37,
+        0.38
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.86
+      ],
+      "size": [
+        0.14,
+        0.05
+      ],
+      "color": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.75,
+        0.86
+      ],
+      "size": [
+        0.14,
+        0.05
+      ],
+      "color": [
+        0.22,
+        0.22,
+        0.22
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.15
+      ],
+      "size": [
+        0.18,
+        0.06
+      ],
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    }
+  ]
+}

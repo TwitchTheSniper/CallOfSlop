@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Gravel Scatter",
+  "description": "Loose grey stones spilled over a path or tarmac.",
+  "author": "Call of Slop",
+  "size": 1.5,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "surfaces": "floor",
+  "fadeDistance": 40,
+  "layers": [
+    {
+      "shape": "speckle",
+      "radius": 0.44,
+      "count": 60,
+      "width": 0.026,
+      "seed": 241,
+      "color": [
+        0.55,
+        0.54,
+        0.5
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.44,
+      "count": 40,
+      "width": 0.022,
+      "seed": 242,
+      "color": [
+        0.38,
+        0.37,
+        0.35
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 25,
+      "width": 0.018,
+      "seed": 243,
+      "color": [
+        0.72,
+        0.7,
+        0.66
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Ceiling Water Spot",
+  "description": "A brown leak stain on a ceiling: rings of old tide marks.",
+  "author": "Call of Slop",
+  "size": 1.6,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "ceiling",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.38,
+      "count": 7,
+      "jag": 0.3,
+      "seed": 901,
+      "color": [
+        0.78,
+        0.7,
+        0.56
+      ],
+      "alpha": 0.6,
+      "softness": 0.12,
+      "noise": 0.3,
+      "noiseScale": 5
+    },
+    {
+      "shape": "ring",
+      "radius": 0.34,
+      "width": 0.03,
+      "color": [
+        0.6,
+        0.5,
+        0.36
+      ],
+      "alpha": 0.75,
+      "softness": 0.01,
+      "noise": 0.35,
+      "noiseScale": 9,
+      "seed": 902
+    },
+    {
+      "shape": "ring",
+      "radius": 0.24,
+      "width": 0.025,
+      "color": [
+        0.62,
+        0.52,
+        0.38
+      ],
+      "alpha": 0.7,
+      "softness": 0.01,
+      "noise": 0.35,
+      "noiseScale": 9,
+      "seed": 903
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.52,
+        0.48
+      ],
+      "radius": 0.13,
+      "width": 0.02,
+      "color": [
+        0.55,
+        0.44,
+        0.3
+      ],
+      "alpha": 0.7,
+      "softness": 0.01
+    }
+  ]
+}
