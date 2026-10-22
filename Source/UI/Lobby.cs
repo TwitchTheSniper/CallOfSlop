@@ -781,6 +781,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Gore"u8);
+            var gore = (int)s.Gore;
+            for (var i = 0; i <= (int)GoreMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreMode)i}##gore", ref gore, i))
+                    s.Gore = (GoreMode)gore;
+            }
+            ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();

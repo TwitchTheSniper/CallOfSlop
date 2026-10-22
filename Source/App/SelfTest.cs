@@ -163,6 +163,7 @@ public static partial class SelfTest
             Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
+            Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Line("");
