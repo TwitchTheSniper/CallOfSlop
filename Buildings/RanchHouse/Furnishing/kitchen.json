@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Ranch House kitchen: pastel appliances, counters, a turquoise formica dinette with red vinyl chairs.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 3]},
+    {"props": ["Cooker"], "place": "wall"},
+    {"id": "sink", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Toaster", "Coffee Maker", "Kettle", "Microwave"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 3]},
+    {"id": "table", "props": ["Ranch House Dinette Table"], "place": "centre"},
+    {"props": ["Ranch House Dinette Chair"], "place": "around", "of": "table", "count": [3, 4]},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

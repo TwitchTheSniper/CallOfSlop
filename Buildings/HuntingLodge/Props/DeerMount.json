@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Deer Mount",
+  "description": "A mounted whitetail deer head with a twelve-point rack on an oak shield.",
+  "collision": "cosmetic",
+  "fadeDistance": 50,
+  "breakable": {"health": 30, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.4, 0.5, 0.04], "offset": [0, 1.85, -0.02], "color": "#7a5230", "material": "wood"},
+    {"size": [0.22, 0.26, 0.24], "offset": [0, 1.85, 0.1], "color": "#8a6a44"},
+    {"size": [0.14, 0.14, 0.24], "offset": [0, 1.75, 0.3], "color": "#7a5a3a"},
+    {"size": [0.06, 0.04, 0.04], "offset": [0, 1.71, 0.43], "color": "#1a1a1a"},
+    {"size": [0.06, 0.12, 0.04], "offset": [-0.12, 1.92, 0.12], "color": "#8a6a44"},
+    {"size": [0.06, 0.12, 0.04], "offset": [0.12, 1.92, 0.12], "color": "#8a6a44"},
+    {"size": [0.04, 0.34, 0.04], "offset": [-0.12, 2.07, 0.1], "color": "#e8dcc0", "rotation": [0, 0, 25]},
+    {"size": [0.04, 0.34, 0.04], "offset": [0.12, 2.07, 0.1], "color": "#e8dcc0", "rotation": [0, 0, -25]},
+    {"size": [0.25, 0.03, 0.03], "offset": [-0.24, 2.135, 0.12], "color": "#e8dcc0"},
+    {"size": [0.25, 0.03, 0.03], "offset": [0.24, 2.135, 0.12], "color": "#e8dcc0"},
+    {"size": [0.03, 0.14, 0.03], "offset": [-0.3, 2.21, 0.12], "color": "#e8dcc0"},
+    {"size": [0.03, 0.14, 0.03], "offset": [0.3, 2.21, 0.12], "color": "#e8dcc0"},
+    {"size": [0.03, 0.12, 0.03], "offset": [-0.18, 2.2, 0.12], "color": "#e8dcc0"},
+    {"size": [0.03, 0.12, 0.03], "offset": [0.18, 2.2, 0.12], "color": "#e8dcc0"},
+    {"size": [0.3, 0.2, 0.2], "offset": [0, 0.1, 0.0], "color": "#3a2a1a"}
+  ]
+}

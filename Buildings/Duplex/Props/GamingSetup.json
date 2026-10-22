@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Duplex Gaming Setup",
+  "description": "A black gaming desk with three glowing monitors, RGB lighting, energy drink cans and a racing-style chair.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.78, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.6, 0.04, 0.7], "offset": [0, 0.76, 0], "color": "#141418"},
+    {"size": [0.06, 0.74, 0.66], "offset": [-0.76, 0.37, 0], "color": "#141418"},
+    {"size": [0.06, 0.74, 0.66], "offset": [0.76, 0.37, 0], "color": "#141418"},
+    {
+      "size": [1.6, 0.02, 0.02],
+      "offset": [0, 0.74, 0.34],
+      "color": "#ff2a8a",
+      "anim": {"type": "cycle", "period": 3, "steps": 3, "on": [0], "color": "#ff2a8a", "glow": 1.2}
+    },
+    {"size": [0.56, 0.26, 0.04], "offset": [0, 0.95, -0.2], "color": "#1a1a1a"},
+    {
+      "size": [0.52, 0.22, 0.01],
+      "offset": [0, 0.95, -0.175],
+      "color": "#3a8aff",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.95, "color": "#5aa0ff", "glow": 0.9}
+    },
+    {"size": [0.5, 0.26, 0.04], "offset": [-0.54, 0.95, -0.12], "color": "#1a1a1a", "rotation": [0, 25, 0]},
+    {"size": [0.5, 0.26, 0.04], "offset": [0.54, 0.95, -0.12], "color": "#1a1a1a", "rotation": [0, -25, 0]},
+    {"size": [0.06, 0.04, 0.06], "offset": [0, 0.8, -0.22], "color": "#2a2a2a"},
+    {"size": [0.45, 0.02, 0.15], "offset": [-0.05, 0.79, 0.15], "color": "#2a2a2a"},
+    {"size": [0.1, 0.03, 0.12], "offset": [0.35, 0.795, 0.15], "color": "#2a2a2a"},
+    {"size": [0.2, 0.46, 0.46], "offset": [0.65, 0.23, -0.05], "color": "#141418"},
+    {
+      "size": [0.02, 0.4, 0.02],
+      "offset": [0.55, 0.23, 0.18],
+      "color": "#2aff8a",
+      "anim": {"type": "cycle", "period": 3, "steps": 3, "on": [1], "color": "#2aff8a", "glow": 1.2}
+    },
+    {"size": [0.06, 0.12, 0.06], "offset": [-0.6, 0.84, 0.2], "color": "#2ac84a"},
+    {"size": [0.06, 0.12, 0.06], "offset": [-0.5, 0.84, 0.25], "color": "#c8c8d0"}
+  ]
+}

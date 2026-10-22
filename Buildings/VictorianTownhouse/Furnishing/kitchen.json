@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Victorian below-stairs kitchen: a black range, a big scrubbed table, a dresser of plates, the sink and copper pans.",
+  "items": [
+    {"props": ["Fireplace", "Cooker"], "place": "wall", "prefer": "far"},
+    {"id": "sink", "props": ["Kitchen Sink"], "place": "wall"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "beside", "of": "sink", "count": [1, 2]},
+    {"props": ["Cooking Pot", "Frying Pan", "Knife Block", "Kettle"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 3]},
+    {"id": "table", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "table", "count": [2, 4]},
+    {"props": ["Cabbage Crate", "Apple Crate"], "place": "on", "of": "table", "chance": 0.6},
+    {"id": "dresser", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Stacked Plates"], "place": "on", "of": "dresser"},
+    {"props": ["Potato Sacks", "Broom", "Bucket"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Terrace front room: a coal fire with a scuttle, two armchairs, a sideboard, a rag rug and the telly.",
+  "items": [
+    {"id": "fire", "props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"props": ["Row Houses Coal Scuttle"], "place": "beside", "of": "fire"},
+    {"props": ["Armchair"], "place": "corner", "count": [2, 2]},
+    {"props": ["Rug"], "place": "centre"},
+    {"id": "sofa", "props": ["Old Sofa", "Fabric Sofa"], "place": "wall", "chance": 0.6},
+    {"props": ["CRT Television", "TV Stand"], "place": "wall"},
+    {"id": "side", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Table Lamp", "Book Pile"], "place": "on", "of": "side"},
+    {"props": ["Cat", "Newspaper", "Dog"], "place": "floor", "count": [1, 2]}
+  ]
+}

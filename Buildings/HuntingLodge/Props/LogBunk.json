@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Log Bunk",
+  "description": "A rough-hewn log bunk bed with red wool blankets and a ladder.",
+  "collision": "solid",
+  "collider": [{"size": [1.12, 1.75, 2.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.12, 1.75, 0.12], "offset": [-0.5, 0.875, -1.0], "color": "#5a3a22"},
+    {"size": [0.12, 1.75, 0.12], "offset": [0.5, 0.875, -1.0], "color": "#5a3a22"},
+    {"size": [0.12, 1.75, 0.12], "offset": [-0.5, 0.875, 1.0], "color": "#5a3a22"},
+    {"size": [0.12, 1.75, 0.12], "offset": [0.5, 0.875, 1.0], "color": "#5a3a22"},
+    {"size": [1.0, 0.14, 2.0], "offset": [0, 0.32, 0], "color": "#5a3a22"},
+    {"size": [0.9, 0.12, 1.9], "offset": [0, 0.45, 0], "color": "#a82a2a"},
+    {"size": [1.0, 0.14, 2.0], "offset": [0, 1.22, 0], "color": "#5a3a22"},
+    {"size": [0.9, 0.12, 1.9], "offset": [0, 1.35, 0], "color": "#2a4a2a"},
+    {"size": [0.5, 0.1, 0.3], "offset": [0, 0.56, -0.75], "color": "#e8e0d0"},
+    {"size": [0.5, 0.1, 0.3], "offset": [0, 1.46, -0.75], "color": "#e8e0d0"},
+    {"size": [0.04, 1.4, 0.3], "offset": [0.56, 0.9, 0.7], "color": "#7a5230"}
+  ]
+}

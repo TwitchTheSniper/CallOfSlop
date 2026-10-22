@@ -1,0 +1,92 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Hunting Lodge",
+  "theme": "A rustic log hunting lodge: dark logs, a green tin roof, a fieldstone chimney and a porch; antler chandeliers, deer mounts, a bear rug, leather, plaid and a gun room",
+  "category": "residential",
+  "description": "A two-storey log lodge: a great room with a stone hearth, a kitchen, a trophy and gun room, a gear room and a game larder downstairs; a loft lounge, a bunk room for the hunting party, two bedrooms, a bathroom and a store upstairs.",
+  "author": "Call of Slop",
+  "seed": 110,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.0,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "wood"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "dark log": {"wall": "#5a3a22", "interior": "#8a6038", "floor": "#6a4428", "ceiling": "#7a5434", "trim": "#3a2414", "door": "#7a2a1a", "roof": "#2f5a36"},
+    "pine log": {"wall": "#a87a48", "interior": "#c89a62", "floor": "#8a6038", "ceiling": "#b88a58", "trim": "#5a3a22", "door": "#2f4a2a", "roof": "#7a2a1e"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.0, "head": 2.2},
+      "rooms": [
+        {"id": "great", "type": "living", "rect": [-7, 0, 3, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "kitchen", "type": "kitchen", "rect": [3, 0, 7, 5], "floor": {"color": "#7a6a52", "material": "tiles"}},
+        {"id": "trophy", "type": "trophy", "rect": [-7, -5, -2, 0], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "gear", "type": "gear", "rect": [-2, -5, 2, 0], "floor": {"color": "#6a6660", "material": "concrete"}},
+        {"id": "larder", "type": "larder", "rect": [2, -5, 7, 0], "floor": {"color": "#6a6660", "material": "concrete"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-2.5, 5], "width": 1.2, "front": true, "color": "$door"},
+        {"type": "door", "at": [3, 1.0], "width": 0.9},
+        {"type": "door", "at": [-4.5, 0], "width": 0.9},
+        {"type": "door", "at": [0, 0], "width": 0.9},
+        {"type": "door", "at": [5, 0], "width": 0.9},
+        {"type": "door", "at": [0, -5], "width": 1.0, "color": "$door"},
+        {"type": "door", "at": [7, 1.0], "width": 0.9, "color": "$door"}
+      ]
+    },
+    {
+      "height": 2.8,
+      "autoWindows": {"spacing": 2.6, "width": 0.9, "sill": 1.0, "head": 2.1},
+      "rooms": [
+        {"id": "loft", "type": "loft", "rect": [-7, -1, -2, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "hallway", "type": "corridor", "rect": [-2, -1, 7, 1], "floor": {"color": "$floor", "material": "wood"}, "windows": false},
+        {"id": "bunks", "type": "bunkroom", "rect": [-2, 1, 3, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "master", "type": "bedroom", "rect": [3, 1, 7, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [-2, -5, 2, -1],
+          "floor": {"color": "#7a7468", "material": "tiles"},
+          "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.4, "head": 2.2}
+        },
+        {"id": "guest", "type": "bedroom", "rect": [2, -5, 7, -1], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "store", "type": "storage", "rect": [-7, -5, -2, -1], "floor": {"color": "$floor", "material": "wood"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-2, 0], "width": 0.9},
+        {"type": "door", "at": [0.5, 1], "width": 0.9},
+        {"type": "door", "at": [5, 1], "width": 0.9},
+        {"type": "door", "at": [0, -1], "width": 0.9},
+        {"type": "door", "at": [4.5, -1], "width": 0.9},
+        {"type": "door", "at": [-4.5, -1], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-6.8, 0.95, -5.7, 3.9], "dir": "-z", "color": {"color": "#7a5230", "material": "wood"}}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 36, "overhang": 0.6, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {"type": "block", "min": [-7.95, 0.0, -2.6], "max": [-7.15, 9.6, -1.2], "color": {"color": "#8a8478", "material": "brick"}},
+    {"type": "porch", "rect": [-6.0, 5.15, 1.0, 7.2], "height": 2.7, "color": "$trim"},
+    {"type": "prop", "name": "Log", "at": [-8.6, 1.0], "yaw": 90},
+    {"type": "prop", "name": "Log", "at": [-8.6, 0.24, 1.0], "yaw": 90},
+    {"type": "prop", "name": "Tree Stump", "at": [-8.8, 3.4], "yaw": 0},
+    {"type": "prop", "name": "Rocking Chair", "at": [-4.5, 6.4], "yaw": 0},
+    {"type": "prop", "name": "Rocking Chair", "at": [-0.5, 6.4], "yaw": 0},
+    {"type": "prop", "name": "Hanging Lantern", "at": [0.6, 6.9], "yaw": 0},
+    {"type": "prop", "name": "Pickup Truck", "at": [5.5, 9.0], "yaw": 0},
+    {"type": "prop", "name": "Duck Decoy", "at": [-3.4, 6.6], "yaw": 30},
+    {"type": "prop", "name": "Oil Drum", "at": [1.0, -5.8], "yaw": 0},
+    {"type": "prop", "name": "Jerry Can", "at": [1.6, -5.7], "yaw": 20},
+    {"type": "prop", "name": "Wheelbarrow", "at": [-4.0, -6.2], "yaw": 70}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "great room", "at": [-2.0, 2.5]},
+    {"type": "spawn", "name": "trophy room", "at": [-4.5, -2.5]},
+    {"type": "spawn", "name": "loft", "floor": 1, "at": [-4.0, 3.5]},
+    {"type": "point", "name": "porch", "at": [-2.5, 6.2]}
+  ]
+}

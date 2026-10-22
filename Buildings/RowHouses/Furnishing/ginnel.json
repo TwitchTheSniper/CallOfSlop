@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "ginnel",
+  "description": "The covered back passage behind the terrace: bins, a tin bath, coal sacks, a bike and the washing line.",
+  "items": [
+    {"props": ["Wheelie Bin Grey", "Recycling Bin"], "place": "wall"},
+    {"props": ["Trash Bag", "Bucket", "Cardboard Box", "Newspaper", "Plastic Bag"], "place": "floor", "count": [3, 5]}
+  ]
+}

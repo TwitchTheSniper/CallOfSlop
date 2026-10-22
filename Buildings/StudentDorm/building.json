@@ -1,0 +1,159 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Student Dorm",
+  "theme": "1990s university residence hall: beige brick, blue doors, green corridors and lino; twin rooms with pine desks, posters and mini fridges, communal showers, ping pong",
+  "category": "residential",
+  "description": "A three-storey student residence round an end stairwell (more floors with the \"floors\" variant): a common room, laundry, RA office, shared kitchen, washroom and study room downstairs; four twin rooms, four singles and a washroom on each floor above; roof access.",
+  "author": "Call of Slop",
+  "seed": 109,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.0,
+  "floorCount": 3,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "concrete"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "beige brick": {
+      "wall": "#c8b48a",
+      "interior": "#e8e4d4",
+      "corr": "#a8bca0",
+      "lino": "#a8a090",
+      "floor": "#8a8a7a",
+      "ceiling": "#f0efe8",
+      "trim": "#e8e4d8",
+      "door": "#2f5a9a",
+      "roof": "#5a5a58"
+    },
+    "red brick": {
+      "wall": "#9a4a3a",
+      "interior": "#e4e0d4",
+      "corr": "#c8c0a0",
+      "lino": "#9a9888",
+      "floor": "#7a7a70",
+      "ceiling": "#f0efe8",
+      "trim": "#f0ece0",
+      "door": "#8a2a2a",
+      "roof": "#4a4a4a"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.8, "width": 1.1, "sill": 1.0, "head": 2.3},
+      "rooms": [
+        {
+          "id": "stairs",
+          "type": "stairwell",
+          "rect": [6, -5, 10, 5],
+          "floor": {"color": "#8a8a84", "material": "concrete"},
+          "wall": "#b8c0b0",
+          "windows": false
+        },
+        {"id": "corridor", "type": "corridor", "rect": [-10, 0, 6, 2], "floor": {"color": "$lino", "material": "tiles"}, "wall": "$corr"},
+        {"id": "lounge", "type": "lounge", "rect": [-10, -5, -2, 0]},
+        {"id": "laundry", "type": "laundry", "rect": [-2, -5, 2, 0], "floor": {"color": "#a8a8a0", "material": "tiles"}},
+        {"id": "ra", "type": "raoffice", "rect": [2, -5, 6, 0]},
+        {"id": "kitchen", "type": "kitchen", "rect": [-10, 2, -4, 5], "floor": {"color": "#c8c0a8", "material": "tiles"}},
+        {
+          "id": "washroom",
+          "type": "showers",
+          "rect": [-4, 2, 0, 5],
+          "floor": {"color": "#c8d8d8", "material": "tiles"},
+          "wall": "#d8e4e4",
+          "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.5, "head": 2.4}
+        },
+        {"id": "study", "type": "study", "rect": [0, 2, 6, 5]}
+      ],
+      "openings": [
+        {"type": "door", "at": [8, 5], "width": 1.4, "front": true, "material": "glass", "color": "$door"},
+        {"type": "door", "at": [8, -5], "width": 1.0, "material": "metal", "color": "$door"},
+        {"type": "door", "at": [6, 1], "width": 0.9},
+        {"type": "door", "at": [-6, 0], "width": 1.2},
+        {"type": "door", "at": [0, 0], "width": 0.9},
+        {"type": "door", "at": [4, 0], "width": 0.9},
+        {"type": "door", "at": [-7, 2], "width": 0.9},
+        {"type": "door", "at": [-2, 2], "width": 0.9},
+        {"type": "door", "at": [3, 2], "width": 1.2}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.8, "width": 1.1, "sill": 1.0, "head": 2.3},
+      "repeat": true,
+      "rooms": [
+        {
+          "id": "stairs",
+          "type": "stairwell",
+          "rect": [6, -5, 10, 5],
+          "floor": {"color": "#8a8a84", "material": "concrete"},
+          "wall": "#b8c0b0",
+          "windows": false
+        },
+        {"id": "corridor", "type": "corridor", "rect": [-10, 0, 6, 2], "floor": {"color": "$lino", "material": "tiles"}, "wall": "$corr"},
+        {"id": "r1", "type": "dormroom", "rect": [-10, -5, -6, 0]},
+        {"id": "r2", "type": "dormroom", "rect": [-6, -5, -2, 0]},
+        {"id": "r3", "type": "dormroom", "rect": [-2, -5, 2, 0]},
+        {"id": "r4", "type": "dormroom", "rect": [2, -5, 6, 0]},
+        {
+          "id": "washroom",
+          "type": "showers",
+          "rect": [-10, 2, -6, 5],
+          "floor": {"color": "#c8d8d8", "material": "tiles"},
+          "wall": "#d8e4e4",
+          "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.5, "head": 2.4}
+        },
+        {"id": "s1", "type": "single", "rect": [-6, 2, -3, 5]},
+        {"id": "s2", "type": "single", "rect": [-3, 2, 0, 5]},
+        {"id": "s3", "type": "single", "rect": [0, 2, 3, 5]},
+        {"id": "s4", "type": "single", "rect": [3, 2, 6, 5]}
+      ],
+      "openings": [
+        {"type": "door", "at": [6, 1], "width": 0.9},
+        {"type": "door", "at": [-8.6, 0], "width": 0.9},
+        {"type": "door", "at": [-4.6, 0], "width": 0.9},
+        {"type": "door", "at": [-0.6, 0], "width": 0.9},
+        {"type": "door", "at": [3.4, 0], "width": 0.9},
+        {"type": "door", "at": [-8, 2], "width": 0.9},
+        {"type": "door", "at": [-4.5, 2], "width": 0.9},
+        {"type": "door", "at": [-1.5, 2], "width": 0.9},
+        {"type": "door", "at": [1.5, 2], "width": 0.9},
+        {"type": "door", "at": [4.5, 2], "width": 0.9},
+        {"type": "window", "at": [8, 5], "width": 1.6, "sill": 0.9, "head": 2.2},
+        {"type": "window", "at": [8, -5], "width": 1.6, "sill": 0.9, "head": 2.2}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [6.15, -3.5, 7.25, 0.5], "dir": "-z", "color": {"color": "#9a9a94", "material": "concrete"}},
+    {
+      "floor": 1,
+      "rect": [8.75, -3.5, 9.85, 0.5],
+      "dir": "+z",
+      "alt": {"rect": [6.15, -3.5, 7.25, 0.5], "dir": "-z"},
+      "color": {"color": "#9a9a94", "material": "concrete"}
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [6.6, 5.15, 9.4, 6.4], "height": 2.7, "color": {"color": "#9a9a94", "material": "concrete"}},
+    {"type": "block", "min": [6.6, 2.8, 5.15], "max": [9.4, 3.3, 5.3], "color": "$door"},
+    {"type": "prop", "name": "Bike Rack", "at": [3.0, 6.2], "yaw": 0},
+    {"type": "prop", "name": "Bicycle", "at": [2.6, 6.3], "yaw": 0},
+    {"type": "prop", "name": "Bicycle", "at": [3.6, 6.1], "yaw": 10},
+    {"type": "prop", "name": "Bench", "at": [-3.0, 6.2], "yaw": 0},
+    {"type": "prop", "name": "Post Litter Bin", "at": [-1.5, 6.0], "yaw": 0},
+    {"type": "prop", "name": "Dumpster", "at": [-7.5, -6.5], "yaw": 0},
+    {"type": "prop", "name": "Recycling Bin", "at": [-5.5, -6.2], "yaw": 0},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [-6.0, 0, -2.5], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [-3.0, 0, -2.5], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Flag on a Pole", "at": [11.2, 5.5], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "common room", "at": [-6.0, -2.5]},
+    {"type": "spawn", "name": "stairwell", "at": [8.0, 3.5]},
+    {"type": "spawn", "name": "first floor corridor", "floor": 1, "at": [-4.0, 1.0]},
+    {"type": "spawn", "name": "upstairs corridor east", "floor": 1, "at": [2.5, 1.0]},
+    {"type": "hill", "name": "common room", "at": [-6.0, -2.5]}
+  ]
+}

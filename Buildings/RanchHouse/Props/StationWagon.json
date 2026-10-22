@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House Station Wagon",
+  "description": "A 1960s station wagon in seafoam green with fake wood-panel sides and a roof rack.",
+  "collision": "solid",
+  "collider": [{"size": [5.0, 0.95, 1.92], "offset": [0, 0.47, 0]}, {"size": [3.4, 0.5, 1.78], "offset": [-0.55, 1.2, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [5.0, 0.62, 1.9], "offset": [0, 0.61, 0], "color": "#8ac8b0", "material": "metal"},
+    {"size": [3.4, 0.5, 1.76], "offset": [-0.55, 1.17, 0], "color": "#8ac8b0", "material": "metal"},
+    {"size": [3.2, 0.42, 1.78], "offset": [-0.55, 1.17, 0], "color": "#9ab8c8"},
+    {"size": [4.4, 0.3, 1.92], "offset": [-0.1, 0.57, 0], "color": "#8a5a2a", "material": "wood"},
+    {"size": [3.3, 0.04, 1.6], "offset": [-0.55, 1.46, 0], "color": "#c0c0c0"},
+    {"size": [0.2, 0.16, 1.9], "offset": [2.45, 0.5, 0], "color": "chrome"},
+    {"size": [0.2, 0.16, 1.9], "offset": [-2.45, 0.5, 0], "color": "chrome"},
+    {"size": [0.66, 0.66, 0.22], "offset": [1.55, 0.33, 0.86], "color": "#1a1a1a"},
+    {"size": [0.66, 0.66, 0.22], "offset": [-1.55, 0.33, 0.86], "color": "#1a1a1a"},
+    {"size": [0.66, 0.66, 0.22], "offset": [1.55, 0.33, -0.86], "color": "#1a1a1a"},
+    {"size": [0.66, 0.66, 0.22], "offset": [-1.55, 0.33, -0.86], "color": "#1a1a1a"},
+    {"size": [0.06, 0.14, 0.3], "offset": [2.5, 0.59, 0.6], "color": "#f8f0c0"},
+    {"size": [0.06, 0.14, 0.3], "offset": [2.5, 0.59, -0.6], "color": "#f8f0c0"}
+  ]
+}

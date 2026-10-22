@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "attic",
+  "description": "Victorian box room in the attic: steamer trunks, a dress form, old chairs and boxes.",
+  "items": [
+    {"props": ["Victorian Townhouse Steamer Trunk"], "place": "wall", "count": [2, 3]},
+    {"props": ["Victorian Townhouse Dress Form"], "place": "corner"},
+    {"props": ["Rocking Chair", "Wooden Chair", "Standing Mirror"], "place": "floor", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Archive Boxes", "Book Pile"], "place": "floor", "count": [2, 3]}
+  ]
+}

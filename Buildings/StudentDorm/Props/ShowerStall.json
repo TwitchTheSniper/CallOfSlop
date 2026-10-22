@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Shower Stall",
+  "description": "A communal shower stall: tiled walls, a curtain half open, a shampoo bottle on the floor.",
+  "collision": "solid",
+  "collider": [
+    {"size": [0.05, 2.0, 1.0], "offset": [-0.475, 1.0, 0]},
+    {"size": [0.05, 2.0, 1.0], "offset": [0.475, 1.0, 0]},
+    {"size": [1.0, 2.0, 0.05], "offset": [0, 1.0, -0.475]}
+  ],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.05, 2.0, 1.0], "offset": [-0.475, 1.0, 0], "color": "#c8d8d8", "material": "tiles"},
+    {"size": [0.05, 2.0, 1.0], "offset": [0.475, 1.0, 0], "color": "#c8d8d8", "material": "tiles"},
+    {"size": [1.0, 2.0, 0.05], "offset": [0, 1.0, -0.475], "color": "#c8d8d8", "material": "tiles"},
+    {"size": [0.9, 0.04, 0.9], "offset": [0, 0.02, 0], "color": "#a8b8b8"},
+    {"size": [0.12, 0.04, 0.1], "offset": [0, 1.87, -0.4], "color": "chrome"},
+    {"size": [0.4, 1.7, 0.02], "offset": [-0.25, 1.15, 0.48], "color": "#e8f0f0"},
+    {"size": [0.06, 0.16, 0.06], "offset": [0.3, 0.12, -0.3], "color": "#e8603a"}
+  ]
+}

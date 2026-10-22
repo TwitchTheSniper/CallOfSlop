@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mobile Home Recliner",
+  "description": "A worn brown vinyl recliner, footrest up, duct tape on one arm.",
+  "collision": "solid",
+  "collider": [{"size": [0.86, 1.1, 0.8]}],
+  "breakable": {"health": 90, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.86, 0.4, 0.8], "offset": [0, 0.28, 0], "color": "#5a3a24"},
+    {"size": [0.86, 0.72, 0.2], "offset": [0, 0.8, -0.32], "color": "#5a3a24", "rotation": [-12, 0, 0]},
+    {"size": [0.16, 0.28, 0.7], "offset": [-0.35, 0.6, 0], "color": "#4e3220"},
+    {"size": [0.16, 0.28, 0.7], "offset": [0.35, 0.6, 0], "color": "#4e3220"},
+    {"size": [0.16, 0.04, 0.3], "offset": [-0.35, 0.76, 0.1], "color": "#b8b8b0"},
+    {"size": [0.6, 0.1, 0.42], "offset": [0, 0.31, 0.58], "color": "#5a3a24"}
+  ]
+}

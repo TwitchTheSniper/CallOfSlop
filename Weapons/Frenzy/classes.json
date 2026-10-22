@@ -4,7 +4,19 @@
   "classes": {
     "Pistol": {
       "character": "Snappy western / outlaw",
-      "music": {},
+      "music": {
+        "style": "Western outlaw",
+        "describe": "a whistled outlaw melody, a galloping twangy bass and a whip crack, the whole track in a canyon slap-back echo",
+        "pool": "classic",
+        "stems": { "drums": 1.0, "bass": 0.5, "lead": 0.75 },
+        "fx": { "slapMs": 120, "slapFeedback": 0.3, "slapMix": 0.3 },
+        "trim": 0.96,
+        "layers": [
+          { "voice": "twang", "pattern": "x..x..x.x..x..4.", "octave": 12, "level": 0.55, "from": 1 },
+          { "voice": "whip", "pattern": "............X...............X.x.", "level": 0.35, "from": 2, "reverb": 0.15 },
+          { "voice": "whistle", "pattern": "0-------4-------7---6-4-2-4-----4-------7---4-2-0-----------....", "octave": 36, "level": 0.3, "from": 3, "reverb": 0.25 }
+        ]
+      },
       "visual": { "signature": "QuickDrawGlint", "color": "#ffc740", "accent": "#ffeb8c", "tracerWidth": 1.3, "sheath": 2.5, "trailLife": 0.18, "muzzleSparks": 7, "impactSparks": 3, "brassSparks": 0, "sparkSpeed": 5, "sparkGravity": 7, "sparkLife": 0.28, "barrelGlow": 0.55, "edgeAlpha": 0.11, "rainbow": false },
       "sound": { "signature": "OutlawTwang", "about": "Ricochet whine, twangy bass, spur ring, canyon echo", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.38, "drive": 0.25, "sub": 0.25, "clack": 0.55, "tail": 0.55, "width": 0.45, "pitch": 1.03 },
       "buffs": {
@@ -16,7 +28,20 @@
     },
     "SMG": {
       "character": "Fast chiptune / breakcore runs",
-      "music": {},
+      "music": {
+        "style": "Chiptune breakcore",
+        "describe": "square-wave arpeggios racing up the chords over chopped breakbeats, the track a little crunchy",
+        "pool": "fast",
+        "stems": { "drums": 0.6, "bass": 1.0, "lead": 0.6 },
+        "fx": { "crushBits": 10, "crushHold": 2 },
+        "trim": 1.1,
+        "layers": [
+          { "voice": "breakkick", "pattern": "X.x.......Xx....", "level": 0.45, "from": 1 },
+          { "voice": "breaksnare", "pattern": "....X..g.g..X..r....X..g.gX...rr", "level": 0.4, "from": 1 },
+          { "voice": "chip", "pattern": "02470247024702479742974297429742", "octave": 24, "level": 0.2, "from": 2 },
+          { "voice": "chip", "pattern": "4.4.7.4.2.0.2.4.9.7.4.2.4-----..", "octave": 36, "level": 0.14, "from": 4 }
+        ]
+      },
       "visual": { "signature": "SpeedLines", "color": "#26f2ff", "accent": "#99ffff", "tracerWidth": 1.2, "sheath": 3, "trailLife": 0.12, "muzzleSparks": 2, "impactSparks": 2, "brassSparks": 0, "sparkSpeed": 6, "sparkGravity": 4, "sparkLife": 0.18, "barrelGlow": 0.6, "edgeAlpha": 0.12, "rainbow": false },
       "sound": { "signature": "SmgBuzz", "about": "Buzzy square-wave bursts and chiptune blips, tight and dry", "levels": [0.2, 0.35, 0.5, 0.65, 0.82, 1], "layer": 0.32, "drive": 0.3, "sub": 0.15, "clack": 0.35, "tail": 0.15, "width": 0.5, "pitch": 1.05 },
       "buffs": {
@@ -28,7 +53,11 @@
     },
     "AssaultRifle": {
       "character": "Classic hardbass drive",
-      "music": {},
+      "music": {
+        "style": "Classic hardbass",
+        "describe": "the hardbass track as it is: pounding kick, bouncing bass, hoovers and chants",
+        "pool": "any"
+      },
       "visual": { "signature": "HeatShimmer", "color": "#ff801f", "accent": "#ffbf4c", "tracerWidth": 1.35, "sheath": 3, "trailLife": 0.2, "muzzleSparks": 3, "impactSparks": 3, "brassSparks": 0, "sparkSpeed": 4, "sparkGravity": 8, "sparkLife": 0.25, "barrelGlow": 0.7, "edgeAlpha": 0.12, "rainbow": false },
       "sound": { "signature": "HardbassThump", "about": "Distorted hardbass kick under every shot, off-beat hat, donk", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.4, "drive": 0.35, "sub": 0.7, "clack": 0.3, "tail": 0.3, "width": 0.35, "pitch": 0.98 },
       "buffs": {
@@ -40,7 +69,18 @@
     },
     "DMR": {
       "character": "Punchy marching drums",
-      "music": {},
+      "music": {
+        "style": "Marching drums and brass",
+        "describe": "a tight marching snare with rolls and a bass drum on the downbeats, brass section stabs on top",
+        "pool": "any",
+        "stems": { "drums": 0.85, "bass": 1.0, "lead": 0.7 },
+        "trim": 0.97,
+        "layers": [
+          { "voice": "march", "pattern": "X.ggx.g.X.grx.g.X.ggx.g.XrXrX.r.", "level": 0.4, "from": 1, "reverb": 0.15 },
+          { "voice": "bassdrum", "pattern": "X.......x.......", "level": 0.4, "from": 2 },
+          { "voice": "brass", "pattern": "X.....x.....X...X.......x.x.X...", "octave": 24, "level": 0.3, "from": 3, "reverb": 0.2, "chord": [0, 2, 4] }
+        ]
+      },
       "visual": { "signature": "ImpactRings", "color": "#f2f7ff", "accent": "#bfd9ff", "tracerWidth": 1.1, "sheath": 2, "trailLife": 0.3, "muzzleSparks": 2, "impactSparks": 12, "brassSparks": 0, "sparkSpeed": 3.5, "sparkGravity": 0, "sparkLife": 0.35, "barrelGlow": 0.45, "edgeAlpha": 0.09, "rainbow": false },
       "sound": { "signature": "MarchSnare", "about": "Marching snare and rim shot, flammed at the top", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.42, "drive": 0.25, "sub": 0.4, "clack": 0.45, "tail": 0.35, "width": 0.4, "pitch": 1.02 },
       "buffs": {
@@ -52,7 +92,18 @@
     },
     "Sniper": {
       "character": "Slow huge drops / cinematic braams",
-      "music": {},
+      "music": {
+        "style": "Cinematic braam",
+        "describe": "the four-on-the-floor pulled back under a half-time sub boom and a huge reverb snare, with a giant brass braam every two bars",
+        "pool": "slow",
+        "stems": { "drums": 0.35, "bass": 0.7, "lead": 0.75 },
+        "trim": 0.93,
+        "layers": [
+          { "voice": "boom", "pattern": "X...............", "level": 0.55, "from": 1 },
+          { "voice": "bigsnare", "pattern": "........X.......", "level": 0.45, "from": 2, "reverb": 0.6 },
+          { "voice": "braam", "pattern": "X-----------------------........", "octave": 12, "level": 0.45, "from": 3, "reverb": 0.4, "chord": [0, 4, 7] }
+        ]
+      },
       "visual": { "signature": "KillPulse", "color": "#8cbfff", "accent": "#d9f2ff", "tracerWidth": 1.5, "sheath": 4, "trailLife": 1.4, "muzzleSparks": 3, "impactSparks": 5, "brassSparks": 0, "sparkSpeed": 3, "sparkGravity": 2, "sparkLife": 0.5, "barrelGlow": 0.5, "edgeAlpha": 0.1, "rainbow": false },
       "sound": { "signature": "WhipCrack", "about": "Supersonic whip crack and a cinematic braam with a long tail", "levels": [0.1, 0.25, 0.4, 0.55, 0.78, 1], "layer": 0.5, "drive": 0.3, "sub": 0.6, "clack": 0.2, "tail": 0.8, "width": 0.6, "pitch": 0.96 },
       "buffs": {
@@ -64,7 +115,18 @@
     },
     "Shotgun": {
       "character": "Stomping gabber kicks",
-      "music": {},
+      "music": {
+        "style": "Gabber stomp",
+        "describe": "a distorted gabber kick stomping through the track, with double hits at the end of every phrase, everything driven hard",
+        "pool": "harder",
+        "stems": { "drums": 0.45, "bass": 0.8, "lead": 0.85 },
+        "fx": { "drive": 1.2 },
+        "trim": 0.72,
+        "layers": [
+          { "voice": "gabber", "pattern": "X...X...X...X...X...X...X.x.X.XX", "level": 0.55, "from": 1 },
+          { "voice": "breaksnare", "pattern": "....X.......X...", "level": 0.25, "from": 3 }
+        ]
+      },
       "visual": { "signature": "Embers", "color": "#ff470d", "accent": "#ff9926", "tracerWidth": 1.8, "sheath": 2.5, "trailLife": 0.15, "muzzleSparks": 5, "impactSparks": 2, "brassSparks": 0, "sparkSpeed": 1.6, "sparkGravity": 1.5, "sparkLife": 0.9, "barrelGlow": 0.6, "edgeAlpha": 0.13, "rainbow": false },
       "sound": { "signature": "BoomDouble", "about": "Gabber kick boom, doubled then tripled, heavy drive", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.48, "drive": 0.45, "sub": 0.8, "clack": 0.4, "tail": 0.3, "width": 0.4, "pitch": 0.97 },
       "buffs": {
@@ -76,7 +138,19 @@
     },
     "LMG": {
       "character": "Industrial metal grind",
-      "music": {},
+      "music": {
+        "style": "Industrial grind",
+        "describe": "palm-muted distorted power-chord chugs, metallic anvil clanks on the off-beats and a double kick at the top",
+        "pool": "any",
+        "stems": { "drums": 0.9, "bass": 0.55, "lead": 0.6 },
+        "fx": { "drive": 0.8 },
+        "trim": 0.8,
+        "layers": [
+          { "voice": "metal", "pattern": "xxx.xxx.xx.xXxx.xxx.xxx.x.x.X.X.", "octave": 12, "level": 0.35, "from": 1, "chord": [0, 4, 7] },
+          { "voice": "anvil", "pattern": "......X.......X.", "level": 0.3, "from": 2, "reverb": 0.2 },
+          { "voice": "breakkick", "pattern": "x.xxx.xxx.xxx.xx", "level": 0.3, "from": 4 }
+        ]
+      },
       "visual": { "signature": "BrassShower", "color": "#ffeb99", "accent": "#ff8c26", "tracerWidth": 1.3, "sheath": 2.5, "trailLife": 0.18, "muzzleSparks": 1, "impactSparks": 2, "brassSparks": 4, "sparkSpeed": 3, "sparkGravity": 11, "sparkLife": 0.45, "barrelGlow": 0.85, "edgeAlpha": 0.12, "rainbow": false },
       "sound": { "signature": "GrindClank", "about": "Industrial clang, grinding metal, belt rasp", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.36, "drive": 0.4, "sub": 0.5, "clack": 0.6, "tail": 0.25, "width": 0.45, "pitch": 0.97 },
       "buffs": {
@@ -91,7 +165,17 @@
     },
     "Special": {
       "character": "Weird / glitch",
-      "music": {},
+      "music": {
+        "style": "Glitch weird",
+        "describe": "the track bit-crushed and stuttering in beat-repeat edits, random square blips squeaking around it",
+        "pool": "weird",
+        "stems": { "drums": 1.0, "bass": 1.0, "lead": 0.9 },
+        "fx": { "crushBits": 6, "crushHold": 3, "stutter": "......s.....S.s." },
+        "trim": 1.04,
+        "layers": [
+          { "voice": "glitch", "pattern": "z..z.z...zz..z.z", "octave": 36, "level": 0.18, "from": 2 }
+        ]
+      },
       "visual": { "signature": "Glitch", "color": "#d959ff", "accent": "#33ffe6", "tracerWidth": 1.3, "sheath": 3, "trailLife": 0.3, "muzzleSparks": 3, "impactSparks": 4, "brassSparks": 0, "sparkSpeed": 4, "sparkGravity": 0, "sparkLife": 0.3, "barrelGlow": 0.6, "edgeAlpha": 0.12, "rainbow": true },
       "sound": { "signature": "GlitchStutter", "about": "Bit-crushed stutter repeats, wide and weird", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.42, "drive": 0.35, "sub": 0.3, "clack": 0.2, "tail": 0.35, "width": 0.7, "pitch": 1.04 },
       "buffs": {

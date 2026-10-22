@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Ranch House",
+  "theme": "1960s California ranch house: long and low, sage board-and-batten with a fieldstone chimney and a shallow hip roof; shag carpet, walnut panelling, mustard and turquoise atomic-age furniture",
+  "category": "residential",
+  "description": "A single-storey ranch house: a sunken-style den with a wet bar and hi-fi, a kitchen and dining nook with formica dinettes, a bedroom wing with two bathrooms, an attached garage with the station wagon, and a back patio.",
+  "author": "Call of Slop",
+  "seed": 102,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.7,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "sage": {
+      "wall": "#8a9a78",
+      "interior": "#efe4c8",
+      "floor": "#9a7448",
+      "ceiling": "#f6f0e2",
+      "trim": "#f2ede0",
+      "door": "#e07a22",
+      "roof": "#5a4a3a",
+      "carpet": "#c8742a",
+      "panel": "#8a5a32"
+    },
+    "desert tan": {
+      "wall": "#c8a878",
+      "interior": "#f0e6cc",
+      "floor": "#8a6a44",
+      "ceiling": "#f6f0e2",
+      "trim": "#5a3a22",
+      "door": "#2f8a86",
+      "roof": "#6a5a4a",
+      "carpet": "#6a8a3a",
+      "panel": "#7a4e2a"
+    },
+    "powder blue": {
+      "wall": "#9ab8c8",
+      "interior": "#f2ecd8",
+      "floor": "#9a7448",
+      "ceiling": "#f6f0e2",
+      "trim": "#ffffff",
+      "door": "#d8a020",
+      "roof": "#4a4e56",
+      "carpet": "#8a3a5a",
+      "panel": "#9a6a3a"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.8, "width": 1.6, "sill": 0.9, "head": 2.1},
+      "rooms": [
+        {
+          "id": "garage",
+          "type": "garage",
+          "rect": [-9, -4.5, -4, 4.5],
+          "floor": {"color": "#8a8680", "material": "concrete"},
+          "wall": "#c8c0b0",
+          "props": [{"name": "Ranch House Station Wagon", "at": [-0.6, 0.3], "yaw": 90}]
+        },
+        {"id": "den", "type": "living", "rect": [-4, 0, 2, 4.5], "floor": {"color": "$carpet", "material": "none"}, "wall": "$panel"},
+        {"id": "kitchen", "type": "kitchen", "rect": [-4, -4.5, 2, 0], "floor": {"color": "#e0d8c0", "material": "tiles"}, "wall": "#f0e8c8"},
+        {"id": "hall", "type": "corridor", "rect": [2, -4.5, 3.5, 4.5], "floor": {"color": "$carpet", "material": "none"}, "windows": false},
+        {"id": "master", "type": "bedroom", "rect": [3.5, 1, 9, 4.5], "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "ensuite",
+          "type": "bathroom",
+          "rect": [6, -1.5, 9, 1],
+          "floor": {"color": "#e8b8c0", "material": "tiles"},
+          "wall": "#f4d8dc",
+          "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.4, "head": 2.1}
+        },
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [3.5, -1.5, 6, 1],
+          "floor": {"color": "#a8d8d0", "material": "tiles"},
+          "wall": "#d8f0ec",
+          "windows": false
+        },
+        {"id": "bed2", "type": "kidsroom", "rect": [3.5, -4.5, 9, -1.5], "floor": {"color": "$carpet", "material": "none"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [1.2, 4.5], "width": 1.0, "front": true, "color": "$door"},
+        {"type": "arch", "at": [-6.5, 4.5], "width": 3.4, "head": 2.3},
+        {"type": "door", "at": [-4, 3.6], "width": 0.9, "material": "metal"},
+        {"type": "door", "at": [1.0, 0], "width": 0.9},
+        {"type": "door", "at": [2, -1.0], "width": 0.9},
+        {"type": "door", "at": [3.5, 2.75], "width": 0.9},
+        {"type": "door", "at": [3.5, -0.25], "width": 0.9},
+        {"type": "door", "at": [3.5, -3.0], "width": 0.9},
+        {"type": "door", "at": [7.5, 1], "width": 0.9},
+        {"type": "door", "at": [1.0, -4.5], "width": 1.4, "material": "glass", "color": "$trim"},
+        {"type": "door", "at": [-6.5, -4.5], "width": 0.9, "material": "metal"},
+        {"type": "window", "at": [-1.6, 4.5], "width": 2.4, "sill": 0.6, "head": 2.2},
+        {"type": "window", "at": [-7.9, -4.5], "width": 0.9, "sill": 1.4, "head": 2.0}
+      ]
+    }
+  ],
+  "roof": {"type": "hip", "pitch": 18, "overhang": 0.9, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "block", "min": [0.5, 0.0, 4.63], "max": [1.9, 0.2, 5.4], "color": {"color": "#9a8e7a", "material": "brick"}},
+    {"type": "block", "min": [0.2, 2.8, 1.0], "max": [1.2, 5.2, 2.0], "color": {"color": "#9a8e7a", "material": "brick"}},
+    {"type": "porch", "rect": [-2.0, -7.0, 3.4, -4.63], "height": 2.4, "posts": true, "color": "$trim"},
+    {"type": "prop", "name": "Gas BBQ", "at": [-3.4, -5.6], "yaw": 180},
+    {"type": "prop", "name": "Patio Table", "at": [1.8, -6.0], "yaw": 0},
+    {"type": "prop", "name": "Sun Lounger", "at": [4.5, -6.3], "yaw": 90},
+    {"type": "prop", "name": "Lawn Sprinkler", "at": [6.0, 7.0], "yaw": 0},
+    {"type": "prop", "name": "Mailbox", "at": [3.5, 7.8], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-9.8, -2.5], "yaw": 90},
+    {"type": "prop", "name": "Flower Pots", "at": [1.6, 5.2], "yaw": 0},
+    {"type": "prop", "name": "TV Antenna", "at": [5.0, 0, -1.5], "yaw": 0, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "den", "at": [-1.0, 2.5]},
+    {"type": "spawn", "name": "master bedroom", "at": [6.2, 2.8]},
+    {"type": "spawn", "name": "garage", "at": [-6.5, -3.0]},
+    {"type": "point", "name": "patio", "at": [0.0, -5.8]}
+  ]
+}

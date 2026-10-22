@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Hunting lodge kitchen: a big range, butcher block counters, a long plank table for the hunting party.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"props": ["Cooker"], "place": "wall"},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Cooking Pot", "Frying Pan", "Knife Block", "Coffee Maker"], "place": "on", "of": "c", "y": 0.9, "count": [2, 3]},
+    {"id": "t", "props": ["Dining Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [4, 6]},
+    {"props": ["Stacked Plates", "Bottles"], "place": "on", "of": "t"}
+  ]
+}
