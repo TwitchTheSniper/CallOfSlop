@@ -212,7 +212,7 @@ public sealed partial class Ui
 
                 case Page.Multiplayer:
                     Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
-                    ImGui.TextColored(Dim, "The host picks the game mode. Each match starts once everyone has readied up in the warmup."u8);
+                    ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
@@ -290,6 +290,7 @@ public sealed partial class Ui
                         ImGuiSafe.TextColored(Dim, s.Advertise
                             ? "Listed publicly through your master server; people on your network always see it too."
                             : "Not listed publicly. People on your network still see it in their browser.");
+                    ImGui.Checkbox("Return to lobby between matches"u8, ref s.LobbyReturn); // the lobby room (PreMatchLobby.cs)
                     if (BigButton("HOST GAME"))
                     {
                         s.Port = (ushort)_portInput;
@@ -369,6 +370,8 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(Dim, GameModes.Short(i.Mode));
+                ImGui.SameLine();
+                ImGuiSafe.TextColored(i.Phase == MatchPhase.Lobby ? Green : Dim, PhaseLabel(i.Phase)); // "In lobby": join before it starts (UiLobbyRoom.cs)
                 if (i.Rotation.Length > 0)
                     ImGuiSafe.TextColored(Orange, i.Rotation); // e.g. "True Random": the next maps come from every pack
                 ImGui.TableNextColumn();

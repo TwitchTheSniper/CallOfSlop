@@ -62,6 +62,8 @@ public sealed partial class Game
     /// </summary>
     private bool TeamTooBig(byte team, Player? mover)
     {
+        if (TeamBalance != TeamBalance.Auto)
+            return false; // balance Off: no size limit; Humans vs Bots: the sides are fixed (TeamBalance.cs)
         int mine = 0, other = 0, flexible = 0;
         foreach (var p in Players.Values)
         {
@@ -93,6 +95,8 @@ public sealed partial class Game
             return null; // Auto: always allowed (it doesn't move you; autobalance may later)
         if (TeamSelection == TeamSelection.AutoOnly)
             return "The host set team selection to Auto only";
+        if (HumansVsBots && team != HumansTeam)
+            return $"Humans vs Bots: people play on {GameModes.TeamNames[HumansTeam]}, bots on {GameModes.TeamNames[1 - HumansTeam]}";
         if (p.TeamChoice == team)
             return $"You're already on {GameModes.TeamNames[team]}";
         if (team != p.Team)
@@ -101,7 +105,7 @@ public sealed partial class Game
                 return "You can't switch teams while carrying the flag";
             if (Phase == MatchPhase.Playing && p.Alive)
                 return "Switch teams while dead or before the match starts";
-            var wait = TeamRules.SwitchCooldown - (now - p.TeamSwitchAt);
+            var wait = Phase == MatchPhase.Lobby ? 0 : TeamRules.SwitchCooldown - (now - p.TeamSwitchAt); // no cooldown in the lobby room
             if (wait > 0)
                 return $"Wait {Math.Ceiling(wait):0} s before switching again";
         }
@@ -235,6 +239,7 @@ public sealed partial class Game
         w.U8((byte)TeamSelection).U8((byte)MaxTeamDiff).U8((byte)Players.Count);
         foreach (var p in Players.Values)
             w.U8(p.Id).U8(p.TeamChoice);
+        w.U8((byte)((byte)TeamBalance | (HumansTeam << 4))); // protocol 32: the team balance (TeamBalance.cs)
     }
 
     private void ReadTeamPicks(ref PacketReader r)
@@ -250,6 +255,12 @@ public sealed partial class Game
             var choice = r.U8();
             if (Players.TryGetValue(id, out var p))
                 p.TeamChoice = choice <= 1 ? choice : NoTeam;
+        }
+        if (r.Has(1))
+        {
+            var b = r.U8();
+            TeamBalance = (b & 15) is var v && v <= (int)TeamBalance.HumansVsBots ? (TeamBalance)v : TeamBalance.Auto;
+            HumansTeam = (byte)(b >> 4);
         }
     }
 
