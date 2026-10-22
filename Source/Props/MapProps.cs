@@ -398,6 +398,9 @@ public sealed partial class Map
         {
             if (IsSteep(p.X, p.Y))
                 return false;
+            if (HasTerrainVoids && (TerrainHoleNear(p.X, p.Y, radius + 0.3f) || IsTerrainHole(min.X, min.Y) || IsTerrainHole(max.X, max.Y)
+                                    || IsTerrainHole(min.X, max.Y) || IsTerrainHole(max.X, min.Y)))
+                return false; // never over (or overhanging) a terrain hole
             ground = LowestGroundUnder(min.X, min.Y, max.X, max.Y);
             var high = MathF.Max(MathF.Max(GroundHeight(min.X, min.Y), GroundHeight(max.X, max.Y)), MathF.Max(GroundHeight(min.X, max.Y), GroundHeight(max.X, min.Y)));
             if (high - ground > (def.IsSolid ? 0.35f : 0.6f))

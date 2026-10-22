@@ -105,7 +105,7 @@ public sealed class SweptMover : IMover
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
         _up = up;
-        _terrain = up == Vector3.UnitY ? phys.Terrain : null;
+        _terrain = up == Vector3.UnitY ? phys.Terrain?.Layer(s.Position.Y) : null; // (in a cave: its floor)
         var dt = World.TickDt;
 
         // Everything the capsule can touch this tick, gathered once.
@@ -470,7 +470,7 @@ public sealed class SweptMover : IMover
         if (phys.Terrain is { } terrain)
         {
             feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
-            feet.Y = MathF.Max(feet.Y, terrain.HeightAt(feet.X, feet.Z) - 0.3f);
+            feet.Y = MathF.Max(feet.Y, terrain.GroundBelow(feet.X, feet.Z, feet.Y) - 0.3f);
         }
         else
             feet.Y = Math.Clamp(feet.Y, -5, 60);

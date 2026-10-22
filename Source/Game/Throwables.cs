@@ -240,6 +240,49 @@ public static class Throwables
     /// </summary>
     private static bool TerrainContact(Projectile p, ref Vector3 pos, ITerrainCollision terrain, float h)
     {
+        var walls = false;
+        if (terrain.HasVoids)
+        {
+            // Holes and caves: bounce off their walls and ceilings first, then the floor (or surface) is the ground below.
+            walls = VoidWalls(p, ref pos, terrain);
+            terrain = terrain.Layer(pos.Y);
+        }
+        return TerrainFloor(p, ref pos, terrain, h) || walls;
+    }
+
+    /// <summary>A hole's sides and a cave's walls and ceiling: like box faces, the axis that ran into them bounces back.</summary>
+    private static bool VoidWalls(Projectile p, ref Vector3 pos, ITerrainCollision terrain)
+    {
+        const float r = ProjectileRadius;
+        bool Solid(Vector3 q) => terrain.GroundBelow(q.X, q.Z, q.Y) > q.Y - r || terrain.CeilingAbove(q.X, q.Z, q.Y) < q.Y + r;
+        if (!Solid(pos))
+            return false;
+        var old = p.Pos;
+        var touched = false;
+        if (Solid(new Vector3(pos.X, old.Y, old.Z)) && !Solid(old))
+        {
+            pos.X = old.X;
+            p.Vel.X *= -Restitution;
+            touched = true;
+        }
+        if (Solid(new Vector3(pos.X, old.Y, pos.Z)) && !Solid(old))
+        {
+            pos.Z = old.Z;
+            p.Vel.Z *= -Restitution;
+            touched = true;
+        }
+        var ceiling = terrain.CeilingAbove(pos.X, pos.Z, old.Y);
+        if (pos.Y + r > ceiling && p.Vel.Y > 0)
+        {
+            pos.Y = MathF.Min(old.Y, ceiling - r);
+            p.Vel.Y *= -Restitution;
+            touched = true;
+        }
+        return touched;
+    }
+
+    private static bool TerrainFloor(Projectile p, ref Vector3 pos, ITerrainCollision terrain, float h)
+    {
         var ground = terrain.HeightAt(pos.X, pos.Z) + ProjectileRadius;
         if (pos.Y >= ground)
             return false;
