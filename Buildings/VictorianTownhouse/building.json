@@ -3,7 +3,7 @@
   "name": "Victorian Townhouse",
   "theme": "1890s Victorian townhouse: red brick, cream stone dressings, a black door, a steep slate roof; wallpaper, mahogany, leather, velvet and brass gasoliers",
   "category": "residential",
-  "description": "A tall, narrow three-storey townhouse: hall and stairs, parlour, dining room and kitchen; a library, master bedroom, bathroom and nursery; a front bedroom, the maid's room and an attic box room at the top.",
+  "description": "A tall, narrow three-storey townhouse: hall and stairs, parlour, dining room and kitchen; a library with the bathroom off it and the master bedroom beyond, and the and nursery; a front bedroom, the maid's room and an attic box room at the top.",
   "author": "Call of Slop",
   "seed": 103,
   "wallThickness": 0.3,
@@ -69,8 +69,8 @@
       "autoWindows": {"spacing": 2.2, "width": 1.0, "sill": 0.8, "head": 2.6},
       "rooms": [
         {"id": "landing", "type": "corridor", "rect": [0.5, -3, 3.5, 6.5]},
-        {"id": "library", "type": "library", "rect": [-3.5, 1.5, 0.5, 6.5], "wall": "$paper"},
-        {"id": "master", "type": "bedroom", "rect": [-3.5, -3, 0.5, 1.5], "wall": "$paper"},
+        {"id": "master", "type": "bedroom", "rect": [-3.5, 1.5, 0.5, 6.5], "wall": "$paper"},
+        {"id": "library", "type": "library", "rect": [-3.5, -3, 0.5, 1.5], "wall": "$paper"},
         {
           "id": "bath",
           "type": "bathroom",
@@ -82,9 +82,9 @@
         {"id": "nursery", "type": "nursery", "rect": [0.5, -6.5, 3.5, -3]}
       ],
       "openings": [
-        {"type": "door", "at": [0.5, 5.0], "width": 0.9},
+        {"type": "door", "at": [-2.5, 1.5], "width": 0.9},
         {"type": "door", "at": [0.5, -1.5], "width": 0.9},
-        {"type": "door", "at": [-1.5, -3], "width": 0.9},
+        {"type": "door", "at": [-0.4, -3], "width": 0.9},
         {"type": "door", "at": [2.0, -3], "width": 0.9}
       ]
     },
@@ -124,7 +124,7 @@
   ],
   "anchors": [
     {"type": "spawn", "name": "kitchen", "at": [0.0, -5.0]},
-    {"type": "spawn", "name": "library", "floor": 1, "at": [-1.5, 4.0]},
+    {"type": "spawn", "name": "master", "floor": 1, "at": [-1.5, 4.0]},
     {"type": "spawn", "name": "attic", "floor": 2, "at": [-1.0, -4.8]}
   ]
 }

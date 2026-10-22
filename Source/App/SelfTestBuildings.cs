@@ -637,7 +637,8 @@ public static partial class SelfTest
                     missing.Add($"{key} room {r.Floor}:{r.Id}");
                     if (detail.Count < 10)
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
-                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent})");
+                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
+                                   + NoPathTrace(g, search, path, start, goal));
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
@@ -682,5 +683,53 @@ public static partial class SelfTest
             foreach (var d in detail.Take(6))
                 Fail("  nav detail: " + d);
         }
+    }
+
+    /// <summary>
+    /// Why a node in the start's area has no path from it: its links in and out, whether it can get back, and the walk
+    /// from the nearest node on its floor that the start does reach.
+    /// </summary>
+    private static string NoPathTrace(NavGraph g, NavSearch search, int[] path, int start, int goal)
+    {
+        if (start < 0)
+            return "no start node";
+        var reached = new bool[g.Nodes.Length];
+        var stack = new Stack<int>();
+        reached[start] = true;
+        stack.Push(start);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (!reached[g.EdgeTo[e]])
+                {
+                    reached[g.EdgeTo[e]] = true;
+                    stack.Push(g.EdgeTo[e]);
+                }
+        }
+        string P(int i) => $"{i}({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}){(reached[i] ? "R" : "")}";
+        var outs = new List<string>();
+        for (var e = g.EdgeStart[goal]; e < g.EdgeStart[goal + 1]; e++)
+            outs.Add(P(g.EdgeTo[e]));
+        var ins = new List<string>();
+        for (var i = 0; i < g.Nodes.Length; i++)
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (g.EdgeTo[e] == goal)
+                    ins.Add(P(i));
+        var gp = g.Nodes[goal];
+        int best = -1;
+        var bestD = float.MaxValue;
+        for (var i = 0; i < g.Nodes.Length; i++)
+        {
+            var q = g.Nodes[i];
+            if (!reached[i] || MathF.Abs(q.Y - gp.Y) > 0.4f)
+                continue;
+            var d = Vector2.Distance(new Vector2(q.X, q.Z), new Vector2(gp.X, gp.Z));
+            if (d < bestD)
+                (best, bestD) = (i, d);
+        }
+        var back = search.Find(g, goal, start, path, maxExpand: 60000) > 0;
+        return $"back to start {back}; out [{string.Join(" ", outs.Take(8))}]; in [{string.Join(" ", ins.Take(8))}]; "
+               + (best < 0 ? "no reached node on its floor" : $"nearest reached on its floor {P(best)} {bestD:0.0} m: walk {WalkTrace(g.Nodes[best], gp)}");
     }
 }
