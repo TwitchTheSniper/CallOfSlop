@@ -236,13 +236,16 @@ public static partial class SelfTest
     /// mode's win rule for a limit of k first held (NaN: not within the time): free-for-all, the leader at k or more and
     /// 2 clear; team modes, a team at k. (The host waits to deploy and never plays, so the bots are the players.)
     /// </summary>
-    private static double[] ScoreCurve(Map map, GameMode mode, int bots, double seconds, int maxScore, out double wallSeconds)
+    private static double[] ScoreCurve(Map map, GameMode mode, int bots, double seconds, int maxScore, out double wallSeconds, int? seed = null)
     {
         var sw = Stopwatch.StartNew();
         var t = new double[maxScore + 1];
         Array.Fill(t, double.NaN);
+        Game.SeedNextGame = seed; // seeded: the same match every run (spawns, bot choices)
         using (var game = ModeGame(bots, mode, map.Id))
         {
+            if (seed != null)
+                NavGraph.Pump(double.MaxValue); // the bots' nav graph ready now, not after a wall-clock-budgeted build
             game.ScoreLimitOverride = int.MaxValue; // never ends at a score
             Game.SettleMemory();
             const double dt = 1.0 / World.TickRate;
@@ -316,7 +319,8 @@ public static partial class SelfTest
                 var times = new List<double>();
                 for (var rep = 0; rep < reps; rep++)
                 {
-                    var curve = ScoreCurve(map, mode, n, Game.MatchSeconds - 1, limit, out var w);
+                    // Seeded per mode, size and rep: the same 8 matches every run (the check was flaky unseeded).
+                    var curve = ScoreCurve(map, mode, n, Game.MatchSeconds - 1, limit, out var w, ScoreSeed(mode, n, rep));
                     wall += w;
                     times.Add(curve[limit]);
                 }
@@ -328,7 +332,19 @@ public static partial class SelfTest
             if (double.IsNaN(ratio) || ratio < 0.65 || ratio > 1.35)
                 Fail($"{GameModes.Name(mode)}: reaching the Auto limit took {Sec(med[1])} s at 16 players vs {Sec(med[0])} s at 8 (want within 35%)");
         }
+
+        // Deterministic: the first seeded match again gives the same curve.
+        var first = ScoreLimits.For(GameMode.FreeForAll, 8);
+        var a = ScoreCurve(map, GameMode.FreeForAll, 8, 120, first, out _, ScoreSeed(GameMode.FreeForAll, 8, 0));
+        var b = ScoreCurve(map, GameMode.FreeForAll, 8, 120, first, out _, ScoreSeed(GameMode.FreeForAll, 8, 0));
+        var same = a.Zip(b).All(p => p.First.Equals(p.Second));
+        ScoreNote($"seeded bot matches replay exactly: {(same ? "yes" : "NO")} (FFA 8 players, first 120 s: {string.Join("/", a.Skip(1).Select(Sec))})");
+        if (!same)
+            Fail($"score timing: the same seeded bot match gave different score times ({string.Join("/", a.Skip(1).Select(Sec))} vs {string.Join("/", b.Skip(1).Select(Sec))})");
     }
+
+    /// <summary>The seed of a measured bot match (one per mode, player count and rep).</summary>
+    private static int ScoreSeed(GameMode mode, int players, int rep) => 7001 + (int)mode * 1000 + players * 37 + rep;
 
     // ---- The full measurement (ScoreSweep) -----------------------------------------------------------------
 

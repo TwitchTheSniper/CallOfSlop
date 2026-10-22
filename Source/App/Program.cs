@@ -297,6 +297,11 @@ public static unsafe partial class Program
             SmokeNameTags(now); // Program.NameTags.cs
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyStep < 7)
+        {
+            SmokeFrenzy(now); // Program.Frenzy.cs
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -992,6 +997,7 @@ public static unsafe partial class Program
             AudioSystem.Music.Volume = _settings.MusicVolume;
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
+            UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)

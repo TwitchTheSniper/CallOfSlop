@@ -372,6 +372,7 @@ public sealed partial class Game
         }
         _deathCamStreaks[kill.Victim] = 0;
         NoteLocalKill(kill); // the killer's "KILLED Ash" notice (KillNotices.cs)
+        NoteFrenzyKill(kill); // the kill-frenzy music's feed (FrenzyFeed.cs)
         ScavengeLocal(kill, Brutal.GlfwApi.Glfw.Time); // Scavenger: your own grenade count (PerksMore.cs)
         if (kill.Victim != LocalId)
             return;

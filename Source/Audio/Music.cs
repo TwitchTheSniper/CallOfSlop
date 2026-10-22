@@ -100,7 +100,11 @@ public sealed class MusicPlayer : IDisposable
         _lobby = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby), _seed * 31u + 7u);
         _menuHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Menu, hardbassOnly: true), _seed * 17u + 3u);
         _lobbyHardbass = new MusicPlaylist(MusicTracks.For(MusicSet.Lobby, hardbassOnly: true), _seed * 13u + 5u);
+        Frenzy = new FrenzyLayer(_seed * 29u + 1u);
     }
+
+    /// <summary>The in-match kill-frenzy layer (MusicFrenzy.cs); it only plays while the mood is Off (a live match).</summary>
+    public readonly FrenzyLayer Frenzy;
 
     /// <summary>
     /// Settings > Audio > Music style: true plays only the hardbass tracks. Switching it on while another style plays
@@ -190,6 +194,8 @@ public sealed class MusicPlayer : IDisposable
                     _lead = null;
             }
         }
+
+        Frenzy.MixInto(output, Volatile.Read(ref _mood) == (int)MusicMood.Off); // the kill-frenzy layer (MusicFrenzy.cs)
 
         // Music volume with a perceptual (squared) curve, ramped per block so slider moves don't click.
         var v = Volume;

@@ -773,6 +773,17 @@ public sealed partial class Ui
             ImGui.RadioButton("Hardbass only"u8, ref musicStyle, (int)MusicChoice.HardbassOnly);
             s.MusicChoice = (MusicChoice)musicStyle;
             audio.Music.HardbassOnly = s.MusicChoice == MusicChoice.HardbassOnly;
+            if (ImGui.Checkbox("Kill frenzy music"u8, ref s.FrenzyMusic))
+                audio.Music.Frenzy.Enabled = s.FrenzyMusic;
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("During a match: hard music fades in as you chain kills, gets harder the more and the faster you kill, and fades out when the killing stops."u8);
+            if (s.FrenzyMusic)
+            {
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth(w * 0.5f);
+                if (ImGui.SliderFloat("Frenzy volume"u8, ref s.FrenzyVolume, 0f, 1f, "%.2f"u8))
+                    audio.Music.Frenzy.Volume = s.FrenzyVolume;
+            }
             ImGui.SetNextItemWidth(w);
             if (ImGui.SliderFloat("Effects volume"u8, ref s.EffectsVolume, 0f, 1f, "%.2f"u8))
                 audio.EffectsVolume = s.EffectsVolume;

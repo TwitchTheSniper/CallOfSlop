@@ -16,6 +16,7 @@ public static partial class SelfTest
         NameTagLayoutCheck();
         NameTagSettings();
         NameTagAllocations();
+        NameTagZombiesColours();
     }
 
     private static readonly Vector3 TagEye = new(0, 1.6f, 0);
@@ -278,5 +279,43 @@ public static partial class SelfTest
             Fail($"name tags: the per-frame rules allocate ({bytes} bytes over 2400 frames)");
         if (gameBytes != 0)
             Fail(gameBytes < 0 ? "name tags: the self-test game has no local player" : $"name tags: the per-frame match adapter allocates ({gameBytes} bytes over 2400 frames)");
+
+        // Colours: in free-for-all a bot is an enemy (enemy red); in Zombies every player is a teammate, so tags and the HUD
+        // points list use the friendly team colour, never a player's own palette colour (bot 1's is red).
+        if (game.Local is { } ffaMe && game.Players.Values.FirstOrDefault(p => p != ffaMe) is { } ffaBot
+            && TagColour(game, ffaMe, ffaBot) != new NameTags().Rules.EnemyColour)
+            Fail($"name tags: a free-for-all enemy's tag isn't the enemy colour ({TagColour(game, ffaMe, ffaBot)})");
+        static Vector3 TagColour(Game g, Player me, Player p) => new NameTags().ColourOf(g, p, !g.AreEnemies(me, p));
+    }
+
+    /// <summary>Zombies: every player is on the co-op side, so tags and the HUD points list use the friendly colour (never red).</summary>
+    private static void NameTagZombiesColours()
+    {
+        if (ZTestMap == null)
+        {
+            Fail("name tags: the Zombies Test map is missing (Zombies tag colours)");
+            return;
+        }
+        var zNow = 0.0;
+        using var zg = ZGame(3, ref zNow);
+        var friendlyCol = GameModes.TeamColors[0];
+        var zChecked = 0;
+        if (zg.Local is { } zMe)
+            foreach (var p in zg.Players.Values)
+            {
+                if (p == zMe)
+                    continue;
+                zChecked++;
+                var tag = TagColour(zg, zMe, p);
+                if (tag != friendlyCol || zg.SideColor(p) != friendlyCol)
+                    Fail($"name tags: Zombies teammate {zg.NameOf(p.Id)} (id {p.Id}) is shown in {tag} / HUD {zg.SideColor(p)}, not the friendly colour {friendlyCol}");
+            }
+        Line($"colours: free-for-all enemy tag = enemy colour; Zombies: {zChecked} co-op bot(s) tagged and listed in the friendly colour");
+        if (zChecked == 0)
+            Fail("name tags: the Zombies colour check had no co-op bots");
+
+        World.SetMap(Maps.All[0]);
+
+        static Vector3 TagColour(Game g, Player me, Player p) => new NameTags().ColourOf(g, p, !g.AreEnemies(me, p));
     }
 }

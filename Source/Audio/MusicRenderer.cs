@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// Loading and rendering never allocate: every buffer is allocated once in the constructor, so one renderer is
 /// reused for track after track. Output is interleaved stereo floats, soft-limited to -1..1.
 /// </summary>
-public sealed class MusicRenderer
+public sealed partial class MusicRenderer
 {
     private const int Sr = Audio.SampleRate;
     private const int PhraseSteps = 128; // 8 bars of 16ths
@@ -87,7 +87,7 @@ public sealed class MusicRenderer
     public double Position => _rendered / (double)Sr;
 
     /// <summary>Seconds left until <see cref="Finished"/>.</summary>
-    public double Remaining => Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
+    public double Remaining => _wd ? WeirdRemaining : Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
 
     /// <summary>Starts a track from the top (or from a bar, for tests). Deterministic for (track, seed, startBar).</summary>
     public void Load(MusicTrack track, uint seed, int startBar = 0)
@@ -127,6 +127,7 @@ public sealed class MusicRenderer
         _delay.Reset();
         _verb.Reset();
         _delay.SetTime((float)(_samplesPerStep * 3 / Sr)); // dotted eighth
+        LoadWeird(startBar); // MusicRenderer.Weird.cs
 
         // Melodies come from the track's own seed, so the track keeps its identity whatever the play seed is.
         var mel = new MusicRng(track.Seed);
@@ -241,6 +242,7 @@ public sealed class MusicRenderer
         _bass.Resonance = 0.3f;
         _kick.Clip = 0;
         _kick.Punch = 0;
+        ResetHarder(); // MusicRendererHarder.cs
         _hb = false;
         _masterGain = 1f;
         _harmony1 = _harmony2 = 0;
@@ -361,6 +363,7 @@ public sealed class MusicRenderer
             {
                 var hb = _flavor = _track.Hardbass ?? MusicTracks.DefaultHardbass;
                 _hb = true;
+                _harder = hb.Harder;
                 var beat = 60f / _track.Bpm;
                 // A short, hard-clipped, pounding kick with a punchy click; short enough at any tempo that it never
                 // smears into the off-beat bass (it ends well before the next 8th).
@@ -401,6 +404,8 @@ public sealed class MusicRenderer
                 _leadVerb = 0.12f;
                 _masterGain = 1.6f;
                 _voxHz = Dsp.MidiHz(48 + _track.Root % 12);
+                if (_harder is { } harder)
+                    ApplyHarder(harder);
                 break;
             }
 
@@ -533,6 +538,8 @@ public sealed class MusicRenderer
                 _gLead = 0.32f;
                 break;
         }
+        if (_harder is { } h)
+            HarderLead(h, kind);
     }
 
     private void Kick(float start, float end, float pitchTime, float hold, float decay, float drive, float tone, float click)
@@ -692,6 +699,8 @@ public sealed class MusicRenderer
         var sc = _track.Scale;
         var o = (int)MathF.Floor(degree / (float)sc.Length);
         var i = degree - o * sc.Length;
+        if (_wd)
+            return Dsp.MidiHz(_track.Root + octaveOffset + 12 * o + sc[i] + (_micro != null ? _micro[i] : 0f)) * _pitchMul; // weird tracks: microtones, pitch sag
         return Dsp.MidiHz(_track.Root + octaveOffset + 12 * o + sc[i]);
     }
 
@@ -808,8 +817,14 @@ public sealed class MusicRenderer
 
     private void OnStep()
     {
+        if (_wd)
+            WeirdMeter(); // odd meters (MusicRenderer.Weird.cs)
         var bar = _step >> 4;
         var s = _step & 15;
+        if (s == 0 && (_jumpBar >= 0 || LoopDrops))
+            bar = Retarget(bar); // the frenzy layer's bar-synced jumps and drop loops (MusicFrenzy.cs)
+        if (_wd)
+            WeirdTiming(bar, s); // this 16th's length, pitch and section effects (after any jump)
         _step++;
         if (bar >= _track.TotalBars)
         {
@@ -835,6 +850,8 @@ public sealed class MusicRenderer
         var chord = ChordAt(barIn);
         var dv = (barIn >> 3) & 1; // groove variant alternates every 8 bars
         var phrase = ((_drops - 1 + (barIn >> 4)) & 1) == 0 ? _phraseA : _phraseB;
+        if (_wd && WeirdPart(barIn, s, prog, chord, lastBar))
+            return; // a weird track's swerve section (drunk, lo-fi, music box)
 
         switch (_part)
         {
@@ -1001,6 +1018,10 @@ public sealed class MusicRenderer
                 break;
             }
         }
+        if (_harder != null)
+            HarderStep(barIn, s, prog, lastBar);
+        if (_wd)
+            WeirdOverlay(barIn, s, prog, chord, lastBar);
     }
 
     private void Drums(int s, int variant, bool kick, bool snare, bool hats, bool open)
@@ -1063,6 +1084,8 @@ public sealed class MusicRenderer
         var v = phrase[((barIn & 7) << 4) | s];
         if (v == Hold)
             return;
+        if (_wd && WeirdLeadNote(v, barIn))
+            return; // a weird lead (accordion, chip, music box) or an out-of-tune harmony
         if (v == Rest)
         {
             _lead.AllOff();
@@ -1150,16 +1173,32 @@ public sealed class MusicRenderer
         _snare.Render(snare, ref _noise);
         _hat.Render(hat, ref _noise);
         _bass.Render(bass);
-        _lead.Render(leadL, leadR);
-        _pad.Render(padL, padR);
-        _arp.Render(arpL, arpR);
+        if (StemLead > 0f)
+        {
+            _lead.Render(leadL, leadR);
+            _pad.Render(padL, padR);
+            _arp.Render(arpL, arpR);
+        }
+        else
+        {
+            MuteLeads(n); // the frenzy layer's lower levels: no leads, and no CPU spent on them
+        }
         _fx.Render(fxL, fxR, ref _noise);
         _rev.Render(rev);
-        _vox.Render(vox, ref _noise);
+        if (StemLead > 0f)
+            _vox.Render(vox, ref _noise);
+        else
+            vox.Clear();
+        if (_harder != null)
+            RenderSweeps(vox);
+        if (_wd)
+            RenderWeird(n); // MusicRenderer.Weird.cs
 
         // Levels, then the delay and reverb sends.
         float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
         float leadDelay = _leadDelay, leadVerb = _leadVerb, gVox = _gVox;
+        if (StemDrums != 1f || StemBass != 1f || StemLead != 1f)
+            ApplyStems(ref gKick, ref gSnare, ref gHat, ref gBass, ref gLead, ref gPad, ref gArp, ref gVox);
         for (var i = 0; i < n; i++)
         {
             var vx = vox[i] *= gVox;
@@ -1221,7 +1260,7 @@ public sealed class MusicRenderer
     /// </summary>
     private void MixHardbass(Span<float> stereo, int n)
     {
-        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev, master = _masterGain;
+        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev * StemBass, master = _masterGain;
         for (var i = 0; i < n; i++)
         {
             var dk = _bDuck[i];
@@ -1252,6 +1291,8 @@ public sealed class MusicRenderer
         _dcInR = dcInR;
         _dcOutL = dcOutL;
         _dcOutR = dcOutR;
+        if (_wd)
+            MixWeird(stereo, n);
         _limiter.Process(stereo[..(n * 2)]);
     }
 
