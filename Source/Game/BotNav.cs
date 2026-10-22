@@ -203,7 +203,9 @@ public sealed class NavGraph
         }
         var gridCount = nodes.Count;
         var extra = 0;
-        foreach (var w in map.Waypoints.Concat(map.Spawns))
+        // Waypoints and spawns, then points along every terrain cave (TerrainVoids.cs) so tunnels get nodes even where the
+        // grid misses them.
+        foreach (var w in map.Waypoints.Concat(map.Spawns).Concat(map.Terrain?.Voids?.NavPoints ?? Array.Empty<Vector3>()))
         {
             var y = Ground(c, w.X, w.Z, w.Y + 1f, 3f);
             if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
@@ -294,6 +296,8 @@ public sealed class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         g.BuildComponents();
+        if (map.Terrain?.Voids != null)
+            g.DropTraps(map.Terrain);
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
         t0 = Stopwatch.GetTimestamp();
@@ -325,6 +329,10 @@ public sealed class NavGraph
         if (t > 0.001f && t < top + 6f)
             heights[n++] = top - t;
         n += c.TopsAt(x, z, top, heights[n..]); // the top of every box over this point
+        // A roofed terrain cave under this point (TerrainVoids.cs): its floor is a surface too.
+        if (map.Terrain is { Voids: not null } data && n < heights.Length
+            && data.Column(x, z, out var caveFloor, out _, out _, out var hollow) == TerrainVoids.Cave && hollow)
+            heights[n++] = caveFloor;
         for (var i = 0; i < n; i++)
             if (Place(map, c, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
                 nodes.Add(p);
@@ -355,7 +363,7 @@ public sealed class NavGraph
                 continue;
             c.Y = y;
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
-            if (col.Terrain is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
+            if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
             if (!col.Blocked(c + new Vector3(0, 0.01f, 0)))
                 return c;
@@ -399,7 +407,7 @@ public sealed class NavGraph
     /// floor above it). Box steps and ledges are left to <see cref="Walk"/>.
     /// </summary>
     private static bool TooSteep(Vector3 a, Vector3 b) =>
-        World.Map.TerrainCollision is { } t && !SlopeRules.LineWalkable(t, a, b, onlyNearLine: true);
+        World.Map.TerrainCollision?.Layer(MathF.Min(a.Y, b.Y)) is { } t && !SlopeRules.LineWalkable(t, a, b, onlyNearLine: true);
 
     /// <summary>A shaped map: a link that passes outside its outline, or hugs it closer than a body width, is no use to a bot.</summary>
     private static bool LeavesBoundary(Vector3 a, Vector3 b)
@@ -651,6 +659,75 @@ public sealed class NavGraph
         MainComponent = size.Count == 0 ? -1 : size.MaxBy(kv => kv.Value).Key;
         MainNodes = Enumerable.Range(0, Nodes.Length).Where(i => Component[i] == MainComponent).ToArray();
     }
+
+    /// <summary>
+    /// Terrain with holes (TerrainVoids.cs): a pit you can drop into but not climb out of joins the main area through its
+    /// one-way drop edges. Bots must never pick a goal in one, so the main area keeps only nodes that can both be reached
+    /// from and get back to a node on open ground (the main area's middle). Maps without holes are left exactly as they were.
+    /// </summary>
+    private void DropTraps(TerrainData terrain)
+    {
+        if (MainNodes.Length == 0)
+            return;
+        var seed = -1;
+        var best = float.MaxValue;
+        foreach (var i in MainNodes)
+        {
+            var p = Nodes[i];
+            if (terrain.KindAt(p.X, p.Z) != TerrainVoids.Solid)
+                continue;
+            var d = p.X * p.X + p.Z * p.Z;
+            if (d < best)
+                (best, seed) = (d, i);
+        }
+        if (seed < 0)
+            return;
+        var n = Nodes.Length;
+        var forward = new bool[n];
+        var backward = new bool[n];
+        var stack = new Stack<int>();
+        forward[seed] = true;
+        stack.Push(seed);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
+                if (!forward[EdgeTo[e]])
+                {
+                    forward[EdgeTo[e]] = true;
+                    stack.Push(EdgeTo[e]);
+                }
+        }
+        // Reverse edges as a CSR too.
+        var rstart = new int[n + 1];
+        foreach (var to in EdgeTo)
+            rstart[to + 1]++;
+        for (var i = 0; i < n; i++)
+            rstart[i + 1] += rstart[i];
+        var rfrom = new int[EdgeTo.Length];
+        var fill = (int[])rstart.Clone();
+        for (var i = 0; i < n; i++)
+            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
+                rfrom[fill[EdgeTo[e]]++] = i;
+        backward[seed] = true;
+        stack.Push(seed);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = rstart[i]; e < rstart[i + 1]; e++)
+                if (!backward[rfrom[e]])
+                {
+                    backward[rfrom[e]] = true;
+                    stack.Push(rfrom[e]);
+                }
+        }
+        var before = MainNodes.Length;
+        MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
+        TrapNodes = before - MainNodes.Length;
+    }
+
+    /// <summary>Nodes left out of <see cref="MainNodes"/> because a bot couldn't get back out from them (holes).</summary>
+    public int TrapNodes { get; private set; }
 
     private static byte OpennessAt(PhysicsWorld c, Vector3 feet)
     {

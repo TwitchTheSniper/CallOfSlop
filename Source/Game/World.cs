@@ -239,7 +239,7 @@ public static class World
     {
         var knee = new Vector3(0, 0.5f, 0);
         var chest = new Vector3(0, 1.3f, 0);
-        var terrain = Map.TerrainCollision;
+        var terrain = Map.TerrainCollision?.Layer(from.Y); // in a cave: its floor
         if (Map.Movers.Count > 0 && !ClearOfMovers(from + knee, to + knee))
             return false; // bots keep out of moving platforms' paths
         if (terrain == null)
@@ -321,7 +321,7 @@ public static class World
         {
             // Never below the ground: nobody falls out of a terrain map.
             feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
-            feet.Y = MathF.Max(feet.Y, terrain.HeightAt(feet.X, feet.Z));
+            feet.Y = MathF.Max(feet.Y, terrain.GroundBelow(feet.X, feet.Z, feet.Y)); // (in a cave: its floor)
         }
         else
             feet.Y = Math.Clamp(feet.Y, -5, 60);

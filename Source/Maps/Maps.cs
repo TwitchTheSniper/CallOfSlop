@@ -323,8 +323,10 @@ public sealed partial class Map
             return true;
         if (Boundary != null && !Boundary.Inside(feet.X, feet.Z, r))
             return true; // outside the map's outline (MapEdges.cs)
-        if (HasTerrain && GroundHeight(feet.X, feet.Z) > feet.Y + 0.05f)
+        if (HasTerrain && GroundHeight(feet.X, feet.Z, feet.Y) > feet.Y + 0.05f)
             return true;
+        if (HasTerrain && TerrainCollision!.CeilingAbove(feet.X, feet.Z, feet.Y) < feet.Y + World.PlayerHeight - 0.05f)
+            return true; // a cave's ceiling too low to stand under
         foreach (var b in Solid)
         {
             if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f

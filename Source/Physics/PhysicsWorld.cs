@@ -412,7 +412,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Box or ShapeKind.Prop => Geometry.BoxEntryNormal(_bmin[index], _bmax[index], o, d, best),
                 ShapeKind.Obb => Geometry.ObbEntryNormal(_obbs[index], o, d, best),
                 ShapeKind.Mesh => TriangleHitNormal(_meshes[index], sub, d),
-                ShapeKind.Terrain => best <= 0 ? -d : Terrain!.NormalAt(hit.Point.X, hit.Point.Z),
+                ShapeKind.Terrain => best <= 0 ? -d : Terrain!.HitNormal(hit.Point, d),
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
                 ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
                 _ => Geometry.BoxEntryNormal(_sweeps[index].Min, _sweeps[index].Max, o, d, best),
@@ -519,8 +519,16 @@ public sealed class PhysicsWorld : IWorldQuery
 
     public bool OverlapBody(Vector3 feet, float height, in QueryFilter filter)
     {
-        if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null && Terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
-            return true;
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
+        {
+            if (!Terrain.HasVoids)
+            {
+                if (Terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
+                    return true;
+            }
+            else if (Terrain.GroundBelow(feet.X, feet.Z, feet.Y) > feet.Y + 0.05f || Terrain.CeilingAbove(feet.X, feet.Z, feet.Y) < feet.Y + height - 0.05f)
+                return true; // under the ground, or a cave's ceiling too low for the body
+        }
         if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
@@ -621,8 +629,16 @@ public sealed class PhysicsWorld : IWorldQuery
             if (_tree.Overlap(point - new Vector3(radius), point + new Vector3(radius), ref v))
                 return true;
         }
-        if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null && point.Y - radius < Terrain.HeightAt(point.X, point.Z))
-            return true;
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
+        {
+            if (!Terrain.HasVoids)
+            {
+                if (point.Y - radius < Terrain.HeightAt(point.X, point.Z))
+                    return true;
+            }
+            else if (point.Y - radius < Terrain.GroundBelow(point.X, point.Z, point.Y) || point.Y + radius > Terrain.CeilingAbove(point.X, point.Z, point.Y))
+                return true;
+        }
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
@@ -661,7 +677,7 @@ public sealed class PhysicsWorld : IWorldQuery
         }
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
-            if (Terrain.HeightAt(box.Center.X, box.Center.Z) > box.Center.Y)
+            if (Terrain.GroundBelow(box.Center.X, box.Center.Z, box.Center.Y) > box.Center.Y || Terrain.CeilingAbove(box.Center.X, box.Center.Z, box.Center.Y) < box.Center.Y)
                 return true; // the box's middle is underground
             _gather.Clear();
             AddTerrain(lo, hi, _gather);
@@ -685,7 +701,7 @@ public sealed class PhysicsWorld : IWorldQuery
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
             var low = capsule.A.Y < capsule.B.Y ? capsule.A : capsule.B;
-            if (Terrain.HeightAt(low.X, low.Z) > low.Y)
+            if (Terrain.GroundBelow(low.X, low.Z, low.Y) > low.Y || Terrain.CeilingAbove(low.X, low.Z, low.Y) < low.Y)
                 return true; // the core's lower end is underground
         }
         Gather(capsule.Min, capsule.Max, filter, _gather);
@@ -852,6 +868,11 @@ public sealed class PhysicsWorld : IWorldQuery
         var j1 = Math.Clamp((int)MathF.Floor((max.Z - d.OriginZ) / d.Cell), 0, d.CountZ - 2);
         if (max.Y < d.MinHeight || min.Y > d.MaxHeight + 1)
             return;
+        if (d.Voids != null)
+        {
+            AddTerrainVoids(d, i0, i1, j0, j1, min, max, into);
+            return;
+        }
         for (var j = j0; j <= j1; j++)
             for (var i = i0; i <= i1; i++)
             {
@@ -875,6 +896,88 @@ public sealed class PhysicsWorld : IWorldQuery
                 {
                     into.Add(ContactShape.FromTriangle(a, c, b, new ShapeId(ShapeKind.Terrain, k, 0), true));
                     into.Add(ContactShape.FromTriangle(b, c, e, new ShapeId(ShapeKind.Terrain, k, 1), true));
+                }
+            }
+    }
+
+    /// <summary>
+    /// <see cref="AddTerrain"/> on ground with holes and caves (TerrainVoids.cs): solid cells as usual; holes get their floor
+    /// and walls up to the neighbouring ground; roofed caves get floor, ceiling (facing down), the surface on top and walls
+    /// where they meet solid ground. Sub ids: 0-1 surface, 2-3 floor, 4-5 ceiling, 6+ walls.
+    /// </summary>
+    private static void AddTerrainVoids(TerrainData d, int i0, int i1, int j0, int j1, Vector3 min, Vector3 max, List<ContactShape> into)
+    {
+        var v = d.Voids!;
+        var nx = d.CountX;
+        void Sheet(float[] h, int k, float x0, float z0, int sub, bool down)
+        {
+            float ha = h[k], hb = h[k + 1], hc = h[k + nx], hd = h[k + nx + 1];
+            var lo = MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd));
+            var hi = MathF.Max(MathF.Max(ha, hb), MathF.Max(hc, hd));
+            if (hi < min.Y || lo > max.Y)
+                return;
+            float x1 = x0 + d.Cell, z1 = z0 + d.Cell;
+            Vector3 a = new(x0, ha, z0), b = new(x1, hb, z0), c = new(x0, hc, z1), e = new(x1, hd, z1);
+            var id0 = new ShapeId(ShapeKind.Terrain, k, sub);
+            var id1 = new ShapeId(ShapeKind.Terrain, k, sub + 1);
+            if (MathF.Abs(ha - hd) <= MathF.Abs(hb - hc))
+            {
+                into.Add(down ? ContactShape.FromTriangle(a, e, c, id0, true) : ContactShape.FromTriangle(a, c, e, id0, true));
+                into.Add(down ? ContactShape.FromTriangle(a, b, e, id1, true) : ContactShape.FromTriangle(a, e, b, id1, true));
+            }
+            else
+            {
+                into.Add(down ? ContactShape.FromTriangle(a, b, c, id0, true) : ContactShape.FromTriangle(a, c, b, id0, true));
+                into.Add(down ? ContactShape.FromTriangle(b, e, c, id1, true) : ContactShape.FromTriangle(b, c, e, id1, true));
+            }
+        }
+        // A vertical quad on a cell edge from p to q (x, z), spanning lo..hi at each end (skipped where hi <= lo).
+        void Wall(int k, int sub, float px, float pz, float qx, float qz, float loP, float hiP, float loQ, float hiQ)
+        {
+            if (hiP <= loP + 0.001f && hiQ <= loQ + 0.001f)
+                return;
+            hiP = MathF.Max(hiP, loP);
+            hiQ = MathF.Max(hiQ, loQ);
+            if (MathF.Max(hiP, hiQ) < min.Y || MathF.Min(loP, loQ) > max.Y)
+                return;
+            Vector3 a = new(px, loP, pz), b = new(qx, loQ, qz), c = new(px, hiP, pz), e = new(qx, hiQ, qz);
+            into.Add(ContactShape.FromTriangle(a, b, e, new ShapeId(ShapeKind.Terrain, k, sub)));
+            into.Add(ContactShape.FromTriangle(a, e, c, new ShapeId(ShapeKind.Terrain, k, sub + 1)));
+        }
+        for (var j = j0; j <= j1; j++)
+            for (var i = i0; i <= i1; i++)
+            {
+                var k = j * nx + i;
+                float x0 = d.OriginX + i * d.Cell, z0 = d.OriginZ + j * d.Cell;
+                var kind = d.CellKind(i, j);
+                if (kind == TerrainVoids.Solid)
+                {
+                    Sheet(d.Heights, k, x0, z0, 0, false);
+                    continue;
+                }
+                Sheet(v.Floor, k, x0, z0, 2, false);
+                if (kind == TerrainVoids.Cave)
+                {
+                    Sheet(v.Ceiling, k, x0, z0, 4, true);
+                    Sheet(d.Heights, k, x0, z0, 0, false);
+                }
+                // Walls on the four edges where the neighbour is more solid than this cell.
+                for (var side = 0; side < 4; side++)
+                {
+                    int ni = i + (side == 0 ? -1 : side == 1 ? 1 : 0), nj = j + (side == 2 ? -1 : side == 3 ? 1 : 0);
+                    var nk = ni < 0 || nj < 0 || ni > d.CountX - 2 || nj > d.CountZ - 2 ? TerrainVoids.Solid : d.CellKind(ni, nj);
+                    // The edge's two samples.
+                    int sp = side switch { 0 => k, 1 => k + 1, 2 => k, _ => k + nx };
+                    int sq = side switch { 0 => k + nx, 1 => k + nx + 1, 2 => k + 1, _ => k + nx + 1 };
+                    float px = d.OriginX + (sp % nx) * d.Cell, pz = d.OriginZ + (sp / nx) * d.Cell;
+                    float qx = d.OriginX + (sq % nx) * d.Cell, qz = d.OriginZ + (sq / nx) * d.Cell;
+                    var sub = 6 + side * 2;
+                    if (kind == TerrainVoids.Open && nk == TerrainVoids.Solid)
+                        Wall(k, sub, px, pz, qx, qz, v.Floor[sp], d.Heights[sp], v.Floor[sq], d.Heights[sq]);
+                    else if (kind == TerrainVoids.Open && nk == TerrainVoids.Cave)
+                        Wall(k, sub, px, pz, qx, qz, v.Ceiling[sp], d.Heights[sp], v.Ceiling[sq], d.Heights[sq]);
+                    else if (kind == TerrainVoids.Cave && nk == TerrainVoids.Solid)
+                        Wall(k, sub, px, pz, qx, qz, v.Floor[sp], v.Ceiling[sp], v.Floor[sq], v.Ceiling[sq]);
                 }
             }
     }
