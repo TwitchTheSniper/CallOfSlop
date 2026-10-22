@@ -109,6 +109,7 @@ public sealed partial class Map
         return true;
     }
 
+    /// <summary>Is the piece within <paramref name="within"/> of an outer corner of the building's outline (not a joint between its rects)?</summary>
     private static bool NearCorner(BuildingPlan plan, in Box piece, float within)
     {
         foreach (var rect in plan.Footprint)
@@ -116,6 +117,19 @@ public sealed partial class Map
             ReadOnlySpan<Vector2> corners = [new(rect.X0, rect.Z0), new(rect.X1, rect.Z0), new(rect.X0, rect.Z1), new(rect.X1, rect.Z1)];
             foreach (var c in corners)
             {
+                var inside = 0;
+                for (var k = 0; k < 4; k++)
+                {
+                    var probe = c + new Vector2((k & 1) == 0 ? -0.05f : 0.05f, (k & 2) == 0 ? -0.05f : 0.05f);
+                    foreach (var r in plan.Footprint)
+                        if (probe.X > r.X0 && probe.X < r.X1 && probe.Y > r.Z0 && probe.Y < r.Z1)
+                        {
+                            inside++;
+                            break;
+                        }
+                }
+                if (inside != 1)
+                    continue; // an inside corner or a joint between two rects: not a corner of the building
                 var dx = MathF.Max(0, MathF.Max(piece.Min.X - c.X, c.X - piece.Max.X));
                 var dz = MathF.Max(0, MathF.Max(piece.Min.Z - c.Y, c.Y - piece.Max.Z));
                 if (dx < within && dz < within)
@@ -244,6 +258,7 @@ public sealed partial class Map
     {
         if (Destruction is not { } d || (uint)c >= (uint)d.Count)
             return false;
+        d.EnsureGraph(); // (its linings)
         c = d.Target(c);
         if (d.Broken[c] || (d.Flags[c] & MapDestruction.FlagFixed) != 0)
             return false;

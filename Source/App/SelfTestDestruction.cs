@@ -99,6 +99,10 @@ public static partial class SelfTest
             Fail("Destruction Test has no destructible chunks");
             return;
         }
+        var graphWait = Stopwatch.StartNew();
+        d.StartGraph(); // as World.SetMap does: on a worker thread
+        d.EnsureGraph();
+        Line($"support graph: chunk arrays {d.LoadMs:0.0} ms at load, the graph {d.BuildMs:0.0} ms on a worker thread (waited {graphWait.Elapsed.TotalMilliseconds:0.0} ms)");
         var buildings = d.Structures.Count(s => s.Building >= 0);
         var blocks = d.Structures.Count(s => s.Building < 0);
         var skins = Enumerable.Range(0, d.Count).Count(c => (d.Flags[c] & MapDestruction.FlagSkin) != 0);
@@ -129,6 +133,7 @@ public static partial class SelfTest
         var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!);
         copy.Validate(); // as the map list does (spawns and waypoints snapped and fixed)
         var cd = copy.Destruction;
+        cd?.EnsureGraph();
         var why = cd == null ? "no chunks" : cd.Count != d.Count ? $"{cd.Count} chunks, not {d.Count}"
             : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Original[c] != d.Original[c], -1) is var c1 and >= 0 ? $"chunk {c1} at {cd.Original[c1].Center} vs {d.Original[c1].Center}"
             : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Mat[c] != d.Mat[c], -1) is var c2 and >= 0 ? $"chunk {c2} material {cd.Mat[c2]} vs {d.Mat[c2]}"

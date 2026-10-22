@@ -105,7 +105,13 @@ public sealed class MapDestruction
     public DestructionMaterial MaterialOf(int c) => Table[Mat[c]];
 
     /// <summary>The chunk damage is applied to: a skin's host (a lining breaks with the wall behind it).</summary>
-    public int Target(int c) => (Flags[c] & FlagSkin) != 0 && Host[c] >= 0 ? Host[c] : c;
+    public int Target(int c)
+    {
+        if ((Flags[c] & FlagSkin) == 0)
+            return c;
+        EnsureGraph();
+        return Host[c] >= 0 ? Host[c] : c;
+    }
 
     // ---- Build (map load) ------------------------------------------------------------------------------------
 
@@ -143,6 +149,55 @@ public sealed class MapDestruction
             MaxHp[c] = (flags & FlagFixed) != 0 ? float.PositiveInfinity : Table[mat].Hp * Math.Clamp(MathF.Sqrt(volume / 0.25f), 0.5f, 2f);
             Hp[c] = MaxHp[c];
         }
+        LoadMs = sw.Elapsed.TotalMilliseconds;
+    }
+
+    /// <summary>Time (ms) the chunk arrays took at load, and the support graph (built later, off the main thread).</summary>
+    public double LoadMs;
+
+    private Task? _graphTask;
+    private volatile bool _graphReady;
+    private readonly object _graphLock = new();
+
+    /// <summary>Is the support graph built (links, linings' walls, every chunk's reach)?</summary>
+    public bool GraphReady => _graphReady;
+
+    /// <summary>Starts building the support graph on a worker thread (the map is about to be played). No-op once started.</summary>
+    public void StartGraph()
+    {
+        lock (_graphLock)
+        {
+            if (_graphReady || _graphTask != null)
+                return;
+            _graphTask = Task.Run(BuildGraph);
+        }
+    }
+
+    /// <summary>Makes sure the support graph is there (waits for the worker, or builds it now). Everything that breaks chunks calls it.</summary>
+    public void EnsureGraph()
+    {
+        if (_graphReady)
+            return;
+        Task? task;
+        lock (_graphLock)
+        {
+            task = _graphTask;
+            if (task == null)
+            {
+                BuildGraph();
+                return;
+            }
+        }
+        task.Wait();
+    }
+
+    /// <summary>The support graph: which chunks touch, which wall each lining belongs to, and every chunk's reach as built.</summary>
+    private void BuildGraph()
+    {
+        if (_graphReady)
+            return;
+        var sw = Stopwatch.StartNew();
+        var n = Count;
 
         // Neighbours: chunks of the same structure whose boxes touch face to face (within 3 cm).
         var edges = new List<(int A, int B, float Cost)>(n * 6);
@@ -268,6 +323,7 @@ public sealed class MapDestruction
             st.MaxSpanAsBuilt = most;
         }
         BuildMs = sw.Elapsed.TotalMilliseconds;
+        _graphReady = true;
     }
 
     /// <summary>Hanging from a chunk above costs this much more than reaching sideways (per metre).</summary>
@@ -380,6 +436,7 @@ public sealed class MapDestruction
     /// </summary>
     public int Unsupported(int s, List<int> falling)
     {
+        EnsureGraph();
         var st = Structures[s];
         Flood(st, initial: false);
         var n = 0;

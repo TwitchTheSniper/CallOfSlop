@@ -65,6 +65,7 @@ public sealed partial class Game
         if (!IsServer || !DestructionLive || !(damage > 0))
             return;
         var d = World.Map.Destruction!;
+        d.EnsureGraph();
         if (!World.Query.Raycast(origin, dir, dist + 0.05f, QueryFilter.Shots, out var hit) || hit.Kind != ShapeKind.Box || hit.Distance < dist - 0.06f
             || !d.IsChunk(hit.Shape.Index, out var c))
             return;
@@ -86,6 +87,7 @@ public sealed partial class Game
         if (!IsServer || !DestructionLive)
             return false;
         var d = World.Map.Destruction!;
+        d.EnsureGraph();
         if (!World.Query.Raycast(origin, dir, MeleeRange + 0.3f, QueryFilter.Shots, out var hit) || hit.Kind != ShapeKind.Box || !d.IsChunk(hit.Shape.Index, out var c))
             return false;
         c = d.Target(c);
@@ -112,6 +114,7 @@ public sealed partial class Game
             return;
         var map = World.Map;
         var d = map.Destruction!;
+        d.EnsureGraph();
         _dHits.Clear();
         var rays = 0;
         foreach (var st in d.Structures)
