@@ -671,6 +671,35 @@ public sealed partial class Game
     public Rocket? SelfTestFireLauncher(Player p, WeaponDef def, Vector3 dir, byte lockTarget, double now) =>
         ServerFireLauncher(p, def, p.Eye, dir, 0f, (uint)(now * 1000) | 1, lockTarget, now);
 
+    /// <summary>Self-test: a projectile straight into the air (no ammo or fire-rate checks), owned by <paramref name="owner"/>.</summary>
+    public Rocket SelfTestAddRocket(Player owner, WeaponDef def, Vector3 pos, Vector3 vel, double now)
+    {
+        var r = NewRocket();
+        r.Id = _nextRocketId++;
+        if (_nextRocketId == 0)
+            _nextRocketId = 1;
+        r.Owner = owner.Id;
+        r.WeaponId = def.Id;
+        r.Kit = def.Kit;
+        r.Def = def;
+        r.Seed = r.Id;
+        r.Pos = r.PrevPos = r.RenderPos = pos;
+        r.Vel = vel;
+        r.BouncesLeft = def.LauncherBounces;
+        r.Born = now;
+        Rockets[r.Id] = r;
+        return r;
+    }
+
+    /// <summary>Self-test: a fresh life's launcher ammo for the player.</summary>
+    public void SelfTestRefillLauncher(Player p) => _launcherAmmo.Remove(p.Id);
+
+    /// <summary>Self-test: the player's sticky charges go off.</summary>
+    public void SelfTestDetonate(Player p, double now) => ServerDetonateStickies(p, now);
+
+    /// <summary>Self-test: cluster bomblets still to go off.</summary>
+    public int SelfTestPendingClusters => _clusterBlasts.Count;
+
     /// <summary>Self-test: one server tick of the rockets (and cluster bomblets).</summary>
     public void SelfTestRocketTick(double now)
     {
