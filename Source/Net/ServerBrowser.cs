@@ -57,9 +57,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     placed with "respawn" is back), and kill id 254 (Game.LandmineKillId, "Landmine") for neutral blasts.
     // 32: the pre-match lobby room (PreMatchLobby.cs): MatchPhase.Lobby (4) in snapshots, the server info and MatchStart,
     //     and Msg.LobbyState / ChatSay / ChatLine at the end of Msg (lobby settings and pings, lobby chat).
-    // 33: destructible buildings (GameDestruction.cs): Msg.StructBreak / StructState at the end of Msg; destructible maps'
+    // 33: blood marks (BodyBlood.cs): every snapshot fast entry ends with the player's 32-bit blood word (hit body parts,
+    //     generation, last hit direction; Snapshot.FastBytes 24 -> 28).
+    // 34: meaty gibs (Gibs.cs, GameGibs.cs): bit 1 of Msg.Kill's headshot byte is "gibbed" (blown apart by a blast).
+    // 35: destructible buildings (GameDestruction.cs): Msg.StructBreak / StructState at the end of Msg; destructible maps'
     //     fingerprints include their chunks (MapDestruction.Map.cs).
-    public const byte ProtocolVersion = 33;
+    public const byte ProtocolVersion = 35;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

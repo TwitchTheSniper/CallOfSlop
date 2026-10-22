@@ -4,6 +4,7 @@
   "category": "Misc",
   "description": "Three pigeons pecking about.",
   "collision": "cosmetic",
+  "breakable": { "health": 20, "breakBy": "all", "gibs": { "count": 10, "style": "bird" } },
   "scatter": {"randomYaw": true},
   "fadeDistance": 35,
   "parts": [

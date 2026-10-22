@@ -59,16 +59,16 @@ public sealed partial class Game
 
     // ---- Server: damage --------------------------------------------------------------------------------------------
 
-    /// <summary>Server: a bullet from <paramref name="origin"/> along <paramref name="dir"/> that stopped at <paramref name="dist"/> chips the chunk it hit (weak materials only).</summary>
+    /// <summary>Server: a bullet from <paramref name="origin"/> along <paramref name="dir"/> that ended at <paramref name="dist"/> chips the first chunk it hit (weak materials only).</summary>
     internal void ShotStructures(Player? shooter, Vector3 origin, Vector3 dir, float dist, float damage, byte killId, double now)
     {
         if (!IsServer || !DestructionLive || !(damage > 0))
             return;
         var d = World.Map.Destruction!;
         d.EnsureGraph();
-        if (!World.Query.Raycast(origin, dir, dist + 0.05f, QueryFilter.Shots, out var hit) || hit.Kind != ShapeKind.Box || hit.Distance < dist - 0.06f
+        if (!World.Query.Raycast(origin, dir, dist + 0.05f, QueryFilter.Shots, out var hit) || hit.Kind != ShapeKind.Box
             || !d.IsChunk(hit.Shape.Index, out var c))
-            return;
+            return; // (the first wall the bullet met: with penetration it may carry on through it)
         c = d.Target(c);
         var mult = d.MaterialOf(c).Mult[(int)StructureHit.Bullet];
         if (mult <= 0 || d.Broken[c])

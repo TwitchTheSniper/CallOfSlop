@@ -54,7 +54,7 @@
     <None Update="Cosmetics\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Decals for the Decal / DecalScatter map ops and bullet impacts: one JSON file each, in category folders (see Decals\README.md). -->
     <None Update="Decals\**\*" CopyToOutputDirectory="PreserveNewest" />
-    <!-- Building materials: how they break (Materials\destruction.json) and which bullets go through them (see Buildings\README.md). -->
+    <!-- Gameplay material tables keyed by surface name: Materials\penetration.json (bullets through walls, see README) and Materials\destruction.json (how buildings break, see Buildings\README.md). -->
     <None Update="Materials\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

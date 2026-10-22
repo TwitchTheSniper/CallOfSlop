@@ -4,6 +4,7 @@
   "category": "Misc",
   "description": "A ginger cat sitting and watching.",
   "collision": "cosmetic",
+  "breakable": { "health": 45, "breakBy": "all", "gibs": { "count": 12, "style": "fur" } },
   "scatter": {"randomYaw": true},
   "fadeDistance": 40,
   "parts": [

@@ -195,6 +195,7 @@ public static class PropDebris
     /// </summary>
     public static void Push(Vector3 center, float radius, float strength)
     {
+        Gibs.Push(center, radius, strength); // the gibs lying about fly too (Gibs.cs)
         if (_count == 0 || !(strength > 0) || !(radius > 0))
             return;
         for (var i = 0; i < _count; i++)

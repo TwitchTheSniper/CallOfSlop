@@ -231,6 +231,10 @@ public sealed partial class WeaponDef
     public float Bright = 0.5f; // high-frequency content of the blast
     public float Tail = 0.5f; // length of the echo
 
+    // ---- Bullet penetration (Materials/penetration.json, Source/Game/Materials) ----
+    public float Penetration = -1f; // power through walls; -1 = from the class and calibre (MaterialPenetration.PowerOf)
+    public float PenetrationMult = 1f; // attachments scale the power (AP Rounds up, hollow points down)
+
     // ---- Derived -------------------------------------------------------------
     public Slot Slot => Class is WeaponClass.Pistol or WeaponClass.Launcher ? Slot.Secondary : Slot.Primary; // launchers: secondary only
     public float FireInterval => 60f / Rpm;

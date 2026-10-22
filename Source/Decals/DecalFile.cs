@@ -25,10 +25,10 @@ public static class DecalFile
 
     /// <summary>Material names an "impact" may list (the box surface textures, the terrain, and Default for anything else).</summary>
     public static readonly string[] ImpactMaterialNames = ["Concrete", "Brick", "Wood", "Metal", "Tiles", "Dirt", "Grid", "Terrain", "Default",
-        "Asphalt", "Plaster", "Grass", "Sand", "Rock", "Snow", "Explosive"];
+        "Asphalt", "Plaster", "Grass", "Sand", "Rock", "Snow", "Explosive", "Gore"];
 
     /// <summary>
-    /// Where a material with no impact decal of its own borrows them from (the chain ends at Default; Explosive has none:
+    /// Where a material with no impact decal of its own borrows them from (the chain ends at Default; Explosive and Gore have none:
     /// a blast with no scorch decal leaves nothing rather than a bullet hole).
     /// </summary>
     public static string? ImpactFallback(string material) => material switch
@@ -36,7 +36,7 @@ public static class DecalFile
         "Asphalt" or "Plaster" or "Rock" or "Tiles" or "Grid" => "Concrete",
         "Grass" or "Sand" or "Snow" => "Terrain",
         "Terrain" => "Dirt",
-        "Explosive" or "Default" => null,
+        "Explosive" or "Gore" or "Default" => null, // (Gore: the gibs' blood splats, Decals/Gore; never a bullet hole)
         _ => "Default",
     };
 

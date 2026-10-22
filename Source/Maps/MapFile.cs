@@ -205,6 +205,8 @@ public static partial class MapFile
         sb.Append($"  \"order\": {m.Order},\n");
         if (m.PrototypeGrid)
             sb.Append("  \"prototypeGrid\": true,\n");
+        if (!m.Penetration)
+            sb.Append("  \"penetration\": false,\n");
         if (m.DestructibleSetting is { } destructible)
             sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
@@ -321,6 +323,8 @@ public static partial class MapFile
                     ? mpi : throw new MapFileException($"{source}: \"maxPlayers\" is a whole number from 2 to {Map.HardMaxPlayers}");
             if (Prop(root, "prototypeGrid") is { ValueKind: JsonValueKind.True })
                 map.PrototypeGrid = true;
+            if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
+                map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
             if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
                 map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");

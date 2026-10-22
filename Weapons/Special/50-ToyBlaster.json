@@ -35,6 +35,7 @@
   "accent": [1, 0.4, 0.8],
   "sound": "Toy",
   "caliber": 0.1,
+  "penetration": 0,
   "bright": 0.9,
   "tail": 0.1,
   "model": {
