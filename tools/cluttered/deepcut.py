@@ -746,8 +746,8 @@ exclude = [{"shape": "rect", "center": [R((x0 + x1) / 2), R((z0 + z1) / 2)], "ha
            [(-19, -6, 11, 28)]]                                         # the pit floor: bare
 for x, z, r in HILLS:
     exclude.append({"shape": "circle", "center": [x, z], "radius": r, "density": 0.15})
-include = [{"shape": "rect", "center": [R((x0 + x1) / 2), R((z0 + z1) / 2)], "halfX": R((x1 - x0) / 2 - 0.3), "halfZ": R((z1 - z0) / 2 - 0.3), "onTop": True}
-           for (x0, z0, x1, z1) in INCLUDE_TOPS]
+include = [{"shape": "polygon", "points": [[R(x0 + 0.3), R(z0 + 0.3)], [R(x1 - 0.3), R(z0 + 0.3)], [R(x1 - 0.3), R(z1 - 0.3)], [R(x0 + 0.3), R(z1 - 0.3)]], "onTop": True}
+           for (x0, z0, x1, z1) in INCLUDE_TOPS]   # polygons: a rect zone must be at least 10 m across
 items = []
 for (x, z, h) in ((-86.0, -16.0, 9.0), (-85.0, 20.0, 8.0), (-62.0, -22.0, 7.0), (-55.0, 22.0, 7.5), (-88.0, 8.0, 10.0), (84.0, 20.0, 9.0),
                   (88.0, -14.0, 10.0), (80.0, -26.0, 8.0), (62.0, -20.0, 7.0)):
