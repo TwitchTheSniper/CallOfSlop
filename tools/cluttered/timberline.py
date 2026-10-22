@@ -42,8 +42,8 @@ DECK = (0.46, 0.35, 0.22); WATER = (0.20, 0.34, 0.36); DIRT = (0.42, 0.34, 0.24)
 WALL_H = 2.7
 
 # ================================================================ objectives (decided first: everything keeps clear)
-BLUE_SP = [(-84, -14), (-80, -18), (-86, -6), (-81, -9), (-85, 4), (-81, 8), (-86, 12), (-85, 18), (-82, -1)]
-RED_SP = [(82, -12), (86, -6), (79, -18), (84, 2), (80, 8), (86, 12), (77, 14), (88, -16), (81, -3)]
+BLUE_SP = [(-84, -14), (-80, -18), (-86, -6), (-81, -9), (-85, 4), (-81, 8), (-86, 12), (-85, 18), (-85, -1)]
+RED_SP = [(82, -12), (86, -6), (81, -21), (84, 2), (80, 8), (86, 12), (77, 14), (88, -16), (81, -3)]
 FFA_SP = [(-40, -52), (34, -56), (-46, 54), (42, 52), (-10, -20), (22, 16)]
 HILLS = [(1.5, 2.0, 6.0), (0.0, -44.0, 6.0), (2.5, 47.0, 6.0)]
 FLAGS = [(-89.0, 3.0), (90.0, -2.0)]
@@ -67,10 +67,10 @@ FEAT = [
     {"type": "hill", "x": 52, "z": 40, "radius": 16, "height": 1.8},
     {"type": "hill", "x": -30, "z": 54, "radius": 14, "height": 1.6},
     # spawn screens: low wooded berms in front of each team's spawns, staggered so no straight line runs past them
-    {"type": "ridge", "points": [[-76, -28], [-71, -18], [-72, -8], [-77, -3]], "width": 13, "height": 3.0},
-    {"type": "ridge", "points": [[-77, 2], [-72, 8], [-72, 16], [-76, 24]], "width": 13, "height": 3.0},
-    {"type": "ridge", "points": [[73, -32], [69, -22], [70, -10], [75, -5]], "width": 13, "height": 3.0},
-    {"type": "ridge", "points": [[75, 1], [70, 8], [70, 18], [74, 26]], "width": 13, "height": 3.0},
+    {"type": "ridge", "points": [[-76, -28], [-71, -18], [-72, -8], [-77, -3]], "width": 15, "height": 3.6},
+    {"type": "ridge", "points": [[-77, 2], [-72, 8], [-72, 16], [-76, 24]], "width": 15, "height": 3.6},
+    {"type": "ridge", "points": [[73, -32], [69, -22], [70, -10], [75, -5]], "width": 15, "height": 3.6},
+    {"type": "ridge", "points": [[75, 1], [70, 8], [70, 18], [74, 26]], "width": 15, "height": 3.6},
     {"type": "valley", "points": [list(p) for p in CREEK], "width": 9, "depth": 1.7, "material": "sand"},
     {"type": "flatten", "x": -58, "z": 37, "radius": 10, "height": -1.1, "edge": 6, "mode": "cut", "material": "sand"},
     {"type": "flatten", "x": -46, "z": 42, "radius": 6, "height": -1.1, "edge": 5, "mode": "cut", "material": "sand"},
@@ -130,6 +130,9 @@ def wmesh(kind, x, z, c, y, **kw):
     t.ops.append(op); t.meshes += 1
 
 
+WORLD_PROPS = set()   # indices into t.props of props placed at an absolute height
+
+
 def wprop(name, x, z, yaw, y, tag="world", mark=False):
     """A prop at an absolute height (on a bunker roof, a cabin floor over a bunker, afloat)."""
     if name not in t.P:
@@ -138,7 +141,7 @@ def wprop(name, x, z, yaw, y, tag="world", mark=False):
     if yaw:
         op["yaw"] = R(yaw % 360)
     op["y"] = R(y); op["anchor"] = "world"
-    t.ops.append(op); t.props.append((name, x, z, yaw, 9.0, tag))
+    t.ops.append(op); WORLD_PROPS.add(len(t.props)); t.props.append((name, x, z, yaw, y, tag))
     if mark and t.P[name]["solid"]:
         r = t.foot(name, x, z, yaw); t.mark(t.occ, r)
         if t.P[name]["h"] > 0.55:
@@ -242,10 +245,13 @@ B_DEPTH = 3.5         # surface to floor (S is a multiple of 0.5, so the floor h
 BUNKER_PLAN = {
     "cabin": (-49.5, -29.5, 9.0, 6.0),
     "shaft": (-52.0, -31.3, -45.5, -29.5),        # the stair ramp (top at x = -52, on the surface)
-    "hole": (-53.7, -31.3, -45.5, -29.5),         # the opening in the roof (the cabin's floor): landing strip + stairs
+    "hole": (-53.7, -31.3, -47.3, -29.5),         # the opening (no roof): landing strip + the upper stairs
     "room": (-45.5, -34.5, -32.5, -24.5),
     "corr": (-32.5, -30.0, -21.0, -27.6),
     "door_x": -21.0, "trench_end": (-8.0, -28.8),
+    # roof slabs only over the pits (the cuts plus their 0.6 m blend, plus 0.3 m): the room, the corridor and the strips
+    # either side of the stair opening; the rest of the hatch cabin stands on the ground itself
+    "roofs": [(-47.3, -36.8, -30.2, -22.2), (-30.2, -32.3, -18.7, -25.3), (-52.9, -33.0, -47.3, -31.3), (-52.9, -29.5, -47.3, -28.0)],
 }
 BUNKERS = []
 
@@ -271,7 +277,7 @@ def bunker_terrain(s, name):
     F = S - B_DEPTH
     FEAT.append({"type": "flatten", "x": R(cx), "z": R(cz), "w": R(bx1 - bx0 + 2), "d": R(bz1 - bz0 + 2), "height": S, "edge": 5})
     BUNKERS.append({"name": name, "s": s, "S": S, "F": F, "rects": rects, "cabin": cabr, "hole": TR(P["hole"], s),
-                    "roof": (bx0 + 1.2, bz0 + 1.2, bx1 - 1.2, bz1 - 1.2)})
+                    "roof": (bx0 + 1.2, bz0 + 1.2, bx1 - 1.2, bz1 - 1.2), "roofs": [TR(r, s) for r in P["roofs"]]})
     return S
 
 
@@ -328,12 +334,9 @@ def bunker_build(b, culvert):
     a = TR((sx0, sz0, sx1 - 0.5, sz1), s)
     wmesh("wedge", (a[0] + a[2]) / 2, (a[1] + a[3]) / 2, PLANK, F + 0.02, width=sz1 - sz0, height=S - F, depth=sx1 - 0.5 - sx0,
           yaw=270.0 if s > 0 else 90.0, material="Wood")
-    # roof: the bounding box less the opening (4 slabs), dirt-coloured
-    X0, Z0, X1, Z1 = b["roof"]
-    hx0, hz0, hx1, hz1 = b["hole"]
-    for r in ((X0, Z0, hx0, Z1), (hx1, Z0, X1, Z1), (hx0, Z0, hx1, hz0), (hx0, hz1, hx1, Z1)):
-        if r[2] - r[0] > 0.05 and r[3] - r[1] > 0.05:
-            wblock(r[0], ceil, r[1], r[2], top, r[3], ROOFDIRT, surface=True)
+    # roof slabs over the pits, dirt-coloured
+    for r in b["roofs"]:
+        wblock(r[0], ceil, r[1], r[2], top, r[3], ROOFDIRT, surface=True)
     # floors (on the pit's ground) and ceilings: cosmetic concrete; planks on the landing strip
     for r in (rm, co):
         cxr, czr, wr, dr = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2, r[2] - r[0], r[3] - r[1]
@@ -463,27 +466,36 @@ def gy(x, z):
 # --- bunkers and their hatch cabins (standing on the roofs)
 bunker_build(BUNKERS[0], culvert=False)
 bunker_build(BUNKERS[1], culvert=True)
+def on_roof(b, x, z, hw=0.6):
+    """Is (x, z) (give or take hw) over one of the bunker's roof slabs? Things there stand 6 cm higher."""
+    return any(r[0] - hw < x < r[2] + hw and r[1] - hw < z < r[3] + hw for r in b["roofs"])
+
+
 for b, nm in ((BUNKERS[0], "Hunting Cabin"), (BUNKERS[1], "Trapper Cabin")):
     s = b["s"]; cxp, czp, w, d = BUNKER_PLAN["cabin"]
     cx, cz = T((cxp, czp), s)
-    top = b["S"] + 0.06
+    S = b["S"]
     # plan: doors on the south side (module 1) and the west end (towards the team's base); turned with the plan
     doors = (("S", 1), ("W", 1)) if s > 0 else (("N", 1), ("E", 0))
     wins = (("N", 0), ("N", 2), ("E", 1)) if s > 0 else (("S", 0), ("S", 2), ("W", 0))
-    room = cabin(nm, cx, cz, w, d, doors, wins, world_y=top, chimney=("W" if s > 0 else "E"))
-    # the hatch: a frame and a propped-open lid at the top of the stairs; a rug pulled back; a few things
-    hx, hz = T((-52.9, -32.0), s)
-    wprop("Bunker Hatch Lid", hx, hz, 0 if s > 0 else 180, top + 0.01, tag="bunker")
-    for (px, pz, nm2, yaw) in ((-47.4, -27.6, "Single Bed", 90), (-53.0, -27.6, "Wooden Chair", 45), (-50.4, -27.6, "Table", 0),
-                               (-46.6, -31.75, "Firewood Rack", 0), (-50.0, -31.9, "Coat Stand", 0)):
+    room = cabin(nm, cx, cz, w, d, doors, wins, world_y=S, chimney=("W" if s > 0 else "E"))
+    # the hatch lid propped open at the top of the stairs; a few things (clear of the opening, the doorways and the waypoint)
+    hx, hz = T((-53.0, -31.8), s)
+    wprop("Bunker Hatch Lid", hx, hz, 0 if s > 0 else 180, S + 0.07, tag="bunker")
+    for (px, pz, nm2, yaw, hw) in ((-53.2, -31.8, "Coat Stand", 0, 0.3), (-48.5, -31.8, "Firewood Rack", 0, 1.0), (-46.3, -27.9, "Table", 0, 0.7),
+                                   (-47.7, -27.9, "Wooden Chair", 90, 0.3)):
         x, z = T((px, pz), s)
-        wprop(nm2, x, z, yaw + (180 if s < 0 else 0), top, tag="cabin")
-    x, z = T((-50.4, -27.6), s)
-    wprop("Camp Lantern", x, z, 0, top + 0.78, tag="cabin")
-    # porch-side bits outside the door, on the roof
-    for (px, pz, nm2) in ((-47.5, -25.6, "Axe Stump"), (-44.0, -27.0, "Firewood Rack")):
+        wprop(nm2, x, z, yaw + (180 if s < 0 else 0), S + (0.06 if on_roof(b, x, z, hw) else 0.0), tag="cabin")
+    x, z = T((-46.3, -27.9), s)
+    wprop("Camp Lantern", x, z, 0, S + 0.06 + 0.78, tag="cabin")
+    # outside the doors
+    for (px, pz, nm2) in ((-47.6, -25.4, "Axe Stump"), (-44.0, -27.0, "Firewood Rack")):
         x, z = T((px, pz), s)
-        wprop(nm2, x, z, rng.uniform(0, 360) if nm2 == "Axe Stump" else (90 if s > 0 else 270), top, tag="cabin", mark=True)
+        wprop(nm2, x, z, rng.uniform(0, 360) if nm2 == "Axe Stump" else (90 if s > 0 else 270), S + (0.06 if on_roof(b, x, z, 1.0) else 0.0), tag="cabin", mark=True)
+    # waypoints: on the cabin's floor (the ground) and outside both doors
+    for (px, pz) in ((-51.6, -27.5), (-49.5, -27.4), (-49.5, -25.2), (-55.3, -28.0)):
+        x, z = T((px, pz), s)
+        t.ops.append({"op": "Waypoint", "x": R(x), "z": R(z)})
 
 # --- the other cabins (on their pads)
 def furnish_cabin(room, kind):
@@ -719,7 +731,7 @@ t.prop("Axe Stump", wx, wz - 2.6, 20, tag="woodshed")
 t.prop("Log", wx + 3.2, wz - 1.5, 80, tag="woodshed"); t.prop("Plank Pile", wx - 3.4, wz - 0.6, 90, tag="woodshed")
 t.prop("Wheelbarrow", wx + 2.9, wz + 1.6, 200, tag="woodshed")
 
-ERRATICS = [(-66.5, -8.6, 30, 1.6), (-40.0, 30.0, 110, 1.5), (44.0, 12.0, 200, 1.5), (-20.0, -36.0, 60, 1.4), (28.0, -30.0, 300, 1.5)]
+ERRATICS = [(-66.5, -8.8, 30, 2.0), (-50.5, -10.6, 75, 1.8), (-40.0, 30.0, 110, 1.5), (44.0, 12.0, 200, 1.5), (-20.0, -36.0, 60, 1.4), (28.0, -30.0, 300, 1.5)]
 # ================================================================ the forest: hand-placed solid cover, trees, foliage
 # fallen logs and boulders in the woods (solid cover, off the trails), stumps and junk
 BX0, BZ0, BX1, BZ1 = t.x0, t.z0, t.x1, t.z1
@@ -752,7 +764,7 @@ def scatter_solid(names, n, seed, x0=None, x1=None, z0=None, z1=None, margin=2.0
 
 
 # Blue's side (west of x = 0) gets more cover than Red's: Red holds the high ground.
-nb = scatter_solid(["Mossy Fallen Log", "Mossy Fallen Log", "Mossy Boulder", "Log", "Tree Stump", "Mossy Boulder"], 150, 21, x1=0.0)
+nb = scatter_solid(["Mossy Fallen Log", "Mossy Fallen Log", "Mossy Boulder", "Log", "Tree Stump", "Mossy Boulder"], 190, 21, x1=0.0)
 nr = scatter_solid(["Mossy Fallen Log", "Mossy Boulder", "Log", "Tree Stump", "Tree Stump"], 110, 22, x0=0.0)
 for (x, z, s_) in ((-46.0, -12.0, 3), (-20.0, 22.0, 4), (30.0, 18.0, 5), (20.0, -28.0, 6), (-52.0, 50.0, 7), (50.0, -8.0, 8), (-2.0, -58.0, 9)):
     t.ops.append({"op": "Rocks", "x": R(x), "z": R(z), "size": 2.4, "color": col((0.48, 0.47, 0.44)), "seed": s_})
@@ -772,18 +784,19 @@ for (x, z, yaw, sc) in ERRATICS:
 
 # --- props on the bunker roofs (hand-placed at the roof height: the ground the game sees there is the bunker floor)
 for b in BUNKERS:
-    X0, Z0, X1, Z1 = b["roof"]
     top = b["S"] + 0.06
     cab = b["cabin"]
-    sh = b["rects"][0]
     rr = random.Random(int(b["S"] * 10) + 7)
+    big = b["roofs"][:2]
     for k in range(40):
-        x, z = rr.uniform(X0 + 0.5, X1 - 0.5), rr.uniform(Z0 + 0.5, Z1 - 0.5)
+        r = big[0] if k % 4 else big[1]
+        x, z = rr.uniform(r[0] + 0.5, r[2] - 0.5), rr.uniform(r[1] + 0.5, r[3] - 0.5)
         if cab[0] - 1.6 < x < cab[2] + 1.6 and cab[1] - 1.6 < z < cab[3] + 1.6:
             continue
         wprop(rr.choice(["Leaf Litter", "Fallen Branch", "Fern Clump", "Forest Stones", "Toadstools", "Leaf Litter", "Fern Clump"]), x, z, rr.uniform(0, 360), top, tag="roof")
     for k in range(3):
-        x, z = rr.uniform(X0 + 2, X1 - 2), rr.uniform(Z0 + 1.5, Z1 - 1.5)
+        r = big[0]
+        x, z = rr.uniform(r[0] + 2, r[2] - 2), rr.uniform(r[1] + 1.5, r[3] - 1.5)
         if cab[0] - 2.5 < x < cab[2] + 2.5 and cab[1] - 2.5 < z < cab[3] + 2.5:
             continue
         wprop(rr.choice(["Mossy Fallen Log", "Tree Stump"]), x, z, rr.uniform(0, 360), top, tag="roof", mark=True)
@@ -823,6 +836,8 @@ for (x, z, r) in HILLS:
     t.exclude.append({"shape": "circle", "center": [R(x), R(z)], "radius": R(r + 1.0), "density": 0.35})
 for (x, z) in BLUE_SP + RED_SP + FFA_SP:
     t.exclude.append({"shape": "circle", "center": [R(x), R(z)], "radius": 1.6, "density": 0.3})
+for (x, z) in FLAGS:
+    t.exclude.append({"shape": "circle", "center": [R(x), R(z)], "radius": 3.0})
 for b in BUNKERS:
     # nothing in the cabin or the opening; under the rest of the roof the indoor rule keeps the pit clear, and the roof
     # over the rooms and the corridor grows grass (include zones with onTop: plants stand on the roof slab)
@@ -830,6 +845,11 @@ for b in BUNKERS:
     t.exclude_rect(cab[0] - 0.4, cab[1] - 0.4, cab[2] + 0.4, cab[3] + 0.4)
     hx0, hz0, hx1, hz1 = b["hole"]
     t.exclude_rect(hx0 - 0.4, hz0 - 0.4, hx1 + 0.4, hz1 + 0.4)
+    for r in b["roofs"][:2]:
+        t.exclude_rect(r[0], r[1], r[2], r[3], density=0.99)      # grass and shrubs on the roof, but no trees (partial ground grows none)
+    # the trench: nothing grows on its floor (a trunk would block it)
+    dx, dz = b["door"]; ex, ez = b["trench_end"]
+    t.exclude_rect(min(dx, ex) - 0.5, dz - 2.4, max(dx, ex) + 0.5, dz + 2.4)
     for r in b["rects"][1:]:
         t.include.append({"shape": "rect", "center": [R((r[0] + r[2]) / 2), R((r[1] + r[3]) / 2)], "halfX": R((r[2] - r[0]) / 2 + 0.6),
                           "halfZ": R((r[3] - r[1]) / 2 + 0.6), "onTop": True})
@@ -1042,7 +1062,31 @@ report.append(("enemy flag", b_, r_))
 for name, b_, r_ in report:
     print(f"walk {name}: blue {b_:.0f} m, red {r_:.0f} m ({(b_ - r_) / max(b_, r_) * 100:+.1f}%)")
 
-# --- spawn-to-spawn sight over the terrain and the tall things (eye height 1.6 m)
+# --- spawn-to-spawn sight over the terrain and the tall things (eye height 1.6 m), with each blocker's real top
+TOP = np.full(t.tall.shape, -1e9)
+
+
+def mark_top(r, top):
+    i0, i1, j0, j1 = t._ij(*r)
+    TOP[i0:i1, j0:j1] = np.maximum(TOP[i0:i1, j0:j1], top)
+
+
+for k_, (name, x, z, yaw, y, tag) in enumerate(t.props):
+    p_ = t.P[name]
+    if not p_["solid"]:
+        continue
+    base = y if k_ in WORLD_PROPS else gy(x, z) + (y or 0.0)
+    mark_top(t.foot(name, x, z, yaw), base + p_["h"])
+for (x, z, yaw, sc) in ERRATICS:
+    hw = 1.1 * sc * 0.7
+    mark_top((x - hw, z - hw, x + hw, z + hw), gy(x, z) + 1.3 * sc)
+for it in t.items:
+    hgt = it["height"] * (0.5 if it["type"] == "pine" else 0.62)
+    mark_top((it["x"] - 0.2, it["z"] - 0.2, it["x"] + 0.2, it["z"] + 0.2), gy(it["x"], it["z"]) + hgt)
+for x0, z0, x1, z1, y0, y1, c in t.boxes:
+    mark_top((x0, z0, x1, z1), gy((x0 + x1) / 2, (z0 + z1) / 2) + y1 if y1 < 20 else y1)
+
+
 def sees(a, b):
     ya, yb = gy(*a) + 1.6, gy(*b) + 1.6
     L = math.hypot(b[0] - a[0], b[1] - a[1]); n = max(1, int(L / 0.25))
@@ -1051,7 +1095,7 @@ def sees(a, b):
         if gy(x, z) > ya + (yb - ya) * f:
             return False
         i = int((z - t.z0) / t.res); j = int((x - t.x0) / t.res)
-        if t.tall[i, j]:
+        if t.tall[i, j] and TOP[i, j] > ya + (yb - ya) * f:
             return False
     return True
 

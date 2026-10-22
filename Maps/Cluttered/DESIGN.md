@@ -340,33 +340,38 @@ creek bed and the densest woods (the dark north-west wood: extra pines and bushe
 about 8 m up the long rise to the camp) with more open ground round the landing. Fairness comes from measurement:
 - **Walks.** The hills sit where both teams walk the same distance. The generator walks a 0.5 m grid over the terrain
   (walls, props, trunks and slopes too steep to walk block; the bunker tunnels are links) from every team spawn: Blue/Red
-  89/89 m to hill 1, 104/102 m to hill 2, 107/108 m to hill 3, 183/179 m to the enemy flag (all within 3%). The
-  self-test measures the same on the game's nav graph and fails past 10%.
-- **Sight.** Wooded berms screen each team's spawns (staggered, so the trails through them don't open a straight line),
-  and a few big erratic boulders (the Mossy Boulder prop scaled to over head height) break the long lines across the
-  middle. The generator finds no Blue spawn that sees a Red spawn over the terrain and the tall things; the self-test
-  casts every eye-to-eye ray in the game world.
-- **Cover for the high ground.** Red looks down on the middle; Blue gets more solid cover in its half (about 130 fallen
+  91/91 m to hill 1, 105/104 m to hill 2, 108/110 m to hill 3, 186/183 m to the enemy flag (all within 2%). The
+  self-test measures the same on the game's nav graph (within 6% in CI) and fails past 10%.
+- **Sight.** Wooded berms (3.6 m) screen each team's spawns, staggered so the trails through them don't open a straight
+  line, and big erratic boulders (the Mossy Boulder prop scaled to over head height) break the long lines across the
+  middle. The generator finds no Blue spawn that sees a Red spawn over the terrain and the solid things at their real
+  heights (every line clears its blocker by at least half a metre, before the scattered trees); the self-test casts
+  every eye-to-eye ray in the game world.
+- **Cover for the high ground.** Red looks down on the middle; Blue gets more solid cover in its half (about 150 fallen
   logs, boulders and stumps against 110) and the covered flanks: the creek bed, the lake shore and the north-west wood.
-  The self-test counts solid cover 0.9 m or taller within 6 m of each team's nav routes to the hills and requires Blue
-  to have at least as much as Red (and Red at least 70% of Blue's).
+  The self-test counts solid props and boxes 0.9 m or taller (not tree trunks: where the scatter puts them is luck)
+  within 6 m of each team's nav routes to the hills: Blue must have at least 90% of Red's, and each team at least 70% of
+  the other's (the generator's estimate is Blue 78, Red 69).
 - **Bunkers.** The two bunkers are the same plan turned 180 degrees about the centre, so neither team has a better
   tunnel: Blue's runs from the hunting cabin (north-west) to a trench that comes up towards hill 2 and the middle, Red's
   from the trapper cabin (south-east) to the creek towards hill 3 and the middle.
 
 **Bunkers (how they're built).** The terrain is a heightfield without holes, so each bunker is a pit cut into a level pad
-(`cut` flattens, 3.5 m deep, 1 m wider than the rooms) with concrete walls of boxes inside, and a roof slab at the surface
-(a dirt-coloured box 6 cm proud of the ground, grass growing on it through an `include` zone with `onTop`). The floor is
-the pit's own ground under a cosmetic concrete mesh: a box floor would bury the waypoints the bots need. Inside: a 13 x
-10 m room (three bunk beds, lockers, a map table with pins, a desk with a field radio, a running generator, gas cylinders,
-supply shelves and crates, ammo cans, flickering caged lamps every few metres on dark concrete), and a 2.4 m corridor to
-a door. Two ways in each:
-- **The hatch.** Stairs (14 risers of 25 cm, under the nav graph's step limit at its 0.6 m sampling) climb from the room
-  to a landing strip inside the cabin above, where the roof is open; the hatch lid stands propped beside it. The landing
-  strip is the ground itself (the pit is cut exactly to a heightfield sample line there), so a waypoint lands on it.
+(`cut` flattens 3.5 m deep, 1 m wider than the rooms) with dark concrete walls of boxes inside and roof slabs at the
+surface over the pits only (dirt-coloured boxes 6 cm proud of the ground, grass and shrubs growing on them through
+`include` zones with `onTop`, an `exclude` at 99% so no tree takes root on a roof). The floor is the pit's own ground
+under a cosmetic concrete mesh: a box floor would bury the waypoints the bots need (a waypoint stands on the terrain, and
+one inside a box is moved away). Inside: a 13 x 10 m room (three bunk beds, lockers, a map table with pins, a desk with
+a field radio, a running generator, gas cylinders, supply shelves and crates, ammo cans, caged lamps flickering on the
+generator every few metres) and a 2.4 m corridor to a door. Two ways in each:
+- **The hatch.** Inside the hunting cabin (Blue) and the trapper cabin (Red) a plank stair goes down through the floor,
+  the hatch lid propped open beside it. The stair is a cosmetic wedge on a `cut` ramp of ground (30 degrees, 6 m, from the
+  cabin's floor level down to the room): box steps over a pit hid the drop under them from the bots' nav links (they check
+  the ground under the line), so the hatch never joined the nav graph. The cabin stands on the ground itself (the pit
+  isn't cut under it), so its floor and the landing get waypoints too.
 - **The trench.** A `cut` ramp runs from the door up to the surface 13 m away: Blue's comes up on the slope under brush
   (a timber door frame, a steel door hanging open), Red's runs down a gully into the creek through a big concrete
-  culvert pipe.
+  culvert pipe. Nothing grows on the trench floor (a trunk would block it).
 The self-test checks each bunker: the floor is more than 2.8 m under the surface, a roof covers the room, the nav graph's
 main area reaches the room, and both the hatch landing and the trench end have a nav route to it.
 

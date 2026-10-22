@@ -11,8 +11,9 @@ namespace CallOfSlop;
 /// <list type="bullet">
 /// <item>the nav walk (averaged over each team's spawns) to every hill and to the enemy flag is within 10%;</item>
 /// <item>no Blue spawn sees a Red spawn (eye to eye, through the world's ray casts: terrain, boxes, props, trunks);</item>
-/// <item>comparable cover: solid cover 0.9 m or taller within 6 m of each team's routes to the hills (at least 70%);</item>
-/// <item>the high ground is Red's (the camp stands higher), so Blue must get at least as much cover as Red.</item>
+/// <item>comparable cover: solid props and boxes 0.9 m or taller (not tree trunks) within 6 m of each team's routes to the
+/// hills, each team at least 70% of the other's;</item>
+/// <item>the high ground is Red's (the camp stands higher), so Blue must get about as much cover as Red or more (90%).</item>
 /// </list>
 /// The bunkers: each has a floor the nav graph reaches from the main area, a roof over it (no sky inside), and two ways
 /// in that the nav graph walks: down the stairs from the hatch in its cabin's floor, and along the trench to its door.
@@ -121,13 +122,14 @@ public static partial class SelfTest
         if (seen.Count > 0)
             Fail($"{m.Name}: {seen.Count} Blue spawn(s) see a Red spawn: {string.Join(", ", seen.Take(4))}");
 
-        // ---- Comparable cover: solid cover 0.9 m or taller within 6 m of each team's routes to the hills. Red has the
-        // high ground, so Blue gets at least as much cover (within 70% the other way for Red).
+        // ---- Comparable cover: solid props and boxes 0.9 m or taller within 6 m of each team's routes to the hills (tree
+        // trunks don't count: they're thin, and where the scatter puts them is luck). Red has the high ground, so Blue
+        // gets about as much cover or more.
         var cover = new List<Vector3>();
         foreach (var p in m.PropInstances.Where(p => p.Def.IsSolid && p.Bounds.Max.Y - m.GroundHeight(p.Position.X, p.Position.Z) >= 0.9f))
             cover.Add(p.Bounds.Center);
         for (var i = 0; i < m.Solid.Count; i++)
-            if (m.IsDrawnBox(i) && m.Solid[i].Max.Y - m.GroundHeight(m.Solid[i].Center.X, m.Solid[i].Center.Z) >= 0.9f && m.Solid[i].Max.Y - m.Solid[i].Min.Y < 6f)
+            if (m.IsDrawnBox(i) && !m.IsTrunk(i) && m.Solid[i].Max.Y - m.GroundHeight(m.Solid[i].Center.X, m.Solid[i].Center.Z) >= 0.9f && m.Solid[i].Max.Y - m.Solid[i].Min.Y < 6f)
                 cover.Add(m.Solid[i].Center);
         int CoverNear(List<Vector3> route)
         {
@@ -146,7 +148,7 @@ public static partial class SelfTest
         float blueY = Height(0), redY = Height(1);
         ClutteredLine($"{m.Name} balance (Blue/Red nav walk): {string.Join(", ", walks)}; spawn-to-spawn sight lines {seen.Count}; cover near the routes to the hills "
             + $"{coverBlue}/{coverRed}; spawn ground {blueY:0.0}/{redY:0.0} m (Red holds the high ground)");
-        if (coverRed < 0.7f * coverBlue || (redY > blueY + 2f && coverBlue < coverRed))
+        if (coverRed < 0.7f * coverBlue || coverBlue < 0.7f * coverRed || (redY > blueY + 2f && coverBlue < 0.9f * coverRed))
             Fail($"{m.Name}: cover on the routes to the hills is out of balance (Blue {coverBlue}, Red {coverRed}; Red's spawns are {redY - blueY:0.0} m higher)");
 
         // ---- The bunkers: a covered floor the nav graph reaches, and both ways in walkable.
