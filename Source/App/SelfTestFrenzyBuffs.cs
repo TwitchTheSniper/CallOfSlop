@@ -109,6 +109,7 @@ public static partial class SelfTest
             var bot = game.Players.Values.First(x => x.Id != 0);
             game.SelfTestPerks(me, PerkSet.Empty); // no Last Stand saves, no Bloodthirst heals (bots pick random perks)
             game.SelfTestPerks(bot, PerkSet.Empty);
+            game.SelfTestPlace(me, new Vector3(5, 0, 5), MathF.PI); // the local player starts unspawned: a dead killer's frenzy stays at 0
             var client = new FrenzyMeter();
             var rng = new Random(seed);
             var smg = FirstOfClass(WeaponClass.SMG)!;
