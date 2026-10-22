@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mailbox Rack",
+  "category": "Nordic",
+  "description": "A row of four rural mailboxes on a plank between two posts at the roadside, facing +Z.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.9, 1.6, 0.42], "offset": [0, 0.8, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.1, 1.15, 0.1], "offset": [-0.85, 0.575, 0], "color": "#4a3624"},
+    {"size": [0.1, 1.15, 0.1], "offset": [0.85, 0.575, 0], "color": "#4a3624"},
+    {"size": [2.0, 0.06, 0.4], "offset": [0, 1.15, 0], "color": "#5a4630", "material": "wood"},
+    {"size": [0.4, 0.32, 0.36], "offset": [-0.72, 1.34, 0], "color": "#2a6a3a", "material": "metal"},
+    {"size": [0.42, 0.06, 0.38], "offset": [-0.72, 1.52, 0], "color": "#2a6a3a"},
+    {"size": [0.1, 0.04, 0.02], "offset": [-0.72, 1.36, 0.19], "color": "#e8e4d8"},
+    {"size": [0.4, 0.32, 0.36], "offset": [-0.24, 1.34, 0], "color": "#8a8c8e", "material": "metal"},
+    {"size": [0.42, 0.06, 0.38], "offset": [-0.24, 1.52, 0], "color": "#8a8c8e"},
+    {"size": [0.1, 0.04, 0.02], "offset": [-0.24, 1.36, 0.19], "color": "#e8e4d8"},
+    {"size": [0.4, 0.32, 0.36], "offset": [0.24, 1.34, 0], "color": "#b02a20", "material": "metal"},
+    {"size": [0.42, 0.06, 0.38], "offset": [0.24, 1.52, 0], "color": "#b02a20"},
+    {"size": [0.1, 0.04, 0.02], "offset": [0.24, 1.36, 0.19], "color": "#e8e4d8"},
+    {"size": [0.4, 0.32, 0.36], "offset": [0.72, 1.34, 0], "color": "#2a4a8a", "material": "metal"},
+    {"size": [0.42, 0.06, 0.38], "offset": [0.72, 1.52, 0], "color": "#2a4a8a"},
+    {"size": [0.1, 0.04, 0.02], "offset": [0.72, 1.36, 0.19], "color": "#e8e4d8"}
+  ]
+}

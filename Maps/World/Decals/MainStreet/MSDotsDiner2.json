@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "MS Dots Diner 2",
+  "category": "MainStreet",
+  "description": "Main Street (World Tour): Dots Diner, piece 2 of 2 (left to right). Invented for the town of Prairie Hollow.",
+  "author": "Call of Slop",
+  "size": [
+    1.6,
+    0.8
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 150,
+  "image": "MSDotsDiner2.png"
+}
