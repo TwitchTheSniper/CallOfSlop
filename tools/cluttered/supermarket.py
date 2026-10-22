@@ -368,7 +368,7 @@ for (x, nm) in ((14.4, "Microwave"), (15.6, "Coffee Maker"), (22.6, "Knife Block
 # ---- frozen (east): glass-door freezers along the east wall, open islands
 for z in (-4.3, -1.9, 0.5, 2.9, 5.3, 7.7, 10.1):
     P("Freezer Case", X1 - W - 0.5, z, 270, tag="frozen")
-for x, z in ((27.0, -3.6), (31.4, -4.6), (27.0, 6.4), (31.4, 6.4)):
+for x, z in ((27.0, -3.9), (31.4, -4.6), (27.0, 6.4), (31.4, 6.4)):
     P("Freezer Island", x, z, 90, tag="frozen")
 
 # ---- checkouts and the front end
@@ -457,7 +457,7 @@ for x in (1.6, 2.5, 3.4, 9.2, 10.1):
 P("Forklift", 1.0, -29.4, 90, tag="stock")
 for (x, z, nm) in ((-12.0, -32.4, "Pallet of Goods"), (-10.6, -32.4, "Pallet of Water"), (-1.6, -32.2, "Pallet of Goods"), (3.0, -32.3, "Pallet of Goods"),
                    (-14.0, -29.6, "Pallet Stack"), (13.6, -31.0, "Pallet of Water"), (4.0, -26.0, "Pallet of Goods"), (-27.0, -31.6, "Pallet of Goods"),
-                   (-30.5, -26.6, "Pallet Stack"), (-8.0, -19.0, "Pallet of Water"), (22.0, -26.0, "Roll Cage"),
+                   (-30.5, -26.6, "Pallet Stack"), (-9.6, -18.0, "Pallet of Water"), (22.0, -26.0, "Roll Cage"),
                    (-23.4, -17.0, "Pallet of Goods"), (-29.6, -17.2, "Roll Cage"), (0.0, -20.4, "Pallet of Goods")):
     P(nm, x, z, rng.choice((0, 90, 180, 270)) + rng.uniform(-6, 6), lanes=True, tag="stock")
 # the walk-in cooler: shelving along its walls, a freezer and pallets
@@ -482,7 +482,7 @@ P("Box Truck", 22.0, Z0 - 4.1, 270, tag="dock")                    # backed up t
 P("Truck Cab", 27.6, -41.8, 180, tag="dock")
 for dx in (-13.0, 1.0):
     tk.bins_by_door(t, (dx - 2.4, Z0), (1, 0), (0, -1), rng, side=1, seed=int(80 + dx), tag="bins")
-tk.bins_by_door(t, (31.5, Z0), (1, 0), (0, -1), rng, side=1, dumpster=True, seed=88, tag="bins")
+tk.bins_by_door(t, (25.6, Z0), (1, 0), (0, -1), rng, side=1, dumpster=True, seed=88, tag="bins")
 for (x, z, nm, yaw) in ((-26.8, -35.2, "Store Cardboard Bale", 0), (-28.0, -35.2, "Store Cardboard Bale", 0), (-27.4, -36.2, "Store Cardboard Bale", 90),
                         (-33.0, -35.0, "Pallet Stack", 0), (-33.4, -36.0, "Pallet Stack", 10), (12.4, -35.0, "Pallet of Water", 0), (13.8, -35.2, "Pallet of Goods", 0),
                         (-36.5, -41.0, "Bench", 90), (-36.4, -39.4, "Cigarette Bin", 0), (-36.6, -43.0, "Trash Can", 0), (-3.0, -35.2, "Roll Cage", 0),
@@ -540,6 +540,7 @@ for poly in ([[-54, 44.4], [48, 44.4], [48, 52], [-54, 52]], [[-54, 20], [-46, 2
     t.region("grass", 6.5, polygon=poly, patchiness=0.35, scale=[1.0, 1.8], color=[0.38, 0.50, 0.22])
     t.region("shrub", 1.0, polygon=poly, patchiness=0.4)
     t.region("bush", 0.3, polygon=poly, patchiness=0.5, scale=[0.9, 1.5])
+    t.region("tree", 0.02, polygon=poly, height=[6.0, 9.5])
 tk.tree_row(t, (-44.0, 47.0), (-14.0, 46.0), 7.5, rng, h=(6.5, 9.5))
 tk.tree_row(t, (6.0, 47.6), (34.0, 47.4), 7.5, rng, h=(6.5, 9.5))
 tk.tree_row(t, (-38.0, -46.0), (28.0, -46.4), 9.0, rng, h=(6.0, 9.0))
@@ -562,7 +563,7 @@ EDGE = [((-49, 23), (-47, 46), "hedge"), ((-46, 47), (36, 49), "hedge"), ((38, 4
         ((-44.2, 18), (-44.4, -35), "backs"), ((-42, -45), (31, -46), "fence"), ((32, -38), (36.8, -34), "fence")]
 edge_counts = {}
 for (a, b, style) in EDGE:
-    n, total = tk.edge_run(t, arc_of(*a), arc_of(*b), style, rng)
+    n, total = tk.edge_run(t, arc_of(*a), arc_of(*b), style, rng, inset=1.5 if style == "fence" else 0.9)   # turned fence panels get extra collider boxes: keep them all inside
     edge_counts[style] = edge_counts.get(style, 0) + n
 
 # ================================================================ spawns and waypoints (after every solid thing)

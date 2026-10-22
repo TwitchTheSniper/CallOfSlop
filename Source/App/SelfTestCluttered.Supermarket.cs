@@ -55,7 +55,7 @@ public static partial class SelfTest
         if (drawn > 300)
             Fail($"{m.Name}: {drawn} boxes drawn one by one (keep it under 300: use props, meshes and foliage)");
 
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 1800, SolidProps: 400, CosmeticProps: 1000, Breakable: 500, Plants: 3000, Trees: 8, Boxes: 600));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2700, SolidProps: 450, CosmeticProps: 2200, Breakable: 1400, Plants: 6000, Trees: 12, Boxes: 1200));
 
         // It reads as a supermarket: the fittings are there, the lights and signs hang under the roof, nothing grows indoors.
         foreach (var (what, need) in new[] { ("Grocery Shelf", 36), ("Shelf End Cap", 36), ("Checkout Counter", 8), ("Freezer Case", 5), ("Freezer Island", 4),
@@ -183,7 +183,9 @@ public static partial class SelfTest
                 Fail($"{m.Name}: dumpster at ({c.X:0.0},{c.Y:0.0}) has {(wall ? "" : "no wall behind it and ")}{near} trash bags round it");
         }
 
-        ClutteredLine($"{m.Name} balance (asymmetric; Blue/Red nav walk averaged over team spawns): {string.Join(", ", walks)}; cover within 6 m of the routes to the hills "
-            + $"{coverBlue}/{coverRed} ({coverRatio:P0}); spawn sight lines {seen.Count}; mirror twins {twinShare:P0} of {solid.Count} solid props; mezzanine nav nodes {mezz}");
+        var balance = $"{m.Name} balance (asymmetric; Blue/Red nav walk averaged over team spawns): {string.Join(", ", walks)}; cover within 6 m of the routes to the hills "
+            + $"{coverBlue}/{coverRed} ({coverRatio:P0}); spawn sight lines {seen.Count}; mirror twins {twinShare:P0} of {solid.Count} solid props; mezzanine nav nodes {mezz}";
+        ClutteredLine(balance);
+        Line("::notice title=Cluttered 07 Supermarket::" + balance.Replace("%", "%25")); // its own notice: the pack's one is long enough to get cut off
     }
 }
