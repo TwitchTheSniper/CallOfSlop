@@ -22,8 +22,8 @@
     {"size": [0.17, 0.014, 0.07], "offset": [0, 0.068, 0], "rotation": [0, 45, 0], "color": "#383b28", "material": "metal"},
     {"size": [0.17, 0.014, 0.07], "offset": [0, 0.068, 0], "rotation": [0, 90, 0], "color": "#383b28", "material": "metal"},
     {"size": [0.17, 0.014, 0.07], "offset": [0, 0.068, 0], "rotation": [0, 135, 0], "color": "#383b28", "material": "metal"},
-    {"size": [0.016, 0.05, 0.016], "offset": [0, 0.1, 0], "color": "#8c8c80",
-      "anim": {"type": "blink", "period": 2.7, "duty": 0.12, "color": "#fff4c8", "off": "#7a7a70", "glow": 0.9, "jitter": 0.2}},
+    {"size": [0.016, 0.05, 0.016], "offset": [0, 0.1, 0], "color": "#b8b8ac", "material": "metal"},
+    {"size": [0.024, 0.012, 0.024], "offset": [0, 0.13, 0], "color": "#e8e4d0"},
     {"size": [0.07, 0.03, 0.05], "offset": [0.21, 0.018, 0.12], "rotation": [0, 30, 0], "color": "#4d3e2c", "material": "dirt"},
     {"size": [0.06, 0.025, 0.06], "offset": [-0.19, 0.016, -0.14], "rotation": [0, 70, 0], "color": "#4d3e2c", "material": "dirt"},
     {"size": [0.05, 0.02, 0.04], "offset": [-0.05, 0.016, 0.23], "rotation": [0, 15, 0], "color": "#3a2f22"}

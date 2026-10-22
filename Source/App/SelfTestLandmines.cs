@@ -107,7 +107,6 @@ public static partial class SelfTest
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 3, botSkill: BotDifficulty.Normal, mapId: map.Id);
         game.MapVoteEnabled = false;
         World.SetMap(map);
-        game.Phase = MatchPhase.Playing;
         var me = game.Players[0];
         var bots = game.Players.Values.Where(p => p.Bot != null).OrderBy(p => p.Id).ToList();
         if (bots.Count < 3)
@@ -123,8 +122,20 @@ public static partial class SelfTest
         MLine($"{map.Name}: {props.Count} props, {mines.Length} mines ({mines.Count(i => map.PropRespawn(i) > 0)} with respawn), "
               + $"{props.Count(p => p.Def.Name == "Mine Warning Sign")} warning signs, {props.Count(p => p.Def.Breakable is { ExplodeRadius: > 0, IsMine: false })} barrels");
         int MineAt(float x, float z) => mines.OrderBy(i => Vector2.Distance(new Vector2(props[i].Position.X, props[i].Position.Z), new Vector2(x, z))).First();
-        var now = 10.0;
+        var now = 0.0;
         const double dt = 1.0 / World.TickRate;
+        // Warm-up and countdown first (the first tick starts the pre-match): the scenarios run in a live match.
+        while (game.Phase != MatchPhase.Playing && now < 60)
+        {
+            now += dt;
+            game.Update(now, dt);
+        }
+        if (game.Phase != MatchPhase.Playing)
+        {
+            Fail($"the Landmines test match never started ({game.Phase} after 60 s)");
+            return;
+        }
+        var matchNo = game.MatchNumber;
         void Place(Player p, float x, float z)
         {
             game.SelfTestPlace(p, new Vector3(x, map.GroundHeight(x, z, 5), z), 0);
@@ -384,6 +395,8 @@ public static partial class SelfTest
         Tick(dt * 1.5);
         var worksAgain = game.IsPropLit(back);
         Tick(1);
+        if (game.MatchNumber != matchNo || game.Phase != MatchPhase.Playing)
+            Fail($"the match changed during the Landmines scenarios (match {game.MatchNumber}, {game.Phase})");
         MLine($"respawn {wait1:0} s: pending after it went off {pending}; still gone with someone on the spot {heldBack}; back once they left {isBack}; sets off again {worksAgain}");
         if (pending != 1 || !heldBack || !isBack || !worksAgain)
             Fail("a mine with \"respawn\" didn't come back as it should");
@@ -418,8 +431,9 @@ public static partial class SelfTest
             game.SelfTestAvoidMines(bot, Vector3.UnitX);
         }
         const int ticks = 3000;
+        var sw = new Stopwatch();
         var before = GC.GetAllocatedBytesForCurrentThread();
-        var sw = Stopwatch.StartNew();
+        sw.Start();
         var steer = Vector3.Zero;
         for (var k = 0; k < ticks; k++)
         {
@@ -427,8 +441,9 @@ public static partial class SelfTest
             game.SelfTestTickMines(now);
             steer = game.SelfTestAvoidMines(bot, Vector3.UnitX);
         }
-        var us = sw.Elapsed.TotalMilliseconds * 1000 / ticks;
         var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+        sw.Stop();
+        var us = sw.Elapsed.TotalMilliseconds * 1000 / ticks;
         var lit = map.TriggerProps.Count(game.IsPropLit);
         MLine($"cost: {map.TriggerProps.Length} mines, {game.Players.Count} players: {us:0.0} us per tick (plates + one bot's steering), {alloc} bytes allocated over {ticks} ticks; "
               + $"{lit} set off; steering next to one {steer.X:0.00},{steer.Z:0.00}");
