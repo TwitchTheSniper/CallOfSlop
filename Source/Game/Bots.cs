@@ -113,6 +113,7 @@ public sealed partial class BotBrain
     internal double SearchNow;
     internal Vector3 FlankFrom, FlankTo;
     internal float FlankWidth;
+    internal float[]? Hazard; // extra cost per nav node (landmines nearby; Game.MineHazard), or null
     internal readonly Func<int, int, int, float> EdgePenaltyFn;
 
     /// <summary>
@@ -143,6 +144,8 @@ public sealed partial class BotBrain
         }
         if (Squad != null)
             extra += SquadEdgePenalty(to, cost); // Insane squads: out of the target's sight, off squadmates' routes
+        if (Hazard is { } hz && (uint)to < (uint)hz.Length)
+            extra += hz[to]; // a landmine next to the node: go round unless there's no other way
         return extra;
     }
 

@@ -107,9 +107,18 @@ public sealed partial class Map
             throw new InvalidOperationException("\"decals\" needs at least one decal name");
         var scope = DecalScope;
         foreach (var n in names)
-            if (scope.Find(n) == null)
-                throw new InvalidOperationException($"unknown decal \"{n}\": {scope.Suggest(n)}");
+        {
+            var def = scope.Find(n) ?? throw new InvalidOperationException($"unknown decal \"{n}\": {scope.Suggest(n)}");
+            if (def.Pack != null && _packDecalsNamed.Add(def) && _packDecalsNamed.Count > CallOfSlop.Decals.MaxPackDecalsPerMap)
+                throw new InvalidOperationException($"a map may use at most {CallOfSlop.Decals.MaxPackDecalsPerMap} different pack decals (each gets an atlas layer); \"{n}\" is one too many");
+        }
     }
+
+    /// <summary>The different pack decals this map's ops name (each needs an atlas layer when the map is played).</summary>
+    private readonly HashSet<DecalDef> _packDecalsNamed = new(ReferenceEqualityComparer.Instance);
+
+    /// <summary>How many different pack decals this map's ops name (at most <see cref="CallOfSlop.Decals.MaxPackDecalsPerMap"/>).</summary>
+    public int PackDecalsNamed => _packDecalsNamed.Count;
 
     private static void CheckDecalNumbers(float minSize, float maxSize, float reach, int count)
     {
