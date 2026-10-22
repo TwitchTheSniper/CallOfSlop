@@ -125,10 +125,12 @@ public static partial class SelfTest
         var now = 0.0;
         const double dt = 1.0 / World.TickRate;
         // Warm-up and countdown first (the first tick starts the pre-match): the scenarios run in a live match.
-        while (game.Phase != MatchPhase.Playing && now < 60)
+        var preMatch = false;
+        while (!(preMatch && game.Phase == MatchPhase.Playing) && now < 60)
         {
             now += dt;
             game.Update(now, dt);
+            preMatch |= game.Phase != MatchPhase.Playing; // (a new game says Playing until its first tick)
         }
         if (game.Phase != MatchPhase.Playing)
         {
