@@ -49,7 +49,7 @@ public sealed partial class Game
 
     public void SetReady(bool ready)
     {
-        if (Phase != MatchPhase.Warmup || Local is not { } me || me.Ready == ready)
+        if (Phase is not (MatchPhase.Warmup or MatchPhase.Lobby) || Local is not { } me || me.Ready == ready) // (the lobby room too, PreMatchLobby.cs)
             return;
         me.Ready = ready; // shown straight away; the server's copy follows
         _readyToggledAt = Brutal.GlfwApi.Glfw.Time;
@@ -72,7 +72,7 @@ public sealed partial class Game
 
     private void ServerSetReady(Player p, bool ready)
     {
-        if (Phase != MatchPhase.Warmup || p.Ready == ready)
+        if (Phase is not (MatchPhase.Warmup or MatchPhase.Lobby) || p.Ready == ready)
             return;
         p.Ready = ready;
         var (r, n) = ReadyCount;

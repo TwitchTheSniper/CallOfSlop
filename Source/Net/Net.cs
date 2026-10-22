@@ -64,6 +64,9 @@ public enum Msg : byte
     RocketSync, // server -> all: guided, decoyed and stuck projectiles' positions with snapshots while any exist (unreliable)
     RocketBoom, // server -> all: a launcher projectile went off / was a dud / left the map, or its target popped flares (reliable)
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
+    LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
+    ChatSay, // client -> server: a lobby chat line (reliable; the server cleans and rate-limits it, LobbyChat.cs)
+    ChatLine, // server -> all: player X said this in the lobby chat (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

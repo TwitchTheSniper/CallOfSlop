@@ -617,7 +617,7 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Loadouts can only be changed while dead (or in the pre-match countdown).</summary>
-    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
+    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup or MatchPhase.Lobby;
 
     /// <summary>The Respawn button: spawn with the chosen loadout as soon as the respawn timer allows.</summary>
     public void RequestRespawn()
@@ -906,6 +906,13 @@ public sealed partial class Game : IDisposable
         foreach (var p in Players.Values)
         {
             p.PrevPosition = p.Position;
+            if (Phase == MatchPhase.Lobby)
+            {
+                // The lobby room: nobody is in the map, bots don't think; clients' inputs are only acknowledged.
+                if (p.Bot == null && p.Id != LocalId)
+                    ConsumeClientInput(p);
+                continue;
+            }
 
             if (p.Id == LocalId)
             {
@@ -1417,6 +1424,7 @@ public sealed partial class Game : IDisposable
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
                     SendVoteState(sender); // joined during the results screen: show the ballot
                 }
+                SendLobbyState(sender); // the lobby room's settings and map (PreMatchLobby.cs)
                 Log($"Player {newId} connected ({Net.ConnectionCount} connected)");
                 BroadcastRoster();
                 break;
@@ -1649,6 +1657,13 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.TeamPick:
             case (byte)Msg.TeamReply:
                 OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
+                break;
+            case (byte)Msg.LobbyState when !IsServer:
+                ReadLobbyState(ref r); // the pre-match lobby room (PreMatchLobby.cs)
+                break;
+            case (byte)Msg.ChatSay:
+            case (byte)Msg.ChatLine:
+                OnChatPacket(id, ref r, sender, now); // lobby chat (LobbyChat.cs)
                 break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);

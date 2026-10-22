@@ -184,6 +184,11 @@ public sealed partial class Game
                 p.Team = NoTeam;
             return;
         }
+        if (HumansVsBots)
+        {
+            ApplyHumansVsBots(); // people on one side, bots on the other (TeamBalance.cs)
+            return;
+        }
         Span<int> n = stackalloc int[2];
         foreach (var p in Players.Values)
             if (p.Bot != null || TeamSelection == TeamSelection.AutoOnly)
@@ -217,6 +222,8 @@ public sealed partial class Game
     {
         if (!IsTeamMode)
             p.Team = NoTeam;
+        else if (p.Team > 1 && HumansVsBots)
+            p.Team = HvbTeamOf(p); // TeamBalance.cs
         else if (p.Team > 1)
             p.Team = p.TeamChoice < 2 ? p.TeamChoice : (byte)(TeamCount(0) <= TeamCount(1) ? 0 : 1);
     }
@@ -238,6 +245,8 @@ public sealed partial class Game
     /// </summary>
     private bool BalanceTeams(double now)
     {
+        if (!AutoBalanceOn)
+            return false; // the host turned balancing off, or Humans vs Bots (TeamBalance.cs)
         int a = TeamCount(0), b = TeamCount(1);
         if (Math.Abs(a - b) < 2)
             return false;
