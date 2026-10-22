@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Churchyard Chest Tomb",
+  "category": "Countryside",
+  "description": "A Georgian chest tomb: a stone box with a heavy lid and panelled sides. Waist-high cover; unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [1.96, 0.86, 1.06]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 3},
+  "parts": [
+    {"size": [1.9, 0.12, 1.0], "offset": [0.0, 0.06, 0.0], "color": "#8a8676", "material": "concrete"},
+    {"size": [1.7, 0.62, 0.84], "offset": [0.0, 0.43, 0.0], "color": "#a8a290", "material": "concrete"},
+    {"size": [1.96, 0.1, 1.06], "offset": [0.0, 0.79, 0.0], "color": "#a8a290"},
+    {"size": [1.2, 0.02, 0.6], "offset": [0.0, 0.85, 0.0], "color": "#8a8676"},
+    {"size": [0.08, 0.62, 0.88], "offset": [-0.86, 0.43, 0.0], "color": "#8a8676"},
+    {"size": [0.08, 0.62, 0.88], "offset": [0.86, 0.43, 0.0], "color": "#8a8676"},
+    {"size": [1.0, 0.26, 0.008], "offset": [0.0, 0.43, -0.425], "color": "#8e8a7a"},
+    {"size": [1.0, 0.26, 0.008], "offset": [0.0, 0.43, 0.425], "color": "#8e8a7a"},
+    {"size": [0.5, 0.05, 0.3], "offset": [0.5, 0.875, 0.1], "color": "#5a7a34"}
+  ]
+}

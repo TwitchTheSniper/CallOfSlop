@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Auditorium Seat Row",
+  "category": "Retail",
+  "description": "A row of six plush red cinema seats. Solid, unbreakable cover (mantle over it).",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        3.6,
+        0.95,
+        0.6
+      ],
+      "offset": [
+        0.0,
+        0.475,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [0.55, 0.45, 0.55], "offset": [-1.5, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [-1.5, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [-1.2, 0.31, 0], "color": "#202020"},
+    {"size": [0.55, 0.45, 0.55], "offset": [-0.9, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [-0.9, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [-0.6, 0.31, 0], "color": "#202020"},
+    {"size": [0.55, 0.45, 0.55], "offset": [-0.3, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [-0.3, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [-0.0, 0.31, 0], "color": "#202020"},
+    {"size": [0.55, 0.45, 0.55], "offset": [0.3, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [0.3, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [0.6, 0.31, 0], "color": "#202020"},
+    {"size": [0.55, 0.45, 0.55], "offset": [0.9, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [0.9, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [1.2, 0.31, 0], "color": "#202020"},
+    {"size": [0.55, 0.45, 0.55], "offset": [1.5, 0.225, 0], "color": "#8a1a28"},
+    {"size": [0.55, 0.65, 0.12], "offset": [1.5, 0.65, -0.24], "color": "#8a1a28", "rotation": [-8, 0, 0]},
+    {"size": [0.06, 0.62, 0.55], "offset": [1.8, 0.31, 0], "color": "#202020"},
+    {"size": [0.06, 0.62, 0.55], "offset": [-1.8, 0.31, 0], "color": "#202020"}
+  ]
+}

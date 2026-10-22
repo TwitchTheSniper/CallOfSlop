@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clothes Rack Round",
+  "category": "Retail",
+  "description": "A round chrome clothes rail hung all round with shirts and jackets. Solid, breakable (soft).",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.2,
+        1.5,
+        1.2
+      ],
+      "offset": [
+        0.0,
+        0.75,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.9,
+      1.1
+    ]
+  },
+  "breakable": {
+    "health": 55,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {
+      "count": 14,
+      "size": [
+        0.04,
+        0.2
+      ],
+      "colors": [
+        "#2a3a5a",
+        "#c83a3a",
+        "#e8e0d0",
+        "#3a6a4a",
+        "#d89a3a"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.06, 1.5, 0.0248], "offset": [0.0, 0.75, 0.0], "color": "chrome", "rotation": [0, 0, 0]},
+    {"size": [0.06, 1.5, 0.0248], "offset": [0.0, 0.75, 0.0], "color": "chrome", "rotation": [0, 45, 0]},
+    {"size": [0.06, 1.5, 0.0248], "offset": [0.0, 0.75, 0.0], "color": "chrome", "rotation": [0, 90, 0]},
+    {"size": [0.06, 1.5, 0.0248], "offset": [0.0, 0.75, 0.0], "color": "chrome", "rotation": [0, 135, 0]},
+    {"size": [0.7, 0.04, 0.2898], "offset": [0.0, 0.02, 0.0], "color": "darkgrey", "rotation": [0, 0, 0]},
+    {"size": [0.7, 0.04, 0.2898], "offset": [0.0, 0.02, 0.0], "color": "darkgrey", "rotation": [0, 45, 0]},
+    {"size": [0.7, 0.04, 0.2898], "offset": [0.0, 0.02, 0.0], "color": "darkgrey", "rotation": [0, 90, 0]},
+    {"size": [0.7, 0.04, 0.2898], "offset": [0.0, 0.02, 0.0], "color": "darkgrey", "rotation": [0, 135, 0]},
+    {"size": [1.2, 0.03, 0.4968], "offset": [0.0, 1.495, 0.0], "color": "chrome", "rotation": [0, 0, 0]},
+    {"size": [1.2, 0.03, 0.4968], "offset": [0.0, 1.495, 0.0], "color": "chrome", "rotation": [0, 45, 0]},
+    {"size": [1.2, 0.03, 0.4968], "offset": [0.0, 1.495, 0.0], "color": "chrome", "rotation": [0, 90, 0]},
+    {"size": [1.2, 0.03, 0.4968], "offset": [0.0, 1.495, 0.0], "color": "chrome", "rotation": [0, 135, 0]},
+    {"size": [0.1, 0.8723, 0.44], "offset": [0.0, 1.0238, 0.52], "color": "#e8e0d0", "rotation": [0, 0, 0]},
+    {"size": [0.1, 0.7965, 0.44], "offset": [0.26, 1.0617, 0.4503], "color": "#6a4a8a", "rotation": [0, 30, 0]},
+    {"size": [0.1, 0.9305, 0.44], "offset": [0.4503, 0.9947, 0.26], "color": "#6a4a8a", "rotation": [0, 60, 0]},
+    {"size": [0.1, 0.8706, 0.44], "offset": [0.52, 1.0247, 0.0], "color": "#3a6a4a", "rotation": [0, 90, 0]},
+    {"size": [0.1, 0.7936, 0.44], "offset": [0.4503, 1.0632, -0.26], "color": "#3a6a4a", "rotation": [0, 120, 0]},
+    {"size": [0.1, 0.9275, 0.44], "offset": [0.26, 0.9962, -0.4503], "color": "#e8e0d0", "rotation": [0, 150, 0]},
+    {"size": [0.1, 0.9278, 0.44], "offset": [0.0, 0.9961, -0.52], "color": "#e8e0d0", "rotation": [0, 180, 0]},
+    {"size": [0.1, 0.8953, 0.44], "offset": [-0.26, 1.0123, -0.4503], "color": "#d89a3a", "rotation": [0, 210, 0]},
+    {"size": [0.1, 0.8276, 0.44], "offset": [-0.4503, 1.0462, -0.26], "color": "#3a8ab0", "rotation": [0, 240, 0]},
+    {"size": [0.1, 0.9164, 0.44], "offset": [-0.52, 1.0018, -0.0], "color": "#3a8ab0", "rotation": [0, 270, 0]},
+    {"size": [0.1, 0.8587, 0.44], "offset": [-0.4503, 1.0307, 0.26], "color": "#e8e0d0", "rotation": [0, 300, 0]},
+    {"size": [0.1, 0.7901, 0.44], "offset": [-0.26, 1.0649, 0.4503], "color": "#2a3a5a", "rotation": [0, 330, 0]}
+  ]
+}

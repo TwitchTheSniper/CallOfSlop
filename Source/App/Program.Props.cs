@@ -41,6 +41,9 @@ public static unsafe partial class Program
         ("cluttered_powderkeg_hall", "Powder Keg", new Vector3(-26f, 1.7f, -1.5f), new Vector3(14f, 1.4f, -5f), false), // the hall's staging band at eye height, racks and barrels
         ("cluttered_supermarket", "Supermarket", new Vector3(-48f, 24f, 60f), new Vector3(0f, 2f, 6f), false), // 07 Supermarket: the car park and store front
         ("cluttered_supermarket_inside", "Supermarket", new Vector3(12.5f, 5.3f, -8f), new Vector3(-12f, 1.2f, 8f), false), // over the shop floor from the mezzanine
+        // World Tour 02 Slopview Mall: the mall and its sloping car park from the south-west, then the atrium from the west balcony.
+        ("world_mall", "Slopview Mall", new Vector3(-72f, 34f, 78f), new Vector3(0f, 0f, 2f), false),
+        ("world_mall_atrium", "Slopview Mall", new Vector3(-20.5f, 6.4f, -6.4f), new Vector3(8f, 2.2f, 2.5f), false),
         // 11 Deepcut Mine: the pit and the terraces from above the camp, then inside the North Drift at eye height, looking up the tunnel.
         ("cluttered_deepcut", "Deepcut Mine", new Vector3(-84f, 34f, 46f), new Vector3(14f, 0f, -6f), false),
         ("cluttered_deepcut_tunnel", "Deepcut Mine", new Vector3(-40f, 1.9f, -40f), new Vector3(-18f, 3.0f, -40f), false),
@@ -64,6 +67,9 @@ public static unsafe partial class Program
         ("world_finland", "Vuorikoski", new Vector3(-118f, 48f, 60f), new Vector3(0f, 6f, -8f), false),
         ("world_finland_forest", "Vuorikoski", new Vector3(-66f, 5.3f, -46f), new Vector3(-40f, 2.6f, -30f), false),
         ("world_finland_tunnel", "Vuorikoski", new Vector3(-24f, -6.3f, -4f), new Vector3(0f, -6.5f, -4f), false),
+        // World Tour, 07 Cotswold Village: the hillside from above the meadow in the south-west, then up the green from the High Street at eye height.
+        ("world_village", "Cotswold Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
+        ("world_village_street", "Cotswold Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),

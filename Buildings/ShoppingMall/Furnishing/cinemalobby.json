@@ -1,0 +1,66 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "cinemalobby",
+ "description": "Cinema lobby: the box office, popcorn, a queue rope and poster stands.",
+ "items": [
+  {
+   "props": [
+    "Box Office Counter"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Popcorn Machine"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Glowing Vending Machine",
+    "Arcade Cabinet"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Queue Rope Barrier"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Mall Bench"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Pendant Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    3,
+    5
+   ],
+   "y": 0.0
+  }
+ ]
+}

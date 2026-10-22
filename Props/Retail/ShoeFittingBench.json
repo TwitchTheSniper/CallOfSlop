@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Shoe Fitting Bench",
+  "category": "Retail",
+  "description": "A padded shoe-shop bench with boxes on it and a foot measure on the floor. Solid, breakable wood.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        0.53,
+        0.52
+      ],
+      "offset": [
+        0.0,
+        0.265,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "breakable": {
+    "health": 70,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {
+      "count": 10,
+      "size": [
+        0.04,
+        0.2
+      ]
+    }
+  },
+  "parts": [
+    {"size": [1.6, 0.45, 0.5], "offset": [0, 0.225, 0], "color": "#5a3e28"},
+    {"size": [1.6, 0.08, 0.52], "offset": [0, 0.49, 0], "color": "#2a3a5a"},
+    {"size": [0.3, 0.02, 0.12], "offset": [0.4, 0.01, 0.5], "color": "#c0c0c0"},
+    {"size": [0.32, 0.12, 0.2], "offset": [-0.5, 0.59, 0], "color": "#d8a040"},
+    {"size": [0.3, 0.1, 0.18], "offset": [-0.5, 0.7, 0.0], "color": "#e8e0d0"},
+    {"size": [0.12, 0.08, 0.26], "offset": [0.3, 0.57, 0.05], "color": "#c83a3a"}
+  ]
+}

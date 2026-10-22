@@ -1,0 +1,67 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Jewellery Tower Case",
+  "category": "Retail",
+  "description": "A tall lit glass cabinet of watches and jewellery on three shelves. Solid, breakable glass.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.8,
+        2.02,
+        0.5
+      ],
+      "offset": [
+        0.0,
+        1.01,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "breakable": {
+    "health": 40,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {
+      "count": 18,
+      "size": [
+        0.04,
+        0.2
+      ],
+      "colors": [
+        "#c8dce4",
+        "#2a2a30",
+        "#e8d060"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.8, 0.9, 0.5], "offset": [0, 0.45, 0], "color": "#2a2a30"},
+    {"size": [0.8, 1.0, 0.02], "offset": [0, 1.4, 0.24], "color": "#c8dce4"},
+    {"size": [0.02, 1.0, 0.5], "offset": [0.39, 1.4, 0], "color": "#c8dce4"},
+    {"size": [0.02, 1.0, 0.5], "offset": [-0.39, 1.4, 0], "color": "#c8dce4"},
+    {"size": [0.8, 1.0, 0.03], "offset": [0, 1.4, -0.235], "color": "#20203a"},
+    {"size": [0.8, 0.12, 0.5], "offset": [0, 1.96, 0], "color": "#2a2a30"},
+    {"size": [0.7, 0.03, 0.02], "offset": [0, 1.88, 0.24], "color": "#d8b040", "anim": {"type": "pulse", "period": 6, "color": "#f0d070", "off": "#ac9550", "glow": 0.6}},
+    {"size": [0.74, 0.02, 0.4], "offset": [0, 1.05, 0], "color": "#c8dce4"},
+    {"size": [0.07, 0.07, 0.03], "offset": [-0.22, 1.1, -0.05], "color": "#f0f0ff"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.0, 1.1, -0.05], "color": "#e8d060"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.22, 1.1, -0.05], "color": "#c0c0d0"},
+    {"size": [0.74, 0.02, 0.4], "offset": [0, 1.4, 0], "color": "#c8dce4"},
+    {"size": [0.07, 0.07, 0.03], "offset": [-0.22, 1.45, -0.05], "color": "#d04060"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.0, 1.45, -0.05], "color": "#c0c0d0"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.22, 1.45, -0.05], "color": "#c0c0d0"},
+    {"size": [0.74, 0.02, 0.4], "offset": [0, 1.72, 0], "color": "#c8dce4"},
+    {"size": [0.07, 0.07, 0.03], "offset": [-0.22, 1.77, -0.05], "color": "#f0f0ff"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.0, 1.77, -0.05], "color": "#f0f0ff"},
+    {"size": [0.07, 0.07, 0.03], "offset": [0.22, 1.77, -0.05], "color": "#c0c0d0"}
+  ]
+}

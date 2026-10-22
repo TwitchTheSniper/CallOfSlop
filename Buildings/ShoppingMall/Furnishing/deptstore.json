@@ -1,0 +1,95 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "deptstore",
+ "description": "Department store floor: clothes, cosmetics and homewares departments with tills.",
+ "items": [
+  {
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Cosmetics Wall Unit",
+    "Clothes Wall Rail",
+    "Shoe Wall Display",
+    "Retail Wall Shelving"
+   ],
+   "place": "wall",
+   "count": [
+    8,
+    12
+   ]
+  },
+  {
+   "props": [
+    "Makeup Counter"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Clothes Rack Round",
+    "Clothes Rail Straight",
+    "Folded Clothes Table",
+    "Perfume Display Table",
+    "Retail Gondola"
+   ],
+   "place": "floor",
+   "count": [
+    10,
+    16
+   ]
+  },
+  {
+   "props": [
+    "Mannequin Casual",
+    "Mannequin Dress",
+    "Mannequin Formal",
+    "Mannequin Sporty"
+   ],
+   "place": "floor",
+   "count": [
+    4,
+    7
+   ]
+  },
+  {
+   "props": [
+    "Changing Room Booth"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Sale Sign Stand",
+    "Display Plinth"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    8,
+    12
+   ],
+   "y": 0.0
+  }
+ ]
+}

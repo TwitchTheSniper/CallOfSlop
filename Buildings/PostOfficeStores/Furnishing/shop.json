@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "shop",
+  "description": "The Post Office Stores floor: the till by the door, shelves of groceries round the walls, a fridge, fruit and veg crates, cards and papers.",
+  "items": [
+    {
+      "id": "till",
+      "props": [
+        "Village Shop Till Counter"
+      ],
+      "place": "wall",
+      "prefer": "near"
+    },
+    {
+      "props": [
+        "Village Shop Grocery Shelf"
+      ],
+      "place": "wall",
+      "count": [
+        3,
+        5
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Fridge"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Produce Crates",
+        "Apple Crate",
+        "Cabbage Crate",
+        "Potato Sacks"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Village Shop Newspaper Rack"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Village Shop Card Rack"
+      ],
+      "place": "floor",
+      "gap": 0.6
+    },
+    {
+      "props": [
+        "Cardboard Box",
+        "Newspaper Stack"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    }
+  ]
+}

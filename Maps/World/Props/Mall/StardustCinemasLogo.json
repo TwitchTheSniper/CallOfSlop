@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Stardust Cinemas Logo",
+  "category": "Mall",
+  "description": "The STARDUST CINEMAS logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#1a0a2a"},
+    {"size": [0.1429, 0.7143, 0.025], "offset": [0.0, 0.7429, 0.0775], "color": "#ffe060"},
+    {"size": [0.4286, 0.1429, 0.025], "offset": [-0.2857, 0.7429, 0.0775], "color": "#ffe060"},
+    {"size": [0.4286, 0.1429, 0.025], "offset": [0.2857, 0.7429, 0.0775], "color": "#ffe060"},
+    {"size": [0.2857, 0.1429, 0.025], "offset": [-0.2143, 0.6, 0.0775], "color": "#ffe060"},
+    {"size": [0.2857, 0.1429, 0.025], "offset": [0.2143, 0.6, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [-0.1429, 0.3857, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [0.1429, 0.3857, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [-0.2857, 0.2429, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [0.2857, 0.2429, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.1429, 0.025], "offset": [-0.4286, 0.1714, 0.0775], "color": "#ffe060"},
+    {"size": [0.1429, 0.1429, 0.025], "offset": [0.4286, 0.1714, 0.0775], "color": "#ffe060"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Churchyard Headstone",
+  "category": "Countryside",
+  "description": "A weathered round-topped limestone headstone with worn lines of lettering (no names). Low cover; unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [0.72, 0.95, 0.24]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 7},
+  "parts": [
+    {"size": [0.64, 0.82, 0.14], "offset": [0.0, 0.41, 0.0], "color": "#a8a290", "material": "concrete"},
+    {"size": [0.48, 0.08, 0.14], "offset": [0.0, 0.86, 0.0], "color": "#a8a290"},
+    {"size": [0.28, 0.05, 0.14], "offset": [0.0, 0.925, 0.0], "color": "#a8a290"},
+    {"size": [0.72, 0.08, 0.24], "offset": [0.0, 0.04, 0.0], "color": "#8a8676"},
+    {"size": [0.4, 0.02, 0.002], "offset": [0.0, 0.46, 0.071], "color": "#5a584e"},
+    {"size": [0.32, 0.02, 0.002], "offset": [0.0, 0.39, 0.071], "color": "#5a584e"},
+    {"size": [0.44, 0.03, 0.002], "offset": [0.0, 0.615, 0.071], "color": "#5a584e"},
+    {"size": [0.2, 0.08, 0.002], "offset": [0.0, 0.74, 0.071], "color": "#6a685c"},
+    {"size": [0.08, 0.16, 0.002], "offset": [0.0, 0.74, 0.071], "color": "#6a685c"},
+    {"size": [0.3, 0.06, 0.12], "offset": [0.2, 0.03, 0.18], "color": "#4a6a2a"}
+  ]
+}

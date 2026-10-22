@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Shoe Box Stack",
+  "category": "Retail",
+  "description": "A leaning stack of shoe boxes. Cosmetic: walk through it.",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.9,
+      1.1
+    ]
+  },
+  "parts": [
+    {"size": [0.34, 0.12, 0.2], "offset": [0.0028, 0.06, 0], "color": "#202020", "rotation": [0, -3.7086258973817223, 0]},
+    {"size": [0.345, 0.02, 0.205], "offset": [0, 0.111, 0], "color": "white"},
+    {"size": [0.34, 0.12, 0.2], "offset": [0.0193, 0.181, 0], "color": "#2a4a8a", "rotation": [0, 3.65785680077029, 0]},
+    {"size": [0.345, 0.02, 0.205], "offset": [0, 0.232, 0], "color": "white"},
+    {"size": [0.34, 0.12, 0.2], "offset": [-0.0088, 0.302, 0], "color": "#c83a3a", "rotation": [0, -4.604711674651364, 0]},
+    {"size": [0.345, 0.02, 0.205], "offset": [0, 0.353, 0], "color": "white"},
+    {"size": [0.34, 0.12, 0.2], "offset": [0.0126, 0.423, 0], "color": "#e8e0d0", "rotation": [0, -1.1323600590334797, 0]},
+    {"size": [0.345, 0.02, 0.205], "offset": [0, 0.474, 0], "color": "white"},
+    {"size": [0.34, 0.12, 0.2], "offset": [0.0152, 0.544, 0], "color": "#c83a3a", "rotation": [0, 2.3375853332759213, 0]},
+    {"size": [0.345, 0.02, 0.205], "offset": [0, 0.595, 0], "color": "white"}
+  ]
+}

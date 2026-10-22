@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Slow Road Marking",
+  "description": "SLOW in white letters across a lane (reads from the south side; runs east-west).",
+  "author": "Call of Slop",
+  "size": [
+    3.0,
+    1.1
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": [
+    "floor"
+  ],
+  "fadeDistance": 80,
+  "image": "slow.png"
+}

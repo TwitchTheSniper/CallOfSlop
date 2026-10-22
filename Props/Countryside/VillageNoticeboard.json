@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Village Noticeboard",
+  "category": "Countryside",
+  "description": "A parish noticeboard: green baize under a little tiled roof, pinned with notices (no readable text).",
+  "collision": "solid",
+  "collider": [{"size": [1.5, 2.15, 0.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.04, 0.35], "speed": 3}},
+  "parts": [
+    {"size": [0.1, 2.05, 0.1], "offset": [-0.7, 1.025, 0.0], "color": "#5a4026", "material": "wood"},
+    {"size": [0.1, 2.05, 0.1], "offset": [0.7, 1.025, 0.0], "color": "#5a4026", "material": "wood"},
+    {"size": [1.36, 0.9, 0.08], "offset": [0.0, 1.4, 0.0], "color": "#463220", "material": "wood"},
+    {"size": [1.24, 0.8, 0.01], "offset": [0.0, 1.4, 0.045], "color": "#5a6a3a"},
+    {"size": [1.75, 0.06, 0.4], "offset": [0.0, 2.1, 0.02], "rotation": [14, 0, 0], "color": "#5a3e30", "material": "tiles"},
+    {"size": [0.3, 0.38, 0.006], "offset": [-0.4, 1.55, 0.054], "color": "#f2eee2"},
+    {"size": [0.21, 0.02, 0.004], "offset": [-0.4, 1.664, 0.059], "color": "#3a3a3a"},
+    {"size": [0.28, 0.22, 0.006], "offset": [-0.02, 1.6, 0.054], "color": "#e8b0b0"},
+    {"size": [0.196, 0.02, 0.004], "offset": [-0.02, 1.666, 0.059], "color": "#3a3a3a"},
+    {"size": [0.3, 0.42, 0.006], "offset": [0.36, 1.5, 0.054], "color": "#e8b0b0"},
+    {"size": [0.21, 0.02, 0.004], "offset": [0.36, 1.626, 0.059], "color": "#3a3a3a"},
+    {"size": [0.34, 0.24, 0.006], "offset": [-0.35, 1.15, 0.054], "color": "#f2eee2"},
+    {"size": [0.238, 0.02, 0.004], "offset": [-0.35, 1.222, 0.059], "color": "#3a3a3a"},
+    {"size": [0.22, 0.3, 0.006], "offset": [0.08, 1.24, 0.054], "color": "#f2eee2"},
+    {"size": [0.154, 0.02, 0.004], "offset": [0.08, 1.33, 0.059], "color": "#3a3a3a"},
+    {"size": [0.22, 0.16, 0.006], "offset": [0.4, 1.12, 0.054], "color": "#b8d0e8"},
+    {"size": [0.154, 0.02, 0.004], "offset": [0.4, 1.168, 0.059], "color": "#3a3a3a"}
+  ]
+}

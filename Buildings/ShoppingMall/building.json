@@ -1,0 +1,3911 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Shopping Mall",
+ "theme": "A 1990s American two-storey mall: beige precast panels, a skylit atrium with balconies, glass railings and escalators, shops of every kind, a food court, a cinema, service corridors",
+ "category": "commercial",
+ "description": "A big two-storey mall round an open skylit atrium: a department store, sixteen shop units, a food court, a two-screen cinema, service corridors, stock rooms and a loading dock, with escalators and bridges up to the balconies.",
+ "author": "Call of Slop",
+ "seed": 502,
+ "wallThickness": 0.3,
+ "storeyHeight": 4.6,
+ "doorHeight": 2.3,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "none"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "none"
+ },
+ "ceiling": "$ceiling",
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "sandstone": {
+   "wall": "#c9bca4",
+   "interior": "#ece8e0",
+   "floor": "#d8d2c4",
+   "ceiling": "#f4f2ee",
+   "trim": "#7a8088",
+   "door": "#4a4e56",
+   "roof": "#5a5c60",
+   "band": "#2a5a7a"
+  },
+  "grey precast": {
+   "wall": "#a8aaac",
+   "interior": "#eaeaea",
+   "floor": "#cfcfcc",
+   "ceiling": "#f4f4f4",
+   "trim": "#3a4048",
+   "door": "#3a3e44",
+   "roof": "#505256",
+   "band": "#a03a2a"
+  }
+ },
+ "floors": [
+  {
+   "height": 4.6,
+   "rooms": [
+    {
+     "id": "dept",
+     "type": "deptstore",
+     "rect": [
+      -42.0,
+      -23.0,
+      -24.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "n1",
+     "type": "electronics",
+     "rect": [
+      -24.0,
+      -20.0,
+      -12.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n2",
+     "type": "books",
+     "rect": [
+      -12.0,
+      -20.0,
+      -3.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n3",
+     "type": "shoes",
+     "rect": [
+      3.0,
+      -20.0,
+      12.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n4",
+     "type": "sports",
+     "rect": [
+      12.0,
+      -20.0,
+      24.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s1",
+     "type": "clothing",
+     "rect": [
+      -24.0,
+      8.0,
+      -12.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s2",
+     "type": "jewellery",
+     "rect": [
+      -12.0,
+      8.0,
+      -4.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s3",
+     "type": "candy",
+     "rect": [
+      4.0,
+      8.0,
+      12.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s4",
+     "type": "toys",
+     "rect": [
+      12.0,
+      8.0,
+      24.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "north hall",
+     "type": "mallhall",
+     "rect": [
+      -3.0,
+      -20.0,
+      3.0,
+      -8.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "entrance hall",
+     "type": "mallhall",
+     "rect": [
+      -4.0,
+      8.0,
+      4.0,
+      26.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "north corridor",
+     "type": "corridor",
+     "rect": [
+      -24.0,
+      -23.0,
+      24.0,
+      -20.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "south corridor west",
+     "type": "corridor",
+     "rect": [
+      -24.0,
+      20.0,
+      -4.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "south corridor east",
+     "type": "corridor",
+     "rect": [
+      4.0,
+      20.0,
+      24.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "food court",
+     "type": "foodcourt",
+     "rect": [
+      24.0,
+      -23.0,
+      42.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     },
+     "props": [
+      {
+       "name": "Food Stall Grill Line",
+       "wall": "E",
+       "along": -10.5
+      },
+      {
+       "name": "Food Stall Counter",
+       "at": [
+        5.75,
+        -10.5
+       ],
+       "yaw": 270
+      },
+      {
+       "name": "Food Stall Grill Line",
+       "wall": "E",
+       "along": 0.0
+      },
+      {
+       "name": "Food Stall Counter",
+       "at": [
+        5.75,
+        0.0
+       ],
+       "yaw": 270
+      },
+      {
+       "name": "Food Stall Grill Line",
+       "wall": "E",
+       "along": 10.5
+      },
+      {
+       "name": "Food Stall Counter",
+       "at": [
+        5.75,
+        10.5
+       ],
+       "yaw": 270
+      }
+     ]
+    },
+    {
+     "id": "stock west",
+     "type": "storage",
+     "rect": [
+      -24.0,
+      -29.0,
+      -10.0,
+      -23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "restrooms",
+     "type": "restroom",
+     "rect": [
+      -10.0,
+      -29.0,
+      -4.0,
+      -23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#c8d4d8",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "loading dock",
+     "type": "warehouse",
+     "rect": [
+      -4.0,
+      -29.0,
+      10.0,
+      -23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "stock east",
+     "type": "storage",
+     "rect": [
+      10.0,
+      -29.0,
+      24.0,
+      -23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      -18.0,
+      -8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -21.675,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -14.325,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -16.5,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -7.5,
+      -8.0
+     ],
+     "width": 3.2,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -10.325,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -4.675,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -6.0,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      7.5,
+      -8.0
+     ],
+     "width": 3.2,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      4.675,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      10.325,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      9.0,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      18.0,
+      -8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      14.325,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      21.675,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      19.5,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -18.0,
+      8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -21.675,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -14.325,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -19.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -8.0,
+      8.0
+     ],
+     "width": 3.0,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -10.525,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -5.475,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -9.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      8.0,
+      8.0
+     ],
+     "width": 3.0,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      5.475,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      10.525,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      6.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      18.0,
+      8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      14.325,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      21.675,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      16.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      0,
+      26
+     ],
+     "width": 3.0,
+     "front": true,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "door",
+     "at": [
+      -2.6,
+      26
+     ],
+     "width": 1.4,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "door",
+     "at": [
+      2.6,
+      26
+     ],
+     "width": 1.4,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      8
+     ],
+     "width": 6.0,
+     "head": 3.6
+    },
+    {
+     "type": "door",
+     "at": [
+      -4,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      4,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      -8
+     ],
+     "width": 4.0,
+     "head": 3.6
+    },
+    {
+     "type": "door",
+     "at": [
+      -1.5,
+      -20
+     ],
+     "width": 1.6,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -24,
+      -21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      24,
+      -21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -24,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      24,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -14,
+      23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      14,
+      23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -17,
+      -23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -7,
+      -23
+     ],
+     "width": 1.0
+    },
+    {
+     "type": "arch",
+     "at": [
+      3,
+      -23
+     ],
+     "width": 2.4
+    },
+    {
+     "type": "door",
+     "at": [
+      17,
+      -23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -1.0,
+      -29
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "arch",
+     "at": [
+      6.0,
+      -29
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "door",
+     "at": [
+      -17,
+      -29
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      17,
+      -29
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -24,
+      0
+     ],
+     "width": 7.0,
+     "head": 3.6
+    },
+    {
+     "type": "door",
+     "at": [
+      -33,
+      23
+     ],
+     "width": 3.0,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "window",
+     "at": [
+      -38.8,
+      23
+     ],
+     "width": 4.0,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -27.4,
+      23
+     ],
+     "width": 4.0,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -42,
+      0
+     ],
+     "width": 2.4,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "arch",
+     "at": [
+      24,
+      -3.1
+     ],
+     "width": 5.6,
+     "head": 3.6
+    },
+    {
+     "type": "arch",
+     "at": [
+      24,
+      3.1
+     ],
+     "width": 5.6,
+     "head": 3.6
+    },
+    {
+     "type": "door",
+     "at": [
+      42,
+      -6
+     ],
+     "width": 2.0,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "door",
+     "at": [
+      42,
+      6
+     ],
+     "width": 2.0,
+     "material": "glass",
+     "health": 40
+    },
+    {
+     "type": "window",
+     "at": [
+      42,
+      -15
+     ],
+     "width": 4.0,
+     "sill": 0.6,
+     "head": 3.0,
+     "health": 10
+    },
+    {
+     "type": "window",
+     "at": [
+      42,
+      15
+     ],
+     "width": 4.0,
+     "sill": 0.6,
+     "head": 3.0,
+     "health": 10
+    },
+    {
+     "type": "door",
+     "at": [
+      33,
+      23
+     ],
+     "width": 2.0,
+     "material": "glass",
+     "health": 40
+    }
+   ]
+  },
+  {
+   "height": 4.2,
+   "rooms": [
+    {
+     "id": "dept upper",
+     "type": "deptstore",
+     "rect": [
+      -42.0,
+      -23.0,
+      -24.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a7a68",
+      "material": "none"
+     }
+    },
+    {
+     "id": "n1u",
+     "type": "arcade",
+     "rect": [
+      -24.0,
+      -20.0,
+      -12.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n2u",
+     "type": "beauty",
+     "rect": [
+      -12.0,
+      -20.0,
+      -3.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n3u",
+     "type": "vacant",
+     "rect": [
+      3.0,
+      -20.0,
+      12.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "n4u",
+     "type": "pets",
+     "rect": [
+      12.0,
+      -20.0,
+      24.0,
+      -8.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s1u",
+     "type": "homewares",
+     "rect": [
+      -24.0,
+      8.0,
+      -12.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s2u",
+     "type": "phones",
+     "rect": [
+      -12.0,
+      8.0,
+      -4.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s3u",
+     "type": "services",
+     "rect": [
+      4.0,
+      8.0,
+      12.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "s4u",
+     "type": "clothing",
+     "rect": [
+      12.0,
+      8.0,
+      24.0,
+      20.0
+     ],
+     "windows": false
+    },
+    {
+     "id": "north landing",
+     "type": "mallhall",
+     "rect": [
+      -3.0,
+      -20.0,
+      3.0,
+      -8.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "south landing",
+     "type": "mallhall",
+     "rect": [
+      -4.0,
+      8.0,
+      4.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "$floor",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "upper north corridor",
+     "type": "corridor",
+     "rect": [
+      -24.0,
+      -23.0,
+      24.0,
+      -20.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "upper south corridor west",
+     "type": "corridor",
+     "rect": [
+      -24.0,
+      20.0,
+      -4.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "upper south corridor east",
+     "type": "corridor",
+     "rect": [
+      4.0,
+      20.0,
+      24.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#8a8478",
+      "material": "concrete"
+     },
+     "wall": {
+      "color": "#c8c4bc",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "cinema lobby",
+     "type": "cinemalobby",
+     "rect": [
+      24.0,
+      -14.0,
+      32.0,
+      14.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#6a2028",
+      "material": "none"
+     }
+    },
+    {
+     "id": "cinema exit north",
+     "type": "corridor",
+     "rect": [
+      24.0,
+      -23.0,
+      32.0,
+      -14.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#6a2028",
+      "material": "none"
+     }
+    },
+    {
+     "id": "cinema exit south",
+     "type": "corridor",
+     "rect": [
+      24.0,
+      14.0,
+      32.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#6a2028",
+      "material": "none"
+     }
+    },
+    {
+     "id": "screen 1",
+     "type": "cinemahall",
+     "rect": [
+      32.0,
+      -23.0,
+      42.0,
+      0.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#6a2028",
+      "material": "none"
+     },
+     "wall": {
+      "color": "#3a1a24",
+      "material": "none"
+     }
+    },
+    {
+     "id": "screen 2",
+     "type": "cinemahall",
+     "rect": [
+      32.0,
+      0.0,
+      42.0,
+      23.0
+     ],
+     "windows": false,
+     "floor": {
+      "color": "#6a2028",
+      "material": "none"
+     },
+     "wall": {
+      "color": "#1a2a3a",
+      "material": "none"
+     }
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      -18.0,
+      -8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -21.675,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -14.325,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -16.5,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -7.5,
+      -8.0
+     ],
+     "width": 3.2,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -10.325,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -4.675,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -6.0,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      7.5,
+      -8.0
+     ],
+     "width": 3.2,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      4.675,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      10.325,
+      -8.0
+     ],
+     "width": 1.85,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      9.0,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      18.0,
+      -8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      14.325,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      21.675,
+      -8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      19.5,
+      -20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -18.0,
+      8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -21.675,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -14.325,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -19.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -8.0,
+      8.0
+     ],
+     "width": 3.0,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      -10.525,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      -5.475,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -9.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      8.0,
+      8.0
+     ],
+     "width": 3.0,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      5.475,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      10.525,
+      8.0
+     ],
+     "width": 1.45,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      6.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      18.0,
+      8.0
+     ],
+     "width": 3.6,
+     "head": 3.4
+    },
+    {
+     "type": "window",
+     "at": [
+      14.325,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "window",
+     "at": [
+      21.675,
+      8.0
+     ],
+     "width": 3.15,
+     "sill": 0.5,
+     "head": 3.2,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      16.5,
+      20.0
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      8
+     ],
+     "width": 6.0,
+     "head": 3.4
+    },
+    {
+     "type": "door",
+     "at": [
+      -4,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      4,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      -8
+     ],
+     "width": 4.0,
+     "head": 3.4
+    },
+    {
+     "type": "door",
+     "at": [
+      -1.5,
+      -20
+     ],
+     "width": 1.6,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -24,
+      -21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      24,
+      -21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -24,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      24,
+      21.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -14,
+      -23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      14,
+      -23
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -24,
+      0
+     ],
+     "width": 7.0,
+     "head": 3.4
+    },
+    {
+     "type": "arch",
+     "at": [
+      24,
+      0
+     ],
+     "width": 7.0,
+     "head": 3.4
+    },
+    {
+     "type": "door",
+     "at": [
+      28,
+      -14
+     ],
+     "width": 1.6
+    },
+    {
+     "type": "door",
+     "at": [
+      28,
+      14
+     ],
+     "width": 1.6
+    },
+    {
+     "type": "door",
+     "at": [
+      32,
+      -7
+     ],
+     "width": 1.6
+    },
+    {
+     "type": "door",
+     "at": [
+      32,
+      7
+     ],
+     "width": 1.6
+    },
+    {
+     "type": "door",
+     "at": [
+      32,
+      -18.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      32,
+      18.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "window",
+     "at": [
+      -33,
+      23
+     ],
+     "width": 6.0,
+     "sill": 1.0,
+     "head": 3.0,
+     "health": 20
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    -41.2,
+    -2.73,
+    -39.6,
+    2.73
+   ],
+   "dir": "+z"
+  },
+  {
+   "floor": 0,
+   "rect": [
+    0.6,
+    -16.2,
+    2.4,
+    -10.74
+   ],
+   "dir": "-z"
+  },
+  {
+   "floor": 0,
+   "rect": [
+    1.6,
+    11.0,
+    3.4,
+    16.46
+   ],
+   "dir": "-z"
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 1.0,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "extras": [
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    0.0,
+    -8.0
+   ],
+   "max": [
+    24.0,
+    0.1,
+    -5.0
+   ],
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    0.0,
+    5.0
+   ],
+   "max": [
+    24.0,
+    0.1,
+    8.0
+   ],
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    0.0,
+    -5.0
+   ],
+   "max": [
+    -12.0,
+    0.1,
+    5.0
+   ],
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.0,
+    0.0,
+    -5.0
+   ],
+   "max": [
+    24.0,
+    0.1,
+    5.0
+   ],
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    -24.0,
+    -8.0,
+    24.0,
+    -5.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    -24.0,
+    5.0,
+    24.0,
+    8.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    -24.0,
+    -5.0,
+    -21.0,
+    5.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    21.0,
+    -5.0,
+    24.0,
+    5.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    -13.5,
+    -5.0,
+    -10.5,
+    5.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "balcony",
+   "rect": [
+    10.5,
+    -5.0,
+    13.5,
+    5.0
+   ],
+   "floor": 1,
+   "railing": 0,
+   "color": {
+    "color": "$floor",
+    "material": "tiles"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -21.0,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    -13.5,
+    5.75,
+    -4.92
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -21.0,
+    4.7,
+    4.92
+   ],
+   "max": [
+    -13.5,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.5,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    10.5,
+    5.75,
+    -4.92
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.5,
+    4.7,
+    4.92
+   ],
+   "max": [
+    10.5,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    13.5,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    21.0,
+    5.75,
+    -4.92
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    13.5,
+    4.7,
+    4.92
+   ],
+   "max": [
+    21.0,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -21.0,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    -20.92,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    20.92,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    21.0,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -10.5,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    -10.42,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.5,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    -13.42,
+    5.75,
+    -3.4
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.5,
+    4.7,
+    -1.3
+   ],
+   "max": [
+    -13.42,
+    5.75,
+    1.3
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.5,
+    4.7,
+    3.4
+   ],
+   "max": [
+    -13.42,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    10.42,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    10.5,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    13.42,
+    4.7,
+    -5.0
+   ],
+   "max": [
+    13.5,
+    5.75,
+    -3.4
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    13.42,
+    4.7,
+    -1.3
+   ],
+   "max": [
+    13.5,
+    5.75,
+    1.3
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    13.42,
+    4.7,
+    3.4
+   ],
+   "max": [
+    13.5,
+    5.75,
+    5.0
+   ],
+   "color": "#8aa6b4"
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.35,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -19.025,
+    0.356,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.025,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -18.7,
+    0.611,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.7,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -18.375,
+    0.867,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.375,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -18.05,
+    1.122,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.05,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -17.725,
+    1.378,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.725,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -17.4,
+    1.633,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.4,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -17.075,
+    1.889,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.075,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -16.75,
+    2.144,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.75,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -16.425,
+    2.4,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.425,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -16.1,
+    2.656,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.1,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -15.775,
+    2.911,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.775,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -15.45,
+    3.167,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.45,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -15.125,
+    3.422,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.125,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -14.8,
+    3.678,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.8,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -14.475,
+    3.933,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.475,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -14.15,
+    4.189,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.15,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -13.825,
+    4.444,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.825,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    -13.5,
+    4.7,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Escalator Balustrade",
+   "at": [
+    -16.425,
+    0.1,
+    -2.35
+   ],
+   "yaw": 270
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.35,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -19.025,
+    0.356,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.025,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -18.7,
+    0.611,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.7,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -18.375,
+    0.867,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.375,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -18.05,
+    1.122,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -18.05,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -17.725,
+    1.378,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.725,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -17.4,
+    1.633,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.4,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -17.075,
+    1.889,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -17.075,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -16.75,
+    2.144,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.75,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -16.425,
+    2.4,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.425,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -16.1,
+    2.656,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.1,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -15.775,
+    2.911,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.775,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -15.45,
+    3.167,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.45,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -15.125,
+    3.422,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.125,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -14.8,
+    3.678,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.8,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -14.475,
+    3.933,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.475,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -14.15,
+    4.189,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.15,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -13.825,
+    4.444,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.825,
+    0.0,
+    1.5
+   ],
+   "max": [
+    -13.5,
+    4.7,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Escalator Balustrade",
+   "at": [
+    -16.425,
+    0.1,
+    2.35
+   ],
+   "yaw": 270
+  },
+  {
+   "type": "block",
+   "min": [
+    19.025,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    19.35,
+    0.356,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.7,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    19.025,
+    0.611,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.375,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    18.7,
+    0.867,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.05,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    18.375,
+    1.122,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.725,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    18.05,
+    1.378,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.4,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    17.725,
+    1.633,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.075,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    17.4,
+    1.889,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.75,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    17.075,
+    2.144,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.425,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    16.75,
+    2.4,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.1,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    16.425,
+    2.656,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.775,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    16.1,
+    2.911,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.45,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    15.775,
+    3.167,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.125,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    15.45,
+    3.422,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.8,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    15.125,
+    3.678,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.475,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    14.8,
+    3.933,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.15,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    14.475,
+    4.189,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    13.825,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    14.15,
+    4.444,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    13.5,
+    0.0,
+    -3.2
+   ],
+   "max": [
+    13.825,
+    4.7,
+    -1.5
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Escalator Balustrade",
+   "at": [
+    16.425,
+    0.1,
+    -2.35
+   ],
+   "yaw": 90
+  },
+  {
+   "type": "block",
+   "min": [
+    19.025,
+    0.0,
+    1.5
+   ],
+   "max": [
+    19.35,
+    0.356,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.7,
+    0.0,
+    1.5
+   ],
+   "max": [
+    19.025,
+    0.611,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.375,
+    0.0,
+    1.5
+   ],
+   "max": [
+    18.7,
+    0.867,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.05,
+    0.0,
+    1.5
+   ],
+   "max": [
+    18.375,
+    1.122,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.725,
+    0.0,
+    1.5
+   ],
+   "max": [
+    18.05,
+    1.378,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.4,
+    0.0,
+    1.5
+   ],
+   "max": [
+    17.725,
+    1.633,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.075,
+    0.0,
+    1.5
+   ],
+   "max": [
+    17.4,
+    1.889,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.75,
+    0.0,
+    1.5
+   ],
+   "max": [
+    17.075,
+    2.144,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.425,
+    0.0,
+    1.5
+   ],
+   "max": [
+    16.75,
+    2.4,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.1,
+    0.0,
+    1.5
+   ],
+   "max": [
+    16.425,
+    2.656,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.775,
+    0.0,
+    1.5
+   ],
+   "max": [
+    16.1,
+    2.911,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.45,
+    0.0,
+    1.5
+   ],
+   "max": [
+    15.775,
+    3.167,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.125,
+    0.0,
+    1.5
+   ],
+   "max": [
+    15.45,
+    3.422,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.8,
+    0.0,
+    1.5
+   ],
+   "max": [
+    15.125,
+    3.678,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.475,
+    0.0,
+    1.5
+   ],
+   "max": [
+    14.8,
+    3.933,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    14.15,
+    0.0,
+    1.5
+   ],
+   "max": [
+    14.475,
+    4.189,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    13.825,
+    0.0,
+    1.5
+   ],
+   "max": [
+    14.15,
+    4.444,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    13.5,
+    0.0,
+    1.5
+   ],
+   "max": [
+    13.825,
+    4.7,
+    3.2
+   ],
+   "color": {
+    "color": "#8a8a94",
+    "material": "metal"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Escalator Balustrade",
+   "at": [
+    16.425,
+    0.1,
+    2.35
+   ],
+   "yaw": 90
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -23.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -19.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -15.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -11.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -8.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -7.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    -3.85,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -0.15,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    0.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    3.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    4.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    7.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    8.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    11.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    12.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    15.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    16.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    19.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    20.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    23.85,
+    9.2,
+    -8.15
+   ],
+   "max": [
+    24.15,
+    9.6,
+    8.15
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    9.6,
+    -4.12
+   ],
+   "max": [
+    24.0,
+    9.9,
+    -3.88
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    9.6,
+    -0.12
+   ],
+   "max": [
+    24.0,
+    9.9,
+    0.12
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.0,
+    9.6,
+    3.88
+   ],
+   "max": [
+    24.0,
+    9.9,
+    4.12
+   ],
+   "color": "#d8dce0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.15,
+    8.9,
+    -8.15
+   ],
+   "max": [
+    24.15,
+    9.2,
+    -7.85
+   ],
+   "color": "#c8ccd0"
+  },
+  {
+   "type": "block",
+   "min": [
+    -24.15,
+    8.9,
+    7.85
+   ],
+   "max": [
+    24.15,
+    9.2,
+    8.15
+   ],
+   "color": "#c8ccd0"
+  },
+  {
+   "type": "awning",
+   "rect": [
+    -6.0,
+    26.0,
+    6.0,
+    29.0
+   ],
+   "height": 3.8,
+   "posts": true,
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -42.15,
+    7.0,
+    23.12
+   ],
+   "max": [
+    -3.85,
+    7.7,
+    23.3
+   ],
+   "color": "$band"
+  },
+  {
+   "type": "block",
+   "min": [
+    3.85,
+    7.0,
+    23.12
+   ],
+   "max": [
+    42.15,
+    7.7,
+    23.3
+   ],
+   "color": "$band"
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.15,
+    7.0,
+    26.12
+   ],
+   "max": [
+    4.15,
+    7.7,
+    26.3
+   ],
+   "color": "$band"
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.0,
+    0.0,
+    -29.5
+   ],
+   "max": [
+    10.0,
+    0.3,
+    -29.15
+   ],
+   "color": "#2a2a2e"
+  },
+  {
+   "type": "prop",
+   "name": "Rooftop HVAC Unit",
+   "at": [
+    -30.0,
+    0,
+    -12.0
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Rooftop HVAC Unit",
+   "at": [
+    -34.0,
+    0,
+    10.0
+   ],
+   "onRoof": true,
+   "yaw": 90
+  },
+  {
+   "type": "prop",
+   "name": "Rooftop HVAC Unit",
+   "at": [
+    34.0,
+    0,
+    -10.0
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Exhaust Fan",
+   "at": [
+    30.0,
+    0,
+    18.0
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Rooftop Condenser",
+   "at": [
+    -16.0,
+    0,
+    -15.0
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Rooftop Condenser",
+   "at": [
+    16.0,
+    0,
+    15.0
+   ],
+   "onRoof": true
+  }
+ ],
+ "anchors": [
+  {
+   "type": "hill",
+   "name": "atrium",
+   "floor": 0,
+   "at": [
+    0,
+    0
+   ]
+  },
+  {
+   "type": "hill",
+   "name": "food court",
+   "floor": 0,
+   "at": [
+    33,
+    0
+   ]
+  },
+  {
+   "type": "hill",
+   "name": "department store",
+   "floor": 1,
+   "at": [
+    -33,
+    0
+   ]
+  },
+  {
+   "type": "point",
+   "name": "main entrance",
+   "floor": 0,
+   "at": [
+    0,
+    27.5
+   ]
+  },
+  {
+   "type": "point",
+   "name": "loading dock",
+   "floor": 0,
+   "at": [
+    3,
+    -31
+   ]
+  }
+ ]
+}

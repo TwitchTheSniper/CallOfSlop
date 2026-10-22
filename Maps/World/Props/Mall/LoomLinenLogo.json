@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Loom Linen Logo",
+  "category": "Mall",
+  "description": "The LOOM & LINEN logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#e8e0d4"},
+    {"size": [0.5714, 0.1429, 0.025], "offset": [-0.2143, 0.9571, 0.0775], "color": "#8a6a50"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [-0.4286, 0.7429, 0.0775], "color": "#8a6a50"},
+    {"size": [0.1429, 0.2857, 0.025], "offset": [0.0, 0.7429, 0.0775], "color": "#8a6a50"},
+    {"size": [0.2857, 0.1429, 0.025], "offset": [-0.2143, 0.6714, 0.0775], "color": "#8a6a50"},
+    {"size": [0.2857, 0.1429, 0.029], "offset": [0.0714, 0.5286, 0.0795], "color": "#c84a4a"},
+    {"size": [0.2857, 0.1429, 0.029], "offset": [0.2143, 0.3857, 0.0795], "color": "#c84a4a"},
+    {"size": [0.2857, 0.1429, 0.029], "offset": [0.3571, 0.2429, 0.0795], "color": "#c84a4a"}
+  ]
+}

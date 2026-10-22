@@ -1,0 +1,75 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Give Way Triangle",
+  "description": "UK give-way triangle: a long white triangle outline on the approach to a junction (its base points north, towards the give-way lines).",
+  "author": "Call of Slop",
+  "size": [
+    1.4,
+    3.2
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 100,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.14,
+        0.88
+      ],
+      "to": [
+        0.86,
+        0.88
+      ],
+      "width": 0.06,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 9,
+      "seed": 711
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.14,
+        0.88
+      ],
+      "to": [
+        0.5,
+        0.07
+      ],
+      "width": 0.06,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 9,
+      "seed": 712
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.86,
+        0.88
+      ],
+      "to": [
+        0.5,
+        0.07
+      ],
+      "width": 0.06,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 9,
+      "seed": 713
+    }
+  ]
+}

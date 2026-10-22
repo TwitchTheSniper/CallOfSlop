@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Slopview Floor Medallion",
+  "category": "Mall",
+  "description": "The mall's floor medallion: a gold star in navy and cream rings with SLOPVIEW.",
+  "author": "Call of Slop",
+  "size": 3.2,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 90,
+  "image": "SlopviewFloorMedallion.png"
+}

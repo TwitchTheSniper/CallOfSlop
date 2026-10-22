@@ -1,0 +1,215 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Road Zigzag Lines",
+  "description": "UK white zig-zag lines along the kerb either side of a pedestrian crossing (runs east-west).",
+  "author": "Call of Slop",
+  "size": [
+    6.0,
+    0.45
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 90,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.03,
+        0.2
+      ],
+      "to": [
+        0.129,
+        0.8
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 720
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.129,
+        0.8
+      ],
+      "to": [
+        0.227,
+        0.2
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 721
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.227,
+        0.2
+      ],
+      "to": [
+        0.326,
+        0.8
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 722
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.326,
+        0.8
+      ],
+      "to": [
+        0.424,
+        0.2
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 723
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.424,
+        0.2
+      ],
+      "to": [
+        0.523,
+        0.8
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 724
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.523,
+        0.8
+      ],
+      "to": [
+        0.621,
+        0.2
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 725
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.621,
+        0.2
+      ],
+      "to": [
+        0.72,
+        0.8
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 726
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.72,
+        0.8
+      ],
+      "to": [
+        0.818,
+        0.2
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 727
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.818,
+        0.2
+      ],
+      "to": [
+        0.917,
+        0.8
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 728
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.917,
+        0.8
+      ],
+      "to": [
+        1.015,
+        0.2
+      ],
+      "width": 0.16,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 729
+    }
+  ]
+}

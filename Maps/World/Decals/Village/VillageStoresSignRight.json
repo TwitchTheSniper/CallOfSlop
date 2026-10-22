@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Village Stores Sign Right",
+  "description": "The village shop's fascia, second half: STORES in gold on bottle green.",
+  "author": "Call of Slop",
+  "size": [
+    2.6,
+    0.46
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "fadeDistance": 60,
+  "image": "village_stores_right.png"
+}

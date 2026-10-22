@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Mall Showcase",
+  "description": "The Shopping Mall building on its own: walk the atrium, ride the escalators, try every shop, the food court and the cinema.",
+  "author": "Call of Slop",
+  "order": 959,
+  "halfX": 58,
+  "halfZ": 44,
+  "sky": [0.58, 0.68, 0.8],
+  "ops": [
+    {"op": "Ground", "color": [0.3, 0.3, 0.31]},
+    {"op": "Perimeter", "height": 4, "color": [0.55, 0.5, 0.45]},
+    {"op": "Building", "name": "Shopping Mall", "at": [0, 0]},
+    {"op": "Spawn", "x": -36, "z": 34.0},
+    {"op": "Spawn", "x": -24, "z": 34.0},
+    {"op": "Spawn", "x": -12, "z": 34.0},
+    {"op": "Spawn", "x": 12, "z": 34.0},
+    {"op": "Spawn", "x": 24, "z": 34.0},
+    {"op": "Spawn", "x": 36, "z": 34.0},
+    {"op": "Spawn", "x": -30, "z": -36.0},
+    {"op": "Spawn", "x": -16, "z": -36.0},
+    {"op": "Spawn", "x": 16, "z": -36.0},
+    {"op": "Spawn", "x": 30, "z": -36.0},
+    {"op": "Spawn", "x": -50.0, "z": 0.0},
+    {"op": "Spawn", "x": 50.0, "z": 0.0},
+    {"op": "Spawn", "x": -50.0, "z": 20.0},
+    {"op": "Spawn", "x": 50.0, "z": -20.0},
+    {"op": "Spawn", "x": -50.0, "z": -20.0},
+    {"op": "Spawn", "x": 50.0, "z": 20.0},
+    {"op": "AutoWaypoints", "spacing": 6}
+  ]
+}

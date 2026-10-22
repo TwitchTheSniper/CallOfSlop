@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Accessible Bay Marking",
+  "category": "Mall",
+  "description": "A blue accessible-parking symbol painted in a bay.",
+  "author": "Call of Slop",
+  "size": 1.6,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 60,
+  "image": "AccessibleBayMarking.png",
+  "opacity": 0.9
+}

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Food Court Logo",
+  "category": "Mall",
+  "description": "The FOOD COURT logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#c83020"},
+    {"size": [0.7143, 0.2857, 0.025], "offset": [0.0, 0.8143, 0.0775], "color": "#f0c060"},
+    {"size": [0.1429, 0.1429, 0.025], "offset": [-0.4286, 0.7429, 0.0775], "color": "#f0c060"},
+    {"size": [0.1429, 0.1429, 0.025], "offset": [0.4286, 0.7429, 0.0775], "color": "#f0c060"},
+    {"size": [1.0, 0.1429, 0.025], "offset": [0.0, 0.3143, 0.0775], "color": "#f0c060"},
+    {"size": [1.0, 0.1429, 0.029], "offset": [0.0, 0.6, 0.0795], "color": "#60c040"},
+    {"size": [1.0, 0.1429, 0.033], "offset": [0.0, 0.4571, 0.0815], "color": "#7a3a10"}
+  ]
+}

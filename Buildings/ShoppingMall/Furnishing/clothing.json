@@ -1,0 +1,98 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "clothing",
+ "description": "Clothes shop: wall rails, round racks, folding tables, mannequins and changing rooms.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Changing Room Booth"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Clothes Wall Rail"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Folded Clothes Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Clothes Rack Round",
+    "Clothes Rack Round",
+    "Clothes Rail Straight"
+   ],
+   "place": "floor",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Mannequin Casual",
+    "Mannequin Dress",
+    "Mannequin Formal",
+    "Mannequin Sporty"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    3
+   ],
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Sale Sign Stand"
+   ],
+   "place": "floor",
+   "chance": 0.6
+  },
+  {
+   "props": [
+    "Carrier Bag",
+    "Shoe Box Stack",
+    "Cardboard Box Small"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

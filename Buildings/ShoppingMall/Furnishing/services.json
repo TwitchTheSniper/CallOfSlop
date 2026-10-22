@@ -1,0 +1,53 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "services",
+ "description": "Customer service desk: a counter, seating and leaflets.",
+ "items": [
+  {
+   "props": [
+    "Reception Desk"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Mall Bench"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Filing Cabinet",
+    "Water Cooler",
+    "Office Plant"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Office Chair"
+   ],
+   "place": "floor"
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Village Shop Post Counter",
+  "description": "The post office counter: a wooden counter behind a glazed screen, with trays, scales and forms, under a red header board.",
+  "collision": "solid",
+  "collider": [{"size": [2.46, 1.05, 0.71], "offset": [0, 0.525, 0.025]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 160, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.05, 0.3], "speed": 3}},
+  "parts": [
+    {"size": [2.4, 1.0, 0.65], "offset": [0.0, 0.5, 0.025], "color": "#7a5432", "material": "wood"},
+    {"size": [2.46, 0.05, 0.71], "offset": [0.0, 1.025, 0.025], "color": "#4a2e1c"},
+    {"size": [2.4, 1.05, 0.04], "offset": [0.0, 1.575, -0.04], "color": "#a8c4cc"},
+    {"size": [2.44, 0.08, 0.08], "offset": [0.0, 2.14, -0.04], "color": "#2a3a2a"},
+    {"size": [0.06, 1.05, 0.08], "offset": [-1.19, 1.575, -0.04], "color": "#2a3a2a"},
+    {"size": [0.06, 1.05, 0.08], "offset": [1.19, 1.575, -0.04], "color": "#2a3a2a"},
+    {"size": [0.04, 1.05, 0.08], "offset": [0.0, 1.575, -0.04], "color": "#2a3a2a"},
+    {"size": [0.5, 0.08, 0.27], "offset": [-0.55, 1.09, 0.065], "color": "#2a2a2a"},
+    {"size": [0.5, 0.08, 0.27], "offset": [0.55, 1.09, 0.065], "color": "#2a2a2a"},
+    {"size": [0.4, 0.15, 0.2], "offset": [-0.8, 1.125, -0.2], "color": "#c8c8c8", "material": "metal"},
+    {"size": [0.4, 0.05, 0.18], "offset": [0.7, 1.075, -0.19], "color": "#e8e0c8"},
+    {"size": [2.42, 0.45, 0.01], "offset": [0.0, 0.525, 0.365], "color": "#c8282a"},
+    {"size": [1.8, 0.3, 0.04], "offset": [0.0, 2.35, -0.04], "color": "#c8282a"},
+    {"size": [1.2, 0.1, 0.01], "offset": [0.0, 2.35, -0.015], "color": "#f0ece0"}
+  ]
+}

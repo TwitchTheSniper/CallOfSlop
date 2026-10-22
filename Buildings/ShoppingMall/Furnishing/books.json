@@ -1,0 +1,69 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "books",
+ "description": "Bookshop: tall cases round the walls, new-release tables, a spinner.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Retail Bookcase"
+   ],
+   "place": "wall",
+   "count": [
+    4,
+    7
+   ]
+  },
+  {
+   "props": [
+    "Book Display Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Book Display Table"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Book Spinner Rack"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Armchair"
+   ],
+   "place": "corner",
+   "chance": 0.6
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

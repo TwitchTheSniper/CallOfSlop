@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Village Shop Card Rack",
+  "description": "A revolving wire rack of greetings cards.",
+  "collision": "solid",
+  "collider": [{"size": [0.36, 1.65, 0.36]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 30, "breakBy": "all", "sound": "soft", "debris": {"count": 14, "size": [0.04, 0.15]}},
+  "parts": [
+    {"size": [0.4, 0.05, 0.4], "offset": [0.0, 0.025, 0.0], "color": "#2a2a2a"},
+    {"size": [0.04, 1.6, 0.04], "offset": [0.0, 0.85, 0.0], "color": "#8a8a8a", "material": "metal"},
+    {"size": [0.02, 0.2, 0.17], "offset": [0.126, 0.45, 0.0], "color": "#e87ab0"},
+    {"size": [0.02, 0.2, 0.17], "offset": [-0.126, 0.45, 0.0], "color": "#f0d070"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.45, 0.126], "color": "#e87a5a"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.45, -0.126], "color": "#a8d8a0"},
+    {"size": [0.02, 0.2, 0.17], "offset": [0.126, 0.7, 0.0], "color": "#e87ab0"},
+    {"size": [0.02, 0.2, 0.17], "offset": [-0.126, 0.7, 0.0], "color": "#e87ab0"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.7, 0.126], "color": "#7ab0e8"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.7, -0.126], "color": "#e87a5a"},
+    {"size": [0.02, 0.2, 0.17], "offset": [0.126, 0.95, 0.0], "color": "#e87a5a"},
+    {"size": [0.02, 0.2, 0.17], "offset": [-0.126, 0.95, 0.0], "color": "#a8d8a0"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.95, 0.126], "color": "#e87a5a"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 0.95, -0.126], "color": "#f0ece0"},
+    {"size": [0.02, 0.2, 0.17], "offset": [0.126, 1.2, 0.0], "color": "#f0d070"},
+    {"size": [0.02, 0.2, 0.17], "offset": [-0.126, 1.2, 0.0], "color": "#f0d070"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 1.2, 0.126], "color": "#7ab0e8"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 1.2, -0.126], "color": "#e87a5a"},
+    {"size": [0.02, 0.2, 0.17], "offset": [0.126, 1.45, 0.0], "color": "#e87ab0"},
+    {"size": [0.02, 0.2, 0.17], "offset": [-0.126, 1.45, 0.0], "color": "#e87a5a"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 1.45, 0.126], "color": "#e87ab0"},
+    {"size": [0.17, 0.2, 0.02], "offset": [0.0, 1.45, -0.126], "color": "#e87a5a"}
+  ]
+}
