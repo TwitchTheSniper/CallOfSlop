@@ -26,7 +26,7 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | **Single player** | You against up to 31 bots (as many as the map takes, see [Lobby size](#lobby-size); Easy, Normal or Hard), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, VSync. **Audio:** master, music, effects and footstep volume. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, VSync. **Audio:** master, music, effects and footstep volume, music style, kill frenzy music. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -494,6 +494,16 @@ The five **harder hardbass** tracks go further: a layered gabber kick (a second,
 - The main menu shows a subtle *Now playing* line in the bottom-left corner.
 - **Settings > Audio > Music volume** (0 = off, default 0.50) sits on top of the master volume. It's saved as `music_volume` in `settings.txt`; older settings files without it load with the default.
 - **Settings > Audio > Music style**: **Mixed** (default, every track) or **Hardbass only** (only the hardbass tracks, in both the menu and the lobby; switching it on crossfades straight into one). Saved as `music_style` in `settings.txt`; older files load as Mixed.
+- **Kill frenzy music** (in matches): as you chain kills, a hardbass track fades in and gets harder the more kills you get and the faster you get them, then fades out after a while without kills. Each kill adds *heat* (6, plus up to 14 for a follow-up within 2 s, tapering to nothing after 7 s; +3 per link of a multi-kill chain of kills under 4 s apart, up to +12; +3 for a headshot; max 100). Heat bleeds slowly (4%/s) for 5 s after the last kill, then drains (7%/s plus 3/s). Heat 12 / 30 / 52 / 85 reaches **level 1-4** (left again below 8 / 24 / 44 / 74):
+  - **Level 1**: only the drums and bass, behind a closed low-pass filter (380 Hz) and quiet: the club through the wall.
+  - **Level 2**: the filter opens: the full beat, claps, hats and the bouncing off-beat bass.
+  - **Level 3**: the leads, harmonies, pads and chants come in.
+  - **Level 4**: full volume, and the track jumps to its **last drop** (the later lead sound, reverse bass, crash and sub drop).
+  - A quick double kill starts level 1, a triple kill level 3, five quick kills level 4; a kill every 6 s never passes level 2, every 7 s or slower never starts it. After a burst, level 4 holds about 5.5 s, then it eases down (level 2 at about 11 s) and is gone after about 18-20 s.
+  - Changes land on the **bar line** and crossfade: up within half a bar, down one level at a time (at most every two bars, over two bars). Drops loop, so it never falls into a breakdown. **Dying** fades it out over 2 s with the filter closing, and it never plays in the death cam, menus or lobby. Your own gunfire ducks it a little, and it sits under the menu music's level so the game stays on top.
+  - **Zombies** too: zombie kills are worth half and the hold is 3.5 s (being downed counts as dying).
+  - Only the local player's kills count, client-side (nothing on the network). One hardbass track from the pool per frenzy, rendered by the same engine with stem gains (drums, bass, melodic parts): about the cost of one hardbass track at levels 3-4 and less at levels 1-2 (the leads aren't rendered).
+  - **Settings > Audio > Kill frenzy music** (On by default) and **Frenzy volume** (0.80, on top of the music volume), saved as `frenzy_music` and `frenzy_volume`; older settings files load with the defaults. The self-test section **Frenzy music** checks the heat model, bar-synced changes, the easing down, death and the setting off, determinism, allocations and CPU (at most 1.5x the heaviest hardbass track).
 - The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs about 1% of one CPU core (the self-test measures it).
 
 ### Zombies (in development)
@@ -634,7 +644,8 @@ Source/
                      SynthFoley (hits, footsteps, whizzes, impacts, distant gunshots), Footsteps (gait, surfaces, voice cap),
                      Music (player, crossfades, streaming thread),
                      MusicTracks (the track list), MusicRenderer (sequencer + arrangement), MusicSynth (synth voices and effects),
-                     MusicTracksHarder + MusicRendererHarder (the harder hardbass tracks and their recipe)
+                     MusicTracksHarder + MusicRendererHarder (the harder hardbass tracks and their recipe),
+                     MusicFrenzy (kill-frenzy heat meter + adaptive in-match layer), MusicRenderer.Frenzy (stems, drop loops, jumps)
 ```
 
 **Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).

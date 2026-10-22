@@ -816,6 +816,8 @@ public sealed partial class MusicRenderer
     {
         var bar = _step >> 4;
         var s = _step & 15;
+        if (s == 0 && (_jumpBar >= 0 || LoopDrops))
+            bar = Retarget(bar); // the frenzy layer's bar-synced jumps and drop loops (MusicFrenzy.cs)
         _step++;
         if (bar >= _track.TotalBars)
         {
@@ -1158,18 +1160,30 @@ public sealed partial class MusicRenderer
         _snare.Render(snare, ref _noise);
         _hat.Render(hat, ref _noise);
         _bass.Render(bass);
-        _lead.Render(leadL, leadR);
-        _pad.Render(padL, padR);
-        _arp.Render(arpL, arpR);
+        if (StemLead > 0f)
+        {
+            _lead.Render(leadL, leadR);
+            _pad.Render(padL, padR);
+            _arp.Render(arpL, arpR);
+        }
+        else
+        {
+            MuteLeads(n); // the frenzy layer's lower levels: no leads, and no CPU spent on them
+        }
         _fx.Render(fxL, fxR, ref _noise);
         _rev.Render(rev);
-        _vox.Render(vox, ref _noise);
+        if (StemLead > 0f)
+            _vox.Render(vox, ref _noise);
+        else
+            vox.Clear();
         if (_harder != null)
             RenderSweeps(vox);
 
         // Levels, then the delay and reverb sends.
         float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
         float leadDelay = _leadDelay, leadVerb = _leadVerb, gVox = _gVox;
+        if (StemDrums != 1f || StemBass != 1f || StemLead != 1f)
+            ApplyStems(ref gKick, ref gSnare, ref gHat, ref gBass, ref gLead, ref gPad, ref gArp, ref gVox);
         for (var i = 0; i < n; i++)
         {
             var vx = vox[i] *= gVox;
@@ -1231,7 +1245,7 @@ public sealed partial class MusicRenderer
     /// </summary>
     private void MixHardbass(Span<float> stereo, int n)
     {
-        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev, master = _masterGain;
+        float dcInL = _dcInL, dcInR = _dcInR, dcOutL = _dcOutL, dcOutR = _dcOutR, duckDepth = _duckDepth, bassDuck = _bassDuck, gRev = _gRev * StemBass, master = _masterGain;
         for (var i = 0; i < n; i++)
         {
             var dk = _bDuck[i];
