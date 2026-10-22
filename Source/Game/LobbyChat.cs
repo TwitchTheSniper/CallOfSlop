@@ -76,7 +76,7 @@ public static class ChatRules
 }
 
 /// <summary>
-/// The chat (protocol 32, extended in 34): <see cref="Msg.ChatSay"/> to the server (text + flags: team), and
+/// The chat (protocol 32, extended in 35): <see cref="Msg.ChatSay"/> to the server (text + flags: team), and
 /// <see cref="Msg.ChatLine"/> to each player who should see it (sender, text, flags, the sender's team). The lobby room and
 /// the in-match HUD chat are the same chat. All chat reaches everyone; team chat only the sender's team (team modes, or
 /// everyone in co-op Zombies; in free-for-all it isn't sent); with the host's "Dead chat: dead only" a dead player's lines
@@ -215,7 +215,7 @@ public sealed partial class Game
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 var text = ChatRules.Clean(r.Str());
-                var team = r.Has(1) && (r.U8() & (byte)ChatFlags.Team) != 0; // protocol 34
+                var team = r.Has(1) && (r.U8() & (byte)ChatFlags.Team) != 0; // protocol 35
                 if (text.Length > 0)
                     ServerChat(p, text, now, team);
                 break;

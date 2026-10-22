@@ -49,6 +49,9 @@ public sealed class RagdollBody
     public bool Live;
     public RagdollLook Look;
 
+    /// <summary>The body was blown apart (<see cref="Gibs"/>): this slot only carries its hat, flying off as one more gib.</summary>
+    public bool Gibbed;
+
     /// <summary>The player whose body it is (255 for zombies), and when it appeared and goes.</summary>
     public byte Owner = 255;
     public double Born, Until;
@@ -193,11 +196,19 @@ public static class Ragdolls
     /// <summary>Where player <paramref name="id"/>'s newest ragdoll lies (its hips), if one is showing (the death camera looks at it).</summary>
     public static Vector3? BodyPoint(byte id)
     {
-        RagdollBody? best = null;
+        RagdollBody? best = null, newest = null;
         foreach (var b in Bodies)
-            if (b.Live && b.Owner == id && b.Look == RagdollLook.Soldier && (best == null || b.Order > best.Order))
+        {
+            if (!b.Live || b.Owner != id || b.Look != RagdollLook.Soldier)
+                continue;
+            if (newest == null || b.Order > newest.Order)
+                newest = b;
+            if (!b.Gibbed && (best == null || b.Order > best.Order))
                 best = b;
-        return best?.Sim.Pelvis;
+        }
+        if (newest is { Gibbed: true } && Gibs.BodyPoint(id) is { } torso)
+            return torso; // blown apart (only the hat is a body slot): the torso chunk
+        return best?.Sim.Pelvis ?? Gibs.BodyPoint(id);
     }
 
     /// <summary>The pool's slots (self-test).</summary>
@@ -328,6 +339,8 @@ public static class Ragdolls
                 strength = 0;
             d.BlastStrength = strength;
         }
+        if (kill.Gibbed && TryGibPlayer(p, d, kill, now))
+            return; // blown apart: gibs instead of a ragdoll
         var body = Alloc(false);
         body.Look = RagdollLook.Soldier;
         body.Owner = p.Id;
@@ -356,6 +369,11 @@ public static class Ragdolls
         {
             (d.BlastAt, d.BlastRadius) = (b.Pos, b.Radius);
             d.BlastStrength = MathF.Max(Throwables.Get(b.Kind).Knockback, 6f);
+            if (ZombieGibbed(b.Pos, b.Radius, d.Feet))
+            {
+                GibZombie(d);
+                return; // blown apart (clients don't get the server's damage, so it's how close the blast was)
+            }
         }
         else
         {
@@ -385,6 +403,75 @@ public static class Ragdolls
     {
         BodyBloodRender.RagdollAmounts(owner, blood, 0f, BodyBloodRender.Mode, body.Blood);
         body.BloodSeed = (BloodMarks.Hash(owner, blood, 7) & 0xFFFF) / 65535f;
+    }
+
+    // ---- Gibs (blast kills that blow the body apart) -----------------------------------------------------------
+
+    /// <summary>Bodies blown apart into gibs since start-up (players, bots and zombies).</summary>
+    public static int GibbedBodies;
+
+    /// <summary>A zombie killed by a blast within this fraction of its radius (from its chest) is blown apart.</summary>
+    public const float ZombieGibFraction = 0.45f;
+
+    /// <summary>Is a zombie at <paramref name="feet"/> close enough to the blast that killed it to be blown apart (and gore on)?</summary>
+    public static bool ZombieGibbed(Vector3 blast, float radius, Vector3 feet) =>
+        Gibs.Mode != GoreMode.Off && Vector3.Distance(blast, feet + new Vector3(0, 1.1f, 0)) <= radius * ZombieGibFraction;
+
+    /// <summary>
+    /// A player's body blown apart (the kill's "gibbed" flag): gibs in their colours, flung from the blast, and their
+    /// prestige hat flying off on its own. False on Off gore (the caller makes a normal ragdoll).
+    /// </summary>
+    private static bool TryGibPlayer(Player p, in RagdollDeath d, in KillPacket kill, double now)
+    {
+        if (Gibs.Mode == GoreMode.Off)
+            return false;
+        var v = BodyModel.VariantFor(p.Name, p.Id);
+        var bc = BodyColors.For(p.Color, v);
+        var lc = LegColors.For(p.Color);
+        var ac = ArmColors.For(p.Color * 0.75f);
+        var strength = d.BlastStrength > 0 ? d.BlastStrength : MathF.Max(Knockback.ForKill(kill.KillId).Strength, 9f);
+        Gibs.SpawnBody(new GibBody
+        {
+            Feet = d.Feet, Yaw = d.Yaw, Stance = d.Stance, Velocity = d.Velocity, Owner = p.Id, Seed = Seed(d),
+            BlastAt = d.BlastStrength > 0 ? d.BlastAt : d.HasSource ? d.Source : d.Feet, Strength = strength,
+            Vest = bc.Shirt, Sleeve = ac.Sleeve, Skin = bc.Skin, Hair = bc.Hair, Trousers = lc.Trousers, Boot = lc.Boot, Glove = ac.Glove,
+        });
+        GibbedBodies++;
+        if (HatRender.HatFor(p) is { } hat)
+            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color);
+        return true;
+    }
+
+    /// <summary>A gibbed player's hat: a body slot that only draws the hat, knocked off by the blast (the ragdoll's hat physics).</summary>
+    public static RagdollBody SpawnHatGib(HatDef hat, in RagdollDeath d, double now, byte owner, string name, Vector3 color)
+    {
+        _now = now;
+        var body = Alloc(false);
+        body.Look = RagdollLook.Soldier;
+        body.Owner = owner;
+        body.Hat = hat;
+        BuildSoldierLook(body, name, owner, color);
+        Spawn(body, d, now, PlayerLife);
+        body.Gibbed = true;
+        if (!body.HatOff)
+        {
+            var rng = new Foliage.Rng(Seed(d) ^ 0x4a7u);
+            PopHat(body, ref rng);
+        }
+        body.Sim.Sleep(); // no body left to simulate
+        body.CacheCount = -1;
+        return body;
+    }
+
+    /// <summary>A zombie blown apart: gibs in zombie colours (torn shirt, green skin), no ragdoll.</summary>
+    private static void GibZombie(in RagdollDeath d)
+    {
+        Gibs.SpawnBody(new GibBody
+        {
+            Feet = d.Feet, Yaw = d.Yaw, Stance = Stance.Stand, Velocity = d.Velocity, Owner = 255, Seed = Seed(d), BlastAt = d.BlastAt, Strength = d.BlastStrength,
+            Vest = ZombieShirt, Sleeve = ZombieSkin * 0.92f, Skin = ZombieSkin, Hair = ZombieSkin * 0.5f, Trousers = ZombiePants, Boot = ZombiePants * 0.6f, Glove = ZombieSkin,
+        });
+        GibbedBodies++;
     }
 
     /// <summary>Zombie colours (set once by the game, the same as the living zombies).</summary>
@@ -469,6 +556,7 @@ public static class Ragdolls
         body.Order = ++_order;
         body.CacheCount = -1;
         body.HasBlast = false;
+        body.Gibbed = false;
         body.HatOff = body.HatResting = false;
         _spawned++;
         var pose = d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
@@ -481,6 +569,13 @@ public static class Ragdolls
         body.Sim.Init(pose, toWorld, vel);
         var rng = new Foliage.Rng(Seed(d));
         ApplyDeath(body, d, ref rng);
+    }
+
+    /// <summary>Self-test: what a PC does for a player's fresh death (a ragdoll, or gibs for a "gibbed" kill).</summary>
+    public static void SpawnPlayerForTest(Game game, Player p, in KillPacket kill, double now)
+    {
+        _now = now;
+        SpawnPlayer(game, p, kill, now);
     }
 
     /// <summary>Self-test: a body for a death without a game (soldier look in <paramref name="color"/>).</summary>
@@ -577,6 +672,16 @@ public static class Ragdolls
     private static bool BlastBody(RagdollBody body, Vector3 center, float radius, float strength, bool killed)
     {
         var sim = body.Sim;
+        if (body.Gibbed)
+        {
+            // Only a hat left: a resting one flies again.
+            if (!body.HatOff || !body.HatResting || Vector3.Distance(body.HatPos, center) > radius)
+                return false;
+            body.HatResting = false;
+            body.HatVel = Vector3.Normalize(body.HatPos - center + new Vector3(0, 1f, 0)) * (strength * 0.6f);
+            body.CacheCount = -1;
+            return true;
+        }
         var pelvis = sim.Pelvis;
         if (Vector3.Distance(pelvis, center) > radius + 1.5f)
             return false;
@@ -828,6 +933,19 @@ public static class Ragdolls
     /// <summary>All of a body's boxes, posed <paramref name="alpha"/> of the way from its last step to its current one.</summary>
     private static void Emit(RagdollBody b, float alpha, ref Sink sink)
     {
+        if (b.Gibbed)
+        {
+            // Blown apart (the gibs draw themselves): only the hat, flying or lying on its side.
+            if (b.Hat is { } gibHat && b.HatOff)
+            {
+                var land = b.HatResting ? b.HatLand : 0f;
+                var gf = Matrix4x4.CreateFromQuaternion(Quaternion.Slerp(b.HatRot, b.HatRestRot, land));
+                gf.Translation = b.HatResting ? Vector3.Lerp(b.HatPos, b.HatRestPos, land) : b.HatPos;
+                foreach (var box in gibHat.Boxes)
+                    sink.Box(box.Local, gf, box.Color);
+            }
+            return;
+        }
         var sim = b.Sim;
         Span<Vector3> q = stackalloc Vector3[RagdollRig.Count];
         for (var i = 0; i < RagdollRig.Count; i++)

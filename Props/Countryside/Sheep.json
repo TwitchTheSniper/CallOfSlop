@@ -2,8 +2,9 @@
   "format": "call-of-slop-prop/1",
   "name": "Sheep",
   "category": "Countryside",
-  "description": "A woolly sheep with a black face. Looks only.",
+  "description": "A woolly sheep with a black face. Cosmetic (you walk through it); shoot it and it bursts into wool and gibs.",
   "collision": "cosmetic",
+  "breakable": { "health": 110, "breakBy": "all", "gibs": { "count": 18, "style": "wool" } },
   "scatter": {"randomYaw": true, "scale": [0.85, 1.1]},
   "fadeDistance": 60,
   "parts": [

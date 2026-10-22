@@ -307,6 +307,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - **Cliffs run on past their end points** until their taper fades them out, so stop the line a taper's length short of anything that has to stay walkable.
 - **Lifts up a cliff:** an `elevator` at the foot of the face, with a thin `Block` landing at the top that reaches over the face to the edge (the face is `face` metres wide). Give bots a ramp to the same place.
 - **Cluttered pockets:** the bots' nav graph samples the ground every few metres. A small space full of cover can end up with too few nodes to join up, so add a couple of `Waypoint` ops there. Each waypoint becomes a nav node.
+- **Finding spots where bots get stuck:** a bot that can't get anywhere for 15 s (or is in a pit with no way out for 4 s) kills itself and the game logs `[bots] stuck: <bot> on <map> (<mode>) at (x, y, z): <cause>` to `callofslop.log`, and every match end logs `[bots] match over on <map>: N stuck self-kill(s)`. Play a bot match on your map and look for these lines: the position and cause (ledge climb, slope, no route, pit, off the nav graph) point at the spot to fix. The self-test's every-map match lists them too ("Bot stuck watch (results)").
 
 ### For tools
 

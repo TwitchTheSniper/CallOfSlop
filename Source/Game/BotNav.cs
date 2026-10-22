@@ -787,6 +787,31 @@ public sealed class NavGraph
         var before = MainNodes.Length;
         MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
         TrapNodes = before - MainNodes.Length;
+        _trapped = new bool[n];
+        for (var i = 0; i < n; i++)
+            _trapped[i] = forward[i] && !backward[i] && Component[i] == MainComponent;
+    }
+
+    private bool[] _trapped = [];
+    private float _minNodeY = float.NaN;
+
+    /// <summary>Can node <paramref name="i"/> be reached from open ground but not left again (the floor of a pit)? Terrain holes only.</summary>
+    public bool IsTrapped(int i) => (uint)i < (uint)_trapped.Length && _trapped[i];
+
+    /// <summary>The lowest node's height (a bot well below it fell out of the map; see the stuck watch, BotStuck.cs).</summary>
+    public float MinNodeY
+    {
+        get
+        {
+            if (float.IsNaN(_minNodeY))
+            {
+                var min = float.MaxValue;
+                foreach (var q in Nodes)
+                    min = MathF.Min(min, q.Y);
+                _minNodeY = Nodes.Length > 0 ? min : 0f;
+            }
+            return _minNodeY;
+        }
     }
 
     /// <summary>Nodes left out of <see cref="MainNodes"/> because a bot couldn't get back out from them (holes).</summary>

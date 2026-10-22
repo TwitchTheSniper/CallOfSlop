@@ -10,6 +10,7 @@ public static unsafe partial class Program
     private static void UpdateRagdolls(double now)
     {
         (Ragdolls.ZombieShirt, Ragdolls.ZombieSkin, Ragdolls.ZombiePants) = (ZShirt, ZSkin, ZPants);
+        Gibs.Mode = _settings.Gore; // Settings > Video "Gore" (Source/Props/Gibs.cs)
         Ragdolls.Frame(_game, now, (float)FrameDt);
     }
 

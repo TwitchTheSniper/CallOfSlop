@@ -66,6 +66,7 @@ public enum Sfx
     LockTone, // a lock-on launcher building its lock (a short low beep; ticks faster as it builds)
     LockedTone, // locked on (a high solid tone)
     FlarePop, // a kill streak machine popping flares against an incoming lock-on rocket
+    GibSquelch, // an animal or a body bursting into meaty gibs (SynthGore.cs)
     COUNT,
 }
 
@@ -930,6 +931,8 @@ public static partial class Synth
             return streak; // SynthStreaks.cs
         if (LauncherFoley(sfx, variant) is { } launcher)
             return launcher; // SynthLaunchers.cs
+        if (GoreFoley(sfx, variant) is { } gore)
+            return gore; // SynthGore.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

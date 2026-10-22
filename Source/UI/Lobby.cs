@@ -812,6 +812,16 @@ public sealed partial class Ui
                     s.BloodColour = (BloodColour)bloodColour;
             }
             ImGui.TextColored(Dim, "Blood splatters at the screen edges as your health drops (more the lower it gets, from the side you were hit), and blood marks on hurt players and zombies. They fade as health comes back. Subtle: fewer and fainter; Off: none. Dark: a darker colour instead of red."u8);
+            ImGui.Text("Gore"u8);
+            var gore = (int)s.Gore;
+            for (var i = 0; i <= (int)GoreMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreMode)i}##gore", ref gore, i))
+                    s.Gore = (GoreMode)gore;
+            }
+            ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
