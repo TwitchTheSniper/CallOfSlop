@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Dirt Patch",
+  "description": "A soft, blotchy patch of trodden-in dirt and grit for any floor.",
+  "author": "Call of Slop",
+  "size": 3.0,
+  "sizeVariation": 0.4,
+  "rotation": "random",
+  "tintVariation": 0.12,
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.38,
+      "count": 9,
+      "jag": 0.5,
+      "seed": 221,
+      "color": [
+        0.62,
+        0.55,
+        0.45
+      ],
+      "alpha": 0.85,
+      "softness": 0.18,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 40,
+      "width": 0.014,
+      "seed": 222,
+      "color": [
+        0.45,
+        0.38,
+        0.3
+      ],
+      "alpha": 0.75
+    }
+  ]
+}

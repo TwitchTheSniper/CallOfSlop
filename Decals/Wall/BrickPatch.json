@@ -1,0 +1,528 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Brick Patch",
+  "description": "Plaster broken away to show the brickwork behind it.",
+  "author": "Call of Slop",
+  "size": 1.4,
+  "sizeVariation": 0.3,
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 70,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.84,
+        0.74
+      ],
+      "color": [
+        0.6,
+        0.57,
+        0.52
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.1,
+        0.24
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 631
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.34,
+        0.24
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 631
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.58,
+        0.24
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 631
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.82,
+        0.24
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 631
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.22,
+        0.355
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 632
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.46,
+        0.355
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 632
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.355
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 632
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.94,
+        0.355
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 632
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.1,
+        0.47
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 633
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.34,
+        0.47
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 633
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.58,
+        0.47
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 633
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.82,
+        0.47
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 633
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.22,
+        0.585
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 634
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.46,
+        0.585
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 634
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.585
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 634
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.94,
+        0.585
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 634
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.1,
+        0.7
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 635
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.34,
+        0.7
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 635
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.58,
+        0.7
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 635
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.82,
+        0.7
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 635
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.22,
+        0.815
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 636
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.46,
+        0.815
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.58,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 636
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.815
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.62,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 636
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.94,
+        0.815
+      ],
+      "size": [
+        0.22,
+        0.1
+      ],
+      "color": [
+        0.66,
+        0.3,
+        0.22
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 636
+    },
+    {
+      "shape": "ring",
+      "radius": 0.6,
+      "width": 0.44,
+      "color": "white",
+      "erase": true
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.17,
+        0.25
+      ],
+      "radius": 0.1,
+      "count": 6,
+      "jag": 0.5,
+      "seed": 632,
+      "color": "white",
+      "erase": true
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.82,
+        0.72
+      ],
+      "radius": 0.11,
+      "count": 6,
+      "jag": 0.5,
+      "seed": 633,
+      "color": "white",
+      "erase": true
+    },
+    {
+      "shape": "ring",
+      "radius": 0.385,
+      "width": 0.04,
+      "color": [
+        0.8,
+        0.78,
+        0.74
+      ],
+      "alpha": 0.9,
+      "noise": 0.4,
+      "noiseScale": 10,
+      "seed": 634
+    }
+  ]
+}

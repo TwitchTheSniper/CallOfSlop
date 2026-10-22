@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Concrete Patch",
+  "description": "A newer, lighter square of concrete filled into an old floor or wall.",
+  "author": "Call of Slop",
+  "size": [
+    1.8,
+    1.4
+  ],
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "surfaces": [
+    "floor",
+    "wall"
+  ],
+  "fadeDistance": 70,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.92,
+        0.88
+      ],
+      "color": [
+        0.42,
+        0.42,
+        0.41
+      ],
+      "softness": 0.01
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.86,
+        0.82
+      ],
+      "color": [
+        0.68,
+        0.67,
+        0.64
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 351
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 20,
+      "width": 0.012,
+      "seed": 352,
+      "color": [
+        0.52,
+        0.52,
+        0.5
+      ],
+      "alpha": 0.8
+    }
+  ]
+}

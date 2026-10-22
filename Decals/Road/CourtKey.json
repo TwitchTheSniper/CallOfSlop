@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Court Key",
+  "description": "A sports court's key: a painted lane with a circle at its end (court edge to the south).",
+  "author": "Call of Slop",
+  "size": [
+    5.0,
+    6.0
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 120,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.4
+      ],
+      "size": [
+        0.6,
+        0.7
+      ],
+      "color": [
+        0.75,
+        0.32,
+        0.2
+      ],
+      "alpha": 0.85
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.2,
+        0.4
+      ],
+      "size": [
+        0.014,
+        0.7
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.8,
+        0.4
+      ],
+      "size": [
+        0.014,
+        0.7
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.75
+      ],
+      "size": [
+        0.614,
+        0.012
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.5,
+        0.75
+      ],
+      "radius": 0.2,
+      "width": 0.012,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.05
+      ],
+      "size": [
+        0.98,
+        0.012
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    }
+  ]
+}

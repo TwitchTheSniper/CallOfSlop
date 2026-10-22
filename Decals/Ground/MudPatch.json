@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Mud Patch",
+  "description": "A churned patch of wet mud with clods round it.",
+  "author": "Call of Slop",
+  "size": 2.2,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.36,
+      "count": 10,
+      "jag": 0.55,
+      "seed": 211,
+      "color": [
+        0.45,
+        0.36,
+        0.26
+      ],
+      "alpha": 0.85,
+      "softness": 0.06,
+      "noise": 0.35,
+      "noiseScale": 7
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.48,
+        0.52
+      ],
+      "radius": 0.2,
+      "count": 7,
+      "jag": 0.5,
+      "seed": 212,
+      "color": [
+        0.3,
+        0.23,
+        0.16
+      ],
+      "alpha": 0.75,
+      "softness": 0.08
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.45,
+      "count": 24,
+      "width": 0.028,
+      "seed": 213,
+      "color": [
+        0.33,
+        0.26,
+        0.18
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

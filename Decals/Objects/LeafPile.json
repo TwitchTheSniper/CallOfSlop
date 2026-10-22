@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Leaf Pile",
+  "description": "A dense heap of fallen leaves swept against something.",
+  "author": "Call of Slop",
+  "size": 1.3,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.15,
+  "surfaces": "floor",
+  "fadeDistance": 50,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.32,
+      "count": 9,
+      "jag": 0.5,
+      "seed": 791,
+      "color": [
+        0.42,
+        0.28,
+        0.14
+      ],
+      "noise": 0.2,
+      "noiseScale": 10
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.32,
+      "count": 40,
+      "width": 0.05,
+      "seed": 792,
+      "color": [
+        0.72,
+        0.36,
+        0.12
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.3,
+      "count": 25,
+      "width": 0.045,
+      "seed": 793,
+      "color": [
+        0.82,
+        0.62,
+        0.2
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.3,
+      "count": 15,
+      "width": 0.04,
+      "seed": 794,
+      "color": [
+        0.6,
+        0.2,
+        0.1
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 10,
+      "width": 0.035,
+      "seed": 795,
+      "color": [
+        0.5,
+        0.32,
+        0.14
+      ]
+    }
+  ]
+}

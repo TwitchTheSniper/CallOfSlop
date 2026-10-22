@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Parking Bay",
+  "description": "A white U-shaped parking bay outline, open to the south.",
+  "author": "Call of Slop",
+  "size": [
+    2.6,
+    5.2
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 110,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.04,
+        0.5
+      ],
+      "size": [
+        0.05,
+        0.96
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 431
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.96,
+        0.5
+      ],
+      "size": [
+        0.05,
+        0.96
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 432
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.97
+      ],
+      "size": [
+        0.97,
+        0.025
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 433
+    }
+  ]
+}

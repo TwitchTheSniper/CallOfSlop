@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Tyre Tracks",
+  "description": "Muddy tread tracks from a truck, two wheels wide.",
+  "author": "Call of Slop",
+  "size": [
+    2.0,
+    4.0
+  ],
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.5
+      ],
+      "size": [
+        0.22,
+        0.96
+      ],
+      "color": [
+        0.5,
+        0.45,
+        0.38
+      ],
+      "alpha": 0.6,
+      "softness": 0.03,
+      "noise": 0.35,
+      "noiseScale": 8,
+      "seed": 281
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.75,
+        0.5
+      ],
+      "size": [
+        0.22,
+        0.96
+      ],
+      "color": [
+        0.5,
+        0.45,
+        0.38
+      ],
+      "alpha": 0.6,
+      "softness": 0.03,
+      "noise": 0.35,
+      "noiseScale": 8,
+      "seed": 282
+    },
+    {
+      "shape": "stripes",
+      "at": [
+        0.25,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.94
+      ],
+      "period": 0.07,
+      "duty": 0.4,
+      "color": [
+        0.36,
+        0.32,
+        0.26
+      ],
+      "alpha": 0.75,
+      "noise": 0.3,
+      "noiseScale": 8,
+      "seed": 283
+    },
+    {
+      "shape": "stripes",
+      "at": [
+        0.75,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.94
+      ],
+      "period": 0.07,
+      "duty": 0.4,
+      "color": [
+        0.36,
+        0.32,
+        0.26
+      ],
+      "alpha": 0.75,
+      "noise": 0.3,
+      "noiseScale": 8,
+      "seed": 284
+    }
+  ]
+}

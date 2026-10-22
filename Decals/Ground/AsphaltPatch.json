@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Asphalt Patch",
+  "description": "A rectangular tarmac repair with a sealed seam, for roads and car parks.",
+  "author": "Call of Slop",
+  "size": [
+    2.4,
+    1.6
+  ],
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "surfaces": "floor",
+  "fadeDistance": 80,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.92,
+        0.88
+      ],
+      "color": [
+        0.32,
+        0.32,
+        0.32
+      ],
+      "softness": 0.01
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.86,
+        0.82
+      ],
+      "color": [
+        0.15,
+        0.15,
+        0.16
+      ],
+      "noise": 0.2,
+      "noiseScale": 14,
+      "seed": 261
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 30,
+      "width": 0.01,
+      "seed": 262,
+      "color": [
+        0.42,
+        0.42,
+        0.42
+      ],
+      "alpha": 0.7
+    }
+  ]
+}

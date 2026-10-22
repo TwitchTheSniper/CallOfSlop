@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Stop Line",
+  "description": "A thick white stop line across a lane.",
+  "author": "Call of Slop",
+  "size": [
+    3.5,
+    0.4
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 110,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.98,
+        0.8
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 421
+    }
+  ]
+}
