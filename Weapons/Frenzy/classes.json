@@ -1,0 +1,113 @@
+{
+  "format": "call-of-slop-frenzy-classes/1",
+  "classes": {
+    "Pistol": {
+      "music": {
+        "style": "Western outlaw",
+        "describe": "a whistled outlaw melody, a galloping twangy bass and a whip crack, the whole track in a canyon slap-back echo",
+        "pool": "classic",
+        "stems": { "drums": 1.0, "bass": 0.5, "lead": 0.75 },
+        "fx": { "slapMs": 120, "slapFeedback": 0.3, "slapMix": 0.3 },
+        "trim": 0.85,
+        "layers": [
+          { "voice": "twang", "pattern": "x..x..x.x..x..4.", "octave": 12, "level": 0.55, "from": 1 },
+          { "voice": "whip", "pattern": "............X...............X.x.", "level": 0.35, "from": 2, "reverb": 0.15 },
+          { "voice": "whistle", "pattern": "0-------4-------7---6-4-2-4-----4-------7---4-2-0-----------....", "octave": 36, "level": 0.3, "from": 3, "reverb": 0.25 }
+        ]
+      }
+    },
+    "SMG": {
+      "music": {
+        "style": "Chiptune breakcore",
+        "describe": "square-wave arpeggios racing up the chords over chopped breakbeats, the track a little crunchy",
+        "pool": "fast",
+        "stems": { "drums": 0.6, "bass": 1.0, "lead": 0.6 },
+        "fx": { "crushBits": 10, "crushHold": 2 },
+        "trim": 0.8,
+        "layers": [
+          { "voice": "breakkick", "pattern": "X.x.......Xx....", "level": 0.45, "from": 1 },
+          { "voice": "breaksnare", "pattern": "....X..g.g..X..r....X..g.gX...rr", "level": 0.4, "from": 1 },
+          { "voice": "chip", "pattern": "02470247024702479742974297429742", "octave": 24, "level": 0.2, "from": 2 },
+          { "voice": "chip", "pattern": "4.4.7.4.2.0.2.4.9.7.4.2.4-----..", "octave": 36, "level": 0.14, "from": 4 }
+        ]
+      }
+    },
+    "Assault Rifle": {
+      "music": {
+        "style": "Classic hardbass",
+        "describe": "the hardbass track as it is: pounding kick, bouncing bass, hoovers and chants",
+        "pool": "any"
+      }
+    },
+    "DMR": {
+      "music": {
+        "style": "Marching drums and brass",
+        "describe": "a tight marching snare with rolls and a bass drum on the downbeats, brass section stabs on top",
+        "pool": "any",
+        "stems": { "drums": 0.85, "bass": 1.0, "lead": 0.7 },
+        "trim": 0.85,
+        "layers": [
+          { "voice": "march", "pattern": "X.ggx.g.X.grx.g.X.ggx.g.XrXrX.r.", "level": 0.4, "from": 1, "reverb": 0.15 },
+          { "voice": "bassdrum", "pattern": "X.......x.......", "level": 0.4, "from": 2 },
+          { "voice": "brass", "pattern": "X.....x.....X...X.......x.x.X...", "octave": 24, "level": 0.3, "from": 3, "reverb": 0.2, "chord": [0, 2, 4] }
+        ]
+      }
+    },
+    "Sniper": {
+      "music": {
+        "style": "Cinematic braam",
+        "describe": "the four-on-the-floor pulled back under a half-time sub boom and a huge reverb snare, with a giant brass braam every two bars",
+        "pool": "slow",
+        "stems": { "drums": 0.35, "bass": 0.7, "lead": 0.75 },
+        "trim": 0.85,
+        "layers": [
+          { "voice": "boom", "pattern": "X...............", "level": 0.55, "from": 1 },
+          { "voice": "bigsnare", "pattern": "........X.......", "level": 0.45, "from": 2, "reverb": 0.6 },
+          { "voice": "braam", "pattern": "X-----------------------........", "octave": 12, "level": 0.45, "from": 3, "reverb": 0.4, "chord": [0, 4, 7] }
+        ]
+      }
+    },
+    "Shotgun": {
+      "music": {
+        "style": "Gabber stomp",
+        "describe": "a distorted gabber kick stomping through the track, with double hits at the end of every phrase, everything driven hard",
+        "pool": "harder",
+        "stems": { "drums": 0.45, "bass": 0.8, "lead": 0.85 },
+        "fx": { "drive": 1.2 },
+        "trim": 0.8,
+        "layers": [
+          { "voice": "gabber", "pattern": "X...X...X...X...X...X...X.x.X.XX", "level": 0.55, "from": 1 },
+          { "voice": "breaksnare", "pattern": "....X.......X...", "level": 0.25, "from": 3 }
+        ]
+      }
+    },
+    "LMG": {
+      "music": {
+        "style": "Industrial grind",
+        "describe": "palm-muted distorted power-chord chugs, metallic anvil clanks on the off-beats and a double kick at the top",
+        "pool": "any",
+        "stems": { "drums": 0.9, "bass": 0.55, "lead": 0.6 },
+        "fx": { "drive": 0.8 },
+        "trim": 0.85,
+        "layers": [
+          { "voice": "metal", "pattern": "xxx.xxx.xx.xXxx.xxx.xxx.x.x.X.X.", "octave": 12, "level": 0.35, "from": 1, "chord": [0, 4, 7] },
+          { "voice": "anvil", "pattern": "......X.......X.", "level": 0.3, "from": 2, "reverb": 0.2 },
+          { "voice": "breakkick", "pattern": "x.xxx.xxx.xxx.xx", "level": 0.3, "from": 4 }
+        ]
+      }
+    },
+    "Special": {
+      "music": {
+        "style": "Glitch weird",
+        "describe": "the track bit-crushed and stuttering in beat-repeat edits, random square blips squeaking around it",
+        "pool": "weird",
+        "stems": { "drums": 1.0, "bass": 1.0, "lead": 0.9 },
+        "fx": { "crushBits": 6, "crushHold": 3, "stutter": "......s.....S.s." },
+        "trim": 0.85,
+        "layers": [
+          { "voice": "glitch", "pattern": "z..z.z...zz..z.z", "octave": 36, "level": 0.18, "from": 2 }
+        ]
+      }
+    }
+  }
+}

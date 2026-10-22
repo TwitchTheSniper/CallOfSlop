@@ -331,6 +331,8 @@ public static class Weapons
             foreach (var file in Directory.GetFiles(Folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
                 var rel = Path.GetRelativePath(Folder, file);
+                if (rel.StartsWith("Frenzy" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                    continue; // Weapons/Frenzy holds the per-class frenzy data, not weapons
                 try
                 {
                     var w = WeaponFile.Load(File.ReadAllText(file), rel);
