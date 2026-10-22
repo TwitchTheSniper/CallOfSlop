@@ -240,7 +240,7 @@ public static class GunSamples
 
     public const float Ceiling = 0.97f;
 
-    /// <summary>Suppressed variants per weapon (the open shot gets one per recording).</summary>
+    /// <summary>Variants of a gun with a Suppressor attachment (fewer than the open shot's one per recording: quiet and short, and it halves the bake cost).</summary>
     public const int SuppressedVariants = 2;
 
     /// <summary>
@@ -256,7 +256,7 @@ public static class GunSamples
         if (w.Sound is not (SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed) || lib.SetFor(w) is not { } set)
             return [synth];
         if (w.Sound == SoundStyle.Suppressed)
-            return SuppressedFrom(set, w, synth);
+            return SuppressedFrom(set, w, synth, set.Shots.Count); // a built-in silencer is the gun's main sound: every variant
         var pitch = PitchFor(set, w);
         var blend = w.Sound == SoundStyle.Boom ? MathF.Max(set.SynthBlend, 0.45f) : set.SynthBlend;
         var len = TrimLength(set, w, pitch);
@@ -277,15 +277,15 @@ public static class GunSamples
     {
         if (w.Sound is not (SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed) || lib.SetFor(w) is not { } set)
             return [synthSuppressed];
-        return SuppressedFrom(set, w, synthSuppressed);
+        return SuppressedFrom(set, w, synthSuppressed, SuppressedVariants);
     }
 
-    private static short[][] SuppressedFrom(GunSampleLibrary.SampleSet set, WeaponDef w, short[] synthSuppressed)
+    private static short[][] SuppressedFrom(GunSampleLibrary.SampleSet set, WeaponDef w, short[] synthSuppressed, int variants)
     {
         var pitch = PitchFor(set, w) * 0.97f;
         var synthF = ToFloat(synthSuppressed);
         var len = Math.Max(synthF.Length, (int)(0.35f * Sr));
-        var outv = new short[Math.Min(SuppressedVariants, set.Shots.Count)][]; // fewer: suppressed shots are quiet and short
+        var outv = new short[Math.Min(variants, set.Shots.Count)][];
         for (var v = 0; v < outv.Length; v++)
         {
             var x = Resample(set.Shots[v], pitch, len);
