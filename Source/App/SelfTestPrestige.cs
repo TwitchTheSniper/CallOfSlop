@@ -211,6 +211,7 @@ public static partial class SelfTest
         scene.AddRoot(rig.Root);
         var now = 321.0;
         var topHat = Cosmetics.Get(HatId.TopHat)!.Height;
+        var tallest = 0f;
         var tall = Cosmetics.Get(HatId.TallTopHat)!.Height;
         if (topHat < 0.3f || tall < 3 * topHat || tall > 1.95f)
             Fail($"prestige: top hat {topHat:0.00} m, ridiculous top hat {tall:0.00} m (want 3-4x and under 2 m)");
@@ -237,30 +238,29 @@ public static partial class SelfTest
                 list.Submit(newG);
                 CompareDraws($"prestige {h.Name} {stance}", oldRec, newRec, parity);
 
-                // Sits on the head: centred over it, bottom near the top of the head.
+                // Sits on the head: measured in the head's own frame (the body leans and bobs with the legs), centred over
+                // it with its bottom near the top of the head box.
                 var node = rig.HatNode(stance switch { Stance.Crouch => 1, Stance.Prone => 2, _ => 0 });
-                if (!node.Visible || node.ChildCount != h.Boxes.Count)
+                if (!node.Visible || node.ChildCount != h.Boxes.Count || node.Parent is not { } head)
+                {
                     Fail($"prestige: {h.Name} {stance}: hat node visible {node.Visible}, {node.ChildCount} boxes");
+                    continue;
+                }
                 var (min, max) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
                 for (var i = 0; i < node.ChildCount; i++)
                     for (var c = 0; c < 8; c++)
                     {
-                        var v = Vector3.Transform(new Vector3((c & 1) - 0.5f, ((c >> 1) & 1) - 0.5f, ((c >> 2) & 1) - 0.5f), node.Child(i).World);
+                        var v = head.ToLocal(Vector3.Transform(new Vector3((c & 1) - 0.5f, ((c >> 1) & 1) - 0.5f, ((c >> 2) & 1) - 0.5f), node.Child(i).World));
                         (min, max) = (Vector3.Min(min, v), Vector3.Max(max, v));
                     }
-                var headTop = stance switch { Stance.Crouch => 1.2f, Stance.Prone => 0.49f, _ => World.PlayerHeight } + p.RenderPosition.Y;
+                var headTop = stance switch { Stance.Crouch => 0.35f, Stance.Prone => 0.38f, _ => World.PlayerHeight - World.HeadStart } / 2;
+                var center = (min + max) / 2;
+                if (min.Y < headTop - 0.26f || min.Y > headTop + 0.02f || MathF.Sqrt(center.X * center.X + center.Z * center.Z) > 0.15f + h.Height * 0.25f)
+                    Fail($"prestige: {h.Name} {stance} isn't on the head (bottom {min.Y - headTop:0.00} m from the head top, centre offset {center.X:0.00},{center.Z:0.00})");
+                if (h.Id == HatId.TallTopHat && stance == Stance.Stand && max.Y - headTop < 3 * topHat * 0.9f)
+                    Fail($"prestige: the ridiculous top hat only reaches {max.Y - headTop:0.00} m above the head");
                 if (stance == Stance.Stand)
-                {
-                    var center = (min + max) / 2 - p.RenderPosition;
-                    if (min.Y < headTop - 0.26f || min.Y > headTop + 0.05f || MathF.Sqrt(center.X * center.X + center.Z * center.Z) > 0.25f + h.Height * 0.2f)
-                        Fail($"prestige: {h.Name} isn't on the head (bottom {min.Y - p.RenderPosition.Y:0.00} m, head top {World.PlayerHeight}, offset {center.X:0.00},{center.Z:0.00})");
-                    if (h.Id == HatId.TallTopHat && max.Y - headTop < 3 * topHat * 0.9f)
-                        Fail($"prestige: the ridiculous top hat only reaches {max.Y - headTop:0.00} m above the head");
-                }
-                else if (max.Y < headTop)
-                {
-                    Fail($"prestige: {h.Name} {stance} is below the head top ({max.Y - p.RenderPosition.Y:0.00} vs {headTop - p.RenderPosition.Y:0.00})");
-                }
+                    tallest = MathF.Max(tallest, node.Child(0).World.Translation.Y - p.RenderPosition.Y);
             }
             p.Alive = false;
             oldRec.Reset();
@@ -301,7 +301,7 @@ public static partial class SelfTest
         list.Submit(newG);
         if (newRec.Count != bare + Cosmetics.Get(HatId.Beanie)!.Boxes.Count)
             Fail($"prestige: the beanie added {newRec.Count - bare} draws, want {Cosmetics.Get(HatId.Beanie)!.Boxes.Count}");
-        Line($"  models: hat parity {parity.Cases} poses, {parity.Draws} draws, worst {parity.Worst:0.0e0}, {parity.Bad} mismatching; top hat {topHat:0.00} m, ridiculous {tall:0.00} m ({tall / topHat:0.0}x); hidden in first person");
+        Line($"  models: hat parity {parity.Cases} poses, {parity.Draws} draws, worst {parity.Worst:0.0e0}, {parity.Bad} mismatching; top hat {topHat:0.00} m, ridiculous {tall:0.00} m ({tall / topHat:0.0}x); hidden in first person; standing hat boxes up to {tallest:0.00} m above the feet");
     }
 
     // ---- No gameplay effect ----
