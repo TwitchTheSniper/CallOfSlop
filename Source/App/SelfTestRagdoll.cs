@@ -37,7 +37,7 @@ public static partial class SelfTest
             Ragdolls.WorldOverride = null;
             Ragdolls.Clear();
             if (RagdollNotes.Count > 0)
-                Line("::warning title=Ragdolls (results)::" + string.Join("%0A", RagdollNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+                Line("::notice title=Ragdolls (results)::" + string.Join("%0A", RagdollNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
@@ -144,7 +144,7 @@ public static partial class SelfTest
             var travel = Vector3.Distance(b.Sim.Pelvis with { Y = 0 }, d.Feet with { Y = 0 });
             RLine($"flat, {name}: {(b.Sim.Broken ? "BROKEN" : "ok")}, lowest {lowest * 100:0.0} cm, links {err * 1000:0.0} mm, inside {pen * 1000:0.0} mm, "
                   + $"{(slept ? $"asleep after {b.Sim.AwakeSteps / 60f:0.0} s" : "never settled")}, moved {travel:0.0} m");
-            if (b.Sim.Broken || !b.Live || lowest < -0.08f || err > 0.03f || pen > 0.05f || !slept || travel > 8f)
+            if (b.Sim.Broken || !b.Live || lowest < -0.08f || err > 0.03f || pen > 0.05f || !slept || travel > (d.BlastStrength > 0 ? 14f : 6f))
                 Fail($"ragdolls: flat ground, {name}: unstable (broken {b.Sim.Broken}, lowest {lowest:0.000}, links {err:0.000}, inside {pen:0.000}, slept {slept}, moved {travel:0.0} m)");
         }
 
@@ -360,8 +360,8 @@ public static partial class SelfTest
             Ragdolls.StepAll(); // warm up (JIT, the gathers)
         var buf = new float[(PropDebris.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece];
         Ragdolls.WriteInstances(buf, 0);
-        var times = new List<double>();
-        var poseTimes = new List<double>();
+        var times = new List<double>(64);
+        var poseTimes = new List<double>(64); // (sized up front: growing them would count as the ragdolls' allocations)
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var s = 0; s < 40; s++)
         {

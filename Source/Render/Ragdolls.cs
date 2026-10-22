@@ -577,7 +577,7 @@ public static class Ragdolls
             if (f <= 0)
                 continue;
             var dir = dist > 0.05f ? to / dist : Vector3.UnitY;
-            sim.Push(i, Vector3.Normalize(dir + new Vector3(0, 0.5f, 0)) * (strength * 1.25f * (0.3f + 0.7f * f)));
+            sim.Push(i, Vector3.Normalize(dir + new Vector3(0, 0.5f, 0)) * (strength * (0.3f + 0.7f * f)));
         }
         body.CacheCount = -1;
         if (body.Hat != null && !body.HatOff)

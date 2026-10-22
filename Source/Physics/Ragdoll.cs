@@ -157,7 +157,7 @@ public sealed class Ragdoll
     public const int Iterations = 6;
 
     /// <summary>Most a particle may move in one sub-step (m); faster bodies take more sub-steps (up to <see cref="MaxSubSteps"/>).</summary>
-    public const float MaxStepMove = 0.07f;
+    public const float MaxStepMove = 0.1f;
 
     public const int MaxSubSteps = 6;
 
@@ -167,7 +167,10 @@ public sealed class Ragdoll
     /// <summary>Asleep after this many steps in a row with every particle slower than <see cref="SleepSpeed"/>.</summary>
     public const int SleepSteps = 30;
 
-    public const float SleepSpeed = 0.25f;
+    public const float SleepSpeed = 0.35f;
+
+    /// <summary>How far (m) a knee may bend backwards past straight before the knee rule pushes it back.</summary>
+    public const float KneeSlack = 0.01f;
 
     /// <summary>Forced to sleep after this many steps awake (s * 60), so a body jammed somewhere jittery stops costing.</summary>
     public const int MaxAwakeSteps = 60 * 9;
@@ -350,15 +353,20 @@ public sealed class Ragdoll
             Pos[l.A] = a + d * (wa * k2);
             Pos[l.B] = b - d * (wb * k2);
         }
-        // Knees bend forward only: each knee stays in front of the line from its hip to its foot.
+        // Knees bend forward only: a knee may not get more than KneeSlack behind the line from its hip to its foot. The fix
+        // moves the knee forward and the hip and foot back (momentum kept), so a straight leg lying on the floor isn't
+        // pushed into it every step (that fight kept bodies creeping and never asleep).
         var fwd = Forward();
         for (var side = 0; side < 2; side++)
         {
             int hip = RagdollRig.HipR + side, knee = RagdollRig.KneeR + side * 2, foot = RagdollRig.FootR + side * 2;
             var mid = (Pos[hip] + Pos[foot]) * 0.5f;
-            var ahead = Vector3.Dot(Pos[knee] - mid, fwd);
-            if (ahead < 0.02f)
-                Pos[knee] += fwd * (0.02f - ahead);
+            var behind = -KneeSlack - Vector3.Dot(Pos[knee] - mid, fwd);
+            if (behind <= 0)
+                continue;
+            Pos[knee] += fwd * (behind * (2f / 3f));
+            Pos[hip] -= fwd * (behind / 6f);
+            Pos[foot] -= fwd * (behind / 6f);
         }
     }
 
