@@ -6,34 +6,43 @@ namespace CallOfSlop;
 /// slowly for <see cref="HoldSeconds"/> after the last kill, then drains faster until it's gone. Dying wipes it. The
 /// heat maps to an intensity level 0 (off) to 6 with hysteresis, which <see cref="FrenzyLayer"/> turns into music.
 /// Decay is integrated exactly, so the result doesn't depend on the frame rate.
-/// Shared by the server and the client (moved here from Source/Audio/MusicFrenzy.cs, numbers unchanged): the server runs
-/// one per player from its kill events (Source/Game/Frenzy/FrenzyServer.cs) and replicates the level; the client's music
-/// meter (<see cref="FrenzyMeter"/>) is the same class, so the same kill sequence gives identical levels on both.
+/// Shared by the server and the client (moved here from Source/Audio/MusicFrenzy.cs): the server runs one per player
+/// from its kill events (Source/Game/Frenzy/FrenzyServer.cs) and replicates the level; the client's music meter
+/// (<see cref="FrenzyMeter"/>) is the same class, so the same kill sequence gives identical levels on both.
 /// Levels 1-4 are the music building up; 5 (FRENZY) is louder than any other music, 6 (MAX FRENZY) is as loud as the
-/// gunfire. Kills a second apart reach level 5 on the 9th kill and level 6 on the 15th; a kill every 2 s gets to 5
-/// on the 10th and 6 only on the 22nd; every 2.5 s or slower never reaches 6 (every 3 s gets to 5 after 14 kills).
+/// gunfire.
+/// Tuning (2026-10-22, "attainable even on smaller 8v8 maps"): it depends only on the kill pacing, not on the lobby or
+/// map size, and is set for the pace a strong player keeps on a small map (a kill every 4-8 s during a streak), so a
+/// small lobby isn't penalised. Kills needed (no headshots): a kill every 3 s or faster: level 4 on the 4th, 5 on the
+/// 6th, 6 (MAX FRENZY) on the 8th-10th; every 4 s: 5 on the 7th, 6 on the 13th; every 5 s: 5 on the 8th, 6 only on
+/// the 23rd; every 6 s: 4 on the 7th, never 5; every 8 s: 1 on the 2nd, 2 on the 3rd, 3 on the 6th and no higher;
+/// every 12 s or slower never starts it. A single kill never does. The pure-maths self-test pins these targets
+/// (SelfTestFrenzy.cs) and a Python replica of the model was used to tune it.
 /// </summary>
 public class FrenzyMeterCore
 {
-    /// <summary>Heat cap: about four fast kills past level 6, so a sustained spree holds the top for the full hold time.</summary>
-    public const float MaxHeat = 400f;
+    /// <summary>Heat cap: a couple of fast kills past level 6, so a sustained spree holds the top for the full hold time and a bit.</summary>
+    public const float MaxHeat = 240f;
 
     /// <summary>Heat for any kill, plus up to <see cref="FastBonus"/> for a follow-up within <see cref="FastGap"/> s (none after <see cref="SlowGap"/> s).</summary>
-    public const float BaseHeat = 6f, FastBonus = 14f, FastGap = 2f, SlowGap = 7f;
+    public const float BaseHeat = 8f, FastBonus = 14f, FastGap = 3f, SlowGap = 12f;
 
     /// <summary>Kills within <see cref="ChainWindow"/> s of each other form a chain; each link adds <see cref="ChainStep"/> more (up to 4 links).</summary>
-    public const float ChainWindow = 4f, ChainStep = 3f, HeadshotBonus = 3f;
+    public const float ChainWindow = 5f, ChainStep = 2f, HeadshotBonus = 3f;
 
     public const int MaxChainLinks = 4;
 
     /// <summary>Decay: exponential at <see cref="HoldDecay"/>/s for the hold, then <see cref="Decay"/>/s plus a linear <see cref="Drain"/>/s.</summary>
-    public const float HoldDecay = 0.04f, Decay = 0.07f, Drain = 3f, HoldSeconds = 5f;
+    public const float HoldDecay = 0.03f, Decay = 0.06f, Drain = 2f, HoldSeconds = 8f;
 
-    /// <summary>Zombies: kills come in hordes, so each is worth less and the hold is shorter.</summary>
-    public const float ZombieScale = 0.5f, ZombieHoldSeconds = 3.5f;
+    /// <summary>
+    /// Zombies: kills come in hordes, so each is worth less (0.4) and the hold is shorter (5 s): a kill a second takes
+    /// about 22 kills to MAX FRENZY, every 2 s about 40, so a horde doesn't max it instantly.
+    /// </summary>
+    public const float ZombieScale = 0.4f, ZombieHoldSeconds = 5f;
 
     /// <summary>Heat needed to reach levels 1-6, and the heat below which each level is left again (hysteresis).</summary>
-    public static readonly float[] Up = [12f, 30f, 52f, 85f, 200f, 330f], Down = [8f, 24f, 44f, 74f, 185f, 310f];
+    public static readonly float[] Up = [12f, 28f, 48f, 72f, 120f, 185f], Down = [8f, 22f, 42f, 64f, 110f, 170f];
 
     public const int MaxLevel = 6;
 

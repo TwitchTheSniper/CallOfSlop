@@ -156,14 +156,14 @@ public static partial class SelfTest
         if (!trace1.Contains('6') && !trace1.Contains('5'))
             Fail("the test spree never reached level 5 (the sequence proves little)");
 
-        // Zombies weighting: the shared meter's half-weight kills (unchanged numbers).
+        // Zombies weighting: the shared meter's reduced-weight kills (ZombieScale).
         var zm = new FrenzyMeterCore { Zombies = true };
         var pm = new FrenzyMeterCore();
         zm.OnKill(1, false);
         pm.OnKill(1, false);
         Line($"Zombies: a kill adds {zm.Heat:0.0} heat vs {pm.Heat:0.0} in PvP (x{FrenzyMeterCore.ZombieScale})");
         if (MathF.Abs(zm.Heat - pm.Heat * FrenzyMeterCore.ZombieScale) > 1e-3f)
-            Fail("Zombies kills should be worth half");
+            Fail("Zombies kills should be worth ZombieScale of a PvP kill");
 
         // ---- Class rule, buffs, heal, bots, grace, replication ----
         World.SetMap(Maps.All[0]);
