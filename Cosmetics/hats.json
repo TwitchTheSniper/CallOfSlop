@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-cosmetics/1",
+  "//": "Prestige hats (see README, Prestige). Model parts are boxes in head space: y = 0 is the top of the head, -z is the face, the head is 0.45 m square. shape \"box\" is one box; \"round\" is a round-ish solid made of \"sides\" boxes turned around the vertical axis. tiltX/tiltY/tiltZ are degrees. Colours are \"#rrggbb\".",
+  "hats": [
+    {
+      "id": "beanie", "name": "Beanie", "prestige": 1,
+      "parts": [
+        { "shape": "box", "at": [0, 0.025, 0], "size": [0.48, 0.17, 0.48], "color": "#8c2a2a" },
+        { "shape": "box", "at": [0, 0.125, 0], "size": [0.38, 0.05, 0.38], "color": "#8c2a2a" },
+        { "shape": "box", "at": [0, -0.055, 0], "size": [0.505, 0.075, 0.505], "color": "#6e1f1f" },
+        { "shape": "box", "at": [0, 0.035, 0], "size": [0.485, 0.012, 0.485], "color": "#a33a36" },
+        { "shape": "box", "at": [0, 0.18, 0], "size": [0.1, 0.08, 0.1], "color": "#e6e0d4" }
+      ]
+    },
+    {
+      "id": "baseball_cap", "name": "Baseball Cap", "prestige": 2,
+      "parts": [
+        { "shape": "box", "at": [0, 0.03, 0], "size": [0.48, 0.13, 0.48], "color": "#24418a" },
+        { "shape": "box", "at": [0, 0.11, 0.01], "size": [0.38, 0.05, 0.4], "color": "#24418a" },
+        { "shape": "box", "at": [0, -0.025, -0.335], "size": [0.4, 0.025, 0.2], "color": "#1b316a", "tiltX": -8 },
+        { "shape": "box", "at": [0, 0.033, -0.242], "size": [0.2, 0.08, 0.01], "color": "#e6e0d4" },
+        { "shape": "box", "at": [0, 0.145, 0.01], "size": [0.05, 0.03, 0.05], "color": "#1b316a" }
+      ]
+    },
+    {
+      "id": "fedora", "name": "Fedora", "prestige": 3,
+      "parts": [
+        { "shape": "round", "sides": 4, "at": [0, -0.012, 0], "size": [0.68, 0.022, 0.68], "color": "#4a3b2c", "tiltX": -4 },
+        { "shape": "round", "sides": 4, "at": [0, 0.07, 0.01], "size": [0.46, 0.17, 0.46], "color": "#5a4734" },
+        { "shape": "round", "sides": 4, "at": [0, 0.02, 0.01], "size": [0.475, 0.045, 0.475], "color": "#1c1a18" },
+        { "shape": "box", "at": [0, 0.165, 0.03], "size": [0.3, 0.03, 0.34], "color": "#5a4734" },
+        { "shape": "box", "at": [0, 0.172, 0.03], "size": [0.06, 0.03, 0.3], "color": "#3f3226" },
+        { "shape": "box", "at": [-0.12, 0.12, -0.2], "size": [0.06, 0.08, 0.04], "color": "#3f3226" },
+        { "shape": "box", "at": [0.12, 0.12, -0.2], "size": [0.06, 0.08, 0.04], "color": "#3f3226" }
+      ]
+    },
+    {
+      "id": "top_hat", "name": "Top Hat", "prestige": 4,
+      "parts": [
+        { "shape": "round", "sides": 4, "at": [0, -0.005, 0], "size": [0.64, 0.025, 0.64], "color": "#141416" },
+        { "shape": "round", "sides": 4, "at": [0, 0.2, 0], "size": [0.46, 0.4, 0.46], "color": "#18181b" },
+        { "shape": "round", "sides": 4, "at": [0, 0.05, 0], "size": [0.47, 0.07, 0.47], "color": "#6a1622" },
+        { "shape": "round", "sides": 4, "at": [0, 0.402, 0], "size": [0.44, 0.01, 0.44], "color": "#232327" }
+      ]
+    },
+    {
+      "id": "tall_top_hat", "name": "Ridiculous Top Hat", "prestige": 5, "wobble": 1,
+      "parts": [
+        { "shape": "round", "sides": 4, "at": [0, -0.005, 0], "size": [0.66, 0.025, 0.66], "color": "#141416" },
+        { "shape": "round", "sides": 4, "at": [0, 0.7, 0], "size": [0.46, 1.4, 0.46], "color": "#18181b" },
+        { "shape": "round", "sides": 4, "at": [0, 0.06, 0], "size": [0.47, 0.09, 0.47], "color": "#5b2a86" },
+        { "shape": "round", "sides": 4, "at": [0, 0.75, 0], "size": [0.465, 0.03, 0.465], "color": "#5b2a86" },
+        { "shape": "round", "sides": 4, "at": [0, 1.402, 0], "size": [0.44, 0.01, 0.44], "color": "#232327" },
+        { "shape": "box", "at": [0.16, 0.12, -0.2], "size": [0.05, 0.13, 0.02], "color": "#e0c060" }
+      ]
+    }
+  ]
+}

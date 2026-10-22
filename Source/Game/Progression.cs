@@ -20,6 +20,7 @@ public readonly record struct XpPopup(double Time, string Text, int Amount);
 ///   - A gun maxes out in 3-7 matches (more attachments = longer; see Attachments.MaxXp).
 ///   - A level costs about what it takes to get a gun ~60% kitted out, so the next weapon tends to
 ///     arrive as your current one is getting good, roughly every 2-3 matches.
+/// Prestige: at max level you can reset to level 1 for a hat (<see cref="DoPrestige"/>, up to <see cref="Cosmetics.MaxPrestige"/>).
 /// Saved to progress.txt next to the game.
 /// </summary>
 public sealed class Progress
@@ -37,6 +38,53 @@ public sealed class Progress
 
     public int Xp;
     public int Kills, Headshots, Matches, Wins;
+
+    /// <summary>
+    /// Prestige 0..<see cref="Cosmetics.MaxPrestige"/>: how many times you reset from max level. Cosmetic only: each one
+    /// unlocks a hat (<see cref="Cosmetics.HatForPrestige"/>), nothing else. Saved as "prestige=N" (old saves: 0).
+    /// </summary>
+    public int Prestige;
+
+    /// <summary>True at max level while there's a prestige left to take.</summary>
+    public bool CanPrestige => Level >= MaxLevel && Prestige < Cosmetics.MaxPrestige;
+
+    /// <summary>
+    /// Prestige (the CoD rule): back to level 1 with no account XP, and every gun's weapon XP cleared, so weapons,
+    /// grenades, equipment, perks, kill streaks, loadout slots and attachments all lock again and are earned again
+    /// (loadouts fall back to unlocked items on their own, <see cref="Loadouts.Effective"/>). Kept: the prestige hats
+    /// and the lifetime stats (kills, headshots, matches, wins). Returns false (and changes nothing) unless
+    /// <see cref="CanPrestige"/>.
+    /// </summary>
+    public bool DoPrestige(double now = -100)
+    {
+        if (!CanPrestige)
+            return false;
+        Prestige++;
+        Xp = 0;
+        _weaponXp.Clear();
+        Popups.Clear();
+        var hat = Cosmetics.Get(Cosmetics.HatForPrestige(Prestige));
+        LevelUpBanner = hat != null ? $"PRESTIGE {Prestige}!  Unlocked: {hat.Name}" : $"PRESTIGE {Prestige}!";
+        LevelUpTime = now;
+        AttachmentBanner = "";
+        AttachmentBannerTime = -100;
+        Save();
+        return true;
+    }
+
+    /// <summary>What the prestige confirmation says will happen (plain ASCII).</summary>
+    public string PrestigeSummary()
+    {
+        var next = Prestige + 1;
+        var hat = Cosmetics.Get(Cosmetics.HatForPrestige(next));
+        return $"Prestige {next}: unlocks the {hat?.Name ?? "next hat"}.\n\n"
+             + $"You go back to level 1 with 0 XP. Every weapon, grenade, equipment, perk, kill streak, loadout slot and "
+             + $"attachment locks again (weapon XP is cleared too) and you earn them again by levelling up.\n\n"
+             + $"You keep your hats (wear them from the loadout's cosmetics slot) and your lifetime stats. Hats are cosmetic only.";
+    }
+
+    /// <summary>"P2 L13" (or just "L13" before any prestige).</summary>
+    public static string RankLabel(int prestige, int level) => prestige > 0 ? $"P{prestige} L{level}" : $"L{level}";
 
     /// <summary>A scratch copy that never writes progress.txt (used by the automatic smoke test).</summary>
     public bool ReadOnly;
@@ -284,7 +332,7 @@ public sealed class Progress
             Popups.RemoveAt(0);
     }
 
-    /// <summary>Back to level 1 with no XP (Settings > Player > Reset level). Everything locks again.</summary>
+    /// <summary>Back to level 1 with no XP (Settings > Player > Reset level). Everything locks again; prestige and hats are kept.</summary>
     public void Reset()
     {
         Xp = 0;
@@ -340,6 +388,7 @@ public sealed class Progress
                 case "headshots": p.Headshots = v; break;
                 case "matches": p.Matches = v; break;
                 case "wins": p.Wins = v; break;
+                case "prestige": p.Prestige = Math.Clamp(v, 0, Cosmetics.MaxPrestige); break;
                 case var key when key.StartsWith("wx.") && key.Length > 3: p._weaponXp[key[3..]] = Math.Max(0, v); break;
                 case var key when key.StartsWith("wx") && Legacy(key[2..]) is { } name: legacyXp[name] = Math.Max(0, v); break;
                 // Older saves counted weapon kills: carry them over as weapon XP.
@@ -355,7 +404,7 @@ public sealed class Progress
 
     /// <summary>The lines progress.txt is saved as.</summary>
     public IEnumerable<string> ToLines() =>
-        [$"xp={Xp}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx.{kv.Key}={kv.Value}")];
+        [$"xp={Xp}", $"prestige={Prestige}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx.{kv.Key}={kv.Value}")];
 
     public void Save()
     {
