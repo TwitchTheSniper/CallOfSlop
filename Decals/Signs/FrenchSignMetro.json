@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "French Sign Metro",
+  "description": "A metro sign: amber lettering on a dark green enamel plate with a border.",
+  "author": "Call of Slop",
+  "size": [
+    1.6,
+    0.4
+  ],
+  "rotation": 0,
+  "tintVariation": 0.04,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "image": "FrenchMetro.png"
+}

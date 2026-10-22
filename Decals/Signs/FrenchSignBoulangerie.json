@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "French Sign Boulangerie",
+  "description": "Gilded shop-front lettering in French for a bakery (for a fascia board).",
+  "author": "Call of Slop",
+  "size": [
+    3.2,
+    0.533
+  ],
+  "rotation": 0,
+  "tintVariation": 0.04,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "image": "FrenchBoulangerie.png"
+}
