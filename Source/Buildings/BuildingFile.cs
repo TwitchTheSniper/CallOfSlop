@@ -320,8 +320,8 @@ public static class BuildingFile
         var a = new BAutoWindows();
         if (Get(e, "spacing") is { } s) a.Spacing = Range(Num(s, w), 1.5f, 20f, $"{w}: spacing");
         if (Get(e, "width") is { } wd) a.Width = Range(Num(wd, w), 0.4f, 6f, $"{w}: width");
-        if (Get(e, "sill") is { } si) a.Sill = Range(Num(si, w), 0f, 4f, $"{w}: sill");
-        if (Get(e, "head") is { } he) a.Head = Range(Num(he, w), 0.5f, 7f, $"{w}: head");
+        if (Get(e, "sill") is { } si) a.Sill = Range(Num(si, w), 0f, 8f, $"{w}: sill");
+        if (Get(e, "head") is { } he) a.Head = Range(Num(he, w), 0.5f, 9f, $"{w}: head");
         if (Get(e, "health") is { } hp) a.Health = Whole(hp, w, 1, 5000);
         if (a.Head <= a.Sill + 0.3f)
             throw new BuildingFileException($"{w}: \"head\" must be at least 0.3 m above \"sill\"");

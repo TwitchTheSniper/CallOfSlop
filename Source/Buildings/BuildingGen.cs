@@ -377,7 +377,7 @@ internal sealed partial class BuildingGenerator
         var along = seg.AlongX ? o.X : o.Z;
         var half = o.Width / 2;
         var margin = _t / 2 + 0.05f;
-        if (along - half < seg.A + margin || along + half > seg.B - margin)
+        if (along - half < seg.A + margin - 0.001f || along + half > seg.B - margin + 0.001f) // (a millimetre's grace for rounding)
             return soft ? false : throw new BuildingFileException($"{w}: {o.Width:0.##} m wide doesn't fit its wall ({seg.A:0.##} to {seg.B:0.##}, minus {margin:0.##} m at each end)");
         var bottom = o.Kind is OpeningKind.Door or OpeningKind.Arch ? 0f : o.Bottom;
         var top = o.Top > 0 ? o.Top : _def.DoorHeight;
@@ -387,7 +387,7 @@ internal sealed partial class BuildingGenerator
         if (top < bottom + 0.3f)
             return soft ? false : throw new BuildingFileException($"{w}: \"head\" must be at least 0.3 m above \"sill\"");
         foreach (var h in seg.Holes)
-            if (along - half < h.B + 0.1f && along + half > h.A - 0.1f)
+            if (along - half < h.B + 0.099f && along + half > h.A - 0.099f)
                 return soft ? false : throw new BuildingFileException($"{w}: overlaps another opening in the same wall");
         seg.Holes.Add((along - half, along + half, bottom, top));
         _openings.Add(new Attached(o, seg, f, along, bottom, top));

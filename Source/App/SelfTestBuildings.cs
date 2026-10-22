@@ -284,7 +284,7 @@ public static partial class SelfTest
         if (Vector3.Dot(mid - yard.PlacedBuildings[w.Building].Plan.Bounds.Center, n) > 0)
             n = -n;
         var from = mid - n * 1.5f;
-        var bodyAt = new Vector3(mid.X, g.Min.Y + 0.05f, mid.Z);
+        var bodyAt = new Vector3(mid.X, g.Min.Y + 0.05f, mid.Z) - n * 0.2f; // in the window, a little outside (clear of anything under it indoors)
         var bodyH = MathF.Min(1.0f, g.Max.Y - g.Min.Y - 0.1f);
         var bodyBlocked = World.Blocked(bodyAt, bodyH);
         var shotDist = World.Query.Raycast(from, n, 3f, QueryFilter.Shots);
@@ -305,12 +305,27 @@ public static partial class SelfTest
             Fail("a bullet didn't shatter the window (or the empty frame still blocks)");
         if (yard.ContentHash != hash)
             Fail("breaking a window changed the map's fingerprint");
-        // A broken ground-floor window is a mantle: walk at it from outside and climb through.
-        var sill = w.Plan.Sill;
-        var outside = new Vector3(mid.X, yard.PlacedBuildings[w.Building].Plan.BaseY, mid.Z) - n * 0.9f;
-        var through = MantleThrough(outside, n, 1.6f);
-        Line($"climbing through the empty frame (sill {sill:0.00} m): got through {through}");
-        if (sill <= 1.2f && !through)
+        // A broken ground-floor window is a mantle: walk at it from outside and climb through. (Furniture just inside can be in
+        // the way of one window, so the Small Houses' first few low windows are tried; at least one must work.)
+        var tried = 0;
+        var climbed = 0;
+        foreach (var b in yard.PlacedBuildings.Where(b => b.Def.Name == "Small House"))
+            for (var k = b.WindowStart; k < b.WindowStart + b.WindowCount && tried < 6; k++)
+            {
+                var wk = yard.BuildingWindows[k];
+                var gk = wk.Plan.Glass;
+                if (!wk.Plan.Exterior || wk.Plan.Sill > 1.2f || MathF.Max(gk.Half.X, gk.Half.Z) * 2 < 1.0f)
+                    continue;
+                yard.BreakBuildingWindow(k);
+                var nk = gk.Half.X < gk.Half.Z ? Vector3.UnitX : Vector3.UnitZ;
+                if (Vector3.Dot(gk.Center - b.Plan.Bounds.Center, nk) > 0)
+                    nk = -nk;
+                tried++;
+                if (MantleThrough(new Vector3(gk.Center.X, b.Plan.BaseY, gk.Center.Z) - nk * 0.9f, nk, 1.6f))
+                    climbed++;
+            }
+        Line($"climbing in through empty ground-floor window frames (sill 0.9, 1.3 m tall): {climbed} of {tried} windows tried");
+        if (climbed == 0)
             Fail("a player can't climb through a broken ground-floor window");
         // A grenade shatters every window in reach that has no wall in between.
         var j = FindWindow(yard, "Corner Shop");

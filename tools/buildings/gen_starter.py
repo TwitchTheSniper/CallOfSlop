@@ -247,7 +247,7 @@ def apartments():
     common = {"autoWindows": {"spacing": 2.5, "width": 1.3, "sill": 0.9, "head": 2.2}}
     ground = dict(common, rooms=[hall] + flat("w_", 1) + flat("e_", -1),
                   openings=[door(0, 5, 1.2, front=True, material="metal", color="$door"), door(0, -5, 1.0, material="metal", color="$door")]
-                  + flat_doors(1) + flat_doors(-1) + [win(0, 5 if False else -5, 1.0) if False else win(-1.0, 5, 0.6, sill=1.0, head=2.2)])
+                  + flat_doors(1) + flat_doors(-1) + [win(0, 5 if False else -5, 1.0) if False else win(-1.2, 5, 0.6, sill=1.0, head=2.2)])
     upper = dict(common, repeat=True, rooms=[dict(hall)] + flat("w_", 1) + flat("e_", -1),
                  openings=flat_doors(1) + flat_doors(-1) + [win(0, 5, 1.6), win(0, -5, 1.6), door(-5, 5, 0.9), door(5, 5, 0.9, hinge="right")])
     B("Apartment Block", "ApartmentBlock",

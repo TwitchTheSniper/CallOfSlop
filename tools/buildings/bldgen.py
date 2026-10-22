@@ -126,11 +126,17 @@ class PropDef:
         return self.name if self.pack is None else self.pack + "/" + self.name
 
 
+def re_strip(f):
+    return f
+
+
 def load_prop_dir(folder, pack=None):
     out = {}
     for f in sorted(glob.glob(os.path.join(folder, "**/*.json"), recursive=True)):
         try:
-            d = json.load(open(f))
+            d = json.load(open(re_strip(f)))
+            if not isinstance(d, dict) or "parts" not in d or "name" not in d:
+                continue  # not a prop file (e.g. Props/Flags/flags.json)
             p = PropDef(d, f, pack)
             out[p.name.lower()] = p
         except Exception as ex:  # noqa: BLE001
@@ -801,7 +807,7 @@ class Generator:
         along = o["x"] if seg.along_x else o["z"]
         half = o["width"] / 2
         margin = self.t / 2 + 0.05
-        if along - half < seg.a + margin or along + half > seg.b - margin:
+        if along - half < seg.a + margin - 0.001 or along + half > seg.b - margin + 0.001:
             if soft:
                 return False
             raise BuildingError(f"{w}: {o['width']} m wide doesn't fit its wall ({seg.a:.2f} to {seg.b:.2f}, minus {margin:.2f} m at each end)")
@@ -817,7 +823,7 @@ class Generator:
                 return False
             raise BuildingError(f"{w}: head must be at least 0.3 m above sill")
         for h in seg.holes:
-            if along - half < h[1] + 0.1 and along + half > h[0] - 0.1:
+            if along - half < h[1] + 0.099 and along + half > h[0] - 0.099:
                 if soft:
                     return False
                 raise BuildingError(f"{w}: overlaps another opening in the same wall")
