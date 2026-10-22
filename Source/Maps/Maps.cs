@@ -456,6 +456,7 @@ public static partial class Maps
         var old = _all ?? [];
         LoadErrors.Clear();
         Props.Reload(); // maps place props from the library, so it's re-read first
+        Decals.Reload(); // and decals (Source/Decals)
         Buildings.Reload(); // and buildings from the Buildings folder
         var fresh = LoadAll();
         _all = fresh;

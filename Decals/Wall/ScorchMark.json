@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Scorch Mark",
+  "description": "Soot from a fire or blast, for walls and floors.",
+  "author": "Call of Slop",
+  "size": 2.4,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "all",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.4,
+      "count": 12,
+      "jag": 0.5,
+      "seed": 81,
+      "color": [
+        0.45,
+        0.43,
+        0.4
+      ],
+      "alpha": 0.8,
+      "softness": 0.2,
+      "noise": 0.3,
+      "noiseScale": 6
+    },
+    {
+      "shape": "splat",
+      "radius": 0.2,
+      "count": 8,
+      "jag": 0.5,
+      "seed": 82,
+      "color": [
+        0.12,
+        0.11,
+        0.1
+      ],
+      "alpha": 0.8,
+      "softness": 0.12
+    }
+  ]
+}

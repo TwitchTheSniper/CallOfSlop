@@ -52,6 +52,8 @@
     <None Update="Audio\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Cosmetics catalog (prestige hats): Cosmetics\hats.json (see README, Prestige). -->
     <None Update="Cosmetics\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Decals for the Decal / DecalScatter map ops and bullet impacts: one JSON file each, in category folders (see Decals\README.md). -->
+    <None Update="Decals\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
