@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dining",
+  "description": "Farmhouse dining room: a big table for Sunday dinner, a dresser of plates, a clock.",
+  "items": [
+    {"id": "table", "props": ["Farmhouse Farm Table"], "place": "centre"},
+    {"props": ["Dining Chair"], "place": "around", "of": "table", "count": [5, 6]},
+    {"props": ["Stacked Plates"], "place": "on", "of": "table", "y": 0.75, "chance": 0.8},
+    {"id": "dresser", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Stacked Plates", "Table Lamp"], "place": "on", "of": "dresser"},
+    {"props": ["Grandfather Clock", "Large Flower Pot"], "place": "corner"},
+    {"props": ["Farmhouse Preserves Shelf"], "place": "wall", "chance": 0.5},
+    {"props": ["Striped Rug"], "place": "floor", "chance": 0.4}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Mobile home living room: a plaid sofa, a recliner aimed at the TV, a wood stove, beer cans and laundry.",
+  "items": [
+    {"id": "sofa", "props": ["Mobile Home Plaid Sofa"], "place": "wall", "prefer": "far"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.35},
+    {"props": ["Mobile Home Beer Cans", "Newspaper"], "place": "on", "of": "table", "y": 0.45},
+    {"props": ["Mobile Home Wood Stove"], "place": "wall"},
+    {"props": ["Mobile Home Recliner"], "place": "corner"},
+    {"props": ["Flickering TV", "CRT Television"], "place": "corner"},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.6},
+    {"props": ["Mobile Home Beer Cans", "Laundry Basket", "Dog", "Newspaper", "Litter"], "place": "floor", "count": [2, 3]}
+  ]
+}

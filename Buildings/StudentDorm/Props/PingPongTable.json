@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Ping Pong Table",
+  "description": "A green ping pong table with a sagging net, two bats and a ball.",
+  "collision": "solid",
+  "collider": [{"size": [2.74, 0.76, 1.52]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.74, 0.04, 1.52], "offset": [0, 0.74, 0], "color": "#1f6a3a"},
+    {"size": [2.74, 0.005, 0.02], "offset": [0, 0.7635, 0], "color": "white"},
+    {"size": [0.02, 0.005, 1.52], "offset": [0, 0.7635, 0], "color": "white"},
+    {"size": [0.02, 0.15, 1.6], "offset": [0, 0.835, 0], "color": "#e8e8e8"},
+    {"size": [0.06, 0.72, 0.06], "offset": [-1.2, 0.36, -0.6], "color": "#3a3a3a"},
+    {"size": [0.06, 0.72, 0.06], "offset": [1.2, 0.36, -0.6], "color": "#3a3a3a"},
+    {"size": [0.06, 0.72, 0.06], "offset": [-1.2, 0.36, 0.6], "color": "#3a3a3a"},
+    {"size": [0.06, 0.72, 0.06], "offset": [1.2, 0.36, 0.6], "color": "#3a3a3a"},
+    {"size": [0.16, 0.02, 0.26], "offset": [-0.8, 0.77, 0.3], "color": "#c8302a"},
+    {"size": [0.16, 0.02, 0.26], "offset": [0.9, 0.77, -0.4], "color": "#c8302a"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.3, 0.78, 0.2], "color": "#f0a020"}
+  ]
+}

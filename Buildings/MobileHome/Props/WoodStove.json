@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mobile Home Wood Stove",
+  "description": "A squat black wood stove on a tin heat shield, a flue going up through the ceiling.",
+  "collision": "solid",
+  "collider": [{"size": [0.56, 0.72, 0.52], "offset": [0, 0.36, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.9, 0.02, 0.9], "offset": [0, 0.01, 0], "color": "#a8a8a0"},
+    {"size": [0.55, 0.6, 0.5], "offset": [0, 0.4, 0], "color": "#1e1e22", "material": "metal"},
+    {"size": [0.06, 0.1, 0.06], "offset": [-0.2, 0.05, 0.18], "color": "#1e1e22"},
+    {"size": [0.06, 0.1, 0.06], "offset": [0.2, 0.05, 0.18], "color": "#1e1e22"},
+    {"size": [0.06, 0.1, 0.06], "offset": [-0.2, 0.05, -0.18], "color": "#1e1e22"},
+    {"size": [0.06, 0.1, 0.06], "offset": [0.2, 0.05, -0.18], "color": "#1e1e22"},
+    {
+      "size": [0.3, 0.22, 0.02],
+      "offset": [0, 0.35, 0.26],
+      "color": "#ff6a1a",
+      "anim": {"type": "flicker", "rate": 7, "duty": 0.8, "color": "#ff7a20", "off": "#6a2408", "glow": 1.2}
+    },
+    {"size": [0.14, 1.35, 0.14], "offset": [0, 1.375, -0.12], "color": "#2a2a2e"}
+  ]
+}

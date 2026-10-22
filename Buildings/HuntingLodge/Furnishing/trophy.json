@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "trophy",
+  "description": "Hunting lodge trophy room: gun cabinets, mounted heads on every wall, a card table and leather armchairs.",
+  "items": [
+    {"props": ["Hunting Lodge Gun Rack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Hunting Lodge Deer Mount"], "place": "wall", "count": [2, 3]},
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [2, 4]},
+    {"props": ["Book Pile", "Bottles"], "place": "on", "of": "t", "y": 0.75},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Hunting Lodge Bear Rug"], "place": "floor", "chance": 0.5}
+  ]
+}

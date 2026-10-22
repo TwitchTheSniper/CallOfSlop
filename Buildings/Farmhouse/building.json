@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Farmhouse",
+  "theme": "1900s Midwestern farmhouse: white clapboard, forest-green trim and shutters, a red tin roof and a wraparound porch; a cast-iron range, preserves, patchwork quilts and plain pine furniture",
+  "category": "residential",
+  "description": "A two-storey farmhouse: hall and stairs, parlour, dining room, a big farm kitchen, pantry and mudroom downstairs; three bedrooms, a sewing room and the bathroom upstairs; a front porch with milk cans, chickens and hay outside.",
+  "author": "Call of Slop",
+  "seed": 101,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.9,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "white clapboard": {"wall": "#ece8dc", "interior": "#efe2c0", "floor": "#8a603a", "ceiling": "#f4efe2", "trim": "#2f5a36", "door": "#8a2a22", "roof": "#9a2c22"},
+    "barn red": {"wall": "#9a3a2c", "interior": "#eadcb8", "floor": "#7a5634", "ceiling": "#f2ecdc", "trim": "#ece8dc", "door": "#2f5a36", "roof": "#5a5e62"},
+    "weathered grey": {"wall": "#a8a49a", "interior": "#e4dcc4", "floor": "#6e5438", "ceiling": "#efe9da", "trim": "#4a4a44", "door": "#3a5a7a", "roof": "#7a3a2a"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.4, "width": 1.0, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "hall", "type": "hall", "rect": [-1.5, 0, 1.5, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "parlour", "type": "living", "rect": [-6, 0, -1.5, 5]},
+        {"id": "dining", "type": "dining", "rect": [1.5, 0, 6, 5]},
+        {"id": "kitchen", "type": "kitchen", "rect": [-1.5, -5, 6, 0], "floor": {"color": "#b8a888", "material": "tiles"}, "wall": "#efe6c8"},
+        {"id": "mudroom", "type": "mudroom", "rect": [-6, -5, -1.5, -2], "floor": {"color": "#8a8070", "material": "tiles"}},
+        {"id": "pantry", "type": "pantry", "rect": [-6, -2, -1.5, 0], "floor": {"color": "#8a8070", "material": "tiles"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-0.5, 5], "width": 1.0, "front": true, "color": "$door"},
+        {"type": "door", "at": [-1.5, 2.5], "width": 0.9},
+        {"type": "door", "at": [-0.6, 0], "width": 0.9},
+        {"type": "door", "at": [3.75, 0], "width": 1.0},
+        {"type": "door", "at": [-1.5, -3.5], "width": 0.9},
+        {"type": "door", "at": [-3.75, -2], "width": 0.9},
+        {"type": "door", "at": [-3.75, -5], "width": 0.9, "color": "$door"}
+      ]
+    },
+    {
+      "height": 2.8,
+      "autoWindows": {"spacing": 2.4, "width": 1.0, "sill": 0.9, "head": 2.1},
+      "rooms": [
+        {"id": "landing", "type": "corridor", "rect": [-1.5, -2.5, 1.5, 5]},
+        {"id": "master", "type": "bedroom", "rect": [-6, 0.5, -1.5, 5]},
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [-6, -5, -1.5, 0.5],
+          "floor": {"color": "#d8d8d0", "material": "tiles"},
+          "wall": "#dfeee8",
+          "autoWindows": {"spacing": 2.2, "width": 0.8, "sill": 1.3, "head": 2.1}
+        },
+        {"id": "bed2", "type": "bedroom", "rect": [1.5, -0.5, 6, 5]},
+        {"id": "kids", "type": "kidsroom", "rect": [1.5, -5, 6, -0.5]},
+        {"id": "sewing", "type": "sewing", "rect": [-1.5, -5, 1.5, -2.5]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, 3.0], "width": 0.9},
+        {"type": "door", "at": [-1.5, -1.0], "width": 0.9},
+        {"type": "door", "at": [1.5, 0.2], "width": 0.9},
+        {"type": "door", "at": [1.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [0, -2.5], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [0.35, 1.0, 1.35, 3.9], "dir": "-z", "color": {"color": "$floor", "material": "wood"}}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 38, "overhang": 0.45, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {"type": "porch", "rect": [-6.4, 5.13, 6.4, 7.2], "height": 2.6, "color": "$trim"},
+    {"type": "block", "min": [-4.9, 6.0, -2.6], "max": [-4.1, 9.8, -1.8], "color": {"color": "#8a4a36", "material": "brick"}},
+    {"type": "prop", "name": "Farmhouse Milk Can", "at": [3.0, 6.4], "yaw": 10},
+    {"type": "prop", "name": "Rocking Chair", "at": [-3.8, 6.2], "yaw": 0},
+    {"type": "prop", "name": "Rocking Chair", "at": [-2.5, 6.3], "yaw": 15},
+    {"type": "prop", "name": "Hay Bale", "at": [8.2, 3.0], "yaw": 90},
+    {"type": "prop", "name": "Hay Bale", "at": [8.3, 1.8], "yaw": 85},
+    {"type": "prop", "name": "Hay Bale", "at": [8.25, 0.51, 2.4], "yaw": 90},
+    {"type": "prop", "name": "Chicken", "at": [7.8, -1.0], "yaw": 40},
+    {"type": "prop", "name": "Chicken", "at": [8.6, -2.2], "yaw": 200},
+    {"type": "prop", "name": "Chicken", "at": [7.4, -3.0], "yaw": 120},
+    {"type": "prop", "name": "Wheelbarrow", "at": [-7.6, -3.5], "yaw": 30},
+    {"type": "prop", "name": "Weather Vane", "at": [2.5, 0, 0], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Mailbox", "at": [5.5, 9.0], "yaw": 0},
+    {"type": "prop", "name": "Picket Fence", "at": [-4.0, 9.4], "yaw": 0},
+    {"type": "prop", "name": "Picket Fence", "at": [-2.0, 9.4], "yaw": 0},
+    {"type": "prop", "name": "Picket Fence", "at": [2.0, 9.4], "yaw": 0},
+    {"type": "prop", "name": "Picket Fence", "at": [4.0, 9.4], "yaw": 0},
+    {"type": "prop", "name": "Watering Can", "at": [-6.9, -5.7], "yaw": 70}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "kitchen", "at": [3.0, -2.5]},
+    {"type": "spawn", "name": "master bedroom", "floor": 1, "at": [-3.8, 3.0]},
+    {"type": "point", "name": "porch", "at": [0.0, 6.2]}
+  ]
+}

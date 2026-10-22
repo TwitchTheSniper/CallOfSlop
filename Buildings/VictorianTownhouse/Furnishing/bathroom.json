@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bathroom",
+  "description": "Victorian bathroom: a roll-top clawfoot bath, a pedestal basin and a high-cistern WC.",
+  "items": [
+    {"props": ["Victorian Townhouse Clawfoot Tub"], "place": "wall", "prefer": "far"},
+    {"props": ["Toilet"], "place": "wall"},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Standing Mirror", "Coat Stand"], "place": "corner"},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.6},
+    {"props": ["Rubber Duck", "Laundry Basket"], "place": "floor", "chance": 0.6}
+  ]
+}

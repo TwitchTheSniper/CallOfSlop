@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "larder",
+  "description": "Hunting lodge larder: game freezers, shelves of jars and tins, sacks of flour and potatoes.",
+  "items": [
+    {"props": ["Hunting Lodge Game Freezer"], "place": "wall", "count": [1, 2]},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Potato Sacks", "Wooden Crate", "Apple Crate"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Bucket"], "place": "floor", "count": [0, 2]}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Modern Villa Media Wall",
+  "description": "A long floating walnut media unit with a huge flat-screen TV above it and a soundbar.",
+  "collision": "solid",
+  "collider": [{"size": [2.6, 0.65, 0.45]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 180, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.6, 0.4, 0.45], "offset": [0, 0.45, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [2.0, 1.1, 0.06], "offset": [0, 1.45, -0.15], "color": "#1c1c1e"},
+    {
+      "size": [1.9, 1.0, 0.01],
+      "offset": [0, 1.45, -0.115],
+      "color": "#2a4a7a",
+      "anim": {"type": "flicker", "rate": 2, "duty": 0.9, "color": "#4a7ac0", "glow": 0.7}
+    },
+    {"size": [1.0, 0.08, 0.1], "offset": [0, 0.71, 0.05], "color": "#2a2a2a"}
+  ]
+}

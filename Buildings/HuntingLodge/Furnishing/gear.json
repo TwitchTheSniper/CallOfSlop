@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "gear",
+  "description": "Hunting lodge gear room: boots and coats by the back door, lockers, decoys, ammo boxes and a workbench.",
+  "items": [
+    {"props": ["Metal Lockers"], "place": "wall"},
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Toolbox", "Duck Decoy", "Book Pile"], "place": "on", "of": "bench", "y": 0.75, "count": [1, 2]},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Duck Decoy", "Backpack", "Duffel Bag", "Jerry Can", "Small Crate"], "place": "floor", "count": [2, 4]}
+  ]
+}

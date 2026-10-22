@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Beach bungalow bedroom: a white bed, rattan chair, wardrobe, a suitcase and beach bags.",
+  "items": [
+    {"id": "bed", "props": ["Double Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bs", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bs", "y": 0.6},
+    {"props": ["Wardrobe"], "place": "wall"},
+    {"props": ["Beach Bungalow Rattan Chair"], "place": "corner"},
+    {"props": ["Striped Rug"], "place": "centre"},
+    {"props": ["Suitcase", "Duffel Bag", "Backpack"], "place": "floor", "count": [1, 2]},
+    {"props": ["Ceiling Fan"], "place": "ceiling"}
+  ]
+}

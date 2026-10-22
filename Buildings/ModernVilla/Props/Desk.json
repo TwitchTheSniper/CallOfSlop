@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Modern Villa Desk",
+  "description": "A white floating desk with an iMac-style screen, a desk lamp and an orchid.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.78, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.6, 0.04, 0.7], "offset": [0, 0.76, 0], "color": "#f4f4f0"},
+    {"size": [0.04, 0.74, 0.66], "offset": [-0.78, 0.37, 0], "color": "#f4f4f0"},
+    {"size": [0.04, 0.74, 0.66], "offset": [0.78, 0.37, 0], "color": "#f4f4f0"},
+    {"size": [0.6, 0.38, 0.03], "offset": [0, 1.07, -0.15], "color": "#d8d8d8"},
+    {"size": [0.56, 0.32, 0.01], "offset": [0, 1.08, -0.135], "color": "#3a5a8a"},
+    {"size": [0.08, 0.1, 0.08], "offset": [0, 0.83, -0.18], "color": "#d8d8d8"},
+    {"size": [0.12, 0.3, 0.12], "offset": [0.6, 0.93, -0.1], "color": "#f0f0f0"},
+    {"size": [0.1, 0.12, 0.1], "offset": [0.6, 1.14, -0.1], "color": "#e070c0"}
+  ]
+}
