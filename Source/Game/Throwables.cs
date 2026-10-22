@@ -10,6 +10,16 @@ public enum ThrowableKind : byte
     Impact, // explodes on first contact, smaller blast
     Smoke, // pops a cloud that blocks vision (and bots' line of sight)
     Recon, // equipment: sticks where it lands and reveals nearby enemies to its owner through walls
+
+    // Tactical equipment added later (TacticalGear.cs, GameTactical.cs): appended so saved names and packet bytes never move.
+    Flash, // thrown: blinds and deafens whoever faces it
+    Stun, // thrown, goes off on contact: slows movement, turning and aiming
+    Decoy, // thrown: fake gunfire and a fake name tag where it lands
+    MotionSensor, // thrown, sticks: pings enemies moving nearby to its owner's team
+    Trophy, // placed: shoots down incoming grenades (limited charges)
+    Cover, // placed: an energy wall that stops bullets and blasts
+    Insertion, // placed: your next spawn point
+    Stim, // used on yourself: instant heal and a short regen boost
 }
 
 public sealed class ThrowableDef
@@ -26,7 +36,7 @@ public sealed class ThrowableDef
     public float Falloff = 1.4f;
     public int PerLife;
     public Vector3 Color;
-    public bool IsEquipment => Kind == ThrowableKind.Recon;
+    public bool IsEquipment => Kind == ThrowableKind.Recon || Kind >= ThrowableKind.Flash; // every tactical item goes in the Equipment slot
 }
 
 public static class Throwables
@@ -58,6 +68,7 @@ public static class Throwables
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
             Fuse = 8f, Radius = 18f, PerLife = 1, Color = new(0.2f, 0.85f, 0.95f) },
+        .. TacticalGear.Defs, // Flashbang .. Stim, in enum order (TacticalGear.cs)
     ];
 
     /// <summary>Blast damage at <paramref name="dist"/> metres from the centre (before the self and prone multipliers).</summary>
@@ -179,7 +190,7 @@ public static class Throwables
     /// <summary>Does a projectile go off now? <paramref name="age"/> in seconds, <paramref name="touched"/> this tick, <paramref name="landed"/> ever.</summary>
     public static bool GoesOff(ThrowableDef def, double age, bool touched, bool landed) => def.Kind switch
     {
-        ThrowableKind.Impact or ThrowableKind.Recon => touched || age > def.Fuse,
+        ThrowableKind.Impact or ThrowableKind.Recon or ThrowableKind.Stun or ThrowableKind.Decoy or ThrowableKind.MotionSensor => touched || age > def.Fuse,
         ThrowableKind.Smoke => (age >= def.Fuse && landed) || age >= SmokeMaxFlight,
         _ => age >= def.Fuse,
     };
@@ -404,6 +415,11 @@ public sealed partial class Game
         else
             return; // not in their loadout, or none left
         p.NextThrow = now + 0.7;
+        if (TacticalGear.UseOf(kind) != TacticalUse.Thrown)
+        {
+            ServerUseTactical(p, kind, dir, now); // placed devices and the stim (GameTactical.cs)
+            return;
+        }
 
         if (Vector3.Distance(origin, p.Eye) > 3f || !float.IsFinite(origin.X + origin.Y + origin.Z))
             origin = p.Eye;
@@ -475,6 +491,8 @@ public sealed partial class Game
                 // Walls shield you from the blast.
                 if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
                     continue;
+                if (CoverBlocks(center, victim.Chest))
+                    continue; // an enemy's Deployable Cover in between takes it (GameTactical.cs)
                 var dmg = Throwables.BlastDamage(def, dist * def.Radius / radius);
                 if (victim == owner)
                     dmg *= 0.5f; // your own grenade still hurts
@@ -496,6 +514,11 @@ public sealed partial class Game
             BlastProps(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
             BlastBuildings(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
             BlastZombies(owner, center, radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
+            BlastTactical(owner, center, radius, def.MaxDamage, now); // enemy tactical devices (GameTactical.cs)
+        }
+        else if (TacticalGear.UseOf(proj.Kind) == TacticalUse.Thrown)
+        {
+            ServerTacticalDetonate(proj, owner, now); // flash, stun, decoy, motion sensor (GameTactical.cs)
         }
 
         _w.Begin(Msg.Explode).U16(proj.Id).U8((byte)proj.Kind).U8(proj.Owner).Vec(proj.Pos).U8(flags);
@@ -529,6 +552,9 @@ public sealed partial class Game
                 Sensors.Add(new ReconSensor(pos, owner, now, now + Throwables.ReconDuration));
                 Audio.Effect3D(Sfx.ReconBeep, pos, 0.7f);
                 break;
+            default:
+                OnTacticalDetonated(kind, owner, pos, now); // the tactical items' bursts and sounds (GameTactical.cs)
+                break;
         }
         if (owner == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);
@@ -547,12 +573,12 @@ public sealed partial class Game
     {
         foreach (var proj in Projectiles.Values)
         {
-            if (proj.Kind == ThrowableKind.Recon && proj.Stuck)
+            if (TacticalGear.Sticks(proj.Kind) && proj.Stuck)
                 continue;
             if (Throwables.Step(proj, World.TickDt))
             {
                 BounceSound(proj, now);
-                if (proj.Kind == ThrowableKind.Recon)
+                if (TacticalGear.Sticks(proj.Kind))
                     proj.Stuck = true;
             }
             if (now - proj.Born > 10)
@@ -596,6 +622,8 @@ public sealed partial class Game
             return false; // the viewer's teammates are never "revealed" (this used to colour allies near your pulse red)
         if (StreakJammed(Local, now))
             return false; // an enemy Counter Sweep blinds your recon
+        if (LocalFlashHidesHud(now))
+            return false; // flashed: the overlay is washed out too (GameTactical.cs)
         if (StreakSweepReveals(p, now))
             return true;
         foreach (var s in Sensors)

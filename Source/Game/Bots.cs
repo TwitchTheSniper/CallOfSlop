@@ -279,6 +279,7 @@ public sealed partial class Game
         BotShoot(p, b, target, visible, def, aim, now);
         SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
         BotGrenade(p, b, target, visible, aim.Distance, now);
+        BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
 
         var cmd = new InputCmd

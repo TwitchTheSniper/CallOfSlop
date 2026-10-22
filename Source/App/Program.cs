@@ -312,6 +312,11 @@ public static unsafe partial class Program
             SmokeFrenzyFx(now); // Program.FrenzyFx.cs: four classes' frenzy visuals at level 6
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeTacStep < SmokeTacSteps)
+        {
+            SmokeTactical(now); // Program.Tactical.cs: placed devices and a flashbang, screenshotted
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -1048,6 +1053,7 @@ public static unsafe partial class Program
             if (_session is { } g)
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
+                TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
                 DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
@@ -1442,7 +1448,7 @@ public static unsafe partial class Program
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
-            var sens = BaseSensitivity * _settings.Sensitivity / zoom;
+            var sens = BaseSensitivity * _settings.Sensitivity / zoom * _game.TacticalLookMult; // a stun slows turning (GameTactical.cs)
             var dy = (float)delta.Y * (_settings.InvertY ? -1 : 1);
             _game.LookYaw = World.WrapAngle(_game.LookYaw + (float)delta.X * sens);
             _game.LookPitch = Math.Clamp(_game.LookPitch - dy * sens, -1.55f, 1.55f);
@@ -1740,6 +1746,7 @@ public static unsafe partial class Program
         }
 
         StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
+        TacticalRender.Draw(Gfx, _game, now); // tactical devices (TacticalRender.cs)
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         _worldView = view;
@@ -1769,6 +1776,7 @@ public static unsafe partial class Program
         // ---- Explosions, smoke, recon reveal ---------------------------------------
         Gfx.SetDepthWrite(false);
         DrawShieldShimmer(now); // Last Stand shields on other players (Program.Health.cs)
+        TacticalRender.DrawGlow(Gfx, _game, now); // cover walls, flash and stun bursts, device lights (TacticalRender.cs)
         foreach (var b in _game.Blasts)
         {
             var age = (float)(now - b.Born);
@@ -2066,6 +2074,7 @@ public static unsafe partial class Program
         }
         if (now < _game.ShieldFlashUntil) // your Last Stand shield blocked a hit
             Gfx.Rect(0, 0, w, h, new Vector3(0.35f, 0.85f, 1f), Math.Clamp((float)((_game.ShieldFlashUntil - now) / 0.3) * 0.3f, 0f, 0.3f));
+        TacticalHud.DrawOverlay(Gfx, _game, now, w, h); // flashbang white-out, stun edges (TacticalHud.cs)
         if (local is { Alive: false })
             Gfx.Rect(0, 0, w, h, new Vector3(0.5f, 0f, 0f), 0.35f);
         if (!_mouseCaptured)
