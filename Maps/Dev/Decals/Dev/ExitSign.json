@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Exit Sign",
+  "description": "The Dev pack's own Exit Sign (blue): shadows the global green one for Dev maps only (global:Exit Sign still means the green one).",
+  "author": "Call of Slop",
+  "size": [
+    0.8,
+    0.4
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 70,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.96,
+        0.9
+      ],
+      "color": [
+        0.12,
+        0.3,
+        0.75
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.5
+      ],
+      "size": [
+        0.2,
+        0.7
+      ],
+      "color": [
+        0.95,
+        0.95,
+        0.92
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.46
+      ],
+      "size": [
+        0.12,
+        0.56
+      ],
+      "color": [
+        0.12,
+        0.3,
+        0.75
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.46,
+        0.5
+      ],
+      "to": [
+        0.8,
+        0.5
+      ],
+      "width": 0.13,
+      "color": [
+        0.95,
+        0.95,
+        0.92
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.82,
+        0.5
+      ],
+      "to": [
+        0.68,
+        0.76
+      ],
+      "width": 0.11,
+      "color": [
+        0.95,
+        0.95,
+        0.92
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.82,
+        0.5
+      ],
+      "to": [
+        0.68,
+        0.24
+      ],
+      "width": 0.11,
+      "color": [
+        0.95,
+        0.95,
+        0.92
+      ]
+    }
+  ],
+  "category": "Dev"
+}
