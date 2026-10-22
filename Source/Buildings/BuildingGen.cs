@@ -647,6 +647,23 @@ internal sealed partial class BuildingGenerator
 
     private readonly List<(BStair S, int F, BRect R, Vector2 Bottom, Vector2 Top)> _stairPlans = new();
 
+    /// <summary>Waypoints 0.55 m out from each corner of <paramref name="r"/> on floor <paramref name="f"/>, where a body fits (in a room, clear of its walls, stairs and holes).</summary>
+    private void CornerWaypoints(int f, BRect r)
+    {
+        const float Out = 0.55f, Body = 0.45f;
+        Span<Vector2> corners = [new(r.X0 - Out, r.Z0 - Out), new(r.X1 + Out, r.Z0 - Out), new(r.X0 - Out, r.Z1 + Out), new(r.X1 + Out, r.Z1 + Out)];
+        foreach (var c in corners)
+        {
+            var room = RoomAt(f, c.X, c.Y);
+            if (room < 0 || !_floors[f].Rooms[room].Rects.Any(x => x.Inset(_t / 2 + BuildingGen.LiningT + Body).Contains(c.X, c.Y)))
+                continue;
+            var body = new BRect(c.X - Body, c.Y - Body, c.X + Body, c.Y + Body);
+            if (_holesIn[f].Any(h => body.Overlaps(h)) || _stairPlans.Any(sp => sp.F == f && body.Overlaps(sp.R)))
+                continue;
+            _plan.Waypoints.Add(P(c.X, _level[f], c.Y));
+        }
+    }
+
     /// <summary>How far from <paramref name="edge"/> (a flight's end) along <paramref name="dir"/> to the wall's inner face (lining included) of the room there.</summary>
     private float ClearAhead(int f, Vector2 edge, Vector2 dir)
     {
@@ -767,6 +784,10 @@ internal sealed partial class BuildingGenerator
             var pt = P(head.X, _level[f + 1], head.Y);
             _plan.Waypoints.Add(pb);
             _plan.Waypoints.Add(pt);
+            // Round the flight (below) and its hole's railing (above): a waypoint off each corner, so the nav can get past.
+            CornerWaypoints(f, r);
+            if (f + 1 < _floors.Count)
+                CornerWaypoints(f + 1, r);
             _plan.Stairs.Add((pb, pt));
             var upperRoom = f + 1 < n ? RoomAt(f + 1, top.X, top.Y) : -1;
             _plan.Links.Add(($"{f}:{_floors[f].Rooms[RoomAt(f, bottom.X, bottom.Y)].Id}", f + 1 < n ? $"{f + 1}:{_floors[f + 1].Rooms[upperRoom].Id}" : "roof"));

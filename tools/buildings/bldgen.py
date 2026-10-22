@@ -1063,6 +1063,18 @@ class Generator:
             self.reserved[f + 1].append(grow(r_inset(r, -0.1), top, width))
             self.stair_plans.append((s, f, r, bottom, top))
 
+    def corner_waypoints(self, f, r):
+        """BuildingGenerator.CornerWaypoints: a waypoint 0.55 m off each corner of r where a body fits."""
+        out, body = 0.55, 0.45
+        for cx, cz in ((r[0] - out, r[1] - out), (r[2] + out, r[1] - out), (r[0] - out, r[3] + out), (r[2] + out, r[3] + out)):
+            room = self.room_at(f, cx, cz)
+            if room < 0 or not any(r_contains(r_inset(x, self.t / 2 + LINING_T + body), cx, cz) for x in self.floors[f]["rooms"][room]["rects"]):
+                continue
+            b = (cx - body, cz - body, cx + body, cz + body)
+            if any(r_overlaps(b, h) for h in self.holes_in[f]) or any(sp[1] == f and r_overlaps(b, sp[2]) for sp in self.stair_plans):
+                continue
+            self.plan.waypoints.append(self.P(cx, self.level[f], cz))
+
     def clear_ahead(self, f, edge, dr):
         """BuildingGenerator.ClearAhead: from a flight's end along dr to the wall's inner face (lining included)."""
         px, pz = edge[0] + dr[0] * 0.05, edge[1] + dr[1] * 0.05
@@ -1119,6 +1131,9 @@ class Generator:
             pb = self.P(foot[0], lf, foot[1])
             pt = self.P(head[0], self.level[f + 1], head[1])
             self.plan.waypoints += [pb, pt]
+            self.corner_waypoints(f, r)  # round the flight and its hole's railing
+            if f + 1 < n:
+                self.corner_waypoints(f + 1, r)
             self.plan.stairs.append((pb, pt))
             if not s["railing"]:
                 continue
