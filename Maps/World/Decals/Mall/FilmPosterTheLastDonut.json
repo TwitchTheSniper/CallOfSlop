@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Film Poster The Last Donut",
+  "category": "Mall",
+  "description": "A poster for the (invented) film 'The Last Donut'.",
+  "author": "Call of Slop",
+  "size": [
+    0.7,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 60,
+  "image": "FilmPosterTheLastDonut.png"
+}

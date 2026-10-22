@@ -1,0 +1,63 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "beauty",
+ "description": "Beauty shop: cosmetics walls, make-up counters and perfume tables.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Cosmetics Wall Unit"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Makeup Counter"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Perfume Display Table",
+    "Makeup Counter"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Bar Stool"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

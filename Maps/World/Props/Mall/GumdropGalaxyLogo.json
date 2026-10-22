@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gumdrop Galaxy Logo",
+  "category": "Mall",
+  "description": "The GUMDROP GALAXY logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#5a2a8a"},
+    {"size": [0.1111, 0.5556, 0.025], "offset": [-0.4444, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.1111, 0.5556, 0.025], "offset": [0.4444, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.1111, 0.3333, 0.025], "offset": [-0.3333, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.1111, 0.3333, 0.025], "offset": [0.3333, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.1111, 0.1111, 0.025], "offset": [-0.2222, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.1111, 0.1111, 0.025], "offset": [0.2222, 0.6, 0.0775], "color": "#ff60b0"},
+    {"size": [0.3333, 0.1111, 0.029], "offset": [0.0, 0.8222, 0.0795], "color": "#ffd020"},
+    {"size": [0.1111, 0.4444, 0.029], "offset": [-0.1111, 0.5444, 0.0795], "color": "#ffd020"},
+    {"size": [0.1111, 0.4444, 0.029], "offset": [0.1111, 0.5444, 0.0795], "color": "#ffd020"},
+    {"size": [0.1111, 0.1111, 0.029], "offset": [0.0, 0.6, 0.0795], "color": "#ffd020"},
+    {"size": [0.1111, 0.1111, 0.029], "offset": [0.0, 0.3778, 0.0795], "color": "#ffd020"},
+    {"size": [0.1111, 0.1111, 0.033], "offset": [0.0, 0.7111, 0.0815], "color": "#ffffff"},
+    {"size": [0.1111, 0.1111, 0.033], "offset": [0.0, 0.4889, 0.0815], "color": "#ffffff"}
+  ]
+}

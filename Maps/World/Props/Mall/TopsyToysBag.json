@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Topsy Toys Bag",
+  "category": "Mall",
+  "description": "A Topsy Toys carrier bag dropped on the floor. Cosmetic.",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.9,
+      1.1
+    ]
+  },
+  "fadeDistance": 30,
+  "parts": [
+    {"size": [0.36, 0.42, 0.14], "offset": [0, 0.21, 0], "color": "#f0d020"},
+    {"size": [0.2, 0.12, 0.012], "offset": [0, 0.27, 0.072], "color": "#d02020"},
+    {"size": [0.16, 0.12, 0.012], "offset": [0, 0.48, 0], "color": "#d02020"}
+  ]
+}

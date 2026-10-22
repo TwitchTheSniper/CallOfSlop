@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Popcorn Machine",
+  "category": "Retail",
+  "description": "A red popcorn cart with a glass cabinet heaped with popcorn. Solid, breakable glass.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.8,
+        1.82,
+        0.6
+      ],
+      "offset": [
+        0.0,
+        0.91,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "breakable": {
+    "health": 40,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {
+      "count": 18,
+      "size": [
+        0.04,
+        0.2
+      ],
+      "colors": [
+        "#c02020",
+        "#f0e090",
+        "#c8dce4"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.8, 0.9, 0.6], "offset": [0, 0.45, 0], "color": "#c02020"},
+    {"size": [0.76, 0.75, 0.56], "offset": [0, 1.3, 0], "color": "#c8dce4"},
+    {"size": [0.8, 0.15, 0.6], "offset": [0, 1.75, 0], "color": "#c02020"},
+    {"size": [0.7, 0.35, 0.5], "offset": [0, 1.1, 0], "color": "#f0e090"},
+    {"size": [0.8, 0.12, 0.02], "offset": [0, 1.75, 0.305], "color": "#ffe040", "anim": {"type": "pulse", "period": 6, "color": "#fff080", "off": "#b7ac5c", "glow": 1.0}},
+    {"size": [0.2, 0.15, 0.2], "offset": [0, 1.55, 0], "color": "#808088"}
+  ]
+}

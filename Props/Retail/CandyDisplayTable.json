@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Candy Display Table",
+  "category": "Retail",
+  "description": "A sweet-shop table of tall jars and lollipops. Solid, breakable glass.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.24,
+        0.86,
+        0.74
+      ],
+      "offset": [
+        0.0,
+        0.43,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "breakable": {
+    "health": 25,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {
+      "count": 18,
+      "size": [
+        0.04,
+        0.2
+      ],
+      "colors": [
+        "#ffffff",
+        "#ff4060",
+        "#40c0ff"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [1.2, 0.8, 0.7], "offset": [0, 0.4, 0], "color": "#ffffff"},
+    {"size": [1.24, 0.04, 0.74], "offset": [0, 0.82, 0], "color": "#e04080"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [-0.45, 0.95, -0.15], "color": "#60e060"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [0.0, 0.95, -0.15], "color": "#40c0ff"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, -0.15], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [0.45, 0.95, -0.15], "color": "#ff80e0"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [-0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [-0.45, 0.95, 0.17], "color": "#ff4060"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.0, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [0.0, 0.95, 0.17], "color": "#60e060"},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 0, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 45, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 90, 0]},
+    {"size": [0.22, 0.3, 0.0911], "offset": [0.45, 0.99, 0.17], "color": "#c8dce4", "rotation": [0, 135, 0]},
+    {"size": [0.18, 0.2, 0.18], "offset": [0.45, 0.95, 0.17], "color": "#ffd020"},
+    {"size": [0.02, 0.35, 0.02], "offset": [-0.5, 1.05, 0.33], "color": "white"},
+    {"size": [0.14, 0.14, 0.03], "offset": [-0.5, 1.27, 0.33], "color": "#40c0ff"},
+    {"size": [0.02, 0.35, 0.02], "offset": [-0.25, 1.05, 0.33], "color": "white"},
+    {"size": [0.14, 0.14, 0.03], "offset": [-0.25, 1.27, 0.33], "color": "#ff4060"},
+    {"size": [0.02, 0.35, 0.02], "offset": [0.0, 1.05, 0.33], "color": "white"},
+    {"size": [0.14, 0.14, 0.03], "offset": [0.0, 1.27, 0.33], "color": "#ff4060"},
+    {"size": [0.02, 0.35, 0.02], "offset": [0.25, 1.05, 0.33], "color": "white"},
+    {"size": [0.14, 0.14, 0.03], "offset": [0.25, 1.27, 0.33], "color": "#ff4060"},
+    {"size": [0.02, 0.35, 0.02], "offset": [0.5, 1.05, 0.33], "color": "white"},
+    {"size": [0.14, 0.14, 0.03], "offset": [0.5, 1.27, 0.33], "color": "#40c0ff"}
+  ]
+}

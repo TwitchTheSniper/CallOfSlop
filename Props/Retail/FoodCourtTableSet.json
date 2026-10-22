@@ -1,0 +1,89 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Food Court Table Set",
+  "category": "Retail",
+  "description": "A square food-court table with four red chairs and a tray. Solid, breakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        0.9,
+        0.78,
+        0.9
+      ],
+      "offset": [
+        0.0,
+        0.39,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        1.8,
+        0.48,
+        0.5
+      ],
+      "offset": [
+        0.0,
+        0.24,
+        0.0
+      ]
+    },
+    {
+      "size": [
+        0.5,
+        0.48,
+        1.8
+      ],
+      "offset": [
+        0.0,
+        0.24,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "breakable": {
+    "health": 90,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {
+      "count": 14,
+      "size": [
+        0.04,
+        0.2
+      ],
+      "colors": [
+        "#e8e4dc",
+        "#d84a30",
+        "#c0c0c0"
+      ]
+    }
+  },
+  "parts": [
+    {"size": [0.9, 0.04, 0.9], "offset": [0, 0.74, 0], "color": "#e8e4dc"},
+    {"size": [0.08, 0.72, 0.08], "offset": [0, 0.36, 0], "color": "chrome"},
+    {"size": [0.5, 0.03, 0.5], "offset": [0, 0.015, 0], "color": "#404044"},
+    {"size": [0.42, 0.04, 0.42], "offset": [0, 0.46, 0.68], "color": "#d84a30", "rotation": [0, 180, 0]},
+    {"size": [0.42, 0.4, 0.04], "offset": [-0.0, 0.68, 0.86], "color": "#d84a30", "rotation": [0, 180, 0]},
+    {"size": [0.04, 0.44, 0.04], "offset": [0, 0.22, 0.68], "color": "chrome"},
+    {"size": [0.42, 0.04, 0.42], "offset": [0, 0.46, -0.68], "color": "#d84a30", "rotation": [0, 0, 0]},
+    {"size": [0.42, 0.4, 0.04], "offset": [0.0, 0.68, -0.86], "color": "#d84a30", "rotation": [0, 0, 0]},
+    {"size": [0.04, 0.44, 0.04], "offset": [0, 0.22, -0.68], "color": "chrome"},
+    {"size": [0.42, 0.04, 0.42], "offset": [0.68, 0.46, 0], "color": "#d84a30", "rotation": [0, 270, 0]},
+    {"size": [0.42, 0.4, 0.04], "offset": [0.86, 0.68, 0.0], "color": "#d84a30", "rotation": [0, 270, 0]},
+    {"size": [0.04, 0.44, 0.04], "offset": [0.68, 0.22, 0], "color": "chrome"},
+    {"size": [0.42, 0.04, 0.42], "offset": [-0.68, 0.46, 0], "color": "#d84a30", "rotation": [0, 90, 0]},
+    {"size": [0.42, 0.4, 0.04], "offset": [-0.86, 0.68, -0.0], "color": "#d84a30", "rotation": [0, 90, 0]},
+    {"size": [0.04, 0.44, 0.04], "offset": [-0.68, 0.22, 0], "color": "chrome"},
+    {"size": [0.3, 0.02, 0.2], "offset": [0.15, 0.77, 0.1], "color": "#c03020"},
+    {"size": [0.07, 0.15, 0.07], "offset": [-0.2, 0.83, -0.15], "color": "#e8e0d0"}
+  ]
+}

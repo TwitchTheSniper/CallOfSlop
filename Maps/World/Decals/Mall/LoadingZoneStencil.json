@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Loading Zone Stencil",
+  "category": "Mall",
+  "description": "LOADING ZONE painted across a yellow band, for a dock apron.",
+  "author": "Call of Slop",
+  "size": [
+    4.0,
+    1.4
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 80,
+  "image": "LoadingZoneStencil.png",
+  "opacity": 0.9
+}

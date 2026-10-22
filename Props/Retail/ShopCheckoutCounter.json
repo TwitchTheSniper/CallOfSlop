@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Shop Checkout Counter",
+  "category": "Retail",
+  "description": "A shop's cash wrap: a counter with a till and screen, a card reader and a stack of carrier bags. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        2.2,
+        1.0,
+        0.8
+      ],
+      "offset": [
+        0.0,
+        0.5,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [2.2, 0.95, 0.8], "offset": [0, 0.475, 0], "color": "#3a3a40"},
+    {"size": [2.24, 0.05, 0.84], "offset": [0, 0.975, 0], "color": "#d8d4cc"},
+    {"size": [2.1, 0.12, 0.02], "offset": [0, 0.06, 0.405], "color": "#202024"},
+    {"size": [0.38, 0.12, 0.3], "offset": [-0.5, 1.06, -0.1], "color": "#2a2a2e"},
+    {"size": [0.32, 0.22, 0.04], "offset": [-0.5, 1.25, -0.05], "color": "#1a1a1e", "rotation": [-15, 0, 0]},
+    {"size": [0.28, 0.16, 0.01], "offset": [-0.5, 1.25, -0.025], "color": "#3070c0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 3, "duty": 0.97, "color": "#4a90e0", "off": "#203050", "glow": 0.6}},
+    {"size": [0.4, 0.06, 0.3], "offset": [-0.5, 1.03, 0.15], "color": "#1a1a1e"},
+    {"size": [0.1, 0.16, 0.06], "offset": [0.1, 1.08, 0.15], "color": "#202020"},
+    {"size": [0.08, 0.02, 0.1], "offset": [0.1, 1.17, 0.15], "color": "#40c060"},
+    {"size": [0.5, 0.3, 0.3], "offset": [0.7, 1.15, -0.15], "color": "#c8a878"},
+    {"size": [0.04, 0.04, 0.12], "offset": [0.55, 1.32, -0.15], "color": "#202020"}
+  ]
+}
