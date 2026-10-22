@@ -22,6 +22,18 @@ public static partial class SelfTest
         CheckImpactPool();
         CheckImpactPlacement();
         CheckDecalSettings();
+        // The section's results as one GitHub Actions notice (the workflow prints selftest.log; "::notice" lines become annotations).
+        Line("::notice title=Decals (results)::" + string.Join("%0A", DecalNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        DecalNotes.Clear();
+    }
+
+    private static readonly List<string> DecalNotes = new();
+
+    /// <summary>A result line for the log and the section's notice.</summary>
+    private static void DecalLine(string s)
+    {
+        Line(s);
+        DecalNotes.Add(s);
     }
 
     private static void CheckDecalLibrary()
@@ -30,7 +42,7 @@ public static partial class SelfTest
         foreach (var e in Decals.LoadErrors)
             Fail("decal file problem: " + e);
         var cats = all.Select(d => d.Category).Distinct().ToList();
-        Line($"decal library: {all.Length} decals ({all.Count(d => d.IsImpact)} impacts, {all.Count(d => d.Blend == DecalBlend.Multiply)} multiply) in {cats.Count} categories [{string.Join(", ", cats)}] from {Decals.Folder}");
+        DecalLine($"decal library: {all.Length} decals ({all.Count(d => d.IsImpact)} impacts, {all.Count(d => d.Blend == DecalBlend.Multiply)} multiply) in {cats.Count} categories [{string.Join(", ", cats)}] from {Decals.Folder}");
         if (all.Length < 15)
             Fail($"only {all.Length} decals loaded (the starter set has 17)");
         for (var i = 0; i < all.Length; i++)
@@ -126,7 +138,7 @@ public static partial class SelfTest
             if (covered < 20)
                 Fail($"decal shape {s.Kind} with default settings paints almost nothing ({covered} pixels)");
         }
-        Line($"decal files: {bad}/{cases.Length} broken files rejected with readable messages; all {every.Layers.Count} shape kinds paint");
+        DecalLine($"decal files: {bad}/{cases.Length} broken files rejected with readable messages; all {every.Layers.Count} shape kinds paint");
     }
 
     private static void CheckDecalAtlas()
@@ -151,7 +163,7 @@ public static partial class SelfTest
         }
         if (empty.Count > 0)
             Fail($"decal(s) painted (nearly) empty: {string.Join(", ", empty)}");
-        Line($"decal atlas: {all.Length} layers of {DecalAtlas.LayerSize} px ({a.Length / 1024} KB before mipmaps) painted in {ms:0.0} ms, deterministic");
+        DecalLine($"decal atlas: {all.Length} layers of {DecalAtlas.LayerSize} px ({a.Length / 1024} KB before mipmaps) painted in {ms:0.0} ms, deterministic");
         if (ms > 2000)
             Fail($"painting the decal atlas took {ms:0} ms (startup budget 2000 ms)");
     }
@@ -170,7 +182,7 @@ public static partial class SelfTest
         var mesh = DecalBaker.Bake(map);
         var bakeMs = sw.Elapsed.TotalMilliseconds;
         var again = DecalBaker.Bake(map);
-        Line($"Decal Test: {map.DecalRequests.Count} decal ops asking for {mesh.Requested} decals: {mesh.Placed} placed, {mesh.Missed} missed; "
+        DecalLine($"Decal Test: {map.DecalRequests.Count} decal ops asking for {mesh.Requested} decals: {mesh.Placed} placed, {mesh.Missed} missed; "
              + $"{mesh.Triangles} triangles in {mesh.Chunks.Length} chunks, baked in {bakeMs:0.0} ms");
         if (mesh.Placed < mesh.Requested * 0.85 || mesh.Triangles < 200)
             Fail($"Decal Test: only {mesh.Placed}/{mesh.Requested} decals placed, {mesh.Triangles} triangles");
@@ -237,7 +249,7 @@ public static partial class SelfTest
             if (terrain.IsHole(c.X, c.Z) && MathF.Abs(c.Y - terrain.Sample(c.X, c.Z)) > 0.3f)
                 overHole++;
         }
-        Line($"Decal Test vertices: {owned} on boxes, {onTerrain} on the terrain ({overHole} triangles over the hole), {onMesh} on the mesh tank, {walls} on walls");
+        DecalLine($"Decal Test vertices: {owned} on boxes, {onTerrain} on the terrain ({overHole} triangles over the hole), {onMesh} on the mesh tank, {walls} on walls");
         if (overHole > 0)
             Fail($"{overHole} decal triangles lie over the terrain hole");
 
@@ -332,7 +344,7 @@ public static partial class SelfTest
             else
                 kerbOther++;
         }
-        Line($"flat check: {fm.Placed} placed, {fm.Missed} missed (the poster facing open space), {fm.Triangles} triangles; "
+        DecalLine($"flat check: {fm.Placed} placed, {fm.Missed} missed (the poster facing open space), {fm.Triangles} triangles; "
              + $"the stain over the 0.3 m kerb: {kerbTop} vertices on top, {kerbGround} on the ground, {kerbOther} elsewhere");
         if (fm.Placed != 3 || fm.Missed != 1 || !floorOk || !wallOk)
             Fail($"flat decals: placed {fm.Placed}, missed {fm.Missed}, floor on the ground {floorOk}, poster on the wall {wallOk}");
@@ -364,7 +376,7 @@ public static partial class SelfTest
         for (var i = 0; i < 1600; i++)
             pool.Add(map, new Vector3(i % 40, 1 + i / 40 * 0.2f, 0), Vector3.UnitZ, 0.15f, 0, 0, (byte)(i % 40), -1, now += 0.01, false);
         var showing = pool.Showing();
-        Line($"impact pool (1024): 1600 shots by 40 players -> {showing} showing, {pool.Count} in the ring, popped {pool.Popped}, player-capped {pool.PlayerFaded}");
+        DecalLine($"impact pool (1024): 1600 shots by 40 players -> {showing} showing, {pool.Count} in the ring, popped {pool.Popped}, player-capped {pool.PlayerFaded}");
         if (pool.Count > pool.Capacity || showing > pool.Capacity - pool.Reserve + 1 || showing < pool.Capacity - pool.Reserve - 70)
             Fail($"impact ring: {pool.Count} slots used, {showing} showing (capacity {pool.Capacity}, reserve {pool.Reserve})");
         if (pool.Popped != 0)
@@ -409,7 +421,7 @@ public static partial class SelfTest
             pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, i * 0.1f, i % 6, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);
         var ns = sw.Elapsed.TotalMilliseconds * 1e6 / adds;
         bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
-        Line($"impact pool cost: {ns:0} ns per add, {bytes} bytes allocated over {adds} adds");
+        DecalLine($"impact pool cost: {ns:0} ns per add, {bytes} bytes allocated over {adds} adds");
         if (bytes > 0)
             Fail($"adding impacts allocated {bytes} bytes (must be allocation-free)");
         if (ns > 20000)
@@ -479,7 +491,7 @@ public static partial class SelfTest
             }
             else
                 Fail("Decal Test: the terrain test shot doesn't hit the terrain");
-            Line($"impact placement: {wallMaterial} wall -> {def?.Name}, terrain -> {Decals.All[(int)pool.Instances[(pool.HighWater - 1) * ImpactPool.FloatsPerInstance + 8]].Name}; "
+            DecalLine($"impact placement: {wallMaterial} wall -> {def?.Name}, terrain -> {Decals.All[(int)pool.Instances[(pool.HighWater - 1) * ImpactPool.FloatsPerInstance + 8]].Name}; "
                  + $"OnTracer {us:0.0} us (first call), deterministic");
 
             // Fitting on a box face: a mark near an edge slides inwards, a narrow face shrinks it, a sliver refuses it.
