@@ -163,6 +163,9 @@ def build_terrain():
     mirrored_ramp([[58.5, -37.6, TOW_Y], [58.5, -29.5]], 4.0, 1.2, material="dirt")
     # Canal Street south: up the rise to the dead-end lane
     mirrored_ramp([[(CS_X0 + CS_X1) / 2, 20.5, 0.0], [(CS_X0 + CS_X1) / 2, 38.6, ALLEY_Y], [(CS_X0 + CS_X1) / 2, 51.0]], 6.6, 0.6, material="sand")
+    # the square's steps: up from the zebra crossing, and down to the back alley
+    mirrored_ramp([[0, 19.9, 0.0], [0, 24.4, PARK_Y]], 3.6, 0.3, material="sand")
+    mirrored_ramp([[0, 42.3, ALLEY_Y], [0, 39.0, PARK_Y]], 3.0, 0.3, material="sand")
     # the paths up beside the park
     mirrored_ramp([[14.9, 20.4, 0.0], [14.9, 38.6, ALLEY_Y]], 2.4, 0.4, material="sand")
 

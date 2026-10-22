@@ -11345,6 +11345,44 @@
     "type": "ramp",
     "points": [
      [
+      0,
+      19.9,
+      0.0
+     ],
+     [
+      0,
+      24.4,
+      1.5
+     ]
+    ],
+    "width": 3.6,
+    "edge": 0.3,
+    "mode": "set",
+    "material": "sand"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      0,
+      42.3,
+      0.75
+     ],
+     [
+      0,
+      39.0,
+      1.5
+     ]
+    ],
+    "width": 3.0,
+    "edge": 0.3,
+    "mode": "set",
+    "material": "sand"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
       14.9,
       20.4,
       0.0
