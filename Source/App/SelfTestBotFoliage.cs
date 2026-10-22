@@ -167,8 +167,9 @@ public static partial class SelfTest
             foreach (var (a, b) in lines)
                 if (m.Concealed(a, b))
                     hidden++;
+            var sw = new Stopwatch();
             var before = GC.GetAllocatedBytesForCurrentThread();
-            var sw = Stopwatch.StartNew();
+            sw.Start();
             hidden = 0;
             for (var r = 0; r < 5; r++)
                 foreach (var (a, b) in lines)
@@ -256,11 +257,13 @@ public static partial class SelfTest
         Run(1.5, botAt);
         var sawStanding = now - b.LastSeenTime < 0.2 && b.Target == host.Id;
         game.HeldButtons = Buttons.Prone;
-        Run(1.0, botAt);
+        host.Sim.Stance = Stance.Prone;
+        b.Ammo = bot.WeaponDef.Mag; // a full magazine for what follows (the aimed fight may have emptied it)
+        b.ReloadUntil = 0;
+        Run(0.3, botAt);
         var lineProne = game.SelfTestBotSees(bot, host);
         var shotsBefore = b.BlindShots;
-        Run(0.4, botAt);
-        var lostProne = now - b.LastSeenTime > 0.3;
+        var lostProne = now - b.LastSeenTime > 0.2;
         BfNote($"bot vs host in tall grass at 15 m: standing seen {sawStanding}; prone {host.Sim.Stance}: line {lineProne}, out of sight {lostProne}");
         if (!sawStanding)
             Fail("a bot didn't see a player standing in knee-high grass 15 m away");
