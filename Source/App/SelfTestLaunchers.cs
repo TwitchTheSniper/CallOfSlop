@@ -16,9 +16,31 @@ public static partial class SelfTest
 
     private static void CheckLaunchers()
     {
+        LauncherNotes.Clear();
+        try
+        {
+            CheckLaunchersBody();
+        }
+        finally
+        {
+            // One annotation on the CI run with the scenario results.
+            Line("::notice title=Launchers::" + string.Join("%0A", LauncherNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static readonly List<string> LauncherNotes = new();
+
+    private static void LLine(string s)
+    {
+        Line(s);
+        LauncherNotes.Add(s);
+    }
+
+    private static void CheckLaunchersBody()
+    {
         // ---- Every launcher loads, secondary only ----------------------------------------------------
         var launchers = Weapons.All.Where(w => w.IsLauncher).ToArray();
-        Line($"launchers ({launchers.Length}): " + string.Join("; ", launchers.Select(w =>
+        LLine($"launchers ({launchers.Length}): " + string.Join("; ", launchers.Select(w =>
             $"{w.Name} {w.LauncherProjectile}/{w.LauncherGuidance} {w.Damage} dmg r{w.LauncherRadius} +{w.LauncherDirect} direct, {w.Mag}+{w.LauncherReserve} rounds, lvl {Progress.UnlockLevel(w)}")));
         if (launchers.Length is < 6 or > 8)
             Fail($"{launchers.Length} launchers (want 6-8)");
@@ -76,7 +98,7 @@ public static partial class SelfTest
         foreach (var a in forLaunchers)
             if (Weapons.All.Any(w => !w.IsLauncher && a.Fits(w)))
                 Fail($"{a.Name} fits a weapon that isn't a launcher");
-        Line($"launcher attachments ({forLaunchers.Length}): {string.Join(", ", forLaunchers.Select(a => a.Name))}; the Skylance takes {Attachments.For(sky).Count}");
+        LLine($"launcher attachments ({forLaunchers.Length}): {string.Join(", ", forLaunchers.Select(a => a.Name))}; the Skylance takes {Attachments.For(sky).Count}");
         if (forLaunchers.Length < 3)
             Fail($"{forLaunchers.Length} launcher attachments (want 3-5)");
         if (Attachments.Find("Quick-Lock Module") is { } ql && Attachments.Find("Spare Round") is { } sr)
@@ -110,7 +132,7 @@ public static partial class SelfTest
         int protocol = ServerInfo.ProtocolVersion;
         if (protocol < 28 || (byte)Msg.RocketDetonate != (byte)Msg.RocketSpawn + 3 || Enum.GetValues<Msg>().Max() < Msg.RocketDetonate)
             Fail("launcher messages: protocol not bumped or the messages aren't together");
-        Line($"packets: spawn {spawnLen} B, sync {Game.RocketSyncBytes} B per guided rocket, boom {boomLen} B; protocol {protocol}");
+        LLine($"packets: spawn {spawnLen} B, sync {Game.RocketSyncBytes} B per guided rocket, boom {boomLen} B; protocol {protocol}");
 
         // ---- Loadouts: secondary only, saved by name -----------------------------------------------------
         var saveBackup = LoadoutStore.SaveLines().ToArray();
@@ -195,14 +217,14 @@ public static partial class SelfTest
             if (game.Rockets.ContainsKey(rocket.Id))
                 worst = MathF.Max(worst, Vector3.Distance(rocket.Pos, copy.Pos));
         }
-        Line($"flight: {flown} ticks, the client's copy is at most {worst * 1000:0.000} mm off the server's rocket");
+        LLine($"flight: {flown} ticks, the client's copy is at most {worst * 1000:0.000} mm off the server's rocket");
         if (flown < 60 || worst > 1e-4f)
             Fail($"rocket flight isn't deterministic ({flown} ticks, {worst} m apart)");
         Run(10);
 
         // ---- Splash: falloff, walls, thermobaric, self damage, arming -------------------------------------
         var falloff = new[] { 0f, 1f, 2f, 3f, 4f, 5f, 6f }.Select(d => Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(d, 1, 20), mule.LauncherRadius)).ToArray();
-        Line($"Mule RPG blast by distance 0-6 m: {string.Join(", ", falloff.Select(f => f.ToString("0")))} (radius {mule.LauncherRadius} m)");
+        LLine($"Mule RPG blast by distance 0-6 m: {string.Join(", ", falloff.Select(f => f.ToString("0")))} (radius {mule.LauncherRadius} m)");
         for (var i = 1; i < falloff.Length; i++)
             if (falloff[i] > falloff[i - 1] || falloff[0] < mule.Damage - 0.5f || Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(mule.LauncherRadius + 0.1f, 1, 20), mule.LauncherRadius) != 0)
                 Fail("launcher blast damage must fall off with distance from the full damage at the centre to nothing at the radius");
@@ -218,7 +240,7 @@ public static partial class SelfTest
         game.SelfTestPlace(me, new Vector3(2, 0, -1), 0);
         game.SelfTestLauncherBlast(me, mule, new Vector3(0, 0.1f, -1), now);
         var self = World.MaxHealth - (me.Alive ? me.Health : 0);
-        Line($"blast at 3 m: Mule open {open}, behind a wall {walled}; Furnace (thermobaric) open {thermoOpen}, behind the wall {thermoWall}; your own Mule at 2 m: {self}");
+        LLine($"blast at 3 m: Mule open {open}, behind a wall {walled}; Furnace (thermobaric) open {thermoOpen}, behind the wall {thermoWall}; your own Mule at 2 m: {self}");
         if (open <= 0 || walled != 0)
             Fail("a launcher blast must hurt in the open and never through a wall");
         if (thermoWall <= 0 || thermoWall >= thermoOpen)
@@ -239,7 +261,7 @@ public static partial class SelfTest
         toB1 = Vector3.Normalize(b1.Chest - me.Eye);
         game.SelfTestFireLauncher(me, mule, toB1, byte.MaxValue, now += 10);
         Run(3);
-        Line($"arming ({mule.LauncherArmDistance} m): a direct hit at 3 m did {dud} (a dud: direct {mule.LauncherDirect} only); at 20 m the target {(b1.Alive ? $"took {World.MaxHealth - b1.Health}" : "died")}");
+        LLine($"arming ({mule.LauncherArmDistance} m): a direct hit at 3 m did {dud} (a dud: direct {mule.LauncherDirect} only); at 20 m the target {(b1.Alive ? $"took {World.MaxHealth - b1.Health}" : "died")}");
         if (dud != (int)MathF.Round(mule.LauncherDirect) || b1.Alive)
             Fail("arming: an unarmed hit should do only its direct damage, an armed one should kill");
 
@@ -265,7 +287,7 @@ public static partial class SelfTest
         game.LookPitch = -0.05f;
         game.SelfTestBuildLock(now + 3, sky.LauncherLockTime * 2, 1f / 60);
         var turretLocked = game.Locked;
-        Line($"lock-on: half the lock time {halfway}, after the lock time {locked} (target {game.LockTarget}); a ground sentry locks: {turretLocked}");
+        LLine($"lock-on: half the lock time {halfway}, after the lock time {locked} (target {game.LockTarget}); a ground sentry locks: {turretLocked}");
         if (halfway || !locked || turretLocked)
             Fail("lock-on: should lock an airborne streak after its lock time (not before), and never a ground sentry");
         var hits = 0;
@@ -276,7 +298,7 @@ public static partial class SelfTest
             hits++;
             Run(6);
         }
-        Line($"Skylance AA: the drone ({KillStreaks.Get(StreakId.AttackDrone).Health} HP) is down after {hits} lock-on rocket(s) (stated: {LauncherTargets.HitsToKill(sky, StreakId.AttackDrone, true)})");
+        LLine($"Skylance AA: the drone ({KillStreaks.Get(StreakId.AttackDrone).Health} HP) is down after {hits} lock-on rocket(s) (stated: {LauncherTargets.HitsToKill(sky, StreakId.AttackDrone, true)})");
         if (game.StreakEntities.ContainsKey(drone.Id) || hits != 1)
             Fail($"a lock-on rocket should kill the attack drone in one hit ({hits} fired, alive {game.StreakEntities.ContainsKey(drone.Id)})");
 
@@ -292,7 +314,7 @@ public static partial class SelfTest
         }
         var shipStated = LauncherTargets.HitsToKill(sky, StreakId.Gunship, true);
         var muleOnTurret = LauncherTargets.HitsToKill(mule, StreakId.SentryTurret, false);
-        Line($"Gunship ({KillStreaks.Get(StreakId.Gunship).Health} HP): down after {shipHits} locked Skylance rockets ({shipStated} hits plus its flare); "
+        LLine($"Gunship ({KillStreaks.Get(StreakId.Gunship).Health} HP): down after {shipHits} locked Skylance rockets ({shipStated} hits plus its flare); "
              + $"the sentry takes {muleOnTurret} Mule RPG direct hits, {LauncherTargets.HitsToKill(sky, StreakId.SentryTurret, false)} dumb-fire Skylance hits");
         if (game.StreakEntities.ContainsKey(ship.Id) || shipHits is < 2 or > 3 || shipStated is < 2 or > 3)
             Fail($"a gunship should need 2-3 lock-on rockets (took {shipHits}, stated {shipStated})");
@@ -310,7 +332,7 @@ public static partial class SelfTest
                 shots++;
                 Run(4);
             }
-            Line($"Mule RPG dumb fire: the sentry is {(game.StreakEntities.ContainsKey(turret.Id) ? "still up" : "down")} after {shots} rocket(s)");
+            LLine($"Mule RPG dumb fire: the sentry is {(game.StreakEntities.ContainsKey(turret.Id) ? "still up" : "down")} after {shots} rocket(s)");
             if (game.StreakEntities.ContainsKey(turret.Id) || shots != muleOnTurret)
                 Fail($"the sentry should go down to {muleOnTurret} dumb-fire rockets (took {shots})");
         }
@@ -326,7 +348,7 @@ public static partial class SelfTest
         var first = game.SelfTestFireLauncher(me, mule, new Vector3(0, 0.3f, -1), byte.MaxValue, now += 5) != null;
         var noReload = game.SelfTestFireLauncher(me, mule, new Vector3(0, 0.3f, -1), byte.MaxValue, now += 0.5) != null;
         Run(10);
-        Line($"ammo: {fired} Mule RPG rounds in a life (mag {mule.Mag} + reserve {mule.LauncherReserve}); a second round 0.5 s later without a reload: {noReload}");
+        LLine($"ammo: {fired} Mule RPG rounds in a life (mag {mule.Mag} + reserve {mule.LauncherReserve}); a second round 0.5 s later without a reload: {noReload}");
         if (fired != mule.Mag + mule.LauncherReserve || tooSoon != null || !first || noReload)
             Fail("launcher ammo: the server must allow exactly magazine + reserve per life and check the reload");
 
@@ -338,7 +360,7 @@ public static partial class SelfTest
             game.SelfTestRocketTick(now += World.TickDt);
         var stuck = game.Rockets.Values.Count(r => r.Owner == me.Id && r.Stuck);
         game.SelfTestDetonate(me, now += 0.1);
-        Line($"sticky: {stuck} charge stuck to the wall; after the detonation {game.Rockets.Count} projectile(s) left");
+        LLine($"sticky: {stuck} charge stuck to the wall; after the detonation {game.Rockets.Count} projectile(s) left");
         if (stuck != 1 || game.Rockets.Count != 0)
             Fail("a sticky charge should stick to the wall and go off when its owner detonates it");
         game.SelfTestPlace(me, new Vector3(30, 0, 50), 0);
@@ -348,7 +370,7 @@ public static partial class SelfTest
         var pending = game.SelfTestPendingClusters;
         for (var i = 0; i < 90; i++)
             game.SelfTestRocketTick(now += World.TickDt);
-        Line($"cluster: {pending} bomblets scheduled ({cluster.LauncherCluster} expected), {game.SelfTestPendingClusters} left after 1.5 s");
+        LLine($"cluster: {pending} bomblets scheduled ({cluster.LauncherCluster} expected), {game.SelfTestPendingClusters} left after 1.5 s");
         if (pending != cluster.LauncherCluster || game.SelfTestPendingClusters != 0)
             Fail("a cluster rocket should throw out its bomblets and they should all go off");
 
@@ -368,7 +390,7 @@ public static partial class SelfTest
             game.SelfTestLauncherVisuals(now, World.TickDt);
         }
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        Line($"20 rockets in flight: {game.Rockets.Count} still flying after 150 ticks, {allocated} bytes allocated over 120 ticks + frames");
+        LLine($"20 rockets in flight: {game.Rockets.Count} still flying after 150 ticks, {allocated} bytes allocated over 120 ticks + frames");
         if (game.Rockets.Count < 15)
             Fail($"the allocation check's rockets ended early ({game.Rockets.Count} left)");
         if (allocated > 0)
@@ -390,7 +412,7 @@ public static partial class SelfTest
                 busySince = now;
             botRocket = game.Rockets.Values.FirstOrDefault(r => r.Owner == b1.Id);
         }
-        Line($"bot vs drone: launcher out after {(busySince < 0 ? "never" : $"{busySince - 10:0.0} s")}, rocket {(botRocket == null ? "none" : $"locked on {botRocket.Target}")}, holding {Weapons.Get(b1.Weapon).Name}");
+        LLine($"bot vs drone: launcher out after {(busySince < 0 ? "never" : $"{busySince - 10:0.0} s")}, rocket {(botRocket == null ? "none" : $"locked on {botRocket.Target}")}, holding {Weapons.Get(b1.Weapon).Name}");
         if (botRocket == null || botRocket.Target != enemyDrone.Id)
             Fail("a bot with a lock-on launcher should lock and fire at an enemy drone it can see");
         Run(6);
@@ -407,7 +429,7 @@ public static partial class SelfTest
                 if (d < closest.D)
                     closest = (d, prints[i].W.Name, prints[j].W.Name);
             }
-        Line($"launch sounds (synth, their own path): closest pair {closest.A} / {closest.B} {closest.D:0.00} dB apart");
+        LLine($"launch sounds (synth, their own path): closest pair {closest.A} / {closest.B} {closest.D:0.00} dB apart");
         if (closest.D < 0.3f)
             Fail($"{closest.A} and {closest.B} sound alike ({closest.D:0.00} dB)");
     }
