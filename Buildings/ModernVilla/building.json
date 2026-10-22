@@ -113,9 +113,9 @@
         }
       ],
       "openings": [
-        {"type": "door", "at": [5.5, -1], "width": 0.9},
-        {"type": "door", "at": [1.5, -1], "width": 0.9},
-        {"type": "door", "at": [0, 0.5], "width": 0.9},
+        {"type": "door", "at": [4.6, -1], "width": 0.9},
+        {"type": "door", "at": [3, -4.0], "width": 0.9},
+        {"type": "door", "at": [0, -0.35], "width": 0.9},
         {"type": "door", "at": [6.5, 2], "width": 1.2, "material": "glass", "color": "#1c1c1e"}
       ]
     }
