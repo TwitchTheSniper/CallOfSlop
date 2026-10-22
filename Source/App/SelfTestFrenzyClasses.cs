@@ -37,7 +37,7 @@ public static partial class SelfTest
         Line("::warning title=Frenzy classes (results)::" + Join(FrenzyClassNotes.Skip(half)));
     }
 
-    private static WeaponClass[] AllClasses => Enum.GetValues<WeaponClass>();
+    private static readonly WeaponClass[] AllClasses = Enum.GetValues<WeaponClass>(); // cached: the allocation check indexes it per block
 
     private static void CheckFrenzyClassData()
     {
