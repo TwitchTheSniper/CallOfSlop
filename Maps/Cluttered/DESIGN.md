@@ -377,4 +377,23 @@ bushes in a band along the edge, weeds at the foot of the walls, trees round the
 global `Props/Volatile` set): Pallet Racking Bay (loaded, wrapped and open), Safety Railing, Semi Trailer, Pallet Jack,
 Dock Bumper, Hazard Placard, High Bay Light (steady and flickering).
 
+**Object counts** (from the self-test): 4,923 props (893 by hand, 4,030 from Clutter; 843 solid, 4,080 cosmetic, 2,279
+breakable). By set (solid/cosmetic): Debris 8/3,150, Misc 0/410, Industrial 69/273, Volatile 304/0, Warehouse 227/41,
+Vehicles 29/194, Urban 119/0, Office 40/8, Street 23/0, Furniture 10/0 and a few others. 288 explosives (263 Red Fuel
+Barrels, 9 Propane Tanks, 3 Propane Bulk Tanks, 4 Flammables Cabinets, 3 Gas Bottle Cages, 3 Gas Bottles, 3 Jerry Cans).
+34,890 plants (31,197 grass, 3,087 shrubs, 587 bushes, 19 trees; 7,479 dropped indoors and 19,255 on paving by the no-go
+rules), 341 meshes, 241 boxes drawn one by one, 26 spawns (9 + 9 team spawns), a 1,438-node nav graph with 179 nodes
+above 2 m (mezzanine, catwalks, stairs).
+
+**Measured** (self-test): nav walk Blue/Red hill 1 93/92 m, hill 2 101/99 m, hill 3 100/96 m, enemy flag 188/186 m (all
+within 4%); no spawn-to-spawn sight line; cover near the routes to the hills 114/98 (86%). Bots, 16 players: 119 kills
+in 90 s of free-for-all and 37 in team deathmatch, no stuck, fallen or escaped bots, worst tick about 1 ms. Chain reaction
+(one barrel shot in the biggest cluster, 21 explosives down the cross aisle): it lit, went off after 0.62 s, 19 of the 21
+went off in a ripple, at most 15 fireballs at once, ticks p99 0.18 ms.
+
+**Performance.** About Old Town's counts (4,908 props, 31,758 plants) with fewer boxes, so expect about the same frame
+rate (~1,600-1,700 fps on the user's PC). Racks, railings, trailers and every barrel are instanced props; lamps and
+flickering tubes are animated props that hold still past 80 m. The smoke run's `cluttered_powderkeg` (the map from the
+south-west) and `cluttered_powderkeg_hall` (the staging band at eye height) views log fps, props and plants drawn.
+
 `tools/cluttered/powderkeg.py` regenerates the file (and a top-down preview PNG with the walk and sight-line checks).
