@@ -1,0 +1,27 @@
+CALL OF SLOP - tester build
+===========================
+
+Thanks for testing!
+
+Running it
+- Unzip the whole folder anywhere (don't run it from inside the zip).
+- Double-click CallOfSlop.exe. No install needed; .NET is included.
+- Windows 10/11, 64-bit, with a graphics card that supports OpenGL 4.1.
+- If Windows SmartScreen warns about an unknown app, click "More info" > "Run anyway".
+
+Playing together
+- Everyone must use the SAME build (the same zip). Different builds can't join each other.
+- One person hosts from the Multiplayer screen; others join from the server browser or by address.
+  The host may need to allow the game through the Windows firewall when asked.
+- Single player against bots works offline.
+
+Your saves
+- Settings, progression and loadouts are saved as settings.txt, progress.txt and loadout.txt
+  in this folder. Keep them if you update to a newer build by copying them into the new folder.
+
+Reporting bugs
+- Say what you were doing, which map and mode, and attach callofslop.log from this folder
+  (it's written fresh each time the game starts, so grab it before restarting).
+- Screenshots help a lot.
+
+Credits and licences are in NOTICE.txt.
