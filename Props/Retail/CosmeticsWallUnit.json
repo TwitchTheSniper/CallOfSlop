@@ -63,6 +63,6 @@
     {"size": [0.06, 0.1079, 0.06], "offset": [0.48, 2.02, -0.1], "color": "#d03060"},
     {"size": [0.06, 0.1445, 0.06], "offset": [0.67, 2.02, -0.1], "color": "#c09060"},
     {"size": [0.06, 0.0871, 0.06], "offset": [0.86, 2.02, -0.1], "color": "#f0a0b0"},
-    {"size": [1.8, 0.04, 0.02], "offset": [0, 2.22, -0.18], "color": "#ffffff", "anim": {"type": "blink", "period": 10, "duty": 1, "color": "#fff4e8", "off": "#fff4e8", "glow": 1.0}}
+    {"size": [1.8, 0.04, 0.02], "offset": [0, 2.22, -0.18], "color": "#ffffff", "anim": {"type": "pulse", "period": 6, "color": "#fff4e8", "off": "#b7afa7", "glow": 1.0}}
   ]
 }

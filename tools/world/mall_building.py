@@ -133,7 +133,8 @@ g_ops += [
     {"type": "window", "at": [-27.4, 23], "width": 4.0, "sill": 0.5, "head": 3.2, "health": 20},
     {"type": "door", "at": [-42, 0], "width": 2.4, "material": "glass", "health": 40},
     # food court: onto the atrium (wide), the east side and the car park
-    {"type": "arch", "at": [24, 0], "width": 12.0, "head": 3.6},
+    {"type": "arch", "at": [24, -3.1], "width": 5.6, "head": 3.6},
+    {"type": "arch", "at": [24, 3.1], "width": 5.6, "head": 3.6},
     {"type": "door", "at": [42, -6], "width": 2.0, "material": "glass", "health": 40},
     {"type": "door", "at": [42, 6], "width": 2.0, "material": "glass", "health": 40},
     {"type": "window", "at": [42, -15], "width": 4.0, "sill": 0.6, "head": 3.0, "health": 10},

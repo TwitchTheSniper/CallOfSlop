@@ -73,7 +73,13 @@ def brk(health, sound, count=10, size=(0.04, 0.2), colors=None):
     return b
 
 
-LIT = lambda c, glow=0.9: {"type": "blink", "period": 10, "duty": 1, "color": c, "off": c, "glow": glow}
+def _dim(c, k=0.72):
+    c = c.lstrip("#")
+    return "#" + "".join(f"{int(int(c[i:i + 2], 16) * k):02x}" for i in (0, 2, 4))
+
+
+# lit letters and light strips: a slow, gentle pulse of glow (a light that never changes fails the animated-prop test)
+LIT = lambda c, glow=0.9: {"type": "pulse", "period": 6, "color": c, "off": _dim(c), "glow": glow}
 STOCK_BRIGHT = ["#d83a2a", "#f0b81e", "#2a6ad0", "#3aa05a", "#e86ab0", "#8a4ac8", "#ff8a20", "#30b8c8", "#f2efe6"]
 WHITE_FIX = "#e9e7e2"
 CHROME = "chrome"
@@ -364,7 +370,7 @@ items = []
 for x in (-0.6, -0.3, 0.0, 0.3, 0.6):
     for z in (-0.18, 0.18):
         items += [part((0.08, 0.06, 0.08), (x, 0.955, z), "#303034"), part((0.08, 0.15, 0.012), (x, 1.06, z), "#202024", rotation=[-15, 0, 0]),
-                  part((0.07, 0.13, 0.004), (x, 1.06, z + 0.007), "#3060b0", rotation=[-15, 0, 0], anim=dict(SCREEN, rate=2, phase=x + z + 0.5))]
+                  part((0.07, 0.13, 0.004), (x, 1.06, z + 0.007), "#3060b0", rotation=[-15, 0, 0], anim=dict(SCREEN, rate=2, phase=round((x + z + 1.0) % 1.0, 3)))]
 gadget_table("Phone Display Island", "A display island of phones on security stands, screens glowing. Solid, unbreakable.", items)
 
 ps = []
@@ -598,10 +604,10 @@ ps = [part((1.4, 0.7, 1.4), (0, 0.35, 0), "#c8c0b0", material="concrete"), part(
 ps += octo(0.2, 2.6, 0.7, "#8a6a40")
 for a in range(0, 360, 45):
     rad = math.radians(a)
-    ps.append(part((1.4, 0.06, 0.28), (math.sin(rad) * 0.6, 3.15, math.cos(rad) * 0.6), "#3a7a30", rotation=[0, a + 90, -22]))
+    ps.append(part((1.4, 0.06, 0.28), (math.sin(rad) * 0.6, 3.15, math.cos(rad) * 0.6), "#3a7a30", rotation=[0, (a + 90) % 360, -22]))
 for a in range(22, 360, 90):
     rad = math.radians(a)
-    ps.append(part((1.0, 0.05, 0.24), (math.sin(rad) * 0.42, 3.35, math.cos(rad) * 0.42), "#4a8a38", rotation=[0, a + 90, -35]))
+    ps.append(part((1.0, 0.05, 0.24), (math.sin(rad) * 0.42, 3.35, math.cos(rad) * 0.42), "#4a8a38", rotation=[0, (a + 90) % 360, -35]))
 ps += [part((0.5, 0.25, 0.5), (0.3, 0.84, 0.3), "#3a7a30"), part((0.4, 0.2, 0.4), (-0.35, 0.82, -0.25), "#4a8a38")]
 add(RETAIL, "Mall Planter Palm", "A square stone planter with a potted palm, for atriums and lobbies. Solid (the planter), unbreakable.", ps,
     collider=[box(1.44, 0.75, 1.44)], scatter=SQUARE)
@@ -665,7 +671,7 @@ for s in (-1, 1):
            part((0.16, 0.3, slope + 0.6), (x, RISE / 2 - 0.05, 0), "#9a9aa4", rotation=[ang, 0, 0], material="metal"),
            part((0.14, 1.04, 0.9), (x, 0.52, RUN / 2 + 0.55), "#9a9aa4", material="metal"), part((0.14, 1.04, 0.9), (x, RISE + 0.52, -RUN / 2 - 0.55), "#9a9aa4", material="metal")]
 ps += [part((1.3, 0.02, 0.6), (0, 0.01, RUN / 2 + 0.4), "#b8b8c0", material="metal"), part((1.3, 0.02, 0.6), (0, RISE + 0.01, -RUN / 2 - 0.4), "#b8b8c0", material="metal")]
-ps += [part((1.34, 0.6, slope), (0, RISE / 2 - 0.55, 0.12), "#8a8a94", rotation=[ang, 0, 0], material="metal")]
+ps += [part((1.34, 0.6, slope), (0, RISE / 2 - 0.2, 0.12), "#8a8a94", rotation=[ang, 0, 0], material="metal")]
 add(RETAIL, "Escalator Balustrade", "The glass sides, black handrails and steel skirt of a mall escalator climbing 4.6 m over 5.85 m towards -Z. Cosmetic: the steps are separate solid blocks.", ps, collision="cosmetic")
 
 ps = [part((1.2, 0.08, 0.6), (0, 0.04, 0), "#e8e8ec")]
@@ -855,4 +861,28 @@ def write(where, folder, category):
 
 
 write(RETAIL, OUT_RETAIL, "Retail")
+
+
+def gallery():
+    """Maps/Dev/PropGalleryRetail.json: every Retail prop on its own pad, in rows (the self-test wants every prop on a Dev map)."""
+    names = sorted(d["name"] for d in RETAIL)
+    per = 10
+    gops = [{"op": "Ground", "color": [0.4, 0.4, 0.42]}, {"op": "Perimeter", "height": 3, "color": [0.55, 0.55, 0.58]}]
+    hung = ("Mall Ceiling Light", "Mall Pendant Light", "Sale Banner Hanging")
+    for i, n in enumerate(names):
+        x, z = -40.5 + (i % per) * 9.0, -24.0 + (i // per) * 8.0
+        big = n in ("Cinema Big Screen", "Mall Fountain", "Escalator Balustrade", "Store Hoarding")
+        gops.append({"op": "Block", "x0": x - 3.6, "y0": 0, "z0": z - 3.4, "x1": x + 3.6, "y1": 0.05, "z1": z + 3.4, "color": [0.55, 0.53, 0.5]} if big else
+                    {"op": "Block", "x0": x - 1.8, "y0": 0, "z0": z - 1.8, "x1": x + 1.8, "y1": 0.05, "z1": z + 1.8, "color": [0.55, 0.53, 0.5]})
+        gops.append({"op": "Prop", "name": n, "x": x, "z": z} | ({"y": 1.2} if n in hung else {}))
+    gops += [{"op": "Spawn", "x": float(x), "z": 32.0} for x in range(-40, 41, 10)] + [{"op": "AutoWaypoints", "spacing": 6}]
+    mp = {"format": "call-of-slop-map/1", "name": "Prop Gallery Retail", "description": "Every Retail shop fitting (Props/Retail) on its own pad.",
+          "author": "Call of Slop", "order": 961, "halfX": 50, "halfZ": 36, "sky": [0.62, 0.7, 0.8], "ops": gops}
+    path = os.path.join(REPO, "Maps/Dev/PropGalleryRetail.json")
+    with open(path, "w") as f:
+        f.write("{\n" + ",\n".join(f'  "{k}": ' + (("[\n" + ",\n".join("    " + json.dumps(o) for o in v) + "\n  ]") if k == "ops" else json.dumps(v)) for k, v in mp.items()) + "\n}\n")
+    print("wrote", path)
+
+
+gallery()
 write(MALL, OUT_MALL, "Mall")

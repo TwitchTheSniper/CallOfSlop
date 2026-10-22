@@ -17,6 +17,6 @@
     {"size": [0.14, 1.04, 0.9], "offset": [0.72, 5.12, -3.475], "color": "#9a9aa4", "material": "metal"},
     {"size": [1.3, 0.02, 0.6], "offset": [0, 0.01, 3.325], "color": "#b8b8c0", "material": "metal"},
     {"size": [1.3, 0.02, 0.6], "offset": [0, 4.61, -3.325], "color": "#b8b8c0", "material": "metal"},
-    {"size": [1.34, 0.6, 7.4419], "offset": [0, 1.75, 0.12], "color": "#8a8a94", "rotation": [38.17884763521565, 0, 0], "material": "metal"}
+    {"size": [1.34, 0.6, 7.4419], "offset": [0, 2.1, 0.12], "color": "#8a8a94", "rotation": [38.17884763521565, 0, 0], "material": "metal"}
   ]
 }
