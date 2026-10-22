@@ -281,6 +281,8 @@ public static partial class SelfTest
         });
         var sbr = sniper.Bot!;
         var spot = sbr.VantageOf is { } vm && sbr.VantageSpot >= 0 ? vm.Spots[sbr.VantageSpot] : default;
+        VNote($"  sniper at the end: ({sniper.Position.X:0.0},{sniper.Position.Y:0.0},{sniper.Position.Z:0.0}), {sbr.Mode}/{sbr.VState} spot {sbr.VantageSpot} at "
+              + $"({spot.Pos.X:0.0},{spot.Pos.Y:0.0},{spot.Pos.Z:0.0}), path {sbr.PathIdx}/{sbr.PathLen}, stuck {sbr.StuckCount}, picks {game.VantagePicks}");
         VNote($"{map.Name} sniper vs SMG at {FlatOf(hostAt - start).Length():0} m: sniper travelling at {travelAt:0.00} s, holding a spot at {holdAt:0.0} s "
               + $"(+{spot.Height:0.0} m, y {spot.Pos.Y:0.0} vs {start.Y:0.0}), {farShots} long shots before that; SMG engaging at {smgEngageAt:0.00} s, "
               + $"first shot {smgShotAt:0.00} s, closed from {startDist:0} to {smgClosest:0} m; {game.VantageArrivals} arrivals");

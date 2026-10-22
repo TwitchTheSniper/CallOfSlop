@@ -210,14 +210,16 @@ public sealed class VantageMap
         foreach (var i in g.MainNodes)
             HeightAdvantage(g, i, near, out adv[i], out below[i]);
 
-        // 2. Candidates: the most elevated or most open nodes (cheap pre-score, deterministic order).
+        // 2. Candidates: the most elevated or most open nodes (cheap pre-score, deterministic order) that a bot can both
+        // get to and get back from (a roof you can only drop off is in the main area, but nobody walks up to it).
+        var reach = TwoWayReach(g);
         var main = g.MainNodes;
         var pre = new float[main.Length];
         var order = new int[main.Length];
         for (var k = 0; k < main.Length; k++)
         {
             var i = main[k];
-            pre[k] = MathF.Max(adv[i], 0f) + below[i] * 2f + g.Openness[i] * 0.35f;
+            pre[k] = reach[i] ? MathF.Max(adv[i], 0f) + below[i] * 2f + g.Openness[i] * 0.35f : -1f;
             order[k] = k;
         }
         Array.Sort(order, (a, b) => pre[b] != pre[a] ? pre[b].CompareTo(pre[a]) : a.CompareTo(b));
@@ -271,6 +273,67 @@ public sealed class VantageMap
     }
 
     private static float Flat(Vector3 d) => MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+
+    /// <summary>
+    /// Main-area nodes reachable from, and able to get back to, the main-area node nearest the map's middle (following
+    /// edges one way: drops can't be climbed back up). O(edges).
+    /// </summary>
+    private static bool[] TwoWayReach(NavGraph g)
+    {
+        var n = g.Nodes.Length;
+        var seed = -1;
+        var best = float.MaxValue;
+        foreach (var i in g.MainNodes)
+        {
+            var p = g.Nodes[i];
+            var d = p.X * p.X + p.Z * p.Z + p.Y * p.Y * 4f; // the middle, at ground level
+            if (d < best)
+                (best, seed) = (d, i);
+        }
+        var both = new bool[n];
+        if (seed < 0)
+            return both;
+        var fwd = new bool[n];
+        var stack = new Stack<int>();
+        fwd[seed] = true;
+        stack.Push(seed);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (!fwd[g.EdgeTo[e]])
+                {
+                    fwd[g.EdgeTo[e]] = true;
+                    stack.Push(g.EdgeTo[e]);
+                }
+        }
+        var rstart = new int[n + 1];
+        foreach (var to in g.EdgeTo)
+            rstart[to + 1]++;
+        for (var i = 0; i < n; i++)
+            rstart[i + 1] += rstart[i];
+        var rfrom = new int[g.EdgeTo.Length];
+        var fill = (int[])rstart.Clone();
+        for (var i = 0; i < n; i++)
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                rfrom[fill[g.EdgeTo[e]]++] = i;
+        var bwd = new bool[n];
+        bwd[seed] = true;
+        stack.Push(seed);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = rstart[i]; e < rstart[i + 1]; e++)
+                if (!bwd[rfrom[e]])
+                {
+                    bwd[rfrom[e]] = true;
+                    stack.Push(rfrom[e]);
+                }
+        }
+        for (var i = 0; i < n; i++)
+            both[i] = fwd[i] && bwd[i];
+        return both;
+    }
 
     /// <summary>Height over the mean of the main-area nodes within <see cref="HeightRadius"/>, and the share of them 2.5+ m below.</summary>
     private static void HeightAdvantage(NavGraph g, int i, List<int> near, out float adv, out float below)
