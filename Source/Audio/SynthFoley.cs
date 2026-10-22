@@ -301,8 +301,10 @@ public static partial class Synth
     // ---- Distant gunshot ------------------------------------------------------------------------
 
     /// <summary>
-    /// The far layer of a real firearm (Gun and Boom styles): a muffled blast, a low boom and a long rolling tail with
-    /// slap-back, crossfaded in with distance. Null for styles that don't carry (suppressed, energy, toy, nailgun).
+    /// The far layer of a real firearm (Gun and Boom styles), crossfaded in with distance: the report as it arrives from
+    /// far off, mid-heavy (the mids are what carry and what you place it by): a softened crack, a band-limited blast, only
+    /// a small boom, and a long rolling echo with slap-back. Null for styles that don't carry (suppressed, energy, toy,
+    /// nailgun).
     /// </summary>
     public static short[]? GunshotDistant(WeaponDef w)
     {
@@ -313,9 +315,10 @@ public static partial class Synth
         var tail = 0.12f + w.Tail * 0.9f;
         var boom = w.Sound == SoundStyle.Boom;
         var b = new Buf(0.55f + tail * 2.2f);
-        Noise(b, rng, 0, 1f, 0.003f, 0.04f + 0.06f * c + (boom ? 0.05f : 0), 500 + 400 * w.Bright);
-        Tone(b, 0, 0.9f + 0.4f * c, 90 - 30 * c, 35, 0.05f, 0.003f, 0.12f + 0.15f * c + (boom ? 0.12f : 0));
-        Noise(b, rng, 0.02f, 0.45f, 0.04f, tail * 0.9f + 0.15f, 300 + 200 * w.Bright, length: tail * 3 + 0.4f);
+        Band(b, rng, 0, 0.45f, 0.0008f, 0.008f, 900, 4500 + 1500 * w.Bright); // the crack, softened by the distance
+        Band(b, rng, 0.001f, 1f, 0.003f, 0.035f + 0.05f * c + (boom ? 0.04f : 0), 220, 1500 + 900 * w.Bright); // the blast
+        Tone(b, 0, 0.18f + 0.15f * c, 140 - 40 * c, 70, 0.04f, 0.003f, 0.06f + 0.08f * c + (boom ? 0.06f : 0)); // a small boom (not a sub rumble)
+        Band(b, rng, 0.02f, 0.4f, 0.04f, tail * 0.9f + 0.15f, 300, 1100 + 500 * w.Bright, length: tail * 3 + 0.4f); // the rolling echo
         Echo(b, 0.55f, 2.2f + w.Tail);
         return Finish(b, boom ? 0.95f : 0.85f);
     }

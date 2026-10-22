@@ -99,6 +99,8 @@ public sealed partial class Game
     {
         if (IsPropLit(i))
             return; // already burning: it goes off on its own
+        if (attacker != null && World.Map.PropInstances[i].Def.Breakable is { IsMine: true } mb && (mb.BreakBy & kind) != 0)
+            NoteMineHit(i, attacker); // whoever last hit a mine gets its kills, even if someone steps on it later (GameMines.cs)
         if (!World.Map.DamageProp(i, Math.Max(1, (int)MathF.Round(amount)), kind))
             return;
         if (World.Map.PropInstances[i].Def.Breakable is { ExplodeRadius: > 0, ExplodeFuse: > 0 } br)
@@ -125,7 +127,10 @@ public sealed partial class Game
     /// <summary>Set on <see cref="Msg.PropBreak"/>'s kind byte when the prop was lit (its fuse started) rather than broken.</summary>
     public const byte PropLitFlag = 0x80;
 
-    private readonly List<(int Index, double At, byte Attacker)> _propFuses = new();
+    /// <summary>Set on <see cref="Msg.PropBreak"/>'s kind byte when a broken prop came back (the Prop op's "respawn"; protocol 31).</summary>
+    public const byte PropRestoreFlag = 0x40;
+
+    private readonly List<(int Index, double At, byte Attacker, bool Env)> _propFuses = new();
     private bool[] _propLit = [];
     private Map? _fuseMap;
     private int _fuseMatch = -1;
@@ -149,7 +154,8 @@ public sealed partial class Game
     /// <summary>Is prop <paramref name="i"/> lit (burning down its fuse) in this match on this map?</summary>
     public bool IsPropLit(int i) => ReferenceEquals(_fuseMap, World.Map) && _fuseMatch == MatchNumber && (uint)i < (uint)_propLit.Length && _propLit[i];
 
-    private void LightProp(int i, float fuse, Player? attacker, double now)
+    /// <summary>Starts the per-match fuse (and respawn) state over when the map or the match changed.</summary>
+    private void EnsurePropFuseState()
     {
         var map = World.Map;
         if (!ReferenceEquals(_fuseMap, map) || _fuseMatch != MatchNumber || _propLit.Length != map.PropInstances.Count)
@@ -159,8 +165,16 @@ public sealed partial class Game
             _fuseMatch = MatchNumber;
             _propLit = new bool[map.PropInstances.Count];
         }
+    }
+
+    private void LightProp(int i, float fuse, Player? attacker, double now)
+    {
+        var map = World.Map;
+        EnsurePropFuseState();
         _propLit[i] = true;
-        _propFuses.Add((i, now + fuse, attacker?.Id ?? byte.MaxValue));
+        // Neutral (nobody's kill) when nobody set it off: a mine stepped on, or anything lit by a neutral blast.
+        var env = attacker == null && (map.PropInstances[i].Def.Breakable is { IsMine: true } || _blastEnv);
+        _propFuses.Add((i, now + fuse, attacker?.Id ?? byte.MaxValue, env));
         WritePropBreak(_w, i, (PropDamage)PropLitFlag, map.PropInstances[i].Bounds.Center);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnPropLit(i);
@@ -170,6 +184,7 @@ public sealed partial class Game
     {
         _propFuses.Clear();
         Array.Clear(_propLit);
+        ClearMineState(); // last hitters and pending respawns (GameMines.cs)
     }
 
     /// <summary>Server, every tick: explosive props whose fuse has burnt down go off (the earliest first, a few a tick).</summary>
@@ -190,10 +205,10 @@ public sealed partial class Game
                     best = k;
             if (best < 0)
                 break;
-            var (i, _, by) = _propFuses[best];
+            var (i, _, by, env) = _propFuses[best];
             _propFuses.RemoveAt(best);
             Players.TryGetValue(by, out var attacker); // null if they left: the blast still breaks props
-            ServerBreakProp(i, World.Map.PropInstances[i].Bounds.Center, PropDamage.Explosion, attacker, now);
+            ServerBreakProp(i, World.Map.PropInstances[i].Bounds.Center, PropDamage.Explosion, attacker, now, env);
         }
     }
 
@@ -205,21 +220,39 @@ public sealed partial class Game
     /// frag grenade owned by whoever broke it: it hurts players and breaks other props nearby (chains are fine: a prop
     /// only ever breaks once). An explosive prop with a fuse gets here when its fuse has burnt down (see <see cref="LightProp"/>).
     /// </summary>
-    internal void ServerBreakProp(int i, Vector3 from, PropDamage kind, Player? attacker = null, double now = 0)
+    internal void ServerBreakProp(int i, Vector3 from, PropDamage kind, Player? attacker = null, double now = 0, bool env = false)
     {
         if (!IsServer || !World.Map.BreakProp(i))
             return;
         WritePropBreak(_w, i, kind, from);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnPropBroken(i, from, kind);
-        if (World.Map.PropInstances[i].Def.Breakable is { ExplodeRadius: > 0 } br)
-            PropExplode(World.Map.PropInstances[i].Bounds.Center, br, attacker, now);
+        ScheduleRespawn(i, now); // a prop placed with "respawn" comes back later (GameMines.cs)
+        var inst = World.Map.PropInstances[i];
+        if (inst.Def.Breakable is { ExplodeRadius: > 0 } br)
+        {
+            env |= attacker == null && (br.IsMine || _blastEnv); // nobody set it off: a stepped-on mine, or a neutral blast's chain
+            // A mine's charge sits at ground level: the blast starts just above it, like a grenade on the floor.
+            var center = br.IsMine ? inst.Position + new Vector3(0, 0.2f, 0) : inst.Bounds.Center;
+            PropExplode(center, br, attacker, env, now);
+        }
     }
 
-    private void PropExplode(Vector3 center, PropBreakable br, Player? attacker, double now)
+    /// <summary>Set while a neutral blast (a mine nobody shot) breaks props, so what it sets off is neutral too.</summary>
+    private bool _blastEnv;
+
+    /// <summary>
+    /// An explosive prop going off. A barrel blast belongs to whoever broke it (their teammates are safe, no friendly fire).
+    /// A mine (or anything a neutral blast set off) is neutral: it hurts everyone in reach. Victims the credited player
+    /// could hurt anyway (enemies, and themselves) are that player's kills; everyone else's death is nobody's kill
+    /// ("Landmine" in the feed, no XP, like a fall). Walls shield, prone and Flak Jacket help, as for grenades.
+    /// </summary>
+    private void PropExplode(Vector3 center, PropBreakable br, Player? attacker, bool env, double now)
     {
         byte flags = 0;
-        if (attacker != null)
+        var neutral = br.IsMine || env;
+        var killId = neutral ? LandmineKillId : (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag);
+        if (attacker != null || neutral)
         {
             foreach (var victim in Players.Values.ToList())
             {
@@ -236,11 +269,14 @@ public sealed partial class Game
                 if (amount <= 0)
                     continue;
                 flags |= 1;
-                if (DamagePlayer(attacker, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag), now, DamageKind.Explosive, center) && victim != attacker)
+                var by = attacker != null && CanDamage(attacker, victim) ? attacker : neutral ? victim : attacker!; // neutral: the victim's own death
+                if (DamagePlayer(by, victim, amount, false, killId, now, DamageKind.Explosive, center) && victim != by)
                     flags |= 4;
             }
         }
-        BlastKnockback(attacker, center, br.ExplodeRadius, br.ExplodeKnockback); // pushes the living (Knockback.cs)
+        if (neutral)
+            BlastZombiesNeutral(attacker, center, br.ExplodeRadius, br.ExplodeDamage * 3f, now); // zombies too (GameMines.cs)
+        BlastKnockback(neutral ? null : attacker, center, br.ExplodeRadius, br.ExplodeKnockback); // pushes the living (Knockback.cs); a mine pushes everyone
         PropDetonations++;
         while (_propBlastTicks.Count > 0 && ServerTick - _propBlastTicks.Peek() >= PropBlastWindowTicks)
             _propBlastTicks.Dequeue();
@@ -248,11 +284,21 @@ public sealed partial class Game
         {
             _propBlastTicks.Enqueue(ServerTick);
             PropBlastsShown++;
-            _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)ThrowableKind.Frag).U8(attacker?.Id ?? byte.MaxValue).Vec(center).U8(flags);
+            var look = br.IsMine ? ThrowableKind.Impact : ThrowableKind.Frag; // a mine's fireball is the smaller one (its blast is about an impact grenade's)
+            _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)look).U8(attacker?.Id ?? byte.MaxValue).Vec(center).U8(flags);
             Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
-            OnDetonated(ThrowableKind.Frag, attacker?.Id ?? byte.MaxValue, center, flags, now);
+            OnDetonated(look, attacker?.Id ?? byte.MaxValue, center, flags, now);
         }
-        BlastProps(attacker, center, br.ExplodeRadius, br.ExplodeDamage, PropDamage.Explosion, now);
+        var wasEnv = _blastEnv;
+        _blastEnv = env;
+        try
+        {
+            BlastProps(attacker, center, br.ExplodeRadius, br.ExplodeDamage, PropDamage.Explosion, now);
+        }
+        finally
+        {
+            _blastEnv = wasEnv;
+        }
         BlastTactical(attacker, center, br.ExplodeRadius, br.ExplodeDamage, now); // tactical devices (GameTactical.cs)
     }
 
@@ -302,6 +348,8 @@ public sealed partial class Game
                 var from = r.Vec();
                 if ((kind & PropLitFlag) != 0)
                     OnPropLit(i); // an explosive prop's fuse started: it goes off (a second PropBreak) a moment later
+                else if ((kind & PropRestoreFlag) != 0)
+                    ApplyPropRestore(World.Map, i); // a prop with "respawn" is back (GameMines.cs)
                 else
                     ApplyPropBreak(World.Map, i, (PropDamage)kind, from);
                 break;
@@ -343,6 +391,15 @@ public sealed partial class Game
         if ((uint)i >= (uint)map.PropInstances.Count || map.IsPropBroken(i))
             return;
         var b = map.PropInstances[i].Bounds;
+        if (map.PropInstances[i].Def.Breakable is { IsMine: true })
+        {
+            // A pressure plate: a sharp click (and a glint of two sparks), then the blast a moment later.
+            Audio.Effect3D(Sfx.DeployDevice, b.Center, 1f);
+            Audio.Effect3D(Sfx.DryFire, b.Center, 0.9f);
+            PropDebris.Sparks(new Vector3(b.Center.X, b.Max.Y, b.Center.Z), 2, i * 7919 + (int)(PropDebris.Spawned & 0xFFFF));
+            MinesClicked++;
+            return;
+        }
         PropDebris.Sparks(new Vector3(b.Center.X, b.Max.Y, b.Center.Z), 10, i * 7919 + (int)(PropDebris.Spawned & 0xFFFF));
         Audio.Effect3D(Sfx.BreakMetal, b.Center, 0.55f);
     }
