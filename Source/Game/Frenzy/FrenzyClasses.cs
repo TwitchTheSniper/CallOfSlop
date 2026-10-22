@@ -168,9 +168,9 @@ public static class FrenzyClasses
         {
             using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
             var root = doc.RootElement;
-            if (!root.TryGetProperty("format", out var fmt) || fmt.GetString() != Format)
+            if (!root.TryGetProperty("format"u8, out var fmt) || fmt.GetString() != Format)
                 errors.Add($"classes.json: format should be \"{Format}\"");
-            if (!root.TryGetProperty("classes", out var cls) || cls.ValueKind != JsonValueKind.Object)
+            if (!root.TryGetProperty("classes"u8, out var cls) || cls.ValueKind != JsonValueKind.Object)
             {
                 errors.Add("classes.json: no \"classes\" object");
                 return list;
@@ -186,12 +186,12 @@ public static class FrenzyClasses
                 var e = list[(int)c];
                 seen[(int)c] = true;
                 var v = prop.Value;
-                if (v.TryGetProperty("character", out var ch) && ch.ValueKind == JsonValueKind.String)
+                if (v.TryGetProperty("character"u8, out var ch) && ch.ValueKind == JsonValueKind.String)
                     e.Character = ch.GetString() ?? "";
                 e.Music = Section(v, "music");
                 e.Visual = Section(v, "visual");
                 e.Sound = Section(v, "sound");
-                if (v.TryGetProperty("buffs", out var b) && b.ValueKind == JsonValueKind.Object)
+                if (v.TryGetProperty("buffs"u8, out var b) && b.ValueKind == JsonValueKind.Object)
                     e.Buffs = ParseBuffs(b, prop.Name, errors) ?? e.Buffs;
             }
             for (var i = 0; i < classes.Length; i++)
@@ -220,22 +220,22 @@ public static class FrenzyClasses
     private static FrenzyBuffDef? ParseBuffs(JsonElement b, string cls, List<string> errors)
     {
         var d = new FrenzyBuffDef();
-        if (b.TryGetProperty("name", out var n) && n.ValueKind == JsonValueKind.String)
+        if (b.TryGetProperty("name"u8, out var n) && n.ValueKind == JsonValueKind.String)
             d.Name = n.GetString() ?? "";
-        if (b.TryGetProperty("blurb", out var bl) && bl.ValueKind == JsonValueKind.String)
+        if (b.TryGetProperty("blurb"u8, out var bl) && bl.ValueKind == JsonValueKind.String)
             d.Blurb = bl.GetString() ?? "";
-        if (b.TryGetProperty("minLevel", out var ml) && ml.TryGetInt32(out var min))
+        if (b.TryGetProperty("minLevel"u8, out var ml) && ml.TryGetInt32(out var min))
             d.MinLevel = Math.Clamp(min, 1, FrenzyMeterCore.MaxLevel);
         var effects = new List<FrenzyEffect>();
-        if (b.TryGetProperty("effects", out var ef) && ef.ValueKind == JsonValueKind.Array)
+        if (b.TryGetProperty("effects"u8, out var ef) && ef.ValueKind == JsonValueKind.Array)
             foreach (var x in ef.EnumerateArray())
             {
-                if (!x.TryGetProperty("stat", out var st) || st.GetString() is not { } key || !StatKeys.TryGetValue(key, out var stat))
+                if (!x.TryGetProperty("stat"u8, out var st) || st.GetString() is not { } key || !StatKeys.TryGetValue(key, out var stat))
                 {
                     errors.Add($"classes.json: {cls}: an effect has no known \"stat\" ({string.Join(", ", StatKeys.Keys)})");
                     continue;
                 }
-                if (!x.TryGetProperty("atMin", out var a) || !a.TryGetSingle(out var atMin) || !x.TryGetProperty("atMax", out var z) || !z.TryGetSingle(out var atMax)
+                if (!x.TryGetProperty("atMin"u8, out var a) || !a.TryGetSingle(out var atMin) || !x.TryGetProperty("atMax"u8, out var z) || !z.TryGetSingle(out var atMax)
                     || !float.IsFinite(atMin) || !float.IsFinite(atMax))
                 {
                     errors.Add($"classes.json: {cls}: effect \"{key}\" needs numbers atMin and atMax");
@@ -253,14 +253,14 @@ public static class FrenzyClasses
     /// <summary>The built-in buffs (the same numbers as the shipped classes.json; used when the file or a class is missing).</summary>
     public static FrenzyBuffDef DefaultBuffs(WeaponClass c) => c switch
     {
-        WeaponClass.Pistol => Buff("Quick draw", "Pistols come out faster", new(FrenzyStat.EquipTime, 0.9f, 0.7f)),
-        WeaponClass.SMG => Buff("Run and gun", "SMGs lose less accuracy while moving, so firing out of a sprint hits", new(FrenzyStat.MoveSpread, 0.85f, 0.6f)),
-        WeaponClass.AssaultRifle => Buff("Steady hands", "Assault rifles kick less", new(FrenzyStat.Recoil, 0.94f, 0.85f)),
-        WeaponClass.DMR => Buff("Snap aim", "Marksman rifles aim down sights faster", new(FrenzyStat.AdsTime, 0.92f, 0.8f)),
-        WeaponClass.Sniper => Buff("Held breath", "Sniper rifles hold a steadier, tighter aim through the scope", new(FrenzyStat.AimedSpread, 0.85f, 0.65f)),
-        WeaponClass.Shotgun => Buff("Choke", "Shotguns fire a tighter spread", new(FrenzyStat.Spread, 0.94f, 0.85f)),
-        WeaponClass.LMG => Buff("Belt fed", "LMGs reload faster and slow you down less", new(FrenzyStat.Reload, 0.94f, 0.85f), new(FrenzyStat.MovePenalty, 0.85f, 0.6f)),
-        _ => Buff("Vampire rounds", "Kills with a Special weapon give you some health back", new(FrenzyStat.KillHeal, 10f, 25f)),
+        WeaponClass.Pistol => Buff("Quick draw", "Pistols come out faster", new FrenzyEffect(FrenzyStat.EquipTime, 0.9f, 0.7f)),
+        WeaponClass.SMG => Buff("Run and gun", "SMGs lose less accuracy while moving, so firing out of a sprint hits", new FrenzyEffect(FrenzyStat.MoveSpread, 0.85f, 0.6f)),
+        WeaponClass.AssaultRifle => Buff("Steady hands", "Assault rifles kick less", new FrenzyEffect(FrenzyStat.Recoil, 0.94f, 0.85f)),
+        WeaponClass.DMR => Buff("Snap aim", "Marksman rifles aim down sights faster", new FrenzyEffect(FrenzyStat.AdsTime, 0.92f, 0.8f)),
+        WeaponClass.Sniper => Buff("Held breath", "Sniper rifles hold a steadier, tighter aim through the scope", new FrenzyEffect(FrenzyStat.AimedSpread, 0.85f, 0.65f)),
+        WeaponClass.Shotgun => Buff("Choke", "Shotguns fire a tighter spread", new FrenzyEffect(FrenzyStat.Spread, 0.94f, 0.85f)),
+        WeaponClass.LMG => Buff("Belt fed", "LMGs reload faster and slow you down less", new FrenzyEffect(FrenzyStat.Reload, 0.94f, 0.85f), new FrenzyEffect(FrenzyStat.MovePenalty, 0.85f, 0.6f)),
+        _ => Buff("Vampire rounds", "Kills with a Special weapon give you some health back", new FrenzyEffect(FrenzyStat.KillHeal, 10f, 25f)),
     };
 
     private static FrenzyBuffDef Buff(string name, string blurb, params FrenzyEffect[] effects) => new() { Name = name, Blurb = blurb, MinLevel = 3, Effects = effects };
