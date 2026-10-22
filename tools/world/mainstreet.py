@@ -496,7 +496,7 @@ def fence_run(name, xa, xb, z, gaps):
 
 
 fence_run("Picket Fence", -33.0, 33.0, N_ALLEY[0] - 0.3, [(-27.0, -22.0), (-3.5, 3.5), (9.0, 13.0), (21.5, 26.0)])
-fence_run("Chain Link Fence", -33.0, 33.0, S_ALLEY[1] + 0.1, [(-29.0, -23.0), (-3.5, 3.5), (5.0, 9.5), (17.0, 22.0)])
+fence_run("Chain Link Fence", -33.0, 20.5, S_ALLEY[1] + 0.1, [(-29.0, -23.0), (-3.5, 3.5), (5.0, 9.5)])   # stops at the gas station kiosk
 DECALS.append({"op": "DecalScatter", "decals": ["Oil Stain", "Mud Patch", "Puddle", "Gravel Scatter", "Trash Bag" if False else "Paper Litter"], "x0": -33, "z0": N_ALLEY[0], "x1": 33, "z1": N_ALLEY[1], "count": 16, "seed": 13, "gap": 2})
 DECALS.append({"op": "DecalScatter", "decals": ["Oil Stain", "Mud Patch", "Puddle", "Gravel Scatter", "Paper Litter"], "x0": -33, "z0": S_ALLEY[0], "x1": 33, "z1": S_ALLEY[1], "count": 16, "seed": 14, "gap": 2})
 # wall dressing: posters on the passage walls and the alley backs, graffiti low down in the alleys
@@ -721,8 +721,11 @@ for x, z in BLUE_SP + RED_SP:
 # litter: the street, the alleys, the yards
 t.clutter(["Litter", "Newspaper", "Soda Cans", "Plastic Bag", "Cigarette Bin" if False else "Litter", "Bottle", "Leaf Litter" if False else "Newspaper"], -33, -8.4, 33, -5.8, 40, 31)
 t.clutter(["Litter", "Newspaper", "Soda Cans", "Plastic Bag", "Bottle"], -33, 5.8, 33, 8.4, 40, 32)
-t.clutter(["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"], -33, N_ALLEY[0], 33, N_ALLEY[1], 70, 33)
-t.clutter(["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"], -33, S_ALLEY[0], 33, S_ALLEY[1], 70, 34)
+ALLEY_JUNK = ["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"]
+t.clutter(ALLEY_JUNK, -33, N_ALLEY[0], 6.0, N_ALLEY[1], 45, 33)
+t.clutter(ALLEY_JUNK, 23.2, N_ALLEY[0], 33, N_ALLEY[1], 14, 38)
+t.clutter(ALLEY_JUNK, 6.0, N_ALLEY[0], 23.2, -20.8, 6, 39)      # the squeeze behind the bank
+t.clutter(["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"], -33, S_ALLEY[0], 20.0, S_ALLEY[1], 55, 34)
 t.clutter(["Hay Bale", "Pallet", "Tyre", "Plank Pile", "Bucket", "Oil Drum", "Litter", "Plank"], -46, -10, -34, 10, 24, 35)
 t.clutter(["Pallet", "Plank", "Tyre", "Litter", "Rusty Drum", "Cinder Blocks"], 39, -11, 52, 11, 18, 36)
 t.clutter(["Litter", "Plastic Bag", "Soda Cans", "Newspaper"], -2.5, -40, 2.5, 40, 16, 37)
