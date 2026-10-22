@@ -75,7 +75,7 @@
           "type": "bottling",
           "rect": [-2, 1, 6, 8],
           "autoWindows": {"spacing": 3.0, "width": 1.4, "sill": 1.6, "head": 3.6},
-          "props": [{"name": "Brewery Bottling Machine", "at": [2.6, -1.9]}, {"name": "Conveyor Rollers", "at": [2.4, 1.8]}]
+          "props": [{"name": "Brewery Bottling Machine", "at": [2.6, -1.9]}, {"name": "Conveyor Rollers", "at": [1.9, 1.3]}]
         },
         {"id": "casks", "type": "cask-store", "rect": [6, 1, 12, 8], "windows": false, "floor": {"color": "#6e6a62", "material": "concrete"}}
       ],
