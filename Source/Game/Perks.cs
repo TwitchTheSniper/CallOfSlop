@@ -96,6 +96,7 @@ public static class Perks
     public const float ParkourReach = 2.3f; // highest ledge you can climb (normally 1.7 m)
     public const float ParkourJump = 1.25f; // jump speed multiplier (about 1.55 m high instead of 1.0 m)
     public const float FlakMult = 0.25f; // explosive damage taken
+    public const float FlakKnockMult = 0.4f; // blast knockback taken (Knockback.cs)
     // Last Stand: the lethal hit leaves you on 1 HP and a shield blocks the next LastStandCharges bullet hits
     // (a shotgun blast is one hit however many pellets land; melee and explosions go straight through it).
     // It never saves you from a melee hit: melee kills in one hit (Melee.cs).
@@ -137,7 +138,7 @@ public static class Perks
             Effect = "A kill gives you 35% more speed for 4 seconds. Kills during the boost don't extend it, and it needs 6 seconds to recharge after it ends." },
 
         new() { Id = PerkId.FlakJacket, Category = PerkCategory.Survival, Name = "Flak Jacket", When = "Against grenades",
-            Effect = "Take 75% less damage from explosions, including your own grenades, and flashbangs and stun grenades hit you half as hard." },
+            Effect = "Take 75% less damage from explosions, including your own grenades, blasts throw you 60% less far, and flashbangs and stun grenades hit you half as hard." },
         new() { Id = PerkId.LastStand, Category = PerkCategory.Survival, Name = "Last Stand", When = "Once per life",
             Effect = "The first bullet or blast that would kill you leaves you on 1 HP instead, and a shield blocks the next 3 bullet hits (a shotgun blast counts as one) for up to 8 seconds. Explosions go straight through the shield, and it never saves you from melee." },
         new() { Id = PerkId.Bloodthirst, Category = PerkCategory.Survival, Name = "Bloodthirst", When = "Right after a kill",

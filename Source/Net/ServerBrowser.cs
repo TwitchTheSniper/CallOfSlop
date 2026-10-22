@@ -47,7 +47,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and frenzy class (+ the host's frenzy-buffs bit), 2 bytes (Snapshot.SlowBytes 16 -> 18).
     // 27: tactical equipment (GameTactical.cs): ThrowableKind gains Flash .. Stim (Msg.Throw / Loadout bytes), and the
     //     new Msg.TacState (devices with the snapshots) and Msg.TacEvent (flash / stun, intercepts, pings...) at the end.
-    public const byte ProtocolVersion = 27;
+    // 28: ragdolls and blast knockback (Knockback.cs): Msg.Knock at the end of Msg (server -> the pushed client: input
+    //     sequence + impulse, put into the prediction replay); blasts change living players' velocity on the server.
+    public const byte ProtocolVersion = 28;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

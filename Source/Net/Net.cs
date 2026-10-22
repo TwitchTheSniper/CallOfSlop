@@ -59,6 +59,7 @@ public enum Msg : byte
     BuildingState, // server -> joining client: every door's state and health and the broken windows (reliable)
     TacState, // server -> all: every tactical device (id, kind, owner, position, yaw, health, charges) with snapshots while any exist (unreliable; GameTactical.cs)
     TacEvent, // server -> all: a tactical moment: flashed / stunned, trophy intercept, device destroyed, decoy burst, motion ping, stim, placed, inserted (reliable)
+    Knock, // server -> one client: a blast pushed you (the input sequence it went in after, the impulse) for the prediction replay (reliable; Knockback.cs)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -213,6 +213,8 @@ public static unsafe partial class Program
     /// <summary>A zombie: legs that shuffle (or run), a hunched torso, arms out in front (swiping when it attacks), green skin, glowing eyes; dead, it tips over.</summary>
     private static void DrawZombie(Zombie z, double now)
     {
+        if (z.Ragdolled && Ragdolls.Enabled)
+            return; // dead: its body is a ragdoll (Source/Render/Ragdolls.cs)
         if (z.State != z.SeenState)
         {
             z.SeenState = z.State;
