@@ -35,7 +35,7 @@ BAL = 3.0                              # balcony depth
 VZ = AZ1 - BAL                         # the void runs z -VZ..VZ
 VX = AX1 - BAL
 BRIDGES = [(-13.5, -10.5), (10.5, 13.5)]
-ESC_RUN, ESC_STEPS = 5.85, 13
+ESC_RUN, ESC_STEPS = 5.85, 18          # 0.256 m risers: a 0.6 m nav sample never spans more than 0.55 m of rise
 FOOD_STALLS = [-10.5, 0.0, 10.5]     # the food court's three stalls along its east wall (z)
 ESC_LANES = [(-3.0, -1.7), (1.7, 3.0)]  # z bands of the two escalators on each side
 

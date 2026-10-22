@@ -125,7 +125,7 @@ for bx in (-12.0, 12.0):
         ESC_TOP.append((bx, sz * 4.2, L1))
         ESC_TOP.append((bx, sz * 6.4, L1))
 # the department store hill is just inside its upper arch (the doorway strip there is always kept free of furniture)
-HILLS = [{"x": -6.5, "z": 0, "radius": 3.6}, {"x": 33, "z": 0, "radius": 5}, {"x": -25.0, "z": 0, "y": L1, "radius": 4.5}]
+HILLS = [{"x": -6.5, "z": 0, "radius": 3.6}, {"x": 33, "z": 0, "y": 0.1, "radius": 5}, {"x": -25.0, "z": 0, "y": L1, "radius": 4.5}]
 FLAGS = [[0, 50.5], [-20, -40.5]]
 
 # ================================================================ the buildings
