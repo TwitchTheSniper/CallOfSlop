@@ -57,6 +57,15 @@ public static partial class SelfTest
             return len;
         }
 
+        string Route(Vector3 a, Vector3 b)
+        {
+            var n = search.Find(g, g.Nearest(a), g.Nearest(b, needSight: false), path);
+            var pts = new List<string>();
+            for (var i = 0; i < n; i++)
+                pts.Add($"({g.Nodes[path[i]].X:0.0},{g.Nodes[path[i]].Y:0.0},{g.Nodes[path[i]].Z:0.0})");
+            return string.Join(" ", pts);
+        }
+
         float Average(List<Vector3> from, Vector3 to)
         {
             var sum = 0f;
@@ -84,7 +93,7 @@ public static partial class SelfTest
             if (float.IsNaN(blue) || float.IsNaN(red) || MathF.Abs(blue - red) > 0.1f * MathF.Max(blue, red))
                 for (var t = 0; t < 2; t++)
                     Fail($"  {label} from {(t == 0 ? "Blue" : "Red")}: " + string.Join(", ", o.TeamSpawns[t].Select(s => $"({s.X:0},{s.Y:0.0},{s.Z:0}) {Walk(s, t == 0 ? forBlue : forRed):0}"))
-                         + $"; target node {g.Nodes[g.Nearest(t == 0 ? forBlue : forRed, needSight: false)]}");
+                         + $"; target node {g.Nodes[g.Nearest(t == 0 ? forBlue : forRed, needSight: false)]}; route from the first: " + Route(o.TeamSpawns[t][0], t == 0 ? forBlue : forRed));
         }
         var summary = $"London: {m.Size} {m.HalfX * 2:0} x {m.HalfZ * 2:0} m ({m.PlayArea:0} m2), max {m.WantedMaxPlayers} players; {m.PlacedBuildings.Count} buildings "
                       + $"({shell} shell boxes); {m.Solid.Count} boxes ({buildingBoxes} building, {drawnBoxes} drawn one by one); {m.PropInstances.Count} props ({solidProps} solid); "
