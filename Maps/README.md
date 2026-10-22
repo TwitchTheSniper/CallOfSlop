@@ -543,7 +543,7 @@ The outline is generated in single precision from the spec, deterministically (s
 
 ## Props
 
-Props are the small things that make a map look lived in: trash cans, dumpsters, crates, pallets, bricks, newspapers, bottles, benches, lamps. Each one is a file in the `Props` folder next to `Maps` (see [Props/README.md](../Props/README.md) for making your own). The **Prop Gallery** map in the Dev pack shows the starter props in rows by category (**Prop Gallery 2** the outdoor set: vehicles, rooftop, utility, signage, urban; **Prop Gallery 3** the indoor and everyday set; **Animated Props** the moving ones); **Prop Yard** is a small dressed street to play on.
+Props are the small things that make a map look lived in: trash cans, dumpsters, crates, pallets, bricks, newspapers, bottles, benches, lamps. Each one is a file in the `Props` folder next to `Maps` (see [Props/README.md](../Props/README.md) for making your own). The **Prop Gallery** map in the Dev pack shows the starter props in rows by category (**Prop Gallery 2** the outdoor set: vehicles, rooftop, utility, signage, urban; **Prop Gallery 3** the indoor and everyday set; **Animated Props** the moving ones; **Military Props** the military set in `Props/Military`); **Prop Yard** is a small dressed street to play on.
 
 | Op | Parameters | What it makes |
 |---|---|---|
