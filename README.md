@@ -78,7 +78,7 @@ When you **host or join** a game you land in the **lobby room** first, a menu in
 - **Return to lobby between matches** (host setting, Host screen and lobby room, default **off**, saved as `lobby_return`): on, everyone comes back to the lobby after the results screen and the map vote (with the voted map); off, the next match's warmup starts straight away.
 - **Single player** has no lobby room: its menu page already has every setting, and the in-map warmup starts the match.
 - The **server browser** shows what a game is doing: **In lobby** (green: join now and ready up), Warmup, Starting, In match or Results.
-- Online it's server-authoritative: the lobby state (map, settings, every player's ping, ~30 bytes + 3 per player) is sent on every change and once a second; chat goes through the server (protocol 33).
+- Online it's server-authoritative: the lobby state (map, settings, every player's ping, ~30 bytes + 3 per player) is sent on every change and once a second; chat goes through the server (protocol 32).
 
 ### Game modes
 
