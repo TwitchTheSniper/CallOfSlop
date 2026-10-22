@@ -17,13 +17,14 @@ public enum AudioSpace : byte
 }
 
 /// <summary>
-/// OpenAL EFX: a low-pass on every positional sound by distance (far gunfire loses its crack) and one reverb send per
-/// map. A canary at start-up (the device reports ALC_EXT_EFX, a low-pass filter takes and returns a value, a reverb
+/// OpenAL EFX: a distance filter on every positional sound (a high shelf: far sounds lose their air; gunshots also get a
+/// low shelf, so far gunfire loses its boom too, see <see cref="DistanceFilter"/>) and one reverb send per map. A canary at start-up (the device reports ALC_EXT_EFX, a low-pass filter takes and returns a value, a reverb
 /// loads into an effect slot) decides whether it is used; without it everything plays dry, exactly as before.
 /// </summary>
 public sealed partial class Audio
 {
     private LowpassFilter _lowpass;
+    private BandpassFilter _bandpass; // both shelves (OpenAL Soft: low shelf at 250 Hz, high shelf at 5 kHz); null when the driver lacks it
     private ReverbEffect _reverb;
     private AlAuxiliaryEffectSlot _slot;
 
@@ -58,6 +59,21 @@ public sealed partial class Audio
             var back = _lowpass.GainHf;
             if (MathF.Abs(back - 0.5f) > 1e-3f)
                 throw new InvalidOperationException($"low-pass GainHf read back {back}");
+            try
+            {
+                _bandpass = efx.CreateBandpass();
+                _bandpass.Gain = 1f;
+                _bandpass.GainLf = 0.5f;
+                var lf = _bandpass.GainLf;
+                if (MathF.Abs(lf - 0.5f) > 1e-3f)
+                    throw new InvalidOperationException($"band-pass GainLf read back {lf}");
+            }
+            catch (Exception)
+            {
+                if (!_bandpass.Filter.IsNull())
+                    _bandpass.Delete();
+                _bandpass = default; // the high shelf alone (no low cut with distance)
+            }
             _reverb = efx.CreateReverb();
             var props = ReverbPreset.Generic;
             _reverb.Set(in props);
@@ -73,7 +89,7 @@ public sealed partial class Audio
             }
             Al.ThrowIfError();
             EfxEnabled = true;
-            EfxStatus = $"on (EFX {efx.EfxMajorVersion}.{efx.EfxMinorVersion}, {sends} sends: distance low-pass{(sends > 0 ? " + reverb" : "")})";
+            EfxStatus = $"on (EFX {efx.EfxMajorVersion}.{efx.EfxMinorVersion}, {sends} sends: distance {(_bandpass.Filter.IsNull() ? "low-pass" : "band-pass (gunshots thin out)")}{(sends > 0 ? " + reverb" : "")})";
         }
         catch (Exception ex)
         {
@@ -95,6 +111,8 @@ public sealed partial class Audio
                 _reverb.Delete();
             if (!_lowpass.Filter.IsNull())
                 _lowpass.Delete();
+            if (!_bandpass.Filter.IsNull())
+                _bandpass.Delete();
         }
         catch (Exception)
         {
@@ -103,9 +121,11 @@ public sealed partial class Audio
         _slot = default;
         _reverb = default;
         _lowpass = default;
+        _bandpass = default;
     }
 
-    private void ApplyDistanceFilter(AlSource src, Vector3? position)
+    /// <summary>The distance filter for a voice: <paramref name="thin"/> = also the low shelf (<see cref="DistanceLf"/>; gunshots).</summary>
+    private void ApplyDistanceFilter(AlSource src, Vector3? position, bool thin = false)
     {
         if (!EfxEnabled)
             return;
@@ -113,8 +133,19 @@ public sealed partial class Audio
         {
             if (position is { } p)
             {
-                _lowpass.GainHf = DistanceHf(Vector3.Distance(p, _listener)) * DeafenHf;
-                src.DirectFilter = _lowpass; // copies the filter's settings into the source
+                var d = Vector3.Distance(p, _listener);
+                var hf = DistanceHf(d) * DeafenHf;
+                if (thin && !_bandpass.Filter.IsNull())
+                {
+                    _bandpass.GainHf = hf;
+                    _bandpass.GainLf = DistanceLf(d);
+                    src.DirectFilter = _bandpass; // copies the filter's settings into the source
+                }
+                else
+                {
+                    _lowpass.GainHf = hf;
+                    src.DirectFilter = _lowpass;
+                }
             }
             else if (DeafenHf < 0.99f)
             {

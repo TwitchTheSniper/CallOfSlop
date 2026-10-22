@@ -114,6 +114,7 @@ public static partial class SelfTest
         CheckGunMixRelations(set, real);
         CheckGunMixHeadroom(set, real);
         CheckGunMixCost();
+        CheckOwnGunVolumeSetting();
         Line("::error title=Gun mix results TEMP::" + string.Join("%0A", GunMixNotes.Select(t => t.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
@@ -225,6 +226,45 @@ public static partial class SelfTest
             Fail($"planning a shot takes {ns:0} ns (budget 2 us)");
     }
 
+    /// <summary>Settings > Audio "Own gun volume": an old settings file loads it as 1, a bad value is ignored or clamped, and it saves.</summary>
+    private static void CheckOwnGunVolumeSetting()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"callofslop-selftest-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var path = Path.Combine(dir, "settings.txt");
+            File.WriteAllLines(path, ["name=Old Timer", "volume=0.6", "effects_volume=0.9"]); // from before the slider
+            var s = Settings.Load(path);
+            if (s.OwnGunVolume != 1f || Math.Abs(s.EffectsVolume - 0.9f) > 1e-6f)
+                Fail($"old settings file: own gun volume {s.OwnGunVolume} (want 1), effects {s.EffectsVolume}");
+            File.WriteAllLines(path, ["own_gun_volume=abc"]);
+            if (Settings.Load(path).OwnGunVolume != 1f)
+                Fail("a bad own gun volume didn't fall back to 1");
+            File.WriteAllLines(path, ["own_gun_volume=4"]);
+            if (Settings.Load(path).OwnGunVolume != 1f)
+                Fail("own gun volume 4 wasn't clamped to 1");
+            s.OwnGunVolume = 0.55f;
+            s.Save(path);
+            var back = Settings.Load(path).OwnGunVolume;
+            if (Math.Abs(back - 0.55f) > 1e-6f)
+                Fail($"own gun volume didn't survive a save: {back}");
+            if (new Settings().OwnGunVolume != 1f)
+                Fail("own gun volume doesn't default to 1 (the tuned mix)");
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, true);
+            }
+            catch
+            {
+                // a leftover temp folder is harmless
+            }
+        }
+    }
+
     // ---- Offline mixing path ---------------------------------------------------------------------------
 
     /// <summary>
@@ -237,7 +277,7 @@ public static partial class SelfTest
         var near = (suppressed ? set.Suppressed : set.Shots)[w.Id][0];
         var far = suppressed ? null : set.Far[w.Id];
         var d = distance ?? 0f;
-        var plan = Audio.PlanShot(distance == null, suppressed, far != null, d);
+        var plan = Audio.PlanShot(distance == null, suppressed, far != null, d, w.Sound is SoundStyle.Rocket or SoundStyle.Thump);
         var len = Math.Max(near.Length, far?.Length ?? 0);
         var o = new float[len];
         AddLayer(o, near, plan.Near, plan.NearFalloff, distance);
