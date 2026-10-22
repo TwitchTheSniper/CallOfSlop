@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fuel Tank",
+  "category": "DeepcutMine",
+  "description": "A 6 m diesel tank lying on two cradles, with a red DIESEL band. Solid, unbreakable cover.",
+  "collision": "solid",
+  "collider": [{"size": [6.1, 2.95, 2.3]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [6.0, 0.994, 2.4], "offset": [0, 1.75, 0], "color": "#d8d4c8", "rotation": [0, 0, 0], "material": "metal"},
+    {"size": [6.0, 0.994, 2.4], "offset": [0, 1.75, 0], "color": "#d8d4c8", "rotation": [45, 0, 0], "material": "metal"},
+    {"size": [6.0, 0.994, 2.4], "offset": [0, 1.75, 0], "color": "#d8d4c8", "rotation": [90, 0, 0], "material": "metal"},
+    {"size": [6.0, 0.994, 2.4], "offset": [0, 1.75, 0], "color": "#d8d4c8", "rotation": [135, 0, 0], "material": "metal"},
+    {"size": [0.3, 1.0, 2.2], "offset": [-2.0, 0.5, 0], "color": "#4a4a4c"},
+    {"size": [0.3, 1.0, 2.2], "offset": [2.0, 0.5, 0], "color": "#4a4a4c"},
+    {"size": [0.1, 2.2, 2.2], "offset": [-3.02, 1.75, 0], "color": "#b8b4a8"},
+    {"size": [0.1, 2.2, 2.2], "offset": [3.02, 1.75, 0], "color": "#b8b4a8"},
+    {"size": [0.6, 0.3, 0.6], "offset": [1.0, 3.05, 0], "color": "#5a5a5c"},
+    {"size": [0.3, 0.6, 0.3], "offset": [-1.5, 3.2, 0], "color": "#5a5a5c"},
+    {"size": [2.6, 0.5, 0.02], "offset": [0, 1.8, 1.25], "color": "#c82818"},
+    {"size": [2.2, 0.3, 0.025], "offset": [0, 1.8, 1.26], "color": "#f2f2ea"}
+  ]
+}

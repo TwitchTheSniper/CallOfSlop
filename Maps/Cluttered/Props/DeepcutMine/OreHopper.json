@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ore Hopper",
+  "category": "DeepcutMine",
+  "description": "An ore bin on four steel legs, its chute 3.4 m up: you can walk under it.",
+  "collision": "solid",
+  "collider": [{"size": [0.35, 5.0, 0.35], "offset": [-1.6, 2.5, -1.6]}, {"size": [0.35, 5.0, 0.35], "offset": [-1.6, 2.5, 1.6]}, {"size": [0.35, 5.0, 0.35], "offset": [1.6, 2.5, -1.6]}, {"size": [0.35, 5.0, 0.35], "offset": [1.6, 2.5, 1.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.35, 5.0, 0.35], "offset": [-1.6, 2.5, -1.6], "color": "#6a6e72", "material": "metal"},
+    {"size": [0.35, 5.0, 0.35], "offset": [-1.6, 2.5, 1.6], "color": "#6a6e72", "material": "metal"},
+    {"size": [0.35, 5.0, 0.35], "offset": [1.6, 2.5, -1.6], "color": "#6a6e72", "material": "metal"},
+    {"size": [0.35, 5.0, 0.35], "offset": [1.6, 2.5, 1.6], "color": "#6a6e72", "material": "metal"},
+    {"size": [3.6, 0.15, 0.15], "offset": [0, 2.0, -1.6], "color": "#5a5e62", "rotation": [0, 0, 30]},
+    {"size": [3.6, 0.15, 0.15], "offset": [0, 2.0, 1.6], "color": "#5a5e62", "rotation": [0, 0, 30]},
+    {"size": [4.2, 2.4, 4.2], "offset": [0, 6.4, 0], "color": "#8a6a3a", "material": "metal"},
+    {"size": [4.4, 0.2, 4.4], "offset": [0, 7.7, 0], "color": "#5a4424"},
+    {"size": [3.0, 1.0, 3.0], "offset": [0, 4.8, 0], "color": "#7a5a30", "material": "metal"},
+    {"size": [1.4, 1.0, 1.4], "offset": [0, 3.9, 0], "color": "#6a4a28", "material": "metal"},
+    {"size": [3.8, 0.3, 3.8], "offset": [0, 7.7, 0], "color": "#4a4440"},
+    {"size": [0.8, 0.8, 0.04], "offset": [0, 6.6, 2.12], "color": "#e0c040"}
+  ]
+}
