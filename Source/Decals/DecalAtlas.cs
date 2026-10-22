@@ -18,19 +18,37 @@ public static class DecalAtlas
     /// <summary>Pixels per side of each decal's layer.</summary>
     public const int LayerSize = 128;
 
-    /// <summary>The most decals the atlas holds (GL 3.3's guaranteed minimum array texture layers).</summary>
-    public const int MaxLayers = 256;
+    /// <summary>
+    /// The most layers the atlas holds: the global library (<see cref="Decals.MaxGlobal"/>) plus every loaded pack's decals
+    /// (<see cref="Decals.MaxPerPack"/> each). GL 4.1 guarantees 2048 array texture layers. Only the layers in use are
+    /// allocated (64 KB each plus a third for mipmaps), so the cap costs nothing by itself.
+    /// </summary>
+    public const int MaxLayers = 1024;
 
     public const int BytesPerLayer = LayerSize * LayerSize * 4;
 
     /// <summary>The atlas for <paramref name="defs"/> (at least one layer, so the texture is never empty).</summary>
-    public static byte[] Build(IReadOnlyList<DecalDef> defs, List<string>? errors = null)
+    public static byte[] Build(IReadOnlyList<DecalDef> defs, List<string>? errors = null) => Build(defs, errors, null, null, out _);
+
+    /// <summary>
+    /// The atlas for <paramref name="defs"/>, reusing the layers of an earlier build: while <paramref name="previousDefs"/>
+    /// matches <paramref name="defs"/> decal for decal (the same objects) those layers are copied from
+    /// <paramref name="previousData"/>, and only the rest are painted (a pack's decals loading when one of its maps does).
+    /// </summary>
+    public static byte[] Build(IReadOnlyList<DecalDef> defs, List<string>? errors, IReadOnlyList<DecalDef>? previousDefs, byte[]? previousData, out int painted)
     {
         var layers = Math.Max(1, defs.Count);
         var data = new byte[layers * BytesPerLayer];
         var problems = new string?[defs.Count];
+        var reuse = 0;
+        if (previousDefs != null && previousData != null)
+            while (reuse < defs.Count && reuse < previousDefs.Count && ReferenceEquals(defs[reuse], previousDefs[reuse]) && (reuse + 1) * BytesPerLayer <= previousData.Length)
+                reuse++;
+        if (reuse > 0)
+            previousData!.AsSpan(0, reuse * BytesPerLayer).CopyTo(data);
+        painted = defs.Count - reuse;
         // Decals are independent: paint them on all cores (each layer is the same whichever thread paints it).
-        Parallel.For(0, defs.Count, () => new Vector4[LayerSize * LayerSize], (i, _, scratch) =>
+        Parallel.For(reuse, defs.Count, () => new Vector4[LayerSize * LayerSize], (i, _, scratch) =>
         {
             try
             {
@@ -42,7 +60,7 @@ public static class DecalAtlas
             }
             return scratch;
         }, _ => { });
-        for (var i = 0; i < defs.Count; i++)
+        for (var i = reuse; i < defs.Count; i++)
         {
             if (problems[i] is not { } problem)
                 continue;

@@ -122,13 +122,13 @@ public static partial class SelfTest
         var totalMs = total.Elapsed.TotalMilliseconds;
         var layers = set.Sum(d => d.Layers.Count);
         DecalLine($"surface decals: {set.Length}/{SurfaceDecalNames.Length} loaded ({set.Count(d => d.Blend == DecalBlend.Multiply)} multiply), {layers} shape layers, "
-                  + $"painted one by one in {totalMs:0.0} ms (slowest {slowest.Name} {slowest.Ms:0.00} ms); library {all.Length}/{DecalAtlas.MaxLayers} atlas layers");
+                  + $"painted one by one in {totalMs:0.0} ms (slowest {slowest.Name} {slowest.Ms:0.00} ms); library {all.Length}/{Decals.MaxGlobal} global decals");
         if (slowest.Ms > 60)
             Fail($"painting decal {slowest.Name} took {slowest.Ms:0} ms (budget 60 ms per decal)");
         if (totalMs > 1000)
             Fail($"painting the surface decals one by one took {totalMs:0} ms (budget 1000 ms)");
-        if (all.Length > DecalAtlas.MaxLayers * 3 / 4)
-            Fail($"{all.Length} decals: the atlas holds {DecalAtlas.MaxLayers}; leave room or raise MaxLayers (GL guarantees 256 array layers on 3.3, 2048 on 4.1)");
+        if (all.Length > Decals.MaxGlobal * 3 / 4)
+            Fail($"{all.Length} decals: the global library holds {Decals.MaxGlobal}; leave room or raise MaxGlobal (the atlas holds {DecalAtlas.MaxLayers} layers with the packs' decals; GL 4.1 guarantees 2048)");
 
         CheckDecalSurfacesMap(placeable);
         Line("::notice title=Decal surfaces (results)::" + string.Join("%0A", DecalNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
@@ -154,7 +154,7 @@ public static partial class SelfTest
                 continue;
             foreach (var r in m.DecalRequests)
                 if (!r.Scatter)
-                    shown.UnionWith(r.Names);
+                    shown.UnionWith(r.Names.Select(n => PropScope.IsGlobal(n, out var bare) ? bare : n)); // "global:Exit Sign" (the Dev pack has its own)
         }
         var unshown = placeable.Where(d => !shown.Contains(d.Name)).Select(d => d.Name).ToList();
         if (unshown.Count > 0)
@@ -170,7 +170,7 @@ public static partial class SelfTest
         foreach (var r in map.DecalRequests.Where(r => !r.Scatter))
         {
             singles++;
-            var def = Decals.Find(r.Names[0]);
+            var def = map.DecalScope.Find(r.Names[0]);
             var rng = new DecalAtlas.Rng((uint)(r.Seed * 7919 + r.OpIndex * 104729 + 1));
             if (def == null || !DecalBaker.TryPlace(map, world, r, def, r.X0, r.Z0, r.Y, ref rng, out _))
                 lost.Add($"{r.Names[0]} at ({r.X0:0.#}, {r.Y:0.#}, {r.Z0:0.#}) onto {r.Onto} (op #{r.OpIndex})");
