@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hayloft",
+  "description": "The Grain Barn's hayloft: bales stacked under the roof, loose straw, old sacks.",
+  "items": [
+    {"props": ["Hay Bale"], "place": "wall", "count": [6, 10], "gap": 0.02},
+    {"props": ["Hay Bale"], "place": "floor", "count": [3, 6], "gap": 0.5},
+    {"props": ["Grain Barn Sack Pile"], "place": "floor", "count": [1, 2], "gap": 0.4},
+    {"props": ["Garden Tools", "Plank", "Cat"], "place": "floor", "count": [1, 3]}
+  ]
+}

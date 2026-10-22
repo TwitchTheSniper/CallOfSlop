@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Substation Switchgear",
+  "description": "A 1.6 m section of grey metal-clad switchgear: breaker handles, meters and indicator lamps, a yellow danger label.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 2.3, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 380,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 14, "size": [0.05, 0.3], "colors": ["#b4b8b0", "#2a2d2a"]}
+  },
+  "parts": [
+    {"size": [1.6, 2.2, 0.8], "offset": [0, 1.1, 0], "color": "#b4b8b0", "material": "metal"},
+    {"size": [1.62, 0.1, 0.82], "offset": [0, 2.25, 0], "color": "#8a8e88"},
+    {"size": [0.02, 2.0, 0.02], "offset": [0, 1.1, 0.41], "color": "#6a6e68"},
+    {"size": [0.6, 0.4, 0.02], "offset": [-0.4, 1.7, 0.41], "color": "#2a2d2a"},
+    {"size": [0.6, 0.4, 0.02], "offset": [0.4, 1.7, 0.41], "color": "#2a2d2a"},
+    {"size": [0.08, 0.3, 0.06], "offset": [-0.4, 1.0, 0.43], "color": "black"},
+    {"size": [0.08, 0.3, 0.06], "offset": [0.4, 1.0, 0.43], "color": "black"},
+    {"size": [0.3, 0.2, 0.01], "offset": [-0.4, 0.5, 0.405], "color": "yellow"},
+    {"size": [0.3, 0.2, 0.01], "offset": [0.4, 0.5, 0.405], "color": "yellow"},
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [-0.55, 1.95, 0.42],
+      "color": "#ff3030",
+      "anim": {"type": "blink", "period": 1.4, "color": "#ff3030", "glow": 1.0, "duty": 0.5}
+    },
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [-0.4, 1.95, 0.42],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30ff60", "glow": 1.0}
+    },
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [-0.25, 1.95, 0.42],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30ff60", "glow": 1.0, "phase": 0.3}
+    },
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [0.25, 1.95, 0.42],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30ff60", "glow": 1.0, "phase": 0.6}
+    },
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [0.4, 1.95, 0.42],
+      "color": "#ffb020",
+      "anim": {"type": "blink", "period": 2.2, "color": "#ffb020", "glow": 1.0, "duty": 0.5}
+    },
+    {
+      "size": [0.06, 0.06, 0.02],
+      "offset": [0.55, 1.95, 0.42],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30ff60", "glow": 1.0, "phase": 0.1}
+    },
+    {
+      "size": [0.4, 0.06, 0.02],
+      "offset": [-0.4, 1.7, 0.42],
+      "color": "#60ff80",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.9, "color": "#70ff90", "glow": 0.7}
+    },
+    {
+      "size": [0.4, 0.06, 0.02],
+      "offset": [0.4, 1.62, 0.42],
+      "color": "#60c0ff",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.95, "color": "#70d0ff", "glow": 0.7}
+    }
+  ]
+}

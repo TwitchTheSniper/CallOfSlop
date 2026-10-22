@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Dust Cyclone",
+  "description": "A galvanized sawdust cyclone on a steel tower, its duct running back to the mill.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 1.2, 1.6]}, {"size": [0.12, 3.0, 0.12], "offset": [-0.7, 1.5, -0.7]}, {"size": [0.12, 3.0, 0.12], "offset": [0.7, 1.5, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.12, 3.0, 0.12], "offset": [-0.7, 1.5, -0.7], "color": "steel"},
+    {"size": [0.12, 3.0, 0.12], "offset": [0.7, 1.5, -0.7], "color": "steel"},
+    {"size": [0.12, 3.0, 0.12], "offset": [-0.7, 1.5, 0.7], "color": "steel"},
+    {"size": [0.12, 3.0, 0.12], "offset": [0.7, 1.5, 0.7], "color": "steel"},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 3.0, 0], "color": "galvanized", "material": "metal", "yaw": 0},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 3.0, 0], "color": "galvanized", "material": "metal", "yaw": 45},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 3.0, 0], "color": "galvanized", "material": "metal", "yaw": 90},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 3.0, 0], "color": "galvanized", "material": "metal", "yaw": 135},
+    {"size": [1.0, 0.6, 0.414], "offset": [0, 3.6, 0], "color": "galvanized", "material": "metal", "yaw": 0},
+    {"size": [1.0, 0.6, 0.414], "offset": [0, 3.6, 0], "color": "galvanized", "material": "metal", "yaw": 45},
+    {"size": [1.0, 0.6, 0.414], "offset": [0, 3.6, 0], "color": "galvanized", "material": "metal", "yaw": 90},
+    {"size": [1.0, 0.6, 0.414], "offset": [0, 3.6, 0], "color": "galvanized", "material": "metal", "yaw": 135},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 4.6, 0], "color": "galvanized", "material": "metal", "yaw": 0},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 4.6, 0], "color": "galvanized", "material": "metal", "yaw": 45},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 4.6, 0], "color": "galvanized", "material": "metal", "yaw": 90},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 4.6, 0], "color": "galvanized", "material": "metal", "yaw": 135},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 5.6, 0], "color": "galvanized", "material": "metal", "yaw": 0},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 5.6, 0], "color": "galvanized", "material": "metal", "yaw": 45},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 5.6, 0], "color": "galvanized", "material": "metal", "yaw": 90},
+    {"size": [0.5, 0.6, 0.207], "offset": [0, 5.6, 0], "color": "galvanized", "material": "metal", "yaw": 135},
+    {"size": [2.4, 0.4, 0.4], "offset": [-1.2, 4.9, 0], "color": "galvanized", "material": "metal"},
+    {"size": [1.6, 1.2, 1.6], "offset": [0, 0.6, 0], "color": "#9a7a4a"}
+  ]
+}

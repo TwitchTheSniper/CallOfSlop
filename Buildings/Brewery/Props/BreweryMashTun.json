@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Mash Tun",
+  "description": "A wood-clad steel mash tun: a stirring rake turning under a motor on the lid, a hatch and a sparge arm.",
+  "collision": "solid",
+  "collider": [{"size": [1.7, 1.7, 1.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.7, 0.2, 1.7], "offset": [0, 0.1, 0], "color": "darkgrey"},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 0.9, 0], "color": "#7a5230", "material": "wood", "yaw": 0},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 0.9, 0], "color": "#7a5230", "material": "wood", "yaw": 45},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 0.9, 0], "color": "#7a5230", "material": "wood", "yaw": 90},
+    {"size": [1.6, 1.4, 0.662], "offset": [0, 0.9, 0], "color": "#7a5230", "material": "wood", "yaw": 135},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 0.35, 0], "color": "steel", "yaw": 0},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 0.35, 0], "color": "steel", "yaw": 45},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 0.35, 0], "color": "steel", "yaw": 90},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 0.35, 0], "color": "steel", "yaw": 135},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 1.4, 0], "color": "steel", "yaw": 0},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 1.4, 0], "color": "steel", "yaw": 45},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 1.4, 0], "color": "steel", "yaw": 90},
+    {"size": [1.64, 0.05, 0.679], "offset": [0, 1.4, 0], "color": "steel", "yaw": 135},
+    {"size": [1.5, 0.08, 0.621], "offset": [0, 1.64, 0], "color": "steel", "material": "metal", "yaw": 0},
+    {"size": [1.5, 0.08, 0.621], "offset": [0, 1.64, 0], "color": "steel", "material": "metal", "yaw": 45},
+    {"size": [1.5, 0.08, 0.621], "offset": [0, 1.64, 0], "color": "steel", "material": "metal", "yaw": 90},
+    {"size": [1.5, 0.08, 0.621], "offset": [0, 1.64, 0], "color": "steel", "material": "metal", "yaw": 135},
+    {"size": [0.4, 0.3, 0.4], "offset": [0, 1.83, 0], "color": "#2f5d3a"},
+    {"size": [0.08, 0.5, 0.08], "offset": [0, 2.2, 0], "color": "chrome", "anim": {"type": "spin", "axis": "y", "rpm": 20}},
+    {
+      "size": [1.2, 0.06, 0.06],
+      "offset": [0, 2.4, 0],
+      "color": "chrome",
+      "anim": {"type": "spin", "axis": "y", "rpm": 20, "pivot": [0, 2.4, 0]}
+    },
+    {"size": [0.5, 0.06, 0.5], "offset": [0.35, 1.7, 0.3], "color": "steel"},
+    {"size": [0.1, 0.1, 0.5], "offset": [0, 1.0, 0.95], "color": "steel"}
+  ]
+}

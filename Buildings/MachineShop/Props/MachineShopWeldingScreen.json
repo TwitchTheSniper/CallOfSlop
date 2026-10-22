@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Machine Shop Welding Screen",
+  "description": "A red welding curtain on a wheeled steel frame.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 1.95, 0.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 60,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 12, "size": [0.05, 0.3], "colors": ["#b02a20", "steel"]}
+  },
+  "parts": [
+    {"size": [0.06, 1.9, 0.06], "offset": [-0.95, 0.95, 0], "color": "steel"},
+    {"size": [0.06, 1.9, 0.06], "offset": [0.95, 0.95, 0], "color": "steel"},
+    {"size": [2.0, 0.06, 0.06], "offset": [0, 1.9, 0], "color": "steel"},
+    {"size": [0.5, 0.05, 0.5], "offset": [-0.95, 0.025, 0], "color": "steel"},
+    {"size": [0.5, 0.05, 0.5], "offset": [0.95, 0.025, 0], "color": "steel"},
+    {
+      "size": [1.8, 1.6, 0.02],
+      "offset": [0, 1.05, 0],
+      "color": "#b02a20",
+      "anim": {"type": "swing", "axis": "x", "angle": 2, "period": 4.0, "pivot": [0, 1.85, 0]}
+    }
+  ]
+}

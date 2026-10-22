@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "welding-bay",
+  "description": "The Machine Shop's welding bay: welding benches behind red screens, gas bottles, steel offcuts.",
+  "items": [
+    {"props": ["Machine Shop Welding Bench"], "place": "wall", "count": [1, 2]},
+    {"props": ["Machine Shop Welding Screen"], "place": "floor", "count": [1, 2], "gap": 0.4},
+    {"props": ["Gas Bottle"], "place": "corner", "count": [1, 2]},
+    {"props": ["Pipe Stack", "Machine Shop Bar Stock Rack"], "place": "wall"},
+    {"props": ["Toolbox", "Bucket"], "place": "floor", "count": [1, 2]}
+  ]
+}

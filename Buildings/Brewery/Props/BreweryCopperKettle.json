@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Copper Kettle",
+  "description": "A riveted copper brew kettle on a brick plinth: a domed lid, a flue to the roof, steam curling off the top.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 2.65, 2.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [2.0, 0.5, 2.0], "offset": [0, 0.25, 0], "color": "brick", "material": "brick"},
+    {"size": [1.8, 1.6, 0.745], "offset": [0, 1.3, 0], "color": "#b8693a", "material": "metal", "yaw": 0},
+    {"size": [1.8, 1.6, 0.745], "offset": [0, 1.3, 0], "color": "#b8693a", "material": "metal", "yaw": 45},
+    {"size": [1.8, 1.6, 0.745], "offset": [0, 1.3, 0], "color": "#b8693a", "material": "metal", "yaw": 90},
+    {"size": [1.8, 1.6, 0.745], "offset": [0, 1.3, 0], "color": "#b8693a", "material": "metal", "yaw": 135},
+    {"size": [1.5, 0.3, 0.621], "offset": [0, 2.25, 0], "color": "#b8693a", "material": "metal", "yaw": 0},
+    {"size": [1.5, 0.3, 0.621], "offset": [0, 2.25, 0], "color": "#b8693a", "material": "metal", "yaw": 45},
+    {"size": [1.5, 0.3, 0.621], "offset": [0, 2.25, 0], "color": "#b8693a", "material": "metal", "yaw": 90},
+    {"size": [1.5, 0.3, 0.621], "offset": [0, 2.25, 0], "color": "#b8693a", "material": "metal", "yaw": 135},
+    {"size": [1.0, 0.2, 0.414], "offset": [0, 2.5, 0], "color": "#b8693a", "material": "metal", "yaw": 0},
+    {"size": [1.0, 0.2, 0.414], "offset": [0, 2.5, 0], "color": "#b8693a", "material": "metal", "yaw": 45},
+    {"size": [1.0, 0.2, 0.414], "offset": [0, 2.5, 0], "color": "#b8693a", "material": "metal", "yaw": 90},
+    {"size": [1.0, 0.2, 0.414], "offset": [0, 2.5, 0], "color": "#b8693a", "material": "metal", "yaw": 135},
+    {"size": [0.34, 1.2, 0.141], "offset": [0, 3.2, 0], "color": "#b8693a", "material": "metal", "yaw": 0},
+    {"size": [0.34, 1.2, 0.141], "offset": [0, 3.2, 0], "color": "#b8693a", "material": "metal", "yaw": 45},
+    {"size": [0.34, 1.2, 0.141], "offset": [0, 3.2, 0], "color": "#b8693a", "material": "metal", "yaw": 90},
+    {"size": [0.34, 1.2, 0.141], "offset": [0, 3.2, 0], "color": "#b8693a", "material": "metal", "yaw": 135},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.0, 0], "color": "#7a4426", "yaw": 0},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.0, 0], "color": "#7a4426", "yaw": 45},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.0, 0], "color": "#7a4426", "yaw": 90},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.0, 0], "color": "#7a4426", "yaw": 135},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.8, 0], "color": "#7a4426", "yaw": 0},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.8, 0], "color": "#7a4426", "yaw": 45},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.8, 0], "color": "#7a4426", "yaw": 90},
+    {"size": [1.84, 0.06, 0.762], "offset": [0, 1.8, 0], "color": "#7a4426", "yaw": 135},
+    {"size": [0.5, 0.36, 0.06], "offset": [0, 0.25, 1.01], "color": "#2a2a2a"},
+    {
+      "size": [0.3, 0.16, 0.04],
+      "offset": [0, 0.25, 1.04],
+      "color": "#ff7a20",
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "color": "#ff8a30", "glow": 1.4}
+    },
+    {"size": [0.2, 0.2, 0.06], "offset": [0.55, 1.6, 0.86], "color": "white"},
+    {"size": [0.4, 0.4, 0.4], "offset": [0.2, 3.6, 0.3], "color": "#e8e8e8", "anim": {"type": "bob", "distance": 0.35, "period": 3.0}},
+    {
+      "size": [0.3, 0.3, 0.3],
+      "offset": [-0.25, 3.9, 0.1],
+      "color": "#f0f0f0",
+      "anim": {"type": "bob", "distance": 0.4, "period": 3.0, "phase": 0.5}
+    }
+  ]
+}

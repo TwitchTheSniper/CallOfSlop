@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "log-deck",
+  "description": "The Sawmill's log deck: piles of logs, a gantry hook for lifting them, loose logs.",
+  "items": [
+    {"props": ["Sawmill Log Pile"], "place": "wall", "count": [1, 2]},
+    {"props": ["Gantry Hook"], "place": "floor", "gap": 0.6},
+    {"props": ["Log"], "place": "floor", "count": [2, 3], "gap": 0.4},
+    {"props": ["Tree Stump", "Plank"], "place": "floor", "count": [1, 2]}
+  ]
+}

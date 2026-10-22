@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "industrial-control",
+  "description": "Industrial control room: desks of monitors facing the plant, racks of equipment, a whiteboard, coffee.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall", "count": [1, 3], "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Computer Monitor", "Monitor Screen Saver"], "place": "on", "of": "desk", "y": 0.77},
+    {"props": ["Server Rack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Filing Cabinet", "Metal Shelving"], "place": "wall"},
+    {"props": ["Whiteboard"], "place": "wall", "chance": 0.6},
+    {"props": ["Water Cooler", "Photocopier"], "place": "corner"},
+    {"props": ["Archive Boxes", "Paper Shredder", "PC Tower"], "place": "floor", "count": [0, 2]}
+  ]
+}

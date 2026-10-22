@@ -25,6 +25,8 @@ public struct SnapSlow
     public byte Primary, Secondary;
     public uint PrimaryKit, SecondaryKit;
     public PerkSet Perks;
+    public byte FrenzyLevel; // kill frenzy 0-6 (protocol 26)
+    public byte FrenzyClass; // WeaponClass of the most recent kill (low 7 bits); bit 7: the host's frenzy buffs are on (protocol 26)
 }
 
 /// <summary>The recipient's own movement at full precision (prediction reconciles against it exactly), plus its slow fields.</summary>
@@ -53,7 +55,7 @@ public struct SnapHeader
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
 ///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
 ///   shield charges, regenerating), weapon, boost;
-///   slow entries (16 bytes): id, kills, deaths, primary, secondary, kits, perks.
+///   slow entries (18 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
 /// <see cref="PacketWriter.Mtu"/>, it's split into parts, each a complete packet (header + whole entries); the
@@ -64,7 +66,7 @@ public static class Snapshot
     public const int HeaderBytes = 1 + 4 + 4 + 1 + 4 + 1 + 1 + 4;
     public const int FastBytes = 24;
     public const int MantleBytes = 10;
-    public const int SlowBytes = 16;
+    public const int SlowBytes = 18; // 16 + frenzy level and class (protocol 26)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 8;
 
@@ -138,12 +140,12 @@ public static class Snapshot
 
     public static void WriteSlow(PacketWriter w, in SnapSlow s) =>
         w.U8(s.Id).U16(s.Kills).U16(s.Deaths).U8(s.Primary).U8(s.Secondary).U24(s.PrimaryKit).U24(s.SecondaryKit)
-            .U8((byte)s.Perks.Movement).U8((byte)s.Perks.Survival).U8((byte)s.Perks.Damage);
+            .U8((byte)s.Perks.Movement).U8((byte)s.Perks.Survival).U8((byte)s.Perks.Damage).U8(s.FrenzyLevel).U8(s.FrenzyClass);
 
     public static SnapSlow ReadSlow(ref PacketReader r) => new()
     {
         Id = r.U8(), Kills = r.U16(), Deaths = r.U16(), Primary = r.U8(), Secondary = r.U8(), PrimaryKit = r.U24(), SecondaryKit = r.U24(),
-        Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()),
+        Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()), FrenzyLevel = r.U8(), FrenzyClass = r.U8(),
     };
 
     public static void WriteHeader(PacketWriter w, in SnapHeader h) =>
