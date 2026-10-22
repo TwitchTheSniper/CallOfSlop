@@ -49,6 +49,13 @@ public sealed class PropPart
     /// <summary>The part's "anim" block (cosmetic motion or light, see <see cref="PropAnimFile"/>), or null for a still part.</summary>
     public PropPartAnim? Anim;
 
+    /// <summary>
+    /// Built in code only (flag cloth pieces, <see cref="FlagPool"/>): the box's 8 corners in the prop's frame, indexed
+    /// like <see cref="Bounds"/> (bit 0: +x side, bit 1: +y, bit 2: +z), so a part can be a slanted slab (a diagonal
+    /// stripe cut to a cloth segment). Null for a normal box: <see cref="Size"/>, <see cref="Offset"/> and the rotation.
+    /// </summary>
+    public Vector3[]? Corners;
+
     public Quaternion Rotation => Quaternion.CreateFromYawPitchRoll(RotationDeg.Y * Deg, RotationDeg.X * Deg, RotationDeg.Z * Deg);
 
     private const float Deg = MathF.PI / 180f;
@@ -58,6 +65,16 @@ public sealed class PropPart
     {
         get
         {
+            if (Corners is { Length: 8 } cs)
+            {
+                Vector3 lo = cs[0], hi = cs[0];
+                foreach (var c in cs)
+                {
+                    lo = Vector3.Min(lo, c);
+                    hi = Vector3.Max(hi, c);
+                }
+                return new Box((lo + hi) / 2, (hi - lo) / 2);
+            }
             var q = Rotation;
             var h = Size / 2;
             var ext = Vector3.Zero;
@@ -84,6 +101,13 @@ public sealed class PropBreakable
 
     /// <summary>An explosive prop (fuel drum) goes off when it breaks: blast radius (0 = it doesn't) and damage at the centre.</summary>
     public float ExplodeRadius, ExplodeDamage;
+
+    /// <summary>
+    /// Seconds an explosive prop burns after the hit that breaks it before it goes off (0 = at once, the old behaviour).
+    /// While lit it stays whole (sparks and a hiss on every PC); one lit by another prop's blast goes off sooner
+    /// (<see cref="Game.ChainFuse"/>), so a cluster ripples instead of popping in one tick.
+    /// </summary>
+    public float ExplodeFuse;
 }
 
 /// <summary>
@@ -119,6 +143,15 @@ public sealed class PropDef
 
     public PropBreakable? Breakable;
 
+    /// <summary>The "flag" block: which parts are the flag's cloth, so a flag design from <see cref="FlagPool"/> can replace it. Null for other props.</summary>
+    public PropFlagCloth? FlagCloth;
+
+    /// <summary>For a flag variant built by <see cref="FlagPool.Variant"/>: the design's id ("us", "uk"...); null for a prop as its file has it.</summary>
+    public string? FlagId;
+
+    /// <summary>For a flag variant: the prop it was built from (same name, colliders and fingerprint; only the cloth differs).</summary>
+    public PropDef? FlagBase;
+
     /// <summary>Position in <see cref="Props.All"/>, or for a pack prop in its pack's <see cref="PropScope.Library"/> (the mesh index).</summary>
     public int Index;
 
@@ -129,7 +162,8 @@ public sealed class PropDef
     public string? Pack;
 
     /// <summary>Unique across every library: the name for a global prop, "Pack/Name" for a pack prop (two packs may both have a "Crate").</summary>
-    public string Key => Pack == null ? Name : Pack + "/" + Name;
+    /// <remarks>A flag variant adds "~id" ("Flag on a Pole~uk"), so each design is its own instanced mesh.</remarks>
+    public string Key => (Pack == null ? Name : Pack + "/" + Name) + (FlagId == null ? "" : "~" + FlagId);
 
     /// <summary>
     /// A fingerprint of a pack prop's file (its JSON with whitespace and comments dropped; 0 for global props). Maps

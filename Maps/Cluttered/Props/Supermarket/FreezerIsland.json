@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Freezer Island",
+  "category": "Supermarket",
+  "description": "A long open chest freezer in the middle of the aisle, frozen goods under sliding glass lids. Waist-high cover, unbreakable.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 0.92, 1.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "parts": [
+    {"size": [2.4, 0.76, 1.1], "offset": [0, 0.38, 0], "color": "#eef1f3", "material": "metal"},
+    {"size": [2.44, 0.06, 1.14], "offset": [0, 0.79, 0], "color": "#cfd6dc"},
+    {"size": [2.42, 0.1, 1.12], "offset": [0, 0.22, 0], "color": "#3a6ea5"},
+    {"size": [2.42, 0.08, 1.12], "offset": [0, 0.04, 0], "color": "#2a3036"},
+    {"size": [2.28, 0.02, 0.98], "offset": [0, 0.81, 0], "color": "#1d3550"},
+    {"size": [0.5, 0.111, 0.42], "offset": [-0.842, 0.876, -0.26], "color": "#c02828"},
+    {"size": [0.5, 0.097, 0.42], "offset": [-0.844, 0.869, 0.26], "color": "#3aa060"},
+    {"size": [0.5, 0.12, 0.42], "offset": [-0.313, 0.88, -0.26], "color": "#2a6ad0"},
+    {"size": [0.5, 0.095, 0.42], "offset": [-0.271, 0.867, 0.26], "color": "#f0c020"},
+    {"size": [0.5, 0.095, 0.42], "offset": [0.29, 0.868, -0.26], "color": "#c02828"},
+    {"size": [0.5, 0.118, 0.42], "offset": [0.301, 0.879, 0.26], "color": "#f0c020"},
+    {"size": [0.5, 0.088, 0.42], "offset": [0.863, 0.864, -0.26], "color": "#e8eef4"},
+    {"size": [0.5, 0.129, 0.42], "offset": [0.883, 0.884, 0.26], "color": "#e8eef4"},
+    {"size": [2.3, 0.03, 0.03], "offset": [0, 0.93, -0.5], "color": "chrome"},
+    {"size": [2.3, 0.03, 0.03], "offset": [0, 0.93, 0.0], "color": "chrome"},
+    {"size": [2.3, 0.03, 0.03], "offset": [0, 0.93, 0.5], "color": "chrome"},
+    {"size": [0.03, 0.12, 1.04], "offset": [-1.15, 0.88, 0], "color": "chrome"},
+    {"size": [0.03, 0.12, 1.04], "offset": [1.15, 0.88, 0], "color": "chrome"}
+  ]
+}

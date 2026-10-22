@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Produce Bin Greens",
+  "category": "Supermarket",
+  "description": "A tilted wooden produce display heaped with lettuce, cabbage and red onions, price cards along the front.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.8, 1.0, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "wood", "debris": {"count": 18, "size": [0.06, 0.3], "speed": 3.5, "colors": ["#3a8a2a", "#8ac850", "#6a2a6a", "#c8a070"]}},
+  "parts": [
+    {"size": [1.8, 0.7, 1.0], "offset": [0, 0.35, 0], "color": "lightwood", "material": "wood"},
+    {"size": [1.84, 0.05, 1.04], "offset": [0, 0.72, 0], "color": "darkwood"},
+    {"size": [1.8, 0.36, 0.05], "offset": [0, 0.98, -0.5], "color": "darkwood"},
+    {"size": [0.05, 0.25, 1.0], "offset": [0.9, 0.86, 0], "color": "darkwood"},
+    {"size": [0.05, 0.25, 1.0], "offset": [-0.9, 0.86, 0], "color": "darkwood"},
+    {"size": [0.56, 0.16, 0.94], "offset": [-0.58, 0.84, 0], "color": "#3a8a2a", "rotation": [10, 0, 0]},
+    {"size": [0.32, 0.1, 0.34], "offset": [-0.66, 0.95, -0.18], "color": "#4aa038", "rotation": [10, 0, 0]},
+    {"size": [0.26, 0.09, 0.3], "offset": [-0.48, 0.91, 0.18], "color": "#4aa038", "rotation": [10, 0, 0]},
+    {"size": [0.18, 0.11, 0.012], "offset": [-0.58, 0.82, 0.53], "color": "white"},
+    {"size": [0.56, 0.16, 0.94], "offset": [0.0, 0.84, 0], "color": "#8ac850", "rotation": [10, 0, 0]},
+    {"size": [0.32, 0.1, 0.34], "offset": [-0.08, 0.95, -0.18], "color": "#a0d868", "rotation": [10, 0, 0]},
+    {"size": [0.26, 0.09, 0.3], "offset": [0.1, 0.91, 0.18], "color": "#a0d868", "rotation": [10, 0, 0]},
+    {"size": [0.18, 0.11, 0.012], "offset": [0.0, 0.82, 0.53], "color": "white"},
+    {"size": [0.56, 0.16, 0.94], "offset": [0.58, 0.84, 0], "color": "#6a2a6a", "rotation": [10, 0, 0]},
+    {"size": [0.32, 0.1, 0.34], "offset": [0.5, 0.95, -0.18], "color": "#8a3a8a", "rotation": [10, 0, 0]},
+    {"size": [0.26, 0.09, 0.3], "offset": [0.68, 0.91, 0.18], "color": "#8a3a8a", "rotation": [10, 0, 0]},
+    {"size": [0.18, 0.11, 0.012], "offset": [0.58, 0.82, 0.53], "color": "white"}
+  ]
+}

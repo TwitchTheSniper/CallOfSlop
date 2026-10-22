@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Chemical Drum",
+  "category": "Volatile",
+  "description": "A blue plastic chemical drum with a corrosive label. It splits when shot but doesn't burn.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.58, 0.94, 0.58]}],
+  "scatter": {"randomYaw": true, "scale": [0.97, 1.03]},
+  "breakable": {"health": 55, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.06, 0.2], "speed": 5, "colors": ["#1f5fa8", "white"]}},
+  "parts": [
+    {"size": [0.56, 0.9, 0.232], "offset": [0.0, 0.46, 0.0], "color": "#1f5fa8", "rotation": [0, 0, 0]},
+    {"size": [0.56, 0.9, 0.232], "offset": [0.0, 0.46, 0.0], "color": "#1f5fa8", "rotation": [0, 45, 0]},
+    {"size": [0.56, 0.9, 0.232], "offset": [0.0, 0.46, 0.0], "color": "#1f5fa8", "rotation": [0, 90, 0]},
+    {"size": [0.56, 0.9, 0.232], "offset": [0.0, 0.46, 0.0], "color": "#1f5fa8", "rotation": [0, 135, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.3, 0.0], "color": "#1a5296", "rotation": [0, 0, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.3, 0.0], "color": "#1a5296", "rotation": [0, 45, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.3, 0.0], "color": "#1a5296", "rotation": [0, 90, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.3, 0.0], "color": "#1a5296", "rotation": [0, 135, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.62, 0.0], "color": "#1a5296", "rotation": [0, 0, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.62, 0.0], "color": "#1a5296", "rotation": [0, 45, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.62, 0.0], "color": "#1a5296", "rotation": [0, 90, 0]},
+    {"size": [0.585, 0.04, 0.242], "offset": [0.0, 0.62, 0.0], "color": "#1a5296", "rotation": [0, 135, 0]},
+    {"size": [0.5, 0.02, 0.207], "offset": [0.0, 0.92, 0.0], "color": "#1a5296", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.02, 0.207], "offset": [0.0, 0.92, 0.0], "color": "#1a5296", "rotation": [0, 45, 0]},
+    {"size": [0.5, 0.02, 0.207], "offset": [0.0, 0.92, 0.0], "color": "#1a5296", "rotation": [0, 90, 0]},
+    {"size": [0.5, 0.02, 0.207], "offset": [0.0, 0.92, 0.0], "color": "#1a5296", "rotation": [0, 135, 0]},
+    {"size": [0.09, 0.04, 0.09], "offset": [0.14, 0.94, 0.08], "color": "white"},
+    {"size": [0.07, 0.04, 0.07], "offset": [-0.13, 0.94, -0.1], "color": "white"},
+    {"size": [0.24, 0.24, 0.012], "offset": [0, 0.48, 0.282], "color": "white"},
+    {"size": [0.14, 0.14, 0.014], "offset": [0, 0.48, 0.285], "color": "black", "rotation": [0, 0, 45]}
+  ]
+}

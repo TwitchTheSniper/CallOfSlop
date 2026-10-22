@@ -29,6 +29,10 @@ public static unsafe partial class Program
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
         ("cluttered_oldtown", "Old Town", new Vector3(-70f, 38f, 52f), new Vector3(0f, 0f, -4f), false), // 06 Old Town from the south-west: smoke_cluttered_oldtown.bmp
         ("cluttered_oldtown_street", "Old Town", new Vector3(-58f, 1.7f, -5f), new Vector3(-16f, 1.6f, -4f), false), // West Main Street at eye height
+        ("cluttered_powderkeg", "Powder Keg", new Vector3(-78f, 46f, 62f), new Vector3(0f, 0f, -4f), false), // 12 Powder Keg from the south-west: smoke_cluttered_powderkeg.bmp
+        ("cluttered_powderkeg_hall", "Powder Keg", new Vector3(-26f, 1.7f, -1.5f), new Vector3(14f, 1.4f, -5f), false), // the hall's staging band at eye height, racks and barrels
+        ("cluttered_supermarket", "Supermarket", new Vector3(-48f, 24f, 60f), new Vector3(0f, 2f, 6f), false), // 07 Supermarket: the car park and store front
+        ("cluttered_supermarket_inside", "Supermarket", new Vector3(12.5f, 5.3f, -8f), new Vector3(-12f, 1.2f, 8f), false), // over the shop floor from the mezzanine
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
@@ -36,9 +40,13 @@ public static unsafe partial class Program
         // Cluttered pack, Dockside: the bay from above the west horn, then the waterfront road at eye height towards the fish market.
         ("cluttered_dockside", "Dockside", new Vector3(-62f, 24f, 38f), new Vector3(0f, 0f, -16f), false),
         ("cluttered_dockside_street", "Dockside", new Vector3(-27f, 1.7f, 2.5f), new Vector3(2f, 1.4f, 9f), false),
+        // Cluttered pack, 08 Truck Stop: the whole stop from above the highway, then the motel courtyard from its balcony.
+        ("cluttered_truckstop", "Truck Stop", new Vector3(-6f, 30f, 52f), new Vector3(2f, 0f, -6f), false),
+        ("cluttered_truckstop_street", "Truck Stop", new Vector3(-44.8f, 5.1f, 10f), new Vector3(-30f, 0.5f, -10f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
+        ("flags", "Flag Lineup", new Vector3(-1.5f, 3.4f, 4.5f), new Vector3(-1.2f, 3.9f, -6f), false), // the flag pool: US, UK, France, Finland at the front (smoke_props_flags.bmp)
     ];
 
     private static int _propsSmoke = -1; // view index; -1 = not running

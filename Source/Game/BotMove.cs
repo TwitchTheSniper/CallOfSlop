@@ -216,7 +216,7 @@ public sealed partial class Game
             return false;
         if (MathF.Abs(next.Y - pos.Y) < 0.4f)
             return true;
-        return World.Map.TerrainCollision is { } t && pos.Y - t.HeightAt(pos.X, pos.Z) < 0.3f && next.Y - t.HeightAt(next.X, next.Z) < 0.3f
+        return World.Map.TerrainCollision?.Layer(pos.Y) is { } t && pos.Y - t.HeightAt(pos.X, pos.Z) < 0.3f && next.Y - t.HeightAt(next.X, next.Z) < 0.3f
             && World.CanWalkStraight(pos, next);
     }
 

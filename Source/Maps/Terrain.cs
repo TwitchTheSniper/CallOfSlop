@@ -115,6 +115,8 @@ public sealed class TerrainSpec
     private static readonly string[] GridModes = ["add", "set"];
     private static readonly string[] Sides = ["left", "right"];
     private static readonly string[] MaterialNames = ["grass", "dirt", "rock", "sand"];
+    private static readonly string[] HoleShapes = ["circle", "ellipse", "polygon"];
+    private static readonly string[] CaveOpenEnds = ["both", "start", "end", "none"];
 
     /// <summary>Allowed keys per feature type (canonical spelling) and the ones that must be present.</summary>
     private static readonly Dictionary<string, (string[] Keys, string[] Required)> Schema = new(StringComparer.OrdinalIgnoreCase)
@@ -131,6 +133,9 @@ public sealed class TerrainSpec
         ["noise"] = (["amplitude", "scale", "octaves", "persistence", "lacunarity", "seed", "x", "z", "radius"], ["amplitude"]),
         ["smooth"] = (["passes", "x", "z", "radius"], []),
         ["grid"] = (["x0", "z0", "cell", "cols", "rows", "heights", "mode"], ["x0", "z0", "cell", "cols", "rows", "heights"]),
+        // Holes and caves (TerrainVoids.cs): they run after every height feature.
+        ["hole"] = (["shape", "x", "z", "radius", "radiusZ", "angle", "points", "depth", "floor"], ["shape"]),
+        ["cave"] = (["points", "width", "height", "depth", "open"], ["points"]),
     };
 
     /// <summary>Every feature type a map file can use.</summary>
@@ -248,6 +253,8 @@ public sealed class TerrainSpec
             case "side": return Choice(v, Sides, where);
             case "material": return Choice(v, MaterialNames, where);
             case "mode": return Choice(v, type == "grid" ? GridModes : LevelModes, where);
+            case "shape": return Choice(v, HoleShapes, where);
+            case "open": return Choice(v, CaveOpenEnds, where);
             default: return Num(v, where, key);
         }
     }
@@ -294,6 +301,24 @@ public sealed class TerrainSpec
             throw new MapFileException($"{where}: a local smooth needs \"x\", \"z\" and \"radius\"");
         if (f.Type == "smooth" && f.Num("passes", 1) > 20)
             throw new MapFileException($"{where}: \"passes\" is at most 20");
+        if (f.Type is "hole" or "cave")
+            foreach (var k in new[] { "height", "depth" })
+                Positive(k);
+        if (f.Type == "hole")
+        {
+            var shape = f.Str("shape", "circle");
+            var need = shape switch
+            {
+                "polygon" => new[] { "points" },
+                "ellipse" => new[] { "x", "z", "radius", "radiusZ" },
+                _ => new[] { "x", "z", "radius" },
+            };
+            foreach (var k in need)
+                if (!f.Has(k))
+                    throw new MapFileException($"{where}: a {shape} hole needs \"{k}\"");
+            if (shape == "polygon" && f.Points.Length < 3)
+                throw new MapFileException($"{where}: a polygon hole needs at least 3 points");
+        }
         if (f.Type == "grid")
         {
             var cols = f.Num("cols", 0);
@@ -428,7 +453,8 @@ public static class TerrainGen
         Array.Fill(g.Paint, (byte)255);
 
         foreach (var f in spec.Features)
-            Apply(g, f);
+            if (!TerrainVoidGen.IsVoidFeature(f.Type))
+                Apply(g, f);
         if (boundary is { Spec.Edge.Style: BoundaryEdgeStyle.Cliff })
             BoundaryCliff(g, boundary);
 
@@ -443,7 +469,9 @@ public static class TerrainGen
             g.H[k] = Math.Round(h / Quantum) * Quantum;
             heights[k] = (float)g.H[k];
         }
-        return new TerrainData(g.Nx, g.Nz, (float)cell, (float)g.Ox, (float)g.Oz, heights, Materials(g, spec.Surface), spec.Surface);
+        // Holes and caves follow the finished ground (null for maps without any: nothing about them changes).
+        var voids = TerrainVoidGen.Build(spec.Features, g.H, g.Nx, g.Nz, cell, g.Ox, g.Oz);
+        return new TerrainData(g.Nx, g.Nz, (float)cell, (float)g.Ox, (float)g.Oz, heights, Materials(g, spec.Surface), spec.Surface, voids);
     }
 
     /// <summary>

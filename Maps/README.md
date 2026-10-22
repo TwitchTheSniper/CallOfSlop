@@ -56,6 +56,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
+| `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
@@ -209,6 +210,39 @@ Any feature except `noise`, `smooth` and `grid` can also take `"material": "gras
 
 **Steepness:** a smooth transition of `h` metres over `w` metres has a steepest slope of about `1.5 × h ÷ w` (`1 × h ÷ w` for "linear"). For example, a hill of height 9 and radius 24 peaks at 1.5 × 9 ÷ 24 = 0.56, which is 29°, so it's walkable. A plateau 7 m high with a 4 m edge peaks at 2.6 (69°), so its sides are cliffs.
 
+### Holes and caves
+
+Two more feature types cut into the finished ground: **`hole`** (the surface is simply not there) and **`cave`** (a tunnel or chamber under the surface, with a floor, walls and a rock ceiling). They always run **after every height feature** (whatever their place in the list), in file order among themselves, so they follow the ground as it ends up.
+
+| Type | Parameters (default) | What it does |
+|---|---|---|
+| `hole` | shape (`"circle"`, `"ellipse"` or `"polygon"`), x, z, radius, radiusZ, angle (0), points, depth (4), floor | Removes the surface inside the shape: a circle (`x`, `z`, `radius`), an ellipse (`x`, `z`, `radius` across x, `radiusZ` across z, turned by `angle` degrees) or a polygon (`points`, at least 3). Over a cave it opens into the cave (a skylight, a sinkhole). Anywhere else it's a pit `depth` metres deep, following the ground, or down to the absolute height `floor`. |
+| `cave` | points, width (5), height (3.5), depth (6), open ("both") | A tunnel along `points` (`[x, z]` or `[x, z, floor height]`), `width` wide with an arched roof `height` tall: a flat floor in the middle third that curves up into the walls. A point without a height has its floor `depth` under the ground there, except the ends named by `open` (`"both"`, `"start"`, `"end"` or `"none"`), which sit **on the surface**: the tunnel ramps up there and breaks out as an entrance. **One point** makes a round chamber `width` across (a dome `height` tall). Overlapping caves join into one space. |
+
+How it works and what it means for a map:
+
+- The ground is still one grid, but each cell is either **solid** (normal ground), a **hole** (no surface: the ground there is the floor below it) or a **cave** (solid up to the cave floor, open up to its ceiling, then at least **1 m of rock** up to the surface). Holes are cut cell by cell: a cell is a hole when its middle is inside the shape, so on a 1 m grid edges are 1 m steps. Wherever a cave's ceiling comes within 1 m of the surface (where a tunnel ramps up to an entrance) the cells become holes automatically, so the entrance is an open trench that turns into a tunnel once there's a roof.
+- Players, bots, bullets and grenades all see the same thing: you fall into holes, walk through tunnels and bump your head on cave ceilings; rays pass through holes and hit the floors, walls and ceilings; grenades drop in and bounce off the walls. Hole sides are vertical rock walls; cave walls are where the curved ceiling meets the floor.
+- **Walkable ramps:** keep a tunnel's slope under 30 degrees (the walk limit is 45 degrees over the footprint, with the usual slower uphill walking): an entrance whose floor drops `d` metres needs about `2 × d` metres of tunnel between the surface point and the first buried point. Give buried points explicit heights (`[x, z, -7]`) when the ground above is uneven, so the floor stays level.
+- **Headroom:** players are 1.8 m tall standing, so `height` 3 or more is comfortable (the arch is lower at the sides). Chambers want `height` 4-6. The 1 m of roof above the ceiling is enforced (a ceiling that would come closer to the surface is pushed down), so put caves deep enough or raise the ground with a `hill` over them.
+- **Light:** cave floors, walls and ceilings are darker the further they are (walking) from an opening, and hole sides and floors get a little less light at the bottom of deep pits. There are no shadows, so boxes and props inside a cave are lit as usual; keep them few.
+- **Nothing grows or gets scattered over holes:** foliage and `Clutter` keep clear of them (and their rims). Grass grows on the ground above caves, never inside them. Hand-placed plants over a hole are left out (with a message).
+- **Spawns, waypoints and ops** are placed on the surface as before; in a hole that means on its floor. To put something **inside a roofed cave**, use `"anchor": "world"` with an absolute `y` (the cave floor's height). The bots' nav graph finds cave floors itself (it adds nodes along every cave's centre line), so caves don't need waypoints.
+- **Pits players can't climb out of** (deeper than 1.7 m, with no tunnel out) are traps: bots never choose to go into them. Make pits shallower than 1.7 m (they can be mantled out of) or give them a way out, like the Cave Test sinkhole that drops into a side passage.
+- Keep holes and cave mouths away from the map's edge and from `Perimeter` walls, and put entrances on fairly level ground (a `flatten` pad), or the floor at the mouth won't meet the ground smoothly.
+- Maps without `hole` or `cave` features are exactly as before (same look, same fingerprint).
+
+Example (the Dev pack's **Cave Test** map has the full set):
+
+```json
+{ "type": "cave", "points": [[-36, 0], [-18, 0, -7], [0, 0, -7], [18, 0, -7], [36, 0]], "width": 6, "height": 3.6 },
+{ "type": "cave", "points": [[0, 0, -7]], "width": 16, "height": 5 },
+{ "type": "hole", "shape": "ellipse", "x": 3, "z": -3, "radius": 2.5, "radiusZ": 1.6, "angle": 30 },
+{ "type": "hole", "shape": "circle", "x": -30, "z": 34, "radius": 3, "depth": 1.4 }
+```
+
+A tunnel from a west entrance to an east one through a chamber 16 m across, a skylight into the chamber and a shallow pit you can climb out of.
+
 ### Surface
 
 | Field | Default | Meaning |
@@ -275,7 +309,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 
 ### For tools
 
-The game builds the heightfield in double precision, in exactly the order above, and rounds every height to a multiple of 1/1024 m. The surface between samples is bilinear. The heightfield (sample heights, surface ids and grid size) is part of the map's multiplayer fingerprint. The map designer's Python tools carry a line-by-line port of the generator (`terrain.py`). Its fingerprint matches the game's (`TerrainData.Hash`), and the self-test checks that against a lab terrain that uses every feature.
+The game builds the heightfield in double precision, in exactly the order above, and rounds every height to a multiple of 1/1024 m. The surface between samples is bilinear. The heightfield (sample heights, surface ids and grid size, plus the hole and cave data when there is any) is part of the map's multiplayer fingerprint. The map designer's Python tools carry a line-by-line port of the generator (`terrain.py`). Its fingerprint matches the game's (`TerrainData.Hash`), and the self-test checks that against a lab terrain that uses every height feature. Holes and caves aren't part of the port: maps that use them get their fingerprint from the game.
 
 ## Foliage
 
@@ -513,7 +547,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 
 | Op | Parameters | What it makes |
 |---|---|---|
-| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0 | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. |
+| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0, flag = "" | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. `flag` is for flag props only: `"us"`, `"uk"`, `"france"`, `"finland"`, `"random"` or `"none"` (see [Flags](#flags)). |
 | `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15, mirror = false | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). With `"mirror": true` every prop also gets a twin turned 180 degrees about the map's centre (see below). |
 
 ```
@@ -534,6 +568,20 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **Fingerprint:** props count towards the map's fingerprint, so host and players need the same map file and the same Props folder. Maps without props keep their old fingerprint.
 - **Pack props:** a pack can carry props of its own in `Maps/<Pack>/Props`, seen only by that pack's maps; `"global:Name"` always means the prop from the `Props` folder. See [Where assets go](#where-assets-go).
 - **Cost:** props are drawn instanced, a few hundred on a map cost well under a millisecond. Hand-placed solid props are best for cover you design around; Clutter is best for litter and dressing.
+
+### Flags
+
+Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Banner**) fly a national flag from the flag pool in `Props/Flags/flags.json`: the US, UK, French and Finnish flags. A **Flag on a Pole** picks one at random by default; the pick comes from the flag's position, so it's the same on every PC and the same every match, and flags mirrored across a symmetric map fly the same flag. To choose:
+
+```
+{ "op": "Prop", "name": "Flag on a Pole", "x": 4, "z": -6, "flag": "france" },
+{ "op": "Prop", "name": "Hanging Banner", "x": 0, "z": -24, "y": 3.3, "flag": "uk" },
+{ "op": "Prop", "name": "Flag on a Pole", "x": 9, "z": -6, "flag": "none" }
+```
+
+- **`flag`** on a placement: a flag id, `"random"` (from the map's pool) or `"none"` (the prop's own striped cloth). Leave it out for the prop's default (random for a Flag on a Pole, its own cloth for pennants and banners).
+- **`"flagPool"`** at the top of the map file limits the random ones, e.g. `"flagPool": ["uk", "us"]` for a map set in one place, or `"flagPool": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
+- Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
 
 ## Meshes and models
 

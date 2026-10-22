@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Cave Test",
+  "description": "Terrain holes and caves: a tunnel between two entrances through an underground chamber, a sinkhole that drops into a side passage, a skylight, a shallow pit and a ditch.",
+  "author": "Call of Slop",
+  "order": 902,
+  "halfX": 60,
+  "halfZ": 60,
+  "sky": [0.55, 0.66, 0.78],
+  "terrain": {
+    "cell": 1,
+    "margin": 20,
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#77736c", "sand": "#b5a577", "dirtSlope": 22, "rockSlope": 36 },
+    "features": [
+      { "type": "noise", "amplitude": 0.5, "scale": 22, "octaves": 3, "seed": 11 },
+      { "type": "hill", "x": 0, "z": 4, "radius": 30, "height": 3 },
+      { "type": "flatten", "x": -36, "z": 0, "w": 8, "d": 10, "edge": 4 },
+      { "type": "flatten", "x": 36, "z": 0, "w": 8, "d": 10, "edge": 4 },
+      { "type": "cave", "points": [[-36, 0], [-18, 0, -7], [0, 0, -7], [18, 0, -7], [36, 0]], "width": 6, "height": 3.6 },
+      { "type": "cave", "points": [[0, 0, -7]], "width": 16, "height": 5 },
+      { "type": "cave", "points": [[0, 0, -7], [0, 26, -7]], "width": 5, "height": 3.4, "open": "none" },
+      { "type": "hole", "shape": "circle", "x": 0, "z": 27, "radius": 4.5, "floor": -7 },
+      { "type": "hole", "shape": "ellipse", "x": 3, "z": -3, "radius": 2.5, "radiusZ": 1.6, "angle": 30 },
+      { "type": "hole", "shape": "circle", "x": -30, "z": 34, "radius": 3, "depth": 1.4 },
+      { "type": "hole", "shape": "polygon", "points": [[24, -30], [34, -28], [35, -25], [25, -27]], "depth": 1.2 }
+    ]
+  },
+  "ops": [
+    { "op": "Ground", "color": [0.36, 0.5, 0.25] },
+    { "op": "Perimeter", "height": 5, "color": "#8f8a80" },
+    { "op": "Container", "x": -24, "z": -22, "alongX": true, "color": [0.3, 0.45, 0.6] },
+    { "op": "Container", "x": 24, "z": 22, "alongX": true, "color": [0.6, 0.3, 0.25] },
+    { "op": "CoverLine", "x0": -10, "z0": -36, "x1": 10, "z1": -36, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "CoverLine", "x0": -10, "z0": 44, "x1": 10, "z1": 44, "height": 1.1, "thick": 0.8, "color": "#7a6a50" },
+    { "op": "Rocks", "x": -44, "z": -40, "size": 3, "color": [0.5, 0.48, 0.45], "seed": 3 },
+    { "op": "Rocks", "x": 44, "z": 40, "size": 3, "color": [0.5, 0.48, 0.45], "seed": 5 },
+    { "op": "Prop", "x": -40, "z": 14, "w": 2, "h": 1.2, "d": 4, "color": "#7a6a50" },
+    { "op": "Prop", "x": 40, "z": -14, "w": 2, "h": 1.2, "d": 4, "color": "#7a6a50" },
+    { "op": "TreeIfClear", "x": -46, "z": 46 },
+    { "op": "TreeIfClear", "x": 46, "z": -46 },
+    { "op": "RingSpawns", "count": 10, "frac": 0.8 },
+    { "op": "AutoWaypoints", "spacing": 7 },
+    { "op": "Clutter", "props": ["Wooden Crate", "Oil Drum", "Tyre", "Plank", "Litter"], "x0": -44, "z0": 8, "x1": 44, "z1": 44, "count": 24, "seed": 7 },
+    { "op": "Clutter", "props": ["Wooden Crate", "Oil Drum", "Tyre", "Plank", "Litter"], "x0": -44, "z0": -44, "x1": 44, "z1": -8, "count": 24, "seed": 8 }
+  ],
+  "foliage": {
+    "seed": 5,
+    "regions": [
+      { "type": "grass", "density": 3, "rect": [-58, -58, 58, 58], "seed": 1 },
+      { "type": "shrub", "density": 0.25, "rect": [-58, -58, 58, 58], "seed": 2 }
+    ]
+  }
+}

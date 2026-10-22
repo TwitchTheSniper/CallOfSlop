@@ -49,6 +49,21 @@ public sealed partial class Map
     /// <summary>Ground height at (x, z): the terrain, or 0 on flat maps.</summary>
     public float GroundHeight(float x, float z) => TerrainCollision?.HeightAt(x, z) ?? 0f;
 
+    /// <summary>
+    /// Ground under a point at height <paramref name="y"/>: the same as <see cref="GroundHeight(float, float)"/> except in a
+    /// cave (TerrainVoids.cs), where it's the cave's floor for a point inside it.
+    /// </summary>
+    public float GroundHeight(float x, float z, float y) => TerrainCollision?.GroundBelow(x, z, y) ?? 0f;
+
+    /// <summary>Does the terrain have holes or caves?</summary>
+    public bool HasTerrainVoids => Terrain?.Voids != null;
+
+    /// <summary>Is (x, z) over a terrain hole (no ground surface there)?</summary>
+    public bool IsTerrainHole(float x, float z) => Terrain?.IsHole(x, z) ?? false;
+
+    /// <summary>Is a terrain hole within <paramref name="radius"/> of (x, z)? (Foliage and clutter keep away from them.)</summary>
+    public bool TerrainHoleNear(float x, float z, float radius) => Terrain?.HoleNear(x, z, radius) ?? false;
+
     /// <summary>Ground surface normal at (x, z) (straight up on flat maps).</summary>
     public Vector3 GroundNormal(float x, float z) => TerrainCollision?.NormalAt(x, z) ?? Vector3.UnitY;
 
@@ -165,7 +180,7 @@ public sealed partial class Map
             return;
         for (var i = 0; i < points.Count; i++)
         {
-            var g = GroundHeight(points[i].X, points[i].Z);
+            var g = GroundHeight(points[i].X, points[i].Z, points[i].Y); // (a point in a cave stays on its floor)
             if (points[i].Y < g)
                 points[i] = points[i] with { Y = g };
         }

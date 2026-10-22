@@ -40,10 +40,11 @@ public sealed partial class Map
     /// A prop from the Props folder standing at (x, z), turned by <paramref name="yaw"/> degrees. On the ground (or the
     /// terrain) unless <paramref name="y"/> is given; with y = 0 it also stands on a low box under it, like a kerb.
     /// </summary>
+    /// <remarks><paramref name="flag"/>: for a flag prop, the design it flies ("uk", "random", "none"; "" = the prop's default, see <see cref="ResolveFlags"/>).</remarks>
     [MapOp]
-    public void PlaceProp(string name, float x, float z, float yaw = 0, float scale = 1, float y = 0)
+    public void PlaceProp(string name, float x, float z, float yaw = 0, float scale = 1, float y = 0, string flag = "")
     {
-        using var __ = Op([name, x, z, yaw, scale, y]);
+        using var __ = Op([name, x, z, yaw, scale, y, flag]);
         var scope = PropScope; // the pack's own props first, then the Props folder (MapPackAssets.cs)
         var def = scope.Find(name) ?? throw new InvalidOperationException($"unknown prop \"{name}\": {scope.Suggest(name)}");
         if (scale is < 0.1f or > 10f)
@@ -66,6 +67,7 @@ public sealed partial class Map
             }
         }
         AddProp(def, new Vector3(x, py, z), yawRad, scale, null);
+        RequestFlag(def, flag); // MapFlags.cs
     }
 
     /// <summary>
@@ -237,6 +239,7 @@ public sealed partial class Map
             InvalidateObjectives(); // automatic hills were probed before the clutter (it keeps clear of them, so they don't move)
             _clutter.Clear();
         }
+        ResolveFlags(); // flag props get their designs (MapFlags.cs); never changes the fingerprint
         PropHash = HashProps();
     }
 
@@ -398,6 +401,9 @@ public sealed partial class Map
         {
             if (IsSteep(p.X, p.Y))
                 return false;
+            if (HasTerrainVoids && (TerrainHoleNear(p.X, p.Y, radius + 0.3f) || IsTerrainHole(min.X, min.Y) || IsTerrainHole(max.X, max.Y)
+                                    || IsTerrainHole(min.X, max.Y) || IsTerrainHole(max.X, min.Y)))
+                return false; // never over (or overhanging) a terrain hole
             ground = LowestGroundUnder(min.X, min.Y, max.X, max.Y);
             var high = MathF.Max(MathF.Max(GroundHeight(min.X, min.Y), GroundHeight(max.X, max.Y)), MathF.Max(GroundHeight(min.X, max.Y), GroundHeight(max.X, min.Y)));
             if (high - ground > (def.IsSolid ? 0.35f : 0.6f))

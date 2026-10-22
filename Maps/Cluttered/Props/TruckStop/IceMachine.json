@@ -1,0 +1,122 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Ice Machine",
+ "category": "Truck Stop",
+ "description": "A motel ice machine with a glowing blue ICE panel. Breaks (heavy metal).",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.9,
+    1.8,
+    0.75
+   ],
+   "offset": [
+    0,
+    0.9,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "breakable": {
+  "health": 240,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.05,
+    0.2
+   ],
+   "colors": [
+    "#e6e6e0",
+    "#6ab8ff",
+    "white"
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.9,
+    1.75,
+    0.75
+   ],
+   "offset": [
+    0,
+    0.9,
+    0
+   ],
+   "color": "#e6e6e0",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.7,
+    0.35,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.45,
+    0.38
+   ],
+   "color": "#2a6ab0",
+   "anim": {
+    "type": "pulse",
+    "period": 4.0,
+    "color": "#6ab8ff",
+    "off": "#1a4a80",
+    "glow": 0.7
+   }
+  },
+  {
+   "size": [
+    0.55,
+    0.4,
+    0.03
+   ],
+   "offset": [
+    0,
+    0.6,
+    0.38
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.05
+   ],
+   "offset": [
+    0,
+    0.85,
+    0.4
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.92,
+    0.06,
+    0.77
+   ],
+   "offset": [
+    0,
+    1.78,
+    0
+   ],
+   "color": "lightgrey"
+  }
+ ]
+}

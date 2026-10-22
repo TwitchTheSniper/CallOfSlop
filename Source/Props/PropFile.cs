@@ -91,7 +91,7 @@ public static class PropFile
                 throw new PropFileException($"{source}: a prop file is one JSON object {{ \"name\": ..., \"parts\": [...] }}");
             string? name = null;
             var def = new PropDef { Name = "", Category = folderCategory, SourceFile = source };
-            JsonElement? parts = null, collider = null, scatter = null, breakable = null;
+            JsonElement? parts = null, collider = null, scatter = null, breakable = null, flag = null;
             float? fade = null;
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in root.EnumerateObject())
@@ -143,8 +143,11 @@ public static class PropFile
                     case "breakable":
                         breakable = p.Value;
                         break;
+                    case "flag":
+                        flag = p.Value;
+                        break;
                     default:
-                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable");
+                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable, flag");
                 }
             }
             if (string.IsNullOrWhiteSpace(name))
@@ -183,6 +186,11 @@ public static class PropFile
                 throw new PropFileException($"{source}: the whole model is below the ground (y = 0)");
 
             PropAnimFile.Validate(def, source);
+            if (flag is { ValueKind: not JsonValueKind.Null } fl)
+            {
+                def.FlagCloth = FlagPool.ReadCloth(fl, $"{source} (\"flag\")");
+                FlagPool.Validate(def, source); // flag designs replace the cloth (FlagPool.cs)
+            }
             def.Colliders = def.IsSolid ? ReadColliders(collider, def, source) : [];
             if (!def.IsSolid && collider != null)
                 throw new PropFileException($"{source}: \"collider\" is only for solid props (this one is cosmetic)");
@@ -394,8 +402,10 @@ public static class PropFile
                             b.ExplodeRadius = Range(Num(q.Value, wq), 1, 15, wq);
                         else if (q.Name.Equals("damage", StringComparison.OrdinalIgnoreCase))
                             b.ExplodeDamage = Range(Num(q.Value, wq), 1, 300, wq);
+                        else if (q.Name.Equals("fuse", StringComparison.OrdinalIgnoreCase))
+                            b.ExplodeFuse = Range(Num(q.Value, wq), 0, 5, wq);
                         else
-                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius and damage)");
+                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage and fuse)");
                     }
                     if (b.ExplodeRadius <= 0 || b.ExplodeDamage <= 0)
                         throw new PropFileException($"{w}: needs both \"radius\" and \"damage\"");

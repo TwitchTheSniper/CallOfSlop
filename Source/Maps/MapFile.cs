@@ -189,6 +189,8 @@ public static partial class MapFile
         sb.Append($"  \"order\": {m.Order},\n");
         if (m.PrototypeGrid)
             sb.Append("  \"prototypeGrid\": true,\n");
+        if (m.FlagPoolJson is { } flagPool)
+            sb.Append("  \"flagPool\": ").Append(flagPool).Append(",\n");
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
         sb.Append($"  \"halfZ\": {Num(m.HalfZ)},\n");
         if (m.MaxPlayersSetting > 0)
@@ -299,6 +301,8 @@ public static partial class MapFile
                     ? mpi : throw new MapFileException($"{source}: \"maxPlayers\" is a whole number from 2 to {Map.HardMaxPlayers}");
             if (Prop(root, "prototypeGrid") is { ValueKind: JsonValueKind.True })
                 map.PrototypeGrid = true;
+            if (Prop(root, "flagPool") is { ValueKind: not JsonValueKind.Null } flagPool)
+                map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
             if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)

@@ -20,6 +20,7 @@
       ]
     }
   ],
+  "flag": {"cloth": [4, 7, 10], "default": "none"},
   "parts": [
     {"size": [0.4, 0.15, 0.4], "offset": [0.0, 0.075, 0.0], "color": "concrete"},
     {"size": [0.08, 4.6, 0.08], "offset": [0.0, 2.3, 0.0], "color": "white"},

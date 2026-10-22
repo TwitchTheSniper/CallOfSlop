@@ -27,7 +27,7 @@ public static partial class SelfTest
         var sectionTime = Stopwatch.StartNew();
         try
         {
-            foreach (var m in Maps.All.Where(m => m.Boundary == null)) // shaped maps have a barrier the old code never had ("Map shapes" checks them)
+            foreach (var m in Maps.All.Where(m => m.Boundary == null && m.Terrain?.Voids == null)) // shaped maps have a barrier the old code never had ("Map shapes" checks them); caves have ceilings it never had ("Terrain holes" checks them)
             {
                 World.SetMap(m);
                 var phys = World.Physics;
