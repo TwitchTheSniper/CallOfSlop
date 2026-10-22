@@ -114,7 +114,7 @@ public static partial class SelfTest
         CheckGunMixRelations(set, real);
         CheckGunMixHeadroom(set, real);
         CheckGunMixCost();
-        Line("::error title=Gun mix (results, TEMP)::" + string.Join("%0A", GunMixNotes.Select(t => t.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        Line("::error title=Gun mix results TEMP::" + string.Join("%0A", GunMixNotes.Select(t => t.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     /// <summary>How much louder your own shot must be than another player's at 5 m (median over the firearms).</summary>
