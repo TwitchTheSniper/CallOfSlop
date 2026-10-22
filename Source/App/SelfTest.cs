@@ -96,6 +96,7 @@ public static partial class SelfTest
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
+            Section("World Tour: Main Street", CheckWorldMainStreet); // SelfTestWorldMainStreet.cs: 01 Main Street (corn concealment, terrain, fairness, reach)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
