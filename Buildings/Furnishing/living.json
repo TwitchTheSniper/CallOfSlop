@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "A living room: a sofa against the far wall with a coffee table in front, a TV facing it, armchairs, shelves, a rug, lamps.",
+  "items": [
+    {
+      "id": "sofa",
+      "props": [
+        "Fabric Sofa",
+        "Old Sofa"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Rug",
+        "Striped Rug"
+      ],
+      "place": "centre",
+      "chance": 0.85
+    },
+    {
+      "id": "table",
+      "props": [
+        "Coffee Table"
+      ],
+      "place": "front",
+      "of": "sofa",
+      "distance": 0.45
+    },
+    {
+      "props": [
+        "Book Pile",
+        "Stacked Plates",
+        "Laptop"
+      ],
+      "place": "on",
+      "of": "table",
+      "y": 0.45,
+      "chance": 0.6
+    },
+    {
+      "id": "tv",
+      "props": [
+        "TV Stand"
+      ],
+      "place": "front",
+      "of": "sofa",
+      "distance": 2.2,
+      "chance": 0.8
+    },
+    {
+      "props": [
+        "Armchair",
+        "Rocking Chair"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Bookshelf",
+        "Upright Piano",
+        "Fireplace",
+        "Fish Tank"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Floor Lamp",
+        "Office Plant",
+        "Large Flower Pot"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Radiator"
+      ],
+      "place": "wall",
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Cat",
+        "Dog",
+        "Toy Blocks",
+        "Newspaper",
+        "Acoustic Guitar"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Ceiling Fan"
+      ],
+      "place": "ceiling",
+      "chance": 0.3,
+      "area": [
+        14,
+        1000
+      ]
+    }
+  ]
+}

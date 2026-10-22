@@ -8,7 +8,7 @@ namespace CallOfSlop;
 ///   - bots are added up to the limit; the number asked for is remembered (<see cref="WantedBots"/>), so a bigger map
 ///     after the vote gets them back and a smaller one sends the extras home;
 ///   - a person joining a full map takes a bot's place; when only people are left, the join is refused with a message;
-///   - the map vote only offers maps big enough for the people playing (people are never removed).
+///   - the map vote only offers maps big enough for the people playing (people are never removed; MapVote.cs).
 /// </summary>
 public sealed partial class Game
 {
@@ -21,7 +21,10 @@ public sealed partial class Game
     private BotDifficulty _botSkill = BotDifficulty.Normal;
 
     /// <summary>The current map's player limit (people + bots).</summary>
-    public int MapMaxPlayers => Math.Min(Module.MaxPlayers(World.Map), MaxPlayers); // (Zombies: co-op for up to 4)
+    public int MapMaxPlayers => PlayerLimit(World.Map); // (Zombies: co-op for up to 4)
+
+    /// <summary>The player limit (people + bots) the lobby would enforce on <paramref name="map"/> in the current mode.</summary>
+    public int PlayerLimit(Map map) => Math.Min(Module.MaxPlayers(map), MaxPlayers);
 
     /// <summary>People in the game (not bots).</summary>
     public int HumanCount => Players.Values.Count(p => p.Bot == null);
@@ -62,11 +65,18 @@ public sealed partial class Game
             Log($"{added} bot{(added == 1 ? "" : "s")} joined: {World.Map.Name} takes {MapMaxPlayers} players", true);
     }
 
-    /// <summary>The maps a vote may offer for this many people: those that take them all (or all of them if none does).</summary>
-    public static List<Map> FitForPeople(List<Map> pool, int humans)
+    /// <summary>
+    /// The maps a vote may offer for this many people (humans; bots don't count): those whose player limit
+    /// (<paramref name="limit"/>, by default the map's own) takes them all, or the largest ones (highest limit) if none does.
+    /// </summary>
+    public static List<Map> FitForPeople(List<Map> pool, int humans, Func<Map, int>? limit = null)
     {
-        var fit = pool.Where(m => m.MaxPlayers >= humans).ToList();
-        return fit.Count > 0 ? fit : pool;
+        limit ??= m => m.MaxPlayers;
+        var fit = pool.Where(m => limit(m) >= humans).ToList();
+        if (fit.Count > 0 || pool.Count == 0)
+            return fit;
+        var top = pool.Max(limit);
+        return pool.Where(m => limit(m) == top).ToList();
     }
 
     /// <summary>Server: a connection arrived but the map is full of people. Tell them why, then close it.</summary>

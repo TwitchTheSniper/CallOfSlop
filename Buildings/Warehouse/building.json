@@ -1,0 +1,75 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Warehouse",
+  "theme": "1990s distribution warehouse: blue corrugated metal walls, a bare concrete floor, yellow safety rails, a mezzanine office over the racks",
+  "category": "industrial",
+  "description": "A tall warehouse hall with pallet racks, a loading bay and a roller-door opening, a mezzanine with stairs, a front office, a break room and a WC.",
+  "author": "Call of Slop",
+  "seed": 71,
+  "wallThickness": 0.3,
+  "storeyHeight": 7.0,
+  "exterior": {"color": "$wall", "material": "metal"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "blue metal": {"wall": "#3d5f8a", "interior": "#c9ccc8", "floor": "#8d8c86", "ceiling": "#b9bdc0", "trim": "#f2c230", "door": "#9aa0a6", "roof": "#6e757c"},
+    "green metal": {"wall": "#4f6b4a", "interior": "#cdcabe", "floor": "#8a877e", "ceiling": "#bdbfb8", "trim": "#f28c28", "door": "#8a8f86", "roof": "#62665e"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "hall",
+          "type": "warehouse",
+          "rect": [-12, -8, 12, 4],
+          "autoWindows": {"spacing": 5, "width": 3.0, "sill": 4.6, "head": 5.8, "health": 1}
+        },
+        {"id": "office", "type": "office", "rect": [-12, 4, 0, 8], "autoWindows": {"spacing": 2.5, "width": 1.4, "sill": 1.0, "head": 2.3}},
+        {"id": "breakroom", "type": "breakroom", "rect": [0, 4, 8, 8], "autoWindows": {"spacing": 2.5, "width": 1.4, "sill": 1.0, "head": 2.3}},
+        {"id": "wc", "type": "restroom", "rect": [8, 4, 12, 8], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-6, 8], "width": 1.0, "front": true, "material": "glass", "health": 40},
+        {"type": "arch", "at": [12, -2.5], "width": 4.0, "head": 4.6},
+        {"type": "arch", "at": [-5, -8], "width": 4.5, "head": 4.8},
+        {"type": "door", "at": [-6, 4], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [4, 4], "width": 1.0},
+        {"type": "door", "at": [10, 4], "width": 0.9},
+        {"type": "door", "at": [8, 6], "width": 0.9},
+        {"type": "door", "at": [12, 2.2], "width": 1.0, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 10, "overhang": 0.3, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {
+      "type": "platform",
+      "rect": [3.0, -7.85, 11.85, -3.0],
+      "height": 3.2,
+      "railing": 1.05,
+      "color": {"color": "#6e6e6a", "material": "metal"},
+      "stairs": {"rect": [0.9, -7.6, 2.9, -6.6], "dir": "+x"}
+    },
+    {"type": "prop", "name": "Office Desk", "at": [6.0, 3.31, -7.2], "yaw": 0},
+    {"type": "prop", "name": "Office Chair", "at": [6.0, 3.31, -6.3], "yaw": 180},
+    {"type": "prop", "name": "Filing Cabinet", "at": [8.0, 3.31, -7.4], "yaw": 0},
+    {"type": "prop", "name": "Filing Cabinet", "at": [8.6, 3.31, -7.4], "yaw": 0},
+    {"type": "prop", "name": "Archive Boxes", "at": [10.6, 3.31, -6.8], "yaw": 270},
+    {"type": "prop", "name": "Water Cooler", "at": [4.0, 3.31, -7.5], "yaw": 0},
+    {"type": "prop", "name": "Desk Phone", "at": [6.4, 4.08, -7.2], "yaw": 0},
+    {"type": "block", "min": [12.15, 0, -5.0], "max": [14.5, 1.1, 0.0], "color": {"color": "#8d8c86", "material": "concrete"}},
+    {"type": "prop", "name": "Box Truck", "at": [17.0, -2.5], "yaw": 90},
+    {"type": "prop", "name": "Pallet Stack", "at": [13.4, 1.1, -4.2], "yaw": 0},
+    {"type": "prop", "name": "Dumpster", "at": [-10.0, -9.3]},
+    {"type": "prop", "name": "Floodlight Tower", "at": [13.5, 5.5], "yaw": 225}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "office", "at": [-6, 6]},
+    {"type": "spawn", "name": "hall", "at": [-2, -2]},
+    {"type": "hill", "name": "hall", "at": [0, -2]},
+    {"type": "point", "name": "mezzanine", "at": [7, -5.5]}
+  ]
+}

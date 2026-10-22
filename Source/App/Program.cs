@@ -1173,6 +1173,7 @@ public static unsafe partial class Program
         for (var i = 0; i < map.Solid.Count; i++)
             if (map.IsDrawnBox(i)) // props are drawn as models by the prop renderer (a shaped map's floor as a mesh)
                 Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        BuildingGfx.Draw(map, Gfx, Glfw.Time); // buildings: walls, floors, roofs, doors and glass, instanced (Program.Buildings.cs)
         DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)

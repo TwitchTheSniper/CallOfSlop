@@ -208,7 +208,10 @@ public sealed class NavGraph
         foreach (var w in map.Waypoints.Concat(map.Spawns).Concat(map.Terrain?.Voids?.NavPoints ?? Array.Empty<Vector3>()))
         {
             var y = Ground(c, w.X, w.Z, w.Y + 1f, 3f);
-            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
+            // Building waypoints (doorways, stairs): placed tight and kept apart from grid nodes only by other waypoints.
+            var exact = map.BuildingNavPoints.Count > 0 && map.BuildingNavPoints.Contains(w);
+            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), exact ? 0.5f : 1.2f) is { } p
+                && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.1f : 0.8f))
                 nodes.Add(p);
             if (++extra % 4 == 0)
             {
@@ -241,6 +244,17 @@ public sealed class NavGraph
                 yield return null;
                 t0 = Stopwatch.GetTimestamp();
             }
+        }
+
+        // Declared links (building stairs, Map.NavLinks): between the waypoint nodes at either end, without a walk.
+        foreach (var (la, lb) in map.NavLinks)
+        {
+            int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
+            if (ia < 0 || ib < 0 || ia == ib)
+                continue;
+            var len = Vector3.Distance(g.Nodes[ia], g.Nodes[ib]);
+            edges.Add((ia, ib, len, (byte)0, Vector3.Zero));
+            edges.Add((ib, ia, len, (byte)0, Vector3.Zero));
         }
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
@@ -338,6 +352,26 @@ public sealed class NavGraph
                 nodes.Add(p);
     }
 
+    /// <summary>The waypoint node (index from <paramref name="from"/> on) within 0.45 m of <paramref name="p"/>, or -1.</summary>
+    private static int WaypointNode(Vector3[] nodes, int from, Vector3 p)
+    {
+        var best = -1;
+        var bestD = 0.45f * 0.45f;
+        for (var i = from; i < nodes.Length; i++)
+        {
+            var n = nodes[i];
+            if (MathF.Abs(n.Y - p.Y) > 0.5f)
+                continue;
+            var d = (n.X - p.X) * (n.X - p.X) + (n.Z - p.Z) * (n.Z - p.Z);
+            if (d < bestD)
+            {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
     private static bool NearExisting(List<Vector3> nodes, Vector3 p, int from, float within = 0.5f)
     {
         for (var i = Math.Max(0, from); i < nodes.Count; i++)
@@ -365,7 +399,7 @@ public sealed class NavGraph
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
-            if (!col.Blocked(c + new Vector3(0, 0.01f, 0)))
+            if (!col.BlockedNav(c + new Vector3(0, 0.01f, 0))) // (building doors don't count: bots open them)
                 return c;
         }
         return null;
@@ -492,7 +526,7 @@ public sealed class NavGraph
                 return; // a wall too tall to climb, or a hole
             h[k] = g;
             y = g;
-            blocked[k] = c.Blocked(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
+            blocked[k] = c.BlockedNav(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
         }
         if (MathF.Abs(h[n] - b.Y) > 0.35f)
             return; // ended up on a different floor

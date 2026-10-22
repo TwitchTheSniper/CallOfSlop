@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Office Building",
+  "theme": "1980s accountancy office: beige brick, smoked-glass windows, grey carpet tiles, beige desks, filing cabinets and rubber plants",
+  "category": "commercial",
+  "description": "A two-storey office (more floors with the \"floors\" variant): reception, a meeting room, a break room and restrooms downstairs, an open-plan office and two private offices on each floor above, roof plant.",
+  "author": "Call of Slop",
+  "seed": 61,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "floorCount": 2,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "beige brick": {"wall": "#c2aa86", "interior": "#e8e4d8", "floor": "#7c7f84", "ceiling": "#f2f2ee", "trim": "#3a3a36", "door": "#6a5a48", "roof": "#55555a"},
+    "red brick": {"wall": "#8e4a3a", "interior": "#e4e6e0", "floor": "#6a6e74", "ceiling": "#f0f0ec", "trim": "#e0ddd4", "door": "#2d4f6e", "roof": "#4a4a4e"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.4, "width": 1.5, "sill": 0.9, "head": 2.4, "health": 2},
+      "rooms": [
+        {"id": "reception", "type": "reception", "rect": [-3, 0, 3, 5]},
+        {"id": "meeting", "type": "meeting", "rect": [-7, 0, -3, 5]},
+        {"id": "breakroom", "type": "breakroom", "rect": [-7, -5, -1, 0], "floor": {"color": "#b8b0a0", "material": "tiles"}},
+        {"id": "restrooms", "type": "restroom", "rect": [-1, -5, 3, 0], "floor": {"color": "#c8d4d8", "material": "tiles"}, "windows": false},
+        {"id": "stairhall", "type": "corridor", "rect": [3, -5, 7, 5], "floor": {"color": "#8c8c88", "material": "tiles"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [0.5, 5], "width": 1.6, "front": true, "material": "glass", "health": 40},
+        {"type": "door", "at": [3, 3.0], "width": 1.0},
+        {"type": "door", "at": [-3, 2.5], "width": 0.9},
+        {"type": "door", "at": [-2, 0], "width": 0.9},
+        {"type": "door", "at": [1, 0], "width": 0.9},
+        {"type": "door", "at": [5, -5], "width": 1.0, "material": "metal"}
+      ]
+    },
+    {
+      "repeat": true,
+      "autoWindows": {"spacing": 2.4, "width": 1.5, "sill": 0.9, "head": 2.4, "health": 2},
+      "rooms": [
+        {"id": "open office", "type": "office", "rect": [-7, -5, 3, 1]},
+        {"id": "office1", "type": "office", "rect": [-7, 1, -2, 5]},
+        {"id": "office2", "type": "office", "rect": [-2, 1, 3, 5]},
+        {"id": "stairhall", "type": "corridor", "rect": [3, -5, 7, 5], "floor": {"color": "#8c8c88", "material": "tiles"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [3, -4.3], "width": 1.0},
+        {"type": "door", "at": [3, 3.0], "width": 1.0},
+        {"type": "door", "at": [-4.5, 1], "width": 0.9},
+        {"type": "door", "at": [0.5, 1], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [3.2, -3.5, 4.3, 0.5], "dir": "-z", "color": {"color": "#8c8c88", "material": "tiles"}},
+    {
+      "floor": 1,
+      "rect": [5.7, -3.5, 6.8, 0.5],
+      "dir": "+z",
+      "alt": {"rect": [3.2, -3.5, 4.3, 0.5], "dir": "-z"},
+      "color": {"color": "#8c8c88", "material": "tiles"}
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [-1.2, 5.13, 2.2, 6.6], "height": 3.0, "color": "$trim", "posts": true},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [-4.0, 0, -2.0], "onRoof": true},
+    {"type": "prop", "name": "Air Duct", "at": [-1.0, 0, -2.0], "yaw": 90, "onRoof": true},
+    {"type": "prop", "name": "Satellite Dish", "at": [1.5, 0, 3.0], "onRoof": true},
+    {"type": "prop", "name": "Bike Rack", "at": [-4.5, 6.2]},
+    {"type": "prop", "name": "Office Plant", "at": [2.8, 5.6]}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "reception", "at": [0, 2.5]},
+    {"type": "spawn", "name": "open office", "floor": 1, "at": [-2, -2]},
+    {"type": "hill", "name": "open office", "floor": 1, "at": [-2, -2]}
+  ]
+}

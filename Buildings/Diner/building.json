@@ -1,0 +1,81 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Diner",
+  "theme": "1950s chrome roadside diner: mint-green panels and chrome trim, a black and white checker floor, red vinyl booths, neon",
+  "category": "commercial",
+  "description": "A roadside diner: the dining room with booths, a long counter with stools and a jukebox; a kitchen, restrooms and a store room behind.",
+  "author": "Call of Slop",
+  "seed": 51,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.4,
+  "exterior": {"color": "$wall", "material": "metal"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "mint and chrome": {
+      "wall": "#9fd6c2",
+      "interior": "#f2ead2",
+      "floor": "#e8e8e8",
+      "ceiling": "#fbf7ec",
+      "trim": "#d8dde2",
+      "door": "#c8102e",
+      "roof": "#7a8088",
+      "accent": "#c8102e"
+    },
+    "cherry red": {
+      "wall": "#c8323a",
+      "interior": "#f4ecd8",
+      "floor": "#e0e0e0",
+      "ceiling": "#fbf7ec",
+      "trim": "#e6e9ec",
+      "door": "#1f6fb2",
+      "roof": "#6a6e74",
+      "accent": "#1f6fb2"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "dining",
+          "type": "diner",
+          "rect": [-7, -0.5, 7, 4],
+          "autoWindows": {"spacing": 2.3, "width": 1.8, "sill": 0.85, "head": 2.5, "health": 10}
+        },
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [-7, -4, 2, -0.5],
+          "floor": {"color": "#b8b4a8", "material": "tiles"},
+          "wall": "#e6e6dc",
+          "autoWindows": {"spacing": 3, "width": 1.0, "sill": 1.2, "head": 2.3}
+        },
+        {"id": "restrooms", "type": "restroom", "rect": [2, -4, 4.5, -0.5], "floor": {"color": "#c8d8e0", "material": "tiles"}, "windows": false},
+        {"id": "store", "type": "storage", "rect": [4.5, -4, 7, -0.5], "floor": {"color": "#9a968c", "material": "concrete"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [0, 4], "width": 1.6, "front": true, "material": "glass", "health": 40},
+        {"type": "door", "at": [-2.2, -0.5], "width": 1.0, "swing": "out"},
+        {"type": "door", "at": [3.25, -0.5], "width": 0.9},
+        {"type": "door", "at": [5.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [-5.5, -4], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [7, 1.75], "width": 1.0, "material": "glass", "health": 40}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {"type": "block", "min": [-7.2, 3.35, 4.12], "max": [7.2, 3.65, 4.3], "color": "$accent"},
+    {"type": "block", "min": [-7.2, 0.0, 4.12], "max": [7.2, 0.35, 4.3], "color": "$trim"},
+    {"type": "prop", "name": "Rotating Diner Sign", "at": [-4.5, 0, 1.5], "onRoof": true},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [3.0, 0, -2.0], "onRoof": true},
+    {"type": "prop", "name": "Neon Sign", "at": [5.0, 2.2, 4.3]},
+    {"type": "prop", "name": "Dumpster", "at": [-2.5, -5.6], "yaw": 0},
+    {"type": "prop", "name": "Trash Bag", "at": [-4.0, -5.0]},
+    {"type": "prop", "name": "Gas Cylinders", "at": [-0.8, -4.6], "yaw": 180}
+  ],
+  "anchors": [{"type": "spawn", "name": "kitchen", "at": [-4.5, -2.2]}, {"type": "hill", "name": "dining room", "at": [0, 1.8]}]
+}

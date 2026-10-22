@@ -72,8 +72,14 @@ public enum QueryLayers : ushort
     /// <summary>Zombies window openings (<see cref="Map.IsClipBox"/>): they block bodies (movement, the nav graph) but not bullets (<see cref="QueryFilter.Shots"/>).</summary>
     Clip = 256,
 
+    /// <summary>
+    /// Building doors while shut (<see cref="Map.IsBuildingDoorBox"/>): they block bodies, bullets and sight like a wall, but bot
+    /// navigation plans straight through them (bots open doors on their way, GameBuildings.cs).
+    /// </summary>
+    Doors = 512,
+
     /// <summary>Everything static except the terrain.</summary>
-    StaticShapes = Boxes | Props | Obbs | Meshes | Clip,
+    StaticShapes = Boxes | Props | Obbs | Meshes | Clip | Doors,
 
     /// <summary>Everything that never moves.</summary>
     Static = StaticShapes | Terrain,
@@ -82,7 +88,7 @@ public enum QueryLayers : ushort
     World = Static | Movers | Boundary,
 
     /// <summary>Bot navigation: static geometry with every mover's whole sweep as a pillar (never where a mover happens to be).</summary>
-    Nav = Static | MoverSweeps | Boundary,
+    Nav = (Static | MoverSweeps | Boundary) & ~Doors,
 
     /// <summary>Everything that lives in the physics world's BVH.</summary>
     Tree = StaticShapes | Boundary,

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "An example building-local rule: this building's living rooms use it instead of the shared Buildings/Furnishing/living.json.",
+  "items": [
+    { "id": "sofa", "props": ["Old Sofa"], "place": "wall", "prefer": "far" },
+    { "id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4 },
+    { "props": ["Book Pile"], "place": "on", "of": "table", "y": 0.45, "chance": 0.7 },
+    { "props": ["Fireplace"], "place": "wall" },
+    { "props": ["Rocking Chair", "Armchair"], "place": "corner", "count": [1, 2] },
+    { "props": ["Rug"], "place": "centre" },
+    { "props": ["Cat", "Dog"], "place": "floor", "chance": 0.5 }
+  ]
+}
