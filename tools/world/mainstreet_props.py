@@ -82,7 +82,7 @@ HUSK = "#a3b05c"
 def corn_patch(seed):
     """3 x 3 m of field corn: four rows along X (0.75 m apart), seven stalks a row with two broad leaves and a tassel
     each (the odd ear), and a few leafy "curtain" slabs at mid height so a row reads as a wall of leaves, not a fence of
-    sticks. Each row sways gently as one (its first stalk swings, the rest follow), the rows out of step."""
+    sticks. (No sway animation: animated props belong in Props/Animated and on its gallery.)"""
     rng = random.Random(seed)
     ps = []
     for ri, rz in enumerate((-1.125, -0.375, 0.375, 1.125)):
@@ -106,14 +106,7 @@ def corn_patch(seed):
         if rng.random() < 0.8:
             x = rng.uniform(-1.1, 1.1)
             group.append(part((0.08, 0.24, 0.08), (x, 1.15, rz + 0.06), HUSK, rotation=[0, 0, -18]))
-        for p in group:
-            if first is None:
-                first = len(ps) + 1
-                p["anim"] = {"type": "swing", "axis": "x", "pivot": [0, 0, R(rz)], "angle": 1.4, "period": R(rng.uniform(3.2, 4.2)),
-                             "wind": 1, "jitter": 0.2, "phase": R(ri * 0.27)}
-            else:
-                p["anim"] = {"type": "follow", "parent": first}
-            ps.append(p)
+        ps += group
     return ps
 
 
@@ -327,7 +320,7 @@ def railcar_base(length, body_y):
 
 
 # Boxcar: 12 m along X, body from 1.2 to 4.3 m.
-BOX = "#7a3a26"; L = 12.0
+BOX = "#7a3a26"; L = 11.6
 ps = railcar_base(L, 1.25)
 ps += [part((L, 3.0, 2.95), (0, 2.75, 0), BOX, material="metal"), part((L + 0.04, 0.1, 3.0), (0, 4.28, 0), "#5e2d1e")]
 for x in [(-5.4 + k * 0.9) for k in range(13)]:
@@ -353,7 +346,7 @@ ps += [part((3.0, 0.1, 2.95), (0, 1.3, 0), "#4b3a2c", material="wood"),      # f
        part((L + 0.04, 0.1, 3.0), (0, 4.33, 0), "#2e4252")]
 ps += [part((0.5, 0.4, 0.4), (0.6, 1.55, -0.6), "cardboard"), part((0.6, 0.3, 0.4), (-0.7, 1.5, 0.8), "pallet", material="wood")]
 add("Rail", "Freight Boxcar Open", "A blue-grey 12 m boxcar with both doors slid open: climb in (1.25 m floor) and through to the other side.",
-    ps, collider=[box((4.5, 3.1, 3.0), (-3.75, 2.75, 0)), box((4.5, 3.1, 3.0), (3.75, 2.75, 0)), box((3.0, 0.45, 3.0), (0, 4.1, 0)),
+    ps, collider=[box((L / 2 - 1.5, 3.1, 3.0), (-(L / 2 + 1.5) / 2, 2.75, 0)), box((L / 2 - 1.5, 3.1, 3.0), ((L / 2 + 1.5) / 2, 2.75, 0)), box((3.0, 0.45, 3.0), (0, 4.1, 0)),
                   box((L - 0.6, 1.35, 2.3), (0, 0.675, 0)), box((3.0, 0.1, 3.0), (0, 1.3, 0))])
 
 # Covered hopper: sloped bins under a rounded roof, 12 m.
@@ -424,6 +417,22 @@ def main():
                 else:
                     f.write(f"  {json.dumps(k)}: {json.dumps(v)}{end}\n")
             f.write("}\n")
+    # The Dev pack's gallery of these props (the self-test wants every prop on some Dev map): one pad each, in rows.
+    ops = [{"op": "Ground", "color": [0.42, 0.44, 0.38]}, {"op": "Perimeter", "height": 3, "color": "#9e9ea3"}]
+    x, z, row_h = -40.0, -24.0, 0.0
+    for folder, d in OUT:
+        xs = [abs(p["offset"][0]) + p["size"][0] / 2 for p in d["parts"]]
+        w = max(3.0, 2 * max(xs) + 2.0)
+        if x + w > 40:
+            x, z = -40.0, z + 16.0
+        ops.append({"op": "Block", "x0": round(x + 0.2, 2), "y0": 0, "z0": round(z - 6.5, 2), "x1": round(x + w - 0.2, 2), "y1": 0.05, "z1": round(z + 6.5, 2), "color": [0.5, 0.5, 0.47]})
+        ops.append({"op": "Prop", "name": d["name"], "x": round(x + w / 2, 2), "z": z})
+        x += w
+    ops += [{"op": "RingSpawns", "count": 8, "frac": 0.85}, {"op": "AutoWaypoints", "spacing": 6}]
+    gal = {"format": "call-of-slop-map/1", "name": "Farm and Rail Props", "description": "The Farm, Rail and Town props (corn, tractor, grain bin, rail cars, gazebo...), one on each pad.",
+           "author": "Call of Slop", "order": 988, "halfX": 46, "halfZ": 40, "sky": [0.62, 0.72, 0.84], "flagPool": "none", "ops": ops}
+    with open(os.path.join(REPO, "Maps/Dev/FarmRailProps.json"), "w") as f:
+        f.write("{\n" + ",\n".join(f"  {json.dumps(k)}: " + ("[\n" + ",\n".join("    " + json.dumps(o) for o in v) + "\n  ]" if k == "ops" else json.dumps(v)) for k, v in gal.items()) + "\n}\n")
     print(f"wrote {len(OUT)} props: " + ", ".join(f"{fo}/{d['name']} ({len(d['parts'])})" for fo, d in OUT))
 
 
