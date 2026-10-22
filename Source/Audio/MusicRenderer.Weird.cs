@@ -376,7 +376,7 @@ public sealed partial class MusicRenderer
         _chip.Render(m);
         _box.Render(m2, m2); // both channels onto the (mono) chant bus
         for (var i = 0; i < n; i++)
-            m2[i] *= 0.5f;
+            m2[i] *= 0.16f; // tines are delicate: a soft interlude, not a wall
         _toy.Render(m2, ref _noise);
         for (var i = 0; i < n; i++)
         {

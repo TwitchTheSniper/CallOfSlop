@@ -542,7 +542,9 @@ internal sealed class TapeBus
             if (pos < 0)
                 pos += Len;
             var p0 = (int)pos;
-            var frac = pos - p0;
+            if (p0 >= Len)
+                p0 -= Len; // pos can round up to exactly Len
+            var frac = pos - (int)pos;
             var p1 = p0 + 1 >= Len ? 0 : p0 + 1;
             x = _l[p0] + (_l[p1] - _l[p0]) * frac;
             y = _r[p0] + (_r[p1] - _r[p0]) * frac;
