@@ -98,6 +98,7 @@ public static partial class SelfTest
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
             Section("World Tour: Main Street", CheckWorldMainStreet); // SelfTestWorldMainStreet.cs: 01 Main Street (corn concealment, terrain, fairness, reach)
             Section("World: Vuorikoski", CheckWorldFinland); // SelfTestWorldFinland.cs: the World Tour's Finland map (tunnels, fairness, costs; no bot matches)
+            Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);
             Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
