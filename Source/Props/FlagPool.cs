@@ -677,12 +677,12 @@ public static class FlagPool
         using (doc)
         {
             var root = doc.RootElement;
-            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("flags", out var flags) || flags.ValueKind != JsonValueKind.Array)
+            if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("flags"u8, out var flags) || flags.ValueKind != JsonValueKind.Array)
             {
                 errors.Add($"{source}: a flag file is {{ \"format\": \"{Format}\", \"flags\": [ ... ] }}");
                 return [];
             }
-            if (!root.TryGetProperty("format", out var fmt) || fmt.ValueKind != JsonValueKind.String || fmt.GetString() != Format)
+            if (!root.TryGetProperty("format"u8, out var fmt) || fmt.ValueKind != JsonValueKind.String || fmt.GetString() != Format)
             {
                 errors.Add($"{source}: expected \"format\": \"{Format}\"");
                 return [];
