@@ -282,12 +282,13 @@ public static partial class SelfTest
         var halfway = game.Locked;
         game.SelfTestBuildLock(now + sky.LauncherLockTime * 0.5, sky.LauncherLockTime * 0.7, 1f / 60);
         var locked = game.Locked && game.LockTarget == drone.Id;
+        var lockedOn = game.LockTarget;
         // The sentry on the ground never locks.
         game.LookYaw = MathF.Atan2(turret.Pos.X - me.Eye.X, -(turret.Pos.Z - me.Eye.Z));
         game.LookPitch = -0.05f;
         game.SelfTestBuildLock(now + 3, sky.LauncherLockTime * 2, 1f / 60);
         var turretLocked = game.Locked;
-        LLine($"lock-on: half the lock time {halfway}, after the lock time {locked} (target {game.LockTarget}); a ground sentry locks: {turretLocked}");
+        LLine($"lock-on: half the lock time {halfway}, after the lock time {locked} (target {lockedOn}, the drone is {drone.Id}); a ground sentry locks: {turretLocked}");
         if (halfway || !locked || turretLocked)
             Fail("lock-on: should lock an airborne streak after its lock time (not before), and never a ground sentry");
         var hits = 0;
@@ -405,6 +406,7 @@ public static partial class SelfTest
         var enemyDrone = game.SelfTestSpawnEntity(me, StreakId.AttackDrone, new Vector3(10, 18, 10), now);
         Rocket? botRocket = null;
         double busySince = -1;
+        var botStart = now;
         for (var i = 0; i < 6 * World.TickRate && botRocket == null; i++)
         {
             now += World.TickDt;
@@ -412,7 +414,7 @@ public static partial class SelfTest
                 busySince = now;
             botRocket = game.Rockets.Values.FirstOrDefault(r => r.Owner == b1.Id);
         }
-        LLine($"bot vs drone: launcher out after {(busySince < 0 ? "never" : $"{busySince - 10:0.0} s")}, rocket {(botRocket == null ? "none" : $"locked on {botRocket.Target}")}, holding {Weapons.Get(b1.Weapon).Name}");
+        LLine($"bot vs drone: launcher out after {(busySince < 0 ? "never" : $"{busySince - botStart:0.0} s")}, rocket {(botRocket == null ? "none" : $"locked on {botRocket.Target}")}, holding {Weapons.Get(b1.Weapon).Name}");
         if (botRocket == null || botRocket.Target != enemyDrone.Id)
             Fail("a bot with a lock-on launcher should lock and fire at an enemy drone it can see");
         Run(6);
