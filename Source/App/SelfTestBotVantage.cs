@@ -548,11 +548,13 @@ public static partial class SelfTest
                 Fail($"{name}: no vantage points after a full pump");
                 continue;
             }
-            // The same build again on this thread: the same spots (deterministic), and its time.
+            // Two more builds on this thread, back to back (the cached one may predate props other sections broke): the same
+            // spots both times (deterministic), and the time.
             sw.Restart();
             var again = VantageMap.BuildNow(map, g);
             var againMs = sw.Elapsed.TotalMilliseconds;
-            var same = again.Spots.Length == vm.Spots.Length && again.Spots.Zip(vm.Spots).All(z => z.First.Node == z.Second.Node && z.First.ScoreLong == z.Second.ScoreLong);
+            var third = VantageMap.BuildNow(map, g);
+            var same = again.Spots.Length == third.Spots.Length && again.Spots.Zip(third.Spots).All(z => z.First.Node == z.Second.Node && z.First.ScoreLong == z.Second.ScoreLong);
             VNote($"{name}: {g.Nodes.Length} nav nodes; vantage {vm.Spots.Length} spots from {vm.Candidates} candidates, {vm.InterestPoints} interest points, "
                   + $"{vm.Rays} rays: {vm.BuildMs:0} ms (worker), rebuilt in {againMs:0} ms; pump {navMs:0} ms; long/DMR/LMG spots "
                   + $"{vm.Spots.Count(s => s.ScoreLong > 0)}/{vm.Spots.Count(s => s.ScoreMediumLong > 0)}/{vm.Spots.Count(s => s.ScoreMedium > 0)}");

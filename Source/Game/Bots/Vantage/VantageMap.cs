@@ -443,6 +443,12 @@ public sealed class VantageMap
         s.ScoreMedium = Band(s.SightMedium, 0.3f, 1.5f);
         s.ScoreMediumLong = Band(s.SightMediumLong, 0.6f, 1f);
         s.ScoreLong = Band(s.SightLong, 0.7f, 1f);
+        // Long guns want height: a sniper spot must be up on something (a roof, an upper floor, a hill, a ridge); a DMR spot
+        // a little raised, or behind a parapet it can peek over. LMG spots go on cover alone.
+        if (adv < 1.2f && below < 0.2f)
+            s.ScoreLong = 0;
+        if (adv < 0.8f && below < 0.12f && !(s.LowCover != 0 && cover >= 2f))
+            s.ScoreMediumLong = 0;
         return s;
     }
 }
