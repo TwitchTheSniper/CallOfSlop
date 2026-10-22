@@ -225,13 +225,16 @@ public sealed class Progress
             {
                 var kind = Enum.Parse<ThrowableKind>(name[1..]);
                 var def = Throwables.Get(kind);
-                list.Add(new Unlock(level, def.Name, kind == ThrowableKind.Recon ? "Equipment" : "Grenade", Throwable: kind));
+                list.Add(new Unlock(level, def.Name, def.IsEquipment ? "Equipment" : "Grenade", Throwable: kind));
             }
             else if (Tabled(name) is { } w)
             {
                 list.Add(new Unlock(level, w.Name, "Weapon", w));
             }
         }
+        // The later tactical equipment sits on its own levels (TacticalGear.UnlockLevels), so the weapon order above never shifts.
+        foreach (var (kind, level) in TacticalGear.UnlockLevels)
+            list.Add(new Unlock(Math.Clamp(level, 2, MaxLevel), Throwables.Get(kind).Name, "Equipment", Throwable: kind));
         // Anything else (a third-party weapon file) unlocks at its "unlockLevel", or at the end.
         foreach (var w in Weapons.All)
             if (list.All(u => u.Weapon != w))

@@ -231,6 +231,7 @@ public sealed partial class Game
         Smokes.Clear();
         Sensors.Clear();
         Blasts.Clear();
+        ClearTactical(); // tactical devices and effects (GameTactical.cs)
         Log($"Match {MatchNumber}: {ModeGoalText}", true);
         if (!IsServer)
             _localInitialized = false; // treat the next snapshot as a fresh spawn (full ammo, new position)

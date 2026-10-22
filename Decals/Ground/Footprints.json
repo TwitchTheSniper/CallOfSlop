@@ -1,0 +1,242 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Footprints",
+  "description": "A trail of four muddy boot prints walking north (turned at random).",
+  "author": "Call of Slop",
+  "size": 1.5,
+  "sizeVariation": 0.15,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "fadeDistance": 40,
+  "layers": [
+    {
+      "shape": "circle",
+      "at": [
+        0.38,
+        0.1
+      ],
+      "radius": 0.04,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 290
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.38,
+        0.2
+      ],
+      "radius": 0.055,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 290
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.38,
+        0.12
+      ],
+      "to": [
+        0.38,
+        0.18
+      ],
+      "width": 0.05,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 290
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.62,
+        0.32
+      ],
+      "radius": 0.04,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 291
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.62,
+        0.42
+      ],
+      "radius": 0.055,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 291
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.62,
+        0.34
+      ],
+      "to": [
+        0.62,
+        0.4
+      ],
+      "width": 0.05,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 291
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.38,
+        0.54
+      ],
+      "radius": 0.04,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 292
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.38,
+        0.64
+      ],
+      "radius": 0.055,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 292
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.38,
+        0.56
+      ],
+      "to": [
+        0.38,
+        0.62
+      ],
+      "width": 0.05,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 292
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.62,
+        0.76
+      ],
+      "radius": 0.04,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 293
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.62,
+        0.86
+      ],
+      "radius": 0.055,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "softness": 0.01,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 293
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.62,
+        0.78
+      ],
+      "to": [
+        0.62,
+        0.84
+      ],
+      "width": 0.05,
+      "color": [
+        0.42,
+        0.36,
+        0.3
+      ],
+      "alpha": 0.9,
+      "noise": 0.25,
+      "noiseScale": 12,
+      "seed": 293
+    }
+  ]
+}

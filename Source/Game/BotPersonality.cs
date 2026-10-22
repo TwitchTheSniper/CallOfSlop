@@ -191,7 +191,7 @@ public sealed partial class Game
         bot.WantPrimary = primary.Id;
         bot.WantSecondary = secondaries[_rng.Next(secondaries.Length)].Id;
         bot.WantGrenade = _rng.NextDouble() < (prof.Kind == BotPersonality.Tactician ? 0.95 : 0.8) ? ThrowableKind.Frag : ThrowableKind.Impact;
-        bot.WantEquipment = ThrowableKind.None;
+        bot.WantEquipment = TacticalGear.BotPick(prof.Kind, TacticalGear.Roll(bot.Id, bot.SpawnTick, 0xE0)); // own roll: the shared random sequence is untouched
         bot.WantPrimaryKit = RandomKit(Weapons.Get(bot.WantPrimary));
         bot.WantSecondaryKit = RandomKit(Weapons.Get(bot.WantSecondary));
         bot.WantPerks = BotPerks(prof);

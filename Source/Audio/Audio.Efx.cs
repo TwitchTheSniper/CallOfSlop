@@ -113,8 +113,13 @@ public sealed partial class Audio
         {
             if (position is { } p)
             {
-                _lowpass.GainHf = DistanceHf(Vector3.Distance(p, _listener));
+                _lowpass.GainHf = DistanceHf(Vector3.Distance(p, _listener)) * DeafenHf;
                 src.DirectFilter = _lowpass; // copies the filter's settings into the source
+            }
+            else if (DeafenHf < 0.99f)
+            {
+                _lowpass.GainHf = DeafenHf; // flashed: even your own sounds are dull (Audio.Tactical.cs)
+                src.DirectFilter = _lowpass;
             }
             else
                 src.DirectFilter = AlFilter.Null;

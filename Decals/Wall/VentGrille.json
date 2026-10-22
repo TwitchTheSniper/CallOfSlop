@@ -1,0 +1,187 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Vent Grille",
+  "description": "A square louvred vent grille with corner screws, for walls and ceilings.",
+  "author": "Call of Slop",
+  "size": 0.8,
+  "rotation": 0,
+  "surfaces": [
+    "wall",
+    "ceiling"
+  ],
+  "fadeDistance": 60,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.92,
+        0.92
+      ],
+      "color": [
+        0.52,
+        0.52,
+        0.53
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.8,
+        0.8
+      ],
+      "color": [
+        0.18,
+        0.18,
+        0.2
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.18
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.308
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.436
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.564
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.692
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.82
+      ],
+      "size": [
+        0.78,
+        0.055
+      ],
+      "color": [
+        0.6,
+        0.6,
+        0.62
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.08,
+        0.08
+      ],
+      "radius": 0.022,
+      "color": [
+        0.35,
+        0.35,
+        0.36
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.08,
+        0.92
+      ],
+      "radius": 0.022,
+      "color": [
+        0.35,
+        0.35,
+        0.36
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.92,
+        0.08
+      ],
+      "radius": 0.022,
+      "color": [
+        0.35,
+        0.35,
+        0.36
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.92,
+        0.92
+      ],
+      "radius": 0.022,
+      "color": [
+        0.35,
+        0.35,
+        0.36
+      ]
+    }
+  ]
+}

@@ -612,6 +612,7 @@ public sealed partial class Game
                     flags |= 4;
             }
             StreakBlastEntities(owner, center, radius, maxDamage, now);
+            BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
         }
         BlastProps(owner, center, radius, maxDamage, PropDamage.Streak, now); // breakable props (GameProps.cs)
         BlastBuildings(owner, center, radius, maxDamage, PropDamage.Streak, now); // building doors and windows (GameBuildings.cs)

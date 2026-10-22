@@ -1,0 +1,56 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Carpet Stain",
+  "description": "A dried spill on carpet: a faint patch with a darker tide mark.",
+  "author": "Call of Slop",
+  "size": 1.1,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "blend": "multiply",
+  "surfaces": "floor",
+  "fadeDistance": 35,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.32,
+      "count": 7,
+      "jag": 0.3,
+      "seed": 381,
+      "color": [
+        0.52,
+        0.44,
+        0.36
+      ],
+      "alpha": 0.7,
+      "softness": 0.03,
+      "noise": 0.3,
+      "noiseScale": 6
+    },
+    {
+      "shape": "splat",
+      "radius": 0.28,
+      "count": 7,
+      "jag": 0.3,
+      "seed": 381,
+      "color": "white",
+      "alpha": 0.65,
+      "softness": 0.06,
+      "erase": true
+    },
+    {
+      "shape": "splat",
+      "radius": 0.26,
+      "count": 7,
+      "jag": 0.3,
+      "seed": 381,
+      "color": [
+        0.8,
+        0.74,
+        0.66
+      ],
+      "alpha": 0.45,
+      "softness": 0.12
+    }
+  ]
+}

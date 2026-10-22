@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Stencil Number 1",
+  "description": "A stencilled white number 1 for parking bays, docks and walls.",
+  "author": "Call of Slop",
+  "size": 1.2,
+  "rotation": 0,
+  "surfaces": [
+    "floor",
+    "wall"
+  ],
+  "fadeDistance": 90,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.69
+      ],
+      "size": [
+        0.1,
+        0.33
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 7
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7,
+        0.31
+      ],
+      "size": [
+        0.1,
+        0.33
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 7
+    }
+  ]
+}

@@ -1,0 +1,164 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Ceiling Tile Stain",
+  "description": "Drop-ceiling tile joints (a 2 x 2 tile square) with one water-stained tile.",
+  "author": "Call of Slop",
+  "size": 1.2,
+  "rotation": 0,
+  "blend": "multiply",
+  "surfaces": "ceiling",
+  "fadeDistance": 40,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.02,
+        0.5
+      ],
+      "size": [
+        0.025,
+        1.0
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.02
+      ],
+      "size": [
+        1.0,
+        0.025
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.025,
+        1.0
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        1.0,
+        0.025
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.98,
+        0.5
+      ],
+      "size": [
+        0.025,
+        1.0
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.98
+      ],
+      "size": [
+        1.0,
+        0.025
+      ],
+      "color": [
+        0.55,
+        0.55,
+        0.55
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.27,
+        0.73
+      ],
+      "radius": 0.17,
+      "count": 7,
+      "jag": 0.35,
+      "seed": 911,
+      "color": [
+        0.72,
+        0.62,
+        0.46
+      ],
+      "alpha": 0.75,
+      "softness": 0.05
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.27,
+        0.73
+      ],
+      "radius": 0.1,
+      "count": 6,
+      "jag": 0.3,
+      "seed": 912,
+      "color": [
+        0.6,
+        0.5,
+        0.36
+      ],
+      "alpha": 0.6,
+      "softness": 0.06
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.45,
+      "count": 30,
+      "width": 0.01,
+      "seed": 913,
+      "color": [
+        0.6,
+        0.6,
+        0.58
+      ],
+      "alpha": 0.6
+    }
+  ]
+}

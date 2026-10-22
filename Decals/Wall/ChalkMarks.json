@@ -1,0 +1,184 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Chalk Marks",
+  "description": "Chalk tally marks, a circle and a cross scrawled on a wall or floor.",
+  "author": "Call of Slop",
+  "size": [
+    1.2,
+    0.8
+  ],
+  "rotation": 0,
+  "surfaces": [
+    "wall",
+    "floor"
+  ],
+  "opacity": 0.85,
+  "fadeDistance": 45,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.1,
+        0.35
+      ],
+      "to": [
+        0.11,
+        0.75
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.17,
+        0.35
+      ],
+      "to": [
+        0.18,
+        0.75
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.24,
+        0.35
+      ],
+      "to": [
+        0.25,
+        0.75
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.31,
+        0.35
+      ],
+      "to": [
+        0.32,
+        0.75
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.05,
+        0.4
+      ],
+      "to": [
+        0.37,
+        0.7
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.6,
+        0.55
+      ],
+      "radius": 0.16,
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.8,
+        0.35
+      ],
+      "to": [
+        0.95,
+        0.7
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.8,
+        0.7
+      ],
+      "to": [
+        0.95,
+        0.35
+      ],
+      "width": 0.03,
+      "color": [
+        0.94,
+        0.94,
+        0.92
+      ],
+      "alpha": 0.8,
+      "noise": 0.45,
+      "noiseScale": 16,
+      "seed": 601
+    }
+  ]
+}

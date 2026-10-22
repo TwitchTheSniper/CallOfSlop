@@ -1,0 +1,170 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Cracked Tiles",
+  "description": "A grid of grubby tile joints with one broken, cracked tile.",
+  "author": "Call of Slop",
+  "size": 2.0,
+  "rotation": 0,
+  "blend": "multiply",
+  "surfaces": "floor",
+  "fadeDistance": 50,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.5
+      ],
+      "size": [
+        0.014,
+        0.98
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.25
+      ],
+      "size": [
+        0.98,
+        0.014
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.014,
+        0.98
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.98,
+        0.014
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.75,
+        0.5
+      ],
+      "size": [
+        0.014,
+        0.98
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.75
+      ],
+      "size": [
+        0.98,
+        0.014
+      ],
+      "color": [
+        0.58,
+        0.58,
+        0.58
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.375,
+        0.625
+      ],
+      "size": [
+        0.22,
+        0.22
+      ],
+      "color": [
+        0.62,
+        0.6,
+        0.57
+      ],
+      "alpha": 0.75,
+      "noise": 0.4,
+      "noiseScale": 10,
+      "seed": 371
+    },
+    {
+      "shape": "cracks",
+      "at": [
+        0.37,
+        0.62
+      ],
+      "count": 5,
+      "length": 0.14,
+      "width": 0.014,
+      "jag": 0.6,
+      "seed": 372,
+      "color": [
+        0.25,
+        0.24,
+        0.23
+      ]
+    },
+    {
+      "shape": "cracks",
+      "at": [
+        0.66,
+        0.36
+      ],
+      "count": 3,
+      "length": 0.1,
+      "width": 0.01,
+      "jag": 0.6,
+      "seed": 373,
+      "color": [
+        0.3,
+        0.29,
+        0.28
+      ],
+      "alpha": 0.8
+    }
+  ]
+}

@@ -50,6 +50,13 @@ public sealed partial class Game
             b.ClearPath();
         }
 
+        if (BotBlinded(p, now))
+        {
+            b.Target = byte.MaxValue; // flashed: sees nothing until it clears (GameTactical.cs)
+            visible = false;
+            return null;
+        }
+
         var target = Players.GetValueOrDefault(b.Target);
         if (target != null && (!target.Alive || !IsEnemy(p, target)))
         {
@@ -128,7 +135,7 @@ public sealed partial class Game
             var stance = target!.Sim.Stance;
             var h = World.HeightOf(stance);
             var point = target.Position + new Vector3(0, h * (stance == Stance.Prone ? 0.5f : BotAimHeight), 0) + target.Sim.Velocity * 0.08f;
-            if (b.Skill == BotDifficulty.Hard && stance != Stance.Prone && _rng.NextDouble() < BotHeadChance)
+            if (b.Skill >= BotDifficulty.Hard && stance != Stance.Prone && _rng.NextDouble() < BotHeadChance)
                 point.Y = target.Position.Y + h * BotHeadHeight; // now and then they go for the head
             var d = point - p.Eye;
             aim.Distance = d.Length();
@@ -154,7 +161,7 @@ public sealed partial class Game
             wantYaw = MathF.Atan2(steer.Wish.X, -steer.Wish.Z);
         }
 
-        var maxTurn = b.TurnSpeed * dt;
+        var maxTurn = b.TurnSpeed * dt * BotStunTurn(p, now); // a stun slows turning (GameTactical.cs)
         aim.Yaw = World.WrapAngle(p.Yaw + Math.Clamp(World.WrapAngle(wantYaw - p.Yaw), -maxTurn, maxTurn));
         aim.Pitch = p.Pitch + Math.Clamp(wantPitch - p.Pitch, -maxTurn, maxTurn);
         if (visible)
@@ -182,7 +189,7 @@ public sealed partial class Game
         // Right up close: melee instead of shooting.
         var meleed = visible && DamageEnabled && now - b.TargetSince >= b.Reaction && aim.Error < 0.5f
                      && BotTryMelee(p, b, target!, dist, aim.Yaw, aim.Pitch, now);
-        if (meleed || !(ready || b.BurstLeft > 0) || now < b.NextFire || b.Ammo <= 0 || b.ReloadUntil != 0 || !DamageEnabled
+        if (meleed || b.HoldFire || !(ready || b.BurstLeft > 0) || now < b.NextFire || b.Ammo <= 0 || b.ReloadUntil != 0 || !DamageEnabled
             || (dist >= def.RangeM * 3f && def.Class != WeaponClass.Sniper))
             return;
 
@@ -218,7 +225,7 @@ public sealed partial class Game
     {
         if (b.Skill == BotDifficulty.Easy || p.Grenade == ThrowableKind.None || p.GrenadesLeft <= 0 || now < p.NextThrow)
             return;
-        var rate = (b.Skill == BotDifficulty.Hard ? 0.006 : 0.003) * b.Profile.GrenadeRate;
+        var rate = (b.Skill >= BotDifficulty.Hard ? 0.006 : 0.003) * b.Profile.GrenadeRate;
         if (visible && dist is > 6f and < 15f && _rng.NextDouble() < rate)
         {
             BotThrowAt(p, b, target!.Position, now);
@@ -270,7 +277,7 @@ public sealed partial class Game
         if (visible && dist > 16f && longGun && b.Skill != BotDifficulty.Easy)
         {
             var prone = (prof.GoesProne && def.Class is WeaponClass.Sniper or WeaponClass.DMR && dist > 22f)
-                        || (b.Skill == BotDifficulty.Hard && def.Class == WeaponClass.Sniper && dist > 24f);
+                        || (b.Skill >= BotDifficulty.Hard && def.Class == WeaponClass.Sniper && dist > 24f);
             if (prone)
             {
                 buttons |= Buttons.Prone;

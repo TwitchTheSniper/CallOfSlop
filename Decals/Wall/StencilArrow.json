@@ -1,0 +1,80 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Stencil Arrow",
+  "description": "A yellow stencilled arrow pointing up (turn it for any direction).",
+  "author": "Call of Slop",
+  "size": [
+    0.8,
+    1.2
+  ],
+  "rotation": 0,
+  "surfaces": [
+    "wall",
+    "floor"
+  ],
+  "fadeDistance": 80,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.66
+      ],
+      "size": 0.46,
+      "rotation": 45,
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 561
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.48
+      ],
+      "size": [
+        0.8,
+        0.36
+      ],
+      "color": "white",
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.36
+      ],
+      "size": [
+        0.2,
+        0.5
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.25,
+      "noiseScale": 10,
+      "seed": 561
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.48
+      ],
+      "size": [
+        0.3,
+        0.03
+      ],
+      "color": "white",
+      "erase": true
+    }
+  ]
+}

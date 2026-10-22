@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Round Sewer Grate",
+  "description": "A round cast-iron sewer grate: rings of slots with spokes.",
+  "author": "Call of Slop",
+  "size": 0.7,
+  "rotation": "random",
+  "surfaces": "floor",
+  "fadeDistance": 60,
+  "layers": [
+    {
+      "shape": "circle",
+      "radius": 0.47,
+      "color": [
+        0.16,
+        0.16,
+        0.16
+      ]
+    },
+    {
+      "shape": "circle",
+      "radius": 0.42,
+      "color": [
+        0.34,
+        0.34,
+        0.35
+      ]
+    },
+    {
+      "shape": "ring",
+      "radius": 0.32,
+      "width": 0.06,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "ring",
+      "radius": 0.19,
+      "width": 0.06,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.8,
+        0.05
+      ],
+      "rotation": 0,
+      "color": [
+        0.34,
+        0.34,
+        0.35
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.8,
+        0.05
+      ],
+      "rotation": 45,
+      "color": [
+        0.34,
+        0.34,
+        0.35
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.8,
+        0.05
+      ],
+      "rotation": 90,
+      "color": [
+        0.34,
+        0.34,
+        0.35
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.8,
+        0.05
+      ],
+      "rotation": 135,
+      "color": [
+        0.34,
+        0.34,
+        0.35
+      ]
+    },
+    {
+      "shape": "circle",
+      "radius": 0.07,
+      "color": [
+        0.3,
+        0.3,
+        0.31
+      ]
+    },
+    {
+      "shape": "circle",
+      "radius": 0.03,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    }
+  ]
+}

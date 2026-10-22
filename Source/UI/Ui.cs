@@ -619,6 +619,11 @@ public sealed partial class Ui : IDisposable
             ImGui.Text($"Damage: up to {t.MaxDamage:0} (falls off to 0 at {t.Radius:0} m; walls block it)");
             ImGui.Text($"Fuse: {(t.Kind == ThrowableKind.Impact ? "on impact" : $"{t.Fuse:0.0} s")}");
         }
+        else if (TacticalGear.Is(t.Kind))
+        {
+            foreach (var line in TacticalGear.StatLines(t.Kind)) // the tactical items' numbers (TacticalGear.cs)
+                ImGuiSafe.TextWrapped(line);
+        }
         else
         {
             ImGui.Text($"Radius: {t.Radius:0} m");

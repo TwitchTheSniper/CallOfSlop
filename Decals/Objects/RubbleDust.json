@@ -1,0 +1,66 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Rubble Dust",
+  "description": "Grey dust and broken chunks of concrete and brick from a collapse.",
+  "author": "Call of Slop",
+  "size": 2.0,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "surfaces": "floor",
+  "fadeDistance": 55,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.38,
+      "count": 9,
+      "jag": 0.5,
+      "seed": 801,
+      "color": [
+        0.64,
+        0.62,
+        0.58
+      ],
+      "alpha": 0.55,
+      "softness": 0.18,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.38,
+      "count": 30,
+      "width": 0.036,
+      "seed": 802,
+      "color": [
+        0.56,
+        0.55,
+        0.52
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 20,
+      "width": 0.026,
+      "seed": 803,
+      "color": [
+        0.4,
+        0.39,
+        0.37
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.34,
+      "count": 10,
+      "width": 0.026,
+      "seed": 804,
+      "color": [
+        0.56,
+        0.32,
+        0.24
+      ]
+    }
+  ]
+}

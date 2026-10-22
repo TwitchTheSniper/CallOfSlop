@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Doormat",
+  "description": "A bristly coir doormat with a black rubber border.",
+  "author": "Call of Slop",
+  "size": [
+    0.9,
+    0.6
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 35,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.96,
+        0.94
+      ],
+      "color": [
+        0.14,
+        0.13,
+        0.12
+      ]
+    },
+    {
+      "shape": "rect",
+      "size": [
+        0.86,
+        0.8
+      ],
+      "color": [
+        0.58,
+        0.44,
+        0.26
+      ],
+      "noise": 0.3,
+      "noiseScale": 20,
+      "seed": 741
+    },
+    {
+      "shape": "stripes",
+      "size": [
+        0.86,
+        0.8
+      ],
+      "period": 0.09,
+      "duty": 0.2,
+      "color": [
+        0.46,
+        0.34,
+        0.19
+      ],
+      "alpha": 0.7
+    }
+  ]
+}
