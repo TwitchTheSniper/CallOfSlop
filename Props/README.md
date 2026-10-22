@@ -282,7 +282,7 @@ Add an entry to `Props/Flags/flags.json` and press **Reload map files**:
 
 1. The placement's own `"flag"` (`{ "op": "Prop", "name": "Flag on a Pole", "x": 4, "z": -6, "flag": "uk" }`): a flag id, `"random"` or `"none"`.
 2. Otherwise the prop's `default`.
-3. `"random"` picks from the map's pool: every design, or the map file's `"flags": ["uk", "us"]` list (for location-specific maps), or none at all with `"flags": "none"`.
+3. `"random"` picks from the map's pool: every design, or the map file's `"flagPool": ["uk", "us"]` list (for location-specific maps), or none at all with `"flagPool": "none"`.
 
 The random pick hashes the flag's position (rounded to 1/8 m, measured from the map's centre lines), so it's the same on the server and every client, the same every match and after a reload, and flags mirrored across a symmetric map fly the same flag. Flags are looks only: the prop's name, colliders and the map's fingerprint don't change. See [Maps/README.md](../Maps/README.md#flags).
 

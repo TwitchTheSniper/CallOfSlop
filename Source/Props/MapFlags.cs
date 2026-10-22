@@ -5,12 +5,12 @@ namespace CallOfSlop;
 /// <summary>
 /// Which flag design each flag prop on a map flies (see <see cref="FlagPool"/> and Props/README.md "Flags"): the
 /// placement's own "flag", else the prop's default ("random" for a decorative flag); "random" picks from the map's pool
-/// (its "flags" list, or every design) by position. Worked out once when the map has loaded, the same on every PC.
+/// (its "flagPool" list, or every design) by position. Worked out once when the map has loaded, the same on every PC.
 /// Cosmetic only: the colliders, the prop's name and so the map's fingerprint stay exactly as they were.
 /// </summary>
 public sealed partial class Map
 {
-    /// <summary>The map's "flags": the designs random flags pick from (null: every design in Props/Flags/flags.json; empty: none, flags keep their own cloth).</summary>
+    /// <summary>The map's "flagPool": the designs random flags pick from (null: every design in Props/Flags/flags.json; empty: none, flags keep their own cloth).</summary>
     public string[]? FlagPoolIds;
 
     private readonly Dictionary<int, string> _flagRequests = new();
@@ -77,10 +77,10 @@ public sealed partial class Map
         }
     }
 
-    /// <summary>Reads a map file's "flags": a list of design ids, "none" (flags keep their own cloth) or "all" (the default: every design).</summary>
+    /// <summary>Reads a map file's "flagPool": a list of design ids, "none" (flags keep their own cloth) or "all" (the default: every design).</summary>
     public static string[]? ReadFlagPool(JsonElement e, string source)
     {
-        var where = $"{source} (\"flags\")";
+        var where = $"{source} (\"flagPool\")";
         if (e.ValueKind == JsonValueKind.String)
             return e.GetString()!.Trim().ToLowerInvariant() switch
             {
@@ -102,7 +102,7 @@ public sealed partial class Map
         return ids.ToArray();
     }
 
-    /// <summary>The "flags" value as map-file JSON (for <see cref="MapFile.ToJson"/>), or null when it's the default.</summary>
+    /// <summary>The "flagPool" value as map-file JSON (for <see cref="MapFile.ToJson"/>), or null when it's the default.</summary>
     public string? FlagPoolJson => FlagPoolIds == null ? null
         : FlagPoolIds.Length == 0 ? "\"none\"" : "[" + string.Join(", ", FlagPoolIds.Select(id => JsonSerializer.Serialize(id))) + "]";
 }

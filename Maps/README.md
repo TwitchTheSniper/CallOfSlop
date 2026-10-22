@@ -56,7 +56,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
-| `flags` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
+| `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
@@ -547,8 +547,8 @@ Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Ba
 ```
 
 - **`flag`** on a placement: a flag id, `"random"` (from the map's pool) or `"none"` (the prop's own striped cloth). Leave it out for the prop's default (random for a Flag on a Pole, its own cloth for pennants and banners).
-- **`"flags"`** at the top of the map file limits the random ones, e.g. `"flags": ["uk", "us"]` for a map set in one place, or `"flags": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
-- Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flags": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
+- **`"flagPool"`** at the top of the map file limits the random ones, e.g. `"flagPool": ["uk", "us"]` for a map set in one place, or `"flagPool": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
+- Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
 
 ## Meshes and models
 

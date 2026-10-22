@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// "Flag pool": the flag designs in Props/Flags/flags.json (US, UK, France, Finland) and the flag props that fly them
 /// (FlagPool.cs, MapFlags.cs). Every design loads and stays inside its flag with the right aspect; each flag prop's
 /// variants keep the prop's colliders and motion (stripes and crosses move with the cloth); random picks are
-/// deterministic and roughly uniform; placement overrides and a map's "flags" list work; fingerprints never change;
+/// deterministic and roughly uniform; placement overrides and a map's "flagPool" list work; fingerprints never change;
 /// older map packs fly no designs; and a flag costs a bounded number of vertices.
 /// </summary>
 public static partial class SelfTest
@@ -301,34 +301,34 @@ public static partial class SelfTest
         // A test map: 40 random flags with the pool cut to two, one France override, a "none", and the same map with every flag off.
         var ops = string.Join(",\n", Enumerable.Range(0, 40).Select(i => $$"""{ "op": "Prop", "name": "Flag on a Pole", "x": {{-15 + (i % 8) * 4}}, "z": {{-12 + (i / 8) * 5}} }"""));
         var withOverride = ops + """, { "op": "Prop", "name": "Flag on a Pole", "x": 14, "z": 14, "flag": "france" }, { "op": "Prop", "name": "Flag on a Pole", "x": 10, "z": 14, "flag": "none" }""";
-        var restricted = MapFile.Load(PropTestMap(withOverride, "\"flags\": [\"uk\", \"us\"],"), "flag pool test");
+        var restricted = MapFile.Load(PropTestMap(withOverride, "\"flagPool\": [\"uk\", \"us\"],"), "flag pool test");
         var picked = restricted.PropInstances.Take(40).Select(p => p.Def.FlagId).ToList();
         var last = restricted.PropInstances[^2].Def.FlagId;
         var noneId = restricted.PropInstances[^1].Def.FlagId;
         if (picked.Any(id => id is not ("uk" or "us")) || !picked.Contains("uk") || !picked.Contains("us"))
-            Fail($"\"flags\": [\"uk\", \"us\"]: random flags flew [{string.Join(", ", picked.Distinct())}]");
+            Fail($"\"flagPool\": [\"uk\", \"us\"]: random flags flew [{string.Join(", ", picked.Distinct())}]");
         if (last != "france" || noneId != null)
             Fail($"placement overrides: \"france\" flew {last ?? "its own cloth"}, \"none\" flew {noneId ?? "its own cloth"}");
-        var off = MapFile.Load(PropTestMap(withOverride, "\"flags\": \"none\","), "flag pool test");
+        var off = MapFile.Load(PropTestMap(withOverride, "\"flagPool\": \"none\","), "flag pool test");
         var all = MapFile.Load(PropTestMap(withOverride), "flag pool test");
         if (off.PropInstances.Take(40).Any(p => p.Def.FlagId != null) || off.PropInstances[^2].Def.FlagId != "france")
-            Fail("\"flags\": \"none\" didn't keep random flags' own cloth (or dropped a placement's own flag)");
+            Fail("\"flagPool\": \"none\" didn't keep random flags' own cloth (or dropped a placement's own flag)");
         if (all.PropInstances.Take(40).Select(p => p.Def.FlagId).Distinct().Count() != 4)
             Fail($"the default pool: 40 random flags flew {all.PropInstances.Take(40).Select(p => p.Def.FlagId).Distinct().Count()} designs (expected all 4)");
         if (off.ContentHash != restricted.ContentHash || all.ContentHash != restricted.ContentHash)
             Fail("flags changed a map's fingerprint (they're cosmetic)");
         var rt = MapFile.Load(MapFile.ToJson(restricted), "flag pool test (round trip)");
         if (rt.FlagPoolIds is not ["uk", "us"] || !rt.PropInstances.Select(p => p.Def.FlagId).SequenceEqual(restricted.PropInstances.Select(p => p.Def.FlagId)))
-            Fail("a map's \"flags\" or a placement's \"flag\" didn't survive saving and reloading");
+            Fail("a map's \"flagPool\" or a placement's \"flag\" didn't survive saving and reloading");
         Line($"overrides and pools: [uk, us] pool flew uk {picked.Count(i => i == "uk")} / us {picked.Count(i => i == "us")}, the \"france\" placement {last}, \"none\" its own cloth; "
-             + $"\"flags\": \"none\" keeps every random flag's own cloth; fingerprint {restricted.ContentHash:x8} the same with flags on, off or cut down");
+             + $"\"flagPool\": \"none\" keeps every random flag's own cloth; fingerprint {restricted.ContentHash:x8} the same with flags on, off or cut down");
 
         // Mistakes are map errors with a readable message.
         (string Ops, string Extra, string Expect)[] bad =
         [
             ("""{ "op": "Prop", "name": "Flag on a Pole", "x": 0, "z": 0, "flag": "mars" }""", "", "unknown flag"),
             ("""{ "op": "Prop", "name": "Wooden Crate", "x": 0, "z": 0, "flag": "uk" }""", "", "only for flag props"),
-            ("""{ "op": "Prop", "name": "Flag on a Pole", "x": 0, "z": 0 }""", "\"flags\": [\"uk\", \"atlantis\"],", "unknown flag"),
+            ("""{ "op": "Prop", "name": "Flag on a Pole", "x": 0, "z": 0 }""", "\"flagPool\": [\"uk\", \"atlantis\"],", "unknown flag"),
         ];
         foreach (var (o, extra, expect) in bad)
         {
@@ -350,7 +350,7 @@ public static partial class SelfTest
         var older = Maps.Packs.Where(p => p.Folder is "Classic" or "CollisionPoint" or "HighGround").SelectMany(p => p.Maps).ToList();
         var oldFlags = older.Where(m => m.PropInstances.Any(p => p.Def.FlagId != null)).Select(m => m.Name).ToList();
         if (oldFlags.Count > 0)
-            Fail($"older-pack maps fly pool flags (they keep their look; add \"flags\": \"none\"): {string.Join(", ", oldFlags)}");
+            Fail($"older-pack maps fly pool flags (they keep their look; add \"flagPool\": \"none\"): {string.Join(", ", oldFlags)}");
         var cluttered = Maps.Packs.Where(p => p.Folder == "Cluttered").SelectMany(p => p.Maps).Where(m => m.PropInstances.Any(p => p.Def.FlagCloth != null || p.Def.FlagBase != null)).ToList();
         Line($"packs: {older.Count} older-pack maps fly no pool flags; Cluttered: {string.Join(", ", cluttered.Select(m => $"{m.Name} {m.FlagsFlying} ({string.Join("/", m.PropInstances.Where(p => p.Def.FlagId != null).Select(p => p.Def.FlagId).Distinct())})"))}");
         foreach (var name in new[] { "Cul-de-sac", "Dockside", "Old Town" })
