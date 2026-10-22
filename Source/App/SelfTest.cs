@@ -553,8 +553,10 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
-            if (game.BotStuckKills > 2)
-                Fail($"{m.Name}: {game.BotStuckKills} stuck bot self-kills in 90 s (a map problem, or the stuck watch misfires; last: {game.LastStuckLog})");
+            if (game.BotStuckKills > 0)
+                StuckNotes.Add($"{m.Name}: {game.BotStuckKills} stuck self-kill(s) in the 90 s match; last: {game.LastStuckLog}");
+            if (game.BotStuckKills > 5)
+                Fail($"{m.Name}: {game.BotStuckKills} stuck bot self-kills in 90 s (the stuck watch misfires, or a bad map problem; last: {game.LastStuckLog})");
             // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
             // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule

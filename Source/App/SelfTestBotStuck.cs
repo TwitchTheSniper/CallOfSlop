@@ -22,7 +22,24 @@ public static partial class SelfTest
           { "op": "RingSpawns", "count": 8, "frac": 0.8 }, { "op": "AutoWaypoints", "spacing": 6 } ] }
         """;
 
+    /// <summary>Stuck self-kills seen in the every-map matches (real map trouble spots), for this section's annotation.</summary>
+    private static readonly List<string> StuckNotes = new();
+
     private static void CheckBotStuck()
+    {
+        try
+        {
+            CheckBotStuckScenarios();
+        }
+        finally
+        {
+            if (StuckNotes.Count == 0)
+                StuckNotes.Add("no stuck self-kills in the every-map matches");
+            Line("::notice title=Bot stuck watch (results)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static void CheckBotStuckScenarios()
     {
         var lab = MapFile.Load(StuckLabJson, "stuck-lab.json");
         lab.Validate();
@@ -86,6 +103,7 @@ public static partial class SelfTest
             Line($"pit in play: self-kill after {(diedAt < 0 ? "NEVER" : $"{diedAt:0.00} s")} (timeout {game.BotStuckSuicideSeconds:0} s), recovery stages reached {maxStage} (mode {b.Mode}), "
                  + $"deaths {deaths}->{bot.Deaths}, kills {kills}->{bot.Kills}, counters {game.BotStuckKills} (this map {game.StuckKillsOn(lab.Name)}, this match {game.BotStuckKillsThisMatch})");
             Line($"log: {log}");
+            StuckNotes.Add($"pit: self-kill after {diedAt:0.00} s (timeout 5 s), stages {maxStage}; {log}");
             if (diedAt < 0)
                 Fail("a bot boxed into a pit with no exit didn't kill itself within 9 s (timeout 5 s)");
             else if (diedAt < game.BotStuckSuicideSeconds - 0.2)
