@@ -287,11 +287,11 @@ public sealed partial class Game
             }
             if (visible)
             {
-                // Moving in the open: don't start a long-range duel, unless they're shooting at us or close.
-                var threatened = now - b.HurtTime < 2.5 || dist < VantageHoldFireRange(bnd) || ShootingAt(target!, p, now);
-                if (threatened)
-                    return false; // fight now (the spot is still the plan afterwards)
-                b.HoldFire = true;
+                // Moving in the open: don't start a long-range duel. Shot at, or targeted: fight properly now (the spot is
+                // still the plan afterwards). Merely close: shoot on the move and keep going. Far: hold fire.
+                if (now - b.HurtTime < 2.5 || ShootingAt(target!, p, now))
+                    return false;
+                b.HoldFire = dist >= VantageHoldFireRange(bnd);
             }
             b.Mode = BotMode.Overwatch;
             return true;
