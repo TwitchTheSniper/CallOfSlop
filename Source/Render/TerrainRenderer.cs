@@ -348,7 +348,7 @@ public sealed unsafe class TerrainRenderer
     {
         var v = t.Voids;
         if (v == null)
-            return ([], []);
+            return (Array.Empty<Vertex>(), Array.Empty<uint>());
         var verts = new List<Vertex>();
         var idx = new List<uint>();
         int nx = t.CountX;
