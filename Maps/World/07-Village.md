@@ -1,4 +1,4 @@
-# 07 Village (World Tour, England, small, 12 players)
+# 07 Cotswold Village (World Tour, England, small, 12 players)
 
 **Theme (the lead's choice for "a UK map in small size").** An English village in the Cotswolds on a sunny afternoon:
 honey limestone walls under grey slate and straw thatch, dry-stone walls along the lanes, hedges, a village green with a
@@ -59,7 +59,7 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
 - Hills: the green (0, -0.5), West Lane (-17, -1.6), East Lane (17, -0.6), each on a levelled pad.
 - Flags: Blue in the churchyard (-25.5, -24), Red in the thatched cottage's back garden (25.5, 29.5).
 - Not mirrored. The generator's grid walk (open ground and doorways, uphill costing more) gives blue/red: green
-  46/44 m, West Lane 48/48 m, East Lane 45/47 m, enemy flag 75/74 m. The self-test ("World Tour: Village") measures the
+  46/44 m, West Lane 48/48 m, East Lane 45/47 m, enemy flag 75/74 m. The self-test ("World Tour: Village", map name "Cotswold Village") measures the
   same on the game's nav graph and fails over 15% apart; it also checks the nav graph reaches every spawn, hill, flag and
   every room of the six buildings.
 

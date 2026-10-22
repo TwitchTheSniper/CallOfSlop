@@ -49,8 +49,8 @@ public static unsafe partial class Program
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),
         ("cluttered_culdesac_street", "Cul-de-sac", new Vector3(-9f, 1.7f, -6f), new Vector3(-17f, 1.2f, -20f), false),
         // World Tour, 07 Village: the hillside from above the meadow in the south-west, then up the green from the High Street at eye height.
-        ("world_village", "Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
-        ("world_village_street", "Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
+        ("world_village", "Cotswold Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
+        ("world_village_street", "Cotswold Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
         // Cluttered pack, Dockside: the bay from above the west horn, then the waterfront road at eye height towards the fish market.
         ("cluttered_dockside", "Dockside", new Vector3(-62f, 24f, 38f), new Vector3(0f, 0f, -16f), false),
         ("cluttered_dockside_street", "Dockside", new Vector3(-27f, 1.7f, 2.5f), new Vector3(2f, 1.4f, 9f), false),

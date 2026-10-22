@@ -873,7 +873,7 @@ def dump(o, ind=0):
 def finish():
     return {
         "format": "call-of-slop-map/1",
-        "name": "Village",
+        "name": "Cotswold Village",
         "description": "A Cotswold village on a hillside: the church on its raised churchyard, the allotments, the green and its memorial, stone cottages, the shop and post office, the pub and a stream under the bridge.",
         "author": "Call of Slop",
         "order": 507,

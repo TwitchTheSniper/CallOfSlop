@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     private const string WorldPack = "World Tour";
-    private const string WorldVillageMap = "Village";
+    private const string WorldVillageMap = "Cotswold Village";
 
     private static void CheckWorldVillage()
     {
