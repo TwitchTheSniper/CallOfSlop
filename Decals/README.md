@@ -257,6 +257,21 @@ Impacts are separate from impact particles and sounds (those are drawn and playe
 4. Place it with a `Decal` op on the Dev pack's **Decal Surfaces** map (`Maps/Dev/DecalSurfaces.json`; the self-test wants every placeable decal shown there or on Decal Test), and run the self-test: every decal file is loaded and painted, and a broken one fails it with the file and the problem.
 5. For a new bullet impact, add `"impact": { "materials": [...] }`; for more variety on a material, add several impact decals listing it (the pick is weighted by `weight`). The self-test wants at least 3 variants for every material (fallbacks count) and checks the pick matches the weights. Impact decals don't need to be placed on a map.
 
-Decals live in this top-level folder so every map and pack can use them (packs can't have their own decals yet). Decals are cosmetic and never part of a map's fingerprint.
+Decals live in this top-level folder so every map and pack can use them. Decals are cosmetic and never part of a map's fingerprint.
+
+## Pack decals
+
+A map pack can carry decals of its own in `Maps/<Pack>/Decals/` (same file format, category subfolders allowed, PNG images next to the files): branding and signage for one pack's invented shops, say. **Put a decal there only if it belongs to that pack**; anything generally useful (a stain, a road marking, a generic sign) goes here in the global folders. The World Tour pack keeps one subfolder per map: `Maps/World/Decals/<MapName>/`.
+
+- **Visible to that pack's maps only**, by name; maps in other packs (or loose in `Maps`) never see them, and two packs may both have a decal called "Shop Sign".
+- **Shadowing.** A pack decal with the same name as a global one replaces it for that pack's maps only, and the log says so (`[decals] pack MyPack: "Exit Sign" shadows the global decal...`). `"global:Exit Sign"` in a `Decal` or `DecalScatter` op always means the global one.
+- **Names are unique within the pack** (a duplicate is skipped and reported, like here). At most **128 decals per pack**.
+- **No impact decals** in packs: bullet impacts are global (an `impact` decal in a pack is skipped with a message).
+- **Cosmetic:** pack decals don't change any map's fingerprint, so a player with different pack decal files still joins (and just sees their own pictures).
+- **Example:** `Maps/Dev/Decals/Dev/` has a blue **Exit Sign** (shadowing the green one) and the **Dev Pack Badge** (a PNG with a painted ring); the Dev pack's **Pack Decals** map shows them next to `"global:Exit Sign"`. The self-test section **Pack decals** checks the scope rules and the atlas budget.
+
+**The atlas.** Every decal is one 128 x 128 layer of one texture array. The global library is painted at startup (it may hold at most **256** decals; the self-test wants a quarter of that free). A pack's decals are read the first time one of its maps loads, get layers appended after the global ones, and only those new layers are painted, on a worker thread (decals already painted are copied, and no map is rebaked). The atlas holds at most **1024** layers in all (OpenGL 4.1 guarantees 2048); only the layers in use take memory, about 85 KB each with mipmaps (200 decals: about 17 MB of video memory, plus a CPU copy so new pack layers can be added without repainting).
+
+**Resolution: 128 px per decal, whatever its size or shape.** A non-square decal (`"size": [2.4, 0.8]`) stretches its 128 x 128 picture over that rectangle, so a 3:1 sign gets 128 pixels across its whole width: its detail across is a third as fine as its detail up and down. There are no larger or wide layers (the texture array has one layer size). For a big or wide shop sign: keep the artwork bold (block letters made of `rect`s, simple logo shapes, no fine text), or split it into 2-3 decals placed side by side (`"Brand Sign Left"`, `"Brand Sign Right"`), each with its own 128 px of detail. A PNG may be up to 512 x 512 but is resampled to 128 x 128.
 
 **From code:** anything that builds a map (a building generator, a future prop type) can call `Map.Decal(...)` and `Map.DecalScatter(...)` directly; calls made inside another op aren't written to the map file as ops of their own, and are baked with the map like any other decal. A decal on one of the boxes it made hides automatically while that box is broken or moved (for example an open door).

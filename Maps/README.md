@@ -776,7 +776,7 @@ Map names must still be unique across **all** packs, because that's how servers 
 
 ## Where assets go
 
-**The rule:** assets used inside maps go in the general, reusable top-level folders whenever possible: `Props/` for props, `Models/` for glTF models, and shared sky images in the `Maps` folder itself. Only an asset that is specific to one map or one pack goes in that pack's folder, so the pack stays self-contained and other packs never see it:
+**The rule:** assets used inside maps go in the general, reusable top-level folders whenever possible: `Props/` for props, `Models/` for glTF models, `Decals/` for decals, and shared sky images in the `Maps` folder itself. Only an asset that is specific to one map or one pack goes in that pack's folder, so the pack stays self-contained and other packs never see it:
 
 ```
 Maps/
@@ -787,6 +787,8 @@ Maps/
       Bunker/Crate.json
     Models/            glTF models only this pack's maps can use
       bunker_door.glb
+    Decals/            decals only this pack's maps can use (same format as Decals/, PNGs next to them)
+      Bunker/BunkerSign.json
     Skies/             sky images for this pack's maps
       dusk.hdr
 ```
@@ -796,15 +798,17 @@ Maps/
 | Asset | Looked up in | Forcing the global one |
 |---|---|---|
 | Prop (`Prop`, `PlaceProp`, `Clutter`, a `props` boundary edge) | `Maps/<Pack>/Props`, then `Props` | `"global:Wooden Crate"`, or `"global:Street"` for a category |
+| Decal (`Decal`, `DecalScatter`) | `Maps/<Pack>/Decals`, then `Decals` | `"global:Exit Sign"` |
 | Model (`Model` op) | the path inside the pack folder (`"Models/door.glb"` finds `Maps/<Pack>/Models/door.glb`), then the same path from the game folder (`Models/door.glb`) | `"global:Models/door.glb"` |
 | Sky image (`skybox`) | next to the map file, then the pack folder, then the `Maps` folder | `"global:Skies/dusk.hdr"` (the `Maps` folder only) |
 
 - **Namespaced per pack.** Two packs can each have a prop called "Crate": each pack's maps get their own, and maps in other packs (or loose in `Maps`) never see either.
-- **Shadowing.** A pack prop with the same name as a global prop replaces it for that pack's maps only, in name lookups and in its category, and the game log says so (`[props] pack MyPack: "Crate" shadows the global prop...`). A pack model at the same path as a global one does the same. Use `global:` where you still want the global one.
-- **Fingerprint.** The pack-local props and models a map uses count towards its fingerprint (each prop file's contents, ignoring whitespace and comments, and each model's geometry), so a player whose copy of the pack has different or missing asset files gets the usual "different version of the map" message instead of a game with different cover. The pack folder's name doesn't count, and a map that uses no pack-local assets keeps the fingerprint it always had. Sky images stay looks only, like the rest of the `skybox`.
-- **Cost.** A pack's Props folder is read the first time one of its maps loads and then cached until **Refresh maps**; a pack without one costs a single folder check.
+- **Shadowing.** A pack prop with the same name as a global prop replaces it for that pack's maps only, in name lookups and in its category, and the game log says so (`[props] pack MyPack: "Crate" shadows the global prop...`). A pack model at the same path as a global one does the same. Use `global:` where you still want the global one. Pack decals shadow global decals the same way (see [Decals/README.md](../Decals/README.md#pack-decals)).
+- **Fingerprint.** The pack-local props and models a map uses count towards its fingerprint (each prop file's contents, ignoring whitespace and comments, and each model's geometry), so a player whose copy of the pack has different or missing asset files gets the usual "different version of the map" message instead of a game with different cover. The pack folder's name doesn't count, and a map that uses no pack-local assets keeps the fingerprint it always had. Sky images and decals (pack-local or not) stay looks only, like the rest of the `skybox`.
+- **Cost.** A pack's Props and Decals folders are read the first time one of its maps loads and then cached until **Refresh maps**; a pack without one costs a single folder check. Pack decals get their own atlas layers, painted once on a worker thread (128 px each, at most 128 per pack; see [Decals/README.md](../Decals/README.md#pack-decals)).
 - **Example:** the Dev pack has its own **Apple Crate** (`Maps/Dev/Props/AppleCrate.json`, magenta, shadowing the global one) and a model (`Maps/Dev/Models/dev_beacon.glb`, written by `tools/models/make_pack_models.py`). The **Pack Assets** map shows them next to `"global:Apple Crate"` and the global barrel; **Prop Gallery 3** names `"global:Apple Crate"` so it keeps showing the global one.
-- Files in a pack's `Props` folder are props, never maps.
+- The Dev pack also has its own decals (`Maps/Dev/Decals/Dev/`: a blue **Exit Sign** shadowing the global one, and the **Dev Pack Badge** PNG), shown by the **Pack Decals** map; the Dev decal galleries name `"global:Exit Sign"`.
+- Files in a pack's `Props` and `Decals` folders are props and decals, never maps.
 
 **Sharing a pack:** zip the pack folder (for example `MyPack.zip` containing `MyPack/pack.json` and the maps). To install one, unzip it into `Maps` so it becomes `Maps/MyPack/`, then click **Refresh maps**.
 

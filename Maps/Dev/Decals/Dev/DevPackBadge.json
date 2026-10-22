@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Dev Pack Badge",
+  "category": "Dev",
+  "description": "A pack-local decal (Maps/Dev/Decals): a navy badge from a PNG with a painted ring over it. Only Dev maps can use it.",
+  "author": "Call of Slop",
+  "size": 0.9,
+  "rotation": 0,
+  "surfaces": "all",
+  "fadeDistance": 60,
+  "image": "dev_badge.png",
+  "layers": [
+    {
+      "shape": "ring",
+      "radius": 0.47,
+      "width": 0.02,
+      "color": [
+        0.95,
+        0.55,
+        0.12
+      ],
+      "alpha": 0.9
+    }
+  ]
+}
