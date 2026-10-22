@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "London Garage Sign 10",
+ "category": "London",
+ "description": "Tile 10 of 13 of the London map's garage sign (VIADUCT MOTORS  MOT - TYRES; an invented name).",
+ "author": "Call of Slop",
+ "size": [
+  0.538,
+  0.48
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "fadeDistance": 70,
+ "image": "london_garage_sign_10.png"
+}

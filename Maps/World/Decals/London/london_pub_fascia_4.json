@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "London Pub Fascia 4",
+ "category": "London",
+ "description": "Tile 4 of 9 of the London map's pub fascia (THE LAMPLIGHTER; an invented name).",
+ "author": "Call of Slop",
+ "size": [
+  0.667,
+  0.6
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "fadeDistance": 70,
+ "image": "london_pub_fascia_4.png"
+}

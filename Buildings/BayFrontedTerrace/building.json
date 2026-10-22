@@ -1,0 +1,1238 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Bay Fronted Terrace",
+ "theme": "A late-Victorian London terrace: yellow stock brick, stone-trimmed ground-floor bay windows, front garden walls with bins, slate roofs and chimney stacks, back yards with washing lines",
+ "category": "residential",
+ "description": "Three two-storey terraced houses, each with a bay-windowed front room, a kitchen with the stairs and a back door to its yard, and one big bedroom upstairs.",
+ "author": "Call of Slop",
+ "seed": 1890,
+ "wallThickness": 0.25,
+ "storeyHeight": 3.0,
+ "exterior": {
+  "color": "$wall",
+  "material": "brick"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "none"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "wood"
+ },
+ "ceiling": "#efe8d8",
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "london stock": {
+   "wall": "#a08a5e",
+   "interior": "#dcd2b8",
+   "paper": "#7a8a6a",
+   "floor": "#5a3a24",
+   "trim": "#e8e0cc",
+   "door": "#7a1e1e",
+   "roof": "#3a3e46"
+  },
+  "red brick": {
+   "wall": "#8a3c2c",
+   "interior": "#e0d4bc",
+   "paper": "#8a6a4a",
+   "floor": "#5a3420",
+   "trim": "#e4dcc8",
+   "door": "#141414",
+   "roof": "#3a3a40"
+  },
+  "white stucco": {
+   "wall": "#ddd6c6",
+   "interior": "#e8e0cc",
+   "paper": "#6a7a8a",
+   "floor": "#5a3a24",
+   "trim": "#f4f0e4",
+   "door": "#1e3a5a",
+   "roof": "#40444a"
+  }
+ },
+ "floors": [
+  {
+   "autoWindows": {
+    "spacing": 2.4,
+    "width": 1.0,
+    "sill": 0.9,
+    "head": 2.3
+   },
+   "rooms": [
+    {
+     "id": "front1",
+     "type": "living",
+     "rects": [
+      [
+       -7.5,
+       0,
+       -2.5,
+       5
+      ],
+      [
+       -6.8,
+       5,
+       -4.2,
+       5.9
+      ]
+     ]
+    },
+    {
+     "id": "kitchen1",
+     "type": "kitchen",
+     "rect": [
+      -7.5,
+      -5,
+      -2.5,
+      0
+     ],
+     "floor": {
+      "color": "#a89a88",
+      "material": "tiles"
+     },
+     "wall": "#e4dfd0"
+    },
+    {
+     "id": "front2",
+     "type": "living",
+     "rects": [
+      [
+       -2.5,
+       0,
+       2.5,
+       5
+      ],
+      [
+       -1.8,
+       5,
+       0.8,
+       5.9
+      ]
+     ]
+    },
+    {
+     "id": "kitchen2",
+     "type": "kitchen",
+     "rect": [
+      -2.5,
+      -5,
+      2.5,
+      0
+     ],
+     "floor": {
+      "color": "#a89a88",
+      "material": "tiles"
+     },
+     "wall": "#e4dfd0"
+    },
+    {
+     "id": "front3",
+     "type": "living",
+     "rects": [
+      [
+       2.5,
+       0,
+       7.5,
+       5
+      ],
+      [
+       3.2,
+       5,
+       5.8,
+       5.9
+      ]
+     ]
+    },
+    {
+     "id": "kitchen3",
+     "type": "kitchen",
+     "rect": [
+      2.5,
+      -5,
+      7.5,
+      0
+     ],
+     "floor": {
+      "color": "#a89a88",
+      "material": "tiles"
+     },
+     "wall": "#e4dfd0"
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      -3.25,
+      5
+     ],
+     "width": 0.95,
+     "color": "$door"
+    },
+    {
+     "type": "window",
+     "at": [
+      -5.5,
+      5.9
+     ],
+     "width": 1.8,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      -6.8,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      -4.2,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "door",
+     "at": [
+      -3.15,
+      0
+     ],
+     "width": 0.9
+    },
+    {
+     "type": "door",
+     "at": [
+      -3.15,
+      -5
+     ],
+     "width": 0.9,
+     "color": "$door"
+    },
+    {
+     "type": "window",
+     "at": [
+      -5.9,
+      -5
+     ],
+     "width": 1.2,
+     "sill": 1.0,
+     "head": 2.2
+    },
+    {
+     "type": "door",
+     "at": [
+      -2.5,
+      -3.0
+     ],
+     "width": 0.9
+    },
+    {
+     "type": "door",
+     "at": [
+      1.75,
+      5
+     ],
+     "width": 0.95,
+     "color": "#1e3a6a",
+     "front": true
+    },
+    {
+     "type": "window",
+     "at": [
+      -0.5,
+      5.9
+     ],
+     "width": 1.8,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      -1.8,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      0.8,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "door",
+     "at": [
+      1.85,
+      0
+     ],
+     "width": 0.9
+    },
+    {
+     "type": "door",
+     "at": [
+      1.85,
+      -5
+     ],
+     "width": 0.9,
+     "color": "#1e3a6a"
+    },
+    {
+     "type": "window",
+     "at": [
+      -0.9,
+      -5
+     ],
+     "width": 1.2,
+     "sill": 1.0,
+     "head": 2.2
+    },
+    {
+     "type": "door",
+     "at": [
+      2.5,
+      -3.0
+     ],
+     "width": 0.9
+    },
+    {
+     "type": "door",
+     "at": [
+      6.75,
+      5
+     ],
+     "width": 0.95,
+     "color": "#2f5d3a"
+    },
+    {
+     "type": "window",
+     "at": [
+      4.5,
+      5.9
+     ],
+     "width": 1.8,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      3.2,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "window",
+     "at": [
+      5.8,
+      5.45
+     ],
+     "width": 0.5,
+     "sill": 0.6,
+     "head": 2.45
+    },
+    {
+     "type": "door",
+     "at": [
+      6.85,
+      0
+     ],
+     "width": 0.9
+    },
+    {
+     "type": "door",
+     "at": [
+      6.85,
+      -5
+     ],
+     "width": 0.9,
+     "color": "#2f5d3a"
+    },
+    {
+     "type": "window",
+     "at": [
+      4.1,
+      -5
+     ],
+     "width": 1.2,
+     "sill": 1.0,
+     "head": 2.2
+    }
+   ]
+  },
+  {
+   "height": 2.9,
+   "autoWindows": {
+    "spacing": 2.3,
+    "width": 1.0,
+    "sill": 1.1,
+    "head": 2.45
+   },
+   "rooms": [
+    {
+     "id": "bedroom1",
+     "type": "bedroom",
+     "rect": [
+      -7.5,
+      -5,
+      -2.5,
+      5
+     ],
+     "wall": "$paper"
+    },
+    {
+     "id": "bedroom2",
+     "type": "bedroom",
+     "rect": [
+      -2.5,
+      -5,
+      2.5,
+      5
+     ],
+     "wall": "$paper"
+    },
+    {
+     "id": "bedroom3",
+     "type": "bedroom",
+     "rect": [
+      2.5,
+      -5,
+      7.5,
+      5
+     ],
+     "wall": "$paper"
+    }
+   ],
+   "openings": []
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    -6.45,
+    -1.15,
+    -4.05,
+    -0.15
+   ],
+   "dir": "-x",
+   "color": {
+    "color": "$floor",
+    "material": "wood"
+   }
+  },
+  {
+   "floor": 0,
+   "rect": [
+    -1.45,
+    -1.15,
+    0.95,
+    -0.15
+   ],
+   "dir": "-x",
+   "color": {
+    "color": "$floor",
+    "material": "wood"
+   }
+  },
+  {
+   "floor": 0,
+   "rect": [
+    3.55,
+    -1.15,
+    5.95,
+    -0.15
+   ],
+   "dir": "-x",
+   "color": {
+    "color": "$floor",
+    "material": "wood"
+   }
+  }
+ ],
+ "roof": {
+  "type": "gable",
+  "ridge": "x",
+  "pitch": 36,
+  "overhang": 0.3,
+  "color": {
+   "color": "$roof",
+   "material": "tiles"
+  }
+ },
+ "extras": [
+  {
+   "type": "block",
+   "min": [
+    -6.95,
+    0.5,
+    5.9
+   ],
+   "max": [
+    -4.05,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.95,
+    0.5,
+    5.0
+   ],
+   "max": [
+    -6.925,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.075,
+    0.5,
+    5.0
+   ],
+   "max": [
+    -4.05,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.95,
+    2.45,
+    5.9
+   ],
+   "max": [
+    -4.05,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.95,
+    2.45,
+    5.0
+   ],
+   "max": [
+    -6.925,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.075,
+    2.45,
+    5.0
+   ],
+   "max": [
+    -4.05,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.5,
+    0,
+    7.3
+   ],
+   "max": [
+    -3.85,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.65,
+    0,
+    7.3
+   ],
+   "max": [
+    -2.5,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.5,
+    0.7,
+    7.27
+   ],
+   "max": [
+    -3.85,
+    0.78,
+    7.53
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "prop",
+   "name": "Wheelie Bin Grey",
+   "at": [
+    -5.6,
+    6.65
+   ],
+   "yaw": 0
+  },
+  {
+   "type": "prop",
+   "name": "Flower Pot",
+   "at": [
+    -7.1,
+    6.9
+   ]
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.6,
+    0,
+    -10.0
+   ],
+   "max": [
+    -2.4,
+    1.6,
+    -5.13
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.5,
+    0,
+    -10.1
+   ],
+   "max": [
+    -3.7,
+    1.6,
+    -9.9
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Laundry Line",
+   "at": [
+    -6.2,
+    -8.2
+   ],
+   "yaw": 90
+  },
+  {
+   "type": "block",
+   "min": [
+    -1.95,
+    0.5,
+    5.9
+   ],
+   "max": [
+    0.95,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -1.95,
+    0.5,
+    5.0
+   ],
+   "max": [
+    -1.925,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    0.925,
+    0.5,
+    5.0
+   ],
+   "max": [
+    0.95,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -1.95,
+    2.45,
+    5.9
+   ],
+   "max": [
+    0.95,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -1.95,
+    2.45,
+    5.0
+   ],
+   "max": [
+    -1.925,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    0.925,
+    2.45,
+    5.0
+   ],
+   "max": [
+    0.95,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.5,
+    0,
+    7.3
+   ],
+   "max": [
+    1.15,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.35,
+    0,
+    7.3
+   ],
+   "max": [
+    2.5,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.5,
+    0.7,
+    7.27
+   ],
+   "max": [
+    1.15,
+    0.78,
+    7.53
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "prop",
+   "name": "Wheelie Bin",
+   "at": [
+    -0.6,
+    6.65
+   ],
+   "yaw": 0
+  },
+  {
+   "type": "prop",
+   "name": "Flower Pot",
+   "at": [
+    -2.1,
+    6.9
+   ]
+  },
+  {
+   "type": "block",
+   "min": [
+    2.4,
+    0,
+    -10.0
+   ],
+   "max": [
+    2.6,
+    1.6,
+    -5.13
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.5,
+    0,
+    -10.1
+   ],
+   "max": [
+    1.3,
+    1.6,
+    -9.9
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Garden Shed",
+   "at": [
+    -1.4,
+    -8.5
+   ],
+   "yaw": 0
+  },
+  {
+   "type": "block",
+   "min": [
+    3.05,
+    0.5,
+    5.9
+   ],
+   "max": [
+    5.95,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    3.05,
+    0.5,
+    5.0
+   ],
+   "max": [
+    3.075,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    5.925,
+    0.5,
+    5.0
+   ],
+   "max": [
+    5.95,
+    0.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    3.05,
+    2.45,
+    5.9
+   ],
+   "max": [
+    5.95,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    3.05,
+    2.45,
+    5.0
+   ],
+   "max": [
+    3.075,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    5.925,
+    2.45,
+    5.0
+   ],
+   "max": [
+    5.95,
+    2.62,
+    6.05
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    2.5,
+    0,
+    7.3
+   ],
+   "max": [
+    6.15,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.35,
+    0,
+    7.3
+   ],
+   "max": [
+    7.5,
+    0.7,
+    7.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.5,
+    0.7,
+    7.27
+   ],
+   "max": [
+    6.15,
+    0.78,
+    7.53
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "prop",
+   "name": "Wheelie Bin Grey",
+   "at": [
+    4.4,
+    6.65
+   ],
+   "yaw": 0
+  },
+  {
+   "type": "prop",
+   "name": "Flower Pot",
+   "at": [
+    2.9,
+    6.9
+   ]
+  },
+  {
+   "type": "block",
+   "min": [
+    7.4,
+    0,
+    -10.0
+   ],
+   "max": [
+    7.6,
+    1.6,
+    -5.13
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.5,
+    0,
+    -10.1
+   ],
+   "max": [
+    6.3,
+    1.6,
+    -9.9
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "prop",
+   "name": "Compost Bin",
+   "at": [
+    3.8,
+    -8.2
+   ],
+   "yaw": 0
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.6,
+    0,
+    -10.0
+   ],
+   "max": [
+    -7.4,
+    1.6,
+    -5.13
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.95,
+    8.2,
+    -0.5
+   ],
+   "max": [
+    -7.05,
+    10.9,
+    0.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -8.0,
+    10.9,
+    -0.55
+   ],
+   "max": [
+    -7.0,
+    11.05,
+    0.55
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    -2.95,
+    8.2,
+    -0.5
+   ],
+   "max": [
+    -2.05,
+    10.9,
+    0.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.0,
+    10.9,
+    -0.55
+   ],
+   "max": [
+    -2.0,
+    11.05,
+    0.55
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    2.05,
+    8.2,
+    -0.5
+   ],
+   "max": [
+    2.95,
+    10.9,
+    0.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.0,
+    10.9,
+    -0.55
+   ],
+   "max": [
+    3.0,
+    11.05,
+    0.55
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "block",
+   "min": [
+    7.05,
+    8.2,
+    -0.5
+   ],
+   "max": [
+    7.95,
+    10.9,
+    0.5
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.0,
+    10.9,
+    -0.55
+   ],
+   "max": [
+    8.0,
+    11.05,
+    0.55
+   ],
+   "color": "$trim"
+  },
+  {
+   "type": "prop",
+   "name": "TV Antenna",
+   "at": [
+    0.0,
+    0,
+    0.6
+   ],
+   "onRoof": true
+  }
+ ],
+ "anchors": [
+  {
+   "type": "spawn",
+   "name": "No. 1 kitchen",
+   "at": [
+    -5.5,
+    -3.4
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "No. 3 kitchen",
+   "at": [
+    4.5,
+    -3.4
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "No. 2 bedroom",
+   "floor": 1,
+   "at": [
+    0.0,
+    2.5
+   ]
+  }
+ ]
+}

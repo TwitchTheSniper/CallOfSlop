@@ -1,0 +1,97 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "archbar",
+ "description": "A craft-beer bar in a railway arch: a long counter with stools, tables and chairs, a fridge, kegs and bottles.",
+ "items": [
+  {
+   "id": "bar",
+   "props": [
+    "Kitchen Counter"
+   ],
+   "place": "wall",
+   "prefer": "far",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Bottles",
+    "Coffee Maker"
+   ],
+   "place": "on",
+   "of": "bar",
+   "y": 0.9
+  },
+  {
+   "props": [
+    "Bar Stool"
+   ],
+   "place": "front",
+   "of": "bar",
+   "distance": 0.3
+  },
+  {
+   "props": [
+    "Fridge"
+   ],
+   "place": "wall",
+   "chance": 0.9
+  },
+  {
+   "id": "t",
+   "props": [
+    "Table"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    3
+   ],
+   "gap": 0.9
+  },
+  {
+   "props": [
+    "Wooden Chair",
+    "Plastic Chair"
+   ],
+   "place": "around",
+   "of": "t",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Oil Drum",
+    "Pallet"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Ceiling Fan"
+   ],
+   "place": "ceiling",
+   "chance": 0.5
+  },
+  {
+   "props": [
+    "Bottles",
+    "Newspaper",
+    "Cardboard Box Small"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}
