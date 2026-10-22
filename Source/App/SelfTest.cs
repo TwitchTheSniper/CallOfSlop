@@ -162,6 +162,7 @@ public static partial class SelfTest
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
+            Section("Bots and foliage", CheckBotFoliage); // SelfTestBotFoliage.cs: no seeing through foliage (by stance), blind fire at estimates, timeouts, walls, corn, costs
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
             Section("Throw input", CheckThrowInput); // SelfTestThrowInput.cs: grenade and equipment keys end to end (every item, each match phase, offline and loopback, bots)
             Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations

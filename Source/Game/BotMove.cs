@@ -38,6 +38,7 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
+        World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
 
@@ -139,6 +140,12 @@ public sealed partial class Game
             }
         }
 
+        if (b.SelfTestHold)
+        {
+            s.Wish = Vector3.Zero; // self-test: stay on the spot (BotFoliage.cs)
+            s.Sprint = false;
+            s.Stationary = true;
+        }
         BotSeparate(p, ref s.Wish);
         BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);

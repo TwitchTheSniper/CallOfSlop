@@ -3,10 +3,12 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Concealment: cosmetic props marked <c>"concealment": true</c> (cornfields, tall crops) hide people from bots. They
-/// stay looks-only for movement, bullets and grenades; only the bots' line of sight checks them (Bots.cs). A sight line is
-/// hidden when it runs through at least <see cref="ConcealDepth"/> metres of concealing props in total, so someone a
-/// step inside a cornfield is hidden from the road, while a bot right next to you (closer than
+/// Concealment: cosmetic props marked <c>"concealment": true</c> (cornfields, tall crops) hide people from bots, and so
+/// do the map's plants (grass, bushes, shrubs, tree canopies: FoliageCover.cs). They stay looks-only for movement,
+/// bullets and grenades; only the bots' line of sight checks them (Bots.cs, BotFoliage.cs). A sight line is hidden when
+/// it runs through at least <see cref="ConcealDepth"/> metres of concealing props, <see cref="FoliageCoverDepth"/> metres
+/// of dense foliage, or a mix of both adding up to as much (each counted as a share of its own threshold), so someone a
+/// step inside a cornfield or a bush is hidden from the road, while a bot right next to you (closer than
 /// <see cref="ConcealSeeRange"/>) still sees you. The props' world bounds go in a coarse grid built on first use, so a
 /// query only tests the few props near the line. Maps without concealing props never build it and answer false at once.
 /// </summary>
@@ -37,18 +39,24 @@ public sealed partial class Map
     public int ConcealingProps => Conceal().Boxes.Length;
 
     /// <summary>
-    /// Is the sight line from <paramref name="from"/> to <paramref name="to"/> hidden by concealing props (tall crops)?
-    /// True when it crosses at least <see cref="ConcealDepth"/> metres of them and the two points are further apart
-    /// than <see cref="ConcealSeeRange"/>. Server side only (bots); no allocation.
+    /// Is the sight line from <paramref name="from"/> to <paramref name="to"/> hidden by concealing props (tall crops) or
+    /// foliage? True when it crosses at least <see cref="ConcealDepth"/> metres of the props, <see cref="FoliageCoverDepth"/>
+    /// metres of dense foliage, or a mix adding up to as much, and the two points are further apart than
+    /// <see cref="ConcealSeeRange"/>. Server side only (bots); no allocation.
     /// </summary>
     public bool Concealed(Vector3 from, Vector3 to)
     {
-        var g = Conceal();
-        if (g.Boxes.Length == 0)
-            return false;
         var d = to - from;
         var dist = d.Length();
         if (dist < ConcealSeeRange)
+            return false;
+        // Foliage first (FoliageCover.cs); whatever share it leaves is what the props have to make up.
+        var share = FoliageInstances.Length == 0 || FoliageCoverDisabled ? 0f : FoliageCoverGrid()!.Depth(from, d / dist, dist, FoliageCoverDepth) / FoliageCoverDepth;
+        if (share >= 1f)
+            return true;
+        var need = ConcealDepth * (1f - share);
+        var g = Conceal();
+        if (g.Boxes.Length == 0)
             return false;
         // Quick reject: the segment's bounds against all the concealing props' bounds.
         Vector3 lo = Vector3.Min(from, to), hi = Vector3.Max(from, to);
@@ -88,7 +96,7 @@ public sealed partial class Map
                                 continue;
                             g.Stamp[i] = g.Mark;
                             depth += Inside(g.Boxes[i], from, dir, dist);
-                            if (depth >= ConcealDepth)
+                            if (depth >= need)
                                 return true;
                         }
                     }
