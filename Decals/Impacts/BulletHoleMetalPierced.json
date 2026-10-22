@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Metal Pierced",
+  "description": "A clean hole punched through sheet metal: bright torn petals and a black centre.",
+  "author": "Call of Slop",
+  "size": 0.1,
+  "sizeVariation": 0.15,
+  "rotation": "random",
+  "tintVariation": 0.05,
+  "impact": {"materials": ["Metal"], "weight": 1},
+  "layers": [
+    {"shape": "circle", "radius": 0.32, "color": [0.22, 0.22, 0.23], "alpha": 0.3, "softness": 0.12},
+    {"shape": "cracks", "count": 6, "length": 0.24, "width": 0.05, "jag": 0.15, "seed": 191, "color": [0.88, 0.88, 0.86], "alpha": 0.9},
+    {"shape": "ring", "radius": 0.14, "width": 0.05, "color": [0.7, 0.7, 0.7], "alpha": 0.95, "softness": 0.02},
+    {"shape": "circle", "radius": 0.11, "color": [0.03, 0.03, 0.035], "softness": 0.015}
+  ]
+}

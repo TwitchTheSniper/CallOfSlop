@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Blast Scorch Rays",
+  "description": "A blast scorch with soot thrown out in streaks and a ragged edge.",
+  "author": "Call of Slop",
+  "size": 1.0,
+  "sizeVariation": 0.15,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Explosive"], "weight": 1},
+  "layers": [
+    {"shape": "cracks", "count": 11, "length": 0.46, "width": 0.06, "jag": 0.2, "seed": 441, "color": [0.07, 0.06, 0.05], "alpha": 0.6},
+    {"shape": "splat", "radius": 0.3, "count": 10, "jag": 0.55, "seed": 442, "color": [0.06, 0.05, 0.04], "alpha": 0.7, "softness": 0.1, "noise": 0.35, "noiseScale": 7},
+    {"shape": "circle", "radius": 0.12, "color": [0.03, 0.025, 0.02], "alpha": 0.8, "softness": 0.06}
+  ]
+}

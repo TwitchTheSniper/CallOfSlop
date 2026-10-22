@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Concrete Deep",
+  "description": "A heavy hit in concrete: wide dust ring, long cracks and a deep, dark crater.",
+  "author": "Call of Slop",
+  "size": 0.21,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Concrete"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.4, "count": 10, "jag": 0.4, "seed": 101, "color": [0.8, 0.78, 0.74], "alpha": 0.5, "softness": 0.08, "noise": 0.45, "noiseScale": 11},
+    {"shape": "cracks", "count": 7, "length": 0.46, "width": 0.028, "jag": 0.65, "seed": 102, "color": [0.17, 0.16, 0.15], "alpha": 0.8},
+    {"shape": "splat", "radius": 0.2, "count": 8, "jag": 0.4, "seed": 103, "color": [0.4, 0.39, 0.37], "alpha": 0.95, "softness": 0.02},
+    {"shape": "speckle", "radius": 0.18, "count": 10, "width": 0.018, "seed": 104, "color": [0.22, 0.21, 0.2], "alpha": 0.8},
+    {"shape": "circle", "radius": 0.1, "color": [0.04, 0.04, 0.04], "softness": 0.02}
+  ]
+}

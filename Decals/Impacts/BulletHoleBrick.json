@@ -10,7 +10,8 @@
   "impact": {
     "materials": [
       "Brick"
-    ]
+    ],
+    "weight": 2
   },
   "layers": [
     {

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Puff Grass",
+  "description": "A small hit in grass: a dark hole and a few clods of earth thrown out.",
+  "author": "Call of Slop",
+  "size": 0.16,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Grass"], "weight": 1},
+  "layers": [
+    {"shape": "speckle", "radius": 0.42, "count": 14, "width": 0.03, "seed": 331, "color": [0.2, 0.15, 0.1], "alpha": 0.85},
+    {"shape": "splat", "radius": 0.13, "count": 7, "jag": 0.5, "seed": 332, "color": [0.16, 0.12, 0.08], "alpha": 0.95, "softness": 0.03},
+    {"shape": "circle", "radius": 0.06, "color": [0.06, 0.05, 0.03], "softness": 0.03}
+  ]
+}

@@ -680,7 +680,7 @@ public sealed partial class Game : IDisposable
     private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
-        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1); // a bullet-impact decal where it ends on a surface (Source/Decals)
+        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def)); // a bullet-impact decal where it ends on a surface (Source/Decals)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),

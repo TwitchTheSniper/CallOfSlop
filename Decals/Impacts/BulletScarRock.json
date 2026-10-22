@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Scar Rock",
+  "description": "A ricochet off stone: a bright scraped streak and a puff of grey dust.",
+  "author": "Call of Slop",
+  "size": 0.18,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Rock"], "weight": 0.7},
+  "layers": [
+    {"shape": "splat", "at": [0.3, 0.5], "radius": 0.18, "count": 8, "jag": 0.4, "seed": 391, "color": [0.7, 0.69, 0.66], "alpha": 0.4, "softness": 0.08},
+    {"shape": "line", "at": [0.22, 0.49], "to": [0.78, 0.52], "width": 0.04, "color": [0.9, 0.89, 0.86], "alpha": 0.9},
+    {"shape": "circle", "at": [0.24, 0.49], "radius": 0.05, "color": [0.3, 0.3, 0.3], "alpha": 0.9, "softness": 0.03}
+  ]
+}
