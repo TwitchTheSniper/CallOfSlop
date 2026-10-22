@@ -138,7 +138,8 @@ T.flatten(OVERLOOK[0], OVERLOOK[1], height=OVERLOOK[2], radius=5.4, edge=2.0, ma
 DUNE_OP = (70.0, 17.0)
 T.plateau(DUNE_OP[0], DUNE_OP[1], height=round(T.sample(*DUNE_OP), 2), radius=4.2, edge=5.0, mode="fill", material="sand")
 # The west bluff path: a zigzag foot path up the face between the ravine and the west pillbox.
-# It climbs along the foot of the west pillbox to a landing cut into the face (hill 1), then back up a cutting to the top.
+# It climbs along the foot of the west pillbox to a landing cut into the face, then back up a cutting to the top
+# (hill 1 is on the plateau at its head).
 LANDING = (-48.6, 12.0, 10.0)
 WPATH = [(-28.0, 20.4, 3.7), (-38.0, 18.4, 7.4), (-44.6, 14.2, 10.0), (-48.6, 12.0, 10.0), (-45.4, 8.8, 10.0), (-41.0, 3.2, PY), (-40.8, 1.0, PY)]
 T.ramp([list(p) for p in WPATH], width=2.8, edge=1.4, material="dirt")
@@ -264,7 +265,7 @@ CONTAINERS = [(0.33, 0.38, 0.22), (0.45, 0.30, 0.18), (0.30, 0.34, 0.38), (0.52,
 BLUE_SP = [(-28.0, 58.0), (-20.0, 58.5), (-6.0, 56.0), (13.5, 59.5), (22.0, 59.5), (31.0, 57.5), (-44.0, 56.0), (-56.0, 54.5), (-36.0, 58.5)]
 RED_SP = [(-24.0, -51.0), (-16.0, -52.5), (-34.0, -51.5), (16.0, -53.0), (24.0, -51.5), (32.0, -50.5), (-8.0, -52.0), (6.0, -51.5), (40.0, -48.0)]
 FFA_SP = [(-66.0, 26.0), (64.0, 26.0), (-24.0, 27.0), (-58.0, -22.0), (62.0, -32.0), (-2.0, -26.0)]
-HILLS = [(LANDING[0], LANDING[1], 4.0), (OVERLOOK[0], OVERLOOK[1], 4.5), (DUNE_OP[0], DUNE_OP[1], 4.5)]
+HILLS = [(-45.0, 0.0, 4.5), (OVERLOOK[0], OVERLOOK[1], 4.5), (DUNE_OP[0], DUNE_OP[1], 4.5)]
 FLAGS = [(-2.0, 55.0), (-18.0, -40.0)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
@@ -709,7 +710,7 @@ for x, z in BLUE_SP + RED_SP + FFA_SP:
 t.ops.append({"op": "AutoWaypoints", "spacing": 7})
 EXTRA_WP = [(-63.0, 14.0), (-60.0, 3.0), (-50.0, 13.0), (-44.0, 15.5), (-20.0, 15.0), (-8.0, 7.5), (20.0, 2.0), (2.0, 26.0), (40.0, 28.0),
             (70.0, 14.0), (64.0, 2.0), (-13.0, -2.0), (-21.0, -6.0), (46.0, -12.5), (52.0, -19.0), (-17.0, -27.5), (36.0, -38.0),
-            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (LANDING[0], LANDING[1]), (-62.5, 10.0)]
+            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (LANDING[0], LANDING[1]), (-45.0, 0.0), (-62.5, 10.0)]
 for x, z in EXTRA_WP:
     t.ops.append({"op": "Waypoint", "x": x, "z": z})
 # waypoint chains along every route (the nav graph's grid is coarse: chains keep the bots' routes, and the self-test's

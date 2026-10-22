@@ -351,8 +351,9 @@ game's grid, plateau/flatten and ramp maths, so the generator knows the ground e
   to the main gate (boom gate, guard hut, sandbag nests). The **overlook** (hill 2) is a gravel lay-by on leg 2 out over
   the face.
 - **The ravine** (west flank): a rocky gully cut into the plateau, with logs, rocks and bushes, coming out by the motor pool.
-- **The west bluff path**: a foot path along the foot of the face under the west pillbox's slits, up to the **west
-  landing** (hill 1, a terrace cut into the face 2 m below the top), then up a cutting onto the plateau.
+- **The west bluff path**: a foot path along the foot of the face under the west pillbox's slits, up to the west
+  landing (a terrace cut into the face 2 m below the top), then up a cutting onto the plateau, where the **west bluff
+  top** (hill 1) is.
 - **The drainage tunnel** (east of centre): an open concrete channel through the dunes from an outfall in the seawall,
   then a 14 m culvert under the face and the plateau (concrete lining, amber lamps, no foliage inside), then an open
   ramp up into the base between the gate and the fuel depot, behind the defenders' front line.
