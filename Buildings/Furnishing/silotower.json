@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silotower",
+ "description": "A service tower landing: a cable reel or a toolbox.",
+ "items": [
+  {
+   "props": [
+    "Cable Spool",
+    "Toolbox",
+    "Gas Cylinders"
+   ],
+   "place": "corner",
+   "count": 1
+  }
+ ]
+}

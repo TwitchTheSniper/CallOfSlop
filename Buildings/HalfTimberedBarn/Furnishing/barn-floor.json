@@ -1,0 +1,65 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "barn-floor",
+  "description": "The threshing floor: round bales and stacked hay, a farm cart, the cider barrels, tools and hens.",
+  "items": [
+    {
+      "props": [
+        "Hay Bale Stack"
+      ],
+      "place": "wall",
+      "count": [
+        2,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Round Hay Bale"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Cider Barrel"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Tipped Farm Cart",
+        "Hay Bale",
+        "Wheelbarrow"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        2
+      ],
+      "gap": 0.8
+    },
+    {
+      "props": [
+        "Leaning Farm Tools",
+        "Bucket",
+        "Chicken",
+        "Chicken",
+        "Loose Straw",
+        "Loose Straw"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        5
+      ]
+    }
+  ]
+}

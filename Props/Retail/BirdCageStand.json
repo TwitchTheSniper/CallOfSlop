@@ -1,0 +1,34 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bird Cage Stand",
+  "category": "Retail",
+  "description": "A round bird cage on a stand, a budgie inside. Cosmetic.",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.9,
+      1.1
+    ]
+  },
+  "parts": [
+    {"size": [0.06, 1.2, 0.0248], "offset": [0.0, 0.6, 0.0], "color": "#3a3a40", "rotation": [0, 0, 0]},
+    {"size": [0.06, 1.2, 0.0248], "offset": [0.0, 0.6, 0.0], "color": "#3a3a40", "rotation": [0, 45, 0]},
+    {"size": [0.06, 1.2, 0.0248], "offset": [0.0, 0.6, 0.0], "color": "#3a3a40", "rotation": [0, 90, 0]},
+    {"size": [0.06, 1.2, 0.0248], "offset": [0.0, 0.6, 0.0], "color": "#3a3a40", "rotation": [0, 135, 0]},
+    {"size": [0.5, 0.03, 0.207], "offset": [0.0, 0.015, 0.0], "color": "#3a3a40", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.03, 0.207], "offset": [0.0, 0.015, 0.0], "color": "#3a3a40", "rotation": [0, 45, 0]},
+    {"size": [0.5, 0.03, 0.207], "offset": [0.0, 0.015, 0.0], "color": "#3a3a40", "rotation": [0, 90, 0]},
+    {"size": [0.5, 0.03, 0.207], "offset": [0.0, 0.015, 0.0], "color": "#3a3a40", "rotation": [0, 135, 0]},
+    {"size": [0.5, 0.6, 0.207], "offset": [0.0, 1.5, 0.0], "color": "#c8c8c8", "rotation": [0, 0, 0], "material": "grid"},
+    {"size": [0.5, 0.6, 0.207], "offset": [0.0, 1.5, 0.0], "color": "#c8c8c8", "rotation": [0, 45, 0], "material": "grid"},
+    {"size": [0.5, 0.6, 0.207], "offset": [0.0, 1.5, 0.0], "color": "#c8c8c8", "rotation": [0, 90, 0], "material": "grid"},
+    {"size": [0.5, 0.6, 0.207], "offset": [0.0, 1.5, 0.0], "color": "#c8c8c8", "rotation": [0, 135, 0], "material": "grid"},
+    {"size": [0.5, 0.04, 0.207], "offset": [0.0, 1.22, 0.0], "color": "#c8b080", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.04, 0.207], "offset": [0.0, 1.22, 0.0], "color": "#c8b080", "rotation": [0, 45, 0]},
+    {"size": [0.5, 0.04, 0.207], "offset": [0.0, 1.22, 0.0], "color": "#c8b080", "rotation": [0, 90, 0]},
+    {"size": [0.5, 0.04, 0.207], "offset": [0.0, 1.22, 0.0], "color": "#c8b080", "rotation": [0, 135, 0]},
+    {"size": [0.09, 0.12, 0.08], "offset": [0.05, 1.45, 0], "color": "#30c060"},
+    {"size": [0.04, 0.03, 0.06], "offset": [0.05, 1.5, 0.06], "color": "#f0c020"}
+  ]
+}

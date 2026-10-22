@@ -1,0 +1,64 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Phone Display Island",
+  "category": "Retail",
+  "description": "A display island of phones on security stands, screens glowing. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        0.93,
+        0.9
+      ],
+      "offset": [
+        0.0,
+        0.465,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.6, 0.05, 0.9], "offset": [0, 0.9, 0], "color": "#e8e8ec"},
+    {"size": [1.5, 0.88, 0.8], "offset": [0, 0.44, 0], "color": "#d0d0d4"},
+    {"size": [1.52, 0.05, 0.82], "offset": [0, 0.025, 0], "color": "#303034"},
+    {"size": [0.08, 0.06, 0.08], "offset": [-0.6, 0.955, -0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [-0.6, 1.06, -0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [-0.6, 1.06, -0.173], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.22}},
+    {"size": [0.08, 0.06, 0.08], "offset": [-0.6, 0.955, 0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [-0.6, 1.06, 0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [-0.6, 1.06, 0.187], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.58}},
+    {"size": [0.08, 0.06, 0.08], "offset": [-0.3, 0.955, -0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [-0.3, 1.06, -0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [-0.3, 1.06, -0.173], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.52}},
+    {"size": [0.08, 0.06, 0.08], "offset": [-0.3, 0.955, 0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [-0.3, 1.06, 0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [-0.3, 1.06, 0.187], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.88}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.0, 0.955, -0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.0, 1.06, -0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.0, 1.06, -0.173], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.82}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.0, 0.955, 0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.0, 1.06, 0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.0, 1.06, 0.187], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.18}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.3, 0.955, -0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.3, 1.06, -0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.3, 1.06, -0.173], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.12}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.3, 0.955, 0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.3, 1.06, 0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.3, 1.06, 0.187], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.48}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.6, 0.955, -0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.6, 1.06, -0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.6, 1.06, -0.173], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.42}},
+    {"size": [0.08, 0.06, 0.08], "offset": [0.6, 0.955, 0.18], "color": "#303034"},
+    {"size": [0.08, 0.15, 0.012], "offset": [0.6, 1.06, 0.18], "color": "#202024", "rotation": [-15, 0, 0]},
+    {"size": [0.07, 0.13, 0.004], "offset": [0.6, 1.06, 0.187], "color": "#3060b0", "rotation": [-15, 0, 0], "anim": {"type": "flicker", "rate": 2, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.78}}
+  ]
+}

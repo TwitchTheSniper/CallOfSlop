@@ -1,0 +1,239 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Blast Door Portal",
+ "category": "Facility",
+ "description": "A thick concrete door frame 3 m wide and 3 m high with hazard stripes and red lamps (the opening is walkable).",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.1,
+    4.2,
+    1.4
+   ],
+   "offset": [
+    -2.05,
+    2.1,
+    0
+   ]
+  },
+  {
+   "size": [
+    1.1,
+    4.2,
+    1.4
+   ],
+   "offset": [
+    2.05,
+    2.1,
+    0
+   ]
+  },
+  {
+   "size": [
+    3.0,
+    1.45,
+    1.4
+   ],
+   "offset": [
+    0,
+    3.72,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "size": [
+    1.1,
+    4.2,
+    1.4
+   ],
+   "offset": [
+    -2.05,
+    2.1,
+    0
+   ],
+   "color": "#8a8a84",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    1.1,
+    4.2,
+    1.4
+   ],
+   "offset": [
+    2.05,
+    2.1,
+    0
+   ],
+   "color": "#8a8a84",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    5.2,
+    1.2,
+    1.4
+   ],
+   "offset": [
+    0,
+    3.6,
+    0
+   ],
+   "color": "#8a8a84",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    5.4,
+    0.25,
+    1.6
+   ],
+   "offset": [
+    0,
+    4.32,
+    0
+   ],
+   "color": "#7a7a74",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    0.12,
+    3.0,
+    1.42
+   ],
+   "offset": [
+    -1.55,
+    1.5,
+    0
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    0.12,
+    3.0,
+    1.42
+   ],
+   "offset": [
+    1.55,
+    1.5,
+    0
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    3.0,
+    0.12,
+    1.42
+   ],
+   "offset": [
+    0,
+    3.0,
+    0
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.12
+   ],
+   "offset": [
+    -2.05,
+    3.35,
+    0.72
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.16,
+    0.16,
+    0.06
+   ],
+   "offset": [
+    -2.05,
+    3.35,
+    0.79
+   ],
+   "color": "#ff3030",
+   "anim": {
+    "type": "blink",
+    "period": 1.4,
+    "duty": 0.5,
+    "glow": 1.4,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.12
+   ],
+   "offset": [
+    2.05,
+    3.35,
+    0.72
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.16,
+    0.16,
+    0.06
+   ],
+   "offset": [
+    2.05,
+    3.35,
+    0.79
+   ],
+   "color": "#ff3030",
+   "anim": {
+    "type": "blink",
+    "period": 1.4,
+    "duty": 0.5,
+    "glow": 1.4,
+    "color": "#ff3030",
+    "phase": 0.5
+   }
+  },
+  {
+   "size": [
+    1.6,
+    0.4,
+    0.04
+   ],
+   "offset": [
+    0,
+    3.6,
+    0.72
+   ],
+   "color": "#e8e0c8"
+  },
+  {
+   "size": [
+    1.4,
+    0.1,
+    0.02
+   ],
+   "offset": [
+    0,
+    3.62,
+    0.745
+   ],
+   "color": "#202020"
+  }
+ ]
+}

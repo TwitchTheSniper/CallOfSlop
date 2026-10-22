@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Poster Half Price",
+  "category": "Mall",
+  "description": "A shop poster: 50% off.",
+  "author": "Call of Slop",
+  "size": [
+    0.7,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 60,
+  "image": "PosterHalfPrice.png"
+}

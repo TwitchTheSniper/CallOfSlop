@@ -14,10 +14,16 @@ public static partial class SelfTest
 {
     private static readonly List<string> MineNotes = new();
 
+    /// <summary>Seeds the scenarios run with (each a fresh game: bot personalities and choices differ), so one CI run checks them several times.</summary>
+    private static readonly int[] MineSeeds = [7101, 7202, 7303];
+
+    private static bool _mineQuiet; // repeat runs: lines go to the log only, not the notice
+
     private static void MLine(string s)
     {
         Line(s);
-        MineNotes.Add(s);
+        if (!_mineQuiet)
+            MineNotes.Add(s);
     }
 
     private static void CheckLandmines()
@@ -26,7 +32,18 @@ public static partial class SelfTest
         try
         {
             LandmineFile();
-            LandmineScenarios();
+            var failsBefore = _failures;
+            var clean = 0;
+            for (var k = 0; k < MineSeeds.Length; k++)
+            {
+                _mineQuiet = k > 0;
+                var before = _failures;
+                Line($"-- scenarios, seed {MineSeeds[k]} --");
+                LandmineScenarios(MineSeeds[k]);
+                clean += _failures == before ? 1 : 0;
+            }
+            _mineQuiet = false;
+            MLine($"scenarios repeated with {MineSeeds.Length} seeds (fresh game each, different bot personalities): {clean} clean, {_failures - failsBefore} failure(s)");
             LandmineCost();
         }
         finally
@@ -97,13 +114,16 @@ public static partial class SelfTest
             Fail("landmine kill name, ragdoll push, restore flag or protocol version is wrong");
     }
 
-    private static void LandmineScenarios()
+    private static void LandmineScenarios(int seed)
     {
         if (Maps.Find("Landmines") is not { } map)
         {
             Fail("Maps/Dev/Landmines.json ('Landmines') didn't load");
             return;
         }
+        map.RestoreProps(); // earlier sections (the bot match on every map) may have left mines broken or damaged on this map
+        World.SetMap(map);
+        Game.SeedNextGame = seed; // the server's randomness (bot personalities, spawn picks, path timing) the same every run
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 3, botSkill: BotDifficulty.Normal, mapId: map.Id);
         game.MapVoteEnabled = false;
         World.SetMap(map);
@@ -197,12 +217,13 @@ public static partial class SelfTest
         Place(me, p0.X, p0.Z);
         Place(a, p0.X + 3f, p0.Z);
         Place(bb, p0.X, p0.Z - 4.5f);
-        int kills0 = game.Players.Values.Sum(p => (int)p.Kills), deaths0 = me.Deaths, clicks0 = game.MinesClicked, feed0 = game.Feed.Count;
+        int kills0 = game.Players.Values.Sum(p => (int)p.Kills), deaths0 = me.Deaths, clicks0 = game.MinesClicked;
         Tick(dt * 1.5);
         var litAfterStep = game.IsPropLit(lone) && !map.IsPropBroken(lone) && game.MinesClicked == clicks0 + 1;
         var wentOff = TickUntilGone(lone, 2) + dt * 2;
         int hpMe = me.Alive ? me.Health : 0, hpA = a.Health, hpB = bb.Health;
-        var neutralKill = game.Feed.Skip(feed0).Any(f => f.Text.Contains("[Landmine]")) && game.Players.Values.Sum(p => (int)p.Kills) == kills0 && me.Deaths == deaths0 + 1;
+        // (Not the kill feed: it keeps 6 lines and drops old ones by the wall clock, so it depends on what ran before.)
+        var neutralKill = game.LastPropBlastKill == (me.Id, me.Id, Game.LandmineKillId) && game.Players.Values.Sum(p => (int)p.Kills) == kills0 && me.Deaths == deaths0 + 1;
         MLine($"step on: clicked {litAfterStep}, went off {wentOff:0.00} s later (fuse {fuse:0.00} s); health after: on the plate {hpMe}, 3 m {hpA}, 4.5 m {hpB}; "
               + $"neutral kill (\"Landmine\", nobody's kill, a death) {neutralKill}");
         if (!litAfterStep)
@@ -241,17 +262,30 @@ public static partial class SelfTest
         Place(me, p0.X, p0.Z + 12f);
         Place(a, p0.X + 0.3f, p0.Z);
         var meKills = me.Kills;
-        feed0 = game.Feed.Count;
         var shotDist = Shoot(lone, me.Eye);
         var shotLit = game.IsPropLit(lone);
         var shotWent = TickUntilGone(lone, 2);
         Tick(dt * 2);
-        var credited = !a.Alive && me.Kills == meKills + 1 && game.Feed.Skip(feed0).Any(f => f.Text.Contains("[Landmine]"));
-        MLine($"shot from {shotDist:0.0} m: lit {shotLit}, went off after {shotWent:0.00} s; the victim on it dead {!a.Alive}, the shooter's kill {credited}; shooter {me.Health} hp");
+        var credited = !a.Alive && me.Kills == meKills + 1 && game.LastPropBlastKill == (me.Id, a.Id, Game.LandmineKillId);
+        // Stepped on and shot in the same server tick (the plate is checked first): the shooter still gets the blast.
+        Reset();
+        Place(me, p0.X, p0.Z + 12f);
+        Place(a, p0.X + 0.3f, p0.Z);
+        meKills = me.Kills;
+        game.SelfTestTickMines(now); // a steps on it: lit, nobody's yet
+        var steppedFirst = game.IsPropLit(lone);
+        Shoot(lone, me.Eye); // the same tick's shot
+        TickUntilGone(lone, 2);
+        Tick(dt * 2);
+        var sameTick = steppedFirst && !a.Alive && me.Kills == meKills + 1 && game.LastPropBlastKill == (me.Id, a.Id, Game.LandmineKillId);
+        MLine($"shot from {shotDist:0.0} m: lit {shotLit}, went off after {shotWent:0.00} s; the victim on it dead {!a.Alive}, the shooter's kill {credited}; "
+              + $"stepped on and shot in one tick: the shooter's kill {sameTick}; shooter {me.Health} hp");
         if (!shotLit || shotWent < 0)
             Fail("a shot didn't set the mine off");
         if (!credited)
-            Fail("a shot mine's kill should be the shooter's (\"Landmine\")");
+            Fail($"a shot mine's kill should be the shooter's (\"Landmine\"; last blast kill {game.LastPropBlastKill}, victim alive {a.Alive})");
+        if (!sameTick)
+            Fail("a mine stepped on and shot in the same tick should be the shooter's kill");
 
         // 4. Chains: a mine sets off the barrel next to it; one shot mine ripples through the minefield.
         var chain = MineAt(10, 5);
@@ -339,7 +373,7 @@ public static partial class SelfTest
         var walkTriggered = game.IsPropLit(lane) || map.IsPropBroken(lane);
         walker.Bot.ForcedGoal = null;
         walker.Bot.Dummy = true;
-        MLine($"bots: nav {nav.Nodes.Length} nodes, a planned path of {pathLen} nodes keeps {pathNear:0.00} m from the mine; walking past it the bot came within {nearest:0.00} m "
+        MLine($"bots ({walker.Bot.Personality}): nav {nav.Nodes.Length} nodes, a planned path of {pathLen} nodes keeps {pathNear:0.00} m from the mine; walking past it the bot came within {nearest:0.00} m "
               + $"(plate {lbr.TriggerRadius} m), set it off {walkTriggered}, arrived after {(arrived < 0 ? "NOT" : $"{arrived:0.0} s")}; hazard builds {game.MineHazardBuilds}");
         if (nav.Nodes.Length == 0 || pathLen == 0)
             Fail("no nav graph or no bot path on the Landmines map");

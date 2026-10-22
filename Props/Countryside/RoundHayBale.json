@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Round Hay Bale",
+  "category": "Countryside",
+  "description": "A big round bale of hay lying on its side: solid cover a metre and a half tall.",
+  "collision": "solid",
+  "collider": [{"size": [1.25, 1.45, 1.45], "offset": [0, 0.725, 0]}],
+  "scatter": {"randomYaw": true, "scale": [0.95, 1.05]},
+  "parts": [
+    {"size": [1.25, 1.5, 0.621], "offset": [0.0, 0.75, 0.0], "color": "#c9ad5f", "rotation": [0, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.25, 1.5, 0.621], "offset": [0.0, 0.75, 0.0], "color": "#c9ad5f", "rotation": [45, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.25, 1.5, 0.621], "offset": [0.0, 0.75, 0.0], "color": "#c9ad5f", "rotation": [90, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.25, 1.5, 0.621], "offset": [0.0, 0.75, 0.0], "color": "#c9ad5f", "rotation": [135, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.27, 1.38, 0.571], "offset": [0.0, 0.75, 0.0], "color": "#b89c52", "rotation": [0, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.27, 1.38, 0.571], "offset": [0.0, 0.75, 0.0], "color": "#b89c52", "rotation": [45, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.27, 1.38, 0.571], "offset": [0.0, 0.75, 0.0], "color": "#b89c52", "rotation": [90, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.27, 1.38, 0.571], "offset": [0.0, 0.75, 0.0], "color": "#b89c52", "rotation": [135, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.29, 0.04, 0.04], "offset": [0, 1.41, 0], "color": "#8a7a4a"},
+    {"size": [1.29, 0.04, 0.04], "offset": [0, 0.09, 0], "color": "#8a7a4a"},
+    {"size": [0.02, 0.9, 0.9], "offset": [0.64, 0.75, 0], "color": "#d6bd6e", "rotation": [22.5, 0, 0], "material": "dirt"},
+    {"size": [0.02, 0.9, 0.9], "offset": [-0.64, 0.75, 0], "color": "#d6bd6e", "rotation": [22.5, 0, 0], "material": "dirt"}
+  ]
+}

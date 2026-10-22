@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Apple Blossom",
+  "category": "Bocage",
+  "description": "Pink-white apple blossom petals fallen in the orchard grass.",
+  "author": "Call of Slop",
+  "size": 1.6,
+  "rotation": "random",
+  "blend": "alpha",
+  "surfaces": "floor",
+  "sizeVariation": 0.3,
+  "layers": [
+    {
+      "shape": "speckle",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "radius": 0.45,
+      "count": 60,
+      "width": 0.018,
+      "seed": 504,
+      "color": [
+        0.96,
+        0.9,
+        0.9
+      ],
+      "alpha": 0.95
+    },
+    {
+      "shape": "speckle",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "radius": 0.38,
+      "count": 40,
+      "width": 0.016,
+      "seed": 505,
+      "color": [
+        0.94,
+        0.72,
+        0.78
+      ],
+      "alpha": 0.95
+    }
+  ]
+}

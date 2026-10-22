@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bus Stop Road Marking",
+  "description": "BUS STOP in yellow letters on the road at a bus stop (reads from the south side; runs east-west).",
+  "author": "Call of Slop",
+  "size": [
+    5.0,
+    1.0
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": [
+    "floor"
+  ],
+  "fadeDistance": 80,
+  "image": "bus_stop.png"
+}

@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Book Spinner Rack",
+  "category": "Retail",
+  "description": "A spinning wire rack of paperbacks. Cosmetic: walk through it.",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": true,
+    "scale": [
+      0.9,
+      1.1
+    ]
+  },
+  "parts": [
+    {"size": [0.12, 1.7, 0.0497], "offset": [0.0, 0.85, 0.0], "color": "chrome", "rotation": [0, 0, 0]},
+    {"size": [0.12, 1.7, 0.0497], "offset": [0.0, 0.85, 0.0], "color": "chrome", "rotation": [0, 45, 0]},
+    {"size": [0.12, 1.7, 0.0497], "offset": [0.0, 0.85, 0.0], "color": "chrome", "rotation": [0, 90, 0]},
+    {"size": [0.12, 1.7, 0.0497], "offset": [0.0, 0.85, 0.0], "color": "chrome", "rotation": [0, 135, 0]},
+    {"size": [0.6, 0.04, 0.6], "offset": [0, 0.02, 0], "color": "darkgrey"},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 0.5, 0.2], "color": "#5a3a6a", "rotation": [0, 0, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.2, 0.5, 0.0], "color": "#c8a040", "rotation": [0, 90, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 0.5, -0.2], "color": "#e07060", "rotation": [0, 180, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [-0.2, 0.5, -0.0], "color": "#a04a20", "rotation": [0, 270, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 0.85, 0.2], "color": "#7a2a2a", "rotation": [0, 0, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.2, 0.85, 0.0], "color": "#a04a20", "rotation": [0, 90, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 0.85, -0.2], "color": "#a04a20", "rotation": [0, 180, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [-0.2, 0.85, -0.0], "color": "#e07060", "rotation": [0, 270, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 1.2, 0.2], "color": "#2a6a3a", "rotation": [0, 0, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.2, 1.2, 0.0], "color": "#e07060", "rotation": [0, 90, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 1.2, -0.2], "color": "#c8a040", "rotation": [0, 180, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [-0.2, 1.2, -0.0], "color": "#e07060", "rotation": [0, 270, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 1.55, 0.2], "color": "#c8a040", "rotation": [0, 0, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.2, 1.55, 0.0], "color": "#e07060", "rotation": [0, 90, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [0.0, 1.55, -0.2], "color": "#c8a040", "rotation": [0, 180, 0]},
+    {"size": [0.24, 0.3, 0.03], "offset": [-0.2, 1.55, -0.0], "color": "#e07060", "rotation": [0, 270, 0]}
+  ]
+}

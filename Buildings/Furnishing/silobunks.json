@@ -1,0 +1,48 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silobunks",
+ "description": "The crew bunk room: steel bunks, lockers, kit bags.",
+ "items": [
+  {
+   "props": [
+    "Bunk Bed"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    4
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Duffel Bag",
+    "Backpack",
+    "Book Pile"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 1,
+   "y": 0.0
+  }
+ ]
+}

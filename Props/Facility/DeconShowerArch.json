@@ -1,0 +1,161 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Decon Shower Arch",
+ "category": "Facility",
+ "description": "A walk-through decontamination spray arch with nozzles on both posts.",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "fadeDistance": 60,
+ "parts": [
+  {
+   "size": [
+    0.12,
+    2.4,
+    0.12
+   ],
+   "offset": [
+    -0.8,
+    1.2,
+    0
+   ],
+   "color": "#e8e8dc",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    2.4,
+    0.12
+   ],
+   "offset": [
+    0.8,
+    1.2,
+    0
+   ],
+   "color": "#e8e8dc",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.72,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    0,
+    2.4,
+    0
+   ],
+   "color": "#e8e8dc",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.8,
+    0.04,
+    1.2
+   ],
+   "offset": [
+    0,
+    0.02,
+    0
+   ],
+   "color": "#9aa0a0",
+   "material": "tiles"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    -0.74,
+    0.6,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.74,
+    0.6,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    -0.74,
+    1.2,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.74,
+    1.2,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    -0.74,
+    1.8,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.06,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.74,
+    1.8,
+    0.06
+   ],
+   "color": "#c0c8d0"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.02
+   ],
+   "offset": [
+    0,
+    2.4,
+    0.07
+   ],
+   "color": "#e8c020"
+  }
+ ]
+}

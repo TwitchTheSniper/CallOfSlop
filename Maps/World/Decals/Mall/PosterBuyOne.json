@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Poster Buy One",
+  "category": "Mall",
+  "description": "A shop poster: buy 1 get 1 free.",
+  "author": "Call of Slop",
+  "size": [
+    0.7,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 60,
+  "image": "PosterBuyOne.png"
+}

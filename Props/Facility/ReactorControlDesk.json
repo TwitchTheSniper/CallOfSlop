@@ -1,0 +1,471 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Reactor Control Desk",
+ "category": "Facility",
+ "description": "The reactor operator's desk: a white mimic panel of the coolant loops, lamps and meters.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    3.0,
+    0.9,
+    0.95
+   ],
+   "offset": [
+    0,
+    0.45,
+    0
+   ]
+  },
+  {
+   "size": [
+    3.0,
+    1.2,
+    0.25
+   ],
+   "offset": [
+    0,
+    1.5,
+    -0.38
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 240,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.05,
+    0.25
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    3.0,
+    0.85,
+    0.9
+   ],
+   "offset": [
+    0,
+    0.425,
+    0
+   ],
+   "color": "#7a8270",
+   "material": "metal"
+  },
+  {
+   "size": [
+    3.04,
+    0.05,
+    0.96
+   ],
+   "offset": [
+    0,
+    0.875,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    3.0,
+    1.2,
+    0.2
+   ],
+   "offset": [
+    0,
+    1.5,
+    -0.38
+   ],
+   "color": "#7a8270",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.8,
+    1.0,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.5,
+    -0.27
+   ],
+   "color": "#d8d8c8"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.15,
+    -0.255
+   ],
+   "color": "#2060c0"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.28,
+    -0.255
+   ],
+   "color": "#c02020"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.41,
+    -0.255
+   ],
+   "color": "#208040"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.54,
+    -0.255
+   ],
+   "color": "#2060c0"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.67,
+    -0.255
+   ],
+   "color": "#c02020"
+  },
+  {
+   "size": [
+    2.4,
+    0.03,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.8,
+    -0.255
+   ],
+   "color": "#208040"
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    -1.2,
+    1.2,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 0.8,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    -0.9,
+    1.45,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.1,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    -0.6,
+    1.7,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.4,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    -0.3,
+    1.2,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.7,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    0.0,
+    1.45,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 2.0,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    0.3,
+    1.7,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 2.3,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    0.6,
+    1.2,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 2.5999999999999996,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    0.9,
+    1.45,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 2.9000000000000004,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.07,
+    0.07,
+    0.01
+   ],
+   "offset": [
+    1.2,
+    1.7,
+    -0.25
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 3.2,
+    "duty": 0.6,
+    "glow": 1.1,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    -1.0,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    -0.6,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    -0.2,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    0.2,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    0.6,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.18,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    1.0,
+    0.9,
+    0.2
+   ],
+   "color": "#e8e8dc",
+   "rotation": [
+    -10,
+    0,
+    0
+   ]
+  }
+ ]
+}

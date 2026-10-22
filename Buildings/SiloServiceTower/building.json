@@ -1,0 +1,201 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Silo Service Tower",
+ "theme": "A steel-and-concrete service tower standing in a missile silo shaft: switchback stairs, an opening on every level facing the missile",
+ "category": "special",
+ "description": "A narrow stair tower, four levels and a flat roof: each level has an opening onto the shaft and firing holes; stairs climb to the roof.",
+ "author": "Call of Slop",
+ "seed": 510,
+ "wallThickness": 0.3,
+ "storeyHeight": 4.5,
+ "exterior": {
+  "color": "#5e6266",
+  "material": "metal"
+ },
+ "interior": {
+  "color": "#6a6e70",
+  "material": "metal"
+ },
+ "floor": {
+  "color": "#4a4e50",
+  "material": "grid"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floorCount": 4,
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "bottom landing",
+     "type": "silotower",
+     "rect": [
+      -2.5,
+      -3.5,
+      2.5,
+      3.5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "W",
+       "along": -2.2,
+       "y": 2.4
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      2.5,
+      -2.4
+     ],
+     "width": 1.2,
+     "front": true
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.5,
+      2.6
+     ],
+     "width": 1.0,
+     "sill": 1.1,
+     "head": 1.8
+    },
+    {
+     "type": "hole",
+     "at": [
+      0,
+      -3.5
+     ],
+     "width": 1.2,
+     "sill": 1.1,
+     "head": 1.8
+    }
+   ]
+  },
+  {
+   "repeat": true,
+   "rooms": [
+    {
+     "id": "landing",
+     "type": "silotower",
+     "rect": [
+      -2.5,
+      -3.5,
+      2.5,
+      3.5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "W",
+       "along": -2.2,
+       "y": 2.4
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      2.5,
+      -2.4
+     ],
+     "width": 1.2
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.5,
+      2.6
+     ],
+     "width": 1.0,
+     "sill": 1.1,
+     "head": 1.8
+    },
+    {
+     "type": "hole",
+     "at": [
+      0,
+      -3.5
+     ],
+     "width": 1.2,
+     "sill": 1.1,
+     "head": 1.8
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    0.95,
+    -1.5,
+    2.05,
+    1.6
+   ],
+   "dir": "-z"
+  },
+  {
+   "floor": 1,
+   "rect": [
+    -2.05,
+    -1.5,
+    -0.95,
+    1.6
+   ],
+   "dir": "+z",
+   "alt": {
+    "rect": [
+     0.95,
+     -1.5,
+     2.05,
+     1.6
+    ],
+    "dir": "-z"
+   }
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "#4a4e50",
+   "material": "grid"
+  }
+ }
+}

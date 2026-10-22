@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mall Ceiling Light",
+  "category": "Retail",
+  "description": "A suspended light panel on two rods (0.7 m tall: place its top under the ceiling with \"y\"). Cosmetic.",
+  "collision": "cosmetic",
+  "parts": [
+    {"size": [1.6, 0.06, 0.6], "offset": [0, 0.06, 0], "color": "#d8d8dc"},
+    {"size": [1.5, 0.03, 0.5], "offset": [0, 0.02, 0], "color": "#ffffff", "anim": {"type": "pulse", "period": 6, "color": "#fffbf0", "off": "#b7b4ac", "glow": 1.1}},
+    {"size": [0.03, 0.6, 0.03], "offset": [-0.6, 0.39, 0], "color": "#606068"},
+    {"size": [0.03, 0.6, 0.03], "offset": [0.6, 0.39, 0], "color": "#606068"}
+  ]
+}

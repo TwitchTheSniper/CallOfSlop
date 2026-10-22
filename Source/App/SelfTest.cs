@@ -95,9 +95,13 @@ public static partial class SelfTest
             Section("Map vote: player fit", CheckMapVotePlayerFit); // SelfTestMapVote.cs: never a map too small for the humans here
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
+            Section("World Tour: Silo", CheckWorldSilo); // SelfTestWorldSilo.cs: the missile-silo map (caves, buried buildings, nav reach, fairness)
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
+            Section("World Tour: Bocage", CheckWorldBocage); // SelfTestWorld.Bocage.cs: 05 Bocage (hedgerows, buildings, fairness)
             Section("World Tour: Main Street", CheckWorldMainStreet); // SelfTestWorldMainStreet.cs: 01 Main Street (corn concealment, terrain, fairness, reach)
             Section("World: Vuorikoski", CheckWorldFinland); // SelfTestWorldFinland.cs: the World Tour's Finland map (tunnels, fairness, costs; no bot matches)
+            Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
+            Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
             Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
             Section("Server browser", CheckServerBrowser);
             Section("HUD layout", CheckHudLayout);

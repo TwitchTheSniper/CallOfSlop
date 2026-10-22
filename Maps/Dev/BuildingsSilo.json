@@ -1,0 +1,429 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Silo Buildings",
+ "description": "The missile-complex buildings of the World Tour map Silo and the Facility props: control centre, power plant, locks, side rooms, towers.",
+ "author": "Call of Slop",
+ "order": 962,
+ "halfX": 62,
+ "halfZ": 52,
+ "sky": [
+  0.58,
+  0.68,
+  0.8
+ ],
+ "terrain": {
+  "cell": 1,
+  "margin": 8,
+  "features": [
+   {
+    "type": "hole",
+    "shape": "polygon",
+    "points": [
+     [
+      -24,
+      24
+     ],
+     [
+      -15,
+      24
+     ],
+     [
+      -15,
+      33
+     ],
+     [
+      -24,
+      33
+     ]
+    ],
+    "floor": -4.1
+   },
+   {
+    "type": "cave",
+    "points": [
+     [
+      -19.5,
+      24.2,
+      -4.1
+     ],
+     [
+      -19.5,
+      19.0,
+      -4.1
+     ],
+     [
+      -19.5,
+      9.0
+     ]
+    ],
+    "width": 4.6,
+    "height": 3.6,
+    "open": "end"
+   }
+  ]
+ },
+ "ops": [
+  {
+   "op": "Ground",
+   "color": [
+    0.36,
+    0.42,
+    0.3
+   ]
+  },
+  {
+   "op": "Building",
+   "name": "Launch Control Centre",
+   "at": [
+    -36,
+    -28
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Power Plant",
+   "at": [
+    0,
+    -28
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Blast Lock",
+   "at": [
+    34,
+    -28
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Armoury",
+   "at": [
+    -42,
+    2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Comms Room",
+   "at": [
+    -20,
+    2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Crew Quarters",
+   "at": [
+    3,
+    2
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Silo Maintenance Bay",
+   "at": [
+    27,
+    2
+   ],
+   "spawns": true,
+   "variant": {
+    "palette": "green paint"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Silo Service Tower",
+   "at": [
+    -40,
+    28
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Concrete Guard Tower",
+   "at": [
+    4,
+    28
+   ],
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Concrete Guard Tower",
+   "at": [
+    16,
+    28
+   ],
+   "spawns": true,
+   "variant": {
+    "palette": "olive"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Silo Access Bunker",
+   "at": [
+    -19.5,
+    -4.1,
+    28.5
+   ],
+   "anchor": "world"
+  },
+  {
+   "op": "Spawn",
+   "x": -19.5,
+   "z": 34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Armoury Shelf",
+   "x": -52.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Big Wall Display",
+   "x": -44.5,
+   "z": 40,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Leaf",
+   "x": -37.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Portal",
+   "x": -29.5,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -22.0,
+   "z": 40,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -14.5,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Decon Shower Arch",
+   "x": -7.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Guard Booth",
+   "x": 0.5,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazmat Suit Rack",
+   "x": 8.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Launch Control Console",
+   "x": 15.5,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Launch Key Console",
+   "x": 23.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Patch Panel Cabinet",
+   "x": 30.5,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Propellant Tank",
+   "x": 38.0,
+   "z": 40,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Radiation Sign",
+   "x": 45.5,
+   "z": 40,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Radio Console",
+   "x": -52.0,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Reactor Control Desk",
+   "x": -44.5,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Reactor Vessel",
+   "x": -37.0,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Restricted Area Sign",
+   "x": -29.5,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Status Board",
+   "x": -22.0,
+   "z": 47,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Steel Rifle Rack",
+   "x": -14.5,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Tape Mainframe",
+   "x": -7.0,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Teletype Printer",
+   "x": 0.5,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 8.0,
+   "z": 47,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": 15.5,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": 23.0,
+   "z": 47,
+   "y": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": 30.5,
+   "z": 47,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 38.0,
+   "z": 47,
+   "y": 1.6
+  },
+  {
+   "op": "Spawn",
+   "x": -54,
+   "z": -12
+  },
+  {
+   "op": "Spawn",
+   "x": 54,
+   "z": -12
+  },
+  {
+   "op": "Spawn",
+   "x": -54,
+   "z": 16
+  },
+  {
+   "op": "Spawn",
+   "x": 54,
+   "z": 16
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": 16
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": -12
+  },
+  {
+   "op": "Spawn",
+   "x": 40,
+   "z": 34
+  },
+  {
+   "op": "Spawn",
+   "x": -28,
+   "z": 44
+  },
+  {
+   "op": "Spawn",
+   "x": 28,
+   "z": 46
+  },
+  {
+   "op": "Spawn",
+   "x": 54,
+   "z": 44
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ]
+}

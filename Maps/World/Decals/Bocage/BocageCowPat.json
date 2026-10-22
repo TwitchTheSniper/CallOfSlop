@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Cow Pat",
+  "category": "Bocage",
+  "description": "A cow pat in the pasture grass.",
+  "author": "Call of Slop",
+  "size": 0.6,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "sizeVariation": 0.3,
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.3,
+      "count": 8,
+      "jag": 0.35,
+      "seed": 501,
+      "color": [
+        0.33,
+        0.28,
+        0.18
+      ],
+      "alpha": 0.9,
+      "softness": 0.04
+    },
+    {
+      "shape": "ring",
+      "radius": 0.18,
+      "width": 0.05,
+      "color": [
+        0.25,
+        0.2,
+        0.13
+      ],
+      "alpha": 0.7,
+      "softness": 0.03
+    },
+    {
+      "shape": "circle",
+      "radius": 0.08,
+      "color": [
+        0.28,
+        0.23,
+        0.15
+      ],
+      "alpha": 0.8
+    }
+  ]
+}

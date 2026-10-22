@@ -1,0 +1,50 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silofuel",
+ "description": "The fuel and propellant store: a propellant tank, drums, a flammables cabinet.",
+ "items": [
+  {
+   "props": [
+    "Propellant Tank"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Oil Drum",
+    "Red Fuel Barrel",
+    "Chemical Drum"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Flammables Cabinet"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Jerry Can"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 1,
+   "y": 0.0
+  }
+ ]
+}

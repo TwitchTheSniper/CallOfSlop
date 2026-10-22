@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Stone Gate Pier",
+  "category": "Countryside",
+  "description": "A square limestone gate pier with a cap and a ball finial, for drive and field gateways. Unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [0.66, 1.42, 0.66]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.64, 1.25, 0.64], "offset": [0.0, 0.625, 0.0], "color": "#c2a670", "material": "brick"},
+    {"size": [0.72, 0.11, 0.72], "offset": [0.0, 1.305, 0.0], "color": "#c8ad78"},
+    {"size": [0.52, 0.06, 0.52], "offset": [0.0, 1.39, 0.0], "color": "#b89c66"},
+    {"size": [0.24, 0.22, 0.24], "offset": [0, 1.53, 0], "color": "#c8ad78"},
+    {"size": [0.24, 0.22, 0.24], "offset": [0, 1.53, 0], "rotation": [0, 45, 0], "color": "#c8ad78"},
+    {"size": [0.3, 0.12, 0.3], "offset": [0, 1.53, 0], "rotation": [0, 22.5, 0], "color": "#c8ad78"},
+    {"size": [0.66, 0.12, 0.66], "offset": [0.0, 0.06, 0.0], "color": "#8a744c"},
+    {"size": [0.644, 0.04, 0.644], "offset": [0.0, 0.64, 0.0], "color": "#8a744c"}
+  ]
+}

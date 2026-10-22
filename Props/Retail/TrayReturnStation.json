@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Tray Return Station",
+  "category": "Retail",
+  "description": "A steel tray return and bin unit with a stack of trays on top. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.4,
+        1.15,
+        0.6
+      ],
+      "offset": [
+        0.0,
+        0.575,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.4, 1.1, 0.6], "offset": [0, 0.55, 0], "color": "#9a9aa4", "material": "metal"},
+    {"size": [1.2, 0.5, 0.04], "offset": [0, 0.8, 0.29], "color": "#202020"},
+    {"size": [0.45, 0.03, 0.35], "offset": [0.0, 1.12, 0.0], "color": "#e8c020"},
+    {"size": [0.45, 0.03, 0.35], "offset": [0.0, 1.16, 0.0], "color": "#c03020"},
+    {"size": [0.45, 0.03, 0.35], "offset": [0.0, 1.2, 0.0], "color": "#2a8a8a"},
+    {"size": [0.45, 0.03, 0.35], "offset": [0.0, 1.24, 0.0], "color": "#c03020"},
+    {"size": [0.3, 0.6, 0.02], "offset": [0, 1.5, -0.29], "color": "#3a8a3a"}
+  ]
+}

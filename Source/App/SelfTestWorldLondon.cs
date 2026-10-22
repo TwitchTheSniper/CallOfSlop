@@ -102,7 +102,6 @@ public static partial class SelfTest
                       + "walks Blue/Red: " + string.Join(", ", walks);
         Line(summary);
         Line("::notice title=London (results)::" + summary.Replace("%", "%25"));
-        Fail("TEMP (to read the numbers): " + summary);
         if (mesh.Placed < mesh.Requested * 0.6)
             Fail($"London: only {mesh.Placed}/{mesh.Requested} decals placed");
         if (drawnBoxes > 400)

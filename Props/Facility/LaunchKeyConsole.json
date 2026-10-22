@@ -1,0 +1,225 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Launch Key Console",
+ "category": "Facility",
+ "description": "The two-key launch station: red flip covers over the key switches, the LAUNCH ENABLE lamp, a beacon.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.2,
+    1.4,
+    0.75
+   ],
+   "offset": [
+    0,
+    0.7,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 300,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.05,
+    0.25
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    1.0,
+    0.7
+   ],
+   "offset": [
+    0,
+    0.5,
+    0
+   ],
+   "color": "#8a8e86",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.24,
+    0.06,
+    0.76
+   ],
+   "offset": [
+    0,
+    1.03,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    1.2,
+    0.5,
+    0.15
+   ],
+   "offset": [
+    0,
+    1.31,
+    -0.28
+   ],
+   "color": "#8a8e86",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.36,
+    0.2,
+    0.26
+   ],
+   "offset": [
+    -0.3,
+    1.16,
+    0.05
+   ],
+   "color": "#a01818"
+  },
+  {
+   "size": [
+    0.36,
+    0.2,
+    0.26
+   ],
+   "offset": [
+    0.3,
+    1.16,
+    0.05
+   ],
+   "color": "#a01818"
+  },
+  {
+   "size": [
+    0.06,
+    0.08,
+    0.06
+   ],
+   "offset": [
+    -0.3,
+    1.1,
+    0.2
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    0.06,
+    0.08,
+    0.06
+   ],
+   "offset": [
+    0.3,
+    1.1,
+    0.2
+   ],
+   "color": "#e8c020"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.03
+   ],
+   "offset": [
+    -0.3,
+    1.4,
+    -0.19
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.0,
+    "duty": 0.5,
+    "glow": 1.4,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.03
+   ],
+   "offset": [
+    0.3,
+    1.4,
+    -0.19
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.0,
+    "duty": 0.5,
+    "glow": 1.4,
+    "color": "#ff3030",
+    "phase": 0.5
+   }
+  },
+  {
+   "size": [
+    0.5,
+    0.12,
+    0.03
+   ],
+   "offset": [
+    0,
+    1.45,
+    -0.19
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "pulse",
+    "period": 2.4,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.25,
+    0.16
+   ],
+   "offset": [
+    0,
+    1.68,
+    -0.28
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.12,
+    0.14,
+    0.12
+   ],
+   "offset": [
+    0,
+    1.88,
+    -0.28
+   ],
+   "color": "#c02020",
+   "anim": {
+    "type": "blink",
+    "period": 0.8,
+    "duty": 0.5,
+    "glow": 1.6,
+    "color": "#ff4040"
+   }
+  }
+ ]
+}

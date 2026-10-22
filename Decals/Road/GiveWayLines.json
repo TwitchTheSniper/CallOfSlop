@@ -1,0 +1,167 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Give Way Lines",
+  "description": "UK give-way marking: two rows of broken white dashes across a lane at a junction (runs east-west; turn it 90 for a north-south line).",
+  "author": "Call of Slop",
+  "size": [
+    3.4,
+    0.6
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 100,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.125,
+        0.73
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 700
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.37,
+        0.73
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 701
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.615,
+        0.73
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 702
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.86,
+        0.73
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 703
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.125,
+        0.27
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 710
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.37,
+        0.27
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 711
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.615,
+        0.27
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 712
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.86,
+        0.27
+      ],
+      "size": [
+        0.17,
+        0.34
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 10,
+      "seed": 713
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cold Frame",
+  "category": "Countryside",
+  "description": "An allotment cold frame: a low wooden box of seedlings under a sloping glass lid. Low enough to step onto.",
+  "collision": "solid",
+  "collider": [{"size": [1.24, 0.42, 0.84]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 5},
+  "breakable": {"health": 20, "breakBy": "all", "sound": "glass", "debris": {"count": 14, "size": [0.04, 0.25], "speed": 3}},
+  "parts": [
+    {"size": [1.24, 0.42, 0.06], "offset": [0.0, 0.21, -0.39], "color": "#7a5e3e", "material": "wood"},
+    {"size": [1.24, 0.24, 0.06], "offset": [0.0, 0.12, 0.39], "color": "#7a5e3e", "material": "wood"},
+    {"size": [0.06, 0.4, 0.84], "offset": [-0.59, 0.2, 0.0], "color": "#7a5e3e", "material": "wood"},
+    {"size": [0.06, 0.4, 0.84], "offset": [0.59, 0.2, 0.0], "color": "#7a5e3e", "material": "wood"},
+    {"size": [1.22, 0.02, 0.88], "offset": [0.0, 0.34, 0.0], "rotation": [-13, 0, 0], "color": "#a8c8c8"},
+    {"size": [0.03, 0.04, 0.88], "offset": [0.0, 0.355, 0.0], "rotation": [-13, 0, 0], "color": "#6a4e30"},
+    {"size": [1.1, 0.1, 0.72], "offset": [0.0, 0.05, 0.0], "color": "#4a3a28"},
+    {"size": [0.14, 0.1, 0.14], "offset": [-0.4, 0.15, -0.1], "color": "#4a8a30"},
+    {"size": [0.14, 0.1, 0.14], "offset": [-0.2, 0.15, 0.1], "color": "#4a8a30"},
+    {"size": [0.14, 0.1, 0.14], "offset": [0.0, 0.15, -0.1], "color": "#4a8a30"},
+    {"size": [0.14, 0.1, 0.14], "offset": [0.2, 0.15, 0.1], "color": "#4a8a30"},
+    {"size": [0.14, 0.1, 0.14], "offset": [0.4, 0.15, -0.1], "color": "#4a8a30"}
+  ]
+}

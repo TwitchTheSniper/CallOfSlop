@@ -1,0 +1,306 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Silo Access Bunker",
+ "theme": "A concrete blockhouse over a stairwell down into a missile complex: firing slits, a roof position behind a parapet, a blast lock at the bottom",
+ "category": "special",
+ "description": "A guard post at ground level (firing slits all round, stairs onto the roof) over a stair hall and a blast lock; the lower floor is meant to be buried.",
+ "author": "Call of Slop",
+ "seed": 511,
+ "wallThickness": 0.4,
+ "storeyHeight": 3.0,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "height": 4.0,
+   "rooms": [
+    {
+     "id": "blast lock",
+     "type": "siloairlock",
+     "rect": [
+      -4.3,
+      -4.3,
+      4.3,
+      -0.5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 2.5,
+       "y": 2.4
+      }
+     ]
+    },
+    {
+     "id": "stair hall",
+     "type": "silostairs",
+     "rect": [
+      -4.3,
+      -0.5,
+      4.3,
+      4.3
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "S",
+       "along": 2.5,
+       "y": 2.6
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      -4.3
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      2.6,
+      -0.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    }
+   ]
+  },
+  {
+   "rooms": [
+    {
+     "id": "guard post",
+     "type": "siloguardpost",
+     "rect": [
+      -4.3,
+      -4.3,
+      4.3,
+      4.3
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      4.3
+     ],
+     "width": 1.2,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "hole",
+     "at": [
+      -2.6,
+      -4.3
+     ],
+     "width": 1.8,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.6,
+      -4.3
+     ],
+     "width": 1.4,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      -4.3,
+      -1.8
+     ],
+     "width": 1.8,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      4.3,
+      -1.8
+     ],
+     "width": 1.8,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      -2.7,
+      4.3
+     ],
+     "width": 1.4,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      2.7,
+      4.3
+     ],
+     "width": 1.4,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      -4.3,
+      2.6
+     ],
+     "width": 1.2,
+     "sill": 1.1,
+     "head": 1.5
+    },
+    {
+     "type": "hole",
+     "at": [
+      4.3,
+      2.6
+     ],
+     "width": 1.2,
+     "sill": 1.1,
+     "head": 1.5
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    -2.6,
+    1.3,
+    0.6,
+    2.5
+   ],
+   "dir": "+x"
+  },
+  {
+   "floor": 1,
+   "rect": [
+    2.3,
+    -3.3,
+    3.4,
+    -0.4
+   ],
+   "dir": "-z"
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 1.0,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "extras": [
+  {
+   "type": "prop",
+   "name": "Sandbag Wall",
+   "at": [
+    -2.2,
+    0,
+    -3.6
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Sandbag Wall",
+   "at": [
+    -3.6,
+    0,
+    1.5
+   ],
+   "yaw": 90,
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Mushroom Vent",
+   "at": [
+    -2.5,
+    0,
+    2.8
+   ],
+   "onRoof": true
+  },
+  {
+   "type": "prop",
+   "name": "Restricted Area Sign",
+   "at": [
+    3.4,
+    0,
+    5.4
+   ]
+  }
+ ],
+ "anchors": [
+  {
+   "type": "point",
+   "name": "roof",
+   "floor": 1,
+   "at": [
+    0,
+    0
+   ]
+  }
+ ]
+}

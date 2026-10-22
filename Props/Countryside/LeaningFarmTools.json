@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Leaning Farm Tools",
+  "category": "Countryside",
+  "description": "A pitchfork, a rake and a scythe leaning on a wall beside a trug of kindling.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "fadeDistance": 45,
+  "parts": [
+    {"size": [0.03, 1.5, 0.03], "offset": [-0.3, 0.75, 0.05], "color": "#8a6a44", "rotation": [-12, 0, 6]},
+    {"size": [0.2, 0.25, 0.02], "offset": [-0.33, 0.12, 0.2], "color": "#5a5a58", "rotation": [-12, 0, 6]},
+    {"size": [0.03, 1.6, 0.03], "offset": [0.0, 0.8, 0.06], "color": "#8a6a44", "rotation": [-10, 0, 0]},
+    {"size": [0.38, 0.03, 0.05], "offset": [0.0, 0.05, 0.2], "color": "#5a5a58"},
+    {"size": [0.03, 1.7, 0.03], "offset": [0.32, 0.85, 0.05], "color": "#8a6a44", "rotation": [-10, 0, -8]},
+    {"size": [0.55, 0.04, 0.02], "offset": [0.55, 1.62, 0.2], "color": "#7a7a78", "rotation": [0, 20, -30]},
+    {"size": [0.45, 0.35, 0.3], "offset": [0.75, 0.18, 0.15], "color": "#5a4a3a", "material": "wood"}
+  ]
+}

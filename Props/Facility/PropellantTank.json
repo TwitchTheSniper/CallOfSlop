@@ -1,0 +1,335 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Propellant Tank",
+ "category": "Facility",
+ "description": "A white horizontal propellant tank on saddles, a red band round its middle.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    5.6,
+    2.3,
+    2.0
+   ],
+   "offset": [
+    0,
+    1.15,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "size": [
+    5.0,
+    2.0,
+    0.828
+   ],
+   "offset": [
+    0.0,
+    1.25,
+    0.0
+   ],
+   "color": "#d8d8d0",
+   "material": "metal",
+   "rotation": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    5.0,
+    2.0,
+    0.828
+   ],
+   "offset": [
+    0.0,
+    1.25,
+    0.0
+   ],
+   "color": "#d8d8d0",
+   "material": "metal",
+   "rotation": [
+    45,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    5.0,
+    2.0,
+    0.828
+   ],
+   "offset": [
+    0.0,
+    1.25,
+    0.0
+   ],
+   "color": "#d8d8d0",
+   "material": "metal",
+   "rotation": [
+    90,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    5.0,
+    2.0,
+    0.828
+   ],
+   "offset": [
+    0.0,
+    1.25,
+    0.0
+   ],
+   "color": "#d8d8d0",
+   "material": "metal",
+   "rotation": [
+    135,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    -2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    -2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    45,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    -2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    90,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    -2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    135,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    45,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    90,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    1.4,
+    0.58
+   ],
+   "offset": [
+    2.6,
+    1.25,
+    0.0
+   ],
+   "color": "#c8c8c0",
+   "material": "metal",
+   "rotation": [
+    135,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    0.5,
+    1.8
+   ],
+   "offset": [
+    -1.6,
+    0.25,
+    0
+   ],
+   "color": "#3a3d40",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.4,
+    0.5,
+    1.8
+   ],
+   "offset": [
+    1.6,
+    0.25,
+    0
+   ],
+   "color": "#3a3d40",
+   "material": "metal"
+  },
+  {
+   "size": [
+    5.0,
+    0.22,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.25,
+    1.0
+   ],
+   "color": "#c02020"
+  },
+  {
+   "size": [
+    0.8,
+    0.5,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.6,
+    1.0
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.15,
+    0.6,
+    0.15
+   ],
+   "offset": [
+    0,
+    2.4,
+    0
+   ],
+   "color": "#7e8286"
+  },
+  {
+   "size": [
+    0.3,
+    0.15,
+    0.3
+   ],
+   "offset": [
+    0,
+    2.75,
+    0
+   ],
+   "color": "#a02020"
+  }
+ ]
+}

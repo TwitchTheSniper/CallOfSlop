@@ -9,7 +9,7 @@ with a memorial and plane trees; and a 1960s council tower block over the canal 
 Whitmore Road station, The Lamplighter, Patel & Son, Sharp Lads, Viaduct Motors, Arch Seven Taproom, Bow Joinery,
 Whitmore Cut, Brite Tea. UK flags only (`"flagPool": ["uk"]`), UK road markings and left-hand traffic.
 
-**Shape.** A `polygon` outline (54 corners, 11,320 m2, about 150 x 92 m across its juts), mirrored about x = 0. The north
+**Shape.** A `polygon` outline (54 corners, 11,321 m2, 150 x 103 m across its juts), mirrored about x = 0. The north
 edge is the canal bank (the water is outside, like Dockside's sea). Everywhere else the edge has lanes poking out of it:
 the high street runs on past the last houses into a road-works dead end at each side, the towpath runs on to a gate,
 and on the south side Canal Street climbs into a dead-end lane, a mews poking out behind the terraces and a narrow
@@ -19,7 +19,7 @@ houses frame it.
 **Terrain (real elevation).** `cell` 0.5 m. The canal is cut 3.5 m below the streets (water at -2.88), the towpath sits
 2.4 m down behind a brick retaining wall with ramps up at the lock (the lock steps), at Canal Street (a sloping street
 down to the water) and at each end. The viaduct deck is 5.4 m up; at each end it runs out of the arches onto a grassy
-railway embankment (a `plateau` fill, edge 15 m, about 33 degrees at its steepest), which the teams climb straight from
+railway embankment (a `plateau` fill, edge 15 m, about 28 degrees at its steepest), which the teams climb straight from
 their spawns. The south side rises: the terraces stand on a 0.3 m pad with front steps, the back alley is 0.75 m up,
 Canal Street climbs on to about 2.5 m in its dead end, and the square is a 1.5 m raised plateau with a retaining edge
 and railings, reached up steps from the zebra crossing and from the back alley. Everything people fight on is on level
@@ -52,8 +52,8 @@ pads or ramps under 25 degrees, except the embankments (walkable, slower).
 - **Canal Street** (x = +-28): the cross street of each half, from the towpath slipway through the viaduct arch,
   between the corner shop and the pub, over the high street and up the hill to the south dead end.
 
-**Teams and objectives.** Blue spawns at the west end, Red at the east: 6 spawns each at the high street's dead end and
-by the bank, 2 at the towpath's end, plus 6 free-for-all spawns spread over the middle (16 in all with the teams').
+**Teams and objectives.** Blue spawns at the west end, Red at the east: 8 spawns each (4 in the high street's dead end, 2 at the
+high street's end below the bank, 2 at the towpath's end), plus 6 free-for-all spawns spread over the middle.
 Flags at the high street ends (x = +-64.5). Hills on the line x = 0: the lock on the towpath, the platform on the deck,
 the square. Lanes: towpath, yards, deck, Arches Lane / back yards, high street, back alley, with the station hall,
 Station Approach and Canal Street as the cross routes.
@@ -82,13 +82,21 @@ graffiti, grime, soot and posters as decals.
 - Pack decals `Maps/World/Decals/London/` (tools/world/london_decals.py): the invented fascias, the station board,
   street name plates, LOOK RIGHT, BUS STOP and two posters, cut into square tiles so the lettering stays sharp.
 
-**Performance.** 16 buildings, about 8,200 shell boxes drawn by the instanced building renderer; 57 map blocks (roads,
-pavements, the retaining wall, the bridge, the station facades, the platform, the chicanes) are the only boxes drawn
-one by one; about 70 meshes; about 530 hand-placed props, about 1,500 building furniture and dressing props and up to
-1,700 Clutter props (cosmetic litter, instanced, fading out); about 400 decal ops (about 160 sign tiles) baked into one
-buffer; foliage is modest (grass on the embankments, the square and the verges, a dozen trees). Fog is the medium size
-default. The smoke run's `world_london` (the whole map from above the west end) and `world_london_street` (the high
-street at eye height) log fps, props and draw calls.
+**Abutments.** Where each arch section meets its embankment a brick abutment block fills the step, so the deck runs
+level from the bridge over the station, along the arches' roofs and out onto the bank top (bots route both ways).
+
+**Balance (from the self-test, game nav graph, averaged over each team's spawns, Blue/Red):** towpath lock 93/95 m,
+platform on the deck 85/81 m, the square 86/83 m, enemy flag 140/138 m (all within 5%). No Blue spawn sees a Red one
+(generator check). Bots reach all 198 rooms and 30 stair tops of the buildings, the deck included.
+
+**Performance (from the self-test).** Medium, 150 x 103 m across the juts, 11,321 m2, 16 players. 16 buildings with
+8,168 shell boxes, drawn by the instanced building renderer; only 83 boxes are drawn one by one (roads, pavements,
+the retaining wall, the bridge and abutments, the station facades, the platform, the chicanes); 95 meshes; 3,661 props
+(1,261 solid; hand-placed, building furniture and dressing, and cosmetic Clutter litter that fades out); 8,040 plants;
+680 of 700 decals placed (28,157 triangles in 47 chunks, about 160 of them the sign tiles); nav graph 1,726 nodes.
+That is fewer props, plants and drawn boxes than Old Town (4,908 props, about 32,000 plants), so it should run at or
+above Old Town's frame rate. The smoke run's `world_london` (the whole map from above the west end) and
+`world_london_street` (the high street at eye height) log fps, props and draw calls.
 
 **Regenerate.** `python3 tools/world/london_props.py`, `python3 tools/world/london_buildings.py`,
 `python3 tools/world/london_decals.py`, `python3 tools/world/london_showcase.py`, then

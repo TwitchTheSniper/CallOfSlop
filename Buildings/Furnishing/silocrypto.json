@@ -1,0 +1,54 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silocrypto",
+ "description": "The crypto room: a safe, a desk with a teletype, filing cabinets.",
+ "items": [
+  {
+   "id": "d",
+   "props": [
+    "Office Desk"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Office Chair"
+   ],
+   "place": "front",
+   "of": "d",
+   "distance": -0.1
+  },
+  {
+   "props": [
+    "Computer Monitor",
+    "Desk Phone"
+   ],
+   "place": "on",
+   "of": "d",
+   "y": 0.77
+  },
+  {
+   "props": [
+    "Safe"
+   ],
+   "place": "corner"
+  },
+  {
+   "props": [
+    "Filing Cabinet"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Paper Shredder"
+   ],
+   "place": "wall",
+   "chance": 0.7
+  }
+ ]
+}

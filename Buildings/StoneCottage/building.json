@@ -1,0 +1,460 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Stone Cottage",
+  "theme": "Cotswold two-up two-down: honey limestone, a grey slate roof, stone chimney stacks, a sage front door, low beamed rooms",
+  "category": "residential",
+  "description": "A two-storey village cottage: a through hall with the stairs, the living room and kitchen; two bedrooms and a bathroom upstairs. First-floor windows overlook the lane.",
+  "author": "Call of Slop",
+  "seed": 27,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.7,
+  "exterior": {
+    "color": "$wall",
+    "material": "brick"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "none"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "wood"
+  },
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "honey stone": {
+      "wall": "#b89c66",
+      "interior": "#ece2c8",
+      "floor": "#6a4a30",
+      "ceiling": "#f2ecdc",
+      "trim": "#e8e2d0",
+      "door": "#5a7a5e",
+      "roof": "#3c4046"
+    },
+    "pale limestone": {
+      "wall": "#c9bc98",
+      "interior": "#e6e2d2",
+      "floor": "#7a5a3a",
+      "ceiling": "#f0ece0",
+      "trim": "#ece8dc",
+      "door": "#2a3a5a",
+      "roof": "#45474c"
+    },
+    "weathered stone": {
+      "wall": "#a48c60",
+      "interior": "#e8dcc0",
+      "floor": "#5a3e28",
+      "ceiling": "#eee6d2",
+      "trim": "#d8d0bc",
+      "door": "#7a2a24",
+      "roof": "#36383a"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {
+        "spacing": 2.4,
+        "width": 1.0,
+        "sill": 0.9,
+        "head": 2.0
+      },
+      "rooms": [
+        {
+          "id": "hall",
+          "type": "hall",
+          "rect": [
+            -1.2,
+            -3.5,
+            1.2,
+            3.5
+          ],
+          "floor": {
+            "color": "#8a4a36",
+            "material": "tiles"
+          }
+        },
+        {
+          "id": "living",
+          "type": "living",
+          "rect": [
+            -4.5,
+            -3.5,
+            -1.2,
+            3.5
+          ]
+        },
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [
+            1.2,
+            -3.5,
+            4.5,
+            3.5
+          ],
+          "floor": {
+            "color": "#a8806a",
+            "material": "tiles"
+          }
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -0.4,
+            3.5
+          ],
+          "width": 1.0,
+          "front": true,
+          "material": "wood"
+        },
+        {
+          "type": "door",
+          "at": [
+            -0.4,
+            -3.5
+          ],
+          "width": 0.9,
+          "material": "wood"
+        },
+        {
+          "type": "door",
+          "at": [
+            -1.2,
+            1.8
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            1.2,
+            2.0
+          ],
+          "width": 0.9,
+          "hinge": "right"
+        },
+        {
+          "type": "door",
+          "at": [
+            4.5,
+            -2.2
+          ],
+          "width": 0.9,
+          "material": "wood"
+        }
+      ]
+    },
+    {
+      "height": 2.5,
+      "autoWindows": {
+        "spacing": 2.4,
+        "width": 0.9,
+        "sill": 0.7,
+        "head": 1.8
+      },
+      "rooms": [
+        {
+          "id": "bedroom",
+          "type": "bedroom",
+          "rect": [
+            -4.5,
+            -3.5,
+            -1.2,
+            3.5
+          ]
+        },
+        {
+          "id": "landing",
+          "type": "hall",
+          "rect": [
+            -1.2,
+            -3.5,
+            1.2,
+            3.5
+          ],
+          "windows": false
+        },
+        {
+          "id": "bathroom",
+          "type": "bathroom",
+          "rect": [
+            1.2,
+            -3.5,
+            4.5,
+            -0.3
+          ],
+          "floor": {
+            "color": "#c8d0cc",
+            "material": "tiles"
+          },
+          "wall": "#e4ece6",
+          "autoWindows": {
+            "spacing": 3,
+            "width": 0.7,
+            "sill": 1.2,
+            "head": 1.8
+          }
+        },
+        {
+          "id": "bedroom2",
+          "type": "kidsroom",
+          "rect": [
+            1.2,
+            -0.3,
+            4.5,
+            3.5
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -1.2,
+            1.6
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            1.2,
+            -2.3
+          ],
+          "width": 0.9,
+          "hinge": "right"
+        },
+        {
+          "type": "door",
+          "at": [
+            1.2,
+            1.9
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "at": [
+            0.0,
+            3.5
+          ],
+          "width": 0.8,
+          "sill": 0.7,
+          "head": 1.7
+        }
+      ]
+    }
+  ],
+  "stairs": [
+    {
+      "floor": 0,
+      "rect": [
+        0.15,
+        -1.75,
+        1.05,
+        0.5
+      ],
+      "dir": "-z",
+      "color": {
+        "color": "#5a3e26",
+        "material": "wood"
+      }
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "ridge": "x",
+    "pitch": 42,
+    "overhang": 0.25,
+    "color": {
+      "color": "$roof",
+      "material": "tiles"
+    }
+  },
+  "extras": [
+    {
+      "type": "block",
+      "min": [
+        -4.95,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        -4.38,
+        9.6,
+        0.45
+      ],
+      "color": {
+        "color": "$wall",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "block",
+      "min": [
+        -5.0,
+        9.6,
+        -0.5
+      ],
+      "max": [
+        -4.33,
+        9.75,
+        0.5
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        4.38,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        4.95,
+        9.6,
+        0.45
+      ],
+      "color": {
+        "color": "$wall",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "block",
+      "min": [
+        4.33,
+        9.6,
+        -0.5
+      ],
+      "max": [
+        5.0,
+        9.75,
+        0.5
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -1.15,
+        0.0,
+        3.63
+      ],
+      "max": [
+        0.35,
+        0.14,
+        4.2
+      ],
+      "color": {
+        "color": "#a08a62",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "awning",
+      "rect": [
+        -1.35,
+        3.63,
+        0.55,
+        4.35
+      ],
+      "height": 2.3,
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -4.62,
+        0.0,
+        3.62
+      ],
+      "max": [
+        4.62,
+        0.3,
+        3.7
+      ],
+      "color": {
+        "color": "#8a744c",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "prop",
+      "name": "Hanging Flower Basket",
+      "at": [
+        0.65,
+        1.95,
+        3.63
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Flower Pots",
+      "at": [
+        -2.6,
+        4.1
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Water Butt",
+      "at": [
+        5.2,
+        1.6
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Wheelie Bin",
+      "at": [
+        2.0,
+        -4.3
+      ],
+      "yaw": 180
+    },
+    {
+      "type": "prop",
+      "name": "Bench",
+      "at": [
+        2.6,
+        4.25
+      ],
+      "yaw": 0
+    }
+  ],
+  "anchors": [
+    {
+      "type": "spawn",
+      "name": "living room",
+      "floor": 0,
+      "at": [
+        -2.8,
+        0.0
+      ]
+    },
+    {
+      "type": "spawn",
+      "name": "kitchen",
+      "floor": 0,
+      "at": [
+        2.8,
+        -1.0
+      ]
+    },
+    {
+      "type": "point",
+      "name": "front bedroom window",
+      "floor": 1,
+      "at": [
+        2.8,
+        2.6
+      ]
+    }
+  ]
+}

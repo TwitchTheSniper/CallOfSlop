@@ -1,0 +1,178 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Silo Comms Room",
+ "theme": "The communications room of a missile complex: radio consoles, patch bays, teletypes and a crypto room",
+ "category": "special",
+ "description": "The comms room (radio consoles, patch cabinets, teletypes), the crypto room and a store; a blast door north and one west.",
+ "author": "Call of Slop",
+ "seed": 507,
+ "wallThickness": 0.4,
+ "storeyHeight": 3.6,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "comms",
+     "type": "silocomms",
+     "rect": [
+      -2,
+      -5,
+      7,
+      5
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "E",
+       "along": -2.0,
+       "y": 2.3
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "E",
+       "along": 2.0,
+       "y": 2.3
+      }
+     ]
+    },
+    {
+     "id": "crypto room",
+     "type": "silocrypto",
+     "rect": [
+      -7,
+      -5,
+      -2,
+      0
+     ],
+     "windows": false
+    },
+    {
+     "id": "store",
+     "type": "silostore",
+     "rect": [
+      -7,
+      0,
+      -2,
+      5
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      2.5,
+      -5
+     ],
+     "width": 1.4,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      -2,
+      -2.5
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -2,
+      2.5
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -4.5,
+      0
+     ],
+     "width": 1.0
+    },
+    {
+     "type": "door",
+     "at": [
+      -7,
+      2.5
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      7,
+      0
+     ],
+     "width": 1.4,
+     "material": "metal"
+    }
+   ]
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "anchors": [
+  {
+   "type": "spawn",
+   "name": "comms",
+   "at": [
+    4.5,
+    0
+   ]
+  }
+ ]
+}

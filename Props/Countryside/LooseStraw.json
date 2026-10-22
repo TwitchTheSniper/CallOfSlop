@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Loose Straw",
+  "category": "Countryside",
+  "description": "Wisps of straw blown across a farmyard.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.8, 1.4]},
+  "fadeDistance": 30,
+  "parts": [
+    {"size": [0.883, 0.02, 0.153], "offset": [0.378, 0.01, -0.41], "color": "#c9ad5f", "rotation": [0, 3.0385177574357236, 0]},
+    {"size": [0.84, 0.02, 0.32], "offset": [0.572, 0.011, 0.6], "color": "#c9ad5f", "rotation": [0, 21.083370304509966, 0]},
+    {"size": [0.633, 0.02, 0.239], "offset": [-0.172, 0.012, -0.187], "color": "#c9ad5f", "rotation": [0, 157.41586896725173, 0]},
+    {"size": [0.799, 0.02, 0.206], "offset": [0.68, 0.013, 0.014], "color": "#c9ad5f", "rotation": [0, 103.88691918549407, 0]},
+    {"size": [0.82, 0.02, 0.272], "offset": [-0.062, 0.014, 0.359], "color": "#b89c52", "rotation": [0, 102.53082764691054, 0]},
+    {"size": [0.865, 0.02, 0.311], "offset": [-0.152, 0.015, 0.436], "color": "#c9ad5f", "rotation": [0, 88.2461745489983, 0]},
+    {"size": [0.873, 0.02, 0.155], "offset": [-0.575, 0.016, -0.393], "color": "#d6bd6e", "rotation": [0, 151.93704716440158, 0]},
+    {"size": [0.409, 0.02, 0.282], "offset": [-0.557, 0.017, 0.427], "color": "#c9ad5f", "rotation": [0, 71.16720608275317, 0]},
+    {"size": [0.437, 0.02, 0.331], "offset": [0.674, 0.018, -0.245], "color": "#d6bd6e", "rotation": [0, 41.82633006764994, 0]},
+    {"size": [0.672, 0.02, 0.275], "offset": [-0.675, 0.019, -0.228], "color": "#c9ad5f", "rotation": [0, 148.48788852026982, 0]}
+  ]
+}

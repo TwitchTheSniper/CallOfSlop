@@ -1,0 +1,34 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silocorridor",
+ "description": "A complex corridor: bare concrete, a fire point, junction boxes.",
+ "items": [
+  {
+   "props": [
+    "Junction Box"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Gas Bottle",
+    "Bucket",
+    "Mop and Bucket"
+   ],
+   "place": "corner",
+   "chance": 0.6
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 3,
+   "y": 0.0
+  }
+ ]
+}

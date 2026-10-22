@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Grit Bin",
+  "category": "Countryside",
+  "description": "A yellow plastic road-grit bin with a sloping lid, as found at the top of every icy lane.",
+  "collision": "solid",
+  "collider": [{"size": [0.94, 0.74, 0.72]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 6},
+  "breakable": {"health": 45, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.04, 0.3], "speed": 3, "colors": ["#e0b81e", "#8a8478", "#a09a8c"]}},
+  "parts": [
+    {"size": [0.9, 0.62, 0.64], "offset": [0.0, 0.31, 0.0], "color": "#e0b81e"},
+    {"size": [0.86, 0.56, 0.02], "offset": [0.0, 0.32, -0.33], "color": "#c9a418"},
+    {"size": [0.96, 0.1, 0.72], "offset": [0.0, 0.69, 0.02], "rotation": [8, 0, 0], "color": "#e0b81e"},
+    {"size": [0.6, 0.06, 0.04], "offset": [0.0, 0.63, 0.35], "color": "#c9a418"},
+    {"size": [0.94, 0.06, 0.68], "offset": [0.0, 0.03, 0.0], "color": "#a88a14"},
+    {"size": [0.42, 0.12, 0.004], "offset": [0.0, 0.42, 0.322], "color": "#2a2a2a"}
+  ]
+}

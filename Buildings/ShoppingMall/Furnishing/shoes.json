@@ -1,0 +1,63 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "shoes",
+ "description": "Shoe shop: shoe walls, fitting benches and box stacks.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Shoe Wall Display"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Shoe Fitting Bench"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Shoe Fitting Bench",
+    "Display Plinth"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Shoe Box Stack"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

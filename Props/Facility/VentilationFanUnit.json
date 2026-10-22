@@ -1,0 +1,266 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Ventilation Fan Unit",
+ "category": "Facility",
+ "description": "A big ducted ventilation fan in a steel housing, its blades turning behind a guard.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.6,
+    2.6,
+    1.4
+   ],
+   "offset": [
+    0,
+    1.3,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "size": [
+    2.4,
+    2.4,
+    1.2
+   ],
+   "offset": [
+    0,
+    1.4,
+    0
+   ],
+   "color": "#6a7068",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.6,
+    0.2,
+    1.4
+   ],
+   "offset": [
+    0,
+    0.1,
+    0
+   ],
+   "color": "#3a3d40",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.0,
+    2.0,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.4,
+    0.61
+   ],
+   "color": "#2a2a2a"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.1
+   ],
+   "offset": [
+    0,
+    1.4,
+    0.63
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0,
+     1.4,
+     0.63
+    ],
+    "rpm": 90
+   }
+  },
+  {
+   "size": [
+    0.9,
+    0.22,
+    0.03
+   ],
+   "offset": [
+    0.5,
+    1.4,
+    0.64
+   ],
+   "color": "#9a9a90",
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    0.9,
+    0.22,
+    0.03
+   ],
+   "offset": [
+    0.155,
+    1.876,
+    0.64
+   ],
+   "color": "#9a9a90",
+   "rotation": [
+    0,
+    0,
+    72
+   ],
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    0.9,
+    0.22,
+    0.03
+   ],
+   "offset": [
+    -0.405,
+    1.694,
+    0.64
+   ],
+   "color": "#9a9a90",
+   "rotation": [
+    0,
+    0,
+    144
+   ],
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    0.9,
+    0.22,
+    0.03
+   ],
+   "offset": [
+    -0.405,
+    1.106,
+    0.64
+   ],
+   "color": "#9a9a90",
+   "rotation": [
+    0,
+    0,
+    216
+   ],
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    0.9,
+    0.22,
+    0.03
+   ],
+   "offset": [
+    0.155,
+    0.924,
+    0.64
+   ],
+   "color": "#9a9a90",
+   "rotation": [
+    0,
+    0,
+    288
+   ],
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    2.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0,
+    0.6,
+    0.68
+   ],
+   "color": "#7e8286"
+  },
+  {
+   "size": [
+    2.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0,
+    1.0,
+    0.68
+   ],
+   "color": "#7e8286"
+  },
+  {
+   "size": [
+    2.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0,
+    1.4,
+    0.68
+   ],
+   "color": "#7e8286"
+  },
+  {
+   "size": [
+    2.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0,
+    1.8,
+    0.68
+   ],
+   "color": "#7e8286"
+  },
+  {
+   "size": [
+    2.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0,
+    2.2,
+    0.68
+   ],
+   "color": "#7e8286"
+  }
+ ]
+}

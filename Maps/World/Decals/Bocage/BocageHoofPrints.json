@@ -1,0 +1,208 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Hoof Prints",
+  "category": "Bocage",
+  "description": "Cloven hoof prints pressed into a muddy gateway, walking north.",
+  "author": "Call of Slop",
+  "size": 1.6,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.42,
+      "count": 9,
+      "jag": 0.5,
+      "seed": 502,
+      "color": [
+        0.62,
+        0.55,
+        0.45
+      ],
+      "alpha": 0.6,
+      "softness": 0.1,
+      "noise": 0.4
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.32499999999999996,
+        0.15
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.375,
+        0.15
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.575,
+        0.3
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.625,
+        0.3
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.355,
+        0.45
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.405,
+        0.45
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.605,
+        0.6
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.655,
+        0.6
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.33499999999999996,
+        0.75
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.385,
+        0.75
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.575,
+        0.9
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.625,
+        0.9
+      ],
+      "radius": 0.035,
+      "color": [
+        0.32,
+        0.25,
+        0.17
+      ],
+      "alpha": 0.85,
+      "softness": 0.01
+    }
+  ]
+}

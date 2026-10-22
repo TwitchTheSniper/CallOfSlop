@@ -1,0 +1,85 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "pets",
+ "description": "Pet shop: aquariums, food shelves, small-animal cages and a bird cage.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Aquarium Rack"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Pet Food Shelf"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Small Animal Cages"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Retail Gondola"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Bird Cage Stand"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Dog Kennel",
+    "Cat",
+    "Dog"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}
