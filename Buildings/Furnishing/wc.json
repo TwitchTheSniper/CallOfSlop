@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "wc",
+  "description": "A small toilet room (WC): toilet and a basin.",
+  "items": [
+    {
+      "props": [
+        "Toilet"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Bathroom Sink"
+      ],
+      "place": "wall"
+    }
+  ]
+}

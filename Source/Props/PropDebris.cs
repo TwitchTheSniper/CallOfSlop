@@ -81,6 +81,40 @@ public static class PropDebris
         }
     }
 
+    /// <summary>
+    /// Shatters a plain box (a building's door or window glass): <paramref name="count"/> pieces of <paramref name="sizeMin"/>
+    /// to <paramref name="sizeMax"/> metres burst from inside it, away from <paramref name="from"/>, in colours between
+    /// <paramref name="colorA"/> and <paramref name="colorB"/>. Same rules as <see cref="Spawn"/>.
+    /// </summary>
+    public static void SpawnBox(Box b, Vector3 from, PropDamage kind, int seed, int count, float sizeMin, float sizeMax, float speed, Vector3 colorA, Vector3 colorB)
+    {
+        var rng = new Foliage.Rng((uint)seed * 2654435761u ^ 0xb0c5u);
+        var blast = kind is PropDamage.Explosion or PropDamage.Streak;
+        count = Math.Min(count, Capacity);
+        for (var i = 0; i < count; i++)
+        {
+            var slot = _count < Capacity ? _count++ : Oldest();
+            ref var p = ref Pool[slot];
+            p.Pos = b.Center + new Vector3((rng.Next() - 0.5f) * 1.8f * b.Half.X, (rng.Next() - 0.5f) * 1.8f * b.Half.Y, (rng.Next() - 0.5f) * 1.8f * b.Half.Z);
+            var s = sizeMin + (sizeMax - sizeMin) * rng.Next();
+            p.Size = new Vector3(s * (0.5f + rng.Next()), s * (0.35f + rng.Next() * 0.8f), s * (0.3f + rng.Next() * 0.5f));
+            p.Color = Vector3.Lerp(colorA, colorB, rng.Next()) * (0.85f + rng.Next() * 0.25f);
+            var away = p.Pos - from;
+            away.Y = MathF.Max(away.Y, 0f);
+            away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitY;
+            var v = speed * (0.45f + rng.Next() * 0.8f) * (blast ? 1.8f : 1f);
+            p.Vel = away * v + new Vector3(rng.Next() - 0.5f, rng.Next() * 0.5f, rng.Next() - 0.5f) * v + new Vector3(0, 1f + rng.Next() * 1.5f, 0);
+            p.SpinAxis = Vector3.Normalize(new Vector3(rng.Next() - 0.5f, rng.Next() - 0.5f, rng.Next() - 0.5f) + new Vector3(0.01f));
+            p.Spin = 3f + rng.Next() * 9f;
+            p.Rot = Quaternion.CreateFromAxisAngle(p.SpinAxis, rng.Next() * MathF.Tau);
+            p.Age = 0;
+            p.Life = MinLife + rng.Next() * 1.5f;
+            p.Floor = FloorUnder(p.Pos);
+            p.Resting = false;
+            Spawned++;
+        }
+    }
+
     private static int Oldest()
     {
         var best = 0;

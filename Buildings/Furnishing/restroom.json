@@ -1,0 +1,35 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "restroom",
+  "description": "Public restrooms: a few toilets and basins in a row, a mop.",
+  "items": [
+    {
+      "props": [
+        "Toilet"
+      ],
+      "place": "wall",
+      "count": [
+        2,
+        3
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Bathroom Sink"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Mop and Bucket",
+        "Pedal Bin"
+      ],
+      "place": "corner"
+    }
+  ]
+}

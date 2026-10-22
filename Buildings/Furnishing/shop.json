@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "shop",
+  "description": "A shop floor: shelving aisles, fridges and freezers on the walls, a counter near the door with a till.",
+  "items": [
+    {
+      "id": "counter",
+      "props": [
+        "Reception Desk"
+      ],
+      "place": "wall",
+      "prefer": "near"
+    },
+    {
+      "props": [
+        "Desk Phone",
+        "Laptop"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 1.08
+    },
+    {
+      "props": [
+        "Fridge"
+      ],
+      "place": "wall",
+      "count": [
+        2,
+        4
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Chest Freezer"
+      ],
+      "place": "wall",
+      "count": [
+        0,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Metal Shelving"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        6
+      ]
+    },
+    {
+      "props": [
+        "Produce Crates",
+        "Potato Sacks",
+        "Apple Crate",
+        "Orange Crate",
+        "Cabbage Crate"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Newspaper Stack",
+        "Cardboard Box",
+        "Sandwich Board"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    },
+    {
+      "props": [
+        "ATM",
+        "Glowing Vending Machine"
+      ],
+      "place": "wall",
+      "chance": 0.5
+    }
+  ]
+}

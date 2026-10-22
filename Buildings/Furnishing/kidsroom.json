@@ -1,0 +1,55 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kidsroom",
+  "description": "A child's bedroom: a single or bunk bed, toys everywhere.",
+  "items": [
+    {
+      "id": "bed",
+      "props": [
+        "Single Bed",
+        "Bunk Bed"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Bedside Table"
+      ],
+      "place": "beside",
+      "of": "bed"
+    },
+    {
+      "props": [
+        "Wardrobe",
+        "Bookshelf",
+        "Chest of Drawers"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Striped Rug"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Toy Blocks",
+        "Teddy Bear",
+        "Sports Balls",
+        "Rubber Duck",
+        "Backpack"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        4
+      ]
+    }
+  ]
+}

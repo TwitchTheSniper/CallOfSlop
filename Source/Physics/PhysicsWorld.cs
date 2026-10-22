@@ -26,6 +26,7 @@ public sealed class PhysicsWorld : IWorldQuery
     private readonly Vector3[] _bmin, _bmax; // each box's corners (Box.Min / Box.Max), computed once
     private readonly bool[] _isProp;
     private readonly bool[] _isClip; // Zombies window openings (QueryLayers.Clip)
+    private readonly bool[] _isDoor; // building doors (QueryLayers.Doors)
     private readonly bool[] _enabled;
     private readonly int _boxCount;
     private readonly List<Obb> _obbs = new();
@@ -103,6 +104,7 @@ public sealed class PhysicsWorld : IWorldQuery
         _bmax = new Vector3[_boxCount];
         _isProp = new bool[_boxCount];
         _isClip = new bool[_boxCount];
+        _isDoor = new bool[_boxCount];
         _enabled = new bool[_boxCount];
         for (var i = 0; i < _boxCount; i++)
         {
@@ -111,6 +113,7 @@ public sealed class PhysicsWorld : IWorldQuery
             _bmax[i] = boxes[i].Max;
             _isProp[i] = map != null && map.IsPropCollider(i);
             _isClip[i] = map != null && map.IsClipBox(i);
+            _isDoor[i] = map != null && map.IsBuildingDoorBox(i);
             _enabled[i] = !Parked(boxes[i]);
         }
         Terrain = terrain;
@@ -241,7 +244,7 @@ public sealed class PhysicsWorld : IWorldQuery
         if (!_enabled[i])
             return false;
         var prop = _isProp[i];
-        if ((layers & (_isClip[i] ? QueryLayers.Clip : prop ? QueryLayers.Props : QueryLayers.Boxes)) == 0)
+        if ((layers & (_isClip[i] ? QueryLayers.Clip : _isDoor[i] ? QueryLayers.Doors : prop ? QueryLayers.Props : QueryLayers.Boxes)) == 0)
             return false; // a Zombies window opening is on its own layer (bullets pass, bodies don't)
         return ignore == null || !Ignored(ignore, prop ? ShapeKind.Prop : ShapeKind.Box, i);
     }
@@ -546,6 +549,9 @@ public sealed class PhysicsWorld : IWorldQuery
 
     /// <summary>The classic body check against static geometry and the terrain (what <see cref="World.Blocked"/> answers).</summary>
     public bool Blocked(Vector3 feet, float height = World.PlayerHeight) => OverlapBody(feet, height, new QueryFilter(QueryLayers.Static));
+
+    /// <summary>The bots' nav graph's body check: <see cref="Blocked"/> with building doors left out (bots plan through them and open them).</summary>
+    public bool BlockedNav(Vector3 feet, float height = World.PlayerHeight) => OverlapBody(feet, height, new QueryFilter(QueryLayers.Static & ~QueryLayers.Doors));
 
     /// <summary>The classic body check against boxes only (terrain ignored): <see cref="World.BlockedByBoxes"/>.</summary>
     public bool BlockedByBoxes(Vector3 feet, float height = World.PlayerHeight) => OverlapBody(feet, height, new QueryFilter(QueryLayers.StaticShapes));

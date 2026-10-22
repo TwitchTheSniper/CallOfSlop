@@ -1,0 +1,146 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Apartment Block",
+  "theme": "1960s concrete council flats: grey precast concrete, blue steel doors, a bare stairwell, lino floors and worn second-hand furniture",
+  "category": "residential",
+  "description": "Three storeys of flats round a concrete stairwell (more with the \"floors\" variant): two flats a floor, each with a living room and kitchen, a bedroom and a bathroom; balconies, roof access.",
+  "author": "Call of Slop",
+  "seed": 31,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.0,
+  "floorCount": 3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "grey concrete": {"wall": "#8f8f8a", "interior": "#d9d3c0", "floor": "#8a6a52", "ceiling": "#e6e3da", "trim": "#5a6a7a", "door": "#2f5a9a", "roof": "#5c5c58"},
+    "brown brick": {"wall": "#7a5040", "interior": "#e1d8c2", "floor": "#6a5a4a", "ceiling": "#e9e6dc", "trim": "#d8d0c0", "door": "#3e6a3a", "roof": "#4a4a48"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.5, "width": 1.3, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {
+          "id": "stairs",
+          "type": "corridor",
+          "rect": [-2, -5, 2, 5],
+          "floor": {"color": "#8a8a84", "material": "concrete"},
+          "wall": "#b7c2b0",
+          "windows": false
+        },
+        {"id": "w_living", "type": "living", "rect": [-8, 1, -2, 5], "openTo": ["w_kitchen"]},
+        {"id": "w_kitchen", "type": "kitchen", "rect": [-8, -2, -4.5, 1], "floor": {"color": "#a8b8a0", "material": "tiles"}},
+        {
+          "id": "w_bath",
+          "type": "bathroom",
+          "rect": [-4.5, -2, -2, 1],
+          "floor": {"color": "#9ab0c0", "material": "tiles"},
+          "wall": "#cdd9de",
+          "autoWindows": {"spacing": 2, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "w_bed", "type": "bedroom", "rect": [-8, -5, -2, -2]},
+        {"id": "e_living", "type": "living", "rect": [2, 1, 8, 5], "openTo": ["e_kitchen"]},
+        {"id": "e_kitchen", "type": "kitchen", "rect": [4.5, -2, 8, 1], "floor": {"color": "#a8b8a0", "material": "tiles"}},
+        {
+          "id": "e_bath",
+          "type": "bathroom",
+          "rect": [2, -2, 4.5, 1],
+          "floor": {"color": "#9ab0c0", "material": "tiles"},
+          "wall": "#cdd9de",
+          "autoWindows": {"spacing": 2, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "e_bed", "type": "bedroom", "rect": [2, -5, 8, -2]}
+      ],
+      "openings": [
+        {"type": "door", "at": [0, 5], "width": 1.2, "front": true, "material": "metal", "color": "$door"},
+        {"type": "door", "at": [0, -5], "width": 1.0, "material": "metal", "color": "$door"},
+        {"type": "door", "at": [-2, 3.0], "width": 0.9},
+        {"type": "door", "at": [-3.25, 1], "width": 0.8},
+        {"type": "door", "at": [-6.2, -2], "width": 0.9},
+        {"type": "door", "at": [2, 3.0], "width": 0.9},
+        {"type": "door", "at": [3.25, 1], "width": 0.8},
+        {"type": "door", "at": [6.2, -2], "width": 0.9},
+        {"type": "window", "at": [-1.0, 5], "width": 0.6, "sill": 1.0, "head": 2.2}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.5, "width": 1.3, "sill": 0.9, "head": 2.2},
+      "repeat": true,
+      "rooms": [
+        {
+          "id": "stairs",
+          "type": "corridor",
+          "rect": [-2, -5, 2, 5],
+          "floor": {"color": "#8a8a84", "material": "concrete"},
+          "wall": "#b7c2b0",
+          "windows": false
+        },
+        {"id": "w_living", "type": "living", "rect": [-8, 1, -2, 5], "openTo": ["w_kitchen"]},
+        {"id": "w_kitchen", "type": "kitchen", "rect": [-8, -2, -4.5, 1], "floor": {"color": "#a8b8a0", "material": "tiles"}},
+        {
+          "id": "w_bath",
+          "type": "bathroom",
+          "rect": [-4.5, -2, -2, 1],
+          "floor": {"color": "#9ab0c0", "material": "tiles"},
+          "wall": "#cdd9de",
+          "autoWindows": {"spacing": 2, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "w_bed", "type": "bedroom", "rect": [-8, -5, -2, -2]},
+        {"id": "e_living", "type": "living", "rect": [2, 1, 8, 5], "openTo": ["e_kitchen"]},
+        {"id": "e_kitchen", "type": "kitchen", "rect": [4.5, -2, 8, 1], "floor": {"color": "#a8b8a0", "material": "tiles"}},
+        {
+          "id": "e_bath",
+          "type": "bathroom",
+          "rect": [2, -2, 4.5, 1],
+          "floor": {"color": "#9ab0c0", "material": "tiles"},
+          "wall": "#cdd9de",
+          "autoWindows": {"spacing": 2, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "e_bed", "type": "bedroom", "rect": [2, -5, 8, -2]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-2, 3.0], "width": 0.9},
+        {"type": "door", "at": [-3.25, 1], "width": 0.8},
+        {"type": "door", "at": [-6.2, -2], "width": 0.9},
+        {"type": "door", "at": [2, 3.0], "width": 0.9},
+        {"type": "door", "at": [3.25, 1], "width": 0.8},
+        {"type": "door", "at": [6.2, -2], "width": 0.9},
+        {"type": "window", "at": [0, 5], "width": 1.6, "sill": 0.9, "head": 2.2},
+        {"type": "window", "at": [0, -5], "width": 1.6, "sill": 0.9, "head": 2.2},
+        {"type": "door", "at": [-5, 5], "width": 0.9},
+        {"type": "door", "at": [5, 5], "width": 0.9, "hinge": "right"}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [-1.85, -3.5, -0.75, 0.5], "dir": "-z", "color": {"color": "#9a9a94", "material": "concrete"}},
+    {
+      "floor": 1,
+      "rect": [0.75, -3.5, 1.85, 0.5],
+      "dir": "+z",
+      "alt": {"rect": [-1.85, -3.5, -0.75, 0.5], "dir": "-z"},
+      "color": {"color": "#9a9a94", "material": "concrete"}
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "balcony", "floor": 1, "rect": [-6.2, 5.15, -3.8, 6.4], "railing": 1.05, "color": {"color": "#9a9a94", "material": "concrete"}},
+    {"type": "balcony", "floor": 1, "rect": [3.8, 5.15, 6.2, 6.4], "railing": 1.05, "color": {"color": "#9a9a94", "material": "concrete"}},
+    {"type": "awning", "rect": [-1.4, 5.15, 1.4, 6.3], "height": 2.6, "color": {"color": "#9a9a94", "material": "concrete"}},
+    {"type": "prop", "name": "Plastic Water Tank", "at": [5.0, 0, -2.5], "onRoof": true},
+    {"type": "prop", "name": "TV Antenna", "at": [-4.0, 0, -3.0], "onRoof": true},
+    {"type": "prop", "name": "Satellite Dish", "at": [-6.5, 0, 3.5], "yaw": 180, "onRoof": true},
+    {"type": "prop", "name": "Dumpster", "at": [-6.0, -6.4], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [-3.8, -6.2], "yaw": 0},
+    {"type": "prop", "name": "Post Box", "at": [2.0, 6.0], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "stairwell", "at": [0, 3.5]},
+    {"type": "spawn", "name": "west flat", "floor": 1, "at": [-5, 3]},
+    {"type": "spawn", "name": "east flat", "floor": 1, "at": [5, 3]},
+    {"type": "hill", "name": "roof", "floor": 0, "at": [0, 0]}
+  ]
+}

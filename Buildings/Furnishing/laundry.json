@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "laundry",
+  "description": "A laundry or utility room: washers and dryers, a basket, an ironing board.",
+  "items": [
+    {
+      "props": [
+        "Washing Machine",
+        "Running Washer"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Tumble Dryer"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Laundry Basket",
+        "Ironing Board",
+        "Mop and Bucket",
+        "Vacuum Cleaner"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        3
+      ]
+    }
+  ]
+}

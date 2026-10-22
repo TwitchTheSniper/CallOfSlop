@@ -443,6 +443,8 @@ public sealed partial class Game
     /// <summary>The interact key (E): park your cart, man it (tap at its bar) or push it (<paramref name="hold"/>), step off, buy the slot upgrade.</summary>
     public void Interact(double now, bool hold = false)
     {
+        if (!hold && MannedCart == null && TryUseDoor(now))
+            return; // looking at a building door: open or shut it (GameBuildings.cs)
         if (Local is not { Alive: true } me || Phase != MatchPhase.Playing)
             return;
         if (IsServer)
@@ -463,6 +465,8 @@ public sealed partial class Game
     {
         if (Local is not { Alive: true } me)
             return null;
+        if (DoorHint() is { } door)
+            return door; // a building door (GameBuildings.cs)
         if (SlotStation is { } st && !me.ExtraSlots && Vector3.Distance(st, me.Position) <= StationRange)
             return "unlock weapon slots 3-4 (free in the sandbox)";
         if (!Carts.TryGetValue(LocalId, out var c))

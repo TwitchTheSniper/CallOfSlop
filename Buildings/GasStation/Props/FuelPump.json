@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fuel Pump",
+  "description": "A 1980s petrol pump: white and red cabinet, a price display and a hose on its holster.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 1.95, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.7, 0.18, 0.5], "offset": [0, 0.09, 0], "color": "concrete"},
+    {"size": [0.6, 1.5, 0.42], "offset": [0, 0.93, 0], "color": "white", "material": "metal"},
+    {"size": [0.62, 0.25, 0.44], "offset": [0, 1.8, 0], "color": "#c8102e"},
+    {"size": [0.4, 0.22, 0.02], "offset": [0, 1.35, 0.22], "color": "#1a1a1a"},
+    {
+      "size": [0.3, 0.08, 0.025],
+      "offset": [0, 1.4, 0.225],
+      "color": "#7cff6a",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.95, "color": "#7cff6a", "glow": 0.5}
+    },
+    {"size": [0.12, 0.25, 0.1], "offset": [0.36, 1.0, 0.1], "color": "darkgrey"},
+    {"size": [0.04, 0.9, 0.04], "offset": [0.4, 0.55, 0.18], "color": "rubber"}
+  ]
+}

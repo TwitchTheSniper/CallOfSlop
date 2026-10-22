@@ -357,7 +357,7 @@ public sealed class NavGraph
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
-            if (!col.Blocked(c + new Vector3(0, 0.01f, 0)))
+            if (!col.BlockedNav(c + new Vector3(0, 0.01f, 0))) // (building doors don't count: bots open them)
                 return c;
         }
         return null;
@@ -455,7 +455,7 @@ public sealed class NavGraph
                 return; // a wall too tall to climb, or a hole
             h[k] = g;
             y = g;
-            blocked[k] = c.Blocked(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
+            blocked[k] = c.BlockedNav(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
         }
         if (MathF.Abs(h[n] - b.Y) > 0.35f)
             return; // ended up on a different floor

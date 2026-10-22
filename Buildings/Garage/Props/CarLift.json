@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Car Lift",
+  "description": "A two-post car lift: red posts, swing arms down at the floor.",
+  "collision": "solid",
+  "collider": [{"size": [0.32, 3.0, 0.32], "offset": [-1.6, 1.5, 0]}, {"size": [0.32, 3.0, 0.32], "offset": [1.6, 1.5, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.32, 2.9, 0.32], "offset": [-1.6, 1.45, 0], "color": "#c0262d", "material": "metal"},
+    {"size": [0.32, 2.9, 0.32], "offset": [1.6, 1.45, 0], "color": "#c0262d", "material": "metal"},
+    {"size": [0.6, 0.04, 0.6], "offset": [-1.6, 0.02, 0], "color": "steel"},
+    {"size": [0.6, 0.04, 0.6], "offset": [1.6, 0.02, 0], "color": "steel"},
+    {"size": [3.5, 0.12, 0.2], "offset": [0, 2.95, 0], "color": "#c0262d"},
+    {"size": [0.9, 0.08, 0.12], "offset": [-1.15, 0.2, 0.45], "color": "steel", "yaw": 25},
+    {"size": [0.9, 0.08, 0.12], "offset": [-1.15, 0.2, -0.45], "color": "steel", "yaw": -25},
+    {"size": [0.9, 0.08, 0.12], "offset": [1.15, 0.2, 0.45], "color": "steel", "yaw": -25},
+    {"size": [0.9, 0.08, 0.12], "offset": [1.15, 0.2, -0.45], "color": "steel", "yaw": 25},
+    {"size": [0.2, 0.4, 0.14], "offset": [-1.6, 1.2, 0.2], "color": "#333333"}
+  ]
+}

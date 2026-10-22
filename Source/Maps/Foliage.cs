@@ -554,6 +554,11 @@ public sealed partial class Map
             }
             if (Boundary != null && !Boundary.Inside(x, z, margin + (tree ? 1f : 0.3f)))
                 continue; // only inside the map's outline (MapEdges.cs)
+            if (PlacedBuildings.Count > 0 && InsideBuilding(x, z))
+            {
+                stats.Indoors++;
+                continue; // never inside a building, roof or not (MapBuildings.cs)
+            }
             // How much of the normal density may grow here (1 = all; busted paths, thinned zones and pavement are less).
             var allow = 1f;
             var why = 0; // what set the allowance: 1 path, 2 exclude zone, 3 surface

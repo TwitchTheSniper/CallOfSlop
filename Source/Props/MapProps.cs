@@ -571,6 +571,7 @@ public sealed partial class Map
     /// <summary>Puts every broken prop back and resets all prop health (a new match, a new session on this map).</summary>
     public void RestoreProps()
     {
+        RestoreBuildings(); // building doors and windows too (MapBuildings.cs)
         var damaged = false;
         for (var i = 0; i < _propHealth.Length; i++)
             damaged |= _propHealth[i] != 0;
@@ -595,7 +596,7 @@ public sealed partial class Map
     }
 
     /// <summary>The box <see cref="ContentHash"/> uses for Solid[i]: a broken prop's original collider, so breaking never changes the fingerprint.</summary>
-    internal Box HashBox(int i) => IsPropCollider(i) && _propOriginal.TryGetValue(i, out var o) ? o : ZombieHashBox(i, out var zb) ? zb : Solid[i]; // an open Zombies door counts as closed
+    internal Box HashBox(int i) => IsPropCollider(i) && _propOriginal.TryGetValue(i, out var o) ? o : ZombieHashBox(i, out var zb) ? zb : BuildingHashBox(i, out var bb) ? bb : Solid[i]; // an open Zombies door counts as closed (a building's door or window: as built)
 }
 
 /// <summary>Boxes filed into 4 m columns, for the placement queries of PlaceProp and Clutter (map loading only).</summary>

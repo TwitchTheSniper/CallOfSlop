@@ -1,0 +1,129 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "A kitchen: a run of fridge, counters, cooker and sink along the walls, a small table with chairs if there's room, things on the counters.",
+  "items": [
+    {
+      "id": "fridge",
+      "props": [
+        "Fridge"
+      ],
+      "place": "corner",
+      "prefer": "far"
+    },
+    {
+      "id": "counter",
+      "props": [
+        "Kitchen Counter"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        3
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Cooker"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "id": "sink",
+      "props": [
+        "Kitchen Sink"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Dishwasher",
+        "Washing Machine"
+      ],
+      "place": "beside",
+      "of": "sink",
+      "chance": 0.7
+    },
+    {
+      "props": [
+        "Microwave",
+        "Kettle",
+        "Toaster",
+        "Coffee Maker",
+        "Knife Block"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 0.9,
+      "count": [
+        2,
+        4
+      ]
+    },
+    {
+      "props": [
+        "Cooking Pot",
+        "Frying Pan"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 0.9,
+      "chance": 0.5
+    },
+    {
+      "id": "table",
+      "props": [
+        "Table",
+        "Dining Table"
+      ],
+      "place": "centre",
+      "area": [
+        11,
+        1000
+      ]
+    },
+    {
+      "props": [
+        "Dining Chair",
+        "Wooden Chair"
+      ],
+      "place": "around",
+      "of": "table",
+      "count": [
+        2,
+        4
+      ]
+    },
+    {
+      "props": [
+        "Stacked Plates",
+        "Apple Crate"
+      ],
+      "place": "on",
+      "of": "table",
+      "y": 0.77,
+      "chance": 0.6
+    },
+    {
+      "props": [
+        "Pedal Bin"
+      ],
+      "place": "corner"
+    },
+    {
+      "props": [
+        "Mop and Bucket",
+        "Broom",
+        "Cat"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        1
+      ]
+    }
+  ]
+}

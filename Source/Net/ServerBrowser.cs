@@ -34,7 +34,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 20: team selection: TeamPick / TeamReply at the end of Msg, the team rules and every player's pick at the end of the mode state
     // 21: score limits scale with the player count (ScoreLimits.cs): the mode state's last U16 is the current mode's score
     //     limit (free-for-all kills, team kills, hill points or captures), no longer only the TDM kill limit
-    public const byte ProtocolVersion = 21;
+    // 22: buildings (Buildings folder, the Building op with a "name"): BuildingUse / BuildingEvent / BuildingState at the end
+    //     of Msg (doors open, shut, take damage and break, windows break; the join-in-progress state), the Doors physics layer
+    public const byte ProtocolVersion = 22;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -94,6 +94,7 @@ public static unsafe partial class Program
             broken++;
         }
         Console.WriteLine($"[smoke] props: broke {broken} prop(s) in view on {map.Name}, {PropDebris.Count} debris pieces flying");
+        SmokeBuildings(map, eye, target); // and open the doors and break the windows in view (Program.Buildings.cs)
     }
 
     private static void PropsSmokeTick(double now)
@@ -162,6 +163,8 @@ public static unsafe partial class Program
                 ? $"; animated {PropGfx.UploadedAnimated} ({(PropGfx.AnimationOn ? "on" : "off")}, {PropGfx.AnimatedTypes} types): {w.AvgAnimInstances:0} moving + {w.AvgFrozenInstances:0} still in "
                   + $"{w.AvgAnimDraws:0.0} draw calls, anim GPU {(w.AvgAnimGpuMs >= 0 ? $"{w.AvgAnimGpuMs:0.000} ms" : "n/a")}"
                 : ""));
+        if (view.Name.StartsWith("buildings_", StringComparison.Ordinal))
+            LogBuildingSmoke(view.Name); // the Dev pack's Building Yard (Program.Buildings.cs)
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))
         {
             // Cluttered pack maps: the foliage and box side of the same frames (boxes are still one draw call each).

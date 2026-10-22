@@ -375,7 +375,7 @@ public sealed unsafe class PropRenderer
         var t0 = Stopwatch.GetTimestamp();
         if (!_ready && !Init())
             return;
-        var library = Props.ForPack(map.PackDir).Library; // the global props, plus the map's pack props (cached per pack)
+        var library = map.PropLibrary; // the global props, plus the map's pack props (cached per pack) and building-local props
         if (_meshGeneration != Props.Generation || _meshes == null || !ReferenceEquals(_meshes.Defs, library))
         {
             UploadMeshes(library);

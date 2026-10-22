@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "ruin",
+  "description": "A wrecked room: rubble, bricks, broken furniture and litter.",
+  "items": [
+    {
+      "props": [
+        "Rubble Pile",
+        "Brick Pile",
+        "Plank Pile"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Old Sofa",
+        "Wooden Chair",
+        "Table",
+        "Chest of Drawers"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Rubble",
+        "Loose Bricks",
+        "Plank",
+        "Litter",
+        "Newspaper",
+        "Cinder Blocks",
+        "Bottles"
+      ],
+      "place": "floor",
+      "count": [
+        3,
+        7
+      ]
+    }
+  ]
+}

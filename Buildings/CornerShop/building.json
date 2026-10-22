@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Corner Shop",
+  "theme": "Family-run 1970s corner grocery: yellow brick, a red striped awning, white lino, crammed shelves, a cluttered back office",
+  "category": "commercial",
+  "description": "A corner grocery: the shop floor with big front windows, a store room with a back door, a back office and a WC.",
+  "author": "Call of Slop",
+  "seed": 41,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "yellow brick": {"wall": "#c9a45c", "interior": "#efe8d2", "floor": "#e4e0d4", "ceiling": "#f4f2ea", "trim": "#c8102e", "door": "#3a3a3a", "roof": "#4c4c4a"},
+    "green grocer": {"wall": "#8a5a3e", "interior": "#e4ecd8", "floor": "#d8d2c0", "ceiling": "#f2f2ea", "trim": "#2e7d32", "door": "#2e7d32", "roof": "#454545"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "shop",
+          "type": "shop",
+          "rect": [-4.5, -0.5, 4.5, 4],
+          "autoWindows": {"spacing": 3, "width": 1.6, "sill": 0.6, "head": 2.4, "health": 20}
+        },
+        {"id": "store", "type": "storage", "rect": [-4.5, -4, 0.5, -0.5], "floor": {"color": "#9a968c", "material": "concrete"}, "windows": false},
+        {"id": "office", "type": "office", "rect": [0.5, -4, 3, -0.5], "autoWindows": {"spacing": 2, "width": 0.9, "sill": 1.0, "head": 2.2}},
+        {"id": "wc", "type": "wc", "rect": [3, -4, 4.5, -0.5], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [1.6, 4], "width": 1.1, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-2.4, 4], "width": 3.0, "sill": 0.5, "head": 2.5, "health": 25},
+        {"type": "window", "at": [3.5, 4], "width": 1.2, "sill": 0.5, "head": 2.5, "health": 25},
+        {"type": "door", "at": [-1.8, -0.5], "width": 0.9},
+        {"type": "door", "at": [1.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [3.75, -0.5], "width": 0.8},
+        {"type": "door", "at": [-3.0, -4], "width": 1.0, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.8, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [-4.65, 4.13, 4.65, 5.5], "height": 2.75, "color": "$trim"},
+    {"type": "prop", "name": "Shop Sign", "at": [0, 2.95, 4.13]},
+    {"type": "prop", "name": "Neon Open Sign", "at": [3.5, 0.95, 3.6], "yaw": 180},
+    {"type": "prop", "name": "Newspaper Box", "at": [-3.6, 6.0], "yaw": 0},
+    {"type": "prop", "name": "Sandwich Board", "at": [3.4, 6.1], "yaw": 15},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-1.4, -5.0], "yaw": 180},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [2.5, 0, -2.0], "onRoof": true},
+    {"type": "prop", "name": "Window AC Unit", "at": [1.2, 2.2, -4.13], "yaw": 180}
+  ],
+  "anchors": [{"type": "spawn", "name": "store room", "at": [-2.5, -2.5]}, {"type": "flag", "name": "shop counter", "at": [0, 1.5]}]
+}
