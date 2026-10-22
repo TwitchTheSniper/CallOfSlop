@@ -352,14 +352,21 @@ public sealed class Progress
 
     // ---- Save file -------------------------------------------------------------------
 
-    private static string FilePath => Path.Combine(AppContext.BaseDirectory, "progress.txt");
+    /// <summary>progress.txt in the save folder (<see cref="SavePaths"/>).</summary>
+    public static string FilePath => SavePaths.PathOf("progress.txt");
 
-    public static Progress Load()
+    /// <summary>The <c>version=</c> line written to progress.txt (files without one are version 0 and load the same).</summary>
+    public const int SaveVersion = 1;
+
+    public static Progress Load() => Load(FilePath);
+
+    /// <summary>Loads progress from <paramref name="path"/> (a damaged file loads its .bak; see <see cref="SavePaths.ReadLines"/>).</summary>
+    public static Progress Load(string path)
     {
         try
         {
-            if (File.Exists(FilePath))
-                return Parse(File.ReadAllLines(FilePath));
+            if (SavePaths.ReadLines(path, SaveVersion) is { } lines)
+                return Parse(lines);
         }
         catch
         {
@@ -409,13 +416,16 @@ public sealed class Progress
     public IEnumerable<string> ToLines() =>
         [$"xp={Xp}", $"prestige={Prestige}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx.{kv.Key}={kv.Value}")];
 
-    public void Save()
+    public void Save() => Save(FilePath);
+
+    /// <summary>Saves to <paramref name="path"/> atomically (keeping progress.txt.bak), unless <see cref="ReadOnly"/>.</summary>
+    public void Save(string path)
     {
         if (ReadOnly)
             return;
         try
         {
-            File.WriteAllLines(FilePath, ToLines());
+            SavePaths.WriteLines(path, ToLines(), SaveVersion);
         }
         catch
         {

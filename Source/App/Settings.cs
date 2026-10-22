@@ -145,7 +145,10 @@ public sealed class Settings
         return pool.Count == 0 ? Game.ClassicPlayers : pool.Max(m => m.MaxPlayers);
     }
 
-    private static string FilePath => Path.Combine(AppContext.BaseDirectory, "settings.txt");
+    private static string FilePath => SavePaths.PathOf("settings.txt");
+
+    /// <summary>The <c>version=</c> line written to settings.txt (separate from binds_version; files without one load the same).</summary>
+    public const int SaveVersion = 1;
 
     private static string DefaultName()
     {
@@ -175,10 +178,10 @@ public sealed class Settings
         var s = new Settings();
         try
         {
-            if (!File.Exists(path))
+            if (SavePaths.ReadLines(path, SaveVersion) is not { } fileLines)
                 return s;
             var bindsVersion = 1; // files without a binds_version line have the first defaults (Keybinds.Migrate)
-            foreach (var line in File.ReadAllLines(path))
+            foreach (var line in fileLines)
             {
                 var kv = line.Split('=', 2);
                 if (kv.Length != 2)
@@ -264,7 +267,7 @@ public sealed class Settings
         var inv = CultureInfo.InvariantCulture;
         try
         {
-            File.WriteAllLines(
+            SavePaths.WriteLines(
                 path,
                 [
                     $"name={Name}",
@@ -320,7 +323,8 @@ public sealed class Settings
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
-                ]
+                ],
+                SaveVersion
             );
         }
         catch
