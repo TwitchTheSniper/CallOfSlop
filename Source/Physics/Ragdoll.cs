@@ -153,19 +153,19 @@ public sealed class Ragdoll
     /// <summary>Simulation step (s): 60 Hz like the game.</summary>
     public const float Step = 1f / 60f;
 
-    /// <summary>Constraint iterations per (sub-)step.</summary>
-    public const int Iterations = 6;
+    /// <summary>Constraint iterations per (sub-)step (collisions after the 2nd and the 4th).</summary>
+    public const int Iterations = 4;
 
     /// <summary>Most a particle may move in one sub-step (m); faster bodies take more sub-steps (up to <see cref="MaxSubSteps"/>).</summary>
-    public const float MaxStepMove = 0.1f;
+    public const float MaxStepMove = 0.15f;
 
-    public const int MaxSubSteps = 6;
+    public const int MaxSubSteps = 4;
 
     /// <summary>Fastest a particle may move (m/s): even a point-blank blast can't throw a body faster.</summary>
     public const float MaxSpeed = 24f;
 
     /// <summary>Asleep after this many steps in a row with every particle slower than <see cref="SleepSpeed"/>.</summary>
-    public const int SleepSteps = 30;
+    public const int SleepSteps = 20;
 
     public const float SleepSpeed = 0.35f;
 
@@ -194,6 +194,23 @@ public sealed class Ragdoll
     public int Touching;
 
     private readonly List<ContactShape> _shapes = new(64);
+
+    // The gathered shapes that reach the body this sub-step (indices into _shapes); -1 = use them all.
+    private readonly int[] _near = new int[48];
+    private int _nearCount;
+    private float _terrainLow = float.NegativeInfinity;
+
+    /// <summary>A link ready to solve: the particles, its limits (and squares) and each end's share of the correction.</summary>
+    private readonly struct Solver(RagdollRig.Link l)
+    {
+        public readonly int A = l.A, B = l.B;
+        public readonly float Min = l.Min, Max = l.Max, Min2 = l.Min * l.Min, Max2 = l.Max == float.MaxValue ? float.MaxValue : l.Max * l.Max;
+        public readonly float Ka = RagdollRig.InvMass[l.A] / (RagdollRig.InvMass[l.A] + RagdollRig.InvMass[l.B]);
+        public readonly float Kb = RagdollRig.InvMass[l.B] / (RagdollRig.InvMass[l.A] + RagdollRig.InvMass[l.B]);
+    }
+
+    private static readonly Solver[] Rigid = RagdollRig.Links.Where(l => l.Min == l.Max).Select(l => new Solver(l)).ToArray();
+    private static readonly Solver[] Ranges = RagdollRig.Links.Where(l => l.Min != l.Max).Select(l => new Solver(l)).ToArray();
     private Vector3 _gatherMin, _gatherMax;
     private bool _gathered;
     private PhysicsWorld? _gatheredFrom;
@@ -278,19 +295,20 @@ public sealed class Ragdoll
         var h = Step / sub;
         var terrain = world.Terrain;
         Touching = 0;
+        var g = new Vector3(0, -World.Gravity * h * h, 0);
         for (var s = 0; s < sub; s++)
         {
-            var g = new Vector3(0, -World.Gravity * h * h, 0);
             for (var i = 0; i < RagdollRig.Count; i++)
             {
                 var p = Pos[i];
                 Pos[i] = p + (p - Prev[i]) * AirDamping + g;
                 Prev[i] = p;
             }
-            EnsureShapes(world);
+            EnsureShapes(world, terrain);
+            var fwd = Forward(); // the knee rule's "forward", once per sub-step (the torso is rigid, it barely turns within one)
             for (var it = 0; it < Iterations; it++)
             {
-                SolveLinks();
+                SolveLinks(fwd);
                 if ((it & 1) == 1)
                     Collide(terrain, it == Iterations - 1);
             }
@@ -329,44 +347,44 @@ public sealed class Ragdoll
         Array.Copy(Pos, Last, RagdollRig.Count);
     }
 
-    private void SolveLinks()
+    private void SolveLinks(Vector3 fwd)
     {
-        var links = RagdollRig.Links;
-        var w = RagdollRig.InvMass;
-        for (var k = 0; k < links.Length; k++)
+        var pos = Pos.AsSpan();
+        foreach (ref readonly var l in Rigid.AsSpan())
         {
-            ref readonly var l = ref links[k];
-            var a = Pos[l.A];
-            var b = Pos[l.B];
-            var d = b - a;
+            var d = pos[l.B] - pos[l.A];
             var len2 = d.LengthSquared();
             if (len2 < 1e-12f)
                 continue;
-            if (len2 >= l.Min * l.Min && len2 <= l.Max * l.Max && l.Min != l.Max)
-                continue; // a range link inside its range
             var len = MathF.Sqrt(len2);
-            var target = len < l.Min ? l.Min : len > l.Max ? l.Max : len;
-            if (target == len)
-                continue;
-            float wa = w[l.A], wb = w[l.B];
-            var k2 = (len - target) / (len * (wa + wb));
-            Pos[l.A] = a + d * (wa * k2);
-            Pos[l.B] = b - d * (wb * k2);
+            var k = (len - l.Min) / len;
+            pos[l.A] += d * (k * l.Ka);
+            pos[l.B] -= d * (k * l.Kb);
+        }
+        foreach (ref readonly var l in Ranges.AsSpan())
+        {
+            var d = pos[l.B] - pos[l.A];
+            var len2 = d.LengthSquared();
+            if (len2 >= l.Min2 && len2 <= l.Max2 || len2 < 1e-12f)
+                continue; // inside its range (the usual case)
+            var len = MathF.Sqrt(len2);
+            var k = (len - (len2 < l.Min2 ? l.Min : l.Max)) / len;
+            pos[l.A] += d * (k * l.Ka);
+            pos[l.B] -= d * (k * l.Kb);
         }
         // Knees bend forward only: a knee may not get more than KneeSlack behind the line from its hip to its foot. The fix
         // moves the knee forward and the hip and foot back (momentum kept), so a straight leg lying on the floor isn't
         // pushed into it every step (that fight kept bodies creeping and never asleep).
-        var fwd = Forward();
         for (var side = 0; side < 2; side++)
         {
             int hip = RagdollRig.HipR + side, knee = RagdollRig.KneeR + side * 2, foot = RagdollRig.FootR + side * 2;
-            var mid = (Pos[hip] + Pos[foot]) * 0.5f;
-            var behind = -KneeSlack - Vector3.Dot(Pos[knee] - mid, fwd);
+            var mid = (pos[hip] + pos[foot]) * 0.5f;
+            var behind = -KneeSlack - Vector3.Dot(pos[knee] - mid, fwd);
             if (behind <= 0)
                 continue;
-            Pos[knee] += fwd * (behind * (2f / 3f));
-            Pos[hip] -= fwd * (behind / 6f);
-            Pos[foot] -= fwd * (behind / 6f);
+            pos[knee] += fwd * (behind * (2f / 3f));
+            pos[hip] -= fwd * (behind / 6f);
+            pos[foot] -= fwd * (behind / 6f);
         }
     }
 
@@ -392,7 +410,7 @@ public sealed class Ragdoll
     }
 
     /// <summary>Gathers the shapes around the body when it has left the region gathered last time (or the world changed).</summary>
-    private void EnsureShapes(PhysicsWorld world)
+    private void EnsureShapes(PhysicsWorld world, ITerrainCollision? terrain)
     {
         var lo = Pos[0];
         var hi = Pos[0];
@@ -403,16 +421,41 @@ public sealed class Ragdoll
         }
         lo -= new Vector3(0.3f);
         hi += new Vector3(0.3f);
-        if (_gathered && ReferenceEquals(world, _gatheredFrom) && _gatheredGeneration == WorldGeneration
-            && lo.X >= _gatherMin.X && lo.Y >= _gatherMin.Y && lo.Z >= _gatherMin.Z && hi.X <= _gatherMax.X && hi.Y <= _gatherMax.Y && hi.Z <= _gatherMax.Z)
-            return;
-        _gatherMin = lo - new Vector3(GatherPad);
-        _gatherMax = hi + new Vector3(GatherPad);
-        world.Gather(_gatherMin, _gatherMax, Filter, _shapes);
-        _gathered = true;
-        _gatheredFrom = world;
-        _gatheredGeneration = WorldGeneration;
-        Gathers++;
+        if (!(_gathered && ReferenceEquals(world, _gatheredFrom) && _gatheredGeneration == WorldGeneration
+              && lo.X >= _gatherMin.X && lo.Y >= _gatherMin.Y && lo.Z >= _gatherMin.Z && hi.X <= _gatherMax.X && hi.Y <= _gatherMax.Y && hi.Z <= _gatherMax.Z))
+        {
+            _gatherMin = lo - new Vector3(GatherPad);
+            _gatherMax = hi + new Vector3(GatherPad);
+            world.Gather(_gatherMin, _gatherMax, Filter, _shapes);
+            _gathered = true;
+            _gatheredFrom = world;
+            _gatheredGeneration = WorldGeneration;
+            Gathers++;
+        }
+        // Broadphase for this sub-step: only the shapes whose bounds reach the body (usually the floor and maybe a wall).
+        _nearCount = 0;
+        var all = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_shapes);
+        for (var k = 0; k < all.Length; k++)
+        {
+            ref readonly var sh = ref all[k];
+            if (sh.Min.X > hi.X || sh.Max.X < lo.X || sh.Min.Y > hi.Y || sh.Max.Y < lo.Y || sh.Min.Z > hi.Z || sh.Max.Z < lo.Z)
+                continue;
+            if (_nearCount == _near.Length)
+            {
+                _nearCount = -1; // a crowded spot: test them all
+                break;
+            }
+            _near[_nearCount++] = k;
+        }
+        // The terrain only if the ground under the body's middle comes within reach (a body on a roof skips it).
+        _terrainLow = float.NegativeInfinity;
+        if (terrain != null && !terrain.HasVoids)
+        {
+            var mid = (lo + hi) * 0.5f;
+            var reach = MathF.Max(hi.X - lo.X, hi.Z - lo.Z);
+            if (lo.Y > terrain.HeightAt(mid.X, mid.Z) + reach + 1f)
+                _terrainLow = float.PositiveInfinity; // well above the ground: no terrain this sub-step
+        }
     }
 
     /// <summary>Pushes every particle out of the terrain and the gathered shapes; on the last pass, friction on what touched.</summary>
@@ -420,6 +463,10 @@ public sealed class Ragdoll
     {
         var radius = RagdollRig.Radius;
         var shapes = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_shapes);
+        var near = _nearCount < 0 ? null : _near;
+        var count = _nearCount < 0 ? shapes.Length : _nearCount;
+        if (float.IsPositiveInfinity(_terrainLow))
+            terrain = null;
         for (var i = 0; i < RagdollRig.Count; i++)
         {
             var p = Pos[i];
@@ -436,9 +483,9 @@ public sealed class Ragdoll
                     hit = true;
                 }
             }
-            for (var k = 0; k < shapes.Length; k++)
+            for (var j = 0; j < count; j++)
             {
-                ref readonly var s = ref shapes[k];
+                ref readonly var s = ref shapes[near == null ? j : near[j]];
                 if (p.X + r < s.Min.X || p.X - r > s.Max.X || p.Y + r < s.Min.Y || p.Y - r > s.Max.Y || p.Z + r < s.Min.Z || p.Z - r > s.Max.Z)
                     continue;
                 if (SpherePush(s, ref p, r, out var n))
