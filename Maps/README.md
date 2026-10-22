@@ -56,6 +56,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
+| `penetration` | no | `false` stops bullets going through thin walls on this map (on by default; see the main README, "Bullet penetration"). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `ops` | **yes** | The list of building steps, run in order. |

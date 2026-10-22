@@ -602,6 +602,16 @@ public sealed partial class Ui
                 if (ImGui.Button("Cancel"u8))
                     _confirmReset = false;
             }
+            // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
+            ImGui.Spacing();
+            ImGui.SeparatorText("Saves"u8);
+            ImGuiSafe.TextColored(Dim, $"Save folder: {SavePaths.Folder}");
+            if (ImGui.Button("Open save folder"u8))
+                SavePaths.OpenFolder();
+            ImGui.SameLine();
+            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            if (SavePaths.Warning is { } saveWarning)
+                ImGuiSafe.TextColored(Red, saveWarning);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

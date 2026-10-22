@@ -44,6 +44,7 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
+        SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -160,12 +161,15 @@ public static partial class SelfTest
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
+            Section("Throw input", CheckThrowInput); // SelfTestThrowInput.cs: grenade and equipment keys end to end (every item, each match phase, offline and loopback, bots)
             Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
+            Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
             Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+            Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }

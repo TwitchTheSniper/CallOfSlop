@@ -204,6 +204,13 @@ The gunshot is synthesised from these when the game starts. Real firearms (`Gun`
 | `bright` | High-frequency crack of the blast. | `0.5` | 0-1 |
 | `tail` | Length of the echo. | `0.5` | 0-1 |
 
+**Bullet penetration** (see the main README, "Bullet penetration"; the material table is `Materials/penetration.json`):
+
+| Field | Meaning | Default | Allowed |
+| --- | --- | --- | --- |
+| `penetration` | Penetration power: how much wall a round goes through (10 cm of wood costs 10, 10 cm of brick 45). `-1` works it out from the weapon's `class` and `caliber` (and gives shotgun pellets almost none). | `-1` | -1-500 |
+| `penetrationMult` | Multiplies the power; for attachments (AP Rounds 1.6, Hollow Point Mag 0.6). | `1` | 0-5 |
+
 **Every weapon sounds like itself.** On top of its sample set, each weapon gets its own sonic identity (`Source/Audio/GunVoice.cs`), derived from a hash of its `name`, its stats and its rank among the weapons of its set and class (ranked by that hash, so file order and ids don't matter; the same weapon files give the same sounds on every client and every run): which of the set's recorded firearms it mostly plays (the weapons of a set take them in turn; a main one for about three shots in four, a second one mixed in), a character (five tone steps from bright to dark and a body resonance band, a low thump or a high ring, so no two weapons of a class share one), a pitch offset (about +-3%, a longer gun a touch lower), the tone nudged by `bright`, the resonance a little lower for a big `caliber` and a long gun, how sharp the crack is, a mechanism click for guns that cycle a bolt or slide (timed by `rpm`), how much of the synthesised shot is blended in, and how dry and short the body is (from `tail`). The log lists every weapon's identity as a `[gunvoice]` line. Barrel and muzzle attachments colour it a little more (a long or heavy barrel lower, a short barrel or brake higher and louder).
 
 To pin any of it, add an optional `"voice"` block (every key optional; the rest stays derived):

@@ -1,8 +1,9 @@
 @echo off
 rem Builds a shareable copy of the game for testers: bin\package\CallOfSlop-<version>.zip
 rem Self-contained (testers don't need .NET installed), Windows x64, and with NO personal files:
-rem it is published into a fresh folder, so settings.txt, progress.txt, loadout*.txt, logs and smoke
-rem screenshots never get in (and any that somehow do are deleted before zipping).
+rem it is published into a fresh folder, so settings.txt, progress.txt, loadout*.txt, workbench.txt, audio mixes,
+rem save backups, portable.txt, logs and smoke screenshots never get in (and any that somehow do are deleted before zipping).
+rem (Players' saves live in %APPDATA%\CallOfSlop anyway, see SavePaths.cs; a stray portable.txt would pin them to the folder.)
 rem Writes bin\package.done when finished ("package-ok <zip>" or "package-failed").
 setlocal
 cd /d "%~dp0.."
@@ -20,7 +21,8 @@ dotnet publish CallOfSlop.csproj -c Release -r win-x64 --self-contained true -p:
 if errorlevel 1 (echo package-failed > bin\package.done & exit /b 1)
 
 rem Belt and braces: no personal or debug files in the shared copy.
-del /q "%OUT%\settings.txt" "%OUT%\progress*.txt" "%OUT%\loadout*.txt" "%OUT%\*.log" "%OUT%\smoke_*.bmp" "%OUT%\selftest.log" 2>nul
+del /q "%OUT%\settings.txt" "%OUT%\progress*.txt" "%OUT%\loadout*.txt" "%OUT%\workbench.txt" "%OUT%\audio_mix.json" "%OUT%\portable.txt" "%OUT%\*.bak" "%OUT%\*.tmp" "%OUT%\*.corrupt" "%OUT%\*.log" "%OUT%\smoke_*.bmp" "%OUT%\selftest.log" 2>nul
+if exist "%OUT%\AudioMixes" rmdir /s /q "%OUT%\AudioMixes"
 copy /y tools\TESTERS.txt "%OUT%\READ ME FIRST.txt" > nul
 
 set ZIP=bin\package\CallOfSlop-%DAY%-%VER%.zip
