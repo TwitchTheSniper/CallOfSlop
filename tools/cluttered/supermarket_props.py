@@ -349,7 +349,7 @@ add("Roll Cage", "A wheeled steel roll cage of stock waiting to go out on the sh
     collider=[{"size": [0.8, 1.7, 0.7]}], scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 20},
     breakable={"health": 150, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.05, 0.3], "speed": 3.5, "colors": ["#9aa0a6", "#c8a070"]}})
 
-add("Pallet Jack", "A red hand pallet truck left on the floor, forks down.",
+add("Store Pallet Jack", "A red hand pallet truck left on the floor, forks down.",
     [part((1.15, 0.08, 0.16), (0.1, 0.04, 0.2), "#d62d20"), part((1.15, 0.08, 0.16), (0.1, 0.04, -0.2), "#d62d20"),
      part((0.3, 0.35, 0.55), (-0.6, 0.2, 0), "#d62d20"), part((0.05, 1.1, 0.05), (-0.8, 0.85, 0), "#2a2e34", rotation=[0, 0, 18]),
      part((0.05, 0.05, 0.32), (-0.97, 1.37, 0), "black"), part((0.12, 0.12, 0.12), (-0.6, 0.06, 0.2), "black"),

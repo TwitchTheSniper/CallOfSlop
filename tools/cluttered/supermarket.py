@@ -584,7 +584,7 @@ SHOP = ["Dropped Groceries", "Dropped Groceries", "Dropped Groceries", "Litter",
 t.clutter(SHOP, X0 + W + 0.3, -9.4, 0.0, 19.2, 340, 41); t.clutter(SHOP, 0.0, -9.4, X1 - W - 0.3, 19.2, 340, 42)
 t.clutter(SHOP + ["Wet Floor Sign"], X0 + W + 0.3, ZP + 0.2, X1 - W - 0.3, -9.0, 120, 43)
 STOCKROOM = ["Flattened Cardboard", "Flattened Cardboard", "Cardboard Box", "Cardboard Box Small", "Open Cardboard Box", "Cardboard Stack", "Plank", "Litter",
-             "Trash Bag", "Pallet Jack", "Plastic Bag", "Soda Cans", "Pallet"]
+             "Trash Bag", "Store Pallet Jack", "Plastic Bag", "Soda Cans", "Pallet"]
 t.clutter(STOCKROOM, X0 + W + 0.3, Z0 + W + 0.3, 25.6, ZP - 0.7, 320, 44)
 OUT = ["Litter", "Litter", "Litter", "Soda Cans", "Bottles", "Bottle", "Plastic Bag", "Newspaper", "Flattened Cardboard", "Trash Bag", "Cardboard Box Small",
        "Car Wheel", "Tyre", "Shopping Basket Stack", "Dropped Groceries", "Storm Drain", "Manhole Cover"]
