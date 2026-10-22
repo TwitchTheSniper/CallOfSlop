@@ -223,6 +223,7 @@ public sealed partial class Ui
 
     private bool DrawLoadoutScreen(Game? game, Audio audio, double now)
     {
+        var lastPreview = Preview; // last frame's 3D view (the showcase / hero gun), for the backdrop below
         Preview = null;
         Thumbs.Clear();
         _loadoutDrawn = true;
@@ -248,6 +249,8 @@ public sealed partial class Ui
             var winPos = ImGui.GetWindowPos();
             var winSize = ImGui.GetWindowSize();
             _loadoutRect = (winPos, winPos + winSize); // the kill card sits beside it if there's room
+            if ((winFlags & ImGuiWindowFlags.NoBackground) != 0 && lastPreview is { } pv)
+                ShowcaseBackdrop(winPos, winPos + winSize, pv.ViewMin, pv.ViewMax);
             var style = ImGui.GetStyle();
             var contentMin = winPos + style.WindowPadding;
             var contentMax = winPos + winSize - style.WindowPadding;
@@ -346,6 +349,38 @@ public sealed partial class Ui
         ImGui.End();
         return deployed;
     }
+
+    /// <summary>The backdrop colour Program paints behind the 3D gun (see DrawGunsmithPreview), as an opaque ImGui colour.</summary>
+    private static readonly ImColor8 ShowcaseBg8 = new(9, 10, 13, 255);
+
+    /// <summary>
+    /// The showcase pages have no ImGui window background (Program paints one behind the 3D gun, before the UI), so HUD panels
+    /// under the window (the key help, the match bar, the ammo) would show through and overlap the breadcrumb and the footer.
+    /// This paints the window opaque again in its own layer (above the HUD, under its widgets), except the 3D view
+    /// (<paramref name="viewMin"/>-<paramref name="viewMax"/>) where the gun is.
+    /// </summary>
+    private void ShowcaseBackdrop(float2 winMin, float2 winMax, float2 viewMin, float2 viewMax)
+    {
+        var dl = ImGui.GetWindowDrawList();
+        // Everything under the title bar, edge to edge (the window's own clip rect leaves out half its padding).
+        winMin = new float2(winMin.X, MathF.Min(winMin.Y + ImGui.GetFrameHeight(), winMax.Y));
+        var v0 = new float2(Math.Clamp(viewMin.X, winMin.X, winMax.X), Math.Clamp(viewMin.Y, winMin.Y, winMax.Y));
+        var v1 = new float2(Math.Clamp(viewMax.X, v0.X, winMax.X), Math.Clamp(viewMax.Y, v0.Y, winMax.Y));
+        ImDrawListExtensions.PushClipRect(dl, in winMin, in winMax, false);
+        foreach (var (a, b) in ShowcaseBackdropRects(winMin, winMax, v0, v1))
+            if (b.X > a.X && b.Y > a.Y)
+                dl.AddRectFilled(a, b, ShowcaseBg8);
+        ImDrawListExtensions.PopClipRect(dl);
+    }
+
+    /// <summary>The four bands of the window around the 3D view: above, below, left and right of it.</summary>
+    internal static (float2 Min, float2 Max)[] ShowcaseBackdropRects(float2 winMin, float2 winMax, float2 v0, float2 v1) =>
+    [
+        (winMin, new float2(winMax.X, v0.Y)),
+        (new float2(winMin.X, v1.Y), winMax),
+        (new float2(winMin.X, v0.Y), new float2(v0.X, v1.Y)),
+        (new float2(v1.X, v0.Y), new float2(winMax.X, v1.Y)),
+    ];
 
     /// <summary>Where you are: "Loadout name / Primary weapon / Kestrel PDW attachments".</summary>
     private void Breadcrumb()

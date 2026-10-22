@@ -46,6 +46,7 @@ public static partial class SelfTest
         CheckClutteredDockside(); // SelfTestCluttered.Dockside.cs: Dockside
         CheckClutteredOldTown(); // SelfTestCluttered.OldTown.cs: 06 Old Town
         CheckClutteredTruckStop(); // SelfTestCluttered.TruckStop.cs: 08 Truck Stop
+        CheckClutteredPowderKeg(); // SelfTestCluttered.PowderKeg.cs: 12 Powder Keg
         World.SetMap(Maps.All[0]);
         if (ClutteredNotes.Count > 0)
             Line("::notice title=Cluttered pack::" + string.Join("%0A", ClutteredNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));

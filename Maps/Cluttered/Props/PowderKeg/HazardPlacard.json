@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hazard Placard",
+  "category": "Warehouse",
+  "description": "A red FLAMMABLE diamond placard for a wall (back at -Z, lift it with y).",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 50,
+  "parts": [
+    {"size": [0.5, 0.5, 0.012], "offset": [0, 0.36, 0.006], "color": "white", "rotation": [0, 0, 45]},
+    {"size": [0.44, 0.44, 0.014], "offset": [0, 0.36, 0.012], "color": "#c8161d", "rotation": [0, 0, 45]},
+    {"size": [0.08, 0.16, 0.016], "offset": [0, 0.38, 0.02], "color": "white"},
+    {"size": [0.24, 0.035, 0.016], "offset": [0, 0.2, 0.02], "color": "white"}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "High Bay Light Flickering",
+  "category": "Warehouse",
+  "description": "A high-bay lamp with a dying tube: mostly on, with random dips.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 120,
+  "parts": [
+    {"size": [0.7, 0.18, 0.7], "offset": [0, 0.16, 0], "color": "darkgrey", "material": "metal"},
+    {"size": [0.3, 0.2, 0.3], "offset": [0, 0.34, 0], "color": "darkgrey"},
+    {"size": [0.02, 1.0, 0.02], "offset": [0, 0.94, 0.0], "color": "black"},
+    {"size": [0.6, 0.06, 0.6], "offset": [0, 0.04, 0], "color": "#fff4d8", "anim": {"type": "flicker", "rate": 6, "duty": 0.82, "color": "#fff4d8", "off": "#4a463c", "glow": 1.2}}
+  ]
+}
