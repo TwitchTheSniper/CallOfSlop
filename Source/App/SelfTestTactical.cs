@@ -19,8 +19,18 @@ public static partial class SelfTest
         ThrowableKind.Trophy, ThrowableKind.Cover, ThrowableKind.Insertion, ThrowableKind.Stim,
     ];
 
+    private static readonly List<string> TacNotes = new();
+
+    /// <summary><see cref="Line"/>, also kept for the section's results annotation (readable from a green run).</summary>
+    private static void TLine(string s)
+    {
+        Line(s);
+        TacNotes.Add(s);
+    }
+
     private static void CheckTacticalGear()
     {
+        TacNotes.Clear();
         TacticalDefs();
         TacticalFormulas();
         TacticalUnlocksAndSaves();
@@ -35,7 +45,7 @@ public static partial class SelfTest
         {
             var first = TacticalServer(map, log: true);
             var again = TacticalServer(map, log: false);
-            Line($"determinism: two identical runs give {(first == again ? "the same" : "DIFFERENT")} results ({first.Length} chars of measurements)");
+            TLine($"determinism: two identical runs give {(first == again ? "the same" : "DIFFERENT")} results ({first.Length} chars of measurements)");
             if (first != again)
                 Fail($"tactical gear: two identical server runs differ:%0A{first}%0A{again}");
             TacticalTeams(map);
@@ -44,6 +54,7 @@ public static partial class SelfTest
         finally
         {
             World.SetMap(Maps.All[0]);
+            Line("::warning title=Tactical gear (results)::" + string.Join("%0A", TacNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
@@ -65,7 +76,7 @@ public static partial class SelfTest
                 if (text.Any(c => c < ' ' || c > '~'))
                     Fail($"tactical gear: non-ASCII text in {d.Name}: \"{text}\"");
         }
-        Line("items: " + string.Join(", ", names));
+        TLine("items: " + string.Join(", ", names));
         if (TacticalGear.Is(ThrowableKind.Recon) || TacticalGear.Is(ThrowableKind.Frag) || Throwables.Grenades.Any(g => g.IsEquipment))
             Fail("tactical gear: the old grenades or the Recon Pulse changed category");
 
@@ -84,7 +95,7 @@ public static partial class SelfTest
                 Fail($"tactical gear: sound {s} is the same as another tactical sound");
             made.Add(pcm);
         }
-        Line("sounds: " + string.Join(", ", sounds.Select((s, i) => $"{s} {made[i].Length / 44.1f:0} ms")));
+        TLine("sounds: " + string.Join(", ", sounds.Select((s, i) => $"{s} {made[i].Length / 44.1f:0} ms")));
     }
 
     // ---- Pure formulas ------------------------------------------------------------------------------
@@ -102,7 +113,7 @@ public static partial class SelfTest
         var flak = F(new Vector3(0, 0, -4), flak: true);
         var self = F(new Vector3(0, 0, -4), self: true);
         var outside = F(new Vector3(0, 0, -TacticalGear.FlashRadius - 0.1f));
-        Line($"flash strength at 4 m: facing {facing4:0.00}, side-on {side4:0.00}, behind {behind4:0.00}; facing at 12 m {facing12:0.00}; "
+        TLine($"flash strength at 4 m: facing {facing4:0.00}, side-on {side4:0.00}, behind {behind4:0.00}; facing at 12 m {facing12:0.00}; "
              + $"wall {walled:0.00}, Flak Jacket {flak:0.00}, own {self:0.00}, past {TacticalGear.FlashRadius:0} m {outside:0.00}");
         if (facing4 < 0.85f || side4 >= facing4 || behind4 >= side4 || behind4 > 0.2f || facing12 >= facing4 * 0.5f)
             Fail("flash strength doesn't fall off with angle and distance as designed");
@@ -130,7 +141,7 @@ public static partial class SelfTest
             if (TacticalGear.FlashAlpha(s, total + 0.01f) != 0 || TacticalGear.FlashAlpha(s, TacticalGear.FlashHold(s) * 0.99f) != TacticalGear.FlashAlpha(s, 0))
                 Fail($"flash at strength {s}: no flat hold or not gone after {total:0.00} s");
         }
-        Line($"flash overlay: full flash {TacticalGear.FlashHold(1):0.0} s hold + {TacticalGear.FlashFade(1):0.0} s fade (total {TacticalGear.FlashTotal(1):0.0} s), "
+        TLine($"flash overlay: full flash {TacticalGear.FlashHold(1):0.0} s hold + {TacticalGear.FlashFade(1):0.0} s fade (total {TacticalGear.FlashTotal(1):0.0} s), "
              + $"behind at 4 m {TacticalGear.FlashTotal(behind4):0.0} s; bot blind {TacticalGear.BotBlindTime(facing4):0.00} s facing, {TacticalGear.BotBlindTime(behind4):0.00} s behind; "
              + $"{rises} brightening steps (strobe check)");
         if (rises > 0)
@@ -141,7 +152,7 @@ public static partial class SelfTest
         // Stun: strength by distance, slows by strength, a short tail.
         float s0 = TacticalGear.StunStrength(0, true, false, false), s4 = TacticalGear.StunStrength(4, true, false, false),
             s8 = TacticalGear.StunStrength(TacticalGear.StunRadius, true, false, false), sw = TacticalGear.StunStrength(2, false, false, false);
-        Line($"stun strength: 0 m {s0:0.00}, 4 m {s4:0.00}, {TacticalGear.StunRadius:0} m {s8:0.00}, behind a wall {sw:0.00}; full stun {TacticalGear.StunTime(1):0.0} s at "
+        TLine($"stun strength: 0 m {s0:0.00}, 4 m {s4:0.00}, {TacticalGear.StunRadius:0} m {s8:0.00}, behind a wall {sw:0.00}; full stun {TacticalGear.StunTime(1):0.0} s at "
              + $"{TacticalGear.StunMove(1) * 100:0}% speed, {TacticalGear.StunLook(1) * 100:0}% turning, {TacticalGear.StunAds(1) * 100:0}% aim speed");
         if (s0 != 1 || MathF.Abs(s4 - (1 - MathF.Pow(0.5f, 1.5f))) > 0.01f || s8 != 0 || sw != 0)
             Fail("stun strength by distance is wrong");
@@ -177,7 +188,7 @@ public static partial class SelfTest
             Fail("every tactical item needs one unlock level");
         // The older unlocks didn't move.
         var old = $"Frag {Progress.UnlockLevel(ThrowableKind.Frag)}, Recon {Progress.UnlockLevel(ThrowableKind.Recon)}, Impact {Progress.UnlockLevel(ThrowableKind.Impact)}, Smoke {Progress.UnlockLevel(ThrowableKind.Smoke)}";
-        Line($"unlock levels: {string.Join(", ", levels)} (older: {old})");
+        TLine($"unlock levels: {string.Join(", ", levels)} (older: {old})");
         if (old != "Frag 4, Recon 8, Impact 13, Smoke 20")
             Fail($"the older grenade unlock levels moved: {old}");
 
@@ -195,7 +206,7 @@ public static partial class SelfTest
             LoadoutStore.LoadLines(["selected=0", "loadout1.name=Old", "loadout1.grenade=Frag", "loadout1.equipment=Recon"]);
             var oldE = LoadoutStore.Slots[0].Equipment;
             var oldG = LoadoutStore.Slots[0].Grenade;
-            Line($"loadout.txt: equipment {e1} -> saved and loaded {e2}; Flashbang as a grenade -> {g1}; level 1 uses {locked}, max level {open}; an old file: {oldG} + {oldE}");
+            TLine($"loadout.txt: equipment {e1} -> saved and loaded {e2}; Flashbang as a grenade -> {g1}; level 1 uses {locked}, max level {open}; an old file: {oldG} + {oldE}");
             if (e1 != ThrowableKind.MotionSensor || e2 != e1 || g1 == ThrowableKind.Flash || locked != ThrowableKind.None || open != e1
                 || oldE != ThrowableKind.Recon || oldG != ThrowableKind.Frag)
                 Fail("loadout.txt: tactical equipment doesn't save, load, lock or migrate correctly");
@@ -209,7 +220,7 @@ public static partial class SelfTest
     private static void TacticalProtocol()
     {
         var last = Enum.GetValues<Msg>().Max();
-        Line($"protocol {ServerInfo.ProtocolVersion}; Msg.TacState {(byte)Msg.TacState}, Msg.TacEvent {(byte)Msg.TacEvent} (last {last}); "
+        TLine($"protocol {ServerInfo.ProtocolVersion}; Msg.TacState {(byte)Msg.TacState}, Msg.TacEvent {(byte)Msg.TacEvent} (last {last}); "
              + $"device {TacDevice.NetBytes} bytes, event {1 + Game.TacEventBytes} bytes");
         if (ServerInfo.ProtocolVersion < 26 || (byte)Msg.TacEvent != (byte)Msg.TacState + 1)
             Fail("tactical gear: protocol version not bumped, or the new messages aren't together");
@@ -230,7 +241,7 @@ public static partial class SelfTest
         {
             sb.Append(s).Append('\n');
             if (log)
-                Line(s);
+                TLine(s);
         }
         void Check(bool ok, string what)
         {
@@ -469,14 +480,15 @@ public static partial class SelfTest
             // A frag on the far side: the wall takes it for you.
             var blastAt = new Vector3(20, 0.3f, -23.4f);
             game.SelfTestPlace(me, new Vector3(20, 0, -20), 0);
+            var blocks = game.CoverBlocks(blastAt, me.Chest);
             game.SelfTestDetonate(b1, ThrowableKind.Frag, blastAt, now);
             var shielded = World.MaxHealth - me.Health;
-            var blocks = game.CoverBlocks(blastAt, me.Chest);
+            var coverLeft = game.TacDevices.Contains(cover) ? $"{cover.Health} health left" : "torn down by it";
             game.SelfTestClearTactical();
             game.SelfTestPlace(me, new Vector3(20, 0, -20), 0);
             game.SelfTestDetonate(b1, ThrowableKind.Frag, blastAt, now + 1);
             var open = World.MaxHealth - me.Health;
-            Note($"a frag 3.4 m away on the far side of the cover: {shielded} damage (blocked {blocks}); without the cover {open}");
+            Note($"a frag 3.4 m away on the far side of the cover: {shielded} damage (blocked {blocks}; the cover {coverLeft}); without the cover {open}");
             Check(blocks && shielded == 0 && open > 0, "deployable cover: should stop a grenade blast");
         }
 
@@ -600,7 +612,7 @@ public static partial class SelfTest
         Tick(10, effects: true);
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         if (log) // (not in the compared text: the first run also pays for JIT)
-            Line($"allocations: {bytes} bytes over 10 s of ticks with {game.TacDevices.Count} devices out");
+            TLine($"allocations: {bytes} bytes over 10 s of ticks with {game.TacDevices.Count} devices out");
         Check(bytes < 1024 && game.TacDevices.Count == 4, "tactical gear: the server tick or the client effects allocate");
 
         // Match end clears everything.
@@ -631,7 +643,7 @@ public static partial class SelfTest
         game.SelfTestPerks(foe, flak);
         game.SelfTestTacticalDetonate(me, ThrowableKind.Flash, new Vector3(0, 1.35f, -19), 110);
         var ffFlak = game.SelfTestFlashOf(foe).Strength;
-        Line($"team deathmatch: flash on a teammate {fm:0.00}, an enemy {ff:0.00} (with Flak Jacket {ffFlak:0.00}); stun on a teammate {sm:0.00}, an enemy {sf:0.00}");
+        TLine($"team deathmatch: flash on a teammate {fm:0.00}, an enemy {ff:0.00} (with Flak Jacket {ffFlak:0.00}); stun on a teammate {sm:0.00}, an enemy {sf:0.00}");
         if (fm != 0 || sm != 0 || ff <= 0.3f || sf <= 0.3f || MathF.Abs(ffFlak - ff * TacticalGear.FlakTacticalMult) > 0.02f)
             Fail("team deathmatch: flashes and stuns must spare teammates, and Flak Jacket halve them");
     }
@@ -652,7 +664,7 @@ public static partial class SelfTest
             game.SelfTestBotTactical(bot, me, true, 10, 100);
         }
         var hook = game.BotUseTacticalNow(bot, me.Position, 100);
-        Line($"Gun Game: spawned with {me.Equipment} x{me.EquipmentLeft} (bot {bot.Equipment} x{bot.EquipmentLeft}); bot uses {game.BotTacticalUses.Sum() - botUses}, hook {hook}");
+        TLine($"Gun Game: spawned with {me.Equipment} x{me.EquipmentLeft} (bot {bot.Equipment} x{bot.EquipmentLeft}); bot uses {game.BotTacticalUses.Sum() - botUses}, hook {hook}");
         if (me.EquipmentLeft != 0 || bot.EquipmentLeft != 0 || game.BotTacticalUses.Sum() != botUses || hook)
             Fail("Gun Game: tactical equipment showed up in a mode without equipment");
     }
