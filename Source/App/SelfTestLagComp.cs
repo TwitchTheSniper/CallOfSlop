@@ -19,7 +19,9 @@ public static partial class SelfTest
             CheckLagCompSlots();
             var later = LagCompDuel(targetJoinsFirst: false);
             var earlier = LagCompDuel(targetJoinsFirst: true);
-            Line($"bot v strafing target, 12 m, 3 s: target joined after the bot {later.Hits}/{later.Shots} hits, before it {earlier.Hits}/{earlier.Shots}");
+            var note = $"bot v strafing target, 12 m, 3 s: target joined after the bot {later.Hits}/{later.Shots} hits, before it {earlier.Hits}/{earlier.Shots}";
+            Line(note);
+            Line("::notice title=Bot lag compensation (results)::" + note);
             if (later.Shots < 5 || earlier.Shots < 5)
                 Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots)");
             else
@@ -86,8 +88,8 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// A Hard bot held at (5, 0, 5) against a pretend person strafing 2.5 m either side of (5, 0, 17) at 4 m/s, for 3 s
-    /// after 1 s to acquire. The target never dies (health is topped up every tick). Returns the bot's shots and hits.
+    /// After the countdown, a Hard bot held at (5, 0, 5) against a pretend person strafing 2.5 m either side of
+    /// (5, 0, 17) at 4 m/s, for 3 s after 1 s to acquire. The target never dies (health is topped up every tick). Returns the bot's shots and hits.
     /// </summary>
     private static (int Shots, int Hits) LagCompDuel(bool targetJoinsFirst)
     {
@@ -109,12 +111,19 @@ public static partial class SelfTest
         game.SelfTestPerks(target, PerkSet.Empty);
         bot.Primary = Weapons.DefaultPrimary.Id;
         game.SelfTestSpawn(bot);
+        var now = 1.0;
+        for (var t = 0.0; t < Game.CountdownSeconds + 0.5; t += World.TickDt) // past the countdown (nobody can be hurt)
+        {
+            now += World.TickDt;
+            game.Update(now, World.TickDt);
+        }
+        if (game.Phase != MatchPhase.Playing)
+            Fail($"lag compensation duel: still {game.Phase} after the countdown");
         var home = new Vector3(5, 0, 5);
         var centre = new Vector3(5, 0, 17);
         game.SelfTestPlace(bot, home, 0);
         game.SelfTestPlace(target, centre, MathF.PI);
 
-        var now = 1.0;
         int shots = 0, hits = 0;
         const int warm = World.TickRate, run = 3 * World.TickRate;
         for (var i = 0; i < warm + run; i++)
