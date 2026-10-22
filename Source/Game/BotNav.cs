@@ -406,8 +406,37 @@ public sealed class NavGraph
     /// rules the movers use: they slide off those) is no use to a bot. Only where the line is on the terrain (not on a box
     /// floor above it). Box steps and ledges are left to <see cref="Walk"/>.
     /// </summary>
-    private static bool TooSteep(Vector3 a, Vector3 b) =>
-        World.Map.TerrainCollision?.Layer(MathF.Min(a.Y, b.Y)) is { } t && !SlopeRules.LineWalkable(t, a, b, onlyNearLine: true);
+    private static bool TooSteep(Vector3 a, Vector3 b)
+    {
+        if (World.Map.TerrainCollision is not { } ground)
+            return false;
+        var t = ground.Layer(MathF.Min(a.Y, b.Y));
+        if (!ground.HasVoids)
+            return !SlopeRules.LineWalkable(t, a, b, onlyNearLine: true);
+        // Holes (TerrainVoids.cs): a hole's edge is a wall like a box's side, a ledge for Walk to judge (drop in, mantle out
+        // of a shallow pit), so only the stretches on either side of each edge must be walkable ground.
+        var data = ground.Data;
+        var len = Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
+        var n = Math.Clamp((int)MathF.Ceiling(len / 0.25f), 1, 512);
+        var margin = len > 0.01f ? 0.35f / len : 1f;
+        var start = 0f;
+        var hole = data.IsHole(a.X, a.Z);
+        for (var k = 1; k <= n; k++)
+        {
+            var f = k / (float)n;
+            var p = Vector3.Lerp(a, b, f);
+            var now = data.IsHole(p.X, p.Z);
+            if (now == hole && k < n)
+                continue;
+            var end = now != hole ? (k - 0.5f) / n : 1f;
+            float s0 = start > 0 ? start + margin : 0f, s1 = end < 1 ? end - margin : 1f;
+            if (s1 > s0 && !SlopeRules.LineWalkable(t, Vector3.Lerp(a, b, s0), Vector3.Lerp(a, b, s1), onlyNearLine: true))
+                return true;
+            start = end;
+            hole = now;
+        }
+        return false;
+    }
 
     /// <summary>A shaped map: a link that passes outside its outline, or hugs it closer than a body width, is no use to a bot.</summary>
     private static bool LeavesBoundary(Vector3 a, Vector3 b)

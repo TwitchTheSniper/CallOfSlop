@@ -23,7 +23,7 @@ public static partial class SelfTest
             "features": [
               { "type": "hole", "shape": "circle", "x": 0, "z": 0, "radius": 4, "depth": 3 },
               { "type": "hole", "shape": "ellipse", "x": 15, "z": 15, "radius": 4, "radiusZ": 2, "angle": 45, "depth": 2 },
-              { "type": "hole", "shape": "polygon", "points": [[-20, -20], [-12, -20], [-12, -13]], "depth": 1 }
+              { "type": "hole", "shape": "polygon", "points": [[-24, -24], [-10, -24], [-10, -12]], "depth": 1 }
             ]
           },
           "ops": [
@@ -96,8 +96,8 @@ public static partial class SelfTest
         }
         HolesLine($"hole lab: {v.OpenCells} hole cells (circle {circle}, ellipse {ellipse}, triangle {poly}), {v.CaveCells} cave cells, "
                   + $"floors {v.MinFloor:0.00} m and up, fingerprint {t.Hash:x8}");
-        if (circle is < 42 or > 58 || ellipse is < 18 or > 34 || poly is < 18 or > 32 || circle + ellipse + poly != v.OpenCells)
-            Fail($"hole lab: unexpected hole cells (circle {circle} ~50, ellipse {ellipse} ~25, triangle {poly} ~25, total {v.OpenCells})");
+        if (circle is < 42 or > 58 || ellipse is < 18 or > 34 || poly is < 70 or > 98 || circle + ellipse + poly != v.OpenCells)
+            Fail($"hole lab: unexpected hole cells (circle {circle} ~50, ellipse {ellipse} ~25, triangle {poly} ~84, total {v.OpenCells})");
         if (!m.IsTerrainHole(0.5f, 0.5f) || !m.IsTerrainHole(14.5f, 15.5f) || !m.IsTerrainHole(-14.5f, -18.5f) || m.IsTerrainHole(6.5f, 0.5f) || m.IsTerrainHole(15.5f, 19.5f))
             Fail("hole lab: IsTerrainHole is wrong at a test point");
 
@@ -434,7 +434,7 @@ public static partial class SelfTest
         var withHoles = HoleLab();
         var without = HoleLab(HoleLabJson.Replace("{ \"type\": \"hole\", \"shape\": \"circle\", \"x\": 0, \"z\": 0, \"radius\": 4, \"depth\": 3 },", "")
                 .Replace("{ \"type\": \"hole\", \"shape\": \"ellipse\", \"x\": 15, \"z\": 15, \"radius\": 4, \"radiusZ\": 2, \"angle\": 45, \"depth\": 2 },", "")
-                .Replace("{ \"type\": \"hole\", \"shape\": \"polygon\", \"points\": [[-20, -20], [-12, -20], [-12, -13]], \"depth\": 1 }", ""), "hole lab without holes");
+                .Replace("{ \"type\": \"hole\", \"shape\": \"polygon\", \"points\": [[-24, -24], [-10, -24], [-10, -12]], \"depth\": 1 }", ""), "hole lab without holes");
         var deeper = HoleLab(HoleLabJson.Replace("\"radius\": 4, \"depth\": 3", "\"radius\": 4, \"depth\": 3.5"), "hole lab deeper");
         if (without.Terrain!.Voids != null || without.Terrain.Hash == withHoles.Terrain!.Hash || deeper.Terrain!.Hash == withHoles.Terrain.Hash)
             Fail("holes aren't part of the terrain fingerprint (or a map without holes got hole data)");
