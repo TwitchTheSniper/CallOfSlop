@@ -26,7 +26,7 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | **Single player** | You against up to 31 bots (as many as the map takes, see [Lobby size](#lobby-size); Easy, Normal, Hard or Insane), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
 | **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, gore, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt`; the same screen is in the Esc menu during a match. |
+| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, gore, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt` (in the [save folder](#where-your-saves-live)); the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -234,6 +234,36 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 - **Bots**: about a quarter of the bots on Normal and up (four in ten tacticians) carry a launcher. They bring it out for an enemy streak machine they can see (locking flying ones with the Skylance) and, on Hard and up, for enemies bunched together at a safe distance, then go back to their main gun.
 - **Netcode**: the host simulates every projectile. A 38-byte spawn message starts it everywhere, each client flies its own copy with the same deterministic steps, guided and stuck ones get a 29-byte correction with the snapshots, and a 25-byte message ends it with the server's result. Your own rocket appears the moment you fire (predicted) and the server's copy takes over without a jump; a new rocket is flown forward by the shooter's latency (up to 100 ms) so it is where the shooter saw it. Protocol 30.
 - **Modding**: launchers are weapon files in `Weapons/Launchers` with a `"launcher"` block (projectile, guidance, speeds, blast, arming, fuses, lock-on, cluster, thermobaric; see [Weapons/README.md](Weapons/README.md#launchers)). New flying kill streaks register how launchers treat them (`LauncherTargets.Register`: airborne, lock-on hits to kill, flares).
+
+### Bullet penetration
+
+**Bullets go through thin or soft walls when the round is big enough.** Every gun has a penetration power (from its class and calibre: pistols and SMGs low, rifles medium, DMRs and LMGs high, snipers very high; shotgun pellets almost none, slugs medium; launchers, the Toy Blaster and the Arc Carbine none, the Railspike most). Passing a box costs its thickness along the bullet's path (so an angled shot goes through more) times its material's resistance; the round goes on with the power it has left, its damage cut after each surface (it keeps the material's share, less the harder the wall was), and passes at most **3 surfaces** (touching boxes, such as a wall's core and its plaster linings, are one surface). A surface it can't get all the way through stops it at its front. **Never:** the terrain, the ground, rock, asphalt, the map's boundary, moving platforms, the Bocage hedgerows (earth banks), anything thicker than its material's limit (25 cm of concrete, 35 cm of brick, 6 cm of metal), crates and cars thicker than that. Headshots still count through a wall. **AP Rounds** (magazine slot) give 1.6x the power, the **Hollow Point Mag** 0.6x.
+
+How much of each material (cm, one surface) a gun can pass, from `Materials/penetration.json`:
+
+| Material | Pistol (P9) | Hand cannon | SMG (Hornet) | AR (Vanguard) | AR (Bulldog) | LMG (Anvil) | DMR (M14) | Sniper (Needle) | .50 (Leviathan) | Railspike | Slug | Buckshot |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| *power* | 8 | 14 | 8 | 20 | 24 | 31 | 40 | 90 | 100 | 140 | 27 | 2 |
+| Wood | 8 | 14 | 8 | 20 | 24 | 31 | 40 | 45 | 45 | 45 | 27 | 2 |
+| Plaster | 10 | 18 | 10 | 25 | 30 | 39 | 40 | 40 | 40 | 40 | 34 | 2 |
+| Glass | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 | 6 |
+| Soft (cardboard, plastic) | 27 | 47 | 27 | 68 | 81 | 105 | 120 | 120 | 120 | 120 | 90 | 7 |
+| Tiles (floors, roofs) | 3 | 6 | 3 | 8 | 10 | 13 | 16 | 25 | 25 | 25 | 11 | - |
+| Snow | 4 | 7 | 4 | 10 | 12 | 16 | 20 | 45 | 50 | 70 | 14 | 1 |
+| Brick | 2 | 3 | 2 | 5 | 5 | 7 | 9 | 20 | 22 | 31 | 6 | - |
+| Concrete | 1 | 2 | 1 | 3 | 4 | 5 | 6 | 14 | 15 | 22 | 4 | - |
+| Prototype grid | 2 | 3 | 2 | 5 | 5 | 7 | 9 | 20 | 22 | 30 | 6 | - |
+| Metal | 1 | 2 | 1 | 3 | 3 | 4 | 5 | 6 | 6 | 6 | 3 | - |
+| Dirt, grass (earthy boxes) | 1 | 2 | 1 | 3 | 4 | 5 | 7 | 15 | 17 | 20 | 4 | - |
+| Sand (sandbags) | - | 2 | - | 2 | 3 | 3 | 4 | 10 | 11 | 15 | 3 | - |
+| Rock, asphalt, hedgerow | never | never | never | never | never | never | never | never | never | never | never | never |
+
+So a building's plaster interior walls (25 cm + linings) stop pistols and SMGs but not LMGs, DMRs and snipers, wooden floors and doors let most rifles through, and brick or concrete outside walls stop everything but the heaviest rifles (the 10 cm wood + 10 cm plaster check: the Needle passes both with 61% of its damage).
+
+- **What a surface is made of** is the bullet-impact surface (the box's texture refined by colour and facing, a building part's own material, a door's wood or metal, the terrain's ground); props by their name (`"props"` rules in the file: sandbags are sand, crates and pallets wood, cars and trucks metal, the Bocage hedgerows earth that stops everything), else their biggest textured parts, else how they break.
+- **Server-authoritative**: the host extends each pellet's ray through what it can pass and hits players behind with the rewound positions of lag compensation; breakable props, doors and glass along the way take the hit too. The shooter predicts the same tracer and hit marker; a hit through a wall shows a second, inner set of marker ticks. Bots get no wallhacks: they only shoot at people they see, except that an Insane base of fire may now put its suppressive fire on a fresh last known spot through a wall its gun goes through.
+- **Both sides of the wall** get an impact mark (the exit hole 30% bigger) and a puff of dust (sparks off metal), the same on every screen: a shot that went through something sends its origin after the tracer ends (12 bytes; flag 64 in the Shot message, 128 = a hit through a wall). Older clients ignore it. No protocol change of its own.
+- **Data**: `Materials/penetration.json` (`call-of-slop-penetration/1`): per material `resistPerCm`, `maxCm` (0 = never) and `damageKept`; per weapon class `base` + `perCalibre` x calibre; `shotgunPellets`; `maxSurfaces`; `props` rules. A weapon file can give `"penetration"` (an absolute power, -1 = derived) and attachments can change `"penetrationMult"` (see [Weapons/README.md](Weapons/README.md)). A map can switch it off with a top-level `"penetration": false` (on everywhere by default; see [Maps/README.md](Maps/README.md)).
 
 ### Melee
 
@@ -553,7 +583,7 @@ Gibs bounce, slide to a stop, lie there for about 15 s and dither out; meat that
 
 ### Loadouts and weapons
 
-The **loadout menu** opens when a match starts (and any time with **B**, or from the Esc menu). Pick a **primary** and a **secondary** from **58 weapons** (50 guns and 8 launchers). Hover a weapon to compare damage, fire rate, DPS, range, accuracy, recoil, mobility, magazine, reload and draw time, see shots-to-kill and damage at range, and use **Test fire / Test reload / Test equip** to hear it. Click **Deploy**. If you're out of combat (no shots fired or taken for 4 s), the change applies instantly; otherwise it applies when you respawn. Your loadout is saved to `loadout.txt` next to the game.
+The **loadout menu** opens when a match starts (and any time with **B**, or from the Esc menu). Pick a **primary** and a **secondary** from **58 weapons** (50 guns and 8 launchers). Hover a weapon to compare damage, fire rate, DPS, range, accuracy, recoil, mobility, magazine, reload and draw time, see shots-to-kill and damage at range, and use **Test fire / Test reload / Test equip** to hear it. Click **Deploy**. If you're out of combat (no shots fired or taken for 4 s), the change applies instantly; otherwise it applies when you respawn. Your loadout is saved to `loadout.txt` in the [save folder](#where-your-saves-live).
 
 | Class | Weapons |
 | --- | --- |
@@ -718,9 +748,20 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 - **Downed** at 0 health: a teammate revives you by holding F on you; you lose your perks; after 30 s you bleed out and come back next round with the start gear, and your **built weapons drop where you went down**: anyone can pick them up (hold F) for 5 minutes. **Second Wind** (start room) gets you back up on your own once, solo or co-op. Guns have **reserve ammo** in Zombies (magazine | reserve).
 - Co-op: built guns and dropped builds replicate to every player (protocol 19). The design, every number and the map format are in [docs/zombies/ZOMBIES-MODE.md](docs/zombies/ZOMBIES-MODE.md).
 
+## Where your saves live
+
+Your own files (`progress.txt` with level, XP, weapon XP and prestige; `loadout.txt` with loadouts and hat; `settings.txt`; `workbench.txt`; audio mixes `audio_mix.json` and `AudioMixes/`) are kept in a **save folder outside the game**, so they **carry over to every new build automatically**:
+
+- **Windows:** `%APPDATA%\CallOfSlop\` (paste that into Explorer's address bar), **Linux:** `~/.local/share/CallOfSlop/`.
+- **Settings > Player > Saves** shows the folder and has an **Open save folder** button.
+- **Portable mode:** put an empty `portable.txt` next to `CallOfSlop.exe` and the saves stay next to the game (USB sticks, dev copies). **`--save-dir <path>`** on the command line uses any folder (it wins over both).
+- **Moving from an older build:** older builds kept the saves next to the game. On startup, any save the save folder doesn't have yet is **copied** from next to the game (`[saves] migrated progress.txt from <folder>` in `callofslop.log`); on the very first run of a freshly unzipped build it also looks for your most recent other Call of Slop build beside it (sibling folders, e.g. the previous tester zip) and copies from there. The originals are never moved or deleted. If both have a file, the save folder's copy wins and the other one is left alone (logged).
+- **Safe saving:** every save is written to a temp file and swapped in, so a crash can't leave half a file, and the previous save is kept as `NAME.bak` (e.g. `progress.txt.bak`). A damaged save loads its backup (the damaged copy is kept as `NAME.corrupt`). Each file starts with a `version=1` line; files without one (older builds) load exactly as before, and a save written by a *newer* build than the one you're running is never saved over (the lobby and Settings > Player say so).
+- Game data (maps, weapons, props, `classes.json`, `hats.json`, ...) stays next to the game, as does `callofslop.log`. The smoke test (`--smoketest`) plays with a throwaway copy of your saves in the temp folder, and the self-test uses its own temp folder, so neither can change your progress.
+
 ## Development and version control
 
-The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. So are your personal game files (`progress.txt`, `settings.txt`, `loadout.txt` and logs), which live next to the built game in `bin\Release\net10.0\` and are never committed.
+The repository holds only the source: `Source/`, `Maps/`, `Weapons/`, `Attachments/`, `tools/`, the project file and the docs. Build output (`bin/`, `obj/`) is ignored. Your personal game files live in the save folder (see [Where your saves live](#where-your-saves-live)), not in the repo; if you run in portable mode from the project folder, `.gitignore` keeps them (and their `.bak` copies) out of commits.
 
 - **Get started:** clone the repo, then run `Start.bat` (or `dotnet build -c Release`). NuGet fetches the BRUTAL packages on the first build.
 - **Automatic checks:** with `.github/workflows/build.yml` in the repo, every push runs **Build and self-test** on GitHub Actions. It builds on Windows, runs `CallOfSlop.exe --selftest` and attaches the logs to the run. A red X on a commit means it didn't build or a check failed; open the run to see which.

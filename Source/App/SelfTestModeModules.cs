@@ -100,8 +100,8 @@ public static partial class SelfTest
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0x235E9CEDEDBD32C1),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x0C77657D830146BC),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x1C59C6CF2EA93A39),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0xF3BF3F086AB600DA),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xEBC32B7742A2C60E), // again (map 1) when bullets started going through thin walls (SelfTestPenetration.cs)
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0xF3E193F262BF28A1),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x84AF9E09C825A7C0),
         (GameMode.Zombies, 2, 0, 4106, 20, 0x740A835A97B6A819),
     ];
