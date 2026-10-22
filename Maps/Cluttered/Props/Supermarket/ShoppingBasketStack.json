@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Shopping Basket Stack",
+  "category": "Supermarket",
+  "description": "A stack of red plastic shopping baskets.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 40,
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.5, 0.12, 0.34], "offset": [0, 0.06, 0], "color": "#d02828"},
+    {"size": [0.46, 0.02, 0.3], "offset": [0, 0.115, 0], "color": "#a81e1e"},
+    {"size": [0.5, 0.12, 0.34], "offset": [0, 0.17, 0], "color": "#d02828"},
+    {"size": [0.46, 0.02, 0.3], "offset": [0, 0.225, 0], "color": "#a81e1e"},
+    {"size": [0.5, 0.12, 0.34], "offset": [0, 0.28, 0], "color": "#d02828"},
+    {"size": [0.46, 0.02, 0.3], "offset": [0, 0.335, 0], "color": "#a81e1e"},
+    {"size": [0.02, 0.08, 0.26], "offset": [0.12, 0.4, 0], "color": "black", "rotation": [0, 0, 20]},
+    {"size": [0.02, 0.08, 0.26], "offset": [-0.12, 0.4, 0], "color": "black", "rotation": [0, 0, -20]}
+  ]
+}

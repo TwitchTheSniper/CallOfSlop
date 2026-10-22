@@ -29,6 +29,8 @@ public static unsafe partial class Program
         ("cluttered_large_market", "Sprawl", new Vector3(-24f, 1.7f, 6f), new Vector3(20f, 1.2f, -4f), false),
         ("cluttered_oldtown", "Old Town", new Vector3(-70f, 38f, 52f), new Vector3(0f, 0f, -4f), false), // 06 Old Town from the south-west: smoke_cluttered_oldtown.bmp
         ("cluttered_oldtown_street", "Old Town", new Vector3(-58f, 1.7f, -5f), new Vector3(-16f, 1.6f, -4f), false), // West Main Street at eye height
+        ("cluttered_supermarket", "Supermarket", new Vector3(-48f, 24f, 60f), new Vector3(0f, 2f, 6f), false), // 07 Supermarket: the car park and store front
+        ("cluttered_supermarket_inside", "Supermarket", new Vector3(12.5f, 5.3f, -8f), new Vector3(-12f, 1.2f, 8f), false), // over the shop floor from the mezzanine
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),

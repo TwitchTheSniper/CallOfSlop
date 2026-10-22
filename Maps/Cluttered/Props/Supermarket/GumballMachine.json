@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gumball Machine",
+  "category": "Supermarket",
+  "description": "A red gumball machine by the entrance, its glass globe full of sweets.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.4, 1.1, 0.4]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 20, "breakBy": "all", "sound": "glass", "debris": {"count": 14, "size": [0.03, 0.1], "speed": 4, "colors": ["#e83a2a", "#40b040", "#2a8ad8", "#f0c020", "#d8eef8"]}},
+  "parts": [
+    {"size": [0.32, 0.62, 0.32], "offset": [0, 0.31, 0], "color": "#c4161c"},
+    {"size": [0.4, 0.05, 0.4], "offset": [0, 0.64, 0], "color": "#8a0e12"},
+    {"size": [0.36, 0.36, 0.36], "offset": [0, 0.85, 0], "color": "#d8eef8"},
+    {"size": [0.36, 0.36, 0.36], "offset": [0, 0.85, 0], "color": "#d8eef8", "rotation": [0, 45, 0]},
+    {"size": [0.08, 0.08, 0.02], "offset": [0.06, 0.8, 0.181], "color": "#e83a2a"},
+    {"size": [0.08, 0.08, 0.02], "offset": [-0.08, 0.9, 0.181], "color": "#40b040"},
+    {"size": [0.08, 0.08, 0.02], "offset": [0.1, 0.95, -0.181], "color": "#2a8ad8"},
+    {"size": [0.08, 0.08, 0.02], "offset": [0.181, 0.84, 0.0], "color": "#f0c020"},
+    {"size": [0.2, 0.08, 0.2], "offset": [0, 1.07, 0], "color": "#c4161c"},
+    {"size": [0.12, 0.08, 0.04], "offset": [0, 0.45, 0.17], "color": "chrome"}
+  ]
+}
