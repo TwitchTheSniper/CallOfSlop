@@ -211,7 +211,7 @@ public sealed class NavGraph
             // Building waypoints (doorways, stairs): placed tight and kept apart from grid nodes only by other waypoints.
             var exact = map.BuildingNavPoints.Count > 0 && map.BuildingNavPoints.Contains(w);
             if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), exact ? 0.5f : 1.2f) is { } p
-                && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.3f : 0.8f))
+                && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.1f : 0.8f))
                 nodes.Add(p);
             if (++extra % 4 == 0)
             {
