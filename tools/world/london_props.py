@@ -230,8 +230,8 @@ def lock_gate():
     wood, dark = "#3a2c20", "#241a12"
     P = []
     # the gate leaf stands across the water in -Z (down to 0.5 m below the bank: set the water 0.4-0.5 m down); the balance beam lies on the bank (+Z)
-    P.append(part((0.4, 1.6, 3.4), (0, -0.16, -1.8), wood, "wood"))
-    for y in (-0.3, 0.2):
+    P.append(part((0.4, 1.66, 3.4), (0, 0.35, -1.8), wood, "wood"))
+    for y in (-0.2, 0.4):
         P.append(part((0.44, 0.16, 3.42), (0, y, -1.8), dark))
     P.append(part((0.06, 0.06, 3.4), (0.24, 0.64, -1.8), "#e8e4d8"))  # white-painted top rail
     P.append(part((0.06, 1.0, 0.06), (0.24, 1.1, -0.2), "#e8e4d8"))   # walkway handrail post

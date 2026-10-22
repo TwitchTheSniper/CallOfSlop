@@ -3068,28 +3068,28 @@
   {
    "op": "Prop",
    "name": "Black Cab",
-   "x": 48.5,
+   "x": 54.5,
    "z": 15.6,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Black Cab",
-   "x": -48.5,
+   "x": -54.5,
    "z": 15.6,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Double Decker Bus",
-   "x": 58.0,
+   "x": 44.0,
    "z": 15.8,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Double Decker Bus",
-   "x": -58.0,
+   "x": -44.0,
    "z": 15.8,
    "yaw": 180
   },
@@ -3148,14 +3148,14 @@
   {
    "op": "Prop",
    "name": "Black Cab",
-   "x": 40.0,
+   "x": 12.8,
    "z": 16.4,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Black Cab",
-   "x": -40.0,
+   "x": -12.8,
    "z": 16.4,
    "yaw": 180
   },
@@ -4998,6 +4998,774 @@
    "x": -66.5,
    "z": -35.9,
    "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": 10.0,
+   "z": -44.5,
+   "yaw": 10.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": -10.0,
+   "z": -44.5,
+   "yaw": 350.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": 11.2,
+   "z": -45.3,
+   "yaw": 54.4,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": -11.2,
+   "z": -45.3,
+   "yaw": 305.6,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": 30.5,
+   "z": -47.8,
+   "yaw": 48.5,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": -30.5,
+   "z": -47.8,
+   "yaw": 311.5,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": 44.0,
+   "z": -44.0,
+   "yaw": 188.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": -44.0,
+   "z": -44.0,
+   "yaw": 172.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": 62.0,
+   "z": -48.5,
+   "yaw": 134.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mallard Duck",
+   "x": -62.0,
+   "z": -48.5,
+   "yaw": 226.0,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Duck Family",
+   "x": 22.0,
+   "z": -45.0,
+   "yaw": 70,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Duck Family",
+   "x": -22.0,
+   "z": -45.0,
+   "yaw": 290,
+   "y": -2.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": 33.0,
+   "z": -13.4,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": -33.0,
+   "z": -13.4,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": 5.0,
+   "z": -16.9,
+   "y": 7.05,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": -5.0,
+   "z": -16.9,
+   "y": 7.05,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": 8.5,
+   "z": 26.0,
+   "y": 1.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": -8.5,
+   "z": 26.0,
+   "y": 1.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": 2.6,
+   "z": 4.6
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": -2.6,
+   "z": 4.6
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": 26.5,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pigeons",
+   "x": -26.5,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Table",
+   "x": 17.0,
+   "z": -7.9
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Table",
+   "x": -17.0,
+   "z": -7.9
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": 16.2,
+   "z": -7.9,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": -16.2,
+   "z": -7.9,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": 17.8,
+   "z": -7.9,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": -17.8,
+   "z": -7.9,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Table",
+   "x": 22.6,
+   "z": -7.9
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Table",
+   "x": -22.6,
+   "z": -7.9
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": 21.8,
+   "z": -7.9,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": -21.8,
+   "z": -7.9,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": 23.4,
+   "z": -7.9,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Patio Chair",
+   "x": -23.4,
+   "z": -7.9,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Moped Scooter",
+   "x": 31.6,
+   "z": -8.8,
+   "yaw": 200
+  },
+  {
+   "op": "Prop",
+   "name": "Moped Scooter",
+   "x": -31.6,
+   "z": -8.8,
+   "yaw": 160
+  },
+  {
+   "op": "Prop",
+   "name": "Motorbike",
+   "x": 39.6,
+   "z": -8.9,
+   "yaw": 160
+  },
+  {
+   "op": "Prop",
+   "name": "Motorbike",
+   "x": -39.6,
+   "z": -8.9,
+   "yaw": 200
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": 36.0,
+   "z": -34.35
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": -36.0,
+   "z": -34.35
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": 38.6,
+   "z": -34.35
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": -38.6,
+   "z": -34.35
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin",
+   "x": 42.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin",
+   "x": -42.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Kettle BBQ",
+   "x": 45.75,
+   "z": 35.2
+  },
+  {
+   "op": "Prop",
+   "name": "Kettle BBQ",
+   "x": -45.75,
+   "z": 35.2
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": 43.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": -43.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": 37.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": -37.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Paddling Pool",
+   "x": 40.75,
+   "z": 35.2,
+   "yaw": 30
+  },
+  {
+   "op": "Prop",
+   "name": "Paddling Pool",
+   "x": -40.75,
+   "z": 35.2,
+   "yaw": 330
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": 38.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": -38.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Recycling Bin",
+   "x": 32.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Recycling Bin",
+   "x": -32.95,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": 35.75,
+   "z": 35.2,
+   "yaw": 60
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": -35.75,
+   "z": 35.2,
+   "yaw": 300
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": 33.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": -33.15,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin",
+   "x": 58.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin",
+   "x": -58.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Kettle BBQ",
+   "x": 61.6,
+   "z": 35.2
+  },
+  {
+   "op": "Prop",
+   "name": "Kettle BBQ",
+   "x": -61.6,
+   "z": 35.2
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": 59.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": -59.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": 53.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": -53.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Paddling Pool",
+   "x": 56.6,
+   "z": 35.2,
+   "yaw": 30
+  },
+  {
+   "op": "Prop",
+   "name": "Paddling Pool",
+   "x": -56.6,
+   "z": 35.2,
+   "yaw": 330
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": 54.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": -54.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Recycling Bin",
+   "x": 48.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Recycling Bin",
+   "x": -48.8,
+   "z": 37.0,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": 51.6,
+   "z": 35.2,
+   "yaw": 60
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": -51.6,
+   "z": 35.2,
+   "yaw": 300
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": 49.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Gnome",
+   "x": -49.0,
+   "z": 33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": 24.0,
+   "z": 34.0,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Bicycle",
+   "x": -24.0,
+   "z": 34.0,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": 24.0,
+   "z": 36.0,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": -24.0,
+   "z": 36.0,
+   "yaw": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": 36.0,
+   "z": -33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -36.0,
+   "z": -33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": 44.0,
+   "z": -33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -44.0,
+   "z": -33.6
+  },
+  {
+   "op": "Prop",
+   "name": "Post Litter Bin",
+   "x": 40.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Post Litter Bin",
+   "x": -40.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": 14.0,
+   "z": -13.3,
+   "yaw": 22.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": -14.0,
+   "z": -13.3,
+   "yaw": 338.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": 27.0,
+   "z": -13.5,
+   "yaw": 351.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": -27.0,
+   "z": -13.5,
+   "yaw": 9.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": 40.0,
+   "z": -13.2,
+   "yaw": 320.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": -40.0,
+   "z": -13.2,
+   "yaw": 40.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": 52.0,
+   "z": -13.4,
+   "yaw": 236.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": -52.0,
+   "z": -13.4,
+   "yaw": 124.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": 58.0,
+   "z": -10.9,
+   "yaw": 194.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Litter",
+   "x": -58.0,
+   "z": -10.9,
+   "yaw": 166.0,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Soda Cans",
+   "x": 24.0,
+   "z": -18.9,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Soda Cans",
+   "x": -24.0,
+   "z": -18.9,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Soda Cans",
+   "x": 35.0,
+   "z": -10.8,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Soda Cans",
+   "x": -35.0,
+   "z": -10.8,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Duffel Bag",
+   "x": 30.5,
+   "z": -13.3,
+   "yaw": 40,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Duffel Bag",
+   "x": -30.5,
+   "z": -13.3,
+   "yaw": 320,
+   "y": 6.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Flag on a Pole",
+   "x": 9.0,
+   "z": 38.6,
+   "y": 1.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Flag on a Pole",
+   "x": -9.0,
+   "z": 38.6,
+   "y": 1.5,
+   "anchor": "world"
   },
   {
    "op": "Waypoint",
@@ -6864,6 +7632,591 @@
    "anchor": "world",
    "onto": "wall-z",
    "size": 2.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Puddle",
+    "Puddle",
+    "Water Stain",
+    "Leaf Litter"
+   ],
+   "x0": 0.4,
+   "z0": 21.8,
+   "x1": 12.8,
+   "z1": 40.2,
+   "count": 14,
+   "seed": 71,
+   "y": 1.52,
+   "anchor": "world",
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Puddle",
+    "Puddle",
+    "Water Stain",
+    "Leaf Litter"
+   ],
+   "x0": -12.8,
+   "z0": 21.8,
+   "x1": -0.4,
+   "z1": 40.2,
+   "count": 14,
+   "seed": 571,
+   "y": 1.52,
+   "anchor": "world",
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Puddle",
+    "Dirt Patch",
+    "Footprints"
+   ],
+   "x0": 1.0,
+   "z0": -40.0,
+   "x1": 71,
+   "z1": -35.7,
+   "count": 22,
+   "seed": 72,
+   "y": -2.38,
+   "anchor": "world",
+   "gap": 3.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Puddle",
+    "Dirt Patch",
+    "Footprints"
+   ],
+   "x0": -71,
+   "z0": -40.0,
+   "x1": -1.0,
+   "z1": -35.7,
+   "count": 22,
+   "seed": 572,
+   "y": -2.38,
+   "anchor": "world",
+   "gap": 3.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Puddle",
+    "Oil Stain",
+    "Floor Cracks"
+   ],
+   "x0": 0.5,
+   "z0": -18.8,
+   "x1": 7.4,
+   "z1": -10.2,
+   "count": 6,
+   "seed": 73,
+   "y": 0.05,
+   "anchor": "world",
+   "gap": 1.6
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Leaf Litter",
+    "Puddle",
+    "Floor Cracks",
+    "Moss Patch"
+   ],
+   "x0": 8.4,
+   "z0": -18.6,
+   "x1": 47.6,
+   "z1": -10.4,
+   "count": 16,
+   "seed": 74,
+   "y": 6.619999999999999,
+   "anchor": "world",
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Leaf Litter",
+    "Puddle",
+    "Floor Cracks",
+    "Moss Patch"
+   ],
+   "x0": -47.6,
+   "z0": -18.6,
+   "x1": -8.4,
+   "z1": -10.4,
+   "count": 16,
+   "seed": 574,
+   "y": 6.619999999999999,
+   "anchor": "world",
+   "gap": 2.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 14.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -14.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": 18.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": -18.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 22.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -22.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": 26.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": -26.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 30.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -30.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": 34.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": -34.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 38.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -38.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": 42.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": -42.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 46.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -46.0,
+   "z": -19.7,
+   "y": 3.4,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": 50.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Soot Plume",
+   "x": -50.0,
+   "z": -19.7,
+   "y": 4.2,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Throw-Up",
+   "x": 11.5,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Throw-Up",
+   "x": -11.5,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Burst",
+   "x": 26.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Burst",
+   "x": -26.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Scribble",
+   "x": 41.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Scribble",
+   "x": -41.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Tag",
+   "x": 52.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Tag",
+   "x": -52.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Throw-Up",
+   "x": 63.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Throw-Up",
+   "x": -63.0,
+   "z": -36.0,
+   "y": -1.3,
+   "anchor": "world",
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Torn Poster",
+   "x": 6.0,
+   "z": -19.7,
+   "y": 1.6,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Torn Poster",
+   "x": -6.0,
+   "z": -19.7,
+   "y": 1.6,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Torn Poster",
+   "x": 33.0,
+   "z": -19.7,
+   "y": 1.6,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Torn Poster",
+   "x": -33.0,
+   "z": -19.7,
+   "y": 1.6,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Chalk Marks",
+   "x": 7.0,
+   "z": 37.0,
+   "y": 1.52,
+   "anchor": "world",
+   "size": 1.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Chalk Marks",
+   "x": -7.0,
+   "z": 37.0,
+   "y": 1.52,
+   "anchor": "world",
+   "size": 1.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 34.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -34.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 41.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -41.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 46.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -46.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 50.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -50.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 57.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -57.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": 62.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
+  },
+  {
+   "op": "Decal",
+   "decal": "Brick Patch",
+   "x": -62.0,
+   "z": 21.5,
+   "y": 1.9,
+   "anchor": "world",
+   "onto": "wall+z"
   },
   {
    "op": "Decal",
@@ -8785,13 +10138,14 @@
     "Soda Cans",
     "Newspaper",
     "Plastic Bag",
-    "Bottle"
+    "Bottle",
+    "Cardboard Box Small"
    ],
    "x0": 4,
    "z0": 8.2,
    "x1": 74,
    "z1": 19.8,
-   "count": 70,
+   "count": 170,
    "seed": 1,
    "mirror": true
   },
@@ -8809,7 +10163,7 @@
    "z0": -9.4,
    "x1": 47.5,
    "z1": -4.2,
-   "count": 45,
+   "count": 110,
    "seed": 2,
    "mirror": true
   },
@@ -8819,13 +10173,14 @@
     "Litter",
     "Soda Cans",
     "Bottle",
-    "Newspaper"
+    "Newspaper",
+    "Plastic Bag"
    ],
    "x0": 2,
    "z0": -40.0,
    "x1": 71,
    "z1": -35.8,
-   "count": 40,
+   "count": 90,
    "seed": 3,
    "mirror": true
   },
@@ -8842,7 +10197,7 @@
    "z0": 38.8,
    "x1": 65,
    "z1": 42.4,
-   "count": 40,
+   "count": 100,
    "seed": 4,
    "mirror": true
   },
@@ -8859,7 +10214,7 @@
    "z0": -34.4,
    "x1": 24,
    "z1": -20,
-   "count": 30,
+   "count": 60,
    "seed": 5,
    "mirror": true
   },
@@ -8876,6 +10231,104 @@
    "z1": -10.2,
    "count": 12,
    "seed": 6,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Newspaper",
+    "Soda Cans",
+    "Plastic Bag"
+   ],
+   "x0": 0.5,
+   "z0": -4.0,
+   "x1": 3.6,
+   "z1": 8.0,
+   "count": 18,
+   "seed": 7,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Soda Cans",
+    "Bottle",
+    "Plastic Bag",
+    "Rubble"
+   ],
+   "x0": 48.8,
+   "z0": -33.0,
+   "x1": 65,
+   "z1": 6.0,
+   "count": 70,
+   "seed": 8,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Soda Cans",
+    "Trash Bag",
+    "Newspaper"
+   ],
+   "x0": 4.2,
+   "z0": -3.9,
+   "x1": 47.5,
+   "z1": 0.6,
+   "count": 60,
+   "seed": 9,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Soda Cans",
+    "Bottle"
+   ],
+   "x0": 14.2,
+   "z0": 20.5,
+   "x1": 16.0,
+   "z1": 38.4,
+   "count": 20,
+   "seed": 10,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Soda Cans",
+    "Bottle",
+    "Plastic Bag",
+    "Newspaper"
+   ],
+   "x0": 24.6,
+   "z0": -34.6,
+   "x1": 31.4,
+   "z1": 51.0,
+   "count": 60,
+   "seed": 11,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Litter",
+    "Soda Cans",
+    "Bottle",
+    "Cardboard Box Small",
+    "Trash Bag"
+   ],
+   "x0": 8.6,
+   "z0": -34.4,
+   "x1": 47.6,
+   "z1": -19.8,
+   "count": 70,
+   "seed": 12,
    "mirror": true
   }
  ],

@@ -600,11 +600,11 @@ def high_street():
     P("Bus Shelter", 17.0, 9.15, 180, lanes=False, check=False)
     P("Bus Stop Sign", 22.6, 10.25, 180, lanes=False, check=False)
     P("Black Cab", 36.0, 11.75, 0, lanes=False, check=False)
-    P("Black Cab", 48.5, 15.6, 180, lanes=False, check=False)
-    P("Double Decker Bus", 58.0, 15.8, 180, lanes=False, check=False)
+    P("Black Cab", 54.5, 15.6, 180, lanes=False, check=False)
+    P("Double Decker Bus", 44.0, 15.8, 180, lanes=False, check=False)
     for name, x in (("Hatchback", 41.5), ("Van", 54.0)):
         P(name, x, 11.65, 0, lanes=False, check=False)
-    for name, x in (("Sedan", 7.5), ("Hatchback", 34.5), ("Black Cab", 40.0)):
+    for name, x in (("Sedan", 7.5), ("Hatchback", 34.5), ("Black Cab", 12.8)):
         P(name, x, 16.4, 180, lanes=False, check=False)
     # Station Approach: phone boxes, a post box, a newsstand, bikes, bollards
     P("Phone Booth", 2.9, 7.2, 90, lanes=False)
@@ -794,6 +794,61 @@ def sign(key, cx, y, cz, onto, rotation=0):
         D(nm, x, z, y=y, onto=onto, rotation=rotation, mirror=False, reach=1.0)
 
 
+def more_dressing():
+    site.rule("dressing")
+    # ducks and a swan-white mallard on the canal, pigeons on the deck, the square and the station roof
+    for x, z in ((10.0, -44.5), (11.2, -45.3), (30.5, -47.8), (44.0, -44.0), (62.0, -48.5)):
+        P("Mallard Duck", x, z, (x * 37) % 360, yw=WATER_Y - 0.02, check=False)
+    P("Duck Family", 22.0, -45.0, 70, yw=WATER_Y - 0.02, check=False)
+    for x, z, yw in ((33.0, -13.4, DECK_Y), (5.0, -16.9, DECK_Y + 0.45), (8.5, 26.0, PARK_Y), (2.6, 4.6, None), (26.5, -22.0, None)):
+        P("Pigeons", x, z, 0, yw=yw, check=False)
+    # cafe tables outside the arch bar, a moped at the garage, bikes chained to the railings
+    for x in (17.0, 22.6):
+        P("Patio Table", x, -7.9, 0, lanes=False)
+        P("Patio Chair", x - 0.8, -7.9, 90, lanes=False, check=False)
+        P("Patio Chair", x + 0.8, -7.9, 270, lanes=False, check=False)
+    P("Moped Scooter", 31.6, -8.8, 200, lanes=False, check=False)
+    P("Motorbike", 39.6, -8.9, 160, lanes=False, check=False)
+    for x in (36.0, 38.6):
+        P("Bicycle", x, -34.35, 0, check=False)
+    # back yards of the terraces: bins, bikes, toys, gnomes, BBQs (cosmetic ones only where the yard is tight)
+    for bx in (39.75, 55.6):
+        for k, cx in enumerate((-5.0, 0.0, 5.0)):
+            x = bx - cx
+            P(["Wheelie Bin", "Wheelie Bin Grey", "Recycling Bin"][k], x - 1.8, 37.0, 180, lanes=False)
+            P(["Kettle BBQ", "Paddling Pool", "Bicycle"][k], x + 1.0, 35.2, 30 * k, lanes=False, check=False)
+            P("Garden Gnome" if k != 1 else "Flower Pots", x - 1.6, 33.6, 0, check=False)
+    # the townhouse's side passage and the tower block's forecourt
+    P("Bicycle", 24.0, 34.0, 90, check=False)
+    P("Wheelie Bin Grey", 24.0, 36.0, 90, lanes=False)
+    P("Bench", 36.0, -33.6, 0, lanes=False, check=False)
+    P("Bench", 44.0, -33.6, 0, lanes=False, check=False)
+    P("Post Litter Bin", 40.0, -33.8, 0, lanes=False, check=False)
+    # the deck: litter, sleeper ends, a dropped hi-vis bag
+    for x, z in ((14.0, -13.3), (27.0, -13.5), (40.0, -13.2), (52.0, -13.4), (58.0, -10.9)):
+        P("Litter", x, z, (x * 53) % 360, yw=DECK_Y, check=False)
+    for x, z in ((24.0, -18.9), (35.0, -10.8)):
+        P("Soda Cans", x, z, 0, yw=DECK_Y, check=False)
+    P("Duffel Bag", 30.5, -13.3, 40, yw=DECK_Y, check=False)
+    # a UK flag on the tower block's roof edge and over the pub, a flagpole in the square
+    P("Flag on a Pole", 9.0, 38.6, 0, yw=PARK_Y, lanes=False, check=False, mirror=True)
+    # decals: puddles everywhere (it has been raining), grime and posters, the playground's chalk
+    SCATTER(["Puddle", "Puddle", "Water Stain", "Leaf Litter"], 0.4, 21.8, 12.8, 40.2, 14, 71, y=PARK_Y + 0.02, gap=2.5)
+    SCATTER(["Puddle", "Dirt Patch", "Footprints"], 1.0, -40.0, 71, -35.7, 22, 72, y=TOW_Y + 0.02, gap=3.0)
+    SCATTER(["Puddle", "Oil Stain", "Floor Cracks"], 0.5, -18.8, 7.4, -10.2, 6, 73, y=0.05, gap=1.6, mirror=False)
+    SCATTER(["Leaf Litter", "Puddle", "Floor Cracks", "Moss Patch"], 8.4, -18.6, 47.6, -10.4, 16, 74, y=DECK_Y + 0.02, gap=2.5)
+    for x in (14.0, 22.0, 30.0, 38.0, 46.0):
+        D("Grime Streaks", x, -19.7, y=3.4, onto="wall+z", size=2.6)
+        D("Soot Plume", x + 4.0, -19.7, y=4.2, onto="wall+z", size=2.4)
+    for x, dec in ((11.5, "Graffiti Throw-Up"), (26.0, "Graffiti Burst"), (41.0, "Graffiti Scribble"), (52.0, "Graffiti Tag"), (63.0, "Graffiti Throw-Up")):
+        D(dec, x, -36.0, y=TOW_Y + 1.1, onto="wall+z", size=2.2)
+    for x, z, onto in ((6.0, -19.7, "wall+z"), (33.0, -19.7, "wall+z")):
+        D("Torn Poster", x, z, y=1.6, onto=onto)
+    D("Chalk Marks", 7.0, 37.0, y=PARK_Y + 0.02, size=1.6)
+    for x in (34.0, 41.0, 46.0, 50.0, 57.0, 62.0):
+        D("Brick Patch", x, 21.5, y=1.6 + TERRACE_Y, onto="wall+z")
+
+
 def signs():
     sign("station", 0.0, 4.7, -9.58, "wall-z")
     for sx in (1, -1):
@@ -904,16 +959,23 @@ def dress():
     canal_side()
     south_side()
     spawn_end()
+    more_dressing()
     signs()
     fol = foliage()
     waypoints()
     # litter (cosmetic, scattered by the game) on every street
-    CL(["Litter", "Soda Cans", "Newspaper", "Plastic Bag", "Cigarette Bin" if False else "Bottle"], 4, 8.2, 74, 19.8, 70, 1)
-    CL(["Litter", "Soda Cans", "Trash Bag", "Flattened Cardboard", "Bottles", "Plastic Bag"], 4, -9.4, 47.5, -4.2, 45, 2)
-    CL(["Litter", "Soda Cans", "Bottle", "Leaf Pile" if False else "Newspaper"], 2, -40.0, 71, -35.8, 40, 3)
-    CL(["Litter", "Trash Bag", "Soda Cans", "Flattened Cardboard", "Plastic Bag"], 2, 38.8, 65, 42.4, 40, 4)
-    CL(["Rubble", "Loose Bricks", "Plank", "Litter", "Soda Cans"], 8.8, -34.4, 24, -20, 30, 5)
+    CL(["Litter", "Soda Cans", "Newspaper", "Plastic Bag", "Bottle", "Cardboard Box Small"], 4, 8.2, 74, 19.8, 170, 1)
+    CL(["Litter", "Soda Cans", "Trash Bag", "Flattened Cardboard", "Bottles", "Plastic Bag"], 4, -9.4, 47.5, -4.2, 110, 2)
+    CL(["Litter", "Soda Cans", "Bottle", "Newspaper", "Plastic Bag"], 2, -40.0, 71, -35.8, 90, 3)
+    CL(["Litter", "Trash Bag", "Soda Cans", "Flattened Cardboard", "Plastic Bag"], 2, 38.8, 65, 42.4, 100, 4)
+    CL(["Rubble", "Loose Bricks", "Plank", "Litter", "Soda Cans"], 8.8, -34.4, 24, -20, 60, 5)
     CL(["Litter", "Newspaper", "Soda Cans"], 0.5, -18.9, 7.4, -10.2, 12, 6)
+    CL(["Litter", "Newspaper", "Soda Cans", "Plastic Bag"], 0.5, -4.0, 3.6, 8.0, 18, 7)
+    CL(["Litter", "Soda Cans", "Bottle", "Plastic Bag", "Rubble"], 48.8, -33.0, 65, 6.0, 70, 8)
+    CL(["Litter", "Soda Cans", "Trash Bag", "Newspaper"], 4.2, -3.9, 47.5, 0.6, 60, 9)
+    CL(["Litter", "Soda Cans", "Bottle"], 14.2, 20.5, 16.0, 38.4, 20, 10)
+    CL(["Litter", "Soda Cans", "Bottle", "Plastic Bag", "Newspaper"], 24.6, -34.6, 31.4, 51.0, 60, 11)
+    CL(["Litter", "Soda Cans", "Bottle", "Cardboard Box Small", "Trash Bag"], 8.6, -34.4, 47.6, -19.8, 70, 12)
     ops = site.ops + DECALS + CLUTTER
     return dict(obj, ops=ops, foliage=fol)
 
@@ -935,5 +997,10 @@ if __name__ == "__main__":
     tall = site.solid_rects(min_h=1.6, max_y0=1.6)
     seen = [(b, r) for b in TEAM_E for r in TEAM_E if not site.sightline((-b[0], b[1]), r, tall)]
     print("spawn sight lines Blue->Red:", len(seen), seen[:8])
+    for x, z in TEAM_E + FFA:
+        g = ground(x, z)
+        hit = [k for r, y0, y1, k in site.occ if r[0] - 0.4 <= x <= r[2] + 0.4 and r[1] - 0.4 <= z <= r[3] + 0.4 and y0 < g + 1.8 and y1 > g + 0.3]
+        if hit:
+            print("  spawn", (x, z), "touches", hit)
     if OUT_PNG:
         site.preview(OUT_PNG, (-78, -56, 78, 54), scale=6, spawns=[((x, z), (220, 60, 60)) for x, z in TEAM_E] + [((-x, z), (60, 110, 230)) for x, z in TEAM_E])
