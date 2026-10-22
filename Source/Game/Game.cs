@@ -1197,6 +1197,7 @@ public sealed partial class Game : IDisposable
         if (amount <= 0)
             return false;
         victim.Health -= amount;
+        BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
             return false;
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
@@ -1277,6 +1278,7 @@ public sealed partial class Game : IDisposable
 
         var damage = new Dictionary<Player, float>();
         var headshotOn = new HashSet<Player>();
+        _bloodShotPart.Clear();
         byte flags = 0;
         var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
@@ -1337,6 +1339,7 @@ public sealed partial class Game : IDisposable
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, end)); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
@@ -1353,8 +1356,10 @@ public sealed partial class Game : IDisposable
             var head = headshotOn.Contains(victim);
             if (head)
                 flags |= 2;
+            _bloodPending = _bloodShotPart.GetValueOrDefault(victim);
             if (DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet))
                 flags |= 4;
+            _bloodPending = BloodPart.None;
         }
 
         if (Horde.Count > 0)

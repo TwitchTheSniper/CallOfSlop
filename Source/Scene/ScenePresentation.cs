@@ -121,7 +121,9 @@ public static class ScenePresentation
         var t0 = Start();
         var rig = Players[p.Id] ??= NewPlayer(p.Id);
         rig.Pose(p, time);
+        BodyBloodRender.Bind(g); // the body's blood marks paint in its own draws (no extra draw calls)
         Draw(g, rig.Root, t0);
+        BodyBloodRender.Unbind(g);
     }
 
     /// <summary>Show your own legs in first person (looking down). Off with CALLOFSLOP_FPLEGS=0.</summary>
@@ -133,6 +135,7 @@ public static class ScenePresentation
         var t0 = Start();
         var rig = Players[p.Id] ??= NewPlayer(p.Id);
         rig.Pose(p, time, legsOnly: true);
+        BodyBloodRender.Reset(); // no blood on your own first-person legs
         Draw(g, rig.Root, t0);
     }
 

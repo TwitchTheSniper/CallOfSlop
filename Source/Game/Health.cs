@@ -62,7 +62,10 @@ public sealed partial class Game
     private void ServerTickHealth(double now)
     {
         foreach (var p in Players.Values)
+        {
             RegenTick(p, now);
+            BloodTick(p); // back to full health: the blood marks clear (BodyBlood.cs)
+        }
     }
 
     /// <summary>One tick of regeneration and shield timing for one player.</summary>

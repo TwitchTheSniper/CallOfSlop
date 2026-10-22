@@ -624,13 +624,14 @@ public sealed partial class Game
     }
 
     /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>.</summary>
-    public void ZombieHurt(Player p, int damage, double now)
+    public void ZombieHurt(Player p, int damage, double now, Vector3? from = null)
     {
         var zp = ZP(p);
         if (!p.Alive || zp.Downed || !DamageEnabled || now < p.ImmuneUntil)
             return;
         var dmg = Math.Max(1, (int)MathF.Round(damage * PerkMult(zp, d => d.DamageTaken)));
         p.Health -= dmg;
+        BloodOnSwipe(p, from ?? p.Position + World.FlatForward(p.Yaw)); // blood marks (BodyBlood.cs)
         p.LastHurtTime = now;
         p.LastCombatTime = now;
         if (p.Health <= 0)
