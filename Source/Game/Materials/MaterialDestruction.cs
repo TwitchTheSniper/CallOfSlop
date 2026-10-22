@@ -296,7 +296,7 @@ public sealed class MaterialDestruction
         }
         M("Concrete", 1200, 4.5f, 2.4f, Sfx.ImpactConcrete, 0, 0, 0.3f, 3, 10, 2.5f, 1);
         M("Brick", 400, 3.5f, 1.9f, Sfx.ImpactConcrete, 0, 0, 1, 5, 8, 3, 2);
-        M("Plaster", 150, 2.5f, 1.1f, Sfx.BreakSoft, 0.35f, 0.8f, 1, 3, 5, 2.5f, 2);
+        M("Plaster", 200, 2.5f, 1.1f, Sfx.BreakSoft, 0.35f, 0.8f, 1.3f, 3, 5, 2.5f, 2);
         M("Wood", 180, 3, 0.6f, Sfx.BreakWood, 0.4f, 0.8f, 1.2f, 3, 5, 2.5f, 2);
         M("Tiles", 220, 3, 1.4f, Sfx.BreakGlass, 0.1f, 0.3f, 1, 3, 5, 2.5f, 1.5f);
         M("Metal", 700, 5, 1.2f, Sfx.BreakMetal, 0, 0, 0.4f, 2.5f, 5, 2, 1);
