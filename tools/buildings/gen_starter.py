@@ -638,7 +638,7 @@ def building_yard():
     ]
     m = {
         "format": "call-of-slop-map/1", "name": "Building Yard",
-        "description": "Every starter building from the Buildings folder on two streets, with variants: walk in, open doors (E), shoot out windows.",
+        "description": "Every starter building from the Buildings folder on two streets, with variants: walk in, open doors (F), shoot out windows.",
         "author": "Call of Slop", "order": 956, "halfX": 70, "halfZ": 56,
         "skybox": {"preset": "day"} if False else None,
         "sky": [0.58, 0.68, 0.8],

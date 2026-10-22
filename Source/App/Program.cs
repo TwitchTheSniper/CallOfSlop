@@ -1015,6 +1015,7 @@ public static unsafe partial class Program
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
             UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
+            UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
