@@ -4,7 +4,8 @@ namespace CallOfSlop;
 /// The kill-frenzy music (Source/Audio/MusicFrenzy.cs) from the game's side: the local player's kills feed a
 /// <see cref="FrenzyMeter"/>, whose level goes to the music thread's <see cref="FrenzyLayer"/>. Only in a live match,
 /// only while alive (dying fades it out fast; the death cam and menus stay frenzy-free), Zombies included (zombie kills,
-/// worth less, shorter hold; being downed counts as dying). Your own gunfire ducks it a little.
+/// worth less, shorter hold; being downed counts as dying). Your own gunfire ducks it a little (not at the top levels).
+/// Reaching level 5 shows a FRENZY banner, level 6 MAX FRENZY (the perk banner, so it looks like the rest of the HUD).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -13,6 +14,10 @@ public static unsafe partial class Program
     private static int _frenzyKills, _frenzyHeads, _frenzyLoggedLevel;
     private static bool _frenzyAlive;
     private static double _frenzyShot = double.NaN;
+    private static int _frenzyBannerLevel;
+
+    /// <summary>The HUD banner for a frenzy level (empty below 5).</summary>
+    internal static string FrenzyBanner(int level) => level >= FrenzyMeter.MaxLevel ? "MAX FRENZY" : level >= 5 ? "FRENZY" : "";
 
     /// <summary>Once per frame, after the game update.</summary>
     private static void UpdateFrenzy(double now)
@@ -60,6 +65,13 @@ public static unsafe partial class Program
         _frenzyHeads = heads;
         _frenzy.Update(now);
         layer.Target = alive ? _frenzy.Level : 0;
+        if (_frenzy.Level > _frenzyBannerLevel && alive && FrenzyBanner(_frenzy.Level) is { Length: > 0 } banner)
+        {
+            game.PerkBanner = banner;
+            game.PerkBannerTime = now;
+        }
+        if (_frenzy.Level != _frenzyBannerLevel)
+            _frenzyBannerLevel = _frenzy.Level;
         if (game.LastShotTime != _frenzyShot)
         {
             _frenzyShot = game.LastShotTime;
@@ -72,13 +84,18 @@ public static unsafe partial class Program
         }
     }
 
-    private static int _smokeFrenzyStep;
+    private static int _smokeFrenzyStep, _smokeFrenzyTop;
     private static double _smokeFrenzyAt;
 
+    /// <summary>The scripted smoke spree: this many kills, this far apart (headshots), through the normal damage path.</summary>
+    private const int SmokeFrenzyKills = 16;
+    private const double SmokeFrenzyGap = 0.7;
+
     /// <summary>
-    /// Smoke step on the first map (before the death cam): a scripted burst of five kills 0.8 s apart through the normal
-    /// damage path, logging the frenzy level after each, then the level the music reached; plus the levels the meter
-    /// reaches for the same burst on paper.
+    /// Smoke step on the first map (before the death cam): a scripted spree of <see cref="SmokeFrenzyKills"/> kills
+    /// <see cref="SmokeFrenzyGap"/> s apart through the normal damage path (bots respawn, so some kills may be skipped),
+    /// logging the frenzy level after each, then the top level the meter and the music reached (level 6 is expected);
+    /// plus the levels the meter reaches for the same spree on paper.
     /// </summary>
     private static void SmokeFrenzy(double now)
     {
@@ -86,40 +103,44 @@ public static unsafe partial class Program
         {
             _smokeFrenzyAt = now;
             _smokeFrenzyStep = 1;
-            Console.WriteLine($"[smoke] frenzy: scripted burst on paper (5 kills 0.8 s apart, then 25 s idle): {FrenzyBurstLine(5, 0.8)}; music setting {(_settings.FrenzyMusic ? "on" : "off")}");
+            _smokeFrenzyTop = 0;
+            Console.WriteLine($"[smoke] frenzy: scripted spree on paper ({SmokeFrenzyKills} headshot kills {SmokeFrenzyGap} s apart, then idle): {FrenzyBurstLine(SmokeFrenzyKills, SmokeFrenzyGap, true)}; music setting {(_settings.FrenzyMusic ? "on" : "off")}");
             return;
         }
         var t = now - _smokeFrenzyAt;
-        if (_smokeFrenzyStep <= 5 && t > 0.2 + 0.8 * (_smokeFrenzyStep - 1))
+        _smokeFrenzyTop = Math.Max(_smokeFrenzyTop, AudioSystem.Music.Frenzy.Level);
+        if (_smokeFrenzyStep <= SmokeFrenzyKills && t > 0.2 + SmokeFrenzyGap * (_smokeFrenzyStep - 1))
         {
             var line = _session?.SmokeKillNearestBot(now) ?? "no session";
-            Console.WriteLine($"[smoke] frenzy: kill {_smokeFrenzyStep}: {line}; meter level {_frenzy.Level} (heat {_frenzy.Heat:0})");
+            Console.WriteLine($"[smoke] frenzy: kill {_smokeFrenzyStep}: {line}; meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {AudioSystem.Music.Frenzy.Level}");
             _smokeFrenzyStep++;
         }
-        else if (_smokeFrenzyStep == 6 && t > 6.5)
+        else if (_smokeFrenzyStep == SmokeFrenzyKills + 1 && t > 0.2 + SmokeFrenzyGap * SmokeFrenzyKills + 3.0)
         {
             var layer = AudioSystem.Music.Frenzy;
-            Console.WriteLine($"[smoke] frenzy: after the burst: meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {layer.Level} \"{layer.TrackName ?? "-"}\", "
-                              + $"music mixing {AudioSystem.Music.RenderMsPerSecond:0.0} ms per s of audio");
+            _smokeFrenzyTop = Math.Max(_smokeFrenzyTop, layer.Level);
+            Console.WriteLine($"[smoke] frenzy: after the spree: meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {layer.Level} \"{layer.TrackName ?? "-"}\", "
+                              + $"top music level {_smokeFrenzyTop} (want {FrenzyMeter.MaxLevel}), level-6 hits {layer.Hits}, banner \"{_session?.PerkBanner}\", "
+                              + $"limiter min gain {AudioSystem.Music.FrenzyLimiterMinGain:0.00}, music mixing {AudioSystem.Music.RenderMsPerSecond:0.0} ms per s of audio");
             _smokeFrenzyStep++;
             _smokeStepStart += t; // the usual steps carry on where they were
         }
     }
 
     /// <summary>The meter on paper: <paramref name="kills"/> kills <paramref name="gap"/> s apart, then idle; the levels it passes and when.</summary>
-    internal static string FrenzyBurstLine(int kills, double gap)
+    internal static string FrenzyBurstLine(int kills, double gap, bool headshots = false)
     {
         var m = new FrenzyMeter();
         var sb = new System.Text.StringBuilder();
         var last = 0;
         for (var i = 0; i < kills; i++)
         {
-            m.OnKill(i * gap, false);
+            m.OnKill(i * gap, headshots);
             sb.Append($"kill {i + 1} -> L{m.Level} ({m.Heat:0}); ");
             last = m.Level;
         }
         var end = (kills - 1) * gap;
-        for (var t = end; t < end + 25; t += 0.1)
+        for (var t = end; t < end + 45; t += 0.1)
         {
             m.Update(t);
             if (m.Level != last)

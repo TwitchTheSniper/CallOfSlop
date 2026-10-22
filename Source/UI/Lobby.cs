@@ -776,7 +776,7 @@ public sealed partial class Ui
             if (ImGui.Checkbox("Kill frenzy music"u8, ref s.FrenzyMusic))
                 audio.Music.Frenzy.Enabled = s.FrenzyMusic;
             if (ImGui.IsItemHovered())
-                ImGui.SetItemTooltip("During a match: hard music fades in as you chain kills, gets harder the more and the faster you kill, and fades out when the killing stops."u8);
+                ImGui.SetItemTooltip("During a match: hard music fades in as you chain kills, gets harder the more and the faster you kill, and fades out when the killing stops. A long spree reaches FRENZY (louder than the menu music) and MAX FRENZY (as loud as the gunfire)."u8);
             if (s.FrenzyMusic)
             {
                 ImGui.SameLine();

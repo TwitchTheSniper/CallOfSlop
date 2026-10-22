@@ -4,12 +4,16 @@ namespace CallOfSlop;
 /// The kill-frenzy meter (game thread, pure maths, deterministic for a sequence of times): every kill of the local
 /// player adds heat, much more for a fast follow-up, a bit more for headshots and multi-kill chains; heat bleeds away
 /// slowly for <see cref="HoldSeconds"/> after the last kill, then drains faster until it's gone. Dying wipes it. The
-/// heat maps to an intensity level 0 (off) to 4 with hysteresis, which <see cref="FrenzyLayer"/> turns into music.
+/// heat maps to an intensity level 0 (off) to 6 with hysteresis, which <see cref="FrenzyLayer"/> turns into music.
 /// Decay is integrated exactly, so the result doesn't depend on the frame rate.
+/// Levels 1-4 are the music building up; 5 (FRENZY) is louder than any other music, 6 (MAX FRENZY) is as loud as the
+/// gunfire. Kills a second apart reach level 5 on the 9th kill and level 6 on the 15th; a kill every 2 s gets to 5
+/// on the 10th and 6 only on the 22nd; every 2.5 s or slower never reaches 6 (every 3 s gets to 5 after 14 kills).
 /// </summary>
 public sealed class FrenzyMeter
 {
-    public const float MaxHeat = 100f;
+    /// <summary>Heat cap: about four fast kills past level 6, so a sustained spree holds the top for the full hold time.</summary>
+    public const float MaxHeat = 400f;
 
     /// <summary>Heat for any kill, plus up to <see cref="FastBonus"/> for a follow-up within <see cref="FastGap"/> s (none after <see cref="SlowGap"/> s).</summary>
     public const float BaseHeat = 6f, FastBonus = 14f, FastGap = 2f, SlowGap = 7f;
@@ -25,10 +29,10 @@ public sealed class FrenzyMeter
     /// <summary>Zombies: kills come in hordes, so each is worth less and the hold is shorter.</summary>
     public const float ZombieScale = 0.5f, ZombieHoldSeconds = 3.5f;
 
-    /// <summary>Heat needed to reach levels 1-4, and the heat below which each level is left again (hysteresis).</summary>
-    public static readonly float[] Up = [12f, 30f, 52f, 85f], Down = [8f, 24f, 44f, 74f];
+    /// <summary>Heat needed to reach levels 1-6, and the heat below which each level is left again (hysteresis).</summary>
+    public static readonly float[] Up = [12f, 30f, 52f, 85f, 200f, 330f], Down = [8f, 24f, 44f, 74f, 185f, 310f];
 
-    public const int MaxLevel = 4;
+    public const int MaxLevel = 6;
 
     /// <summary>Zombies tuning (<see cref="ZombieScale"/>, <see cref="ZombieHoldSeconds"/>).</summary>
     public bool Zombies;
@@ -126,28 +130,66 @@ public sealed class FrenzyMeter
 /// level 1 = drums and bass only, behind a closed low-pass (the club through the wall), quiet;
 /// level 2 = the filter opens: the full beat with claps, hats and the bouncing bass;
 /// level 3 = the leads, harmonies, pads and chants come in;
-/// level 4 = full volume, and the track jumps to its last drop (the later lead sound, reverse bass, a crash and sub drop).
+/// level 4 = full volume, and the track jumps to its last drop (the later lead sound, reverse bass, a crash and sub drop);
+/// level 5 (FRENZY) = louder: as loud as the menu music (the frenzy normally sits under it), gunfire ducks it half as much;
+/// level 6 (MAX FRENZY) = as loud as the gunfire itself (<see cref="Level6Gain"/>, calibrated against the game's own
+/// gunshot and explosion sounds), no ducking at all, a crash and a crowd roar when it lands. The whole music bus then
+/// goes through a limiter (in <see cref="MusicPlayer"/>, after the music volume) so it never clips.
 /// Changes happen on the bar line and crossfade smoothly: up within half a bar, down one level at a time at most every
 /// two bars, over two bars. Drops loop, so the energy never falls into a breakdown. Dying (or the setting going off, or
 /// leaving the match) fades it out over <see cref="QuickFadeSeconds"/> with the filter closing; heat running out
-/// fades it over two bars. One renderer, reused: allocation-free, about the cost of one hardbass track at level 3-4
-/// and much less at levels 1-2 (the leads aren't rendered).
+/// fades it over two bars. One renderer, reused: allocation-free, about the cost of one hardbass track at level 3-6
+/// and much less at levels 1-2 (the leads aren't rendered). Levels 5 and 6 only change gains (and the roar for a
+/// moment), so they cost the same as level 4.
 /// </summary>
 public sealed class FrenzyLayer
 {
     private const int Sr = Audio.SampleRate;
 
-    /// <summary>Per level: bus gain, low-pass cutoff (Hz) and the melodic stem gain.</summary>
-    public static readonly float[] LevelGain = [0f, 0.5f, 0.72f, 0.86f, 1f], LevelCutoff = [250f, 380f, 9000f, 20000f, 20000f], LevelLead = [0f, 0f, 0f, 1f, 1f];
-
-    /// <summary>The whole layer sits a bit under the menu music, so gunfire and footsteps stay on top.</summary>
+    /// <summary>The whole layer sits a bit under the menu music, so gunfire and footsteps stay on top (levels 1-4).</summary>
     public const float BusLevel = 0.75f;
+
+    /// <summary>
+    /// The loudness level 6 matches: the RMS (sample level, effects volume 1) of a second of your own gun firing at its
+    /// rate (<see cref="Audio.Shot"/> plays it at 0.75) with a frag explosion (gain 1) on top, median over the real
+    /// firearms; measured from the game's own synthesised sounds by <see cref="Audio.CombatReferenceRms"/> and checked
+    /// against this constant by the self-test.
+    /// </summary>
+    public const float SfxReferenceRms = 0.190f;
+
+    /// <summary>The RMS of a frenzy track's drop as rendered (before any gain), typical over the pool; checked by the self-test.</summary>
+    public const float DropRms = 0.30f;
+
+    /// <summary>Level 6 aims this much above the SFX reference: as loud as everything else, if not slightly louder.</summary>
+    public const float Level6Headroom = 1.05f;
+
+    /// <summary>The settings level 6 is calibrated at: Settings defaults (music volume 0.50, a squared curve; frenzy volume 0.80).</summary>
+    public const float DefaultMusicVolume = 0.5f, DefaultVolume = 0.8f;
+
+    /// <summary>
+    /// The level-6 bus gain: with the sliders at their defaults the frenzy's drop comes out at <see cref="Level6Headroom"/>
+    /// times <see cref="SfxReferenceRms"/>. The music and frenzy volume sliders still multiply it (and the limiter
+    /// catches what a loud setting would clip).
+    /// </summary>
+    public static readonly float Level6Gain = SfxReferenceRms * Level6Headroom / (DropRms * BusLevel * DefaultVolume * DefaultMusicVolume * DefaultMusicVolume);
+
+    /// <summary>Level 5 is as loud as the menu music: the bus level cancelled out.</summary>
+    public const float Level5Gain = 1f / BusLevel;
+
+    /// <summary>Per level: bus gain, low-pass cutoff (Hz), the melodic stem gain and the gunfire ducking depth.</summary>
+    public static readonly float[] LevelGain = [0f, 0.5f, 0.72f, 0.86f, 1f, Level5Gain, Level6Gain],
+        LevelCutoff = [250f, 380f, 9000f, 20000f, 20000f, 20000f, 20000f],
+        LevelLead = [0f, 0f, 0f, 1f, 1f, 1f, 1f],
+        LevelDuck = [0.3f, 0.3f, 0.3f, 0.3f, 0.3f, 0.15f, 0f];
 
     /// <summary>Death, setting off, leaving the match: the fade time.</summary>
     public const float QuickFadeSeconds = 2f;
 
-    /// <summary>Gunfire ducking: depth and release time.</summary>
+    /// <summary>Gunfire ducking: depth at levels 1-4 (see <see cref="LevelDuck"/>) and release time.</summary>
     public const float DuckDepth = 0.3f, DuckRelease = 0.5f;
+
+    /// <summary>The level-6 hit: a crowd roar (filtered noise, this long) with a crash on the bar line it lands on.</summary>
+    public const float RoarSeconds = 1.8f, RoarLevel = 0.55f;
 
     private readonly MusicRenderer _r = new();
     private readonly float[] _buf = new float[MusicPlayer.BlockFrames * 2];
@@ -162,11 +204,16 @@ public sealed class FrenzyLayer
     private int _seenDeath, _seenShot;
     private bool _active, _fading, _inLastDrop;
     private int _level, _barsAtLevel;
-    private float _gain, _gainTo, _gainStep, _logCut, _logCutTo, _logCutStep, _lead, _leadTo, _leadStep, _duck;
+    private float _gain, _gainTo, _gainStep, _logCut, _logCutTo, _logCutStep, _lead, _leadTo, _leadStep, _duck, _duckDepth, _duckDepthTo, _duckDepthStep;
     private Svf _l1, _l2, _r1, _r2;
     private long _frames;
     private int _published;
     private string? _trackName;
+
+    // The level-6 roar: two noise generators (left, right) through band-passes, with an envelope.
+    private int _roarLeft;
+    private uint _roarL = 12345u, _roarR = 67890u;
+    private Svf _roarBL, _roarBR, _roarHL, _roarHR;
 
     public FrenzyLayer(uint seed = 1)
     {
@@ -176,7 +223,7 @@ public sealed class FrenzyLayer
 
     // ---- Game thread -------------------------------------------------------------------------
 
-    /// <summary>The level the meter asks for (0-4); 0 while dead or outside a live match.</summary>
+    /// <summary>The level the meter asks for (0-6); 0 while dead or outside a live match.</summary>
     public int Target
     {
         get => Volatile.Read(ref _target);
@@ -200,7 +247,7 @@ public sealed class FrenzyLayer
     /// <summary>The local player died: fade out fast.</summary>
     public void Died() => Interlocked.Increment(ref _deathSeq);
 
-    /// <summary>The local player fired: duck the layer a little so the gunfire stays on top.</summary>
+    /// <summary>The local player fired: duck the layer a little so the gunfire stays on top (less at level 5, not at 6).</summary>
     public void Shot() => Interlocked.Increment(ref _shotSeq);
 
     /// <summary>The level playing now (0 = silent). Written by the mixing thread.</summary>
@@ -228,6 +275,12 @@ public sealed class FrenzyLayer
 
     /// <summary>Current low-pass cutoff in Hz.</summary>
     public float Cutoff => MathF.Exp(_logCut);
+
+    /// <summary>Current gunfire ducking depth (0.3 at levels 1-4, 0.15 at 5, 0 at 6).</summary>
+    public float DuckingDepth => _duckDepth;
+
+    /// <summary>Times the level-6 hit (crash and roar) has fired since the layer was made.</summary>
+    public int Hits { get; private set; }
 
     /// <summary>
     /// Adds the layer into <paramref name="output"/> (interleaved stereo, at most one <see cref="MusicPlayer.BlockFrames"/>
@@ -263,7 +316,7 @@ public sealed class FrenzyLayer
         if (toBar < frames)
         {
             var next = NextLevel(target);
-            if (next == 4 && _level < 4 && !_inLastDrop)
+            if (next >= 4 && _level < 4 && !_inLastDrop)
             {
                 _r.JumpAtNextBar(MusicRenderer.LastDropBar(_r.Track));
                 _inLastDrop = true;
@@ -304,6 +357,7 @@ public sealed class FrenzyLayer
         _level = level;
         _barsAtLevel = 0;
         _duck = 0;
+        _roarLeft = 0;
         _l1.Reset();
         _l2.Reset();
         _r1.Reset();
@@ -311,6 +365,7 @@ public sealed class FrenzyLayer
         _gain = 0;
         _logCut = MathF.Log(LevelCutoff[level]);
         _lead = LevelLead[level];
+        _duckDepth = LevelDuck[level];
         SetTargets(level, (float)_r.FramesPerBar); // fade in over a bar
         LastChangeFrame = 0;
         Volatile.Write(ref _trackName, track.Name);
@@ -322,11 +377,25 @@ public sealed class FrenzyLayer
         if (next == _level)
             return;
         var up = next > _level;
+        if (next == FrenzyMeter.MaxLevel && up)
+            Hit();
         _level = next;
         _barsAtLevel = 0;
         LastChangeFrame = _frames;
         var bar = (float)_r.FramesPerBar;
         SetTargets(next, up ? bar * 0.5f : bar * 2f);
+    }
+
+    /// <summary>MAX FRENZY lands: a crash on this bar line and the crowd roars.</summary>
+    private void Hit()
+    {
+        Hits++;
+        _r.FrenzyCrash(0.7f);
+        _roarLeft = (int)(RoarSeconds * Sr);
+        _roarBL.Reset();
+        _roarBR.Reset();
+        _roarHL.Reset();
+        _roarHR.Reset();
     }
 
     private void SetTargets(int level, float frames)
@@ -338,6 +407,8 @@ public sealed class FrenzyLayer
         _logCutStep = MathF.Abs(_logCutTo - _logCut) / frames;
         _leadTo = LevelLead[level];
         _leadStep = MathF.Abs(_leadTo - _lead) / frames;
+        _duckDepthTo = LevelDuck[level];
+        _duckDepthStep = MathF.Abs(_duckDepthTo - _duckDepth) / frames;
     }
 
     private void QuickFade()
@@ -351,6 +422,8 @@ public sealed class FrenzyLayer
         _logCutStep = MathF.Abs(_logCutTo - _logCut) / frames;
         _leadTo = _lead;
         _leadStep = 0;
+        _duckDepthTo = _duckDepth;
+        _duckDepthStep = 0;
         LastChangeFrame = _frames;
     }
 
@@ -360,6 +433,7 @@ public sealed class FrenzyLayer
         _fading = false;
         _level = 0;
         _gain = 0;
+        _roarLeft = 0;
         Volatile.Write(ref _trackName, null);
     }
 
@@ -375,6 +449,8 @@ public sealed class FrenzyLayer
         _r.StemLead = _lead;
         var buf = _buf.AsSpan(0, frames * 2);
         _r.Render(buf);
+        if (_roarLeft > 0)
+            Roar(buf, frames);
 
         var c0 = _logCut;
         _logCut = Approach(_logCut, _logCutTo, _logCutStep * frames);
@@ -388,9 +464,12 @@ public sealed class FrenzyLayer
         var d0 = _duck;
         var d1 = shot ? 1f : MathF.Max(0f, d0 - frames / (DuckRelease * Sr));
         _duck = d1;
+        var dd0 = _duckDepth;
+        var dd1 = Approach(dd0, _duckDepthTo, _duckDepthStep * frames);
+        _duckDepth = dd1;
         var vol = Volume * BusLevel;
-        var m0 = g0 * (1f - DuckDepth * d0) * vol;
-        var m1 = g1 * (1f - DuckDepth * d1) * vol;
+        var m0 = g0 * (1f - dd0 * d0) * vol;
+        var m1 = g1 * (1f - dd1 * d1) * vol;
         var dm = (m1 - m0) / frames;
         var m = m0;
         for (var i = 0; i < frames; i++)
@@ -404,5 +483,36 @@ public sealed class FrenzyLayer
             m += dm;
         }
         _frames += frames;
+    }
+
+    /// <summary>
+    /// The crowd roar, added to the rendered track: white noise through a band-pass around 900 Hz (the crowd) with a
+    /// touch of a brighter band (the whistles), a slow flutter, a 0.12 s swell and a long tail. Stereo: two independent
+    /// noise sources. Cheap: two filters per channel for <see cref="RoarSeconds"/>.
+    /// </summary>
+    private void Roar(Span<float> buf, int frames)
+    {
+        var total = RoarSeconds * Sr;
+        Svf.Coefs(Dsp.SvfG(900f), 0.9f, out var b1, out var b2, out var b3);
+        Svf.Coefs(Dsp.SvfG(2600f), 1.2f, out var h1, out var h2, out var h3);
+        const float k = 0.9f, kh = 1.2f;
+        for (var i = 0; i < frames && _roarLeft > 0; i++, _roarLeft--)
+        {
+            var t = (total - _roarLeft) / total; // 0..1 over the roar
+            var sec = t * RoarSeconds;
+            var env = sec < 0.12f ? sec / 0.12f : MathF.Exp(-(sec - 0.12f) / 0.55f);
+            env *= 1f + 0.15f * MathF.Sin(sec * 37f) + 0.1f * MathF.Sin(sec * 61f); // the flutter of many voices
+            _roarL = _roarL * 1664525u + 1013904223u;
+            _roarR = _roarR * 1664525u + 1013904223u;
+            var nl = (_roarL >> 8) * (1f / 8388608f) - 1f;
+            var nr = (_roarR >> 8) * (1f / 8388608f) - 1f;
+            _roarBL.Process(nl, k, b1, b2, b3);
+            _roarBR.Process(nr, k, b1, b2, b3);
+            _roarHL.Process(nl, kh, h1, h2, h3);
+            _roarHR.Process(nr, kh, h1, h2, h3);
+            var a = RoarLevel * env;
+            buf[i * 2] += (_roarBL.Band * 1.4f + _roarHL.Band * 0.35f) * a;
+            buf[i * 2 + 1] += (_roarBR.Band * 1.4f + _roarHR.Band * 0.35f) * a;
+        }
     }
 }
