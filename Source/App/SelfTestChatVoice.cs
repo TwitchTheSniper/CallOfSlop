@@ -13,8 +13,18 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
+    private static readonly List<string> VoiceNotes = new();
+
+    /// <summary>A result line, also collected for the CI summary annotation.</summary>
+    private static void VLine(string text)
+    {
+        Line(text);
+        VoiceNotes.Add(text);
+    }
+
     private static void CheckChatVoice()
     {
+        VoiceNotes.Clear();
         CheckVoiceCodec();
         CheckJitterBuffer();
         CheckVoiceRules();
@@ -23,7 +33,8 @@ public static partial class SelfTest
         CheckVoiceAllocations();
         CheckChatVoiceSettings();
         var devices = MicCapture.Devices();
-        Line($"capture: {devices.Length} capture device(s) listed; opening one is skipped here (CI has no microphone, and the self-test never opens a mic)");
+        VLine($"capture: {devices.Length} capture device(s) listed; opening one is skipped here (CI has no microphone, and the self-test never opens a mic)");
+        Line("::notice title=Chat and voice (results)::" + string.Join("%0A", VoiceNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     // ---- Test signals ------------------------------------------------------------------------------------------
@@ -80,9 +91,10 @@ public static partial class SelfTest
         var chord = CodecSnr(VoiceTone(n, (300, 0.18f), (1200, 0.12f)));
         var babble = CodecSnr(VoiceBabble(n, 11));
         var quiet = CodecSnr(VoiceTone(n, (700, 0.01f)));
-        Line($"codec: IMA-ADPCM {VoiceCodec.SampleRate / 1000} kHz mono, {VoiceCodec.FrameMs} ms frames of {VoiceCodec.FrameBytes} bytes "
+        VLine($"codec: IMA-ADPCM {VoiceCodec.SampleRate / 1000} kHz mono, {VoiceCodec.FrameMs} ms frames of {VoiceCodec.FrameBytes} bytes "
              + $"({VoiceCodec.FrameBytes * 8 * VoiceCodec.FramesPerSecond / 1000} kbps); SNR tone {tone:0.0} dB, two tones {chord:0.0} dB, speech-like noise {babble:0.0} dB, quiet tone {quiet:0.0} dB");
-        if (VoiceCodec.FrameSamples != 320 || VoiceCodec.FrameBytes != 164)
+        int samples = VoiceCodec.FrameSamples, bytes = VoiceCodec.FrameBytes; // (locals: comparing the constants directly is folded and warns)
+        if (samples != 320 || bytes != 164)
             Fail($"voice frames are {VoiceCodec.FrameSamples} samples / {VoiceCodec.FrameBytes} bytes (expected 320 / 164)");
         if (tone < 25 || chord < 22 || babble < 15 || quiet < 12)
             Fail($"voice codec quality too low (SNR tone {tone:0.0} >= 25, two tones {chord:0.0} >= 22, speech {babble:0.0} >= 15, quiet {quiet:0.0} >= 12 dB)");
@@ -104,7 +116,7 @@ public static partial class SelfTest
         VoiceCodec.Encode(sig.AsSpan(640, 320), f3, ref st); // frame 3 decoded without frames 1 and 2
         VoiceCodec.Decode(f3, pcm);
         var alone = VoiceCodec.Snr(sig.AsSpan(640, 320), pcm);
-        Line($"codec: junk frame -> {(okJunk ? "decoded" : "rejected")}, short frame -> {(okShort ? "decoded" : "rejected")}, silent {silent}; a frame decoded alone after two losses: SNR {alone:0.0} dB");
+        VLine($"codec: junk frame -> {(okJunk ? "decoded" : "rejected")}, short frame -> {(okShort ? "decoded" : "rejected")}, silent {silent}; a frame decoded alone after two losses: SNR {alone:0.0} dB");
         if (okJunk || okShort || !silent)
             Fail("a garbage voice frame wasn't rejected as silence");
         if (alone < 20)
@@ -160,7 +172,7 @@ public static partial class SelfTest
                 played.Add(FrameMark(pcm));
         }
         var inOrder = played.Count == 60 && played.Select((m, i) => m == i).All(x => x);
-        Line($"jitter: reordered arrival -> {played.Count}/60 played {(inOrder ? "in order" : "OUT OF ORDER")}, {jb.Concealed} concealed (the fade-out at the end), {silenceFirst} pulls waited for the first {JitterBuffer.MinTargetFrames} frames");
+        VLine($"jitter: reordered arrival -> {played.Count}/60 played {(inOrder ? "in order" : "OUT OF ORDER")}, {jb.Concealed} concealed (the fade-out at the end), {silenceFirst} pulls waited for the first {JitterBuffer.MinTargetFrames} frames");
         if (!inOrder || jb.Concealed > 1 || silenceFirst < 1) // (one concealed frame at the very end is the fade-out when the talker stops)
             Fail($"the jitter buffer didn't put reordered frames back in order ({string.Join(",", played.Take(12))}...)");
 
@@ -185,7 +197,7 @@ public static partial class SelfTest
                 concealedLevels.Add(Math.Abs((int)pcm[200]));
         }
         var monotonic = played.Zip(played.Skip(1)).All(p => p.Second > p.First);
-        Line($"jitter: {dropped} of 100 frames lost -> {played.Count} played (in order {monotonic}, sequence wrapped), {jb.Concealed} concealed, delay target {jb.TargetFrames} frames");
+        VLine($"jitter: {dropped} of 100 frames lost -> {played.Count} played (in order {monotonic}, sequence wrapped), {jb.Concealed} concealed, delay target {jb.TargetFrames} frames");
         if (played.Count != 100 - dropped || !monotonic || jb.Concealed < dropped || jb.Concealed > dropped + JitterBuffer.MaxConceal)
             Fail($"packet loss concealment: {played.Count} played, {jb.Concealed} concealed for {dropped} lost");
 
@@ -200,7 +212,7 @@ public static partial class SelfTest
             jb.Push((ushort)i, MarkedFrame(i)); // 11 frames at once
         jb.Pull(pcm);
         var depthAfter = jb.Buffered;
-        Line($"jitter: late frame taken {lateTaken} (late count {jb.Late}); a burst of 11 frames -> {depthAfter} left after one pull (skipped {jb.Skipped})");
+        VLine($"jitter: late frame taken {lateTaken} (late count {jb.Late}); a burst of 11 frames -> {depthAfter} left after one pull (skipped {jb.Skipped})");
         if (lateTaken || jb.Late < 1 || depthAfter > JitterBuffer.MaxTargetFrames + 3)
             Fail("the jitter buffer kept a late frame, or let a burst build up a long delay");
 
@@ -213,7 +225,7 @@ public static partial class SelfTest
         for (var i = 0; i < 4; i++)
             jb.Push((ushort)(40 + i), MarkedFrame(40 + i));
         var restarted = jb.Pull(pcm);
-        Line($"jitter: wrong-size frame refused {refused}; after the talker stopped: {tail} pulls then {after}; a new talk spurt -> {restarted}");
+        VLine($"jitter: wrong-size frame refused {refused}; after the talker stopped: {tail} pulls then {after}; a new talk spurt -> {restarted}");
         if (!refused || after != VoicePull.Silence || restarted != VoicePull.Frame)
             Fail("the jitter buffer didn't stop when the talker stopped, or didn't restart");
     }
@@ -242,7 +254,7 @@ public static partial class SelfTest
             ("results screen: everyone", VoiceRules.Route(P(0, 0), P(900, 1), true, MatchPhase.Ended, true, false), VoiceRoute.Open),
         };
         var wrong = cases.Where(c => c.Got != c.Want).ToList();
-        Line($"routing: {cases.Length - wrong.Count}/{cases.Length} cases right"
+        VLine($"routing: {cases.Length - wrong.Count}/{cases.Length} cases right"
              + (wrong.Count > 0 ? $"; wrong: {string.Join("; ", wrong.Select(c => $"{c.Name} -> {c.Got} (want {c.Want})"))}" : ""));
         foreach (var c in wrong)
             Fail($"voice routing: {c.Name} gave {c.Got}, expected {c.Want}");
@@ -254,7 +266,7 @@ public static partial class SelfTest
         var occluded = VoiceRules.ProximityGain(10, 1);
         var hfClear = VoiceRules.ProximityHf(10, 0);
         var hfWall = VoiceRules.ProximityHf(10, 1);
-        Line($"proximity gain: {string.Join(", ", ds.Zip(gains).Select(p => $"{p.First:0.#} m {p.Second:0.000}"))}; behind a wall at 10 m {occluded:0.000} (HF {hfWall:0.00} vs {hfClear:0.00} clear)");
+        VLine($"proximity gain: {string.Join(", ", ds.Zip(gains).Select(p => $"{p.First:0.#} m {p.Second:0.000}"))}; behind a wall at 10 m {occluded:0.000} (HF {hfWall:0.00} vs {hfClear:0.00} clear)");
         if (MathF.Abs(gains[0] - 1) > 1e-4f || !falls || gains[6] > 0.01f || gains[7] != 0 || gains[8] != 0 || gains[2] < 0.3f)
             Fail("proximity gain should be 1 up close, fall with distance and reach 0 at the range");
         if (occluded >= gains[2] * 0.7f || hfWall > hfClear * 0.3f)
@@ -266,7 +278,7 @@ public static partial class SelfTest
         var boxes = map.Solid.Where(b => b.Half.Y > 0.8f && b.Half.X > 0.3f && b.Max.Y < 30).OrderByDescending(b => b.Half.X * b.Half.Y * b.Half.Z).ToList();
         if (boxes.Count == 0)
         {
-            Line($"occlusion: no solid box on {map.Name} to test with (skipped)");
+            VLine($"occlusion: no solid box on {map.Name} to test with (skipped)");
             return;
         }
         var box = boxes[0];
@@ -275,7 +287,7 @@ public static partial class SelfTest
         var b2 = new Vector3(box.Max.X + 2, y, box.Center.Z);
         var through = Audio.VoiceOccluded(a, b2);
         var over = Audio.VoiceOccluded(new Vector3(a.X, box.Max.Y + 3, a.Z), new Vector3(b2.X, box.Max.Y + 3, b2.Z));
-        Line($"occlusion on {map.Name}: through a {box.Half.X * 2:0.#} m box -> {through}, over it -> {over}");
+        VLine($"occlusion on {map.Name}: through a {box.Half.X * 2:0.#} m box -> {through}, over it -> {over}");
         if (!through)
             Fail("a voice through a solid box isn't occluded");
     }
@@ -290,7 +302,7 @@ public static partial class SelfTest
             var why = ffa.SendChat("team?", 10, team: true);
             var before = ffa.ChatsRouted;
             ffa.SelfTestChatFrom(guest, "team from guest", 10, team: true);
-            Line($"free-for-all: team chat from you -> \"{why}\"; from a guest -> routed {ffa.ChatsRouted - before}");
+            VLine($"free-for-all: team chat from you -> \"{why}\"; from a guest -> routed {ffa.ChatsRouted - before}");
             if (why != ChatRules.NoTeamHint || ffa.ChatsRouted != before || ffa.Chat.Count != 0)
                 Fail("team chat in free-for-all should be refused with a hint (and nothing sent)");
         }
@@ -330,7 +342,7 @@ public static partial class SelfTest
             for (var i = 0; i < 10; i++)
                 tdm.SelfTestChatFrom(mate, $"spam {i}", 100, team: true);
             var kept = tdm.Chat.Count - n0;
-            Line($"team deathmatch (host on Blue): enemy team line shown {gotEnemy}, mate's team line \"{(mateLine.Text == null ? "-" : ChatRules.Format(mateLine))}\"; "
+            VLine($"team deathmatch (host on Blue): enemy team line shown {gotEnemy}, mate's team line \"{(mateLine.Text == null ? "-" : ChatRules.Format(mateLine))}\"; "
                  + $"dead line \"{(deadLine.Text == null ? "-" : ChatRules.Format(deadLine))}\"; dead-only: living saw {livingSaw}, dead saw {deadSaw}; "
                  + $"muted shown {mutedShown}; system line \"{ChatRules.Format(sys)}\" ({sys.Flags}); 10 team lines at once -> {kept} kept");
             if (gotEnemy || mateLine.Text == null || (mateLine.Flags & ChatFlags.Team) == 0)
@@ -413,7 +425,7 @@ public static partial class SelfTest
         Pump(server, clients, 0.4, ref now, clock);
         var muteOk = !b.Chat.Any(c => c.Text == "can bravo hear me") && server.Chat.Any(c => c.Text == "can bravo hear me");
         b.MutedChat.Clear();
-        Line($"chat loopback: join line {joinLine}; all chat everywhere {allOk}; team chat Blue (host, Alpha) / Red (Bravo) right {teamOk} (teams held {teamsHeld}); Bravo muting Alpha works {muteOk}");
+        VLine($"chat loopback: join line {joinLine}; all chat everywhere {allOk}; team chat Blue (host, Alpha) / Red (Bravo) right {teamOk} (teams held {teamsHeld}); Bravo muting Alpha works {muteOk}");
         if (!joinLine || !allOk || !muteOk)
             Fail("chat over the network: a join line, an all-chat line or a mute didn't work");
         if (teamsHeld && !teamOk)
@@ -454,7 +466,7 @@ public static partial class SelfTest
             return (server.VoiceRelayedTo[b.LocalId] - b0, server.VoiceRelayedTo[host.Id] - h0, server.VoiceRelayedTo[a.LocalId] - a0, a.Net.BytesSent - bytes0, sent - s0);
         }
 
-        Line($"voice loopback: phase {server.Phase}, voice allowed on the clients {a.VoiceAllowed}/{b.VoiceAllowed}");
+        VLine($"voice loopback: phase {server.Phase}, voice allowed on the clients {a.VoiceAllowed}/{b.VoiceAllowed}");
         // 1. Proximity: Bravo 5 m away hears; the host 80 m up doesn't; Alpha never gets herself back.
         bravoAt = spot + new Vector3(5, 0, 0);
         hostAt = spot + new Vector3(0, 80, 0);
@@ -463,7 +475,7 @@ public static partial class SelfTest
         var bravoGot = b.Voice.FramesIn - bravoIn0;
         var stream = b.Voice.Get(a.LocalId);
         var bytesPerSecond = near.Bytes / 0.6;
-        Line($"voice near: Alpha sent {near.Frames} frames ({bytesPerSecond / 1024:0.0} KB/s up incl. other traffic; voice alone {VoiceRules.TalkerBytesPerSecond / 1024.0:0.0} KB/s = {VoiceRules.TalkerBytesPerSecond * 8 / 1000} kbps); "
+        VLine($"voice near: Alpha sent {near.Frames} frames ({bytesPerSecond / 1024:0.0} KB/s up incl. other traffic; voice alone {VoiceRules.TalkerBytesPerSecond / 1024.0:0.0} KB/s = {VoiceRules.TalkerBytesPerSecond * 8 / 1000} kbps); "
              + $"relayed to Bravo (5 m) {near.Bravo}, Bravo took in {bravoGot} (route {stream?.Route}, talking {b.IsTalking(sa, now)}), to the host (80 m) {near.Host}, back to Alpha {near.Alpha}");
         if (near.Frames < 20 || near.Bravo < near.Frames * 0.8 || bravoGot < near.Frames * 0.8 || stream?.Route != VoiceRoute.Proximity)
             Fail($"proximity voice didn't reach a listener 5 m away ({near.Bravo} of {near.Frames} relayed, {bravoGot} received)");
@@ -476,7 +488,7 @@ public static partial class SelfTest
         // 2. Bravo walks 60 m away: nothing more is relayed to him.
         bravoAt = spot + new Vector3(0, 60, 0);
         var far = Burst(0.4, ref now);
-        Line($"voice far: Bravo 60 m away got {far.Bravo} of {far.Frames} frames, the host {far.Host}");
+        VLine($"voice far: Bravo 60 m away got {far.Bravo} of {far.Frames} frames, the host {far.Host}");
         if (far.Frames < 10 || far.Bravo != 0 || far.Host != 0)
             Fail("the server relayed voice to listeners out of range");
 
@@ -485,7 +497,7 @@ public static partial class SelfTest
         bravoAt = spot + new Vector3(5, 0, 0);
         var radio = Burst(0.4, ref now);
         var hostStream = server.Voice.Get(a.LocalId);
-        Line($"team radio: host (Blue, 80 m) got {radio.Host} of {radio.Frames} (route {hostStream?.Route}), Bravo (Red, 5 m) {radio.Bravo}");
+        VLine($"team radio: host (Blue, 80 m) got {radio.Host} of {radio.Frames} (route {hostStream?.Route}), Bravo (Red, 5 m) {radio.Bravo}");
         if (teamsHeld && (radio.Host < radio.Frames * 0.8 || radio.Bravo != 0 || hostStream?.Route != VoiceRoute.Radio))
             Fail("team radio didn't reach the team at any distance, or reached the other team");
         talkTeam = false;
@@ -499,7 +511,7 @@ public static partial class SelfTest
         server.VoiceAllowed = false;
         var off = Burst(0.3, ref now);
         server.VoiceAllowed = true;
-        Line($"voice off on Bravo -> {deaf.Bravo} frames sent to him; host voice off -> {off.Bravo + off.Host} relayed; server totals: {server.VoiceFramesUp} up, {server.VoiceFramesRelayed} relayed ({server.VoiceBytesRelayed / Math.Max(1, server.VoiceFramesRelayed)} B each), {server.VoiceRateDropped} rate-dropped");
+        VLine($"voice off on Bravo -> {deaf.Bravo} frames sent to him; host voice off -> {off.Bravo + off.Host} relayed; server totals: {server.VoiceFramesUp} up, {server.VoiceFramesRelayed} relayed ({server.VoiceBytesRelayed / Math.Max(1, server.VoiceFramesRelayed)} B each), {server.VoiceRateDropped} rate-dropped");
         if (deaf.Bravo != 0 || off.Bravo + off.Host != 0)
             Fail("voice was relayed to a player with voice off, or with the host's voice chat off");
 
@@ -508,7 +520,7 @@ public static partial class SelfTest
         for (var i = 0; i < 100; i++)
             server.SelfTestVoiceFrom(sa, sender.Frame, (ushort)i, false, now + 50);
         var flooded = server.VoiceFramesUp - floodBefore;
-        Line($"rate limit: 100 frames at once from one talker -> {flooded} accepted (burst {VoiceRules.TalkBurst}, then {VoiceRules.TalkRate}/s)");
+        VLine($"rate limit: 100 frames at once from one talker -> {flooded} accepted (burst {VoiceRules.TalkBurst}, then {VoiceRules.TalkRate}/s)");
         if (flooded > VoiceRules.TalkBurst)
             Fail("the server's voice rate limit let a flood through");
     }
@@ -548,7 +560,7 @@ public static partial class SelfTest
         var us = (Stopwatch.GetTimestamp() - t0) * 1e6 / Stopwatch.Frequency / 1000;
         var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
         var heard = game.Voice.Get(guest.Id)?.Jitter.Played ?? 0;
-        Line($"voice path (process + encode + relay + 2 jitter buffers + decode + radio EQ): {alloc} bytes allocated over 1000 frames, {us:0.0} us a frame ({us / 200:0.000}% of a core per talker); host heard {heard} frames");
+        VLine($"voice path (process + encode + relay + 2 jitter buffers + decode + radio EQ): {alloc} bytes allocated over 1000 frames, {us:0.0} us a frame ({us / 200:0.000}% of a core per talker); host heard {heard} frames");
         if (alloc > 0)
             Fail($"the voice path allocates ({alloc} bytes over 1000 frames)");
         if (heard < 900)
@@ -574,7 +586,7 @@ public static partial class SelfTest
             var back = Settings.Load(tmp);
             var same = back.VoiceMode == s.VoiceMode && back.VoiceTransmit && back.VoiceActivation && MathF.Abs(back.VoiceThresholdDb + 33f) < 1e-3f
                        && back.VoiceDevice == s.VoiceDevice && MathF.Abs(back.VoiceVolume - 0.4f) < 1e-4f && back.VoiceMuteAll && !back.AllowVoice && back.DeadChatPrivate;
-            Line($"settings: first run mic {(fresh.VoiceTransmit ? "ON" : "off")}, voice {fresh.VoiceMode}, playback volume {fresh.VoiceVolume}; an old file -> mic {(old.VoiceTransmit ? "ON" : "off")}, allow voice {old.AllowVoice}; saved and loaded back the same: {same}");
+            VLine($"settings: first run mic {(fresh.VoiceTransmit ? "ON" : "off")}, voice {fresh.VoiceMode}, playback volume {fresh.VoiceVolume}; an old file -> mic {(old.VoiceTransmit ? "ON" : "off")}, allow voice {old.AllowVoice}; saved and loaded back the same: {same}");
             if (fresh.VoiceTransmit || old.VoiceTransmit || fresh.VoiceMode != VoiceMode.Proximity || !old.AllowVoice || fresh.VoiceMuteAll)
                 Fail("voice defaults: the mic must be off until turned on, playback on, voice allowed");
             if (!same)
@@ -588,7 +600,7 @@ public static partial class SelfTest
             File.WriteAllLines(tmp, oldBinds);
             var mig = Settings.Load(tmp).Binds;
             var dup = Duplicates(mig);
-            Line($"keybinds v3: defaults Chat (all) {Code(d[(int)GameAction.ChatAll])}, Chat (team) {Code(d[(int)GameAction.ChatTeam])}, Push to talk {Code(d[(int)GameAction.PushToTalk])}; "
+            VLine($"keybinds v3: defaults Chat (all) {Code(d[(int)GameAction.ChatAll])}, Chat (team) {Code(d[(int)GameAction.ChatTeam])}, Push to talk {Code(d[(int)GameAction.PushToTalk])}; "
                  + $"an old file with Melee on Y -> Melee {Code(mig[(int)GameAction.Melee])}, Chat (team) {Code(mig[(int)GameAction.ChatTeam])}, Chat (all) {Code(mig[(int)GameAction.ChatAll])}, shared keys: {(dup.Length > 0 ? dup : "none")}");
             if (mig[(int)GameAction.Melee] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.Y) || mig[(int)GameAction.ChatTeam] != Keybinds.Unbound
                 || mig[(int)GameAction.ChatAll] != d[(int)GameAction.ChatAll] || mig[(int)GameAction.PushToTalk] != d[(int)GameAction.PushToTalk] || dup.Length > 0)
