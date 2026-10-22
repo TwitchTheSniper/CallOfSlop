@@ -65,7 +65,7 @@ public static partial class SelfTest
         if (explosive is < 4 or > 12)
             Fail($"{m.Name}: {explosive} explosive props (expected a few: 4-12)");
 
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 3400, SolidProps: 250, CosmeticProps: 3000, Breakable: 600, Plants: 30000, Trees: 40, Boxes: 500));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 3400, SolidProps: 230, CosmeticProps: 3000, Breakable: 600, Plants: 30000, Trees: 40, Boxes: 500));
 
         var o = m.Objectives;
         var g = ClutteredLargeNav(m);

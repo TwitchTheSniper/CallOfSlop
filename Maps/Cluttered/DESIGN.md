@@ -359,12 +359,13 @@ from the conveyor yard (north-east), the pit's south ramp, bench 1 down to the y
 both dumps from both sides, bench 1 up to bench 2 at each end, and the main haul road straight down the massif from the
 top to bench 1 and on down a cutting through the pit's terraced east face to the pit floor, with a blast wall at its
 head so there's no line down it. A low berm runs along the top's west rim.
-**Hills:** the pit's north-east corner, the conveyor yard, and the south dump's east end. **Flags:** in the camp and
+**Hills:** the pit's north-east corner, the east end of the conveyor yard, and the south dump's east end. **Flags:** in the camp and
 behind the winder house.
 
 **Balance (by measurement, not mirroring).** Red's spawns sit on the west half of the top, Blue's in the camp, and the
 hills sit on the line of equal walk, found by the generator on a 0.5 m grid over the terrain with the tunnels as a
-second layer (Blue/Red: pit 90/87 m, yard 84/85 m, south dump 102/104 m, enemy flag 176/177 m). Red needs 17.5 m of
+second layer (Blue/Red: pit 93/84 m, yard 87/82 m, south dump 102/104 m, enemy flag 176/177 m; the game's nav graph makes Red's
+walks 12-16 m longer than this grid does, so the pit and yard hills are set a little Red-ward of the grid's equal line). Red needs 17.5 m of
 descent to reach the pit (about 60 m of ramp), so its spawns are closer to the middle than Blue's. The self-test measures
 it again on the game's nav graph (within 10%), checks that no Blue spawn can see a Red one (the processing shed, the core
 shed and the top's berm and blast wall are in the way), and counts the solid cover within 6 m of each team's routes to
