@@ -496,6 +496,8 @@ public sealed partial class Game : IDisposable
             var o = ray.Origin;
             var d = ray.Dir;
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots);
+            dist = PenetrateAfterHit(def, o, d, dist); // the same walls the server lets it through (GamePenetration.cs)
+            var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
             foreach (var other in Players.Values)
             {
                 if (other.Id == LocalId || !other.Alive)
@@ -512,7 +514,7 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
                 predictedHit |= zHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me);
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through);
         }
         if (predictedHit)
         {
@@ -603,6 +605,11 @@ public sealed partial class Game : IDisposable
         {
             SendLoadout();
             LoadoutNotice = "Loadout sent...";
+            // The server swaps the loadout in place before play (ServerRequestLoadout's "instant"), and the snapshot only
+            // refills the throwables when a gun changed: refill them here too, or a grenade-only change leaves the HUD
+            // (and the key) on the old kind, which the server then refuses, so the throw spawns nothing.
+            if (Local is { Alive: true } && Phase is MatchPhase.Countdown or MatchPhase.Warmup && !Module.ServerPicksWeapons)
+                RefillThrowables();
         }
     }
 
@@ -686,10 +693,11 @@ public sealed partial class Game : IDisposable
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null, Vector3? through = null)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
         ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def)); // a bullet-impact decal where it ends on a surface (Source/Decals)
+        PenetrationMarks(through, to, def, shooter?.Id ?? (byte)255, now); // went through walls on the way: marks on both sides (GamePenetration.cs)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
@@ -1276,12 +1284,14 @@ public sealed partial class Game : IDisposable
         var ends = new List<Vector3>(rays.Count);
         var laterals = new List<Vector2>(rays.Count);
         var zHead = false;
+        _shotPenetrated = false;
 
         foreach (var ray in rays)
         {
             var o = ray.Origin;
             var d = ray.Dir;
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
+            dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
@@ -1304,26 +1314,27 @@ public sealed partial class Game : IDisposable
             {
                 hit = null;
                 turret = null;
-                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f), zHead);
+                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f) * PenFactor(dist), zHead);
             }
-            if (hit == null && turret == null && zombie == null)
-                ShotProps(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
-            ShotBuildings(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // building doors and window glass (GameBuildings.cs)
+            var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
+            if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
+                flags |= ShotWallbang;
+            PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
             if (device != null)
-                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist), now);
+                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist) * pen, now);
             if (turret != null)
                 flags |= ShotHitMachine;
-            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist) * pen), now))
                 flags |= 4;
             else if (turret != null)
                 flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
-                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f)
+                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
                 if (head)
@@ -1349,17 +1360,21 @@ public sealed partial class Game : IDisposable
         if (Horde.Count > 0)
             flags |= ZombieShotApply(shooter, now); // one damage event per zombie per trigger pull
 
+        if (_shotPenetrated)
+            flags |= ShotPenetrated; // the origin follows the ends: every client marks both sides of the walls
         // Host-side feedback
         if (shooter.Id == LocalId)
             OnOwnShotConfirmed(flags, now);
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter);
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
             _w.Vec(end);
+        if (_shotPenetrated)
+            _w.Vec(origin); // after the ends: older clients stop reading before it
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -1375,6 +1390,7 @@ public sealed partial class Game : IDisposable
         HitMarkerFriendly = false;
         HitMarkerUntil = now + 0.15;
         HitMarkerHead = (flags & 2) != 0;
+        HitMarkerWallbang = (flags & ShotWallbang) != 0; // through a wall (GamePenetration.cs)
         PlayHitConfirm(flags); // GameSounds.cs
     }
 
@@ -1683,8 +1699,9 @@ public sealed partial class Game : IDisposable
                 if (!Players.TryGetValue(shooter, out var sp))
                     break;
                 Audio.Shot(def, sp.RenderEye);
-                for (var i = 0; i < n && r.Has(12); i++)
-                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags, sp);
+                var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
+                foreach (var end in shotEnds)
+                    AddTracer(MuzzleWorld(sp), end, def, now, flags, sp, through);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

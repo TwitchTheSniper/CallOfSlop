@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-penetration/1",
+  "comment": "Bullet penetration (see README, Bullet penetration). A round has a penetration power; passing a box costs resistPerCm x its thickness along the ray (cm). It goes through if the power left covers the cost and the box is no thicker than maxCm (0: never). After each surface the damage is multiplied by damageKept x (0.5 + 0.5 x power after / power before).",
+  "maxSurfaces": 3,
+  "maxLayerCm": 80,
+  "materials": {
+    "Default":  { "resistPerCm": 6.5, "maxCm": 20,  "damageKept": 0.55 },
+    "Grid":     { "resistPerCm": 4.5, "maxCm": 30,  "damageKept": 0.6 },
+    "Concrete": { "resistPerCm": 6.5, "maxCm": 25,  "damageKept": 0.55 },
+    "Brick":    { "resistPerCm": 4.5, "maxCm": 35,  "damageKept": 0.6 },
+    "Wood":     { "resistPerCm": 1.0, "maxCm": 45,  "damageKept": 0.8 },
+    "Metal":    { "resistPerCm": 8,   "maxCm": 6,   "damageKept": 0.6 },
+    "Tiles":    { "resistPerCm": 2.5, "maxCm": 25,  "damageKept": 0.7 },
+    "Dirt":     { "resistPerCm": 6,   "maxCm": 20,  "damageKept": 0.5 },
+    "Asphalt":  { "resistPerCm": 0,   "maxCm": 0,   "damageKept": 0 },
+    "Plaster":  { "resistPerCm": 0.8, "maxCm": 40,  "damageKept": 0.85 },
+    "Grass":    { "resistPerCm": 6,   "maxCm": 20,  "damageKept": 0.5 },
+    "Sand":     { "resistPerCm": 9,   "maxCm": 15,  "damageKept": 0.45 },
+    "Snow":     { "resistPerCm": 2,   "maxCm": 80,  "damageKept": 0.7 },
+    "Rock":     { "resistPerCm": 0,   "maxCm": 0,   "damageKept": 0 },
+    "Glass":    { "resistPerCm": 0.3, "maxCm": 6,   "damageKept": 0.9 },
+    "Soft":     { "resistPerCm": 0.3, "maxCm": 120, "damageKept": 0.95 },
+    "Hedgerow": { "resistPerCm": 0,   "maxCm": 0,   "damageKept": 0 }
+  },
+  "weapons": {
+    "Pistol":       { "base": 5,  "perCalibre": 12 },
+    "SMG":          { "base": 5,  "perCalibre": 12 },
+    "AssaultRifle": { "base": 12, "perCalibre": 20 },
+    "LMG":          { "base": 16, "perCalibre": 28 },
+    "DMR":          { "base": 20, "perCalibre": 30 },
+    "Sniper":       { "base": 30, "perCalibre": 70 },
+    "Shotgun":      { "base": 10, "perCalibre": 20 },
+    "Special":      { "base": 6,  "perCalibre": 14 },
+    "Launcher":     { "base": 0,  "perCalibre": 0 }
+  },
+  "shotgunPellets": 2,
+  "props": [
+    { "match": "Bocage Hedgerow", "material": "Hedgerow" },
+    { "match": "Sandbag", "material": "Sand" },
+    { "match": "Hedge", "material": "Hedgerow" },
+    { "match": "Boulder", "material": "Rock" },
+    { "match": "Rock", "material": "Rock" },
+    { "match": "Car", "material": "Metal" },
+    { "match": "Truck", "material": "Metal" },
+    { "match": "Van", "material": "Metal" },
+    { "match": "Crate", "material": "Wood" },
+    { "match": "Pallet", "material": "Wood" },
+    { "match": "Cardboard", "material": "Soft" }
+  ]
+}

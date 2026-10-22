@@ -423,7 +423,9 @@ public sealed partial class Game
         else
             return; // not in their loadout, or none left
         p.NextThrow = now + 0.7;
-        if (TacticalGear.UseOf(kind) != TacticalUse.Thrown)
+        // Only the placed devices and the stim skip the flight. Frags, impacts, smoke and the Recon Pulse aren't tactical
+        // gear at all (UseOf: None), so they must fall through to the projectile below with the thrown tactical items.
+        if (TacticalGear.UseOf(kind) is TacticalUse.Placed or TacticalUse.Self)
         {
             ServerUseTactical(p, kind, dir, now); // placed devices and the stim (GameTactical.cs)
             return;
@@ -660,6 +662,19 @@ public sealed partial class Game
         }
         return false;
     }
+
+    // ---- Self-test hooks --------------------------------------------------------------
+
+    /// <summary>Self-test: spawns <paramref name="p"/> now with the loadout it asked for (the local player's HUD counts refill too).</summary>
+    public void SelfTestRespawn(Player p, double now)
+    {
+        Spawn(p, ServerTick, now);
+        if (p.Id == LocalId)
+            OnLocalSpawn(p);
+    }
+
+    /// <summary>Self-test: a bot's grenade throw at <paramref name="at"/> (BotCombat.cs), skipping the random roll.</summary>
+    public void SelfTestBotThrow(Player bot, Vector3 at, double now) => BotThrowAt(bot, bot.Bot!, at, now);
 
     // ---- Packets --------------------------------------------------------------------
 
