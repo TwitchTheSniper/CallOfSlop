@@ -83,7 +83,7 @@ public static partial class SelfTest
                 Fail($"London: {label} is {blue:0} m from Blue and {red:0} m from Red (more than 10% apart)");
             if (float.IsNaN(blue) || float.IsNaN(red) || MathF.Abs(blue - red) > 0.1f * MathF.Max(blue, red))
                 for (var t = 0; t < 2; t++)
-                    Line($"  {label} from {(t == 0 ? "Blue" : "Red")}: " + string.Join(", ", o.TeamSpawns[t].Select(s => $"({s.X:0},{s.Y:0.0},{s.Z:0}) {Walk(s, t == 0 ? forBlue : forRed):0}"))
+                    Fail($"  {label} from {(t == 0 ? "Blue" : "Red")}: " + string.Join(", ", o.TeamSpawns[t].Select(s => $"({s.X:0},{s.Y:0.0},{s.Z:0}) {Walk(s, t == 0 ? forBlue : forRed):0}"))
                          + $"; target node {g.Nodes[g.Nearest(t == 0 ? forBlue : forRed, needSight: false)]}");
         }
         var summary = $"London: {m.Size} {m.HalfX * 2:0} x {m.HalfZ * 2:0} m ({m.PlayArea:0} m2), max {m.WantedMaxPlayers} players; {m.PlacedBuildings.Count} buildings "
