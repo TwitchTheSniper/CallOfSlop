@@ -129,7 +129,7 @@ public sealed partial class Ui
         _nav.Reset();
         _wsSmoke = false;
         _renaming = false;
-        _editSlot = Math.Clamp(LoadoutStore.Selected, 0, Math.Max(0, Progress.LoadoutSlots - 1));
+        _editSlot = LoadoutStore.UnlockedSlot(LoadoutStore.Selected, Progress);
         _hoverThrowable = null;
         _hoverAttachment = null;
         _hoverPerk = null;
@@ -234,8 +234,7 @@ public sealed partial class Ui
 
         var deployed = false;
         var prog = Progress;
-        if (_editSlot >= prog.LoadoutSlots)
-            _editSlot = 0;
+        _editSlot = LoadoutStore.UnlockedSlot(_editSlot, prog); // a locked slot (level reset, edited file) falls back to an unlocked one
         var vp = ImGui.GetMainViewport();
         var center = new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y / 2);
         ImGui.SetNextWindowPos(center, ImGuiCond.Always, new float2(0.5f, 0.5f));
@@ -497,23 +496,20 @@ public sealed partial class Ui
         if (ImGui.BeginChild("##slots"u8, new float2(leftW, size.Y), ImGuiChildFlags.None))
         {
             var rowH = 50 * _scale;
-            for (var i = 0; i < LoadoutStore.Slots.Length; i++)
+            // Only unlocked slots are listed; locked ones keep their saved contents and show up again once unlocked.
+            for (var i = 0; i < LoadoutStore.UnlockedSlots(prog); i++)
             {
                 var l = LoadoutStore.Slots[i];
-                var level = CallOfSlop.Progress.LoadoutSlotLevel(i);
-                var unlocked = prog.Level >= level;
-                var selected = i == _editSlot && unlocked;
-                ImGui.PushStyleColor(ImGuiCol.ChildBg, !unlocked ? LockedBg : selected ? SelectedBg : _hotCard == 10 + i ? CardHover : CardBg);
+                var selected = i == _editSlot;
+                ImGui.PushStyleColor(ImGuiCol.ChildBg, selected ? SelectedBg : _hotCard == 10 + i ? CardHover : CardBg);
                 if (ImGui.BeginChild($"##slot{i}", new float2(ImGui.GetContentRegionAvail().X, rowH), ImGuiChildFlags.Borders,
                         ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
                 {
                     ImGui.PushFont(default, 18);
-                    ImGuiSafe.TextColored(!unlocked ? Dim : selected ? new float4(0.55f, 0.85f, 1f, 1f) : new float4(1, 1, 1, 1), unlocked ? l.Name : DefaultLockedName(i));
+                    ImGuiSafe.TextColored(selected ? new float4(0.55f, 0.85f, 1f, 1f) : new float4(1, 1, 1, 1), l.Name);
                     ImGui.PopFont();
                     var eff = LoadoutStore.Effective(l, prog);
-                    ImGuiSafe.TextColored(Dim, unlocked
-                        ? $"{Weapons.Get(eff.Primary).Name} + {Weapons.Get(eff.Secondary).Name}"
-                        : $"Unlocks at level {level}");
+                    ImGuiSafe.TextColored(Dim, $"{Weapons.Get(eff.Primary).Name} + {Weapons.Get(eff.Secondary).Name}");
                     if (selected)
                     {
                         // Orange marker: this is the loadout you'll spawn with.
@@ -528,9 +524,9 @@ public sealed partial class Ui
                 }
                 ImGui.EndChild();
                 ImGui.PopStyleColor();
-                if (ImGui.IsItemHovered() && unlocked)
+                if (ImGui.IsItemHovered())
                     hot = 10 + i;
-                if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && unlocked && i != _editSlot)
+                if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && i != _editSlot)
                 {
                     _editSlot = i;
                     LoadoutStore.Selected = i;
@@ -538,6 +534,8 @@ public sealed partial class Ui
                     _renaming = false;
                 }
             }
+            if (LoadoutStore.NextSlotLevel(prog) is { } next)
+                ImGuiSafe.TextColored(Dim, $"Next slot at level {next}");
         }
         ImGui.EndChild();
 
@@ -623,8 +621,6 @@ public sealed partial class Ui
         ImGui.EndChild();
         _hotCard = hot;
     }
-
-    private static string DefaultLockedName(int slot) => $"Loadout slot {slot + 1}";
 
     private static bool SameAsStored(Loadout l, Loadout eff) =>
         l.Primary == eff.Primary && l.Secondary == eff.Secondary && l.Grenade == eff.Grenade && l.Equipment == eff.Equipment && l.Perks == eff.Perks
