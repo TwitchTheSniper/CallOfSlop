@@ -160,6 +160,13 @@ public sealed class PropDef
 
     public PropBreakable? Breakable;
 
+    /// <summary>
+    /// Cosmetic props only ("concealment": true in the file): tall crops and thick screens that hide whoever is in them.
+    /// Players, bullets and grenades still pass straight through, but bots can't see through enough of them (see
+    /// <see cref="Map.Concealed"/>), so a cornfield hides you from bots the way it hides you from people.
+    /// </summary>
+    public bool Concealment;
+
     /// <summary>The "flag" block: which parts are the flag's cloth, so a flag design from <see cref="FlagPool"/> can replace it. Null for other props.</summary>
     public PropFlagCloth? FlagCloth;
 

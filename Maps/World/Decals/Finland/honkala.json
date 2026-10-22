@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Honkala Village Sign",
+  "description": "A blue Finnish place-name board: HONKALA.",
+  "author": "Call of Slop",
+  "size": [
+    2.6,
+    0.7
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "honkala.png"
+}

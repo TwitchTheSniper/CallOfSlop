@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "MS Railroad Crossing Marking",
+  "category": "MainStreet",
+  "description": "Main Street (World Tour): Railroad Crossing Marking. Invented for the town of Prairie Hollow.",
+  "author": "Call of Slop",
+  "size": [
+    3.0,
+    5.6
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 150,
+  "image": "MSRailroadCrossingMarking.png"
+}

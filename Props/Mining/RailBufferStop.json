@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Rail Buffer Stop",
+  "category": "Mining",
+  "description": "A steel buffer stop at the end of a siding, two buffers facing +X. Waist-high cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.2, 2.6], "offset": [-0.1, 0.6, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.6, 1.0, 2.4], "offset": [-0.3, 0.5, 0], "color": "#3a3a3c", "material": "metal"},
+    {"size": [0.2, 0.3, 2.6], "offset": [0.1, 1.05, 0], "color": "#c82818"},
+    {"size": [1.6, 0.18, 0.2], "offset": [-0.7, 0.55, -0.8], "color": "#3a3a3c", "rotation": [0, 0, 30]},
+    {"size": [1.6, 0.18, 0.2], "offset": [-0.7, 0.55, 0.8], "color": "#3a3a3c", "rotation": [0, 0, 30]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, -0.8], "color": "#2a2a2c", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, -0.8], "color": "#2a2a2c", "rotation": [45, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, -0.8], "color": "#2a2a2c", "rotation": [90, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, -0.8], "color": "#2a2a2c", "rotation": [135, 0, 0]},
+    {"size": [0.06, 0.42, 0.42], "offset": [0.52, 0.95, -0.8], "color": "#d8d4c8"},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, 0.8], "color": "#2a2a2c", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, 0.8], "color": "#2a2a2c", "rotation": [45, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, 0.8], "color": "#2a2a2c", "rotation": [90, 0, 0]},
+    {"size": [0.5, 0.149, 0.36], "offset": [0.25, 0.95, 0.8], "color": "#2a2a2c", "rotation": [135, 0, 0]},
+    {"size": [0.06, 0.42, 0.42], "offset": [0.52, 0.95, 0.8], "color": "#d8d4c8"}
+  ]
+}
