@@ -24,11 +24,11 @@ public static partial class SelfTest
         "Main Battle Tank Winter", "Light Tank", "Wrecked Tank", "Fighter Plane (WWII)", "Twin-Engine Bomber", "Jet Fighter",
         "Transport Plane", "Light Utility Jeep", "Light Utility Jeep Desert", "Light Utility Jeep Winter", "Covered Cargo Truck",
         "Covered Cargo Truck Desert", "Covered Cargo Truck Winter", "Armoured Car", "Armoured Car Desert", "Fuel Tanker Truck",
-        "Sidecar Motorcycle",
+        "Sidecar Motorcycle", "Landmine", "Mine Warning Sign",
     ];
 
     /// <summary>The military props that go off when broken (each with a fuse, so players get a moment to run).</summary>
-    private static readonly string[] MilitaryExplosives = ["Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Shell Crate"];
+    private static readonly string[] MilitaryExplosives = ["Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Shell Crate", "Landmine"];
 
     /// <summary>Props whose main collider (the hull, the wing) players should be able to mantle onto.</summary>
     private static readonly string[] MilitaryClimbable =

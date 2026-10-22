@@ -90,6 +90,8 @@ public static class Knockback
     /// <summary>How hard (m/s at the centre) and how far a kill id's blast pushes: frag and impact grenades and the strikes (0 for everything else).</summary>
     public static (float Strength, float Radius) ForKill(byte killId)
     {
+        if (killId == Game.LandmineKillId)
+            return (Game.LandmineRagdollPush, Game.LandmineRagdollRadius); // mines and their chains (GameMines.cs)
         if (killId >= Throwables.KillIdBase && killId != Game.SuicideKillId)
         {
             var def = Throwables.Get((ThrowableKind)(killId - Throwables.KillIdBase));

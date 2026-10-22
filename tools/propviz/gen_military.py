@@ -1186,7 +1186,7 @@ GROUPS = [
                  "Barbed Wire Fence Line", "Steel Hedgehog", "Concrete Tank Trap", "Wooden Stake Barrier"]),
     ("#6a6a3a", ["Field Cannon", "Anti-Tank Gun", "Howitzer", "Mortar Pit", "Mounted Machine Gun", "Field Searchlight", "Guard Tower"]),
     ("#4a6a3a", ["Ammo Crate Wooden", "Stacked Ammo Crates", "Ammo Case Metal", "Steel Ammo Can", "Shell Crate", "Rifle Crate", "Artillery Shell Stack",
-                 "Spent Shell Casings", "Military Pallet", "Pallet of Ammo Crates", "Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Field Radio Pack"]),
+                 "Spent Shell Casings", "Landmine", "Mine Warning Sign", "Military Pallet", "Pallet of Ammo Crates", "Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Field Radio Pack"]),
     ("#5a5a5a", ["Camo Net Canopy", "Field Tent", "Command Tent"]),
     ("#3a5a6a", ["Medium Tank (WWII)", "Medium Tank (WWII) Desert", "Heavy Tank", "Light Tank", "Wrecked Tank"]),
     ("#3a5a6a", ["Main Battle Tank", "Main Battle Tank Desert", "Main Battle Tank Winter"]),
@@ -1213,9 +1213,15 @@ def write_prop(p, out):
         fh.write("\n".join(lines) + "\n")
 
 
-def gallery(props, path):
+# Military props from other generators/agents (hand-made files in Props/Military): shown on the gallery too, never rewritten here.
+EXTERNAL = {"Landmine": "Landmine.json", "Mine Warning Sign": "MineWarningSign.json"}
+
+
+def gallery(props, path, out="Props"):
     """Military Props: every prop on its own pad, rows by group (north to south)."""
     by = {p["name"]: p for p in props}
+    for n, fn in EXTERNAL.items():
+        by[n] = json.load(open(os.path.join(out, "Military", fn)))
     shown = [n for _, names in GROUPS for n in names]
     assert sorted(shown) == sorted(by), (set(by) - set(shown), set(shown) - set(by))
     gap, aisle = 2.0, 4.0
@@ -1283,7 +1289,7 @@ if __name__ == "__main__":
         lo, hi = go.bounds(p)
         assert lo[1] > -0.03 and all(hi[i] - lo[i] <= 24 for i in range(3)), (p["name"], lo, hi)
         write_prop(p, out)
-    hx, hz = gallery(PROPS, gpath)
+    hx, hz = gallery(PROPS, gpath, out)
     print(len(PROPS), "props:", ", ".join(f"{c} {sum(1 for p in PROPS if p['category'] == c)}" for c in FOLDERS), f"| gallery {2 * hx} x {2 * hz} m")
     for p in PROPS:
         lo, hi = go.bounds(p)

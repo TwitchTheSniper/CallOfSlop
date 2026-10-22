@@ -41,10 +41,11 @@ public sealed partial class Map
     /// terrain) unless <paramref name="y"/> is given; with y = 0 it also stands on a low box under it, like a kerb.
     /// </summary>
     /// <remarks><paramref name="flag"/>: for a flag prop, the design it flies ("uk", "random", "none"; "" = the prop's default, see <see cref="ResolveFlags"/>).</remarks>
+    /// <remarks><paramref name="respawn"/>: for a breakable prop, seconds after it breaks until it's back (0 = not until the next match; see <see cref="PropRespawn"/>).</remarks>
     [MapOp]
-    public void PlaceProp(string name, float x, float z, float yaw = 0, float scale = 1, float y = 0, string flag = "")
+    public void PlaceProp(string name, float x, float z, float yaw = 0, float scale = 1, float y = 0, string flag = "", float respawn = 0)
     {
-        using var __ = Op([name, x, z, yaw, scale, y, flag]);
+        using var __ = Op([name, x, z, yaw, scale, y, flag, respawn]);
         var scope = PropScope; // the pack's own props first, then the Props folder (MapPackAssets.cs)
         var def = scope.Find(name) ?? throw new InvalidOperationException($"unknown prop \"{name}\": {scope.Suggest(name)}");
         if (scale is < 0.1f or > 10f)
@@ -66,7 +67,11 @@ public sealed partial class Map
                     py = top;
             }
         }
+        if (respawn != 0 && (def.Breakable == null || respawn is < 1 or > 3600))
+            throw new InvalidOperationException(def.Breakable == null ? $"\"respawn\" is for breakable props (\"{def.Name}\" never breaks)" : "respawn is 1 to 3600 seconds (or 0: not until the next match)");
         AddProp(def, new Vector3(x, py, z), yawRad, scale, null);
+        if (respawn > 0)
+            _propRespawn[PropInstances.Count - 1] = respawn;
         RequestFlag(def, flag); // MapFlags.cs
     }
 
@@ -212,6 +217,7 @@ public sealed partial class Map
         }
         PropInstances.Add(new PropInstance(def, pos, yaw, scale, rand, start, count, WorldBounds(def.Bounds, pos, yaw, scale)));
         _breakables = null;
+        _triggers = null;
     }
 
     // ---- Clutter (runs once the map is otherwise complete) ----------------------------------------------------
@@ -505,6 +511,19 @@ public sealed partial class Map
     /// <summary>Indices (into <see cref="PropInstances"/>) of every breakable prop.</summary>
     public int[] BreakableProps => _breakables ??= Enumerable.Range(0, PropInstances.Count).Where(i => PropInstances[i].IsBreakable).ToArray();
 
+    private int[]? _triggers;
+
+    /// <summary>Indices (into <see cref="PropInstances"/>) of every prop with a pressure plate (landmines, <see cref="PropBreakable.IsMine"/>).</summary>
+    public int[] TriggerProps => _triggers ??= Enumerable.Range(0, PropInstances.Count).Where(i => PropInstances[i].Def.Breakable is { IsMine: true }).ToArray();
+
+    private readonly Dictionary<int, float> _propRespawn = new();
+
+    /// <summary>
+    /// Seconds after it breaks until prop <paramref name="i"/> is back (the Prop op's "respawn"), or 0: broken until the
+    /// next match, like every prop without one. The server decides (Game.ServerTickPropRespawns); clients are told.
+    /// </summary>
+    public float PropRespawn(int i) => _propRespawn.TryGetValue(i, out var s) ? s : 0f;
+
     private int[] _propHealth = [];
     private bool[] _propBroken = [];
     private readonly List<int> _brokenProps = new();
@@ -570,6 +589,26 @@ public sealed partial class Map
             Solid[k] = new Box(new Vector3(b.Center.X, -1000f, b.Center.Z), new Vector3(0.001f));
             World.SolidChanged(this, k);
         }
+        PropBreakVersion++;
+        return true;
+    }
+
+    /// <summary>
+    /// Puts one broken prop back (a prop with "respawn"): whole, full health, its collider boxes where they were.
+    /// Returns false if it wasn't broken.
+    /// </summary>
+    public bool RestoreProp(int i)
+    {
+        if (!IsPropBroken(i))
+            return false;
+        _propBroken[i] = false;
+        _propHealth[i] = 0;
+        _brokenProps.Remove(i);
+        var inst = PropInstances[i];
+        for (var k = inst.SolidStart; k < inst.SolidStart + inst.SolidCount; k++)
+            Solid[k] = _propOriginal[k];
+        if (inst.SolidCount > 0)
+            World.InvalidateGrid(this); // boxes grew back (a cosmetic prop, a landmine, has none: free)
         PropBreakVersion++;
         return true;
     }

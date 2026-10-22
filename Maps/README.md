@@ -547,7 +547,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 
 | Op | Parameters | What it makes |
 |---|---|---|
-| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0, flag = "" | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. `flag` is for flag props only: `"us"`, `"uk"`, `"france"`, `"finland"`, `"random"` or `"none"` (see [Flags](#flags)). |
+| `PlaceProp` | name, x, z, yaw = 0, scale = 1, y = 0, flag = "", respawn = 0 | One prop standing at (x, z), turned `yaw` degrees. `{ "op": "Prop", "name": "Trash Can", ... }` is the same thing. `flag` is for flag props only: `"us"`, `"uk"`, `"france"`, `"finland"`, `"random"` or `"none"` (see [Flags](#flags)). `respawn` (breakable props only, 1-3600 s) brings it back that long after it breaks, within the match (see [Props/README.md](../Props/README.md#breakable-props)). |
 | `Clutter` | props, x0, z0, x1, z1, count, seed = 0, width = 0, align = false, gap = 0.15, mirror = false | Scatters up to `count` props over the rectangle between the corners, or with `width` above 0 along a strip that wide from (x0, z0) to (x1, z1). With `"mirror": true` every prop also gets a twin turned 180 degrees about the map's centre (see below). |
 
 ```
