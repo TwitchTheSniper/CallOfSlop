@@ -68,16 +68,70 @@ public static class Keybinds
         Key(GlfwKey.B),
         Key(GlfwKey.Tab),
         Key(GlfwKey.G),
-        Key(GlfwKey.F),
+        Key(GlfwKey.E), // Equipment (tactical): F until binds version 2
         Key(GlfwKey.V),
         Key(GlfwKey.Number4),
         Key(GlfwKey.Number5),
         Key(GlfwKey.Number6),
         Key(GlfwKey.F3),
-        Key(GlfwKey.E),
+        Key(GlfwKey.F), // Interact: E until binds version 2
         Key(GlfwKey.Number3),
         Unbound,
     ];
+
+    /// <summary>
+    /// Version of <see cref="Defaults"/>, saved as <c>binds_version</c> in settings.txt. Files from before a change get
+    /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
+    /// </summary>
+    public const int DefaultsVersion = 2;
+
+    /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
+    private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
+    [
+        (2, GameAction.Interact, Key(GlfwKey.E), Key(GlfwKey.F)),
+        (2, GameAction.Equipment, Key(GlfwKey.F), Key(GlfwKey.E)),
+    ];
+
+    /// <summary>
+    /// Updates binds saved under binds version <paramref name="fromVersion"/> to today's defaults: an action still on its
+    /// old default key moves to the new one, and a bind the player changed stays as it is. A move that would put two
+    /// actions on one key is skipped (that action keeps its old key), so migrating never creates a conflict.
+    /// </summary>
+    /// <returns>The actions that moved.</returns>
+    public static List<GameAction> Migrate(int[] binds, int fromVersion)
+    {
+        var moved = new List<GameAction>();
+        foreach (var version in Changes.Select(c => c.Version).Distinct().Order())
+        {
+            if (version <= fromVersion)
+                continue;
+            var step = Changes.Where(c => c.Version == version && binds[(int)c.Action] == c.Old).ToList();
+            var before = (int[])binds.Clone();
+            foreach (var c in step)
+                binds[(int)c.Action] = c.New;
+            // Undo any move that lands on a key another action now holds; undoing one can clash again, so repeat.
+            for (var changed = true; changed;)
+            {
+                changed = false;
+                foreach (var c in step)
+                {
+                    var a = (int)c.Action;
+                    if (binds[a] == before[a])
+                        continue;
+                    var clash = false;
+                    for (var i = 0; i < binds.Length; i++)
+                        clash |= i != a && binds[i] == binds[a];
+                    if (clash)
+                    {
+                        binds[a] = before[a];
+                        changed = true;
+                    }
+                }
+            }
+            moved.AddRange(step.Where(c => binds[(int)c.Action] != before[(int)c.Action]).Select(c => c.Action));
+        }
+        return moved;
+    }
 
     public static string Label(GameAction a) =>
         a switch
@@ -152,6 +206,9 @@ public static class Keybinds
         }
         return sb.ToString().Replace("Number ", "");
     }
+
+    /// <summary>The key name bound to <paramref name="a"/> in <paramref name="s"/>, or its default key's without settings.</summary>
+    public static string NameOf(Settings? s, GameAction a) => Name(s != null ? s.Bind(a) : Defaults[(int)a]);
 
     public static bool IsDown(GlfwWindow window, int code)
     {

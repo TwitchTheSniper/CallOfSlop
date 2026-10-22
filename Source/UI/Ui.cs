@@ -321,7 +321,7 @@ public sealed partial class Ui : IDisposable
             _noticeTime = now;
         }
         if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
-            CenterText(size, pos, _lastNotice, 0.75f);
+            CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
 
         if (ShowScoreboard)
             DrawScoreboard(game, size, pos);
@@ -626,7 +626,7 @@ public sealed partial class Ui : IDisposable
         if (!Progress.IsUnlocked(t.Kind))
             ImGuiSafe.TextColored(Red, $"Locked - reach level {CallOfSlop.Progress.UnlockLevel(t.Kind)}.");
         ImGui.Spacing();
-        ImGuiSafe.TextColored(Dim, t.IsEquipment ? "Use it with your Use equipment key (F by default)." : "Throw it with your Throw grenade key (G by default).");
+        ImGuiSafe.TextColored(Dim, t.IsEquipment ? "Use it with your Use equipment key (E by default)." : "Throw it with your Throw grenade key (G by default).");
     }
 
     private void DrawStats(Audio audio, WeaponDef w)

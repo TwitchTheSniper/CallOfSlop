@@ -558,7 +558,7 @@ public sealed partial class Ui
             }
         }
         ImGui.EndDisabled();
-        ImGui.TextColored(Dim, "Opens the Workbench Range with your builds (E: park / push a cart, buy the slot upgrade)."u8);
+        ImGuiSafe.TextColored(Dim, $"Opens the Workbench Range with your builds ({Keybinds.NameOf(_hudSettings, GameAction.Interact)}: park / push a cart, buy the slot upgrade).");
         return launch;
     }
 
@@ -584,7 +584,7 @@ public sealed partial class Ui
             if (cur.NoAds)
                 ImGui.TextColored(Yellow, "Hip fire only."u8);
             if (Game.IsCart(cur))
-                ImGui.TextColored(Yellow, "A real cart: push it, E parks it, E at its bar mans its gun."u8);
+                ImGuiSafe.TextColored(Yellow, $"A real cart: push it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} parks it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} at its bar mans its gun.");
             if (cur.BuildFlags.Length > 0)
                 ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", cur.BuildFlags) + " (effects come with Zombies)");
         }
