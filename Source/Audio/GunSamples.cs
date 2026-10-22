@@ -319,7 +319,7 @@ public static class GunSamples
     /// transient sharp. Near shots use a fast release (<see cref="SnapRelease"/>), so the limiter only shaves the crack's
     /// first milliseconds and the body right after it isn't ducked.
     /// </summary>
-    public const float MaxPeakReductionDb = 8f;
+    public const float MaxPeakReductionDb = 9f;
 
     /// <summary>
     /// The synthesised layer under a recording only keeps its first <see cref="SynthWindow"/> seconds (crack, thump and
