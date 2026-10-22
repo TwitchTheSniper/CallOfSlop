@@ -1,0 +1,3442 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Railway Arches",
+ "theme": "A Victorian London brick railway viaduct: sooty stock brick piers and arches, stone keystones, the arches let as a bar, a garage and workshops, ballast and rails on the deck",
+ "category": "special",
+ "description": "A 40 m viaduct section of five 8 m arch bays: a stair bay up to the track deck, an arch bar, an open through-arch, a garage and a workshop. The deck has parapets along both sides and open ends, so sections and bridges join up.",
+ "author": "Call of Slop",
+ "seed": 508,
+ "wallThickness": 0.6,
+ "storeyHeight": 6.5,
+ "doorHeight": 2.3,
+ "exterior": {
+  "color": "$wall",
+  "material": "brick"
+ },
+ "interior": {
+  "color": "$inner",
+  "material": "brick"
+ },
+ "floor": {
+  "color": "#5e5c58",
+  "material": "concrete"
+ },
+ "ceiling": "$vault",
+ "trim": "$coping",
+ "door": "$door",
+ "palettes": {
+  "london stock": {
+   "wall": "#857256",
+   "arch": "#9a8566",
+   "inner": "#7a6a52",
+   "vault": "#4a443c",
+   "coping": "#b8b0a0",
+   "door": "#2a4a3a",
+   "shutter": "#5a6a70",
+   "sign": "#1e2a3a",
+   "deck": "#4a4844"
+  },
+  "engineering red": {
+   "wall": "#6a2e26",
+   "arch": "#7e3a2e",
+   "inner": "#6a3a30",
+   "vault": "#3a2e2a",
+   "coping": "#a8a49a",
+   "door": "#1e2a44",
+   "shutter": "#6a6a66",
+   "sign": "#3a1a1a",
+   "deck": "#454240"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "stairs",
+     "type": "stairhall",
+     "rect": [
+      -20,
+      -4.5,
+      -12,
+      4.5
+     ],
+     "floor": {
+      "color": "#6a6a66",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "bar",
+     "type": "archbar",
+     "rect": [
+      -12,
+      -4.5,
+      -4,
+      4.5
+     ],
+     "floor": {
+      "color": "#5a3e2a",
+      "material": "wood"
+     }
+    },
+    {
+     "id": "passage",
+     "type": "passage",
+     "rect": [
+      -4,
+      -4.5,
+      4,
+      4.5
+     ],
+     "floor": {
+      "color": "#5e5c58",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "garage",
+     "type": "garage",
+     "rect": [
+      4,
+      -4.5,
+      12,
+      4.5
+     ],
+     "floor": {
+      "color": "#605e5a",
+      "material": "concrete"
+     }
+    },
+    {
+     "id": "workshop",
+     "type": "industrial-workshop",
+     "rect": [
+      12,
+      -4.5,
+      20,
+      4.5
+     ],
+     "floor": {
+      "color": "#625f5a",
+      "material": "concrete"
+     }
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      -20,
+      0.6
+     ],
+     "width": 2.6,
+     "head": 3.4
+    },
+    {
+     "type": "arch",
+     "at": [
+      -15.6,
+      4.5
+     ],
+     "width": 2.0,
+     "head": 3.2,
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      -12,
+      2.2
+     ],
+     "width": 1.0,
+     "material": "wood",
+     "color": "$door"
+    },
+    {
+     "type": "door",
+     "at": [
+      -9.6,
+      4.5
+     ],
+     "width": 1.2,
+     "material": "glass",
+     "health": 60
+    },
+    {
+     "type": "window",
+     "at": [
+      -6.2,
+      4.5
+     ],
+     "width": 2.6,
+     "sill": 0.6,
+     "head": 3.0,
+     "health": 20
+    },
+    {
+     "type": "door",
+     "at": [
+      -6.0,
+      -4.5
+     ],
+     "width": 1.0,
+     "material": "metal",
+     "color": "$door"
+    },
+    {
+     "type": "window",
+     "at": [
+      -9.4,
+      -4.5
+     ],
+     "width": 1.6,
+     "sill": 1.5,
+     "head": 2.6
+    },
+    {
+     "type": "door",
+     "at": [
+      -4,
+      -2.6
+     ],
+     "width": 1.0,
+     "material": "wood"
+    },
+    {
+     "type": "door",
+     "at": [
+      4,
+      -2.6
+     ],
+     "width": 1.0,
+     "material": "metal",
+     "color": "$door"
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      4.5
+     ],
+     "width": 6.0,
+     "head": 4.6
+    },
+    {
+     "type": "arch",
+     "at": [
+      0,
+      -4.5
+     ],
+     "width": 6.0,
+     "head": 4.6
+    },
+    {
+     "type": "door",
+     "at": [
+      8.2,
+      4.5
+     ],
+     "width": 3.0,
+     "material": "metal",
+     "color": "$shutter",
+     "open": true
+    },
+    {
+     "type": "door",
+     "at": [
+      10.0,
+      -4.5
+     ],
+     "width": 1.0,
+     "material": "metal",
+     "color": "$door"
+    },
+    {
+     "type": "window",
+     "at": [
+      6.2,
+      -4.5
+     ],
+     "width": 1.4,
+     "sill": 1.6,
+     "head": 2.6
+    },
+    {
+     "type": "door",
+     "at": [
+      12,
+      -1.6
+     ],
+     "width": 1.0,
+     "material": "wood"
+    },
+    {
+     "type": "door",
+     "at": [
+      14.4,
+      4.5
+     ],
+     "width": 1.2,
+     "material": "metal",
+     "color": "$door"
+    },
+    {
+     "type": "window",
+     "at": [
+      17.6,
+      4.5
+     ],
+     "width": 2.0,
+     "sill": 1.0,
+     "head": 2.8,
+     "health": 10
+    },
+    {
+     "type": "door",
+     "at": [
+      16.0,
+      -4.5
+     ],
+     "width": 1.0,
+     "material": "metal",
+     "color": "$door"
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    -18.7,
+    -4.05,
+    -13.6,
+    -2.85
+   ],
+   "dir": "+x",
+   "color": {
+    "color": "#5c5a56",
+    "material": "concrete"
+   }
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "$deck",
+   "material": "dirt"
+  }
+ },
+ "extras": [
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    6.6,
+    4.2
+   ],
+   "max": [
+    20.3,
+    7.7,
+    4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    7.7,
+    4.15
+   ],
+   "max": [
+    20.3,
+    7.8,
+    4.85
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    6.05,
+    4.8
+   ],
+   "max": [
+    20.3,
+    6.55,
+    5.02
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    6.6,
+    -4.8
+   ],
+   "max": [
+    20.3,
+    7.7,
+    -4.2
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    7.7,
+    -4.85
+   ],
+   "max": [
+    20.3,
+    7.8,
+    -4.15
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.3,
+    6.05,
+    -5.02
+   ],
+   "max": [
+    20.3,
+    6.55,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.55,
+    0,
+    4.8
+   ],
+   "max": [
+    -19.45,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.55,
+    0,
+    4.8
+   ],
+   "max": [
+    -11.45,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.55,
+    0,
+    4.8
+   ],
+   "max": [
+    -3.45,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.45,
+    0,
+    4.8
+   ],
+   "max": [
+    4.55,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.45,
+    0,
+    4.8
+   ],
+   "max": [
+    12.55,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.45,
+    0,
+    4.8
+   ],
+   "max": [
+    20.55,
+    6.05,
+    4.96
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.1,
+    4.8
+   ],
+   "max": [
+    -19.35,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.65,
+    3.1,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.55,
+    4.8
+   ],
+   "max": [
+    -19.206,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.794,
+    3.55,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.0,
+    4.8
+   ],
+   "max": [
+    -18.988,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.012,
+    4.0,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.45,
+    4.8
+   ],
+   "max": [
+    -18.678,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.322,
+    4.45,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.9,
+    4.8
+   ],
+   "max": [
+    -18.239,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.761,
+    4.9,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.35,
+    4.8
+   ],
+   "max": [
+    -17.564,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.436,
+    5.35,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.8,
+    4.8
+   ],
+   "max": [
+    -16.415,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.585,
+    5.8,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.9,
+    4.8
+   ],
+   "max": [
+    -12.55,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.3,
+    5.5,
+    4.8
+   ],
+   "max": [
+    -15.7,
+    6.1,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    3.1,
+    4.8
+   ],
+   "max": [
+    -11.35,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.65,
+    3.1,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    3.55,
+    4.8
+   ],
+   "max": [
+    -11.206,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.794,
+    3.55,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.0,
+    4.8
+   ],
+   "max": [
+    -10.988,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.012,
+    4.0,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.45,
+    4.8
+   ],
+   "max": [
+    -10.678,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.322,
+    4.45,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.9,
+    4.8
+   ],
+   "max": [
+    -10.239,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.761,
+    4.9,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.35,
+    4.8
+   ],
+   "max": [
+    -9.564,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.436,
+    5.35,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.8,
+    4.8
+   ],
+   "max": [
+    -8.415,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.585,
+    5.8,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.9,
+    4.8
+   ],
+   "max": [
+    -4.55,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -8.3,
+    5.5,
+    4.8
+   ],
+   "max": [
+    -7.7,
+    6.1,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.1,
+    4.8
+   ],
+   "max": [
+    -3.35,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.35,
+    3.1,
+    4.8
+   ],
+   "max": [
+    3.45,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.55,
+    4.8
+   ],
+   "max": [
+    -3.206,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.206,
+    3.55,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.0,
+    4.8
+   ],
+   "max": [
+    -2.988,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.988,
+    4.0,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.45,
+    4.8
+   ],
+   "max": [
+    -2.678,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.678,
+    4.45,
+    4.8
+   ],
+   "max": [
+    3.45,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.9,
+    4.8
+   ],
+   "max": [
+    -2.239,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.239,
+    4.9,
+    4.8
+   ],
+   "max": [
+    3.45,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.35,
+    4.8
+   ],
+   "max": [
+    -1.564,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    1.564,
+    5.35,
+    4.8
+   ],
+   "max": [
+    3.45,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.8,
+    4.8
+   ],
+   "max": [
+    -0.415,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    0.415,
+    5.8,
+    4.8
+   ],
+   "max": [
+    3.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.9,
+    4.8
+   ],
+   "max": [
+    3.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -0.3,
+    5.5,
+    4.8
+   ],
+   "max": [
+    0.3,
+    6.1,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.1,
+    4.8
+   ],
+   "max": [
+    4.65,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.35,
+    3.1,
+    4.8
+   ],
+   "max": [
+    11.45,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.55,
+    4.8
+   ],
+   "max": [
+    4.794,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.206,
+    3.55,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.0,
+    4.8
+   ],
+   "max": [
+    5.012,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.988,
+    4.0,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.45,
+    4.8
+   ],
+   "max": [
+    5.322,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.678,
+    4.45,
+    4.8
+   ],
+   "max": [
+    11.45,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.9,
+    4.8
+   ],
+   "max": [
+    5.761,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.239,
+    4.9,
+    4.8
+   ],
+   "max": [
+    11.45,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.35,
+    4.8
+   ],
+   "max": [
+    6.436,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    9.564,
+    5.35,
+    4.8
+   ],
+   "max": [
+    11.45,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.8,
+    4.8
+   ],
+   "max": [
+    7.585,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    8.415,
+    5.8,
+    4.8
+   ],
+   "max": [
+    11.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.9,
+    4.8
+   ],
+   "max": [
+    11.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.7,
+    5.5,
+    4.8
+   ],
+   "max": [
+    8.3,
+    6.1,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.1,
+    4.8
+   ],
+   "max": [
+    12.65,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.35,
+    3.1,
+    4.8
+   ],
+   "max": [
+    19.45,
+    3.55,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.55,
+    4.8
+   ],
+   "max": [
+    12.794,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.206,
+    3.55,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.0,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.0,
+    4.8
+   ],
+   "max": [
+    13.012,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.988,
+    4.0,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.45,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.45,
+    4.8
+   ],
+   "max": [
+    13.322,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.678,
+    4.45,
+    4.8
+   ],
+   "max": [
+    19.45,
+    4.9,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.9,
+    4.8
+   ],
+   "max": [
+    13.761,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.239,
+    4.9,
+    4.8
+   ],
+   "max": [
+    19.45,
+    5.35,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.35,
+    4.8
+   ],
+   "max": [
+    14.436,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.564,
+    5.35,
+    4.8
+   ],
+   "max": [
+    19.45,
+    5.8,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.8,
+    4.8
+   ],
+   "max": [
+    15.585,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.415,
+    5.8,
+    4.8
+   ],
+   "max": [
+    19.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.9,
+    4.8
+   ],
+   "max": [
+    19.45,
+    6.05,
+    4.9
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.7,
+    5.5,
+    4.8
+   ],
+   "max": [
+    16.3,
+    6.1,
+    5.0
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -20.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -19.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -11.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.55,
+    0,
+    -4.96
+   ],
+   "max": [
+    -3.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    4.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    12.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.45,
+    0,
+    -4.96
+   ],
+   "max": [
+    20.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$wall",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    -19.35,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.65,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    -19.206,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -12.794,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    -18.988,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.012,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    -18.678,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.322,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    -18.239,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -13.761,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    -17.564,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -14.436,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    -16.415,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -15.585,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -19.45,
+    5.9,
+    -4.9
+   ],
+   "max": [
+    -12.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -16.3,
+    5.5,
+    -5.0
+   ],
+   "max": [
+    -15.7,
+    6.1,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    -11.35,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.65,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    -11.206,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -4.794,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    -10.988,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.012,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    -10.678,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.322,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    -10.239,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -5.761,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    -9.564,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -6.436,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    -8.415,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -7.585,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.45,
+    5.9,
+    -4.9
+   ],
+   "max": [
+    -4.55,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -8.3,
+    5.5,
+    -5.0
+   ],
+   "max": [
+    -7.7,
+    6.1,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    -3.35,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.35,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    -3.206,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    3.206,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    -2.988,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.988,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    -2.678,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.678,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    -2.239,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    2.239,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    -1.564,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    1.564,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    -0.415,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    0.415,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -3.45,
+    5.9,
+    -4.9
+   ],
+   "max": [
+    3.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    -0.3,
+    5.5,
+    -5.0
+   ],
+   "max": [
+    0.3,
+    6.1,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    4.65,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.35,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    4.794,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    11.206,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    5.012,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.988,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    5.322,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.678,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    5.761,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    10.239,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    6.436,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    9.564,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    7.585,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    8.415,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    4.55,
+    5.9,
+    -4.9
+   ],
+   "max": [
+    11.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    7.7,
+    5.5,
+    -5.0
+   ],
+   "max": [
+    8.3,
+    6.1,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    12.65,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.35,
+    3.1,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    3.55,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    12.794,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    19.206,
+    3.55,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.0,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    13.012,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.988,
+    4.0,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.45,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    13.322,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.678,
+    4.45,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    4.9,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    13.761,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    18.239,
+    4.9,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    5.35,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    14.436,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    17.564,
+    5.35,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    5.8,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    15.585,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    16.415,
+    5.8,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    12.55,
+    5.9,
+    -4.9
+   ],
+   "max": [
+    19.45,
+    6.05,
+    -4.8
+   ],
+   "color": {
+    "color": "$arch",
+    "material": "brick"
+   }
+  },
+  {
+   "type": "block",
+   "min": [
+    15.7,
+    5.5,
+    -5.0
+   ],
+   "max": [
+    16.3,
+    6.1,
+    -4.8
+   ],
+   "color": "$coping"
+  },
+  {
+   "type": "block",
+   "min": [
+    -11.4,
+    3.3,
+    4.8
+   ],
+   "max": [
+    -4.6,
+    3.9,
+    4.92
+   ],
+   "color": "$sign"
+  },
+  {
+   "type": "block",
+   "min": [
+    4.6,
+    3.6,
+    4.8
+   ],
+   "max": [
+    11.8,
+    4.1,
+    4.92
+   ],
+   "color": "$sign"
+  },
+  {
+   "type": "prop",
+   "name": "Hanging Lantern",
+   "at": [
+    -10.8,
+    3.1,
+    5.1
+   ]
+  },
+  {
+   "type": "prop",
+   "name": "Hanging Lantern",
+   "at": [
+    -5.0,
+    3.1,
+    5.1
+   ]
+  },
+  {
+   "type": "prop",
+   "name": "Tyre Stack",
+   "at": [
+    5.4,
+    5.5
+   ]
+  },
+  {
+   "type": "prop",
+   "name": "Oil Drum",
+   "at": [
+    11.0,
+    5.35
+   ]
+  },
+  {
+   "type": "prop",
+   "name": "Electric Meter",
+   "at": [
+    19.0,
+    0.9,
+    4.8
+   ]
+  },
+  {
+   "type": "prop",
+   "name": "Sandwich Board",
+   "at": [
+    -11.4,
+    5.6
+   ],
+   "yaw": 20
+  },
+  {
+   "type": "prop",
+   "name": "Wheelie Bin",
+   "at": [
+    -7.8,
+    -5.3
+   ],
+   "yaw": 180
+  },
+  {
+   "type": "prop",
+   "name": "Wheelie Bin Grey",
+   "at": [
+    -8.6,
+    -5.3
+   ],
+   "yaw": 180
+  }
+ ],
+ "anchors": [
+  {
+   "type": "point",
+   "name": "deck centre",
+   "floor": 0,
+   "at": [
+    0,
+    0
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "workshop",
+   "at": [
+    16,
+    -1
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "bar",
+   "at": [
+    -8,
+    -2.2
+   ]
+  }
+ ]
+}

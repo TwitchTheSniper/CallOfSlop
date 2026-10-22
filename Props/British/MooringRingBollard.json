@@ -1,0 +1,185 @@
+{
+ "format": "call-of-slop-prop/1",
+ "category": "British",
+ "author": "Call of Slop",
+ "name": "Mooring Ring Bollard",
+ "description": "A short black cast-iron canal-side mooring bollard on a stone pad. Low enough to step over.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.4,
+    0.4,
+    0.4
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.3,
+    0.32,
+    0.1242
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    0.32,
+    0.1242
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    45,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    0.32,
+    0.1242
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    90,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.3,
+    0.32,
+    0.1242
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    135,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    0.08,
+    0.1656
+   ],
+   "offset": [
+    0.0,
+    0.36,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    0.08,
+    0.1656
+   ],
+   "offset": [
+    0.0,
+    0.36,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    45,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    0.08,
+    0.1656
+   ],
+   "offset": [
+    0.0,
+    0.36,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    90,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    0.08,
+    0.1656
+   ],
+   "offset": [
+    0.0,
+    0.36,
+    0.0
+   ],
+   "color": "#1a1a1c",
+   "rotation": [
+    0,
+    135,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.5,
+    0.05,
+    0.5
+   ],
+   "offset": [
+    0,
+    0.025,
+    0
+   ],
+   "color": "#7a7670",
+   "material": "concrete"
+  }
+ ]
+}

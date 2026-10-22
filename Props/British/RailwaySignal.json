@@ -1,0 +1,166 @@
+{
+ "format": "call-of-slop-prop/1",
+ "category": "British",
+ "author": "Call of Slop",
+ "name": "Railway Signal",
+ "description": "A trackside colour-light railway signal on a post, showing red. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.5,
+    0.15,
+    0.5
+   ]
+  },
+  {
+   "size": [
+    0.16,
+    4.0,
+    0.16
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.5,
+    0.15,
+    0.5
+   ],
+   "offset": [
+    0,
+    0.075,
+    0
+   ],
+   "color": "#6a6a64",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    0.14,
+    3.6,
+    0.14
+   ],
+   "offset": [
+    0,
+    1.95,
+    0
+   ],
+   "color": "#2a2a2c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.36,
+    0.9,
+    0.2
+   ],
+   "offset": [
+    0,
+    3.6,
+    0.06
+   ],
+   "color": "#141414"
+  },
+  {
+   "size": [
+    0.6,
+    0.66,
+    0.03
+   ],
+   "offset": [
+    0,
+    3.6,
+    -0.06
+   ],
+   "color": "#141414"
+  },
+  {
+   "size": [
+    0.16,
+    0.16,
+    0.03
+   ],
+   "offset": [
+    0,
+    3.85,
+    0.17
+   ],
+   "color": "#ff3020"
+  },
+  {
+   "size": [
+    0.16,
+    0.16,
+    0.03
+   ],
+   "offset": [
+    0,
+    3.6,
+    0.17
+   ],
+   "color": "#3a3010"
+  },
+  {
+   "size": [
+    0.16,
+    0.16,
+    0.03
+   ],
+   "offset": [
+    0,
+    3.35,
+    0.17
+   ],
+   "color": "#103a18"
+  },
+  {
+   "size": [
+    0.3,
+    0.04,
+    0.12
+   ],
+   "offset": [
+    0,
+    3.92,
+    0.24
+   ],
+   "color": "#141414"
+  },
+  {
+   "size": [
+    0.4,
+    0.3,
+    0.25
+   ],
+   "offset": [
+    0,
+    0.4,
+    0.2
+   ],
+   "color": "#4a4e50"
+  },
+  {
+   "size": [
+    0.04,
+    1.4,
+    0.04
+   ],
+   "offset": [
+    0.15,
+    1.2,
+    -0.1
+   ],
+   "color": "#e8b818"
+  }
+ ]
+}

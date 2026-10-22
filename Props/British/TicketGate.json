@@ -1,0 +1,108 @@
+{
+ "format": "call-of-slop-prop/1",
+ "category": "British",
+ "author": "Call of Slop",
+ "name": "Ticket Gate",
+ "description": "A station ticket barrier cabinet with a card reader and a glass paddle on its +Z side. Line several up 1.0 m apart.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.3,
+    1.0,
+    0.3
+   ]
+  }
+ ],
+ "breakable": {
+  "health": 300,
+  "breakBy": [
+   "explosions",
+   "streaks"
+  ],
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.2
+   ]
+  }
+ },
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    1.3,
+    0.95,
+    0.26
+   ],
+   "offset": [
+    0,
+    0.475,
+    0.0
+   ],
+   "color": "#c8ccd0",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.32,
+    0.05,
+    0.3
+   ],
+   "offset": [
+    0,
+    0.98,
+    0.0
+   ],
+   "color": "#2a2c2e"
+  },
+  {
+   "size": [
+    0.18,
+    0.04,
+    0.16
+   ],
+   "offset": [
+    0.45,
+    1.02,
+    0.0
+   ],
+   "color": "#3a6ac8"
+  },
+  {
+   "size": [
+    0.06,
+    0.12,
+    0.2
+   ],
+   "offset": [
+    -0.6,
+    0.9,
+    0.0
+   ],
+   "color": "#30d060"
+  },
+  {
+   "size": [
+    0.02,
+    0.6,
+    0.36
+   ],
+   "offset": [
+    0.1,
+    0.75,
+    0.31
+   ],
+   "color": "#9ac0d0"
+  }
+ ]
+}
