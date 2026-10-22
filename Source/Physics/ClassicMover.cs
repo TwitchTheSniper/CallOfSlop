@@ -73,7 +73,7 @@ public sealed class ClassicMover : IMover
         var control = s.Grounded ? 14f : 3f; // snappy on the ground, floaty in the air
         var targetX = wish.X * speed;
         var targetZ = wish.Z * speed;
-        if (map.TerrainCollision is { } ground && s.Position.Y - ground.HeightAt(s.Position.X, s.Position.Z) < SlopeRules.OnGround)
+        if (map.TerrainCollision?.Layer(s.Position.Y) is { } ground && s.Position.Y - ground.HeightAt(s.Position.X, s.Position.Z) < SlopeRules.OnGround)
             SlopeSteer(ground, s, wish, speed, ref targetX, ref targetZ, ref control);
         var blend = 1f - MathF.Exp(-control * World.TickDt);
         s.Velocity.X += (targetX - s.Velocity.X) * blend;
@@ -118,7 +118,7 @@ public sealed class ClassicMover : IMover
     {
         s.Position += (s.MantleTo - s.Position) / s.MantleTicks;
         if (World.Map.TerrainCollision is { } ground)
-            s.Position.Y = MathF.Max(s.Position.Y, ground.HeightAt(s.Position.X, s.Position.Z)); // don't cut through a bank's edge
+            s.Position.Y = MathF.Max(s.Position.Y, ground.GroundBelow(s.Position.X, s.Position.Z, s.Position.Y)); // don't cut through a bank's edge
         s.MantleTicks--;
         s.Velocity = Vector3.Zero;
         if (s.MantleTicks == 0)
@@ -172,7 +172,7 @@ public sealed class ClassicMover : IMover
         var boxes = phys.Boxes;
         var parkour = s.MovePerk == PerkId.Parkour;
         var maxReach = parkour ? Perks.ParkourReach : World.MantleReach;
-        var terrain = phys.Terrain;
+        var terrain = phys.Terrain?.Layer(feet.Y); // (in a cave: its floor, not the surface over it)
         // Terrain banks are a cell wide or more, so on terrain maps also look a little further for the top.
         ReadOnlySpan<float> reach = terrain == null ? [0.55f, 0.8f, 1.05f] : [0.55f, 0.8f, 1.05f, 1.35f, 1.65f];
         ReadOnlySpan<float> side = [0f, 0.15f, -0.15f, 0.3f, -0.3f]; // small sideways nudge to line up with windows
@@ -282,7 +282,20 @@ public sealed class ClassicMover : IMover
             MoverPhysics.Vertical(feet, prevY, ref newY, ref velocity, ref grounded, H, _moverTick);
         feet.Y = newY;
         if (phys.Terrain is { } terrain)
-            TerrainVertical(terrain, ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
+        {
+            TerrainVertical(terrain.Layer(feet.Y), ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
+            if (terrain.HasVoids)
+            {
+                // A cave's ceiling: bump the head on it.
+                var ceiling = terrain.CeilingAbove(feet.X, feet.Z, feet.Y);
+                if (feet.Y + H > ceiling)
+                {
+                    feet.Y = MathF.Max(ceiling - H, terrain.GroundBelow(feet.X, feet.Z, feet.Y));
+                    if (velocity.Y > 0)
+                        velocity.Y = 0;
+                }
+            }
+        }
 
         // ---- Horizontal, X then Z ----
         feet = MoveAxis(phys, feet, velocity.X * dt, true, ref velocity, grounded, H);
@@ -356,7 +369,7 @@ public sealed class ClassicMover : IMover
 
         // Terrain rising in front: walk up it if it's walkable or a lip within a step (and there's headroom), otherwise it's
         // a wall (SlopeRules).
-        if (phys.Terrain is { } terrain)
+        if (phys.Terrain?.Layer(feet.Y) is { } terrain)
         {
             var g = terrain.HeightAt(p.X, p.Z);
             if (g > p.Y + 0.001f)
@@ -366,6 +379,20 @@ public sealed class ClassicMover : IMover
                 else
                 {
                     p = feet; // no progress along this axis this tick
+                    if (alongX)
+                        velocity.X = 0;
+                    else
+                        velocity.Z = 0;
+                }
+            }
+            // A cave's ceiling coming down lower than the head (where it meets the walls): a wall too. Only when it's lower
+            // than where we stand, so nobody gets stuck under one.
+            if (terrain.HasVoids && p != feet)
+            {
+                var ceiling = terrain.CeilingAbove(p.X, p.Z, p.Y);
+                if (p.Y + height > ceiling && ceiling < terrain.CeilingAbove(feet.X, feet.Z, feet.Y) - 0.001f)
+                {
+                    p = feet;
                     if (alongX)
                         velocity.X = 0;
                     else

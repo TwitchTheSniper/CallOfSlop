@@ -418,6 +418,11 @@ public sealed partial class Map
         foreach (var it in spec.Items)
         {
             var rng = new Foliage.Rng((uint)spec.Seed * 2654435761u ^ (uint)itemIndex++ * 40503u ^ 0x51ed27u);
+            if (HasTerrainVoids && IsTerrainHole(it.X, it.Z))
+            {
+                Console.WriteLine($"Map '{Name}': a hand-placed {it.Type} at ({it.X:0.#}, {it.Z:0.#}) is over a terrain hole and is left out");
+                continue;
+            }
             var y = FoliageGround(it.X, it.Z);
             var yaw = rng.Next();
             var tint = 0.92f + rng.Next() * 0.16f;
@@ -554,6 +559,8 @@ public sealed partial class Map
             }
             if (Boundary != null && !Boundary.Inside(x, z, margin + (tree ? 1f : 0.3f)))
                 continue; // only inside the map's outline (MapEdges.cs)
+            if (HasTerrainVoids && TerrainHoleNear(x, z, margin + (tree ? 1.5f : 0.4f)))
+                continue; // nothing grows over (or hanging over the edge of) a terrain hole
             if (PlacedBuildings.Count > 0 && InsideBuilding(x, z))
             {
                 stats.Indoors++;

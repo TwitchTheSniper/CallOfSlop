@@ -115,6 +115,33 @@ public static class PropDebris
         }
     }
 
+    /// <summary>
+    /// A spurt of sparks from <paramref name="at"/> (a lit explosive prop): small bright pieces flung up and out that
+    /// fall and die within about a second. Shares the pool with the debris.
+    /// </summary>
+    public static void Sparks(Vector3 at, int count, int seed)
+    {
+        var rng = new Foliage.Rng((uint)seed * 2654435761u ^ 0x5a4bu);
+        for (var i = 0; i < Math.Min(count, Capacity); i++)
+        {
+            var slot = _count < Capacity ? _count++ : Oldest();
+            ref var p = ref Pool[slot];
+            p.Pos = at + new Vector3((rng.Next() - 0.5f) * 0.2f, 0.02f, (rng.Next() - 0.5f) * 0.2f);
+            var s = 0.025f + rng.Next() * 0.035f;
+            p.Size = new Vector3(s);
+            p.Color = rng.Next() < 0.5f ? new Vector3(1f, 0.85f, 0.35f) : new Vector3(1f, 0.5f, 0.12f);
+            p.Vel = new Vector3((rng.Next() - 0.5f) * 3f, 2.5f + rng.Next() * 3f, (rng.Next() - 0.5f) * 3f);
+            p.SpinAxis = Vector3.UnitY;
+            p.Spin = 0;
+            p.Rot = Quaternion.Identity;
+            p.Age = 0;
+            p.Life = 0.7f + rng.Next() * 0.6f;
+            p.Floor = FloorUnder(p.Pos);
+            p.Resting = false;
+            Spawned++;
+        }
+    }
+
     private static int Oldest()
     {
         var best = 0;

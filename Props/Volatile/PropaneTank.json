@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Propane Tank",
+  "category": "Volatile",
+  "description": "A white propane bottle with a red valve guard. Shoot it and it hisses for a second, then goes off hard.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.38, 1.42, 0.38]}],
+  "scatter": {"randomYaw": true, "scale": [0.96, 1.04]},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.06, 0.2], "speed": 8, "colors": ["white", "red", "darkgrey"]}, "explode": {"radius": 6.5, "damage": 140, "fuse": 1.0}},
+  "parts": [
+    {"size": [0.36, 1.12, 0.149], "offset": [0.0, 0.62, 0.0], "color": "white", "rotation": [0, 0, 0], "material": "metal"},
+    {"size": [0.36, 1.12, 0.149], "offset": [0.0, 0.62, 0.0], "color": "white", "rotation": [0, 45, 0], "material": "metal"},
+    {"size": [0.36, 1.12, 0.149], "offset": [0.0, 0.62, 0.0], "color": "white", "rotation": [0, 90, 0], "material": "metal"},
+    {"size": [0.36, 1.12, 0.149], "offset": [0.0, 0.62, 0.0], "color": "white", "rotation": [0, 135, 0], "material": "metal"},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.0, 1.22, 0.0], "color": "white", "rotation": [0, 0, 0]},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.0, 1.22, 0.0], "color": "white", "rotation": [0, 45, 0]},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.0, 1.22, 0.0], "color": "white", "rotation": [0, 90, 0]},
+    {"size": [0.3, 0.12, 0.124], "offset": [0.0, 1.22, 0.0], "color": "white", "rotation": [0, 135, 0]},
+    {"size": [0.38, 0.06, 0.157], "offset": [0.0, 0.04, 0.0], "color": "darkgrey", "rotation": [0, 0, 0]},
+    {"size": [0.38, 0.06, 0.157], "offset": [0.0, 0.04, 0.0], "color": "darkgrey", "rotation": [0, 45, 0]},
+    {"size": [0.38, 0.06, 0.157], "offset": [0.0, 0.04, 0.0], "color": "darkgrey", "rotation": [0, 90, 0]},
+    {"size": [0.38, 0.06, 0.157], "offset": [0.0, 0.04, 0.0], "color": "darkgrey", "rotation": [0, 135, 0]},
+    {"size": [0.06, 0.14, 0.06], "offset": [0, 1.34, 0], "color": "galvanized"},
+    {"size": [0.16, 0.05, 0.05], "offset": [0, 1.39, 0], "color": "#c8161d"},
+    {"size": [0.26, 0.16, 0.26], "offset": [0, 1.33, 0], "color": "#c8161d"},
+    {"size": [0.2, 0.08, 0.012], "offset": [0, 0.8, 0.186], "color": "#c8161d"},
+    {"size": [0.012, 0.08, 0.2], "offset": [0.186, 0.8, 0], "color": "#c8161d"}
+  ]
+}

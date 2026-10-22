@@ -59,7 +59,7 @@ public sealed class PropBatches
         for (var i = 0; i < all.Count; i++)
         {
             var p = all[i];
-            if (!index.TryGetValue(p.Def.Key, out var d))
+            if (!TryIndex(index, p.Def, out var d))
                 continue;
             var cx = Math.Clamp((int)MathF.Floor((p.Position.X + map.HalfX) / ChunkSize), 0, ncx - 1);
             var cz = Math.Clamp((int)MathF.Floor((p.Position.Z + map.HalfZ) / ChunkSize), 0, ncz - 1);
@@ -81,7 +81,7 @@ public sealed class PropBatches
         {
             var i = (int)(keys[k] & 0xFFFFFF);
             var p = all[i];
-            var d = index[p.Def.Key];
+            TryIndex(index, p.Def, out var d);
             types.Add(d);
             b.SlotOf[i] = k;
             b._scales[k] = p.Scale;
@@ -119,6 +119,13 @@ public sealed class PropBatches
         }
         return b;
     }
+
+    /// <summary>
+    /// A prop's mesh: its own, or for a flag variant missing from the meshes (a library built without
+    /// <see cref="FlagPool.WithVariants"/>) the prop it was built from, drawn with its own cloth.
+    /// </summary>
+    private static bool TryIndex(Dictionary<string, int> index, PropDef def, out int d) =>
+        index.TryGetValue(def.Key, out d) || def.FlagBase is { } b && index.TryGetValue(b.Key, out d);
 
     /// <summary>Hides broken props (scale 0, collapsed in the vertex shader) and shows restored ones. No allocation.</summary>
     public void ApplyBroken(Map map)

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "High Bay Light",
+  "category": "Warehouse",
+  "description": "A warehouse high-bay lamp on a wire (the lamp is at its foot: give it y = roof height - 1.4). Glows warm white.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 120,
+  "parts": [
+    {"size": [0.7, 0.18, 0.7], "offset": [0, 0.16, 0], "color": "darkgrey", "material": "metal"},
+    {"size": [0.3, 0.2, 0.3], "offset": [0, 0.34, 0], "color": "darkgrey"},
+    {"size": [0.02, 1.0, 0.02], "offset": [0, 0.94, 0.0], "color": "black"},
+    {"size": [0.6, 0.06, 0.6], "offset": [0, 0.04, 0], "color": "#fff4d8", "anim": {"type": "pulse", "period": 9.0, "color": "#fff6e0", "off": "#efe3c4", "glow": 1.1}}
+  ]
+}

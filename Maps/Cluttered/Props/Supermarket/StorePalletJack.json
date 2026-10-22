@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Store Pallet Jack",
+  "category": "Supermarket",
+  "description": "A red hand pallet truck left on the floor, forks down.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 60,
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [1.15, 0.08, 0.16], "offset": [0.1, 0.04, 0.2], "color": "#d62d20"},
+    {"size": [1.15, 0.08, 0.16], "offset": [0.1, 0.04, -0.2], "color": "#d62d20"},
+    {"size": [0.3, 0.35, 0.55], "offset": [-0.6, 0.2, 0], "color": "#d62d20"},
+    {"size": [0.05, 1.1, 0.05], "offset": [-0.8, 0.85, 0], "color": "#2a2e34", "rotation": [0, 0, 18]},
+    {"size": [0.05, 0.05, 0.32], "offset": [-0.97, 1.37, 0], "color": "black"},
+    {"size": [0.12, 0.12, 0.12], "offset": [-0.6, 0.06, 0.2], "color": "black"},
+    {"size": [0.12, 0.12, 0.12], "offset": [-0.6, 0.06, -0.2], "color": "black"}
+  ]
+}

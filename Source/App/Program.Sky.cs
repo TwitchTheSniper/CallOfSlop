@@ -102,7 +102,7 @@ public static unsafe partial class Program
             if (_skySmoke >= SkySmokeViews.Length)
             {
                 EndSkySmoke();
-                SmokeNextMap(now);
+                StartCaveSmoke(now); // then the cave step (Program.Caves.cs), then on to the maps
                 return;
             }
             BeginSkySmokeView(now);

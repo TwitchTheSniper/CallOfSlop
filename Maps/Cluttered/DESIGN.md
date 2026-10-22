@@ -318,3 +318,249 @@ park, ivy (cosmetic leafy slabs) up the walls.
 paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
 frustum-culled, litter fades out with distance and animated props hold still past 80 m.
 `tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).
+## 08 Truck Stop (medium, noisy smooth outline, about 121 x 81 m, 8,750 m2, 12 players): desert highway truck stop at dusk
+
+**Theme.** A truck stop on a desert highway at dusk (`dusk` preset with an orange desert haze and the first stars; the
+sun sits low in the north-west, so neither team looks straight into it along the east-west fights). A two-storey
+L-shaped motel round a courtyard with a drained pool, a diner, a gas station with its convenience store, a water tower,
+a tire shop and a big lot full of semis and trailers, with the highway along the south edge. The neon MOTEL sign lights
+letter by letter with a chasing arrow and a flickering NO in VACANCY, the billboards' lamps flicker, the pumps' price
+panels and the ice machines glow. Terrain is flat desert (sand) inside a ranch fence, with red mesas, low hills and buttes
+beyond it.
+
+**Shape.** A `smooth` outline through 22 control points with `noise` (1.2 m, 16 m bumps) and a weathered wooden `fence`
+edge. It follows the buildings: tight behind the motel, the diner and the tire shop, a long straight run along the far
+side of the highway, the south-west and south-east corners cut off diagonally, so the highway leaves the map at both
+ends (closed by water barriers, road works signs and arrow boards).
+
+**Layout and routes.** Blue spawns in the service yard behind the motel (west), Red at the east end of the truck lot.
+- **The motel (Blue's side, vertical).** Two wings of rooms (8 and 5 a floor) with 2 m walkways under balconies, joined
+  at the lobby (reception, TV corner, ice and vending machines, a back door to Blue's yard). 13 rooms are walk-in and
+  furnished (bed, TV, bedside table and lamp, a bathroom behind a partition with toilet, sink and shower), the others are
+  locked (painted doors, curtained windows). A breezeway runs through the west wing from the yard to the walkway. Two
+  staircases lead up to the balconies (south end of the west wing, east end of the north wing), which look over the
+  courtyard, the car park and the approach from the middle. The courtyard has a drained pool (a terrain pit: 1 m deep,
+  1.8 m at the deep end, a ramp cut into the shallow end, a step at the drop) with loungers, umbrellas and a tired lawn.
+- **The middle (contested).** The diner (booths along the front windows, a counter with stools, the kitchen behind,
+  dumpsters by its back door), the diner lot, the water tower, the convenience store (shelving aisles, fridges, the
+  counter) and the gas canopy over two pump islands, with the closed highway beyond (a jack-knifed semi, a crash with a
+  police car and cones, street lamps along the sidewalk, two billboards).
+- **The truck lot (Red's side, cover maze).** Three double rows of trailers in bays (box trailers, reefers, flatbeds
+  with lumber, pipes or machinery, half of them coupled to semi tractors), aisles between the rows, a cross aisle, a
+  truck fuel island under its own canopy with a semi filling up. The flatbeds are a mantle up (1.4 m deck, cargo on top),
+  two box trailers have crate steps up to their roofs (3.76 m). The tire shop (three bays with a car up on a lift, tire
+  racks, tool chests, a tire changer, an office) has a fire escape on its east wall up to its roof, which looks over the lot.
+- **Hills:** under the gas canopy (between the pump islands), the diner lot, and inside the diner by the counter (a small
+  zone, 3 m). **Flags:** at the back of each team's spawn.
+
+**Balance (not mirrored).** Blue's motel gives height (balconies 3.4 m up over the courtyard and the car park), Red's
+lot gives cover (trailers you can only see over from their roofs) and flanks (aisles, gaps between paired trailers, the
+garage roof). The hills sit on the line of equal walk, found by walking a 0.5 m grid from each team's spawns in the
+generator (Blue/Red: canopy 60/59 m, diner lot 57/58 m, diner 67/63 m, enemy flag 119/119 m), and the self-test measures
+it again on the game's nav graph, averaged over each team's spawns: canopy 70/69 m (+0.7%), diner lot 69/70 m (-2.4%),
+diner 83/86 m (-2.9%), enemy flag 131/130 m (+0.7%), all well inside the 10% the test allows. Solid cover within 6 m of
+each team's routes to the hills: Blue 117, Red 123 (95%; the test wants 70%). No Blue spawn sees a Red one at eye height
+(the motel, the store and the trailers are in the way). Bots reach every level (nav nodes in the main nav area: 12 on the
+balconies, 4 on the pool floor, 33 on the tire shop roof, 27 on trailer roofs). In the 12-player bot matches (90 s) the
+free-for-all had 70 kills and team deathmatch 47 (Blue 28, Red 19, with the idle host on Blue), no stuck bots, worst
+server tick 0.75 ms.
+
+**Placement** (with `townkit.py`): rooms furnished against their walls with the doorways and an aisle clear; bins and a
+dumpster by every back door with trash bags and litter round them; AC units, vents and dishes on the flat roofs, wall
+units on the outside walls; pumps on their islands under the canopies; cars square in their bays in the motel car park
+and the diner lot; street lamps along the sidewalk every 15 m with the arm over the road; trailers aligned with their bays
+and tractors coupled to them; junk (pallets, drums, tire stacks, crates, cable spools) scattered off the walking lanes;
+litter, tires, wheels and cans scattered by `Clutter`. Explosive barrels (4) stand in the tire shop and the truck lot,
+more than 10 m from every spawn. Foliage: dry desert grass and sage everywhere (none indoors or on intact paving, 10% on
+the busted asphalt of the lots), thicker scrub along the edges and the motel's back wall, a lawn in the courtyard, nothing
+in the pool, a few hand-placed trees.
+
+**Pack props** (`Maps/Cluttered/Props/TruckStop`, written by `tools/cluttered/truckstop_props.py`): Semi Tractor (red,
+blue, white), Box Trailer, Box Trailer Rusty, Reefer Trailer, Flatbed Lumber, Flatbed Pipes, Flatbed Machinery, Car Lift,
+Car Lift Raised (walk under the car), Tool Chest, Tire Changer, Air Compressor, Tire Rack, Diner Booth, Ice Machine,
+Housekeeping Cart, Pool Ladder, Diesel Dispenser, Motel Neon Sign, Billboard Diner and Billboard Motel. The map also uses
+Old Town's fuel pump (`Maps/Cluttered/Props/OldTown`).
+
+**Object counts** (from the self-test): 3,140 props (517 by hand, 2,623 clutter; 417 solid, 2,723 cosmetic, 1,467
+breakable, 4 explosive, 53 animated). By set (solid/cosmetic): Truck Stop 48/2, Household 81/24, Industrial 70/185,
+Animated 24/11, Kitchen 24/5, Street 25/0, Rooftop 23/16, Vehicles 23/123, Office 22/4, Garden 18/1, Nature 14/0, Urban
+14/0, Utility 14/30, Old Town 8/0, Signage 5/6, Furniture 3/0, Misc 0/94, Debris 1/2,222. 14,013 plants (12,459 grass,
+1,465 shrubs, 73 bushes, 16 trees), 566 meshes, 241 boxes drawn one by one (walls, slabs, stairs, pillars, tree trunks;
+1,110 solid boxes with the prop colliders), 22 spawns (8 + 8 team spawns, 6 more for free-for-all), 202 waypoints, a
+1,066-node nav graph.
+
+**Performance.** About two thirds of Old Town's props and a third of its plants (Old Town draws 4,908 props and about
+31,800 plants at about 1,690 fps on the user's PC), with fewer boxes than Old Town or Sprawl, so it should run at or above
+Old Town's frame rate. Props, meshes and plants are instanced; animated props freeze past 80 m (the neon sign and the
+billboard lamps at 160 m). The 12-player bot matches keep the worst server tick under 1 ms. The smoke run's
+`cluttered_truckstop` (the whole stop from above the highway) and `cluttered_truckstop_street` (the courtyard from the
+west balcony) views log fps, props, plants and draw calls.
+
+`tools/cluttered/truckstop.py` regenerates the map and, given a PNG path, a top-down preview with the spawns, hills and any
+spawn-to-spawn sight lines; it prints the walk check and the counts.
+
+## 12 Powder Keg (large, noisy smooth outline, about 195 x 130 m, 21,000 m2, 16 players): a warehouse full of explosives
+
+**Theme.** A distribution warehouse under a grey `overcast` sky, stocked with things that go bang: hundreds of red fuel
+barrels on pallets, in lines along the aisles and on the shelves of the racking, propane bottles and three bulk propane
+tanks, cages of gas cylinders, yellow flammables cabinets, chemical drums and IBC totes.
+
+**Shape.** A `smooth` outline through 19 control points with `noise` (1.8 m, 20 m bumps). No visible edge style: the
+edge is dressed in runs (chain-link fence panels round the yards, tall hedges along the north and east, building backs
+behind the container stack).
+
+**Layout.**
+- **The hall** (64 x 52 m, roof at 9.5 m): six back-to-back rows of 4.4 m pallet racking running east-west (loaded
+  bays are solid cover, about a quarter are open bays you can see and shoot through, with barrels on their shelves), a
+  north-south cross aisle, and a 12 m staging band through the middle with four staggered racking islands (so no line
+  runs from a dock door to the dispatch door). Hill 1 is in the staging band.
+- **The annex** (the hall's east 14 m, two storeys): break room, dispatch and maintenance shop downstairs; two offices
+  and an open mezzanine upstairs (deck at 4.8 m), an inside stair from dispatch and an outside steel stair on the east
+  wall. **Two catwalks** run west from the mezzanine over the two racking aisles, 0.4 m above the rack tops, with yellow
+  railings (only the top rail collides: they keep you on but bullets fly through) and stairs down at their west ends.
+  The catwalks and stairs sit on the game's nav grid lines so bots find them.
+- **West, the loading yard (Blue):** four dock doors (semi trailers backed onto two, a gap behind them), the fuel depot,
+  a container stack two high in places, a truck park and a guard hut, and parked trucks screening the spawn yard.
+- **North:** the walk-in chemical store (hill 2 is in the road in front of it) and the propane tank farm in a low bund.
+- **South:** the rail spur with a boxcar and a flat wagon of crates, the loading canopy at the south roller door,
+  stock in the yard (hill 3).
+- **East (Red):** the staff car park, the entrance canopy, the outside stair up to the offices.
+- **Flags** are at the back of each spawn yard.
+
+**Asymmetry and balance.** Nothing is mirrored. Blue's side is outdoors and full of cover (trucks, containers,
+trailers) with two long flanks round the hall; Red's side is compact with the high ground (the offices' windows over the
+hall, the mezzanine, both catwalks). The catwalks are exposed (railings don't stop bullets) and Blue can climb them from
+their west ends, so the high ground costs exposure. Fairness is by measurement: the generator walks a 0.5 m grid from
+each team's spawns and puts the hills on the line of equal walk (Blue/Red: hall 81/83 m, north 91/91 m, south 89/88 m,
+enemy flag 180/178 m), and the self-test measures it again on the game's nav graph (within 10%), checks that no Blue
+spawn sees a Red one (eye to eye through the world), counts the cover within 6 m of each team's routes to the hills
+(held to a floor of 50%: Blue has more by design) and how much of each route runs on raised floors.
+
+**Explosives.** About 285 explosive props from the global `Props/Volatile` set, all with a short fuse: a hit that
+breaks one lights it (sparks and a clank, it stays whole), it goes off 0.4-1.5 s later (by type), and a blast lights its
+neighbours with a 0.12-0.32 s fuse, so clusters and lines ripple rather than pop in one tick: lines of barrels run along
+the staging band, down the cross aisle, past the trailers and the boxcar, to be lit towards the enemy. None is closer to
+a spawn than its blast radius plus 9.5 m (15 m for a barrel, 20.5 m for a bulk tank). Cost under mass chain
+reactions is bounded in the game code: at most 4 fused props go off per server tick (the rest wait a tick), at most 20
+prop fireballs show in any 0.6 s (more still hurt and break things, with debris and sound), and debris has its fixed
+pool. The self-test shoots one barrel in the biggest cluster and times every tick of the ripple.
+
+**Logical placement.** Barrels on pallets at the dock staging and in the chemical store, on the racks' open shelves, in
+lines where they'd wait to be loaded; propane at the forklift charging bay and the tank farm; gas cylinders by the
+shop's welding bay; flammables cabinets against walls; forklifts and pallet jacks in the aisles; conveyor, packing
+tables and shelving in dispatch; a kitchen, tables and vending machines in the break room; desks, monitors, filing
+cabinets, a photocopier, a safe and a conference table upstairs; high-bay lamps under the roof (a few flicker); trailers
+at the docks with their cabs hitched; dumpsters by the doors; lamps along the car park. Foliage: none indoors (the
+automatic rule), none on the intact roads and car park, about 10% on the busted yard concrete, long grass, shrubs and
+bushes in a band along the edge, weeds at the foot of the walls, trees round the edge.
+
+**Pack props** (`Maps/Cluttered/Props/PowderKeg`, written by `tools/cluttered/powderkeg_props.py`, which also writes the
+global `Props/Volatile` set): Pallet Racking Bay (loaded, wrapped and open), Safety Railing, Semi Trailer, Pallet Jack,
+Dock Bumper, Hazard Placard, High Bay Light (steady and flickering).
+
+**Object counts** (from the self-test): 4,923 props (893 by hand, 4,030 from Clutter; 843 solid, 4,080 cosmetic, 2,279
+breakable). By set (solid/cosmetic): Debris 8/3,150, Misc 0/410, Industrial 69/273, Volatile 304/0, Warehouse 227/41,
+Vehicles 29/194, Urban 119/0, Office 40/8, Street 23/0, Furniture 10/0 and a few others. 288 explosives (263 Red Fuel
+Barrels, 9 Propane Tanks, 3 Propane Bulk Tanks, 4 Flammables Cabinets, 3 Gas Bottle Cages, 3 Gas Bottles, 3 Jerry Cans).
+34,890 plants (31,197 grass, 3,087 shrubs, 587 bushes, 19 trees; 7,479 dropped indoors and 19,255 on paving by the no-go
+rules), 341 meshes, 241 boxes drawn one by one, 26 spawns (9 + 9 team spawns), a 1,438-node nav graph with 179 nodes
+above 2 m (mezzanine, catwalks, stairs).
+
+**Measured** (self-test): nav walk Blue/Red hill 1 93/92 m, hill 2 101/99 m, hill 3 100/96 m, enemy flag 188/186 m (all
+within 4%); no spawn-to-spawn sight line; cover near the routes to the hills 114/98 (86%). Bots, 16 players: 119 kills
+in 90 s of free-for-all and 37 in team deathmatch, no stuck, fallen or escaped bots, worst tick about 1 ms. Chain reaction
+(one barrel shot in the biggest cluster, 21 explosives down the cross aisle): it lit, went off after 0.62 s, 19 of the 21
+went off in a ripple, at most 15 fireballs at once, ticks p99 0.18 ms.
+
+**Performance.** About Old Town's counts (4,908 props, 31,758 plants) with fewer boxes, so expect about the same frame
+rate (~1,600-1,700 fps on the user's PC). Racks, railings, trailers and every barrel are instanced props; lamps and
+flickering tubes are animated props that hold still past 80 m. The smoke run's `cluttered_powderkeg` (the map from the
+south-west) and `cluttered_powderkeg_hall` (the staging band at eye height) views log fps, props and plants drawn.
+
+`tools/cluttered/powderkeg.py` regenerates the file (and a top-down preview PNG with the walk and sight-line checks).
+## 07 Supermarket (medium, noisy polygon, about 101 x 99 m, 8,135 m2, 12 players): SLOP MART after closing
+
+**Theme.** A run-down supermarket on a grey evening (`overcast` preset, sun at 17:36), most of the map indoors under one
+roof (6.5 m): rows of gondola shelving stocked with cans, cereal, bottles, snacks and household goods, end caps with SALE
+headers, hanging blue aisle signs and department signs, pendant fluorescent lights (about one in eight flickering, more in
+the stock room), tilted produce bins and crates, bakery racks and bread tables, open dairy chillers, a deli counter with
+its prep kitchen behind it, glass-door freezer cases and open freezer islands, ten checkout lanes (belt, scanner,
+register, sweets rack, a lit lane number), the front end (customer service desk, nested carts, vending and gumball
+machines), and over the deli a staff mezzanine with an office and a break room looking out over the floor. Behind the
+shop floor: the stock room (pallet racks, pallets of goods and water, roll cages, staff lockers, a forklift, a baler with
+its cardboard bales, a walk-in cooler) and the loading dock (three open dock doors, a closed one with a box truck backed up
+to it, dumpsters with trash round them, a smokers' bench). Outside: the car park in front (bays, planted islands with
+trees and lamps, cart corrals, abandoned carts, a bus stop, the price pylon), a service alley down the west side (a
+delivery truck, AC condensers, the bins at the side doors) and the dock apron. The `SLOP MART` sign is lit over the
+entrance.
+
+**Shape.** A `polygon` of 23 corners with `noise` (0.8 m, 9 m bumps), 107 segments: it hugs the store's blank east wall,
+takes in the west alley and the dock apron, and bulges round the car park with bites in its south and west edges. No
+`edge` style: `townkit.edge_run` dresses it per section, a tall hedge round the car park, chain-link fence along its east
+side and along the dock, brick backs of the neighbouring buildings across the alley.
+
+**Layout and routes.** Blue spawns in the far drive aisle of the car park (z about 44), Red on the dock apron (z about -40).
+- **Front (Blue's way in):** the entrance and exit doors under their canopies, three smashed shop windows with 1 m sills
+  to mantle over, then the checkouts (waist-high counters you can vault) and the front aisle. The west alley is Blue's
+  long flank: past the delivery truck to the produce fire exit or on to the stock room's side door.
+- **Back (Red's way in):** three dock doors into the stock room, then the bakery door, the main double door (a rack
+  island stops anyone looking straight from the middle dock door through it) or the deli's back door under the
+  mezzanine. Red also owns the back stair from the stock room up to the break room.
+- **Shop floor:** eleven rows of shelving (two runs each, a cross aisle between them) form ten aisles with a back aisle
+  and a front aisle; the middle of row 5 is taken out for the **centre court** (hill 1, radius 3.3, two roof columns for
+  cover). **Produce** (hill 2) is the open west side among the bins, **frozen** (hill 3) the east side between the freezer
+  islands and the freezer wall.
+- **Mezzanine:** 3.6 m up over the deli, a walkway behind a 1.05 m parapet (cover and the view over the shelves) in front
+  of the office and break room; the main stair climbs from the back aisle, the back stair from the stock room.
+- **Flags:** Blue's at the back of the car park, Red's on the dock apron behind the middle dock door.
+
+**Balance (not mirrored).** The two ends are different places on purpose: Red's side is closer to the mezzanine (the high
+ground over the floor, with its own back stair), Blue's side has more ways in (two doors, three windows, the alley flank)
+and more low cover on its way to the hills (checkout counters, promo stacks, cart nests). The generator measures the map
+instead of mirroring it: a 0.5 m grid walk from every spawn (anything 0.55-1.7 m tall can be mantled at 2 m extra, like
+the game's nav graph) puts the hills and spawns where both teams have the same walk (hill 1 51/51 m, hill 2 54/54 m,
+hill 3 61/64 m, the enemy flag 93/94 m, Blue/Red averaged over the team spawns), and checks that no Blue spawn can see a
+Red one. The self-test (`SelfTestCluttered.Supermarket.cs`) measures the same on the game's nav graph (within 10%): hill 1
+54/52 m (+3%), hill 2 56/56 m (0%), hill 3 61/65 m (-6%), the enemy flag 98/95 m (+3%); solid cover within 6 m of each
+team's routes to the hills 143/169 (85%, at least 70% needed); 0 spawn-to-spawn sight lines (real ray casts at eye
+height); 12 nav nodes on the mezzanine in the main area; and that the map really isn't mirrored (0% of the 505 solid props
+have a twin across x = 0, z = 0 or the centre; at most 35% allowed). Those checks are this map's own, so the twin checks of
+the mirrored maps stay as strict as they were. Hill 3 leans to Blue because Red's way to the frozen section goes round the
+deli counters; Red gets the mezzanine and the back stair in exchange.
+
+**Placement rules** (`townkit.py` plus the map's own code in `supermarket.py`): shelves in rows square to the walls with
+end caps facing out of every run; fittings against the walls with their backs to them (chillers and bakery racks on the
+back wall, freezer cases on the east wall, the deli's kitchen on the partition behind the counters); checkouts in a row
+across the front with the belt towards the aisles and the register towards the doors; nested carts by the doors, cart
+corrals in car park bays, lamps and trees in the planted islands; dumpsters with their backs to the dock wall and the
+alley wall beside a door, trash bags heaped round them and litter around (`bins_by_door`); AC condensers, meters and
+vents on the outside walls, rooftop plant on the roof (`roof_kit`, `wall_kit`); office and break room furnished on the
+mezzanine floor (desks, chairs, monitors, filing cabinets, a safe, a table and chairs, a fridge, a counter with a
+microwave and kettle, lockers, a sofa); ceiling lights and hanging signs with their tops at the ceiling. Every doorway is
+kept clear for 1.1 m each side, solid loose cover stays off the walking lanes, and fixtures keep out of what the
+self-test protects (1 m round a spawn, a hill's radius, 2 m round a flag). **Foliage:** none indoors (the roof), none on
+the intact pavement in front of the store (`Concrete`), 10% on the busted asphalt (`"surfaces": {"Plain": 0.1}`), lush
+verges between the car park and the hedge and along the dock fence, planted islands, weeds along the foot of the walls.
+
+**Pack props** (`Maps/Cluttered/Props/Supermarket`, written by `tools/cluttered/supermarket_props.py`, 40 props): five
+Grocery Shelf kinds, Shelf End Cap, Dairy Chiller, Freezer Case, Freezer Island, Deli Counter, Bakery Rack, Bread Display,
+three Produce Bins, Promo Stack, Checkout Counter, Shopping Cart Nest, Cart Corral, Shopping Basket Stack, Pallet of Goods,
+Pallet of Water, Store Cardboard Bale, Pallet Rack, Cardboard Baler, Roll Cage, Pallet Jack, Hanging Aisle Sign, six
+Department Signs, Ceiling Light Panel, Flickering Ceiling Light, the Slop Mart Sign, Wet Floor Sign, Dropped Groceries and
+a Gumball Machine. Fittings are solid and unbreakable; loose stock breaks; lights and signs are cosmetic.
+
+**Object counts** (from the self-test): 2,948 props (about 700 by hand, 2,240 from 13 cosmetic Clutter ops; 505 solid,
+2,443 cosmetic, 1,599 breakable), 6,948 plants (16 trees; the roof removes 9,786 and the paving 6,655), 382 meshes,
+120 boxes drawn one by one (walls with their openings, the roof, the mezzanine, stairs, columns, the
+cooler), 96 animated props (flickering lights, freezer and chiller lights, checkout lane lights, the sign's letters,
+swinging signs), 19 spawns, about 300 waypoints and a 1,390-node nav graph. Bots (12 players, 90 s): about 60 kills in
+free-for-all and 52 in TDM, no stuck, fallen or escaped bots, worst tick 0.8 ms.
+
+**Performance.** Fewer boxes than any other Cluttered map (120 drawn), about the props of Dockside and less than half its
+plants, so it should run at least as fast as Dockside on the user's PC. Animated props freeze past their distance (40-80 m
+for the signs and lights, which also keeps the shelves' dense interior cheap). The smoke run's `cluttered_supermarket` (the
+car park and store front from above) and `cluttered_supermarket_inside` (the floor from the mezzanine) views log fps,
+props and plants drawn.
+
+`tools/cluttered/supermarket.py` regenerates the map and, given a PNG path, a top-down preview with the spawns, hills and
+any spawn-to-spawn sight lines (run `supermarket_props.py` first if the props changed).

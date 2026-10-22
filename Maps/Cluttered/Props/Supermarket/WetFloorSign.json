@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Wet Floor Sign",
+  "category": "Supermarket",
+  "description": "A yellow folding wet floor sign.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 45,
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 10, "breakBy": "all", "sound": "soft", "debris": {"count": 6, "size": [0.05, 0.15], "speed": 3, "colors": ["#f2d23a"]}},
+  "parts": [
+    {"size": [0.3, 0.62, 0.02], "offset": [0, 0.3, 0.09], "color": "#f2d23a", "rotation": [-14, 0, 0]},
+    {"size": [0.3, 0.62, 0.02], "offset": [0, 0.3, -0.09], "color": "#f2d23a", "rotation": [14, 0, 0]},
+    {"size": [0.16, 0.16, 0.012], "offset": [0, 0.36, 0.17], "color": "black", "rotation": [-14, 0, 0]},
+    {"size": [0.06, 0.04, 0.2], "offset": [0, 0.6, 0], "color": "#f2d23a"}
+  ]
+}
