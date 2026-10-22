@@ -47,13 +47,13 @@
         {
           "id": "changing",
           "type": "changing",
+          "rules": "hall",
           "rect": [
             -2.5,
             0,
             2.5,
             2
           ],
-          "furnish": "explicit",
           "autoWindows": {
             "spacing": 2,
             "width": 0.7,

@@ -203,15 +203,15 @@
         },
         {
           "id": "vestry",
-          "type": "storage",
+          "type": "vestry",
+          "rules": "storage",
           "rect": [
             3,
             -10,
             4.5,
             -6.5
           ],
-          "windows": false,
-          "furnish": "none"
+          "windows": false
         }
       ],
       "openings": [

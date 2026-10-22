@@ -656,7 +656,7 @@ for (n, pts, w, h, op) in CAVES:
 def village(sx, name_sign):
     X = lambda v: v * sx
     # the green with the flag pole, benches and the notice board
-    gprop("Flag on a Pole", X(-101.0), -3.0 + 2.5, 0, tag="village", flag="finland")
+    gprop("Flag on a Pole", X(-101.0), -3.0 + 4.0, 0, tag="village", flag="finland")
     gprop("Bench", X(-104.5), -6.0, 90 if sx > 0 else 270, tag="village")
     gprop("Mailbox Rack", X(-93.6), -17.6, 90 if sx > 0 else 270, tag="village")
     gprop("Moose Warning Sign", X(-86.0), -54.0, 180, tag="village")

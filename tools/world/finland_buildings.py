@@ -128,7 +128,7 @@ house = {
     "roof": {"type": "gable", "ridge": "x", "pitch": 42, "overhang": 0.5, "color": {"color": "$roof", "material": "metal"}},
     "extras": corner_boards(-5.125, -4.125, 5.125, 4.125, 5.6) + [
         {"type": "porch", "rect": [-1.5, 4.13, 1.5, 5.7], "height": 2.6, "color": "$trim"},
-        {"type": "block", "min": [-0.4, 4.0, -1.0], "max": [0.4, 8.6, -0.2], "color": {"color": "#8a5a44", "material": "brick"}},
+        {"type": "block", "min": [-0.4, 5.75, -1.0], "max": [0.4, 8.6, -0.2], "color": {"color": "#8a5a44", "material": "brick"}},
         {"type": "prop", "name": "Birch Firewood Stack", "at": [-6.3, 0.0], "yaw": 90},
         {"type": "prop", "name": "Wheelie Bin Grey", "at": [6.3, -2.6], "yaw": 270},
         {"type": "prop", "name": "Kicksled", "at": [2.4, 5.0], "yaw": 20},
@@ -287,7 +287,7 @@ church = {
                 {"id": "chancel", "type": "chancel", "rect": [-3, -10, 3, -6.5], "furnish": "explicit",
                  "autoWindows": {"spacing": 2.2, "width": 0.9, "sill": 1.8, "head": 4.2},
                  "props": [{"name": "Church Altar Table", "wall": "N", "along": 0}]},
-                {"id": "vestry", "type": "storage", "rect": [3, -10, 4.5, -6.5], "windows": False, "furnish": "none"},
+                {"id": "vestry", "type": "vestry", "rules": "storage", "rect": [3, -10, 4.5, -6.5], "windows": False},
             ],
             "openings": [
                 {"type": "door", "at": [0, 9.5], "width": 1.4, "front": True, "material": "wood"},
@@ -369,7 +369,7 @@ sauna = {
     "floors": [
         {
             "rooms": [
-                {"id": "changing", "type": "changing", "rect": [-2.5, 0, 2.5, 2], "furnish": "explicit",
+                {"id": "changing", "type": "changing", "rules": "hall", "rect": [-2.5, 0, 2.5, 2],
                  "autoWindows": {"spacing": 2, "width": 0.7, "sill": 1.1, "head": 1.9},
                  "props": [{"name": "Birch Log Bench", "wall": "N", "along": -1.2}, {"name": "Coat Stand", "at": [2.0, -0.5]}]},
                 {"id": "steam", "type": "sauna", "rect": [-2.5, -2.5, 2.5, 0], "furnish": "explicit",
@@ -414,6 +414,23 @@ for folder in ("LakesideSauna", "RedBarnCottage"):
         write_prop(folder, p)
 
 # ============================================================================================ the showcase map
+# Every Forest, Mining and Nordic prop in two rows (the self-test wants every prop on a Dev map): big ones north, small south.
+SHOW_PROPS = []
+_big, _small = [], []
+for _f in sorted(__import__("glob").glob(os.path.join(REPO, "Props", "*", "*.json"))):
+    if os.path.basename(os.path.dirname(_f)) not in ("Forest", "Mining", "Nordic"):
+        continue
+    _d = json.load(open(_f))
+    _w = max(abs(p["offset"][0]) + p["size"][0] / 2 for p in _d["parts"]) * 2 if _d["parts"] else 1
+    (_big if _w > 3.0 else _small).append((_d["name"], _w))
+for _row, _zs in ((_big, (-40.0, -31.0)), (_small, (38.0, 43.5))):
+    _x, _k = -54.0, 0
+    for _n, _w in _row:
+        if _x + 2 * max(1.6, _w / 2) + 1.6 > 55:
+            _x, _k = -54.0, _k + 1
+        _x += max(1.6, _w / 2) + 0.8
+        SHOW_PROPS.append({"op": "Prop", "name": _n, "x": round(_x, 2), "z": _zs[_k]})
+        _x += max(1.6, _w / 2) + 0.8
 show = {
     "format": "call-of-slop-map/1",
     "name": "Finnish Buildings",
@@ -421,7 +438,7 @@ show = {
     "author": "Call of Slop",
     "order": 963,
     "halfX": 58,
-    "halfZ": 30,
+    "halfZ": 50,
     "sky": [0.62, 0.72, 0.82],
     "flagPool": ["finland"],
     "ops": [
@@ -436,18 +453,19 @@ show = {
         {"op": "Building", "name": "Village Shop", "at": [-2, -8.5], "yaw": 0, "spawns": True},
         {"op": "Building", "name": "Village Shop", "at": [-12, 18.5], "yaw": 180, "spawns": True, "variant": {"palette": "red ochre"}},
         {"op": "Building", "name": "Wooden Church", "at": [22, -14], "yaw": 0, "spawns": True},
-        {"op": "Building", "name": "Wooden Church", "at": [8, 18], "yaw": 180, "variant": {"palette": "white boards"}},
+        {"op": "Building", "name": "Wooden Church", "at": [8, 24], "yaw": 0, "variant": {"palette": "white boards"}},
         {"op": "Building", "name": "Lakeside Sauna", "at": [40, -8], "yaw": 0},
         {"op": "Building", "name": "Lakeside Sauna", "at": [40, 16], "yaw": 180, "variant": {"palette": "red ochre"}},
         {"op": "Prop", "name": "Flag on a Pole", "x": 52, "z": 0, "flag": "finland"},
         {"op": "Prop", "name": "Mailbox Rack", "x": -24, "z": 1.0},
         {"op": "Prop", "name": "Moose Warning Sign", "x": 30, "z": 8.0, "yaw": 180},
+    ] + SHOW_PROPS + [
         {"op": "RingSpawns", "count": 10, "frac": 0.85},
         {"op": "AutoWaypoints", "spacing": 6},
     ],
-    "foliage": {"seed": 5, "regions": [{"type": "grass", "density": 2, "rect": [-57, -29, 57, 29]},
-                                       {"type": "pine", "density": 0.01, "rect": [-57, -29, 57, -24]},
-                                       {"type": "tree", "density": 0.01, "rect": [-57, 25, 57, 29], "color": [0.78, 0.66, 0.2]}]},
+    "foliage": {"seed": 5, "regions": [{"type": "grass", "density": 2, "rect": [-57, -49, 57, 49]},
+                                       {"type": "pine", "density": 0.02, "rect": [-57, -49, 57, -46]},
+                                       {"type": "tree", "density": 0.02, "rect": [-57, 46, 57, 49], "color": [0.78, 0.66, 0.2]}]},
 }
 with open(os.path.join(REPO, "Maps/Dev/BuildingsFinnish.json"), "w") as f:
     f.write("{\n" + ",\n".join(f'  "{k}": ' + (("[\n" + ",\n".join("    " + json.dumps(o) for o in v) + "\n  ]") if k == "ops" else json.dumps(v)) for k, v in show.items()) + "\n}\n")
