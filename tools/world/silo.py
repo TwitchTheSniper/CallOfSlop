@@ -954,16 +954,17 @@ while BOULDERS < 44 and tries < 6000:
         continue
     for s in (-1, 1):       # mirrored pairs
         x = s * abs(xb); yaw = yaw0 * (1 if s < 0 else -1)
-        t.mesh("icosphere", x, z, (0.47, 0.46, 0.43), width=size, height=size * 0.72, depth=size * 0.85, detail=1, yaw=yaw, y=-0.25, material="Concrete")
-        if extra:
-            t.mesh("icosphere", x + s * -size * 0.5, z + size * 0.3, (0.43, 0.43, 0.4), width=size * 0.55, height=size * 0.4, depth=size * 0.5, detail=1, yaw=yaw + 40, y=-0.1, material="Concrete")
         if big:
-            c = size * 0.33
-            t.block(x - c, -0.4, z - c, x + c, size * 0.6, z + c, (0.47, 0.46, 0.43))
+            t.prop("Granite Outcrop" if (BOULDERS // 2) % 3 == 0 else "Granite Boulder", x, z, yaw, check=False)
         else:
+            t.mesh("icosphere", x, z, (0.47, 0.46, 0.43), width=size, height=size * 0.72, depth=size * 0.85, detail=1, yaw=yaw, y=-0.25, material="Concrete")
+            if extra:
+                t.mesh("icosphere", x + s * -size * 0.5, z + size * 0.3, (0.43, 0.43, 0.4), width=size * 0.55, height=size * 0.4, depth=size * 0.5, detail=1, yaw=yaw + 40, y=-0.1, material="Concrete")
             t.mark(t.occ, (x - size * 0.4, z - size * 0.4, x + size * 0.4, z + size * 0.4))
         BOULDERS += 1
-t.clutter(["Log", "Log", "Tree Stump", "Tree Stump", "Tree Stump"], -112, -80, 112, 80, 90, 5033)
+t.clutter(["Fallen Spruce Log", "Log", "Tree Stump", "Tree Stump", "Spruce Log Pile"], -112, -80, 112, 80, 80, 5033)
+t.clutter(["Dead Pine Branch", "Dead Pine Branch", "Autumn Bracken", "Autumn Bracken", "Mossy Stones", "Fly Agaric Toadstools", "Birch Leaf Litter"],
+          -114, -82, 114, 82, 700, 5034)
 
 # ================================================================ scenery: the forest carrying on over the hills past the edge
 SCENERY = 0

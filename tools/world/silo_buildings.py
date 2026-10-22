@@ -120,8 +120,8 @@ BUILDINGS["LaunchControlCentre"] = base(
     })
 
 # ---------------------------------------------------------------------------------------------- Silo Power Plant
-hall_props = [P("Reactor Vessel", at=[0, -1.6]), P("Reactor Control Desk", wall="S", along=0.0),
-              P("Coolant Pump", at=[-4.6, -3.2], yaw=90), P("Coolant Pump", at=[4.6, -3.2], yaw=270),
+hall_props = [P("Reactor Vessel", at=[0, 0.25]), P("Reactor Control Desk", wall="S", along=0.0),
+              P("Coolant Pump", at=[-4.8, -0.95], yaw=90), P("Coolant Pump", at=[3.8, 1.25], yaw=90),
               P("Wall Pipe Run", wall="N", along=-3.5, y=4.4), P("Wall Pipe Run", wall="N", along=3.5, y=4.4),
               P("Radiation Sign", wall="S", along=2.0, y=1.8), P("Radiation Sign", wall="W", along=1.5, y=1.8),
               P("Radiation Sign", wall="E", along=1.5, y=1.8), P("Status Board", wall="S", along=3.6, y=1.4),
