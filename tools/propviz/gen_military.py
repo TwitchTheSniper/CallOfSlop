@@ -704,18 +704,17 @@ def searchlight():
     p = [At([0.9, 0.08, 0.9], 0.12, color=dk), At([0.12, 0.12, 0.12], 0, 0.38, 0.38, color=dk), At([0.12, 0.12, 0.12], 0, -0.38, 0.38, color=dk),
          At([0.12, 0.12, 0.12], 0, 0.38, -0.38, color=dk), At([0.12, 0.12, 0.12], 0, -0.38, -0.38, color=dk)]
     p += Cyl(0.16, 0.95, 0.2, color=g)[:2] + [At([0.4, 0.3, 0.3], 0.2, -0.2, 0, color=g)]
-    sw = {"type": "swing", "axis": "y", "pivot": [0, 1.2, 0], "angle": 40, "period": 14, "jitter": 0.2}
+    sw = {"type": "swing", "axis": "y", "pivot": [0, 1.2, 0], "angle": 40, "period": 14}
     head = [At([0.16, 0.06, 0.16], 1.15, color=dk), B([0.1, 0.6, 0.06], [0, 1.5, 0.52], color=g), B([0.1, 0.6, 0.06], [0, 1.5, -0.52], color=g),
             B([0.16, 0.06, 1.1], [0, 1.2, 0], color=g)]
     head += HCyl(0.9, 0.8, 1.6, 0.05, 0, color=g) + HCyl(0.95, 0.08, 1.6, 0.45, 0, color=dk)[:2] + HCyl(0.6, 0.1, 1.6, -0.38, 0, color=dk)[:2]
     head += [B([0.3, 0.05, 0.05], [0.0, 2.08, 0], color=dk)]
-    first = len(p) + 1
     for q in head:
         q["anim"] = dict(sw)
     p += head
     lens = HCyl(0.8, 0.02, 1.6, 0.5, 0, color="#fff4cc")
-    for q in lens:
-        q["anim"] = {"type": "follow", "parent": first, "glow": 1.6}
+    for q in lens:  # same swing (same phase on every copy), plus a glow
+        q["anim"] = dict(sw, glow=1.6)
     p += lens
     p += [tube([-0.2, 0.3, 0.15], [-0.9, 0.02, 0.6], 0.03, color="#1e1e1c")]
     prop("Field Searchlight", MIL, "A big drum searchlight on a stand, lens lit, slowly sweeping 40 degrees either way. Beam to +X.", p,
@@ -1038,7 +1037,7 @@ def transport(pal=OLIVE):
     p += [tube([8.0, y - 1.2, 0], [8.0, 0.42, 0], 0.14, color=dk)] + wheel(0.84, 0.3, 8.0, 0, tyre="rubber", hub=lt)
     prop("Transport Plane" + pal["id"], VEH, "A parked four-engine high-wing transport, 20 m long, 23.6 m span, cargo ramp down at the back: walk into the hold. Nose to +X.",
          ground(p), collider=[C([11.2, 0.12, 3.0], [0.4, 0.49, 0]), C([11.2, 3.5, 0.7], [0.4, 2.15, 1.9]), C([11.2, 3.5, 0.7], [0.4, 2.15, -1.9]),
-                              C([11.2, 0.25, 3.4], [0.4, 3.95, 0]), C([4.2, 3.3, 3.3], [7.9, 2.15, 0]), C([4.0, 0.55, 23.6], [1.5, 4.35, 0]),
+                              C([11.2, 0.25, 3.4], [0.4, 3.95, 0]), C([3.8, 3.2, 3.2], [7.75, 2.15, 0]), C([4.0, 0.55, 23.6], [1.5, 4.35, 0]),
                               C([4.6, 2.4, 2.8], [-7.6, 4.5, 0]), C([3.4, 2.8, 8.4], [-9.6, 7.3, 0])], scatter=BIG)
 
 
