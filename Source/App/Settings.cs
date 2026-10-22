@@ -49,6 +49,9 @@ public sealed class Settings
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
     public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
+    public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
+    public BloodColour BloodColour = BloodColour.Red; // Settings > Video "Blood colour": red or dark
+    public GoreMode Gore = GoreMode.Full; // Settings > Video "Gore": meaty gibs from animals and blast kills, blood splats (Source/Props/Gibs.cs)
     public FrenzyGunSoundMode FrenzyGunSound = FrenzyGunSoundMode.Full; // Settings > Audio "Frenzy gun sound": per-class frenzy layers on your gun (Source/Audio/FrenzyGunSound.cs)
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
@@ -241,6 +244,9 @@ public sealed class Settings
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
                     case "impact_decals" when Enum.TryParse<ImpactDecalQuality>(v, out var iq) && Enum.IsDefined(iq): s.ImpactDecals = iq; break;
                     case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
+                    case "blood_overlay" when Enum.TryParse<BloodMode>(v, true, out var bo) && Enum.IsDefined(bo): s.BloodOverlay = bo; break;
+                    case "blood_colour" when Enum.TryParse<BloodColour>(v, true, out var bc) && Enum.IsDefined(bc): s.BloodColour = bc; break;
+                    case "gore" when Enum.TryParse<GoreMode>(v, true, out var gm) && Enum.IsDefined(gm): s.Gore = gm; break;
                     case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
@@ -317,7 +323,10 @@ public sealed class Settings
                     $"sky={SkyQuality}",
                     $"impact_decals={ImpactDecals}",
                     $"frenzy_visuals={FrenzyVisuals}",
+                    $"gore={Gore}",
                     $"frenzy_gunsound={FrenzyGunSound}",
+                    $"blood_overlay={BloodOverlay}",
+                    $"blood_colour={BloodColour}",
                     $"head_bob={HeadBob}",
                     $"name_tags={NameTags}",
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",

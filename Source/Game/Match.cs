@@ -165,6 +165,7 @@ public sealed partial class Game
             _w.U8(c);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnMatchEnded(now);
+        LogStuckMatchSummary(); // [bots] stuck self-kills this match and on this map (BotStuck.cs)
         if (MapVoteEnabled && Module.UsesMapVote) // (a Zombies run restarts on its own map)
             StartMapVote(now);
     }
@@ -238,6 +239,7 @@ public sealed partial class Game
         if (!IsServer)
             ClientModeMatchStart(); // every mode's client-side reset (Zombies: doors shut, boards up, no zombies; the server resets its run in ResetModeForMatch)
         PropDebris.Clear();
+        Gibs.Clear();
         ClearVote();
         Feed.Clear();
         Tracers.Clear();

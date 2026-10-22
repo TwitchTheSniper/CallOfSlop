@@ -34,18 +34,27 @@ public readonly record struct KillPacket(byte Killer, byte Victim, bool Headshot
     /// <summary>Bytes after the message id: the original 4, plus kit (3), killer HP (1) and source (12).</summary>
     public const int Size = 4 + 3 + 1 + 12;
 
+    /// <summary>
+    /// The victim was blown apart (a blast kill right next to the explosion, <see cref="Game.ShouldGib"/>): every PC bursts
+    /// the body into gibs instead of a ragdoll. Bit 1 of the headshot byte (protocol 33).
+    /// </summary>
+    public bool Gibbed { get; init; }
+
     /// <summary>True when the protocol 5 extras were in the packet.</summary>
     public bool HasExtras => KillerHp >= 0;
 
     /// <summary>Writes the whole packet (the original four fields, then the extras).</summary>
     public void Write(PacketWriter w) =>
-        w.Begin(Msg.Kill).U8(Killer).U8(Victim).U8(Headshot ? (byte)1 : (byte)0).U8(KillId)
+        w.Begin(Msg.Kill).U8(Killer).U8(Victim).U8((byte)((Headshot ? 1 : 0) | (Gibbed ? 2 : 0))).U8(KillId)
             .U24(Kit).U8((byte)Math.Clamp(KillerHp, 0, 255)).Vec(Source ?? Vector3.Zero);
 
     /// <summary>Reads a packet body (after the message id). Tolerates packets without the extras.</summary>
     public static KillPacket Read(ref PacketReader r)
     {
-        var p = new KillPacket(r.U8(), r.U8(), r.U8() != 0, r.U8());
+        var killer = r.U8();
+        var victim = r.U8();
+        var flags = r.U8();
+        var p = new KillPacket(killer, victim, (flags & 1) != 0, r.U8()) { Gibbed = (flags & 2) != 0 };
         if (!r.Has(4))
             return p;
         p = p with { Kit = r.U24(), KillerHp = r.U8() };
