@@ -259,8 +259,9 @@ public static partial class SelfTest
                         if (w.Length - 1 == Snapshot.SlowBytes && s.Kills == 7 && dst.FrenzyLevel == l && dst.FrenzyClass == c && dst.FrenzyBuffsOn == on)
                             trips++;
                     }
-            Line($"slow entry round trips (8 classes x 7 levels x buffs on/off): {trips}/112");
-            if (trips != 112)
+            var wantTrips = Enum.GetValues<WeaponClass>().Length * 7 * 2;
+            Line($"slow entry round trips ({Enum.GetValues<WeaponClass>().Length} classes x 7 levels x buffs on/off): {trips}/{wantTrips}");
+            if (trips != wantTrips)
                 Fail("frenzy slow-entry round trip");
             var junk = new Player();
             Game.FrenzyFromWire(junk, 200, 0x7E);

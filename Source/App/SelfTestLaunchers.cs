@@ -142,9 +142,10 @@ public static partial class SelfTest
               { "op": "Block", "x0": -10, "y0": 0, "z0": -40.5, "x1": 10, "y1": 6.0, "z1": -39.5, "color": "#808080" },
               { "op": "Spawn", "x": 60, "z": 60 } ] }
             """, "launchertest.json");
-        World.SetMap(map);
+        World.SetMap(Maps.All[0]);
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2);
         game.SelfTestStreakTick(0); // match reset
+        World.SetMap(map); // (a server game loads its own map: the test range goes in after)
         var me = game.Players[0];
         var bots = game.Players.Values.Where(p => p.Bot != null).ToArray();
         Player b1 = bots[0], b2 = bots[1];
