@@ -195,6 +195,11 @@ public static unsafe partial class Program
             SkySmokeTick(now); // Program.Sky.cs
             return;
         }
+        if (CaveSmokeActive)
+        {
+            CaveSmokeTick(now); // Program.Caves.cs
+            return;
+        }
         if (WorkbenchSmokeActive)
         {
             WorkbenchSmokeTick(now); // Program.Workbench.cs
@@ -1006,6 +1011,8 @@ public static unsafe partial class Program
                 DrawLegsSmoke();
             else if (SkySmokeActive)
                 DrawSkySmoke();
+            else if (CaveSmokeActive)
+                DrawCaveSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -1051,7 +1058,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive && !SkySmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive && !SkySmokeActive && !CaveSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
             {
                 if (Ui.LobbyLoadouts)
                 {

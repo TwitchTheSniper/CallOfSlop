@@ -59,6 +59,7 @@ public static partial class SelfTest
             Section("Mantling", CheckMantle);
             Section("Terrain", CheckTerrain);
             Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
+            Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery

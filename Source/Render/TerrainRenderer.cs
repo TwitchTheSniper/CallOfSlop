@@ -66,14 +66,14 @@ public sealed unsafe class TerrainRenderer
         """;
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct Vertex
+    internal struct Vertex
     {
         public Vector3 Pos;
         public Vector3 Normal;
         public uint Color; // RGBA8: surface colour + rockiness
     }
 
-    private readonly record struct Chunk(Vector3 Min, Vector3 Max, int FirstIndex, int IndexCount);
+    internal readonly record struct Chunk(Vector3 Min, Vector3 Max, int FirstIndex, int IndexCount);
 
     private bool _ready, _failed;
     private GlProgram _program;
@@ -81,6 +81,12 @@ public sealed unsafe class TerrainRenderer
     private GlVertexArray _vao;
     private GlBuffer _vbo, _ibo;
     private bool _hasBuffers;
+
+    // Holes and caves (TerrainVoids.cs): one more small static mesh (floors, ceilings, walls and hole rims), drawn in one call.
+    private GlVertexArray _caveVao;
+    private GlBuffer _caveVbo, _caveIbo;
+    private int _caveIndexCount;
+    private Vector3 _caveMin, _caveMax;
     private Chunk[] _chunks = [];
     private Map? _builtFor;
     private TerrainData? _builtData;
@@ -196,6 +202,8 @@ public sealed unsafe class TerrainRenderer
             var (color, rock) = t.VertexColor(i, j);
             if (map.Boundary is { } b)
                 color *= OutsideShade(b, t.OriginX + i * t.Cell, t.OriginZ + j * t.Cell);
+            if (t.Voids != null && TouchesHole(t, i, j))
+                (color, rock) = (Vector3.Lerp(color, t.Surface.Rock * 0.9f, 0.65f), MathF.Max(rock, 0.8f)); // a rocky rim round holes
             verts[j * nx + i] = new Vertex
             {
                 Pos = new Vector3(t.OriginX + i * t.Cell, t.Height(i, j), t.OriginZ + j * t.Cell),
@@ -204,11 +212,95 @@ public sealed unsafe class TerrainRenderer
             };
         }
 
-        // Indices chunk by chunk, so a chunk is one contiguous range (and neighbours in a row merge into one draw).
+        var (indices, chunks) = SurfaceIndices(t);
+
+        _vao = GenVertexArray();
+        _vao.Bind();
+        _vbo = GenBuffer();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        fixed (Vertex* p = verts)
+            Native.glBufferData(GL_ARRAY_BUFFER, verts.Length * sizeof(Vertex), p, GL_STATIC_DRAW);
+        _ibo = GenBuffer();
+        Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo); // recorded in the VAO
+        fixed (uint* p = indices)
+            Native.glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.Length * sizeof(uint), p, GL_STATIC_DRAW);
+        var stride = sizeof(Vertex);
+        SetupAttributes(stride);
+        var caveTris = 0;
+        if (t.Voids != null)
+        {
+            var (cv, ci) = CaveMesh(t);
+            if (ci.Length > 0)
+            {
+                _caveVao = GenVertexArray();
+                _caveVao.Bind();
+                _caveVbo = GenBuffer();
+                Native.glBindBuffer(GL_ARRAY_BUFFER, _caveVbo);
+                fixed (Vertex* p = cv)
+                    Native.glBufferData(GL_ARRAY_BUFFER, cv.Length * sizeof(Vertex), p, GL_STATIC_DRAW);
+                _caveIbo = GenBuffer();
+                Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _caveIbo);
+                fixed (uint* p = ci)
+                    Native.glBufferData(GL_ELEMENT_ARRAY_BUFFER, ci.Length * sizeof(uint), p, GL_STATIC_DRAW);
+                SetupAttributes(stride);
+                _caveIndexCount = ci.Length;
+                _caveMin = new Vector3(float.MaxValue);
+                _caveMax = new Vector3(float.MinValue);
+                foreach (var v in cv)
+                {
+                    _caveMin = Vector3.Min(_caveMin, v.Pos);
+                    _caveMax = Vector3.Max(_caveMax, v.Pos);
+                }
+                caveTris = ci.Length / 3;
+            }
+        }
+        _hasBuffers = true;
+        _chunks = chunks;
+        _builtFor = map;
+        _builtData = t;
+        var err = Native.glGetError();
+        Console.WriteLine($"[terrain] built '{map.Name}': {nx} x {nz} vertices, {indices.Length / 3} triangles in {chunks.Length} chunks, "
+                          + (t.Voids is { } tv ? $"{tv.OpenCells} hole cells skipped, {tv.CaveCells} cave cells, {caveTris} cave/rim triangles, " : "")
+                          + $"{(verts.Length * stride + indices.Length * 4) / 1024} KB on the GPU, {sw.Elapsed.TotalMilliseconds:0.0} ms, GL error 0x{(uint)err:X}");
+        _nextLog = _clock.Elapsed.TotalSeconds + 5;
+    }
+
+    private static void SetupAttributes(int stride)
+    {
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
+        EnableVertexAttribArray(0);
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)12);
+        EnableVertexAttribArray(1);
+        Native.glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, stride, (void*)24);
+        EnableVertexAttribArray(2);
+    }
+
+    /// <summary>Does sample (i, j) sit on the edge of a hole (one of its four cells is a hole)?</summary>
+    private static bool TouchesHole(TerrainData t, int i, int j)
+    {
+        for (var dj = -1; dj <= 0; dj++)
+        for (var di = -1; di <= 0; di++)
+        {
+            int ci = i + di, cj = j + dj;
+            if (ci >= 0 && cj >= 0 && ci < t.CountX - 1 && cj < t.CountZ - 1 && t.CellKind(ci, cj) == TerrainVoids.Open)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The surface's index list, chunk by chunk (so a chunk is one contiguous range and neighbours in a row merge into one
+    /// draw). Hole cells (TerrainVoids.cs) get no triangles. Pure CPU work: the self-test checks it without a GPU.
+    /// </summary>
+    internal static (uint[] Indices, Chunk[] Chunks) SurfaceIndices(TerrainData t)
+    {
+        int nx = t.CountX, nz = t.CountZ;
         int cellsX = nx - 1, cellsZ = nz - 1;
         int chunksX = (cellsX + ChunkCells - 1) / ChunkCells, chunksZ = (cellsZ + ChunkCells - 1) / ChunkCells;
-        var indices = new uint[cellsX * cellsZ * 6];
+        var holes = t.Voids?.OpenCells ?? 0;
+        var indices = new uint[(cellsX * cellsZ - holes) * 6];
         var chunks = new Chunk[chunksX * chunksZ];
+        var kinds = t.Voids?.Kinds;
         var w = 0;
         for (var cz = 0; cz < chunksZ; cz++)
         for (var cx = 0; cx < chunksX; cx++)
@@ -219,6 +311,8 @@ public sealed unsafe class TerrainRenderer
             for (var j = j0; j < j1; j++)
             for (var i = i0; i < i1; i++)
             {
+                if (kinds != null && kinds[j * cellsX + i] == TerrainVoids.Open)
+                    continue; // a hole: nothing at the surface
                 uint a = (uint)(j * nx + i), b = a + 1, c = a + (uint)nx, d = c + 1;
                 float ha = t.Heights[a], hb = t.Heights[b], hc = t.Heights[c], hd = t.Heights[d];
                 lo = MathF.Min(lo, MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd)));
@@ -235,36 +329,109 @@ public sealed unsafe class TerrainRenderer
                     indices[w++] = b; indices[w++] = c; indices[w++] = d;
                 }
             }
+            if (lo > hi)
+                (lo, hi) = (0f, 0f); // a chunk that is all hole: nothing to draw
             chunks[cz * chunksX + cx] = new Chunk(
                 new Vector3(t.OriginX + i0 * t.Cell, lo, t.OriginZ + j0 * t.Cell),
                 new Vector3(t.OriginX + i1 * t.Cell, hi, t.OriginZ + j1 * t.Cell), first, w - first);
         }
+        return (indices, chunks);
+    }
 
-        _vao = GenVertexArray();
-        _vao.Bind();
-        _vbo = GenBuffer();
-        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-        fixed (Vertex* p = verts)
-            Native.glBufferData(GL_ARRAY_BUFFER, verts.Length * sizeof(Vertex), p, GL_STATIC_DRAW);
-        _ibo = GenBuffer();
-        Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ibo); // recorded in the VAO
-        fixed (uint* p = indices)
-            Native.glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.Length * sizeof(uint), p, GL_STATIC_DRAW);
-        var stride = sizeof(Vertex);
-        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
-        EnableVertexAttribArray(0);
-        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)12);
-        EnableVertexAttribArray(1);
-        Native.glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, stride, (void*)24);
-        EnableVertexAttribArray(2);
-        _hasBuffers = true;
-        _chunks = chunks;
-        _builtFor = map;
-        _builtData = t;
-        var err = Native.glGetError();
-        Console.WriteLine($"[terrain] built '{map.Name}': {nx} x {nz} vertices, {indices.Length / 3} triangles in {chunks.Length} chunks, "
-                          + $"{(verts.Length * stride + indices.Length * 4) / 1024} KB on the GPU, {sw.Elapsed.TotalMilliseconds:0.0} ms, GL error 0x{(uint)err:X}");
-        _nextLog = _clock.Elapsed.TotalSeconds + 5;
+    /// <summary>
+    /// The mesh for holes and caves: each hole's floor and the rock walls round it up to the surface (the rim), each cave's
+    /// floor, ceiling (facing down) and walls where it meets solid ground. Floors are darkened by how little daylight
+    /// reaches them (<see cref="TerrainVoids.Light"/>), walls and ceilings by the same amount, so caves get darker inside
+    /// with the normal lighting. Built once per map like the surface; empty without holes or caves.
+    /// </summary>
+    internal static (Vertex[] Vertices, uint[] Indices) CaveMesh(TerrainData t)
+    {
+        var v = t.Voids;
+        if (v == null)
+            return ([], []);
+        var verts = new List<Vertex>();
+        var idx = new List<uint>();
+        int nx = t.CountX;
+        var s = t.Surface;
+        var floorCol = Vector3.Lerp(s.Dirt, s.Rock, 0.45f);
+        var rockCol = s.Rock;
+
+        Vector3 Pos(int k, float y) => new(t.OriginX + (k % nx) * t.Cell, y, t.OriginZ + (k / nx) * t.Cell);
+
+        Vector3 SheetNormal(float[] h, int k)
+        {
+            int i = k % nx, j = k / nx;
+            float Get(int ii, int jj)
+            {
+                ii = Math.Clamp(ii, 0, nx - 1);
+                jj = Math.Clamp(jj, 0, t.CountZ - 1);
+                var val = h[jj * nx + ii];
+                return float.IsFinite(val) ? val : h[k];
+            }
+            var dx = (Get(i + 1, j) - Get(i - 1, j)) / (2 * t.Cell);
+            var dz = (Get(i, j + 1) - Get(i, j - 1)) / (2 * t.Cell);
+            return Vector3.Normalize(new Vector3(-dx, 1, -dz));
+        }
+
+        void Quad(Vertex a, Vertex b, Vertex c, Vertex d)
+        {
+            var b0 = (uint)verts.Count;
+            verts.Add(a);
+            verts.Add(b);
+            verts.Add(c);
+            verts.Add(d);
+            idx.Add(b0); idx.Add(b0 + 1); idx.Add(b0 + 2);
+            idx.Add(b0); idx.Add(b0 + 2); idx.Add(b0 + 3);
+        }
+
+        Vertex V(Vector3 pos, Vector3 n, Vector3 col, float light, float rock) =>
+            new() { Pos = pos, Normal = n, Color = Pack(col * light, rock) };
+
+        for (var j = 0; j < t.CountZ - 1; j++)
+        for (var i = 0; i < nx - 1; i++)
+        {
+            var kind = t.CellKind(i, j);
+            if (kind == TerrainVoids.Solid)
+                continue;
+            int k00 = j * nx + i, k10 = k00 + 1, k01 = k00 + nx, k11 = k01 + 1;
+            // Floor (and in a cave, the ceiling over it).
+            Quad(V(Pos(k00, v.Floor[k00]), SheetNormal(v.Floor, k00), floorCol, v.Light[k00], 0.55f),
+                 V(Pos(k01, v.Floor[k01]), SheetNormal(v.Floor, k01), floorCol, v.Light[k01], 0.55f),
+                 V(Pos(k11, v.Floor[k11]), SheetNormal(v.Floor, k11), floorCol, v.Light[k11], 0.55f),
+                 V(Pos(k10, v.Floor[k10]), SheetNormal(v.Floor, k10), floorCol, v.Light[k10], 0.55f));
+            if (kind == TerrainVoids.Cave)
+                Quad(V(Pos(k00, v.Ceiling[k00]), -SheetNormal(v.Ceiling, k00), rockCol, v.Light[k00] * 0.8f, 1f),
+                     V(Pos(k10, v.Ceiling[k10]), -SheetNormal(v.Ceiling, k10), rockCol, v.Light[k10] * 0.8f, 1f),
+                     V(Pos(k11, v.Ceiling[k11]), -SheetNormal(v.Ceiling, k11), rockCol, v.Light[k11] * 0.8f, 1f),
+                     V(Pos(k01, v.Ceiling[k01]), -SheetNormal(v.Ceiling, k01), rockCol, v.Light[k01] * 0.8f, 1f));
+            // Walls on edges where the neighbour is more solid (the same rule as the collision's walls).
+            for (var side = 0; side < 4; side++)
+            {
+                int ni = i + (side == 0 ? -1 : side == 1 ? 1 : 0), nj = j + (side == 2 ? -1 : side == 3 ? 1 : 0);
+                var nk = ni < 0 || nj < 0 || ni > nx - 2 || nj > t.CountZ - 2 ? TerrainVoids.Solid : t.CellKind(ni, nj);
+                int sp = side switch { 0 => k00, 1 => k10, 2 => k00, _ => k01 };
+                int sq = side switch { 0 => k01, 1 => k11, 2 => k10, _ => k11 };
+                var n = side switch { 0 => Vector3.UnitX, 1 => -Vector3.UnitX, 2 => Vector3.UnitZ, _ => -Vector3.UnitZ }; // into this cell
+                float loP, hiP, loQ, hiQ, topLight;
+                if (kind == TerrainVoids.Open && nk == TerrainVoids.Solid)
+                    (loP, hiP, loQ, hiQ, topLight) = (v.Floor[sp], t.Heights[sp], v.Floor[sq], t.Heights[sq], 1f);
+                else if (kind == TerrainVoids.Open && nk == TerrainVoids.Cave)
+                    (loP, hiP, loQ, hiQ, topLight) = (v.Ceiling[sp], t.Heights[sp], v.Ceiling[sq], t.Heights[sq], 1f);
+                else if (kind == TerrainVoids.Cave && nk == TerrainVoids.Solid)
+                    (loP, hiP, loQ, hiQ, topLight) = (v.Floor[sp], v.Ceiling[sp], v.Floor[sq], v.Ceiling[sq], -1f);
+                else
+                    continue;
+                if (hiP <= loP + 0.001f && hiQ <= loQ + 0.001f)
+                    continue;
+                hiP = MathF.Max(hiP, loP);
+                hiQ = MathF.Max(hiQ, loQ);
+                float lp = v.Light[sp], lq = v.Light[sq];
+                float tp = topLight < 0 ? lp * 0.8f : topLight, tq = topLight < 0 ? lq * 0.8f : topLight;
+                Quad(V(Pos(sp, loP), n, rockCol, lp * 0.85f, 1f), V(Pos(sq, loQ), n, rockCol, lq * 0.85f, 1f),
+                     V(Pos(sq, hiQ), n, rockCol, tq * 0.9f, 1f), V(Pos(sp, hiP), n, rockCol, tp * 0.9f, 1f));
+            }
+        }
+        return (verts.ToArray(), idx.ToArray());
     }
 
     private static uint Pack(Vector3 c, float a)
@@ -283,6 +450,15 @@ public sealed unsafe class TerrainRenderer
         bufs[0] = _vbo;
         bufs[1] = _ibo;
         Native.glDeleteBuffers(2, bufs);
+        if (_caveIndexCount > 0)
+        {
+            var cvao = _caveVao;
+            Native.glDeleteVertexArrays(1, &cvao);
+            bufs[0] = _caveVbo;
+            bufs[1] = _caveIbo;
+            Native.glDeleteBuffers(2, bufs);
+            _caveIndexCount = 0;
+        }
         _hasBuffers = false;
         _chunks = [];
         _builtData = null;
@@ -348,6 +524,16 @@ public sealed unsafe class TerrainRenderer
         }
         if (runStart >= 0)
             DrawRange(runStart, runCount);
+
+        // Holes and caves: one more draw with the same shader and state.
+        if (_caveIndexCount > 0 && Visible(planes, _caveMin, _caveMax))
+        {
+            _caveVao.Bind();
+            Native.glDrawElements(GL_TRIANGLES, _caveIndexCount, GL_UNSIGNED_INT, (void*)0);
+            _drawCalls++;
+            _visibleTris += _caveIndexCount / 3;
+            _vao.Bind();
+        }
 
         if (timing)
         {
