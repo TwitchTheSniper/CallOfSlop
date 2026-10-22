@@ -92,7 +92,7 @@ When several impacts list the same material, each hit picks one, weighted by `we
 - **Each player keeps at most 64**: their oldest fades as they add another.
 - **Oldest first**: when the pool is nearly full, the oldest mark starts fading an eighth of the pool ahead of being reused, so marks fade out instead of popping.
 - **Shotgun pellets merge** when the pool is three quarters full (or a player is near their 64): pellets of one shot landing close together on the same surface make one slightly bigger mark.
-- **Breakable things**: marks on a prop, door or window that breaks, opens or moves fade out at once. Props themselves (drawn as models) don't take marks; the wall behind does.
+- **Breakable things**: marks on a door, window or box that breaks, opens or moves fade out at once. Props (drawn as models, with only a box as their collider) don't take marks, so a mark never floats in the air beside a prop.
 - A new map clears the pool. Marks are drawn up to 70 m away (50 on Medium, 35 on Low), fading out with distance.
 
 Impacts are separate from impact particles and sounds (those are drawn and played by their own systems).
@@ -113,3 +113,5 @@ Impacts are separate from impact particles and sounds (those are drawn and playe
 5. For a new bullet impact, add `"impact": { "materials": [...] }`; for more variety on a material, add several impact decals listing it (the pick is weighted by `weight`).
 
 Decals live in this top-level folder so every map and pack can use them (packs can't have their own decals yet). Decals are cosmetic and never part of a map's fingerprint.
+
+**From code:** anything that builds a map (a building generator, a future prop type) can call `Map.Decal(...)` and `Map.DecalScatter(...)` directly; calls made inside another op aren't written to the map file as ops of their own, and are baked with the map like any other decal. A decal on one of the boxes it made hides automatically while that box is broken or moved (for example an open door).
