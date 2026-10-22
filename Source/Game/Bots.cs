@@ -236,7 +236,8 @@ public sealed partial class Game
             return true;
         if (World.Query.Raycast(from, d / dist, dist, QueryFilter.All) < dist - 0.05f)
             return false;
-        return !SmokeBlocks(from, to, Brutal.GlfwApi.Glfw.Time); // bots can't see through smoke either
+        return !SmokeBlocks(from, to, Brutal.GlfwApi.Glfw.Time) // bots can't see through smoke either
+               && !World.Map.Concealed(from, to); // ... or through a cornfield (concealment props, MapConcealment.cs)
     }
 
     /// <summary>One simulation tick of bot thinking: perceive, decide, steer, aim, shoot, move.</summary>

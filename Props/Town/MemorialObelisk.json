@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Memorial Obelisk",
+  "category": "Town",
+  "description": "A granite memorial obelisk 6.6 m tall on a stepped plinth, with a dark plaque facing +Z. Solid, unbreakable.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 0.3, 2.2], "offset": [0.0, 0.15, 0.0]}, {"size": [1.7, 0.3, 1.7], "offset": [0.0, 0.45, 0.0]}, {"size": [1.1, 0.9, 1.1], "offset": [0.0, 1.05, 0.0]}, {"size": [0.8, 5.0, 0.8], "offset": [0.0, 4.0, 0.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "parts": [
+    {"size": [2.2, 0.3, 2.2], "offset": [0.0, 0.15, 0.0], "color": "#8e8a82", "material": "concrete"},
+    {"size": [1.7, 0.3, 1.7], "offset": [0.0, 0.45, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [1.1, 0.9, 1.1], "offset": [0.0, 1.05, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [0.8, 0.02, 0.5], "offset": [0.0, 1.1, 0.555], "color": "#3a3a36"},
+    {"size": [0.6, 0.04, 0.02], "offset": [0.0, 1.25, 0.566], "color": "#c8b070"},
+    {"size": [0.5, 0.03, 0.02], "offset": [0.0, 1.0, 0.566], "color": "#c8b070"},
+    {"size": [0.8, 1.2, 0.8], "offset": [0.0, 2.1, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [0.7, 1.2, 0.7], "offset": [0.0, 3.25, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [0.6, 1.2, 0.6], "offset": [0.0, 4.4, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [0.5, 1.0, 0.5], "offset": [0.0, 5.45, 0.0], "color": "#a8a49a", "material": "concrete"},
+    {"size": [0.5, 0.35, 0.5], "offset": [0.0, 6.25, 0.0], "color": "#a8a49a", "rotation": [0, 45, 0]},
+    {"size": [0.3, 0.3, 0.3], "offset": [0.0, 6.5, 0.0], "color": "#a8a49a", "rotation": [0, 45, 45]}
+  ]
+}
