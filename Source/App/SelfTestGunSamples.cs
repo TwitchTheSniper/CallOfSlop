@@ -194,6 +194,7 @@ public static partial class SelfTest
         // ---- Same-class distinctness: every pair in a class (recorded or synth) ----
         var prints = Weapons.All.Select(d => (W: d, F: GunSnap.Fingerprint(baked[d.Id]))).ToArray();
         var closest = new List<string>();
+        var closeDetail = new List<string>();
         var pairs = 0;
         foreach (var g in prints.GroupBy(p => p.W.Class))
         {
@@ -207,11 +208,18 @@ public static partial class SelfTest
                     if (d < best.D)
                         best = (d, arr[i].W.Name, arr[j].W.Name);
                     if (d < MinSameClassDistanceDb)
+                    {
                         Fail($"{arr[i].W.Name} and {arr[j].W.Name} ({g.Key}) sound alike: fingerprint distance {d:0.00} dB (want {MinSameClassDistanceDb:0.0}+)");
+                        if (closeDetail.Count < 6)
+                            foreach (var x in new[] { arr[i], arr[j] })
+                                closeDetail.Add($"{x.W.Name} [{string.Join(" ", x.F.Select(f => f.ToString("0.0")))}] {(lib.SetFor(x.W) is { } xs ? xs.Name + " " + GunVoice.For(x.W, xs).Describe() : "synth")}");
+                    }
                 }
             if (arr.Length > 1)
                 closest.Add($"{g.Key} {best.D:0.00} ({best.A} / {best.B})");
         }
+        foreach (var cd in closeDetail)
+            GunLine("  close: " + cd);
         GunLine($"distinct: {pairs} same-class pairs, closest per class in dB (want {MinSameClassDistanceDb:0.0}+): " + string.Join("; ", closest));
 
         // ---- Determinism ----
