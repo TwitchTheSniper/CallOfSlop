@@ -148,7 +148,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     4,
     28
@@ -157,7 +157,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     16,
     28

@@ -2,7 +2,7 @@
 """Writes the missile-complex buildings used by the World Tour map "Silo" (Maps/World/03-Silo.json):
 
     Launch Control Centre, Silo Power Plant, Silo Blast Lock, Silo Armoury, Silo Comms Room, Silo Crew Quarters,
-    Silo Maintenance Bay, Silo Service Tower, Silo Access Bunker, Guard Tower
+    Silo Maintenance Bay, Silo Service Tower, Silo Access Bunker, Concrete Guard Tower
 
 and their furnishing rules (new room types in Buildings/Furnishing, all named silo*). Run from anywhere:
 
@@ -126,7 +126,7 @@ hall_props = [P("Reactor Vessel", at=[0, -1.6]), P("Reactor Control Desk", wall=
               P("Radiation Sign", wall="S", along=2.0, y=1.8), P("Radiation Sign", wall="W", along=1.5, y=1.8),
               P("Radiation Sign", wall="E", along=1.5, y=1.8), P("Status Board", wall="S", along=3.6, y=1.4),
               P("Caged Bulkhead Lamp", wall="W", along=-2, y=3.0), P("Caged Bulkhead Lamp", wall="E", along=-2, y=3.0),
-              P("Caged Bulkhead Lamp", wall="N", along=0, y=6.1)]
+              P("Caged Bulkhead Lamp", wall="N", along=0, y=5.6)]
 turb_props = [P("Turbine Generator", at=[0.3, -0.6], yaw=90), P("Caged Bulkhead Lamp", wall="E", along=-3, y=3.2),
               P("Caged Bulkhead Lamp", wall="E", along=3, y=3.2), P("Wall Pipe Run", wall="E", along=0, y=4.8)]
 corr_pp = lamps(5, 22, "S", 2.8) + [P("Wall Cable Tray", wall="N", along=-6, y=3.4), P("Wall Cable Tray", wall="N", along=6, y=3.4),
@@ -299,8 +299,8 @@ BUILDINGS["SiloAccessBunker"] = base(
     })
 
 # ---------------------------------------------------------------------------------------------- Guard Tower
-BUILDINGS["GuardTower"] = base(
-    "Guard Tower",
+BUILDINGS["ConcreteGuardTower"] = base(
+    "Concrete Guard Tower",
     "A Cold War perimeter guard tower: a plain concrete shaft, a glazed-open lookout on top, a searchlight on the roof",
     "A three-level concrete tower: a door at the foot, switchback stairs, a lookout with wide openings all round and stairs onto the roof.",
     512, 3.0, {
@@ -434,7 +434,7 @@ def showcase():
     place = [("Launch Control Centre", -36, -28, {}), ("Silo Power Plant", 0, -28, {}), ("Silo Blast Lock", 34, -28, {}),
              ("Silo Armoury", -42, 2, {}), ("Silo Comms Room", -20, 2, {}), ("Silo Crew Quarters", 3, 2, {}),
              ("Silo Maintenance Bay", 27, 2, {"variant": {"palette": "green paint"}}), ("Silo Service Tower", -40, 28, {}),
-             ("Guard Tower", 4, 28, {}), ("Guard Tower", 16, 28, {"variant": {"palette": "olive"}})]
+             ("Concrete Guard Tower", 4, 28, {}), ("Concrete Guard Tower", 16, 28, {"variant": {"palette": "olive"}})]
     for name, x, z, kw in place:
         op = {"op": "Building", "name": name, "at": [x, z], "spawns": True}
         op.update(kw)

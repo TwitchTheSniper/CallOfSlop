@@ -34,7 +34,27 @@ import voids as vd
 from townkit import yaw_facing, yaw_along, R, col
 
 _glob = glob.glob
-tk.glob.glob = lambda p, **k: [f for f in _glob(p, **k) if os.sep + "Flags" + os.sep not in f]
+def _props_glob(p, **k):
+    """townkit reads Props/*/*.json; also take category subfolders (Props/Military/Vehicles) and skip the flag pool."""
+    out = _glob(p, **k)
+    if p.endswith(os.path.join("Props", "*", "*.json")):
+        out += _glob(p.replace(os.path.join("*", "*.json"), os.path.join("*", "*", "*.json")))
+    return [f for f in out if os.sep + "Flags" + os.sep not in f]
+
+
+tk.glob.glob = _props_glob
+FAILED = []
+
+
+class SiloTown(tk.Town):
+    def prop(self, name, x, z, yaw=0.0, y=None, check=True, gap=0.02, lanes=False, margin=0.6, tag=None):
+        ok = super().prop(name, x, z, yaw, y, check, gap, lanes, margin, tag)
+        if not ok:
+            r = self.foot(name, x, z, round(yaw % 360, 1))
+            corners = ((r[0], r[1]), (r[2], r[1]), (r[0], r[3]), (r[2], r[3]), (x, z))
+            why = "outside" if not all(self.inside(a, b, margin) for a, b in corners) else "keep-out" if self.in_keepout(r, 0.3) else "occupied"
+            FAILED.append(f"{name} ({x:.1f}, {z:.1f}): {why}")
+        return ok
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "..", "..")
 OUT_JSON = os.path.join(REPO, "Maps/World/03-Silo.json")
@@ -46,7 +66,7 @@ HALF_CTRL = [(0, -82), (-34, -87), (-68, -80), (-98, -64), (-117, -36), (-123, -
 # round the loop: the west half from north to south, then the east half back north
 CTRL = HALF_CTRL + [(-x, z) for x, z in reversed(HALF_CTRL[1:-1])]
 NOISE = {"amplitude": 1.6, "scale": 22, "seed": 503, "octaves": 2}
-t = tk.Town(REPO, CTRL, NOISE)
+t = SiloTown(REPO, CTRL, NOISE)
 HALF_X = max(abs(p[0]) for p in t.outline)
 HALF_Z = max(abs(p[1]) for p in t.outline)
 
@@ -679,7 +699,7 @@ MARKS = []
 
 
 # ================================================================ objectives
-BLUE_SP = [(-93.0, z) for z in (-24, -16, -8, 8, 16, 24)] + [(-88.0, z) for z in (-20, -12, -4, 4, 12, 20)]
+BLUE_SP = [(-90.0, z) for z in (-24, -16, -8, 8, 16, 24)] + [(-86.0, z) for z in (-20, -12, -4, 4, 12, 20)]
 RED_SP = [mx(p) for p in BLUE_SP]
 FFA_SP = [(-46, -62), (46, -62), (-44, 60), (44, 60), (-30, -44), (30, -44), (-28, 44), (28, 44)]
 FLAGS = [(-104.0, 2.0), (104.0, 2.0)]
@@ -710,9 +730,9 @@ for s in (-1, 1):
     bk = place_building("Bunker", (s * 84, -50), 270 if blue else 90, None, mirror=not blue, palette=None if blue else "olive paint", seed=75, kind="surface")
     t.mark(t.occ, (s * 84 - 11, -64, s * 84 + 11, -36)); t.mark(t.walk, (s * 84 - 11, -64, s * 84 + 11, -36))
     for (x, z) in ((97, -42), (97, 44)):
-        place_building("GuardTower", (s * x, z), 90 if blue else 270, None, palette="olive" if not blue else None, seed=76, kind="surface")
-place_building("GuardTower", (0, -75), 180, None, seed=77, kind="surface")
-place_building("GuardTower", (0, 75), 0, None, seed=78, kind="surface")
+        place_building("ConcreteGuardTower", (s * x, z), 90 if blue else 270, None, palette="olive" if not blue else None, seed=76, kind="surface")
+place_building("ConcreteGuardTower", (0, -75), 180, None, seed=77, kind="surface")
+place_building("ConcreteGuardTower", (0, 75), 0, None, seed=78, kind="surface")
 for rec in ACCESS["blue"] + ACCESS["red"]:
     fp = rec["fp"]
     t.mark(t.occ, (fp[0] - 1, fp[1] - 1, fp[2] + 1, fp[3] + 1)); t.mark(t.walk, fp); t.mark(t.tall, fp)
@@ -748,6 +768,12 @@ for s in (-1, 1):
 t.prop("Restricted Area Sign", 0.0, -17.0, 180)
 t.prop("Restricted Area Sign", 0.0, 17.0, 0)
 
+# the passes over the ridge: an old wreck in each, the silo pad's searchlights
+t.prop("Wrecked Tank", 0.0, -63.0, 90)
+t.prop("Wrecked Tank", 0.0, 63.0, 270)
+for s in (-1, 1):
+    t.prop("Field Searchlight", s * 20.0, 15.5, 0)
+
 # lift heads: a hazard railing round each shaft, a control box, a light
 for s in (-1, 1):
     lx, lz = s * LIFT[0], LIFT[1]
@@ -758,8 +784,8 @@ for s in (-1, 1):
 # vent shafts over the junctions: fan housings round a grille-less shaft
 for s in (-1, 1):
     vx = s * JW[0]
-    t.prop("Ventilation Fan Unit", vx + 3.4 * s, -1.2, 270 if s < 0 else 90)
-    t.prop("Mushroom Vent", vx - 2.8 * s, 2.4, 0)
+    t.prop("Ventilation Fan Unit", vx + 4.6 * s, -1.2, 270 if s < 0 else 90)
+    t.prop("Mushroom Vent", vx - 3.8 * s, 3.4, 0)
     t.prop("Road Barrier", vx, -3.0, 0, check=False)
     t.prop("Road Barrier", vx, 3.0, 0, check=False)
 # antennas over the Launch Control Centre and the power plant
@@ -783,36 +809,35 @@ def base_props(s):
     for z in (-9.0, 11.0):
         t.prop("Flag on a Pole", X(100.5), z, 0, check=False)
     if blue:
-        trucks = [("Box Truck", -97, -24, 0), ("Box Truck", -97, -18, 0), ("Pickup Truck", -96.5, -7, 0), ("Van", -98.5, 26, 0),
-                  ("Forklift", -96.5, 3.5, 90), ("Pickup Truck", -84.5, -27, 90), ("Box Truck", -84.5, 27, 90)]
+        trucks = [("Covered Cargo Truck", -95.0, -24.0, 90), ("Covered Cargo Truck", -95.0, -15.6, 90), ("Light Utility Jeep", -95.0, -7.5, 90),
+                  ("Fuel Tanker Truck", -95.0, 23.5, 90), ("Forklift", -99.5, 3.5, 90), ("Light Utility Jeep", -95.0, 12.5, 90)]
         for name, x, z, yaw in trucks:
             t.prop(name, x, z, yaw)
-        for k in range(4):
-            t.prop("Oil Drum", -100.5 + k * 0.7, 5.4, 0)
-            t.prop("Rusty Drum", -100.5 + k * 0.7, 6.1, 0)
+        t.prop("Fuel Drum Rack", -100.0, 5.6, 0)
+        t.prop("Jerrycan Rack", -100.2, 7.2, 0)
+        t.prop("Military Pallet", -98.0, 7.4, 0); t.prop("Pallet of Ammo Crates", -112.0, 0.5, 0)
         t.prop("Propellant Tank", -110.0, 4.5, 0)
         t.prop("Diesel Generator", -112.0, 26.0, 90)
-        t.prop("Tyre Stack", -100.0, 9.5, 0); t.prop("Tyre Stack", -99.0, 9.5, 0)
-        t.prop("Pallet Stack", -98.5, -1.0, 0); t.prop("Jerry Can", -97.5, 4.8, 30)
-        t.prop("Red Fuel Barrel", -101.0, 2.0, 0)
+        t.prop("Tyre Stack", -100.0, 10.5, 0); t.prop("Tyre Stack", -99.0, 10.5, 0)
+        t.prop("Pallet Stack", -99.0, -2.5, 0); t.prop("Jerry Can", -97.5, 4.8, 30)
+        t.prop("Red Fuel Barrel", -101.5, -3.5, 0)
     else:
-        cars = [("Sedan", 97, -24, 0), ("SUV", 97, -18, 0), ("Police Car", 96.5, -7, 0), ("Sedan", 98.5, 26, 0),
-                ("Ambulance", 96.5, 3.5, 90), ("Pickup Truck", 84.5, -27, 90), ("Box Truck", 84.5, 27, 90)]
+        cars = [("Sedan", 95.0, -24.5, 90), ("SUV", 95.0, -17.5, 90), ("Armoured Car", 95.0, -9.5, 90), ("Covered Cargo Truck", 95.0, 23.5, 90),
+                ("Ambulance", 99.5, 3.5, 90), ("Light Utility Jeep", 95.0, 12.5, 90)]
         for name, x, z, yaw in cars:
             t.prop(name, x, z, yaw)
-        t.prop("Guard Booth", 85.5, 3.0, 0)
-        t.prop("Boom Gate", 85.0, -1.6, 270)
-        t.prop("Concrete Block", 100.5, 5.4, 0); t.prop("Concrete Block", 100.5, 6.4, 0)
-        t.prop("Bench", 101.0, 9.5, 0); t.prop("Trash Can", 99.5, 9.5, 0)
+        t.prop("Guard Booth", 81.5, 3.6, 0)
+        t.prop("Boom Gate", 81.0, -1.6, 270)
+        t.prop("Concrete Tank Trap", 79.0, -5.0, 0); t.prop("Concrete Tank Trap", 79.0, 6.0, 0)
+        t.prop("Concrete Block", 100.5, 6.0, 0); t.prop("Field Searchlight", 100.5, 8.2, 270)
+        t.prop("Bench", 101.0, 10.5, 0); t.prop("Trash Can", 99.5, 10.5, 0)
         t.prop("Mailbox", 99.0, -1.0, 0); t.prop("Vending Machine", 110.0, 4.5, 180)
         t.prop("Diesel Generator", 112.0, 26.0, 270)
-        t.prop("Red Fuel Barrel", 101.0, 2.0, 0)
-    for (x, z) in ((-90.5, -28.0), (-90.5, 28.0)):
+        t.prop("Red Fuel Barrel", 101.5, -3.5, 0)
+    for (x, z) in ((-99.5, -29.5), (-99.5, 29.5)):
         t.prop("Floodlight Tower", X(x), z, face)
     for z in (-30.0, -14.0, 14.0, 30.0):
         t.prop("Street Lamp", X(83.5), z, face)
-    for z in (-2.5, 2.5):
-        t.prop("Sandbag Wall", X(84.0), z, 90)
     t.prop("Restricted Area Sign", X(82.5), 7.0, face)
 
 
@@ -820,29 +845,63 @@ for s in (-1, 1):
     base_props(s)
 
 # ================================================================ surface: sandbag positions scattered through the woods
-FORTS = [(-66, -12, 90), (-46, -44, 90), (-44, 48, 90), (-26, -60, 90), (-24, 60, 90), (-38, -14, 70), (-36, 15, 110),
-         (-14, -32, 45), (-14, 32, 135), (-58, -66, 60), (-58, 66, 120), (-72, 46, 90)]
+FORTS = [(-66, -12, 90), (-46, -44, 90), (-44, 48, 90), (-26, -60, 90), (-24, 60, 90), (-38, -14, 70), (-38, 21, 110),
+         (-14, -32, 45), (-14, 32, 135), (-56, -57, 60), (-56, 57, 120), (-60, 45, 90)]
 
 
-def fort(x, z, facing, s):
-    """A little sandbag position: a curve of walls facing `facing` (degrees, 90 = east), a crate or drums behind."""
+def fort(x, z, facing, s, kind):
+    """A small sandbag position facing `facing` (degrees, 90 = east), with its kit behind it. Three kinds: a machine-gun
+    nest (a ring of sandbags), a U of long walls with corners and an ammunition stack, a low wall under a camo net."""
     if s > 0:
         x, facing = -x, 180 - facing
     f = math.radians(facing)
     fx, fz = math.cos(f), math.sin(f)
     put = 0
-    for k, off in enumerate((-60, -30, 0, 30, 60)):
-        a = f + math.radians(off)
-        px, pz = x + 2.6 * math.cos(a), z + 2.6 * math.sin(a)
-        if t.prop("Sandbag Wall", px, pz, yaw_along(-math.sin(a), math.cos(a))):
+    along = yaw_along(-fz, fx)            # a wall's long axis across the facing direction
+    P = t.prop
+
+    def put_(name, px, pz, yaw):
+        return P(name, px, pz, yaw, check=False)
+    if kind == 0:
+        if put_("Sandbag Nest Ring", x, z, along):
             put += 1
-    for k, name in enumerate(rng.sample(["Wooden Crate", "Oil Drum", "Small Crate", "Concrete Block"], 2)):
-        t.prop(name, x - fx * 1.4 + (k - 0.5) * 1.6 * fz, z - fz * 1.4 - (k - 0.5) * 1.6 * fx, rng.uniform(0, 90))
-    t.prop("Jerry Can", x - fx * 0.6, z - fz * 0.6, rng.uniform(0, 360))
+            put_("Mounted Machine Gun", x + fx * 0.6, z + fz * 0.6, yaw_facing(fx, fz) - 90)
+            put_("Steel Ammo Can", x - fx * 0.5, z - fz * 0.5, rng.uniform(0, 360))
+        put_("Ammo Crate Wooden", x - fx * 2.4, z - fz * 2.4, along)
+        put_("Sandbag Pile", x - fx * 2.0 + fz * 2.0, z - fz * 2.0 - fx * 2.0, along)
+    elif kind == 1:
+        for off in (-1, 0, 1):
+            if put_("Sandbag Wall Long", x + fx * 1.6 + fz * off * 3.0, z + fz * 1.6 - fx * off * 3.0, along):
+                put += 1
+        for sd in (-1, 1):
+            if put_("Sandbag Corner", x + fx * 0.9 + fz * sd * 5.5, z + fz * 0.9 - fx * sd * 5.5, along + (0 if sd < 0 else 90)):
+                put += 1
+        put_("Stacked Ammo Crates", x - fx * 1.2 + fz * 2.2, z - fz * 1.2 - fx * 2.2, along)
+        put_("Field Radio Pack", x - fx * 0.6 - fz * 1.0, z - fz * 0.6 + fx * 1.0, yaw_facing(fx, fz))
+        put_("Military Fuel Drum", x - fx * 1.6 - fz * 2.6, z - fz * 1.6 + fx * 2.6, 0)
+    else:
+        for off in (-0.8, 0.8):
+            if put_("Sandbag Wall Short", x + fx * 1.4 + fz * off, z + fz * 1.4 - fx * off, along):
+                put += 1
+        put_("Camo Net Canopy", x - fx * 1.4, z - fz * 1.4, along)
+        put_("Pallet of Ammo Crates", x - fx * 2.6 + fz * 1.8, z - fz * 2.6 - fx * 1.8, along)
+        put_("Jerry Can", x - fx * 0.6, z - fz * 0.6, rng.uniform(0, 360))
+    t.mark(t.occ, (x - 4.5, z - 4.5, x + 4.5, z + 4.5))
     return put
 
 
-FORT_COUNT = sum(fort(x, z, f, s) for s in (-1, 1) for (x, z, f) in FORTS)
+def fort_site(x, z):
+    site = (x - 5.8, z - 5.8, x + 5.8, z + 5.8)
+    return t.free((x - 3.5, z - 3.5, x + 3.5, z + 3.5)) and not t.in_keepout(site, 0.0) and not t.on_lane((x - 4, z - 4, x + 4, z + 4)) \
+        and all(V.kind(x + dx, z + dz) != vd.OPEN for dx in (-4, 0, 4) for dz in (-4, 0, 4))
+
+
+FORT_COUNT = 0
+for i, (x, z, f) in enumerate(FORTS):
+    if fort_site(x, z) and fort_site(-x, z):
+        FORT_COUNT += fort(x, z, f, -1, i % 3) + fort(x, z, f, 1, i % 3)
+    else:
+        FAILED.append(f"fort at (+-{abs(x)}, {z}): site not clear")
 
 # ================================================================ surface: the perimeter fence (just inside the outline)
 FENCE = 0
@@ -867,8 +926,12 @@ for i in range(len(pts)):
         nx_, nz_ = -nx_, -nz_
     if (i * 7) % 23 == 0:
         continue      # a gap where the fence has come down
-    if t.prop("Chain Link Fence", mxp + nx_ * 4.0, mzp + nz_ * 4.0, yaw_along(b[0] - a[0], b[1] - a[1]), margin=2.0):
+    if t.prop("Chain Link Fence", mxp + nx_ * 4.0, mzp + nz_ * 4.0, yaw_along(b[0] - a[0], b[1] - a[1]), margin=1.5, check=False):
         FENCE += 1
+        if i % 2 == 0:
+            t.prop("Barbed Wire Coil", mxp + nx_ * 2.6, mzp + nz_ * 2.6, yaw_along(b[0] - a[0], b[1] - a[1]), margin=1.2)
+        if i % 17 == 5:
+            t.prop("Mine Warning Sign", mxp + nx_ * 4.6, mzp + nz_ * 4.6, yaw_facing(nx_, nz_), margin=2.0)
 
 
 # ================================================================ surface: the forest floor
@@ -1122,6 +1185,9 @@ def write():
           f"{SCENERY} scenery trees; area {t.area():.0f} m2")
     for p in PROBLEMS:
         print("PROBLEM:", p)
+    if os.environ.get("SILO_DEBUG"):
+        for f in FAILED:
+            print("not placed:", f)
 
 
 if __name__ == "__main__":

@@ -2246,101 +2246,101 @@
  "teamSpawns": [
   [
    [
-    -93.0,
+    -90.0,
     -24.0
    ],
    [
-    -93.0,
+    -90.0,
     -16.0
    ],
    [
-    -93.0,
+    -90.0,
     -8.0
    ],
    [
-    -93.0,
+    -90.0,
     8.0
    ],
    [
-    -93.0,
+    -90.0,
     16.0
    ],
    [
-    -93.0,
+    -90.0,
     24.0
    ],
    [
-    -88.0,
+    -86.0,
     -20.0
    ],
    [
-    -88.0,
+    -86.0,
     -12.0
    ],
    [
-    -88.0,
+    -86.0,
     -4.0
    ],
    [
-    -88.0,
+    -86.0,
     4.0
    ],
    [
-    -88.0,
+    -86.0,
     12.0
    ],
    [
-    -88.0,
+    -86.0,
     20.0
    ]
   ],
   [
    [
-    93.0,
+    90.0,
     -24.0
    ],
    [
-    93.0,
+    90.0,
     -16.0
    ],
    [
-    93.0,
+    90.0,
     -8.0
    ],
    [
-    93.0,
+    90.0,
     8.0
    ],
    [
-    93.0,
+    90.0,
     16.0
    ],
    [
-    93.0,
+    90.0,
     24.0
    ],
    [
-    88.0,
+    86.0,
     -20.0
    ],
    [
-    88.0,
+    86.0,
     -12.0
    ],
    [
-    88.0,
+    86.0,
     -4.0
    ],
    [
-    88.0,
+    86.0,
     4.0
    ],
    [
-    88.0,
+    86.0,
     12.0
    ],
    [
-    88.0,
+    86.0,
     20.0
    ]
   ]
@@ -9657,7 +9657,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     -97.0,
     -42.0
@@ -9667,7 +9667,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     -97.0,
     44.0
@@ -9714,7 +9714,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     97.0,
     -42.0
@@ -9727,7 +9727,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     97.0,
     44.0
@@ -9740,7 +9740,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     0.0,
     -75.0
@@ -9750,7 +9750,7 @@
   },
   {
    "op": "Building",
-   "name": "Guard Tower",
+   "name": "Concrete Guard Tower",
    "at": [
     0.0,
     75.0
@@ -10012,6 +10012,32 @@
   },
   {
    "op": "Prop",
+   "name": "Wrecked Tank",
+   "x": 0.0,
+   "z": -63.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wrecked Tank",
+   "x": 0.0,
+   "z": 63.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": -20.0,
+   "z": 15.5
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": 20.0,
+   "z": 15.5
+  },
+  {
+   "op": "Prop",
    "name": "Road Barrier",
    "x": -6.4,
    "z": -27.9
@@ -10064,6 +10090,12 @@
   },
   {
    "op": "Prop",
+   "name": "Mushroom Vent",
+   "x": 29.8,
+   "z": 3.4
+  },
+  {
+   "op": "Prop",
    "name": "Road Barrier",
    "x": 26.0,
    "z": -3.0
@@ -10073,6 +10105,12 @@
    "name": "Road Barrier",
    "x": 26.0,
    "z": 3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mushroom Vent",
+   "x": -29.8,
+   "z": 3.4
   },
   {
    "op": "Prop",
@@ -10173,66 +10211,69 @@
   },
   {
    "op": "Prop",
-   "name": "Van",
-   "x": -98.5,
-   "z": 26.0
+   "name": "Covered Cargo Truck",
+   "x": -95.0,
+   "z": -24.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Covered Cargo Truck",
+   "x": -95.0,
+   "z": -15.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Light Utility Jeep",
+   "x": -95.0,
+   "z": -7.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Tanker Truck",
+   "x": -95.0,
+   "z": 23.5,
+   "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Forklift",
-   "x": -96.5,
+   "x": -99.5,
    "z": 3.5,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Pickup Truck",
-   "x": -84.5,
-   "z": -27.0,
+   "name": "Light Utility Jeep",
+   "x": -95.0,
+   "z": 12.5,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Box Truck",
-   "x": -84.5,
-   "z": 27.0,
-   "yaw": 90.0
+   "name": "Fuel Drum Rack",
+   "x": -100.0,
+   "z": 5.6
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": -100.5,
-   "z": 5.4
+   "name": "Jerrycan Rack",
+   "x": -100.2,
+   "z": 7.2
   },
   {
    "op": "Prop",
-   "name": "Rusty Drum",
-   "x": -100.5,
-   "z": 6.1
+   "name": "Military Pallet",
+   "x": -98.0,
+   "z": 7.4
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": -99.1,
-   "z": 5.4
-  },
-  {
-   "op": "Prop",
-   "name": "Rusty Drum",
-   "x": -99.1,
-   "z": 6.1
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": -98.4,
-   "z": 5.4
-  },
-  {
-   "op": "Prop",
-   "name": "Rusty Drum",
-   "x": -98.4,
-   "z": 6.1
+   "name": "Pallet of Ammo Crates",
+   "x": -112.0,
+   "z": 0.5
   },
   {
    "op": "Prop",
@@ -10251,7 +10292,7 @@
    "op": "Prop",
    "name": "Tyre Stack",
    "x": -99.0,
-   "z": 9.5
+   "z": 10.5
   },
   {
    "op": "Prop",
@@ -10263,8 +10304,22 @@
   {
    "op": "Prop",
    "name": "Floodlight Tower",
-   "x": -90.5,
-   "z": -28.0,
+   "x": -99.5,
+   "z": -29.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Floodlight Tower",
+   "x": -99.5,
+   "z": 29.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Street Lamp",
+   "x": -83.5,
+   "z": -30.0,
    "yaw": 90.0
   },
   {
@@ -10283,16 +10338,9 @@
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -84.0,
-   "z": -2.5,
-   "yaw": 90.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -84.0,
-   "z": 2.5,
+   "name": "Street Lamp",
+   "x": -83.5,
+   "z": 30.0,
    "yaw": 90.0
   },
   {
@@ -10317,48 +10365,75 @@
   {
    "op": "Prop",
    "name": "Sedan",
-   "x": 98.5,
-   "z": 26.0
+   "x": 95.0,
+   "z": -24.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "SUV",
+   "x": 95.0,
+   "z": -17.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Armoured Car",
+   "x": 95.0,
+   "z": -9.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Covered Cargo Truck",
+   "x": 95.0,
+   "z": 23.5,
+   "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Ambulance",
-   "x": 96.5,
+   "x": 99.5,
    "z": 3.5,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Pickup Truck",
-   "x": 84.5,
-   "z": -27.0,
+   "name": "Light Utility Jeep",
+   "x": 95.0,
+   "z": 12.5,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Box Truck",
-   "x": 84.5,
-   "z": 27.0,
-   "yaw": 90.0
+   "name": "Guard Booth",
+   "x": 81.5,
+   "z": 3.6
   },
   {
    "op": "Prop",
    "name": "Boom Gate",
-   "x": 85.0,
+   "x": 81.0,
    "z": -1.6,
    "yaw": 270.0
   },
   {
    "op": "Prop",
-   "name": "Concrete Block",
-   "x": 100.5,
-   "z": 5.4
+   "name": "Concrete Tank Trap",
+   "x": 79.0,
+   "z": -5.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": 79.0,
+   "z": 6.0
   },
   {
    "op": "Prop",
    "name": "Trash Can",
    "x": 99.5,
-   "z": 9.5
+   "z": 10.5
   },
   {
    "op": "Prop",
@@ -10382,9 +10457,29 @@
   },
   {
    "op": "Prop",
+   "name": "Red Fuel Barrel",
+   "x": 101.5,
+   "z": -3.5
+  },
+  {
+   "op": "Prop",
    "name": "Floodlight Tower",
-   "x": 90.5,
-   "z": 28.0,
+   "x": 99.5,
+   "z": -29.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Floodlight Tower",
+   "x": 99.5,
+   "z": 29.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Street Lamp",
+   "x": 83.5,
+   "z": -30.0,
    "yaw": 270.0
   },
   {
@@ -10403,17 +10498,10 @@
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 84.0,
-   "z": -2.5,
-   "yaw": 90.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 84.0,
-   "z": 2.5,
-   "yaw": 90.0
+   "name": "Street Lamp",
+   "x": 83.5,
+   "z": 30.0,
+   "yaw": 270.0
   },
   {
    "op": "Prop",
@@ -10424,941 +10512,999 @@
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -63.75,
-   "z": -10.7,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
+   "name": "Sandbag Nest Ring",
    "x": -66.0,
-   "z": -9.4,
+   "z": -12.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -68.25,
-   "z": -10.7,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": -66.8,
-   "z": -13.4,
-   "yaw": 31.9
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -65.2,
-   "z": -13.4,
-   "yaw": 17.3
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -43.75,
-   "z": -42.7,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -46.0,
-   "z": -41.4,
-   "yaw": 180.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -48.25,
-   "z": -42.7,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -46.8,
-   "z": -45.4,
-   "yaw": 70.9
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": -45.2,
-   "z": -45.4,
-   "yaw": 63.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -41.75,
-   "z": 49.3,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -44.0,
-   "z": 50.6,
-   "yaw": 180.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -46.25,
-   "z": 49.3,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -44.8,
-   "z": 46.6,
-   "yaw": 50.2
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -43.2,
-   "z": 46.6,
-   "yaw": 80.8
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -23.75,
-   "z": -58.7,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -26.0,
-   "z": -57.4,
-   "yaw": 180.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -28.25,
-   "z": -58.7,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -26.8,
-   "z": -61.4,
-   "yaw": 89.1
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": -25.2,
-   "z": -61.4,
-   "yaw": 57.9
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -21.75,
-   "z": 61.3,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -24.0,
-   "z": 62.6,
-   "yaw": 180.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -26.25,
-   "z": 61.3,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": -24.8,
-   "z": 58.6,
-   "yaw": 37.8
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -23.2,
-   "z": 58.6,
-   "yaw": 64.3
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -35.44,
-   "z": -13.55,
-   "yaw": 260.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -37.11,
-   "z": -11.56,
-   "yaw": 200.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -39.67,
-   "z": -12.01,
-   "yaw": 140.0
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -39.23,
-   "z": -15.04,
-   "yaw": 87.4
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": -37.73,
-   "z": -15.59,
-   "yaw": 44.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -34.33,
-   "z": 16.99,
-   "yaw": 220.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -36.89,
-   "z": 17.44,
-   "yaw": 160.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -38.56,
-   "z": 15.45,
-   "yaw": 100.0
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -36.27,
-   "z": 13.41,
-   "yaw": 39.0
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -34.77,
-   "z": 13.96,
-   "yaw": 89.0
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -35.79,
-   "z": 14.44,
-   "yaw": 295.5
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -11.49,
-   "z": -32.67,
-   "yaw": 285.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -12.16,
-   "z": -30.16,
-   "yaw": 225.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -14.67,
-   "z": -29.49,
-   "yaw": 165.0
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": -15.56,
-   "z": -32.42,
-   "yaw": 74.1
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -14.42,
-   "z": -32.42,
-   "yaw": 81.3
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -13.33,
-   "z": 34.51,
-   "yaw": 195.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -15.84,
-   "z": 33.84,
-   "yaw": 135.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -16.51,
-   "z": 31.33,
-   "yaw": 75.0
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -13.58,
-   "z": 30.44,
-   "yaw": 85.8
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": -12.44,
-   "z": 31.58,
-   "yaw": 13.4
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -13.58,
-   "z": 31.58,
-   "yaw": 132.6
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -55.4,
-   "z": -66.0,
+   "name": "Mounted Machine Gun",
+   "x": -66.0,
+   "z": -11.4,
    "yaw": 270.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -56.7,
-   "z": -63.75,
-   "yaw": 210.0
+   "name": "Steel Ammo Can",
+   "x": -66.0,
+   "z": -12.5,
+   "yaw": 61.5
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -59.3,
-   "z": -63.75,
-   "yaw": 150.0
-  },
-  {
-   "op": "Prop",
-   "name": "Wooden Crate",
-   "x": -59.39,
-   "z": -66.81,
-   "yaw": 1.4
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": -58.01,
-   "z": -67.61,
-   "yaw": 6.1
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -58.3,
-   "z": -66.52,
-   "yaw": 67.7
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -56.7,
-   "z": 68.25,
-   "yaw": 210.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -59.3,
-   "z": 68.25,
-   "yaw": 150.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -60.6,
-   "z": 66.0,
-   "yaw": 90.0
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -57.99,
-   "z": 64.39,
-   "yaw": 88.0
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": -56.61,
-   "z": 65.19,
-   "yaw": 73.6
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -57.7,
-   "z": 65.48,
-   "yaw": 19.6
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -69.75,
-   "z": 47.3,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -72.0,
-   "z": 48.6,
+   "name": "Ammo Crate Wooden",
+   "x": -66.0,
+   "z": -14.4,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": -74.25,
-   "z": 47.3,
-   "yaw": 120.0
+   "name": "Sandbag Pile",
+   "x": -64.0,
+   "z": -14.0,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": -72.8,
-   "z": 44.6,
-   "yaw": 45.1
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
-   "x": -71.2,
-   "z": 44.6,
-   "yaw": 83.2
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": -72.0,
-   "z": 45.4,
-   "yaw": 154.8
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 68.25,
-   "z": -10.7,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
+   "name": "Sandbag Nest Ring",
    "x": 66.0,
-   "z": -9.4,
+   "z": -12.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 63.75,
-   "z": -10.7,
-   "yaw": 120.0
+   "name": "Mounted Machine Gun",
+   "x": 66.0,
+   "z": -11.4,
+   "yaw": 270.0
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 65.2,
-   "z": -13.4,
-   "yaw": 52.1
+   "name": "Steel Ammo Can",
+   "x": 66.0,
+   "z": -12.5,
+   "yaw": 127.4
   },
   {
    "op": "Prop",
-   "name": "Small Crate",
-   "x": 66.8,
-   "z": -13.4,
-   "yaw": 15.4
+   "name": "Ammo Crate Wooden",
+   "x": 66.0,
+   "z": -14.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 48.25,
-   "z": -42.7,
-   "yaw": 240.0
+   "name": "Sandbag Pile",
+   "x": 68.0,
+   "z": -14.0,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
+   "name": "Sandbag Wall Long",
+   "x": -49.0,
+   "z": -42.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -46.0,
+   "z": -42.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -43.0,
+   "z": -42.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -51.5,
+   "z": -43.1,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -40.5,
+   "z": -43.1,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": -43.8,
+   "z": -45.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": -47.0,
+   "z": -44.6
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": -48.6,
+   "z": -45.6
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 43.0,
+   "z": -42.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
    "x": 46.0,
-   "z": -41.4,
+   "z": -42.4,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 43.75,
-   "z": -42.7,
-   "yaw": 120.0
+   "name": "Sandbag Wall Long",
+   "x": 49.0,
+   "z": -42.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 45.2,
-   "z": -45.4,
-   "yaw": 13.9
+   "name": "Sandbag Corner",
+   "x": 40.5,
+   "z": -43.1,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Small Crate",
-   "x": 46.8,
-   "z": -45.4,
-   "yaw": 45.1
+   "name": "Sandbag Corner",
+   "x": 51.5,
+   "z": -43.1,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": 48.2,
+   "z": -45.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": 45.0,
+   "z": -44.6
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": 43.4,
+   "z": -45.6
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -44.8,
+   "z": 49.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -43.2,
+   "z": 49.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": -44.0,
+   "z": 46.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": -42.2,
+   "z": 45.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
-   "x": 46.0,
-   "z": -44.6,
-   "yaw": 86.7
+   "x": -44.0,
+   "z": 47.4,
+   "yaw": 69.2
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 46.25,
-   "z": 49.3,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 44.0,
-   "z": 50.6,
+   "name": "Sandbag Wall Short",
+   "x": 43.2,
+   "z": 49.4,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 41.75,
-   "z": 49.3,
-   "yaw": 120.0
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": 43.2,
-   "z": 46.6,
-   "yaw": 13.6
-  },
-  {
-   "op": "Prop",
-   "name": "Small Crate",
+   "name": "Sandbag Wall Short",
    "x": 44.8,
+   "z": 49.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": 44.0,
    "z": 46.6,
-   "yaw": 10.7
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": 45.8,
+   "z": 45.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
    "x": 44.0,
    "z": 47.4,
-   "yaw": 311.0
+   "yaw": 111.9
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 28.25,
-   "z": -58.7,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 26.0,
-   "z": -57.4,
+   "name": "Sandbag Nest Ring",
+   "x": -26.0,
+   "z": -60.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 23.75,
-   "z": -58.7,
-   "yaw": 120.0
+   "name": "Mounted Machine Gun",
+   "x": -26.0,
+   "z": -59.4,
+   "yaw": 270.0
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 25.2,
-   "z": -61.4,
-   "yaw": 69.9
+   "name": "Steel Ammo Can",
+   "x": -26.0,
+   "z": -60.5,
+   "yaw": 322.0
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 26.8,
-   "z": -61.4,
-   "yaw": 56.3
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": 26.0,
-   "z": -60.6,
-   "yaw": 182.1
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 26.25,
-   "z": 61.3,
-   "yaw": 240.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 24.0,
-   "z": 62.6,
+   "name": "Ammo Crate Wooden",
+   "x": -26.0,
+   "z": -62.4,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 21.75,
-   "z": 61.3,
-   "yaw": 120.0
+   "name": "Sandbag Pile",
+   "x": -24.0,
+   "z": -62.0,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 23.2,
-   "z": 58.6,
-   "yaw": 27.9
+   "name": "Sandbag Nest Ring",
+   "x": 26.0,
+   "z": -60.0,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 24.8,
-   "z": 58.6,
-   "yaw": 6.2
+   "name": "Mounted Machine Gun",
+   "x": 26.0,
+   "z": -59.4,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Steel Ammo Can",
+   "x": 26.0,
+   "z": -60.5,
+   "yaw": 6.8
+  },
+  {
+   "op": "Prop",
+   "name": "Ammo Crate Wooden",
+   "x": 26.0,
+   "z": -62.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Pile",
+   "x": 28.0,
+   "z": -62.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -27.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -24.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -21.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -29.5,
+   "z": 60.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -18.5,
+   "z": 60.9,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": -21.8,
+   "z": 58.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": -25.0,
+   "z": 59.4
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": -26.6,
+   "z": 58.4
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 21.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 24.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 27.0,
+   "z": 61.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 18.5,
+   "z": 60.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 29.5,
+   "z": 60.9,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": 26.2,
+   "z": 58.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": 23.0,
+   "z": 59.4
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": 21.4,
+   "z": 58.4
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -38.27,
+   "z": -12.41,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -36.77,
+   "z": -12.96,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": -38.48,
+   "z": -15.32,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": -37.2,
+   "z": -17.06,
+   "yaw": 200.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
-   "x": 24.0,
-   "z": 59.4,
-   "yaw": 189.9
+   "x": -38.21,
+   "z": -14.56,
+   "yaw": 283.7
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 39.67,
-   "z": -12.01,
-   "yaw": 220.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 37.11,
-   "z": -11.56,
+   "name": "Sandbag Wall Short",
+   "x": 36.77,
+   "z": -12.96,
    "yaw": 160.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 35.44,
-   "z": -13.55,
-   "yaw": 100.0
+   "name": "Sandbag Wall Short",
+   "x": 38.27,
+   "z": -12.41,
+   "yaw": 160.0
   },
   {
    "op": "Prop",
-   "name": "Small Crate",
-   "x": 37.73,
-   "z": -15.59,
-   "yaw": 35.2
+   "name": "Camo Net Canopy",
+   "x": 38.48,
+   "z": -15.32,
+   "yaw": 160.0
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 39.23,
-   "z": -15.04,
-   "yaw": 5.3
+   "name": "Pallet of Ammo Crates",
+   "x": 40.58,
+   "z": -15.83,
+   "yaw": 160.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
    "x": 38.21,
    "z": -14.56,
-   "yaw": 181.9
+   "yaw": 251.9
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 38.56,
-   "z": 15.45,
-   "yaw": 260.0
+   "name": "Sandbag Nest Ring",
+   "x": -38.0,
+   "z": 21.0,
+   "yaw": 160.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 36.89,
-   "z": 17.44,
+   "name": "Mounted Machine Gun",
+   "x": -38.21,
+   "z": 21.56,
+   "yaw": 250.0
+  },
+  {
+   "op": "Prop",
+   "name": "Steel Ammo Can",
+   "x": -37.83,
+   "z": 20.53,
+   "yaw": 10.4
+  },
+  {
+   "op": "Prop",
+   "name": "Ammo Crate Wooden",
+   "x": -37.18,
+   "z": 18.74,
+   "yaw": 160.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Pile",
+   "x": -35.44,
+   "z": 19.8,
+   "yaw": 160.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": 38.0,
+   "z": 21.0,
    "yaw": 200.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 34.33,
-   "z": 16.99,
-   "yaw": 140.0
+   "name": "Mounted Machine Gun",
+   "x": 38.21,
+   "z": 21.56,
+   "yaw": 290.0
   },
   {
    "op": "Prop",
-   "name": "Concrete Block",
-   "x": 34.77,
-   "z": 13.96,
-   "yaw": 17.3
+   "name": "Steel Ammo Can",
+   "x": 37.83,
+   "z": 20.53,
+   "yaw": 12.4
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 36.27,
-   "z": 13.41,
-   "yaw": 27.5
+   "name": "Ammo Crate Wooden",
+   "x": 37.18,
+   "z": 18.74,
+   "yaw": 200.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 14.67,
-   "z": -29.49,
-   "yaw": 195.0
+   "name": "Sandbag Pile",
+   "x": 39.2,
+   "z": 18.44,
+   "yaw": 200.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 12.16,
-   "z": -30.16,
-   "yaw": 135.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 11.49,
-   "z": -32.67,
-   "yaw": 75.0
-  },
-  {
-   "op": "Prop",
-   "name": "Oil Drum",
-   "x": 14.42,
-   "z": -33.56,
-   "yaw": 17.6
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": 14.42,
-   "z": -32.42,
-   "yaw": 199.4
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 16.51,
-   "z": 31.33,
-   "yaw": 285.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 15.84,
-   "z": 33.84,
+   "name": "Sandbag Wall Long",
+   "x": -14.99,
+   "z": -28.75,
    "yaw": 225.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 13.33,
-   "z": 34.51,
-   "yaw": 165.0
+   "name": "Sandbag Wall Long",
+   "x": -12.87,
+   "z": -30.87,
+   "yaw": 225.0
   },
   {
    "op": "Prop",
-   "name": "Small Crate",
-   "x": 12.44,
+   "name": "Sandbag Wall Long",
+   "x": -10.75,
+   "z": -32.99,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -17.25,
+   "z": -27.47,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -9.47,
+   "z": -35.25,
+   "yaw": 315.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": -13.29,
+   "z": -34.4,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": -15.13,
+   "z": -31.72,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": -16.97,
+   "z": -31.29
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 10.75,
+   "z": -32.99,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 12.87,
+   "z": -30.87,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 14.99,
+   "z": -28.75,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 9.47,
+   "z": -35.25,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 17.25,
+   "z": -27.47,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": 16.4,
+   "z": -31.29,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": 13.72,
+   "z": -33.13,
+   "yaw": 315.0
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": 13.29,
+   "z": -34.97
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -15.56,
+   "z": 32.42,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -14.42,
+   "z": 33.56,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": -13.01,
+   "z": 31.01,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": -10.89,
+   "z": 31.43,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Jerry Can",
+   "x": -13.58,
    "z": 31.58,
-   "yaw": 31.7
+   "yaw": 200.6
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 13.58,
-   "z": 30.44,
-   "yaw": 36.2
+   "name": "Sandbag Wall Short",
+   "x": 14.42,
+   "z": 33.56,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": 15.56,
+   "z": 32.42,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": 13.01,
+   "z": 31.01,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": 13.43,
+   "z": 28.89,
+   "yaw": 225.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
    "x": 13.58,
    "z": 31.58,
-   "yaw": 86.8
+   "yaw": 323.2
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 59.3,
-   "z": -63.75,
+   "name": "Sandbag Nest Ring",
+   "x": -56.0,
+   "z": -57.0,
    "yaw": 210.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 56.7,
-   "z": -63.75,
-   "yaw": 150.0
+   "name": "Mounted Machine Gun",
+   "x": -55.7,
+   "z": -56.48,
+   "yaw": 300.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 55.4,
-   "z": -66.0,
-   "yaw": 90.0
+   "name": "Steel Ammo Can",
+   "x": -56.25,
+   "z": -57.43,
+   "yaw": 151.3
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 58.01,
-   "z": -67.61,
-   "yaw": 25.9
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": 59.39,
-   "z": -66.81,
-   "yaw": 75.9
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": 58.3,
-   "z": -66.52,
-   "yaw": 172.4
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 60.6,
-   "z": 66.0,
-   "yaw": 270.0
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 59.3,
-   "z": 68.25,
+   "name": "Ammo Crate Wooden",
+   "x": -57.2,
+   "z": -59.08,
    "yaw": 210.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 56.7,
-   "z": 68.25,
+   "name": "Sandbag Pile",
+   "x": -55.27,
+   "z": -59.73,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": 56.0,
+   "z": -57.0,
    "yaw": 150.0
   },
   {
    "op": "Prop",
-   "name": "Small Crate",
-   "x": 56.61,
-   "z": 65.19,
-   "yaw": 17.1
-  },
-  {
-   "op": "Prop",
-   "name": "Concrete Block",
-   "x": 57.99,
-   "z": 64.39,
-   "yaw": 88.1
-  },
-  {
-   "op": "Prop",
-   "name": "Jerry Can",
-   "x": 57.7,
-   "z": 65.48,
-   "yaw": 6.8
-  },
-  {
-   "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 74.25,
-   "z": 47.3,
+   "name": "Mounted Machine Gun",
+   "x": 55.7,
+   "z": -56.48,
    "yaw": 240.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 72.0,
-   "z": 48.6,
+   "name": "Steel Ammo Can",
+   "x": 56.25,
+   "z": -57.43,
+   "yaw": 262.1
+  },
+  {
+   "op": "Prop",
+   "name": "Ammo Crate Wooden",
+   "x": 57.2,
+   "z": -59.08,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Pile",
+   "x": 58.73,
+   "z": -57.73,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -59.4,
+   "z": 56.89,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -56.8,
+   "z": 58.39,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -54.2,
+   "z": 59.89,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -61.21,
+   "z": 55.03,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -51.69,
+   "z": 60.53,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": -53.49,
+   "z": 57.06,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": -56.57,
+   "z": 55.98,
+   "yaw": 330.0
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": -57.45,
+   "z": 54.31
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 54.2,
+   "z": 59.89,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 56.8,
+   "z": 58.39,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 59.4,
+   "z": 56.89,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 51.69,
+   "z": 60.53,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 61.21,
+   "z": 55.03,
+   "yaw": 300.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": 57.31,
+   "z": 54.86,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Radio Pack",
+   "x": 54.83,
+   "z": 56.98,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Military Fuel Drum",
+   "x": 52.95,
+   "z": 56.91
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -60.8,
+   "z": 46.4,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Sandbag Wall",
-   "x": 69.75,
-   "z": 47.3,
-   "yaw": 120.0
+   "name": "Sandbag Wall Short",
+   "x": -59.2,
+   "z": 46.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Wooden Crate",
-   "x": 71.2,
-   "z": 44.6,
-   "yaw": 0.5
+   "name": "Camo Net Canopy",
+   "x": -60.0,
+   "z": 43.6,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Oil Drum",
-   "x": 72.8,
-   "z": 44.6,
-   "yaw": 61.7
+   "name": "Pallet of Ammo Crates",
+   "x": -58.2,
+   "z": 42.4,
+   "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Jerry Can",
-   "x": 72.0,
-   "z": 45.4,
-   "yaw": 44.8
+   "x": -60.0,
+   "z": 44.4,
+   "yaw": 299.7
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": 59.2,
+   "z": 46.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": 60.8,
+   "z": 46.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Camo Net Canopy",
+   "x": 60.0,
+   "z": 43.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet of Ammo Crates",
+   "x": 61.8,
+   "z": 42.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Jerry Can",
+   "x": 60.0,
+   "z": 44.4,
+   "yaw": 356.3
   },
   {
    "op": "Prop",
@@ -11372,6 +11518,13 @@
    "name": "Chain Link Fence",
    "x": 11.64,
    "z": -78.97,
+   "yaw": 4.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 11.52,
+   "z": -80.37,
    "yaw": 4.9
   },
   {
@@ -11390,6 +11543,13 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 18.27,
+   "z": -81.26,
+   "yaw": 9.7
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 21.83,
    "z": -80.49,
@@ -11404,10 +11564,38 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 24.79,
+   "z": -82.55,
+   "yaw": 12.7
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 28.15,
+   "z": -81.84,
+   "yaw": 11.5
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 30.91,
    "z": -82.27,
    "yaw": 6.2
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 30.76,
+   "z": -83.67,
+   "yaw": 6.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 33.44,
+   "z": -82.35,
+   "yaw": 357.3
   },
   {
    "op": "Prop",
@@ -11418,9 +11606,30 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 36.38,
+   "z": -83.46,
+   "yaw": 351.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 39.2,
+   "z": -81.56,
+   "yaw": 349.4
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 42.51,
    "z": -81.0,
+   "yaw": 351.3
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 42.72,
+   "z": -82.38,
    "yaw": 351.3
   },
   {
@@ -11433,9 +11642,37 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 48.99,
+   "z": -80.1,
+   "yaw": 352.0
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 49.18,
+   "z": -81.49,
+   "yaw": 352.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 52.05,
    "z": -79.61,
    "yaw": 349.7
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 55.06,
+   "z": -78.98,
+   "yaw": 346.8
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 55.37,
+   "z": -80.35,
+   "yaw": 346.8
   },
   {
    "op": "Prop",
@@ -11447,9 +11684,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 61.06,
+   "z": -77.35,
+   "yaw": 342.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 64.05,
    "z": -76.38,
    "yaw": 341.6
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 67.06,
+   "z": -75.36,
+   "yaw": 341.0
   },
   {
    "op": "Prop",
@@ -11461,9 +11712,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 73.14,
+   "z": -73.21,
+   "yaw": 339.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 79.27,
    "z": -70.92,
    "yaw": 338.6
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 82.08,
+   "z": -69.71,
+   "yaw": 334.9
   },
   {
    "op": "Prop",
@@ -11475,9 +11740,30 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 87.5,
+   "z": -66.78,
+   "yaw": 328.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 90.07,
    "z": -65.14,
    "yaw": 326.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 92.46,
+   "z": -63.42,
+   "yaw": 322.3
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 94.5,
+   "z": -61.65,
+   "yaw": 315.5
   },
   {
    "op": "Prop",
@@ -11489,9 +11775,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 98.52,
+   "z": -57.17,
+   "yaw": 310.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 100.72,
    "z": -54.66,
    "yaw": 311.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 102.84,
+   "z": -52.24,
+   "yaw": 310.9
   },
   {
    "op": "Prop",
@@ -11503,6 +11803,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 106.64,
+   "z": -47.34,
+   "yaw": 304.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 108.47,
    "z": -44.64,
    "yaw": 303.6
@@ -11510,9 +11817,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 110.14,
+   "z": -42.0,
+   "yaw": 300.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 111.59,
    "z": -39.38,
    "yaw": 297.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 112.77,
+   "z": -36.79,
+   "yaw": 291.9
   },
   {
    "op": "Prop",
@@ -11545,9 +11866,30 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 117.95,
+   "z": -21.85,
+   "yaw": 285.3
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 118.7,
    "z": -16.37,
    "yaw": 270.6
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 118.64,
+   "z": -13.3,
+   "yaw": 267.4
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 120.04,
+   "z": -13.23,
+   "yaw": 267.4
   },
   {
    "op": "Prop",
@@ -11565,6 +11907,13 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 119.94,
+   "z": -6.5,
+   "yaw": 272.5
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 118.74,
    "z": -3.12,
@@ -11573,9 +11922,37 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 118.94,
+   "z": -0.02,
+   "yaw": 272.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 120.34,
+   "z": -0.09,
+   "yaw": 272.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 118.96,
    "z": 2.88,
    "yaw": 268.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 118.78,
+   "z": 5.94,
+   "yaw": 265.2
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 120.17,
+   "z": 6.06,
+   "yaw": 265.2
   },
   {
    "op": "Prop",
@@ -11589,6 +11966,20 @@
    "name": "Chain Link Fence",
    "x": 118.09,
    "z": 12.32,
+   "yaw": 263.1
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 119.48,
+   "z": 12.49,
+   "yaw": 263.1
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": 117.5,
+   "z": 12.25,
    "yaw": 263.1
   },
   {
@@ -11607,10 +11998,31 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 118.71,
+   "z": 19.02,
+   "yaw": 262.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 116.78,
+   "z": 21.75,
+   "yaw": 257.1
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 116.0,
    "z": 24.49,
    "yaw": 250.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 114.94,
+   "z": 27.26,
+   "yaw": 247.3
   },
   {
    "op": "Prop",
@@ -11643,9 +12055,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 108.5,
+   "z": 42.15,
+   "yaw": 244.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 107.04,
    "z": 45.04,
    "yaw": 242.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 105.5,
+   "z": 47.87,
+   "yaw": 240.5
   },
   {
    "op": "Prop",
@@ -11657,6 +12083,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 100.39,
+   "z": 55.13,
+   "yaw": 225.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 98.27,
    "z": 57.17,
    "yaw": 221.8
@@ -11664,9 +12097,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 95.91,
+   "z": 59.24,
+   "yaw": 220.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 93.55,
    "z": 61.17,
    "yaw": 217.7
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 91.05,
+   "z": 63.01,
+   "yaw": 214.9
   },
   {
    "op": "Prop",
@@ -11692,9 +12139,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 80.1,
+   "z": 70.18,
+   "yaw": 211.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 77.43,
    "z": 71.68,
    "yaw": 207.7
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 74.63,
+   "z": 73.1,
+   "yaw": 205.9
   },
   {
    "op": "Prop",
@@ -11706,9 +12167,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 69.14,
+   "z": 75.5,
+   "yaw": 201.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 66.36,
    "z": 76.47,
    "yaw": 197.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 63.41,
+   "z": 77.37,
+   "yaw": 195.9
   },
   {
    "op": "Prop",
@@ -11727,9 +12202,37 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 54.07,
+   "z": 80.18,
+   "yaw": 197.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 51.08,
    "z": 81.03,
    "yaw": 194.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 48.15,
+   "z": 81.7,
+   "yaw": 190.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 48.41,
+   "z": 83.08,
+   "yaw": 190.9
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": 48.03,
+   "z": 81.11,
+   "yaw": 190.9
   },
   {
    "op": "Prop",
@@ -11748,9 +12251,37 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": 36.32,
+   "z": 82.15,
+   "yaw": 174.0
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 36.17,
+   "z": 83.54,
+   "yaw": 174.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": 33.47,
    "z": 81.72,
    "yaw": 169.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 30.47,
+   "z": 81.08,
+   "yaw": 166.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 30.15,
+   "z": 82.45,
+   "yaw": 166.9
   },
   {
    "op": "Prop",
@@ -11764,6 +12295,13 @@
    "name": "Chain Link Fence",
    "x": 23.88,
    "z": 79.74,
+   "yaw": 170.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 23.66,
+   "z": 81.12,
    "yaw": 170.9
   },
   {
@@ -11782,6 +12320,13 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 16.91,
+   "z": 80.38,
+   "yaw": 176.1
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 13.29,
    "z": 78.91,
@@ -11796,6 +12341,20 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 9.86,
+   "z": 80.5,
+   "yaw": 184.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 6.55,
+   "z": 79.31,
+   "yaw": 182.9
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": 3.6,
    "z": 79.36,
@@ -11803,9 +12362,30 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 3.57,
+   "z": 80.76,
+   "yaw": 179.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": 0.56,
+   "z": 79.26,
+   "yaw": 177.2
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -2.68,
    "z": 79.12,
+   "yaw": 178.1
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -2.73,
+   "z": 80.52,
    "yaw": 178.1
   },
   {
@@ -11817,9 +12397,23 @@
   },
   {
    "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": -6.15,
+   "z": 78.52,
+   "yaw": 181.6
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -9.58,
    "z": 79.3,
+   "yaw": 184.5
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -9.47,
+   "z": 80.7,
    "yaw": 184.5
   },
   {
@@ -11838,9 +12432,30 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -16.07,
+   "z": 81.34,
+   "yaw": 185.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -19.3,
+   "z": 80.18,
+   "yaw": 183.0
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -22.55,
    "z": 80.33,
+   "yaw": 182.3
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -22.49,
+   "z": 81.73,
    "yaw": 182.3
   },
   {
@@ -11859,10 +12474,31 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -29.1,
+   "z": 82.15,
+   "yaw": 185.7
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -35.2,
    "z": 81.17,
    "yaw": 180.8
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -35.18,
+   "z": 82.57,
+   "yaw": 180.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -38.13,
+   "z": 81.12,
+   "yaw": 177.2
   },
   {
    "op": "Prop",
@@ -11873,9 +12509,30 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -41.35,
+   "z": 82.31,
+   "yaw": 175.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -44.45,
+   "z": 80.66,
+   "yaw": 175.2
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -47.7,
    "z": 80.4,
+   "yaw": 175.6
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -47.81,
+   "z": 81.8,
    "yaw": 175.6
   },
   {
@@ -11894,10 +12551,38 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -54.41,
+   "z": 81.47,
+   "yaw": 178.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -57.37,
+   "z": 79.87,
+   "yaw": 174.4
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -60.08,
    "z": 79.43,
    "yaw": 167.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": -59.94,
+   "z": 78.84,
+   "yaw": 167.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -62.7,
+   "z": 78.65,
+   "yaw": 159.7
   },
   {
    "op": "Prop",
@@ -11909,6 +12594,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -68.35,
+   "z": 76.2,
+   "yaw": 155.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -71.07,
    "z": 74.9,
    "yaw": 153.3
@@ -11916,8 +12608,22 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -73.72,
+   "z": 73.48,
+   "yaw": 150.6
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -76.46,
    "z": 71.9,
+   "yaw": 149.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -79.29,
+   "z": 70.23,
    "yaw": 149.5
   },
   {
@@ -11930,9 +12636,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -84.83,
+   "z": 66.87,
+   "yaw": 147.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -87.41,
    "z": 65.1,
    "yaw": 144.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -89.96,
+   "z": 63.2,
+   "yaw": 142.3
   },
   {
    "op": "Prop",
@@ -11944,9 +12664,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -94.69,
+   "z": 59.22,
+   "yaw": 137.3
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -98.56,
    "z": 55.06,
    "yaw": 128.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -100.28,
+   "z": 52.72,
+   "yaw": 124.4
   },
   {
    "op": "Prop",
@@ -11965,9 +12699,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -105.74,
+   "z": 44.73,
+   "yaw": 123.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -107.19,
    "z": 42.22,
    "yaw": 117.3
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -108.47,
+   "z": 39.49,
+   "yaw": 113.1
   },
   {
    "op": "Prop",
@@ -11993,6 +12741,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -114.15,
+   "z": 27.4,
+   "yaw": 117.7
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -115.45,
    "z": 24.72,
    "yaw": 114.3
@@ -12000,8 +12755,22 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -116.44,
+   "z": 22.13,
+   "yaw": 107.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -117.18,
    "z": 19.3,
+   "yaw": 101.9
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -118.55,
+   "z": 19.59,
    "yaw": 101.9
   },
   {
@@ -12020,10 +12789,38 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -119.75,
+   "z": 13.16,
+   "yaw": 99.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -118.84,
+   "z": 9.83,
+   "yaw": 97.4
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -119.17,
    "z": 6.73,
    "yaw": 94.8
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -120.56,
+   "z": 6.85,
+   "yaw": 94.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -119.39,
+   "z": 3.56,
+   "yaw": 93.3
   },
   {
    "op": "Prop",
@@ -12034,9 +12831,37 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -120.94,
+   "z": 0.45,
+   "yaw": 92.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": -118.94,
+   "z": 0.38,
+   "yaw": 92.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -119.58,
+   "z": -2.64,
+   "yaw": 89.3
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -119.46,
    "z": -5.66,
+   "yaw": 86.4
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -120.86,
+   "z": -5.75,
    "yaw": 86.4
   },
   {
@@ -12048,9 +12873,30 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -120.27,
+   "z": -12.11,
+   "yaw": 84.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -118.52,
+   "z": -15.14,
+   "yaw": 83.1
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -118.08,
    "z": -18.18,
+   "yaw": 80.4
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -119.46,
+   "z": -18.42,
    "yaw": 80.4
   },
   {
@@ -12063,6 +12909,20 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -116.9,
+   "z": -24.51,
+   "yaw": 79.0
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -118.27,
+   "z": -24.78,
+   "yaw": 79.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -116.25,
    "z": -27.62,
    "yaw": 77.6
@@ -12070,9 +12930,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -115.5,
+   "z": -30.49,
+   "yaw": 73.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -114.54,
    "z": -33.09,
    "yaw": 66.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -113.24,
+   "z": -35.8,
+   "yaw": 62.8
   },
   {
    "op": "Prop",
@@ -12091,6 +12965,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -109.11,
+   "z": -44.82,
+   "yaw": 66.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -107.91,
    "z": -47.34,
    "yaw": 62.4
@@ -12098,9 +12979,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -106.58,
+   "z": -49.49,
+   "yaw": 54.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -104.9,
    "z": -51.54,
    "yaw": 47.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -102.77,
+   "z": -53.75,
+   "yaw": 44.9
   },
   {
    "op": "Prop",
@@ -12115,6 +13010,27 @@
    "x": -98.07,
    "z": -58.83,
    "yaw": 49.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -96.07,
+   "z": -61.09,
+   "yaw": 47.0
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -94.1,
+   "z": -62.96,
+   "yaw": 39.9
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -92.0,
+   "z": -64.44,
+   "yaw": 30.5
   },
   {
    "op": "Prop",
@@ -12147,9 +13063,23 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -74.88,
+   "z": -73.63,
+   "yaw": 30.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -72.31,
    "z": -75.02,
    "yaw": 26.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -69.43,
+   "z": -76.39,
+   "yaw": 24.5
   },
   {
    "op": "Prop",
@@ -12161,6 +13091,13 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -63.77,
+   "z": -78.67,
+   "yaw": 18.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -61.05,
    "z": -79.4,
    "yaw": 11.8
@@ -12168,9 +13105,37 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -58.03,
+   "z": -79.92,
+   "yaw": 8.1
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -58.23,
+   "z": -81.31,
+   "yaw": 8.1
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -54.76,
    "z": -80.38,
    "yaw": 7.8
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -51.52,
+   "z": -80.81,
+   "yaw": 7.1
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -51.69,
+   "z": -82.19,
+   "yaw": 7.1
   },
   {
    "op": "Prop",
@@ -12188,6 +13153,20 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -45.18,
+   "z": -82.93,
+   "yaw": 6.4
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -41.76,
+   "z": -81.92,
+   "yaw": 6.8
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -38.7,
    "z": -82.22,
@@ -12195,10 +13174,38 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -38.81,
+   "z": -83.61,
+   "yaw": 4.5
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -35.68,
+   "z": -82.39,
+   "yaw": 2.0
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -32.78,
    "z": -82.4,
    "yaw": 358.2
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -32.74,
+   "z": -83.8,
+   "yaw": 358.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
+   "x": -30.0,
+   "z": -82.18,
+   "yaw": 353.0
   },
   {
    "op": "Prop",
@@ -12210,8 +13217,22 @@
   {
    "op": "Prop",
    "name": "Chain Link Fence",
+   "x": -24.03,
+   "z": -81.13,
+   "yaw": 348.2
+  },
+  {
+   "op": "Prop",
+   "name": "Chain Link Fence",
    "x": -20.84,
    "z": -80.47,
+   "yaw": 348.3
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -20.56,
+   "z": -81.84,
    "yaw": 348.3
   },
   {
@@ -12223,6 +13244,13 @@
   },
   {
    "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -13.96,
+   "z": -80.63,
+   "yaw": 351.4
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -10.63,
    "z": -78.83,
@@ -12230,9 +13258,23 @@
   },
   {
    "op": "Prop",
+   "name": "Mine Warning Sign",
+   "x": -10.68,
+   "z": -78.23,
+   "yaw": 355.3
+  },
+  {
+   "op": "Prop",
    "name": "Chain Link Fence",
    "x": -6.89,
    "z": -78.73,
+   "yaw": 1.7
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": -6.94,
+   "z": -80.13,
    "yaw": 1.7
   },
   {
@@ -12247,6 +13289,13 @@
    "name": "Chain Link Fence",
    "x": 0.5,
    "z": -79.02,
+   "yaw": 0.2
+  },
+  {
+   "op": "Prop",
+   "name": "Barbed Wire Coil",
+   "x": 0.49,
+   "z": -80.42,
    "yaw": 0.2
   },
   {
@@ -12872,183 +13921,11 @@
   {
    "op": "Mesh",
    "mesh": "icosphere",
-   "x": -15.72,
-   "z": -25.32,
-   "width": 2.23,
-   "height": 1.6,
-   "depth": 1.89,
-   "detail": 1,
-   "yaw": 196.7,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": -14.61,
-   "z": -24.65,
-   "width": 1.22,
-   "height": 0.89,
-   "depth": 1.11,
-   "detail": 1,
-   "yaw": 236.7,
-   "y": -0.1,
-   "material": "Concrete",
-   "color": [
-    0.43,
-    0.43,
-    0.4
-   ]
-  },
-  {
-   "op": "Block",
-   "x0": -16.45,
-   "y0": -0.4,
-   "z0": -26.05,
-   "x1": -14.98,
-   "y1": 1.34,
-   "z1": -24.58,
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": 15.72,
-   "z": -25.32,
-   "width": 2.23,
-   "height": 1.6,
-   "depth": 1.89,
-   "detail": 1,
-   "yaw": -196.7,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": 14.61,
-   "z": -24.65,
-   "width": 1.22,
-   "height": 0.89,
-   "depth": 1.11,
-   "detail": 1,
-   "yaw": -156.7,
-   "y": -0.1,
-   "material": "Concrete",
-   "color": [
-    0.43,
-    0.43,
-    0.4
-   ]
-  },
-  {
-   "op": "Block",
-   "x0": 14.98,
-   "y0": -0.4,
-   "z0": -26.05,
-   "x1": 16.45,
-   "y1": 1.34,
-   "z1": -24.58,
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": -62.13,
-   "z": 52.33,
-   "width": 1.04,
-   "height": 0.75,
-   "depth": 0.88,
-   "detail": 1,
-   "yaw": 119.47,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": -61.61,
-   "z": 52.64,
-   "width": 0.57,
-   "height": 0.42,
-   "depth": 0.52,
-   "detail": 1,
-   "yaw": 159.47,
-   "y": -0.1,
-   "material": "Concrete",
-   "color": [
-    0.43,
-    0.43,
-    0.4
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": 62.13,
-   "z": 52.33,
-   "width": 1.04,
-   "height": 0.75,
-   "depth": 0.88,
-   "detail": 1,
-   "yaw": -119.47,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": 61.61,
-   "z": 52.64,
-   "width": 0.57,
-   "height": 0.42,
-   "depth": 0.52,
-   "detail": 1,
-   "yaw": -79.47,
-   "y": -0.1,
-   "material": "Concrete",
-   "color": [
-    0.43,
-    0.43,
-    0.4
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
    "x": -73.37,
    "z": -6.26,
-   "width": 1.18,
-   "height": 0.85,
-   "depth": 1.0,
+   "width": 2.52,
+   "height": 1.81,
+   "depth": 2.14,
    "detail": 1,
    "yaw": 246.7,
    "y": -0.25,
@@ -13062,11 +13939,11 @@
   {
    "op": "Mesh",
    "mesh": "icosphere",
-   "x": -72.78,
-   "z": -5.91,
-   "width": 0.65,
-   "height": 0.47,
-   "depth": 0.59,
+   "x": -72.11,
+   "z": -5.51,
+   "width": 1.39,
+   "height": 1.01,
+   "depth": 1.26,
    "detail": 1,
    "yaw": 286.7,
    "y": -0.1,
@@ -13078,13 +13955,27 @@
    ]
   },
   {
+   "op": "Block",
+   "x0": -74.2,
+   "y0": -0.4,
+   "z0": -7.09,
+   "x1": -72.54,
+   "y1": 1.51,
+   "z1": -5.43,
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
    "op": "Mesh",
    "mesh": "icosphere",
    "x": 73.37,
    "z": -6.26,
-   "width": 1.18,
-   "height": 0.85,
-   "depth": 1.0,
+   "width": 2.52,
+   "height": 1.81,
+   "depth": 2.14,
    "detail": 1,
    "yaw": -246.7,
    "y": -0.25,
@@ -13098,11 +13989,11 @@
   {
    "op": "Mesh",
    "mesh": "icosphere",
-   "x": 72.78,
-   "z": -5.91,
-   "width": 0.65,
-   "height": 0.47,
-   "depth": 0.59,
+   "x": 72.11,
+   "z": -5.51,
+   "width": 1.39,
+   "height": 1.01,
+   "depth": 1.26,
    "detail": 1,
    "yaw": -206.7,
    "y": -0.1,
@@ -13111,6 +14002,20 @@
     0.43,
     0.43,
     0.4
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": 72.54,
+   "y0": -0.4,
+   "z0": -7.09,
+   "x1": 74.2,
+   "y1": 1.51,
+   "z1": -5.43,
+   "color": [
+    0.47,
+    0.46,
+    0.43
    ]
   },
   {
@@ -13285,42 +14190,6 @@
    "depth": 1.11,
    "detail": 1,
    "yaw": -311.09,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": -59.74,
-   "z": 41.9,
-   "width": 1.57,
-   "height": 1.13,
-   "depth": 1.34,
-   "detail": 1,
-   "yaw": 297.7,
-   "y": -0.25,
-   "material": "Concrete",
-   "color": [
-    0.47,
-    0.46,
-    0.43
-   ]
-  },
-  {
-   "op": "Mesh",
-   "mesh": "icosphere",
-   "x": 59.74,
-   "z": 41.9,
-   "width": 1.57,
-   "height": 1.13,
-   "depth": 1.34,
-   "detail": 1,
-   "yaw": -297.7,
    "y": -0.25,
    "material": "Concrete",
    "color": [
@@ -13645,6 +14514,150 @@
    "depth": 0.48,
    "detail": 1,
    "yaw": -77.85,
+   "y": -0.1,
+   "material": "Concrete",
+   "color": [
+    0.43,
+    0.43,
+    0.4
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -51.84,
+   "z": 44.29,
+   "width": 1.25,
+   "height": 0.9,
+   "depth": 1.06,
+   "detail": 1,
+   "yaw": 244.16,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 51.84,
+   "z": 44.29,
+   "width": 1.25,
+   "height": 0.9,
+   "depth": 1.06,
+   "detail": 1,
+   "yaw": -244.16,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -66.9,
+   "z": 7.03,
+   "width": 0.97,
+   "height": 0.7,
+   "depth": 0.82,
+   "detail": 1,
+   "yaw": 245.26,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 66.9,
+   "z": 7.03,
+   "width": 0.97,
+   "height": 0.7,
+   "depth": 0.82,
+   "detail": 1,
+   "yaw": -245.26,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -73.56,
+   "z": -20.75,
+   "width": 1.15,
+   "height": 0.83,
+   "depth": 0.98,
+   "detail": 1,
+   "yaw": 129.98,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -72.98,
+   "z": -20.41,
+   "width": 0.63,
+   "height": 0.46,
+   "depth": 0.57,
+   "detail": 1,
+   "yaw": 169.98,
+   "y": -0.1,
+   "material": "Concrete",
+   "color": [
+    0.43,
+    0.43,
+    0.4
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 73.56,
+   "z": -20.75,
+   "width": 1.15,
+   "height": 0.83,
+   "depth": 0.98,
+   "detail": 1,
+   "yaw": -129.98,
+   "y": -0.25,
+   "material": "Concrete",
+   "color": [
+    0.47,
+    0.46,
+    0.43
+   ]
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 72.98,
+   "z": -20.41,
+   "width": 0.63,
+   "height": 0.46,
+   "depth": 0.57,
+   "detail": 1,
+   "yaw": -89.98,
    "y": -0.1,
    "material": "Concrete",
    "color": [
@@ -32826,122 +33839,122 @@
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": -24.0
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": -16.0
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": -8.0
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": 8.0
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": 16.0
   },
   {
    "op": "Spawn",
-   "x": -93.0,
+   "x": -90.0,
    "z": 24.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": -20.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": -12.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": -4.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": 4.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": 12.0
   },
   {
    "op": "Spawn",
-   "x": -88.0,
+   "x": -86.0,
    "z": 20.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": -24.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": -16.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": -8.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": 8.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": 16.0
   },
   {
    "op": "Spawn",
-   "x": 93.0,
+   "x": 90.0,
    "z": 24.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": -20.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": -12.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": -4.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": 4.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": 12.0
   },
   {
    "op": "Spawn",
-   "x": 88.0,
+   "x": 86.0,
    "z": 20.0
   },
   {
@@ -33008,13 +34021,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": -80.0,
    "z": 0.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Puddle",
    "x": 80.0,
    "z": 0.0
   },
@@ -33026,13 +34039,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": -71.0,
    "z": 11.25
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Gravel Scatter",
    "x": -61.0,
    "z": 12.25
   },
@@ -33044,19 +34057,19 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Gravel Scatter",
    "x": -42.0,
    "z": 12.0
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": -34.0,
    "z": 10.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": -24.0,
    "z": 6.5
   },
@@ -33080,13 +34093,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": 51.0,
    "z": 12.75
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": 42.0,
    "z": 12.0
   },
@@ -33098,7 +34111,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": 24.0,
    "z": 6.5
   },
@@ -33110,7 +34123,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Tyre Tracks",
    "x": -84.0,
    "z": -39.75
   },
@@ -33122,13 +34135,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Mud Patch",
    "x": -76.0,
    "z": -54.75
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": -72.0,
    "z": -62.25
   },
@@ -33140,13 +34153,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Gravel Scatter",
    "x": -58.75,
    "z": -68.25
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": -51.25,
    "z": -69.75
   },
@@ -33158,19 +34171,19 @@
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Tyre Tracks",
    "x": -35.67,
    "z": -71.33
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": -27.0,
    "z": -70.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Tyre Tracks",
    "x": -18.33,
    "z": -68.67
   },
@@ -33182,67 +34195,67 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Tyre Tracks",
    "x": -3.5,
    "z": -68.0
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Gravel Scatter",
    "x": 92.0,
    "z": -33.0
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Mud Patch",
    "x": 84.0,
    "z": -39.75
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Puddle",
    "x": 80.0,
    "z": -47.25
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": 76.0,
    "z": -54.75
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": 72.0,
    "z": -62.25
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Tyre Tracks",
    "x": 66.25,
    "z": -66.75
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Puddle",
    "x": 58.75,
    "z": -68.25
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": 51.25,
    "z": -69.75
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": 43.75,
    "z": -71.25
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Mud Patch",
    "x": 35.67,
    "z": -71.33
   },
@@ -33254,19 +34267,19 @@
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": 18.33,
    "z": -68.67
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": 10.5,
    "z": -68.0
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Gravel Scatter",
    "x": 3.5,
    "z": -68.0
   },
@@ -33278,7 +34291,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": -84.0,
    "z": 39.75
   },
@@ -33290,25 +34303,25 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": -76.0,
    "z": 54.75
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": -72.0,
    "z": 62.25
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": -66.25,
    "z": 66.75
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": -58.75,
    "z": 68.25
   },
@@ -33320,7 +34333,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": -43.75,
    "z": 71.25
   },
@@ -33332,37 +34345,37 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": -27.0,
    "z": 70.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Tyre Tracks",
    "x": -18.33,
    "z": 68.67
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": -10.5,
    "z": 68.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Tyre Tracks",
    "x": -3.5,
    "z": 68.0
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Gravel Scatter",
    "x": 92.0,
    "z": 33.0
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Tyre Tracks",
    "x": 84.0,
    "z": 39.75
   },
@@ -33374,7 +34387,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Gravel Scatter",
    "x": 76.0,
    "z": 54.75
   },
@@ -33386,19 +34399,19 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Gravel Scatter",
    "x": 66.25,
    "z": 66.75
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Puddle",
    "x": 58.75,
    "z": 68.25
   },
   {
    "op": "Decal",
-   "decal": "Gravel Scatter",
+   "decal": "Mud Patch",
    "x": 51.25,
    "z": 69.75
   },
@@ -33410,19 +34423,19 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": 35.67,
    "z": 71.33
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": 27.0,
    "z": 70.0
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Mud Patch",
    "x": 18.33,
    "z": 68.67
   },
@@ -33440,13 +34453,13 @@
   },
   {
    "op": "Decal",
-   "decal": "Tyre Tracks",
+   "decal": "Mud Patch",
    "x": 0.0,
    "z": -26.0
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Tyre Tracks",
    "x": -0.0,
    "z": -26.0
   },
@@ -34634,7 +35647,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Puddle",
    "x": -72.17,
    "z": 0.0,
    "y": -0.25,
@@ -34642,7 +35655,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Footprints",
    "x": -66.5,
    "z": 0.0,
    "y": -1.75,
@@ -34650,7 +35663,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Footprints",
    "x": -60.83,
    "z": 0.0,
    "y": -3.25,
@@ -34658,7 +35671,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Puddle",
    "x": -53.9,
    "z": 0.0,
    "y": -4.0,
@@ -34666,7 +35679,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Mud Patch",
    "x": 72.17,
    "z": 0.0,
    "y": -0.42,
@@ -34674,7 +35687,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Oil Drips",
    "x": 66.5,
    "z": 0.0,
    "y": -1.85,
@@ -34682,7 +35695,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Floor Cracks",
    "x": 60.83,
    "z": 0.0,
    "y": -3.28,
@@ -34698,7 +35711,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Floor Cracks",
    "x": -35.15,
    "z": 0.0,
    "y": -4.0,
@@ -34706,7 +35719,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Puddle",
    "x": -29.05,
    "z": 0.0,
    "y": -4.0,
@@ -34714,7 +35727,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Puddle",
    "x": -23.5,
    "z": 0.0,
    "y": -4.0,
@@ -34722,7 +35735,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Water Stain",
    "x": -18.5,
    "z": 0.0,
    "y": -4.0,
@@ -34730,7 +35743,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Water Stain",
    "x": -13.5,
    "z": 0.0,
    "y": -4.0,
@@ -34738,7 +35751,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Oil Drips",
    "x": 35.15,
    "z": 0.0,
    "y": -4.0,
@@ -34746,7 +35759,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Mud Patch",
    "x": 29.05,
    "z": 0.0,
    "y": -4.0,
@@ -34754,7 +35767,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Floor Cracks",
    "x": 23.5,
    "z": 0.0,
    "y": -4.0,
@@ -34770,7 +35783,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Mud Patch",
    "x": 13.5,
    "z": 0.0,
    "y": -4.0,
@@ -34778,7 +35791,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Puddle",
    "x": -26.7,
    "z": -7.5,
    "y": -4.0,
@@ -34794,7 +35807,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Water Stain",
    "x": 26.7,
    "z": -7.5,
    "y": -4.0,
@@ -34802,7 +35815,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Water Stain",
    "x": 27.7,
    "z": -16.6,
    "y": -4.0,
@@ -34826,7 +35839,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Oil Drips",
    "x": -17.38,
    "z": -37.56,
    "y": -4.0,
@@ -34850,7 +35863,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Mud Patch",
    "x": 18.12,
    "z": -31.19,
    "y": -4.0,
@@ -34866,7 +35879,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Water Stain",
    "x": 13.9,
    "z": -40.75,
    "y": -4.0,
@@ -34874,7 +35887,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Floor Cracks",
    "x": -26.8,
    "z": 5.5,
    "y": -4.0,
@@ -34882,7 +35895,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Water Stain",
    "x": -30.5,
    "z": 12.0,
    "y": -5.35,
@@ -34890,7 +35903,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Oil Drips",
    "x": -33.95,
    "z": 18.6,
    "y": -7.35,
@@ -34898,7 +35911,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Floor Cracks",
    "x": 26.8,
    "z": 5.5,
    "y": -4.0,
@@ -34914,7 +35927,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Puddle",
    "x": 33.95,
    "z": 18.6,
    "y": -7.35,
@@ -34922,7 +35935,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Floor Cracks",
    "x": -22.6,
    "z": 29.0,
    "y": -8.0,
@@ -34930,7 +35943,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Puddle",
    "x": -19.25,
    "z": 32.19,
    "y": -9.15,
@@ -34938,7 +35951,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Puddle",
    "x": -17.75,
    "z": 37.56,
    "y": -11.45,
@@ -34946,7 +35959,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Oil Drips",
    "x": -14.4,
    "z": 40.25,
    "y": -12.8,
@@ -34954,7 +35967,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Mud Patch",
    "x": 22.6,
    "z": 29.0,
    "y": -8.0,
@@ -34970,7 +35983,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Oil Drips",
    "x": 17.75,
    "z": 37.56,
    "y": -11.45,
@@ -34978,7 +35991,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Oil Drips",
    "x": 14.4,
    "z": 40.25,
    "y": -12.8,
@@ -34986,7 +35999,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Footprints",
    "x": -53.4,
    "z": -26.5,
    "y": -3.05,
@@ -34994,7 +36007,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Water Stain",
    "x": -43.4,
    "z": -28.0,
    "y": -4.0,
@@ -35002,7 +36015,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Puddle",
    "x": 53.4,
    "z": -26.5,
    "y": -3.05,
@@ -35010,7 +36023,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Water Stain",
    "x": 43.4,
    "z": -28.0,
    "y": -4.0,
@@ -35018,7 +36031,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Mud Patch",
    "x": -59.4,
    "z": 30.5,
    "y": -3.55,
@@ -35026,7 +36039,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Floor Cracks",
    "x": -54.05,
    "z": 29.38,
    "y": -4.81,
@@ -35034,7 +36047,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Oil Drips",
    "x": -49.35,
    "z": 27.12,
    "y": -6.94,
@@ -35042,7 +36055,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Floor Cracks",
+   "decal": "Water Stain",
    "x": -42.9,
    "z": 26.0,
    "y": -8.0,
@@ -35050,7 +36063,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Mud Patch",
    "x": 59.4,
    "z": 30.5,
    "y": -3.55,
@@ -35058,7 +36071,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Footprints",
    "x": 54.05,
    "z": 29.38,
    "y": -4.81,
@@ -35066,7 +36079,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Floor Cracks",
    "x": 49.35,
    "z": 27.12,
    "y": -6.94,
@@ -35074,7 +36087,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Puddle",
    "x": 42.9,
    "z": 26.0,
    "y": -8.0,
@@ -35082,7 +36095,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Floor Cracks",
    "x": 0.0,
    "z": -36.43,
    "y": -4.0,
@@ -35090,7 +36103,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Water Stain",
    "x": 0.0,
    "z": -30.9,
    "y": -4.0,
@@ -35098,7 +36111,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Footprints",
+   "decal": "Floor Cracks",
    "x": 0.0,
    "z": -25.37,
    "y": -4.0,
@@ -35106,7 +36119,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Floor Cracks",
    "x": 0.0,
    "z": -19.83,
    "y": -4.0,
@@ -35114,7 +36127,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Oil Drips",
    "x": 0.0,
    "z": -14.3,
    "y": -4.0,
@@ -35122,7 +36135,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Puddle",
+   "decal": "Oil Drips",
    "x": -3.0,
    "z": -25.0,
    "y": -4.0,
@@ -35130,7 +36143,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Mud Patch",
+   "decal": "Oil Drips",
    "x": 3.0,
    "z": -25.0,
    "y": -4.0,
@@ -35138,7 +36151,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Oil Drips",
+   "decal": "Puddle",
    "x": 0.0,
    "z": 35.69,
    "y": -13.0,
@@ -35146,7 +36159,7 @@
   },
   {
    "op": "Decal",
-   "decal": "Water Stain",
+   "decal": "Mud Patch",
    "x": 0.0,
    "z": 30.66,
    "y": -13.0,
