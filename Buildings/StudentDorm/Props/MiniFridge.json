@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Mini Fridge",
+  "description": "A little black dorm fridge with a microwave on top and stickers on the door.",
+  "collision": "solid",
+  "collider": [{"size": [0.5, 0.83, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.5, 0.55, 0.5], "offset": [0, 0.275, 0], "color": "#1a1a1e", "material": "metal"},
+    {"size": [0.02, 0.2, 0.02], "offset": [0.2, 0.35, 0.26], "color": "#8a8a8a"},
+    {"size": [0.12, 0.08, 0.01], "offset": [-0.1, 0.44, 0.255], "color": "#e8503a"},
+    {"size": [0.1, 0.1, 0.01], "offset": [0.05, 0.25, 0.255], "color": "#3ab0e8"},
+    {"size": [0.48, 0.28, 0.36], "offset": [0, 0.69, -0.04], "color": "#e8e8e4"},
+    {"size": [0.28, 0.2, 0.01], "offset": [-0.06, 0.69, 0.145], "color": "#2a2a2a"}
+  ]
+}

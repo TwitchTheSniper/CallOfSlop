@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "analysis-lab",
+  "description": "The Chemical Lab's analysis lab: instruments, benches of glassware, a desk with the results.",
+  "items": [
+    {"props": ["Chemical Lab Analyzer"], "place": "wall", "count": [2, 3]},
+    {"props": ["Chemical Lab Bench"], "place": "wall", "count": [1, 2]},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Computer Monitor"], "place": "on", "of": "desk", "y": 0.77},
+    {"props": ["Bar Stool"], "place": "floor", "count": [1, 2], "gap": 0.3}
+  ]
+}

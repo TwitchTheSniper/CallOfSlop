@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Bungalow Tiki Torch",
+  "description": "A bamboo tiki torch with a flickering flame.",
+  "collision": "cosmetic",
+  "fadeDistance": 70,
+  "breakable": {"health": 20, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.06, 1.5, 0.06], "offset": [0, 0.75, 0], "color": "#c8a860"},
+    {"size": [0.14, 0.2, 0.14], "offset": [0, 1.6, 0], "color": "#6a4a2a"},
+    {
+      "size": [0.1, 0.18, 0.1],
+      "offset": [0, 1.79, 0],
+      "color": "#ff9a30",
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.85, "color": "#ffb040", "off": "#c84a10", "glow": 1.6}
+    }
+  ]
+}

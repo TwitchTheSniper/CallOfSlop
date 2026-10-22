@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The loudness reference the MAX FRENZY music level (6) is calibrated against: measured from the game's own
-/// synthesised sounds, the way the game plays them, instead of a guess (see <see cref="FrenzyLayer.SfxReferenceRms"/>).
+/// gunshots (recorded layers where the weapon has them, see <see cref="GunSamples"/>) and synthesised explosion, the way the game plays them, instead of a guess (see <see cref="FrenzyLayer.SfxReferenceRms"/>).
 /// Headless: no OpenAL needed.
 /// </summary>
 public sealed partial class Audio
@@ -32,12 +32,14 @@ public sealed partial class Audio
         {
             if (w.Suppressor || w.Sound is SoundStyle.Suppressed or SoundStyle.Toy or SoundStyle.Zap or SoundStyle.Pneumatic || w.Rpm <= 0)
                 continue;
-            var shot = Synth.Gunshot(w);
+            var shots = GunSamples.Shots(GunSampleLibrary.Shared, w, Synth.Gunshot(w)); // the recorded variants the game plays, in turn
             var gun = new float[sr];
             var period = 60.0 * sr / w.Rpm;
+            var k = 0;
             for (var t = 0.0; t < sr; t += period)
             {
                 var start = (int)t;
+                var shot = shots[k++ % shots.Length];
                 for (var i = 0; i < shot.Length && start + i < gun.Length; i++)
                     gun[start + i] += shot[i] / 32768f * OwnShotGain;
             }

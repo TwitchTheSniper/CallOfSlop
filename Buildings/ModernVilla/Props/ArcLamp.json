@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Modern Villa Arc Lamp",
+  "description": "A chrome arc floor lamp on a marble block, its shade reaching out over the sofa.",
+  "collision": "solid",
+  "collider": [{"size": [0.36, 2.0, 0.36]}],
+  "parts": [
+    {"size": [0.36, 0.2, 0.36], "offset": [0, 0.1, 0], "color": "#e8e6e0"},
+    {"size": [0.04, 1.8, 0.04], "offset": [0, 1.1, 0], "color": "chrome"},
+    {"size": [1.0, 0.04, 0.04], "offset": [0.48, 2.0, 0], "color": "chrome"},
+    {"size": [0.4, 0.2, 0.4], "offset": [0.95, 1.9, 0], "color": "chrome"},
+    {"size": [0.3, 0.02, 0.3], "offset": [0.95, 1.8, 0], "color": "#fff4d8", "anim": {"type": "pulse", "period": 8, "color": "#fff4d8", "glow": 1.0}}
+  ]
+}

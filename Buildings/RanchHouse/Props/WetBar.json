@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House Wet Bar",
+  "description": "A padded home bar with a formica top, bottles on a mirrored back shelf and a soda siphon.",
+  "collision": "solid",
+  "collider": [{"size": [1.7, 1.05, 0.62]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.6, 1.0, 0.5], "offset": [0, 0.5, 0], "color": "#7a2a2a"},
+    {"size": [1.7, 0.05, 0.62], "offset": [0, 1.025, 0.04], "color": "#e8d8a0"},
+    {"size": [1.6, 0.06, 0.04], "offset": [0, 0.15, 0.27], "color": "chrome"},
+    {"size": [0.08, 0.28, 0.08], "offset": [-0.5, 1.19, -0.05], "color": "#3a7a3a"},
+    {"size": [0.08, 0.3, 0.08], "offset": [-0.35, 1.2, -0.08], "color": "#8a5a20"},
+    {"size": [0.08, 0.26, 0.08], "offset": [-0.2, 1.18, -0.04], "color": "#d0d8e0"},
+    {"size": [0.1, 0.22, 0.1], "offset": [0.45, 1.16, 0.0], "color": "#5aa0c0"},
+    {"size": [0.14, 0.1, 0.14], "offset": [0.2, 1.1, 0.08], "color": "#e0e8f0"}
+  ]
+}

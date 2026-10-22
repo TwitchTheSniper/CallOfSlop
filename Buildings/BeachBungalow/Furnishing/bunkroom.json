@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bunkroom",
+  "description": "Beach bungalow bunk room: bunk beds for the surf kids, wetsuits, boards and buckets of shells.",
+  "items": [
+    {"props": ["Bunk Bed"], "place": "wall", "count": [1, 2], "prefer": "far"},
+    {"props": ["Beach Bungalow Surfboard Rack"], "place": "wall"},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Sports Balls", "Bucket", "Backpack", "Duffel Bag", "Rubber Duck"], "place": "floor", "count": [2, 3]}
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Duplex",
+  "theme": "1970s side-by-side duplex: tan brick and brown trim, a shared entry and laundry; one half a tidy young family's home, the other a messy bachelor pad",
+  "category": "residential",
+  "description": "Two mirrored two-storey units under one gable roof, joined by a shared entry and laundry: each with a living room, kitchen and stair hall downstairs and two bedrooms, a bathroom and an eaves closet upstairs.",
+  "author": "Call of Slop",
+  "seed": 106,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.7,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "tan brick": {"wall": "#b8946a", "interior": "#e8e0cc", "floor": "#8a6a4a", "ceiling": "#f4f0e6", "trim": "#5a3e26", "door": "#5a3e26", "roof": "#4a3e36"},
+    "red brick": {"wall": "#9a4e3a", "interior": "#e6dcc8", "floor": "#7a6a5a", "ceiling": "#f4f0e6", "trim": "#e8e4d8", "door": "#2f4a6a", "roof": "#3e3e42"},
+    "grey block": {"wall": "#a8a8a0", "interior": "#e0e4dc", "floor": "#6a6a62", "ceiling": "#f2f2ec", "trim": "#3a5a7a", "door": "#c8a030", "roof": "#3a3e44"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.5, "width": 1.2, "sill": 0.9, "head": 2.1},
+      "rooms": [
+        {"id": "w_living", "type": "familyliving", "rect": [-7.5, 0, -1.5, 4.5]},
+        {"id": "w_kitchen", "type": "familykitchen", "rect": [-7.5, -4.5, -4.1, 0], "floor": {"color": "#c8c0a8", "material": "tiles"}},
+        {"id": "w_stairs", "type": "hall", "rect": [-4.1, -4.5, -1.5, 0], "windows": false},
+        {"id": "e_living", "type": "bachelorliving", "rect": [1.5, 0, 7.5, 4.5]},
+        {"id": "e_kitchen", "type": "bachelorkitchen", "rect": [4.1, -4.5, 7.5, 0], "floor": {"color": "#c8c0a8", "material": "tiles"}},
+        {"id": "e_stairs", "type": "hall", "rect": [1.5, -4.5, 4.1, 0], "windows": false},
+        {"id": "entry", "type": "hall", "rect": [-1.5, 0, 1.5, 4.5], "floor": {"color": "#a89a88", "material": "tiles"}, "windows": false},
+        {"id": "laundry", "type": "laundry", "rect": [-1.5, -4.5, 1.5, 0], "floor": {"color": "#a8a8a0", "material": "tiles"}, "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-3.3, 0], "width": 0.9},
+        {"type": "door", "at": [-6.8, 0], "width": 0.9},
+        {"type": "door", "at": [-6.8, -4.5], "width": 0.9, "color": "$door"},
+        {"type": "door", "at": [-1.5, 2.5], "width": 0.9},
+        {"type": "door", "at": [3.3, 0], "width": 0.9},
+        {"type": "door", "at": [6.8, 0], "width": 0.9},
+        {"type": "door", "at": [6.8, -4.5], "width": 0.9, "color": "$door"},
+        {"type": "door", "at": [1.5, 2.5], "width": 0.9},
+        {"type": "door", "at": [0, 4.5], "width": 1.0, "front": true, "color": "$door"},
+        {"type": "door", "at": [0, 0], "width": 0.9}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.5, "width": 1.2, "sill": 0.9, "head": 2.1},
+      "rooms": [
+        {"id": "w_landing", "type": "corridor", "rect": [-4.1, -4.5, -1.5, 0], "windows": false},
+        {"id": "w_front", "type": "bedroom", "rect": [-7.5, 0, -1.5, 4.5]},
+        {"id": "w_back", "type": "kidsroom", "rect": [-7.5, -2.5, -4.1, 0]},
+        {
+          "id": "w_bath",
+          "type": "bathroom",
+          "rect": [-7.5, -4.5, -4.1, -2.5],
+          "floor": {"color": "#b8d0d8", "material": "tiles"},
+          "wall": "#dce8ec",
+          "autoWindows": {"spacing": 2.0, "width": 0.7, "sill": 1.4, "head": 2.1}
+        },
+        {"id": "w_closet", "type": "closet", "rect": [-1.5, -4.5, 0, 4.5], "windows": false},
+        {"id": "e_landing", "type": "corridor", "rect": [1.5, -4.5, 4.1, 0], "windows": false},
+        {"id": "e_front", "type": "bachelorbedroom", "rect": [1.5, 0, 7.5, 4.5]},
+        {"id": "e_back", "type": "office", "rect": [4.1, -2.5, 7.5, 0]},
+        {
+          "id": "e_bath",
+          "type": "bathroom",
+          "rect": [4.1, -4.5, 7.5, -2.5],
+          "floor": {"color": "#b8d0d8", "material": "tiles"},
+          "wall": "#dce8ec",
+          "autoWindows": {"spacing": 2.0, "width": 0.7, "sill": 1.4, "head": 2.1}
+        },
+        {"id": "e_closet", "type": "closet", "rect": [0, -4.5, 1.5, 4.5], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-3.3, 0], "width": 0.9},
+        {"type": "door", "at": [-4.1, -1.25], "width": 0.9},
+        {"type": "door", "at": [-4.1, -3.5], "width": 0.9},
+        {"type": "door", "at": [-1.5, 2.25], "width": 0.9},
+        {"type": "door", "at": [3.3, 0], "width": 0.9},
+        {"type": "door", "at": [4.1, -1.25], "width": 0.9},
+        {"type": "door", "at": [4.1, -3.5], "width": 0.9},
+        {"type": "door", "at": [1.5, 2.25], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-2.625, -3.15, -1.625, -1.05], "dir": "-z"}, {"floor": 0, "rect": [1.625, -3.15, 2.625, -1.05], "dir": "-z"}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 26, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "porch", "rect": [-1.4, 4.63, 1.4, 5.9], "height": 2.5, "color": "$trim"},
+    {"type": "prop", "name": "Mailbox", "at": [-0.9, 7.6], "yaw": 0},
+    {"type": "prop", "name": "Mailbox", "at": [0.9, 7.6], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-8.4, -3.0], "yaw": 90},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [8.4, -3.0], "yaw": 270},
+    {"type": "prop", "name": "Swing Set", "at": [-5.0, -7.0], "yaw": 0},
+    {"type": "prop", "name": "Kick Scooter", "at": [-4.0, 5.6], "yaw": 30},
+    {"type": "prop", "name": "Paddling Pool", "at": [-6.8, -6.8], "yaw": 0},
+    {"type": "prop", "name": "Motorbike", "at": [5.0, 6.0], "yaw": 90},
+    {"type": "prop", "name": "Trash Bag", "at": [8.3, -4.2]},
+    {"type": "prop", "name": "Trash Bag", "at": [8.0, -4.6]},
+    {"type": "prop", "name": "Hatchback", "at": [-5.0, 8.2], "yaw": 0},
+    {"type": "prop", "name": "Satellite Dish", "at": [5.5, 0, -2.0], "yaw": 180, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "west living room", "at": [-4.5, 2.2]},
+    {"type": "spawn", "name": "east living room", "at": [4.5, 2.2]},
+    {"type": "spawn", "name": "west bedroom", "floor": 1, "at": [-4.5, 2.2]},
+    {"type": "spawn", "name": "east bedroom", "floor": 1, "at": [4.5, 2.2]}
+  ]
+}

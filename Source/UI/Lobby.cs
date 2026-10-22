@@ -255,6 +255,10 @@ public sealed partial class Ui
                     TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
                     MapPicker(s);
                     AutoStartPicker(s);
+                    ImGui.Checkbox("Frenzy buffs"u8, ref s.FrenzyBuffs); // FrenzyBuffs.cs
+                    ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
+                        ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
+                        : "Off: kill frenzies are music and effects only.");
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
@@ -745,6 +749,18 @@ public sealed partial class Ui
                     s.SkyQuality = (SkyQuality)skyQ;
             }
             ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
+
+            ImGui.Spacing();
+            ImGui.Text("Frenzy visuals"u8);
+            var frenzyFx = (int)s.FrenzyVisuals;
+            for (var i = 0; i <= (int)FrenzyVisualMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(FrenzyVisualMode)i}##frenzyfx", ref frenzyFx, i))
+                    s.FrenzyVisuals = (FrenzyVisualMode)frenzyFx;
+            }
+            ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);

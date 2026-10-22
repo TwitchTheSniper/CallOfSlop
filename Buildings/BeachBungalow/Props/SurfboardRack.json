@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Bungalow Surfboard Rack",
+  "description": "A driftwood rack holding three surfboards: teal, yellow and orange, each with a white stringer.",
+  "collision": "solid",
+  "collider": [{"size": [1.5, 2.1, 0.3]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.5, 0.08, 0.3], "offset": [0, 0.04, 0], "color": "#a89070", "material": "wood"},
+    {"size": [0.08, 1.5, 0.08], "offset": [-0.7, 0.75, -0.1], "color": "#a89070"},
+    {"size": [0.08, 1.5, 0.08], "offset": [0.7, 0.75, -0.1], "color": "#a89070"},
+    {"size": [1.5, 0.06, 0.08], "offset": [0, 1.33, -0.1], "color": "#a89070"},
+    {"size": [0.36, 1.9, 0.06], "offset": [-0.45, 1.0, 0.05], "color": "#3ab0c8"},
+    {"size": [0.04, 1.9, 0.07], "offset": [-0.45, 1.0, 0.05], "color": "white"},
+    {"size": [0.24, 0.12, 0.06], "offset": [-0.45, 2.01, 0.05], "color": "#3ab0c8"},
+    {"size": [0.36, 1.9, 0.06], "offset": [0.0, 1.0, 0.05], "color": "#f0c040"},
+    {"size": [0.04, 1.9, 0.07], "offset": [0.0, 1.0, 0.05], "color": "white"},
+    {"size": [0.24, 0.12, 0.06], "offset": [0.0, 2.01, 0.05], "color": "#f0c040"},
+    {"size": [0.36, 1.9, 0.06], "offset": [0.45, 1.0, 0.05], "color": "#e8603a"},
+    {"size": [0.04, 1.9, 0.07], "offset": [0.45, 1.0, 0.05], "color": "white"},
+    {"size": [0.24, 0.12, 0.06], "offset": [0.45, 2.01, 0.05], "color": "#e8603a"}
+  ]
+}

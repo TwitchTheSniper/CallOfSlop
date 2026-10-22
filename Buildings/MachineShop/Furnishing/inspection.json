@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "inspection",
+  "description": "The Machine Shop's inspection room: a granite surface plate, a desk of drawings, a cabinet of gauges.",
+  "items": [
+    {"props": ["Machine Shop Surface Plate"], "place": "centre"},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Filing Cabinet", "Machine Shop Tool Cabinet"], "place": "wall"},
+    {"props": ["Archive Boxes"], "place": "floor", "count": [0, 1]}
+  ]
+}

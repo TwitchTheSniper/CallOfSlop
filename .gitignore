@@ -14,3 +14,5 @@ loadout*.txt
 *.log
 smoke_*.bmp
 tools/run_smoke.flag
+__pycache__/
+*.pyc

@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House HiFi Console",
+  "description": "A walnut stereo console: a record player under the lid, speaker cloth either side, a stack of LPs.",
+  "collision": "solid",
+  "collider": [{"size": [1.7, 0.72, 0.45]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.7, 0.5, 0.45], "offset": [0, 0.45, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.05, 0.2, 0.05], "offset": [-0.8, 0.1, 0.18], "color": "#3a2414"},
+    {"size": [0.05, 0.2, 0.05], "offset": [0.8, 0.1, 0.18], "color": "#3a2414"},
+    {"size": [0.05, 0.2, 0.05], "offset": [-0.8, 0.1, -0.18], "color": "#3a2414"},
+    {"size": [0.05, 0.2, 0.05], "offset": [0.8, 0.1, -0.18], "color": "#3a2414"},
+    {"size": [0.5, 0.38, 0.02], "offset": [-0.55, 0.45, 0.225], "color": "#c8b48a"},
+    {"size": [0.5, 0.38, 0.02], "offset": [0.55, 0.45, 0.225], "color": "#c8b48a"},
+    {"size": [0.5, 0.06, 0.02], "offset": [0, 0.53, 0.225], "color": "#d0b070"},
+    {"size": [0.36, 0.02, 0.36], "offset": [0, 0.71, 0], "color": "#141414"},
+    {"size": [0.3, 0.03, 0.3], "offset": [0.55, 0.715, 0], "color": "#c8102e"},
+    {"size": [0.3, 0.03, 0.3], "offset": [0.55, 0.745, 0.01], "color": "#1f4a8a"}
+  ]
+}

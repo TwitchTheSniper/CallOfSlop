@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Print Shop Paper Pallet",
+  "description": "A pallet stacked with reams of white paper, one pack torn open.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 0.96, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 70,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 18, "size": [0.05, 0.25], "colors": ["paper", "#e8e0c8"]}
+  },
+  "parts": [
+    {"size": [1.2, 0.14, 1.0], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [1.1, 0.7, 0.9], "offset": [0, 0.49, 0], "color": "paper"},
+    {"size": [0.5, 0.12, 0.35], "offset": [-0.2, 0.9, -0.15], "color": "#e8e0c8"},
+    {"size": [0.5, 0.12, 0.35], "offset": [0.3, 0.9, 0.2], "color": "paper"},
+    {"size": [1.12, 0.02, 0.92], "offset": [0, 0.3, 0], "color": "#c8a040"},
+    {"size": [1.12, 0.02, 0.92], "offset": [0, 0.6, 0], "color": "#c8a040"}
+  ]
+}

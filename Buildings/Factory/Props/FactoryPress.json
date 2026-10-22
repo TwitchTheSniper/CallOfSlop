@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Factory Press",
+  "description": "A green hydraulic stamping press: the ram thumps up and down over the die, a warning lamp blinking.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 3.1, 1.2]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.6, 0.3, 1.2], "offset": [0, 0.15, 0], "color": "#3f7a4e", "material": "metal"},
+    {"size": [0.3, 2.4, 1.0], "offset": [-0.65, 1.5, 0], "color": "#3f7a4e", "material": "metal"},
+    {"size": [0.3, 2.4, 1.0], "offset": [0.65, 1.5, 0], "color": "#3f7a4e", "material": "metal"},
+    {"size": [1.6, 0.45, 1.1], "offset": [0, 2.85, 0], "color": "#3f7a4e", "material": "metal"},
+    {"size": [1.0, 0.25, 0.8], "offset": [0, 0.95, 0], "color": "steel"},
+    {"size": [0.9, 0.3, 0.7], "offset": [0, 2.0, 0], "color": "steel", "anim": {"type": "bob", "distance": 0.35, "period": 1.6}},
+    {"size": [0.18, 0.6, 0.18], "offset": [0, 2.45, 0], "color": "chrome", "anim": {"type": "follow", "parent": 6}},
+    {"size": [1.0, 0.1, 0.8], "offset": [0, 0.82, 0], "color": "darkgrey"},
+    {"size": [0.3, 0.06, 1.02], "offset": [-0.65, 0.5, 0], "color": "yellow"},
+    {"size": [0.3, 0.06, 1.02], "offset": [0.65, 0.5, 0], "color": "yellow"},
+    {"size": [0.3, 0.06, 1.02], "offset": [-0.65, 0.7, 0], "color": "black"},
+    {"size": [0.3, 0.06, 1.02], "offset": [0.65, 0.7, 0], "color": "black"},
+    {
+      "size": [0.14, 0.14, 0.14],
+      "offset": [0.6, 3.15, 0.4],
+      "color": "#ff8020",
+      "anim": {"type": "blink", "period": 1.6, "duty": 0.3, "color": "#ffa040", "glow": 1.2}
+    },
+    {"size": [0.36, 0.5, 0.2], "offset": [1.0, 1.25, 0.3], "color": "#d8d8d0"},
+    {"size": [0.08, 0.08, 0.04], "offset": [0.95, 1.35, 0.41], "color": "red"},
+    {"size": [0.08, 0.08, 0.04], "offset": [1.05, 1.35, 0.41], "color": "#30c050"}
+  ]
+}

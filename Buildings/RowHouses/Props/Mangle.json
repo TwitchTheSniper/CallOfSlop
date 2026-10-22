@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Row Houses Mangle",
+  "description": "A cast-iron laundry mangle with wooden rollers and a big crank wheel.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 1.2, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.06, 0.95, 0.5], "offset": [-0.3, 0.475, 0], "color": "#202024"},
+    {"size": [0.06, 0.95, 0.5], "offset": [0.3, 0.475, 0], "color": "#202024"},
+    {"size": [0.6, 0.04, 0.4], "offset": [0, 0.32, 0], "color": "#202024"},
+    {"size": [0.56, 0.12, 0.12], "offset": [0, 0.96, 0.03], "color": "#e8d8b0"},
+    {"size": [0.56, 0.12, 0.12], "offset": [0, 1.08, 0.03], "color": "#e8d8b0"},
+    {"size": [0.04, 0.5, 0.5], "offset": [0.36, 0.97, 0], "color": "#202024"},
+    {"size": [0.5, 0.04, 0.4], "offset": [0, 0.84, 0.24], "color": "#8a6a44"}
+  ]
+}

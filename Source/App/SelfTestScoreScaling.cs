@@ -247,6 +247,7 @@ public static partial class SelfTest
             if (seed != null)
                 NavGraph.Pump(double.MaxValue); // the bots' nav graph ready now, not after a wall-clock-budgeted build
             game.ScoreLimitOverride = int.MaxValue; // never ends at a score
+            game.FrenzyBuffsEnabled = false; // the scaling was measured without the frenzy buffs (they change kill rates); keep the baseline comparable
             Game.SettleMemory();
             const double dt = 1.0 / World.TickRate;
             var now = 0.0;

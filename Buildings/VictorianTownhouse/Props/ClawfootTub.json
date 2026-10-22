@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Clawfoot Tub",
+  "description": "A white enamel roll-top bath on brass claw feet, with tall taps.",
+  "collision": "solid",
+  "collider": [{"size": [0.78, 0.72, 1.66]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.72, 0.5, 1.6], "offset": [0, 0.41, 0], "color": "#f2f0ea"},
+    {"size": [0.78, 0.06, 1.66], "offset": [0, 0.69, 0], "color": "white"},
+    {"size": [0.58, 0.04, 1.46], "offset": [0, 0.64, 0], "color": "#b8d8e0"},
+    {"size": [0.1, 0.16, 0.1], "offset": [-0.28, 0.08, -0.66], "color": "#c8a040"},
+    {"size": [0.1, 0.16, 0.1], "offset": [0.28, 0.08, -0.66], "color": "#c8a040"},
+    {"size": [0.1, 0.16, 0.1], "offset": [-0.28, 0.08, 0.66], "color": "#c8a040"},
+    {"size": [0.1, 0.16, 0.1], "offset": [0.28, 0.08, 0.66], "color": "#c8a040"},
+    {"size": [0.04, 0.3, 0.04], "offset": [-0.1, 0.81, -0.76], "color": "#c8a040"},
+    {"size": [0.04, 0.3, 0.04], "offset": [0.1, 0.81, -0.76], "color": "#c8a040"}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House Atomic Sofa",
+  "description": "A long, low 1960s sofa in mustard tweed on splayed walnut legs.",
+  "collision": "solid",
+  "collider": [{"size": [2.1, 0.78, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 130, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.1, 0.22, 0.8], "offset": [0, 0.29, 0], "color": "#c89a2a"},
+    {"size": [2.1, 0.42, 0.16], "offset": [0, 0.57, -0.32], "color": "#c89a2a"},
+    {"size": [0.12, 0.22, 0.8], "offset": [-1.0, 0.47, 0], "color": "#b8881e"},
+    {"size": [0.12, 0.22, 0.8], "offset": [1.0, 0.47, 0], "color": "#b8881e"},
+    {"size": [0.66, 0.08, 0.6], "offset": [-0.68, 0.44, 0.06], "color": "#d4a636"},
+    {"size": [0.66, 0.08, 0.6], "offset": [0, 0.44, 0.06], "color": "#d4a636"},
+    {"size": [0.66, 0.08, 0.6], "offset": [0.68, 0.44, 0.06], "color": "#d4a636"},
+    {"size": [0.05, 0.18, 0.05], "offset": [-0.95, 0.09, 0.3], "color": "#5a3a22"},
+    {"size": [0.05, 0.18, 0.05], "offset": [0.95, 0.09, 0.3], "color": "#5a3a22"},
+    {"size": [0.05, 0.18, 0.05], "offset": [-0.95, 0.09, -0.3], "color": "#5a3a22"},
+    {"size": [0.05, 0.18, 0.05], "offset": [0.95, 0.09, -0.3], "color": "#5a3a22"},
+    {"size": [0.4, 0.3, 0.1], "offset": [0.6, 0.63, -0.2], "color": "#2f8a86"}
+  ]
+}

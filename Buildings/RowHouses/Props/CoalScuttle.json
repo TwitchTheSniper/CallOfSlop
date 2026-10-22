@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Row Houses Coal Scuttle",
+  "description": "A coal scuttle and a bucket of coal by the hearth.",
+  "collision": "cosmetic",
+  "fadeDistance": 35,
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.3, 0.3, 0.4], "offset": [0, 0.15, 0], "color": "#202024"},
+    {"size": [0.26, 0.06, 0.3], "offset": [0, 0.33, -0.04], "color": "#141414"},
+    {"size": [0.22, 0.25, 0.22], "offset": [0.32, 0.125, 0.05], "color": "#5a5a56"},
+    {"size": [0.2, 0.04, 0.2], "offset": [0.32, 0.27, 0.05], "color": "#141414"}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Hunting lodge bedroom: a log-frame bed with plaid blankets, a dresser and a deer mount.",
+  "items": [
+    {"id": "bed", "props": ["Double Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bs", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bs", "y": 0.6},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Hunting Lodge Deer Mount"], "place": "wall"},
+    {"props": ["Rocking Chair", "Armchair"], "place": "corner"},
+    {"props": ["Hunting Lodge Bear Rug"], "place": "centre", "chance": 0.5}
+  ]
+}

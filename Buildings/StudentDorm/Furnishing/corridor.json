@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "Dorm corridor: a notice board, a fire extinguisher's worth of clutter and recycling bins.",
+  "items": [
+    {"props": ["Student Dorm Notice Board"], "place": "wall", "count": [1, 2]},
+    {"props": ["Recycling Bin", "Pedal Bin"], "place": "wall", "chance": 0.7}
+  ]
+}

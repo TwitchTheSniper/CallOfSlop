@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Grain Barn Auger",
+  "description": "A grain auger on two wheels, its tube angled up to the bin, the drive belt spinning.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 0.7, 1.0], "offset": [-2.0, 0.35, 0]}, {"size": [0.3, 1.2, 1.1], "offset": [-0.4, 0.6, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [5.0, 0.3, 0.3], "offset": [0, 1.6, 0], "color": "#a8b0b4", "material": "metal", "roll": 28},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, 0.5], "color": "rubber", "roll": 0},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, 0.5], "color": "rubber", "roll": 45},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, 0.5], "color": "rubber", "roll": 90},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, 0.5], "color": "rubber", "roll": 135},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, -0.5], "color": "rubber", "roll": 0},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, -0.5], "color": "rubber", "roll": 45},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, -0.5], "color": "rubber", "roll": 90},
+    {"size": [0.248, 0.6, 0.12], "offset": [-0.4, 0.3, -0.5], "color": "rubber", "roll": 135},
+    {"size": [0.1, 0.1, 1.0], "offset": [-0.4, 0.3, 0], "color": "#5a5a5a"},
+    {"size": [0.1, 1.2, 0.1], "offset": [-0.4, 0.8, 0], "color": "#5a5a5a"},
+    {"size": [0.5, 0.4, 0.5], "offset": [-2.0, 0.35, 0], "color": "#e8c020"},
+    {
+      "size": [0.124, 0.3, 0.06],
+      "offset": [-1.9, 0.6, 0.27],
+      "color": "#2a2a2a",
+      "roll": 0,
+      "anim": {"type": "spin", "axis": "z", "rpm": 200, "pivot": [-1.9, 0.6, 0.27]}
+    },
+    {
+      "size": [0.124, 0.3, 0.06],
+      "offset": [-1.9, 0.6, 0.27],
+      "color": "#2a2a2a",
+      "roll": 45,
+      "anim": {"type": "spin", "axis": "z", "rpm": 200, "pivot": [-1.9, 0.6, 0.27]}
+    },
+    {
+      "size": [0.124, 0.3, 0.06],
+      "offset": [-1.9, 0.6, 0.27],
+      "color": "#2a2a2a",
+      "roll": 90,
+      "anim": {"type": "spin", "axis": "z", "rpm": 200, "pivot": [-1.9, 0.6, 0.27]}
+    },
+    {
+      "size": [0.124, 0.3, 0.06],
+      "offset": [-1.9, 0.6, 0.27],
+      "color": "#2a2a2a",
+      "roll": 135,
+      "anim": {"type": "spin", "axis": "z", "rpm": 200, "pivot": [-1.9, 0.6, 0.27]}
+    }
+  ]
+}

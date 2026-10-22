@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Writing Desk",
+  "description": "A mahogany bureau with a green leather writing surface, pigeonholes, an inkwell and an oil lamp.",
+  "collision": "solid",
+  "collider": [{"size": [1.24, 1.18, 0.64]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.2, 0.04, 0.6], "offset": [0, 0.76, 0], "color": "#2a5a3a"},
+    {"size": [1.24, 0.04, 0.64], "offset": [0, 0.73, 0], "color": "#4a2418"},
+    {"size": [0.36, 0.71, 0.6], "offset": [-0.42, 0.355, 0], "color": "#4a2418", "material": "wood"},
+    {"size": [0.36, 0.71, 0.6], "offset": [0.42, 0.355, 0], "color": "#4a2418", "material": "wood"},
+    {"size": [1.2, 0.4, 0.22], "offset": [0, 0.98, -0.19], "color": "#5a2c1c"},
+    {"size": [0.1, 0.08, 0.1], "offset": [0.3, 0.82, 0.05], "color": "#141414"},
+    {"size": [0.1, 0.1, 0.1], "offset": [-0.4, 0.83, 0.05], "color": "#c8a040"},
+    {
+      "size": [0.08, 0.18, 0.08],
+      "offset": [-0.4, 0.97, 0.05],
+      "color": "#f8e8b0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.9, "color": "#ffd890", "glow": 0.8}
+    }
+  ]
+}

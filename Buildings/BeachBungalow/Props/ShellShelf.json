@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Bungalow Shell Shelf",
+  "description": "A white-painted shelf of seashells, starfish, a ship in a bottle and a jar of sea glass.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.9, 1.2, 0.3], "offset": [0, 0.6, 0], "color": "#f4f4ee", "material": "wood"},
+    {"size": [0.84, 0.02, 0.28], "offset": [0, 0.41, 0.0], "color": "#e0e0d8"},
+    {"size": [0.84, 0.02, 0.28], "offset": [0, 0.81, 0.0], "color": "#e0e0d8"},
+    {"size": [0.14, 0.1, 0.1], "offset": [-0.25, 0.47, 0.03], "color": "#f0b8a0"},
+    {"size": [0.16, 0.03, 0.16], "offset": [0.15, 0.435, 0.03], "color": "#e88a3a"},
+    {"size": [0.3, 0.12, 0.1], "offset": [0.0, 0.88, 0.03], "color": "#a8d8c0"},
+    {"size": [0.1, 0.16, 0.1], "offset": [0.3, 0.9, 0.03], "color": "#5ab8c8"},
+    {"size": [0.12, 0.08, 0.1], "offset": [-0.3, 1.24, 0.0], "color": "#f0e0c0"}
+  ]
+}

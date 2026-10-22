@@ -39,8 +39,8 @@ public static partial class SelfTest
         CheckBuildingDoors(yard);
         CheckBuildingState(yard);
         CheckBuildingNav(yard);
-        // The building content packs' showcase maps (Maps/Dev/Buildings*.json): bots reach every room and stair top there too.
-        foreach (var show in BuildingShowcases())
+        // The content packs' showcase maps (Maps/Dev/Buildings*.json): bots reach every room and stair top there too.
+        foreach (var show in ShowcaseMaps())
             CheckBuildingNav(show);
         // Maps without Building ops are unchanged: no building boxes, no building fingerprint (the pinned fingerprints
         // of every shipped map are checked in "Pack assets").
@@ -226,10 +226,11 @@ public static partial class SelfTest
              + $"(at most {runs.Length} + 2 draw calls, 3 when everything is in view), {yard.BuildingDoors.Count} doors, {yard.BuildingWindows.Count} windows, "
              + $"{props} props, {drawn} boxes still drawn one by one; loads in {loadMs:0} ms ({loadMs / Math.Max(1, yard.PlacedBuildings.Count):0.0} ms per building), "
              + $"fingerprint {yard.ContentHash:x8}, same on a second load {copy.ContentHash == yard.ContentHash}");
-        var shown = names.Concat(BuildingShowcases().SelectMany(m => m.PlacedBuildings.Select(b => b.Def.Name))).ToHashSet();
+        // Every building is on the Building Yard or on one of the Dev pack's Buildings* showcase maps.
+        var shown = names.Concat(ShowcaseMaps().SelectMany(m => m.PlacedBuildings).Select(b => b.Def.Name)).ToHashSet();
         foreach (var d in Buildings.All)
             if (!shown.Contains(d.Name) && !d.Folder.StartsWith('_'))
-                Fail($"neither Building Yard nor a Buildings*.json showcase map shows {d.Name}");
+                Fail($"neither the Building Yard nor a Dev Buildings* showcase map shows {d.Name}");
         if (copy.ContentHash != yard.ContentHash)
             Fail("Building Yard's fingerprint differs between two loads");
         if (runs.Length != yard.PlacedBuildings.Count || runs.Sum(r => r.Count) != shell)
@@ -256,9 +257,9 @@ public static partial class SelfTest
             Fail($"{blocked} Building Yard spawns are inside geometry");
     }
 
-    /// <summary>The building content showcase maps: map files named Buildings*.json with Building ops (e.g. Maps/Dev/BuildingsCivic.json).</summary>
-    private static IEnumerable<Map> BuildingShowcases() =>
-        Maps.All.Where(m => m.PlacedBuildings.Count > 0 && Path.GetFileName(m.SourceFile ?? "").StartsWith("Buildings", StringComparison.OrdinalIgnoreCase));
+    /// <summary>The Dev pack's building showcase maps (Maps/Dev/Buildings*.json, one per content set), besides the Building Yard.</summary>
+    private static IEnumerable<Map> ShowcaseMaps() =>
+        Maps.All.Where(m => m.SourceFile?.Replace('\\', '/').StartsWith("Dev/Buildings", StringComparison.OrdinalIgnoreCase) == true && m.PlacedBuildings.Count > 0);
 
     /// <summary>A whole window at least 1.2 m wide on an exterior ground-floor wall of the first building called <paramref name="building"/>.</summary>
     private static int FindWindow(Map map, string building)
@@ -628,7 +629,8 @@ public static partial class SelfTest
                     missing.Add($"{key} room {r.Floor}:{r.Id}");
                     if (detail.Count < 10)
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
-                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent})");
+                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
+                                   + NoPathTrace(g, search, path, start, goal));
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
@@ -651,7 +653,7 @@ public static partial class SelfTest
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
                         var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
                         detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
-                                   + $"mid node {Node(mid)}, top node {goal}; foot {Why(bottom)}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
+                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
                     }
                 }
             }
@@ -670,8 +672,56 @@ public static partial class SelfTest
             Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
-            foreach (var d in detail.Take(10))
+            foreach (var d in detail.Take(6))
                 Fail("  nav detail: " + d);
         }
+    }
+
+    /// <summary>
+    /// Why a node in the start's area has no path from it: its links in and out, whether it can get back, and the walk
+    /// from the nearest node on its floor that the start does reach.
+    /// </summary>
+    private static string NoPathTrace(NavGraph g, NavSearch search, int[] path, int start, int goal)
+    {
+        if (start < 0)
+            return "no start node";
+        var reached = new bool[g.Nodes.Length];
+        var stack = new Stack<int>();
+        reached[start] = true;
+        stack.Push(start);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (!reached[g.EdgeTo[e]])
+                {
+                    reached[g.EdgeTo[e]] = true;
+                    stack.Push(g.EdgeTo[e]);
+                }
+        }
+        string P(int i) => $"{i}({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}){(reached[i] ? "R" : "")}";
+        var outs = new List<string>();
+        for (var e = g.EdgeStart[goal]; e < g.EdgeStart[goal + 1]; e++)
+            outs.Add(P(g.EdgeTo[e]));
+        var ins = new List<string>();
+        for (var i = 0; i < g.Nodes.Length; i++)
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (g.EdgeTo[e] == goal)
+                    ins.Add(P(i));
+        var gp = g.Nodes[goal];
+        int best = -1;
+        var bestD = float.MaxValue;
+        for (var i = 0; i < g.Nodes.Length; i++)
+        {
+            var q = g.Nodes[i];
+            if (!reached[i] || MathF.Abs(q.Y - gp.Y) > 0.4f)
+                continue;
+            var d = Vector2.Distance(new Vector2(q.X, q.Z), new Vector2(gp.X, gp.Z));
+            if (d < bestD)
+                (best, bestD) = (i, d);
+        }
+        var back = search.Find(g, goal, start, path, maxExpand: 60000) > 0;
+        return $"back to start {back}; out [{string.Join(" ", outs.Take(8))}]; in [{string.Join(" ", ins.Take(8))}]; "
+               + (best < 0 ? "no reached node on its floor" : $"nearest reached on its floor {P(best)} {bestD:0.0} m: walk {WalkTrace(g.Nodes[best], gp)}");
     }
 }

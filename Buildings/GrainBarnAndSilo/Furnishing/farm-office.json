@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "farm-office",
+  "description": "The Grain Barn's farm office: a desk of ledgers, a stove, a filing cabinet, a dog asleep.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Wooden Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Dog", "Book Pile"], "place": "floor"}
+  ]
+}

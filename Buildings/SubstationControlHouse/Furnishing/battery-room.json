@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "battery-room",
+  "description": "The Substation's battery room: racks of backup cells, a charger cabinet, an eyewash bucket.",
+  "items": [
+    {"props": ["Substation Battery Rack"], "place": "wall", "count": [2, 3]},
+    {"props": ["Substation Relay Cabinet"], "place": "wall"},
+    {"props": ["Bucket", "Mop and Bucket"], "place": "corner"}
+  ]
+}

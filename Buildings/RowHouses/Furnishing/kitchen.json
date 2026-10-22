@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Terrace back kitchen: the black-leaded range, a stone sink, a Welsh dresser, a table and chairs and the mangle.",
+  "items": [
+    {"props": ["Row Houses Kitchen Range"], "place": "wall", "prefer": "far"},
+    {"id": "sink", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Row Houses Dresser"], "place": "wall"},
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [2, 3]},
+    {"props": ["Stacked Plates", "Apple Crate", "Cooking Pot"], "place": "on", "of": "t", "y": 0.75},
+    {"props": ["Row Houses Mangle"], "place": "corner", "chance": 0.7},
+    {"props": ["Bucket", "Broom", "Cat", "Potato Sacks"], "place": "floor", "count": [1, 2]}
+  ]
+}

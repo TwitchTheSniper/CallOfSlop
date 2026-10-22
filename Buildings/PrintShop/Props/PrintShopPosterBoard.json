@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Print Shop Poster Board",
+  "description": "A wooden board of sample posters: gig bills, a circus, a lost cat and a sale.",
+  "collision": "solid",
+  "collider": [{"size": [1.4, 2.0, 0.12]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 60,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 14, "size": [0.05, 0.3], "colors": ["paper", "#c8102e", "#1f6fb5"]}
+  },
+  "parts": [
+    {"size": [1.4, 2.0, 0.08], "offset": [0, 1.0, -0.06], "color": "#5a3a20", "material": "wood"},
+    {"size": [0.6, 0.6, 0.02], "offset": [-0.35, 1.5, 0.0], "color": "paper"},
+    {"size": [0.5, 0.25, 0.01], "offset": [-0.35, 1.6, 0.012], "color": "#c8102e"},
+    {"size": [0.4, 0.06, 0.01], "offset": [-0.35, 1.32, 0.012], "color": "#1a1a1a"},
+    {"size": [0.6, 0.6, 0.02], "offset": [0.35, 1.5, 0.0], "color": "paper"},
+    {"size": [0.5, 0.25, 0.01], "offset": [0.35, 1.6, 0.012], "color": "#1f6fb5"},
+    {"size": [0.4, 0.06, 0.01], "offset": [0.35, 1.32, 0.012], "color": "#1a1a1a"},
+    {"size": [0.6, 0.6, 0.02], "offset": [-0.35, 0.8, 0.0], "color": "paper"},
+    {"size": [0.5, 0.25, 0.01], "offset": [-0.35, 0.9, 0.012], "color": "#e8c020"},
+    {"size": [0.4, 0.06, 0.01], "offset": [-0.35, 0.62, 0.012], "color": "#1a1a1a"},
+    {"size": [0.6, 0.6, 0.02], "offset": [0.35, 0.8, 0.0], "color": "paper"},
+    {"size": [0.5, 0.25, 0.01], "offset": [0.35, 0.9, 0.012], "color": "#3a9a4a"},
+    {"size": [0.4, 0.06, 0.01], "offset": [0.35, 0.62, 0.012], "color": "#1a1a1a"}
+  ]
+}

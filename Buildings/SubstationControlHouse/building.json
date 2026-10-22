@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Substation Control House",
+  "theme": "1970s grid substation control house: grey board-marked concrete, hazard yellow trim, steel doors, humming switchgear and a fenced transformer yard",
+  "category": "industrial",
+  "description": "Two storeys and a roof: switchgear and battery rooms below, the control room with its mimic board, a relay room and an office above, stairs on to a parapet roof.",
+  "author": "Call of Slop",
+  "seed": 304,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.4,
+  "doorHeight": 2.2,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "grey concrete": {"wall": "#8e8e88", "interior": "#d4d6cc", "floor": "#6e7270", "ceiling": "#c4c6c0", "trim": "#e8c020", "door": "#5a6a72", "roof": "#5a5c5c"},
+    "pale brick": {"wall": "#b89a78", "interior": "#dcd8c8", "floor": "#70706a", "ceiling": "#c8c6bc", "trim": "#d0a020", "door": "#2f4f6a", "roof": "#56585a"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {"id": "switchgear", "type": "switchgear", "rect": [-8, -6, 2, 1], "autoWindows": {"spacing": 3.0, "width": 1.6, "sill": 2.4, "head": 3.0}},
+        {"id": "battery", "type": "battery-room", "rect": [2, -6, 8, -1], "windows": false, "floor": {"color": "#8a5a3a", "material": "tiles"}},
+        {"id": "hall", "type": "corridor", "rect": [2, -1, 8, 6], "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.0, "head": 2.4}},
+        {"id": "mess", "type": "breakroom", "rect": [-8, 1, -3, 6], "autoWindows": {"spacing": 2.4, "width": 1.2, "sill": 1.0, "head": 2.4}},
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [-3, 1, -0.5, 6],
+          "autoWindows": {"spacing": 2.0, "width": 0.6, "sill": 1.8, "head": 2.4},
+          "wall": {"color": "#e0e4e0", "material": "tiles"}
+        },
+        {"id": "store", "type": "industrial-workshop", "rect": [-0.5, 1, 2, 6], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [5, 6], "width": 1.0, "front": true, "material": "metal"},
+        {"type": "door", "at": [2, 0], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [5, -1], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [2, 3.5], "width": 0.9},
+        {"type": "door", "at": [-3, 3.5], "width": 0.9},
+        {"type": "door", "at": [-5.5, 1], "width": 1.0},
+        {"type": "door", "at": [-8, 3.5], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [-3.8, -6], "width": 1.4, "head": 2.9, "material": "metal", "swing": "out", "hinge": "right"},
+        {"type": "door", "at": [-2.2, -6], "width": 1.4, "head": 2.9, "material": "metal", "swing": "out", "hinge": "left"}
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "id": "control",
+          "type": "industrial-control",
+          "rect": [-8, -6, 4, 2],
+          "autoWindows": {"spacing": 2.2, "width": 1.6, "sill": 0.95, "head": 2.6},
+          "props": [{"name": "Substation Mimic Board", "wall": "E", "along": 0.9}, {"name": "Substation Control Desk", "at": [0.0, 0.6], "yaw": 180}]
+        },
+        {
+          "id": "landing",
+          "type": "corridor",
+          "rect": [4, -6, 8, 6],
+          "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.0, "head": 2.4},
+          "props": [{"name": "Metal Lockers", "wall": "E", "along": 4.6}]
+        },
+        {"id": "office", "type": "office", "rect": [-8, 2, -2, 6], "autoWindows": {"spacing": 2.4, "width": 1.2, "sill": 1.0, "head": 2.4}},
+        {"id": "relay", "type": "relay-room", "rect": [-2, 2, 4, 6], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [4, -3.5], "width": 1.0},
+        {"type": "door", "at": [4, 4], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [-2, 4], "width": 0.9},
+        {"type": "door", "at": [-5, 2], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [6.5, 0.0, 7.6, 3.0], "dir": "-z", "color": {"color": "#5a5c5c", "material": "metal"}},
+    {"floor": 1, "rect": [6.5, -4.8, 7.6, -1.8], "dir": "-z", "color": {"color": "#5a5c5c", "material": "metal"}}
+  ],
+  "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
+  "anchors": [
+    {"type": "spawn", "name": "mess room", "floor": 0, "at": [-5.5, 3.5]},
+    {"type": "spawn", "name": "office", "floor": 1, "at": [-5, 4]},
+    {"type": "spawn", "name": "front hall", "floor": 0, "at": [4.0, 4.0]},
+    {"type": "hill", "name": "control room", "floor": 1, "at": [-2, -2]},
+    {"type": "point", "name": "roof", "floor": 1, "at": [0, 0]}
+  ],
+  "extras": [
+    {"type": "prop", "name": "Chain Link Fence", "at": [-6.5, -17.2], "yaw": 0},
+    {"type": "prop", "name": "Chain Link Fence", "at": [-3.4, -17.2], "yaw": 0},
+    {"type": "prop", "name": "Chain Link Fence", "at": [-0.3, -17.2], "yaw": 0},
+    {"type": "prop", "name": "Chain Link Fence", "at": [2.8, -17.2], "yaw": 0},
+    {"type": "prop", "name": "Chain Link Fence", "at": [5.9, -17.2], "yaw": 0},
+    {"type": "prop", "name": "Chain Link Fence", "at": [-8.1, -15.6], "yaw": 90},
+    {"type": "prop", "name": "Chain Link Fence", "at": [7.5, -15.6], "yaw": 90},
+    {"type": "prop", "name": "Chain Link Fence", "at": [-8.1, -12.5], "yaw": 90},
+    {"type": "prop", "name": "Chain Link Fence", "at": [7.5, -12.5], "yaw": 90},
+    {"type": "prop", "name": "Chain Link Fence", "at": [-8.1, -9.4], "yaw": 90},
+    {"type": "prop", "name": "Chain Link Fence", "at": [7.5, -9.4], "yaw": 90},
+    {"type": "prop", "name": "Substation Transformer", "at": [-4.0, -13.4], "yaw": 0},
+    {"type": "prop", "name": "Substation Transformer", "at": [2.4, -13.4], "yaw": 0},
+    {"type": "prop", "name": "Pole Transformer", "at": [6.3, -15.8]},
+    {"type": "prop", "name": "Warning Beacon", "at": [-7.4, -8.0]},
+    {"type": "prop", "name": "Junction Box", "at": [5.5, -6.3], "yaw": 180},
+    {"type": "prop", "name": "Cable Spool", "at": [5.0, -9.0], "yaw": 90},
+    {"type": "prop", "name": "Diesel Generator", "at": [11.0, -2.5], "yaw": 90},
+    {"type": "prop", "name": "Electric Meter", "at": [8.15, 0, 3.0], "yaw": 90},
+    {"type": "prop", "name": "Utility Pole", "at": [-10.5, 7.5]},
+    {"type": "prop", "name": "Bollard", "at": [3.6, 7.2]},
+    {"type": "prop", "name": "Bollard", "at": [6.4, 7.2]},
+    {"type": "prop", "name": "Van", "at": [-3.0, 9.5], "yaw": 90},
+    {"type": "block", "min": [-8.15, 3.3, 6.15], "max": [8.15, 3.5, 6.3], "color": "$trim"},
+    {"type": "block", "min": [3.9, 2.5, 6.15], "max": [6.1, 2.65, 6.9], "color": "$trim"},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [-5.0, -3.5], "onRoof": true},
+    {"type": "prop", "name": "Radio Mast", "at": [-6.5, 4.5], "onRoof": true},
+    {"type": "prop", "name": "Sweeping Satellite Dish", "at": [-1.0, 4.5], "onRoof": true},
+    {"type": "prop", "name": "Mushroom Vent", "at": [2.0, -4.0], "onRoof": true}
+  ]
+}
