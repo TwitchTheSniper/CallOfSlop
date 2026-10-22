@@ -29,6 +29,14 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      # Cache the NuGet packages (the BRUTAL packages and the rest) so each run doesn't download them again from
+      # nuget.org. The key only changes when the project's package references change.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
@@ -82,6 +90,14 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
+
+      # Cache the NuGet packages (the BRUTAL packages and the rest) so each run doesn't download them again from
+      # nuget.org. The key only changes when the project's package references change.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
 
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
