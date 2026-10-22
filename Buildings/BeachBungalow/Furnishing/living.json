@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Beach bungalow living room: a rattan sofa and chairs, sisal rug, a surfboard rack, a shell shelf and a ceiling fan.",
+  "items": [
+    {"id": "sofa", "props": ["Beach Bungalow Rattan Sofa"], "place": "wall", "prefer": "far"},
+    {"props": ["Rug"], "place": "centre"},
+    {"id": "t", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Rubber Duck"], "place": "on", "of": "t", "y": 0.45},
+    {"props": ["Beach Bungalow Rattan Chair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Beach Bungalow Surfboard Rack"], "place": "wall"},
+    {"props": ["Beach Bungalow Shell Shelf"], "place": "wall"},
+    {"props": ["Acoustic Guitar", "Backpack", "Dog"], "place": "floor", "count": [1, 2]},
+    {"props": ["Ceiling Fan"], "place": "ceiling"}
+  ]
+}

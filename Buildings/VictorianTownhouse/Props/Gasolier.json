@@ -1,0 +1,45 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Gasolier",
+  "description": "A brass gas chandelier with five frosted glass shades, hanging from the ceiling rose.",
+  "collision": "cosmetic",
+  "fadeDistance": 60,
+  "breakable": {"health": 10, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.06, 0.4, 0.06], "offset": [0, 0.4, 0], "color": "#c8a040"},
+    {"size": [0.3, 0.06, 0.3], "offset": [0, 0.21, 0], "color": "#c8a040"},
+    {"size": [0.9, 0.03, 0.04], "offset": [0, 0.215, 0], "color": "#c8a040"},
+    {"size": [0.04, 0.03, 0.9], "offset": [0, 0.215, 0], "color": "#c8a040"},
+    {
+      "size": [0.14, 0.12, 0.14],
+      "offset": [0.43, 0.12, 0],
+      "color": "#fff0c8",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#ffe8b0", "glow": 1.0}
+    },
+    {
+      "size": [0.14, 0.12, 0.14],
+      "offset": [-0.43, 0.12, 0],
+      "color": "#fff0c8",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#ffe8b0", "glow": 1.0}
+    },
+    {
+      "size": [0.14, 0.12, 0.14],
+      "offset": [0, 0.12, 0.43],
+      "color": "#fff0c8",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#ffe8b0", "glow": 1.0}
+    },
+    {
+      "size": [0.14, 0.12, 0.14],
+      "offset": [0, 0.12, -0.43],
+      "color": "#fff0c8",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#ffe8b0", "glow": 1.0}
+    },
+    {
+      "size": [0.16, 0.14, 0.16],
+      "offset": [0, 0.07, 0],
+      "color": "#fff0c8",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#ffe8b0", "glow": 1.0}
+    },
+    {"size": [0.36, 0.04, 0.36], "offset": [0, 0.58, 0], "color": "#f4f0e4"}
+  ]
+}

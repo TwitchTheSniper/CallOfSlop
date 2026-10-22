@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "Mobile home hallway: coats, the vacuum cleaner and a laundry basket that never gets emptied.",
+  "items": [
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Vacuum Cleaner", "Laundry Basket", "Backpack", "Broom"], "place": "floor", "count": [1, 2]}
+  ]
+}

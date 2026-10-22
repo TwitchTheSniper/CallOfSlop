@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Dorm shared kitchen: a fridge, two cookers, counters with dirty dishes, a table, and a microwave queue.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner", "count": [1, 2]},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 3]},
+    {"props": ["Cooker"], "place": "wall"},
+    {"props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Microwave", "Stacked Plates", "Kettle", "Toaster"], "place": "on", "of": "c", "y": 0.9, "count": [2, 3]},
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Plastic Chair"], "place": "around", "of": "t", "count": [2, 4]},
+    {"props": ["Trash Bag", "Soda Cans", "Pedal Bin"], "place": "floor", "count": [1, 2]}
+  ]
+}

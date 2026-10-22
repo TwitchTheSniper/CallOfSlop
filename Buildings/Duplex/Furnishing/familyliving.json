@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "familyliving",
+  "description": "Duplex west unit living room (the young family): a fabric sofa, a play mat of toys, a high chair, family photos and plants.",
+  "items": [
+    {"id": "sofa", "props": ["Fabric Sofa"], "place": "wall", "prefer": "far"},
+    {"props": ["Striped Rug"], "place": "centre"},
+    {"id": "t", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Toy Blocks"], "place": "on", "of": "t", "y": 0.45},
+    {"props": ["TV Stand"], "place": "wall"},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Duplex High Chair"], "place": "floor"},
+    {"props": ["Bookshelf"], "place": "wall"},
+    {"props": ["Toy Blocks", "Teddy Bear", "Sports Balls", "Rubber Duck"], "place": "floor", "count": [3, 4]},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner"}
+  ]
+}

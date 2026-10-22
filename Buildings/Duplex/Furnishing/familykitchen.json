@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "familykitchen",
+  "description": "Duplex family kitchen: tidy counters, a dining table with a high chair, drawings on the fridge.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cooker"], "place": "wall"},
+    {"id": "s", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Dishwasher"], "place": "beside", "of": "s"},
+    {"props": ["Kettle", "Toaster", "Microwave", "Knife Block"], "place": "on", "of": "c", "y": 0.9, "count": [2, 3]},
+    {"id": "t", "props": ["Dining Table"], "place": "centre"},
+    {"props": ["Dining Chair"], "place": "around", "of": "t", "count": [3, 4]},
+    {"props": ["Stacked Plates"], "place": "on", "of": "t"},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

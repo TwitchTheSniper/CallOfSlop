@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "media",
+  "description": "Modern villa cinema room: a big sectional facing a media wall, bean bags and a popcorn-strewn rug.",
+  "items": [
+    {"id": "tv", "props": ["Modern Villa Media Wall"], "place": "wall"},
+    {"props": ["Modern Villa Sectional Sofa"], "place": "wall", "prefer": "far"},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Armchair", "Arcade Cabinet"], "place": "corner", "count": [1, 2]},
+    {"props": ["Sports Balls", "Laptop", "Soda Cans"], "place": "floor", "count": [1, 2]}
+  ]
+}

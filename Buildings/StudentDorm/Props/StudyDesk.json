@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Study Desk",
+  "description": "A pine dorm desk with a bookshelf hutch, a laptop, a lamp, energy drinks and a stack of textbooks.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.26, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.2, 0.04, 0.6], "offset": [0, 0.74, 0], "color": "#c8a878", "material": "wood"},
+    {"size": [0.4, 0.72, 0.58], "offset": [-0.4, 0.36, 0], "color": "#c8a878", "material": "wood"},
+    {"size": [0.04, 0.72, 0.58], "offset": [0.58, 0.36, 0], "color": "#c8a878"},
+    {"size": [1.2, 0.5, 0.25], "offset": [0, 1.01, -0.17], "color": "#c8a878", "material": "wood"},
+    {"size": [1.16, 0.02, 0.24], "offset": [0, 1.01, -0.16], "color": "#b89868"},
+    {"size": [0.34, 0.02, 0.26], "offset": [0.15, 0.77, 0.08], "color": "#2a2a2a"},
+    {"size": [0.34, 0.22, 0.02], "offset": [0.15, 0.88, -0.04], "color": "#3a3a3a", "rotation": [-15, 0, 0]},
+    {"size": [0.06, 0.12, 0.06], "offset": [0.45, 0.82, 0.1], "color": "#2ac84a"},
+    {"size": [0.25, 0.14, 0.18], "offset": [-0.35, 0.83, 0.1], "color": "#3a5a8a"},
+    {"size": [0.12, 0.2, 0.08], "offset": [-0.4, 1.12, -0.17], "color": "#c8302a"},
+    {"size": [0.1, 0.2, 0.08], "offset": [-0.28, 1.12, -0.17], "color": "#e8c030"},
+    {"size": [0.14, 0.18, 0.08], "offset": [0.3, 1.11, -0.17], "color": "#2a8a6a"}
+  ]
+}

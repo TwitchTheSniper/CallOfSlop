@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Notice Board",
+  "description": "A cork notice board covered in flyers: lost keys, a band night, house rules and a pizza menu.",
+  "collision": "cosmetic",
+  "fadeDistance": 40,
+  "breakable": {"health": 20, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.2, 0.9, 0.04], "offset": [0, 1.45, 0], "color": "#b8885a"},
+    {"size": [1.26, 0.04, 0.05], "offset": [0, 1.92, 0], "color": "#7a5a3a"},
+    {"size": [1.26, 0.04, 0.14], "offset": [0, 0.96, 0.05], "color": "#7a5a3a"},
+    {"size": [0.25, 0.32, 0.01], "offset": [-0.4, 1.56, 0.025], "color": "#f0e050"},
+    {"size": [0.3, 0.22, 0.01], "offset": [-0.05, 1.66, 0.025], "color": "#f4f4f0"},
+    {"size": [0.22, 0.3, 0.01], "offset": [0.3, 1.45, 0.025], "color": "#e870a0"},
+    {"size": [0.3, 0.2, 0.01], "offset": [0.1, 1.25, 0.025], "color": "#70c0e8"}
+  ]
+}

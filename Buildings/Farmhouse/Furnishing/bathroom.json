@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bathroom",
+  "description": "Farmhouse bathroom: a big tub, a washstand, a towel chair, a dresser of linen and a rag rug.",
+  "items": [
+    {"props": ["Bathtub"], "place": "corner", "prefer": "far"},
+    {"props": ["Toilet"], "place": "wall"},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Wooden Chair"], "place": "corner"},
+    {"props": ["Standing Mirror"], "place": "corner", "chance": 0.7},
+    {"props": ["Striped Rug"], "place": "centre"},
+    {"props": ["Laundry Basket", "Bucket"], "place": "floor", "count": [1, 2]}
+  ]
+}

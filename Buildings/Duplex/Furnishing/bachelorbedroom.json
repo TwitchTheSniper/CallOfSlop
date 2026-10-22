@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bachelorbedroom",
+  "description": "Duplex bachelor bedroom: a mattress on the floor, clothes, a guitar and a weight bench's worth of junk.",
+  "items": [
+    {"props": ["Duplex Mattress"], "place": "wall", "prefer": "far"},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {
+      "props": ["Acoustic Guitar", "Laundry Basket", "Duffel Bag", "Backpack", "Duplex Pizza Boxes", "Sports Balls"],
+      "place": "floor",
+      "count": [3, 4]
+    }
+  ]
+}

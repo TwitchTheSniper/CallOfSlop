@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Bungalow Outdoor Shower",
+  "description": "A wooden outdoor shower post for rinsing off the sand, with a chrome rose.",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 2.3, 0.14], "offset": [0, 1.15, -0.35]}],
+  "parts": [
+    {"size": [0.9, 0.06, 0.9], "offset": [0, 0.03, 0], "color": "#a89070", "material": "wood"},
+    {"size": [0.12, 2.2, 0.12], "offset": [0, 1.16, -0.35], "color": "#a89070"},
+    {"size": [0.04, 0.04, 0.4], "offset": [0, 2.17, -0.15], "color": "chrome"},
+    {"size": [0.18, 0.04, 0.18], "offset": [0, 2.12, 0.03], "color": "chrome"},
+    {"size": [0.12, 0.04, 0.06], "offset": [0.09, 1.12, -0.27], "color": "chrome"}
+  ]
+}

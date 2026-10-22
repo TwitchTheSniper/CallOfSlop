@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House Egg Chair",
+  "description": "A white fibreglass egg chair with an orange cushion, on a swivel foot.",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 1.46, 0.76]}],
+  "breakable": {"health": 60, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.5, 0.06, 0.5], "offset": [0, 0.03, 0], "color": "#d8d8d8"},
+    {"size": [0.08, 0.3, 0.08], "offset": [0, 0.21, 0], "color": "chrome"},
+    {"size": [0.8, 0.5, 0.72], "offset": [0, 0.61, 0.02], "color": "#f0f0ec"},
+    {"size": [0.8, 0.6, 0.16], "offset": [0, 1.16, -0.3], "color": "#f0f0ec"},
+    {"size": [0.14, 0.5, 0.5], "offset": [-0.38, 1.05, -0.05], "color": "#f0f0ec"},
+    {"size": [0.14, 0.5, 0.5], "offset": [0.38, 1.05, -0.05], "color": "#f0f0ec"},
+    {"size": [0.56, 0.1, 0.5], "offset": [0, 0.91, 0.06], "color": "#e86a1e"},
+    {"size": [0.56, 0.5, 0.08], "offset": [0, 1.17, -0.2], "color": "#e86a1e"}
+  ]
+}

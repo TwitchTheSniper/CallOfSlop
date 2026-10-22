@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "sewing",
+  "description": "Farmhouse sewing room: a treadle sewing machine, baskets of mending and the ironing board.",
+  "items": [
+    {"id": "sew", "props": ["Farmhouse Sewing Machine"], "place": "wall", "prefer": "far"},
+    {"props": ["Wooden Chair"], "place": "front", "of": "sew", "distance": 0.05},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Rocking Chair"], "place": "corner"},
+    {"props": ["Laundry Basket", "Ironing Board", "Book Pile"], "place": "floor", "count": [1, 2]},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.6}
+  ]
+}

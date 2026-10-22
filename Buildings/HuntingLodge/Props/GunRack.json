@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Gun Rack",
+  "description": "A locked pine gun cabinet: four hunting rifles behind glass, boxes of shells in the drawer.",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 1.9, 0.42]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 160, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.1, 1.9, 0.4], "offset": [0, 0.95, 0], "color": "#8a5a32", "material": "wood"},
+    {"size": [1.0, 1.5, 0.02], "offset": [0, 1.1, 0.2], "color": "#a8c8c8"},
+    {"size": [0.06, 1.2, 0.06], "offset": [-0.35, 1.05, 0.05], "color": "#3a2414"},
+    {"size": [0.06, 1.2, 0.06], "offset": [-0.12, 1.05, 0.05], "color": "#3a2414"},
+    {"size": [0.06, 1.2, 0.06], "offset": [0.12, 1.05, 0.05], "color": "#3a2414"},
+    {"size": [0.06, 1.2, 0.06], "offset": [0.35, 1.05, 0.05], "color": "#3a2414"},
+    {"size": [0.03, 0.5, 0.03], "offset": [-0.35, 1.4, 0.05], "color": "#2a2a2a"},
+    {"size": [0.03, 0.5, 0.03], "offset": [-0.12, 1.4, 0.05], "color": "#2a2a2a"},
+    {"size": [0.03, 0.5, 0.03], "offset": [0.12, 1.4, 0.05], "color": "#2a2a2a"},
+    {"size": [0.03, 0.5, 0.03], "offset": [0.35, 1.4, 0.05], "color": "#2a2a2a"},
+    {"size": [1.0, 0.25, 0.02], "offset": [0, 0.175, 0.205], "color": "#7a4a2a"},
+    {"size": [0.12, 0.04, 0.02], "offset": [0, 0.17, 0.22], "color": "#c8a040"}
+  ]
+}

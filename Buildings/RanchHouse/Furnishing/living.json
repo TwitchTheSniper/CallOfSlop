@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Ranch House den: a mustard sofa, an egg chair, the walnut hi-fi, a wet bar and a fieldstone fireplace on shag carpet.",
+  "items": [
+    {"props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"id": "sofa", "props": ["Ranch House Atomic Sofa"], "place": "wall"},
+    {"props": ["Rug"], "place": "centre"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Newspaper"], "place": "on", "of": "table", "y": 0.45, "chance": 0.7},
+    {"id": "bar", "props": ["Ranch House Wet Bar"], "place": "wall"},
+    {"props": ["Bar Stool"], "place": "front", "of": "bar", "count": [1, 2], "distance": 0.2},
+    {"props": ["Ranch House Egg Chair"], "place": "corner"},
+    {"props": ["Ranch House HiFi Console"], "place": "wall"},
+    {"props": ["Flickering TV", "CRT Television"], "place": "corner"},
+    {"props": ["Floor Lamp", "Office Plant"], "place": "corner", "count": [1, 2]},
+    {"props": ["Dog", "Newspaper", "Cat"], "place": "floor", "count": [0, 2]}
+  ]
+}

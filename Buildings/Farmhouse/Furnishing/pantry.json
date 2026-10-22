@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pantry",
+  "description": "Farmhouse pantry: shelves of preserves, sacks of potatoes, crates of apples and cabbages, a chest freezer.",
+  "items": [
+    {"props": ["Farmhouse Preserves Shelf"], "place": "wall", "count": [2, 3]},
+    {"props": ["Chest Freezer"], "place": "wall", "chance": 0.8},
+    {"props": ["Potato Sacks", "Apple Crate", "Cabbage Crate", "Orange Crate"], "place": "wall", "count": [1, 3]},
+    {"props": ["Bucket", "Cardboard Box"], "place": "floor", "count": [0, 2]}
+  ]
+}
