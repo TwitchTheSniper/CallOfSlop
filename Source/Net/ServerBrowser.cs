@@ -39,7 +39,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     mode's GameModeModule.WriteState writes: KotH 7 bytes, CTF 36, others none). Game mode 6 is the Dev-only template.
     // 23: buildings (Buildings folder, the Building op with a "name"): BuildingUse / BuildingEvent / BuildingState at the end
     //     of Msg (doors open, shut, take damage and break, windows break; the join-in-progress state), the Doors physics layer
-    public const byte ProtocolVersion = 23;
+    // 24: prestige hats (GameCosmetics.cs): the Hello carries prestige and level after the name; every roster entry ends
+    //     with prestige, level and hat (3 bytes)
+    public const byte ProtocolVersion = 24;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

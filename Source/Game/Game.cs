@@ -1507,6 +1507,7 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Hello).U8((byte)nameBytes.Length);
                 foreach (var c in nameBytes)
                     _w.U8(c);
+                WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
                 SendLoadout();
                 break;
@@ -1525,6 +1526,7 @@ public sealed partial class Game : IDisposable
                 if (Players.Values.Any(o => o != p && o.Name == name))
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
+                ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
                 LogJoin(name);
                 BroadcastRoster();
                 break;

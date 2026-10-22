@@ -417,6 +417,26 @@ The lobby shows your level and next unlock, and the level bar at the bottom of t
 - Weapons added as files unlock at the level their file asks for (`unlockLevel`), or at level 48.
 - Unlocks are kept on each player's own PC.
 
+### Prestige
+
+At max level (48) the lobby's **PRESTIGE** button (under the level bar; greyed out before max level) resets your account for a hat. A confirmation dialog says what resets and which hat you get ("Prestige 1: unlocks the Beanie"). There are five prestiges, one hat each:
+
+| Prestige | Hat |
+| --- | --- |
+| 1 | **Beanie**: a small red knit beanie with a folded cuff and a bobble |
+| 2 | **Baseball Cap**: blue crown, brim forward |
+| 3 | **Fedora**: pinched crown with a black band and a wide brim |
+| 4 | **Top Hat**: tall black cylinder with a red band |
+| 5 | **Ridiculous Top Hat**: about 3.5 times as tall as the top hat (1.4 m), sways as you move |
+
+- **What resets (the CoD rule):** level and account XP go back to level 1 / 0 XP, and every gun's weapon XP is cleared, so weapons, grenades, equipment, perks, kill streaks, loadout slots and attachments all lock again and are earned again. Loadouts fall back to unlocked items on their own (as after Reset level).
+- **What you keep:** your hats and your lifetime stats (kills, headshots, matches, wins). Settings > Reset level keeps your prestige too.
+- **Wearing a hat:** pick it in the loadout's cosmetics slot (None or any unlocked hat; locked ones show "Prestige N"). Others see it on your head in third person, in the death cam and kill cam, and lying by your corpse; you never see it in first person.
+- **Cosmetic only:** hats have no collision and don't change your hitbox, and prestige gives nothing else. Bots never prestige and never wear hats.
+- Your prestige shows as **P2** before your level: in the lobby, on the HUD level line and on the scoreboard (`[P2 L13]` after a person's name; bots get no tag).
+- Saved in `progress.txt` as `prestige=N`; older saves load as prestige 0. Hat models are data: `Cosmetics/hats.json` (format `call-of-slop-cosmetics/1`; boxes in head space, `"round"` parts made of a few turned boxes).
+- **Network:** your client sends its prestige and level after its name in the Hello; the roster carries prestige, level and hat for every player (3 bytes each, nothing in the snapshots). The server only uses the reported prestige for what it shows and to check the hat you pick (`Cosmetics.IsUnlocked`); it never affects gameplay. Levels on the scoreboard are as of joining (the host's own is live).
+
 ### Grenades and equipment
 
 The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per life), both refilled when you respawn. Projectiles are simulated by the server: they bounce off walls and floors, and blasts are blocked by walls. Everything is thrown at 22.5 m/s (plus a little lift and half your own speed), which carries about **34 m** on flat ground at the best angle (about 40 degrees up); a frag thrown that far lands with a few tenths of a second to spare before it goes off.
