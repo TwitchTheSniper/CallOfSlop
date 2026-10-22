@@ -366,8 +366,28 @@ internal sealed partial class BuildingGenerator
         return (placedCount, skipped);
     }
 
-    private void Emit(Piece p, string room, float floorY) =>
-        _plan.Props.Add(new PlannedProp(p.Def, P(p.Pos.X, floorY + p.Y, p.Pos.Y), YawW(p.Yaw), p.Scale, room));
+    private void Emit(Piece p, string room, float floorY) => EmitProp(p.Def, p.Pos, floorY + p.Y, p.Yaw, p.Scale, room);
+
+    /// <summary>
+    /// Adds a prop placed in the building's frame. Mirrored buildings mirror the prop's footprint, not just its origin: a prop
+    /// whose model sits off its origin (a fridge's door side, archive boxes) keeps its footprint where the plan put it.
+    /// </summary>
+    private void EmitProp(PropDef def, Vector2 pos, float y, float yawDeg, float scale, string room)
+    {
+        var yaw = YawW(yawDeg);
+        var c = new Vector2(def.Bounds.Center.X, def.Bounds.Center.Z) * scale;
+        var local = Turn(c, yawDeg * (MathF.PI / 180f));
+        var centre = P(pos.X + local.X, y, pos.Y + local.Y);
+        var world = Turn(c, yaw);
+        _plan.Props.Add(new PlannedProp(def, new Vector3(centre.X - world.X, y, centre.Z - world.Y), yaw, scale, room));
+    }
+
+    /// <summary>A vector on the plan turned like a prop's yaw (radians): x' = x cos + z sin, z' = -x sin + z cos.</summary>
+    private static Vector2 Turn(Vector2 v, float a)
+    {
+        float cs = MathF.Cos(a), sn = MathF.Sin(a);
+        return new Vector2(v.X * cs + v.Y * sn, -v.X * sn + v.Y * cs);
+    }
 
     private static bool IsFlat(PropDef def, float scale) => def.Bounds.Max.Y * scale < 0.06f && !def.IsSolid;
 

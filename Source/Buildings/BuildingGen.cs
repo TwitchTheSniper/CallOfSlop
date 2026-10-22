@@ -816,7 +816,7 @@ internal sealed partial class BuildingGenerator
                 {
                     var def = _def.FindProp(x.Prop!, _scope) ?? throw new BuildingFileException($"building \"{_def.Name}\": extras: unknown prop \"{x.Prop}\" ({_scope.Suggest(x.Prop!)})");
                     var py = x.OnRoof ? _level[_floors.Count] + x.At.Y : baseY + x.At.Y;
-                    _plan.Props.Add(new PlannedProp(def, P(x.At.X, py, x.At.Z), YawW(x.Yaw), x.Scale, "exterior"));
+                    EmitProp(def, new Vector2(x.At.X, x.At.Z), py, x.Yaw, x.Scale, "exterior");
                     break;
                 }
                 case ExtraKind.Porch:

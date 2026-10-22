@@ -211,7 +211,7 @@ public static partial class SelfTest
     private static void CheckBuildingYard(Map yard)
     {
         var sw = Stopwatch.StartNew();
-        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), "load timing");
+        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!) // (same source path: the same pack, so the same props);
         var loadMs = sw.Elapsed.TotalMilliseconds;
         var names = yard.PlacedBuildings.Select(b => b.Def.Name).Distinct().ToList();
         var shell = yard.PlacedBuildings.Sum(b => b.ShellCount);
@@ -476,7 +476,7 @@ public static partial class SelfTest
         }
         for (var i = 0; i < yard.BuildingWindows.Count; i += 3)
             yard.BreakBuildingWindow(i);
-        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), "client copy");
+        var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!);
         var w = new PacketWriter();
         var packets = 0;
         var biggest = 0;
@@ -498,7 +498,7 @@ public static partial class SelfTest
         if (biggest > 1400)
             Fail($"a building state packet is {biggest} bytes (over 1400)");
         // Events: open, damage, break and a window, written and applied on a third copy.
-        var copy2 = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), "client copy 2");
+        var copy2 = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!);
         var events = new (BuildingEventKind Kind, int Index, int Health)[] { (BuildingEventKind.DoorOpen, 0, 150), (BuildingEventKind.DoorDamage, 1, 90), (BuildingEventKind.DoorBreak, 2, 0), (BuildingEventKind.WindowBreak, 3, 0) };
         foreach (var (kind, index, health) in events)
         {

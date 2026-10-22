@@ -1231,8 +1231,14 @@ class Generator:
             self.add_along(ax, a, b, cc, cc + 0.05, top, top + x["railing"], self.d.trim, "railing")
 
     def emit_prop(self, p, x, y, z, yaw, scale, room, fp=None):
-        wp = self.P(x, y, z)
-        self.plan.props.append({"def": p, "pos": wp, "yaw": self.yaw_w(yaw), "scale": scale, "room": room, "local": (x, y, z, yaw), "fp": fp})
+        # Mirrored buildings mirror the prop's footprint (its bounds centre), not just its origin (BuildingFurnish.EmitProp).
+        cx, cz = (p.min[0] + p.max[0]) / 2 * scale, (p.min[2] + p.max[2]) / 2 * scale
+        lx, lz = turn(cx, cz, math.radians(yaw))
+        centre = self.P(x + lx, y, z + lz)
+        wy = self.yaw_w(yaw)
+        wx, wz = turn(cx, cz, math.radians(wy))
+        wp = (centre[0] - wx, y, centre[2] - wz)
+        self.plan.props.append({"def": p, "pos": wp, "yaw": wy, "scale": scale, "room": room, "local": (x, y, z, yaw), "fp": fp})
 
     # ---- furnishing
     def faces(self, f, r):
@@ -1559,6 +1565,11 @@ class Generator:
                 return None
             return piece(pos, item["turn"], y)
         return None
+
+
+def turn(x, z, a):
+    cs, sn = math.cos(a), math.sin(a)
+    return (x * cs + z * sn, -x * sn + z * cs)
 
 
 def t2(g):
