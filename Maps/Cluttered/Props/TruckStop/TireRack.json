@@ -1,0 +1,383 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Tire Rack",
+ "category": "Truck Stop",
+ "description": "A steel rack of truck tires, two shelves. Unbreakable.",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.4,
+    2.0,
+    0.6
+   ],
+   "offset": [
+    0,
+    1.0,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    2.4,
+    0.06,
+    0.6
+   ],
+   "offset": [
+    0,
+    0.25,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    2.4,
+    0.06,
+    0.6
+   ],
+   "offset": [
+    0,
+    1.05,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    2.4,
+    0.06,
+    0.6
+   ],
+   "offset": [
+    0,
+    1.85,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.06,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    -1.17,
+    1.0,
+    -0.27
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.06,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    -1.17,
+    1.0,
+    0.27
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.06,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    1.17,
+    1.0,
+    -0.27
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.06,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    1.17,
+    1.0,
+    0.27
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    -0.96,
+    0.62,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    -0.96,
+    0.62,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    -0.48,
+    0.62,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    -0.48,
+    0.62,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.0,
+    0.62,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.62,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.48,
+    0.62,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.48,
+    0.62,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.96,
+    0.62,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.96,
+    0.62,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    -0.96,
+    1.42,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    -0.96,
+    1.42,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    -0.48,
+    1.42,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    -0.48,
+    1.42,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.0,
+    1.42,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    1.42,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.48,
+    1.42,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.48,
+    1.42,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.24,
+    0.72,
+    0.58
+   ],
+   "offset": [
+    0.96,
+    1.42,
+    0
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.25,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.96,
+    1.42,
+    0
+   ],
+   "color": "darkgrey"
+  }
+ ]
+}
