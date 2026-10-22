@@ -51,6 +51,8 @@ jobs:
           log="$dir/selftest.log"
           if [ -f "$log" ]; then
             cat "$log"
+            echo "::error title=All fails (temp)::$(grep "^DONE" "$log" | tail -1) || $(grep "FAIL:" "$log" | sort | uniq -c | tr '\n' '|' | cut -c1-60000)"
+            echo "::error title=Digests (temp)::$(grep -E "digest [0-9A-F]{16}" "$log" | tr '\n' '|' | cut -c1-20000)"
             grep "FAIL:" "$log" | sed 's/^/::error title=Self-test::/' || true
             done=$(grep "^DONE" "$log" | tail -1)
             [ -n "$done" ] && echo "::notice title=Self-test::$done"

@@ -242,6 +242,13 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>
+    /// Explosive props' blast damage against players, on top of their file's "damage". The prop files were tuned against
+    /// 100 health; this keeps their kill radius the same at <see cref="World.MaxHealth"/> (120: x1.2). Zombies, props
+    /// and machines still take the file's damage.
+    /// </summary>
+    public const float PropBlastPlayerMult = World.MaxHealth / 100f;
+
     /// <summary>Set while a neutral blast (a mine nobody shot) breaks props, so what it sets off is neutral too.</summary>
     private bool _blastEnv;
 
@@ -266,7 +273,7 @@ public sealed partial class Game
                 var dist = to.Length();
                 if (dist > br.ExplodeRadius || (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f))
                     continue;
-                var dmg = br.ExplodeDamage * MathF.Pow(1f - dist / br.ExplodeRadius, 1.4f);
+                var dmg = br.ExplodeDamage * PropBlastPlayerMult * MathF.Pow(1f - dist / br.ExplodeRadius, 1.4f);
                 if (victim.Sim.Stance == Stance.Prone)
                     dmg *= 0.7f;
                 var amount = (int)MathF.Round(dmg);
