@@ -39,6 +39,9 @@ public static partial class SelfTest
         CheckBuildingDoors(yard);
         CheckBuildingState(yard);
         CheckBuildingNav(yard);
+        // The building packs' Dev showcase maps (Maps/Dev/Buildings*.json): bots reach every room and stair top there too.
+        foreach (var show in BuildingShowcases())
+            CheckBuildingNav(show);
         // Maps without Building ops are unchanged: no building boxes, no building fingerprint (the pinned fingerprints
         // of every shipped map are checked in "Pack assets").
         var plain = Maps.All.Where(m => m.PlacedBuildings.Count == 0).ToList();
@@ -223,9 +226,18 @@ public static partial class SelfTest
              + $"(at most {runs.Length} + 2 draw calls, 3 when everything is in view), {yard.BuildingDoors.Count} doors, {yard.BuildingWindows.Count} windows, "
              + $"{props} props, {drawn} boxes still drawn one by one; loads in {loadMs:0} ms ({loadMs / Math.Max(1, yard.PlacedBuildings.Count):0.0} ms per building), "
              + $"fingerprint {yard.ContentHash:x8}, same on a second load {copy.ContentHash == yard.ContentHash}");
+        var showcased = BuildingShowcases().SelectMany(m => m.PlacedBuildings).Select(b => b.Def.Name).ToHashSet();
         foreach (var d in Buildings.All)
-            if (!names.Contains(d.Name) && !d.Folder.StartsWith('_'))
-                Fail($"Building Yard doesn't show {d.Name}");
+            if (!names.Contains(d.Name) && !showcased.Contains(d.Name) && !d.Folder.StartsWith('_'))
+                Fail($"neither Building Yard nor a Dev building showcase (Maps/Dev/Buildings*.json) shows {d.Name}");
+        foreach (var show in BuildingShowcases())
+        {
+            var blockedThere = show.Spawns.Count(s => show.IsBlocked(s));
+            Line($"showcase {show.Name}: {show.PlacedBuildings.Count} buildings, {show.PlacedBuildings.Sum(b => b.ShellCount)} shell boxes, {show.BuildingDoors.Count} doors, "
+                 + $"{show.BuildingWindows.Count} windows, {show.PropInstances.Count} props, {show.Spawns.Count} spawns ({blockedThere} blocked)");
+            if (blockedThere > 0)
+                Fail($"{blockedThere} {show.Name} spawns are inside geometry");
+        }
         if (copy.ContentHash != yard.ContentHash)
             Fail("Building Yard's fingerprint differs between two loads");
         if (runs.Length != yard.PlacedBuildings.Count || runs.Sum(r => r.Count) != shell)
@@ -251,6 +263,11 @@ public static partial class SelfTest
         if (blocked > 0)
             Fail($"{blocked} Building Yard spawns are inside geometry");
     }
+
+    /// <summary>The Dev pack's building showcase maps (Maps/Dev/Buildings*.json, one per building content pack).</summary>
+    private static List<Map> BuildingShowcases() =>
+        Maps.All.Where(m => m.Pack?.Name == "Dev" && m.PlacedBuildings.Count > 0
+                            && Path.GetFileName(m.SourceFile ?? "").StartsWith("Buildings", StringComparison.OrdinalIgnoreCase)).ToList();
 
     /// <summary>A whole window at least 1.2 m wide on an exterior ground-floor wall of the first building called <paramref name="building"/>.</summary>
     private static int FindWindow(Map map, string building)
@@ -649,17 +666,17 @@ public static partial class SelfTest
             }
             perBuilding[key] = pb;
         }
-        Line($"bots on Building Yard: nav graph {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.BuildMs:0} ms); rooms reached from the front door {reached} of {rooms} ({noNode} without a node), "
+        Line($"bots on {yard.Name}: nav graph {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.BuildMs:0} ms); rooms reached from the front door {reached} of {rooms} ({noNode} without a node), "
              + $"stair tops reached {climbed} of {stairs}");
         foreach (var m in missing.Take(40))
             Line("  unreachable: " + m);
         foreach (var d in detail)
             Line("  why: " + d);
         if (g.Nodes.Length == 0)
-            Fail("no nav graph for Building Yard");
+            Fail($"no nav graph for {yard.Name}");
         else if (reached < rooms || climbed < stairs)
         {
-            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on Building Yard: "
+            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
             foreach (var d in detail.Take(6))
