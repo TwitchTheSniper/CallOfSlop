@@ -631,33 +631,14 @@ public static partial class SelfTest
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
                                    + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
                                    + NoPathTrace(g, search, path, start, goal));
-                    if (detail.Count < 10) // TEMP (stair-headroom): the nodes round the room and their links
-                    {
-                        var wp = r.Waypoint;
-                        var ids = Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - wp.Y) < 0.6f && Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(wp.X, wp.Z)) < 5f).ToList();
-                        var reach = new bool[g.Nodes.Length];
-                        if (start >= 0)
-                        {
-                            var st = new Stack<int>();
-                            reach[start] = true;
-                            st.Push(start);
-                            while (st.Count > 0)
-                            {
-                                var i = st.Pop();
-                                for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
-                                    if (!reach[g.EdgeTo[e]])
-                                    {
-                                        reach[g.EdgeTo[e]] = true;
-                                        st.Push(g.EdgeTo[e]);
-                                    }
-                            }
-                        }
-                        detail.Add($"{key} {r.Floor}:{r.Id} NODES " + string.Join(" ", ids.Select(i => $"{i}({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}){(reach[i] ? "R" : "")}->" + string.Join(",", Enumerable.Range(g.EdgeStart[i], g.EdgeStart[i + 1] - g.EdgeStart[i]).Select(e => g.EdgeTo[e])))));
-                    }
                     if (detail.Count < 10) // TEMP (stair-headroom): walks through the doors near the room
                         foreach (var dd in b.Plan.Doors.Where(dd => dd.Floor == r.Floor && Vector3.Distance(dd.SwingSide, r.Waypoint) < 4f))
-                            detail.Add($"{key} {r.Floor}:{r.Id} door at ({dd.Closed.Center.X:0.0}, {dd.Closed.Center.Z:0.0}): nodes {Node(dd.SwingSide)}/{Node(dd.OtherSide)} walk {WalkTrace(dd.SwingSide, dd.OtherSide)}; props near: "
-                                       + string.Join(" ", Enumerable.Range(0, yard.Solid.Count).Where(i => yard.IsPropCollider(i) && Vector3.Distance(yard.Solid[i].Center, dd.OtherSide) < 1.6f).Select(i => $"[{yard.Solid[i].Min.X:0.00},{yard.Solid[i].Min.Z:0.00}..{yard.Solid[i].Max.X:0.00},{yard.Solid[i].Max.Z:0.00} y{yard.Solid[i].Max.Y:0.0}]")));
+                        {
+                            string Hits(Vector3 q) => string.Join(" ", Enumerable.Range(0, yard.Solid.Count).Where(i => !yard.IsBuildingDoorBox(i) && yard.Solid[i].Min.Y < q.Y + World.PlayerHeight && yard.Solid[i].Max.Y > q.Y + 0.02f
+                                && q.X + 0.4f > yard.Solid[i].Min.X && q.X - 0.4f < yard.Solid[i].Max.X && q.Z + 0.4f > yard.Solid[i].Min.Z && q.Z - 0.4f < yard.Solid[i].Max.Z)
+                                .Select(i => $"{(yard.IsPropCollider(i) ? "prop" : "box")}[{yard.Solid[i].Min.X:0.00},{yard.Solid[i].Min.Y:0.00},{yard.Solid[i].Min.Z:0.00}..{yard.Solid[i].Max.X:0.00},{yard.Solid[i].Max.Y:0.00},{yard.Solid[i].Max.Z:0.00}]"));
+                            detail.Add($"{key} {r.Floor}:{r.Id} door at ({dd.Closed.Center.X:0.0}, {dd.Closed.Center.Z:0.0}): swing ({dd.SwingSide.X:0.00},{dd.SwingSide.Z:0.00}) node {Node(dd.SwingSide)} hits {Hits(dd.SwingSide)}; other ({dd.OtherSide.X:0.00},{dd.OtherSide.Z:0.00}) node {Node(dd.OtherSide)} hits {Hits(dd.OtherSide)}");
+                        }
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
