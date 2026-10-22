@@ -70,6 +70,7 @@ public static partial class SelfTest
                     WeaponClass.Sniper => $"aimed cone {F2(w.HipSpreadRad * w.AdsSpreadMult * FrenzyBuffs.ConeMult(p, w, 1f) * 1000)} mrad",
                     WeaponClass.Shotgun => $"cone {F2(w.HipSpreadRad * FrenzyBuffs.ConeMult(p, w, 0f) * 1000)} mrad",
                     WeaponClass.LMG => $"reload {F2(w.Reload * FrenzyBuffs.Value(p, w, FrenzyStat.Reload))} s, speed {F2(FrenzyBuffs.Mobility(p, w))}",
+                    WeaponClass.Launcher => $"reload {F2(w.Reload * FrenzyBuffs.Value(p, w, FrenzyStat.Reload))} s",
                     _ => $"heal {FrenzyBuffs.Value(p, w, FrenzyStat.KillHeal):0} HP",
                 });
                 // Never stronger than the safety limits, never a nerf, nothing below level 3.

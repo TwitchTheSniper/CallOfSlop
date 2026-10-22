@@ -13,6 +13,9 @@ public enum WeaponClass : byte
     Shotgun,
     LMG,
     Special,
+
+    /// <summary>Rocket and grenade launchers (Weapons/Launchers): secondary slot only, fire real projectiles (Source/Game/Launchers).</summary>
+    Launcher,
 }
 
 public enum FireMode : byte
@@ -31,6 +34,12 @@ public enum SoundStyle : byte
     Zap,
     Toy,
     Pneumatic,
+
+    /// <summary>Launchers: a rocket's backblast roar (Source/Game/Launchers).</summary>
+    Rocket,
+
+    /// <summary>Launchers: a grenade launcher's hollow "thoomp".</summary>
+    Thump,
 }
 
 public enum Slot : byte
@@ -44,7 +53,7 @@ public enum Slot : byte
 /// Weapons are loaded from files in the Weapons folder (see <see cref="WeaponFile"/> and Weapons/README.md):
 /// every public field below except Id, Optic, Suppressor and Kit is a key in a weapon file (the Recoil* fields sit in its "recoil" block).
 /// </summary>
-public sealed class WeaponDef
+public sealed partial class WeaponDef
 {
     public WeaponDef()
     {
@@ -220,7 +229,7 @@ public sealed class WeaponDef
     public float Tail = 0.5f; // length of the echo
 
     // ---- Derived -------------------------------------------------------------
-    public Slot Slot => Class == WeaponClass.Pistol ? Slot.Secondary : Slot.Primary;
+    public Slot Slot => Class is WeaponClass.Pistol or WeaponClass.Launcher ? Slot.Secondary : Slot.Primary; // launchers: secondary only
     public float FireInterval => 60f / Rpm;
     public float HipSpreadRad => HipSpreadDeg * MathF.PI / 180f;
     public float MinSpreadRad => HipSpreadRad * AdsSpreadMult * 0.5f;

@@ -322,6 +322,7 @@ public static class Attachments
             // However much is stacked, a kitted gun keeps at least half its hip spread and 40% of its recoil.
             def.HipSpreadDeg = MathF.Max(def.HipSpreadDeg, baseDef.HipSpreadDeg * 0.5f);
             Recoil.ClampKit(baseDef, def);
+            LauncherStats.ClampKit(baseDef, def); // launchers keep sane lock times, speeds and reserves (LauncherStats.cs)
             _applied[(baseDef.Id, kit)] = def;
             return def;
         }

@@ -115,6 +115,11 @@ public static class Recoil
             sway: 0.6f, swayPeriod: 8, recovery: 10, recoveryDelay: 0.08f, recoveryAmount: 0.75f, resetTime: 0.3f, crouchVertical: 0.85f, crouchHorizontal: 0.8f, proneVertical: 0.7f,
             proneHorizontal: 0.6f, adsVertical: 0.8f, adsHorizontal: 0.7f, shake: 0.2f, shakeFreq: 20, shakeTime: 0.1f, punch: 0.6f, punchFov: 1.5f, punchRoll: 1.5f,
             punchTime: 0.1f, kickBack: 0.05f, kickUp: 4, kickRoll: 2, kickSide: 0.004f, kickTime: 0.08f),
+        // Launchers: one big shove on the shoulder and a heavy camera punch, then a slow settle (they fire once or twice a mag).
+        [WeaponClass.Launcher] = Profile(vertical: 1, horizontal: 0.2f, bias: 0.1f, jitter: 0.4f, firstShot: 1, patternShots: 2, rampVertical: 1, rampHorizontal: 1,
+            sway: 0, swayPeriod: 4, recovery: 6, recoveryDelay: 0.15f, recoveryAmount: 0.85f, resetTime: 0.6f, crouchVertical: 0.85f, crouchHorizontal: 0.8f, proneVertical: 0.7f,
+            proneHorizontal: 0.6f, adsVertical: 0.85f, adsHorizontal: 0.8f, shake: 0.7f, shakeFreq: 9, shakeTime: 0.3f, punch: 3, punchFov: 5, punchRoll: 2.5f,
+            punchTime: 0.22f, kickBack: 0.14f, kickUp: 6, kickRoll: 3, kickSide: 0.008f, kickTime: 0.22f),
     };
 
     private static Dictionary<string, float> Profile(float vertical, float horizontal, float bias, float jitter, float firstShot, float patternShots, float rampVertical,

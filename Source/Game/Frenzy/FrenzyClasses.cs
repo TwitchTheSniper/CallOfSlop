@@ -260,6 +260,7 @@ public static class FrenzyClasses
         WeaponClass.Sniper => Buff("Held breath", "Sniper rifles hold a steadier, tighter aim through the scope", new FrenzyEffect(FrenzyStat.AimedSpread, 0.85f, 0.65f)),
         WeaponClass.Shotgun => Buff("Choke", "Shotguns fire a tighter spread", new FrenzyEffect(FrenzyStat.Spread, 0.94f, 0.85f)),
         WeaponClass.LMG => Buff("Belt fed", "LMGs reload faster and slow you down less", new FrenzyEffect(FrenzyStat.Reload, 0.94f, 0.85f), new FrenzyEffect(FrenzyStat.MovePenalty, 0.85f, 0.6f)),
+        WeaponClass.Launcher => Buff("Hot loader", "Launchers reload faster", new FrenzyEffect(FrenzyStat.Reload, 0.9f, 0.7f)),
         _ => Buff("Vampire rounds", "Kills with a Special weapon give you some health back", new FrenzyEffect(FrenzyStat.KillHeal, 10f, 25f)),
     };
 

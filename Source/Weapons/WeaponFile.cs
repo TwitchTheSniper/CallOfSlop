@@ -24,6 +24,7 @@ public static class WeaponFile
     public static readonly FieldInfo[] Fields = typeof(WeaponDef).GetFields(BindingFlags.Public | BindingFlags.Instance)
         .Where(f => f.Name is not (nameof(WeaponDef.Id) or nameof(WeaponDef.Optic) or nameof(WeaponDef.Suppressor) or nameof(WeaponDef.Kit)))
         .Where(f => !f.IsDefined(typeof(RecoilKeyAttribute))) // these live in the "recoil" block (see Recoil.cs)
+        .Where(f => !f.IsDefined(typeof(LauncherKeyAttribute))) // and these in a launcher's "launcher" block (LauncherStats.cs)
         .OrderBy(f => f.MetadataToken)
         .ToArray();
 
@@ -81,6 +82,8 @@ public static class WeaponFile
             if (f.Name == nameof(WeaponDef.RecoilDeg))
                 Add("recoil", Recoil.BlockJson(w));
         }
+        if (w.IsLauncher)
+            Add("launcher", LauncherStats.BlockJson(w)); // launchers only, so every other weapon's text (and fingerprint) is unchanged
         if (w.Model != null)
             Add("model", w.Model.ToJson());
         sb.Length -= 2;
@@ -118,6 +121,7 @@ public static class WeaponFile
         var given = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         JsonElement? recoil = null;
         JsonElement? model = null;
+        JsonElement? launcher = null;
         foreach (var p in root.EnumerateObject())
         {
             var where = $"{source} (\"{p.Name}\")";
@@ -134,6 +138,9 @@ public static class WeaponFile
                 case "model":
                     model = p.Value; // read after the loop: its sizes scale with the weapon's length and bulk
                     break;
+                case "launcher":
+                    launcher = p.Value; // read after the loop: only a weapon of class Launcher may have one
+                    break;
                 case "order":
                     w.Order = Int(p.Value, where);
                     break;
@@ -145,7 +152,7 @@ public static class WeaponFile
                     break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, model, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, launcher, model, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }
@@ -156,6 +163,12 @@ public static class WeaponFile
         Recoil.ApplyClassDefaults(w);
         if (recoil is { } r)
             Recoil.ReadBlock(w, r, $"{source} (\"recoil\")");
+        if (launcher is { } lb)
+        {
+            if (!w.IsLauncher)
+                throw new WeaponFileException($"{source} (\"launcher\"): only a weapon of class \"Launcher\" has a launcher block");
+            LauncherStats.ReadBlock(w, lb, $"{source} (\"launcher\")");
+        }
         if (model is { } m)
             w.Model = GunSpec.Read(m, w, $"{source} (\"model\")");
         Validate(w, source);
@@ -177,6 +190,8 @@ public static class WeaponFile
         if (w.Accent.X is < 0 or > 1 || w.Accent.Y is < 0 or > 1 || w.Accent.Z is < 0 or > 1)
             throw new WeaponFileException($"{source}: \"accent\" colour values must be between 0 and 1");
         Recoil.Validate(w, source);
+        if (w.IsLauncher)
+            LauncherStats.Validate(w, source);
     }
 
     /// <summary>Names end up in save files and loadout.txt ("name=value" lines), so a few characters are off limits.</summary>
@@ -263,8 +278,13 @@ public sealed class AttachmentFits
     public string[] OnlyWeapons = [];
     public string[] NotWeapons = [];
 
+    /// <summary>
+    /// Launchers only take attachments made for them: a rule set has to name the Launcher class (or the weapon) to fit
+    /// one, so the existing "everything but pistols" attachments never end up on a rocket tube.
+    /// </summary>
     public bool Test(WeaponDef w) =>
-        (Classes.Length == 0 || Classes.Contains(w.Class)) && !NotClasses.Contains(w.Class)
+        (!w.IsLauncher || Classes.Contains(WeaponClass.Launcher) || OnlyWeapons.Contains(w.Name, StringComparer.OrdinalIgnoreCase))
+        && (Classes.Length == 0 || Classes.Contains(w.Class)) && !NotClasses.Contains(w.Class)
         && (Sounds.Length == 0 || Sounds.Contains(w.Sound)) && !NotSounds.Contains(w.Sound)
         && w.Mag >= MinMag && (MaxMag == 0 || w.Mag <= MaxMag)
         && (OnlyWeapons.Length == 0 || OnlyWeapons.Contains(w.Name, StringComparer.OrdinalIgnoreCase))

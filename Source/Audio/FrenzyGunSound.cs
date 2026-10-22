@@ -42,6 +42,9 @@ public enum FrenzySoundSignature : byte
 
     /// <summary>Special: bit-crushed stutter repeats.</summary>
     GlitchStutter,
+
+    /// <summary>Launcher: a rising rocket hiss that lands on a deep sub detonation, then falling debris.</summary>
+    Warhead,
 }
 
 /// <summary>
@@ -301,6 +304,7 @@ public static class FrenzyGunSound
         WeaponClass.Sniper => Def(FrenzySoundSignature.WhipCrack, "Supersonic whip crack and a cinematic braam with a long tail", [0.1f, 0.25f, 0.4f, 0.55f, 0.78f, 1f], 0.5f, 0.3f, 0.6f, 0.2f, 0.8f, 0.6f, 0.96f),
         WeaponClass.Shotgun => Def(FrenzySoundSignature.BoomDouble, "Gabber kick boom, doubled then tripled, heavy drive", [0.15f, 0.3f, 0.45f, 0.6f, 0.8f, 1f], 0.48f, 0.45f, 0.8f, 0.4f, 0.3f, 0.4f, 0.97f),
         WeaponClass.LMG => Def(FrenzySoundSignature.GrindClank, "Industrial clang, grinding metal, belt rasp", [0.15f, 0.3f, 0.45f, 0.6f, 0.8f, 1f], 0.36f, 0.4f, 0.5f, 0.6f, 0.25f, 0.45f, 0.97f),
+        WeaponClass.Launcher => Def(FrenzySoundSignature.Warhead, "Rising rocket hiss into a deep sub detonation, then falling debris", [0.15f, 0.3f, 0.45f, 0.6f, 0.8f, 1f], 0.45f, 0.4f, 0.9f, 0.15f, 0.6f, 0.55f, 0.95f),
         _ => Def(FrenzySoundSignature.GlitchStutter, "Bit-crushed stutter repeats, wide and weird", [0.15f, 0.3f, 0.45f, 0.6f, 0.8f, 1f], 0.42f, 0.35f, 0.3f, 0.2f, 0.35f, 0.7f, 1.04f),
     };
 
@@ -478,6 +482,17 @@ public static partial class Synth
                     Noise(b, rng, 0.01f, 0.2f, 0.01f, 0.06f, 3500, highpass: true); // belt rasp
                 if (tier >= 2)
                     Clunk(b, rng, V(0.06f), 0.6f, V(0.6f)); // a heavy second clank
+                break;
+            case FrenzySoundSignature.Warhead:
+                Noise(b, rng, 0, 0.45f, 0.03f, 0.05f + 0.03f * k, 5200, highpass: true); // the rocket's hiss
+                Tone(b, 0, 0.3f, V(900), V(2600), 0.06f, 0.01f, 0.05f); // its rising whistle
+                Tone(b, V(0.05f), 0.9f, V(95), V(28), 0.12f, 0.002f, 0.18f + 0.12f * k, harmonics: 0.5f); // the detonation's sub
+                Noise(b, rng, V(0.05f), 0.6f, 0.003f, 0.12f + 0.08f * k, 700); // its blast
+                if (tier >= 1)
+                    for (var i = 0; i < 4 + 3 * tier; i++) // debris pattering down
+                        Click(b, rng, 0.15f + (float)rng.NextDouble() * (0.25f + 0.2f * k), 0.18f, 0.6f + (float)rng.NextDouble() * 0.8f);
+                if (tier >= 2)
+                    Noise(b, rng, 0.08f, 0.25f, 0.08f, 0.4f, 300, length: 0.9f); // a rolling rumble
                 break;
             default: // GlitchStutter
             {

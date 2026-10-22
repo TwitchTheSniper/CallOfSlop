@@ -59,6 +59,10 @@ public enum Msg : byte
     BuildingState, // server -> joining client: every door's state and health and the broken windows (reliable)
     TacState, // server -> all: every tactical device (id, kind, owner, position, yaw, health, charges) with snapshots while any exist (unreliable; GameTactical.cs)
     TacEvent, // server -> all: a tactical moment: flashed / stunned, trophy intercept, device destroyed, decoy burst, motion ping, stim, placed, inserted (reliable)
+    RocketSpawn, // server -> all: a launcher projectile was fired (id, owner, weapon + kit, lock target, seed, position, velocity, age) (reliable; GameLaunchersNet.cs)
+    RocketSync, // server -> all: guided, decoyed and stuck projectiles' positions with snapshots while any exist (unreliable)
+    RocketBoom, // server -> all: a launcher projectile went off / was a dud / left the map, or its target popped flares (reliable)
+    RocketDetonate, // client -> server: set off my sticky charges (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
