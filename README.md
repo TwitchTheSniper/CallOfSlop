@@ -396,6 +396,8 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 
 Standing speed is 6 m/s walking and **13.5 m/s sprinting** (before your weapon's mobility, aiming and perks); stance percentages are of the walking speed.
 
+**Sprinting costs accuracy.** While you sprint, and for 0.3 s after you stop (the penalty fades out), your spread is multiplied by a per-class factor: shotguns x1.5, SMGs and pistols x2, assault rifles x2.75, DMRs, snipers and LMGs x3 (special weapons x2.5). The crosshair blooms to match. Holding Shift while standing still doesn't count, and a fast walk (Lightweight, Head Start, Afterburner) isn't sprinting. You still can't aim down sights while sprinting (aiming stops the sprint). Steady Aim and attachments stay multiplicative with it (Steady Aim sprinting: x0.65 of the sprinting cone); stance and movement terms apply on top as before. It runs in the shared simulation, so prediction, the server and bots agree: the server widens a cone a client sends while sprinting to at least 75% of the honest sprinting hip cone (`Source/Game/SprintSpread.cs`, where the class factors live).
+
 You can't stand up where there's no headroom (for example under a container roof); from prone you'll get up to a crouch if that's all that fits. Stance is part of the shared 60 Hz simulation, so prediction, the server and lag compensation (which rewinds stance as well as position) all agree. Bots crouch for long-range shots; Marksmen and Hard snipers go prone, and bots crouch-peek in close fights and duck behind low cover to reload.
 
 ### Progression
