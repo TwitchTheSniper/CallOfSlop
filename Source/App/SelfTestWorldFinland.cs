@@ -50,6 +50,96 @@ public static partial class SelfTest
         }
     }
 
+    /// <summary>The mine railway's sleeper and rail colours (tools/world/finland.py), which pick its meshes out.</summary>
+    private static readonly Vector3 FinlandSleeperColor = new(0.291f, 0.226f, 0.161f), FinlandRailColor = new(0.411f, 0.397f, 0.384f);
+
+    /// <summary>
+    /// The track lies on the floor: every sleeper's ends and every rail's ends (rails sit on the sleepers, 8 cm up) within
+    /// 5 cm of the ground under them (the tunnel floor, the ramps up to the adits, the pit floor), the carts stand on the
+    /// rails, timber frames on the floor and cage lamps hang from the ceiling; the surface spur's track and wagons lie on
+    /// the rail bed.
+    /// </summary>
+    private static void CheckFinlandTrack(Map m)
+    {
+        const float tol = 0.05f, railLift = 0.08f, railTop = 0.18f;
+        var bad = new List<string>();
+        int sleepers = 0, rails = 0;
+        var worst = 0f;
+        foreach (var p in m.MeshPlacements)
+        {
+            if (p.Mesh == null)
+                continue;
+            var c = new Vector3(p.Color.X, p.Color.Y, p.Color.Z);
+            var rail = Vector3.Distance(c, FinlandRailColor) < 0.004f;
+            if (!rail && Vector3.Distance(c, FinlandSleeperColor) >= 0.004f)
+                continue;
+            if (rail)
+                rails++;
+            else
+                sleepers++;
+            var b = p.Mesh.Bounds;
+            foreach (var ez in new[] { b.Min.Z, b.Max.Z })
+            {
+                var end = Vector3.Transform(new Vector3(0, 0, ez), p.Transform); // bottom of the piece at that end
+                var under = end.Y - (rail ? railLift : -0.01f);
+                var ground = m.GroundHeight(end.X, end.Z, end.Y + 0.5f);
+                var err = MathF.Abs(under - ground);
+                worst = MathF.Max(worst, err);
+                if (err > tol)
+                    bad.Add($"{(rail ? "rail" : "sleeper")} end ({end.X:0.0},{end.Z:0.0}) at {under:0.00} m, floor {ground:0.00}");
+            }
+        }
+        var carts = 0;
+        foreach (var p in m.PropInstances)
+        {
+            var at = p.Position;
+            switch (p.Def.Name)
+            {
+                case "Ore Mine Cart" when at.Y < -2f: // the carts underground stand on the rails
+                {
+                    carts++;
+                    var g = m.GroundHeight(at.X, at.Z, at.Y + 0.5f);
+                    if (MathF.Abs(at.Y - (g + railTop - 0.01f)) > 0.08f)
+                        bad.Add($"cart ({at.X:0.0},{at.Z:0.0}) at {at.Y:0.00} m, rails at {g + railTop:0.00}");
+                    break;
+                }
+                case "Tunnel Timber Frame":
+                {
+                    var g = m.GroundHeight(at.X, at.Z, at.Y + 0.5f);
+                    if (MathF.Abs(at.Y - g) > tol)
+                        bad.Add($"timber frame ({at.X:0.0},{at.Z:0.0}) at {at.Y:0.00} m, floor {g:0.00}");
+                    break;
+                }
+                case "Tunnel Cage Lamp":
+                {
+                    var ceil = m.Terrain!.CeilingAbove(at.X, at.Z, at.Y);
+                    if (!float.IsFinite(ceil) || MathF.Abs(at.Y + 0.6f - ceil) > tol)
+                        bad.Add($"lamp ({at.X:0.0},{at.Z:0.0}) top at {at.Y + 0.6f:0.00} m, ceiling {ceil:0.00}");
+                    break;
+                }
+                case "Railway Track Section" or "Ore Hopper Wagon" or "Rail Buffer Stop":
+                {
+                    var lift = p.Def.Name == "Ore Hopper Wagon" ? 0.32f : 0f;
+                    foreach (var dx in new[] { -1f, 0f, 1f })
+                    {
+                        var g = m.GroundHeight(at.X + dx, at.Z);
+                        if (MathF.Abs(at.Y - lift - g) > tol)
+                        {
+                            bad.Add($"{p.Def.Name} ({at.X:0.0},{at.Z:0.0}) at {at.Y - lift:0.00} m, bed {g:0.00} at x {at.X + dx:0.0}");
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        Line($"{m.Name} track: {sleepers} sleepers and {rails} rail pieces (worst end {worst * 100:0.0} cm off the floor), {carts} carts on the rails, {bad.Count} problem(s)");
+        if (sleepers < 400 || rails < 400 || carts < 8)
+            Fail($"{m.Name}: the mine railway is short ({sleepers} sleepers, {rails} rail pieces, {carts} carts underground)");
+        if (bad.Count > 0)
+            Fail($"{m.Name}: {bad.Count} track piece(s) or tunnel props off the floor or ceiling: {string.Join("; ", bad.Take(6))}");
+    }
+
     private static void CheckWorldFinlandMap(Map m)
     {
         if (m.SourceFile == null || !m.SourceFile.Replace('\\', '/').EndsWith("World/06-Finland.json", StringComparison.OrdinalIgnoreCase))
@@ -185,8 +275,8 @@ public static partial class SelfTest
         Vector3 At(float x, float z, float? y = null) => new(x, y is { } yy ? m.GroundHeight(x, z, yy + 1f) : m.GroundHeight(x, z), z);
         foreach (var (label, start, route) in new[]
                  {
-                     ("west adit", At(-66, -24), new[] { At(-62, -21.5f), At(-56, -18, -3f), At(-50, -14, -5.5f), At(-44, -8, -7f), At(-40, -4, -8f), At(-28, -4, -8f), At(-14, -4, -8f), At(-3, -2, -8f) }),
-                     ("pit drift", At(0, 56), new[] { At(0, 51), At(0, 46, -9f), At(0, 40, -8.5f), At(0, 30, -8f), At(0, 18, -8f), At(0, 8, -8f), At(0, 1, -8f) }),
+                     ("west adit", At(-66, -24), new[] { At(-62, -21.5f), At(-56, -18, -3f), At(-50, -14, -5.5f), At(-44, -8, -7f), At(-40, -5.6f, -8f), At(-28, -5.6f, -8f), At(-14, -5.6f, -8f), At(-3, -2, -8f) }),
+                     ("pit drift", At(0, 56), new[] { At(1.6f, 51), At(1.6f, 46, -9f), At(1.6f, 40, -8.5f), At(1.6f, 30, -8f), At(1.6f, 18, -8f), At(1.6f, 8, -8f), At(1.6f, 1, -8f) }),
                  })
         {
             var underRoof = false;
@@ -200,6 +290,8 @@ public static partial class SelfTest
             if (!ok || !underRoof || MathF.Abs(end.Position.Y + 8f) > 0.5f)
                 Fail($"{m.Name}: couldn't walk through the {label} to the shaft station (ended at ({end.Position.X:0.0}, {end.Position.Y:0.00}, {end.Position.Z:0.0}), under the roof {underRoof})");
         }
+
+        CheckFinlandTrack(m);
 
         // No line of sight between the two teams' spawns (eye height: terrain, boxes, trunks, props, buildings).
         var seen = new List<string>();
