@@ -189,7 +189,7 @@ public abstract class GameModeModule
 
     /// <summary>The goal of the mode in one line for the match log and the warmup bar ("First to 11 kills...").</summary>
     public virtual string GoalText(Game game) =>
-        $"{Name}: {Rules(game.ScoreLimit)}{(HasTimeLimit ? $" {Game.MatchSeconds / 60:0} minutes max." : "")}";
+        $"{Name}: {Rules(game.ScoreLimit)}{(HasTimeLimit ? $" {game.MatchMinutes} minutes max." : "")}";
 
     /// <summary>
     /// Objective lines under the match bar while playing (coloured text), and a world position to point an arrow at

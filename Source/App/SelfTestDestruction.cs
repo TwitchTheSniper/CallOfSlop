@@ -388,7 +388,7 @@ public static partial class SelfTest
             Fail("the join-in-progress state doesn't reproduce the broken chunks");
         if (biggest > 1400)
             Fail($"a structure state packet is {biggest} bytes (over 1400)");
-        if (ServerInfo.ProtocolVersion < 32)
+        if (ServerInfo.ProtocolVersion < 33)
             Fail("the protocol wasn't bumped for destruction");
         // Junk doesn't throw.
         var junk = new byte[] { (byte)Msg.StructState, 0xFF, 0xFF, 0x05, 0x00, 1 };
