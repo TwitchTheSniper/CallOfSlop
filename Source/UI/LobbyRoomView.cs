@@ -78,7 +78,7 @@ public sealed class LobbyRoomView
         _mapListKey = "";
     }
 
-    private static long Mix(long h, long v) => unchecked((h ^ v) * 0x100000001B3L + 0x9E3779B97F4A7C15L);
+    private static long Mix(long h, long v) => unchecked((h ^ v) * 0x100000001B3L + (long)0x9E3779B97F4A7C15UL);
 
     private static long Signature(Game game, Progress? prog)
     {
@@ -95,7 +95,7 @@ public sealed class LobbyRoomView
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
         {
-            h = Mix(h, p.Id | (p.Team << 8) | (p.TeamChoice << 16) | ((p.Ready ? 1 : 0) << 24) | ((p.Bot != null ? 1L : 0) << 25));
+            h = Mix(h, p.Id | (p.Team << 8) | (p.TeamChoice << 16) | ((p.Ready ? 1 : 0) << 24) | ((p.Bot != null ? 1 : 0) << 25));
             h = Mix(h, p.Name.GetHashCode());
             h = Mix(h, p.Prestige | (p.Level << 8) | ((int)p.Hat << 16));
             h = Mix(h, p.Id < game.PingMs.Length ? game.PingMs[p.Id] / 5 : 0); // 5 ms steps: no rebuild for 1 ms jitter

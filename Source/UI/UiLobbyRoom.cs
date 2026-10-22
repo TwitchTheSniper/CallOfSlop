@@ -23,7 +23,6 @@ public sealed partial class Ui
     private string _chatNotice = "";
     private double _chatNoticeAt = -10;
     private int _chatSeen = -1;
-    private bool _roomHostOpen = true;
     private int _roomPack = -2; // the pack the host's map list shows (-1 True Random, -2: not chosen yet)
 
     /// <summary>The lobby room's text (the self-test checks it allocates nothing when nothing changed).</summary>
