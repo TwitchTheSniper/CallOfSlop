@@ -97,7 +97,7 @@
         {"type": "door", "at": [-0.25, -0.5], "width": 0.9},
         {"type": "door", "at": [-6.3, -0.5], "width": 0.9, "swing": "out"},
         {"type": "door", "at": [-1, -2.6], "width": 0.9},
-        {"type": "door", "at": [2, -4.2], "width": 0.9},
+        {"type": "door", "at": [2, -1.2], "width": 0.9},
         {"type": "door", "at": [5.75, -0.5], "width": 0.9},
         {"type": "door", "at": [-4, -5], "width": 1.0, "material": "metal"}
       ]

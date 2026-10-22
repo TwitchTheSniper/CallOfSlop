@@ -116,7 +116,7 @@
       "openings": [
         {"type": "door", "at": [-1.5, -1], "width": 0.9},
         {"type": "door", "at": [-2.5, -3.0], "width": 0.9},
-        {"type": "door", "at": [1, -4.2], "width": 0.9},
+        {"type": "door", "at": [3.5, -1], "width": 0.9},
         {"type": "arch", "at": [1, 2.0], "width": 2.0}
       ]
     }
