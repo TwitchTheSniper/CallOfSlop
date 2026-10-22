@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sauna Stove",
+  "description": "A wood-fired sauna stove (kiuas): a black steel firebox heaped with stones, the fire glowing, a flue pipe. Its back goes to a wall.",
+  "collision": "solid",
+  "collider": [{"size": [0.6, 0.85, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "author": "Call of Slop",
+  "parts": [
+    {"size": [0.56, 0.6, 0.56], "offset": [0, 0.3, 0], "color": "#1e1e20", "material": "metal"},
+    {"size": [0.5, 0.22, 0.5], "offset": [0, 0.71, 0], "color": "#6a6660"},
+    {"size": [0.2, 0.12, 0.2], "offset": [0.1, 0.86, 0.08], "color": "#4a4644"},
+    {"size": [0.18, 0.1, 0.2], "offset": [-0.12, 0.85, -0.06], "color": "#7a7670"},
+    {"size": [0.3, 0.16, 0.02], "offset": [0, 0.22, 0.285], "color": "#ff8a2a", "anim": {"type": "flicker", "rate": 8, "duty": 0.85, "color": "#ff8a2a", "off": "#7a3010", "glow": 1.6}},
+    {"size": [0.12, 1.4, 0.12], "offset": [0.12, 1.5, -0.16], "color": "#2a2a2a", "material": "metal"}
+  ]
+}

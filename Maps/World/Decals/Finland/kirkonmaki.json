@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Kirkonmaki Village Sign",
+  "description": "A blue Finnish place-name board: KIRKONMAKI (church hill).",
+  "author": "Call of Slop",
+  "size": [
+    3.0,
+    0.7
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "kirkonmaki.png"
+}

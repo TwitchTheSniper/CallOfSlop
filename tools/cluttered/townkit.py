@@ -112,6 +112,8 @@ def load_props(repo, pack_dirs=()):
         files += glob.glob(os.path.join(pd, "**/*.json"), recursive=True)
     for f in files:
         d = json.load(open(f))
+        if "parts" not in d:
+            continue       # Props/Flags/flags.json holds flag designs, not a prop
         xs, zs, ys = [], [], []
         for p in d["parts"]:
             s = p["size"]; o = p.get("offset", [0, s[1] / 2, 0])

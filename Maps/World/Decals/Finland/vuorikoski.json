@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Vuorikoski Mine Sign",
+  "description": "A blue board at the mine gate: VUORIKOSKI KAIVOS (mine).",
+  "author": "Call of Slop",
+  "size": [
+    3.4,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "vuorikoski.png"
+}

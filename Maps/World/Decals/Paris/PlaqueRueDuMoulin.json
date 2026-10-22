@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Paris Plaque RueDuMoulin",
+  "description": "A blue enamel street-name plaque with a white border: RUE DU MOULIN.",
+  "author": "Call of Slop",
+  "size": [
+    0.75,
+    0.25
+  ],
+  "rotation": 0,
+  "tintVariation": 0.03,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "image": "PlaqueRueDuMoulin.png"
+}

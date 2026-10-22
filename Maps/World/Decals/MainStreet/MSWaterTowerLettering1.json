@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "MS Water Tower Lettering 1",
+  "category": "MainStreet",
+  "description": "Main Street (World Tour): Water Tower Lettering, piece 1 of 3 (left to right). Invented for the town of Prairie Hollow.",
+  "author": "Call of Slop",
+  "size": [
+    2.2,
+    1.5
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 150,
+  "image": "MSWaterTowerLettering1.png"
+}

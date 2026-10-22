@@ -1,0 +1,181 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Window Flower Box",
+  "description": "A terracotta window box of red and white geraniums, for sills and balcony rails (looks only).",
+  "collision": "cosmetic",
+  "scatter": {
+    "randomYaw": false
+  },
+  "fadeDistance": 60,
+  "parts": [
+    {
+      "size": [
+        1.0,
+        0.2,
+        0.24
+      ],
+      "offset": [
+        0,
+        0.1,
+        0
+      ],
+      "color": "#a85a38"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        -0.4,
+        0.26,
+        -0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        -0.4,
+        0.36,
+        -0.02
+      ],
+      "color": "#f4f0f0"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        -0.24,
+        0.26,
+        0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        -0.24,
+        0.36,
+        0.02
+      ],
+      "color": "#d02a3a"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        -0.08,
+        0.26,
+        -0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        -0.08,
+        0.36,
+        -0.02
+      ],
+      "color": "#d02a3a"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        0.08,
+        0.26,
+        0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        0.08,
+        0.36,
+        0.02
+      ],
+      "color": "#f4f0f0"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        0.24,
+        0.26,
+        -0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        0.24,
+        0.36,
+        -0.02
+      ],
+      "color": "#d02a3a"
+    },
+    {
+      "size": [
+        0.16,
+        0.14,
+        0.16
+      ],
+      "offset": [
+        0.4,
+        0.26,
+        0.02
+      ],
+      "color": "#3a6a2a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.1
+      ],
+      "offset": [
+        0.4,
+        0.36,
+        0.02
+      ],
+      "color": "#d02a3a"
+    }
+  ]
+}

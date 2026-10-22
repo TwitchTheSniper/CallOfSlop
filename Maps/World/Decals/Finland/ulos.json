@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Ulos Sign",
+  "description": "A green exit board in the drifts: ULOS (out) with an arrow.",
+  "author": "Call of Slop",
+  "size": [
+    1.4,
+    0.5
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 110,
+  "blend": "alpha",
+  "image": "ulos.png"
+}

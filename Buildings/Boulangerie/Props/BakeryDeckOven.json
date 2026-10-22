@@ -1,0 +1,133 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bakery Deck Oven",
+  "description": "A stainless steel three-deck bread oven with glowing peepholes.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        1.9,
+        1.1
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90
+  },
+  "parts": [
+    {
+      "size": [
+        1.6,
+        1.9,
+        1.1
+      ],
+      "offset": [
+        0,
+        0.95,
+        0
+      ],
+      "color": "#9aa0a4",
+      "material": "metal"
+    },
+    {
+      "size": [
+        1.4,
+        0.32,
+        0.03
+      ],
+      "offset": [
+        0,
+        0.45,
+        0.56
+      ],
+      "color": "#2a2a2a"
+    },
+    {
+      "size": [
+        1.2,
+        0.04,
+        0.05
+      ],
+      "offset": [
+        0,
+        0.66,
+        0.58
+      ],
+      "color": "chrome"
+    },
+    {
+      "size": [
+        1.4,
+        0.32,
+        0.03
+      ],
+      "offset": [
+        0,
+        0.95,
+        0.56
+      ],
+      "color": "#2a2a2a"
+    },
+    {
+      "size": [
+        1.2,
+        0.04,
+        0.05
+      ],
+      "offset": [
+        0,
+        1.16,
+        0.58
+      ],
+      "color": "chrome"
+    },
+    {
+      "size": [
+        1.4,
+        0.32,
+        0.03
+      ],
+      "offset": [
+        0,
+        1.45,
+        0.56
+      ],
+      "color": "#2a2a2a"
+    },
+    {
+      "size": [
+        1.2,
+        0.04,
+        0.05
+      ],
+      "offset": [
+        0,
+        1.66,
+        0.58
+      ],
+      "color": "chrome"
+    },
+    {
+      "size": [
+        0.3,
+        0.4,
+        0.04
+      ],
+      "offset": [
+        0.55,
+        1.75,
+        0.56
+      ],
+      "color": "#d06a2a",
+      "anim": {
+        "type": "pulse",
+        "period": 3.0,
+        "color": "#ff9a40",
+        "off": "#7a3a1a",
+        "glow": 0.6
+      }
+    }
+  ]
+}

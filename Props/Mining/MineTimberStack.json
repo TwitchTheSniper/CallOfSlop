@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mine Timber Stack",
+  "category": "Mining",
+  "description": "Square mine timbers stacked between two chocks for the tunnel crews. Waist-high cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.6, 0.84, 1.25]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
+  "breakable": {"health": 130, "breakBy": "all", "sound": "wood", "debris": {"count": 16, "size": [0.08, 0.5]}},
+  "parts": [
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.14, -0.45], "color": "#806040", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.14, -0.15], "color": "#6e5434", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.14, 0.15], "color": "#806040", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.14, 0.45], "color": "#6e5434", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.42, -0.3], "color": "#6e5434", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.42, -0.0], "color": "#806040", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.42, 0.3], "color": "#6e5434", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.7, -0.15], "color": "#806040", "material": "wood"},
+    {"size": [2.6, 0.26, 0.26], "offset": [0, 0.7, 0.15], "color": "#6e5434", "material": "wood"},
+    {"size": [0.12, 0.85, 1.25], "offset": [-1.0, 0.42, 0], "color": "#3a2a18"},
+    {"size": [0.12, 0.85, 1.25], "offset": [1.0, 0.42, 0], "color": "#3a2a18"}
+  ]
+}
