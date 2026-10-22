@@ -202,7 +202,7 @@ public static partial class SelfTest
         var closest = new List<string>();
         var closeDetail = new List<string>();
         var pairs = 0;
-        foreach (var g in prints.GroupBy(p => p.W.Class))
+        foreach (var g in prints.Where(p => !p.W.IsLauncher).GroupBy(p => p.W.Class)) // launchers have their own synth path and check (SelfTestLaunchers.cs)
         {
             var best = (D: float.MaxValue, A: "", B: "");
             var arr = g.ToArray();

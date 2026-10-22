@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-weapon/1",
+  "name": "Furnace Thermobaric",
+  "order": 108,
+  "unlockLevel": 39,
+  "class": "Launcher",
+  "blurb": "Thermobaric rocket: a wide, slow-falling blast that gets round walls.",
+  "damage": 120,
+  "headMult": 1,
+  "pellets": 1,
+  "rangeM": 50,
+  "minDamageMult": 1,
+  "rpm": 40,
+  "mode": "Semi",
+  "burstCount": 3,
+  "burstDelay": 0.25,
+  "mag": 1,
+  "reload": 4.0,
+  "hipSpreadDeg": 2.8,
+  "adsSpreadMult": 0.25,
+  "recoilDeg": 3.8,
+  "mobility": 0.82,
+  "adsZoom": 1.35,
+  "equipTime": 1.0,
+  "adsTime": 0.3,
+  "length": 0.88,
+  "bulk": 1.2,
+  "accent": [1.0, 0.35, 0.12],
+  "sound": "Rocket",
+  "caliber": 1.0,
+  "bright": 0.15,
+  "tail": 1.0,
+  "launcher": {
+    "projectile": "Rocket", "guidance": "None", "speed": 20, "maxSpeed": 40, "thrust": 35, "gravity": 0.15,
+    "drag": 0, "radius": 8, "falloff": 0.8, "direct": 40, "vehicleMult": 1, "selfDamage": 0.6,
+    "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 1, "lockTime": 1.2,
+    "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0.5
+  },
+  "model": {
+    "base": "rocket_tube", "barrelWidth": 0.12, "barrelLength": 0.5, "shroud": "jacket", "shroudLength": 0.3, "sights": "aperture", "finish": "rust", "furniture": "black", "accentStyle": "glow"
+  }
+}

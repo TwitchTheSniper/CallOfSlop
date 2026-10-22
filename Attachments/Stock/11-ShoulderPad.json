@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Shoulder Pad",
+  "slot": "Stock",
+  "order": 11,
+  "unlockOrder": 245,
+  "blurb": "A padded rest: the launcher comes up to the eye faster and kicks less.",
+  "pros": ["-15% aim time", "-20% recoil"],
+  "cons": ["-10% hip spread accuracy"],
+  "fits": {"classes": ["Launcher"]},
+  "model": "recoilPad",
+  "effects": [
+    {"stat": "adsTime", "mul": 0.85},
+    {"stat": "recoilDeg", "mul": 0.8},
+    {"stat": "hipSpreadDeg", "mul": 1.1}
+  ]
+}

@@ -42,6 +42,9 @@ public enum FrenzySignature : byte
 
     /// <summary>Special: rainbow tracers with a split glitch ghost, and a slow chromatic flicker at the screen edges.</summary>
     Glitch,
+
+    /// <summary>Launcher: every blast throws out a flat ring of lime sparks (a shockwave) and a column of embers (FrenzyFx.Launcher.cs).</summary>
+    Shockwave,
 }
 
 /// <summary>
@@ -265,6 +268,13 @@ public static class FrenzyLooks
             Color = new(0.85f, 0.35f, 1f), Accent = new(0.2f, 1f, 0.9f),
             TracerWidth = 1.3f, Sheath = 3f, TrailLife = 0.3f, MuzzleSparks = 3, ImpactSparks = 4, SparkSpeed = 4f, SparkGravity = 0f, SparkLife = 0.3f,
             BarrelGlow = 0.6f, EdgeAlpha = 0.12f,
+        },
+        new()
+        {
+            Class = WeaponClass.Launcher, Name = "LAUNCHER", Signature = FrenzySignature.Shockwave,
+            Color = new(0.55f, 1f, 0.2f), Accent = new(0.85f, 1f, 0.55f),
+            TracerWidth = 1.4f, Sheath = 2.5f, TrailLife = 0.5f, MuzzleSparks = 6, ImpactSparks = 16, SparkSpeed = 9f, SparkGravity = 1f, SparkLife = 0.55f,
+            BarrelGlow = 0.65f, EdgeAlpha = 0.12f,
         },
     ];
 

@@ -248,6 +248,7 @@ public sealed partial class Game : IDisposable
 
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
         UpdateRenderStates((float)frameDt);
+        UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
@@ -403,6 +404,8 @@ public sealed partial class Game : IDisposable
             return; // targeting a streak: fire calls it in
         if (CartHoldsFire(pressed))
             return; // a push cart only fires while you man it (GameZombies.cs)
+        if (LauncherTrigger(now, pressed))
+            return; // a sticky launcher: aim and pull the trigger to set off your charges (GameLaunchersNet.cs)
         var w = Active;
         var def = w.Def;
         if (now < EquipUntil || IsReloading(now))
@@ -475,6 +478,11 @@ public sealed partial class Game : IDisposable
         var kick = def.RecoilDeg * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
         Bloom = MathF.Min(Bloom + kick * 0.25f, 0.06f);
 
+        if (def.IsLauncher)
+        {
+            LauncherFireLocal(me, def, origin, dir, spread, seed, now); // a real projectile, predicted (Source/Game/Launchers)
+            return;
+        }
         if (IsServer)
         {
             ServerResolveShot(me, def, origin, dir, spread, seed, Math.Max(0.0, (double)ServerTick - 1 + _alpha), now);
@@ -655,6 +663,7 @@ public sealed partial class Game : IDisposable
             if (Mode == GameMode.Zombies)
                 for (var i = 0; i < Slots.Length; i++)
                     Slots[i].Reserve = Slots[i].Def.Mag * ZRules.StartReserveMags; // Zombies: reserve ammo (wall ammo refills it)
+            LauncherReserves(); // launchers carry a few spare rounds, not endless reloads (GameLaunchersNet.cs)
             ActiveSlot = 0;
             _burstLeft = 0;
             Bloom = 0;
@@ -719,6 +728,7 @@ public sealed partial class Game : IDisposable
     private void ClientTickStep()
     {
         ClientTickProjectiles(Brutal.GlfwApi.Glfw.Time);
+        ClientTickRockets(); // launcher projectiles (GameLaunchersNet.cs)
         if (Local is not { } me)
             return;
 
@@ -885,6 +895,7 @@ public sealed partial class Game : IDisposable
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         ServerTickMatch(now);
         ServerTickProjectiles(now);
+        ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
@@ -1214,6 +1225,11 @@ public sealed partial class Game : IDisposable
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
             return;
+        if (def.IsLauncher)
+        {
+            ServerLauncherShot(shooter, def, origin, dir, spread, seed, now); // rockets and grenades fly for real (GameLaunchers.cs)
+            return;
+        }
         if (CartBlocksShot(shooter, def, ref dir))
             return; // a push cart only fires while you man it, within its traverse limits (GameZombies.cs)
         // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
@@ -1487,6 +1503,7 @@ public sealed partial class Game : IDisposable
                 var spread = r.F32();
                 var seed = r.U32();
                 var viewTick = r.U32() + (double)Math.Clamp(r.F32(), 0f, 1f);
+                _launcherLockClaim = r.Has(1) ? r.U8() : byte.MaxValue; // protocol 28: a launcher's lock-on target (GameLaunchers.cs)
                 if (float.IsFinite(origin.X + origin.Y + origin.Z + dir.X + dir.Y + dir.Z + spread))
                     ServerResolveShot(p, weapon, origin, dir, spread, seed, viewTick, now);
                 break;
@@ -1527,6 +1544,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.TacState:
             case (byte)Msg.TacEvent:
                 OnTacticalPacket(id, ref r, now); // GameTactical.cs
+                break;
+            case (byte)Msg.RocketSpawn:
+            case (byte)Msg.RocketSync:
+            case (byte)Msg.RocketBoom:
+            case (byte)Msg.RocketDetonate:
+                OnLauncherPacket(id, ref r, sender, now); // launchers (GameLaunchersNet.cs)
                 break;
             case (byte)Msg.StreakUse:
             case (byte)Msg.StreakEvent:

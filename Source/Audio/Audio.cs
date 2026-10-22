@@ -62,6 +62,10 @@ public enum Sfx
     GunshipCannon, // a gunship's cannon round leaving the barrel
     NapalmIgnite, // napalm bursting into flame
     CrateLand, // a Supply Drop crate thumping down
+    RocketMotor, // launchers (SynthLaunchers.cs): a rocket motor's roar, played every few tenths of a second along its flight
+    LockTone, // a lock-on launcher building its lock (a short low beep; ticks faster as it builds)
+    LockedTone, // locked on (a high solid tone)
+    FlarePop, // a kill streak machine popping flares against an incoming lock-on rocket
     COUNT,
 }
 
@@ -713,6 +717,30 @@ public static partial class Synth
 
         switch (w.Sound)
         {
+            case SoundStyle.Rocket:
+            {
+                // Rocket launch: a hard ignition crack, the backblast roar (long filtered noise swelling and falling), a deep
+                // shove on the shoulder and the motor's hiss pulling away. Caliber deepens it, bright opens the roar, tail stretches it.
+                var roar = V(0.18f + 0.25f * w.Tail);
+                Noise(b, rng, 0, V(0.9f), 0.0004f, V(0.006f), V(5000 + 3000 * w.Bright), highpass: true); // ignition crack
+                Noise(b, rng, 0.002f, 1.0f, V(0.012f), roar, V(800 + 2600 * w.Bright)); // backblast roar
+                Tone(b, 0, V(0.9f), V(120 - 60 * c), V(35 + 15 * (1 - c)), V(0.05f + 0.06f * c), 0.002f, V(0.14f + 0.12f * c)); // the shove
+                Noise(b, rng, V(0.05f), V(0.35f), V(0.06f), roar * 1.4f, V(3500 + 3000 * w.Bright), highpass: true, length: roar * 3f); // motor hiss
+                Tone(b, V(0.03f), 0.2f, V(380 + 300 * w.Bright), V(900 + 900 * w.Bright), 0.2f, 0.03f, roar, harmonics: 0.3f); // the motor's whine climbing away
+                Echo(b, 0.35f + 0.35f * w.Tail, V(0.9f + 0.8f * w.Tail));
+                return Finish(b, 0.95f);
+            }
+            case SoundStyle.Thump:
+            {
+                // Grenade launcher: a hollow "thoomp" (a falling low tone through a tube), the breech clack and a little air.
+                var pitch = V(1.25f - 0.6f * c, 0.15f);
+                Tone(b, 0, 1.0f, V(260 * pitch), V(70 * pitch), V(0.03f + 0.04f * c), 0.001f, V(0.07f + 0.05f * c), harmonics: V(0.25f + 0.4f * w.Bright)); // thoomp
+                Noise(b, rng, 0, V(0.5f), 0.001f, V(0.03f + 0.02f * c), V(900 + 1400 * w.Bright)); // the puff of gas
+                Tone(b, V(0.004f), 0.3f, V(620 * pitch), V(540 * pitch), 0.05f, 0.001f, V(0.05f)); // the tube ringing
+                Click(b, rng, V(0.02f), V(0.5f), V(0.8f + 0.4f * w.Bright)); // breech
+                Echo(b, 0.2f + 0.3f * w.Tail, V(0.6f + 0.6f * w.Tail));
+                return Finish(b, 0.75f);
+            }
             case SoundStyle.Suppressed:
                 // "Thwip": muffled pressure puff + loud mechanism.
                 Noise(b, rng, 0, V(0.8f), 0.001f, V(0.018f + 0.02f * c), V(700 + 500 * w.Bright));
@@ -778,6 +806,7 @@ public static partial class Synth
             WeaponClass.LMG => 0.75f,
             WeaponClass.Sniper => 0.85f,
             WeaponClass.Shotgun => 0.8f,
+            WeaponClass.Launcher => 0.7f,
             _ => 1f,
         });
 
@@ -824,6 +853,21 @@ public static partial class Synth
                 Clunk(b, rng, T * 0.7f, 1.0f, pitch * 0.9f);
                 Slide(b, rng, T * 0.82f, 0.5f, 0.08f, 1800);
                 Clunk(b, rng, T * 0.88f, 0.9f, pitch);
+                break;
+            case WeaponClass.Launcher when w.Mag > 1:
+                // Drum / revolving launcher: swing the cylinder out, shells in one by one, slap it shut.
+                Clunk(b, rng, 0.1f, 0.8f, pitch * 0.8f);
+                for (var i = 0; i < Math.Min(w.Mag, 6); i++)
+                    Clunk(b, rng, 0.3f + i * (T * 0.55f / Math.Min(w.Mag, 6)), 0.55f, pitch * V(0.9f));
+                Slide(b, rng, T * 0.85f, 0.4f, 0.1f, 1600);
+                Clunk(b, rng, T * 0.92f, 1.0f, pitch * 0.75f);
+                break;
+            case WeaponClass.Launcher:
+                // Single tube: a hollow knock, the round sliding in down the tube, a latch.
+                Clunk(b, rng, 0.12f, 0.7f, pitch * 0.7f);
+                Slide(b, rng, T * 0.35f, 0.5f, T * 0.25f, 900);
+                Clunk(b, rng, T * 0.68f, 1.0f, pitch * 0.6f);
+                Click(b, rng, T * 0.88f, 0.8f, pitch * 0.9f);
                 break;
             case WeaponClass.Special when w.Sound == SoundStyle.Zap:
                 // Cell eject + power-up whine.
@@ -872,6 +916,8 @@ public static partial class Synth
             return tactical; // SynthTactical.cs
         if (StreakFoley(sfx, variant) is { } streak)
             return streak; // SynthStreaks.cs
+        if (LauncherFoley(sfx, variant) is { } launcher)
+            return launcher; // SynthLaunchers.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

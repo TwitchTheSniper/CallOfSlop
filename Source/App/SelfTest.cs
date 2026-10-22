@@ -48,6 +48,7 @@ public static partial class SelfTest
         {
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
+            Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
@@ -145,6 +146,7 @@ public static partial class SelfTest
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
+            Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
@@ -1153,11 +1155,11 @@ public static partial class SelfTest
 
         // Pacing (rough targets): ~1,000 weapon XP and ~1,000 account XP per typical match (~7 kills).
         const float perMatch = 1000f;
-        var matchesToMax = Weapons.All.Where(w => Attachments.For(w).Count > 0).Select(w => Attachments.MaxXp(w) / perMatch).ToArray();
+        var matchesToMax = Weapons.All.Where(w => Attachments.For(w).Count > 0 && !w.IsLauncher).Select(w => Attachments.MaxXp(w) / perMatch).ToArray(); // (launchers: their own few attachments, quick to unlock)
         Line($"matches to max a gun: {matchesToMax.Min():0.0} - {matchesToMax.Max():0.0} (target 3-7), average {matchesToMax.Average():0.0}");
         if (matchesToMax.Min() < 2.5f || matchesToMax.Max() > 7.5f)
             Fail("attachment pacing outside 3-7 matches");
-        var sixty = Weapons.All.Where(w => Attachments.For(w).Count > 0).Select(w =>
+        var sixty = Weapons.All.Where(w => Attachments.For(w).Count > 0 && !w.IsLauncher).Select(w =>
         {
             var list = Attachments.For(w);
             var k = Math.Max(0, (int)MathF.Ceiling(list.Count * 0.6f) - 1);
@@ -2185,8 +2187,10 @@ public static partial class SelfTest
                 }
             }
         }
-        if (WeaponSelect.Tabs(Slot.Secondary) is not [WeaponClass.Pistol])
-            Fail("the secondary slot should have just the Pistols tab");
+        if (WeaponSelect.Tabs(Slot.Secondary) is not ([WeaponClass.Pistol] or [WeaponClass.Pistol, WeaponClass.Launcher]))
+            Fail("the secondary slot should have just the Pistols and Launchers tabs");
+        if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Launcher))
+            Fail("launchers showing in the primary tabs");
         if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Pistol))
             Fail("pistols showing in the primary tabs");
         for (var id = 0; id < seen.Length; id++)

@@ -51,7 +51,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     sequence + impulse, put into the prediction replay); blasts change living players' velocity on the server.
     // 29: eight more kill streaks (KillStreaksMore.cs): Msg.StreakState carries 16 earned-streak bits and armour (8 -> 12
     //     bytes), Msg.StreakEvent gains kinds 2-4 (effect ended, crate taken, streak blast), StreakIds 8-15 on the wire.
-    public const byte ProtocolVersion = 29;
+    // 30: launchers (Source/Game/Launchers): WeaponClass.Launcher weapons, the new Msg.RocketSpawn / RocketSync /
+    //     RocketBoom / RocketDetonate at the end, and the Fire packet's trailing lock-on byte.
+    public const byte ProtocolVersion = 30;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

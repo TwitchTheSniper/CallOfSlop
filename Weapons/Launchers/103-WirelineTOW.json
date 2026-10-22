@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-weapon/1",
+  "name": "Wireline TOW",
+  "order": 103,
+  "unlockLevel": 27,
+  "class": "Launcher",
+  "blurb": "Wire-guided rocket: it flies where you look, as long as you hold the launcher.",
+  "damage": 140,
+  "headMult": 1,
+  "pellets": 1,
+  "rangeM": 100,
+  "minDamageMult": 1,
+  "rpm": 50,
+  "mode": "Semi",
+  "burstCount": 3,
+  "burstDelay": 0.25,
+  "mag": 1,
+  "reload": 3.8,
+  "hipSpreadDeg": 2,
+  "adsSpreadMult": 0.25,
+  "recoilDeg": 3,
+  "mobility": 0.84,
+  "adsZoom": 1.6,
+  "equipTime": 1.0,
+  "adsTime": 0.3,
+  "length": 0.92,
+  "bulk": 1.15,
+  "accent": [1.0, 0.54, 0.23],
+  "sound": "Rocket",
+  "caliber": 0.75,
+  "bright": 0.45,
+  "tail": 0.7,
+  "launcher": {
+    "projectile": "Rocket", "guidance": "Wire", "speed": 28, "maxSpeed": 52, "thrust": 45, "gravity": 0.04,
+    "drag": 0, "radius": 5, "falloff": 1.2, "direct": 80, "vehicleMult": 1, "selfDamage": 0.6,
+    "armDistance": 6, "proximity": 0, "fuse": 10, "bounces": 0, "reserve": 2, "lockTime": 1.2,
+    "lockRange": 160, "lockCone": 9, "turnRate": 75, "cluster": 0, "wallPierce": 0
+  },
+  "model": {
+    "base": "rocket_tube", "barrelWidth": 0.09, "barrelLength": 0.68, "foregrip": "stub", "sights": "aperture", "topRail": true, "finish": "tan", "furniture": "black", "accentStyle": "stripe"
+  }
+}

@@ -64,7 +64,7 @@ public static partial class SelfTest
         var all = Attachments.BySlot.SelectMany(s => s).ToArray();
 
         // ---- Every weapon: at least MinAttachmentSlots slots, each with at least MinAttachmentsPerSlot options ----
-        foreach (var w in Weapons.All.Where(x => x.SourceFile != null))
+        foreach (var w in Weapons.All.Where(x => x.SourceFile != null && !x.IsLauncher)) // launchers only take their own few (SelfTestLaunchers.cs)
         {
             var list = Attachments.For(w);
             var perSlot = Enumerable.Range(0, Attachments.SlotCount).Select(s => list.Count(a => (int)a.Slot == s)).ToArray();

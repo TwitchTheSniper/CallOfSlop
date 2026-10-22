@@ -20,7 +20,7 @@ namespace CallOfSlop;
 /// Player.FrenzyLevel / FrenzyClass (the class of the weapon that got the most recent kill) for other players, and the
 /// local meter (the same one that drives the music) for you.
 /// </summary>
-public static class FrenzyFx
+public static partial class FrenzyFx
 {
     /// <summary>Settings > Video "Frenzy visuals" (set by Program from the settings each frame).</summary>
     public static FrenzyVisualMode Mode = FrenzyVisualMode.Full;

@@ -187,7 +187,7 @@ public sealed partial class Game
                     break;
                 }
         }
-        var secondaries = Weapons.All.Where(w => w.Slot == Slot.Secondary).ToArray();
+        var secondaries = Weapons.All.Where(w => w.Slot == Slot.Secondary && !w.IsLauncher).ToArray(); // launchers: their own roll below
         bot.WantPrimary = primary.Id;
         bot.WantSecondary = secondaries[_rng.Next(secondaries.Length)].Id;
         bot.WantGrenade = _rng.NextDouble() < (prof.Kind == BotPersonality.Tactician ? 0.95 : 0.8) ? ThrowableKind.Frag : ThrowableKind.Impact;
@@ -195,6 +195,7 @@ public sealed partial class Game
         bot.WantPrimaryKit = RandomKit(Weapons.Get(bot.WantPrimary));
         bot.WantSecondaryKit = RandomKit(Weapons.Get(bot.WantSecondary));
         bot.WantPerks = BotPerks(prof);
+        BotPickLauncher(bot, prof); // some bots carry a launcher instead (BotLaunchers.cs; its own roll, the shared random sequence is untouched)
     }
 
     /// <summary>Perks the personality likes (one per category), or random ones for an empty preference list.</summary>

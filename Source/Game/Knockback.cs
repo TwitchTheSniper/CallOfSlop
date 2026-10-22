@@ -101,8 +101,13 @@ public static class Knockback
             var def = KillStreaks.Get(id);
             return (def.Knockback, KillStreaks.BlastRadiusOf(id));
         }
+        if (killId < Weapons.All.Length && Weapons.Get(killId) is { IsLauncher: true } launcher)
+            return (LauncherStrength(launcher), launcher.LauncherRadius); // launcher blasts (Source/Game/Launchers)
         return (0f, 0f);
     }
+
+    /// <summary>A launcher blast's push (m/s at the centre): bigger warheads shove harder, capped like everything else.</summary>
+    public static float LauncherStrength(WeaponDef d) => Math.Min(MaxImpulse, 5f + d.Damage / 25f);
 }
 
 public sealed partial class Game

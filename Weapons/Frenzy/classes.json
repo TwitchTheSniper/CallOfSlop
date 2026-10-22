@@ -192,6 +192,32 @@
         "minLevel": 3,
         "effects": [ { "stat": "killHeal", "atMin": 10, "atMax": 25 } ]
       }
+    },
+    "Launcher": {
+      "character": "Artillery barrage",
+      "music": {
+        "style": "Artillery barrage",
+        "describe": "syncopated sub booms landing like shells, a falling whistle before each phrase, the track in a long blast echo",
+        "pool": "harder",
+        "tempo": { "level5": 1.08, "level6": 1.18 },
+        "stems": { "drums": 0.55, "bass": 1.0, "lead": 0.5 },
+        "fx": { "drive": 0.6, "slapMs": 165, "slapFeedback": 0.45, "slapMix": 0.32 },
+        "trim": 0.8,
+        "layers": [
+          { "voice": "boom", "pattern": "X..X..X...X..X..", "level": 0.5, "from": 1 },
+          { "voice": "whistle", "pattern": "........................9-8-7-6-5-4-3-2-1-0-------....", "octave": 36, "level": 0.22, "from": 2, "reverb": 0.3 },
+          { "voice": "bassdrum", "pattern": "..x...x...x.xx..", "level": 0.35, "from": 3 },
+          { "voice": "braam", "pattern": "X---------------................", "octave": 12, "level": 0.3, "from": 5, "reverb": 0.5, "chord": [0, 3, 7] }
+        ]
+      },
+      "visual": { "signature": "Shockwave", "color": "#8cff33", "accent": "#d9ff8c", "tracerWidth": 1.4, "sheath": 2.5, "trailLife": 0.5, "muzzleSparks": 6, "impactSparks": 16, "brassSparks": 0, "sparkSpeed": 9, "sparkGravity": 1, "sparkLife": 0.55, "barrelGlow": 0.65, "edgeAlpha": 0.12, "rainbow": false },
+      "sound": { "signature": "Warhead", "about": "Rising rocket hiss into a deep sub detonation, then falling debris", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.45, "drive": 0.4, "sub": 0.9, "clack": 0.15, "tail": 0.6, "width": 0.55, "pitch": 0.95 },
+      "buffs": {
+        "name": "Hot loader",
+        "blurb": "Launchers reload faster",
+        "minLevel": 3,
+        "effects": [ { "stat": "reload", "atMin": 0.9, "atMax": 0.7 } ]
+      }
     }
   }
 }

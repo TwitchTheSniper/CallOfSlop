@@ -174,6 +174,12 @@ ARCHETYPES = {
     "tool": dict(receiver="tool", receiverLength=0.55, receiverHeight=0.14, receiverWidth=0.075, barrelLength=0.38, barrelWidth=0.03,
                  handguard="none", handguardLength=0.0, stock="none", mag="strip", magAngle=-20.0, bolt="none", sights="none", muzzle="tip",
                  canister=True, finish="accent", furniture="black", magColor="steel", accentStyle="none"),
+    "rocket_tube": dict(receiver="round", receiverLength=0.42, receiverHeight=0.1, receiverWidth=0.1, barrelLength=0.62, barrelWidth=0.1,
+                        shroud="none", shroudLength=0.35, handguard="none", handguardLength=0.0, stock="none", gripAngle=12.0, mag="none",
+                        foregrip="vertical", bolt="none", sights="tall", muzzle="none", finish="olive", furniture="black", accentStyle="bands"),
+    "grenade_launcher": dict(receiver="break", receiverLength=0.3, receiverHeight=0.09, receiverWidth=0.07, barrelLength=0.5, barrelWidth=0.05,
+                             handguard="forend", handguardLength=0.3, handguardHeight=0.05, stock="folding", stockLength=0.24, mag="none",
+                             bolt="none", sights="aperture", finish="olive", furniture="polymer", accentStyle="stripe"),
     "toy": dict(receiver="toy", receiverLength=0.6, receiverHeight=0.12, receiverWidth=0.075, barrelLength=0.45, barrelWidth=0.035,
                 barrelStyle="square", handguard="slim", handguardLength=0.25, handguardHeight=0.08, stock="toy", mag="pan", bolt="top",
                 sights="tall", muzzle="tip", finish="accent", furniture="white", magColor="white", accentStyle="panel"),
@@ -1657,6 +1663,8 @@ def load_attachments():
 
 def fits(a, w):
     r = a.get("fits", {})
+    if w["class"] == "Launcher" and "Launcher" not in r.get("classes", []) and w["name"] not in r.get("weapons", []):
+        return False  # launchers only take attachments made for them (AttachmentFits.Test)
     if r.get("classes") and w["class"] not in r["classes"]:
         return False
     if w["class"] in r.get("notClasses", []):

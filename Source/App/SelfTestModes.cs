@@ -359,7 +359,7 @@ public static partial class SelfTest
         var ladder = GunGame.Ladder;
         var first = Progress.All.First(u => u.Weapon != null).Weapon!;
         Line($"ladder ({ladder.Length}): {string.Join(", ", ladder.Select(w => w.Name))}");
-        if (ladder.Length != Math.Min(GunGame.Steps, Weapons.All.Length) || ladder[0] != first || ladder.Distinct().Count() != ladder.Length)
+        if (ladder.Length != Math.Min(GunGame.Steps, Weapons.All.Count(w => !w.IsLauncher)) || ladder[0] != first || ladder.Any(w => w.IsLauncher) || ladder.Distinct().Count() != ladder.Length)
             Fail("the Gun Game ladder is wrong (length, first weapon or repeats)");
 
         using var game = ModeGame(1, GameMode.GunGame);

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Spare Round",
+  "slot": "Magazine",
+  "order": 13,
+  "unlockOrder": 243,
+  "blurb": "One more rocket or grenade strapped to the tube.",
+  "pros": ["+1 reserve round"],
+  "cons": ["-3% speed"],
+  "fits": {"classes": ["Launcher"]},
+  "model": "stripper",
+  "effects": [
+    {"stat": "launcherReserve", "add": 1},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

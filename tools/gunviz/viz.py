@@ -223,7 +223,7 @@ if __name__ == "__main__":
         table(weapons)
         sys.exit(0)
     only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
-    classes = ["Pistol", "SMG", "AssaultRifle", "DMR", "Sniper", "Shotgun", "LMG", "Special"]
+    classes = ["Pistol", "SMG", "AssaultRifle", "DMR", "Sniper", "Shotgun", "LMG", "Special", "Launcher"]
     if "--nosheets" not in sys.argv:
         for cls in classes:
             ws = [w for w in weapons if w["class"] == cls and (only is None or only in w["name"])]

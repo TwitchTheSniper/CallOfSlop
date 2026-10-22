@@ -1,6 +1,6 @@
 # Making attachments for Call of Slop
 
-Every attachment is a single `.json` file in this folder. The 71 that ship with the game are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
+Every attachment is a single `.json` file in this folder. The 76 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
 
 An attachment says which slot it goes in, which weapons it fits, and a list of stat changes ("effects") it makes to the weapon's numbers. The weapon numbers are the fields described in [Weapons/README.md](../Weapons/README.md).
 
@@ -60,6 +60,8 @@ Every rule you give must pass. Leave `fits` out (or `{}`) to fit everything. Rul
 | `sounds` / `notSounds` | the weapon's `sound` is (or isn't) in the list, e.g. `["Gun", "Boom"]` |
 | `minMag` / `maxMag` | the magazine is at least / at most this big |
 | `weapons` / `notWeapons` | the weapon's name is (or isn't) in the list |
+
+**Launchers** (class `Launcher`) only take attachments made for them: to fit a launcher, `classes` must list `"Launcher"` (or `weapons` must name it). So an empty `fits` or a `notClasses` rule never puts a gun attachment on a rocket tube. Launcher stats are changed by their field names with a `launcher` prefix (`launcherLockTime`, `launcherReserve`, `launcherSpeed`...; see the "Launchers" part of [Weapons/README.md](../Weapons/README.md#launchers)).
 
 ## Effects
 

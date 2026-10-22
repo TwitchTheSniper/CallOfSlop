@@ -1059,6 +1059,7 @@ public static unsafe partial class Program
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
+                LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
                 DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                 Ui.DrawHud(g, now, _joinAddress, _settings);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
@@ -1753,6 +1754,7 @@ public static unsafe partial class Program
         }
 
         StreakRender.Draw(Gfx, _game, now); // turrets, drones, strikes (StreakRender.cs)
+        LauncherRender.Draw(Gfx, _game, now); // rockets, launcher grenades, sticky charges (LauncherRender.cs)
         TacticalRender.Draw(Gfx, _game, now); // tactical devices (TacticalRender.cs)
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
@@ -1784,6 +1786,7 @@ public static unsafe partial class Program
         Gfx.SetDepthWrite(false);
         DrawShieldShimmer(now); // Last Stand shields on other players (Program.Health.cs)
         TacticalRender.DrawGlow(Gfx, _game, now); // cover walls, flash and stun bursts, device lights (TacticalRender.cs)
+        LauncherRender.DrawGlow(Gfx, _game, now); // rocket flames and smoke trails (LauncherRender.cs)
         foreach (var b in _game.Blasts)
         {
             var age = (float)(now - b.Born);
