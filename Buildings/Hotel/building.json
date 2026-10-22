@@ -171,12 +171,12 @@
     }
   ],
   "stairs": [
-    {"floor": 0, "rect": [7.55, -4.9, 8.7, -2.05], "dir": "-z", "color": {"color": "#5a1a24", "material": "none"}},
+    {"floor": 0, "rect": [7.55, -4.625, 8.7, -2.375], "dir": "-z", "color": {"color": "#5a1a24", "material": "none"}},
     {
       "floor": 1,
-      "rect": [5.3, -4.9, 6.45, -2.05],
+      "rect": [5.3, -4.625, 6.45, -2.375],
       "dir": "+z",
-      "alt": {"rect": [7.55, -4.9, 8.7, -2.05], "dir": "-z"},
+      "alt": {"rect": [7.55, -4.625, 8.7, -2.375], "dir": "-z"},
       "color": {"color": "#5a1a24", "material": "none"}
     }
   ],

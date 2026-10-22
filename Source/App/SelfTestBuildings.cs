@@ -627,13 +627,10 @@ public static partial class SelfTest
                 else
                 {
                     missing.Add($"{key} room {r.Floor}:{r.Id}");
-                    if (!b.Def.Name.StartsWith("Hotel") && !detail.Any(x => x.StartsWith(key))) // DEBUG (temporary)
-                    {
-                        var door = b.Plan.Doors.FirstOrDefault(d => Vector3.Distance(d.SwingSide, r.Waypoint) < 0.05f || Vector3.Distance(d.OtherSide, r.Waypoint) < 0.05f);
-                        var walk = door == null ? "no door" : WalkTrace(r.Waypoint, Vector3.Distance(door.SwingSide, r.Waypoint) < 0.05f ? door.OtherSide : door.SwingSide);
+                    if (detail.Count < 10)
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
-                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); door walk: {walk}");
-                    }
+                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
+                                   + NoPathTrace(g, search, path, start, goal));
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
@@ -650,17 +647,13 @@ public static partial class SelfTest
                 {
                     missing.Add($"{key} stairs up to {top.Y:0.0} m");
                     var foot = Node(bottom);
-                    if (detail.Count < 12) // DEBUG (temporary)
+                    if (detail.Count < 10)
                     {
                         // The flight's middle waypoint follows the foot in the plan's waypoint list.
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
                         var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
                         detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
-                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; foot {Why(bottom)}; " // DEBUG (temporary)
-                                   + $"wps near top: {string.Join(" ", yard.Waypoints.Where(w => MathF.Abs(w.Y - top.Y) < 0.6f && Vector2.Distance(new(w.X, w.Z), new(top.X, top.Z)) < 1.3f).Select(w => $"({w.X:0.00},{w.Y:0.00},{w.Z:0.00}){(yard.BuildingNavPoints.Contains(w) ? "x" : "")}"))}; "
-                                   + $"nodes near top: {string.Join(" ", Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - top.Y) < 0.6f && Vector2.Distance(new(g.Nodes[i].X, g.Nodes[i].Z), new(top.X, top.Z)) < 1.3f).Select(i => $"{i}({g.Nodes[i].X:0.00},{g.Nodes[i].Y:0.00},{g.Nodes[i].Z:0.00})"))}; "
-                                   + $"wps near foot: {string.Join(" ", yard.Waypoints.Where(w => MathF.Abs(w.Y - bottom.Y) < 0.6f && Vector2.Distance(new(w.X, w.Z), new(bottom.X, bottom.Z)) < 1.3f).Select(w => $"({w.X:0.00},{w.Y:0.00},{w.Z:0.00}){(yard.BuildingNavPoints.Contains(w) ? "x" : "")}"))}; "
-                                   + $"nodes near foot: {string.Join(" ", Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - bottom.Y) < 0.6f && Vector2.Distance(new(g.Nodes[i].X, g.Nodes[i].Z), new(bottom.X, bottom.Z)) < 1.3f).Select(i => $"{i}({g.Nodes[i].X:0.00},{g.Nodes[i].Y:0.00},{g.Nodes[i].Z:0.00})"))}");
+                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
                     }
                 }
             }
@@ -679,8 +672,56 @@ public static partial class SelfTest
             Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
-            foreach (var d in detail.Take(12))
+            foreach (var d in detail.Take(6))
                 Fail("  nav detail: " + d);
         }
+    }
+
+    /// <summary>
+    /// Why a node in the start's area has no path from it: its links in and out, whether it can get back, and the walk
+    /// from the nearest node on its floor that the start does reach.
+    /// </summary>
+    private static string NoPathTrace(NavGraph g, NavSearch search, int[] path, int start, int goal)
+    {
+        if (start < 0)
+            return "no start node";
+        var reached = new bool[g.Nodes.Length];
+        var stack = new Stack<int>();
+        reached[start] = true;
+        stack.Push(start);
+        while (stack.Count > 0)
+        {
+            var i = stack.Pop();
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (!reached[g.EdgeTo[e]])
+                {
+                    reached[g.EdgeTo[e]] = true;
+                    stack.Push(g.EdgeTo[e]);
+                }
+        }
+        string P(int i) => $"{i}({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}){(reached[i] ? "R" : "")}";
+        var outs = new List<string>();
+        for (var e = g.EdgeStart[goal]; e < g.EdgeStart[goal + 1]; e++)
+            outs.Add(P(g.EdgeTo[e]));
+        var ins = new List<string>();
+        for (var i = 0; i < g.Nodes.Length; i++)
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                if (g.EdgeTo[e] == goal)
+                    ins.Add(P(i));
+        var gp = g.Nodes[goal];
+        int best = -1;
+        var bestD = float.MaxValue;
+        for (var i = 0; i < g.Nodes.Length; i++)
+        {
+            var q = g.Nodes[i];
+            if (!reached[i] || MathF.Abs(q.Y - gp.Y) > 0.4f)
+                continue;
+            var d = Vector2.Distance(new Vector2(q.X, q.Z), new Vector2(gp.X, gp.Z));
+            if (d < bestD)
+                (best, bestD) = (i, d);
+        }
+        var back = search.Find(g, goal, start, path, maxExpand: 60000) > 0;
+        return $"back to start {back}; out [{string.Join(" ", outs.Take(8))}]; in [{string.Join(" ", ins.Take(8))}]; "
+               + (best < 0 ? "no reached node on its floor" : $"nearest reached on its floor {P(best)} {bestD:0.0} m: walk {WalkTrace(g.Nodes[best], gp)}");
     }
 }
