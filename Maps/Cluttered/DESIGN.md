@@ -376,7 +376,11 @@ again in the game: the nav walk and the nav walking time (uphill links cost more
 objective within 10%, a scripted walker from each team's middle spawn reaching every objective, no Blue/Red spawn pair in
 sight, the share of each team's routes to the hills with cover within 3 m (the beach side gets at least as much soft
 cover, props, as the base side; overall at least 85% of the base side's, which has the walls and containers), and fewer
-than a fifth of the solid props with a mirrored twin.
+than a fifth of the solid props with a mirrored twin. Measured on the game's nav graph (Blue/Red, averaged over each
+team's spawns): hill 1 83/82 m, hill 2 73/72 m, hill 3 98/103 m, the enemy flag 125/129 m (walking times within 2.7%
+of the same); the scripted walkers take 12.2/13.5 s, 11.8/12.0 s, 16.8/16.1 s and 19.9/21.5 s; 42% of the beach side's
+routes have soft cover within 3 m (45% any cover) against 33% (42%) of the base side's; 4 of 493 solid props have a
+mirrored twin.
 
 **Logical placement.** Obstacles in bands up the beach the way they were laid (stake ramps at the waterline, hedgehogs on
 the wet sand, concertina wire above them, dragon's teeth under the seawall), Blue's spawns in the lee of the wrecks,
@@ -391,7 +395,7 @@ the helipad, roof masts and dishes on the HQ, sandbag nests facing the sea along
 grass, shrubs and bushes on the face (the cliff itself is too steep for scattered plants); grass on the plateau, none on
 the asphalt roads (`Concrete`), 10% on the busted parade ground (`Tiles`), none indoors (in the huts, the pillboxes, the
 tunnel, under the mess tent); bushes in the ravine; pines and broadleaves round the back of the base, on the headland
-side and among the eastern dunes. About 43,000 plants.
+side and among the eastern dunes. About 43,000 plants in all.
 
 **Pack props** (`Maps/Cluttered/Props/Beachhead`, written by `tools/cluttered/beachhead_props.py`): Czech Hedgehog,
 Dragons Tooth, Beach Stake Ramp, Concertina Wire and Barbed Wire Fence (both looks only, so bots aren't caught on them),
@@ -399,14 +403,17 @@ Landing Craft Wreck (steel sides to hide behind and mantle over), Beached Fishin
 Bowser, Ammo Crate Stack, Ammo Box, Radio Set (a blinking set light), Map Table, Rifle Rack, Sandbag Nest, Camo Net,
 and three animated ones: Wind Sock (swings round in the wind), Searchlight (sweeps, lens lit) and Helipad Light (blinks).
 
-**Object counts** (from the self-test): 3,747 props (587 by hand, the rest from 22 cosmetic Clutter ops; 493 solid, 1,731
-breakable, 13 explosive barrels in the depot), about 240 from the pack's Beachhead set; 43,188 plants, 67 trees; 247
+**Object counts** (from the self-test): 3,744 props (584 by hand, 3,160 from 22 cosmetic Clutter ops; 493 solid, 1,669
+breakable, 47 animated, 13 explosive barrels in the depot), 806 of them from the pack's Beachhead set; 42,968 plants
+(37,450 grass, 4,840 shrubs, 611 bushes, 67 trees); 247
 meshes (the sea, the wrecks and the ship out on the water, the seawall's cap, the tunnel lining, roofs, the mess tent,
 roads and the helipad markings); 392 boxes drawn one by one (huts, the HQ, the pillboxes, the seawall, the tunnel roof,
-containers, the motor pool, tanks, watchtowers, rocks, tree trunks); 24 spawns (9 a team plus 6), 288 hand-placed waypoints on
-top of AutoWaypoints (chains along every route, so the bots' nav graph follows the paths, the road and the tunnel).
+containers, the motor pool, tanks, watchtowers, rocks, tree trunks); 24 spawns (9 a team plus 6), 614 waypoints (AutoWaypoints
+plus chains along every route, so the bots' nav graph follows the paths, the road and the tunnel: 1,271 nav nodes, all in
+one area). Bots at 16 players: about 100 kills in 90 s of free-for-all and 50 in team deathmatch, no stuck, fallen or
+escaped bots, worst server tick under 1 ms of work.
 
-**Performance.** About Old Town's budget (3,747 props against its 4,908, 43,188 plants against 43,765, 392 boxes drawn
+**Performance.** About Old Town's budget (3,744 props against its 4,908, 42,968 plants against 43,765, 392 boxes drawn
 against 317; the terrain is 489 x 375 samples, drawn in chunks), everything numerous instanced, animated props still past
 80 m, so it should run at Old Town's frame rate or better on the user's PC (~1,700 fps there). The smoke run's
 `cluttered_beachhead` (the beach and the bluff from over the sea) and `cluttered_beachhead_beach` (the bluff from behind
