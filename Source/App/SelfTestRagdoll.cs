@@ -413,7 +413,6 @@ public static partial class SelfTest
         var costLine = $"cost: {awake} of {bodies.Count} bodies awake: one 60 Hz step {median:0.000} ms (median of 3 runs: {string.Join(" / ", medians.Select(m => m.ToString("0.000")))}; {worst:0.000} worst step), "
               + $"posing their boxes {poseMedian:0.000} ms; {bytes} bytes allocated over 3 x 40 steps; all {asleep} asleep (after {settled:0.0} s on average): step + draw {sleepMs:0.0000} ms; target under 0.3 ms per step";
         RLine(costLine);
-        Line("::error title=Ragdoll cost (TEMPORARY, not a failure)::" + costLine);
         if (awake < bodies.Count - 2)
             Fail($"ragdolls: only {awake} of {bodies.Count} bodies were awake for the cost test");
         if (median > 0.6)
