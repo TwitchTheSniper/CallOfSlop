@@ -4,15 +4,13 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Another player's box body as a scene graph: player (feet at the origin, -Z = facing) -> "upper_body" (posed by the legs:
-/// hip bob, lean) -> one body group per stance (torso box, head -> head box and visor), the legs (pelvis -> thigh -> shin
+/// hip bob, lean) -> one body group per stance (torso -> <see cref="BodyModel"/> torso parts, head -> head parts and the hat), the legs (pelvis -> thigh -> shin
 /// -> foot per side, posed by <see cref="LegAnimator"/>), "upper_gear" (same pose as upper_body) -> the gun in hand
 /// (<see cref="GunRig"/>, posed by <see cref="ThirdPersonArms"/>) with both arms holding it, the health bar, and the corpse
 /// box, plus the prestige hat (<see cref="HatRender"/>) on each stance's head and on the ground by the corpse. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
 /// </summary>
 public sealed class PlayerRig
 {
-    private static readonly Vector3 Visor = new(0.05f, 0.05f, 0.08f);
-
     public readonly SceneNode Root;
     public readonly GunRig Gun;
     public readonly ArmNodes Right, Left;
@@ -22,8 +20,13 @@ public sealed class PlayerRig
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
     private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
-    private readonly SceneNode[] _hats = new SceneNode[3]; // per stance, under the head after the visor
+    private readonly SceneNode[] _hats = new SceneNode[3]; // per stance, under the head (after its body model parts)
     private readonly Vector3[] _headSizes = new Vector3[3];
+    private readonly BodyParts[] _torsoParts = new BodyParts[3], _headParts = new BodyParts[3];
+    private string? _name;
+    private byte _id;
+    private bool _bodyHat, _bodyBuilt;
+    private Vector3 _bodyColor;
     private readonly SceneNode _corpseHat;
     private HatDef? _hat;
     private Vector3 _color = new(float.NaN);
@@ -35,15 +38,8 @@ public sealed class PlayerRig
     {
         Root = new SceneNode("player_" + id);
         _upper = Root.Add("upper_body");
-        var headH = World.PlayerHeight - World.HeadStart;
-        const float hip = LegAnimator.StandPelvis;
-        _stances[0] = MakeStance("stand", new Vector3(0.8f, World.HeadStart - hip, 0.5f), new Vector3(0, (World.HeadStart + hip) / 2, 0),
-            new Vector3(0, World.HeadStart + headH / 2, 0), new Vector3(0.45f, headH, 0.45f), new Vector3(0.38f, 0.1f, 0.06f), new Vector3(0, 1.63f, -0.24f));
-        const float body = 0.85f, top = 1.2f, chip = LegAnimator.CrouchPelvis - 0.04f;
-        _stances[1] = MakeStance("crouch", new Vector3(0.8f, body - chip, 0.6f), new Vector3(0, (body + chip) / 2, 0),
-            new Vector3(0, (body + top) / 2, -0.05f), new Vector3(0.45f, top - body, 0.45f), new Vector3(0.38f, 0.1f, 0.06f), new Vector3(0, 1.07f, -0.29f));
-        _stances[2] = MakeStance("prone", new Vector3(0.6f, 0.4f, 0.6f), new Vector3(0, 0.2f, -0.27f),
-            new Vector3(0, 0.3f, -0.75f), new Vector3(0.4f, 0.38f, 0.4f), new Vector3(0.34f, 0.1f, 0.06f), new Vector3(0, 0.36f, -0.96f));
+        for (var i = 0; i < 3; i++)
+            _stances[i] = MakeStance(i);
 
         // Legs: pelvis -> thigh -> shin -> foot, boxes in LegAnimator's draw order.
         Pelvis = Root.Add("pelvis");
@@ -80,19 +76,35 @@ public sealed class PlayerRig
         _corpseHat.Visible = false;
     }
 
-    private SceneNode MakeStance(string name, Vector3 torsoSize, Vector3 torsoAt, Vector3 headAt, Vector3 headSize, Vector3 visorSize, Vector3 visorAt)
+    private SceneNode MakeStance(int stance)
     {
-        var g = _upper.Add(name);
-        g.Add("torso", Matrix4x4.CreateScale(torsoSize) * Matrix4x4.CreateTranslation(torsoAt), Renderable.Box(Vector3.One));
+        var s = BodyModel.Stances[stance];
+        var g = _upper.Add(stance switch { 1 => "crouch", 2 => "prone", _ => "stand" });
+        var torso = g.Add("torso");
+        torso.SetLocalMatrix(s.TorsoFrame);
+        torso.Custom = _torsoParts[stance] = new BodyParts();
         var head = g.Add("head");
-        head.LocalPosition = headAt;
-        head.Add("head_box", Matrix4x4.CreateScale(headSize), Renderable.Box(Vector3.One));
-        head.Add("visor", Matrix4x4.CreateScale(visorSize) * Matrix4x4.CreateTranslation(visorAt - headAt), Renderable.Box(Visor));
-        var stance = name switch { "crouch" => 1, "prone" => 2, _ => 0 };
+        head.LocalPosition = s.HeadAt;
+        head.Custom = _headParts[stance] = new BodyParts();
         _hats[stance] = head.Add("hat");
         _hats[stance].Visible = false;
-        _headSizes[stance] = headSize;
+        _headSizes[stance] = s.HeadSize;
         return g;
+    }
+
+    /// <summary>The torso and head parts of a stance (0 stand, 1 crouch, 2 prone; self-test).</summary>
+    public (BodyParts Torso, BodyParts Head) Body(int stance) => (_torsoParts[stance], _headParts[stance]);
+
+    /// <summary>Rebuilds the three stances' torso and head parts when the look changes (colour, name, hat on or off).</summary>
+    private void PoseBody(Player p, bool hat)
+    {
+        if (_bodyBuilt && hat == _bodyHat && p.Color == _bodyColor && _id == p.Id && ReferenceEquals(_name, p.Name))
+            return;
+        (_bodyBuilt, _bodyHat, _bodyColor, _id, _name) = (true, hat, p.Color, p.Id, p.Name);
+        var v = BodyModel.VariantFor(p.Name, p.Id);
+        var c = BodyColors.For(p.Color, v);
+        for (var i = 0; i < 3; i++)
+            BodyModel.Build(_torsoParts[i], _headParts[i], i, v, c, hat);
     }
 
     /// <summary>The prestige hat: rebuilt only when it changes, posed on the visible stance's head (or by the corpse).</summary>
@@ -137,11 +149,6 @@ public sealed class PlayerRig
         if (color != _color)
         {
             _color = color;
-            foreach (var g in _stances)
-            {
-                g.Child(0).Renderable.Color = color;
-                g.Child(1).Child(0).Renderable.Color = color * 1.1f;
-            }
             _corpse.Renderable.Color = color * 0.4f;
             var lc = LegColors.For(color);
             _pelvisBox.Renderable.Color = lc.Of(LegAnimator.PelvisPart.Paint);
@@ -152,12 +159,16 @@ public sealed class PlayerRig
 
         _corpse.Visible = !p.Alive && !legsOnly;
         PoseHat(p, time, legsOnly);
+        if (!legsOnly)
+            PoseBody(p, _hat != null);
         Pelvis.Visible = p.Alive;
         _pelvisBox.Visible = !legsOnly;
         _health.Visible = _gear.Visible = p.Alive && !legsOnly;
         var stance = p.Alive && !legsOnly ? p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 } : -1;
         for (var i = 0; i < 3; i++)
             _stances[i].Visible = i == stance;
+        if (stance >= 0)
+            _torsoParts[stance].ShowDetail = _headParts[stance].ShowDetail = BodyModel.WantsDetail(p.RenderPosition);
         if (!p.Alive)
             return;
 

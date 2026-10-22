@@ -299,8 +299,11 @@ public static partial class SelfTest
         list.Clear();
         list.Flatten(rig.Root);
         list.Submit(newG);
-        if (newRec.Count != bare + Cosmetics.Get(HatId.Beanie)!.Boxes.Count)
-            Fail($"prestige: the beanie added {newRec.Count - bare} draws, want {Cosmetics.Get(HatId.Beanie)!.Boxes.Count}");
+        // (a hat replaces the body model's headwear: hair keeps only its back part under the hat)
+        var look = BodyModel.VariantFor(p.Name, p.Id);
+        var swap = BodyModel.HeadwearCount(look, true) - BodyModel.HeadwearCount(look, false);
+        if (newRec.Count != bare + Cosmetics.Get(HatId.Beanie)!.Boxes.Count + swap)
+            Fail($"prestige: the beanie added {newRec.Count - bare} draws, want {Cosmetics.Get(HatId.Beanie)!.Boxes.Count} hat boxes {swap:+0;-0} headwear");
         Line($"  models: hat parity {parity.Cases} poses, {parity.Draws} draws, worst {parity.Worst:0.0e0}, {parity.Bad} mismatching; top hat {topHat:0.00} m, ridiculous {tall:0.00} m ({tall / topHat:0.0}x); hidden in first person; standing hat boxes up to {tallest:0.00} m above the feet");
     }
 
