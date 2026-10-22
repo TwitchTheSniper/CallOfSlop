@@ -451,6 +451,7 @@ public sealed partial class Map
         }
 
         FoliageInstances = list.ToArray();
+        ResetFoliageCover(); // bot sight cover is built from these (FoliageCover.cs)
         FoliageHash = HashFoliage(FoliageInstances);
         AddTrunkColliders(trunks);
         stats.PlantMs = clock.Elapsed.TotalMilliseconds;

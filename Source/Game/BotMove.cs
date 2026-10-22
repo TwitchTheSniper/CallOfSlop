@@ -38,6 +38,7 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
+        World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
 
