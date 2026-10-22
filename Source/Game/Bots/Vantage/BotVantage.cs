@@ -178,8 +178,12 @@ public sealed partial class Game
     {
         if (b.Squad != null)
             return SquadOverwatchDecide(p, b, target, visible, now);
-        if (Module.CoOp || b.Dummy)
-            return false;
+        if (Module.CoOp || b.Dummy || b.ForcedGoal != null)
+        {
+            if (b.VState != VantageState.None)
+                VantageRelease(b, now, false);
+            return false; // (self-tests walking a bot somewhere: no detours)
+        }
         var band = VantageBandFor(p, b, out var airTarget);
         if (b.VantageLife != p.SpawnTick)
         {

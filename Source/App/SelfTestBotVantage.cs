@@ -70,7 +70,7 @@ public static partial class SelfTest
     /// A seeded game on <paramref name="map"/>: the given bots (Hard) on Blue, as many Red bots kept dead (minus one: the
     /// host is Red too) so nobody is moved over. The host is placed by the caller (or kept dead).
     /// </summary>
-    private static (Game Game, List<Player> Blue) VScenario(Map map, int seed, GameMode mode, params BotPersonality[] blue)
+    private static (Game Game, List<Player> Blue) VScenario(Map map, int seed, GameMode mode, ref double now, params BotPersonality[] blue)
     {
         Game.SeedNextGame = seed;
         World.SetMap(map);
@@ -96,8 +96,14 @@ public static partial class SelfTest
         }
         var host = game.Players[0];
         host.Team = 1;
-        host.Alive = false;
-        host.RespawnAt = 1e9;
+        KeepHostDead(game);
+        Tick(game, ref now, Game.CountdownSeconds + 0.5); // past the countdown (frozen, nobody can be hurt)
+        foreach (var p in bots.Skip(blue.Length))
+        {
+            p.Alive = false;
+            p.RespawnAt = 1e9;
+        }
+        KeepHostDead(game);
         return (game, squad);
     }
 
@@ -216,7 +222,8 @@ public static partial class SelfTest
     private static void CheckVantageSniperVsSmg()
     {
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
-        var (game, blue) = VScenario(map, 7301, GameMode.TeamDeathmatch, BotPersonality.Marksman, BotPersonality.Rusher);
+        var now = 0.0;
+        var (game, blue) = VScenario(map, 7301, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman, BotPersonality.Rusher);
         using var _ = game;
         var g = NavGraph.Current;
         if (!VDuelNodes(g, 34f, 55f, out var start, out var hostAt))
@@ -226,7 +233,6 @@ public static partial class SelfTest
         }
         var sniper = blue[0];
         var smg = blue[1];
-        var now = 0.0;
         PlaceHost(game, hostAt, start);
         game.SelfTestPlace(sniper, start, 0);
         var smgAt = FindNode(start, 1.5f, 5f, q => MathF.Abs(q.Y - start.Y) < 0.5f) ?? start + new Vector3(1.5f, 0, 0);
@@ -240,24 +246,25 @@ public static partial class SelfTest
         var farShots = 0;
         var startDist = FlatOf(smg.Position - hostAt).Length();
         var smgClosest = startDist;
+        var t0 = now;
         Tick(game, ref now, 30, () =>
         {
             var sb = sniper.Bot!;
             var shots = game.BotStats.Shots[(int)BotPersonality.Marksman];
             var dist = FlatOf(sniper.Position - host.Position).Length();
             if (sb.VState == VantageState.Travel && travelAt < 0)
-                travelAt = now;
+                travelAt = now - t0;
             if (sb.VState == VantageState.Hold && holdAt < 0)
-                holdAt = now;
+                holdAt = now - t0;
             if (holdAt < 0 && shots > marks0 && dist >= 30f)
                 farShots += shots - marks0;
             marks0 = shots;
             if (smg.Bot!.Mode == BotMode.Engage && smgEngageAt < 0)
-                smgEngageAt = now;
+                smgEngageAt = now - t0;
             if (game.BotStats.Shots[(int)BotPersonality.Rusher] > rush0 && smgShotAt < 0)
-                smgShotAt = now;
+                smgShotAt = now - t0;
             smgClosest = MathF.Min(smgClosest, FlatOf(smg.Position - host.Position).Length());
-            return holdAt > 0 && now - holdAt > 2 && smgEngageAt > 0;
+            return holdAt > 0 && now - t0 - holdAt > 2 && smgEngageAt > 0;
         });
         var sbr = sniper.Bot!;
         var spot = sbr.VantageOf is { } vm && sbr.VantageSpot >= 0 ? vm.Spots[sbr.VantageSpot] : default;
@@ -281,7 +288,8 @@ public static partial class SelfTest
     private static void CheckVantageHoldAndRelocate()
     {
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
-        var (game, blue) = VScenario(map, 7302, GameMode.TeamDeathmatch, BotPersonality.Marksman);
+        var now = 0.0;
+        var (game, blue) = VScenario(map, 7302, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman);
         using var _ = game;
         var vm = VantageMap.For(NavGraph.Current);
         if (vm == null || vm.Spots.Length == 0)
@@ -293,7 +301,6 @@ public static partial class SelfTest
         var b = sniper.Bot!;
         var spotIndex = Enumerable.Range(0, vm.Spots.Length).OrderByDescending(i => vm.Spots[i].ScoreLong).First();
         var spot = vm.Spots[spotIndex];
-        var now = 0.0;
         game.SelfTestPlace(sniper, spot.Pos, 0);
         VArm(sniper, VSniper, VPistol);
         b.ForceVantage = true;
@@ -320,7 +327,8 @@ public static partial class SelfTest
 
         // Shot by someone it can't see (out of the spot's sight, 10-30 m off): the spot is compromised, it moves.
         var eye = EyeAt(spot.Pos);
-        var hidden = FindNode(spot.Pos, 10f, 30f, q => !ClearLine(eye, Chest(q)) && !ClearLine(eye, EyeAt(q)), salt: 3);
+        var crouchEye = spot.Pos + new Vector3(0, World.EyeOf(Stance.Crouch), 0);
+        var hidden = FindNode(spot.Pos, 10f, 30f, q => !ClearLine(eye, Chest(q)) && !ClearLine(eye, EyeAt(q)) && !ClearLine(crouchEye, Chest(q)) && !ClearLine(crouchEye, EyeAt(q)), salt: 3);
         if (hidden is not { } hostAt)
         {
             Fail($"{map.Name}: no hidden spot near the vantage point (relocation test)");
@@ -328,10 +336,11 @@ public static partial class SelfTest
         }
         PlaceHost(game, hostAt, spot.Pos);
         var relocations = game.VantageRelocations;
-        game.SelfTestDamageWith(game.Players[0], sniper, 15, game.Players[0].Weapon, now);
+        var hit = game.SelfTestDamageWith(game.Players[0], sniper, 15, game.Players[0].Weapon, now);
+        var healthAfter = sniper.Health;
         Tick(game, ref now, 0.3);
         var moved = b.VantageSpot != spotIndex;
-        VNote($"shot from out of sight at ({hostAt.X:0},{hostAt.Z:0}): {b.VState}, spot {spotIndex} -> {b.VantageSpot}, compromised {game.SelfTestVantageCompromised(spotIndex, now)}, "
+        VNote($"shot from out of sight at ({hostAt.X:0},{hostAt.Z:0}) (health {healthAfter}, teams {sniper.Team}/{game.Players[0].Team}, phase {game.Phase}): {b.VState}, spot {spotIndex} -> {b.VantageSpot}, compromised {game.SelfTestVantageCompromised(spotIndex, now)}, "
               + $"holding flag {b.IsHoldingPosition}");
         if (game.VantageRelocations == relocations || !moved)
             Fail("shot from a flank at a vantage point, the bot didn't relocate");
@@ -348,7 +357,8 @@ public static partial class SelfTest
     private static void CheckVantageSidearm()
     {
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
-        var (game, blue) = VScenario(map, 7303, GameMode.TeamDeathmatch, BotPersonality.Marksman);
+        var now = 0.0;
+        var (game, blue) = VScenario(map, 7303, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman);
         using var _ = game;
         var g = NavGraph.Current;
         if (!VDuelNodes(g, 4.5f, 6.5f, out var start, out var hostAt))
@@ -357,16 +367,16 @@ public static partial class SelfTest
             return;
         }
         var sniper = blue[0];
-        var now = 0.0;
         game.SelfTestPlace(sniper, start, MathF.Atan2(hostAt.X - start.X, -(hostAt.Z - start.Z)));
         VArm(sniper, VSniper, VPistol);
         sniper.Bot!.ForceVantage = true;
         PlaceHost(game, hostAt, start);
         double drawnAt = -1;
+        var tDraw = now;
         Tick(game, ref now, 2, () =>
         {
             if (sniper.Weapon == sniper.Secondary && drawnAt < 0)
-                drawnAt = now;
+                drawnAt = now - tDraw;
             return drawnAt > 0;
         });
         var close = FlatOf(sniper.Position - game.Players[0].Position).Length();
@@ -377,11 +387,11 @@ public static partial class SelfTest
         else
             KeepHostDead(game);
         double backAt = -1;
-        var t0 = now;
+        var tBack = now;
         Tick(game, ref now, 5, () =>
         {
             if (sniper.Weapon == sniper.Primary && backAt < 0)
-                backAt = now - t0;
+                backAt = now - tBack;
             return backAt >= 0;
         });
         VNote($"sidearm: enemy at {close:0.0} m -> {Weapons.Get(sniper.Secondary).Name} out at {drawnAt:0.00} s; enemy gone -> {Weapons.Get(sniper.Primary).Name} back after {backAt:0.0} s");
@@ -398,11 +408,11 @@ public static partial class SelfTest
     private static void CheckVantageTwoSnipers()
     {
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
-        var (game, blue) = VScenario(map, 7304, GameMode.TeamDeathmatch, BotPersonality.Marksman, BotPersonality.Marksman);
+        var now = 0.0;
+        var (game, blue) = VScenario(map, 7304, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman, BotPersonality.Marksman);
         using var _ = game;
         var g = NavGraph.Current;
         var start = g.Nodes[LowestMainNode(g)];
-        var now = 0.0;
         game.SelfTestPlace(blue[0], start, 0);
         game.SelfTestPlace(blue[1], FindNode(start, 1.5f, 4f, q => MathF.Abs(q.Y - start.Y) < 0.5f) ?? start + new Vector3(1.5f, 0, 0), 0);
         foreach (var p in blue)
@@ -411,7 +421,8 @@ public static partial class SelfTest
             p.Bot!.ForceVantage = true;
         }
         KeepHostDead(game);
-        Tick(game, ref now, 4, () => blue.All(p => p.Bot!.VantageSpot >= 0) && now > 1.5);
+        var tPick = now;
+        Tick(game, ref now, 4, () => blue.All(p => p.Bot!.VantageSpot >= 0) && now - tPick > 1.5);
         int a = blue[0].Bot!.VantageSpot, c = blue[1].Bot!.VantageSpot;
         var vm = VantageMap.For(g)!;
         var apart = a >= 0 && c >= 0 ? Vector3.Distance(vm.Spots[a].Pos, vm.Spots[c].Pos) : 0f;
@@ -444,10 +455,10 @@ public static partial class SelfTest
     private static void CheckVantageKingOfTheHill()
     {
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
-        var (game, blue) = VScenario(map, 7305, GameMode.KingOfTheHill, BotPersonality.Marksman);
+        var now = 0.0;
+        var (game, blue) = VScenario(map, 7305, GameMode.KingOfTheHill, ref now, BotPersonality.Marksman);
         using var _ = game;
         var sniper = blue[0];
-        var now = 0.0;
         game.SelfTestPlace(sniper, NavGraph.Current.Nodes[LowestMainNode(NavGraph.Current)], 0);
         VArm(sniper, VSniper, VPistol);
         sniper.Bot!.ForceVantage = true;
@@ -479,15 +490,17 @@ public static partial class SelfTest
         var map = Maps.Find("Rooftops") ?? Maps.All[0];
         var (game, squad) = SquadScenario(map, 7306);
         using var _ = game;
+        var now = 0.0;
+        Tick(game, ref now, Game.CountdownSeconds + 0.5); // past the countdown
         KeepHostDead(game);
         var marksman = squad.First(p => p.Bot!.Personality == BotPersonality.Marksman);
         VArm(marksman, VSniper, VPistol);
-        var now = 0.0;
         var ordered = false;
+        var tOrder = now;
         Tick(game, ref now, 5, () =>
         {
             ordered |= marksman.Bot!.Order.Overwatch && marksman.Bot.VantageSpot >= 0;
-            return ordered && now > 2;
+            return ordered && now - tOrder > 2;
         });
         var b = marksman.Bot!;
         VNote($"Insane squad on {map.Name}: overwatch orders {game.SquadStats.OverwatchOrders}, the marksman ({b.Role}) at spot {b.VantageSpot}, {b.VState}, "
