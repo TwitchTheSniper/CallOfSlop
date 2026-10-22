@@ -212,6 +212,7 @@ public static partial class SelfTest
     {
         var sw = Stopwatch.StartNew();
         var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, yard.SourceFile!)), yard.SourceFile!); // (same source path: the same pack, so the same props)
+        copy.Validate(); // as the map list does (spawns and waypoints moved out of geometry; both count in the fingerprint)
         var loadMs = sw.Elapsed.TotalMilliseconds;
         var names = yard.PlacedBuildings.Select(b => b.Def.Name).Distinct().ToList();
         var shell = yard.PlacedBuildings.Sum(b => b.ShellCount);
@@ -530,6 +531,16 @@ public static partial class SelfTest
         var path = new int[4096];
         int rooms = 0, reached = 0, stairs = 0, climbed = 0, noNode = 0;
         var missing = new List<string>();
+        var detail = new List<string>();
+        var perBuilding = new Dictionary<string, (int Rooms, int Reached, int Stairs, int Climbed)>();
+        string Why(Vector3 p)
+        {
+            var k = g.Nearest(p, needSight: false);
+            var near = k >= 0 ? g.Nodes[k] : Vector3.Zero;
+            var down = World.Physics.Raycast(p + new Vector3(0, 1f, 0), -Vector3.UnitY, 3f, QueryFilter.Navigation);
+            return $"at ({p.X:0.0}, {p.Y:0.00}, {p.Z:0.0}): nearest node {(k >= 0 ? $"({near.X:0.0}, {near.Y:0.00}, {near.Z:0.0})" : "none")}, "
+                   + $"body there blocked {World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0))}, floor {1f - down:0.00} m below";
+        }
         foreach (var b in yard.PlacedBuildings)
         {
             var front = b.Plan.Doors.FirstOrDefault(d => d.Front) ?? b.Plan.Doors.FirstOrDefault();
@@ -542,38 +553,64 @@ public static partial class SelfTest
                     return -1;
                 return k;
             }
+            var key = $"{b.Def.Name} #{b.Index}";
+            var pb = (Rooms: 0, Reached: 0, Stairs: 0, Climbed: 0);
             foreach (var r in b.Plan.Rooms)
             {
                 rooms++;
+                pb.Rooms++;
                 var goal = Node(r.Waypoint);
                 if (goal < 0)
                 {
                     noNode++;
-                    missing.Add($"{b.Def.Name} #{b.Index} room {r.Floor}:{r.Id} (no nav node at its waypoint)");
+                    missing.Add($"{key} room {r.Floor}:{r.Id} (no nav node at its waypoint)");
+                    if (detail.Count < 6)
+                        detail.Add($"{key} {r.Floor}:{r.Id} no node {Why(r.Waypoint)}");
                     continue;
                 }
                 if (start >= 0 && search.Find(g, start, goal, path, maxExpand: 60000) > 0)
+                {
                     reached++;
+                    pb.Reached++;
+                }
                 else
-                    missing.Add($"{b.Def.Name} #{b.Index} room {r.Floor}:{r.Id}");
+                    missing.Add($"{key} room {r.Floor}:{r.Id}");
             }
-            foreach (var (_, top) in b.Plan.Stairs)
+            foreach (var (bottom, top) in b.Plan.Stairs)
             {
                 stairs++;
+                pb.Stairs++;
                 var goal = Node(top);
                 if (goal >= 0 && start >= 0 && search.Find(g, start, goal, path, maxExpand: 60000) > 0)
+                {
                     climbed++;
+                    pb.Climbed++;
+                }
                 else
-                    missing.Add($"{b.Def.Name} #{b.Index} stairs up to {top.Y:0.0} m");
+                {
+                    missing.Add($"{key} stairs up to {top.Y:0.0} m");
+                    var foot = Node(bottom);
+                    if (detail.Count < 10)
+                        detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, top node {goal}; top {Why(top)}");
+                }
             }
+            perBuilding[key] = pb;
         }
         Line($"bots on Building Yard: nav graph {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.BuildMs:0} ms); rooms reached from the front door {reached} of {rooms} ({noNode} without a node), "
              + $"stair tops reached {climbed} of {stairs}");
-        foreach (var m in missing.Take(10))
+        foreach (var m in missing.Take(40))
             Line("  unreachable: " + m);
+        foreach (var d in detail)
+            Line("  why: " + d);
         if (g.Nodes.Length == 0)
             Fail("no nav graph for Building Yard");
         else if (reached < rooms || climbed < stairs)
-            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on Building Yard");
+        {
+            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on Building Yard: "
+                 + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
+                     .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
+            foreach (var d in detail.Take(6))
+                Fail("  nav detail: " + d);
+        }
     }
 }

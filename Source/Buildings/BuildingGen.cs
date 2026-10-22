@@ -171,6 +171,12 @@ internal sealed partial class BuildingGenerator
                 for (var b = a + 1; b < rooms.Count; b++)
                     if (Joined(f, a, b) && rooms[a].Rects.Any(x => rooms[b].Rects.Any(y => x.Inset(-0.01f).Overlaps(y))))
                         _plan.Links.Add(($"{f}:{rooms[a].Id}", $"{f}:{rooms[b].Id}")); // open plan: no wall between them
+            // Open-plan joins get waypoints on both sides, like a doorway (bots path through, furniture keeps clear).
+            foreach (var j in OpenJoints(f).Where(j => j.A < j.B))
+            {
+                _plan.Waypoints.Add(P(j.Mid.X - j.N.X * 0.9f, _level[f], j.Mid.Y - j.N.Y * 0.9f));
+                _plan.Waypoints.Add(P(j.Mid.X + j.N.X * 0.9f, _level[f], j.Mid.Y + j.N.Y * 0.9f));
+            }
         }
         for (var f = 0; f < n; f++)
             AttachOpenings(f);
@@ -279,6 +285,44 @@ internal sealed partial class BuildingGenerator
         var ra = _floors[f].Rooms[a];
         var rb = _floors[f].Rooms[b];
         return ra.OpenTo.Contains(rb.Id, StringComparer.OrdinalIgnoreCase) || rb.OpenTo.Contains(ra.Id, StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Where two open-plan rooms on floor <paramref name="f"/> meet (no wall between): for each shared edge at least 1 m
+    /// long, its middle and the unit normal from room A into room B.
+    /// </summary>
+    private List<(int A, int B, Vector2 Mid, Vector2 N, float Len)> OpenJoints(int f)
+    {
+        var list = new List<(int, int, Vector2, Vector2, float)>();
+        var rooms = _floors[f].Rooms;
+        for (var a = 0; a < rooms.Count; a++)
+            for (var b = 0; b < rooms.Count; b++)
+            {
+                if (a == b || !Joined(f, a, b))
+                    continue;
+                foreach (var ra in rooms[a].Rects)
+                    foreach (var rb in rooms[b].Rects)
+                    {
+                        // ra's east edge on rb's west edge, etc.: overlap along the edge.
+                        float lo, hi;
+                        if (MathF.Abs(ra.X1 - rb.X0) < 0.01f || MathF.Abs(ra.X0 - rb.X1) < 0.01f)
+                        {
+                            lo = MathF.Max(ra.Z0, rb.Z0);
+                            hi = MathF.Min(ra.Z1, rb.Z1);
+                            if (hi - lo >= 1f)
+                                list.Add((a, b, new Vector2(MathF.Abs(ra.X1 - rb.X0) < 0.01f ? ra.X1 : ra.X0, (lo + hi) / 2), new Vector2(MathF.Abs(ra.X1 - rb.X0) < 0.01f ? 1 : -1, 0), hi - lo));
+                        }
+                        else if (MathF.Abs(ra.Z1 - rb.Z0) < 0.01f || MathF.Abs(ra.Z0 - rb.Z1) < 0.01f)
+                        {
+                            lo = MathF.Max(ra.X0, rb.X0);
+                            hi = MathF.Min(ra.X1, rb.X1);
+                            if (hi - lo >= 1f)
+                                list.Add((a, b, new Vector2((lo + hi) / 2, MathF.Abs(ra.Z1 - rb.Z0) < 0.01f ? ra.Z1 : ra.Z0), new Vector2(0, MathF.Abs(ra.Z1 - rb.Z0) < 0.01f ? 1 : -1), hi - lo));
+                        }
+                    }
+            }
+        // Each pair once (a < b) for waypoints; DoorZones and Pois use both directions.
+        return list;
     }
 
     /// <summary>The room on floor <paramref name="f"/> whose rects contain the point (strictly), or -1.</summary>

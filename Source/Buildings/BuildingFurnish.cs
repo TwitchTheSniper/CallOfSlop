@@ -214,6 +214,17 @@ internal sealed partial class BuildingGenerator
             var (c0, c1) = (MathF.Min(face, far), MathF.Max(face, far));
             list.Add(a.S.AlongX ? new BRect(a.Along - half, c0, a.Along + half, c1) : new BRect(c0, a.Along - half, c1, a.Along + half));
         }
+        // An open-plan join is a doorway too: a 1.4 m wide strip on this room's side of the middle of the shared edge.
+        foreach (var j in OpenJoints(f))
+        {
+            if (j.B != r)
+                continue;
+            var far = j.Mid + j.N * BuildingGen.DoorClearDepth; // into room r (B)
+            var side = new Vector2(j.N.Y, j.N.X) * 0.7f;
+            var p0 = j.Mid - side;
+            var p1 = far + side;
+            list.Add(new BRect(MathF.Min(p0.X, p1.X), MathF.Min(p0.Y, p1.Y), MathF.Max(p0.X, p1.X), MathF.Max(p0.Y, p1.Y)));
+        }
         return list;
     }
 
@@ -229,6 +240,9 @@ internal sealed partial class BuildingGenerator
             var c = a.S.C + dir * 0.9f;
             list.Add(a.S.AlongX ? new Vector2(a.Along, c) : new Vector2(c, a.Along));
         }
+        foreach (var j in OpenJoints(f))
+            if (j.B == r)
+                list.Add(j.Mid + j.N * 0.9f); // an open-plan join, 0.9 m into this room
         foreach (var (_, sf, _, bottom, top) in _stairPlans)
         {
             if (sf == f && RoomAt(f, bottom.X, bottom.Y) == r)

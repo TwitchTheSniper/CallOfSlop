@@ -706,6 +706,9 @@ class Generator:
         for f in range(n):
             self.check_rooms(f)
             self.segs.append(build_segs(self.room_items(f), lambda a, b, f=f: self.joined(f, a, b)))
+            for a, b, mid, nn, ln in self.open_joints(f):
+                if a < b:
+                    self.plan.waypoints += [self.P(mid[0] - nn[0] * 0.9, self.level[f], mid[1] - nn[1] * 0.9), self.P(mid[0] + nn[0] * 0.9, self.level[f], mid[1] + nn[1] * 0.9)]
         for f in range(n):
             for o in self.floors[f]["openings"]:
                 self.attach(f, o, False)
@@ -781,6 +784,27 @@ class Generator:
     def joined(self, f, a, b):
         ra, rb = self.floors[f]["rooms"][a], self.floors[f]["rooms"][b]
         return rb["id"].lower() in ra["openTo"] or ra["id"].lower() in rb["openTo"]
+
+    def open_joints(self, f):
+        out = []
+        rooms = self.floors[f]["rooms"]
+        for a in range(len(rooms)):
+            for b in range(len(rooms)):
+                if a == b or not self.joined(f, a, b):
+                    continue
+                for ra in rooms[a]["rects"]:
+                    for rb in rooms[b]["rects"]:
+                        if abs(ra[2] - rb[0]) < 0.01 or abs(ra[0] - rb[2]) < 0.01:
+                            lo, hi = max(ra[1], rb[1]), min(ra[3], rb[3])
+                            if hi - lo >= 1:
+                                east = abs(ra[2] - rb[0]) < 0.01
+                                out.append((a, b, (ra[2] if east else ra[0], (lo + hi) / 2), (1 if east else -1, 0), hi - lo))
+                        elif abs(ra[3] - rb[1]) < 0.01 or abs(ra[1] - rb[3]) < 0.01:
+                            lo, hi = max(ra[0], rb[0]), min(ra[2], rb[2])
+                            if hi - lo >= 1:
+                                south = abs(ra[3] - rb[1]) < 0.01
+                                out.append((a, b, ((lo + hi) / 2, ra[3] if south else ra[1]), (0, 1 if south else -1), hi - lo))
+        return out
 
     def room_at(self, f, x, z):
         for i, room in enumerate(self.floors[f]["rooms"]):
@@ -1261,6 +1285,14 @@ class Generator:
             half = a["o"]["width"] / 2 + 0.2
             c0, c1 = min(face, far), max(face, far)
             out.append((a["along"] - half, c0, a["along"] + half, c1) if a["s"].along_x else (c0, a["along"] - half, c1, a["along"] + half))
+        for a, b, mid, nn, ln in self.open_joints(f):
+            if b != r:
+                continue
+            far = (mid[0] + nn[0] * DOOR_CLEAR_DEPTH, mid[1] + nn[1] * DOOR_CLEAR_DEPTH)
+            side = (nn[1] * 0.7, nn[0] * 0.7)
+            p0 = (mid[0] - side[0], mid[1] - side[1])
+            p1 = (far[0] + side[0], far[1] + side[1])
+            out.append((min(p0[0], p1[0]), min(p0[1], p1[1]), max(p0[0], p1[0]), max(p0[1], p1[1])))
         return out
 
     def pois(self, f, r):
@@ -1271,6 +1303,9 @@ class Generator:
             dr = 1 if a["s"].pos == r else -1
             c = a["s"].c + dr * 0.9
             out.append((a["along"], c) if a["s"].along_x else (c, a["along"]))
+        for a, b, mid, nn, ln in self.open_joints(f):
+            if b == r:
+                out.append((mid[0] + nn[0] * 0.9, mid[1] + nn[1] * 0.9))
         for s, sf, rr, bottom, top in self.stair_plans:
             if sf == f and self.room_at(f, *bottom) == r:
                 out.append(bottom)
