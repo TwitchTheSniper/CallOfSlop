@@ -166,7 +166,7 @@ public sealed partial class Ui
                 var ok = p.Ready || p.Bot != null;
                 ImGui.TextColored(ok ? Green : Red, ok ? "[x]"u8 : "[ ]"u8);
                 ImGui.SameLine();
-                ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
+                ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
             }
             var key = Keybinds.Name(settings.Bind(GameAction.Ready));
             if (game.Local is { } me && ImGui.Button(me.Ready ? $"NOT READY ({key})###rdy" : $"READY ({key})###rdy", new float2(180 * _scale, 0)))
@@ -265,7 +265,7 @@ public sealed partial class Ui
                         var tag = mode.ScoreboardTag(game, p);
                         var carrier = (tag.Length > 0 ? " " + tag : "")
                                       + (mode.TeamBased && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
-                        ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier);
+                        ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                         var (cell1, cell2) = mode.ScoreboardCells(game, p);
                         ImGui.TableNextColumn();
                         ImGui.Text(cell1);

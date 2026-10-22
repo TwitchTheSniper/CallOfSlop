@@ -57,7 +57,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     placed with "respawn" is back), and kill id 254 (Game.LandmineKillId, "Landmine") for neutral blasts.
     // 32: the pre-match lobby room (PreMatchLobby.cs): MatchPhase.Lobby (4) in snapshots, the server info and MatchStart,
     //     and Msg.LobbyState / ChatSay / ChatLine at the end of Msg (lobby settings and pings, lobby chat).
-    public const byte ProtocolVersion = 32;
+    // 33: in-match text chat and voice chat (LobbyChat.cs, GameVoice.cs): ChatSay gains a flags byte (team), ChatLine gains
+    //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
+    public const byte ProtocolVersion = 33;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

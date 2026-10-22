@@ -37,6 +37,17 @@ public sealed class Settings
     public float FrenzyVolume = 0.8f; // Settings > Audio > Frenzy volume, on top of the music volume
     public bool VSync = true;
 
+    // Voice and chat (Settings > Audio, Source/Audio/Voice). The microphone stays off until the player turns it on.
+    public VoiceMode VoiceMode = VoiceMode.Proximity; // how you talk; Off: no voice at all (you hear nobody either)
+    public bool VoiceTransmit; // "Use my microphone": off on first run
+    public bool VoiceActivation; // false: push to talk; true: transmit while the level is over the threshold
+    public float VoiceThresholdDb = VoiceSender.DefaultThresholdDb;
+    public string VoiceDevice = ""; // capture device name ("" = the system default)
+    public float VoiceVolume = 1f; // other players' voices, on top of the master volume
+    public bool VoiceMuteAll; // hear no voices (your own mic is unaffected)
+    public bool AllowVoice = true; // hosting: relay voice chat at all
+    public bool DeadChatPrivate; // hosting: dead players' chat in a live match reaches only the dead
+
     /// <summary>A small fps counter in the top-right corner.</summary>
     public bool ShowFps = true;
     public bool ShowNetStats = true;
@@ -201,6 +212,15 @@ public sealed class Settings
                     case "frenzy_music": s.FrenzyMusic = v != "0"; break;
                     case "frenzy_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FrenzyVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
+                    case "voice_mode" when Enum.TryParse<VoiceMode>(v, true, out var vm) && Enum.IsDefined(vm): s.VoiceMode = vm; break;
+                    case "voice_transmit": s.VoiceTransmit = v == "1"; break;
+                    case "voice_activation": s.VoiceActivation = v == "1"; break;
+                    case "voice_threshold" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.VoiceThresholdDb = Math.Clamp(f, VoiceSender.MinThresholdDb, VoiceSender.MaxThresholdDb); break;
+                    case "voice_device": s.VoiceDevice = new string(v.Where(c => c >= 32).Take(200).ToArray()); break;
+                    case "voice_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.VoiceVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "voice_mute_all": s.VoiceMuteAll = v == "1"; break;
+                    case "allow_voice": s.AllowVoice = v != "0"; break;
+                    case "dead_chat": s.DeadChatPrivate = v == "dead"; break;
                     case "show_fps": s.ShowFps = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
                     case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
@@ -280,6 +300,15 @@ public sealed class Settings
                     $"frenzy_music={(FrenzyMusic ? 1 : 0)}",
                     $"frenzy_volume={FrenzyVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
+                    $"voice_mode={VoiceMode}",
+                    $"voice_transmit={(VoiceTransmit ? 1 : 0)}",
+                    $"voice_activation={(VoiceActivation ? 1 : 0)}",
+                    $"voice_threshold={VoiceThresholdDb.ToString(inv)}",
+                    $"voice_device={VoiceDevice}",
+                    $"voice_volume={VoiceVolume.ToString(inv)}",
+                    $"voice_mute_all={(VoiceMuteAll ? 1 : 0)}",
+                    $"allow_voice={(AllowVoice ? 1 : 0)}",
+                    $"dead_chat={(DeadChatPrivate ? "dead" : "all")}",
                     $"show_fps={(ShowFps ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
                     $"bots={Bots}",

@@ -65,8 +65,12 @@ public enum Msg : byte
     RocketBoom, // server -> all: a launcher projectile went off / was a dud / left the map, or its target popped flares (reliable)
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
     LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
-    ChatSay, // client -> server: a lobby chat line (reliable; the server cleans and rate-limits it, LobbyChat.cs)
-    ChatLine, // server -> all: player X said this in the lobby chat (reliable)
+    ChatSay, // client -> server: a chat line (+ flags: team, protocol 33) (reliable; the server cleans and rate-limits it, LobbyChat.cs)
+    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system, and X's team; protocol 33) (reliable; LobbyChat.cs)
+    VoiceUp, // client -> server: one 20 ms voice frame (sequence, flags: team radio, IMA-ADPCM frame) (unreliable; GameVoice.cs)
+    VoiceDown, // server -> each listener it reaches: talker X's voice frame (talker, sequence, route, frame) (unreliable; never back to the talker)
+    VoiceCtl, // client -> server: my voice preferences (bit 0: I listen to voice) (reliable)
+    VoiceInfo, // server -> one client: the host's voice settings (bit 0: voice chat allowed) (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
