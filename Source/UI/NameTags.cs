@@ -392,6 +392,9 @@ public sealed class NameTags
         return clear;
     }
 
-    /// <summary>The colour of a tag: team colour in team modes (and for teammates anywhere), <see cref="NameTagRules.EnemyColour"/> for enemies without teams.</summary>
-    public Vector3 ColourOf(Game game, Player p, bool friendly) => game.IsTeamMode || friendly ? p.Color : Rules.EnemyColour;
+    /// <summary>
+    /// The colour of a tag: team colour in team modes (and for teammates anywhere; the friendly Blue for everyone in Zombies, see
+    /// <see cref="Game.SideColor"/>), <see cref="NameTagRules.EnemyColour"/> for enemies without teams.
+    /// </summary>
+    public Vector3 ColourOf(Game game, Player p, bool friendly) => game.IsTeamMode || friendly ? game.SideColor(p) : Rules.EnemyColour;
 }

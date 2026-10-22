@@ -61,7 +61,7 @@ public sealed partial class Ui
             foreach (var p in game.Players.Values.Where(p => p.Id != me.Id).OrderBy(p => p.Id))
             {
                 var zp = game.ZP(p);
-                var c = p.Color;
+                var c = game.SideColor(p); // teammates: the friendly colour, not their own palette colour (which can be red)
                 ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), $"{game.NameOf(p.Id)}: {zp.Points}{(zp.Downed ? "  (DOWN)" : !p.Alive ? "  (out)" : "")}");
             }
         }
