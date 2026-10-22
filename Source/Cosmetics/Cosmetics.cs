@@ -145,9 +145,9 @@ public static class Cosmetics
         var root = doc.RootElement;
         if (root.ValueKind != JsonValueKind.Object)
             throw new FormatException($"{source}: expected one JSON object");
-        if (!root.TryGetProperty("format", out var fmt) || fmt.GetString() != Format)
+        if (!root.TryGetProperty("format"u8, out var fmt) || fmt.GetString() != Format)
             throw new FormatException($"{source}: expected \"format\": \"{Format}\"");
-        if (!root.TryGetProperty("hats", out var hats) || hats.ValueKind != JsonValueKind.Array)
+        if (!root.TryGetProperty("hats"u8, out var hats) || hats.ValueKind != JsonValueKind.Array)
             throw new FormatException($"{source}: needs \"hats\": [ ... ]");
         var list = new List<HatDef>();
         var n = 0;
@@ -169,9 +169,9 @@ public static class Cosmetics
             var def = new HatDef
             {
                 Id = id, Key = key, Name = name, Prestige = prestige,
-                Wobble = e.TryGetProperty("wobble", out var wb) ? Math.Clamp(wb.GetSingle(), 0, 2) : 0,
+                Wobble = e.TryGetProperty("wobble"u8, out var wb) ? Math.Clamp(wb.GetSingle(), 0, 2) : 0,
             };
-            if (!e.TryGetProperty("parts", out var parts) || parts.ValueKind != JsonValueKind.Array || parts.GetArrayLength() == 0)
+            if (!e.TryGetProperty("parts"u8, out var parts) || parts.ValueKind != JsonValueKind.Array || parts.GetArrayLength() == 0)
                 throw new FormatException($"{where}: needs \"parts\"");
             var boxes = new List<HatBox>();
             var k = 0;
@@ -191,7 +191,7 @@ public static class Cosmetics
 
     private static void ReadPart(JsonElement p, string where, List<HatBox> boxes)
     {
-        var shape = p.TryGetProperty("shape", out var s) ? s.GetString() ?? "box" : "box";
+        var shape = p.TryGetProperty("shape"u8, out var s) ? s.GetString() ?? "box" : "box";
         var at = Vec(p, "at", where, Vector3.Zero);
         var size = Vec(p, "size", where, null);
         if (size.X <= 0 || size.Y <= 0 || size.Z <= 0)
@@ -207,7 +207,7 @@ public static class Cosmetics
                 break;
             case "round":
                 // A union of squares turned around Y: always covers the head's own square, reads as round from any side.
-                var sides = p.TryGetProperty("sides", out var sd) ? sd.GetInt32() : 4;
+                var sides = p.TryGetProperty("sides"u8, out var sd) ? sd.GetInt32() : 4;
                 if (sides < 1 || sides > 8)
                     throw new FormatException($"{where}: \"sides\" is 1..8");
                 for (var i = 0; i < sides; i++)
@@ -250,7 +250,7 @@ public static class Cosmetics
 
     private static Vector3 Color(JsonElement e, string where)
     {
-        var text = e.TryGetProperty("color", out var v) ? v.GetString() ?? "" : "";
+        var text = e.TryGetProperty("color"u8, out var v) ? v.GetString() ?? "" : "";
         if (text.Length != 7 || text[0] != '#' || !int.TryParse(text.AsSpan(1), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var rgb))
             throw new FormatException($"{where}: \"color\" is \"#rrggbb\"");
         return new Vector3((rgb >> 16 & 255) / 255f, (rgb >> 8 & 255) / 255f, (rgb & 255) / 255f);
