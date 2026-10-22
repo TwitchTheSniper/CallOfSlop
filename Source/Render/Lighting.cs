@@ -20,9 +20,14 @@ namespace CallOfSlop;
 /// from the map's centre so it doesn't depend on the camera, and the sky gradient below the horizon is the horizon
 /// colour, so the far ground meets the sky without a dark band. Zero for every other map (their look is unchanged).
 /// </param>
+/// <param name="OuterStarts">
+/// With <see cref="OuterFog"/>: where the fade starts in each direction (<see cref="Map.OuterFogStarts"/>); the fade
+/// then runs over OuterFog's end minus start. Null: the start radius OuterFog.z in every direction.
+/// </param>
 public readonly record struct LightSetup(
     Vector3 SunDir, Vector3 SunColor, Vector3 AmbSky, Vector3 AmbGround, float FogMax,
-    bool SkyFog, Vector3 Zenith, Vector3 Horizon, Vector3 Ground, Vector3 HazeDir, Vector4 Haze, Vector4 OuterFog = default);
+    bool SkyFog, Vector3 Zenith, Vector3 Horizon, Vector3 Ground, Vector3 HazeDir, Vector4 Haze, Vector4 OuterFog = default,
+    float[]? OuterStarts = null);
 
 /// <summary>
 /// The scene's one light setup, shared by every renderer so boxes, terrain, foliage, props and meshes are lit the
@@ -98,6 +103,7 @@ public static unsafe class Lighting
         uniform vec3 uSkyHazeDir; // towards the real sun
         uniform vec4 uSkyHaze;    // horizon glow colour, strength
         uniform vec4 uOuterFog;   // flat shaped maps: centre x, z, start / end radius (w <= z: off); see LightSetup.OuterFog
+        uniform vec4 uOuterR[16]; // with uOuterFog: the fade's start radius per direction, 64 packed 4 to a vec4 (Map.OuterFogStarts)
 
         // wrap: 0 = plain Lambert (solid surfaces), ~0.5 = leaves (light leaks round the edges)
         vec3 ApplyLight(vec3 albedo, vec3 n, float wrap)
@@ -123,6 +129,21 @@ public static unsafe class Lighting
             return mix(c, uSkyHaze.rgb, clamp(h, 0.0, 1.0));
         }
 
+        // The horizon fade's start radius in direction d from the centre (between the two nearest of 64 directions).
+        float OuterStart(vec2 d)
+        {
+            if (dot(d, d) < 1e-8)
+                return uOuterR[0].x; // (atan(0, 0) is undefined)
+            float a = atan(d.y, d.x) * (64.0 / 6.28318531);
+            if (a < 0.0)
+                a += 64.0;
+            int i = int(a);
+            float t = a - float(i);
+            i = i % 64;
+            int j = (i + 1) % 64;
+            return mix(uOuterR[i >> 2][i & 3], uOuterR[j >> 2][j & 3], t);
+        }
+
         vec3 ApplyFog(vec3 col, vec3 world)
         {
             if (uFogRange.y <= uFogRange.x)
@@ -131,7 +152,11 @@ public static unsafe class Lighting
             float dist = length(v);
             float f = clamp((dist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0) * uFogMax;
             if (uOuterFog.w > uOuterFog.z) // past a shaped map's outline: fully into the horizon, wherever the camera is
-                f = max(f, smoothstep(uOuterFog.z, uOuterFog.w, length(world.xz - uOuterFog.xy)));
+            {
+                vec2 od = world.xz - uOuterFog.xy;
+                float os = OuterStart(od);
+                f = max(f, smoothstep(os, os + (uOuterFog.w - uOuterFog.z), length(od)));
+            }
             vec3 fogCol = uSkyFog > 0.5 ? SkyGradient(v / max(dist, 1e-4)) : uFog;
             return mix(col, fogCol, f);
         }
@@ -192,6 +217,10 @@ public static unsafe class Lighting
         Native.glUniform3f(Loc(program, "uSkyHazeDir\0"u8), l.HazeDir.X, l.HazeDir.Y, l.HazeDir.Z);
         Native.glUniform4f(Loc(program, "uSkyHaze\0"u8), l.Haze.X, l.Haze.Y, l.Haze.Z, l.Haze.W);
         Native.glUniform4f(Loc(program, "uOuterFog\0"u8), l.OuterFog.X, l.OuterFog.Y, l.OuterFog.Z, l.OuterFog.W);
+        var starts = stackalloc float[Map.OuterFogDirections];
+        for (var i = 0; i < Map.OuterFogDirections; i++)
+            starts[i] = l.OuterStarts is { Length: Map.OuterFogDirections } r ? r[i] : l.OuterFog.Z;
+        Native.glUniform4fv(Loc(program, "uOuterR\0"u8), Map.OuterFogDirections / 4, starts); // packed 4 per vec4 (fewer uniform slots)
     }
 
     private static int Loc(uint program, ReadOnlySpan<byte> nameZ)
@@ -200,7 +229,7 @@ public static unsafe class Lighting
             return Native.glGetUniformLocation(new GlProgram(program), p);
     }
 
-    /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree).</summary>
+    /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree); the array uOuterR is apart.</summary>
     public static readonly string[] UniformNames =
         ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog"];
 
@@ -212,6 +241,21 @@ public static unsafe class Lighting
         if (l.OuterFog.W > l.OuterFog.Z)
             d = Vector3.Normalize(new Vector3(d.X, MathF.Max(d.Y, 0f), d.Z) + new Vector3(0f, 1e-5f, 0f));
         return SkySettings.Gradient(d, l.Zenith, l.Horizon, l.Ground, l.HazeDir, new Vector3(l.Haze.X, l.Haze.Y, l.Haze.Z), l.Haze.W);
+    }
+
+    /// <summary>C# mirror of <see cref="Glsl"/>'s OuterStart: the horizon fade's start radius in direction <paramref name="d"/> (x, z) from its centre.</summary>
+    public static float OuterStart(in LightSetup l, Vector2 d)
+    {
+        const int n = Map.OuterFogDirections;
+        if (l.OuterStarts is not { Length: n } r)
+            return l.OuterFog.Z;
+        var a = MathF.Atan2(d.Y, d.X) * (n / MathF.Tau);
+        if (a < 0f)
+            a += n;
+        var i = (int)a;
+        var t = a - i;
+        i %= n;
+        return r[i] + (r[(i + 1) % n] - r[i]) * t;
     }
 
     /// <summary>
@@ -227,8 +271,9 @@ public static unsafe class Lighting
         var f = Math.Clamp((dist - range.X) / (range.Y - range.X), 0f, 1f) * l.FogMax;
         if (l.OuterFog.W > l.OuterFog.Z)
         {
-            var r = Vector2.Distance(new Vector2(world.X, world.Z), new Vector2(l.OuterFog.X, l.OuterFog.Y));
-            var t = Math.Clamp((r - l.OuterFog.Z) / (l.OuterFog.W - l.OuterFog.Z), 0f, 1f);
+            var od = new Vector2(world.X - l.OuterFog.X, world.Z - l.OuterFog.Y);
+            var os = OuterStart(l, od);
+            var t = Math.Clamp((od.Length() - os) / (l.OuterFog.W - l.OuterFog.Z), 0f, 1f);
             f = MathF.Max(f, t * t * (3f - 2f * t));
         }
         var fogCol = l.SkyFog ? SkyGradient(l, v / MathF.Max(dist, 1e-4f)) : fog;

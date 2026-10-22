@@ -183,6 +183,12 @@ public sealed partial class Game
 
     public bool IsTeamMode => GameModes.IsTeam(Mode);
 
+    /// <summary>
+    /// The colour a player is shown in on the HUD and their name tag: their team's colour in team modes, the friendly team colour
+    /// (Blue) for everyone in Zombies (one co-op side), otherwise their own <see cref="Player.Color"/>.
+    /// </summary>
+    public Vector3 SideColor(Player p) => Mode == GameMode.Zombies ? GameModes.TeamColors[0] : p.Color;
+
     /// <summary>Kill streaks are off in Gun Game (<see cref="StreaksEnabled"/> follows it).</summary>
     public bool ModeAllowsStreaks => Mode is not (GameMode.GunGame or GameMode.Zombies);
 

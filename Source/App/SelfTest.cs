@@ -115,6 +115,7 @@ public static partial class SelfTest
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
             Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
+            Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run

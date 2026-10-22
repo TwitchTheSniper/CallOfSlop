@@ -412,7 +412,7 @@ public sealed partial class Ui : IDisposable
                 var rank = 1;
                 foreach (var p in game.Players.Values.OrderBy(q => game.IsTeamMode ? q.Team : 0).ThenByDescending(q => q.GunLevel).ThenByDescending(q => q.Kills).ThenBy(q => q.Deaths))
                 {
-                    var c = p.Color;
+                    var c = game.SideColor(p); // Zombies: everyone in the friendly colour
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
@@ -491,7 +491,7 @@ public sealed partial class Ui : IDisposable
                 ImGui.TableHeadersRow();
                 foreach (var p in game.Players.Values.OrderByDescending(q => q.Kills).ThenBy(q => q.Deaths))
                 {
-                    var c = p.Color;
+                    var c = game.SideColor(p); // Zombies: everyone in the friendly colour
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
