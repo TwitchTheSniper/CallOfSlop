@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "carparkstairs",
+  "description": "The stairwell: a bin, litter, a sad plastic bag.",
+  "items": [
+    {"props": ["Post Litter Bin"], "place": "corner"},
+    {"props": ["Litter", "Plastic Bag", "Newspaper", "Soda Cans"], "place": "floor", "count": [1, 2]}
+  ]
+}

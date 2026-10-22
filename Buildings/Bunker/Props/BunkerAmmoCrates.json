@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Ammo Crates",
+  "description": "A stack of green ammunition boxes and a wooden grenade crate.",
+  "collision": "solid",
+  "collider": [{"size": [1, 0.96, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "wood", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.6, 0.3, 0.3], "offset": [-0.2, 0.15, 0.05], "color": "#4a5232", "material": "metal"},
+    {"size": [0.6, 0.3, 0.3], "offset": [0.25, 0.15, -0.1], "color": "#4a5232", "material": "metal"},
+    {"size": [0.6, 0.3, 0.3], "offset": [0, 0.45, 0], "color": "#4a5232", "material": "metal"},
+    {"size": [0.7, 0.35, 0.45], "offset": [0.1, 0.78, -0.02], "color": "#7a6a42", "material": "wood"},
+    {"size": [0.3, 0.06, 0.01], "offset": [0.1, 0.8, 0.205], "color": "#e8e8d0"}
+  ]
+}

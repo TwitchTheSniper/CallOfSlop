@@ -24,7 +24,21 @@ public static class DecalFile
     public const int MaxImageSize = 512;
 
     /// <summary>Material names an "impact" may list (the box surface textures, the terrain, and Default for anything else).</summary>
-    public static readonly string[] ImpactMaterialNames = ["Concrete", "Brick", "Wood", "Metal", "Tiles", "Dirt", "Grid", "Terrain", "Default"];
+    public static readonly string[] ImpactMaterialNames = ["Concrete", "Brick", "Wood", "Metal", "Tiles", "Dirt", "Grid", "Terrain", "Default",
+        "Asphalt", "Plaster", "Grass", "Sand", "Rock", "Snow", "Explosive"];
+
+    /// <summary>
+    /// Where a material with no impact decal of its own borrows them from (the chain ends at Default; Explosive has none:
+    /// a blast with no scorch decal leaves nothing rather than a bullet hole).
+    /// </summary>
+    public static string? ImpactFallback(string material) => material switch
+    {
+        "Asphalt" or "Plaster" or "Rock" or "Tiles" or "Grid" => "Concrete",
+        "Grass" or "Sand" or "Snow" => "Terrain",
+        "Terrain" => "Dirt",
+        "Explosive" or "Default" => null,
+        _ => "Default",
+    };
 
     private const string Keys = "format, name, category, description, author, size, sizeVariation, rotation, tintVariation, blend, surfaces, opacity, fadeDistance, image, layers, impact";
 

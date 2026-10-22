@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "tickethall",
+  "description": "The booking hall: ticket machines, the departures board, a payphone, a newspaper box.",
+  "items": [
+    {"props": ["Train Station Departure Board"], "place": "wall", "prefer": "far"},
+    {"props": ["Ticket Machine"], "place": "wall", "count": [1, 2]},
+    {"props": ["Payphone", "ATM", "Newspaper Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Post Litter Bin"], "place": "corner"},
+    {"props": ["Train Station Bench"], "place": "wall", "chance": 0.6},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "chance": 0.5}
+  ]
+}

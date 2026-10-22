@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "headoffice",
+  "description": "The head teacher's study: an oak desk, a visitor's chair, books, a filing cabinet, a globe.",
+  "items": [
+    {"id": "desk", "props": ["School Teacher Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Desk Phone"], "place": "on", "of": "desk", "y": 0.78},
+    {"id": "books", "props": ["Bookshelf"], "place": "wall", "count": [1, 2]},
+    {"props": ["Filing Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Spinning Globe"], "place": "on", "of": "books", "y": 1.9, "chance": 0.7},
+    {"props": ["Office Plant"], "place": "corner", "chance": 0.7},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.7}
+  ]
+}

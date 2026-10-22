@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Chip Tile",
+  "description": "A small chip of glaze knocked off a tile, showing the grey body.",
+  "author": "Call of Slop",
+  "size": 0.1,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Tiles"], "weight": 1.2},
+  "layers": [
+    {"shape": "splat", "radius": 0.3, "count": 7, "jag": 0.5, "seed": 231, "color": [0.97, 0.97, 0.96], "alpha": 0.8, "softness": 0.02},
+    {"shape": "splat", "radius": 0.2, "count": 6, "jag": 0.4, "seed": 232, "color": [0.62, 0.6, 0.57], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.05, "color": [0.2, 0.2, 0.2], "softness": 0.02}
+  ]
+}

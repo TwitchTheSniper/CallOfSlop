@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Hazard Sign",
+  "description": "An enamel warning sign: AUTHORISED PERSONNEL ONLY under a yellow fallout trefoil.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.9, 0.6, 0.02], "offset": [0, 0, 0.01], "color": "#e8c020"},
+    {"size": [0.25, 0.25, 0.005], "offset": [0, 0.08, 0.023], "color": "#1a1a1a"},
+    {"size": [0.7, 0.06, 0.005], "offset": [0, -0.17, 0.023], "color": "#1a1a1a"}
+  ]
+}

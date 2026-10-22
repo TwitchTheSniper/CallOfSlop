@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Scuffed",
+  "description": "A fallback bullet hole with a dusty scuffed ring and a couple of short cracks.",
+  "author": "Call of Slop",
+  "size": 0.16,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.06,
+  "impact": {"materials": ["Default"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.34, "count": 9, "jag": 0.4, "seed": 421, "color": [0.62, 0.61, 0.58], "alpha": 0.5, "softness": 0.06, "noise": 0.35, "noiseScale": 9},
+    {"shape": "cracks", "count": 3, "length": 0.36, "width": 0.025, "jag": 0.5, "seed": 422, "color": [0.2, 0.2, 0.2], "alpha": 0.7},
+    {"shape": "splat", "radius": 0.14, "count": 7, "jag": 0.35, "seed": 423, "color": [0.3, 0.3, 0.3], "alpha": 0.9},
+    {"shape": "circle", "radius": 0.075, "color": [0.05, 0.05, 0.05], "softness": 0.02}
+  ]
+}

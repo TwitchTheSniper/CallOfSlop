@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Castle Ruin Brazier",
+  "description": "An iron fire basket on three legs, the coals glowing.",
+  "collision": "solid",
+  "collider": [{"size": [0.6, 1.15, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.04, 0.9, 0.04], "offset": [-0.2, 0.45, -0.12], "color": "#2a2622", "roll": -8},
+    {"size": [0.04, 0.9, 0.04], "offset": [0.2, 0.45, -0.12], "color": "#2a2622", "roll": 8},
+    {"size": [0.04, 0.9, 0.04], "offset": [0, 0.45, 0.22], "color": "#2a2622", "pitch": 8},
+    {"size": [0.6, 0.25, 0.248], "offset": [0, 1, 0], "color": "#2a2622", "material": "metal", "yaw": 0},
+    {"size": [0.6, 0.25, 0.248], "offset": [0, 1, 0], "color": "#2a2622", "material": "metal", "yaw": 45},
+    {"size": [0.6, 0.25, 0.248], "offset": [0, 1, 0], "color": "#2a2622", "material": "metal", "yaw": 90},
+    {"size": [0.6, 0.25, 0.248], "offset": [0, 1, 0], "color": "#2a2622", "material": "metal", "yaw": 135},
+    {
+      "size": [0.5, 0.06, 0.207],
+      "offset": [0, 1.1, 0],
+      "color": "#ff6a20",
+      "yaw": 0,
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "glow": 1.6, "off": "#a03010"}
+    },
+    {
+      "size": [0.5, 0.06, 0.207],
+      "offset": [0, 1.1, 0],
+      "color": "#ff6a20",
+      "yaw": 45,
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "glow": 1.6, "off": "#a03010"}
+    },
+    {
+      "size": [0.5, 0.06, 0.207],
+      "offset": [0, 1.1, 0],
+      "color": "#ff6a20",
+      "yaw": 90,
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "glow": 1.6, "off": "#a03010"}
+    },
+    {
+      "size": [0.5, 0.06, 0.207],
+      "offset": [0, 1.1, 0],
+      "color": "#ff6a20",
+      "yaw": 135,
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "glow": 1.6, "off": "#a03010"}
+    },
+    {"size": [0.25, 0.25, 0.25], "offset": [0.05, 1.25, 0], "color": "#ffb040", "anim": {"type": "flicker", "rate": 12, "duty": 0.7, "glow": 1.8}}
+  ]
+}

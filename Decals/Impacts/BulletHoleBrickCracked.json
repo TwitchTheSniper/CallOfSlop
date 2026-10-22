@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Brick Cracked",
+  "description": "A hole in brick that cracked the face: dark lines running off a red crater.",
+  "author": "Call of Slop",
+  "size": 0.17,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Brick"], "weight": 0.9},
+  "layers": [
+    {"shape": "splat", "radius": 0.3, "count": 9, "jag": 0.4, "seed": 151, "color": [0.74, 0.43, 0.31], "alpha": 0.65, "softness": 0.04, "noise": 0.3, "noiseScale": 10},
+    {"shape": "cracks", "count": 5, "length": 0.44, "width": 0.03, "jag": 0.3, "seed": 152, "color": [0.22, 0.12, 0.09], "alpha": 0.8},
+    {"shape": "splat", "radius": 0.15, "count": 6, "jag": 0.35, "seed": 153, "color": [0.3, 0.16, 0.12], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.075, "color": [0.05, 0.04, 0.04], "softness": 0.02}
+  ]
+}

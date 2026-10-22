@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Puff Sand",
+  "description": "A hit in sand: a soft shadowed dimple with a paler rim of thrown grains.",
+  "author": "Call of Slop",
+  "size": 0.2,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Sand"], "weight": 2},
+  "layers": [
+    {"shape": "ring", "radius": 0.28, "width": 0.12, "color": [0.92, 0.86, 0.7], "alpha": 0.5, "softness": 0.1},
+    {"shape": "circle", "radius": 0.2, "color": [0.45, 0.38, 0.27], "alpha": 0.6, "softness": 0.12},
+    {"shape": "circle", "radius": 0.07, "color": [0.28, 0.23, 0.16], "softness": 0.06}
+  ]
+}

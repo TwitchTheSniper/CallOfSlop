@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dispensary",
+  "description": "The dispensary behind its hatch: shelves of boxes, a counter, a drug fridge.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [3, 5]},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box Small", "Desk Phone"], "place": "on", "of": "counter", "y": 0.9, "count": [1, 2]},
+    {"props": ["Fridge"], "place": "corner"},
+    {"props": ["Safe"], "place": "corner", "chance": 0.7},
+    {"props": ["Cardboard Box", "Archive Boxes"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "motelroom",
+  "description": "A motel room: a double bed, bedside lamps, the TV, an armchair, a luggage rack, a ceiling fan.",
+  "items": [
+    {"id": "bed", "props": ["Double Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bedside", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bedside", "y": 0.6},
+    {"props": ["TV Stand"], "place": "wall"},
+    {"props": ["Motel Luggage Rack"], "place": "wall"},
+    {"props": ["Armchair"], "place": "corner", "chance": 0.8},
+    {"props": ["Chest of Drawers"], "place": "wall", "chance": 0.5},
+    {"props": ["Ceiling Fan"], "place": "ceiling"},
+    {"props": ["Suitcase", "Laundry Basket", "Newspaper"], "place": "floor", "count": [0, 2]}
+  ]
+}

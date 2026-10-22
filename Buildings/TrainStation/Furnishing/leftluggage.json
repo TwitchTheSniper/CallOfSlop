@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "leftluggage",
+  "description": "Parcels and left luggage: shelves of cases, crates and a porter's trolley.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 3]},
+    {"props": ["Train Station Luggage Trolley"], "place": "wall"},
+    {"props": ["Wooden Crate", "Cardboard Stack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Suitcase", "Suitcase", "Duffel Bag", "Cardboard Box"], "place": "floor", "count": [2, 4]}
+  ]
+}

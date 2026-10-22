@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "musicroom",
+  "description": "The music room: a piano, a drum kit, stands and stacking chairs.",
+  "items": [
+    {"props": ["Upright Piano"], "place": "wall", "prefer": "far"},
+    {"props": ["School Drum Kit"], "place": "corner"},
+    {"props": ["School Music Stand"], "place": "floor", "count": [3, 5]},
+    {"props": ["Plastic Chair"], "place": "floor", "count": [4, 7]},
+    {"props": ["Acoustic Guitar"], "place": "floor", "chance": 0.8},
+    {"props": ["Bookshelf"], "place": "wall"}
+  ]
+}

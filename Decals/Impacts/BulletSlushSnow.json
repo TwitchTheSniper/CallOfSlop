@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Slush Snow",
+  "description": "A hit through thin snow: grey slush and a little dark earth in the hole.",
+  "author": "Call of Slop",
+  "size": 0.16,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.06,
+  "impact": {"materials": ["Snow"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.3, "count": 9, "jag": 0.45, "seed": 411, "color": [0.6, 0.64, 0.68], "alpha": 0.6, "softness": 0.06, "noise": 0.35, "noiseScale": 8},
+    {"shape": "splat", "radius": 0.13, "count": 7, "jag": 0.5, "seed": 412, "color": [0.28, 0.25, 0.22], "alpha": 0.85, "softness": 0.03},
+    {"shape": "circle", "radius": 0.05, "color": [0.12, 0.1, 0.09], "softness": 0.03}
+  ]
+}

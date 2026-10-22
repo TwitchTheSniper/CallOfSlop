@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "parking",
+  "description": "Round the parked cars: cones, a bin, a stray trolley, oil stains and litter.",
+  "items": [
+    {"props": ["Traffic Cone"], "place": "floor", "count": [1, 3]},
+    {"props": ["Trash Can"], "place": "corner"},
+    {"props": ["Car Park Oil Stain"], "place": "floor", "count": [1, 3]},
+    {"props": ["Shopping Cart", "Litter", "Plastic Bag", "Newspaper"], "place": "floor", "count": [1, 3]}
+  ]
+}

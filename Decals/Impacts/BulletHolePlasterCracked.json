@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Plaster Cracked",
+  "description": "A hit that cracked the plaster: fine lines and a crumbled grey crater.",
+  "author": "Call of Slop",
+  "size": 0.18,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Plaster"], "weight": 1},
+  "layers": [
+    {"shape": "cracks", "count": 6, "length": 0.45, "width": 0.018, "jag": 0.55, "seed": 301, "color": [0.3, 0.29, 0.28], "alpha": 0.75},
+    {"shape": "splat", "radius": 0.22, "count": 8, "jag": 0.55, "seed": 302, "color": [0.6, 0.58, 0.55], "alpha": 0.9, "softness": 0.02, "noise": 0.25, "noiseScale": 8},
+    {"shape": "speckle", "radius": 0.32, "count": 10, "width": 0.02, "seed": 303, "color": [0.45, 0.44, 0.42], "alpha": 0.8},
+    {"shape": "circle", "radius": 0.07, "color": [0.08, 0.08, 0.08], "softness": 0.02}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Blue Lamp",
+  "description": "The traditional blue lamp over the station door, POLICE on its glass.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.06, 0.06, 0.5], "offset": [0, 0, -0.25], "color": "#1a1a1a"},
+    {"size": [0.36, 0.08, 0.36], "offset": [0, 0.2, 0], "color": "#1a1a1a"},
+    {"size": [0.3, 0.36, 0.3], "offset": [0, 0.42, 0], "color": "#3a6ae0", "anim": {"type": "pulse", "period": 4, "glow": 1.2, "off": "#2a4aa0"}},
+    {"size": [0.36, 0.06, 0.36], "offset": [0, 0.63, 0], "color": "#1a1a1a"},
+    {"size": [0.12, 0.1, 0.12], "offset": [0, 0.71, 0], "color": "#1a1a1a"},
+    {"size": [0.26, 0.06, 0.005], "offset": [0, 0.42, 0.153], "color": "#f0f0f0"}
+  ]
+}

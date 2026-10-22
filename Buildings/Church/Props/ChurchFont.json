@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Font",
+  "description": "An octagonal stone font on a pedestal, with a carved oak lid.",
+  "collision": "solid",
+  "collider": [{"size": [0.86, 1.2, 0.86]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.7, 0.18, 0.29], "offset": [0, 0.09, 0], "color": "#a8a090", "material": "concrete", "yaw": 0},
+    {"size": [0.7, 0.18, 0.29], "offset": [0, 0.09, 0], "color": "#a8a090", "material": "concrete", "yaw": 45},
+    {"size": [0.7, 0.18, 0.29], "offset": [0, 0.09, 0], "color": "#a8a090", "material": "concrete", "yaw": 90},
+    {"size": [0.7, 0.18, 0.29], "offset": [0, 0.09, 0], "color": "#a8a090", "material": "concrete", "yaw": 135},
+    {"size": [0.36, 0.6, 0.149], "offset": [0, 0.48, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 0},
+    {"size": [0.36, 0.6, 0.149], "offset": [0, 0.48, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 45},
+    {"size": [0.36, 0.6, 0.149], "offset": [0, 0.48, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 90},
+    {"size": [0.36, 0.6, 0.149], "offset": [0, 0.48, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 135},
+    {"size": [0.85, 0.3, 0.352], "offset": [0, 0.93, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 0},
+    {"size": [0.85, 0.3, 0.352], "offset": [0, 0.93, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 45},
+    {"size": [0.85, 0.3, 0.352], "offset": [0, 0.93, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 90},
+    {"size": [0.85, 0.3, 0.352], "offset": [0, 0.93, 0], "color": "#b8b0a2", "material": "concrete", "yaw": 135},
+    {"size": [0.7, 0.12, 0.29], "offset": [0, 1.13, 0], "color": "#4a2e1a", "material": "wood", "yaw": 0},
+    {"size": [0.7, 0.12, 0.29], "offset": [0, 1.13, 0], "color": "#4a2e1a", "material": "wood", "yaw": 45},
+    {"size": [0.7, 0.12, 0.29], "offset": [0, 1.13, 0], "color": "#4a2e1a", "material": "wood", "yaw": 90},
+    {"size": [0.7, 0.12, 0.29], "offset": [0, 1.13, 0], "color": "#4a2e1a", "material": "wood", "yaw": 135},
+    {"size": [0.06, 0.3, 0.06], "offset": [0, 1.34, 0], "color": "#d8b040"}
+  ]
+}

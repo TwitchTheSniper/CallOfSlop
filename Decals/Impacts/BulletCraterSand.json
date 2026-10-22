@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Crater Sand",
+  "description": "A wide soft crater in sand from a heavy round, darker damp sand inside.",
+  "author": "Call of Slop",
+  "size": 0.28,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Sand"], "weight": 0.7},
+  "layers": [
+    {"shape": "splat", "radius": 0.4, "count": 11, "jag": 0.35, "seed": 351, "color": [0.9, 0.84, 0.68], "alpha": 0.45, "softness": 0.12},
+    {"shape": "circle", "radius": 0.24, "color": [0.52, 0.44, 0.31], "alpha": 0.65, "softness": 0.1},
+    {"shape": "circle", "radius": 0.1, "color": [0.32, 0.26, 0.18], "alpha": 0.8, "softness": 0.06}
+  ]
+}

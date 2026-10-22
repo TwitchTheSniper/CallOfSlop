@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Leaflet Rack",
+  "description": "A floor-standing rack of health leaflets in five colours.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.5, 1.4, 0.3], "offset": [0, 0.7, 0], "color": "#d8dcdc"},
+    {"size": [0.42, 0.18, 0.04], "offset": [0, 0.45, 0.16], "color": "#e04040"},
+    {"size": [0.42, 0.18, 0.04], "offset": [0, 0.65, 0.16], "color": "#40a0e0"},
+    {"size": [0.42, 0.18, 0.04], "offset": [0, 0.85, 0.16], "color": "#40c060"},
+    {"size": [0.42, 0.18, 0.04], "offset": [0, 1.05, 0.16], "color": "#e0c040"},
+    {"size": [0.42, 0.18, 0.04], "offset": [0, 1.25, 0.16], "color": "#c060c0"}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Motel Sun Umbrella",
+  "description": "A striped poolside umbrella in a concrete base.",
+  "collision": "solid",
+  "collider": [{"size": [0.4, 2.3, 0.4]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.4, 0.15, 0.4], "offset": [0, 0.075, 0], "color": "#a8a8a0", "material": "concrete"},
+    {"size": [0.05, 2.3, 0.05], "offset": [0, 1.2, 0], "color": "#e8e8e8"},
+    {"size": [1.9, 0.06, 0.8], "offset": [0, 2.3, 0], "color": "#e84a4a", "yaw": 0},
+    {"size": [1.9, 0.06, 0.8], "offset": [0, 2.3, 0], "color": "#f0f0e8", "yaw": 45},
+    {"size": [1.9, 0.06, 0.8], "offset": [0, 2.3, 0], "color": "#e84a4a", "yaw": 90},
+    {"size": [1.9, 0.06, 0.8], "offset": [0, 2.3, 0], "color": "#f0f0e8", "yaw": 135}
+  ]
+}

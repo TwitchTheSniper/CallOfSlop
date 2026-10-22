@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Choir Stall",
+  "description": "A carved oak choir stall with a book ledge in front.",
+  "collision": "solid",
+  "collider": [{"size": [1.96, 1.1, 0.68], "offset": [0, 0.55, 0.02]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.9, 0.06, 0.44], "offset": [0, 0.45, -0.05], "color": "#5a3a22", "material": "wood"},
+    {"size": [1.9, 1, 0.06], "offset": [0, 0.95, -0.27], "color": "#3e2716", "material": "wood"},
+    {"size": [1.9, 0.9, 0.06], "offset": [0, 0.45, 0.32], "color": "#3e2716", "material": "wood"},
+    {"size": [1.9, 0.04, 0.22], "offset": [0, 0.92, 0.3], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.06, 1.1, 0.66], "offset": [-0.95, 0.55, 0.02], "color": "#3e2716", "material": "wood"},
+    {"size": [0.06, 1.1, 0.66], "offset": [0.95, 0.55, 0.02], "color": "#3e2716", "material": "wood"},
+    {"size": [0.3, 0.05, 0.2], "offset": [-0.4, 0.96, 0.3], "color": "#7a1e22"}
+  ]
+}

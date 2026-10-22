@@ -50,20 +50,31 @@ public static class Decals
     }
 
     /// <summary>
-    /// The impact decals for a surface material (a box's <see cref="Material"/> name, "Terrain", or anything else for
-    /// "Default"): the decals listing it, else those listing Default, else empty. Cached; no allocation after the first call.
+    /// The impact decals for a surface material (a name from <see cref="DecalFile.ImpactMaterialNames"/>, as
+    /// <see cref="ImpactDecals.SurfaceOf"/> gives it): the decals listing it, else those of its fallback
+    /// (<see cref="DecalFile.ImpactFallback"/>: Asphalt to Concrete, Grass to Terrain to Dirt...), else Default's; an unknown
+    /// name gets Default's. Cached; no allocation after the first call.
     /// </summary>
     public static DecalDef[] ImpactsFor(string material)
     {
         var map = _impacts ??= BuildImpacts(All);
-        return map.TryGetValue(material, out var list) && list.Length > 0 ? list : map.TryGetValue("Default", out var d) ? d : [];
+        return map.TryGetValue(material, out var list) ? list : map.TryGetValue("Default", out var d) ? d : [];
     }
 
     private static Dictionary<string, DecalDef[]> BuildImpacts(DecalDef[] all)
     {
+        var own = new Dictionary<string, DecalDef[]>(StringComparer.OrdinalIgnoreCase);
+        foreach (var m in DecalFile.ImpactMaterialNames)
+            own[m] = all.Where(d => d.ImpactMaterials.Contains(m, StringComparer.OrdinalIgnoreCase)).ToArray();
         var map = new Dictionary<string, DecalDef[]>(StringComparer.OrdinalIgnoreCase);
         foreach (var m in DecalFile.ImpactMaterialNames)
-            map[m] = all.Where(d => d.ImpactMaterials.Contains(m, StringComparer.OrdinalIgnoreCase)).ToArray();
+        {
+            var at = m;
+            var list = own[at];
+            for (var hops = 0; list.Length == 0 && hops < 8 && DecalFile.ImpactFallback(at) is { } next; hops++)
+                list = own[at = next];
+            map[m] = list;
+        }
         return map;
     }
 

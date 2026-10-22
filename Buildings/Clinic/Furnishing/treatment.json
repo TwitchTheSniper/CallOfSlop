@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "treatment",
+  "description": "The treatment room: two beds with drip stands, screens, a medicine cupboard, a sink, a wheelchair.",
+  "items": [
+    {"id": "bed", "props": ["Clinic Hospital Bed"], "place": "wall", "count": 2},
+    {"props": ["Clinic Drip Stand"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Clinic Privacy Screen"], "place": "wall"},
+    {"props": ["Clinic Medicine Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Clinic Wheelchair"], "place": "floor"},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

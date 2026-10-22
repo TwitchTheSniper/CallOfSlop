@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Chip Asphalt",
+  "description": "Asphalt chipped by a hit: pale stones knocked loose round a shallow pit.",
+  "author": "Call of Slop",
+  "size": 0.14,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Asphalt"], "weight": 1},
+  "layers": [
+    {"shape": "speckle", "radius": 0.4, "count": 18, "width": 0.03, "seed": 271, "color": [0.62, 0.61, 0.58], "alpha": 0.9},
+    {"shape": "splat", "radius": 0.14, "count": 6, "jag": 0.5, "seed": 272, "color": [0.28, 0.28, 0.28], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.05, "color": [0.06, 0.06, 0.06], "softness": 0.02}
+  ]
+}

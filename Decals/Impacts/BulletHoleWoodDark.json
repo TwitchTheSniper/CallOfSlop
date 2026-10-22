@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Wood Dark",
+  "description": "A hole in dark or painted wood: a ring of bright raw fibres round a black hole.",
+  "author": "Call of Slop",
+  "size": 0.14,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Wood"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.3, "count": 10, "jag": 0.55, "seed": 171, "color": [0.92, 0.8, 0.6], "alpha": 0.8, "softness": 0.02},
+    {"shape": "cracks", "count": 8, "length": 0.34, "width": 0.035, "jag": 0.3, "seed": 172, "color": [0.95, 0.84, 0.64], "alpha": 0.75},
+    {"shape": "circle", "radius": 0.15, "color": [0.36, 0.25, 0.15], "alpha": 0.95, "softness": 0.02},
+    {"shape": "circle", "radius": 0.075, "color": [0.05, 0.03, 0.02], "softness": 0.02}
+  ]
+}

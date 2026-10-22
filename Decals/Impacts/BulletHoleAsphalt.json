@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Asphalt",
+  "description": "A hit on a road or car park: a scuffed grey ring and a black pit.",
+  "author": "Call of Slop",
+  "size": 0.15,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Asphalt"], "weight": 2},
+  "layers": [
+    {"shape": "splat", "radius": 0.33, "count": 9, "jag": 0.45, "seed": 261, "color": [0.5, 0.5, 0.5], "alpha": 0.5, "softness": 0.05, "noise": 0.4, "noiseScale": 10},
+    {"shape": "splat", "radius": 0.15, "count": 7, "jag": 0.4, "seed": 262, "color": [0.2, 0.2, 0.2], "alpha": 0.95, "softness": 0.02},
+    {"shape": "circle", "radius": 0.07, "color": [0.03, 0.03, 0.03], "softness": 0.02}
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Clinic",
+  "theme": "1990s health centre: white render with a blue band, pale blue lino, blue vinyl waiting chairs, consulting rooms with couches and screens, a dispensary hatch",
+  "category": "special",
+  "description": "A single-storey GP clinic: a waiting room with hatches to reception and the dispensary, a corridor to two consulting rooms, a treatment room, a staff room, a store and a WC; an ambulance bay outside.",
+  "author": "Call of Slop",
+  "seed": 231,
+  "wallThickness": 0.25,
+  "storeyHeight": 3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "white render": {"wall": "#e8e8e2", "interior": "#eef2f2", "floor": "#a8c0cc", "ceiling": "#f6f6f4", "trim": "#2a5aa0", "door": "#d8dcdc", "roof": "#5a5e66"},
+    "cream render": {"wall": "#e4dcc4", "interior": "#f2eee2", "floor": "#b0bca0", "ceiling": "#f6f4ee", "trim": "#2a7a5a", "door": "#c8c0a8", "roof": "#6a5a50"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.4, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "waiting room", "type": "waiting", "rect": [-4, 0, 4, 6]},
+        {"id": "reception", "type": "records", "rect": [-10, 0, -4, 6]},
+        {"id": "dispensary", "type": "dispensary", "rect": [4, 0, 10, 6], "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 1.5, "head": 2.2}},
+        {"id": "corridor", "type": "corridor", "rect": [-10, -1.5, 10, 0], "windows": false},
+        {"id": "consulting 1", "type": "consulting", "rect": [-10, -6, -6, -1.5]},
+        {"id": "consulting 2", "type": "consulting", "rect": [-6, -6, -2, -1.5]},
+        {"id": "treatment", "type": "treatment", "rect": [-2, -6, 4, -1.5]},
+        {"id": "staff room", "type": "breakroom", "rect": [4, -6, 7, -1.5]},
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [7, -6, 10, -3.5],
+          "autoWindows": {"spacing": 2, "width": 0.8, "sill": 1.6, "head": 2.2},
+          "floor": {"color": "#d8e0e0", "material": "tiles"},
+          "wall": {"color": "#e0ecec", "material": "tiles"}
+        },
+        {"id": "store", "type": "storage", "rect": [7, -3.5, 10, -1.5], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [0, 6], "width": 1.6, "front": true, "material": "glass", "health": 40},
+        {"type": "arch", "at": [0, 0], "width": 2},
+        {"type": "hole", "at": [-4, 4], "width": 1.6, "sill": 1, "head": 1.9},
+        {"type": "hole", "at": [4, 4], "width": 1.6, "sill": 1, "head": 1.9},
+        {"type": "door", "at": [-7, 0], "width": 0.9},
+        {"type": "door", "at": [7, 0], "width": 0.9},
+        {"type": "door", "at": [-8, -1.5], "width": 0.9},
+        {"type": "door", "at": [-4, -1.5], "width": 0.9},
+        {"type": "door", "at": [1, -1.5], "width": 1.2},
+        {"type": "door", "at": [5.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [8.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [7, -4.8], "width": 0.9},
+        {"type": "door", "at": [-10, -0.75], "width": 0.9, "material": "metal"},
+        {"type": "door", "at": [10, -0.75], "width": 0.9, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "hip", "pitch": 22, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "awning", "rect": [-2.2, 6.13, 2.2, 8], "height": 2.8, "color": "$trim", "posts": true},
+    {"type": "block", "min": [-10.13, 2.4, 5.98], "max": [10.13, 2.7, 6.2], "color": {"color": "$trim", "material": "none"}},
+    {"type": "prop", "name": "Clinic Sign", "at": [4, 8.4], "yaw": 0},
+    {"type": "prop", "name": "Ambulance", "at": [-6.5, 9.8], "yaw": 90},
+    {"type": "prop", "name": "Bench", "at": [3.6, 6.8], "yaw": 0},
+    {"type": "prop", "name": "Post Litter Bin", "at": [2.6, 7.6], "yaw": 0},
+    {"type": "prop", "name": "Bike Rack", "at": [7.5, 7.4], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin", "at": [10.9, -4.5], "yaw": 270},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [10.9, -3.6], "yaw": 270},
+    {"type": "prop", "name": "Split AC Unit", "at": [-8, -6.6], "yaw": 180}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "waiting room", "at": [0, 3]},
+    {"type": "spawn", "name": "corridor", "at": [-3, -0.75]},
+    {"type": "hill", "name": "waiting room", "at": [0, 2.5]}
+  ]
+}

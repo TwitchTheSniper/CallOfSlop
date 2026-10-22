@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cellblock",
+  "description": "The cell corridor: a fire bucket, a mop, a chair for the gaoler.",
+  "items": [{"props": ["Plastic Chair"], "place": "wall"}, {"props": ["Mop and Bucket", "Bucket"], "place": "corner"}]
+}

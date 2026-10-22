@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Wheelchair",
+  "description": "A folding steel hospital wheelchair with a black seat.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.45, 0.05, 0.45], "offset": [0, 0.5, 0], "color": "#1a1a1a"},
+    {"size": [0.45, 0.45, 0.04], "offset": [0, 0.78, -0.22], "color": "#1a1a1a"},
+    {"size": [0.03, 0.6, 0.248], "offset": [-0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 0},
+    {"size": [0.03, 0.6, 0.248], "offset": [-0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 45},
+    {"size": [0.03, 0.6, 0.248], "offset": [-0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 90},
+    {"size": [0.03, 0.6, 0.248], "offset": [-0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 135},
+    {"size": [0.03, 0.6, 0.248], "offset": [0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 0},
+    {"size": [0.03, 0.6, 0.248], "offset": [0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 45},
+    {"size": [0.03, 0.6, 0.248], "offset": [0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 90},
+    {"size": [0.03, 0.6, 0.248], "offset": [0.3, 0.32, -0.05], "color": "#c8ccd0", "pitch": 135},
+    {"size": [0.04, 0.04, 0.2], "offset": [-0.2, 1, -0.32], "color": "#1a1a1a"},
+    {"size": [0.04, 0.04, 0.2], "offset": [0.2, 1, -0.32], "color": "#1a1a1a"},
+    {"size": [0.4, 0.03, 0.15], "offset": [0, 0.12, 0.35], "color": "#c8ccd0"}
+  ]
+}

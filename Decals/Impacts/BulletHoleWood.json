@@ -10,7 +10,8 @@
   "impact": {
     "materials": [
       "Wood"
-    ]
+    ],
+    "weight": 1.5
   },
   "layers": [
     {

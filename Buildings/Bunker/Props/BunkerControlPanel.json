@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Control Panel",
+  "description": "A grey steel console of dials, switches, blinking lamps and a red launch key.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.6, 0.9, 0.8], "offset": [0, 0.45, 0], "color": "#6a6e72", "material": "metal"},
+    {"size": [1.6, 0.7, 0.3], "offset": [0, 1.2, -0.25], "color": "#6a6e72", "material": "metal", "pitch": -20},
+    {"size": [0.12, 0.12, 0.02], "offset": [-0.55, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.12, 0.12, 0.02], "offset": [-0.33, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.12, 0.12, 0.02], "offset": [-0.11, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.12, 0.12, 0.02], "offset": [0.11, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.12, 0.12, 0.02], "offset": [0.33, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.12, 0.12, 0.02], "offset": [0.55, 1.25, -0.09], "color": "#e8e8d8"},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.6, 1.05, -0.03], "color": "#ff3030", "anim": {"type": "blink", "period": 1, "duty": 0.5, "glow": 0.9}},
+    {
+      "size": [0.05, 0.05, 0.02],
+      "offset": [-0.36, 1.05, -0.03],
+      "color": "#30ff30",
+      "anim": {"type": "blink", "period": 1.3, "duty": 0.5, "glow": 0.9}
+    },
+    {
+      "size": [0.05, 0.05, 0.02],
+      "offset": [-0.12, 1.05, -0.03],
+      "color": "#ffc030",
+      "anim": {"type": "blink", "period": 1.6, "duty": 0.5, "glow": 0.9}
+    },
+    {
+      "size": [0.05, 0.05, 0.02],
+      "offset": [0.12, 1.05, -0.03],
+      "color": "#30ff30",
+      "anim": {"type": "blink", "period": 1.9, "duty": 0.5, "glow": 0.9}
+    },
+    {
+      "size": [0.05, 0.05, 0.02],
+      "offset": [0.36, 1.05, -0.03],
+      "color": "#ff3030",
+      "anim": {"type": "blink", "period": 2.2, "duty": 0.5, "glow": 0.9}
+    },
+    {"size": [0.05, 0.05, 0.02], "offset": [0.6, 1.05, -0.03], "color": "#30c0ff", "anim": {"type": "blink", "period": 2.5, "duty": 0.5, "glow": 0.9}},
+    {"size": [1.5, 0.04, 0.3], "offset": [0, 0.92, 0.2], "color": "#3a3e42"},
+    {"size": [0.08, 0.04, 0.08], "offset": [0.5, 0.95, 0.25], "color": "#d02020"}
+  ]
+}

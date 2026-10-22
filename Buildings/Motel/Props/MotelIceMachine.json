@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Motel Ice Machine",
+  "description": "A humming steel ice machine with ICE in blue letters and a scoop on a chain.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.8, 1.6, 0.7], "offset": [0, 0.8, 0], "color": "#c8ccd0", "material": "metal"},
+    {"size": [0.6, 0.25, 0.01], "offset": [0, 1.35, 0.355], "color": "#3a7ae0", "anim": {"type": "pulse", "period": 3.5, "glow": 0.7}},
+    {"size": [0.5, 0.4, 0.02], "offset": [0, 0.7, 0.36], "color": "#8a8e94"},
+    {"size": [0.08, 0.04, 0.2], "offset": [0.25, 0.95, 0.42], "color": "#e8e8e8"},
+    {"size": [0.2, 0.3, 0.02], "offset": [-0.3, 0.3, 0.355], "color": "#5a5e64", "material": "grid"}
+  ]
+}

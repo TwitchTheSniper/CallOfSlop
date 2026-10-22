@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Brick Chunk",
+  "description": "A chunk blown out of a brick: raw orange core, red dust and a deep hole.",
+  "author": "Call of Slop",
+  "size": 0.21,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Brick"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.4, "count": 7, "jag": 0.55, "seed": 131, "color": [0.62, 0.32, 0.22], "alpha": 0.55, "softness": 0.06, "noise": 0.4, "noiseScale": 9},
+    {"shape": "splat", "radius": 0.27, "count": 6, "jag": 0.5, "seed": 132, "color": [0.86, 0.52, 0.34], "alpha": 0.85, "softness": 0.02},
+    {"shape": "speckle", "radius": 0.44, "count": 18, "width": 0.028, "seed": 133, "color": [0.4, 0.18, 0.12], "alpha": 0.85},
+    {"shape": "splat", "radius": 0.14, "count": 6, "jag": 0.4, "seed": 134, "color": [0.28, 0.14, 0.1], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.075, "color": [0.05, 0.03, 0.03], "softness": 0.02}
+  ]
+}

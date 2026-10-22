@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Spray Sand",
+  "description": "Sand kicked up by a hit: a scatter of darker grains round a small hole.",
+  "author": "Call of Slop",
+  "size": 0.2,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "impact": {"materials": ["Sand"], "weight": 1},
+  "layers": [
+    {"shape": "speckle", "radius": 0.42, "count": 26, "width": 0.02, "seed": 361, "color": [0.42, 0.35, 0.24], "alpha": 0.75},
+    {"shape": "circle", "radius": 0.12, "color": [0.4, 0.33, 0.23], "alpha": 0.6, "softness": 0.06},
+    {"shape": "circle", "radius": 0.05, "color": [0.25, 0.2, 0.14], "softness": 0.04}
+  ]
+}
