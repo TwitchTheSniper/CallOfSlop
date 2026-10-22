@@ -171,7 +171,7 @@ public sealed class FrenzyLayer
     public FrenzyLayer(uint seed = 1)
     {
         _seed = seed | 1u;
-        _pool = new MusicPlaylist(MusicTracks.All.Where(t => t.Style == MusicStyle.Hardbass).ToArray(), _seed * 7919u + 11u);
+        _pool = new MusicPlaylist(MusicTracks.All.Where(t => t.Style == MusicStyle.Hardbass && (t.Timeline?.SteadyDrops ?? true)).ToArray(), _seed * 7919u + 11u);
     }
 
     // ---- Game thread -------------------------------------------------------------------------

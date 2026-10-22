@@ -87,7 +87,7 @@ public sealed partial class MusicRenderer
     public double Position => _rendered / (double)Sr;
 
     /// <summary>Seconds left until <see cref="Finished"/>.</summary>
-    public double Remaining => Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
+    public double Remaining => _wd ? WeirdRemaining : Math.Max(0, (_track.TotalBars + MusicTrack.TailBars - (_step / 16.0)) * _track.SecondsPerBar + _toNextStep / Sr);
 
     /// <summary>Starts a track from the top (or from a bar, for tests). Deterministic for (track, seed, startBar).</summary>
     public void Load(MusicTrack track, uint seed, int startBar = 0)
@@ -127,6 +127,7 @@ public sealed partial class MusicRenderer
         _delay.Reset();
         _verb.Reset();
         _delay.SetTime((float)(_samplesPerStep * 3 / Sr)); // dotted eighth
+        LoadWeird(startBar); // MusicRenderer.Weird.cs
 
         // Melodies come from the track's own seed, so the track keeps its identity whatever the play seed is.
         var mel = new MusicRng(track.Seed);
@@ -698,6 +699,8 @@ public sealed partial class MusicRenderer
         var sc = _track.Scale;
         var o = (int)MathF.Floor(degree / (float)sc.Length);
         var i = degree - o * sc.Length;
+        if (_wd)
+            return Dsp.MidiHz(_track.Root + octaveOffset + 12 * o + sc[i] + (_micro != null ? _micro[i] : 0f)) * _pitchMul; // weird tracks: microtones, pitch sag
         return Dsp.MidiHz(_track.Root + octaveOffset + 12 * o + sc[i]);
     }
 
@@ -814,10 +817,14 @@ public sealed partial class MusicRenderer
 
     private void OnStep()
     {
+        if (_wd)
+            WeirdMeter(); // odd meters (MusicRenderer.Weird.cs)
         var bar = _step >> 4;
         var s = _step & 15;
         if (s == 0 && (_jumpBar >= 0 || LoopDrops))
             bar = Retarget(bar); // the frenzy layer's bar-synced jumps and drop loops (MusicFrenzy.cs)
+        if (_wd)
+            WeirdTiming(bar, s); // this 16th's length, pitch and section effects (after any jump)
         _step++;
         if (bar >= _track.TotalBars)
         {
@@ -843,6 +850,8 @@ public sealed partial class MusicRenderer
         var chord = ChordAt(barIn);
         var dv = (barIn >> 3) & 1; // groove variant alternates every 8 bars
         var phrase = ((_drops - 1 + (barIn >> 4)) & 1) == 0 ? _phraseA : _phraseB;
+        if (_wd && WeirdPart(barIn, s, prog, chord, lastBar))
+            return; // a weird track's swerve section (drunk, lo-fi, music box)
 
         switch (_part)
         {
@@ -1011,6 +1020,8 @@ public sealed partial class MusicRenderer
         }
         if (_harder != null)
             HarderStep(barIn, s, prog, lastBar);
+        if (_wd)
+            WeirdOverlay(barIn, s, prog, chord, lastBar);
     }
 
     private void Drums(int s, int variant, bool kick, bool snare, bool hats, bool open)
@@ -1073,6 +1084,8 @@ public sealed partial class MusicRenderer
         var v = phrase[((barIn & 7) << 4) | s];
         if (v == Hold)
             return;
+        if (_wd && WeirdLeadNote(v, barIn))
+            return; // a weird lead (accordion, chip, music box) or an out-of-tune harmony
         if (v == Rest)
         {
             _lead.AllOff();
@@ -1178,6 +1191,8 @@ public sealed partial class MusicRenderer
             vox.Clear();
         if (_harder != null)
             RenderSweeps(vox);
+        if (_wd)
+            RenderWeird(n); // MusicRenderer.Weird.cs
 
         // Levels, then the delay and reverb sends.
         float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
@@ -1276,6 +1291,8 @@ public sealed partial class MusicRenderer
         _dcInR = dcInR;
         _dcOutL = dcOutL;
         _dcOutR = dcOutR;
+        if (_wd)
+            MixWeird(stereo, n);
         _limiter.Process(stereo[..(n * 2)]);
     }
 

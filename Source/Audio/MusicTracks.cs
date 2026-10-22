@@ -107,7 +107,29 @@ public sealed class MusicTrack
     public double SecondsPerBar => 4 * 60.0 / Bpm;
 
     /// <summary>Length including the tail.</summary>
-    public double Seconds => (TotalBars + TailBars) * SecondsPerBar;
+    public double Seconds => Timeline?.Seconds ?? (TotalBars + TailBars) * SecondsPerBar;
+
+    /// <summary>The weird recipe of a weird hardbass track (odd meters, tempo changes, swerves; see MusicWeird.cs), else null.</summary>
+    public WeirdFlavor? Weird
+    {
+        get => _weird;
+        init
+        {
+            _weird = value;
+            Timeline = value != null && Style == MusicStyle.Hardbass ? new WeirdTimeline(this, value) : null;
+        }
+    }
+
+    private readonly WeirdFlavor? _weird;
+
+    /// <summary>Bar lengths and tempos of a weird track (null for the others, whose bars are all <see cref="SecondsPerBar"/>).</summary>
+    public WeirdTimeline? Timeline { get; private init; }
+
+    /// <summary>When a bar starts, in seconds from the top.</summary>
+    public double BarStart(int bar) => Timeline?.BarStart(bar) ?? bar * SecondsPerBar;
+
+    /// <summary>The bar playing at a time.</summary>
+    public int BarAt(double seconds) => Timeline?.BarAt(seconds) ?? (int)(seconds / SecondsPerBar);
 
     /// <summary>The hardbass recipe (non-null for <see cref="MusicStyle.Hardbass"/> tracks).</summary>
     public HardbassFlavor? Hardbass { get; }
@@ -243,6 +265,9 @@ public static class MusicTracks
 
         // ---- Harder hardbass (menu and lobby; MusicTracksHarder.cs) ----------------------------------
         .. MusicTracksHarder.Tracks,
+
+        // ---- Weird hardbass (menu and lobby; MusicTracksWeird.cs) -------------------------------------
+        .. MusicTracksWeird.Tracks,
     ];
 
     public static MusicTrack[] For(MusicSet set) => All.Where(t => t.Set == set).ToArray();

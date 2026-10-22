@@ -58,7 +58,7 @@ public static partial class SelfTest
 
         // CPU: each harder track's drop against the most expensive drop of the older tracks, all timed the same way on
         // this machine (median of 5 runs of 2 s each), so a slow or busy runner shifts both sides alike.
-        var older = all.Where(t => t.Hardbass?.Harder == null).ToArray();
+        var older = all.Where(t => t.Hardbass?.Harder == null && t.Weird == null).ToArray(); // the weird tracks are new too
         double DropMedian(MusicTrack t)
         {
             var runs = new double[5];

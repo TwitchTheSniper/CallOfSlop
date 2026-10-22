@@ -65,7 +65,7 @@ public static partial class SelfTest
             var partCount = new long[5];
             long nan = 0, clipped = 0, samples = 0;
             float peak = 0;
-            var dropStart = (long)(t.FirstDropBar * t.SecondsPerBar * sr);
+            var dropStart = (long)(t.BarStart(t.FirstDropBar) * sr);
             var drop = new float[sr * 3];
             dropWindows[ti] = drop;
             var frame = 0L;
@@ -77,7 +77,7 @@ public static partial class SelfTest
                 var t0 = Stopwatch.GetTimestamp();
                 r.Render(block);
                 ticks += Stopwatch.GetTimestamp() - t0;
-                var bar = (int)(frame / (t.SecondsPerBar * sr));
+                var bar = t.BarAt(frame / (double)sr); // weird tracks have bars of different lengths
                 var part = PartAt(t, bar);
                 for (var i = 0; i < block.Length; i += 2)
                 {
