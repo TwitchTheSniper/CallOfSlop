@@ -109,8 +109,8 @@ public static partial class SelfTest
             var clipPct = samples == 0 ? 0 : 100.0 * clipped / samples;
             stats[ti] = new MusicTrackStats(Rms(MusicPart.Intro), Rms(MusicPart.Build), Rms(MusicPart.Drop), Rms(MusicPart.Break), peak, clipped, ms / seconds,
                                             t.Style == MusicStyle.Hardbass ? r.LimiterMinGain : 1f);
-            if (ms / seconds > MusicBudgetMsPerSecond)
-                Fail($"{t.Name}: rendering costs {ms / seconds:0.0} ms per second of audio (budget {MusicBudgetMsPerSecond} for every track)");
+            if (ms / seconds > MusicBudgetMsPerSecond && MusicCostRecheck(t) is var recheck && recheck > MusicBudgetMsPerSecond)
+                Fail($"{t.Name}: rendering costs {ms / seconds:0.0} ms per second of audio, {recheck:0.0} on a recheck (budget {MusicBudgetMsPerSecond} for every track)");
             Line($"{t.Name,-24} {t.Set,-5} {t.Style,-11} {t.Bpm,3:0} BPM  {t.Key,-21} {seconds,4:0} s  rms intro {Rms(MusicPart.Intro):0.000} "
                  + $"build {Rms(MusicPart.Build):0.000} drop {Rms(MusicPart.Drop):0.000} break {Rms(MusicPart.Break):0.000} outro {Rms(MusicPart.Outro):0.000}  "
                  + $"peak {peak:0.000} clipped {clipPct:0.000}%  {ms / seconds:0.0} ms per s");
@@ -176,6 +176,29 @@ public static partial class SelfTest
         CheckMusicPlaylist(MusicTracks.For(MusicSet.Menu, true), MusicTracks.For(MusicSet.Lobby, true));
         CheckMusicSettings();
         CheckMusicStyleSetting();
+    }
+
+    /// <summary>
+    /// A track over the CPU budget gets a second chance: the median of three 3 s renders from its drop. A one-off
+    /// hiccup on a busy CI runner (a GC, the runner's other work) used to fail the timing line now and then.
+    /// </summary>
+    private static double MusicCostRecheck(MusicTrack t)
+    {
+        var r = new MusicRenderer();
+        var block = new float[MusicPlayer.BlockFrames * 2];
+        var blocks = 3 * Audio.SampleRate / MusicPlayer.BlockFrames;
+        var runs = new double[3];
+        for (var k = 0; k < runs.Length; k++)
+        {
+            r.Load(t, 1234, t.FirstDropBar);
+            var t0 = Stopwatch.GetTimestamp();
+            for (var b = 0; b < blocks; b++)
+                r.Render(block);
+            runs[k] = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / (blocks * MusicPlayer.BlockFrames / (double)Audio.SampleRate);
+        }
+        Array.Sort(runs);
+        Line($"{t.Name}: over the CPU budget once, rechecked: {runs[0]:0.0} / {runs[1]:0.0} / {runs[2]:0.0} ms per s (median counts)");
+        return runs[1];
     }
 
     private readonly record struct MusicTrackStats(double Intro, double Build, double Drop, double Break, float Peak, long Clipped, double MsPerSecond, float LimiterMinGain);
