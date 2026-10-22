@@ -711,7 +711,7 @@ def south_side():
         x = 1.6 + 2.6 * k
         if x < 12.5:
             P("Iron Railings", x + 0.4, 40.45, 0, yw=PARK_Y, check=False)
-    M("box", 0, 21.5, "#c8c0ac", yw=PARK_Y - 0.02, mirror=False, width=26.6, depth=0.5, height=0.08, material="Concrete")
+    M("box", 7.6, 21.5, "#c8c0ac", yw=PARK_Y - 0.02, width=11.4, depth=0.5, height=0.08, material="Concrete")
     M("box", 13.2, 31.0, "#c8c0ac", yw=PARK_Y - 0.02, width=0.5, depth=19.4, height=0.08, material="Concrete")
     # gravel paths: the middle walk and a cross walk round the memorial
     M("box", 0, 31.0, "#9a8e78", yw=PARK_Y + 0.005, mirror=False, width=2.6, depth=18.6, height=0.03, material="Dirt")
