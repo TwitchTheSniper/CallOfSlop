@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Gib Smear",
+  "description": "A chunk of meat that skidded: a short red smear trailing off into drops (Source/Props/Gibs.cs).",
+  "author": "Call of Slop",
+  "size": 0.6,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.12,
+  "impact": {"materials": ["Gore"], "weight": 1},
+  "layers": [
+    {"shape": "splat", "at": [0.4, 0.5], "radius": 0.2, "count": 8, "jag": 0.45, "seed": 821, "color": [0.34, 0.03, 0.03], "alpha": 0.85, "softness": 0.04},
+    {"shape": "splat", "at": [0.58, 0.5], "radius": 0.13, "count": 6, "jag": 0.4, "seed": 822, "color": [0.3, 0.03, 0.03], "alpha": 0.7, "softness": 0.05},
+    {"shape": "splat", "at": [0.72, 0.52], "radius": 0.07, "count": 5, "jag": 0.35, "seed": 823, "color": [0.28, 0.02, 0.02], "alpha": 0.6, "softness": 0.05},
+    {"shape": "speckle", "radius": 0.44, "count": 10, "width": 0.025, "seed": 824, "color": [0.38, 0.03, 0.03], "alpha": 0.8}
+  ]
+}

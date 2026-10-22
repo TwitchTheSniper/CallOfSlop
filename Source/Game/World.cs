@@ -101,6 +101,7 @@ public static class World
         Map = map;
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
+        Gibs.Clear(); // and so do the gibs (Source/Props/Gibs.cs)
     }
 
     /// <summary>A breakable prop's collider box changed (it broke): the physics world switches that box off.</summary>

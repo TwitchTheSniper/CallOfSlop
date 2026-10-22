@@ -1196,6 +1196,7 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
+        var healthBefore = victim.Health;
         victim.Health -= amount;
         BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
@@ -1225,7 +1226,8 @@ public sealed partial class Game : IDisposable
             ScavengeOnKill(attacker); // Scavenger (PerksMore.cs)
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
-            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye) { Gibbed = ShouldGib(kind, killId, amount, healthBefore) }; // blown apart (GameGibs.cs)
+        LastKill = kill;
         kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);

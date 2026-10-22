@@ -239,6 +239,7 @@ public sealed partial class Game
         if (!IsServer)
             ClientModeMatchStart(); // every mode's client-side reset (Zombies: doors shut, boards up, no zombies; the server resets its run in ResetModeForMatch)
         PropDebris.Clear();
+        Gibs.Clear();
         ClearVote();
         Feed.Clear();
         Tracers.Clear();

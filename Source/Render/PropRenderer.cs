@@ -339,7 +339,7 @@ public sealed unsafe class PropRenderer
     private int _breakVersion = -1;
     private PropBatches _batches = new();
     private readonly Vector4[] _planes = new Vector4[6];
-    private readonly float[] _debrisData = new float[(PropDebris.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece]; // debris, then ragdoll boxes (Ragdolls.cs)
+    private readonly float[] _debrisData = new float[(PropDebris.Capacity + Gibs.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece]; // debris, gibs (Gibs.cs), then ragdoll boxes (Ragdolls.cs)
     private double _lastNow;
 
     // GPU timing: timestamps around the plain pass (pass 0, with debris) and the animated pass (pass 1).
@@ -404,9 +404,10 @@ public sealed unsafe class PropRenderer
         var dt = (float)Math.Clamp(now - _lastNow, 0, 0.1);
         _lastNow = now;
         PropDebris.Update(dt);
+        Gibs.Update(dt, now);
         if (_broken)
             return;
-        if (map.PropInstances.Count == 0 && PropDebris.Count == 0 && !Ragdolls.HasInstances)
+        if (map.PropInstances.Count == 0 && PropDebris.Count == 0 && Gibs.Count == 0 && !Ragdolls.HasInstances)
         {
             if (_batches.Count > 0)
                 Free();
@@ -469,6 +470,7 @@ public sealed unsafe class PropRenderer
         }
 
         var debris = PropDebris.Write(_debrisData);
+        debris = Gibs.Write(_debrisData, debris); // meaty gibs (Gibs.cs)
         debris = Ragdolls.WriteInstances(_debrisData, debris); // the ragdolls' boxes ride in the same instanced draw
         if (debris > 0)
         {
