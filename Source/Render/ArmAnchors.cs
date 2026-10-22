@@ -98,8 +98,7 @@ public static class ArmAnchors
             WeaponClass.LMG => ReloadStyle.LmgBox,
             WeaponClass.Special when d.Mag <= 1 => ReloadStyle.MuzzleLoad,
             WeaponClass.Launcher when d.Mag > 1 => ReloadStyle.Revolver, // a drum launcher, shell by shell
-            WeaponClass.Launcher when d.Model?.Receiver == "break" => ReloadStyle.BreakOpen, // break-action grenade launcher
-            WeaponClass.Launcher => ReloadStyle.MuzzleLoad, // a rocket goes in the front of the tube
+            WeaponClass.Launcher => ReloadStyle.BreakOpen, // a round goes into the breech (a long tube's muzzle is out of reach)
             _ => ReloadStyle.BoxMag,
         };
 
@@ -286,6 +285,10 @@ public static class ArmAnchors
             case ReloadStyle.Revolver:
                 a.Carry = new Vector3(recvH * 0.75f, recvH * 0.75f, 0.03f);
                 a.CarryColor = new Vector3(0.4f, 0.41f, 0.44f);
+                break;
+            case ReloadStyle.BreakOpen when cls == WeaponClass.Launcher:
+                a.Carry = d.LauncherProjectile == LauncherProjectile.Rocket ? new Vector3(0.05f, 0.05f, 0.2f) : new Vector3(0.04f, 0.04f, 0.07f); // a rocket or a grenade
+                a.CarryColor = d.Accent * 0.8f;
                 break;
             case ReloadStyle.TubeShells:
             case ReloadStyle.BreakOpen:
