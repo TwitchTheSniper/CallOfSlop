@@ -172,7 +172,7 @@ public static class ImpactDecals
             case ShapeKind.Terrain:
                 if (map.Terrain is not { } t)
                     return "Dirt";
-                return Footsteps.OfTerrain(t, hit.Point.X, hit.Point.Z) switch
+                return SurfaceProbe.OfTerrain(t, hit.Point.X, hit.Point.Z) switch
                 {
                     FootSurface.Rock => "Rock",
                     FootSurface.Dirt => "Dirt",
@@ -201,7 +201,7 @@ public static class ImpactDecals
                     return "Plaster"; // pale walls: rendered, painted, drywall
                 return "Concrete";
             case Material.Dirt:
-                if (Footsteps.IsSnowy(c))
+                if (SurfaceProbe.IsSnowy(c))
                     return "Snow";
                 if (c.Y > c.X + 0.04f && c.Y > c.Z + 0.04f)
                     return "Grass";
