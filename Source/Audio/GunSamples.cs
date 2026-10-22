@@ -381,6 +381,7 @@ public static class GunSamples
             var x = Resample(set.Shots[picks[v]], pitch * (repeat ? 1.014f : 1f), len);
             LowPass(x, 900f);
             LowPass(x, 1400f);
+            LowPass(x, 1100f); // a third pole: the brighter recordings (PPSh, Walther) stay under the thwip too
             Decay(x, 0.07f); // a suppressor kills the blast's ring-out
             Tilt(x, MathF.Min(voice.Tilt, 0f) * 0.6f); // darker only (it stays muffled), on the recording only
             var mix = new float[len];
