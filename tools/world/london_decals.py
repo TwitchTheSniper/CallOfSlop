@@ -24,7 +24,7 @@ SIGNS = {
     "barber": ("London Barber Fascia", 3.6, 0.55, "#14243a", "#f0d878", ["SHARP LADS"], "serif", "wall", None),
     "shop": ("London Corner Shop Fascia", 8.0, 0.62, "#1e5a32", "#f8f4e8", ["PATEL & SON  FOOD - WINE - NEWS"], "cond", "wall", "#e8c040"),
     "pub": ("London Pub Fascia", 6.0, 0.6, "#173a2a", "#e8c870", ["THE LAMPLIGHTER"], "serif", "wall", None),
-    "bar": ("London Arch Bar Sign", 6.6, 0.58, "#1e2a3a", "#f0a040", ["ARCH SEVEN TAPROOM"], "poppins", "wall", None),
+    "bar": ("London Arch Bar Sign", 5.0, 0.55, "#1e2a3a", "#f0a040", ["ARCH SEVEN TAPROOM"], "poppins", "wall", None),
     "garage": ("London Garage Sign", 7.0, 0.48, "#e8e4da", "#a01818", ["VIADUCT MOTORS  MOT - TYRES"], "cond", "wall", "#a01818"),
     "workshop": ("London Workshop Sign", 3.2, 0.5, "#2a2a2a", "#e8e8e0", ["BOW JOINERY"], "cond", "wall", None),
     "plate_lane": ("London Street Plate Arches", 1.5, 0.36, "#f4f4f0", "#141414", ["ARCHES LANE"], "sans", "wall", "#141414"),

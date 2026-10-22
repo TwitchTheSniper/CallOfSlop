@@ -525,9 +525,9 @@ def viaduct():
             P("Railway Track", x, z, 0, yw=DECK_Y, check=False)
     # the platform (north side) with a gap at each stair head, its canopy and shelter
     B(-9.0, DECK_Y, -18.7, 9.0, DECK_Y + 0.45, -16.45, "#8a8680", mirror=False)
-    B(16.4, DECK_Y, -18.7, 30.0, DECK_Y + 0.45, -16.45, "#8a8680")
+    B(17.0, DECK_Y, -18.7, 30.0, DECK_Y + 0.45, -16.45, "#8a8680")
     M("box", 0, -16.52, "#e8d040", yw=DECK_Y + 0.45, mirror=False, width=18.0, depth=0.14, height=0.02)
-    M("box", 23.2, -16.52, "#e8d040", yw=DECK_Y + 0.45, width=13.6, depth=0.14, height=0.02)
+    M("box", 23.5, -16.52, "#e8d040", yw=DECK_Y + 0.45, width=13.0, depth=0.14, height=0.02)
     for x in (3.0, 7.5):
         B(x - 0.1, DECK_Y + 0.45, -18.4, x + 0.1, DECK_Y + 3.3, -18.2, "#1e3a2a")
     M("box", 0, -17.6, "#2a4a36", yw=DECK_Y + 3.3, mirror=False, width=18.4, depth=2.8, height=0.14, material="Metal")
@@ -537,7 +537,7 @@ def viaduct():
         P("Bench", x, -18.45, 0, yw=DECK_Y + 0.45, check=False)
     for x in (18.0, 25.0):
         P("Post Litter Bin", x, -18.5, 0, yw=DECK_Y + 0.45, check=False)
-    P("Ticket Machine", 17.2, -18.45, 0, yw=DECK_Y + 0.45, check=False)
+    P("Ticket Machine", 18.0, -18.45, 0, yw=DECK_Y + 0.45, check=False)
     # trains: two cars standing at the platform's far side (south line), a car on each north line by the embankment
     P("Commuter Train Car", 10.0, -11.9, 0, yw=DECK_Y + 0.38, check=False)
     P("Commuter Train Car", 38.0, -15.0, 0, yw=DECK_Y + 0.38, check=False)
@@ -856,7 +856,7 @@ def signs():
         sign("barber", sx * 10.2, 3.025, 8.22, "wall-z")
         sign("shop", sx * 18.6, 3.72, 8.125, "wall-z")
         sign("pub", sx * 43.6, 2.775, 8.24, "wall-z")
-        sign("bar", sx * 20.0, 3.6, -9.58, "wall-z")
+        sign("bar", sx * 20.75, 3.6, -9.58, "wall-z")
         sign("garage", sx * 36.2, 3.85, -9.58, "wall-z")
         sign("workshop", sx * 44.2, 3.2, -9.7, "wall-z")
         sign("plate_lane", sx * 5.6, 2.5, -9.62, "wall-z")

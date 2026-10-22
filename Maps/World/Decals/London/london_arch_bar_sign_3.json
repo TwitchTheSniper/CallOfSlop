@@ -2,11 +2,11 @@
  "format": "call-of-slop-decal/1",
  "name": "London Arch Bar Sign 3",
  "category": "London",
- "description": "Tile 3 of 10 of the London map's arch bar sign (ARCH SEVEN TAPROOM; an invented name).",
+ "description": "Tile 3 of 8 of the London map's arch bar sign (ARCH SEVEN TAPROOM; an invented name).",
  "author": "Call of Slop",
  "size": [
-  0.66,
-  0.58
+  0.625,
+  0.55
  ],
  "rotation": 0,
  "blend": "alpha",

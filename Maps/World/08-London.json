@@ -2249,7 +2249,7 @@
   },
   {
    "op": "Block",
-   "x0": 16.4,
+   "x0": 17.0,
    "y0": 5.4,
    "z0": -18.7,
    "x1": 30.0,
@@ -2263,7 +2263,7 @@
    "x0": -30.0,
    "y0": 5.4,
    "z0": -18.7,
-   "x1": -16.4,
+   "x1": -17.0,
    "y1": 5.85,
    "z1": -16.45,
    "color": "#8a8680",
@@ -2284,10 +2284,10 @@
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": 23.2,
+   "x": 23.5,
    "z": -16.52,
    "y": 5.85,
-   "width": 13.6,
+   "width": 13.0,
    "depth": 0.14,
    "height": 0.02,
    "color": "#e8d040",
@@ -2296,10 +2296,10 @@
   {
    "op": "Mesh",
    "mesh": "box",
-   "x": -23.2,
+   "x": -23.5,
    "z": -16.52,
    "y": 5.85,
-   "width": 13.6,
+   "width": 13.0,
    "depth": 0.14,
    "height": 0.02,
    "color": "#e8d040",
@@ -2466,7 +2466,7 @@
   {
    "op": "Prop",
    "name": "Ticket Machine",
-   "x": 17.2,
+   "x": 18.0,
    "z": -18.45,
    "y": 5.85,
    "anchor": "world"
@@ -2474,7 +2474,7 @@
   {
    "op": "Prop",
    "name": "Ticket Machine",
-   "x": -17.2,
+   "x": -18.0,
    "z": -18.45,
    "y": 5.85,
    "anchor": "world"
@@ -8597,7 +8597,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 1",
-   "x": 17.03,
+   "x": 18.56,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8608,7 +8608,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 2",
-   "x": 17.69,
+   "x": 19.19,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8619,7 +8619,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 3",
-   "x": 18.35,
+   "x": 19.81,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8630,7 +8630,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 4",
-   "x": 19.01,
+   "x": 20.44,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8641,7 +8641,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 5",
-   "x": 19.67,
+   "x": 21.06,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8652,7 +8652,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 6",
-   "x": 20.33,
+   "x": 21.69,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -8663,28 +8663,6 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 7",
-   "x": 20.99,
-   "z": -9.23,
-   "y": 3.6,
-   "anchor": "world",
-   "onto": "wall-z",
-   "rotation": 0,
-   "reach": 1.0
-  },
-  {
-   "op": "Decal",
-   "decal": "London Arch Bar Sign 8",
-   "x": 21.65,
-   "z": -9.23,
-   "y": 3.6,
-   "anchor": "world",
-   "onto": "wall-z",
-   "rotation": 0,
-   "reach": 1.0
-  },
-  {
-   "op": "Decal",
-   "decal": "London Arch Bar Sign 9",
    "x": 22.31,
    "z": -9.23,
    "y": 3.6,
@@ -8695,8 +8673,8 @@
   },
   {
    "op": "Decal",
-   "decal": "London Arch Bar Sign 10",
-   "x": 22.97,
+   "decal": "London Arch Bar Sign 8",
+   "x": 22.94,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9301,7 +9279,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 1",
-   "x": -22.97,
+   "x": -22.94,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9323,7 +9301,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 3",
-   "x": -21.65,
+   "x": -21.69,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9334,7 +9312,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 4",
-   "x": -20.99,
+   "x": -21.06,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9345,7 +9323,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 5",
-   "x": -20.33,
+   "x": -20.44,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9356,7 +9334,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 6",
-   "x": -19.67,
+   "x": -19.81,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9367,7 +9345,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 7",
-   "x": -19.01,
+   "x": -19.19,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
@@ -9378,29 +9356,7 @@
   {
    "op": "Decal",
    "decal": "London Arch Bar Sign 8",
-   "x": -18.35,
-   "z": -9.23,
-   "y": 3.6,
-   "anchor": "world",
-   "onto": "wall-z",
-   "rotation": 0,
-   "reach": 1.0
-  },
-  {
-   "op": "Decal",
-   "decal": "London Arch Bar Sign 9",
-   "x": -17.69,
-   "z": -9.23,
-   "y": 3.6,
-   "anchor": "world",
-   "onto": "wall-z",
-   "rotation": 0,
-   "reach": 1.0
-  },
-  {
-   "op": "Decal",
-   "decal": "London Arch Bar Sign 10",
-   "x": -17.03,
+   "x": -18.56,
    "z": -9.23,
    "y": 3.6,
    "anchor": "world",
