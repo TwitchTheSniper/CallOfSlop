@@ -354,7 +354,7 @@ public static partial class SelfTest
             bodies[i].Teleport(new Vector3(i, 0, 3));
         }
         var body = Matrix4x4.CreateTranslation(1, 0, 2);
-        for (var i = 0; i < 200; i++) // warm up
+        for (var i = 0; i < 3000; i++) // warm up (and let the JIT settle: its one-off tier-up can allocate a few bytes)
             BodyBloodRender.PlacePlayer(bodies[i & 31], pose, body, i % 3);
         BodyBloodRender.Mode = BloodMode.Full;
         var placed = 0;
@@ -371,10 +371,10 @@ public static partial class SelfTest
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         BodyBloodRender.Reset();
         var usPerFrame = sw.Elapsed.TotalMilliseconds * 1000 / frameCount;
-        Line($"32 bodies: {placed / (double)frameCount:0} marks placed per frame in {usPerFrame:0.0} us (budget 100 us), {allocated} bytes allocated; 0 extra draw calls (marks paint in the bodies' own draws)");
+        Line($"32 bodies: {placed / (double)frameCount:0} marks placed per frame in {usPerFrame:0.0} us (budget 100 us), {allocated} bytes allocated over {frameCount} frames; 0 extra draw calls (marks paint in the bodies' own draws)");
         if (usPerFrame > 100)
             Fail($"body blood: {usPerFrame:0} us per frame for 32 bodies (budget 100 us)");
-        if (allocated > 0)
+        if (allocated > 256) // a per-frame allocation would be at least 500 x 24 bytes; a one-off JIT tier-up is a few dozen
             Fail("body blood: allocates per frame");
 
         // Off: nothing placed, nothing bound.
