@@ -1,6 +1,6 @@
 # Making weapons for Call of Slop
 
-Every weapon is a single `.json` file in this folder. The 50 weapons that ship with the game are ordinary weapon files too, sorted into one subfolder per class (`Pistols/`, `SMGs/`, `AssaultRifles/`, ...). Open any of them to see a real one. Subfolders are only for tidiness: the game reads every `*.json` under `Weapons/`, however deep. The one exception is `Weapons/Frenzy/`: `classes.json` there holds the kill frenzy's per-class character and buffs (see the main README), not a weapon.
+Every weapon is a single `.json` file in this folder. The 58 weapons that ship with the game (50 guns and 8 launchers) are ordinary weapon files too, sorted into one subfolder per class (`Pistols/`, `SMGs/`, `AssaultRifles/`, ..., `Launchers/`). Open any of them to see a real one. Subfolders are only for tidiness: the game reads every `*.json` under `Weapons/`, however deep. The one exception is `Weapons/Frenzy/`: `classes.json` there holds the kill frenzy's per-class character and buffs (see the main README), not a weapon.
 
 To add a weapon, drop its file in here (or in a subfolder such as `Weapons/MyPack/`) and restart the game. Nothing needs recompiling. The gun's 3D model and its gunshot, reload and equip sounds are generated from its stats, so a file is all a weapon needs.
 
@@ -57,7 +57,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `author` | Your name. Optional. | `""` | |
 | `order` | Position in the weapon list. Lower comes first, ties sort by name. See "Ids and order" below. | `1000` | any whole number |
 | `unlockLevel` | Account level that unlocks it. See "Unlocking" below. | max level | 1 or more |
-| `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG` or `Special`. Pistols go in the **secondary** slot, everything else in the **primary**. The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
+| `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG`, `Special` or `Launcher`. Pistols and launchers go in the **secondary** slot, everything else in the **primary** (a launcher fires projectiles: see [Launchers](#launchers)). The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
 | `blurb` | One line shown in the loadout menu. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `""` | |
 
 ### Damage
@@ -182,7 +182,7 @@ An optional object that says what the gun is made of. It starts from an archetyp
 "model": { "base": "pump_shotgun", "barrelLength": 0.24, "stock": "crane", "muzzle": "breacher", "sideSaddle": true, "finish": "black" }
 ```
 
-- **Archetypes** (`base`, default `rifle`): `pistol`, `revolver`, `derringer`, `smg`, `pdw`, `rifle`, `battle_rifle`, `bullpup`, `dmr`, `lever_rifle`, `bolt_sniper`, `pump_shotgun`, `semi_shotgun`, `double_barrel`, `drum_shotgun`, `lever_shotgun`, `lmg`, `rotary`, `musket`, `coil_rifle`, `energy`, `tool`, `toy`. An archetype's sizes follow the weapon's `length` and `bulk`; sizes you write yourself are metres, angles are degrees.
+- **Archetypes** (`base`, default `rifle`): `pistol`, `revolver`, `derringer`, `smg`, `pdw`, `rifle`, `battle_rifle`, `bullpup`, `dmr`, `lever_rifle`, `bolt_sniper`, `pump_shotgun`, `semi_shotgun`, `double_barrel`, `drum_shotgun`, `lever_shotgun`, `lmg`, `rotary`, `musket`, `coil_rifle`, `energy`, `tool`, `toy`, and for launchers `rocket_tube` and `grenade_launcher`. An archetype's sizes follow the weapon's `length` and `bulk`; sizes you write yourself are metres, angles are degrees.
 - **Receiver:** `receiver` (box, slab, round, slide, revolver, bullpup, lever, break, tool, toy, sci), `receiverLength`, `receiverHeight`, `receiverWidth`, `topRail`, `bolt` (none, side, rear, charging, top), `hammer`, `lever`, `canister`, `sideSaddle`.
 - **Barrel:** `barrels` (1-8), `barrelLayout` (single, side, over, rotary), `barrelStyle` (round, square, fluted), `barrelLength`, `barrelWidth`, `shroud` (none, jacket, perforated, heatshield, suppressor, coils, rails) with `shroudLength` (fraction of the barrel), `gasBlock`, `ramrod`, `coils` (0-10), `muzzle` (none, crown, flash, brake, bell, comp, tip, breacher, ported; a muzzle attachment replaces it).
 - **Handguard:** `handguard` (none, rail, slim, ribbed, wood, quad, tube, forend, pump, stock), `handguardLength`, `handguardHeight`, `foregrip` (none, vertical, stub, folding, strap), `bipod` (none, folded, deployed).
@@ -199,7 +199,7 @@ The gunshot is synthesised from these when the game starts. Real firearms (`Gun`
 
 | Field | Meaning | Default | Allowed |
 | --- | --- | --- | --- |
-| `sound` | Recipe: `Gun`, `Suppressed` (built-in silencer), `Boom` (huge, for .50 cal and muskets), `Zap` (energy), `Toy` or `Pneumatic`. | `Gun` | |
+| `sound` | Recipe: `Gun`, `Suppressed` (built-in silencer), `Boom` (huge, for .50 cal and muskets), `Zap` (energy), `Toy`, `Pneumatic`, or for launchers `Rocket` (a backblast roar and the motor pulling away) and `Thump` (a grenade launcher's hollow thoomp). Launcher sounds are synthesised only (no recorded layers). | `Gun` | |
 | `caliber` | 0 = small and snappy, 1 = huge and deep. | `0.5` | 0-1 |
 | `bright` | High-frequency crack of the blast. | `0.5` | 0-1 |
 | `tail` | Length of the echo. | `0.5` | 0-1 |
@@ -226,9 +226,61 @@ To pin any of it, add an optional `"voice"` block (every key optional; the rest 
 
 Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30), an SMG fires 650-1150 rpm with 11-18 m of range, and a sniper does 70-140 damage. `--check-weapon` prints DPS and shots to kill so you can compare with the shipped guns.
 
+## Launchers
+
+A weapon of class `Launcher` fires a real projectile instead of a hitscan bullet (Source/Game/Launchers): a rocket, a grenade or a sticky charge that flies, drops and goes off with a blast. Launchers are secondaries, carry a few spare rounds instead of endless reloads, only take attachments made for launchers (an attachment's `fits` must name `"Launcher"` in `classes`, or the weapon in `weapons`), and sit out Gun Game. The shipped ones are in `Weapons/Launchers/`.
+
+For a launcher some of the usual fields mean something a little different: `damage` is the blast's damage at its centre (it falls off to nothing at `radius`), `rangeM` is the range bots and the stat bars use, `hipSpreadDeg` / `adsSpreadMult` are the launch cone, `headMult` and `pellets` aren't used. Everything else lives in a `launcher` block (every key optional; the defaults are a dumb-fire rocket):
+
+```
+"launcher": {
+  "projectile": "Rocket", "guidance": "None", "speed": 22, "maxSpeed": 46, "thrust": 40, "gravity": 0.15,
+  "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "selfDamage": 0.6,
+  "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
+  "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
+}
+```
+
+| Key | Meaning | Default | Allowed |
+| --- | --- | --- | --- |
+| `projectile` | `Rocket` (a motor, nearly flat, goes off on contact), `Grenade` (an arc, goes off on contact, after its bounces or at its fuse) or `Sticky` (sticks to the map or a player; its owner aims and pulls the trigger to set them all off). | `Rocket` | |
+| `guidance` | `None` (dumb fire), `LockOn` (aim at an enemy's flying kill streak until it locks, then it homes; ground streaks never lock) or `Wire` (it turns towards wherever its owner looks while they hold the launcher). | `None` | |
+| `speed` | Launch speed, m/s. | `30` | 1-300 |
+| `maxSpeed` | Rockets: the motor pushes it up to this. Must be at least `speed` when there is `thrust`. | `60` | 1-300 |
+| `thrust` | Rockets: motor push, m/s per second (0 = no motor). | `60` | 0-1000 |
+| `gravity` | Fraction of the world's gravity (rockets 0.05-0.2, grenades about 1). | `0.1` | 0-3 |
+| `drag` | Fraction of the speed lost per second. | `0` | 0-5 |
+| `radius` | Blast radius, metres. | `5` | 0.5-20 |
+| `falloff` | Damage is `damage x (1 - distance / radius) ^ falloff`. | `1.2` | 0.3-4 |
+| `direct` | Extra damage to a player hit straight on. | `50` | 0-1000 |
+| `vehicleMult` | Multiplier on everything it does to kill streak machines (before their own explosive multiplier: the sentry takes 1.5x). | `1` | 0-10 |
+| `selfDamage` | Share of the blast its owner takes. | `0.6` | 0-1 |
+| `armDistance` | Metres of flight before it arms; an unarmed hit is a dud (only `direct` damage, no blast). | `6` | 0-60 |
+| `proximity` | Goes off this close to an enemy's flying streak (0 = no proximity fuse). | `0` | 0-12 |
+| `fuse` | Seconds before it goes off on its own (rockets self-destruct, stickies wait at most this long). | `8` | 0.1-40 |
+| `bounces` | Grenades: bounces before contact sets it off. | `0` | 0-10 |
+| `reserve` | Spare rounds per life on top of the magazine. | `3` | 0-30 |
+| `lockTime`, `lockRange`, `lockCone` | Lock-on: seconds to lock while aiming, furthest target (m), cone half-angle (degrees). | `1.2`, `160`, `9` | 0.1-10, 5-600, 1-45 |
+| `turnRate` | Guided: degrees per second it can turn. | `90` | 0-720 |
+| `cluster` | Bomblets the blast throws out (each 45% of the radius, 40% of the damage). | `0` | 0-12 |
+| `wallPierce` | Thermobaric: share of the blast that gets round walls. | `0` | 0-1 |
+
+Attachments change these by their field names with a `launcher` prefix, e.g. `{ "stat": "launcherLockTime", "mul": 0.7 }` or `{ "stat": "launcherReserve", "add": 1 }`. Kitted launchers keep at least 70% of their lock time, launch speeds within 70-140% and at most double the reserve.
+
+| Shipped launcher | Type | Damage / radius / direct | Rounds | Unlock |
+| --- | --- | --- | --- | --- |
+| Mule RPG | dumb-fire rocket | 150 / 6.5 m / +60 | 1 + 2 | 6 |
+| Clover Break-Action | single-shot grenade launcher | 130 / 5 m / +40 | 1 + 5 | 9 |
+| Carousel Drum Launcher | 6-round revolving grenade launcher | 100 / 4.2 m / +30 | 6 + 6 | 14 |
+| Skylance AA | lock-on anti-air rocket | 110 / 3.5 m / +140 | 1 + 3 | 18 |
+| Gluepot Sticky Launcher | sticky charges | 125 / 4.5 m / - | 3 + 3 | 22 |
+| Wireline TOW | wire-guided rocket | 140 / 5 m / +80 | 1 + 2 | 27 |
+| Hailcrack Cluster | cluster rocket (6 bomblets) | 90 / 4 m / +40 | 1 + 2 | 33 |
+| Furnace Thermobaric | thermobaric rocket | 120 / 8 m / +40 | 1 + 1 | 39 |
+
 ## Ids and order
 
-Weapons are sorted by `order`, then by name. A weapon's position in that list is its id, which the network uses. The shipped weapons use `order` 1-50 (pistols 1-9, SMGs 10-16, rifles 17-24, marksman 25-30, snipers 31-35, shotguns 36-41, LMGs 42-46, special 47-50). Give new weapons 100 or more, or leave `order` out (it defaults to 1000), so they're listed after the shipped ones.
+Weapons are sorted by `order`, then by name. A weapon's position in that list is its id, which the network uses. The shipped weapons use `order` 1-50 (pistols 1-9, SMGs 10-16, rifles 17-24, marksman 25-30, snipers 31-35, shotguns 36-41, LMGs 42-46, special 47-50) and the launchers 101-108. Give new weapons 110 or more, or leave `order` out (it defaults to 1000), so they're listed after the shipped ones.
 
 Your progress doesn't depend on ids: weapon XP in `progress.txt` (`wx.<weapon name>=...`) and loadouts in `loadout.txt` are stored by **name**. Renaming a weapon starts its weapon XP from zero, and removing a weapon file keeps its XP in the save in case it comes back.
 

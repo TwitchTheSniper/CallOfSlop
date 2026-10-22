@@ -37,6 +37,6 @@
     "lockRange": 160, "lockCone": 9, "turnRate": 75, "cluster": 0, "wallPierce": 0
   },
   "model": {
-    "base": "rocket_tube", "barrelWidth": 0.09, "receiverLength": 0.5, "foregrip": "stub", "sights": "aperture", "topRail": true, "finish": "tan", "furniture": "black", "accentStyle": "stripe"
+    "base": "rocket_tube", "barrelWidth": 0.09, "barrelLength": 0.68, "foregrip": "stub", "sights": "aperture", "topRail": true, "finish": "tan", "furniture": "black", "accentStyle": "stripe"
   }
 }

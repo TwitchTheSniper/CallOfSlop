@@ -1153,11 +1153,11 @@ public static partial class SelfTest
 
         // Pacing (rough targets): ~1,000 weapon XP and ~1,000 account XP per typical match (~7 kills).
         const float perMatch = 1000f;
-        var matchesToMax = Weapons.All.Where(w => Attachments.For(w).Count > 0).Select(w => Attachments.MaxXp(w) / perMatch).ToArray();
+        var matchesToMax = Weapons.All.Where(w => Attachments.For(w).Count > 0 && !w.IsLauncher).Select(w => Attachments.MaxXp(w) / perMatch).ToArray(); // (launchers: their own few attachments, quick to unlock)
         Line($"matches to max a gun: {matchesToMax.Min():0.0} - {matchesToMax.Max():0.0} (target 3-7), average {matchesToMax.Average():0.0}");
         if (matchesToMax.Min() < 2.5f || matchesToMax.Max() > 7.5f)
             Fail("attachment pacing outside 3-7 matches");
-        var sixty = Weapons.All.Where(w => Attachments.For(w).Count > 0).Select(w =>
+        var sixty = Weapons.All.Where(w => Attachments.For(w).Count > 0 && !w.IsLauncher).Select(w =>
         {
             var list = Attachments.For(w);
             var k = Math.Max(0, (int)MathF.Ceiling(list.Count * 0.6f) - 1);
