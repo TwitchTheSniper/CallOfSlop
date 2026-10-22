@@ -46,6 +46,9 @@ public sealed class StreakDef
     /// (grenades, strikes, exploding props). Never a headshot multiplier: machines have no head.
     /// </summary>
     public float BulletDamageMult = 1f, ExplosiveDamageMult = 1f;
+
+    /// <summary>Strikes: blast knockback (m/s added at each impact's centre, falling off to nothing at its radius; Knockback.cs). 0 = no push.</summary>
+    public float Knockback;
 }
 
 /// <summary>One shell or strafe impact of a called-in strike: when (seconds after the call) and where.</summary>
@@ -219,7 +222,7 @@ public static class KillStreaks
             Color = new(1f, 0.8f, 0.2f) },
         new() { Id = StreakId.MortarBarrage, Name = "Mortar Barrage", Kills = 5, Short = "7 shells on a spot", Aim = StreakAim.Spot,
             Effect = "Look at a spot and press fire. After a short delay 7 shells land around it, each one whistling as it comes in. Walls and roofs shield you.",
-            Color = new(1f, 0.5f, 0.2f) },
+            Color = new(1f, 0.5f, 0.2f), Knockback = 10f },
         new() { Id = StreakId.SentryTurret, Name = "Sentry Turret", Kills = 6, Short = "Auto-turret, 45 s",
             Effect = "Drops an automatic turret in front of you, facing where you look. It shoots enemies in front of it for 45 seconds. Armoured: bullets do reduced damage, explosives extra.",
             Color = new(0.55f, 0.9f, 0.45f), Health = TurretHealth, BulletDamageMult = TurretBulletMult, ExplosiveDamageMult = TurretExplosiveMult },
@@ -228,7 +231,7 @@ public static class KillStreaks
             Color = new(0.95f, 0.35f, 0.35f), Health = DroneHealth },
         new() { Id = StreakId.StrafeRun, Name = "Strafe Run", Kills = 11, Short = "Jet strafes a line", Aim = StreakAim.Line,
             Effect = "Look at a spot and press fire: a jet strafes a 50 m line through it, along the way you're facing. Roofs shield you.",
-            Color = new(1f, 0.3f, 0.6f) },
+            Color = new(1f, 0.3f, 0.6f), Knockback = 7f },
     ];
 
     public static StreakDef Get(StreakId id) => All[(int)id < All.Length ? (int)id : 0];
@@ -611,6 +614,7 @@ public sealed partial class Game
                 if (DamagePlayer(owner, victim, (int)MathF.Round(amount), false, killId, now, DamageKind.Explosive))
                     flags |= 4;
             }
+            BlastKnockback(owner, center, radius, KillStreaks.Get(KillStreaks.FromKillId(killId)).Knockback, enemiesOnly: true); // pushes the caller's enemies (Knockback.cs)
             StreakBlastEntities(owner, center, radius, maxDamage, now);
             BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
         }
@@ -751,6 +755,9 @@ public sealed partial class Game
                 s.Done = true;
                 var radius = s.Kind == StreakId.MortarBarrage ? KillStreaks.MortarRadius : KillStreaks.StrafeRadius;
                 Blasts.Add(new Blast(s.Pos + new Vector3(0, 0.3f, 0), now, radius, ThrowableKind.Frag));
+                var push = KillStreaks.Get(s.Kind).Knockback;
+                Ragdolls.Blast(s.Pos + new Vector3(0, 0.3f, 0), radius, push, now); // corpses fly (cosmetic, Source/Render/Ragdolls.cs)
+                PropDebris.Push(s.Pos + new Vector3(0, 0.3f, 0), radius, push);
                 Audio.Effect3D(Sfx.Explosion, s.Pos, s.Kind == StreakId.MortarBarrage ? 1f : 0.75f);
                 ImpactDecals.OnBlast(World.Map, s.Pos, s.Owner, now); // a scorch where it landed (Source/Decals)
                 if (Local is { } me)

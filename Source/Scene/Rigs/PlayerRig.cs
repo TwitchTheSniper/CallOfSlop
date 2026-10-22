@@ -157,8 +157,9 @@ public sealed class PlayerRig
                 _legBoxes[i].Renderable.Color = lc.Of(parts[i % parts.Length].Paint);
         }
 
-        _corpse.Visible = !p.Alive && !legsOnly;
-        PoseHat(p, time, legsOnly);
+        var ragdoll = !p.Alive && Ragdolls.OwnsBody(p.Id); // the body is a ragdoll (Source/Render/Ragdolls.cs), drawn with the debris
+        _corpse.Visible = !p.Alive && !legsOnly && !ragdoll;
+        PoseHat(p, time, legsOnly || ragdoll);
         if (!legsOnly)
             PoseBody(p, _hat != null);
         Pelvis.Visible = p.Alive;
