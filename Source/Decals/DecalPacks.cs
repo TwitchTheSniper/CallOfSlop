@@ -18,7 +18,20 @@ public sealed class DecalScope
     public string? Folder { get; init; }
 
     /// <summary>The pack's own decals, sorted by category then name (empty for the global scope).</summary>
-    public DecalDef[] Local { get; init; } = [];
+    public DecalDef[] Local
+    {
+        get => _local;
+        init
+        {
+            _local = value;
+            _byName = new Dictionary<string, DecalDef>(StringComparer.OrdinalIgnoreCase);
+            foreach (var d in value)
+                _byName.TryAdd(d.Name, d);
+        }
+    }
+
+    private readonly DecalDef[] _local = [];
+    private readonly Dictionary<string, DecalDef>? _byName;
 
     /// <summary>Names of global decals the pack shadows with its own.</summary>
     public string[] Shadowed { get; init; } = [];
@@ -33,9 +46,8 @@ public sealed class DecalScope
     {
         if (PropScope.IsGlobal(name, out var bare))
             return Decals.Find(bare);
-        foreach (var d in Local)
-            if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
-                return d;
+        if (_byName != null && _byName.TryGetValue(name, out var local))
+            return local;
         return Decals.Find(name);
     }
 
@@ -59,22 +71,20 @@ public static partial class Decals
     /// <summary>The most decals the global Decals folder may hold (the self-test asks for a quarter of it free).</summary>
     public const int MaxGlobal = 256;
 
-    /// <summary>The most decals one pack's Decals folder may hold.</summary>
-    public const int MaxPerPack = 128;
+    /// <summary>
+    /// The most decals one pack's Decals folder may hold. Only the pack decals a map actually places get atlas layers
+    /// (painted when that map loads), so a big pack costs parse time and a little memory, not video memory.
+    /// </summary>
+    public const int MaxPerPack = 4096;
+
+    /// <summary>
+    /// The most different pack decals one map may use. With the global library (<see cref="MaxGlobal"/>) that stays inside
+    /// the 2048 array texture layers OpenGL 4.1 guarantees (<see cref="DecalAtlas.MaxLayers"/>).
+    /// </summary>
+    public const int MaxPackDecalsPerMap = 1024;
 
     private static DecalScope? _globalScope;
     private static readonly Dictionary<string, DecalScope> PackScopes = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Pack decals loaded so far, in load order (append-only until <see cref="Reload"/>, so atlas layers never move).</summary>
-    private static readonly List<DecalDef> PackLayers = new();
-
-    private static DecalDef[]? _atlasDefs;
-
-    /// <summary>
-    /// Goes up whenever the atlas gains layers (a pack's decals loaded) or the library reloads. The renderer repaints only
-    /// the new layers on a worker thread; map decal meshes don't rebake (existing layers keep their index).
-    /// </summary>
-    public static int AtlasVersion { get; private set; }
 
     /// <summary>The scope of maps outside any pack: just the global Decals folder.</summary>
     public static DecalScope Global
@@ -84,20 +94,6 @@ public static partial class Decals
             _ = All;
             lock (LoadLock)
                 return _globalScope ??= new DecalScope();
-        }
-    }
-
-    /// <summary>
-    /// Every decal with a layer in the atlas: <see cref="All"/> (layers 0..All.Length-1), then every pack's decals loaded so
-    /// far (each pack's decals only load when one of its maps does). <see cref="DecalDef.Index"/> is the position here.
-    /// </summary>
-    public static DecalDef[] AtlasDefs
-    {
-        get
-        {
-            var all = All;
-            lock (LoadLock)
-                return _atlasDefs ??= all.Concat(PackLayers).ToArray();
         }
     }
 
@@ -132,10 +128,7 @@ public static partial class Decals
         }
     }
 
-    /// <summary>
-    /// Drops one pack's cached scope, so the next <see cref="ForPack"/> reads its Decals folder again (its old layers stay
-    /// in the atlas until <see cref="Reload"/>, so maps already baked keep drawing).
-    /// </summary>
+    /// <summary>Drops one pack's cached scope, so the next <see cref="ForPack"/> reads its Decals folder again.</summary>
     public static void ForgetPack(string packDir)
     {
         lock (LoadLock)
@@ -145,10 +138,7 @@ public static partial class Decals
     private static void ClearPacks()
     {
         PackScopes.Clear();
-        PackLayers.Clear();
-        _atlasDefs = null;
         _globalScope = null;
-        AtlasVersion++;
     }
 
     private static DecalScope LoadPack(string packDir, DecalDef[] global)
@@ -170,31 +160,19 @@ public static partial class Decals
             else
                 local.Add(d);
         }
-        var room = DecalAtlas.MaxLayers - global.Length - PackLayers.Count;
-        if (local.Count > room)
-        {
-            errors.Add($"{local.Count} pack decals but the atlas has room for {Math.Max(0, room)} more ({DecalAtlas.MaxLayers} layers); the rest are skipped");
-            local = local.Take(Math.Max(0, room)).ToList();
-        }
         foreach (var e in errors)
         {
             LoadErrors.Add($"{pack}/{PackFolderName}: {e}");
             Console.WriteLine($"[decals] pack {pack}: {e}");
         }
         for (var i = 0; i < local.Count; i++)
-            local[i].Index = global.Length + PackLayers.Count + i;
-        PackLayers.AddRange(local);
-        if (local.Count > 0)
-        {
-            _atlasDefs = null;
-            AtlasVersion++;
-        }
-        var shadowed = local.Where(l => global.Any(g => g.Name.Equals(l.Name, StringComparison.OrdinalIgnoreCase))).Select(l => l.Name).ToArray();
+            local[i].Index = i; // its place in the pack (not an atlas layer: a map's bake gives its pack decals layers)
+        var globalNames = new HashSet<string>(global.Select(g => g.Name), StringComparer.OrdinalIgnoreCase);
+        var shadowed = local.Where(l => globalNames.Contains(l.Name)).Select(l => l.Name).ToArray();
         foreach (var n in shadowed)
             Console.WriteLine($"[decals] pack {pack}: \"{n}\" shadows the global decal of that name for this pack's maps (\"{PropScope.GlobalPrefix}{n}\" still means the global one)");
         var ms = sw.Elapsed.TotalMilliseconds;
-        Console.WriteLine($"[decals] pack {pack}: {local.Count} pack decal(s) from {folder}, {shadowed.Length} shadowing a global one, "
-                          + $"atlas now {global.Length + PackLayers.Count}/{DecalAtlas.MaxLayers} layers, {ms:0.0} ms");
+        Console.WriteLine($"[decals] pack {pack}: {local.Count} pack decal(s) from {folder}, {shadowed.Length} shadowing a global one, {ms:0.0} ms");
         return new DecalScope { Pack = pack, Folder = folder, Local = local.ToArray(), Shadowed = shadowed, LoadMs = ms };
     }
 }
