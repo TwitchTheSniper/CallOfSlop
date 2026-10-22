@@ -65,6 +65,12 @@ public sealed partial class Map
     /// </summary>
     public readonly HashSet<Vector3> BuildingNavPoints = new();
 
+    /// <summary>
+    /// Ways the nav build links without walking them (both ways): the buildings' stairs, foot to top. A body on a flight of
+    /// short steps always overlaps the next ones, which the nav's sampled walk reads as a wall; players and bots step up them.
+    /// </summary>
+    public readonly List<(Vector3 A, Vector3 B)> NavLinks = new();
+
     /// <summary>A fingerprint of the buildings placed (their files, seeds, turns and variants); 0 without any.</summary>
     public uint BuildingHash;
 
@@ -185,6 +191,7 @@ public sealed partial class Map
         }
         Waypoints.AddRange(plan.Waypoints);
         BuildingNavPoints.UnionWith(plan.Waypoints);
+        NavLinks.AddRange(plan.Stairs);
         foreach (var (type, aname, pos) in plan.Anchors)
         {
             BuildingAnchors.Add((type, aname, pos, inst.Index));

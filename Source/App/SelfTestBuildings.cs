@@ -616,7 +616,12 @@ public static partial class SelfTest
                     pb.Reached++;
                 }
                 else
+                {
                     missing.Add($"{key} room {r.Floor}:{r.Id}");
+                    if (detail.Count < 10)
+                        detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
+                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent})");
+                }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
             {

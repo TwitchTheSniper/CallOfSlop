@@ -721,14 +721,6 @@ internal sealed partial class BuildingGenerator
             var pb = P(bottom.X, lf, bottom.Y);
             var pt = P(top.X, _level[f + 1], top.Y);
             _plan.Waypoints.Add(pb);
-            // Mid-flight, on the middle of a step: the nav build links foot -> middle -> top (shorter walks up the flight).
-            {
-                var km = Math.Max(1, (steps + 1) / 2);
-                var along = (km - 0.5f) * run;
-                var o = s.Dx > 0 ? r.X0 + along : s.Dx < 0 ? r.X1 - along : s.Dz > 0 ? r.Z0 + along : r.Z1 - along;
-                var ym = km == steps ? _level[f + 1] : lf + km * rise / steps;
-                _plan.Waypoints.Add(s.Dx != 0 ? P(o, ym, r.Center.Y) : P(r.Center.X, ym, o));
-            }
             _plan.Waypoints.Add(pt);
             _plan.Stairs.Add((pb, pt));
             var upperRoom = f + 1 < n ? RoomAt(f + 1, top.X, top.Y) : -1;

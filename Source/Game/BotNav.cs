@@ -246,6 +246,17 @@ public sealed class NavGraph
             }
         }
 
+        // Declared links (building stairs, Map.NavLinks): between the waypoint nodes at either end, without a walk.
+        foreach (var (la, lb) in map.NavLinks)
+        {
+            int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
+            if (ia < 0 || ib < 0 || ia == ib)
+                continue;
+            var len = Vector3.Distance(g.Nodes[ia], g.Nodes[ib]);
+            edges.Add((ia, ib, len, (byte)0, Vector3.Zero));
+            edges.Add((ib, ia, len, (byte)0, Vector3.Zero));
+        }
+
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
         var degree = new int[g.Nodes.Length];
         foreach (var e in edges)
@@ -339,6 +350,26 @@ public sealed class NavGraph
         for (var i = 0; i < n; i++)
             if (Place(map, c, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
                 nodes.Add(p);
+    }
+
+    /// <summary>The waypoint node (index from <paramref name="from"/> on) within 0.45 m of <paramref name="p"/>, or -1.</summary>
+    private static int WaypointNode(Vector3[] nodes, int from, Vector3 p)
+    {
+        var best = -1;
+        var bestD = 0.45f * 0.45f;
+        for (var i = from; i < nodes.Length; i++)
+        {
+            var n = nodes[i];
+            if (MathF.Abs(n.Y - p.Y) > 0.5f)
+                continue;
+            var d = (n.X - p.X) * (n.X - p.X) + (n.Z - p.Z) * (n.Z - p.Z);
+            if (d < bestD)
+            {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
     }
 
     private static bool NearExisting(List<Vector3> nodes, Vector3 p, int from, float within = 0.5f)
