@@ -62,6 +62,15 @@ public sealed record FrenzyStyle(string Name, string Describe, FrenzyPool Pool, 
     /// <summary>The classic frenzy: the track as it is (Assault Rifle, and every class without data).</summary>
     public static readonly FrenzyStyle Plain = new("Classic hardbass", "the hardbass track as it is", FrenzyPool.Any, 1, 1, 1, FrenzyMusicFx.None, 1, []);
 
+    /// <summary>
+    /// The tempo at frenzy levels 5 and 6 as multipliers of the track's own BPM ("tempo": { "level5", "level6" }; levels
+    /// 1-4 play the track's tempo). <see cref="FrenzyLayer.LevelBpm"/> gives an already fast track a smaller share of the boost.
+    /// </summary>
+    public float Tempo5 { get; init; } = FrenzyLayer.DefaultTempo5;
+
+    /// <inheritdoc cref="Tempo5"/>
+    public float Tempo6 { get; init; } = FrenzyLayer.DefaultTempo6;
+
     /// <summary>True when the style leaves the track untouched (the mixer skips it entirely).</summary>
     public bool IsPlain => Layers.Length == 0 && StemDrums == 1f && StemBass == 1f && StemLead == 1f && Trim == 1f
                            && Fx.Drive <= 0 && Fx.CrushBits <= 0 && Fx.CrushHold <= 1 && Fx.Stutter.Length == 0 && Fx.SlapMs <= 0;
@@ -207,6 +216,13 @@ public static class FrenzyStyles
             }
         if (layers.Count > FrenzyStyleRig.MaxLayers)
             throw new FormatException($"at most {FrenzyStyleRig.MaxLayers} layers");
-        return new FrenzyStyle(name, describe, pool, sd, sb, sl, fx, trim, layers.ToArray());
+        float t5 = FrenzyLayer.DefaultTempo5, t6 = FrenzyLayer.DefaultTempo6;
+        if (m.TryGetProperty("tempo", out var tempo))
+        {
+            // Always clearly faster than the level below (even at the 0.4 share a 215 BPM track gets: at least 2%).
+            t5 = Num(tempo, "level5", t5, 1.05f, 1.3f);
+            t6 = Num(tempo, "level6", MathF.Max(t6, t5 + 0.05f), t5 + 0.05f, 1.45f);
+        }
+        return new FrenzyStyle(name, describe, pool, sd, sb, sl, fx, trim, layers.ToArray()) { Tempo5 = t5, Tempo6 = t6 };
     }
 }

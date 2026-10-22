@@ -102,7 +102,7 @@ public sealed partial class MusicRenderer
     {
         var h = _harder!;
         float siren = 0, riser = 0;
-        var beatHz = _track.Bpm / 60f;
+        var beatHz = EffBpm / 60f; // at the frenzy's tempo (MusicRenderer.Tempo.cs)
         switch (_part)
         {
             case MusicPart.Build:
