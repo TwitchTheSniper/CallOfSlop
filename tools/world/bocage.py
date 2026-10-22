@@ -216,12 +216,32 @@ def q(v, step=0.25):
 
 PADS = []
 for (name, x, z, yaw, pal, plan, seed) in PLACED:
-    xs = [r[0] for r in plan.footprint] + [r[2] for r in plan.footprint]
-    zs = [r[1] for r in plan.footprint] + [r[3] for r in plan.footprint]
+    # the pad covers the shell and everything the building stands outside it (porches, chimneys, its own props):
+    # the game stands a building on the highest ground under all of it
+    xs = [r[0] for r in plan.footprint] + [r[2] for r in plan.footprint] + [b[0] for b in plan.shell] + [b[3] for b in plan.shell]
+    zs = [r[1] for r in plan.footprint] + [r[3] for r in plan.footprint] + [b[2] for b in plan.shell] + [b[5] for b in plan.shell]
+    for p_ in plan.props:
+        if p_["room"] == "exterior":
+            xs += [p_["pos"][0] - 1.0, p_["pos"][0] + 1.0]; zs += [p_["pos"][2] - 1.0, p_["pos"][2] + 1.0]
     x0, x1, z0, z1 = min(xs), max(xs), min(zs), max(zs)
     cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
     h = q((g0(cx, cz) + g0(-cx, -cz)) / 2) if name != "Church" and not (name == "Norman Farmhouse" and pal == "whitewash") else q(g0(cx, cz))
     PADS.append((cx, cz, x1 - x0 + 4, z1 - z0 + 4, h))
+# buildings whose pads overlap (a farmhouse and its barn) share one level
+groups = list(range(len(PADS)))
+def _root(i):
+    while groups[i] != i:
+        i = groups[i]
+    return i
+for i in range(len(PADS)):
+    for j in range(i + 1, len(PADS)):
+        a, b = PADS[i], PADS[j]
+        if abs(a[0] - b[0]) < (a[2] + b[2]) / 2 + 4 and abs(a[1] - b[1]) < (a[3] + b[3]) / 2 + 4:
+            groups[_root(j)] = _root(i)
+for i in range(len(PADS)):
+    members = [k for k in range(len(PADS)) if _root(k) == _root(i)]
+    h = q(sum(PADS[k][4] for k in members) / len(members))
+    PADS[i] = PADS[i][:4] + (h,)
 for (x, z) in (J1, J2):
     PADS.append((x * 1.6, z, 22, 16, SQUARE_Y))
 for (x, z, r) in HILLS[1:]:
@@ -1019,3 +1039,7 @@ if os.environ.get("BOCAGE_SMOKE"):
         print("ground", p, round(gy(*p), 2))
 low = sorted((4.3 - sink(nm, x, z, yaw) + min(0.4, max(0.0, sink(nm, x, z, yaw) - 0.5)), round(x, 1), round(z, 1), nm) for (nm, x, z, yaw) in HEDGE_PIECES)
 print("lowest hedge tops over their centre ground:", [(round(v[0], 2),) + v[1:] for v in low[:5]])
+if os.environ.get("BOCAGE_PADS"):
+    for (name, x, z, yaw, pal, plan, seed) in PLACED:
+        hs = [gy(px, pz) for r in plan.footprint for px in np.linspace(r[0], r[2], 8) for pz in np.linspace(r[1], r[3], 8)]
+        print(f"pad {name} ({x},{z}) ground {min(hs):.2f}..{max(hs):.2f}")
