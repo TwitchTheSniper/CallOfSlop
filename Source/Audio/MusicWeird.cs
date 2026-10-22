@@ -81,6 +81,7 @@ public sealed class WeirdTimeline
             if (!WeirdFlavor.Codes.Contains(code))
                 code = '.';
             var len = track.Sections[s].Bars;
+            SteadyDrops &= track.Sections[s].Part != MusicPart.Drop || code == '.';
             for (var b = 0; b < len; b++, bar++)
             {
                 _code[bar] = code;
@@ -104,6 +105,12 @@ public sealed class WeirdTimeline
             _start[b + 1] = _start[b] + sum;
         }
     }
+
+    /// <summary>
+    /// True when every drop is plain 4/4 at the track's tempo: the kill-frenzy layer (which loops drops on bar lines of
+    /// a fixed length) only picks tracks like that.
+    /// </summary>
+    public bool SteadyDrops { get; } = true;
 
     /// <summary>Length of the track including the tail.</summary>
     public double Seconds => _start[^1];

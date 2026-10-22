@@ -55,35 +55,49 @@ public sealed partial class MusicRenderer
         _pad.CutoffMul = 1f;
     }
 
-    /// <summary>Seconds left in a weird track (its bars aren't all the same length).</summary>
-    private double WeirdRemaining => Math.Max(0, _track.Seconds - _loadOffset - Position);
+    /// <summary>Seconds left in a weird track (its bars aren't all the same length), from the bar and 16th playing.</summary>
+    private double WeirdRemaining
+    {
+        get
+        {
+            if (_wPrevBar < 0)
+                return Math.Max(0, _track.Seconds - _loadOffset);
+            var tl = _tl!;
+            var done = tl.BarStart(_wPrevBar);
+            for (var v = 0; v <= _wv; v++)
+                done += tl.StepSeconds(_wPrevBar, v);
+            return Math.Max(0, _track.Seconds - done + _toNextStep / Sr);
+        }
+    }
 
     // ========================================================================================
     // Sequencer hooks
     // ========================================================================================
 
-    /// <summary>
-    /// Before each 16th: the meter (a 7/8 bar ends after 14 16ths; a 5/4 bar plays its last beat again), the length of
-    /// this 16th from the timeline, the pitch sag, section changes, the tape-deck settings and the chant pitch.
-    /// </summary>
-    private void WeirdBeforeStep()
+    /// <summary>Before each 16th: a 7/8 bar ends after 14 16ths; a 5/4 bar plays its last beat again.</summary>
+    private void WeirdMeter()
     {
         var tl = _tl!;
         var bar = _step >> 4;
         var s = _step & 15;
         if (s == 14 && tl.Steps(bar) == 14)
+            _step = (bar + 1) << 4;
+        else if (s == 0 && bar > 0 && _wPrevBar == bar - 1 && tl.Steps(bar - 1) == 20 && _repeatBar != bar - 1)
         {
-            bar++;
-            s = 0;
-            _step = bar << 4;
+            _step = ((bar - 1) << 4) | 12;
+            _repeatBar = bar - 1;
         }
-        if (s == 0 && bar > 0 && _wPrevBar == bar - 1 && tl.Steps(bar - 1) == 20 && _repeatBar != bar - 1)
-        {
-            bar--;
-            s = 12;
-            _step = (bar << 4) | 12;
-            _repeatBar = bar;
-        }
+    }
+
+    /// <summary>
+    /// The 16th about to play (after the meter and any frenzy jump): its length from the timeline, the pitch sag,
+    /// section changes, the tape-deck settings and the chant pitch.
+    /// </summary>
+    private void WeirdTiming(int bar, int s)
+    {
+        var tl = _tl!;
+        if (bar != _wPrevBar && bar != _wPrevBar + 1)
+            _repeatBar = -1; // a jump (or the load point): no beat comes round again here
         _wPrevBar = bar;
         _wv = bar == _repeatBar ? s + 4 : s;
         _samplesPerStep = tl.StepSeconds(bar, _wv) * Sr;
