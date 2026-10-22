@@ -178,10 +178,19 @@ public static class World
     public const int MaxHealth = 120;
 
     /// <summary>
+    /// One-shot blasts tuned against the old 100 health (explosive props and mines, kill-streak strikes, the Hunter
+    /// Drone and gunship rounds) do this much more to players, so their kill radius stays the same at
+    /// <see cref="MaxHealth"/>. Machines, props, doors and zombies still take the tuned damage. (Frag and Impact grenades
+    /// have their own player and object damage in Throwables.)
+    /// </summary>
+    public const float BlastPlayerScale = MaxHealth / 100f;
+
+    /// <summary>
     /// <paramref name="percent"/>% of <see cref="MaxHealth"/>, rounded. Health thresholds (bots retreating, the HUD's
     /// low-health colour) are written as percentages so they follow <see cref="MaxHealth"/>.
     /// </summary>
     public static int HealthAt(int percent) => (percent * MaxHealth + 50) / 100;
+
     public const float RespawnDelay = 3f;
 
     // ---- Shooting (per-weapon stats live in Weapons.cs) -------------------------

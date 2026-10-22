@@ -1011,7 +1011,7 @@ public static partial class SelfTest
         if (Perks.AttackMult(flank, 10, -Vector3.UnitZ, 0, 100, false) < 1.5f || Perks.AttackMult(flank, 10, Vector3.UnitZ, 0, 100, false) != 1f)
             Fail("Flanker back/front check is wrong");
         var opener = new PerkSet(PerkId.None, PerkId.None, PerkId.Opener);
-        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 100, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 99, false) != 1f)
+        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth - 1, false) != 1f)
             Fail("Opener full-health check is wrong");
 
         // ---- Survival perks on the server ----
