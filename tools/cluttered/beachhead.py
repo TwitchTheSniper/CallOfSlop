@@ -132,10 +132,10 @@ T.ramp([list(p) for p in ROAD1], width=6.5, edge=2.2, material="dirt")
 T.flatten(HAIRPIN[0], HAIRPIN[1], height=HAIRPIN[2], radius=6.5, edge=2.5, material="dirt")
 T.ramp([list(p) for p in ROAD2], width=6.5, edge=2.2, material="dirt")
 # the overlook: a gravel lay-by on the beach side of leg 2, level with the road, out over the face (hill 2)
-OVERLOOK = (1.0, 9.0, 10.0)
+OVERLOOK = (-3.0, 10.4, 9.55)
 T.flatten(OVERLOOK[0], OVERLOOK[1], height=OVERLOOK[2], radius=5.4, edge=2.0, material="dirt")
 # the dune observation post: a level hollow half way up the long dune slope in the east (hill 3)
-DUNE_OP = (70.0, 15.0)
+DUNE_OP = (70.0, 17.0)
 T.plateau(DUNE_OP[0], DUNE_OP[1], height=round(T.sample(*DUNE_OP), 2), radius=4.2, edge=5.0, mode="fill", material="sand")
 # The west bluff path: a zigzag foot path up the face between the ravine and the west pillbox.
 WPATH = [(-39.0, 17.5, 3.7), (-53.0, 14.0, 8.0), (-46.0, 9.5, PY), (-45.0, 7.0, PY)]
@@ -261,8 +261,8 @@ CONTAINERS = [(0.33, 0.38, 0.22), (0.45, 0.30, 0.18), (0.30, 0.34, 0.38), (0.52,
 BLUE_SP = [(-28.0, 58.0), (-20.0, 58.5), (-6.0, 56.0), (13.5, 59.5), (22.0, 59.5), (31.0, 57.5), (-44.0, 56.0), (-56.0, 54.5), (-36.0, 58.5)]
 RED_SP = [(-24.0, -51.0), (-16.0, -52.5), (-34.0, -51.5), (16.0, -53.0), (24.0, -51.5), (32.0, -50.5), (-8.0, -52.0), (6.0, -51.5), (40.0, -48.0)]
 FFA_SP = [(-66.0, 26.0), (64.0, 26.0), (-24.0, 27.0), (-58.0, -22.0), (62.0, -32.0), (-2.0, -26.0)]
-HILLS = [(-46.0, 2.0, 5.0), (OVERLOOK[0], OVERLOOK[1], 4.5), (DUNE_OP[0], DUNE_OP[1], 4.5)]
-FLAGS = [(-2.0, 55.0), (2.0, -49.0)]
+HILLS = [(-44.5, 7.0, 4.5), (OVERLOOK[0], OVERLOOK[1], 4.5), (DUNE_OP[0], DUNE_OP[1], 4.5)]
+FLAGS = [(-2.0, 55.0), (-18.0, -40.0)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
 for x, z, r in HILLS:
@@ -706,9 +706,27 @@ for x, z in BLUE_SP + RED_SP + FFA_SP:
 t.ops.append({"op": "AutoWaypoints", "spacing": 7})
 EXTRA_WP = [(-63.0, 14.0), (-60.0, 3.0), (-50.0, 13.0), (-44.0, 15.5), (-20.0, 15.0), (-8.0, 7.5), (20.0, 2.0), (2.0, 26.0), (40.0, 28.0),
             (70.0, 14.0), (64.0, 2.0), (-13.0, -2.0), (-21.0, -6.0), (46.0, -12.5), (52.0, -19.0), (-17.0, -27.5), (36.0, -38.0),
-            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (-46.0, 2.0), (-62.5, 10.0)]
+            (OVERLOOK[0], OVERLOOK[1]), (DUNE_OP[0], DUNE_OP[1] - 2.0), (-44.5, 7.0), (-62.5, 10.0)]
 for x, z in EXTRA_WP:
     t.ops.append({"op": "Waypoint", "x": x, "z": z})
+# waypoint chains along every route (the nav graph's grid is coarse: chains keep the bots' routes, and the self-test's
+# walks, on the paths, the road and the lanes)
+import placekit as pk  # noqa: E402
+CHAINS = [(pts, 5.0) for pts, w in LANES] + [([(p[0], p[1]) for p in RAVINE], 4.0), ([(p[0], p[1]) for p in WPATH], 2.5)]
+for g0, g1 in SEAWALL_GAPS:
+    gx = (g0 + g1) / 2
+    zw = float(shore_z(gx)) - 22.0
+    CHAINS.append(([(gx, zw + 6.0), (gx, zw - 5.0)], 2.5))
+NCHAIN = 0
+for pts, step in CHAINS:
+    for x, z, _, _ in pk.walk([list(p) for p in pts], step, 0.0, 0.0):
+        if not t.inside(x, z, 1.2):
+            continue
+        i0, i1, j0, j1 = t._ij(x - 0.5, z - 0.5, x + 0.5, z + 0.5)
+        if t.walk[i0:i1, j0:j1].any():
+            continue
+        t.ops.append({"op": "Waypoint", "x": tk.R(x), "z": tk.R(z)})
+        NCHAIN += 1
 
 # ============================================================================ cosmetic clutter (the game's Clutter op runs last and keeps out of everything)
 BEACH_BITS = ["Plank", "Rope Coil", "Fishing Net Pile", "Bottle", "Litter", "Ammo Box", "Tyre", "Plank", "Plastic Bag", "Car Wheel", "Rubble", "Rope Coil"]
@@ -824,7 +842,7 @@ print(f"area {t.area():.0f} m2, outline {len(CTRL)} control points; terrain {T.n
       f"blocks {nblock}, other box ops {sum(1 for o in t.ops if o['op'] in ('Container', 'Hangar', 'Tank', 'Watchtower', 'Rocks'))}, trees {len(t.items)}; meshes {t.meshes}; "
       f"hand props {len(props)} (solid {nsolid}, breakable {nbrk}); clutter up to {nclutter}; file {os.path.getsize(OUT_JSON) // 1024} KB")
 print("by category (solid/cosmetic):", ", ".join(f"{c} {v[0]}/{v[1]}" for c, v in sorted(by_cat.items())))
-print("scatter:", NB, "wire", _wire, "explosive barrels", len(EXPLOSIVE), "fence", FENCE)
+print("scatter:", NB, "waypoint chains", NCHAIN, "wire", _wire, "explosive barrels", len(EXPLOSIVE), "fence", FENCE)
 
 # walking: the terrain graph with everything that blocks walking at body height
 X_, Z_ = np.meshgrid(T.X, T.Z)
@@ -896,6 +914,10 @@ for name, x, z, yaw, y, tag in props:
             if math.hypot(dx, dz) < kr:
                 bad.append((name, round(x, 1), round(z, 1)))
 print("solid props on objectives:", bad[:5])
+for (hx, hz, hr) in HILLS:   # the game wants a hill's ground within -1..+3 m of its centre at 0.8 of its radius
+    dys = [ground(hx + math.cos(k * math.pi / 4) * hr * 0.8, hz + math.sin(k * math.pi / 4) * hr * 0.8) - ground(hx, hz) for k in range(8)]
+    if min(dys) < -1.0 or max(dys) > 3.0:
+        print("WARN hill on uneven ground", hx, hz, [round(d, 2) for d in dys])
 for (ex, ez) in EXPLOSIVE:
     for sx, sz in BLUE_SP + RED_SP + FFA_SP:
         if math.hypot(ex - sx, ez - sz) < 10.5:

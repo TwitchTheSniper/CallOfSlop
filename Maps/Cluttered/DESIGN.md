@@ -318,3 +318,98 @@ park, ivy (cosmetic leafy slabs) up the walls.
 paving, road markings, awnings, the canopy, tracks and scenery are instanced meshes; props and plants are instanced and
 frustum-culled, litter fades out with distance and animated props hold still past 80 m.
 `tools/cluttered/oldtown.py` regenerates the file (and a top-down preview PNG with the walk check).
+## 09 Beachhead (large, noisy smooth outline, about 182 x 124 m, 18,400 m2, 16 players): a beach that leads up into a military base
+
+**Theme.** A landing beach on a clear morning (`clear` preset, sun at 9:18 out over the sea, light clouds drifting
+east). Blue comes ashore among grounded landing craft, a beached fishing boat, czech hedgehogs, stake ramps, concertina
+wire and shell craters, behind a seawall with dunes and beach grass above it. A bluff rises 12 m to the plateau where
+Red holds an army base: two barracks huts, the HQ (operations room with the map table and radios, a radio room, the CO's
+office), a motor pool shed with trucks and jeeps, the supply yard of containers at the front, a fuel depot with tanks and
+stacks of explosive barrels, the comms hut with a turning radar and a sweeping dish, a helipad with blinking lights and
+a wind sock, a mess tent on the parade ground, watchtowers with sweeping searchlights, floodlights on running
+generators, sandbag nests and barbed wire along the edge, and a chain-link fence round the back.
+
+**Shape.** A `smooth` outline through 19 control points with `noise` (1.4 m, 18 m bumps): wide along the shore (the
+south side follows the waterline), narrower round the base, with a lobe for the helipad and the comms hut in the NE.
+No `edge` style: the sea runs out beyond the shore (the beach slopes under the water just outside the outline, and one
+flat box mesh is the water surface, as in Dockside but with a sloping beach instead of a quay drop), the land outside
+the other sides rises into hills (part of the terrain), and the base side has its chain-link fence just inside the
+outline. Out on the water: a half-sunk landing craft, a wreck, buoys and a warship on the horizon (cosmetic meshes).
+
+**Terrain.** One `grid` feature (2 m cells, "set") holds the designed shape: the beach rising 4 degrees from the
+waterline, a band of dunes, the bluff (a 70-degree face 4 m wide along most of the coast, turning in the east into a
+long dune slope of about 20 degrees) and the flat plateau at y = 12, plus the hills outside. Sharp things are ordinary
+features on top: the switchback road and the ravine (`ramp`), the hairpin and the overlook (`flatten`), the dune post
+(`plateau`, "fill"), the bunker pads and their trenches, the drainage tunnel's trench (a `ramp` in "cut" mode with no
+edge, so its walls are vertical) and sand ramps through the seawall gaps. `tools/cluttered/beachterrain.py` ports the
+game's grid, plateau/flatten and ramp maths, so the generator knows the ground everywhere and builds at absolute heights
+(`"anchor": "world"`).
+
+**Layout and routes.** Blue spawns on the beach behind the wrecks, Red at the back of the base. Five ways up, all under
+25 degrees (full walking speed):
+- **The switchback road** (centre): leg 1 along the foot of the bluff to the hairpin terrace, leg 2 back across the face
+  to the main gate (boom gate, guard hut, sandbag nests). The **overlook** (hill 2) is a gravel lay-by on leg 2 out over
+  the face.
+- **The ravine** (west flank): a rocky gully cut into the plateau, with logs, rocks and bushes, coming out by the motor pool.
+- **The west bluff path**: a zigzag foot path up the face between the ravine and the west pillbox, to the **west bluff
+  top** (hill 1).
+- **The drainage tunnel** (east of centre): an open concrete channel through the dunes from an outfall in the seawall,
+  then a 14 m culvert under the face and the plateau (concrete lining, amber lamps, no foliage inside), then an open
+  ramp up into the base between the gate and the fuel depot, behind the defenders' front line.
+- **The dune slope** (east flank): the long gentle slope, with tank traps, sandbags and camo nets, past the **dune post**
+  (hill 3) to the fuel depot.
+Three **pillboxes** are dug into the top of the face (floors 2.4 m down, roofs level with the plateau, firing slits to
+the beach), each entered from the plateau down a trench to its back door. **Flags:** on the beach between the landing
+craft, and behind the HQ.
+
+**Balance (not mirrored).** The two halves look and play differently on purpose, so fairness is measured instead of
+mirrored. The base has the height (Red's spawns stand 11 m above Blue's), the pillboxes and the hard cover (buildings,
+containers, walls); the beach gets more soft cover (hedgehogs, dragon's teeth, sandbags, wrecks, logs, crates) and more
+ways up: five routes, two of them flanks (the ravine and the dune slope) and one (the tunnel) that comes up behind the
+defence. The hills sit where both teams walk the same distance (found on a 0.5 m walk graph over the terrain and its
+obstacles, then nudged a few metres towards the base, because the game's coarser nav graph makes the beach side's
+walks a little longer: on the generator's graph Blue/Red walk 80/84 m to hill 1, 68/73 m to hill 2, 102/103 m to hill 3
+and 115/124 m to the enemy flag), so each team meets the other on the bluff, not in its own camp. The generator found no line
+of sight between a Blue and a Red spawn (the bluff's edge hides the base from the beach). The self-test measures it all
+again in the game: the nav walk and the nav walking time (uphill links cost more) from each team's spawns to every
+objective within 10%, a scripted walker from each team's middle spawn reaching every objective, no Blue/Red spawn pair in
+sight, the share of each team's routes to the hills with cover within 3 m (the beach side gets at least as much soft
+cover, props, as the base side; overall at least 85% of the base side's, which has the walls and containers), and fewer
+than a fifth of the solid props with a mirrored twin.
+
+**Logical placement.** Obstacles in bands up the beach the way they were laid (stake ramps at the waterline, hedgehogs on
+the wet sand, concertina wire above them, dragon's teeth under the seawall), Blue's spawns in the lee of the wrecks,
+flotsam (logs, crates, a dinghy, drums, rope, nets) along the tide line; sandbag walls along the road's first leg; in the
+base, bunks and lockers along the barracks walls with a clear aisle and rifle racks, desks with radios and the map table
+in the HQ, server racks and radios in the comms hut, trucks, a jeep, the bowser, tyres and tools in the motor pool,
+tables and benches in the mess tent with its kitchen at the back, latrines behind it, explosive barrels in stacks in the
+fuel depot (10+ m from every spawn), a generator beside each floodlight, searchlights on the watchtowers, lights round
+the helipad, roof masts and dishes on the HQ, sandbag nests facing the sea along the edge.
+
+**Foliage.** Long beach grass and shrubs on the dunes, a sparse fringe above the tide line, nothing on the wet sand;
+grass, shrubs and bushes on the face (the cliff itself is too steep for scattered plants); grass on the plateau, none on
+the asphalt roads (`Concrete`), 10% on the busted parade ground (`Tiles`), none indoors (in the huts, the pillboxes, the
+tunnel, under the mess tent); bushes in the ravine; pines and broadleaves round the back of the base, on the headland
+side and among the eastern dunes. About 43,000 plants.
+
+**Pack props** (`Maps/Cluttered/Props/Beachhead`, written by `tools/cluttered/beachhead_props.py`): Czech Hedgehog,
+Dragons Tooth, Beach Stake Ramp, Concertina Wire and Barbed Wire Fence (both looks only, so bots aren't caught on them),
+Landing Craft Wreck (steel sides to hide behind and mantle over), Beached Fishing Boat, Army Jeep, Army Truck, Fuel
+Bowser, Ammo Crate Stack, Ammo Box, Radio Set (a blinking set light), Map Table, Rifle Rack, Sandbag Nest, Camo Net,
+and three animated ones: Wind Sock (swings round in the wind), Searchlight (sweeps, lens lit) and Helipad Light (blinks).
+
+**Object counts** (from the self-test): 3,747 props (587 by hand, the rest from 22 cosmetic Clutter ops; 493 solid, 1,731
+breakable, 13 explosive barrels in the depot), about 240 from the pack's Beachhead set; 43,188 plants, 67 trees; 247
+meshes (the sea, the wrecks and the ship out on the water, the seawall's cap, the tunnel lining, roofs, the mess tent,
+roads and the helipad markings); 392 boxes drawn one by one (huts, the HQ, the pillboxes, the seawall, the tunnel roof,
+containers, the motor pool, tanks, watchtowers, rocks, tree trunks); 24 spawns (9 a team plus 6), 288 hand-placed waypoints on
+top of AutoWaypoints (chains along every route, so the bots' nav graph follows the paths, the road and the tunnel).
+
+**Performance.** About Old Town's budget (3,747 props against its 4,908, 43,188 plants against 43,765, 392 boxes drawn
+against 317; the terrain is 489 x 375 samples, drawn in chunks), everything numerous instanced, animated props still past
+80 m, so it should run at Old Town's frame rate or better on the user's PC (~1,700 fps there). The smoke run's
+`cluttered_beachhead` (the beach and the bluff from over the sea) and `cluttered_beachhead_beach` (the bluff from behind
+a landing craft at eye height) views log fps, props and plants drawn.
+
+`tools/cluttered/beachhead.py` regenerates the map and, given a PNG path, a top-down preview over the terrain (with the
+walk balance, the spawn sight lines and the objective checks printed).
