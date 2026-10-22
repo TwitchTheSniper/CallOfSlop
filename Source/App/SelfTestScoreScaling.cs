@@ -44,7 +44,7 @@ public static partial class SelfTest
         {
             // The measurements as one GitHub Actions warning (the workflow prints selftest.log, and a line starting with
             // "::warning" becomes an annotation; notices are already used up by other sections).
-            if (ScoreNotes.Count > 0 && (ScoreSweep || _failures > failuresBefore))
+            if (ScoreNotes.Count > 0)
                 Line("::warning title=Score scaling (results)::" + string.Join("%0A", ScoreNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
