@@ -33,6 +33,9 @@ public static unsafe partial class Program
         ("cluttered_powderkeg_hall", "Powder Keg", new Vector3(-26f, 1.7f, -1.5f), new Vector3(14f, 1.4f, -5f), false), // the hall's staging band at eye height, racks and barrels
         ("cluttered_supermarket", "Supermarket", new Vector3(-48f, 24f, 60f), new Vector3(0f, 2f, 6f), false), // 07 Supermarket: the car park and store front
         ("cluttered_supermarket_inside", "Supermarket", new Vector3(12.5f, 5.3f, -8f), new Vector3(-12f, 1.2f, 8f), false), // over the shop floor from the mezzanine
+        // 11 Deepcut Mine: the pit and the terraces from above the camp, then inside the North Drift at eye height, looking up the tunnel.
+        ("cluttered_deepcut", "Deepcut Mine", new Vector3(-84f, 34f, 46f), new Vector3(14f, 0f, -6f), false),
+        ("cluttered_deepcut_tunnel", "Deepcut Mine", new Vector3(-40f, 1.9f, -40f), new Vector3(-18f, 3.0f, -40f), false),
         ("cluttered_medium", "Crescent Bazaar", new Vector3(-46f, 15f, 33f), new Vector3(-2f, 0f, -6f), false), // Cluttered pack: smoke_cluttered_medium.bmp
         // 04 Cul-de-sac: the turning circle from above the street's mouth, then the north houses at eye height from the island.
         ("cluttered_culdesac", "Cul-de-sac", new Vector3(36f, 22f, 14f), new Vector3(-16f, 0f, -4f), false),

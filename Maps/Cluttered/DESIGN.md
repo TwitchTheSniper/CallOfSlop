@@ -653,3 +653,79 @@ plants (52,000) sit between Old Town's 32,000 and Sprawl's 72,000 and the props 
 
 `tools/cluttered/timberline.py` regenerates the map (with `terrain.py`, the Python port of the game's terrain generator,
 for the heights the bunkers and the water need) and, given a PNG path, a top-down preview with the walks and sight lines.
+## 11 Deepcut Mine (large, noisy smooth outline, about 179 x 120 m, 18,300 m2, 16 players): mine site with tunnels
+
+**Theme.** A working mine on a dusty afternoon (`desert` preset turned dustier: a tan horizon, a strong ochre haze, the
+sun at 16:12). Down low on the west, the workers' camp (portable cabins: a canteen with tables and vending machines, a
+locker room, the site office, toilets, a generator and floodlights) and the processing plant (a walk-in shed with
+conveyor rollers, a jaw crusher, shelving and a forklift; an ore hopper on legs you can walk under, stockpiles, the rail
+line with mine carts coming down from the North Drift). In the middle, the open pit and two spoil dumps either side of
+it. Up on the east, a terraced massif: bench 1 (4.5 m), bench 2 (9 m) and the top (13.5 m) with the headframe over the
+shaft (its two sheave wheels turn), the winder house with its drum and ropes, and the second camp. Haul trucks,
+excavators, conveyors, floodlight masts, timber stacks, fuel tanks in a bund, and the explosives magazine on bench 1.
+
+**Shape.** A `smooth` outline through 17 control points with `noise` (1.5 m, 18 m bumps), wider at the west end. The
+edge is a terrain `cliff` berm (9 m over 7 m) all round, the natural edge of a mine cut into the hills.
+
+**Not mirrored.** The two halves look and play differently: Blue holds the low, open camp and plant side (spawns at
+y = 0), Red the high side, the top of the massif (spawns at y = 13.5). Red has the height: bench 1 and the top's rim
+look down into the pit and the conveyor yard. Blue has the cover (cabins, the plant, stockpiles, the haul truck and the
+excavator in the pit, the dumps) and the tunnels, which give the low side its ways up.
+
+**Tunnels** (the engine's terrain is a heightfield, so they're cut and covered: a terrain `ramp` in `cut` mode carves
+the trench, with a flat floor 4.4 m wide and rock walls, and a box roof closes each stretch at the hillside's own
+height, so the surface carries on over the top; dark timber lagging on the walls and ceiling, a timber set every 2.5 m,
+a flickering mine lamp every 9 m; nothing grows inside, and the plants on the hillside grow on the roofs too):
+
+- **North Drift** (69 m): from the plant's rail head at ground level (y = 0) under the north dump, climbing gently to
+  come out on bench 1 (y = 4.5), with the rails along its floor. A side **adit** branches off half way and drops out
+  into the conveyor yard (y = 0).
+- **South Adit** (48 m): from the pit floor (y = -4) under the haul road and the south dump, out onto bench 1 (y = 4.5).
+- **Main Haulage** (25 m): from bench 1 into the hill to the **shaft station**, a timbered junction room under the
+  headframe. Two branches leave it: **Shaft North**, climbing out onto bench 2 (y = 9), and **Shaft South**, out onto
+  bench 1 south. The **shaft cage** (an elevator) runs from the station up the shaft to the top, through the middle of
+  the headframe (players only; bots take the ramps and tunnels).
+
+Every tunnel has waypoints every 3 m along its floor, so the bots' nav graph runs through them (the self-test checks a
+nav node, a roof and no plants at ten points along them).
+
+**Layout and routes.** Haul roads (dirt ramps, about 17 degrees) join the levels: into the pit from the plant (west) and
+from the conveyor yard (north-east), the pit's south ramp, bench 1 down to the yard and to the strip east of the pit,
+both dumps from both sides, bench 1 up to bench 2 at each end, and the main haul road straight down the massif from the
+top to bench 1 and on down a cutting through the pit's terraced east face to the pit floor, with a blast wall at its
+head so there's no line down it. A low berm runs along the top's west rim.
+**Hills:** the pit's north-east corner, the east end of the conveyor yard, and the south dump's east end. **Flags:** in the camp and
+behind the winder house.
+
+**Balance (by measurement, not mirroring).** Red's spawns sit on the west half of the top, Blue's in the camp, and the
+hills sit on the line of equal walk, found by the generator on a 0.5 m grid over the terrain with the tunnels as a
+second layer (Blue/Red: pit 93/84 m, yard 87/82 m, south dump 102/104 m, enemy flag 176/177 m; the game's nav graph makes Red's
+walks 12-16 m longer than this grid does, so the pit and yard hills are set a little Red-ward of the grid's equal line). Red needs 17.5 m of
+descent to reach the pit (about 60 m of ramp), so its spawns are closer to the middle than Blue's. The self-test measures
+it again on the game's nav graph (within 10%), checks that no Blue spawn can see a Red one (the processing shed, the core
+shed and the top's berm and blast wall are in the way), and counts the solid cover within 6 m of each team's routes to
+the hills: the low side must have at least as much as the high side (that's what pays for the height), and the high
+side at least 30% of it. Waypoints every 3 m down each haul road and tunnel keep the bots' nav graph on the ramps,
+which are narrower than its grid. No spawn stands over a tunnel roof (it would be put on the tunnel floor).
+
+**Explosives.** Four explosives crates at the magazine on bench 1 (three inside, one on the apron: shoot it and the rest
+go too), and three explosive barrels in the yard, the pit and on bench 2, all well over 10 m from any spawn.
+
+**Pack props** (`Maps/Cluttered/Props/DeepcutMine`, written by `tools/cluttered/mine_props.py`): Mine Cart, Rail Track,
+Haul Truck, Excavator, Headframe Tower and Headframe Head (props are at most 12 m, so the 25 m headframe is two: the head with its turning sheave wheels and a beacon stands on the tower), Inclined Conveyor (ore riding the belt, drums
+turning), Jaw Crusher (flywheels and jaw), Ore Hopper, Timber Set, Mine Lamp (flickers), Timber Stack, Explosives Crate
+(explodes), Danger Sign, Fuel Tank and Floodlight Mast (lamps burning).
+
+**Object counts** (from the self-test): about 280 boxes drawn one by one (215 map boxes, 72 of them tunnel roofs, the
+rest cabins, sheds, walls and stockpile cores; plus the tree trunks), about 3,950 props (386 hand-placed, the rest from
+34 Clutter ops; about 290 solid, 750 breakable; the Clutter ops that reach over tunnels are cosmetic only, so nothing
+solid lands on a tunnel floor), about 35,000 plants (dusty patchy grass everywhere, scrub on the dumps, 66 trees, pines
+round the camps), 277 meshes (tunnel lagging, portal frames, stockpile cones, ropes, floors).
+
+**Performance.** Fewer boxes than Old Town, a similar prop count and fewer plants, so it should run at least as fast;
+animated props (the sheaves, conveyors, crushers, generators, lamps) freeze past their freeze distance. The smoke run's
+`cluttered_deepcut` (the pit and terraces from above the camp) and `cluttered_deepcut_tunnel` (inside the North Drift)
+views log fps, props and plants drawn.
+
+`tools/cluttered/deepcut.py` regenerates the map and, given a PNG path, a top-down preview with the equal-walk line and
+any spawn sight lines (it uses `terrain.py`, the Python port of the game's terrain generator).

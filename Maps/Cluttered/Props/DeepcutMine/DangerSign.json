@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Danger Sign",
+  "category": "DeepcutMine",
+  "description": "A red DANGER - EXPLOSIVES sign on a post (faces +Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 80,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.08, 1.8, 0.08], "offset": [0, 0.9, -0.03], "color": "#888888"},
+    {"size": [0.9, 0.6, 0.03], "offset": [0, 1.55, 0.02], "color": "#c82818"},
+    {"size": [0.8, 0.14, 0.035], "offset": [0, 1.62, 0.02], "color": "#f2f2ea"},
+    {"size": [0.8, 0.08, 0.035], "offset": [0, 1.42, 0.02], "color": "#f2f2ea"}
+  ]
+}
