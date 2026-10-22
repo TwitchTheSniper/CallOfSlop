@@ -103,7 +103,7 @@
       "autoWindows": {"spacing": 2.4, "width": 1.7, "sill": 0.9, "head": 2.8},
       "rooms": [
         {"id": "corridor", "type": "corridor", "rect": [-12, -1, 12, 1], "floor": {"color": "#3a6a4a", "material": "tiles"}},
-        {"id": "stair hall", "type": "stairhall", "rect": [-4, -7, 0, -1], "floor": {"color": "#5a5a58", "material": "concrete"}, "windows": false},
+        {"id": "stair hall", "type": "landing", "rect": [-4, -7, 0, -1], "floor": {"color": "#5a5a58", "material": "concrete"}, "windows": false},
         {
           "id": "classroom 3",
           "type": "classroom",
@@ -175,8 +175,8 @@
     }
   ],
   "stairs": [
-    {"floor": 0, "rect": [-3.6, -5.5, -2.5, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}},
-    {"floor": 1, "rect": [-1.5, -5.5, -0.4, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}}
+    {"floor": 0, "rect": [-3.8, -5.5, -2.7, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}},
+    {"floor": 1, "rect": [-1.25, -5.5, -0.15, -2.5], "dir": "-z", "color": {"color": "#5a5a58", "material": "concrete"}}
   ],
   "roof": {"type": "flat", "parapet": 1, "color": {"color": "$roof", "material": "concrete"}},
   "extras": [
