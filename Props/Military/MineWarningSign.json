@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mine Warning Sign",
+  "category": "Military",
+  "description": "A red board on a stake: MINES. Put one at the edge of a minefield (it faces +Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 70,
+  "scatter": {"randomYaw": false, "yawJitter": 12, "scale": [0.95, 1.05]},
+  "breakable": {"health": 30, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.25], "colors": ["#b0201a", "lightwood"]}},
+  "parts": [
+    {"size": [0.06, 1.15, 0.06], "offset": [0, 0.575, 0], "rotation": [0, 0, 3], "color": "lightwood", "material": "wood"},
+    {"size": [0.12, 0.04, 0.12], "offset": [0, 0.02, 0], "color": "#5b4a35", "material": "dirt"},
+    {"size": [0.52, 0.38, 0.02], "offset": [0, 0.96, 0.045], "color": "#b0201a"},
+    {"size": [0.54, 0.02, 0.022], "offset": [0, 1.16, 0.045], "color": "#2a2a2a"},
+    {"size": [0.54, 0.02, 0.022], "offset": [0, 0.76, 0.045], "color": "#2a2a2a"},
+    {"size": [0.4, 0.075, 0.024], "offset": [0, 0.92, 0.046], "color": "#f2efe6"},
+    {"size": [0.12, 0.12, 0.024], "offset": [0, 1.06, 0.046], "rotation": [0, 0, 45], "color": "#f2efe6"},
+    {"size": [0.03, 0.03, 0.026], "offset": [-0.025, 1.07, 0.047], "color": "#2a2a2a"},
+    {"size": [0.03, 0.03, 0.026], "offset": [0.025, 1.07, 0.047], "color": "#2a2a2a"},
+    {"size": [0.06, 0.012, 0.026], "offset": [0, 1.03, 0.047], "color": "#2a2a2a"}
+  ]
+}

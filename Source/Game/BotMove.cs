@@ -140,6 +140,7 @@ public sealed partial class Game
         }
 
         BotSeparate(p, ref s.Wish);
+        BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);
         return s;
     }
@@ -256,6 +257,7 @@ public sealed partial class Game
             return;
         b.SearchGraph = nav;
         b.SearchNow = now;
+        b.Hazard = MineHazard(nav); // nodes next to a landmine cost extra (GameMines.cs)
         if (b.Mode is not (BotMode.Roam or BotMode.Squad))
             b.FlankWidth = 0; // flank routes only while sneaking around, not when chasing or retreating
         if (b.Squad != null)

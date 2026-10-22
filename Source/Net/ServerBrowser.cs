@@ -53,7 +53,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     bytes), Msg.StreakEvent gains kinds 2-4 (effect ended, crate taken, streak blast), StreakIds 8-15 on the wire.
     // 30: launchers (Source/Game/Launchers): WeaponClass.Launcher weapons, the new Msg.RocketSpawn / RocketSync /
     //     RocketBoom / RocketDetonate at the end, and the Fire packet's trailing lock-on byte.
-    public const byte ProtocolVersion = 30;
+    // 31: landmines and prop respawns (GameMines.cs): Msg.PropBreak's kind byte gains Game.PropRestoreFlag (0x40, a prop
+    //     placed with "respawn" is back), and kill id 254 (Game.LandmineKillId, "Landmine") for neutral blasts.
+    public const byte ProtocolVersion = 31;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
