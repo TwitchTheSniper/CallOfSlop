@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Blade Rack",
+  "description": "A wooden wall board hung with big circular saw blades.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 1.9, 0.2]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 140,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 12, "size": [0.05, 0.3], "colors": ["chrome", "#7a6040"]}
+  },
+  "parts": [
+    {"size": [1.6, 1.8, 0.06], "offset": [0, 1.0, -0.07], "color": "#7a6040", "material": "wood"},
+    {"size": [1.6, 0.1, 0.2], "offset": [0, 0.05, 0], "color": "#7a6040", "material": "wood"},
+    {"size": [0.29, 0.7, 0.02], "offset": [-0.45, 1.45, -0.02], "color": "chrome", "roll": 0},
+    {"size": [0.29, 0.7, 0.02], "offset": [-0.45, 1.45, -0.02], "color": "chrome", "roll": 45},
+    {"size": [0.29, 0.7, 0.02], "offset": [-0.45, 1.45, -0.02], "color": "chrome", "roll": 90},
+    {"size": [0.29, 0.7, 0.02], "offset": [-0.45, 1.45, -0.02], "color": "chrome", "roll": 135},
+    {"size": [0.06, 0.06, 0.06], "offset": [-0.45, 1.45, 0.0], "color": "darkgrey"},
+    {"size": [0.248, 0.6, 0.02], "offset": [0.4, 1.4, -0.02], "color": "chrome", "roll": 0},
+    {"size": [0.248, 0.6, 0.02], "offset": [0.4, 1.4, -0.02], "color": "chrome", "roll": 45},
+    {"size": [0.248, 0.6, 0.02], "offset": [0.4, 1.4, -0.02], "color": "chrome", "roll": 90},
+    {"size": [0.248, 0.6, 0.02], "offset": [0.4, 1.4, -0.02], "color": "chrome", "roll": 135},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.4, 1.4, 0.0], "color": "darkgrey"},
+    {"size": [0.228, 0.55, 0.02], "offset": [-0.4, 0.6, -0.02], "color": "chrome", "roll": 0},
+    {"size": [0.228, 0.55, 0.02], "offset": [-0.4, 0.6, -0.02], "color": "chrome", "roll": 45},
+    {"size": [0.228, 0.55, 0.02], "offset": [-0.4, 0.6, -0.02], "color": "chrome", "roll": 90},
+    {"size": [0.228, 0.55, 0.02], "offset": [-0.4, 0.6, -0.02], "color": "chrome", "roll": 135},
+    {"size": [0.06, 0.06, 0.06], "offset": [-0.4, 0.6, 0.0], "color": "darkgrey"},
+    {"size": [0.31, 0.75, 0.02], "offset": [0.35, 0.65, -0.02], "color": "chrome", "roll": 0},
+    {"size": [0.31, 0.75, 0.02], "offset": [0.35, 0.65, -0.02], "color": "chrome", "roll": 45},
+    {"size": [0.31, 0.75, 0.02], "offset": [0.35, 0.65, -0.02], "color": "chrome", "roll": 90},
+    {"size": [0.31, 0.75, 0.02], "offset": [0.35, 0.65, -0.02], "color": "chrome", "roll": 135},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.35, 0.65, 0.0], "color": "darkgrey"}
+  ]
+}

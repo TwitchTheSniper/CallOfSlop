@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Grain Barn Sack Pile",
+  "description": "A pile of grain sacks stamped with the farm's name.",
+  "collision": "solid",
+  "collider": [{"size": [1.26, 0.9, 0.95]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 50,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 16, "size": [0.05, 0.25], "colors": ["#c8b07a", "#e0d0a0"]}
+  },
+  "parts": [
+    {"size": [0.6, 0.3, 0.9], "offset": [-0.33, 0.15, 0], "color": "#c8b07a"},
+    {"size": [0.6, 0.3, 0.9], "offset": [0.33, 0.15, 0], "color": "#bca46e"},
+    {"size": [0.6, 0.3, 0.9], "offset": [0, 0.45, 0], "color": "#c8b07a", "yaw": 10},
+    {"size": [0.6, 0.3, 0.9], "offset": [-0.3, 0.75, 0.05], "color": "#d0b880", "yaw": -6},
+    {"size": [0.2, 0.12, 0.01], "offset": [0, 0.45, 0.46], "color": "#2f5d3a"}
+  ]
+}

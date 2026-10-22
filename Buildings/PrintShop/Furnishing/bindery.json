@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bindery",
+  "description": "The Print Shop's bindery: a folding machine, a bench of stitched booklets, boxes of finished jobs.",
+  "items": [
+    {"props": ["Print Shop Folding Machine"], "place": "wall"},
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Book Pile", "Newspaper Stack"], "place": "on", "of": "bench"},
+    {"props": ["Cardboard Box", "Archive Boxes", "Cardboard Stack"], "place": "floor", "count": [1, 3], "gap": 0.3}
+  ]
+}

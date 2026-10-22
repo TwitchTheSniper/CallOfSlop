@@ -598,7 +598,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server: damage on a zombie from <paramref name="attacker"/> (points for the hit or the kill). Returns true if it killed.</summary>
-    public bool DamageZombie(Player attacker, Zombie z, int amount, bool head, bool melee, double now)
+    public bool DamageZombie(Player attacker, Zombie z, int amount, bool head, bool melee, double now, bool explosive = false)
     {
         if (z.State == ZState.Dead || amount <= 0 || !DamageEnabled)
             return false;
@@ -617,6 +617,7 @@ public sealed partial class Game
         if (head)
             zp.Headshots++;
         attacker.Kills++;
+        FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, half weight (FrenzyServer.cs)
         AddPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints);
         zp.Scrap += ZRules.ScrapPerKill;
         RollDrop(z.Position, ZRound, now);
@@ -679,7 +680,7 @@ public sealed partial class Game
                 continue;
             if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.Shots) < dist - 0.05f)
                 continue;
-            DamageZombie(owner, z, (int)MathF.Round(maxDamage * MathF.Pow(1f - dist / radius, 1.4f)), false, melee: false, now);
+            DamageZombie(owner, z, (int)MathF.Round(maxDamage * MathF.Pow(1f - dist / radius, 1.4f)), false, melee: false, now, explosive: true);
         }
     }
 

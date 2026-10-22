@@ -1,0 +1,80 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Bottling Machine",
+  "description": "A steel rotary bottle filler: the carousel of brown bottles turns under the filling heads, a guard window in front.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 2.1, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 240,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 14, "size": [0.04, 0.25], "colors": ["steel", "#5a3210", "glass"]}
+  },
+  "parts": [
+    {"size": [1.6, 0.9, 1.0], "offset": [0, 0.45, 0], "color": "steel", "material": "metal"},
+    {"size": [1.6, 0.1, 1.0], "offset": [0, 0.95, 0], "color": "chrome"},
+    {"size": [0.2, 1.1, 0.2], "offset": [0, 1.5, -0.35], "color": "steel"},
+    {"size": [1.0, 0.2, 0.3], "offset": [0, 2.0, -0.2], "color": "steel"},
+    {
+      "size": [0.8, 0.06, 0.331],
+      "offset": [0, 1.03, 0.05],
+      "color": "darkgrey",
+      "yaw": 0,
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.03, 0.05]}
+    },
+    {
+      "size": [0.8, 0.06, 0.331],
+      "offset": [0, 1.03, 0.05],
+      "color": "darkgrey",
+      "yaw": 45,
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.03, 0.05]}
+    },
+    {
+      "size": [0.8, 0.06, 0.331],
+      "offset": [0, 1.03, 0.05],
+      "color": "darkgrey",
+      "yaw": 90,
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.03, 0.05]}
+    },
+    {
+      "size": [0.8, 0.06, 0.331],
+      "offset": [0, 1.03, 0.05],
+      "color": "darkgrey",
+      "yaw": 135,
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.03, 0.05]}
+    },
+    {
+      "size": [0.08, 0.26, 0.08],
+      "offset": [0.3, 1.19, 0.05],
+      "color": "#5a3210",
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.19, 0.05]}
+    },
+    {
+      "size": [0.08, 0.26, 0.08],
+      "offset": [-0.3, 1.19, 0.05],
+      "color": "#5a3210",
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.19, 0.05]}
+    },
+    {
+      "size": [0.08, 0.26, 0.08],
+      "offset": [0, 1.19, 0.35],
+      "color": "#5a3210",
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.19, 0.05]}
+    },
+    {
+      "size": [0.08, 0.26, 0.08],
+      "offset": [0, 1.19, -0.25],
+      "color": "#5a3210",
+      "anim": {"type": "spin", "axis": "y", "rpm": 30, "pivot": [0, 1.19, 0.05]}
+    },
+    {"size": [1.5, 0.8, 0.02], "offset": [0, 1.4, 0.5], "color": "glass"},
+    {"size": [0.3, 0.3, 0.1], "offset": [0.65, 1.3, 0.45], "color": "#2a2a2a"},
+    {
+      "size": [0.1, 0.06, 0.03],
+      "offset": [0.65, 1.36, 0.51],
+      "color": "#40ff60",
+      "anim": {"type": "blink", "period": 0.8, "duty": 0.5, "color": "#50ff70", "glow": 0.9}
+    }
+  ]
+}

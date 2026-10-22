@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Pot Stove",
+  "description": "A cast-iron pot-belly stove burning offcuts, its flue going up through the roof.",
+  "collision": "solid",
+  "collider": [{"size": [0.6, 0.95, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.6, 0.12, 0.6], "offset": [0, 0.06, 0], "color": "#2a2a2a"},
+    {"size": [0.55, 0.7, 0.228], "offset": [0, 0.47, 0], "color": "#2a2a2a", "material": "metal", "yaw": 0},
+    {"size": [0.55, 0.7, 0.228], "offset": [0, 0.47, 0], "color": "#2a2a2a", "material": "metal", "yaw": 45},
+    {"size": [0.55, 0.7, 0.228], "offset": [0, 0.47, 0], "color": "#2a2a2a", "material": "metal", "yaw": 90},
+    {"size": [0.55, 0.7, 0.228], "offset": [0, 0.47, 0], "color": "#2a2a2a", "material": "metal", "yaw": 135},
+    {"size": [0.4, 0.1, 0.166], "offset": [0, 0.87, 0], "color": "#3a3a3a", "yaw": 0},
+    {"size": [0.4, 0.1, 0.166], "offset": [0, 0.87, 0], "color": "#3a3a3a", "yaw": 45},
+    {"size": [0.4, 0.1, 0.166], "offset": [0, 0.87, 0], "color": "#3a3a3a", "yaw": 90},
+    {"size": [0.4, 0.1, 0.166], "offset": [0, 0.87, 0], "color": "#3a3a3a", "yaw": 135},
+    {"size": [0.14, 1.6, 0.14], "offset": [0, 1.72, -0.1], "color": "#3a3a3a"},
+    {
+      "size": [0.2, 0.14, 0.02],
+      "offset": [0, 0.42, 0.28],
+      "color": "#ff6a10",
+      "anim": {"type": "flicker", "rate": 8, "duty": 0.75, "color": "#ff8a20", "off": "#5a2008", "glow": 1.6}
+    },
+    {"size": [0.5, 0.3, 0.3], "offset": [0.5, 0.15, 0.1], "color": "lightwood", "material": "wood"}
+  ]
+}

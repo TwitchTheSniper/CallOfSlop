@@ -297,14 +297,19 @@ public static unsafe partial class Program
             SmokeNameTags(now); // Program.NameTags.cs
             return;
         }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 3)
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
-            SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots
+            SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
             return;
         }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyStep < SmokeFrenzyKills + 2)
         {
             SmokeFrenzy(now); // Program.Frenzy.cs
+            return;
+        }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyFxStep < SmokeFrenzyFxClasses.Length)
+        {
+            SmokeFrenzyFx(now); // Program.FrenzyFx.cs: four classes' frenzy visuals at level 6
             return;
         }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
@@ -911,6 +916,7 @@ public static unsafe partial class Program
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
+            _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -1008,6 +1014,7 @@ public static unsafe partial class Program
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
+            UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
@@ -1795,6 +1802,7 @@ public static unsafe partial class Program
         Gfx.SetDepthTest(true);
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);
+        _frenzyFx.DrawWorld(Gfx, _game, now); // frenzy sparks, trails, others' gun glow: one instanced draw (Program.FrenzyFx.cs)
 
         Gfx.SetFog(World.Map.Sky, 0, 0); // no haze on the viewmodel and HUD
 
@@ -1804,7 +1812,9 @@ public static unsafe partial class Program
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);
             GunModel.AdsCutaway = 0;
+            DrawFrenzyFxViewModel(now); // your gun's frenzy glow (Program.FrenzyFx.cs)
         }
+        _frenzyFx.EndFrame(now);
 
         // ---- HUD ------------------------------------------------------------
         DrawHud(now, w, h, local, fov);

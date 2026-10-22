@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Sawmill",
+  "theme": "Backwoods timber sawmill: weathered plank walls, a rusty tin roof, a band headrig, logs and sawdust everywhere",
+  "category": "industrial",
+  "description": "A mill floor with a band headrig and log carriage, an open log deck, a planing shed, a saw doctor's shop, a timber store with cart doors and a stove-heated office.",
+  "author": "Call of Slop",
+  "seed": 303,
+  "wallThickness": 0.25,
+  "storeyHeight": 5.2,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "wood"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "weathered timber": {"wall": "#5e4a36", "interior": "#8a6e4e", "floor": "#9a7c56", "ceiling": "#6e5840", "trim": "#3a2e22", "door": "#7a2b24", "roof": "#7a4a2e"},
+    "barn red": {"wall": "#7a2e24", "interior": "#9a7a56", "floor": "#a0825a", "ceiling": "#7a6248", "trim": "#e6dcc8", "door": "#e6dcc8", "roof": "#6a6e70"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "mill",
+          "type": "mill-floor",
+          "rect": [-13, -7, 5, 3],
+          "autoWindows": {"spacing": 3.2, "width": 1.6, "sill": 1.5, "head": 3.0},
+          "props": [
+            {"name": "Sawmill Log Carriage", "at": [0.6, -2.6]},
+            {"name": "Sawmill Headrig", "at": [3.1, -3.75]},
+            {"name": "Conveyor Rollers", "at": [5.6, -2.6]}
+          ]
+        },
+        {"id": "logdeck", "type": "log-deck", "rect": [5, -7, 13, 1], "windows": false, "floor": {"color": "#7a6a52", "material": "dirt"}},
+        {"id": "planing", "type": "planing", "rect": [-13, 3, -4, 7], "autoWindows": {"spacing": 2.8, "width": 1.4, "sill": 1.3, "head": 2.6}},
+        {"id": "sawdoctor", "type": "saw-doctor", "rect": [-4, 3, 1, 7], "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 1.1, "head": 2.4}},
+        {
+          "id": "office",
+          "type": "office",
+          "rect": [1, 3, 5, 7],
+          "autoWindows": {"spacing": 2.4, "width": 1.2, "sill": 0.9, "head": 2.3},
+          "props": [{"name": "Sawmill Pot Stove", "wall": "W", "along": -0.4}]
+        },
+        {"id": "timber", "type": "timber-store", "rect": [5, 1, 13, 7], "autoWindows": {"spacing": 3.0, "width": 1.6, "sill": 2.4, "head": 3.4}}
+      ],
+      "openings": [
+        {"type": "door", "at": [3.0, 7], "width": 1.0, "front": true},
+        {"type": "door", "at": [3.0, 3], "width": 1.0},
+        {"type": "door", "at": [-1.5, 3], "width": 1.0},
+        {"type": "arch", "at": [-8.5, 3], "width": 2.0, "head": 3.4},
+        {"type": "door", "at": [-4, 5], "width": 0.9},
+        {"type": "door", "at": [5, 2], "width": 1.0},
+        {"type": "arch", "at": [5, -2], "width": 3.0, "head": 3.8},
+        {"type": "arch", "at": [13, -3], "width": 4.2, "head": 4.4},
+        {"type": "door", "at": [-6, -7], "width": 1.0},
+        {"type": "door", "at": [-13, -2], "width": 1.2},
+        {"type": "door", "at": [13, 3.15], "width": 1.5, "head": 3.2, "material": "wood", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [13, 4.85], "width": 1.5, "head": 3.2, "material": "wood", "swing": "out", "hinge": "right"}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 22, "overhang": 0.6, "color": {"color": "$roof", "material": "metal"}},
+  "anchors": [
+    {"type": "spawn", "name": "office", "floor": 0, "at": [3.0, 5.0]},
+    {"type": "spawn", "name": "planing shed", "floor": 0, "at": [-8.5, 5.0]},
+    {"type": "spawn", "name": "mill floor", "floor": 0, "at": [-9.0, -2.0]},
+    {"type": "hill", "name": "headrig", "floor": 0, "at": [-3, -2]},
+    {"type": "point", "name": "log deck", "floor": 0, "at": [9, -3]}
+  ],
+  "extras": [
+    {"type": "prop", "name": "Sawmill Log Pile", "at": [17.5, -6.0], "yaw": 90},
+    {"type": "prop", "name": "Sawmill Log Pile", "at": [20.5, -6.0], "yaw": 90},
+    {"type": "prop", "name": "Log", "at": [17.0, 2.0], "yaw": 20},
+    {"type": "prop", "name": "Log", "at": [18.2, 2.6], "yaw": 70},
+    {"type": "prop", "name": "Forklift", "at": [17.5, -0.5], "yaw": 270},
+    {"type": "prop", "name": "Plank Pile", "at": [-15.6, -4.6], "yaw": 90},
+    {"type": "prop", "name": "Plank Pile", "at": [-15.6, 1.2], "yaw": 90},
+    {"type": "prop", "name": "Sawmill Dust Cyclone", "at": [-2.0, -9.3], "yaw": 0},
+    {"type": "prop", "name": "Running Generator", "at": [6.5, -8.6], "yaw": 0},
+    {"type": "prop", "name": "Red Fuel Barrel", "at": [8.6, -8.4]},
+    {"type": "prop", "name": "Oil Drum", "at": [9.3, -8.5]},
+    {"type": "prop", "name": "Wheelbarrow", "at": [-9.5, -8.4], "yaw": 80},
+    {"type": "porch", "rect": [1.2, 7.13, 4.8, 8.6], "height": 2.6, "color": "$trim"},
+    {"type": "prop", "name": "Hanging Shop Sign", "at": [0.6, 0, 7.8], "yaw": 0},
+    {"type": "prop", "name": "Rocking Chair", "at": [4.3, 0.25, 7.9], "yaw": 200},
+    {"type": "prop", "name": "Pickup Truck", "at": [-4.0, 10.2], "yaw": 90},
+    {"type": "prop", "name": "Roof Turbine Vent", "at": [-8.0, -2.0], "onRoof": true}
+  ]
+}

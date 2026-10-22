@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "print-counter",
+  "description": "The Print Shop's front shop: the counter, poster boards, a waiting chair, sample books.",
+  "items": [
+    {"props": ["Print Shop Counter"], "place": "wall", "prefer": "far"},
+    {"props": ["Print Shop Poster Board"], "place": "wall", "count": [1, 2]},
+    {"props": ["Wooden Chair"], "place": "corner"},
+    {"props": ["Office Plant"], "place": "corner"},
+    {"props": ["Newspaper Stack", "Book Pile"], "place": "floor", "count": [0, 1]}
+  ]
+}

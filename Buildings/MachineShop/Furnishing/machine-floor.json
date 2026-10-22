@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "machine-floor",
+  "description": "The Machine Shop's floor: lathes, mills and drills in rows, tool cabinets, a gantry hook, bar stock, swarf bins.",
+  "items": [
+    {"props": ["Machine Shop Lathe"], "place": "wall", "count": [2, 3]},
+    {"props": ["Machine Shop Milling Machine"], "place": "wall", "count": [1, 2]},
+    {"props": ["Machine Shop Pillar Drill", "Machine Shop Bench Grinder"], "place": "wall", "count": [2, 3]},
+    {"props": ["Machine Shop Tool Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Gantry Hook"], "place": "floor", "gap": 0.8},
+    {"props": ["Machine Shop Bar Stock Rack"], "place": "wall"},
+    {"props": ["Oil Drum", "Small Crate", "Pallet"], "place": "floor", "count": [1, 3], "gap": 0.4},
+    {"props": ["Toolbox", "Bucket", "Broom"], "place": "floor", "count": [1, 3]}
+  ]
+}

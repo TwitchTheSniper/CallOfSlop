@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "tipping-hall",
+  "description": "The Recycling Plant's tipping hall: heaps of tipped recycling, skips, bins, a forklift.",
+  "items": [
+    {"props": ["Recycling Waste Pile"], "place": "floor", "count": [2, 4], "gap": 1.0},
+    {"props": ["Builders Skip"], "place": "wall"},
+    {"props": ["Wheelie Bin", "Wheelie Bin Grey", "Recycling Bin"], "place": "wall", "count": [2, 4]},
+    {"props": ["Forklift"], "place": "floor"},
+    {
+      "props": ["Trash Bag", "Plastic Bag", "Flattened Cardboard", "Soda Cans", "Bottles", "Litter"],
+      "place": "floor",
+      "count": [4, 8]
+    }
+  ]
+}

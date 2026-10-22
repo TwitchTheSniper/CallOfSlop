@@ -386,6 +386,10 @@ public sealed class Player
     public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
     public byte ShieldCharges; // Last Stand: bullet hits the shield still blocks (server-owned, replicated in the snapshot)
     public bool Regenerating; // health is coming back right now (server-owned, replicated in the snapshot)
+    public byte FrenzyLevel; // kill frenzy 0-6 (server-owned, replicated in the snapshot's slow fields; Source/Game/Frenzy/FrenzyServer.cs)
+    public WeaponClass FrenzyClass; // the class of the weapon that got this player's most recent kill (server-owned, replicated)
+    public bool FrenzyBuffsOn; // the host's "Frenzy buffs" setting, replicated with FrenzyClass (Source/Game/Frenzy/FrenzyBuffs.cs)
+    public FrenzyMeterCore? FrenzyHeat; // server only: this player's heat model (FrenzyServer.cs)
     public double ShieldFlashTime = -100; // client: when the shield last blocked a hit (the shimmer)
 
     // Loadout and the weapon in hand (replicated so others see and hear the right gun)
@@ -426,6 +430,10 @@ public sealed class Player
 
     /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
     public double StunnedUntil;
+
+    /// <summary>Sprinting right now, and ticks left of the after-sprint spread recovery (Source/Game/SprintSpread.cs). Server and local prediction.</summary>
+    public bool Sprinting;
+    public int SprintRecoverTicks;
 
     /// <summary>The built weapon in slot 3 or 4 with this id, if the slots are unlocked.</summary>
     public WeaponDef? ExtraDef(byte weaponId) =>

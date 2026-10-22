@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "chem-store",
+  "description": "The Chemical Lab's chemical store: flammables cabinets, drums, a bulk tote. Nobody should be shooting in here.",
+  "items": [
+    {"props": ["Flammables Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Chemical Drum"], "place": "floor", "count": [2, 3], "gap": 0.2},
+    {"props": ["IBC Tote"], "place": "corner"}
+  ]
+}

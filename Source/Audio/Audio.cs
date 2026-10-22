@@ -55,7 +55,8 @@ public enum Sfx
 /// <summary>
 /// OpenAL (via Brutal.OpenAl) playback with 3D positioning for other players' shots, steps and impacts.
 /// Every sound is synthesised at startup: each weapon gets its own gunshot (near and distant layers), reload and equip
-/// sound built from its stats, so there are no audio files to ship. Footsteps have their own small voice pool
+/// sound built from its stats. Real firearms then get recorded gunshot layers baked in (<see cref="GunSamples"/>, from
+/// Audio/Samples/Guns; the synth stays as the fallback when those files are missing). Footsteps have their own small voice pool
 /// (<see cref="FootstepVoicePool"/>). With OpenAL EFX (checked by a canary at start-up) far sounds are low-passed by
 /// distance and everything gets a light reverb send that suits the map (<see cref="AudioSpace"/>).
 /// </summary>
@@ -72,7 +73,8 @@ public sealed partial class Audio : IDisposable
     private AlSource[] _sources = [];
     private AlSource[] _stepSources = [];
     private readonly double[] _startedAt = new double[Voices];
-    private AlBuffer[] _shots = [], _shotsSuppressed = [], _shotsFar = [], _reloads = [], _equips = [];
+    private AlBuffer[][] _shots = [], _shotsSuppressed = []; // [weapon][variant]
+    private AlBuffer[] _shotsFar = [], _reloads = [], _equips = [];
     private readonly AlBuffer[][] _sfx = new AlBuffer[(int)Sfx.COUNT][];
     private AlBuffer[] _steps = []; // [surface][run][variant], see StepIndex
     private readonly Random _rng = new(1234);
@@ -122,8 +124,8 @@ public sealed partial class Audio : IDisposable
             var pcm = SynthesiseAll();
             SynthMs = sw.Elapsed.TotalMilliseconds;
             var defs = Weapons.All;
-            _shots = defs.Select(d => Upload(pcm.Shots[d.Id])).ToArray();
-            _shotsSuppressed = defs.Select(d => Upload(pcm.Suppressed[d.Id])).ToArray();
+            _shots = defs.Select(d => pcm.Shots[d.Id].Select(Upload).ToArray()).ToArray();
+            _shotsSuppressed = defs.Select(d => pcm.Suppressed[d.Id].Select(Upload).ToArray()).ToArray();
             _shotsFar = defs.Select(d => pcm.Far[d.Id] is { } f ? Upload(f) : default).ToArray();
             _reloads = defs.Select(d => Upload(pcm.Reloads[d.Id])).ToArray();
             _equips = defs.Select(d => Upload(pcm.Equips[d.Id])).ToArray();
@@ -148,6 +150,11 @@ public sealed partial class Audio : IDisposable
             Console.WriteLine($"[audio] {BufferCount} buffers ({BufferBytes / 1024} KB) synthesised in {SynthMs:0} ms on {Environment.ProcessorCount} threads; "
                 + $"{Voices} effect voices + {StepVoices} footstep voices; footsteps {(int)FootSurface.Count} surfaces x 2 gaits x {Synth.StepVariants} variants; "
                 + $"EFX {EfxStatus}; HRTF {hrtf}");
+            var lib = GunSampleLibrary.Shared;
+            Console.WriteLine($"[audio] gun samples: {lib.FilesLoaded}/{lib.FilesListed} files ({lib.BytesLoaded / 1024} KB) loaded in {lib.LoadMs:0} ms from {lib.Folder}"
+                + (lib.Problems.Count > 0 ? $"; {lib.Problems.Count} problem(s), synth fallback: {string.Join("; ", lib.Problems.Take(6))}" : ""));
+            foreach (var line in lib.Describe(defs))
+                Console.WriteLine(line);
             try
             {
                 if (music)
@@ -168,7 +175,8 @@ public sealed partial class Audio : IDisposable
     /// <summary>Every sound the game makes, as 16-bit mono PCM (made in parallel; no OpenAL needed).</summary>
     public sealed class SoundSet
     {
-        public required short[][] Shots, Suppressed, Reloads, Equips;
+        public required short[][][] Shots, Suppressed; // [weapon][variant]: recorded variants, or the synth alone
+        public required short[][] Reloads, Equips;
         public required short[]?[] Far;
         public required short[][][] Effects; // [sfx][variant]
         public required short[][] Steps; // StepIndex order
@@ -179,15 +187,18 @@ public sealed partial class Audio : IDisposable
     /// <summary>The footstep buffer for a surface, gait and variant.</summary>
     public static int StepIndex(FootSurface s, bool run, int variant) => ((int)s * 2 + (run ? 1 : 0)) * Synth.StepVariants + variant;
 
-    /// <summary>Synthesises everything (also run headlessly by the self-test).</summary>
-    public static SoundSet SynthesiseAll()
+    /// <summary>Synthesises everything (also run headlessly by the self-test), with the game's gun samples.</summary>
+    public static SoundSet SynthesiseAll() => SynthesiseAll(GunSampleLibrary.Shared);
+
+    /// <summary>Synthesises everything, baking gunshots from <paramref name="guns"/> (<see cref="GunSampleLibrary.Empty"/> = synth only).</summary>
+    public static SoundSet SynthesiseAll(GunSampleLibrary guns)
     {
         var defs = Weapons.All;
         var n = defs.Length;
         var set = new SoundSet
         {
-            Shots = new short[n][],
-            Suppressed = new short[n][],
+            Shots = new short[n][][],
+            Suppressed = new short[n][][],
             Reloads = new short[n][],
             Equips = new short[n][],
             Far = new short[n][],
@@ -204,13 +215,19 @@ public sealed partial class Audio : IDisposable
             var i = k;
             jobs.Add(() =>
             {
-                set.Shots[i] = Synth.Gunshot(defs[i]);
+                var synth = Synth.Gunshot(defs[i]);
+                set.Shots[i] = GunSamples.Shots(guns, defs[i], synth);
                 // The same gun with a Suppressor attachment on it.
-                var quiet = defs[i].Clone();
-                quiet.Sound = SoundStyle.Suppressed;
-                set.Suppressed[i] = defs[i].Sound is SoundStyle.Gun or SoundStyle.Boom ? Synth.Gunshot(quiet) : set.Shots[i];
+                if (defs[i].Sound is SoundStyle.Gun or SoundStyle.Boom)
+                {
+                    var quiet = defs[i].Clone();
+                    quiet.Sound = SoundStyle.Suppressed;
+                    set.Suppressed[i] = GunSamples.Suppressed(guns, defs[i], Synth.Gunshot(quiet));
+                }
+                else
+                    set.Suppressed[i] = set.Shots[i];
             });
-            jobs.Add(() => set.Far[i] = Synth.GunshotDistant(defs[i]));
+            jobs.Add(() => set.Far[i] = GunSamples.Far(guns, defs[i], Synth.GunshotDistant(defs[i])));
             jobs.Add(() =>
             {
                 set.Reloads[i] = Synth.Reload(defs[i]);
@@ -241,8 +258,10 @@ public sealed partial class Audio : IDisposable
         }
         for (var i = 0; i < n; i++)
         {
-            Add(set.Shots[i]);
-            Add(set.Suppressed[i]);
+            foreach (var a in set.Shots[i])
+                Add(a);
+            foreach (var a in set.Suppressed[i])
+                Add(a);
             Add(set.Far[i]);
             Add(set.Reloads[i]);
             Add(set.Equips[i]);
@@ -364,19 +383,34 @@ public sealed partial class Audio : IDisposable
     {
         if (!Enabled)
             return;
-        var gain = (position == null ? 0.75f : 1f) * (w.Suppressor ? 0.5f : 1f);
+        var gain = (position == null ? OwnShotGain : 1f) * (w.Suppressor ? 0.5f : 1f) * Jitter(0.07f);
         var pitch = Jitter(0.04f);
+        var near = PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]);
         if (position is { } p && !w.Suppressor && !_shotsFar[w.Id].IsNull())
         {
             var far = FarMix(Vector3.Distance(p, _listener));
             if (far < 0.98f)
-                Play(_shots[w.Id], p, gain * (1f - 0.85f * far), pitch);
+                Play(near, p, gain * (1f - 0.85f * far), pitch);
             if (far > 0.02f)
                 Play(_shotsFar[w.Id], p, gain * 0.9f * far, pitch, Falloff.Far);
             return;
         }
-        Play(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id], position, gain, pitch);
+        Play(near, position, gain, pitch);
     }
+
+    /// <summary>A random recorded variant (never the same one twice in a row when there are several).</summary>
+    private AlBuffer PickVariant(AlBuffer[] v)
+    {
+        if (v.Length <= 1)
+            return v.Length == 1 ? v[0] : default;
+        var i = _rng.Next(v.Length - 1);
+        if (i >= _lastVariant)
+            i++;
+        _lastVariant = i;
+        return v[i];
+    }
+
+    private int _lastVariant;
 
     public void Reload(WeaponDef w, Vector3? position)
     {
@@ -524,8 +558,7 @@ public sealed partial class Audio : IDisposable
             Al.DeleteSources(set);
         }
         DisposeEfx();
-        Al.DeleteBuffers(_shots);
-        Al.DeleteBuffers(_shotsSuppressed);
+        Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);
         Al.DeleteBuffers(_equips);
