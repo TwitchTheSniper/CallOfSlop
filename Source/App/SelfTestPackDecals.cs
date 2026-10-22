@@ -168,8 +168,9 @@ public static partial class SelfTest
         var global = Decals.All;
         if (global.Length > Decals.MaxGlobal * 3 / 4)
             Fail($"{global.Length} global decals: the library holds {Decals.MaxGlobal}; leave a quarter free or raise MaxGlobal");
-        if (Decals.MaxGlobal + Decals.MaxPackDecalsPerMap > DecalAtlas.MaxLayers || DecalAtlas.MaxLayers > 2048)
-            Fail($"a map's atlas could need {Decals.MaxGlobal + Decals.MaxPackDecalsPerMap} layers; OpenGL 4.1 guarantees 2048 ({DecalAtlas.MaxLayers} allowed)");
+        int need = Decals.MaxGlobal + Decals.MaxPackDecalsPerMap, allowed = DecalAtlas.MaxLayers; // (not constants: no "unreachable" warning)
+        if (need > allowed || allowed > 2048)
+            Fail($"a map's atlas could need {need} layers; OpenGL 4.1 guarantees 2048 ({allowed} allowed)");
         foreach (var p in Decals.LoadedPacks)
             if (p.Local.Length > Decals.MaxPerPack)
                 Fail($"pack {p.Pack}: {p.Local.Length} decals, more than {Decals.MaxPerPack}");
