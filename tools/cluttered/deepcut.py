@@ -227,7 +227,8 @@ def P(name, x, z, yaw=0.0, tag=None, **kw):
     over = [q for q in ROOFS if q[0] < r[2] and r[0] < q[2] and q[1] < r[3] and r[1] < q[3]]
     if over:
         op = t.ops[-1]
-        top = max(max(q[5] for q in over), max_over(hill, r[0], r[1], r[2], r[3], 0.5))
+        under = [q[5] for q in over if q[0] <= x <= q[2] and q[1] <= z <= q[3]]
+        top = max(under) if under else min(q[5] for q in over)
         op["y"] = R(top + float(kw.get("y") or 0.0))
         op["anchor"] = "world"
         ROOF_PROPS.append(name)
@@ -641,7 +642,8 @@ P("Water Barrier", 62.0, -31.0, 0, tag="bench"); P("Cable Spool", 46.0, 12.0, 0,
 
 # ---------------------------------------------------------------- the top: headframe over the shaft, winder house, Red's camp
 pad_y = TOP
-P("Headframe", SHAFT[0], SHAFT[1], 0, check=False, tag="headframe")
+P("Headframe Tower", SHAFT[0], SHAFT[1], 0, check=False, tag="headframe")
+propw("Headframe Head", SHAFT[0], SHAFT[1], 0, t.ops[-1].get("y", TOP) + 11.9, tag="headframe")
 for (x0, z0, x1, z1) in ((sx - 2.6, sz - 2.6, sx + 2.6, sz - 2.3), (sx - 2.6, sz + 2.3, sx + 2.6, sz + 2.6)):
     meshw("box", (x0 + x1) / 2, (z0 + z1) / 2, (0.85, 0.7, 0.1), TOP, width=x1 - x0, height=1.0, depth=z1 - z0)   # collar rails (cosmetic)
 r = shell(74, 1, 84, 11, (0.55, 0.36, 0.28), {"W": [(6.0, 2.4, 0.0, 2.6), WIN(2.8, 1.4), WIN(9.2, 1.4)], "S": [DOOR(80.0)], "N": [DOOR(78.0), WIN(81.5, 1.8)]},

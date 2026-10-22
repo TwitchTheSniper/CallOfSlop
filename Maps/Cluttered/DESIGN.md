@@ -372,7 +372,7 @@ shed and the top's berm and blast wall are in the way), and compares the cover n
 go too), and three explosive barrels in the yard, the pit and on bench 2, all well over 10 m from any spawn.
 
 **Pack props** (`Maps/Cluttered/Props/DeepcutMine`, written by `tools/cluttered/mine_props.py`): Mine Cart, Rail Track,
-Haul Truck, Excavator, Headframe (animated sheave wheels and a beacon), Inclined Conveyor (ore riding the belt, drums
+Haul Truck, Excavator, Headframe Tower and Headframe Head (props are at most 12 m, so the 25 m headframe is two: the head with its turning sheave wheels and a beacon stands on the tower), Inclined Conveyor (ore riding the belt, drums
 turning), Jaw Crusher (flywheels and jaw), Ore Hopper, Timber Set, Mine Lamp (flickers), Timber Stack, Explosives Crate
 (explodes), Danger Sign, Fuel Tank and Floodlight Mast (lamps burning).
 

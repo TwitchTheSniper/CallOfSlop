@@ -127,47 +127,54 @@ PROPS.append({"name": "Excavator", "description": "A tracked yellow excavator wi
               "collision": "solid", "collider": [{"size": [4.6, 2.8, 3.4], "offset": [-0.2, 1.4, 0]}, {"size": [1.3, 1.4, 1.4], "offset": [7.0, 0.7, -0.3]}],
               "scatter": {"randomYaw": True}, "parts": ex})
 
-# ---------------------------------------------------------------- headframe with sheave wheels (animated)
-hf = []
+# ---------------------------------------------------------------- headframe: a 12 m tower and its head (props are at most 12 m)
 STEEL = "#7c4a2e"   # red-oxide painted steel
+tw = []
 for x in (-2.2, 2.2):
     for z in (-2.2, 2.2):
-        hf.append(part((0.45, 12.0, 0.45), (x * (1 - 0.0), 6.0, z), STEEL, material="metal"))
-        hf.append(part((0.4, 6.0, 0.4), (x * 0.82, 15.0, z * 0.82), STEEL, material="metal"))
-for y in (3.5, 7.5, 11.5):
+        tw.append(part((0.45, 11.9, 0.45), (x, 5.95, z), STEEL, material="metal"))
+for y in (3.5, 7.5, 11.4):
     for z in (-2.2, 2.2):
-        hf.append(part((4.8, 0.3, 0.3), (0, y, z), STEEL, material="metal"))
+        tw.append(part((4.8, 0.3, 0.3), (0, y, z), STEEL, material="metal"))
     for x in (-2.2, 2.2):
-        hf.append(part((0.3, 0.3, 4.8), (x, y, 0), STEEL, material="metal"))
+        tw.append(part((0.3, 0.3, 4.8), (x, y, 0), STEEL, material="metal"))
 for z in (-2.2, 2.2):   # cross bracing
-    hf.append(part((5.6, 0.18, 0.18), (0, 5.5, z), "#6a3e26", rotation=[0, 0, 45]))
-    hf.append(part((5.6, 0.18, 0.18), (0, 9.5, z), "#6a3e26", rotation=[0, 0, -45]))
-hf.append(part((4.4, 0.3, 4.4), (0, 17.9, 0), "#5a3420", material="metal"))       # sheave deck
-hf.append(part((4.8, 0.08, 0.08), (0, 19.0, 2.35), "#aaaaaa")); hf.append(part((4.8, 0.08, 0.08), (0, 19.0, -2.35), "#aaaaaa"))  # rails
+    tw.append(part((5.6, 0.18, 0.18), (0, 5.5, z), "#6a3e26", rotation=[0, 0, 45]))
+    tw.append(part((5.6, 0.18, 0.18), (0, 9.5, z), "#6a3e26", rotation=[0, 0, -45]))
+for zs in (1.4, -1.4):  # back stays (the struts that take the rope pull), leaning towards -X
+    tw.append(part((0.45, 11.7, 0.45), (-4.25, 5.75, zs), STEEL, material="metal", rotation=[0, 0, -20]))
+for xr, zr in ((1.62, 0.9), (-1.62, -0.9)):   # the ropes down the shaft (to the cage)
+    tw.append(part((0.06, 10.4, 0.06), (xr, 6.8, zr), "#9a9a9a"))
+PROPS.append({"name": "Headframe Tower", "description": "The lower 11.9 m of a steel mine headframe over a shaft 4 m square, with its back stays. Put a Headframe Head on top.",
+              "collision": "solid",
+              "collider": [{"size": [0.45, 11.9, 0.45], "offset": [x, 5.95, z]} for x in (-2.2, 2.2) for z in (-2.2, 2.2)]
+              + [{"size": [0.6, 3.0, 0.5], "offset": [-5.8, 1.5, 1.4]}, {"size": [0.6, 3.0, 0.5], "offset": [-5.8, 1.5, -1.4]}],
+              "scatter": {"randomYaw": False, "yawStep": 90}, "parts": tw})
+
+hd = []
+for x in (-2.2, 2.2):
+    for z in (-2.2, 2.2):
+        hd.append(part((0.4, 6.0, 0.4), (x * 0.82, 3.0, z * 0.82), STEEL, material="metal"))
+hd.append(part((4.4, 0.3, 4.4), (0, 5.9, 0), "#5a3420", material="metal"))       # sheave deck
+hd.append(part((4.8, 0.08, 0.08), (0, 7.0, 2.35), "#aaaaaa")); hd.append(part((4.8, 0.08, 0.08), (0, 7.0, -2.35), "#aaaaaa"))  # rails
 for x in (-2.35, 2.35):
-    hf.append(part((0.08, 1.1, 0.08), (x, 18.6, 2.35), "#aaaaaa")); hf.append(part((0.08, 1.1, 0.08), (x, 18.6, -2.35), "#aaaaaa"))
-# back stay (the strut that takes the rope pull), leaning towards -X
-for zs in (1.4, -1.4):
-    hf.append(part((0.45, 12.0, 0.45), (-4.25, 5.65, zs), STEEL, material="metal", rotation=[0, 0, -20]))
+    hd.append(part((0.08, 1.1, 0.08), (x, 6.6, 2.35), "#aaaaaa")); hd.append(part((0.08, 1.1, 0.08), (x, 6.6, -2.35), "#aaaaaa"))
 # two sheave wheels side by side, turning in opposite directions (one cage up, one down)
 for z, rpm in ((0.9, 14), (-0.9, -14)):
-    spin = {"type": "spin", "axis": "z", "pivot": [0, 19.6, z], "rpm": rpm, "freezeDistance": 160}
-    hf += [part((3.4, 0.16, 0.12), (0, 19.6, z), "#3a3a3c", rotation=[0, 0, a], anim=dict(spin)) for a in (0, 45, 90, 135)]  # spokes
+    spin = {"type": "spin", "axis": "z", "pivot": [0, 7.6, z], "rpm": rpm, "freezeDistance": 160}
+    hd += [part((3.4, 0.16, 0.12), (0, 7.6, z), "#3a3a3c", rotation=[0, 0, a], anim=dict(spin)) for a in (0, 45, 90, 135)]  # spokes
     for k in range(8):   # the rim: eight segments round the hub
         a = k * 45 + 22.5
-        hf.append(part((1.36, 0.18, 0.16), (1.62 * math.cos(math.radians(a)), 19.6 + 1.62 * math.sin(math.radians(a)), z), "#2e2e30",
-                       rotation=[0, 0, a + 90], anim=dict(spin)))
-    hf.append(part((0.5, 0.5, 0.3), (0, 19.6, z), "#c8a040", anim=dict(spin)))
-    hf.append(part((0.6, 1.4, 0.2), (0, 18.6, z), "#4a2a18"))                   # bearing block
-for xr, zr in ((1.62, 0.9), (-1.62, -0.9)):   # ropes down the shaft
-    hf.append(part((0.06, 10.0, 0.06), (xr, 14.6, zr), "#9a9a9a")); hf.append(part((0.06, 8.0, 0.06), (xr, 5.6, zr), "#9a9a9a"))
-hf.append(part((0.25, 0.25, 0.25), (2.4, 18.3, 2.4), "#ff3020",
+        hd.append(part((1.36, 0.18, 0.16), (1.62 * math.cos(math.radians(a)), 7.6 + 1.62 * math.sin(math.radians(a)), z), "#2e2e30",
+                       rotation=[0, 0, (a + 90) % 360], anim=dict(spin)))
+    hd.append(part((0.5, 0.5, 0.3), (0, 7.6, z), "#c8a040", anim=dict(spin)))
+    hd.append(part((0.6, 1.4, 0.2), (0, 6.6, z), "#4a2a18"))                   # bearing block
+for xr, zr in ((1.62, 0.9), (-1.62, -0.9)):   # ropes from the sheaves down into the tower
+    hd.append(part((0.06, 7.6, 0.06), (xr, 3.8, zr), "#9a9a9a"))
+hd.append(part((0.25, 0.25, 0.25), (2.4, 6.3, 2.4), "#ff3020",
                anim={"type": "blink", "period": 1.6, "duty": 0.3, "color": "#ff5030", "off": "#401010", "glow": 1.8, "freezeDistance": 200}))
-PROPS.append({"name": "Headframe", "description": "A steel mine headframe 20 m tall with two sheave wheels turning at the top, over a shaft 4 m square.",
-              "collision": "solid",
-              "collider": [{"size": [0.45, 12.0, 0.45], "offset": [x, 6.0, z]} for x in (-2.2, 2.2) for z in (-2.2, 2.2)]
-              + [{"size": [0.6, 3.0, 0.5], "offset": [-5.8, 1.5, 1.4]}, {"size": [0.6, 3.0, 0.5], "offset": [-5.8, 1.5, -1.4]}],
-              "scatter": {"randomYaw": False, "yawStep": 90}, "parts": hf})
+PROPS.append({"name": "Headframe Head", "description": "The top of a mine headframe: the sheave deck and two sheave wheels turning. Goes 11.9 m up, on a Headframe Tower.",
+              "collision": "cosmetic", "fadeDistance": 320, "scatter": {"randomYaw": False, "yawStep": 90}, "parts": hd})
 
 # ---------------------------------------------------------------- conveyor, crusher, hopper
 L, RISE = 11.0, 4.5
@@ -189,7 +196,7 @@ shake = {"type": "shake", "axis": [0.9, 0.4, 0.2], "distance": 0.02, "period": 0
 for k in range(9):
     x = -5.2 + k * 1.25
     cv.append(part((0.34, 0.2, 0.36), (x, y_at(x) + 0.46, 0.15 * ((-1) ** k)), ORE if k % 2 else "#5c564e",
-                   rotation=[0, 0, ang], anim=dict(shake, phase=k * 0.13)))
+                   rotation=[0, 0, ang], anim=dict(shake, phase=round((k * 0.13) % 1, 3))))
 for x in (-L / 2 + 0.2, L / 2 - 0.2):
     spin = {"type": "spin", "axis": "z", "pivot": [x, y_at(x) + 0.3, 0], "rpm": 60, "freezeDistance": 60}
     cv += [part((0.5, 0.2, 1.1), (x, y_at(x) + 0.3, 0), "#3a3a3c", rotation=[0, 0, a], anim=dict(spin)) for a in (0, 45, 90, 135)]
@@ -321,6 +328,9 @@ for p in PROPS:
     assert len(d.get("collider", [])) <= 8, p["name"]
     for q in d["parts"]:
         assert all(0.001 <= s <= 12 for s in q["size"]), (p["name"], q)
+        assert all(-360 <= a <= 360 for a in q.get("rotation", [0, 0, 0])), (p["name"], q)
+        an = q.get("anim", {})
+        assert 0 <= an.get("phase", 0) <= 1 and 10 <= an.get("freezeDistance", 80) <= 400, (p["name"], an)
     path = os.path.join(OUT, p["name"].replace(" ", "") + ".json")
     with open(path, "w") as f:
         f.write("{\n")
