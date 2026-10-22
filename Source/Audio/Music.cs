@@ -109,7 +109,7 @@ public sealed class MusicPlayer : IDisposable
 
     // The frenzy's levels 5 and 6 push the bus past full scale at loud settings: a limiter after the music volume, on
     // while the frenzy plays (the menu and lobby music never reach it and stay bit-for-bit as before).
-    private readonly MasterLimiter _frenzyLimiter = new();
+    private readonly MasterLimiter _frenzyLimiter = new() { Ceiling = FrenzyLayer.LimiterCeiling };
     private bool _limiting;
 
     /// <summary>The lowest gain the frenzy limiter has applied since the frenzy started (1 = never limited).</summary>

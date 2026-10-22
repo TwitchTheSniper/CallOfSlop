@@ -153,15 +153,22 @@ public sealed class FrenzyLayer
     /// The loudness level 6 matches: the RMS (sample level, effects volume 1) of a second of your own gun firing at its
     /// rate (<see cref="Audio.Shot"/> plays it at 0.75) with a frag explosion (gain 1) on top, median over the real
     /// firearms; measured from the game's own synthesised sounds by <see cref="Audio.CombatReferenceRms"/> and checked
-    /// against this constant by the self-test.
+    /// against this constant by the self-test (measured: 0.552; gunfire alone 0.35, the explosion alone 0.42).
     /// </summary>
-    public const float SfxReferenceRms = 0.190f;
+    public const float SfxReferenceRms = 0.552f;
 
-    /// <summary>The RMS of a frenzy track's drop as rendered (before any gain), typical over the pool; checked by the self-test.</summary>
-    public const float DropRms = 0.30f;
+    /// <summary>The RMS of a frenzy track's drop as rendered (before any gain), the pool's median (0.47-0.54); checked by the self-test.</summary>
+    public const float DropRms = 0.50f;
 
-    /// <summary>Level 6 aims this much above the SFX reference: as loud as everything else, if not slightly louder.</summary>
-    public const float Level6Headroom = 1.05f;
+    /// <summary>
+    /// Level 6 aims this much above the SFX reference before the limiter: the limiter (ceiling <see cref="LimiterCeiling"/>)
+    /// shaves the kicks' peaks, so after it the drop comes out at about 1.05-1.1x the reference: as loud as everything else,
+    /// if not slightly louder.
+    /// </summary>
+    public const float Level6Headroom = 1.2f;
+
+    /// <summary>The music bus limiter's ceiling while the frenzy plays (its soft safety clipper never passes 0.985).</summary>
+    public const float LimiterCeiling = 0.96f;
 
     /// <summary>The settings level 6 is calibrated at: Settings defaults (music volume 0.50, a squared curve; frenzy volume 0.80).</summary>
     public const float DefaultMusicVolume = 0.5f, DefaultVolume = 0.8f;

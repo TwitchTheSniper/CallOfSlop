@@ -17,6 +17,9 @@ public static partial class SelfTest
 
     private static readonly List<string> FrenzyNotes = new();
 
+    /// <summary>The measured gunfire-and-explosion reference (set by <see cref="CheckFrenzyLevel6Loudness"/>, used by the limiter test).</summary>
+    private static double _frenzySfxReference;
+
     private static void FrenzyLine(string s)
     {
         Line(s);
@@ -425,7 +428,8 @@ public static partial class SelfTest
     /// <summary>
     /// Level 6 against the game's own sounds (<see cref="Audio.CombatReferenceRms"/>): the calibration constants match
     /// what's measured (the SFX reference within 10%, the pool's median drop RMS within 10%), and the frenzy at level 6
-    /// with the sliders at their defaults comes out at least as loud as the reference, at most 1.6x.
+    /// with the sliders at their defaults aims above the reference before the limiter (at most 1.6x); what comes out
+    /// after the limiter is checked in <see cref="CheckFrenzyDuckingAndLimiter"/>.
     /// <paramref name="rms6"/> and <paramref name="rms4"/> are the layer's output (frenzy volume 0.8, before the music volume).
     /// </summary>
     private static void CheckFrenzyLevel6Loudness(double rms6, double rms4)
@@ -458,18 +462,19 @@ public static partial class SelfTest
         drops.Sort((a, b) => a.Rms.CompareTo(b.Rms));
         var medianDrop = drops[drops.Count / 2].Rms;
 
+        _frenzySfxReference = sfx.Combined;
         var musicGain = FrenzyLayer.DefaultMusicVolume * FrenzyLayer.DefaultMusicVolume; // the player's squared curve
         var level6 = rms6 * musicGain; // what comes out of the music bus at the default sliders (frenzy volume 0.8 is already in)
         var level4 = rms4 * musicGain;
         FrenzyLine($"SFX reference: {sfx.Combined:0.000} rms (gunfire median {sfx.GunfireMedian:0.000}, explosion {sfx.Explosion:0.000}, weapons {sfx.Min:0.000}-{sfx.Max:0.000} over {sfx.Weapons}; "
             + $"constant {FrenzyLayer.SfxReferenceRms:0.000}; measured in {measureMs:0} ms); frenzy drops {drops[0].Rms:0.000} ({drops[0].Name}) to {drops[^1].Rms:0.000} ({drops[^1].Name}), median {medianDrop:0.000} (constant {FrenzyLayer.DropRms:0.00}); "
-            + $"at default sliders: level 4 {level4:0.000} rms = {level4 / sfx.Combined:0.00}x the SFX, level 6 {level6:0.000} rms = {level6 / sfx.Combined:0.00}x the SFX (gain {FrenzyLayer.Level6Gain:0.00}, aim {FrenzyLayer.Level6Headroom:0.00}x)");
+            + $"at default sliders before the limiter: level 4 {level4:0.000} rms = {level4 / sfx.Combined:0.00}x the SFX, level 6 {level6:0.000} rms = {level6 / sfx.Combined:0.00}x the SFX (gain {FrenzyLayer.Level6Gain:0.00}, aim {FrenzyLayer.Level6Headroom:0.00}x)");
         if (Math.Abs(sfx.Combined - FrenzyLayer.SfxReferenceRms) > 0.1 * sfx.Combined)
             Fail($"the SFX reference constant {FrenzyLayer.SfxReferenceRms:0.000} is off: measured {sfx.Combined:0.000} (retune FrenzyLayer.SfxReferenceRms)");
         if (Math.Abs(medianDrop - FrenzyLayer.DropRms) > 0.1 * medianDrop)
             Fail($"the drop RMS constant {FrenzyLayer.DropRms:0.00} is off: measured {medianDrop:0.000} (retune FrenzyLayer.DropRms)");
-        if (level6 < sfx.Combined)
-            Fail($"level 6 at the default sliders ({level6:0.000} rms) is quieter than the gunfire and explosions ({sfx.Combined:0.000})");
+        if (level6 < sfx.Combined * 1.05)
+            Fail($"level 6 at the default sliders ({level6:0.000} rms before the limiter) doesn't aim above the gunfire and explosions ({sfx.Combined:0.000})");
         if (level6 > sfx.Combined * 1.6)
             Fail($"level 6 at the default sliders ({level6:0.000} rms) is far louder than the gunfire and explosions ({sfx.Combined:0.000}); want about {FrenzyLayer.Level6Headroom:0.00}x");
         if (level4 >= sfx.Combined)
@@ -554,23 +559,35 @@ public static partial class SelfTest
         var max = Loud(1f, 1f);
         var def = Loud(FrenzyLayer.DefaultMusicVolume, FrenzyLayer.DefaultVolume);
         var gunPeak = 0.9f * Audio.OwnShotGain; // gunshots are normalised to 0.9 (0.98 for the boom guns)
+        var reference = _frenzySfxReference;
         FrenzyLine($"level 6 through the player: sliders at max peak {max.Peak:0.000} rms {max.Rms:0.000} (limiter min gain {max.MinGain:0.00}); "
-            + $"defaults peak {def.Peak:0.000} rms {def.Rms:0.000} (limiter min gain {def.MinGain:0.00}); with your own gun's peak ({gunPeak:0.00}) on top: {def.Peak + gunPeak:0.00}, x master 0.8 = {(def.Peak + gunPeak) * 0.8f:0.00}");
+            + $"defaults peak {def.Peak:0.000} rms {def.Rms:0.000} = {def.Rms / Math.Max(1e-9, reference):0.00}x the gunfire-and-explosion reference {reference:0.000} (limiter min gain {def.MinGain:0.00}); "
+            + $"with your own gun's peak ({gunPeak:0.00}) on top: {def.Peak + gunPeak:0.00}, x master 0.8 = {(def.Peak + gunPeak) * 0.8f:0.00}");
         if (max.Peak > MasterLimiter.SafetyCeiling + 1e-4f)
             Fail($"level 6 at full volume peaks at {max.Peak:0.000}, past the limiter's ceiling {MasterLimiter.SafetyCeiling}");
         if (max.MinGain >= 0.999f)
             Fail("level 6 at full volume never engaged the limiter (the gain is lower than it should be)");
         if (def.Peak > MasterLimiter.SafetyCeiling + 1e-4f)
             Fail($"level 6 at the default sliders peaks at {def.Peak:0.000}");
+        if (reference > 0 && def.Rms < reference)
+            Fail($"level 6 at the default sliders comes out at {def.Rms:0.000} rms after the limiter, quieter than the gunfire and explosions ({reference:0.000})");
+        if (reference > 0 && def.Rms > reference * 1.5)
+            Fail($"level 6 at the default sliders comes out at {def.Rms:0.000} rms, far louder than the gunfire and explosions ({reference:0.000})");
 
-        // The sliders still multiply at level 6: half the frenzy volume halves it; music volume 0.25 instead of 0.5 quarters it (squared curve).
-        var halfFrenzy = Loud(FrenzyLayer.DefaultMusicVolume, FrenzyLayer.DefaultVolume * 0.5f);
-        var quarterMusic = Loud(FrenzyLayer.DefaultMusicVolume * 0.5f, FrenzyLayer.DefaultVolume);
-        FrenzyLine($"sliders at level 6: frenzy volume halved -> {halfFrenzy.Rms / def.Rms:0.000}x (want 0.5), music volume halved -> {quarterMusic.Rms / def.Rms:0.000}x (want 0.25)");
-        if (Math.Abs(halfFrenzy.Rms / def.Rms - 0.5) > 0.03)
-            Fail($"the frenzy volume slider doesn't multiply at level 6 ({halfFrenzy.Rms / def.Rms:0.000}x for half)");
-        if (Math.Abs(quarterMusic.Rms / def.Rms - 0.25) > 0.03)
-            Fail($"the music volume slider doesn't multiply at level 6 ({quarterMusic.Rms / def.Rms:0.000}x for half)");
+        // The sliders still multiply at level 6 (measured below the limiter's reach): half the frenzy volume halves it;
+        // half the music volume quarters it (squared curve).
+        var baseFrenzy = Loud(FrenzyLayer.DefaultMusicVolume, FrenzyLayer.DefaultVolume * 0.5f);
+        var halfFrenzy = Loud(FrenzyLayer.DefaultMusicVolume, FrenzyLayer.DefaultVolume * 0.25f);
+        var baseMusic = Loud(0.35f, FrenzyLayer.DefaultVolume);
+        var quarterMusic = Loud(0.175f, FrenzyLayer.DefaultVolume);
+        FrenzyLine($"sliders at level 6: frenzy volume halved -> {halfFrenzy.Rms / baseFrenzy.Rms:0.000}x (want 0.5), music volume halved -> {quarterMusic.Rms / baseMusic.Rms:0.000}x (want 0.25); "
+            + $"frenzy volume {FrenzyLayer.DefaultVolume * 0.5f:0.0} rms {baseFrenzy.Rms:0.000}, music volume 0.35 rms {baseMusic.Rms:0.000}");
+        if (baseFrenzy.MinGain < 0.999f || baseMusic.MinGain < 0.999f)
+            Fail($"the slider test's baselines hit the limiter (min gain {baseFrenzy.MinGain:0.00}, {baseMusic.MinGain:0.00}); lower them");
+        if (Math.Abs(halfFrenzy.Rms / baseFrenzy.Rms - 0.5) > 0.03)
+            Fail($"the frenzy volume slider doesn't multiply at level 6 ({halfFrenzy.Rms / baseFrenzy.Rms:0.000}x for half)");
+        if (Math.Abs(quarterMusic.Rms / baseMusic.Rms - 0.25) > 0.03)
+            Fail($"the music volume slider doesn't multiply at level 6 ({quarterMusic.Rms / baseMusic.Rms:0.000}x for half)");
     }
 
     /// <summary>
