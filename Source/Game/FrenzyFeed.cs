@@ -9,11 +9,19 @@ public sealed partial class Game
     /// </summary>
     public int LocalKillCount, LocalHeadshotCount;
 
+    /// <summary>
+    /// The weapon class of the local player's most recent gun kill (melee, throwable and streak kills keep the last
+    /// one; Assault Rifle before any): the kill-frenzy music's class character (MusicFrenzy.Classes.cs).
+    /// </summary>
+    public WeaponClass LocalKillClass = WeaponClass.AssaultRifle;
+
     private void NoteFrenzyKill(in KillPacket kill)
     {
         if (kill.Killer != LocalId || kill.Victim == LocalId || kill.Killer == kill.Victim)
             return;
         LocalKillCount++;
+        if (KillInfo.IsGunId(kill.KillId))
+            LocalKillClass = Weapons.Get(kill.KillId).Class;
         if (kill.Headshot)
             LocalHeadshotCount++;
     }

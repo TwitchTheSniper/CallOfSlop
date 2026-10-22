@@ -543,6 +543,18 @@ The five **weird hardbass** tracks keep that core (pumping kick, off-beat bass, 
   - **Zombies** too: zombie kills are worth half and the hold is 3.5 s (being downed counts as dying); the same six levels apply, so a horde of 30 fast kills reaches MAX FRENZY.
   - The music follows the local player's own meter. The server also runs the same heat model (Source/Game/Frenzy/FrenzyMeterCore.cs) for every player and bot from its kill events and sends each player's level and frenzy class to everyone (2 bytes in the snapshot, protocol 26), for frenzy effects and buffs. One hardbass track from the pool per frenzy, rendered by the same engine with stem gains (drums, bass, melodic parts): about the cost of one hardbass track at levels 3-6 (5 and 6 only change gains, plus the roar for two seconds) and less at levels 1-2 (the leads aren't rendered).
   - **Frenzy per weapon class**: your frenzy takes the character of the class of the weapon that got your most recent kill (Pistol, SMG, Assault Rifle, DMR, Sniper, Shotgun, LMG, Special). Kills without a gun (grenades and other throwables, kill streaks, melee) still add heat but keep the previous class. The per-class data lives in `Weapons/Frenzy/classes.json` (format `call-of-slop-frenzy-classes/1`): one entry per class with "music", "visual", "sound" and "buffs" sections.
+  - **A music character per weapon class**: the frenzy music takes on the style of your frenzy class (the rule above; the server's replicated class, predicted locally on your own kill so it never lags). Each class has its own track pool, stem gains, effects on the track and instrument layers that come in level by level, defined in the `"music"` sections of `Weapons/Frenzy/classes.json` (synth code in `Source/Audio/FrenzyStyleRig.cs`):
+    - **Pistol - Western outlaw**: a whistled melody, a galloping twangy bass and a whip crack, the whole track in a canyon slap-back echo.
+    - **SMG - Chiptune breakcore**: square-wave arpeggios racing over chopped breakbeats, the track a little crunchy (fast tracks).
+    - **Assault Rifle - Classic hardbass**: the track as it is (the frenzy before classes).
+    - **DMR - Marching drums and brass**: a marching snare with rolls, a bass drum on the downbeats, brass stabs.
+    - **Sniper - Cinematic braam**: the four-on-the-floor pulled back under a half-time sub boom and a huge reverb snare, a giant brass braam every two bars (slower tracks).
+    - **Shotgun - Gabber stomp**: a distorted gabber kick tuned to the key, double hits at the end of the phrase, everything driven (harder tracks).
+    - **LMG - Industrial grind**: palm-muted power-chord chugs, anvil clanks on the off-beats, a double kick at the top levels.
+    - **Special - Glitch weird**: the track bit-crushed with beat-repeat stutters and random square blips (the weird track with steady drops).
+
+    A class change mid-frenzy waits for the next bar line and crossfades the two styles over one bar (the track keeps playing). Each class's level 6 stays in the same loudness window against the gunfire, and each class costs at most 1.5x the heaviest hardbass track. The self-test section **Frenzy classes** checks the data, determinism, a rhythm-and-spectrum fingerprint that differs between every pair of classes, the levels building up per class, level 6 per class, the bar-synced crossfade, CPU per class and allocations.
+
   - **Frenzy buffs** (host setting on the host page, On by default, saved as `frenzy_buffs`; it applies to solo games too): from frenzy level 3, guns of your frenzy class get a small buff that grows up to level 6. It only applies to that class's guns, and it works for bots and in Zombies too:
 
     | Class | Buff | Level 3 | Level 4 | Level 5 | Level 6 |
@@ -706,7 +718,7 @@ Source/
                      Music (player, crossfades, streaming thread),
                      MusicTracks (the track list), MusicRenderer (sequencer + arrangement), MusicSynth (synth voices and effects),
                      MusicTracksHarder + MusicRendererHarder (the harder hardbass tracks and their recipe),
-                     MusicFrenzy (kill-frenzy heat meter + adaptive in-match layer, levels 1-6), MusicRenderer.Frenzy (stems, drop loops, jumps, crash), Audio.FrenzyReference (the gunfire-and-explosion loudness level 6 matches)
+                     MusicFrenzy (kill-frenzy heat meter + adaptive in-match layer, levels 1-6), MusicFrenzy.Classes + FrenzyStyles + FrenzyStyleRig (per-weapon-class frenzy styles), MusicRenderer.Frenzy (stems, drop loops, jumps, crash), Audio.FrenzyReference (the gunfire-and-explosion loudness level 6 matches)
 ```
 
 **Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).

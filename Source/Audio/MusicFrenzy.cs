@@ -27,7 +27,7 @@ public sealed class FrenzyMeter : FrenzyMeterCore
 /// and much less at levels 1-2 (the leads aren't rendered). Levels 5 and 6 only change gains (and the roar for a
 /// moment), so they cost the same as level 4.
 /// </summary>
-public sealed class FrenzyLayer
+public sealed partial class FrenzyLayer
 {
     private const int Sr = Audio.SampleRate;
 
@@ -113,6 +113,7 @@ public sealed class FrenzyLayer
     {
         _seed = seed | 1u;
         _pool = new MusicPlaylist(MusicTracks.All.Where(t => t.Style == MusicStyle.Hardbass && (t.Timeline?.SteadyDrops ?? true)).ToArray(), _seed * 7919u + 11u);
+        InitClasses(); // the per-weapon-class styles (MusicFrenzy.Classes.cs)
     }
 
     // ---- Game thread -------------------------------------------------------------------------
@@ -239,7 +240,7 @@ public sealed class FrenzyLayer
 
     private void Begin(int level)
     {
-        var track = _pool.Next();
+        var track = NextTrack(); // the class style's pool (MusicFrenzy.Classes.cs)
         _seed = _seed * 1664525u + 1013904223u;
         _r.JumpAtNextBar(-1);
         _inLastDrop = level >= 4;
@@ -262,11 +263,13 @@ public sealed class FrenzyLayer
         _duckDepth = LevelDuck[level];
         SetTargets(level, (float)_r.FramesPerBar); // fade in over a bar
         LastChangeFrame = 0;
+        BeginClass(level);
         Volatile.Write(ref _trackName, track.Name);
     }
 
     private void OnBar(int next)
     {
+        ClassBar(next); // a class switch starts on the bar line (MusicFrenzy.Classes.cs)
         _barsAtLevel++;
         if (next == _level)
             return;
@@ -341,8 +344,10 @@ public sealed class FrenzyLayer
         // The stems follow their ramps once per segment (at most ~23 ms), the gain per sample.
         _lead = Approach(_lead, _leadTo, _leadStep * frames);
         _r.StemLead = _lead;
+        PreClass();
         var buf = _buf.AsSpan(0, frames * 2);
         _r.Render(buf);
+        PostClass(buf, frames);
         if (_roarLeft > 0)
             Roar(buf, frames);
 
