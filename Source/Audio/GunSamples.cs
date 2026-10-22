@@ -6,8 +6,10 @@ namespace CallOfSlop;
 /// <summary>
 /// Recorded gunshot layers (Audio/Samples/Guns: manifest.json plus 16-bit mono WAVs made by
 /// tools/audio/make_gun_samples.py). Every weapon whose class, sound style and caliber match a manifest rule gets its
-/// shots baked at start-up from that set's recordings: pitched by caliber, trimmed by its tail, blended with a bit of its
-/// own synthesised shot (mechanism click, thump) and loudness-matched to the synth. Anything missing (the manifest, a
+/// shots baked at start-up from that set's recordings: its own pick of recorded firearms and its own treatment
+/// (<see cref="GunVoice"/>: pitch, tone, body resonance, crack, click, dryness), pitched by caliber, trimmed by its tail,
+/// blended with the start of its own synthesised shot (crack, thump, mechanism) and loudness-matched to the synth
+/// (with the limiter held back so the transient stays sharp). Anything missing (the manifest, a
 /// file, a whole set) falls back to the synthesised sound, so the game never depends on these files.
 /// </summary>
 public sealed class GunSampleLibrary
@@ -27,6 +29,32 @@ public sealed class GunSampleLibrary
         public readonly List<float[]> Shots = new();
         public readonly List<float[]> Tails = new();
         public readonly List<string> ShotFiles = new();
+
+        /// <summary>The recorded firearms of the near shots (the manifest's "gun", in order of first appearance).</summary>
+        public readonly List<string> Guns = new();
+
+        private readonly List<int> _shotGun = new();
+
+        /// <summary>Which of <see cref="Guns"/> near shot <paramref name="shot"/> was recorded from (-1 = untagged).</summary>
+        public int ShotGun(int shot) => shot < _shotGun.Count ? _shotGun[shot] : -1;
+
+        /// <summary>Adds a near shot, recorded from <paramref name="gun"/> ("" = untagged).</summary>
+        public void AddShot(float[] pcm, string file, string gun)
+        {
+            Shots.Add(pcm);
+            ShotFiles.Add(file);
+            var g = -1;
+            if (gun.Length > 0)
+            {
+                g = Guns.IndexOf(gun);
+                if (g < 0)
+                {
+                    Guns.Add(gun);
+                    g = Guns.Count - 1;
+                }
+            }
+            _shotGun.Add(g);
+        }
     }
 
     /// <summary>A manifest rule: the first one matching a weapon picks its set.</summary>
@@ -167,10 +195,7 @@ public sealed class GunSampleLibrary
                     if (role == "tail")
                         set.Tails.Add(pcm);
                     else if (role == "shot")
-                    {
-                        set.Shots.Add(pcm);
-                        set.ShotFiles.Add(file);
-                    }
+                        set.AddShot(pcm, file, e.TryGetProperty("gun"u8, out var gn) ? gn.GetString() ?? "" : "");
                     else
                     {
                         lib.Problems.Add($"{file}: role '{role}' isn't used (shot or tail)");
@@ -216,8 +241,10 @@ public sealed class GunSampleLibrary
             else
             {
                 var s = Sets[g.Key];
-                yield return $"[gunsamples] {s.Name} ({s.Shots.Count} shots, {s.Tails.Count} tail): "
-                    + string.Join(", ", g.Select(w => $"{w.Name} x{GunSamples.PitchFor(s, w):0.00}{(w.Sound == SoundStyle.Suppressed ? " (suppressed)" : "")}"));
+                yield return $"[gunsamples] {s.Name} ({s.Shots.Count} shots from {s.Guns.Count} guns, {s.Tails.Count} tail): "
+                    + string.Join(", ", g.Select(w => $"{w.Name} x{GunSamples.PitchFor(s, w) * GunVoice.For(w, s).Pitch:0.00}{(w.Sound == SoundStyle.Suppressed ? " (suppressed)" : "")}"));
+                foreach (var wd in g)
+                    yield return $"[gunvoice] {wd.Name}: {GunVoice.For(wd, s).Describe()}";
             }
         }
     }
@@ -250,24 +277,44 @@ public static class GunSamples
     public static float PitchFor(GunSampleLibrary.SampleSet set, WeaponDef w) =>
         Math.Clamp(1f + (set.RefCaliber - w.Caliber) * 0.45f + (w.Bright - 0.5f) * 0.12f, 0.82f, 1.18f);
 
-    /// <summary>The weapon's shot variants: one per recording in its set, or just <paramref name="synth"/> without one.</summary>
+    /// <summary>Baked shot variants per weapon (picked from its set's recordings by its <see cref="GunVoice"/>; a repeat take is treated a little differently).</summary>
+    public const int Variants = 4;
+
+    /// <summary>The most a near shot's peak is turned down by the limiter (dB): beyond it the bake gives up loudness to keep the transient sharp.</summary>
+    public const float MaxPeakReductionDb = 3f;
+
+    /// <summary>
+    /// The synthesised layer under a recording only keeps its first <see cref="SynthWindow"/> seconds (crack, thump and
+    /// mechanism; its noise tail and echo would smear the recording's attack), fading out over the same time again.
+    /// Boom guns (the .50, the musket) keep more of their synthesised boom.
+    /// </summary>
+    public const float SynthWindow = 0.045f;
+
+    /// <summary>The weapon's shot variants (<see cref="Variants"/> of them), or just <paramref name="synth"/> without a set.</summary>
     public static short[][] Shots(GunSampleLibrary lib, WeaponDef w, short[] synth)
     {
         if (w.Sound is not (SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed) || lib.SetFor(w) is not { } set)
             return [synth];
+        var voice = GunVoice.For(w, set);
         if (w.Sound == SoundStyle.Suppressed)
-            return SuppressedFrom(set, w, synth, set.Shots.Count); // a built-in silencer is the gun's main sound: every variant
-        var pitch = PitchFor(set, w);
-        var blend = w.Sound == SoundStyle.Boom ? MathF.Max(set.SynthBlend, 0.45f) : set.SynthBlend;
-        var len = TrimLength(set, w, pitch);
+            return SuppressedFrom(set, w, voice, synth, Variants); // a built-in silencer is the gun's main sound: every variant
+        var pitch = PitchFor(set, w) * voice.Pitch;
+        var boom = w.Sound == SoundStyle.Boom;
+        var blend = (boom ? MathF.Max(set.SynthBlend, 0.45f) : set.SynthBlend) * voice.SynthBlend;
+        var picks = voice.Picks(set, Variants);
+        var len = TrimLength(set, picks, w, voice, pitch);
         var synthF = ToFloat(synth);
-        var outv = new short[set.Shots.Count][];
+        var target = Rms(synthF, LoudnessWindow) * LoudnessMatch;
+        Window(synthF, boom ? SynthWindow * 3f : SynthWindow);
+        var outv = new short[picks.Length][];
         for (var v = 0; v < outv.Length; v++)
         {
-            var x = Resample(set.Shots[v], pitch * (1f + (v - 1.5f) * 0.006f), len); // a hair of extra spread between variants
+            var repeat = Array.IndexOf(picks, picks[v]) < v; // the same take again: nudge its treatment
+            var x = Resample(set.Shots[picks[v]], pitch * (1f + (v - 1.5f) * 0.006f + (repeat ? 0.014f : 0f)), len);
+            Shape(x, voice, w, repeat ? 0.75f : 1f);
             FadeTail(x, 0.35f);
             Blend(x, synthF, blend);
-            outv[v] = Finish(x, Rms(synthF, LoudnessWindow) * LoudnessMatch);
+            outv[v] = Finish(x, target, MaxPeakReductionDb);
         }
         return outv;
     }
@@ -277,25 +324,29 @@ public static class GunSamples
     {
         if (w.Sound is not (SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed) || lib.SetFor(w) is not { } set)
             return [synthSuppressed];
-        return SuppressedFrom(set, w, synthSuppressed, SuppressedVariants);
+        return SuppressedFrom(set, w, GunVoice.For(w, set), synthSuppressed, SuppressedVariants);
     }
 
-    private static short[][] SuppressedFrom(GunSampleLibrary.SampleSet set, WeaponDef w, short[] synthSuppressed, int variants)
+    private static short[][] SuppressedFrom(GunSampleLibrary.SampleSet set, WeaponDef w, GunVoice voice, short[] synthSuppressed, int variants)
     {
-        var pitch = PitchFor(set, w) * 0.97f;
+        var pitch = PitchFor(set, w) * voice.Pitch * 0.97f;
         var synthF = ToFloat(synthSuppressed);
         var len = Math.Max(synthF.Length, (int)(0.35f * Sr));
-        var outv = new short[Math.Min(variants, set.Shots.Count)][];
+        var picks = voice.Picks(set, variants);
+        var outv = new short[picks.Length][];
         for (var v = 0; v < outv.Length; v++)
         {
-            var x = Resample(set.Shots[v], pitch, len);
+            var repeat = Array.IndexOf(picks, picks[v]) < v;
+            var x = Resample(set.Shots[picks[v]], pitch * (repeat ? 1.014f : 1f), len);
             LowPass(x, 900f);
             LowPass(x, 1400f);
             Decay(x, 0.07f); // a suppressor kills the blast's ring-out
+            Body(x, voice.BodyHz * 0.8f, voice.BodyQ, voice.BodyGain * 1.5f); // what's left is the gun's own body
             var mix = new float[len];
             var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f) * 0.7f;
             for (var i = 0; i < len; i++)
                 mix[i] = x[i] * k + (i < synthF.Length ? synthF[i] : 0f);
+            Tilt(mix, voice.Tilt * 0.6f);
             FadeTail(mix, 0.3f);
             outv[v] = Finish(mix, Rms(synthF, LoudnessWindow) * LoudnessMatch);
         }
@@ -307,7 +358,8 @@ public static class GunSamples
     {
         if (synthFar == null || lib.SetFor(w) is not { } set || set.Tails.Count == 0)
             return synthFar;
-        var pitch = PitchFor(set, w);
+        var voice = GunVoice.For(w, set);
+        var pitch = PitchFor(set, w) * voice.Pitch;
         var synthF = ToFloat(synthFar);
         var tail = set.Tails[0];
         var len = Math.Max(synthF.Length, (int)(tail.Length / pitch));
@@ -316,17 +368,131 @@ public static class GunSamples
         var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f);
         for (var i = 0; i < len; i++)
             x[i] = x[i] * k + (i < synthF.Length ? synthF[i] * 0.6f : 0f);
+        Tilt(x, voice.Tilt * 0.5f);
         FadeTail(x, 0.3f);
         return Finish(x, Rms(synthF, LoudnessWindow) * LoudnessMatch);
     }
 
+    /// <summary>
+    /// The snappy treatment and the weapon's identity on one near shot: a sharper crack (a high-passed copy of the
+    /// first milliseconds on top), the body resonance, the tone tilt, a drier body (an extra decay after the blast)
+    /// and the mechanism click. <paramref name="amount"/> below 1 softens it a little for a repeat take.
+    /// </summary>
+    public static void Shape(float[] x, GunVoice voice, WeaponDef w, float amount)
+    {
+        var peak = 1e-6f;
+        foreach (var s in x)
+            peak = MathF.Max(peak, MathF.Abs(s));
+        // Crack: the top end of the first ~2 ms, emphasised (one-pole high-pass at 2.5 kHz, 1.6 ms decay).
+        var hpA = MathF.Exp(-2f * MathF.PI * 2500f / Sr);
+        float hpY = 0, hpX = 0;
+        var crack = (0.25f + 0.75f * voice.Crack) * amount;
+        var crackN = Math.Min(x.Length, (int)(0.012f * Sr));
+        var crackK = -1f / (0.0016f * Sr);
+        for (var i = 0; i < crackN; i++)
+        {
+            hpY = hpA * (hpY + x[i] - hpX);
+            hpX = x[i];
+            x[i] += hpY * crack * MathF.Exp(i * crackK);
+        }
+        Body(x, voice.BodyHz * (2f - amount), voice.BodyQ, voice.BodyGain);
+        Tilt(x, voice.Tilt * amount);
+        // Drier body: from a few ms after the blast (later for big calibers) an extra exponential decay.
+        var hold = (int)((0.006f + 0.012f * w.Caliber) * Sr);
+        var step = MathF.Exp(-1f / (voice.Dry * Sr));
+        var g = 1f;
+        for (var i = hold; i < x.Length; i++)
+        {
+            x[i] *= g;
+            g *= step;
+        }
+        Click(x, voice, peak);
+    }
+
+    /// <summary>Adds a band-pass ring (RBJ, 0 dB peak) of the signal at <paramref name="hz"/> / <paramref name="q"/>, at <paramref name="gain"/> times its peak gain.</summary>
+    private static void Body(float[] x, float hz, float q, float gain)
+    {
+        if (gain <= 0)
+            return;
+        var w0 = 2f * MathF.PI * Math.Clamp(hz, 40f, Sr * 0.45f) / Sr;
+        var alpha = MathF.Sin(w0) / (2f * q);
+        var a0 = 1f + alpha;
+        float b0 = alpha / a0, a1 = -2f * MathF.Cos(w0) / a0, a2 = (1f - alpha) / a0;
+        // Resonators need more drive the narrower they are: scale by Q so the ring's level tracks gain, not Q.
+        var k = gain * MathF.Sqrt(q) * 0.6f;
+        float x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+        for (var i = 0; i < x.Length; i++)
+        {
+            var xi = x[i];
+            var y = b0 * (xi - x2) - a1 * y1 - a2 * y2;
+            (x2, x1, y2, y1) = (x1, xi, y1, y);
+            x[i] = xi + y * k;
+        }
+    }
+
+    /// <summary>Tone tilt around 1.2 kHz: +1 lifts the highs about 4 dB and dips the lows 3 dB, -1 the reverse.</summary>
+    private static void Tilt(float[] x, float tilt)
+    {
+        if (MathF.Abs(tilt) < 1e-3f)
+            return;
+        var a = 1f - MathF.Exp(-2f * MathF.PI * 1200f / Sr);
+        float lo = 0;
+        float gl = 1f - 0.3f * tilt, gh = 1f + 0.55f * tilt;
+        for (var i = 0; i < x.Length; i++)
+        {
+            lo += a * (x[i] - lo);
+            x[i] = lo * gl + (x[i] - lo) * gh;
+        }
+    }
+
+    /// <summary>The voice's mechanism click (a few damped partials) at its delay, relative to <paramref name="peak"/>.</summary>
+    private static void Click(float[] x, GunVoice v, float peak)
+    {
+        if (v.ClickLevel <= 0)
+            return;
+        // kind: partial frequencies (Hz) and decay (s); "double" repeats 4 ms later, softer.
+        var (f1, f2, tau) = v.ClickKind switch
+        {
+            0 => (3300f, 5200f, 0.0012f),
+            1 => (2400f, 3900f, 0.0016f),
+            _ => (1150f, 2100f, 0.0028f),
+        };
+        var detune = 0.85f + 0.3f * GunVoice.U(v.Seed, 20);
+        f1 *= detune;
+        f2 *= detune;
+        var hits = v.ClickKind == 1 ? 2 : 1;
+        for (var h = 0; h < hits; h++)
+        {
+            var start = (int)((v.ClickDelay + h * 0.004f) * Sr);
+            var amp = v.ClickLevel * peak * (h == 0 ? 1f : 0.6f);
+            var n = Math.Min(x.Length - start, (int)(tau * 6 * Sr));
+            for (var i = 0; i < n; i++)
+            {
+                var t = i / (float)Sr;
+                x[start + i] += amp * MathF.Exp(-t / tau) * (MathF.Sin(2f * MathF.PI * f1 * t) + 0.6f * MathF.Sin(2f * MathF.PI * f2 * t + 1.3f));
+            }
+        }
+    }
+
+    /// <summary>Keeps the first <paramref name="seconds"/> of a buffer, then fades it out over the same time again (raised cosine).</summary>
+    private static void Window(float[] x, float seconds)
+    {
+        var a = (int)(seconds * Sr);
+        var b = a * 2;
+        for (var i = a; i < x.Length; i++)
+            x[i] = i >= b ? 0f : x[i] * (0.5f + 0.5f * MathF.Cos(MathF.PI * (i - a) / (b - a)));
+    }
+
     // ---- DSP helpers ---------------------------------------------------------------------------------
 
-    /// <summary>How long a weapon's shot runs: the recording at its pitch, shortened for guns with a short tail.</summary>
-    private static int TrimLength(GunSampleLibrary.SampleSet set, WeaponDef w, float pitch)
+    /// <summary>
+    /// How long a weapon's shot runs: its shortest picked recording at its pitch, shortened for guns with a short tail
+    /// and by the voice's length (the dry body is gone well before, so this mostly trims silence and room).
+    /// </summary>
+    private static int TrimLength(GunSampleLibrary.SampleSet set, int[] picks, WeaponDef w, GunVoice voice, float pitch)
     {
-        var full = (int)(set.Shots.Min(s => s.Length) / pitch);
-        return Math.Clamp((int)(full * (0.55f + 0.5f * w.Tail)), Math.Min(full, (int)(0.3f * Sr)), full);
+        var full = (int)(picks.Min(p => set.Shots[p].Length) / pitch);
+        return Math.Clamp((int)(full * (0.5f + 0.45f * w.Tail) * voice.Length), Math.Min(full, (int)(0.25f * Sr)), full);
     }
 
     private static float[] ToFloat(short[] s)
@@ -404,9 +570,14 @@ public static class GunSamples
     /// <see cref="MaxGain"/>), a soft clip under <see cref="Ceiling"/> as a safety net, and a 2 ms fade-out.
     /// The limiter lowers the RMS, so the gain is corrected once and the limiter run again.
     /// </summary>
-    private static short[] Finish(float[] x, float targetRms)
+    private static short[] Finish(float[] x, float targetRms, float maxReductionDb = float.PositiveInfinity)
     {
-        var gain = MathF.Min(targetRms / MathF.Max(Rms(x, LoudnessWindow), 1e-6f), MaxGain);
+        var peak = 1e-6f;
+        foreach (var s in x)
+            peak = MathF.Max(peak, MathF.Abs(s));
+        // At most maxReductionDb of limiting on the peak: past that, loudness is traded for a sharp transient.
+        var cap = MathF.Min(MaxGain, LimiterThreshold * MathF.Pow(10f, MathF.Min(maxReductionDb, 60f) / 20f) / peak);
+        var gain = MathF.Min(targetRms / MathF.Max(Rms(x, LoudnessWindow), 1e-6f), cap);
         // Calibrate on the loudness window only (the limiter looks 1 ms ahead, so a 2 ms longer prefix limits exactly
         // as the whole buffer would), then limit the whole buffer once at the corrected gain.
         var probe = new float[Math.Min(x.Length, LoudnessWindow + Sr / 500)];
@@ -415,7 +586,7 @@ public static class GunSamples
         Limit(probe, LimiterThreshold);
         var got = Rms(probe, LoudnessWindow);
         if (got > 1e-6f)
-            gain = MathF.Min(gain * targetRms / got, MaxGain);
+            gain = MathF.Min(gain * targetRms / got, cap);
         var y = new float[x.Length];
         for (var i = 0; i < x.Length; i++)
             y[i] = x[i] * gain;

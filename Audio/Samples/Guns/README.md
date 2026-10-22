@@ -13,13 +13,17 @@ Recorded by Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney (credited
 
 ## Files
 
-- `<set>_shot<N>.wav`: a single shot recorded beside the shooter ("near distance"), 2-4 per set.
+- `<set>_shot<N>.wav`: a single shot recorded beside the shooter ("near distance"), 4-6 per set, from 2-3 different
+  firearms (the manifest's `gun`). Each weapon on a set plays mostly one of them plus a second one, chosen by its
+  identity (`Source/Audio/GunVoice.cs`), so weapons on the same set don't share their recordings.
 - `<set>_tail<N>.wav`: a shot recorded in front at mid distance, used for the distant layer.
-- All 16-bit PCM mono, 44.1 kHz, 0.6-1.8 s, loudness-normalised (RMS of the first 200 ms) and soft-limited.
+- All 16-bit PCM mono, 44.1 kHz, 0.5-1.8 s, cut right on the blast (0.2 ms pre-roll, 0.1 ms fade-in, for a snappy
+  attack), loudness-normalised (RMS of the first 200 ms) and soft-limited. About 5.6 MB in all.
 - `manifest.json`: sets (`refCaliber` = the weapon caliber the set plays unpitched at, `synthBlend` = how much of
   the synthesised shot is mixed in), rules (the first match by `class`, `sounds`, `minCaliber`/`maxCaliber`,
   `maxRpm` picks a weapon's set; Zap, Toy and Pneumatic guns match none) and samples (`file`, `set`, `role`
-  `shot`/`tail`, `gain`, and the `source` file and shot in the library).
+  `shot`/`tail`, `gun` (the recorded firearm: the library's folder name, used by weapons' "voice" block), `gain`, and
+  the `source` file and shot in the library).
 
 ## Rebuilding
 
@@ -27,6 +31,6 @@ From the library's `Prepared SFX Library` folder (96 kHz / 24-bit stereo BWF):
 
     python3 -I tools/audio/make_gun_samples.py "<path>/Prepared SFX Library" Audio/Samples/Guns
 
-The tool (stdlib only) finds each shot by onset detection, cuts it, high-passes at 30 Hz, mixes to mono,
+The tool (stdlib only) finds each shot by onset detection, cuts it right at its leading edge, high-passes at 30 Hz, mixes to mono,
 resamples to 44.1 kHz, fades the tail, normalises loudness and writes the WAVs and the manifest. The picks
 (which source file and which shot in it) are listed at the top of the script and in each manifest entry.

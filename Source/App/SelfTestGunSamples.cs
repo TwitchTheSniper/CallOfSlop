@@ -37,7 +37,7 @@ public static partial class SelfTest
             Fail($"gun samples take {lib.BytesLoaded / 1024} KB (budget 8 MB)");
         CheckGunSampleFiles(lib, folder);
         CheckGunSampleBakes(lib);
-        CheckGunSnap(lib);
+        CheckGunVoices(lib);
         CheckWavLoader();
         CheckGunSampleFallback(folder);
         CheckGunSampleCost(folder);
@@ -49,7 +49,7 @@ public static partial class SelfTest
 
         foreach (var l in lib.Describe(Weapons.All))
             Line(l);
-        Line("::notice title=Gun samples::" + string.Join("%0A", GunSampleNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        Line("::error title=Gun samples (temporary, while tuning)::" + string.Join("%0A", GunSampleNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     /// <summary>Every listed file: canonical 16-bit mono 44.1 kHz, a sane loudness (RMS of the first 200 ms) and no full-scale peaks.</summary>
@@ -99,12 +99,13 @@ public static partial class SelfTest
                 continue;
             }
             sampled++;
-            if (set!.Shots.Count < 2)
-                Fail($"{w.Name}: set {set.Name} has {set.Shots.Count} shot variant(s) (want 2+)");
+            if (set!.Shots.Count < 2 || set.Guns.Count < 2)
+                Fail($"{w.Name}: set {set.Name} has {set.Shots.Count} shot recording(s) from {set.Guns.Count} gun(s) (want 2+ from 2+)");
             var synth = Synth.Gunshot(w);
             var shots = GunSamples.Shots(lib, w, synth);
-            if (shots.Length != set.Shots.Count)
-                Fail($"{w.Name}: {shots.Length} baked variants for {set.Shots.Count} recordings");
+            var wantShots = set.Guns.Count > 0 ? GunSamples.Variants : Math.Min(GunSamples.Variants, set.Shots.Count);
+            if (shots.Length != wantShots)
+                Fail($"{w.Name}: {shots.Length} baked variants (want {wantShots})");
             var synthRms = PcmRms(synth, GunSamples.LoudnessWindow);
             foreach (var (s, v) in shots.Select((s, v) => (s, v)))
             {
@@ -115,11 +116,11 @@ public static partial class SelfTest
                     Fail($"{w.Name} #{v}: {clipped} clipped samples");
                 var ratio = PcmRms(s, GunSamples.LoudnessWindow) / synthRms;
                 ratios.Add(($"{w.Name} #{v}", ratio));
-                // Lower bound 0.45: the synthesised pistols are almost square-wave dense over 80 ms; a recording's blast
-                // decays inside that window, so through the limiter it tops out near 0.55-0.6x their RMS (as loud as it
-                // can be without audible squashing).
-                if (ratio is < 0.45 or > 1.25)
-                    Fail($"{w.Name} #{v}: loudness {ratio:0.00}x the synth it replaces (want 0.45-1.25x)");
+                // Lower bound 0.3: the synthesised pistols are almost square-wave dense over 80 ms; a recording's blast
+                // decays inside that window, and the snappy bake limits its peak by at most
+                // GunSamples.MaxPeakReductionDb (a sharp transient over raw RMS), so it lands well under their RMS.
+                if (ratio is < 0.3 or > 1.25)
+                    Fail($"{w.Name} #{v}: loudness {ratio:0.00}x the synth it replaces (want 0.3-1.25x)");
             }
             for (var v = 1; v < shots.Length; v++)
                 if (shots[v].AsSpan().SequenceEqual(shots[0]))
@@ -146,9 +147,26 @@ public static partial class SelfTest
             GunLine($"baked: {sampled} weapons from recordings, {Weapons.All.Length - sampled} synth only; loudness vs synth {ratios[0].Ratio:0.00}x ({ratios[0].Name}) to {ratios[^1].Ratio:0.00}x ({ratios[^1].Name}), median {ratios[ratios.Count / 2].Ratio:0.00}x");
     }
 
-    /// <summary>Snappiness (<see cref="GunSnap"/>) of the baked near shots, per class and overall.</summary>
-    private static void CheckGunSnap(GunSampleLibrary lib)
+    /// <summary>
+    /// Snappiness of the baked near shots before this work (main bebf410, measured the same way on CI run 39744671925): the
+    /// median over every recorded weapon's variants. The snappier bake must beat it on attack, early energy and decay.
+    /// </summary>
+    private static readonly GunSnap.Numbers SnapBefore = new(PreRollMs: 0.2f, AttackMs: 3.0f, Early: 0.49f, CrestDb: 9.2f, DecayMs: 288f);
+
+    /// <summary>The closest two weapons of one class may be by sonic fingerprint (dB, see <see cref="GunSnap.Distance"/>).</summary>
+    private const float MinSameClassDistanceDb = 1.0f;
+
+    /// <summary>
+    /// Per-weapon identity (<see cref="GunVoice"/>) and snappiness: the baked shots beat <see cref="SnapBefore"/>; every
+    /// same-class pair is at least <see cref="MinSameClassDistanceDb"/> apart by fingerprint; identities are deterministic
+    /// (independent of weapon order / id, the name hash is the same everywhere, two bakes are bit-identical); the
+    /// "voice" block overrides and round-trips; the per-shot kit colour doesn't allocate.
+    /// </summary>
+    private static void CheckGunVoices(GunSampleLibrary lib)
     {
+        var baked = Weapons.All.ToDictionary(d => d.Id, d => GunSamples.Shots(lib, d, Synth.Gunshot(d)));
+
+        // ---- Snappiness ----
         var byClass = new SortedDictionary<string, List<short[]>>(StringComparer.Ordinal);
         foreach (var w in Weapons.All)
         {
@@ -156,16 +174,27 @@ public static partial class SelfTest
                 continue;
             if (!byClass.TryGetValue(w.Class.ToString(), out var list))
                 byClass[w.Class.ToString()] = list = new();
-            list.AddRange(GunSamples.Shots(lib, w, Synth.Gunshot(w)));
+            list.AddRange(baked[w.Id]);
         }
-        var all = GunSnap.Median(byClass.Values.SelectMany(v => v));
-        GunLine($"snappiness (median of baked shots): {GunSnap.Describe(all)}");
+        var snap = GunSnap.Median(byClass.Values.SelectMany(v => v));
+        GunLine($"snappiness (median of baked shots): {GunSnap.Describe(snap)}; before: {GunSnap.Describe(SnapBefore)}");
         foreach (var (cls, list) in byClass)
             Line($"  snappiness {cls}: {GunSnap.Describe(GunSnap.Median(list))}");
-        // Same-class distinctness: the closest pair of weapons in each class by sonic fingerprint.
-        var prints = Weapons.All.Where(w => w.Sound is SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed)
-            .Select(w => (W: w, F: GunSnap.Fingerprint(GunSamples.Shots(lib, w, Synth.Gunshot(w))))).ToArray();
+        if (snap.PreRollMs > 0.5f)
+            Fail($"gunshots start {snap.PreRollMs:0.0} ms late (want 0.5 ms or less)");
+        if (snap.AttackMs > Math.Min(1f, SnapBefore.AttackMs))
+            Fail($"gunshot attack {snap.AttackMs:0.0} ms (want 1 ms or less, before {SnapBefore.AttackMs:0.0})");
+        if (snap.Early < SnapBefore.Early + 0.03f)
+            Fail($"gunshots put {snap.Early:0.00} of their energy in the first 30 ms (before {SnapBefore.Early:0.00}; want more)");
+        if (snap.DecayMs > SnapBefore.DecayMs * 0.9f)
+            Fail($"gunshot bodies take {snap.DecayMs:0} ms to fall 30 dB (before {SnapBefore.DecayMs:0}; want them drier)");
+        if (snap.CrestDb < SnapBefore.CrestDb)
+            Fail($"gunshot crest {snap.CrestDb:0.0} dB is below before ({SnapBefore.CrestDb:0.0}): the transient got squashed");
+
+        // ---- Same-class distinctness: every pair in a class (recorded or synth) ----
+        var prints = Weapons.All.Select(d => (W: d, F: GunSnap.Fingerprint(baked[d.Id]))).ToArray();
         var closest = new List<string>();
+        var pairs = 0;
         foreach (var g in prints.GroupBy(p => p.W.Class))
         {
             var best = (D: float.MaxValue, A: "", B: "");
@@ -173,14 +202,80 @@ public static partial class SelfTest
             for (var i = 0; i < arr.Length; i++)
                 for (var j = i + 1; j < arr.Length; j++)
                 {
+                    pairs++;
                     var d = GunSnap.Distance(arr[i].F, arr[j].F);
                     if (d < best.D)
                         best = (d, arr[i].W.Name, arr[j].W.Name);
+                    if (d < MinSameClassDistanceDb)
+                        Fail($"{arr[i].W.Name} and {arr[j].W.Name} ({g.Key}) sound alike: fingerprint distance {d:0.00} dB (want {MinSameClassDistanceDb:0.0}+)");
                 }
             if (arr.Length > 1)
-                closest.Add($"{g.Key} {best.D:0.00} dB ({best.A} / {best.B})");
+                closest.Add($"{g.Key} {best.D:0.00} ({best.A} / {best.B})");
         }
-        GunLine("closest same-class pairs: " + string.Join("; ", closest));
+        GunLine($"distinct: {pairs} same-class pairs, closest per class in dB (want {MinSameClassDistanceDb:0.0}+): " + string.Join("; ", closest));
+
+        // ---- Determinism ----
+        if (GunVoice.NameHash("P9 Sidearm") != 1893677205u)
+            Fail($"GunVoice.NameHash(\"P9 Sidearm\") = {GunVoice.NameHash("P9 Sidearm")} (want 1893677205 on every machine)");
+        var probe = Weapons.All.FirstOrDefault(d => lib.SetFor(d) is { Guns.Count: > 1 } && d.Sound == SoundStyle.Gun);
+        if (probe != null)
+        {
+            var moved = probe.Clone();
+            moved.Id = (byte)(probe.Id ^ 0x55); // another position in the weapon list (another client's order)
+            var set = lib.SetFor(probe)!;
+            var again = GunSamples.Shots(lib, moved, Synth.Gunshot(probe));
+            var same = again.Length == baked[probe.Id].Length && again.Zip(baked[probe.Id]).All(p => p.First.AsSpan().SequenceEqual(p.Second));
+            if (GunVoice.For(moved, set).Describe() != GunVoice.For(probe, set).Describe() || !same)
+                Fail($"{probe.Name}: its sound changed with its id / on a second bake");
+
+            // ---- The "voice" block: pins the recording, round-trips through the weapon file ----
+            var pinned = probe.Clone();
+            var other = set.Guns.First(g => g != GunVoice.For(probe, set).MainName);
+            pinned.Voice = new VoiceSpec { Recording = other, Pitch = 1.1f, Tone = -0.8f, Click = 0f };
+            var pv = GunVoice.For(pinned, set);
+            var back = WeaponFile.Load(WeaponFile.ToJson(pinned), "voice-test.json");
+            var dPinned = GunSnap.Distance(GunSnap.Fingerprint(GunSamples.Shots(lib, pinned, Synth.Gunshot(probe))), GunSnap.Fingerprint(baked[probe.Id]));
+            GunLine($"determinism: {probe.Name} same on another id and a second bake: {same}; voice block -> {pv.Describe()} ({dPinned:0.00} dB from stock), round trip {back.Voice?.ToJson()}");
+            if (pv.MainName != other || MathF.Abs(pv.Pitch - 1.1f) > 1e-6f || pv.ClickLevel != 0f || back.Voice?.ToJson() != pinned.Voice.ToJson() || dPinned < MinSameClassDistanceDb)
+                Fail($"voice block: main {pv.MainName} (want {other}), pitch {pv.Pitch}, click {pv.ClickLevel}, round trip {back.Voice?.ToJson()}, {dPinned:0.00} dB from stock");
+            try
+            {
+                WeaponFile.Load(WeaponFile.ToJson(probe).TrimEnd().TrimEnd('}') + ", \"voice\": { \"pitch\": 3 } }", "bad-voice.json");
+                Fail("voice block: a pitch of 3 was accepted");
+            }
+            catch (WeaponFileException)
+            {
+                // expected
+            }
+        }
+
+        // ---- The per-shot kit colour: cached, no allocation ----
+        var audio = new Audio();
+        var all = Attachments.BySlot.SelectMany(x => x).ToArray();
+        uint KitOf(AttachmentDef a) => Attachments.With(0, a.Slot, a.Index);
+        var longBarrel = all.FirstOrDefault(a => a.Name == "Long Barrel");
+        var shortBarrel = all.FirstOrDefault(a => a.Name == "Short Barrel");
+        var kitted = Weapons.All[0].Clone();
+        kitted.Kit = longBarrel != null ? KitOf(longBarrel) : 1u;
+        audio.KitVoiceForTest(kitted);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 1000; i++)
+            audio.KitVoiceForTest(kitted);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        if (allocated > 0)
+            Fail($"the kit sound colour allocates {allocated} bytes per 1000 shots");
+        if (longBarrel != null && shortBarrel != null)
+        {
+            var (pl, _) = Audio.KitVoiceFor(KitOf(longBarrel));
+            var (ps, _) = Audio.KitVoiceFor(KitOf(shortBarrel));
+            Line($"  kit colour: long barrel pitch x{pl:0.000}, short barrel x{ps:0.000}; {allocated} bytes per 1000 shots");
+            if (!(pl < 1f && ps > 1f))
+                Fail($"kit colour: long barrel x{pl}, short barrel x{ps} (want lower / higher)");
+        }
+
+        foreach (var d in Weapons.All)
+            if (lib.SetFor(d) is { } vs)
+                Line($"  [gunvoice] {d.Name}: {GunVoice.For(d, vs).Describe()}");
     }
 
     private static double PcmRms(short[] s, int window)
@@ -293,11 +388,11 @@ public static partial class SelfTest
             var rifleShots = GunSamples.Shots(part, rifleGun, Synth.Gunshot(rifleGun));
             var smgSynth = Synth.Gunshot(smgGun);
             var smgShots = GunSamples.Shots(part, smgGun, smgSynth);
-            GunLine($"fallback: {missing} missing + {corrupt} corrupt file(s) logged; {rifleGun.Name} {rifleShots.Length} variants (was {rifleSet.Shots.Count}); {smgGun.Name} {(smgShots.Length == 1 && smgShots[0] == smgSynth ? "synth" : "NOT synth")}");
+            GunLine($"fallback: {missing} missing + {corrupt} corrupt file(s) logged; {rifleGun.Name} {rifleShots.Length} variants from {part.Sets["rifle"].Shots.Count} recordings (was {rifleSet.Shots.Count}); {smgGun.Name} {(smgShots.Length == 1 && smgShots[0] == smgSynth ? "synth" : "NOT synth")}");
             if (missing != smgFiles.Length + 1 || corrupt != 1)
                 Fail($"fallback: {missing} missing / {corrupt} corrupt reported (want {smgFiles.Length + 1} / 1)");
-            if (rifleShots.Length != rifleSet.Shots.Count - 2)
-                Fail($"fallback: {rifleGun.Name} has {rifleShots.Length} variants (want {rifleSet.Shots.Count - 2})");
+            if (rifleShots.Length != GunSamples.Variants || part.Sets["rifle"].Shots.Count != rifleSet.Shots.Count - 2)
+                Fail($"fallback: {rifleGun.Name} has {rifleShots.Length} variants (want {GunSamples.Variants}) from {part.Sets["rifle"].Shots.Count} recordings (want {rifleSet.Shots.Count - 2})");
             if (smgShots.Length != 1 || smgShots[0] != smgSynth)
                 Fail($"fallback: {smgGun.Name} with its set gone didn't fall back to the synth");
             if (part.SetFor(smgGun) != null || GunSamples.Far(part, smgGun, Synth.GunshotDistant(smgGun)) is not { } far || far.Length == 0)
