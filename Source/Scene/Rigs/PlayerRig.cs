@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// hip bob, lean) -> one body group per stance (torso box, head -> head box and visor), the legs (pelvis -> thigh -> shin
 /// -> foot per side, posed by <see cref="LegAnimator"/>), "upper_gear" (same pose as upper_body) -> the gun in hand
 /// (<see cref="GunRig"/>, posed by <see cref="ThirdPersonArms"/>) with both arms holding it, the health bar, and the corpse
-/// box. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
+/// box, plus the prestige hat (<see cref="HatRender"/>) on each stance's head and on the ground by the corpse. Draws exactly what <see cref="PlayerRender.DrawImmediate"/> draws, in the same order.
 /// </summary>
 public sealed class PlayerRig
 {
@@ -22,6 +22,10 @@ public sealed class PlayerRig
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
     private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
+    private readonly SceneNode[] _hats = new SceneNode[3]; // per stance, under the head after the visor
+    private readonly Vector3[] _headSizes = new Vector3[3];
+    private readonly SceneNode _corpseHat;
+    private HatDef? _hat;
     private Vector3 _color = new(float.NaN);
 
     /// <summary>First-person legs: drawn this far behind the feet so looking down shows them a step ahead of the camera, not under it.</summary>
@@ -72,6 +76,8 @@ public sealed class PlayerRig
         _health = Root.Add("health_bar");
         _health.Renderable = Renderable.Box(Vector3.One, 1f, 2);
         _corpse = Root.Add("corpse", Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0), Renderable.Box(Vector3.One));
+        _corpseHat = Root.Add("corpse_hat");
+        _corpseHat.Visible = false;
     }
 
     private SceneNode MakeStance(string name, Vector3 torsoSize, Vector3 torsoAt, Vector3 headAt, Vector3 headSize, Vector3 visorSize, Vector3 visorAt)
@@ -82,8 +88,39 @@ public sealed class PlayerRig
         head.LocalPosition = headAt;
         head.Add("head_box", Matrix4x4.CreateScale(headSize), Renderable.Box(Vector3.One));
         head.Add("visor", Matrix4x4.CreateScale(visorSize) * Matrix4x4.CreateTranslation(visorAt - headAt), Renderable.Box(Visor));
+        var stance = name switch { "crouch" => 1, "prone" => 2, _ => 0 };
+        _hats[stance] = head.Add("hat");
+        _hats[stance].Visible = false;
+        _headSizes[stance] = headSize;
         return g;
     }
+
+    /// <summary>The prestige hat: rebuilt only when it changes, posed on the visible stance's head (or by the corpse).</summary>
+    private void PoseHat(Player p, double time, bool legsOnly)
+    {
+        var hat = legsOnly ? null : HatRender.HatFor(p);
+        if (hat != _hat)
+        {
+            _hat = hat;
+            foreach (var h in _hats)
+                HatRender.Build(h, hat);
+            HatRender.Build(_corpseHat, hat);
+            if (hat != null)
+                _corpseHat.SetLocalMatrix(HatRender.OnGround(hat));
+        }
+        var stance = p.RenderStance switch { Stance.Prone => 2, Stance.Crouch => 1, _ => 0 };
+        for (var i = 0; i < 3; i++)
+        {
+            var on = hat != null && p.Alive && i == stance;
+            _hats[i].Visible = on;
+            if (on)
+                _hats[i].SetLocalMatrix(HatRender.OnHead(hat!, _headSizes[i], p, time));
+        }
+        _corpseHat.Visible = hat != null && !p.Alive;
+    }
+
+    /// <summary>The hat node on a stance's head (0 stand, 1 crouch, 2 prone; self-test).</summary>
+    public SceneNode HatNode(int stance) => _hats[stance];
 
     /// <summary>
     /// Poses the whole player for this frame (runs <see cref="LegAnimator.Animate"/> and <see cref="ThirdPersonArms.Animate"/>,
@@ -114,6 +151,7 @@ public sealed class PlayerRig
         }
 
         _corpse.Visible = !p.Alive && !legsOnly;
+        PoseHat(p, time, legsOnly);
         Pelvis.Visible = p.Alive;
         _pelvisBox.Visible = !legsOnly;
         _health.Visible = _gear.Visible = p.Alive && !legsOnly;

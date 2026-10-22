@@ -48,6 +48,8 @@
     <None Update="Buildings\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Models (.glb / .gltf) for the Mesh and Model map ops (see Models\README.md). -->
     <None Update="Models\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Cosmetics catalog (prestige hats): Cosmetics\hats.json (see README, Prestige). -->
+    <None Update="Cosmetics\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

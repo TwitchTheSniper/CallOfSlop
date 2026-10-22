@@ -163,7 +163,7 @@ public sealed partial class Ui
     // Smoke-test hooks (see Program.SmokeTick)
     /// <summary>
     /// Smoke test: 4/5 = primary/secondary attachments (opened through the weapon select, so Back would
-    /// return there), 6 = perks, 7 = the progression page, 8 = kill streaks, 0 = back to the overview.
+    /// return there), 6 = perks, 7 = the progression page, 8 = kill streaks, 9 = cosmetics (hats), 0 = back to the overview.
     /// </summary>
     public void SmokeTab(int tab)
     {
@@ -185,6 +185,9 @@ public sealed partial class Ui
                 break;
             case 8:
                 OpenPage(LoadoutPage.Streaks);
+                break;
+            case 9:
+                OpenPage(LoadoutPage.Cosmetics);
                 break;
         }
     }
@@ -401,6 +404,7 @@ public sealed partial class Ui
                 LoadoutPage.Perks => "Perks",
                 LoadoutPage.Attachments => $"{Weapons.Get((byte)Math.Clamp(e.Arg, 0, 255)).Name} attachments",
                 LoadoutPage.Streaks => "Kill streaks",
+                LoadoutPage.Cosmetics => "Cosmetics",
                 _ => "Progression",
             };
             if (i == _nav.Depth - 1)
@@ -601,12 +605,15 @@ public sealed partial class Ui
                 OpenPage(LoadoutPage.Perks);
             }
             var gap = ImGui.GetStyle().ItemSpacing.X;
-            var half = (w - gap) / 2;
-            if (ThrowableCard(3, "Lethal", eff.Grenade, half, 70 * _scale, ref hot))
+            var third = OverviewThirdWidth(w, gap); // lethal, tactical and the hat (UiCosmetics.cs) share a row
+            if (ThrowableCard(3, "Lethal", eff.Grenade, third, 70 * _scale, ref hot))
                 OpenPage(LoadoutPage.Lethal);
             ImGui.SameLine();
-            if (ThrowableCard(4, "Tactical", eff.Equipment, half, 70 * _scale, ref hot))
+            if (ThrowableCard(4, "Tactical", eff.Equipment, third, 70 * _scale, ref hot))
                 OpenPage(LoadoutPage.Tactical);
+            ImGui.SameLine();
+            if (HatCard(eff.Hat, third, 70 * _scale, ref hot))
+                OpenPage(LoadoutPage.Cosmetics);
             if (StreaksCard(eff.Streaks, w, 76 * _scale, ref hot))
                 OpenPage(LoadoutPage.Streaks);
 
@@ -799,6 +806,11 @@ public sealed partial class Ui
         if (page == LoadoutPage.Streaks)
         {
             DrawStreakPicker(audio, area);
+            return;
+        }
+        if (page == LoadoutPage.Cosmetics)
+        {
+            DrawCosmeticsPicker(audio, area);
             return;
         }
         if (page is LoadoutPage.Primary or LoadoutPage.Secondary)

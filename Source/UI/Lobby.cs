@@ -451,7 +451,7 @@ public sealed partial class Ui
     {
         var p = Progress;
         ImGui.PushFont(default, 22);
-        ImGuiSafe.TextColored(Orange, $"LEVEL {p.Level}");
+        ImGuiSafe.TextColored(Orange, $"{PrestigePrefix(p)}LEVEL {p.Level}");
         ImGui.PopFont();
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
@@ -460,6 +460,7 @@ public sealed partial class Ui
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
         ImGui.ProgressBar(p.LevelFraction, new float2(360 * _scale, 10 * _scale), ""u8);
         ImGui.PopStyleColor();
+        PrestigeButton(); // UiPrestige.cs
         if (p.NextUnlock is { } next)
             ImGuiSafe.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
         ImGuiSafe.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
