@@ -12,7 +12,7 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    private const string WorldPack = "World";
+    private const string BocagePackFolder = "World";
     private const string BocageMap = "Bocage";
 
     private static void CheckWorldBocage()
@@ -22,7 +22,7 @@ public static partial class SelfTest
         var m = Maps.FindPack("World Tour")?.Maps.FirstOrDefault(x => x.Name == BocageMap) ?? Maps.Find(BocageMap);
         if (m == null)
         {
-            Fail($"no map \"{BocageMap}\" (Maps/{WorldPack}/05-Bocage.json)");
+            Fail($"no map \"{BocageMap}\" (Maps/{BocagePackFolder}/05-Bocage.json)");
             return;
         }
         var notes = new List<string>();
@@ -31,8 +31,8 @@ public static partial class SelfTest
             Line(s);
             notes.Add(s);
         }
-        if (m.SourceFile == null || !m.SourceFile.Replace('\\', '/').EndsWith($"{WorldPack}/05-Bocage.json", StringComparison.OrdinalIgnoreCase))
-            Fail($"{m.Name}: file should be Maps/{WorldPack}/05-Bocage.json (is {m.SourceFile})");
+        if (m.SourceFile == null || !m.SourceFile.Replace('\\', '/').EndsWith($"{BocagePackFolder}/05-Bocage.json", StringComparison.OrdinalIgnoreCase))
+            Fail($"{m.Name}: file should be Maps/{BocagePackFolder}/05-Bocage.json (is {m.SourceFile})");
         if (m.Boundary is not { } bd || bd.Spec.Shape == BoundaryShape.Rect)
         {
             Fail($"{m.Name}: the World Tour maps have no rectangular outline");
