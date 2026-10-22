@@ -59,6 +59,12 @@ public sealed partial class Map
     /// <summary>Anchor points the buildings offer (spawns, hills, flags, points), world space.</summary>
     public readonly List<(string Type, string Name, Vector3 At, int Building)> BuildingAnchors = new();
 
+    /// <summary>
+    /// The buildings' waypoints (also in <see cref="Waypoints"/>): either side of every doorway, stair ends, room centres. The nav
+    /// build places these exactly and never merges them into a nearby grid node (one off the door's axis can't see through it).
+    /// </summary>
+    public readonly HashSet<Vector3> BuildingNavPoints = new();
+
     /// <summary>A fingerprint of the buildings placed (their files, seeds, turns and variants); 0 without any.</summary>
     public uint BuildingHash;
 
@@ -178,6 +184,7 @@ public sealed partial class Map
                 _buildingLocalProps.Add(p.Def);
         }
         Waypoints.AddRange(plan.Waypoints);
+        BuildingNavPoints.UnionWith(plan.Waypoints);
         foreach (var (type, aname, pos) in plan.Anchors)
         {
             BuildingAnchors.Add((type, aname, pos, inst.Index));

@@ -208,7 +208,10 @@ public sealed class NavGraph
         foreach (var w in map.Waypoints.Concat(map.Spawns).Concat(map.Terrain?.Voids?.NavPoints ?? Array.Empty<Vector3>()))
         {
             var y = Ground(c, w.X, w.Z, w.Y + 1f, 3f);
-            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), 1.2f) is { } p && !NearExisting(nodes, p, 0, 0.8f))
+            // Building waypoints (doorways, stairs): placed tight and kept apart from grid nodes only by other waypoints.
+            var exact = map.BuildingNavPoints.Count > 0 && map.BuildingNavPoints.Contains(w);
+            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), exact ? 0.5f : 1.2f) is { } p
+                && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.3f : 0.8f))
                 nodes.Add(p);
             if (++extra % 4 == 0)
             {

@@ -1077,7 +1077,12 @@ class Generator:
                     self.add(r[0], lf, a, r[2], y1, b, surf, "stairs")
             pb = self.P(bottom[0], lf, bottom[1])
             pt = self.P(top[0], self.level[f + 1], top[1])
-            self.plan.waypoints += [pb, pt]
+            km = max(1, (steps + 1) // 2)  # mid-flight, on the middle of a step
+            along = (km - 0.5) * run
+            o = r[0] + along if dx > 0 else r[2] - along if dx < 0 else r[1] + along if dz > 0 else r[3] - along
+            ym = self.level[f + 1] if km == steps else lf + km * rise / steps
+            pm = self.P(o, ym, (r[1] + r[3]) / 2) if dx != 0 else self.P((r[0] + r[2]) / 2, ym, o)
+            self.plan.waypoints += [pb, pm, pt]
             self.plan.stairs.append((pb, pt))
             if not s["railing"]:
                 continue
