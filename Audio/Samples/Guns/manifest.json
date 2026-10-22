@@ -6,32 +6,32 @@
  "rate": 44100,
  "sets": {
   "pistol_light": {
-   "about": "9mm / .380 semi-auto pistols (Walther PPQ, Bersa)",
+   "about": "9mm / .380 / .22 semi-auto pistols (Walther PPQ, Bersa, Ruger Mark III)",
    "refCaliber": 0.25,
    "synthBlend": 0.22
   },
   "pistol_heavy": {
-   "about": ".45 pistol and .38 revolver (Colt 1911, S&W 642)",
+   "about": ".45 pistol and revolvers (Colt 1911, S&W 642 .38, Ruger Single Six)",
    "refCaliber": 0.5,
    "synthBlend": 0.22
   },
   "smg": {
-   "about": "9mm / 7.62x25 sub machine guns (Carl Gustav M45, PPSh)",
+   "about": "9mm / 7.62x25 sub machine guns (Carl Gustav M45, PPSh, Walther PPQ 9mm)",
    "refCaliber": 0.25,
    "synthBlend": 0.22
   },
   "rifle": {
-   "about": "5.56 / 7.62x39 assault rifles (AR-15, AK-47)",
+   "about": "5.56 / 7.62x39 / .300 BLK assault rifles (AR-15, AK-47, Savage 10)",
    "refCaliber": 0.42,
    "synthBlend": 0.2
   },
   "rifle_heavy": {
-   "about": "7.62x39 rifles for heavy ARs and LMGs (AK-47, SKS)",
+   "about": "7.62x39 rifles for heavy ARs and LMGs (AK-47, SKS, AR-15 pitched down)",
    "refCaliber": 0.6,
    "synthBlend": 0.2
   },
   "dmr": {
-   "about": "semi-auto and light bolt rifles (SKS, Savage 10 .300 BLK)",
+   "about": "semi-auto and light bolt rifles (SKS, Savage 10 .300 BLK, Tikka T3)",
    "refCaliber": 0.62,
    "synthBlend": 0.2
   },
@@ -41,22 +41,22 @@
    "synthBlend": 0.2
   },
   "sniper": {
-   "about": "full-power bolt-action rifles (Mosin Nagant, Tikka T3 .30-06)",
+   "about": "full-power bolt-action rifles (Mosin Nagant, Tikka T3 .30-06, Springfield 1917)",
    "refCaliber": 0.85,
    "synthBlend": 0.2
   },
   "sniper_heavy": {
-   "about": "old military bolt-actions for the .50 and the musket (Springfield 1917, Arisaka)",
+   "about": "old military bolt-actions for the .50 and the musket (Springfield 1917, Arisaka, Mosin Nagant)",
    "refCaliber": 0.9,
    "synthBlend": 0.4
   },
   "shotgun_pump": {
-   "about": "12 gauge pump shotguns (Winchester Model 12, Benelli Nova)",
+   "about": "12 gauge pump shotguns (Winchester Model 12, Benelli Nova, Charles Daly)",
    "refCaliber": 0.72,
    "synthBlend": 0.2
   },
   "shotgun_heavy": {
-   "about": "12 gauge shotguns, heavier report (Charles Daly pump, Mossberg 190 bolt)",
+   "about": "12 gauge shotguns, heavier report (Charles Daly pump, Mossberg 190 bolt, Model 12)",
    "refCaliber": 0.88,
    "synthBlend": 0.2
   }
@@ -139,38 +139,61 @@
    "file": "pistol_light_shot1.wav",
    "set": "pistol_light",
    "role": "shot",
+   "gun": "Walther PPQ",
    "gain": 1.0,
    "source": "Walther PPQ/X_39P.wav shot 1 at 1.407 s",
-   "seconds": 0.7
+   "seconds": 0.55
   },
   {
    "file": "pistol_light_shot2.wav",
    "set": "pistol_light",
    "role": "shot",
+   "gun": "Walther PPQ",
    "gain": 1.0,
    "source": "Walther PPQ/X_39P.wav shot 2 at 6.444 s",
-   "seconds": 0.7
+   "seconds": 0.55
   },
   {
    "file": "pistol_light_shot3.wav",
    "set": "pistol_light",
    "role": "shot",
+   "gun": "Bersa",
    "gain": 1.0,
    "source": "Bersa/F_47P.wav shot 1 at 0.334 s",
-   "seconds": 0.7
+   "seconds": 0.55
   },
   {
    "file": "pistol_light_shot4.wav",
    "set": "pistol_light",
    "role": "shot",
+   "gun": "Bersa",
    "gain": 1.0,
    "source": "Bersa/F_47P.wav shot 2 at 4.410 s",
-   "seconds": 0.7
+   "seconds": 0.55
+  },
+  {
+   "file": "pistol_light_shot5.wav",
+   "set": "pistol_light",
+   "role": "shot",
+   "gun": "Ruger Mark III",
+   "gain": 1.0,
+   "source": "Ruger Mark III/R_35P.wav shot 1 at 0.481 s",
+   "seconds": 0.55
+  },
+  {
+   "file": "pistol_light_shot6.wav",
+   "set": "pistol_light",
+   "role": "shot",
+   "gun": "Ruger Mark III",
+   "gain": 1.0,
+   "source": "Ruger Mark III/R_35P.wav shot 2 at 4.482 s",
+   "seconds": 0.55
   },
   {
    "file": "pistol_light_tail1.wav",
    "set": "pistol_light",
    "role": "tail",
+   "gun": "Walther PPQ",
    "gain": 1.0,
    "source": "Walther PPQ/X_31P.wav shot 1 at 1.085 s",
    "seconds": 1.4
@@ -179,38 +202,61 @@
    "file": "pistol_heavy_shot1.wav",
    "set": "pistol_heavy",
    "role": "shot",
+   "gun": "1911",
    "gain": 1.0,
    "source": "1911/A_42P.wav shot 1 at 0.941 s",
-   "seconds": 0.8
+   "seconds": 0.55
   },
   {
    "file": "pistol_heavy_shot2.wav",
    "set": "pistol_heavy",
    "role": "shot",
+   "gun": "1911",
    "gain": 1.0,
    "source": "1911/A_42P.wav shot 2 at 5.002 s",
-   "seconds": 0.8
+   "seconds": 0.55
   },
   {
    "file": "pistol_heavy_shot3.wav",
    "set": "pistol_heavy",
    "role": "shot",
+   "gun": "Smith & Wesson 642",
    "gain": 1.0,
    "source": "Smith & Wesson 642/V_27P.wav shot 1 at 0.805 s",
-   "seconds": 0.8
+   "seconds": 0.55
   },
   {
    "file": "pistol_heavy_shot4.wav",
    "set": "pistol_heavy",
    "role": "shot",
+   "gun": "Smith & Wesson 642",
    "gain": 1.0,
    "source": "Smith & Wesson 642/V_27P.wav shot 2 at 6.219 s",
-   "seconds": 0.8
+   "seconds": 0.55
+  },
+  {
+   "file": "pistol_heavy_shot5.wav",
+   "set": "pistol_heavy",
+   "role": "shot",
+   "gun": "Ruger Single Six",
+   "gain": 1.0,
+   "source": "Ruger Single Six/S_14P.wav shot 1 at 0.668 s",
+   "seconds": 0.55
+  },
+  {
+   "file": "pistol_heavy_shot6.wav",
+   "set": "pistol_heavy",
+   "role": "shot",
+   "gun": "Ruger Single Six",
+   "gain": 1.0,
+   "source": "Ruger Single Six/S_14P.wav shot 2 at 5.454 s",
+   "seconds": 0.55
   },
   {
    "file": "pistol_heavy_tail1.wav",
    "set": "pistol_heavy",
    "role": "tail",
+   "gun": "1911",
    "gain": 1.0,
    "source": "1911/A_34P.wav shot 1 at 1.542 s",
    "seconds": 1.4
@@ -219,38 +265,61 @@
    "file": "smg_shot1.wav",
    "set": "smg",
    "role": "shot",
+   "gun": "Carl Gustav M45",
    "gain": 1.0,
    "source": "Carl Gustav M45/G_31P.wav shot 1 at 0.310 s",
-   "seconds": 0.6
+   "seconds": 0.5
   },
   {
    "file": "smg_shot2.wav",
    "set": "smg",
    "role": "shot",
+   "gun": "Carl Gustav M45",
    "gain": 1.0,
    "source": "Carl Gustav M45/G_31P.wav shot 2 at 3.501 s",
-   "seconds": 0.6
+   "seconds": 0.5
   },
   {
    "file": "smg_shot3.wav",
    "set": "smg",
    "role": "shot",
+   "gun": "PPSh",
    "gain": 1.0,
    "source": "PPSh/P_30P.wav shot 1 at 0.969 s",
-   "seconds": 0.6
+   "seconds": 0.5
   },
   {
    "file": "smg_shot4.wav",
    "set": "smg",
    "role": "shot",
+   "gun": "PPSh",
    "gain": 1.0,
    "source": "PPSh/P_30P.wav shot 3 at 8.243 s",
-   "seconds": 0.6
+   "seconds": 0.5
+  },
+  {
+   "file": "smg_shot5.wav",
+   "set": "smg",
+   "role": "shot",
+   "gun": "Walther PPQ",
+   "gain": 1.0,
+   "source": "Walther PPQ/X_39P.wav shot 2 at 6.444 s",
+   "seconds": 0.5
+  },
+  {
+   "file": "smg_shot6.wav",
+   "set": "smg",
+   "role": "shot",
+   "gun": "Walther PPQ",
+   "gain": 1.0,
+   "source": "Walther PPQ/X_39P.wav shot 3 at 10.660 s",
+   "seconds": 0.5
   },
   {
    "file": "smg_tail1.wav",
    "set": "smg",
    "role": "tail",
+   "gun": "Carl Gustav M45",
    "gain": 1.0,
    "source": "Carl Gustav M45/G_20P.wav shot 1 at 0.348 s",
    "seconds": 1.4
@@ -259,38 +328,61 @@
    "file": "rifle_shot1.wav",
    "set": "rifle",
    "role": "shot",
+   "gun": "AR-15",
    "gain": 1.0,
    "source": "AR-15/D_32P.wav shot 1 at 0.704 s",
-   "seconds": 0.8
+   "seconds": 0.65
   },
   {
    "file": "rifle_shot2.wav",
    "set": "rifle",
    "role": "shot",
+   "gun": "AR-15",
    "gain": 1.0,
    "source": "AR-15/D_32P.wav shot 2 at 5.647 s",
-   "seconds": 0.8
+   "seconds": 0.65
   },
   {
    "file": "rifle_shot3.wav",
    "set": "rifle",
    "role": "shot",
+   "gun": "AK-47",
    "gain": 1.0,
    "source": "AK-47/C_28P.wav shot 1 at 0.611 s",
-   "seconds": 0.8
+   "seconds": 0.65
   },
   {
    "file": "rifle_shot4.wav",
    "set": "rifle",
    "role": "shot",
+   "gun": "AK-47",
    "gain": 1.0,
    "source": "AK-47/C_28P.wav shot 2 at 3.257 s",
-   "seconds": 0.8
+   "seconds": 0.65
+  },
+  {
+   "file": "rifle_shot5.wav",
+   "set": "rifle",
+   "role": "shot",
+   "gun": "Savage 10 .300 Blackout",
+   "gain": 1.0,
+   "source": "Savage 10 .300 Blackout/T_27P.wav shot 1 at 0.951 s",
+   "seconds": 0.65
+  },
+  {
+   "file": "rifle_shot6.wav",
+   "set": "rifle",
+   "role": "shot",
+   "gun": "Savage 10 .300 Blackout",
+   "gain": 1.0,
+   "source": "Savage 10 .300 Blackout/T_27P.wav shot 2 at 4.968 s",
+   "seconds": 0.65
   },
   {
    "file": "rifle_tail1.wav",
    "set": "rifle",
    "role": "tail",
+   "gun": "AR-15",
    "gain": 1.0,
    "source": "AR-15/D_24P.wav shot 1 at 0.549 s",
    "seconds": 1.5
@@ -299,38 +391,61 @@
    "file": "rifle_heavy_shot1.wav",
    "set": "rifle_heavy",
    "role": "shot",
+   "gun": "AK-47",
    "gain": 1.0,
    "source": "AK-47/C_28P.wav shot 3 at 6.021 s",
-   "seconds": 0.9
+   "seconds": 0.65
   },
   {
    "file": "rifle_heavy_shot2.wav",
    "set": "rifle_heavy",
    "role": "shot",
+   "gun": "AK-47",
    "gain": 1.0,
    "source": "AK-47/C_28P.wav shot 4 at 9.156 s",
-   "seconds": 0.9
+   "seconds": 0.65
   },
   {
    "file": "rifle_heavy_shot3.wav",
    "set": "rifle_heavy",
    "role": "shot",
+   "gun": "SKS",
    "gain": 1.0,
    "source": "SKS/U_14P.wav shot 1 at 3.577 s",
-   "seconds": 0.9
+   "seconds": 0.65
   },
   {
    "file": "rifle_heavy_shot4.wav",
    "set": "rifle_heavy",
    "role": "shot",
+   "gun": "SKS",
    "gain": 1.0,
    "source": "SKS/U_14P.wav shot 2 at 6.755 s",
-   "seconds": 0.9
+   "seconds": 0.65
+  },
+  {
+   "file": "rifle_heavy_shot5.wav",
+   "set": "rifle_heavy",
+   "role": "shot",
+   "gun": "AR-15",
+   "gain": 1.0,
+   "source": "AR-15/D_32P.wav shot 1 at 0.704 s",
+   "seconds": 0.65
+  },
+  {
+   "file": "rifle_heavy_shot6.wav",
+   "set": "rifle_heavy",
+   "role": "shot",
+   "gun": "AR-15",
+   "gain": 1.0,
+   "source": "AR-15/D_32P.wav shot 2 at 5.647 s",
+   "seconds": 0.65
   },
   {
    "file": "rifle_heavy_tail1.wav",
    "set": "rifle_heavy",
    "role": "tail",
+   "gun": "AK-47",
    "gain": 1.0,
    "source": "AK-47/C_31P.wav shot 1 at 0.338 s",
    "seconds": 1.5
@@ -339,38 +454,61 @@
    "file": "dmr_shot1.wav",
    "set": "dmr",
    "role": "shot",
+   "gun": "SKS",
    "gain": 1.0,
    "source": "SKS/U_14P.wav shot 3 at 10.211 s",
-   "seconds": 1.0
+   "seconds": 0.75
   },
   {
    "file": "dmr_shot2.wav",
    "set": "dmr",
    "role": "shot",
+   "gun": "SKS",
    "gain": 1.0,
    "source": "SKS/U_14P.wav shot 4 at 13.291 s",
-   "seconds": 1.0
+   "seconds": 0.75
   },
   {
    "file": "dmr_shot3.wav",
    "set": "dmr",
    "role": "shot",
+   "gun": "Savage 10 .300 Blackout",
    "gain": 1.0,
    "source": "Savage 10 .300 Blackout/T_27P.wav shot 1 at 0.951 s",
-   "seconds": 1.0
+   "seconds": 0.75
   },
   {
    "file": "dmr_shot4.wav",
    "set": "dmr",
    "role": "shot",
+   "gun": "Savage 10 .300 Blackout",
    "gain": 1.0,
    "source": "Savage 10 .300 Blackout/T_27P.wav shot 2 at 4.968 s",
-   "seconds": 1.0
+   "seconds": 0.75
+  },
+  {
+   "file": "dmr_shot5.wav",
+   "set": "dmr",
+   "role": "shot",
+   "gun": "Tikka",
+   "gain": 1.0,
+   "source": "Tikka/W_29P.wav shot 1 at 0.577 s",
+   "seconds": 0.75
+  },
+  {
+   "file": "dmr_shot6.wav",
+   "set": "dmr",
+   "role": "shot",
+   "gun": "Tikka",
+   "gain": 1.0,
+   "source": "Tikka/W_29P.wav shot 2 at 5.665 s",
+   "seconds": 0.75
   },
   {
    "file": "dmr_tail1.wav",
    "set": "dmr",
    "role": "tail",
+   "gun": "Savage 10 .300 Blackout",
    "gain": 1.0,
    "source": "Savage 10 .300 Blackout/T_17P.wav shot 1 at 0.862 s",
    "seconds": 1.6
@@ -379,38 +517,43 @@
    "file": "lever_shot1.wav",
    "set": "lever",
    "role": "shot",
+   "gun": "Marlin 336",
    "gain": 1.0,
    "source": "Marlin 336/I_22P.wav shot 1 at 0.740 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "lever_shot2.wav",
    "set": "lever",
    "role": "shot",
+   "gun": "Marlin 336",
    "gain": 1.0,
    "source": "Marlin 336/I_22P.wav shot 2 at 7.004 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "lever_shot3.wav",
    "set": "lever",
    "role": "shot",
+   "gun": "Model 1894",
    "gain": 1.0,
    "source": "Model 1894/L_23P.wav shot 1 at 0.573 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "lever_shot4.wav",
    "set": "lever",
    "role": "shot",
+   "gun": "Model 1894",
    "gain": 1.0,
    "source": "Model 1894/L_23P.wav shot 2 at 4.123 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "lever_tail1.wav",
    "set": "lever",
    "role": "tail",
+   "gun": "Marlin 336",
    "gain": 1.0,
    "source": "Marlin 336/I_17P.wav shot 1 at 0.603 s",
    "seconds": 1.6
@@ -419,38 +562,61 @@
    "file": "sniper_shot1.wav",
    "set": "sniper",
    "role": "shot",
+   "gun": "Mosin Nagant",
    "gain": 1.0,
    "source": "Mosin Nagant/M_21P.wav shot 1 at 1.034 s",
-   "seconds": 1.3
+   "seconds": 1.0
   },
   {
    "file": "sniper_shot2.wav",
    "set": "sniper",
    "role": "shot",
+   "gun": "Mosin Nagant",
    "gain": 1.0,
    "source": "Mosin Nagant/M_21P.wav shot 2 at 5.020 s",
-   "seconds": 1.3
+   "seconds": 1.0
   },
   {
    "file": "sniper_shot3.wav",
    "set": "sniper",
    "role": "shot",
+   "gun": "Tikka",
    "gain": 1.0,
    "source": "Tikka/W_29P.wav shot 1 at 0.577 s",
-   "seconds": 1.3
+   "seconds": 1.0
   },
   {
    "file": "sniper_shot4.wav",
    "set": "sniper",
    "role": "shot",
+   "gun": "Tikka",
    "gain": 1.0,
    "source": "Tikka/W_29P.wav shot 2 at 5.665 s",
-   "seconds": 1.3
+   "seconds": 1.0
+  },
+  {
+   "file": "sniper_shot5.wav",
+   "set": "sniper",
+   "role": "shot",
+   "gun": "1917",
+   "gain": 1.0,
+   "source": "1917/B_24P.wav shot 1 at 1.308 s",
+   "seconds": 1.0
+  },
+  {
+   "file": "sniper_shot6.wav",
+   "set": "sniper",
+   "role": "shot",
+   "gun": "1917",
+   "gain": 1.0,
+   "source": "1917/B_24P.wav shot 2 at 6.731 s",
+   "seconds": 1.0
   },
   {
    "file": "sniper_tail1.wav",
    "set": "sniper",
    "role": "tail",
+   "gun": "Mosin Nagant",
    "gain": 1.0,
    "source": "Mosin Nagant/M_26P.wav shot 1 at 1.138 s",
    "seconds": 1.8
@@ -459,38 +625,61 @@
    "file": "sniper_heavy_shot1.wav",
    "set": "sniper_heavy",
    "role": "shot",
+   "gun": "1917",
    "gain": 1.0,
    "source": "1917/B_24P.wav shot 1 at 1.308 s",
-   "seconds": 1.4
+   "seconds": 1.0
   },
   {
    "file": "sniper_heavy_shot2.wav",
    "set": "sniper_heavy",
    "role": "shot",
+   "gun": "1917",
    "gain": 1.0,
    "source": "1917/B_24P.wav shot 2 at 6.731 s",
-   "seconds": 1.4
+   "seconds": 1.0
   },
   {
    "file": "sniper_heavy_shot3.wav",
    "set": "sniper_heavy",
    "role": "shot",
+   "gun": "Arisaka",
    "gain": 1.0,
    "source": "Arisaka/E_25P.wav shot 1 at 0.524 s",
-   "seconds": 1.4
+   "seconds": 1.0
   },
   {
    "file": "sniper_heavy_shot4.wav",
    "set": "sniper_heavy",
    "role": "shot",
+   "gun": "Arisaka",
    "gain": 1.0,
    "source": "Arisaka/E_25P.wav shot 2 at 4.030 s",
-   "seconds": 1.4
+   "seconds": 1.0
+  },
+  {
+   "file": "sniper_heavy_shot5.wav",
+   "set": "sniper_heavy",
+   "role": "shot",
+   "gun": "Mosin Nagant",
+   "gain": 1.0,
+   "source": "Mosin Nagant/M_21P.wav shot 3 at 9.156 s",
+   "seconds": 1.0
+  },
+  {
+   "file": "sniper_heavy_shot6.wav",
+   "set": "sniper_heavy",
+   "role": "shot",
+   "gun": "Mosin Nagant",
+   "gain": 1.0,
+   "source": "Mosin Nagant/M_21P.wav shot 4 at 14.137 s",
+   "seconds": 1.0
   },
   {
    "file": "sniper_heavy_tail1.wav",
    "set": "sniper_heavy",
    "role": "tail",
+   "gun": "1917",
    "gain": 1.0,
    "source": "1917/B_16P.wav shot 1 at 0.607 s",
    "seconds": 1.8
@@ -499,38 +688,61 @@
    "file": "shotgun_pump_shot1.wav",
    "set": "shotgun_pump",
    "role": "shot",
+   "gun": "Model 12",
    "gain": 1.0,
    "source": "Model 12/K_22P.wav shot 1 at 0.842 s",
-   "seconds": 0.9
+   "seconds": 0.8
   },
   {
    "file": "shotgun_pump_shot2.wav",
    "set": "shotgun_pump",
    "role": "shot",
+   "gun": "Model 12",
    "gain": 1.0,
    "source": "Model 12/K_22P.wav shot 2 at 7.445 s",
-   "seconds": 0.9
+   "seconds": 0.8
   },
   {
    "file": "shotgun_pump_shot3.wav",
    "set": "shotgun_pump",
    "role": "shot",
+   "gun": "Nova",
    "gain": 1.0,
    "source": "Nova/O_21P.wav shot 1 at 0.431 s",
-   "seconds": 0.9
+   "seconds": 0.8
   },
   {
    "file": "shotgun_pump_shot4.wav",
    "set": "shotgun_pump",
    "role": "shot",
+   "gun": "Nova",
    "gain": 1.0,
    "source": "Nova/O_21P.wav shot 2 at 3.465 s",
-   "seconds": 0.9
+   "seconds": 0.8
+  },
+  {
+   "file": "shotgun_pump_shot5.wav",
+   "set": "shotgun_pump",
+   "role": "shot",
+   "gun": "CD",
+   "gain": 1.0,
+   "source": "CD/H_21P.wav shot 1 at 0.464 s",
+   "seconds": 0.8
+  },
+  {
+   "file": "shotgun_pump_shot6.wav",
+   "set": "shotgun_pump",
+   "role": "shot",
+   "gun": "CD",
+   "gain": 1.0,
+   "source": "CD/H_21P.wav shot 2 at 3.075 s",
+   "seconds": 0.8
   },
   {
    "file": "shotgun_pump_tail1.wav",
    "set": "shotgun_pump",
    "role": "tail",
+   "gun": "Model 12",
    "gain": 1.0,
    "source": "Model 12/K_17P.wav shot 1 at 0.907 s",
    "seconds": 1.6
@@ -539,38 +751,61 @@
    "file": "shotgun_heavy_shot1.wav",
    "set": "shotgun_heavy",
    "role": "shot",
+   "gun": "CD",
    "gain": 1.0,
    "source": "CD/H_21P.wav shot 1 at 0.464 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "shotgun_heavy_shot2.wav",
    "set": "shotgun_heavy",
    "role": "shot",
+   "gun": "CD",
    "gain": 1.0,
    "source": "CD/H_21P.wav shot 2 at 3.075 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "shotgun_heavy_shot3.wav",
    "set": "shotgun_heavy",
    "role": "shot",
+   "gun": "Mossberg",
    "gain": 1.0,
    "source": "Mossberg/N_30P.wav shot 1 at 1.697 s",
-   "seconds": 1.0
+   "seconds": 0.8
   },
   {
    "file": "shotgun_heavy_shot4.wav",
    "set": "shotgun_heavy",
    "role": "shot",
+   "gun": "Mossberg",
    "gain": 1.0,
    "source": "Mossberg/N_30P.wav shot 2 at 4.961 s",
-   "seconds": 1.0
+   "seconds": 0.8
+  },
+  {
+   "file": "shotgun_heavy_shot5.wav",
+   "set": "shotgun_heavy",
+   "role": "shot",
+   "gun": "Model 12",
+   "gain": 1.0,
+   "source": "Model 12/K_22P.wav shot 1 at 0.842 s",
+   "seconds": 0.8
+  },
+  {
+   "file": "shotgun_heavy_shot6.wav",
+   "set": "shotgun_heavy",
+   "role": "shot",
+   "gun": "Model 12",
+   "gain": 1.0,
+   "source": "Model 12/K_22P.wav shot 2 at 7.445 s",
+   "seconds": 0.8
   },
   {
    "file": "shotgun_heavy_tail1.wav",
    "set": "shotgun_heavy",
    "role": "tail",
+   "gun": "CD",
    "gain": 1.0,
    "source": "CD/H_16P.wav shot 1 at 0.607 s",
    "seconds": 1.6

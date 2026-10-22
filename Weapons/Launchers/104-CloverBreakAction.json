@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-weapon/1",
+  "name": "Clover Break-Action",
+  "order": 104,
+  "unlockLevel": 9,
+  "class": "Launcher",
+  "blurb": "Single-shot grenade launcher. Lob it on an arc; it goes off on contact.",
+  "damage": 130,
+  "headMult": 1,
+  "pellets": 1,
+  "rangeM": 35,
+  "minDamageMult": 1,
+  "rpm": 80,
+  "mode": "Semi",
+  "burstCount": 3,
+  "burstDelay": 0.25,
+  "mag": 1,
+  "reload": 2.2,
+  "hipSpreadDeg": 1.6,
+  "adsSpreadMult": 0.25,
+  "recoilDeg": 2.5,
+  "mobility": 0.95,
+  "adsZoom": 1.3,
+  "equipTime": 0.6,
+  "adsTime": 0.3,
+  "length": 0.62,
+  "bulk": 1.0,
+  "accent": [0.5, 0.75, 0.31],
+  "sound": "Thump",
+  "caliber": 0.6,
+  "bright": 0.4,
+  "tail": 0.4,
+  "launcher": {
+    "projectile": "Grenade", "guidance": "None", "speed": 36, "maxSpeed": 36, "thrust": 0, "gravity": 1,
+    "drag": 0.05, "radius": 5, "falloff": 1.2, "direct": 40, "vehicleMult": 1, "selfDamage": 0.6,
+    "armDistance": 4, "proximity": 0, "fuse": 5, "bounces": 0, "reserve": 5, "lockTime": 1.2,
+    "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
+  },
+  "model": {
+    "base": "grenade_launcher", "barrelWidth": 0.055, "finish": "olive", "furniture": "wood"
+  }
+}

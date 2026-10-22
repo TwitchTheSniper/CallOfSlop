@@ -276,7 +276,8 @@ public sealed partial class Game
         var steer = BotSteer(p, b, target, visible, def, now);
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
         var aim = BotAim(p, b, target, visible, def, steer, now);
-        BotShoot(p, b, target, visible, def, aim, now);
+        if (!BotLauncherTick(p, b, target, visible, ref aim, now)) // a launcher at an enemy kill streak or a group (BotLaunchers.cs)
+            BotShoot(p, b, target, visible, def, aim, now);
         SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
         BotGrenade(p, b, target, visible, aim.Distance, now);
         BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)

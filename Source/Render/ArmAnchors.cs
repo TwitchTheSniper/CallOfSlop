@@ -97,6 +97,9 @@ public static class ArmAnchors
             WeaponClass.Sniper => d.Name.Contains("Semi") ? ReloadStyle.BoxMag : ReloadStyle.BoltAction,
             WeaponClass.LMG => ReloadStyle.LmgBox,
             WeaponClass.Special when d.Mag <= 1 => ReloadStyle.MuzzleLoad,
+            WeaponClass.Launcher when d.Mag > 1 => ReloadStyle.Revolver, // a drum launcher, shell by shell
+            WeaponClass.Launcher when d.Model?.Receiver == "break" => ReloadStyle.BreakOpen, // break-action grenade launcher
+            WeaponClass.Launcher => ReloadStyle.MuzzleLoad, // a rocket goes in the front of the tube
             _ => ReloadStyle.BoxMag,
         };
 

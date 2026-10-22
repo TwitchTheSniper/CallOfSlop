@@ -25,7 +25,8 @@ public static class GunGame
             if (_ladder == null || _builtFrom != Weapons.All)
             {
                 _builtFrom = Weapons.All;
-                var order = Progress.All.Where(u => u.Weapon != null).Select(u => u.Weapon!).Distinct().ToList();
+                // Launchers sit out: a rocket a kill would turn the climb into a splash fest (and their ammo is limited).
+                var order = Progress.All.Where(u => u.Weapon is { IsLauncher: false }).Select(u => u.Weapon!).Distinct().ToList();
                 _ladder = Build(order.Count > 0 ? order : [Weapons.DefaultPrimary]);
             }
             return _ladder;

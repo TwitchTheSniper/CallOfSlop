@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Quick-Lock Module",
+  "slot": "Underbarrel",
+  "order": 10,
+  "unlockOrder": 242,
+  "blurb": "A faster seeker head: lock-on launchers lock sooner and reach further.",
+  "pros": ["-30% lock time", "+15% lock range"],
+  "cons": ["+10% draw time"],
+  "fits": {"classes": ["Launcher"]},
+  "model": "light",
+  "effects": [
+    {"stat": "launcherLockTime", "mul": 0.7},
+    {"stat": "launcherLockRange", "mul": 1.15},
+    {"stat": "equipTime", "mul": 1.1}
+  ]
+}

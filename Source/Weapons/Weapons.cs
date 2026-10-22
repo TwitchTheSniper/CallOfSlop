@@ -155,6 +155,9 @@ public sealed partial class WeaponDef
     /// <summary>The gun's model (the file's "model" block; see GunSpec and Weapons/README.md). Null: drawn by the per-class model.</summary>
     public GunSpec? Model { get; set; }
 
+    /// <summary>The file's "voice" block: pinned parts of the gun's sonic identity (see GunVoice and Weapons/README.md). Null: all derived.</summary>
+    public VoiceSpec? Voice { get; set; }
+
     // ---- Built weapons (Zombies weapon builder, Source/Zombies). Properties, so they're never weapon-file keys. ----
     // Every one is null/off on the weapons from the Weapons folder, which keeps them firing exactly as before.
 

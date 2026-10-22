@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Long Tube",
+  "slot": "Barrel",
+  "order": 13,
+  "unlockOrder": 244,
+  "blurb": "A longer launch tube: the round leaves faster and flies flatter.",
+  "pros": ["+20% launch speed", "+10% top speed"],
+  "cons": ["+12% draw time", "-3% speed"],
+  "fits": {"classes": ["Launcher"]},
+  "model": "extendedBarrel",
+  "effects": [
+    {"stat": "launcherSpeed", "mul": 1.2},
+    {"stat": "launcherMaxSpeed", "mul": 1.1},
+    {"stat": "equipTime", "mul": 1.12},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

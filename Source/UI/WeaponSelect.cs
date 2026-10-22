@@ -22,7 +22,7 @@ public static class WeaponSelect
     /// <summary>Tab order for primaries (the classes a slot actually has are shown, in this order); pistols go in the secondary slot.</summary>
     private static readonly WeaponClass[] TabOrder =
     [
-        WeaponClass.AssaultRifle, WeaponClass.SMG, WeaponClass.Shotgun, WeaponClass.LMG, WeaponClass.DMR, WeaponClass.Sniper, WeaponClass.Special, WeaponClass.Pistol,
+        WeaponClass.AssaultRifle, WeaponClass.SMG, WeaponClass.Shotgun, WeaponClass.LMG, WeaponClass.DMR, WeaponClass.Sniper, WeaponClass.Special, WeaponClass.Pistol, WeaponClass.Launcher,
     ];
 
     /// <summary>Number of stats in <see cref="SelectStat"/>.</summary>
@@ -54,7 +54,7 @@ public static class WeaponSelect
             ByClass[(int)c] = guns;
             if (guns.Length == 0)
                 continue;
-            (c == WeaponClass.Pistol ? secondary : primary).Add(c);
+            (c is WeaponClass.Pistol or WeaponClass.Launcher ? secondary : primary).Add(c); // launchers: secondary only
         }
         _primaryTabs = primary.ToArray();
         _secondaryTabs = secondary.ToArray();
@@ -112,6 +112,7 @@ public static class WeaponSelect
         WeaponClass.Sniper => "SNIPERS",
         WeaponClass.Special => "SPECIAL",
         WeaponClass.Pistol => "PISTOLS",
+        WeaponClass.Launcher => "LAUNCHERS",
         _ => "OTHER",
     };
 
@@ -126,6 +127,7 @@ public static class WeaponSelect
         WeaponClass.Sniper => "SNIPER RIFLE",
         WeaponClass.Special => "SPECIAL",
         WeaponClass.Pistol => "PISTOL",
+        WeaponClass.Launcher => "LAUNCHER",
         _ => "WEAPON",
     };
 

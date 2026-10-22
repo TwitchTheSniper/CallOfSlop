@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-weapon/1",
+  "name": "Carousel Drum Launcher",
+  "order": 105,
+  "unlockLevel": 14,
+  "class": "Launcher",
+  "blurb": "Six grenades in a revolving drum. Each bounces once, then goes off.",
+  "damage": 100,
+  "headMult": 1,
+  "pellets": 1,
+  "rangeM": 30,
+  "minDamageMult": 1,
+  "rpm": 120,
+  "mode": "Semi",
+  "burstCount": 3,
+  "burstDelay": 0.25,
+  "mag": 6,
+  "reload": 4.8,
+  "hipSpreadDeg": 1.8,
+  "adsSpreadMult": 0.25,
+  "recoilDeg": 2.2,
+  "mobility": 0.9,
+  "adsZoom": 1.3,
+  "equipTime": 0.75,
+  "adsTime": 0.3,
+  "length": 0.68,
+  "bulk": 1.25,
+  "accent": [0.82, 0.31, 0.31],
+  "sound": "Thump",
+  "caliber": 0.5,
+  "bright": 0.55,
+  "tail": 0.35,
+  "launcher": {
+    "projectile": "Grenade", "guidance": "None", "speed": 32, "maxSpeed": 32, "thrust": 0, "gravity": 1,
+    "drag": 0.05, "radius": 4.2, "falloff": 1.3, "direct": 30, "vehicleMult": 1, "selfDamage": 0.6,
+    "armDistance": 3, "proximity": 0, "fuse": 3, "bounces": 1, "reserve": 6, "lockTime": 1.2,
+    "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
+  },
+  "model": {
+    "base": "grenade_launcher", "receiver": "revolver", "receiverLength": 0.36, "receiverHeight": 0.16, "receiverWidth": 0.15, "barrelWidth": 0.05, "handguard": "none", "handguardLength": 0.0, "foregrip": "vertical", "stock": "skeleton", "finish": "black", "furniture": "polymer", "accentStyle": "mag"
+  }
+}

@@ -485,6 +485,12 @@ public sealed partial class Game
         {
             r.NextTrail = now + 0.03;
             r.PushTrail(r.RenderPos);
+            if (r.Def.LauncherProjectile == LauncherProjectile.Rocket && Vector3.DistanceSquared(r.RenderPos, Hud.Camera.Eye) < 150f * 150f)
+            {
+                // Motor sparks streaming back (the frenzy effects' instanced particle pool: one draw for all of them).
+                var back = -Vector3.Normalize(r.Vel + new Vector3(0, 1e-4f, 0));
+                FrenzyParticles.Spark(r.RenderPos + back * 0.3f, back * 6f + new Vector3(0, 0.5f, 0), new Vector3(1f, 0.6f, 0.2f), 0.05f, 0.18f, 0f, 2f);
+            }
         }
         if (r.Def.LauncherProjectile == LauncherProjectile.Rocket && now >= r.NextMotorSound)
         {
@@ -492,6 +498,9 @@ public sealed partial class Game
             Audio.Effect3DSmall(Sfx.RocketMotor, r.RenderPos, 0.55f, 70f);
         }
     }
+
+    /// <summary>The local player's predicted rockets (drawn like the others until the server's copy takes over).</summary>
+    public IReadOnlyList<Rocket> PredictedRockets => _predictedRockets;
 
     /// <summary>Self-test: every rocket this side knows of (server copies, client copies and predictions).</summary>
     public int SelfTestRocketCount => Rockets.Count + _predictedRockets.Count;

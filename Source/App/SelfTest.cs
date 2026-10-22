@@ -2183,8 +2183,10 @@ public static partial class SelfTest
                 }
             }
         }
-        if (WeaponSelect.Tabs(Slot.Secondary) is not [WeaponClass.Pistol])
-            Fail("the secondary slot should have just the Pistols tab");
+        if (WeaponSelect.Tabs(Slot.Secondary) is not ([WeaponClass.Pistol] or [WeaponClass.Pistol, WeaponClass.Launcher]))
+            Fail("the secondary slot should have just the Pistols and Launchers tabs");
+        if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Launcher))
+            Fail("launchers showing in the primary tabs");
         if (WeaponSelect.Tabs(Slot.Primary).Contains(WeaponClass.Pistol))
             Fail("pistols showing in the primary tabs");
         for (var id = 0; id < seen.Length; id++)

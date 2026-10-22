@@ -86,6 +86,8 @@ public static class WeaponFile
             Add("launcher", LauncherStats.BlockJson(w)); // launchers only, so every other weapon's text (and fingerprint) is unchanged
         if (w.Model != null)
             Add("model", w.Model.ToJson());
+        if (w.Voice != null)
+            Add("voice", w.Voice.ToJson());
         sb.Length -= 2;
         sb.Append("\n}\n");
         return sb.ToString();
@@ -141,6 +143,9 @@ public static class WeaponFile
                 case "launcher":
                     launcher = p.Value; // read after the loop: only a weapon of class Launcher may have one
                     break;
+                case "voice":
+                    w.Voice = VoiceSpec.Read(p.Value, where);
+                    break;
                 case "order":
                     w.Order = Int(p.Value, where);
                     break;
@@ -152,7 +157,7 @@ public static class WeaponFile
                     break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, launcher, model, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, launcher, model, voice, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }

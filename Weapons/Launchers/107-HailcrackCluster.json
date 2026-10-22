@@ -1,0 +1,42 @@
+{
+  "format": "call-of-slop-weapon/1",
+  "name": "Hailcrack Cluster",
+  "order": 107,
+  "unlockLevel": 33,
+  "class": "Launcher",
+  "blurb": "Cluster rocket: the blast throws six bomblets around it.",
+  "damage": 90,
+  "headMult": 1,
+  "pellets": 1,
+  "rangeM": 55,
+  "minDamageMult": 1,
+  "rpm": 50,
+  "mode": "Semi",
+  "burstCount": 3,
+  "burstDelay": 0.25,
+  "mag": 1,
+  "reload": 3.6,
+  "hipSpreadDeg": 2.5,
+  "adsSpreadMult": 0.25,
+  "recoilDeg": 3.2,
+  "mobility": 0.85,
+  "adsZoom": 1.4,
+  "equipTime": 0.9,
+  "adsTime": 0.3,
+  "length": 0.85,
+  "bulk": 1.25,
+  "accent": [0.88, 0.88, 0.29],
+  "sound": "Rocket",
+  "caliber": 0.9,
+  "bright": 0.25,
+  "tail": 0.9,
+  "launcher": {
+    "projectile": "Rocket", "guidance": "None", "speed": 26, "maxSpeed": 50, "thrust": 45, "gravity": 0.12,
+    "drag": 0, "radius": 4, "falloff": 1.2, "direct": 40, "vehicleMult": 1, "selfDamage": 0.6,
+    "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
+    "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 6, "wallPierce": 0
+  },
+  "model": {
+    "base": "rocket_tube", "barrelWidth": 0.12, "barrelLength": 0.5, "shroud": "heatshield", "shroudLength": 0.6, "muzzle": "brake", "finish": "black", "accentStyle": "tips"
+  }
+}
