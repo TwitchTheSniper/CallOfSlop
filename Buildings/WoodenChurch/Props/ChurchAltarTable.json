@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Altar Table",
+  "description": "A wooden altar with a white cloth, two candlesticks and a cross, a curved altar rail in front. Faces +Z.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 1.0, 0.8], "offset": [0, 0.5, -0.4]}, {"size": [3.2, 0.8, 0.12], "offset": [0, 0.4, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "author": "Call of Slop",
+  "parts": [
+    {"size": [1.9, 0.95, 0.75], "offset": [0, 0.475, -0.4], "color": "#8a6a44", "material": "wood"},
+    {"size": [2.0, 0.04, 0.8], "offset": [0, 0.97, -0.4], "color": "#f2f0ea"},
+    {"size": [0.5, 0.5, 0.02], "offset": [0, 0.7, -0.01], "color": "#c8a040"},
+    {"size": [0.05, 0.3, 0.05], "offset": [-0.7, 1.14, -0.5], "color": "#c8a040"},
+    {"size": [0.05, 0.3, 0.05], "offset": [0.7, 1.14, -0.5], "color": "#c8a040"},
+    {"size": [0.06, 0.8, 0.04], "offset": [0, 1.39, -0.7], "color": "#c8a040"},
+    {"size": [0.4, 0.06, 0.04], "offset": [0, 1.55, -0.7], "color": "#c8a040"},
+    {"size": [3.2, 0.06, 0.16], "offset": [0, 0.8, 0.9], "color": "#9ab4c4", "material": "wood"},
+    {"size": [3.2, 0.2, 0.4], "offset": [0, 0.1, 0.95], "color": "#7a5a3a", "material": "wood"},
+    {"size": [0.05, 0.7, 0.05], "offset": [-1.5, 0.45, 0.9], "color": "#7a96a8"},
+    {"size": [0.05, 0.7, 0.05], "offset": [-0.75, 0.45, 0.9], "color": "#7a96a8"},
+    {"size": [0.05, 0.7, 0.05], "offset": [0.0, 0.45, 0.9], "color": "#7a96a8"},
+    {"size": [0.05, 0.7, 0.05], "offset": [0.75, 0.45, 0.9], "color": "#7a96a8"},
+    {"size": [0.05, 0.7, 0.05], "offset": [1.5, 0.45, 0.9], "color": "#7a96a8"}
+  ]
+}

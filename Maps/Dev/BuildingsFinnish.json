@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Finnish Buildings",
+  "description": "The Finnish buildings in a row along a gravel road: wooden houses in their palettes, the cottage, the village shop, the wooden church and the lakeside sauna.",
+  "author": "Call of Slop",
+  "order": 963,
+  "halfX": 58,
+  "halfZ": 30,
+  "sky": [0.62, 0.72, 0.82],
+  "flagPool": ["finland"],
+  "ops": [
+    {"op": "Ground", "color": [0.36, 0.42, 0.28]},
+    {"op": "Perimeter", "height": 4, "color": [0.5, 0.48, 0.44]},
+    {"op": "Block", "x0": -58, "y0": 0, "z0": 2, "x1": 58, "y1": 0.03, "z1": 7, "color": [0.5, 0.47, 0.42]},
+    {"op": "Building", "name": "Finnish Wooden House", "at": [-46, -8], "yaw": 0, "spawns": true},
+    {"op": "Building", "name": "Finnish Wooden House", "at": [-32, -8], "yaw": 0, "spawns": true, "variant": {"palette": "yellow ochre", "mirror": true}},
+    {"op": "Building", "name": "Finnish Wooden House", "at": [-46, 18], "yaw": 180, "spawns": true, "variant": {"palette": "pale green"}},
+    {"op": "Building", "name": "Red Barn Cottage", "at": [-18, -8], "yaw": 0, "spawns": true},
+    {"op": "Building", "name": "Red Barn Cottage", "at": [-30, 18], "yaw": 180, "spawns": true, "variant": {"palette": "yellow ochre"}},
+    {"op": "Building", "name": "Village Shop", "at": [-2, -8.5], "yaw": 0, "spawns": true},
+    {"op": "Building", "name": "Village Shop", "at": [-12, 18.5], "yaw": 180, "spawns": true, "variant": {"palette": "red ochre"}},
+    {"op": "Building", "name": "Wooden Church", "at": [22, -14], "yaw": 0, "spawns": true},
+    {"op": "Building", "name": "Wooden Church", "at": [8, 18], "yaw": 180, "variant": {"palette": "white boards"}},
+    {"op": "Building", "name": "Lakeside Sauna", "at": [40, -8], "yaw": 0},
+    {"op": "Building", "name": "Lakeside Sauna", "at": [40, 16], "yaw": 180, "variant": {"palette": "red ochre"}},
+    {"op": "Prop", "name": "Flag on a Pole", "x": 52, "z": 0, "flag": "finland"},
+    {"op": "Prop", "name": "Mailbox Rack", "x": -24, "z": 1.0},
+    {"op": "Prop", "name": "Moose Warning Sign", "x": 30, "z": 8.0, "yaw": 180},
+    {"op": "RingSpawns", "count": 10, "frac": 0.85},
+    {"op": "AutoWaypoints", "spacing": 6}
+  ],
+  "foliage": {"seed": 5, "regions": [{"type": "grass", "density": 2, "rect": [-57, -29, 57, 29]}, {"type": "pine", "density": 0.01, "rect": [-57, -29, 57, -24]}, {"type": "tree", "density": 0.01, "rect": [-57, 25, 57, 29], "color": [0.78, 0.66, 0.2]}]}
+}
