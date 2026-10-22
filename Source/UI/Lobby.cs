@@ -599,6 +599,16 @@ public sealed partial class Ui
                 if (ImGui.Button("Cancel"u8))
                     _confirmReset = false;
             }
+            // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
+            ImGui.Spacing();
+            ImGui.SeparatorText("Saves"u8);
+            ImGuiSafe.TextColored(Dim, $"Save folder: {SavePaths.Folder}");
+            if (ImGui.Button("Open save folder"u8))
+                SavePaths.OpenFolder();
+            ImGui.SameLine();
+            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            if (SavePaths.Warning is { } saveWarning)
+                ImGuiSafe.TextColored(Red, saveWarning);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -779,6 +789,36 @@ public sealed partial class Ui
                     s.FrenzyVisuals = (FrenzyVisualMode)frenzyFx;
             }
             ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
+
+            ImGui.Spacing();
+            ImGui.Text("Blood overlay"u8);
+            var blood = (int)s.BloodOverlay;
+            for (var i = 0; i <= (int)BloodMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodMode)i}##blood", ref blood, i))
+                    s.BloodOverlay = (BloodMode)blood;
+            }
+            ImGui.Text("Blood colour"u8);
+            var bloodColour = (int)s.BloodColour;
+            for (var i = 0; i <= (int)BloodColour.Dark; i++)
+            {
+                ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodColour)i}##bloodcol", ref bloodColour, i))
+                    s.BloodColour = (BloodColour)bloodColour;
+            }
+            ImGui.TextColored(Dim, "Blood splatters at the screen edges as your health drops (more the lower it gets, from the side you were hit), and blood marks on hurt players and zombies. They fade as health comes back. Subtle: fewer and fainter; Off: none. Dark: a darker colour instead of red."u8);
+            ImGui.Text("Gore"u8);
+            var gore = (int)s.Gore;
+            for (var i = 0; i <= (int)GoreMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreMode)i}##gore", ref gore, i))
+                    s.Gore = (GoreMode)gore;
+            }
+            ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);

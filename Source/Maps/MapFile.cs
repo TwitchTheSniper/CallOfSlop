@@ -197,6 +197,8 @@ public static partial class MapFile
         sb.Append($"  \"order\": {m.Order},\n");
         if (m.PrototypeGrid)
             sb.Append("  \"prototypeGrid\": true,\n");
+        if (!m.Penetration)
+            sb.Append("  \"penetration\": false,\n");
         if (m.FlagPoolJson is { } flagPool)
             sb.Append("  \"flagPool\": ").Append(flagPool).Append(",\n");
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
@@ -311,6 +313,8 @@ public static partial class MapFile
                     ? mpi : throw new MapFileException($"{source}: \"maxPlayers\" is a whole number from 2 to {Map.HardMaxPlayers}");
             if (Prop(root, "prototypeGrid") is { ValueKind: JsonValueKind.True })
                 map.PrototypeGrid = true;
+            if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
+                map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
             if (Prop(root, "flagPool") is { ValueKind: not JsonValueKind.Null } flagPool)
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)

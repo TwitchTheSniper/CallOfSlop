@@ -91,6 +91,8 @@ public sealed partial class Game
             if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.2f)
                 continue; // something else in between (the prop's own surface is at dist)
             var dmg = MathF.Max(1f, maxDamage * MathF.Pow(1f - dist / radius, 1.4f));
+            if (map.PropInstances[i].Def.Breakable is { IsAnimal: true } animal && dist <= radius * GibBlastFraction)
+                dmg = MathF.Max(dmg, animal.Health); // an animal near a blast goes at once (GameGibs.cs)
             DamageProp(owner, i, dmg, kind, center, now);
         }
     }
@@ -419,6 +421,11 @@ public sealed partial class Game
         if ((uint)i >= (uint)map.PropInstances.Count)
             return;
         var p = map.PropInstances[i];
+        if (p.Def.Breakable is { IsAnimal: true })
+        {
+            OnAnimalGibbed(i, p, from, kind); // meaty gibs instead of debris (GameGibs.cs)
+            return;
+        }
         PropDebris.Spawn(p, from, kind, i * 7919 + (int)(PropDebris.Spawned & 0xFFFF));
         if (p.Def.Breakable is { } br)
             Audio.Effect3D(br.Sound switch

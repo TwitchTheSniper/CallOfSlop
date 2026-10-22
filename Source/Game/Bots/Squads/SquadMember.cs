@@ -138,6 +138,8 @@ public sealed partial class Game
                             b.SuppressAim = over;
                         }
                     }
+                    if (inRange && !b.SuppressLos && BotSuppressThroughWall(p, o))
+                        b.SuppressLos = true; // a fresh last known spot behind a wall their gun goes through (GamePenetration.cs)
                 }
                 if (b.SuppressLos)
                     s.Stationary = true;

@@ -221,9 +221,12 @@ public sealed unsafe class PropRenderer
         out vec3 vNormal;
         out vec3 vColor;
         out vec2 vUv;
+        out vec3 vLocal;
         flat out float vLayer;
         flat out float vFade;
         flat out float vHash;
+        flat out float vBlood;
+        flat out float vBloodSeed;
 
         vec3 Rotate(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 
@@ -236,9 +239,43 @@ public sealed unsafe class PropRenderer
             vLayer = -1.0;
             vFade = iPosFade.w;
             vHash = fract(iPosFade.x * 7.31 + iPosFade.z * 3.17);
+            vLocal = aPos * iSize.xyz;    // box-local metres: ragdoll blood rides with the box
+            vBlood = iColor.w;            // ragdoll blood amount 0-1 (negative: zombie ichor; Ragdolls.cs), 0 for debris
+            vBloodSeed = iSize.w;
             gl_Position = uViewProj * vec4(vWorld, 1.0);
         }
         """;
+
+    /// <summary>
+    /// The debris / ragdoll fragment shader: the plain one plus ragdoll blood (the body's final blood marks as a blocky,
+    /// ragged coverage per box, <see cref="BodyBloodRender.RagdollAmounts"/>). uBloodCol.w = 0 turns it off.
+    /// </summary>
+    private static string DebrisFragmentSrc => FragmentSrc
+        .Replace("out vec4 FragColor;", """
+            in vec3 vLocal;
+            flat in float vBlood;
+            flat in float vBloodSeed;
+            uniform vec4 uBloodCol;
+            out vec4 FragColor;
+            float BloodHash(vec3 p)
+            {
+                p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+                p += dot(p, p.yxz + 33.33);
+                return fract((p.x + p.y) * p.z);
+            }
+            """)
+        .Replace("float rim = 0.12 * (1.0 - abs(n.y));", """
+            if (vBlood != 0.0 && uBloodCol.w > 0.5)
+            {
+                float amt = abs(vBlood);
+                float fine = BloodHash(floor(vLocal * 30.0) + vBloodSeed * 61.0);
+                float blot = BloodHash(floor(vLocal * 6.0) + vBloodSeed * 37.0);
+                float cover = step(1.0 - amt * 0.9, blot * 0.65 + fine * 0.35);
+                vec3 bc = vBlood < 0.0 ? vec3(0.2, 0.11, 0.035) : uBloodCol.rgb;
+                col = mix(col, bc * (0.75 + 0.3 * fine), cover);
+            }
+            float rim = 0.12 * (1.0 - abs(n.y));
+            """);
 
     private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
 
@@ -282,7 +319,7 @@ public sealed unsafe class PropRenderer
     private GlVertexArray _vao, _debrisVao;
     private GlBuffer _meshVbo, _meshIbo, _instVbo, _cubeVbo, _debrisVbo;
     private int _locViewProj, _locCam, _locFog, _locFogRange;
-    private int _dLocViewProj, _dLocCam, _dLocFog, _dLocFogRange;
+    private int _dLocViewProj, _dLocCam, _dLocFog, _dLocFogRange, _dLocBlood;
 
     // Animated props (PropAnim.cs): a second program and vertex array that add one per-vertex stream (the record of each
     // vertex's part) and read the records from a small float texture. Disabled cleanly if any of it fails: animated props
@@ -302,7 +339,7 @@ public sealed unsafe class PropRenderer
     private int _breakVersion = -1;
     private PropBatches _batches = new();
     private readonly Vector4[] _planes = new Vector4[6];
-    private readonly float[] _debrisData = new float[(PropDebris.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece]; // debris, then ragdoll boxes (Ragdolls.cs)
+    private readonly float[] _debrisData = new float[(PropDebris.Capacity + Gibs.Capacity + Ragdolls.MaxInstances) * PropDebris.FloatsPerPiece]; // debris, gibs (Gibs.cs), then ragdoll boxes (Ragdolls.cs)
     private double _lastNow;
 
     // GPU timing: timestamps around the plain pass (pass 0, with debris) and the animated pass (pass 1).
@@ -367,9 +404,10 @@ public sealed unsafe class PropRenderer
         var dt = (float)Math.Clamp(now - _lastNow, 0, 0.1);
         _lastNow = now;
         PropDebris.Update(dt);
+        Gibs.Update(dt, now);
         if (_broken)
             return;
-        if (map.PropInstances.Count == 0 && PropDebris.Count == 0 && !Ragdolls.HasInstances)
+        if (map.PropInstances.Count == 0 && PropDebris.Count == 0 && Gibs.Count == 0 && !Ragdolls.HasInstances)
         {
             if (_batches.Count > 0)
                 Free();
@@ -432,6 +470,7 @@ public sealed unsafe class PropRenderer
         }
 
         var debris = PropDebris.Write(_debrisData);
+        debris = Gibs.Write(_debrisData, debris); // meaty gibs (Gibs.cs)
         debris = Ragdolls.WriteInstances(_debrisData, debris); // the ragdolls' boxes ride in the same instanced draw
         if (debris > 0)
         {
@@ -440,6 +479,8 @@ public sealed unsafe class PropRenderer
             Native.glUniform3f(_dLocCam, cam.X, cam.Y, cam.Z);
             Native.glUniform3f(_dLocFog, fog.X, fog.Y, fog.Z);
             Native.glUniform2f(_dLocFogRange, fogRange.X, fogRange.Y);
+            var bc = BodyBloodRender.PlayerColor;
+            Native.glUniform4f(_dLocBlood, bc.X, bc.Y, bc.Z, BodyBloodRender.Mode == BloodMode.Off ? 0f : 1f); // ragdoll blood (Ragdolls.cs)
             _debrisVao.Bind();
             Native.glBindBuffer(GL_ARRAY_BUFFER, _debrisVbo);
             var bytes = debris * PropDebris.FloatsPerPiece * sizeof(float);
@@ -683,11 +724,12 @@ public sealed unsafe class PropRenderer
             _locCam = Uniform(_program, "uCam\0"u8);
             _locFog = Uniform(_program, "uFog\0"u8);
             _locFogRange = Uniform(_program, "uFogRange\0"u8);
-            _debrisProgram = Link(DebrisVertexSrc, FragmentSrc);
+            _debrisProgram = Link(DebrisVertexSrc, DebrisFragmentSrc);
             _dLocViewProj = Uniform(_debrisProgram, "uViewProj\0"u8);
             _dLocCam = Uniform(_debrisProgram, "uCam\0"u8);
             _dLocFog = Uniform(_debrisProgram, "uFog\0"u8);
             _dLocFogRange = Uniform(_debrisProgram, "uFogRange\0"u8);
+            _dLocBlood = Uniform(_debrisProgram, "uBloodCol\0"u8);
 
             // Props: mesh attributes 0-3 from the shared mesh buffer, instance attributes 4-5.
             _vao = GenVertexArray();

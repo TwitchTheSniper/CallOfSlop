@@ -528,7 +528,7 @@ public sealed partial class Game
             var reach = ZRules.ZombieReach + (backToWindow ? 0.35f : 0f) + 0.45f; // a little slack: you can still back away during the windup
             if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < 1.6f)
             {
-                ZombieHurt(t, ZRules.ZombieDamage, now);
+                ZombieHurt(t, ZRules.ZombieDamage, now, z.Position);
                 Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f);
             }
         }

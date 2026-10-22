@@ -33,7 +33,10 @@ public static class BuildStore
 
     private static bool _loaded;
 
-    private static string PathName => Path.Combine(AppContext.BaseDirectory, "workbench.txt");
+    private static string PathName => SavePaths.PathOf("workbench.txt");
+
+    /// <summary>The <c>version=</c> line written to workbench.txt (files without one load the same).</summary>
+    public const int SaveVersion = 1;
 
     /// <summary>Reads workbench.txt once (missing file: the example builds fill the slots).</summary>
     public static void EnsureLoaded()
@@ -44,8 +47,7 @@ public static class BuildStore
         string[]? lines = null;
         try
         {
-            if (File.Exists(PathName))
-                lines = File.ReadAllLines(PathName);
+            lines = SavePaths.ReadLines(PathName, SaveVersion);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
@@ -134,7 +136,7 @@ public static class BuildStore
             return;
         try
         {
-            File.WriteAllLines(PathName, Lines());
+            SavePaths.WriteLines(PathName, Lines(), SaveVersion);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

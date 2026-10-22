@@ -31,6 +31,7 @@ public enum PropBreakSound : byte
     Glass,
     Metal,
     Soft, // cardboard, plastic, paper
+    Meat, // animals (a wet squelch; set by a "gibs" block, see Gibs.cs)
 }
 
 /// <summary>One box of a prop's model, in the prop's own frame (metres, origin on the ground at the prop's centre).</summary>
@@ -125,6 +126,18 @@ public sealed class PropBreakable
 
     /// <summary>Has a pressure plate (a landmine).</summary>
     public bool IsMine => TriggerRadius > 0;
+
+    /// <summary>
+    /// An animal (the "gibs" block): it bursts into this many meaty gibs instead of its debris (<see cref="Gibs"/>), and a
+    /// blast within <see cref="Game.GibBlastFraction"/> of its radius breaks it at once. 0 = an ordinary prop.
+    /// </summary>
+    public int GibCount;
+
+    /// <summary>What its skin bursts into besides meat and bone: fur, feathers or wool.</summary>
+    public GibStyle GibStyle = GibStyle.Fur;
+
+    /// <summary>Is it an animal that bursts into gibs?</summary>
+    public bool IsAnimal => GibCount > 0;
 }
 
 /// <summary>

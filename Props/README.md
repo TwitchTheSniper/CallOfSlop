@@ -102,8 +102,9 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 |---|---|---|
 | `health` | 50 | Damage it takes to break. A rifle bullet does about 25-35, a melee swing 55, a frag grenade up to 120 at the centre. |
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
-| `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
+| `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"`, `"soft"` (cardboard, plastic, paper) or `"meat"` (animals; set for you by `gibs`). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
+| `gibs` | none | It's an animal: instead of `debris` it bursts into `count` (1-40, default 8) meaty gibs, with `style` `"fur"` (default), `"bird"` (feathers) or `"wool"` (see [Animals](#animals)). Its break sound is a wet squelch; it can't also `explode`. |
 | `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. `trigger` makes it a pressure-plate mine (see [Landmines](#landmines)). |
 
 How breaking works in a match:
@@ -118,6 +119,27 @@ How breaking works in a match:
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
 
 A map can bring any breakable prop back during a match: `{ "op": "Prop", "name": "Landmine", "x": 18, "z": 10, "respawn": 8 }` puts it back 8 seconds after it broke (1 to 3600 s; the default 0 means not until the next match). It waits while anyone is standing on or right next to its spot, so it never comes back under someone's feet. `respawn` is for the `Prop` op only (not `Clutter`), and an unbreakable prop with one is an error.
+
+### Animals
+
+Real animals are breakable props with a `gibs` block. When one breaks it bursts into meaty gibs (Source/Props/Gibs.cs) instead of debris: red and pink meat chunks, a few bone-white bits, and feathers (`"bird"`, they flutter down slowly), white wool tufts (`"wool"`) or fur in the animal's own colours (`"fur"`; feathers and fur take the `debris` block's `colors` if it has any, else the parts' colours). Gibs fly away from the hit (twice as hard from a blast), bounce, slide to a stop, leave a small blood splat where meat lands (a `Gore` impact decal, Decals/Gore), lie there for about 15 s and dither out. At most 320 gib pieces exist at once (oldest first), cleared every map and match. A blast within 60% of its radius breaks an animal at once, whatever its health. Animals give no kill, XP or kill feed line, and `respawn` brings them back like any breakable prop.
+
+```json
+"breakable": { "health": 20, "breakBy": "all", "gibs": { "count": 10, "style": "bird" } }
+```
+
+| Animal | `health` | `gibs` |
+|---|---|---|
+| Bird on a Perch | 8 | 5 bird (red plumage) |
+| Chicken, Mallard Duck, Hen Duck, Duck on a Pond | 15 | 8 bird |
+| Pigeons (a flock of three, one prop) | 20 | 10 bird |
+| Duck Family (one prop) | 25 | 12 bird |
+| Cat | 45 | 12 fur |
+| Dog | 60 | 14 fur |
+| Sheep | 110 | 18 wool |
+| Dairy Cow, Grazing Cow | 250 | 24 fur |
+
+Pick `health` by size (a bird goes in one shot, a cow takes most of a magazine) and `count` from about 5 for a small bird to 24 for a cow. Toys and objects never get `gibs`: Rubber Duck, Giant Rubber Duck, Duck Decoy, Duck Pond, Teddy Bear, Bird Bath, Bird Cage Stand. Animated animals (Bird on a Perch, Duck on a Pond) stop moving and vanish when they burst. The player's **Gore** setting (Settings > Video) makes it Full, Reduced (half the gibs, no blood) or Off (a small puff of feathers or dust instead).
 
 ### Landmines
 
