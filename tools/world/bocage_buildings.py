@@ -301,7 +301,7 @@ def barn():
                 "openings": u_ops,
             },
         ],
-        "stairs": [{"floor": 0, "rect": [-7.9, -4.65, -4.7, -3.65], "dir": "+x", "color": {"color": "#5e4630", "material": "wood"}}],
+        "stairs": [{"floor": 0, "rect": [-3.4, -4.65, -0.2, -3.65], "dir": "+x", "color": {"color": "#5e4630", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 48, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
         "extras": [
             {"type": "prop", "name": "Hay Bale Stack", "at": [-11.0, 3.0], "yaw": 90},
