@@ -1338,7 +1338,10 @@ public sealed partial class Game : IDisposable
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 if (VoteOpen)
+                {
+                    RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
                     SendVoteState(sender); // joined during the results screen: show the ballot
+                }
                 Log($"Player {newId} connected ({Net.ConnectionCount} connected)");
                 BroadcastRoster();
                 break;
