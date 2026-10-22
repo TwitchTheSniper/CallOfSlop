@@ -916,7 +916,7 @@ public sealed partial class Game : IDisposable
                     OnLocalSpawn(p);
             }
 
-            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw };
+            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
         }
 
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
@@ -1109,8 +1109,8 @@ public sealed partial class Game : IDisposable
         var t0 = (uint)Math.Floor(tick);
         var t1 = Math.Min(t0 + 1, ServerTick);
         var frac = (float)(tick - t0);
-        var a = p.History[t0 % Player.HistorySize];
-        var b = p.History[t1 % Player.HistorySize];
+        var a = RecordedState(p, t0);
+        var b = RecordedState(p, t1);
         return new HistoryEntry
         {
             Position = Vector3.Lerp(a.Position, b.Position, frac),
@@ -1118,6 +1118,25 @@ public sealed partial class Game : IDisposable
             Yaw = World.LerpAngle(a.Yaw, b.Yaw, frac),
         };
     }
+
+    /// <summary>
+    /// The history slot for <paramref name="tick"/>, or the player's live state when that slot is stale. The current
+    /// tick's slot is only written once the player has been simulated this tick, so a bot, turret or bot melee resolving
+    /// at <see cref="ServerTick"/> mid-tick used to read, for anyone later in the update order, the entry from
+    /// <see cref="Player.HistorySize"/> ticks ago (bots missed whoever joined after them). Those players haven't moved
+    /// yet this tick, so their live state is where they are. Past ticks use their recorded entry, or a spawn/teleport
+    /// fill (tick 0) as before; any other mismatch (a slot from an older lap of the ring) falls back to live too.
+    /// </summary>
+    private HistoryEntry RecordedState(Player p, uint tick)
+    {
+        var e = p.History[tick % Player.HistorySize];
+        if (tick != 0 && e.Tick == tick || e.Tick == 0 && tick < ServerTick)
+            return e;
+        return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick };
+    }
+
+    /// <summary>Self-test: where lag compensation puts <paramref name="p"/> for a shot aimed at <paramref name="tick"/>.</summary>
+    public HistoryEntry SelfTestHistoricState(Player p, double tick) => HistoricState(p, tick);
 
     /// <summary>
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
