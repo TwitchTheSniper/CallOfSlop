@@ -62,7 +62,7 @@ public static partial class SelfTest
             var partCount = new long[5];
             long nan = 0, clipped = 0, samples = 0;
             float peak = 0;
-            var dropStart = (long)(t.FirstDropBar * t.SecondsPerBar * sr);
+            var dropStart = (long)(t.BarStart(t.FirstDropBar) * sr);
             var drop = new float[sr * 3];
             dropWindows[ti] = drop;
             var frame = 0L;
@@ -74,7 +74,7 @@ public static partial class SelfTest
                 var t0 = Stopwatch.GetTimestamp();
                 r.Render(block);
                 ticks += Stopwatch.GetTimestamp() - t0;
-                var bar = (int)(frame / (t.SecondsPerBar * sr));
+                var bar = t.BarAt(frame / (double)sr); // weird tracks have bars of different lengths
                 var part = PartAt(t, bar);
                 for (var i = 0; i < block.Length; i += 2)
                 {
@@ -109,8 +109,6 @@ public static partial class SelfTest
             var clipPct = samples == 0 ? 0 : 100.0 * clipped / samples;
             stats[ti] = new MusicTrackStats(Rms(MusicPart.Intro), Rms(MusicPart.Build), Rms(MusicPart.Drop), Rms(MusicPart.Break), peak, clipped, ms / seconds,
                                             t.Style == MusicStyle.Hardbass ? r.LimiterMinGain : 1f);
-            if (ms / seconds > MusicBudgetMsPerSecond)
-                Fail($"{t.Name}: rendering costs {ms / seconds:0.0} ms per second of audio (budget {MusicBudgetMsPerSecond} for every track)");
             Line($"{t.Name,-24} {t.Set,-5} {t.Style,-11} {t.Bpm,3:0} BPM  {t.Key,-21} {seconds,4:0} s  rms intro {Rms(MusicPart.Intro):0.000} "
                  + $"build {Rms(MusicPart.Build):0.000} drop {Rms(MusicPart.Drop):0.000} break {Rms(MusicPart.Break):0.000} outro {Rms(MusicPart.Outro):0.000}  "
                  + $"peak {peak:0.000} clipped {clipPct:0.000}%  {ms / seconds:0.0} ms per s");
@@ -134,6 +132,11 @@ public static partial class SelfTest
                 Fail($"{t.Name}: the intro ({Rms(MusicPart.Intro):0.000}) is louder than the drops ({Rms(MusicPart.Drop):0.000})");
             if (Rms(MusicPart.Drop) > 0.6)
                 Fail($"{t.Name}: drops are crushed (rms {Rms(MusicPart.Drop):0.000})");
+            // CPU per track: the median of repeated timed renders of its heaviest parts (one slow run on a shared CI runner
+            // used to fail the raw single-pass number); see MusicTrackCost in SelfTestWeirdHardbass.cs.
+            var cost = MusicTrackCost(r, t, block);
+            if (cost > MusicTrackBudgetMsPerSecond)
+                Fail($"{t.Name}: rendering costs {cost:0.0} ms per second of audio (median; budget {MusicTrackBudgetMsPerSecond} for every track)");
         }
         Line($"track costs (ms per s of audio):{costs}");
         var msPerSecond = renderMs / renderSeconds;
