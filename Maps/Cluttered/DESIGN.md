@@ -391,11 +391,19 @@ Branch, Mossy Boulder, Forest Stones, Toadstools, Leaf Litter, Fern Clump, Trail
 Box Post, Field Radio (blinking), Map Table, Bunker Cage Lamp (flickering), Supply Crate, Ammo Can, Bunker Hatch Lid,
 and the cabin kit.
 
-**Performance.** About 80 boxes plus the trunks are drawn one by one (the cabins are instanced props); props, plants and
-meshes are instanced and culled; litter fades with distance; animated props hold still past 80 m. The plant count is in
-Sprawl's range and the props about Old Town's, so it should run near their ~1,700 fps on the user's PC. The smoke run's
-`cluttered_timberline` (from above the lake) and `cluttered_timberline_forest` (eye height on Blue's trail) views log fps,
-props, plants and draw calls.
+**Object counts** (from the self-test): 4,290 props (740 hand-placed, about 3,550 from 87 cosmetic Clutter ops of forest
+floor litter, branches, stones, ferns and toadstools, and camp and trail litter; 519 solid, 514 breakable, 4 explosive
+barrels and 2 jerry cans, all over 10 m from any spawn), 51,968 plants (313 trees: pines and broadleaf), 1,038 meshes (the
+scenery pines, water, the creek, bridges' rails, floors and ceilings, roofs), 411 boxes drawn one by one (313 of them
+trunks; the rest the bunkers' walls and roofs, the sawmill, the woodshed, the lookout, the dock and bridge decks, rocks),
+24 spawns (9 + 9 team, 6 more), about 570 waypoints. Bots: 16-player free-for-all and team matches with no stuck, fallen
+or escaped bots and under 1 ms of tick work.
+
+**Performance.** About 100 boxes plus the trunks are drawn one by one (the cabins are instanced kit props, not boxes);
+props, plants and meshes are instanced and culled; litter fades with distance; animated props hold still past 80 m. The
+plants (52,000) sit between Old Town's 32,000 and Sprawl's 72,000 and the props match Old Town's, both of which run near
+1,700 fps on the user's PC, so this map should too. The smoke run's `cluttered_timberline` (from above the lake) and
+`cluttered_timberline_forest` (eye height on Blue's trail) views log fps, props, plants and draw calls.
 
 `tools/cluttered/timberline.py` regenerates the map (with `terrain.py`, the Python port of the game's terrain generator,
 for the heights the bunkers and the water need) and, given a PNG path, a top-down preview with the walks and sight lines.
