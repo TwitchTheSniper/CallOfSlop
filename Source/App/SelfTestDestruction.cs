@@ -127,6 +127,7 @@ public static partial class SelfTest
             Fail($"{falling.Count} chunks fall on a fresh map (first: {d.Original[falling[0]].Center})");
         // Determinism: a second load cuts exactly the same chunks, with the same fingerprint.
         var copy = MapFile.Load(File.ReadAllText(Path.Combine(Maps.Folder, map.SourceFile!)), map.SourceFile!);
+        copy.Validate(); // as the map list does (spawns and waypoints snapped and fixed)
         var cd = copy.Destruction;
         var why = cd == null ? "no chunks" : cd.Count != d.Count ? $"{cd.Count} chunks, not {d.Count}"
             : Enumerable.Range(0, d.Count).FirstOrDefault(c => cd.Original[c] != d.Original[c], -1) is var c1 and >= 0 ? $"chunk {c1} at {cd.Original[c1].Center} vs {d.Original[c1].Center}"
@@ -333,7 +334,15 @@ public static partial class SelfTest
         if (floorFell == 0)
             Fail("the floor above didn't fall when the ground floor's walls were gone");
         if (fallen < floor1.Count / 2)
-            Fail($"only {fallen} chunks fell when the ground floor went ({ground.Count} broken, {floorFell} of {floor1.Count} floor-1 slabs, the farthest floor-1 slab {floor1.Max(c => d.LastDistance(c)):0.0} m from support)");
+        {
+            d.Unsupported(s, new List<int>());
+            var standing = floor1.Where(c => !d.Broken[c]).ToList();
+            var anchors = ChunksOf(d, s).Count(c => !d.Broken[c] && (d.Flags[c] & MapDestruction.FlagAnchor) != 0);
+            var statics = ChunksOf(d, s).Count(c => (d.Flags[c] & MapDestruction.FlagStatic) != 0);
+            Fail($"only {fallen} chunks fell when the ground floor went ({ground.Count} broken, {floorFell} of {floor1.Count} floor-1 slabs; {anchors} anchors left, {statics} free-standing; "
+                 + $"standing floor-1 slabs: distance {(standing.Count > 0 ? standing.Max(c => d.LastDistance(c)) : 0):0.0} m max, reach {(standing.Count > 0 ? standing.Min(c => d.Allowed[c]) : 0):0.0}-{(standing.Count > 0 ? standing.Max(c => d.Allowed[c]) : 0):0.0} m, "
+                 + $"material {(standing.Count > 0 ? d.MaterialOf(standing[0]).Key : "-")}; walls left on the ground floor {ChunksOf(d, s).Count(c => !d.Broken[c] && d.Original[c].Min.Y < level1 - 0.25f && (d.Flags[c] & MapDestruction.FlagFloor) == 0)})");
+        }
         if (game.FallHits == 0 || (me.Alive && me.Health >= World.MaxHealth))
             Fail("a falling floor didn't hurt the player under it");
         if (ms > 60)

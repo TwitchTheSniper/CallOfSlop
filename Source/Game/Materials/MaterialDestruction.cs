@@ -52,7 +52,7 @@ public sealed class DestructionRules
     /// <summary>No piece narrower than this (m): a cut that would leave a sliver at a box's end is skipped.</summary>
     public float MinPiece = 0.3f;
 
-    public int MaxPerBox = 48, MaxPerBuilding = 2600, MaxPerMap = 36000;
+    public int MaxPerBox = 48, MaxPerBuilding = 4000, MaxPerMap = 40000;
 
     /// <summary>Ground-floor chunks within this distance (m) of a footprint corner are load-bearing (never break). 0: none.</summary>
     public float CornerPillar = 0.8f;

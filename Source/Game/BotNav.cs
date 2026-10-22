@@ -319,8 +319,8 @@ public sealed partial class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         // ---- How open the view is from each node ----
-        g.Openness = new byte[count];
-        for (var i = 0; i < count; i++)
+        g.Openness = new byte[g.Nodes.Length]; // (with the spare nodes on a destructible map)
+        for (var i = 0; i < g.Nodes.Length; i++)
         {
             g.Openness[i] = g.SpareCount > 0 && i >= g.SpareStart ? (byte)0 : OpennessAt(c, g.Nodes[i]); // parked spares: nothing to see
             if (i % 4 == 3)

@@ -7,8 +7,8 @@
     "slabCell": 2.0,
     "minPiece": 0.3,
     "maxPerBox": 48,
-    "maxPerBuilding": 2600,
-    "maxPerMap": 36000
+    "maxPerBuilding": 4000,
+    "maxPerMap": 40000
   },
   "rules": {
     "cornerPillar": 0.8,
