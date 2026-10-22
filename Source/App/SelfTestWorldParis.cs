@@ -25,9 +25,8 @@ public static partial class SelfTest
         var buildingBoxes = Enumerable.Range(0, m.Solid.Count).Count(m.IsBuildingBox);
         var solidProps = m.PropInstances.Count(p => p.Def.IsSolid);
         var mesh = DecalBaker.Bake(m);
-        CheckCaveOpenings(m, fail: true);
-        foreach (var other in Maps.All.Where(x => x != m && x.Terrain is { HasVoids: true }))
-            CheckCaveOpenings(other, fail: false);
+        var caves = CheckCaveOpenings(m, fail: true);
+        var otherCaves = Maps.All.Where(x => x != m && x.Terrain is { HasVoids: true }).Select(x => CheckCaveOpenings(x, fail: false)).ToList();
         CheckBuildingNav(m);
         var g = NavGraph.Current;
         var search = new NavSearch();
@@ -46,7 +45,7 @@ public static partial class SelfTest
                       + $"{m.Solid.Count} boxes ({buildingBoxes} building); {m.PropInstances.Count} props ({solidProps} solid); "
                       + $"decals {mesh.Placed}/{mesh.Requested} placed, {mesh.Triangles} triangles in {mesh.Chunks.Length} chunks; "
                       + $"{spawns.Count} spawns ({unmatched} unmirrored); nav {g.Nodes.Length} nodes, {g.EdgeCount} edges, {g.MantleEdges} mantles, "
-                      + $"{unreachable} far spawn pairs unreachable";
+                      + $"{unreachable} far spawn pairs unreachable; {caves}" + (otherCaves.Count > 0 ? "; others: " + string.Join("; ", otherCaves) : "");
         Line(summary);
         Line("::notice title=Paris Quarter (results)::" + summary.Replace("%", "%25"));
         if (mesh.Placed < mesh.Requested * 0.6)
@@ -59,10 +58,10 @@ public static partial class SelfTest
     /// players and bots walking through it), and no box stands in the walking column along a cave's centre line. Paris
     /// Quarter fails on any; other maps with caves only report theirs (<paramref name="fail"/> false).
     /// </summary>
-    private static void CheckCaveOpenings(Map m, bool fail)
+    private static string CheckCaveOpenings(Map m, bool fail)
     {
         if (m.Terrain is not { Voids: { } v } t)
-            return;
+            return "";
         var cx = t.CountX - 1;
         var covered = new List<string>();
         var openCells = 0;
@@ -114,13 +113,15 @@ public static partial class SelfTest
             }
         }
         var distinct = covered.Distinct().ToList();
-        Line($"cave openings on {m.Name}: {openCells} open cells, {covered.Count} covered by a box or mesh, {v.NavPoints.Length} tunnel points, {blockedPath.Count} blocked"
-             + (distinct.Count > 0 ? "; e.g. " + string.Join("; ", distinct.Take(3)) : "") + (blockedPath.Count > 0 ? "; " + string.Join("; ", blockedPath.Take(3)) : ""));
+        var summary = $"cave openings on {m.Name}: {openCells} open cells, {covered.Count} covered by a box or mesh, {v.NavPoints.Length} tunnel points, {blockedPath.Count} blocked"
+                      + (distinct.Count > 0 ? " (e.g. " + string.Join("; ", distinct.Take(2)) + ")" : "") + (blockedPath.Count > 0 ? " (" + string.Join("; ", blockedPath.Take(2)) + ")" : "");
+        Line(summary);
         if (!fail)
-            return;
+            return summary;
         foreach (var c in distinct.Take(6))
             Fail($"{m.Name}: cave opening covered: {c}");
         foreach (var c in blockedPath.Take(6))
             Fail($"{m.Name}: cave path blocked: {c}");
+        return summary;
     }
 }

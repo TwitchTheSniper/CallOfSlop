@@ -20,8 +20,8 @@ The quarter climbs from south to north in three levels joined by stone retaining
   Petit Zinc cafe-tabac); the team plazas at both ends with a cul-de-sac (the flags) and the **metro**: a railed
   stairwell (an open trench with stone treads, railings and a cast-iron arch with its MÉTRO plate) in each plaza drops
   into a zig-zag tunnel and a roofed station hall under the square; nothing is laid over the openings (the self-test
-  checks every open cell against the map's boxes and meshes)
-  (pillars, benches, ticket and vending machines, posters). It is the underground flank between the plazas.
+  checks every open cell against the map's boxes and meshes). The station has pillars, benches, ticket and vending
+  machines and posters. It is the underground flank between the plazas.
 - **C, Rue des Lilas (y 6).** The north street and the north row: two Haussmann blocks, a boulangerie and a corner
   cafe-brasserie per side; the two brasseries face each other across the Passage des Artistes (terraces, and a plank
   sky bridge between their roofs). Behind them the north courtyards, an alley out to a dead end, and the belvedere
