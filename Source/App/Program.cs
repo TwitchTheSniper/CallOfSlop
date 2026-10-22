@@ -16,6 +16,7 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
 /// </summary>
 public static unsafe partial class Program
@@ -85,6 +86,12 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
 
+        // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
+        // The smoke test works on a throwaway copy and never touches the real save folder.
+        if (args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+            SavePaths.UseSmokeSandbox(args);
+        else
+            SavePaths.Init(args);
         _settings = Settings.Load();
         _progress = Progress.Load();
         LoadoutStore.Load();
@@ -92,7 +99,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        var plain = args.Where(a => !a.StartsWith("--")).ToArray();
+        var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--")).ToArray();
 
         // Remove the router mapping even if the process is closed abruptly.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => _upnp?.Dispose();
@@ -1119,6 +1126,8 @@ public static unsafe partial class Program
                 }
                 else
                 {
+                    if (SavePaths.TakeWarningOnce() is { } saveWarning)
+                        _lobbyMessage = saveWarning; // a save from a newer build that this one won't overwrite (shown once)
                     var action = Ui.DrawLobby(_settings, _lobbyMessage, AudioSystem);
                     if (action == LobbyAction.Quit)
                         _quit = true;
@@ -2072,6 +2081,8 @@ public static unsafe partial class Program
                     var sx = (i & 1) == 0 ? -1 : 1;
                     var sy = (i & 2) == 0 ? -1 : 1;
                     Gfx.Rect(cx + sx * 14 * k - 3 * k, cy + sy * 14 * k - 3 * k, 6 * k, 6 * k, c);
+                    if (_game.HitMarkerWallbang) // through a wall: a second, inner set of ticks (GamePenetration.cs)
+                        Gfx.Rect(cx + sx * 7 * k - 1.5f * k, cy + sy * 7 * k - 1.5f * k, 3 * k, 3 * k, c);
                 }
             }
 
