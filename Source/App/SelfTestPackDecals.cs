@@ -131,6 +131,7 @@ public static partial class SelfTest
         if (sa.Local.Length != 1)
             Fail($"DecalPackA: {sa.Local.Length} decals loaded (expected 1: the duplicate name and the impact decal are skipped)");
         var newErrors = Decals.LoadErrors.Skip(errorsBefore).ToList();
+        Decals.LoadErrors.RemoveRange(errorsBefore, newErrors.Count); // expected ones: don't leave them in the library's list
         if (!newErrors.Any(e => e.Contains("already called", StringComparison.Ordinal)) || !newErrors.Any(e => e.Contains("impact decals are global", StringComparison.Ordinal)))
             Fail($"DecalPackA's duplicate name / impact decal weren't reported: {string.Join(" | ", newErrors)}");
         if (sa.Find("Test Hole") != null || Decals.ImpactsFor("Concrete").Any(d => d.Pack != null))
