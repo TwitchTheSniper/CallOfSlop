@@ -355,6 +355,43 @@ public static partial class SelfTest
         return Vector3.Dot(s.Position - start, dir) >= dist;
     }
 
+    /// <summary>The nav build's walk from a to b, sample by sample (ground height, body blocked by what), for diagnosing a missing link.</summary>
+    private static string WalkTrace(Vector3 a, Vector3 b)
+    {
+        var phys = World.Physics;
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        var n = Math.Clamp((int)MathF.Ceiling(d.Length() / NavGraph.SampleStep), 1, 63);
+        var y = a.Y;
+        var parts = new List<string>();
+        for (var k = 1; k <= n; k++)
+        {
+            var f = k / (float)n;
+            float x = a.X + d.X * f, z = a.Z + d.Y * f;
+            var from = y + World.MantleReach + 0.05f;
+            var t = phys.Raycast(new Vector3(x, from, z), -Vector3.UnitY, World.MantleReach + 0.05f + NavGraph.MaxDrop, QueryFilter.Navigation);
+            var g = t < 0.001f ? float.PositiveInfinity : from - t;
+            var feet = new Vector3(x, g + World.StepHeight + 0.02f, z);
+            var blocked = float.IsFinite(g) && phys.BlockedNav(feet, World.PlayerHeight - World.StepHeight - 0.02f);
+            var hit = "";
+            if (blocked)
+                for (var i = 0; i < World.Map.Solid.Count; i++)
+                {
+                    var bx = World.Map.Solid[i];
+                    if (feet.Y < bx.Max.Y - 0.001f && feet.Y + World.PlayerHeight - World.StepHeight - 0.02f > bx.Min.Y + 0.001f && feet.X + 0.4f > bx.Min.X && feet.X - 0.4f < bx.Max.X
+                        && feet.Z + 0.4f > bx.Min.Z && feet.Z - 0.4f < bx.Max.Z && !World.Map.IsBuildingDoorBox(i))
+                    {
+                        hit = $" by box {i} ({(World.Map.IsPropCollider(i) ? "prop" : World.Map.IsBuildingBox(i) ? "building" : "map")} {bx.Min.X:0.00},{bx.Min.Y:0.00},{bx.Min.Z:0.00}..{bx.Max.X:0.00},{bx.Max.Y:0.00},{bx.Max.Z:0.00})";
+                        break;
+                    }
+                }
+            parts.Add($"{k}: ({x:0.00},{z:0.00}) ground {g:0.00}{(blocked ? " BLOCKED" + hit : "")}");
+            if (!float.IsFinite(g))
+                break;
+            y = g;
+        }
+        return string.Join(" | ", parts);
+    }
+
     /// <summary>The first door of a building of that name made of <paramref name="material"/> (any if null), or -1.</summary>
     private static int FindDoor(Map map, string building, DoorMaterial? material = null, bool front = false)
     {
@@ -565,7 +602,12 @@ public static partial class SelfTest
                     noNode++;
                     missing.Add($"{key} room {r.Floor}:{r.Id} (no nav node at its waypoint)");
                     if (detail.Count < 6)
-                        detail.Add($"{key} {r.Floor}:{r.Id} no node {Why(r.Waypoint)}");
+                    {
+                        // The doorway the waypoint belongs to: walk from it through the door, sample by sample, as the nav build does.
+                        var door = b.Plan.Doors.FirstOrDefault(d => Vector3.Distance(d.SwingSide, r.Waypoint) < 0.05f || Vector3.Distance(d.OtherSide, r.Waypoint) < 0.05f);
+                        var walk = door == null ? "no door" : WalkTrace(r.Waypoint, Vector3.Distance(door.SwingSide, r.Waypoint) < 0.05f ? door.OtherSide : door.SwingSide);
+                        detail.Add($"{key} {r.Floor}:{r.Id} no node {Why(r.Waypoint)}; walk through its door: {walk}");
+                    }
                     continue;
                 }
                 if (start >= 0 && search.Find(g, start, goal, path, maxExpand: 60000) > 0)
