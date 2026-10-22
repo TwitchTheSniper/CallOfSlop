@@ -355,7 +355,7 @@ public static class GunSamples
             Blend(x, synthF, blend); // first, so the identity treatment colours the synthesised layer too
             Shape(x, voice, w, repeat ? 0.75f : 1f);
             FadeTail(x, 0.35f);
-            outv[v] = Finish(x, target, MaxPeakReductionDb, SnapRelease);
+            outv[v] = Finish(x, target, MaxPeakReductionDb, SnapRelease, voice.Tilt * (repeat ? 0.75f : 1f));
         }
         return outv;
     }
@@ -436,11 +436,10 @@ public static class GunSamples
             hpX = x[i];
             x[i] += hpY * crack * MathF.Exp(i * crackK);
         }
-        // Body resonance and tone colour the body, not the first milliseconds: the blast's peak (what the limiter
-        // acts on) stays the same, so neither costs loudness nor gets flattened by the limiter.
+        // The body resonance colours the body, not the first milliseconds: the blast's peak (what the limiter acts on)
+        // stays the same. (The tone tilt comes after the limiter, in Finish, so the limiter can't flatten it.)
         var dry = (float[])x.Clone();
         Body(x, voice.BodyHz * (2f - amount), voice.BodyQ, voice.BodyGain);
-        Tilt(x, voice.Tilt * amount);
         int r0 = (int)(0.0015f * Sr), r1 = (int)(0.006f * Sr);
         for (var i = 0; i < Math.Min(r1, x.Length); i++)
         {
@@ -480,14 +479,14 @@ public static class GunSamples
         }
     }
 
-    /// <summary>Tone tilt around 1.2 kHz: +1 lifts the highs about 5 dB and dips the lows 4 dB, -1 dips the highs 14 dB and lifts the lows 3 dB.</summary>
+    /// <summary>Tone tilt around 1.2 kHz: +1 lifts the highs about 4 dB and dips the lows 3 dB, -1 dips the highs 8 dB and lifts the lows 2 dB.</summary>
     private static void Tilt(float[] x, float tilt)
     {
         if (MathF.Abs(tilt) < 1e-3f)
             return;
         var a = 1f - MathF.Exp(-2f * MathF.PI * 1200f / Sr);
         float lo = 0;
-        float gl = 1f - 0.4f * tilt, gh = 1f + 0.8f * tilt;
+        float gl = 1f - 0.3f * tilt, gh = 1f + 0.6f * tilt;
         for (var i = 0; i < x.Length; i++)
         {
             lo += a * (x[i] - lo);
@@ -620,7 +619,7 @@ public static class GunSamples
     /// <see cref="MaxGain"/>), a soft clip under <see cref="Ceiling"/> as a safety net, and a 2 ms fade-out.
     /// The limiter lowers the RMS, so the gain is corrected once and the limiter run again.
     /// </summary>
-    private static short[] Finish(float[] x, float targetRms, float maxReductionDb = float.PositiveInfinity, float release = 0.04f)
+    private static short[] Finish(float[] x, float targetRms, float maxReductionDb = float.PositiveInfinity, float release = 0.04f, float tilt = 0f)
     {
         var peak = 1e-6f;
         foreach (var s in x)
@@ -641,6 +640,20 @@ public static class GunSamples
         for (var i = 0; i < x.Length; i++)
             y[i] = x[i] * gain;
         Limit(y, LimiterThreshold, release);
+        if (tilt != 0f)
+        {
+            // The weapon's tone, after the limiter (which would flatten it), at the same peak: a bright gun's body
+            // comes out a little quieter, a dark gun's a little louder.
+            float p0 = 0, p1 = 0;
+            foreach (var v in y)
+                p0 = MathF.Max(p0, MathF.Abs(v));
+            Tilt(y, tilt);
+            foreach (var v in y)
+                p1 = MathF.Max(p1, MathF.Abs(v));
+            var k = p1 > 1e-6f ? p0 / p1 : 1f;
+            for (var i = 0; i < y.Length; i++)
+                y[i] *= k;
+        }
         const float knee = 0.85f, span = Ceiling - knee;
         var fade = Math.Min(y.Length, Sr / 500);
         var pcm = new short[y.Length];

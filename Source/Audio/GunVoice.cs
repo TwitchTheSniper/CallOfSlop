@@ -165,21 +165,21 @@ public sealed class GunVoice
     public static uint SeedOf(WeaponDef w) => w.Voice?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
 
     /// <summary>
-    /// Characters the recorded weapons of a class take in turn by their class rank: a 3 x 3 grid of tone tilt (bright,
-    /// neutral, dark) and body resonance band (a low thump, a mid knock, a high ring), so any two differ in tone or in
-    /// where the gun's body rings; body length and crack vary along with them.
+    /// Characters the recorded weapons of a class take in turn by their class rank: five tone steps (bright to dark),
+    /// each used at most twice, and the two sharing a tone ring in opposite body bands (a low thump vs a high ring) with
+    /// opposite body lengths; crack varies along with them.
     /// </summary>
     private static readonly (float Tilt, float Tail, float BodyHz, float Crack)[] Characters =
     [
         (0.9f, 0.7f, 230f, 0.85f),
         (-0.9f, 1.35f, 1350f, 0.3f),
         (0f, 1.0f, 560f, 0.95f),
-        (0.9f, 1.0f, 1350f, 0.5f),
-        (-0.9f, 0.7f, 230f, 0.65f),
-        (0f, 1.35f, 230f, 0.4f),
-        (0.9f, 1.35f, 560f, 0.7f),
-        (-0.9f, 0.7f, 560f, 0.8f),
-        (0f, 1.0f, 1350f, 0.6f),
+        (0.45f, 1.0f, 1350f, 0.5f),
+        (-0.45f, 1.0f, 230f, 0.65f),
+        (0.9f, 1.35f, 1350f, 0.4f),
+        (-0.9f, 0.7f, 230f, 0.7f),
+        (0.45f, 0.7f, 230f, 0.8f),
+        (-0.45f, 1.35f, 1350f, 0.6f),
     ];
 
     /// <summary>
