@@ -47,7 +47,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Courtyard", -26.0f, -23.3f), ("Warehouse 9", -25.0f, -16.8f), ("Riverbend", -7.0f, -40.3f), ("Adobe Mesa", -11.4f, -1.7f), ("Adobe Mesa", -8.4f, -5.2f), ("Gravel Pit", -33.0f, -8.3f),
+        ("Train Yard", 20.0f, -27.8f), ("Powder Keg", -25.3f, -14.2f), ("Alpine Pass", -19.0f, -80.3f), ("Sprawl", -16.0f, -16.3f), ("Truck Stop", -45.2f, 14.1f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -319,8 +319,8 @@ public static partial class SelfTest
                     var b = solid[f.Treads[0]];
                     var front = StairPoint(f, AlongLo(b, f.Axis, f.Dir) - 0.45f, (f.C0 + f.C1) / 2, 0);
                     if (AlongHi(b, f.Axis, f.Dir) - AlongLo(b, f.Axis, f.Dir) < 2 * World.PlayerRadius
-                        && SupportAt(m, phys, front.X, front.Z, b.Max.Y + 0.02f, b.Max.Y - 3f) < b.Max.Y - 0.04f)
-                        break;
+                        && SupportAt(m, phys, front.X, front.Z, b.Max.Y + World.StepHeight, b.Max.Y - 3f, 0.1f) < b.Max.Y - 0.04f)
+                        break; // (a tread level with the ground in front of it, or under it, isn't a step)
                     f.Treads.RemoveAt(0);
                 }
                 if (f.Treads.Count < 3)
@@ -387,9 +387,8 @@ public static partial class SelfTest
     }
 
     /// <summary>The highest floor under a standing body's footprint at (x, z) between <paramref name="yMin"/> and <paramref name="yMax"/> (boxes and terrain); -infinity if none.</summary>
-    private static float SupportAt(Map m, PhysicsWorld phys, float x, float z, float yMax, float yMin)
+    private static float SupportAt(Map m, PhysicsWorld phys, float x, float z, float yMax, float yMin, float r = World.PlayerRadius)
     {
-        const float r = World.PlayerRadius;
         var best = float.NegativeInfinity;
         foreach (var j in phys.CollectBoxes(x - r, z - r, x + r, z + r))
         {
@@ -502,15 +501,14 @@ public static partial class SelfTest
             if (float.IsFinite(floor) && !phys.Blocked(p with { Y = floor + 0.002f }, World.PlayerHeight))
                 return (p with { Y = floor + 0.002f }, false);
         }
-        var run = AlongHi(first, f.Axis, f.Dir) - AlongLo(first, f.Axis, f.Dir);
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
             var edge = side < 0 ? f.C0 : f.C1;
-            // The body must not reach the second tread while it steps on sideways.
-            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + run - World.PlayerRadius - 0.02f; u += 0.05f)
+            // As near the foot as there's room (stepping on over the first tread or two; the walks tell whether the movers can).
+            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.05f)
             {
                 var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
-                var floor = SupportAt(m, phys, p.X, p.Z, top - StepMinRise + 0.01f, lowest);
+                var floor = SupportAt(m, phys, p.X, p.Z, top - StepMinRise + 0.01f, lowest, 0.15f); // firm footing under the middle
                 if (float.IsFinite(floor) && StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f))
                     return (p with { Y = floor + 0.002f }, true);
             }
@@ -524,13 +522,16 @@ public static partial class SelfTest
         var name = $"{label}: {f.Where}";
         StairDump(m, phys, f); // TEMP
         var issues = new List<string>();
-        // Width: the widest clear span over the treads (every tread's side obstacles at its middle, standing on it).
+        // Width: the widest clear span over the treads (every tread's side obstacles at its middle, standing on it)...
         var spans = new List<(float, float)>();
         foreach (var k in f.Treads)
         {
             var b = solid[k];
             StairObstacles(m, phys, f, (AlongLo(b, f.Axis, f.Dir) + AlongHi(b, f.Axis, f.Dir)) / 2, b.Max.Y, spans);
         }
+        // ... and just off both ends, where a body steps off the flight (a catwalk's railings, a narrower doorway).
+        StairObstacles(m, phys, f, f.U1 + World.PlayerRadius + 0.05f, f.Y1, spans);
+        StairObstacles(m, phys, f, f.U0 - World.PlayerRadius - 0.05f, f.Y0, spans);
         var (lo, hi) = StairWidestGap(f, spans);
         var width = MathF.Max(0, hi - lo);
         if (width < StairWidthMin - 0.005f)
@@ -767,9 +768,14 @@ public static partial class SelfTest
         var lastU = Along(f, s.Position);
         var lastLo = AlongLo(m.Solid[f.Treads[^1]], f.Axis, f.Dir); // up: done once standing on the last tread
         var firstTop = m.Solid[f.Treads[0]].Max.Y; // down: done once on the first tread or below it, at the foot
+        var right = World.FlatRight(yaw);
+        var rightAcross = f.Axis == 0 ? right.Z : right.X; // + if "right" points towards +across
         for (var t = 0; t < ticks; t++)
         {
-            World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = yaw, SpeedPct = 100 });
+            // Walk the lane like a player does: forward, strafing back onto it when the body drifts off it.
+            var off = c - (f.Axis == 0 ? s.Position.Z : s.Position.X);
+            var steer = MathF.Abs(off) < 0.08f ? Buttons.None : off * rightAcross > 0 ? Buttons.Right : Buttons.Left;
+            World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward | steer, Yaw = yaw, SpeedPct = 100 });
             var u = Along(f, s.Position);
             if (s.Stance != Stance.Stand)
                 return $"had to leave the standing stance at ({s.Position.X:0.0}, {s.Position.Y:0.0}, {s.Position.Z:0.0})";

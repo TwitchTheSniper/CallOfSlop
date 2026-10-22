@@ -574,8 +574,8 @@ lane_dressing((-84, -24.0), (-16, -24.0), (0, -1), JUNK, 16, 1); lane_dressing((
 lane_dressing((-80, 14.0), (-44, 14.0), (0, 1), JUNK, 6, 3); lane_dressing((-30, 14.0), (-12, 14.0), (0, 1), JUNK, 4, 4)
 lane_dressing((44, -14.0), (82, -14.0), (0, -1), JUNK, 4, 5); lane_dressing((12, -14.0), (30, -14.0), (0, -1), JUNK, 4, 6)
 # fire escapes up the back of the two-storey buildings
-t.prop("Fire Escape Stairs", -26.5, -24.9, 0, check=False, tag="lane"); t.prop("Fire Escape Landing", -22.9, -25.0, 0, check=False, tag="lane")
-t.prop("Fire Escape Stairs", 26.5, 24.9, 180, check=False, tag="lane"); t.prop("Fire Escape Landing", 22.9, 25.0, 180, check=False, tag="lane")
+t.prop("Fire Escape Stairs", -26.5, -24.9, 0, check=False, tag="lane"); t.prop("Fire Escape Landing", -23.5, -25.0, 0, check=False, tag="lane")
+t.prop("Fire Escape Stairs", 26.5, 24.9, 180, check=False, tag="lane"); t.prop("Fire Escape Landing", 23.5, 25.0, 180, check=False, tag="lane")
 for (x0, z0, x1, z1) in ((-29.0, -26.4, -21.0, -24.0), (21.0, 24.0, 29.0, 26.4)):
     t.mark(t.occ, (x0, z0, x1, z1)); t.mark(t.walk, (x0, z0, x1, z1))
 
