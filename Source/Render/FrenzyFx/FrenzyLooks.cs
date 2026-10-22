@@ -310,7 +310,7 @@ public static class FrenzyLooks
         var looks = Defaults();
         var notes = new List<string>();
         using var doc = JsonDocument.Parse(json, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true });
-        if (!doc.RootElement.TryGetProperty("classes", out var classes))
+        if (!doc.RootElement.TryGetProperty("classes"u8, out var classes))
             return (looks, notes);
         if (classes.ValueKind == JsonValueKind.Object)
         {
@@ -320,7 +320,7 @@ public static class FrenzyLooks
         else if (classes.ValueKind == JsonValueKind.Array)
         {
             foreach (var e in classes.EnumerateArray())
-                if (e.ValueKind == JsonValueKind.Object && e.TryGetProperty("class", out var c) && c.ValueKind == JsonValueKind.String)
+                if (e.ValueKind == JsonValueKind.Object && e.TryGetProperty("class"u8, out var c) && c.ValueKind == JsonValueKind.String)
                     ApplyEntry(looks, c.GetString()!, e, notes);
         }
         return (looks, notes);
@@ -342,7 +342,7 @@ public static class FrenzyLooks
             notes.Add($"unknown class '{className}' skipped");
             return;
         }
-        if (entry.ValueKind != JsonValueKind.Object || !entry.TryGetProperty("visual", out var v) || v.ValueKind != JsonValueKind.Object)
+        if (entry.ValueKind != JsonValueKind.Object || !entry.TryGetProperty("visual"u8, out var v) || v.ValueKind != JsonValueKind.Object)
             return;
         var l = looks[(int)c];
         foreach (var p in v.EnumerateObject())

@@ -13,8 +13,18 @@ public static partial class SelfTest
     /// <summary>CPU budget per frame for a 16-player lobby all at frenzy level 6 firing LMGs (particles, glows, tracer hooks).</summary>
     private const double FrenzyFxCpuBudgetMs = 0.15;
 
+    private static readonly List<string> FrenzyFxNotes = [];
+
+    /// <summary>A result line, also collected for the run's "Frenzy visuals (results)" annotation.</summary>
+    private static void FrenzyFxLine(string s)
+    {
+        Line(s);
+        FrenzyFxNotes.Add(s);
+    }
+
     private static void CheckFrenzyVisuals()
     {
+        FrenzyFxNotes.Clear();
         var mode = FrenzyFx.Mode;
         var over = FrenzyFx.Override;
         try
@@ -32,6 +42,7 @@ public static partial class SelfTest
             FrenzyFx.Override = over;
             FrenzyFx.LocalLevel = 0;
             FrenzyParticles.Clear();
+            Line("::warning title=Frenzy visuals (results)::" + string.Join("%0A", FrenzyFxNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
@@ -64,7 +75,7 @@ public static partial class SelfTest
             }
         if (closest < 0.15f)
             Fail($"frenzy visuals: {pair} colours are too alike ({closest:0.00})");
-        Line($"mapping: {all.Length} classes, {sigs} signatures ({string.Join(", ", all.Select(l => $"{l.Class}={l.Signature}"))}); closest colours {pair} {closest:0.00}");
+        FrenzyFxLine($"mapping: {all.Length} classes, {sigs} signatures ({string.Join(", ", all.Select(l => $"{l.Class}={l.Signature}"))}); closest colours {pair} {closest:0.00}");
     }
 
     // ---- Subtle at 1-2, strong at 5-6; the setting ----
@@ -90,7 +101,7 @@ public static partial class SelfTest
             Fail("frenzy visuals: out-of-range levels aren't clamped");
         if (FrenzyLooks.ScreenEffects(FrenzyVisualMode.Subtle) || FrenzyLooks.ScreenEffects(FrenzyVisualMode.Off) || !FrenzyLooks.ScreenEffects(FrenzyVisualMode.Full))
             Fail("frenzy visuals: screen effects should be on in Full only");
-        Line($"scaling: Full {string.Join(" ", Enumerable.Range(0, 7).Select(l => FrenzyLooks.Intensity(l).ToString("0.00")))}; "
+        FrenzyFxLine($"scaling: Full {string.Join(" ", Enumerable.Range(0, 7).Select(l => FrenzyLooks.Intensity(l).ToString("0.00")))}; "
              + $"Subtle {string.Join(" ", Enumerable.Range(0, 7).Select(l => FrenzyLooks.Intensity(l, FrenzyVisualMode.Subtle).ToString("0.00")))}; Off 0");
     }
 
@@ -155,9 +166,10 @@ public static partial class SelfTest
                         if (a > FrenzyLooks.MaxEdgeAlpha || (md == FrenzyVisualMode.Off && a != 0) || (lv == 0 && a != 0))
                             Fail($"frenzy visuals: edge tint {a:0.000} for {look.Class} level {lv} {md}");
                     }
-        if (FrenzyLooks.EdgeDepth > 0.2f)
+        var edgeDepth = FrenzyLooks.EdgeDepth; // a variable, so the check isn't folded away at compile time
+        if (edgeDepth > 0.2f)
             Fail($"frenzy visuals: the edge tint reaches {FrenzyLooks.EdgeDepth:P0} into the screen (the middle must stay clear)");
-        Line($"strobe: fastest light change {worst:0.00} Hz ({what}), max {FrenzyLooks.MaxFlashHz} Hz; edge tint at most {maxEdge:0.000} alpha, {FrenzyLooks.EdgeDepth:P0} deep at the edges");
+        FrenzyFxLine($"strobe: fastest light change {worst:0.00} Hz ({what}), max {FrenzyLooks.MaxFlashHz} Hz; edge tint at most {maxEdge:0.000} alpha, {FrenzyLooks.EdgeDepth:P0} deep at the edges");
     }
 
     // ---- classes.json "visual" overrides ----
@@ -189,7 +201,7 @@ public static partial class SelfTest
         for (var i = 0; i < def.Length; i++)
             if (Vector3.Distance(back[i].Color, def[i].Color) > 0.01f || back[i].MuzzleSparks != def[i].MuzzleSparks || MathF.Abs(back[i].TrailLife - def[i].TrailLife) > 1e-4f)
                 Fail($"frenzy visuals: {def[i].Class}'s look doesn't survive a write and read of its visual section");
-        Line($"classes.json: overrides, clamps and both layouts read; {notes.Count} notes; data file {(File.Exists(FrenzyLooks.DataFile) ? "present" : "absent (built-in looks)")}");
+        FrenzyFxLine($"classes.json: overrides, clamps and both layouts read; {notes.Count} notes; data file {(File.Exists(FrenzyLooks.DataFile) ? "present" : "absent (built-in looks)")}");
     }
 
     // ---- settings.txt: frenzy_visuals ----
@@ -214,7 +226,7 @@ public static partial class SelfTest
             ok &= Settings.Load(tmp).FrenzyVisuals == FrenzyVisualMode.Subtle;
             if (!ok)
                 Fail("frenzy visuals: the setting doesn't default to Full, round-trip Full/Subtle/Off, or reject junk");
-            Line($"settings: {string.Join(" / ", Enum.GetNames<FrenzyVisualMode>())}, default {new Settings().FrenzyVisuals}, old files load as Full");
+            FrenzyFxLine($"settings: {string.Join(" / ", Enum.GetNames<FrenzyVisualMode>())}, default {new Settings().FrenzyVisuals}, old files load as Full");
         }
         finally
         {
@@ -340,7 +352,7 @@ public static partial class SelfTest
             Fail($"frenzy visuals: {players.Length} players at level 6 cost {ms:0.000} ms of CPU per frame (budget {FrenzyFxCpuBudgetMs} ms)");
         if (peak >= FrenzyParticles.Capacity)
             Fail($"frenzy visuals: a full lobby at level 6 fills the particle pool ({peak} of {FrenzyParticles.Capacity})");
-        Line($"cost: {players.Length} players at level 6 firing LMGs (12/s each) at 240 fps: CPU {ms:0.0000} ms/frame median of 3 (budget {FrenzyFxCpuBudgetMs} ms), "
+        FrenzyFxLine($"cost: {players.Length} players at level 6 firing LMGs (12/s each) at 240 fps: CPU {ms:0.0000} ms/frame median of 3 (budget {FrenzyFxCpuBudgetMs} ms), "
              + $"peak {peak} particles of {FrenzyParticles.Capacity}, peak {peakInstances} streaks in 2 instanced draws; allocations {bytes} bytes over 2400 frames");
     }
 }
