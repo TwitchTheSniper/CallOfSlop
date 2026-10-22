@@ -605,6 +605,11 @@ public sealed partial class Game : IDisposable
         {
             SendLoadout();
             LoadoutNotice = "Loadout sent...";
+            // The server swaps the loadout in place before play (ServerRequestLoadout's "instant"), and the snapshot only
+            // refills the throwables when a gun changed: refill them here too, or a grenade-only change leaves the HUD
+            // (and the key) on the old kind, which the server then refuses, so the throw spawns nothing.
+            if (Local is { Alive: true } && Phase is MatchPhase.Countdown or MatchPhase.Warmup && !Module.ServerPicksWeapons)
+                RefillThrowables();
         }
     }
 
