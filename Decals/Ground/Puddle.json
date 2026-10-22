@@ -1,0 +1,63 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Puddle",
+  "description": "A shallow rain puddle: a dark wet patch with a smaller one beside it.",
+  "author": "Call of Slop",
+  "size": 2.4,
+  "sizeVariation": 0.4,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.34,
+      "count": 7,
+      "jag": 0.35,
+      "seed": 201,
+      "color": [
+        0.42,
+        0.45,
+        0.5
+      ],
+      "alpha": 0.85,
+      "softness": 0.04
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.53,
+        0.47
+      ],
+      "radius": 0.24,
+      "count": 6,
+      "jag": 0.3,
+      "seed": 202,
+      "color": [
+        0.5,
+        0.53,
+        0.58
+      ],
+      "alpha": 0.7,
+      "softness": 0.1
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.2,
+        0.78
+      ],
+      "radius": 0.09,
+      "count": 5,
+      "jag": 0.3,
+      "seed": 203,
+      "color": [
+        0.45,
+        0.48,
+        0.53
+      ],
+      "alpha": 0.8,
+      "softness": 0.03
+    }
+  ]
+}

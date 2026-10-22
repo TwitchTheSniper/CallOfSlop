@@ -1,0 +1,170 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Broken Glass",
+  "description": "Shards and glittering crumbs of a broken window or bottle.",
+  "author": "Call of Slop",
+  "size": 1.2,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "surfaces": "floor",
+  "fadeDistance": 35,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.12,
+        0.06
+      ],
+      "rotation": 30,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.35,
+        0.62
+      ],
+      "size": [
+        0.08,
+        0.05
+      ],
+      "rotation": -20,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.62,
+        0.35
+      ],
+      "size": [
+        0.1,
+        0.04
+      ],
+      "rotation": 75,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.3,
+        0.35
+      ],
+      "size": [
+        0.06,
+        0.04
+      ],
+      "rotation": 10,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.68,
+        0.62
+      ],
+      "size": [
+        0.07,
+        0.05
+      ],
+      "rotation": -50,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.48,
+        0.75
+      ],
+      "size": [
+        0.05,
+        0.03
+      ],
+      "rotation": 40,
+      "color": [
+        0.72,
+        0.84,
+        0.88
+      ],
+      "alpha": 0.75
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.2,
+        0.55
+      ],
+      "to": [
+        0.32,
+        0.5
+      ],
+      "width": 0.018,
+      "color": [
+        0.8,
+        0.9,
+        0.92
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.7,
+        0.8
+      ],
+      "to": [
+        0.78,
+        0.7
+      ],
+      "width": 0.016,
+      "color": [
+        0.8,
+        0.9,
+        0.92
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 45,
+      "width": 0.01,
+      "seed": 781,
+      "color": [
+        0.9,
+        0.96,
+        0.98
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

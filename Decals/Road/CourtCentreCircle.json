@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Court Centre Circle",
+  "description": "A sports court's centre circle and half-way line in white.",
+  "author": "Call of Slop",
+  "size": 6.0,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 120,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.02,
+        0.5
+      ],
+      "to": [
+        0.98,
+        0.5
+      ],
+      "width": 0.014,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "ring",
+      "radius": 0.3,
+      "width": 0.014,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    },
+    {
+      "shape": "circle",
+      "radius": 0.04,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ]
+    }
+  ]
+}

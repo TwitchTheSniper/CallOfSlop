@@ -648,7 +648,7 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 
 ## Decals
 
-Decals are flat pictures projected onto surfaces: oil stains, cracks, manhole covers, road markings, graffiti, posters, soot. They come from the `Decals` folder (one file each, see [Decals/README.md](../Decals/README.md)) and are placed with two ops. The **Decal Test** map in the Dev pack shows them on floors, walls, a kerb, a mesh and the terrain round a hole.
+Decals are flat pictures projected onto surfaces: oil stains, cracks, manhole covers, road markings, graffiti, posters, soot. They come from the `Decals` folder (one file each, see [Decals/README.md](../Decals/README.md)) and are placed with two ops. The **Decal Test** map in the Dev pack shows them on floors, walls, a kerb, a mesh and the terrain round a hole. The **Decal Surfaces** map shows every placeable decal in a street, two rooms (ceiling decals too) and a wall gallery; [the catalogue](../Decals/README.md#the-catalogue) lists them.
 
 | Op | Parameters | What it makes |
 | --- | --- | --- |

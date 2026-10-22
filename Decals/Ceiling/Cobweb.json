@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Cobweb",
+  "description": "A dusty cobweb spun out from a corner (the corner is the decal's top left).",
+  "author": "Call of Slop",
+  "size": 1.0,
+  "sizeVariation": 0.3,
+  "rotation": 0,
+  "surfaces": [
+    "ceiling",
+    "wall"
+  ],
+  "opacity": 0.8,
+  "fadeDistance": 30,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "to": [
+        0.91,
+        0.94
+      ],
+      "width": 0.012,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "to": [
+        0.8429,
+        0.609
+      ],
+      "width": 0.012,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "to": [
+        0.6522,
+        0.3302
+      ],
+      "width": 0.012,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "to": [
+        0.368,
+        0.1478
+      ],
+      "width": 0.012,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "to": [
+        0.0607,
+        0.09
+      ],
+      "width": 0.012,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "radius": 0.2,
+      "width": 0.01,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.55
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "radius": 0.36,
+      "width": 0.01,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.55
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "radius": 0.52,
+      "width": 0.01,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.55
+    },
+    {
+      "shape": "ring",
+      "at": [
+        0.06,
+        0.94
+      ],
+      "radius": 0.68,
+      "width": 0.01,
+      "color": [
+        0.86,
+        0.86,
+        0.84
+      ],
+      "alpha": 0.55
+    },
+    {
+      "shape": "ring",
+      "radius": 1.0,
+      "width": 0.5,
+      "at": [
+        0.06,
+        0.94
+      ],
+      "color": "white",
+      "erase": true
+    }
+  ]
+}

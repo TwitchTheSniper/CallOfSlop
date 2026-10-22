@@ -1,0 +1,62 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Leaf Litter",
+  "description": "Fallen autumn leaves scattered thinly over the ground.",
+  "author": "Call of Slop",
+  "size": 1.8,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.15,
+  "surfaces": "floor",
+  "fadeDistance": 45,
+  "layers": [
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 18,
+      "width": 0.045,
+      "seed": 231,
+      "color": [
+        0.72,
+        0.38,
+        0.12
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 18,
+      "width": 0.04,
+      "seed": 232,
+      "color": [
+        0.45,
+        0.28,
+        0.14
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 10,
+      "width": 0.036,
+      "seed": 233,
+      "color": [
+        0.8,
+        0.62,
+        0.2
+      ]
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.4,
+      "count": 8,
+      "width": 0.03,
+      "seed": 234,
+      "color": [
+        0.32,
+        0.22,
+        0.12
+      ]
+    }
+  ]
+}
