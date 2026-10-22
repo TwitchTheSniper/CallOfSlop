@@ -35,7 +35,7 @@ public static partial class SelfTest
         {
             if (StuckNotes.Count == 0)
                 StuckNotes.Add("no stuck self-kills in the every-map matches");
-            Line("::notice title=Bot stuck watch (results)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            Line("::error title=Bot stuck watch (results, TEMP)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
@@ -79,6 +79,7 @@ public static partial class SelfTest
             var countKills = game.BotStuckKills;
             Run(game, ref now, 0.5); // (play starts during this: a moment with the 1 s timeout, under it)
             Line($"pit in {warm}: {warmKills} stuck kills (stuck clock {warmSecs:0.0} s); in {countdown}: {countKills}; now {game.Phase}");
+            StuckNotes.Add($"pit in {warm}: {warmKills} stuck kills (stuck clock {warmSecs:0.0} s); in {countdown}: {countKills}; now {game.Phase}");
             if (warm != MatchPhase.Warmup || countdown != MatchPhase.Countdown || game.Phase != MatchPhase.Playing)
                 Fail($"the stuck lab didn't go warmup -> countdown -> play ({warm}, {countdown}, {game.Phase})");
             if (warmKills != 0 || countKills != 0 || warmSecs != 0)
@@ -118,6 +119,7 @@ public static partial class SelfTest
             Run(game, ref now, World.RespawnDelay + 0.5);
             var flat = MathF.Max(MathF.Abs(bot.Position.X), MathF.Abs(bot.Position.Z));
             Line($"respawn: alive {bot.Alive} at ({bot.Position.X:0.0}, {bot.Position.Z:0.0})");
+            StuckNotes.Add($"respawn: alive {bot.Alive} at ({bot.Position.X:0.0}, {bot.Position.Z:0.0})");
             if (!bot.Alive || flat < 2.5f)
                 Fail("the stuck bot didn't respawn (outside the pit) after its self-kill");
 
@@ -136,6 +138,7 @@ public static partial class SelfTest
             var endKills = game.BotStuckKills;
             Run(game, ref now, 4);
             Line($"results screen ({game.Phase}): stuck kills {endKills}->{game.BotStuckKills}, end-of-match summary written {summaryReset}");
+            StuckNotes.Add($"results screen ({game.Phase}): stuck kills {endKills}->{game.BotStuckKills}, end-of-match summary written {summaryReset}");
             if (game.Phase != MatchPhase.Ended || game.BotStuckKills != endKills)
                 Fail("the stuck watch ran on the results screen");
             if (!summaryReset)
@@ -170,6 +173,7 @@ public static partial class SelfTest
             }
             b.ForcedGoal = null;
             Line($"wedged on a wall: round it in {(took < 0 ? "NEVER" : $"{took:0.0} s")} (timeout {game.BotStuckSuicideSeconds:0} s), stage reached {maxStage}, stuck kills {game.BotStuckKills}");
+            StuckNotes.Add($"wedged on a wall: round it in {(took < 0 ? "NEVER" : $"{took:0.0} s")} (timeout {game.BotStuckSuicideSeconds:0} s), stage reached {maxStage}, stuck kills {game.BotStuckKills}");
             if (took < 0 || game.BotStuckKills != 0)
                 Fail("a bot wedged against a wall didn't recover by jumping / re-planning before the timeout");
         }
@@ -196,6 +200,7 @@ public static partial class SelfTest
                 maxSecs = MathF.Max(maxSecs, b.StuckSecs);
             }
             Line($"KotH: {onHill:0.0} s of 25 holding the hill, longest stuck clock {maxSecs:0.0} s, stuck kills {game.BotStuckKills} (timeout {game.BotStuckSuicideSeconds:0} s)");
+            StuckNotes.Add($"KotH: {onHill:0.0} s of 25 holding the hill, longest stuck clock {maxSecs:0.0} s, stuck kills {game.BotStuckKills} (timeout {game.BotStuckSuicideSeconds:0} s)");
             if (onHill < 3)
                 Fail($"the KotH bot never got to hold the hill ({onHill:0.0} s), so the check proves nothing");
             if (game.BotStuckKills != 0)
@@ -229,6 +234,7 @@ public static partial class SelfTest
                 maxSecs = MathF.Max(maxSecs, b.StuckSecs);
             }
             Line($"perch ({b.Personality}): held {held:0.0} s of 15, longest stuck clock {maxSecs:0.0} s, stuck kills {game.BotStuckKills} (timeout {game.BotStuckSuicideSeconds:0} s)");
+            StuckNotes.Add($"perch ({b.Personality}): held {held:0.0} s of 15, longest stuck clock {maxSecs:0.0} s, stuck kills {game.BotStuckKills} (timeout {game.BotStuckSuicideSeconds:0} s)");
             if (game.BotStuckKills != 0)
                 Fail("a bot holding a perch killed itself as stuck");
 
@@ -263,6 +269,7 @@ public static partial class SelfTest
             }
             var fightSecs = b.StuckSecs;
             Line($"watch through stage {stage}: {alloc} bytes allocated; 5 s standing still / fighting: stuck clock {fightSecs:0.00} s");
+            StuckNotes.Add($"watch through stage {stage}: {alloc} bytes allocated; 5 s standing still / fighting: stuck clock {fightSecs:0.00} s");
             if (alloc != 0)
                 Fail($"the stuck watch allocated {alloc} bytes");
             if (stage != 3 || !bot.Alive)
@@ -288,6 +295,7 @@ public static partial class SelfTest
             }
             var near = Vector3.Distance(bot.Position, mate.Position);
             Line($"Zombies co-op: hopped {jumped}, backed off {backed}, teleported {game.BotStuckRescues - rescues} time(s), now {near:0.0} m from its teammate, log: {game.LastStuckLog}");
+            StuckNotes.Add($"Zombies co-op: hopped {jumped}, backed off {backed}, teleported {game.BotStuckRescues - rescues} time(s), now {near:0.0} m from its teammate, log: {game.LastStuckLog}");
             if (!jumped || !backed || game.BotStuckRescues != rescues + 1 || near > 0.5f || !bot.Alive)
                 Fail("a stuck Zombies co-op bot didn't hop and back off, then teleport to its teammate");
         }
