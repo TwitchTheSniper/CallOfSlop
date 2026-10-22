@@ -94,13 +94,14 @@ public static class GunSnap
     /// <summary>Band centres of <see cref="Fingerprint"/> (octaves, 125 Hz to 16 kHz).</summary>
     public static readonly float[] FingerprintBands = [125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
-    /// <summary>Length of a fingerprint: the band levels, then the log decay time, then the crest factor.</summary>
+    /// <summary>Length of a fingerprint: the band levels, then the body length, then the crest factor.</summary>
     public static int FingerprintLength => FingerprintBands.Length + 2;
 
     /// <summary>
     /// A weapon's sonic fingerprint, averaged over its shot variants: the level of each octave band over the first
-    /// 150 ms in dB relative to the loudest band (the timbre, independent of loudness), the body's decay time
-    /// (20 dB per factor of 10) and the crest factor in dB. Compare two with <see cref="Distance"/>.
+    /// 150 ms in dB relative to the loudest band (the timbre, independent of loudness), the body's length (the energy
+    /// centroid in time, 20 dB per factor of 10, weighted double since it's what the ear hears as "short and dry" vs
+    /// "long and heavy") and the crest factor in dB. Compare two with <see cref="Distance"/>.
     /// </summary>
     public static float[] Fingerprint(IReadOnlyList<short[]> variants)
     {
@@ -132,9 +133,17 @@ public static class GunSnap
             }
             for (var b = 0; b < bands.Length; b++)
                 fp[b] += (float)(bands[b] - max) / variants.Count;
-            var m = Measure(pcm);
-            fp[bands.Length] += 20f * MathF.Log10(MathF.Max(m.DecayMs, 1f)) / variants.Count;
-            fp[bands.Length + 1] += m.CrestDb / variants.Count;
+            // Body length: the energy centroid in time over the first 300 ms (20 dB per factor of 10), counted twice.
+            double et = 0, e0 = 0;
+            for (var i = 0; i < pcm.Length && i < Audio.SampleRate * 3 / 10; i++)
+            {
+                var p = pcm[i] / 32768.0 * (pcm[i] / 32768.0);
+                et += p * i;
+                e0 += p;
+            }
+            var centroidMs = et / Math.Max(e0, 1e-12) * 1000.0 / Audio.SampleRate;
+            fp[bands.Length] += 2f * 20f * (float)Math.Log10(Math.Max(centroidMs, 0.5)) / variants.Count;
+            fp[bands.Length + 1] += Measure(pcm).CrestDb / variants.Count;
         }
         return fp;
     }

@@ -171,17 +171,17 @@ public sealed class GunVoice
     /// </summary>
     private static readonly (float Tilt, float Tail, float Body, float Crack)[] Characters =
     [
-        // A 3 x 3 grid of tone (bright / neutral / dark) and body length (short / medium / long), in an order where
-        // neighbours differ in both; body resonance and crack vary along with them.
-        (0.85f, 0.7f, 0.2f, 0.85f),
-        (-0.85f, 1.35f, 0.95f, 0.3f),
+        // Nine (tone, body length) pairs: five tone steps from bright to dark and three body lengths, no two alike;
+        // the ones sharing a tone differ most in length. Body resonance and crack vary along with them.
+        (0.9f, 0.65f, 0.2f, 0.85f),
+        (-0.9f, 1.4f, 0.95f, 0.3f),
         (0f, 1.0f, 0.55f, 0.95f),
-        (0.85f, 1.35f, 0.7f, 0.5f),
-        (-0.85f, 0.7f, 0.4f, 0.65f),
-        (0f, 0.7f, 0.85f, 0.4f),
-        (0.85f, 1.0f, 0.45f, 0.7f),
-        (-0.85f, 1.0f, 0.25f, 0.8f),
-        (0f, 1.35f, 0.3f, 0.6f),
+        (0.45f, 1.0f, 0.7f, 0.5f),
+        (-0.45f, 1.0f, 0.4f, 0.65f),
+        (0.9f, 1.4f, 0.85f, 0.4f),
+        (-0.9f, 0.65f, 0.45f, 0.7f),
+        (0f, 0.65f, 0.25f, 0.8f),
+        (0f, 1.4f, 0.3f, 0.6f),
     ];
 
     /// <summary>
@@ -244,7 +244,7 @@ public sealed class GunVoice
         v.SynthBlend = S(0.6f, 1.45f, 11);
         // Dryness: the gun's tail stat sets the base; the character (or the voice block's tail) scales it.
         var tail = spec?.Tail ?? Math.Clamp(ch.Tail + S(-0.05f, 0.05f, 16), 0.5f, 1.5f);
-        v.Dry = (0.045f + 0.16f * w.Tail) * tail;
+        v.Dry = (0.04f + 0.15f * w.Tail) * tail * MathF.Sqrt(tail); // tail^1.5: the length steps stay clearly apart
         v.Length = Math.Clamp(0.75f + 0.25f * tail, 0.6f, 1.15f);
         return v;
     }
