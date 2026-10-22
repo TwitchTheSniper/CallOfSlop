@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// preview. A few dozen boxes at most, so it uses the same per-box draws as everything else. Called once per frame from
 /// Program.Render after the opaque world.
 /// </summary>
-public static class StreakRender
+public static partial class StreakRender
 {
     private static readonly Vector3 Gunmetal = new(0.22f, 0.24f, 0.26f);
     private static readonly Vector3 DarkMetal = new(0.12f, 0.13f, 0.14f);
@@ -30,7 +30,9 @@ public static class StreakRender
             var owner = game.Players.GetValueOrDefault(e.Owner);
             var friendly = local != null && owner != null && !game.StreakIsEnemy(owner, local);
             var stripe = owner?.Color ?? new Vector3(0.6f, 0.6f, 0.6f);
-            if (ScenePresentation.Enabled) // turret base -> head -> barrels, drone body -> rotors/pod (Source/Scene/Rigs/StreakRigs.cs)
+            if (e.Kind is not (StreakId.SentryTurret or StreakId.AttackDrone))
+                DrawMoreEntity(gfx, e, stripe, friendly, now); // Hunter Drone, Gunship, crate (StreakRenderMore.cs)
+            else if (ScenePresentation.Enabled) // turret base -> head -> barrels, drone body -> rotors/pod (Source/Scene/Rigs/StreakRigs.cs)
                 ScenePresentation.DrawStreakEntity(gfx, e, stripe, friendly, now);
             else if (e.Kind == StreakId.SentryTurret)
                 DrawTurret(gfx, e, stripe, friendly, now);
@@ -38,17 +40,19 @@ public static class StreakRender
                 DrawDrone(gfx, e, stripe, friendly, now);
         }
 
-        var anyGlow = game.StrikeMarkers.Count > 0 || game.Strikes.Count > 0 || game.StreakTargeting != StreakId.None;
+        DrawJuggernauts(gfx, game, now); // armour plates on anyone in the suit (StreakRenderMore.cs)
+        var anyGlow = game.StrikeMarkers.Count > 0 || game.Strikes.Count > 0 || game.StreakTargeting != StreakId.None || game.FireZones.Count > 0;
         if (!anyGlow)
             return;
 
         // Jets are solid; the rest glows.
         foreach (var m in game.StrikeMarkers)
-            if (m.Kind == StreakId.StrafeRun)
+            if (m.Kind is StreakId.StrafeRun or StreakId.NapalmStrike)
                 DrawJet(gfx, m, now);
 
         gfx.SetBlend(true);
         gfx.SetDepthWrite(false);
+        DrawFireZones(gfx, game, now);
         foreach (var m in game.StrikeMarkers)
         {
             var pulse = 0.5f + 0.5f * MathF.Sin((float)(now - m.Born) * 9f);
@@ -61,7 +65,7 @@ public static class StreakRender
             if (m.Kind == StreakId.MortarBarrage)
                 Ring(gfx, m.Pos, KillStreaks.MortarSpread, c, 0.25f + 0.25f * pulse);
             else
-                LineMarks(gfx, m.Pos, m.Yaw, c, 0.2f + 0.25f * pulse, exact: true);
+                LineMarks(gfx, m.Kind, m.Pos, m.Yaw, c, 0.2f + 0.25f * pulse, exact: true);
         }
         foreach (var s in game.Strikes)
         {
@@ -80,7 +84,7 @@ public static class StreakRender
             var c = new Vector3(1f, 0.55f, 0.15f);
             var pulse = 0.5f + 0.5f * MathF.Sin((float)now * 7f);
             if (KillStreaks.Get(game.StreakTargeting).Aim == StreakAim.Line)
-                LineMarks(gfx, game.StreakAimPoint, game.LookYaw, c, 0.35f + 0.25f * pulse, exact: false);
+                LineMarks(gfx, game.StreakTargeting, game.StreakAimPoint, game.LookYaw, c, 0.35f + 0.25f * pulse, exact: false);
             else
                 Ring(gfx, game.StreakAimPoint, KillStreaks.MortarSpread, c, 0.35f + 0.25f * pulse);
             gfx.Draw(Matrix4x4.CreateScale(0.12f, 2f, 0.12f) * Matrix4x4.CreateTranslation(game.StreakAimPoint + new Vector3(0, 1f, 0)), c, 0.6f, mode: 2);
@@ -101,16 +105,18 @@ public static class StreakRender
         }
     }
 
-    /// <summary>Glowing marks along a strafe line (on the real landing spots when <paramref name="exact"/>, else flat).</summary>
-    private static void LineMarks(Renderer gfx, Vector3 center, float yaw, Vector3 color, float alpha, bool exact)
+    /// <summary>Glowing marks along a strike line (on the real landing spots when <paramref name="exact"/>, else flat). Smoke Screen's runs across the facing.</summary>
+    private static void LineMarks(Renderer gfx, StreakId kind, Vector3 center, float yaw, Vector3 color, float alpha, bool exact)
     {
-        var dir = World.FlatForward(yaw);
-        for (var i = 0; i < KillStreaks.StrafeHits; i++)
+        var (length, count, across) = KillStreaks.LineShape(kind);
+        var lineYaw = across ? yaw + MathF.PI / 2 : yaw;
+        var dir = World.FlatForward(lineYaw);
+        for (var i = 0; i < count; i++)
         {
-            var off = -KillStreaks.StrafeLength / 2 + i * KillStreaks.StrafeLength / (KillStreaks.StrafeHits - 1);
+            var off = -length / 2 + i * length / (count - 1);
             var p = center + dir * off;
             p = exact ? KillStreaks.GroundAt(p.X, p.Z, center.Y) : p;
-            gfx.Draw(Matrix4x4.CreateScale(0.5f, 0.08f, 1.6f) * Matrix4x4.CreateRotationY(-yaw) * Matrix4x4.CreateTranslation(p + new Vector3(0, 0.08f, 0)), color, alpha, mode: 2);
+            gfx.Draw(Matrix4x4.CreateScale(0.5f, 0.08f, 1.6f) * Matrix4x4.CreateRotationY(-lineYaw) * Matrix4x4.CreateTranslation(p + new Vector3(0, 0.08f, 0)), color, alpha, mode: 2);
         }
     }
 
@@ -183,8 +189,8 @@ public static class StreakRender
     /// <summary>The strafe-run jet: a box-built plane flying along the line, low over the target, when it's near.</summary>
     private static void DrawJet(Renderer gfx, StrikeMarker m, double now)
     {
-        var pass = m.Born + KillStreaks.StrafeDelay + KillStreaks.StrafeLength / 2 / KillStreaks.StrafeSpeed;
-        var along = (float)(now - pass) * KillStreaks.StrafeSpeed;
+        var pass = m.Born + KillStreaks.JetPassTime(m.Kind);
+        var along = (float)(now - pass) * KillStreaks.JetSpeed(m.Kind);
         if (MathF.Abs(along) > 260)
             return;
         var dir = World.FlatForward(m.Yaw);

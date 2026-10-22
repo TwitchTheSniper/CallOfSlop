@@ -57,7 +57,7 @@ public sealed partial class Game
     }
 
     /// <summary>True when a kill id is a gun (not a streak, melee or throwable): only those set the frenzy class.</summary>
-    public static bool FrenzyGunKill(byte killId) => killId < KillInfo.StreakKillIdFirst;
+    public static bool FrenzyGunKill(byte killId) => killId < KillInfo.StreakKillIdFirst && !KillStreaks.IsStreakKill(killId); // (later streaks use 214-229)
 
     /// <summary>The frenzy class byte on the wire: the class in the low 7 bits, bit 7 when the buffs are on.</summary>
     internal static byte FrenzyWire(Player p) => (byte)(((byte)p.FrenzyClass & 0x7F) | (p.FrenzyBuffsOn ? 0x80 : 0));

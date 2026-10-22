@@ -258,7 +258,7 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
+        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
         return new InputCmd
         {
             Seq = seq,
@@ -954,6 +954,7 @@ public sealed partial class Game : IDisposable
     {
         cmd = FreezeFilter(cmd);
         cmd = TacticalFilter(p, cmd); // stunned: slower (GameTactical.cs)
+        cmd = StreakMoveFilter(p, cmd); // the Juggernaut suit: slower (KillStreaksMore.cs)
         cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
@@ -1176,6 +1177,9 @@ public sealed partial class Game : IDisposable
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.FlakMult));
         if (kind == DamageKind.Bullet && victim.Perks.Has(PerkId.Entrenched) && IsDugIn(victim))
             amount = Math.Max(1, (int)MathF.Round(amount * Perks.EntrenchedMult));
+        amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
+        if (amount <= 0)
+            return false;
         victim.Health -= amount;
         if (victim.Health > 0)
             return false;

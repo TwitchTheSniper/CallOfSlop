@@ -99,7 +99,7 @@ public static class Knockback
         {
             var id = KillStreaks.FromKillId(killId);
             var def = KillStreaks.Get(id);
-            return (def.Knockback, id == StreakId.MortarBarrage ? KillStreaks.MortarRadius : id == StreakId.StrafeRun ? KillStreaks.StrafeRadius : 0f);
+            return (def.Knockback, KillStreaks.BlastRadiusOf(id));
         }
         if (killId < Weapons.All.Length && Weapons.Get(killId) is { IsLauncher: true } launcher)
             return (LauncherStrength(launcher), launcher.LauncherRadius); // launcher blasts (Source/Game/Launchers)
