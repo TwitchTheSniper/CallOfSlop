@@ -55,7 +55,7 @@ ROOF_T = 6.8    # motel roof
 BLUE_SP = [(-56.5, -22.0), (-55.5, -14.0), (-57.0, -6.5), (-55.5, 1.5), (-56.5, 9.0), (-54.5, 15.5), (-57.5, -17.5), (-55.0, -10.0)]
 RED_SP = [(55.0, -15.5), (54.5, -7.0), (57.0, 0.5), (55.0, 8.0), (55.5, 14.0), (57.5, -10.0), (57.5, 4.0), (53.5, -19.0)]
 FFA_SP = [(-32.0, 3.5), (-3.0, -38.5), (40.7, -2.0), (12.5, -4.0), (-12.0, 24.0), (2.0, 31.5)]
-HILLS = [(2.0, 17.5, 4.5), (-0.5, -15.0, 4.5), (-8.0, -26.5, 3.0)]     # under the gas canopy, the diner lot, inside the diner
+HILLS = [(2.0, 17.5, 4.5), (-1.5, -15.0, 4.5), (-8.0, -26.5, 3.0)]     # under the gas canopy, the diner lot, inside the diner
 FLAGS = [(-57.5, 0.0), (57.5, -3.5)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
@@ -341,22 +341,26 @@ POOL = (-38.0, -14.0, -27.0, -8.0)         # pit: floor at -1.0, deep end (x > -
 DECK = (-41.5, -17.0, -24.0, -5.0)
 slab(DECK[0], DECK[1], DECK[2], POOL[1], PAVING, "Concrete", h=0.06, **W0)
 slab(DECK[0], POOL[3], DECK[2], DECK[3], PAVING, "Concrete", h=0.06, **W0)
-slab(DECK[0], POOL[1], POOL[0], POOL[3], PAVING, "Concrete", h=0.06, **W0)
+CHAN = (-41.0, -13.5, POOL[0], -11.5)     # a ramp cut down into the shallow end (terrain), 1 m over 4 m
+slab(DECK[0], POOL[1], POOL[0], CHAN[1] - 0.1, PAVING, "Concrete", h=0.06, **W0)
+slab(DECK[0], CHAN[3] + 0.1, POOL[0], POOL[3], PAVING, "Concrete", h=0.06, **W0)
+t.mesh("wedge", (CHAN[0] + CHAN[2]) / 2 + 0.5, (CHAN[1] + CHAN[3]) / 2, POOLTILE, y=-1.0, width=2.0, height=1.0, depth=4.0, yaw=270.0, material="Tiles", **W0)
 slab(POOL[2], POOL[1], DECK[2], POOL[3], PAVING, "Concrete", h=0.06, **W0)
 for (x0, z0, x1, z1) in ((POOL[0] - 0.3, POOL[1] - 0.3, POOL[2] + 0.3, POOL[1]), (POOL[0] - 0.3, POOL[3], POOL[2] + 0.3, POOL[3] + 0.3),
-                         (POOL[0] - 0.3, POOL[1], POOL[0], POOL[3]), (POOL[2], POOL[1], POOL[2] + 0.3, POOL[3])):
+                         (POOL[0] - 0.3, POOL[1], POOL[0], CHAN[1]), (POOL[0] - 0.3, CHAN[3], POOL[0], POOL[3]), (POOL[2], POOL[1], POOL[2] + 0.3, POOL[3])):
     slab(x0, z0, x1, z1, WHITE, "Concrete", h=0.1, **W0)                                          # coping
 # tiled walls and floor inside the pit (cosmetic), a green puddle in the deep end
 for (cx, cz, w, d) in (((POOL[0] + POOL[2]) / 2, POOL[1] + 0.02, POOL[2] - POOL[0], 0.04), ((POOL[0] + POOL[2]) / 2, POOL[3] - 0.02, POOL[2] - POOL[0], 0.04),
-                       (POOL[0] + 0.02, (POOL[1] + POOL[3]) / 2, 0.04, POOL[3] - POOL[1]), (POOL[2] - 0.02, (POOL[1] + POOL[3]) / 2, 0.04, POOL[3] - POOL[1])):
+                       (POOL[0] + 0.02, (POOL[1] + CHAN[1]) / 2, 0.04, CHAN[1] - POOL[1]), (POOL[0] + 0.02, (CHAN[3] + POOL[3]) / 2, 0.04, POOL[3] - CHAN[3]),
+                       (POOL[2] - 0.02, (POOL[1] + POOL[3]) / 2, 0.04, POOL[3] - POOL[1])):
     t.mesh("box", cx, cz, POOLTILE, y=-1.8, width=w, height=1.8, depth=d, material="Tiles", **W0)
 slab(POOL[0], POOL[1], -31.0, POOL[3], POOLTILE, "Tiles", h=0.03, y=-1.0, **W0)
 slab(-31.0, POOL[1], POOL[2], POOL[3], POOLTILE, "Tiles", h=0.03, y=-1.8, **W0)
 slab(-30.2, -13.4, -27.4, -9.0, MURK, None, h=0.05, y=-1.79, **W0)
 # steps: one along the shallow end wall, one at the deep end's drop (blocks inside the pit, world heights)
-t.ops.append({"op": "Block", "x0": POOL[0], "y0": -1.0, "z0": -13.9, "x1": POOL[0] + 0.8, "y1": -0.5, "z1": -11.6, "color": [0.80, 0.82, 0.80], "anchor": "world"})
-t.ops.append({"op": "Block", "x0": -31.8, "y0": -1.8, "z0": -13.9, "x1": -31.0, "y1": -1.4, "z1": -8.1, "color": [0.80, 0.82, 0.80], "anchor": "world"})
-t.mark(t.occ, (POOL[0] - 0.5, POOL[1] - 0.5, POOL[2] + 0.5, POOL[3] + 0.5))
+t.ops.append({"op": "Block", "x0": -31.0, "y0": -1.8, "z0": -13.9, "x1": -30.2, "y1": -1.4, "z1": -8.1, "color": [0.80, 0.82, 0.80], "anchor": "world"})
+t.mark(t.occ, (POOL[0] - 0.5, POOL[1] - 0.5, POOL[2] + 0.5, POOL[3] + 0.5)); t.mark(t.occ, (CHAN[0] - 0.4, CHAN[1] - 0.4, CHAN[2], CHAN[3] + 0.4))
+WAYPOINTS += [(-35.0, -12.5), (-30.5, -11.0), (CHAN[0] - 1.0, -12.5)]
 for (lx, lz, ly, lyaw) in ((POOL[2] - 0.2, -12.5, -1.75, 90), (POOL[0] + 0.2, -9.0, -0.95, 270)):
     t.ops.append({"op": "Prop", "name": "Pool Ladder", "x": lx, "z": lz, "yaw": lyaw, "y": ly, "anchor": "world"})
     t.props.append(("Pool Ladder", lx, lz, lyaw, ly, "pool"))
@@ -696,22 +700,23 @@ for x, z in [(-34.0, 6.5), (-26.5, -2.0), (-40.5, -1.5), (-27.0, -19.0), (-51.5,
     t.tree(x + rng.uniform(-0.4, 0.4), z + rng.uniform(-0.4, 0.4), rng.uniform(5.0, 7.5), "tree")
 BX0, BZ0, BX1, BZ1 = t.x0, t.z0, t.x1, t.z1
 DRY = [0.62, 0.55, 0.32]; SAGE = [0.46, 0.50, 0.36]
-t.region("grass", 4.0, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.6, scale=[0.7, 1.3], color=DRY)
+t.region("grass", 5.0, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.55, scale=[0.7, 1.3], color=DRY)
 t.region("shrub", 0.8, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.6, color=SAGE)
 t.region("bush", 0.05, rect=[BX0, BZ0, BX1, BZ1], patchiness=0.8, scale=[0.8, 1.4], color=[0.40, 0.44, 0.28])
 # the motel courtyard's tired lawn, and the scrubby verges along the highway and the edges
 LAWN = [[-43.5, -23.5], [-22.5, -23.5], [-22.5, 11.5], [-43.5, 11.5]]
-t.region("grass", 7.0, polygon=LAWN, patchiness=0.4, scale=[0.9, 1.4], color=[0.52, 0.56, 0.28])
+t.region("grass", 9.0, polygon=LAWN, patchiness=0.4, scale=[0.9, 1.4], color=[0.52, 0.56, 0.28])
 t.region("shrub", 0.4, polygon=LAWN, patchiness=0.5, color=[0.40, 0.50, 0.26])
 for poly in ([[-62, 37.6], [62, 37.6], [62, 42], [-62, 42]], [[-64, -37.5], [64, -37.5], [64, -43], [-64, -43]], [[-62, -30], [-58.5, -30], [-58.5, 30], [-62, 30]],
              [[58, -30], [62, -30], [62, 30], [58, 30]]):
-    t.region("grass", 5.0, polygon=poly, patchiness=0.5, scale=[0.9, 1.6], color=DRY)
-    t.region("shrub", 1.2, polygon=poly, patchiness=0.5, color=SAGE)
+    t.region("grass", 7.0, polygon=poly, patchiness=0.5, scale=[0.9, 1.6], color=DRY)
+    t.region("shrub", 1.5, polygon=poly, patchiness=0.5, color=SAGE)
     t.region("bush", 0.35, polygon=poly, patchiness=0.6, scale=[0.9, 1.6], color=[0.42, 0.46, 0.30])
 for (a, b) in [((MX0 - 0.5, -32.0), (MX0 - 0.5, 11.0)), ((DN[0], DN[1] - 0.6), (DN[2], DN[1] - 0.6)), ((GR[0], GR[1] - 0.6), (GR[2], GR[1] - 0.6)),
                ((-62, 26.9), (62, 26.9)), ((ST[0] - 0.5, -3.5), (ST[0] - 0.5, 5.5))]:
     tk.weeds_along(t, a, b, density=5.0)
 t.exclude.append({"shape": "rect", "center": [-32.5, -11.0], "halfX": 5.8, "halfZ": 3.3})   # nothing grows in the pool
+t.exclude.append({"shape": "rect", "center": [(CHAN[0] + CHAN[2]) / 2, (CHAN[1] + CHAN[3]) / 2], "halfX": 1.6, "halfZ": 1.2})
 
 # ================================================================ spawns, waypoints (after every solid thing)
 for x, z in BLUE_SP + RED_SP + FFA_SP:
@@ -749,6 +754,7 @@ TERRAIN = {
     "features": [
         {"type": "plateau", "x": -32.5, "z": -11.0, "w": 11.0, "d": 6.0, "height": -1.0, "edge": 0, "mode": "cut"},
         {"type": "plateau", "x": -29.0, "z": -11.0, "w": 4.0, "d": 6.0, "height": -1.8, "edge": 0, "mode": "cut"},
+        {"type": "ramp", "points": [[-41.0, -12.5, 0.0], [-37.0, -12.5, -1.0]], "width": 2.0, "edge": 0, "mode": "cut"},
         # the desert beyond the fence: mesas to the north, low hills over the highway, buttes east and west
         {"type": "ridge", "points": [[-110, -66, 9], [-50, -72, 13], [10, -70, 16], [70, -73, 12], [110, -64, 8]], "width": 32, "material": "rock"},
         {"type": "ridge", "points": [[-110, 72, 5], [-40, 74, 7], [30, 73, 6], [110, 70, 5]], "width": 26},

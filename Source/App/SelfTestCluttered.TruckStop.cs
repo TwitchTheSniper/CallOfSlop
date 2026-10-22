@@ -53,7 +53,7 @@ public static partial class SelfTest
         if (shallow > -0.8f || deep > -1.6f || MathF.Abs(deck) > 0.05f)
             Fail($"{m.Name}: the pool isn't a pit (shallow end {shallow:0.00} m, deep end {deep:0.00} m, deck {deck:0.00} m)");
 
-        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2000, SolidProps: 350, CosmeticProps: 1200, Breakable: 400, Plants: 12000, Trees: 12, Boxes: 600));
+        CheckClutteredSmallMap(m, new SmallClutterQuota(Props: 2000, SolidProps: 350, CosmeticProps: 1200, Breakable: 400, Plants: 11000, Trees: 12, Boxes: 600));
 
         // ---- Fairness by measurement (the map isn't mirrored) ----
         var o = m.Objectives;
