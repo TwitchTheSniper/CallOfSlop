@@ -154,6 +154,8 @@ def block(m):
 
 def write_designs():
     for f in sorted(glob.glob(os.path.join(ROOT, "Weapons", "**", "*.json"), recursive=True)):
+        if os.sep + "Frenzy" + os.sep in f:
+            continue  # Weapons/Frenzy/classes.json is frenzy data, not a weapon
         text = open(f).read()
         name = json.loads(text)["name"]
         if name not in D:

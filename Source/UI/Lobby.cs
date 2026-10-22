@@ -255,6 +255,10 @@ public sealed partial class Ui
                     TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
                     MapPicker(s);
                     AutoStartPicker(s);
+                    ImGui.Checkbox("Frenzy buffs"u8, ref s.FrenzyBuffs); // FrenzyBuffs.cs
+                    ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
+                        ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
+                        : "Off: kill frenzies are music and effects only.");
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);

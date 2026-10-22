@@ -256,7 +256,7 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, def.Mobility, Aiming); // Lightweight, Stalker
+        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming); // Lightweight, Stalker; the LMG frenzy buff
         return new InputCmd
         {
             Seq = seq,
@@ -358,7 +358,7 @@ public sealed partial class Game : IDisposable
 
         var alive = Local is { Alive: true };
         Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil && !w.Def.NoAds; // carts and briefcases are hip fire only
-        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / w.Def.AdsTime, 0f, 1f); // optics and grips change aim speed
+        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / (w.Def.AdsTime * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.AdsTime)), 0f, 1f); // optics and grips change aim speed (and the DMR frenzy buff)
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
         if (alive)
         {
@@ -380,12 +380,13 @@ public sealed partial class Game : IDisposable
             spread *= sprintMult; // sprinting or just stopped (SprintSpread.cs)
             var v = me.Sim.Velocity;
             var moving = MathF.Min(new Vector2(v.X, v.Z).Length() / World.WalkSpeed, 1.5f);
-            spread += moving * 0.014f * (Aiming ? 0.5f : 1f);
+            spread += moving * 0.014f * (Aiming ? 0.5f : 1f) * FrenzyBuffs.Value(me, def, FrenzyStat.MoveSpread); // the SMG frenzy buff
             if (!me.Sim.Grounded)
                 spread += 0.035f;
             spread *= World.SpreadOf(me.Sim.Stance);
         }
         spread += Bloom;
+        spread *= FrenzyBuffs.ConeMult(Local, def, AimT); // the Shotgun and Sniper frenzy buffs (FrenzyBuffs.cs)
         return Math.Clamp(spread, 0f, def.MaxSpreadRad * sprintMult);
     }
 
@@ -467,7 +468,7 @@ public sealed partial class Game : IDisposable
         var seed = _shotSeed++;
 
         // Recoil (the gun's pattern, see Recoil.cs) + bloom
-        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT)); // Tight Grip
+        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT) * FrenzyBuffs.Value(me, def, FrenzyStat.Recoil)); // Tight Grip; the AR frenzy buff
         LookPitch = Math.Clamp(LookPitch + kickPitch, -1.5f, 1.5f);
         LookYaw = World.WrapAngle(LookYaw + kickYaw);
         var kick = def.RecoilDeg * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
@@ -520,7 +521,7 @@ public sealed partial class Game : IDisposable
         if (IsReloading(now) || w.Ammo == w.Def.Mag || now < EquipUntil || Local is not { Alive: true } || w.Reserve == 0)
             return; // (Zombies: no reserve left, nothing to reload with)
         w.ReloadStarted = now;
-        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks); // Overdrive halves it, Sleight of Hand
+        w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks) * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.Reload); // Overdrive halves it, Sleight of Hand, the LMG frenzy buff
         _burstLeft = 0;
         Audio.Reload(w.Def, null);
 
@@ -555,7 +556,7 @@ public sealed partial class Game : IDisposable
         Active.ReloadUntil = 0; // switching cancels a reload
         ActiveSlot = slot;
         _burstLeft = 0;
-        EquipUntil = now + Active.Def.EquipTime;
+        EquipUntil = now + Active.Def.EquipTime * FrenzyBuffs.Value(Local, Active.Def, FrenzyStat.EquipTime); // the Pistol frenzy buff
         NextFireTime = Math.Max(NextFireTime, EquipUntil);
         Audio.Equip(Active.Def);
     }
@@ -877,6 +878,7 @@ public sealed partial class Game : IDisposable
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
+        ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         foreach (var p in Players.Values)
         {
@@ -1164,6 +1166,7 @@ public sealed partial class Game : IDisposable
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
         RecordKill(kill);
+        FrenzyOnKill(attacker, victim, killId, head, now); // per-player kill frenzy (FrenzyServer.cs)
         OnModeKill(attacker, victim, killId, now);
         BotNoteKill(attacker, victim, head, killId, now);
         return true;
@@ -1190,7 +1193,8 @@ public sealed partial class Game : IDisposable
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
-        spread = ServerClampSpread(shooter, def, spread); // weapon limits plus the sprint penalty (SprintSpread.cs)
+        // Weapon limits plus the sprint penalty (SprintSpread.cs); the frenzy buffs can tighten the floor (FrenzyServer.cs).
+        spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def) * FrenzyAllowedConeMult(shooter, def), SprintSpread.ServerMax(def));
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         var targets = new List<(Player P, Box Hitbox, HistoryEntry At)>();
@@ -1395,7 +1399,7 @@ public sealed partial class Game : IDisposable
                 if (!_clients.TryGetValue(sender.G, out var c) || !Players.TryGetValue(c.Id, out var p))
                     break;
                 int count = Math.Min((int)r.U8(), 16);
-                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(p.DefFor(p.Primary).Mobility, p.DefFor(p.Secondary).Mobility), false) * 100), 1, 200); // (Lightweight lifts a slow pair of guns)
+                var maxSpeed = (byte)Math.Clamp((int)MathF.Round(Perks.MoveSpeed(p.Perks, MathF.Max(FrenzyAllowedMobility(p, p.DefFor(p.Primary)), FrenzyAllowedMobility(p, p.DefFor(p.Secondary))), false) * 100), 1, 200); // (Lightweight lifts a slow pair of guns; the LMG frenzy buff, FrenzyServer.cs)
                 Span<InputCmd> cmds = stackalloc InputCmd[count];
                 var read = 0;
                 for (; read < count && r.Has(15); read++)
