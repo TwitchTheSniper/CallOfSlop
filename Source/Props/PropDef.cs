@@ -111,6 +111,20 @@ public sealed class PropBreakable
 
     /// <summary>An explosive prop's blast knockback (m/s at the centre, falling off to nothing at <see cref="ExplodeRadius"/>; Knockback.cs).</summary>
     public float ExplodeKnockback = Knockback.DefaultProp;
+
+    /// <summary>
+    /// A pressure plate (the "trigger" block of "explode"; 0 = none): a living player, bot or zombie whose feet come within
+    /// this many metres of the prop (horizontally, scaled with the prop) and no more than <see cref="TriggerHeight"/> above
+    /// its base lights it (a click), and it goes off after <see cref="ExplodeFuse"/>. A prop with a trigger is a mine: its
+    /// blast is neutral and hurts everyone (see Game.PropExplode), and its kills read "Landmine".
+    /// </summary>
+    public float TriggerRadius;
+
+    /// <summary>How high above the prop's base (metres) feet still press the plate: jump over it and nothing happens.</summary>
+    public float TriggerHeight = 0.5f;
+
+    /// <summary>Has a pressure plate (a landmine).</summary>
+    public bool IsMine => TriggerRadius > 0;
 }
 
 /// <summary>

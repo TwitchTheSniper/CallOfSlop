@@ -29,6 +29,15 @@ public sealed class DecalMesh
     /// <summary>Did the vertex budget cut decals off?</summary>
     public bool Truncated;
 
+    /// <summary>
+    /// The pack decals this map places, in first-use order: pack decal k is atlas layer <see cref="GlobalLayers"/> + k (the
+    /// renderer paints just these when the map loads). Global decals keep their own layer (<see cref="DecalDef.Index"/>).
+    /// </summary>
+    public DecalDef[] PackDefs = [];
+
+    /// <summary>How many global decals the atlas starts with (<see cref="Decals.All"/> when baked).</summary>
+    public int GlobalLayers;
+
     public double BuildMs;
 
     public int Triangles => VertexCount / 3;
@@ -58,7 +67,11 @@ public static class DecalBaker
     public const float SurfaceLift = 0.0015f;
 
     /// <summary>A placed decal: its projector box and look.</summary>
-    public readonly record struct Placement(DecalDef Def, Vector3 Center, Vector3 Normal, Vector3 Up, Vector3 Right, float HalfW, float HalfH, float HalfD, Vector4 Color);
+    public readonly record struct Placement(DecalDef Def, Vector3 Center, Vector3 Normal, Vector3 Up, Vector3 Right, float HalfW, float HalfH, float HalfD, Vector4 Color)
+    {
+        /// <summary>The atlas layer drawn (set by the bake: a global decal's own, or after the global ones for a pack decal).</summary>
+        public int Layer { get; init; } = Def.Pack == null ? Def.Index : -1;
+    }
 
     public static DecalMesh Bake(Map map)
     {
@@ -76,11 +89,50 @@ public static class DecalBaker
         AddMeshes(map, world);
 
         var placements = Resolve(map, world, mesh);
+        AssignLayers(placements, mesh);
         Emit(map, world, placements, mesh);
         mesh.BuildMs = sw.Elapsed.TotalMilliseconds;
         Console.WriteLine($"[decals] baked '{map.Name}': {mesh.Placed}/{mesh.Requested} decals placed ({mesh.Missed} found no allowed surface), "
                           + $"{mesh.Triangles} triangles in {mesh.Chunks.Length} chunks, {mesh.BuildMs:0.0} ms" + (mesh.Truncated ? " (vertex budget reached: some left out)" : ""));
         return mesh;
+    }
+
+    /// <summary>
+    /// Gives every placement its atlas layer: global decals their own, pack decals the next free layer after the global
+    /// library in first-use order (<see cref="DecalMesh.PackDefs"/>), so the atlas holds only the pack decals the map places.
+    /// Past <see cref="Decals.MaxPackDecalsPerMap"/> different pack decals the rest are left out (map loading already refuses that).
+    /// </summary>
+    private static void AssignLayers(List<Placement> placements, DecalMesh mesh)
+    {
+        var global = Decals.All.Length;
+        var packIndex = new Dictionary<DecalDef, int>(ReferenceEqualityComparer.Instance);
+        var packDefs = new List<DecalDef>();
+        var kept = 0;
+        for (var i = 0; i < placements.Count; i++)
+        {
+            var p = placements[i];
+            var layer = p.Def.Index;
+            if (p.Def.Pack != null)
+            {
+                if (!packIndex.TryGetValue(p.Def, out var k))
+                {
+                    if (packDefs.Count >= Decals.MaxPackDecalsPerMap)
+                    {
+                        mesh.Missed++;
+                        mesh.Placed--;
+                        continue;
+                    }
+                    k = packDefs.Count;
+                    packIndex[p.Def] = k;
+                    packDefs.Add(p.Def);
+                }
+                layer = global + k;
+            }
+            placements[kept++] = p with { Layer = layer };
+        }
+        placements.RemoveRange(kept, placements.Count - kept);
+        mesh.PackDefs = packDefs.ToArray();
+        mesh.GlobalLayers = global;
     }
 
     /// <summary>Adds the Mesh / Model placements near any decal to the bake world (they're cosmetic, so the game world has none).</summary>
@@ -507,7 +559,7 @@ public static class DecalBaker
         verts.Add(world.X); verts.Add(world.Y); verts.Add(world.Z);
         verts.Add(n.X); verts.Add(n.Y); verts.Add(n.Z);
         verts.Add(Math.Clamp(l.X * 0.5f + 0.5f, 0f, 1f)); verts.Add(Math.Clamp(l.Y * 0.5f + 0.5f, 0f, 1f));
-        verts.Add(p.Def.Index); verts.Add(owner); verts.Add(p.Def.FadeEnd);
+        verts.Add(p.Layer); verts.Add(owner); verts.Add(p.Def.FadeEnd);
         verts.Add(p.Color.X); verts.Add(p.Color.Y); verts.Add(p.Color.Z); verts.Add(p.Color.W * facingFade * depthFade);
     }
 
