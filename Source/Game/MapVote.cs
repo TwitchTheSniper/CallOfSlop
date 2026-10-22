@@ -8,6 +8,11 @@ namespace CallOfSlop;
 ///   - When a match ends the server picks 3 maps from the pack of the map just played (True Random: from every
 ///     pack in True Random), one small, one medium, one large when possible, never the map just played, and
 ///     broadcasts them.
+///   - Player count: only maps whose player limit in the current mode (<see cref="PlayerLimit"/>) takes every human
+///     here (bots don't count; people still loading do) can be offered, so fewer than 3 options when few fit. When
+///     none fits: the map just played if it does, else the largest maps (logged). See VoteCandidates.
+///   - Someone joins during the vote and an option no longer takes everyone: it's replaced in its slot by another
+///     map that fits (its votes are dropped), or removed when none is left. See <see cref="RefitBallot"/>.
 ///   - Human players vote during the 12 s results screen (click, or press 1/2/3) and can change their vote until
 ///     the timer runs out. Bots never vote and don't count anywhere (tally, "everyone voted").
 ///   - Once every human here has voted, the timer drops to <see cref="VoteEarlyEndSeconds"/> (if it was longer).
@@ -57,30 +62,155 @@ public sealed partial class Game
     {
         _votes.Clear();
         MyVote = -1;
+        var pool = VoteCandidates(out var fallback); // never a map too small for the people here (bots don't count)
+        if (fallback)
+            LogVoteFallback(pool);
+        SetBallot(PickBallot(pool, _rng));
+        BroadcastVoteState();
+    }
 
-        // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
-        var pack = (Maps.Find(World.Map.Name) ?? World.Map).Pack is { } playedPack ? Maps.FindPack(playedPack.Name) : null;
-        var pool = FitForPeople(TrueRandom ? TrueRandomVotePool(World.Map.Name, Maps.Packs, Maps.All) : VotePool(World.Map.Name, pack, Maps.All),
-            HumanCount); // never a map too small for the people here
+    /// <summary>
+    /// Picks up to <see cref="VoteChoices"/> maps from <paramref name="pool"/>: one small, one medium, one large when
+    /// possible, then any others; fewer when the pool is smaller. Ordered by size. Deterministic for a given seed.
+    /// </summary>
+    public static List<Map> PickBallot(IReadOnlyList<Map> pool, Random rng)
+    {
         var picks = new List<Map>();
         // One of each size first, so there's always a choice of pace...
         foreach (var size in new[] { MapSize.Small, MapSize.Medium, MapSize.Large })
         {
             var ofSize = pool.Where(m => m.Size == size && !picks.Contains(m)).ToList();
             if (ofSize.Count > 0 && picks.Count < VoteChoices)
-                picks.Add(ofSize[_rng.Next(ofSize.Count)]);
+                picks.Add(ofSize[rng.Next(ofSize.Count)]);
         }
         // ...then fill up with anything left.
-        while (picks.Count < VoteChoices && picks.Count < pool.Count)
+        var rest = pool.Where(m => !picks.Contains(m)).Distinct().ToList();
+        while (picks.Count < VoteChoices && rest.Count > 0)
         {
-            var m = pool[_rng.Next(pool.Count)];
-            if (!picks.Contains(m))
-                picks.Add(m);
+            var m = rest[rng.Next(rest.Count)];
+            rest.Remove(m);
+            picks.Add(m);
         }
-        VoteOptions = picks.OrderBy(m => m.Size).Select(m => m.Id).ToArray();
-        VoteNames = VoteOptions.Select(id => Maps.Get(id).Name).ToArray();
+        return picks.OrderBy(m => m.Size).ToList();
+    }
+
+    /// <summary>
+    /// The player-count rule for the next map (vote options, a refit during the vote, the fallback when the winner is
+    /// gone): out of <paramref name="scope"/> (the pack or True Random pool, without the map just played), the maps
+    /// the current mode plays (<paramref name="modeFits"/>; ignored if it would leave nothing) whose player limit
+    /// (<paramref name="limit"/>: what the lobby enforces in this mode) takes every human here. Bots never count:
+    /// they're trimmed or added to fit the map, as on any map change. When none takes everyone:
+    ///   - the map just played (<paramref name="current"/>), if it does: playing it again beats overfilling a map;
+    ///   - otherwise the largest maps (the highest limit), with <paramref name="fallback"/> set (the server logs it).
+    /// </summary>
+    public static List<Map> VoteCandidates(IReadOnlyList<Map> scope, Map? current, int humans, Func<Map, int> limit,
+        Func<Map, bool>? modeFits, out bool fallback)
+    {
+        fallback = false;
+        var pool = scope.ToList();
+        if (modeFits != null && pool.Any(modeFits))
+            pool = pool.Where(modeFits).ToList();
+        var fit = pool.Where(m => limit(m) >= humans).ToList();
+        if (fit.Count > 0)
+            return fit;
+        var currentOk = current != null && (modeFits?.Invoke(current) ?? true);
+        if (currentOk && limit(current!) >= humans)
+            return [current!];
+        fallback = true;
+        var top = pool.Count > 0 ? pool.Max(limit) : 0;
+        if (currentOk && limit(current!) > top)
+            return [current!];
+        return pool.Where(m => limit(m) == top).ToList();
+    }
+
+    /// <summary>The next-map candidates for the people here right now (see the static overload).</summary>
+    private List<Map> VoteCandidates(out bool fallback)
+    {
+        // By name: after a map reload the playing map (and its pack) aren't in the lists as the same objects.
+        var current = Maps.Find(World.Map.Name) ?? World.Map;
+        var pack = current.Pack is { } playedPack ? Maps.FindPack(playedPack.Name) : null;
+        var scope = TrueRandom ? TrueRandomVotePool(World.Map.Name, Maps.Packs, Maps.All) : VotePool(World.Map.Name, pack, Maps.All);
+        return VoteCandidates(scope, current, HumanCount, PlayerLimit, m => Module.Fits(m), out fallback);
+    }
+
+    private void LogVoteFallback(List<Map> pool) =>
+        Log($"Map vote: no map takes all {HumanCount} players here; offering the largest ({string.Join(", ", pool.Select(m => $"{m.Name} {PlayerLimit(m)}"))})");
+
+    /// <summary>
+    /// Puts <paramref name="maps"/> on the ballot. Votes for maps still on it follow them (by name, the same way a
+    /// client keeps its pick); votes for maps that left are dropped, so those people pick again.
+    /// </summary>
+    private void SetBallot(List<Map> maps)
+    {
+        var oldNames = VoteNames;
+        VoteOptions = maps.Select(m => m.Id).ToArray();
+        VoteNames = maps.Select(m => m.Name).ToArray();
         VoteTally = new byte[VoteOptions.Length];
+        _ballotMinLimit = maps.Count > 0 ? maps.Min(m => PlayerLimit(m)) : int.MaxValue;
+        foreach (var (pid, option) in _votes.ToArray())
+        {
+            var moved = option < oldNames.Length ? Array.IndexOf(VoteNames, oldNames[option]) : -1;
+            if (moved >= 0)
+                _votes[pid] = moved;
+            else
+                _votes.Remove(pid);
+        }
+        MyVote = _votes.TryGetValue(LocalId, out var mine) ? mine : -1;
+        RecountVotes();
+    }
+
+    private int _ballotMinLimit = int.MaxValue;
+
+    /// <summary>
+    /// Server: someone joined during the vote and an option no longer takes every human here. The rule: each option
+    /// that's now too small is replaced in its slot by a random fitting map that isn't on the ballot yet (votes for it
+    /// are dropped, so those people vote again); with no such map left, that option is removed. When nothing takes
+    /// everyone any more, the ballot is redrawn from the fallback (the largest maps). Votes for maps that stay keep counting.
+    /// </summary>
+    private void RefitBallot()
+    {
+        if (!VoteOpen || HumanCount <= _ballotMinLimit)
+            return;
+        var humans = HumanCount;
+        var options = VoteNames.Select(n => Maps.Find(n)).ToArray();
+        var candidates = VoteCandidates(out var fallback);
+        List<Map> slots;
+        if (fallback)
+        {
+            if (options.All(o => o != null && candidates.Any(c => c.Name == o.Name)))
+            {
+                _ballotMinLimit = int.MaxValue; // already the fallback ballot: nothing better to offer
+                return;
+            }
+            LogVoteFallback(candidates);
+            slots = PickBallot(candidates, _rng);
+        }
+        else
+        {
+            var spare = candidates.Where(c => !options.Any(o => o?.Name == c.Name)).ToList();
+            slots = [];
+            foreach (var o in options)
+            {
+                if (o != null && PlayerLimit(o) >= humans)
+                    slots.Add(o);
+                else if (spare.Count > 0)
+                {
+                    var r = spare[_rng.Next(spare.Count)];
+                    spare.Remove(r);
+                    slots.Add(r);
+                }
+            }
+        }
+        Log($"Map vote: {humans} players now; ballot changed to {string.Join(", ", slots.Select(m => m.Name))}");
+        SetBallot(slots);
         BroadcastVoteState();
+    }
+
+    /// <summary>Self-test only (server): re-check the ballot against the people here now (the server does it every tick).</summary>
+    public void DebugRefitBallot()
+    {
+        if (IsServer)
+            RefitBallot();
     }
 
     /// <summary>
@@ -100,6 +230,7 @@ public sealed partial class Game
 
     private void ServerTickVotes(double now)
     {
+        RefitBallot(); // someone joined: no option may be too small for the people here
         // Every human has voted: no need to sit through the rest of the timer.
         if (AllHumansVoted && _intermissionUntil - now > VoteEarlyEndSeconds)
             _intermissionUntil = now + VoteEarlyEndSeconds;
@@ -150,11 +281,18 @@ public sealed partial class Game
     {
         if (VoteOptions.Length == 0)
             return null;
+        RefitBallot(); // a last check: never start a map with more people than it takes
         RecountVotes();
         var pick = PickVoteWinner(VoteTally, _rng);
         // By name, so a map reload between the vote and now picks up the current version of the winner.
-        var winner = VoteNames.Length == VoteOptions.Length ? Maps.Find(VoteNames[pick]) : null;
-        return winner ?? Maps.All[_rng.Next(Maps.All.Length)]; // the winner's file was removed meanwhile
+        var winner = pick >= 0 && VoteNames.Length == VoteOptions.Length ? Maps.Find(VoteNames[pick]) : null;
+        if (winner == null || PlayerLimit(winner) < HumanCount)
+        {
+            // The winner's file was removed meanwhile (or it shrank on a reload): a random map that fits instead.
+            var pool = VoteCandidates(out _);
+            winner = pool.Count > 0 ? pool[_rng.Next(pool.Count)] : null;
+        }
+        return winner;
     }
 
     private void BroadcastVoteState() => WriteVoteState(null);
@@ -196,6 +334,7 @@ public sealed partial class Game
 
     private void ClearVote()
     {
+        _ballotMinLimit = int.MaxValue;
         VoteOptions = [];
         VoteNames = [];
         VoteTally = [];
@@ -223,8 +362,8 @@ public sealed partial class Game
                 var tally = new byte[n];
                 for (var i = 0; i < n; i++)
                     tally[i] = r.U8();
-                if (!VoteNames.SequenceEqual(names))
-                    MyVote = -1; // a new ballot
+                if (!VoteNames.SequenceEqual(names)) // a new ballot, or one refit after a join: keep my pick if its map is still on it
+                    MyVote = MyVote >= 0 && MyVote < VoteNames.Length ? Array.IndexOf(names, VoteNames[MyVote]) : -1;
                 VoteNames = names;
                 VoteOptions = names.Select(nm => Maps.Find(nm)?.Id ?? byte.MaxValue).ToArray(); // byte.MaxValue: we don't have that map
                 VoteTally = tally;
