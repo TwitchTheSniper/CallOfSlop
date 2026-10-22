@@ -651,7 +651,7 @@ public static partial class SelfTest
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
                         var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
                         detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
-                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
+                                   + $"mid node {Node(mid)}, top node {goal}; foot {Why(bottom)}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
                     }
                 }
             }
@@ -670,7 +670,7 @@ public static partial class SelfTest
             Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
-            foreach (var d in detail.Take(6))
+            foreach (var d in detail.Take(10))
                 Fail("  nav detail: " + d);
         }
     }
