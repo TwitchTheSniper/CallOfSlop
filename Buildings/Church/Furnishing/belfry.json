@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "belfry",
+  "description": "The bell chamber: dust, pigeons, a bucket and spare boards.",
+  "items": [
+    {"props": ["Pigeons"], "place": "floor", "count": [1, 2]},
+    {"props": ["Bucket", "Broom", "Plank", "Small Crate"], "place": "floor", "count": [2, 3]}
+  ]
+}

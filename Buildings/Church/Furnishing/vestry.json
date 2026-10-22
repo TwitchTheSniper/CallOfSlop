@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "vestry",
+  "description": "The vicar's vestry: a robe wardrobe, a desk, the safe for the plate.",
+  "items": [
+    {"id": "robes", "props": ["Wardrobe"], "place": "wall", "prefer": "far"},
+    {"id": "desk", "props": ["Table"], "place": "wall"},
+    {"props": ["Wooden Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Book Pile", "Table Lamp"], "place": "on", "of": "desk", "count": [1, 2]},
+    {"props": ["Safe"], "place": "corner"},
+    {"props": ["Bookshelf"], "place": "wall", "chance": 0.8},
+    {"props": ["Coat Stand"], "place": "corner", "chance": 0.7}
+  ]
+}

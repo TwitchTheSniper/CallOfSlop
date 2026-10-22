@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "carparklobby",
+  "description": "The lift lobby on each deck: pay machines, a bench, a bin, a vending machine.",
+  "items": [
+    {"props": ["Car Park Pay Machine"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bench"], "place": "wall"},
+    {"props": ["Trash Can"], "place": "corner"},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.6},
+    {"props": ["Litter", "Soda Cans"], "place": "floor", "count": [0, 2]}
+  ]
+}

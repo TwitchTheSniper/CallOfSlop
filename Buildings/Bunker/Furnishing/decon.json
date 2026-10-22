@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "decon",
+  "description": "Decontamination: shower cubicles, a sink, gas masks, a bin for suits.",
+  "items": [
+    {"props": ["Shower Cubicle"], "place": "wall", "count": [2, 3]},
+    {"props": ["Bathroom Sink"], "place": "wall"},
+    {"props": ["Bunker Gas Mask Rack"], "place": "wall"},
+    {"props": ["Laundry Basket", "Trash Bag"], "place": "corner"}
+  ]
+}

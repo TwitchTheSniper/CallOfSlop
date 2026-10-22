@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bunkercorridor",
+  "description": "The main corridor: junction boxes, a bench, cable reels.",
+  "items": [
+    {"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
+    {"props": ["Electric Meter"], "place": "wall", "chance": 0.6},
+    {"props": ["Cable Spool", "Bucket"], "place": "corner", "chance": 0.6}
+  ]
+}

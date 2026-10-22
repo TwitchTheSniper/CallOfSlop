@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "command",
+  "description": "The command room: the plotting table, consoles round the walls, the status board, a coat stand.",
+  "items": [
+    {"id": "panel", "props": ["Bunker Control Panel"], "place": "wall", "count": [2, 3], "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "panel", "distance": 0.2, "count": [2, 3]},
+    {"props": ["Whiteboard"], "place": "wall"},
+    {"props": ["Server Rack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Coat Stand"], "place": "corner", "chance": 0.6},
+    {"props": ["Desk Fan"], "place": "floor", "chance": 0.3}
+  ]
+}

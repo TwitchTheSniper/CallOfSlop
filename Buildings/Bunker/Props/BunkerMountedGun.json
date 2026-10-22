@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Mounted Gun",
+  "description": "A heavy machine gun on a tripod behind sandbags, belt fed from a green tin.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 0.9, 0.8], "offset": [0, 0.45, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.04, 0.7, 0.04], "offset": [-0.25, 0.35, 0.15], "color": "#2a2a2a", "roll": -15},
+    {"size": [0.04, 0.7, 0.04], "offset": [0.25, 0.35, 0.15], "color": "#2a2a2a", "roll": 15},
+    {"size": [0.04, 0.75, 0.04], "offset": [0, 0.35, -0.3], "color": "#2a2a2a", "pitch": 20},
+    {"size": [0.18, 0.18, 0.7], "offset": [0, 0.78, 0.1], "color": "#2a2e2a", "material": "metal"},
+    {"size": [0.06, 0.06, 0.7], "offset": [0, 0.8, 0.75], "color": "#1a1a1a"},
+    {"size": [0.25, 0.2, 0.2], "offset": [0.22, 0.75, 0], "color": "#4a5232"},
+    {"size": [0.1, 0.18, 0.12], "offset": [0, 0.65, -0.3], "color": "#5a3a1e"}
+  ]
+}

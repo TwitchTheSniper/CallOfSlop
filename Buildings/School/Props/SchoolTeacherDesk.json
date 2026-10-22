@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "School Teacher Desk",
+  "description": "A heavy oak teacher's desk with drawers, a register, a pot of pens and an apple.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.4, 0.05, 0.72], "offset": [0, 0.76, 0], "color": "#7a5430", "material": "wood"},
+    {"size": [0.45, 0.72, 0.68], "offset": [-0.45, 0.36, 0], "color": "#6a4626", "material": "wood"},
+    {"size": [0.45, 0.72, 0.68], "offset": [0.45, 0.36, 0], "color": "#6a4626", "material": "wood"},
+    {"size": [0.5, 0.5, 0.04], "offset": [0, 0.5, -0.32], "color": "#6a4626", "material": "wood"},
+    {"size": [0.32, 0.04, 0.24], "offset": [-0.3, 0.8, 0.05], "color": "#7a1e22"},
+    {"size": [0.08, 0.12, 0.08], "offset": [0.45, 0.84, -0.15], "color": "#3a6a3a"},
+    {"size": [0.08, 0.08, 0.08], "offset": [0.25, 0.82, 0.12], "color": "#c82020"}
+  ]
+}

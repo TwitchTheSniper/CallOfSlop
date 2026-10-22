@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Motel",
+  "theme": "1960s roadside motor lodge: pastel stucco and a turquoise trim, numbered doors off an open walkway and balcony, a pink neon sign, an ice machine and a pool",
+  "category": "special",
+  "description": "A two-storey motel: the office with the check-in counter, eight rooms with their own bathrooms off a walkway and an upstairs balcony (connecting doors between rooms), the stair hall, the manager's flat upstairs; the neon sign, a pool and parked cars.",
+  "author": "Call of Slop",
+  "seed": 301,
+  "wallThickness": 0.25,
+  "storeyHeight": 3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "flamingo pink": {
+      "wall": "#f0c4c8",
+      "interior": "#f2ead8",
+      "floor": "#c8b89a",
+      "ceiling": "#f8f4ea",
+      "trim": "#2ab0a8",
+      "door": "#2ab0a8",
+      "roof": "#6a5a52",
+      "carpet": "#8a6a4a",
+      "accent": "#f0a030"
+    },
+    "mint green": {
+      "wall": "#c4e4cc",
+      "interior": "#f0ecd8",
+      "floor": "#b8b09a",
+      "ceiling": "#f6f4ea",
+      "trim": "#e8704a",
+      "door": "#e8704a",
+      "roof": "#5a5650",
+      "carpet": "#6a7a5a",
+      "accent": "#e8c030"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "office",
+          "type": "motellobby",
+          "rect": [-14, -3, -8, 4],
+          "autoWindows": {"spacing": 2.2, "width": 1.6, "sill": 0.8, "head": 2.3},
+          "floor": {"color": "#a86a3a", "material": "tiles"}
+        },
+        {"id": "stair hall", "type": "corridor", "rect": [-8, -3, -5, 4], "windows": false},
+        {"id": "room 1", "type": "motelroom", "rect": [-5, -1, -1, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 1",
+          "type": "motelbath",
+          "rect": [-5, -3, -1, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 2", "type": "motelroom", "rect": [-1, -1, 3, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 2",
+          "type": "motelbath",
+          "rect": [-1, -3, 3, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 3", "type": "motelroom", "rect": [3, -1, 7, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 3",
+          "type": "motelbath",
+          "rect": [3, -3, 7, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 4", "type": "motelroom", "rect": [7, -1, 11, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 4",
+          "type": "motelbath",
+          "rect": [7, -3, 11, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-11, 4], "width": 1.2, "front": true, "material": "glass", "health": 40},
+        {"type": "door", "at": [-8, 2.8], "width": 0.9},
+        {"type": "arch", "at": [-6.5, 4], "width": 1.2},
+        {"type": "door", "at": [-4.1, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [-2.4, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [-1.8, -1], "width": 0.9},
+        {"type": "window", "at": [-3.2, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [-1, 0.2], "width": 0.9},
+        {"type": "door", "at": [-0.1, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [1.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [2.2, -1], "width": 0.9},
+        {"type": "window", "at": [0.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [3, 0.2], "width": 0.9},
+        {"type": "door", "at": [3.9, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [5.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [6.2, -1], "width": 0.9},
+        {"type": "window", "at": [4.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [7, 0.2], "width": 0.9},
+        {"type": "door", "at": [7.9, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [9.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [10.2, -1], "width": 0.9},
+        {"type": "window", "at": [8.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "window", "at": [11, 1.6], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [-5, 2.8], "width": 0.9}
+      ]
+    },
+    {
+      "rooms": [
+        {
+          "id": "manager's flat",
+          "type": "living",
+          "rect": [-14, -3, -8, 4],
+          "autoWindows": {"spacing": 2.2, "width": 1.4, "sill": 0.9, "head": 2.2},
+          "floor": {"color": "$carpet", "material": "none"}
+        },
+        {"id": "landing", "type": "corridor", "rect": [-8, -3, -5, 4], "windows": false},
+        {"id": "room 5", "type": "motelroom", "rect": [-5, -1, -1, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 5",
+          "type": "motelbath",
+          "rect": [-5, -3, -1, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 6", "type": "motelroom", "rect": [-1, -1, 3, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 6",
+          "type": "motelbath",
+          "rect": [-1, -3, 3, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 7", "type": "motelroom", "rect": [3, -1, 7, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 7",
+          "type": "motelbath",
+          "rect": [3, -3, 7, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        },
+        {"id": "room 8", "type": "motelroom", "rect": [7, -1, 11, 4], "windows": false, "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "bath 8",
+          "type": "motelbath",
+          "rect": [7, -3, 11, -1],
+          "windows": false,
+          "floor": {"color": "#e0dcd0", "material": "tiles"},
+          "wall": {"color": "#c8e8e0", "material": "tiles"}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-8, 2.8], "width": 0.9},
+        {"type": "arch", "at": [-6.5, 4], "width": 1.2},
+        {"type": "door", "at": [-4.1, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [-2.4, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [-1.8, -1], "width": 0.9},
+        {"type": "window", "at": [-3.2, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [-1, 0.2], "width": 0.9},
+        {"type": "door", "at": [-0.1, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [1.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [2.2, -1], "width": 0.9},
+        {"type": "window", "at": [0.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [3, 0.2], "width": 0.9},
+        {"type": "door", "at": [3.9, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [5.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [6.2, -1], "width": 0.9},
+        {"type": "window", "at": [4.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "door", "at": [7, 0.2], "width": 0.9},
+        {"type": "door", "at": [7.9, 4], "width": 0.9, "color": "$accent"},
+        {"type": "window", "at": [9.6, 4], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [10.2, -1], "width": 0.9},
+        {"type": "window", "at": [8.8, -3], "width": 0.6, "sill": 1.6, "head": 2.1},
+        {"type": "window", "at": [11, 1.6], "width": 1.4, "sill": 0.9, "head": 2.1},
+        {"type": "door", "at": [-5, 2.8], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-7.6, -1.6, -6.5, 1.6], "dir": "-z"}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 14, "overhang": 0.9, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "porch", "rect": [-8, 4.13, 11.4, 5.8], "roof": false, "posts": false, "color": {"color": "#c8c4b8", "material": "concrete"}},
+    {"type": "balcony", "rect": [-8, 4.13, 11.4, 5.8], "floor": 1, "railing": 1, "color": {"color": "#c8c4b8", "material": "concrete"}},
+    {"type": "block", "min": [-7.88, 0.1, 5.6], "max": [-7.72, 2.9, 5.76], "color": "$trim"},
+    {"type": "block", "min": [-3.08, 0.1, 5.6], "max": [-2.92, 2.9, 5.76], "color": "$trim"},
+    {"type": "block", "min": [0.92, 0.1, 5.6], "max": [1.08, 2.9, 5.76], "color": "$trim"},
+    {"type": "block", "min": [4.92, 0.1, 5.6], "max": [5.08, 2.9, 5.76], "color": "$trim"},
+    {"type": "block", "min": [8.92, 0.1, 5.6], "max": [9.08, 2.9, 5.76], "color": "$trim"},
+    {"type": "block", "min": [11.12, 0.1, 5.6], "max": [11.28, 2.9, 5.76], "color": "$trim"},
+    {"type": "prop", "name": "Motel Room Number", "at": [-3.45, 2.3, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [0.55, 2.3, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [4.55, 2.3, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [8.55, 2.3, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [-3.45, 5.4, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [0.55, 5.4, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [4.55, 5.4, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Room Number", "at": [8.55, 5.4, 4.13], "yaw": 0},
+    {"type": "prop", "name": "Motel Neon Sign", "at": [-17, 6.5], "yaw": 0},
+    {"type": "prop", "name": "Motel Ice Machine", "at": [-8.8, 0, 4.7], "yaw": 270},
+    {"type": "prop", "name": "Glowing Vending Machine", "at": [12.1, 0, 4.9], "yaw": 270},
+    {"type": "prop", "name": "Sedan", "at": [-1, 7.4], "yaw": 0},
+    {"type": "prop", "name": "Pickup Truck", "at": [7.5, 7.4], "yaw": 180},
+    {"type": "prop", "name": "Hatchback", "at": [-11.5, 7.4], "yaw": 0},
+    {"type": "block", "min": [-4, 0, 9], "max": [6, 0.6, 9.3], "color": {"color": "#e8e8e0", "material": "tiles"}},
+    {"type": "block", "min": [-4, 0, 13.7], "max": [6, 0.6, 14], "color": {"color": "#e8e8e0", "material": "tiles"}},
+    {"type": "block", "min": [-4, 0, 9.3], "max": [-3.7, 0.6, 13.7], "color": {"color": "#e8e8e0", "material": "tiles"}},
+    {"type": "block", "min": [5.7, 0, 9.3], "max": [6, 0.6, 13.7], "color": {"color": "#e8e8e0", "material": "tiles"}},
+    {"type": "block", "min": [-3.7, 0, 9.3], "max": [5.7, 0.45, 13.7], "color": {"color": "#3ab0d8", "material": "none"}},
+    {"type": "prop", "name": "Sun Lounger", "at": [7.2, 10.2], "yaw": 270},
+    {"type": "prop", "name": "Sun Lounger", "at": [7.2, 12.4], "yaw": 270},
+    {"type": "prop", "name": "Motel Sun Umbrella", "at": [8.3, 11.3], "yaw": 0},
+    {"type": "prop", "name": "Patio Chair", "at": [-5.2, 10], "yaw": 90},
+    {"type": "prop", "name": "Patio Chair", "at": [-5.2, 12.6], "yaw": 90},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [-12, -4], "yaw": 180},
+    {"type": "prop", "name": "Dumpster", "at": [-2, -4.3], "yaw": 180},
+    {"type": "prop", "name": "Pedal Bin", "at": [-8.6, 0.1, 5.4], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "office", "at": [-11, 1]},
+    {"type": "spawn", "name": "room 3", "at": [5, 1.5]},
+    {"type": "spawn", "name": "room 6", "floor": 1, "at": [1, 1.5]},
+    {"type": "hill", "name": "stair hall", "at": [-6.5, 2.6]}
+  ]
+}

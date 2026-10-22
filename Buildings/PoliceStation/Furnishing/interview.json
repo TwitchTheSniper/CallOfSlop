@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "interview",
+  "description": "The interview room: a bolted table, chairs on both sides, a camera in the corner.",
+  "items": [
+    {"id": "table", "props": ["Police Interview Table"], "place": "centre"},
+    {"props": ["Plastic Chair"], "place": "around", "of": "table", "count": [3, 4]},
+    {"props": ["Water Cooler"], "place": "corner", "chance": 0.5}
+  ]
+}

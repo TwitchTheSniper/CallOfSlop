@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cid",
+  "description": "The CID office: desks pushed together, an incident board, filing cabinets, a kettle.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall", "count": [3, 5]},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1, "count": [3, 5]},
+    {"props": ["Computer Monitor", "Desk Phone", "Book Pile", "Desk Printer"], "place": "on", "of": "desk", "y": 0.77, "count": [3, 6]},
+    {"props": ["Police Incident Board"], "place": "wall", "count": [1, 2]},
+    {"props": ["Filing Cabinet"], "place": "wall", "count": [2, 3]},
+    {"props": ["Whiteboard"], "place": "wall", "chance": 0.7},
+    {"props": ["Desk Fan"], "place": "on", "of": "desk", "y": 0.77, "chance": 0.5},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [1, 2]}
+  ]
+}

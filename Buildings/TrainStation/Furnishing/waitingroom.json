@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "waitingroom",
+  "description": "The first-class waiting room: a coal fire, benches round the walls, a ticking clock, a rug.",
+  "items": [
+    {"props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"props": ["Train Station Bench"], "place": "wall", "count": [3, 5]},
+    {"props": ["Grandfather Clock"], "place": "wall"},
+    {"id": "table", "props": ["Coffee Table"], "place": "centre"},
+    {"props": ["Newspaper"], "place": "on", "of": "table", "y": 0.45},
+    {"props": ["Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Trash Can"], "place": "corner"}
+  ]
+}

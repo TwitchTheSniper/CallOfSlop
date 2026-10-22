@@ -1,0 +1,145 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Multi-Storey Car Park",
+  "theme": "1970s brutalist multi-storey car park: raw grey concrete decks with open sides and low walls, painted bays, ramps between the levels, a grim stair core and a pay booth",
+  "category": "special",
+  "description": "A concrete car park: three parking decks (more with the floors variant) joined by wide ramps, a rooftop deck, a stair core with a lobby on every level and the attendant's booth at street level; parked cars, cones and litter.",
+  "author": "Call of Slop",
+  "seed": 291,
+  "wallThickness": 0.3,
+  "storeyHeight": 2.8,
+  "doorHeight": 2.1,
+  "floorCount": 3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "concrete"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": {"color": "$ceiling", "material": "concrete"},
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "raw concrete": {"wall": "#8e8c86", "interior": "#9a9890", "floor": "#6e6e6a", "ceiling": "#a8a69e", "trim": "#e8c020", "door": "#3a5a8a", "roof": "#7a7a76"},
+    "painted": {"wall": "#b8b4a6", "interior": "#c8c4b4", "floor": "#76746e", "ceiling": "#d0ccc0", "trim": "#2a7aa8", "door": "#2a7aa8", "roof": "#828078"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "deck",
+          "type": "parking",
+          "rect": [-12, -8, 8, 8],
+          "windows": false,
+          "props": [
+            {"name": "Car Park Bay Lines", "at": [-5.9, 5.3]},
+            {"name": "Car Park Bay Lines", "at": [1.9, 5.3]},
+            {"name": "Sedan", "at": [-5.9, 5.3], "yaw": 90},
+            {"name": "Taxi", "at": [1.9, 5.3], "yaw": 90},
+            {"name": "Burnt Out Car", "at": [4.5, 5.3], "yaw": 90},
+            {"name": "SUV", "at": [7.1, 5.3], "yaw": 90},
+            {"name": "SUV", "at": [-3.6, -4.6], "yaw": 270},
+            {"name": "Hatchback", "at": [1.6, -4.6], "yaw": 270},
+            {"name": "Hatchback", "at": [4.2, -4.6], "yaw": 270}
+          ]
+        },
+        {"id": "stair core", "type": "carparkstairs", "rect": [8, -8, 12, 0], "autoWindows": {"spacing": 2.5, "width": 0.8, "sill": 1, "head": 2.2}},
+        {
+          "id": "pay booth",
+          "type": "payoffice",
+          "rect": [8, 0, 12, 8],
+          "autoWindows": {"spacing": 2.2, "width": 1.4, "sill": 0.9, "head": 2.2},
+          "floor": {"color": "#5a5a58", "material": "tiles"}
+        }
+      ],
+      "openings": [
+        {"type": "arch", "at": [-4, 8], "width": 3.6, "head": 2.45, "front": true},
+        {"type": "arch", "at": [-12, 4], "width": 3.6, "head": 2.45},
+        {"type": "hole", "at": [-9, 8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [1, 8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [5.6, 8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-12, -5.5], "width": 3.5, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-12, -0.6], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-9, -8], "width": 3.4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-3.5, -8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [1.5, -8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [5.8, -8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "door", "at": [8, -0.75], "width": 1, "material": "metal"},
+        {"type": "arch", "at": [10, 0], "width": 1.6},
+        {"type": "arch", "at": [8, 4], "width": 2},
+        {"type": "door", "at": [10.8, 8], "width": 1, "material": "glass", "health": 40}
+      ]
+    },
+    {
+      "repeat": true,
+      "rooms": [
+        {
+          "id": "deck",
+          "type": "parking",
+          "rect": [-12, -8, 8, 8],
+          "windows": false,
+          "props": [
+            {"name": "Car Park Bay Lines", "at": [-5.9, 5.3]},
+            {"name": "Car Park Bay Lines", "at": [1.9, 5.3]},
+            {"name": "Hatchback", "at": [-8.5, 5.3], "yaw": 90},
+            {"name": "Sedan", "at": [-3.3, 5.3], "yaw": 90},
+            {"name": "Sedan", "at": [-0.7, 5.3], "yaw": 90},
+            {"name": "Taxi", "at": [4.5, 5.3], "yaw": 90},
+            {"name": "Burnt Out Car", "at": [7.1, 5.3], "yaw": 90},
+            {"name": "Sedan", "at": [-1, -4.6], "yaw": 270},
+            {"name": "Sedan", "at": [1.6, -4.6], "yaw": 270}
+          ]
+        },
+        {"id": "stair core", "type": "carparkstairs", "rect": [8, -8, 12, 0], "autoWindows": {"spacing": 2.5, "width": 0.8, "sill": 1, "head": 2.2}},
+        {"id": "lift lobby", "type": "carparklobby", "rect": [8, 0, 12, 8], "autoWindows": {"spacing": 2.2, "width": 1.4, "sill": 0.9, "head": 2.2}}
+      ],
+      "openings": [
+        {"type": "hole", "at": [-4, 8], "width": 3.6, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-12, 4], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-9, 8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [1, 8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [5.6, 8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-12, -5.5], "width": 3.5, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-12, -0.6], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-9, -8], "width": 3.4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [-3.5, -8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [1.5, -8], "width": 4, "sill": 1, "head": 2.4},
+        {"type": "hole", "at": [5.8, -8], "width": 3, "sill": 1, "head": 2.4},
+        {"type": "door", "at": [8, -0.75], "width": 1, "material": "metal"},
+        {"type": "arch", "at": [10, 0], "width": 1.6},
+        {"type": "arch", "at": [8, 4], "width": 2}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [-11.6, -6.8, -8.6, -1.6], "dir": "-z", "color": {"color": "#7e7e78", "material": "concrete"}},
+    {
+      "floor": 1,
+      "rect": [4.6, -6.8, 7.6, -1.6],
+      "dir": "-z",
+      "color": {"color": "#7e7e78", "material": "concrete"},
+      "alt": {"rect": [-11.6, -6.8, -8.6, -1.6], "dir": "-z"}
+    },
+    {"floor": 0, "rect": [8.4, -6.6, 9.6, -3], "dir": "-z"},
+    {"floor": 1, "rect": [10.4, -6.6, 11.6, -3], "dir": "+z", "alt": {"rect": [8.4, -6.6, 9.6, -3], "dir": "-z"}}
+  ],
+  "roof": {"type": "flat", "parapet": 1.1, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "prop", "name": "Car Park Sign", "at": [12.16, 1.8, -2.75], "yaw": 90},
+    {"type": "prop", "name": "Car Park Height Bar", "at": [-4, 9], "yaw": 0},
+    {"type": "prop", "name": "Car Park Pay Machine", "at": [8.8, 8.7], "yaw": 0},
+    {"type": "prop", "name": "Bollard", "at": [-6.3, 8.8], "yaw": 0},
+    {"type": "prop", "name": "Bollard", "at": [-1.7, 8.8], "yaw": 0},
+    {"type": "prop", "name": "Sedan", "at": [-7, 0, 5.4], "yaw": 90, "onRoof": true},
+    {"type": "prop", "name": "Hatchback", "at": [-1.5, 0, 5.4], "yaw": 90, "onRoof": true},
+    {"type": "prop", "name": "Burnt Out Car", "at": [3, 0, -4.4], "yaw": 260, "onRoof": true},
+    {"type": "prop", "name": "Car Park Bay Lines", "at": [-4, 0, 5.3], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Street Lamp", "at": [-2, 0, -7.4], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Street Lamp", "at": [-2, 0, 7.4], "yaw": 180, "onRoof": true},
+    {"type": "prop", "name": "Traffic Cone", "at": [0.8, 0, 1], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [10, 0, 5.5], "yaw": 0, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "ground deck", "at": [-6, 0.5]},
+    {"type": "spawn", "name": "upper deck", "floor": 1, "at": [0, 0.5]},
+    {"type": "hill", "name": "upper deck", "floor": 1, "at": [-2, 0.5]},
+    {"type": "point", "name": "pay booth", "at": [10, 5]}
+  ]
+}

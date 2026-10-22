@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "castletower",
+  "description": "The tower's ground floor: rubble, old crates, a brazier.",
+  "items": [
+    {"props": ["Castle Ruin Brazier"], "place": "corner"},
+    {"props": ["Wooden Crate", "Small Crate", "Plank Pile"], "place": "wall", "count": [1, 2]},
+    {"props": ["Rubble", "Loose Bricks", "Rubble Pile"], "place": "floor", "count": [1, 3]}
+  ]
+}

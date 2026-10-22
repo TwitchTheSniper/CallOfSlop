@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "castlechapel",
+  "description": "The ruined chapel: the broken altar, rough benches, weeds and rubble.",
+  "items": [
+    {"props": ["Castle Ruin Altar Stone"], "place": "wall", "prefer": "far"},
+    {"props": ["Bench"], "place": "floor", "count": [1, 2]},
+    {"props": ["Castle Ruin Brazier"], "place": "corner", "chance": 0.7},
+    {"props": ["Rubble Pile", "Castle Ruin Fallen Masonry"], "place": "floor", "count": [1, 2]},
+    {"props": ["Loose Bricks", "Rubble", "Flower Pot"], "place": "floor", "count": [1, 3]}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker CCTV Monitors",
+  "description": "A steel rack of four flickering security monitors over a desk.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "glass", "debris": {"count": 14, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.5, 0.75, 0.7], "offset": [0, 0.375, 0], "color": "#6a6e72", "material": "metal"},
+    {"size": [1.4, 0.9, 0.45], "offset": [0, 1.2, -0.12], "color": "#3a3e42", "material": "metal"},
+    {"size": [0.55, 0.32, 0.01], "offset": [-0.33, 1, 0.11], "color": "#6a9a8a", "anim": {"type": "flicker", "rate": 6, "duty": 0.85, "glow": 0.7}},
+    {"size": [0.55, 0.32, 0.01], "offset": [-0.33, 1.42, 0.11], "color": "#6a9a8a", "anim": {"type": "flicker", "rate": 6, "duty": 0.85, "glow": 0.7}},
+    {"size": [0.55, 0.32, 0.01], "offset": [0.33, 1, 0.11], "color": "#6a9a8a", "anim": {"type": "flicker", "rate": 6, "duty": 0.85, "glow": 0.7}},
+    {"size": [0.55, 0.32, 0.01], "offset": [0.33, 1.42, 0.11], "color": "#6a9a8a", "anim": {"type": "flicker", "rate": 6, "duty": 0.85, "glow": 0.7}}
+  ]
+}

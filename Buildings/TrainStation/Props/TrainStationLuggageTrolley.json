@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Train Station Luggage Trolley",
+  "description": "A flat wooden porter's trolley with iron wheels and a pile of trunks and cases.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.8, 0.08, 0.9], "offset": [0, 0.45, 0], "color": "#7a5430", "material": "wood"},
+    {"size": [0.06, 0.6, 0.9], "offset": [-0.9, 0.75, 0], "color": "#1e2a22"},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 0},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 45},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 90},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 135},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 0},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 45},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 90},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, 0.42], "color": "#1e2a22", "roll": 135},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 0},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 45},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 90},
+    {"size": [0.207, 0.5, 0.06], "offset": [-0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 135},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 0},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 45},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 90},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.5, 0.25, -0.42], "color": "#1e2a22", "roll": 135},
+    {"size": [0.8, 0.45, 0.55], "offset": [-0.3, 0.72, 0], "color": "#4a2e1a", "material": "wood"},
+    {"size": [0.6, 0.3, 0.4], "offset": [0.45, 0.64, 0.1], "color": "#6a2a22"},
+    {"size": [0.55, 0.25, 0.4], "offset": [-0.3, 1.07, 0.02], "color": "#2a4a6a"}
+  ]
+}

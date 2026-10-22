@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Police Custody Desk",
+  "description": "The custody sergeant's high desk: a raised counter, the custody record, a phone and a monitor.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 250, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [2.4, 1.25, 0.8], "offset": [0, 0.625, 0], "color": "#4a5a6a"},
+    {"size": [2.5, 0.05, 0.6], "offset": [0, 1.27, 0.15], "color": "#c8c0b0"},
+    {"size": [2.3, 0.05, 0.5], "offset": [0, 0.78, -0.2], "color": "#c8c0b0"},
+    {"size": [0.5, 0.4, 0.12], "offset": [-0.5, 1.5, -0.1], "color": "#1a1a1a"},
+    {"size": [0.4, 0.03, 0.3], "offset": [0.5, 1.31, 0.15], "color": "#1e5a9a"},
+    {"size": [0.22, 0.1, 0.18], "offset": [0, 1.33, 0.1], "color": "#1a1a1a"}
+  ]
+}

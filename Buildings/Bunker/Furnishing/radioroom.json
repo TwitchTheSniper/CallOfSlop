@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "radioroom",
+  "description": "The signals room: radio sets on desks, headphones, a cipher safe, cable reels.",
+  "items": [
+    {"id": "desk", "props": ["Office Desk"], "place": "wall", "count": [1, 2]},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1, "count": [1, 2]},
+    {"props": ["Bunker Radio Set"], "place": "on", "of": "desk", "y": 0.77, "count": [1, 2]},
+    {"props": ["Desk Phone", "Book Pile"], "place": "on", "of": "desk", "y": 0.77, "chance": 0.7},
+    {"props": ["Server Rack"], "place": "wall"},
+    {"props": ["Safe"], "place": "corner"},
+    {"props": ["Cable Spool"], "place": "floor", "chance": 0.6}
+  ]
+}

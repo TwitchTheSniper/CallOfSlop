@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Drip Stand",
+  "description": "A chrome drip stand on a five-wheeled base with a bag of saline.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.5, 0.04, 0.5], "offset": [0, 0.06, 0], "color": "#c8ccd0"},
+    {"size": [0.03, 1.9, 0.03], "offset": [0, 1, 0], "color": "#c8ccd0"},
+    {"size": [0.3, 0.02, 0.02], "offset": [0, 1.92, 0], "color": "#c8ccd0"},
+    {"size": [0.14, 0.22, 0.04], "offset": [0.12, 1.75, 0], "color": "#d8eef4"},
+    {"size": [0.01, 0.6, 0.01], "offset": [0.12, 1.35, 0], "color": "#e0e8ee"}
+  ]
+}

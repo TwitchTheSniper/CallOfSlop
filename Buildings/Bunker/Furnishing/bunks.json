@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bunks",
+  "description": "The bunk room: steel bunks, footlockers, lockers, kit bags.",
+  "items": [
+    {"id": "bunk", "props": ["Bunk Bed"], "place": "wall", "count": [2, 4], "prefer": "far"},
+    {"props": ["Bunker Footlocker"], "place": "front", "of": "bunk", "distance": 0.05, "count": [1, 3]},
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Duffel Bag", "Backpack"], "place": "floor", "count": [1, 2]}
+  ]
+}

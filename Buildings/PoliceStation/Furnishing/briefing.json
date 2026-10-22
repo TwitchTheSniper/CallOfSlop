@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "briefing",
+  "description": "The briefing room: rows of chairs facing a whiteboard and the incident board.",
+  "items": [
+    {"id": "board", "props": ["Whiteboard"], "place": "wall", "prefer": "far"},
+    {"props": ["Police Incident Board"], "place": "wall"},
+    {"id": "table", "props": ["Conference Table"], "place": "centre"},
+    {"props": ["Office Chair"], "place": "around", "of": "table", "count": [4, 6]},
+    {"props": ["Water Cooler"], "place": "corner"}
+  ]
+}

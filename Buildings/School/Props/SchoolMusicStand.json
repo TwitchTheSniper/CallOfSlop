@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "School Music Stand",
+  "description": "A folding black music stand with sheet music.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.35, 0.02, 0.35], "offset": [0, 0.01, 0], "color": "#1a1a1a"},
+    {"size": [0.025, 1.1, 0.025], "offset": [0, 0.56, 0], "color": "#1a1a1a"},
+    {"size": [0.45, 0.32, 0.02], "offset": [0, 1.22, 0.02], "color": "#1a1a1a", "pitch": -20},
+    {"size": [0.4, 0.28, 0.005], "offset": [0, 1.23, 0.04], "color": "#f0ece0", "pitch": -20}
+  ]
+}

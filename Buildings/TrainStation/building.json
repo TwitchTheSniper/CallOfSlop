@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Train Station",
+  "theme": "Victorian country railway station: buff brick, a slate roof, green and cream paint, a cast-iron canopy over the platform, a coal fire in the waiting room",
+  "category": "special",
+  "description": "A railway station: a booking hall with the ticket hatch, a booking office, parcels office, a station buffet, a waiting room with a fire, toilets; the platform behind under a canopy, with the track.",
+  "author": "Call of Slop",
+  "seed": 261,
+  "wallThickness": 0.35,
+  "storeyHeight": 4.2,
+  "doorHeight": 2.5,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "buff brick": {"wall": "#c4a676", "interior": "#e8dcb8", "floor": "#7a5e4a", "ceiling": "#f0e8d0", "trim": "#2a4a32", "door": "#2a4a32", "roof": "#3e434a"},
+    "red brick": {"wall": "#94503e", "interior": "#e6dcc0", "floor": "#6e5e50", "ceiling": "#efe8d4", "trim": "#5a1e22", "door": "#5a1e22", "roof": "#3c3e44"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.4, "width": 1.2, "sill": 1, "head": 3},
+      "rooms": [
+        {
+          "id": "waiting room",
+          "type": "waitingroom",
+          "rects": [[-12, -1, -5, 4], [-9, -4, -5, -1]],
+          "floor": {"color": "#6a4632", "material": "wood"}
+        },
+        {
+          "id": "toilets",
+          "type": "restroom",
+          "rect": [-12, -4, -9, -1],
+          "autoWindows": {"spacing": 2, "width": 0.8, "sill": 1.8, "head": 2.8},
+          "floor": {"color": "#d0d0c8", "material": "tiles"}
+        },
+        {"id": "booking hall", "type": "tickethall", "rect": [-5, -4, 3, 4]},
+        {
+          "id": "booking office",
+          "type": "ticketoffice",
+          "rect": [3, 0, 7, 4],
+          "props": [{"name": "Train Station Ticket Counter", "wall": "W", "along": 0}],
+          "floor": {"color": "#6a4632", "material": "wood"}
+        },
+        {"id": "parcels office", "type": "leftluggage", "rect": [3, -4, 7, 0], "floor": {"color": "#7a7a72", "material": "concrete"}},
+        {"id": "buffet", "type": "stationcafe", "rect": [7, -4, 12, 4]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-1, 4], "width": 2, "front": true, "material": "wood"},
+        {"type": "arch", "at": [-1, -4], "width": 2.4},
+        {"type": "arch", "at": [-5, 1], "width": 1.6},
+        {"type": "door", "at": [-10.5, -1], "width": 0.9},
+        {"type": "door", "at": [-7, -4], "width": 1.2},
+        {"type": "hole", "at": [3, 2], "width": 1.4, "sill": 1, "head": 1.8},
+        {"type": "door", "at": [3, -2.2], "width": 1},
+        {"type": "door", "at": [5, 0], "width": 0.9},
+        {"type": "door", "at": [5, -4], "width": 1.4, "material": "wood"},
+        {"type": "door", "at": [9.5, -4], "width": 1.2},
+        {"type": "door", "at": [9.5, 4], "width": 1.2, "material": "glass", "health": 40},
+        {"type": "door", "at": [7, -2], "width": 0.9}
+      ]
+    }
+  ],
+  "roof": {"type": "hip", "ridge": "x", "pitch": 35, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "block", "min": [-16, 0, -10], "max": [16, 0.1, -4.18], "color": {"color": "#8e8a82", "material": "concrete"}},
+    {"type": "block", "min": [-16, 0.1, -10], "max": [16, 0.11, -9.65], "color": {"color": "#e8c020", "material": "none"}},
+    {"type": "awning", "rect": [-14, -9, 14, -4.18], "height": 3.9, "color": {"color": "#2a4a32", "material": "metal"}, "posts": true},
+    {"type": "block", "min": [-7.09, 0.1, -8.99], "max": [-6.91, 3.75, -8.81], "color": {"color": "#2a4a32", "material": "metal"}},
+    {"type": "block", "min": [-0.09, 0.1, -8.99], "max": [0.09, 3.75, -8.81], "color": {"color": "#2a4a32", "material": "metal"}},
+    {"type": "block", "min": [6.91, 0.1, -8.99], "max": [7.09, 3.75, -8.81], "color": {"color": "#2a4a32", "material": "metal"}},
+    {"type": "block", "min": [-14.1, 3.45, -9.1], "max": [14.1, 3.75, -9], "color": {"color": "#e8dcb8", "material": "wood"}},
+    {"type": "prop", "name": "Train Station Track", "at": [-15, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Track", "at": [-9, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Track", "at": [-3, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Track", "at": [3, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Track", "at": [9, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Track", "at": [15, -12.2], "yaw": 0},
+    {"type": "prop", "name": "Train Station Name Board", "at": [-4, 0.1, -9.3], "yaw": 0},
+    {"type": "prop", "name": "Train Station Name Board", "at": [10.5, 0.1, -9.3], "yaw": 0},
+    {"type": "prop", "name": "Train Station Clock", "at": [0, 3, -6.6], "yaw": 0},
+    {"type": "prop", "name": "Train Station Bench", "at": [-11, 0.1, -5], "yaw": 0},
+    {"type": "prop", "name": "Train Station Bench", "at": [-3.5, 0.1, -5], "yaw": 0},
+    {"type": "prop", "name": "Train Station Bench", "at": [4, 0.1, -5], "yaw": 0},
+    {"type": "prop", "name": "Train Station Luggage Trolley", "at": [7.5, 0.1, -6], "yaw": 0},
+    {"type": "prop", "name": "Post Litter Bin", "at": [-6, 0.1, -4.8], "yaw": 0},
+    {"type": "prop", "name": "Vending Machine", "at": [12.5, 0.1, -4.75], "yaw": 0},
+    {"type": "prop", "name": "Railway Crossing Lights", "at": [16.8, -9], "yaw": 270},
+    {"type": "prop", "name": "Taxi", "at": [6, 7.2], "yaw": 90},
+    {"type": "prop", "name": "Bus Stop Sign", "at": [-9.5, 5.6], "yaw": 0},
+    {"type": "prop", "name": "Bike Rack", "at": [-5.5, 5.2], "yaw": 0},
+    {"type": "prop", "name": "Street Lamp", "at": [2.6, 5.4], "yaw": 0},
+    {"type": "prop", "name": "Brick Chimney", "at": [-10.5, 1.2, 1.6], "yaw": 0, "onRoof": true},
+    {"type": "block", "min": [-3.5, 3.2, 4.15], "max": [1.5, 3.9, 4.4], "color": {"color": "#2a4a32", "material": "none"}},
+    {"type": "block", "min": [-3.2, 3.35, 4.4], "max": [1.2, 3.75, 4.42], "color": {"color": "#e8dcb8", "material": "none"}}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "booking hall", "at": [-1, 0]},
+    {"type": "spawn", "name": "buffet", "at": [9.5, 0]},
+    {"type": "hill", "name": "booking hall", "at": [-1, 0.5]},
+    {"type": "point", "name": "platform", "at": [0, -6.5]}
+  ]
+}

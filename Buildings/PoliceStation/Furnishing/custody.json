@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "custody",
+  "description": "The custody suite: the sergeant's high desk, a height chart, a bench for prisoners, lockers for their property.",
+  "items": [
+    {"id": "desk", "props": ["Police Custody Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.2},
+    {"props": ["Police Height Chart"], "place": "wall"},
+    {"props": ["Bench"], "place": "wall"},
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "motellobby",
+  "description": "The motel office: the check-in counter with its bell, a brochure rack, two armchairs, a vending machine.",
+  "items": [
+    {"id": "desk", "props": ["Reception Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.2},
+    {"props": ["Desk Phone", "Book Pile"], "place": "on", "of": "desk", "y": 1.08, "count": [1, 2]},
+    {"props": ["Motel Brochure Rack"], "place": "wall"},
+    {"props": ["Armchair"], "place": "wall", "count": [1, 2]},
+    {"props": ["Coffee Table"], "place": "centre", "chance": 0.7},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.8},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner"},
+    {"props": ["Ceiling Fan"], "place": "ceiling"}
+  ]
+}

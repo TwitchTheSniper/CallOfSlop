@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Fire Station",
+  "theme": "1950s brick fire station: red brick and white trim, a tall appliance bay with two red engines, a crew loft with the brass sliding pole, a mess and bunk room, a hose drying tower",
+  "category": "special",
+  "description": "A fire station: a double appliance bay with two engines and a gear loft (sliding pole down), the watch room, stairs to the crew dormitory and lounge upstairs, a mess kitchen, a drill tower at the back.",
+  "author": "Call of Slop",
+  "seed": 251,
+  "wallThickness": 0.3,
+  "storeyHeight": 4.6,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red brick": {"wall": "#9a3e32", "interior": "#e8e4d8", "floor": "#8a8a86", "ceiling": "#f0f0ea", "trim": "#f0f0ea", "door": "#c01818", "roof": "#4a4a4c"},
+    "brown brick": {"wall": "#6e4a38", "interior": "#e4e0d2", "floor": "#86847e", "ceiling": "#eeeee8", "trim": "#e8d8a0", "door": "#a81818", "roof": "#46423e"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "appliance bay",
+          "type": "enginebay",
+          "rect": [-9, -7, 3, 7],
+          "autoWindows": {"spacing": 3, "width": 1.6, "sill": 2.6, "head": 3.9},
+          "props": [
+            {"name": "Fire Station Engine", "at": [-3, 0.8]},
+            {"name": "Fire Station Engine", "at": [3, 0.8]},
+            {"name": "Fire Station Pole", "at": [5.2, -4.7]}
+          ]
+        },
+        {
+          "id": "watch room",
+          "type": "watchroom",
+          "rect": [3, 3, 9, 7],
+          "autoWindows": {"spacing": 2.2, "width": 1.4, "sill": 0.9, "head": 2.6},
+          "floor": {"color": "#7a5a42", "material": "tiles"}
+        },
+        {"id": "stair hall", "type": "corridor", "rect": [3, -0.5, 9, 3], "windows": false, "floor": {"color": "#7a7a76", "material": "tiles"}},
+        {
+          "id": "mess",
+          "type": "messroom",
+          "rect": [3, -7, 9, -0.5],
+          "autoWindows": {"spacing": 2.4, "width": 1.4, "sill": 0.9, "head": 2.6},
+          "floor": {"color": "#b0a490", "material": "tiles"}
+        }
+      ],
+      "openings": [
+        {"type": "arch", "at": [-6, 7], "width": 3.8, "head": 4.2},
+        {"type": "arch", "at": [0, 7], "width": 3.8, "head": 4.2},
+        {"type": "door", "at": [6, 7], "width": 1, "front": true},
+        {"type": "door", "at": [3, 2], "width": 1},
+        {"type": "door", "at": [6, 3], "width": 0.9},
+        {"type": "door", "at": [7.8, -0.5], "width": 0.9},
+        {"type": "door", "at": [9, -4], "width": 1, "material": "metal"},
+        {"type": "door", "at": [-6, -7], "width": 1.2, "material": "metal"}
+      ]
+    },
+    {
+      "height": 3,
+      "autoWindows": {"spacing": 2.2, "width": 1.2, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "dormitory", "type": "dorm", "rect": [3, -7, 9, -0.5], "floor": {"color": "#6a5a4a", "material": "wood"}},
+        {"id": "landing", "type": "corridor", "rect": [3, -0.5, 9, 3], "windows": false},
+        {"id": "crew lounge", "type": "recroom", "rect": [3, 3, 9, 7], "floor": {"color": "#6a5a4a", "material": "wood"}}
+      ],
+      "openings": [{"type": "door", "at": [7.8, -0.5], "width": 0.9}, {"type": "door", "at": [6, 3], "width": 0.9}]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [4.2, -0.2, 7, 0.9], "dir": "+x"}],
+  "roof": {"type": "flat", "parapet": 0.8, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {
+      "type": "platform",
+      "rect": [-8.85, -6.85, 2.85, -5],
+      "height": 2.4,
+      "railing": 0.9,
+      "color": {"color": "#6a6e72", "material": "metal"},
+      "stairs": {"rect": [-8.6, -4.9, -7.6, -2.6], "dir": "-z"}
+    },
+    {"type": "prop", "name": "Fire Station Gear Locker", "at": [-5.5, 2.51, -6.45], "yaw": 0},
+    {"type": "prop", "name": "Fire Station Gear Locker", "at": [-4.5, 2.51, -6.45], "yaw": 0},
+    {"type": "prop", "name": "Fire Station Gear Locker", "at": [-3.5, 2.51, -6.45], "yaw": 0},
+    {"type": "prop", "name": "Fire Station Gear Locker", "at": [-2.5, 2.51, -6.45], "yaw": 0},
+    {"type": "prop", "name": "Bench", "at": [-0.5, 2.51, -6.5], "yaw": 0},
+    {"type": "prop", "name": "Fire Station Hose Rack", "at": [1.6, 2.51, -6.55], "yaw": 0},
+    {"type": "prop", "name": "Duffel Bag", "at": [-7, 2.51, -6.3], "yaw": 30},
+    {"type": "block", "min": [-9.15, 4.35, 7], "max": [3.15, 4.65, 7.3], "color": {"color": "#c01818", "material": "none"}},
+    {"type": "block", "min": [-2.4, 0, -9.7], "max": [0.4, 12, -7.15], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [-2.6, 12, -9.9], "max": [0.6, 12.4, -6.95], "color": {"color": "$trim", "material": "none"}},
+    {"type": "prop", "name": "Fire Station Bell", "at": [4.6, 3, 7.4], "yaw": 0},
+    {"type": "prop", "name": "Fire Hydrant", "at": [10, 8], "yaw": 0},
+    {"type": "prop", "name": "Traffic Cone", "at": [-8.6, 8.4], "yaw": 0},
+    {"type": "prop", "name": "Traffic Cone", "at": [2.6, 8.4], "yaw": 0},
+    {"type": "prop", "name": "Bench", "at": [7.5, 7.9], "yaw": 0},
+    {"type": "prop", "name": "Flag on a Pole", "at": [9.8, 9], "yaw": 0},
+    {"type": "prop", "name": "Hose Reel", "at": [-9.6, -2], "yaw": 90},
+    {"type": "prop", "name": "Alarm Light", "at": [3.4, 0, 6.4], "yaw": 0, "onRoof": true},
+    {"type": "prop", "name": "Rooftop Condenser", "at": [6, 0, -4], "yaw": 0, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "appliance bay", "at": [-3, 4.8]},
+    {"type": "spawn", "name": "mess", "at": [6, -3.5]},
+    {"type": "hill", "name": "appliance bay", "at": [-3, -2]},
+    {"type": "point", "name": "gear loft", "at": [-3, -6]}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "payoffice",
+  "description": "The attendant's booth: a counter, a chair, the CCTV screen, a kettle.",
+  "items": [
+    {"id": "desk", "props": ["Reception Desk"], "place": "wall", "prefer": "near"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.2},
+    {"props": ["Desk Phone"], "place": "on", "of": "desk", "y": 1.08},
+    {"props": ["Flickering TV"], "place": "wall"},
+    {"props": ["Filing Cabinet"], "place": "wall"},
+    {"props": ["Car Park Pay Machine"], "place": "wall"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "chance": 0.8},
+    {"props": ["Kettle"], "place": "on", "of": "counter", "y": 0.9}
+  ]
+}

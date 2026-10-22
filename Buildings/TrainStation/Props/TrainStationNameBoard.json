@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Train Station Name Board",
+  "description": "A long enamel station name board on two green posts.",
+  "collision": "solid",
+  "collider": [{"size": [3, 2.3, 0.15]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.1, 2.2, 0.1], "offset": [-1.3, 1.1, 0], "color": "#2a4a32"},
+    {"size": [0.1, 2.2, 0.1], "offset": [1.3, 1.1, 0], "color": "#2a4a32"},
+    {"size": [3, 0.6, 0.06], "offset": [0, 1.95, 0], "color": "#2a4a32"},
+    {"size": [2.8, 0.45, 0.01], "offset": [0, 1.95, 0.035], "color": "#e8dcb8"},
+    {"size": [2.8, 0.45, 0.01], "offset": [0, 1.95, -0.035], "color": "#e8dcb8"},
+    {"size": [2, 0.14, 0.012], "offset": [0, 1.95, 0.04], "color": "#1a1a1a"},
+    {"size": [2, 0.14, 0.012], "offset": [0, 1.95, -0.04], "color": "#1a1a1a"}
+  ]
+}

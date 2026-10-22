@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fire Station Pole",
+  "description": "The polished brass sliding pole from the crew loft, with a rubber landing mat.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.09, 4.4, 0.037], "offset": [0, 2.2, 0], "color": "#d8b040", "yaw": 0},
+    {"size": [0.09, 4.4, 0.037], "offset": [0, 2.2, 0], "color": "#d8b040", "yaw": 45},
+    {"size": [0.09, 4.4, 0.037], "offset": [0, 2.2, 0], "color": "#d8b040", "yaw": 90},
+    {"size": [0.09, 4.4, 0.037], "offset": [0, 2.2, 0], "color": "#d8b040", "yaw": 135},
+    {"size": [0.2, 0.06, 0.2], "offset": [0, 4.37, 0], "color": "#a8862e"},
+    {"size": [1, 0.04, 0.414], "offset": [0, 0.02, 0], "color": "#2a2a2a", "yaw": 0},
+    {"size": [1, 0.04, 0.414], "offset": [0, 0.02, 0], "color": "#2a2a2a", "yaw": 45},
+    {"size": [1, 0.04, 0.414], "offset": [0, 0.02, 0], "color": "#2a2a2a", "yaw": 90},
+    {"size": [1, 0.04, 0.414], "offset": [0, 0.02, 0], "color": "#2a2a2a", "yaw": 135}
+  ]
+}

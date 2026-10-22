@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "The clinic corridor: a parked wheelchair, a plant, chairs by the consulting rooms.",
+  "items": [
+    {"props": ["Clinic Wheelchair"], "place": "wall", "chance": 0.8},
+    {"props": ["Plastic Chair"], "place": "wall", "count": [0, 2]},
+    {"props": ["Office Plant"], "place": "corner", "chance": 0.6}
+  ]
+}

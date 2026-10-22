@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "guardroom",
+  "description": "The guard room: a bank of CCTV monitors, a chair, lockers, the duty phone.",
+  "items": [
+    {"id": "cctv", "props": ["Bunker CCTV Monitors"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "cctv", "distance": 0.1},
+    {"props": ["Metal Lockers"], "place": "wall"},
+    {"props": ["Bench"], "place": "wall", "chance": 0.6},
+    {"props": ["Bunker Gas Mask Rack"], "place": "wall", "chance": 0.6}
+  ]
+}

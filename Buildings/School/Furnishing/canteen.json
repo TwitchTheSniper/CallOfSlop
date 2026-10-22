@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "canteen",
+  "description": "The canteen: a serving counter with plates, a fridge, bins and a vending machine (tables placed in the file).",
+  "items": [
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 4], "prefer": "far"},
+    {"props": ["Stacked Plates", "Cooking Pot", "Stacked Plates"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 4]},
+    {"props": ["Fridge"], "place": "wall"},
+    {"props": ["Trash Can", "Wheelie Bin"], "place": "corner", "count": [1, 2]},
+    {"props": ["Vending Machine"], "place": "wall", "chance": 0.6}
+  ]
+}

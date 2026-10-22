@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "castlehall",
+  "description": "The roofless great hall: fallen masonry, braziers, the re-enactors' feast table, restoration scaffolding.",
+  "items": [
+    {"props": ["Castle Ruin Throne"], "place": "wall", "prefer": "far"},
+    {"props": ["Castle Ruin Long Table"], "place": "centre"},
+    {"props": ["Castle Ruin Brazier"], "place": "wall", "count": [2, 3]},
+    {"props": ["Castle Ruin Fallen Masonry"], "place": "floor", "count": [2, 3]},
+    {"props": ["Hanging Banner"], "place": "wall", "count": [1, 2]},
+    {"props": ["Rubble Pile", "Brick Pile"], "place": "floor", "count": [1, 2]},
+    {"props": ["Scaffold Tower"], "place": "wall", "chance": 0.7},
+    {"props": ["Wheelbarrow", "Log", "Wooden Crate"], "place": "floor", "count": [1, 2]},
+    {"props": ["Rubble", "Loose Bricks", "Bucket"], "place": "floor", "count": [2, 4]}
+  ]
+}
