@@ -64,6 +64,7 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
+            Section("Destruction", CheckDestruction); // SelfTestDestruction.cs: materials, chunks, damage per material, holes, collapse, falling pieces, replication, reset, budgets, nav
             Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map

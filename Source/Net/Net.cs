@@ -64,6 +64,8 @@ public enum Msg : byte
     RocketSync, // server -> all: guided, decoyed and stuck projectiles' positions with snapshots while any exist (unreliable)
     RocketBoom, // server -> all: a launcher projectile went off / was a dud / left the map, or its target popped flares (reliable)
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
+    StructBreak, // server -> all: destructible chunks a hit broke (structure, hit kind, from, chunk ids); every PC runs the same collapse (reliable; GameDestruction.cs)
+    StructState, // server -> joining client: a structure's broken chunks, a bit each (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

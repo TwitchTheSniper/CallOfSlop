@@ -716,6 +716,7 @@ public sealed partial class Game
         }
         BlastProps(owner, center, radius, maxDamage, PropDamage.Streak, now); // breakable props (GameProps.cs)
         BlastBuildings(owner, center, radius, maxDamage, PropDamage.Streak, now); // building doors and windows (GameBuildings.cs)
+        BlastStructures(owner, center, radius, maxDamage, StructureHit.Streak, killId, now); // destructible buildings (GameDestruction.cs)
         if (ownerId == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);
     }
