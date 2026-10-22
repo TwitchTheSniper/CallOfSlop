@@ -4,8 +4,16 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// A Sentry Turret or Attack Drone. The server runs them; clients get a compact update (~22 bytes each) with every
-/// snapshot, and draw tracers and sounds themselves while the "firing" flag is set.
+/// A streak's world object: Sentry Turret, Attack Drone, Hunter Drone, Gunship or a Supply Drop crate. The server runs
+/// them; clients get a compact update (22 bytes each) with every snapshot, and draw tracers and sounds themselves while
+/// the "firing" flag is set.
+/// <para>
+/// For weapons that counter streaks (e.g. launchers): <see cref="IsAirborne"/> marks the flying ones, <see cref="Health"/> /
+/// <see cref="MaxHealth"/> are their hit points, <see cref="Hitbox"/> is what hits them, and
+/// <see cref="Game.DamageStreakMachine"/> applies a direct hit or blast through the normal rules (team check, the
+/// streak's bullet and explosive multipliers, the kill-feed line when it goes down). <see cref="Game.StreakMachineHostile"/>
+/// says whether a player may target it.
+/// </para>
 /// </summary>
 public sealed class StreakEntity
 {
@@ -34,15 +42,42 @@ public sealed class StreakEntity
 
     public int MaxHealth => Math.Max(1, KillStreaks.Get(Kind).Health); // from the streak's definition (KillStreaks.All)
 
-    /// <summary>What bullets and blasts hit. Turret: 0.9 x 1.2 x 0.9 m, the tripod's footprint up to the top of its head.</summary>
-    public Box Hitbox => Kind == StreakId.SentryTurret
-        ? new Box(Pos + new Vector3(0, 0.6f, 0), new Vector3(0.45f, 0.6f, 0.45f))
-        : new Box(Pos, new Vector3(0.75f, 0.3f, 0.75f));
+    /// <summary>Flying streaks (Attack Drone, Hunter Drone, Gunship): what anti-air weapons lock onto.</summary>
+    public bool IsAirborne => Kind is StreakId.AttackDrone or StreakId.HunterDrone or StreakId.Gunship;
+
+    /// <summary>Can it be shot or blown up? (A Supply Drop crate can't: it's taken, not destroyed.)</summary>
+    public bool Targetable => Kind != StreakId.SupplyDrop;
+
+    /// <summary>
+    /// What bullets and blasts hit. Turret: 0.9 x 1.2 x 0.9 m, the tripod's footprint up to the top of its head.
+    /// Gunship: 5 x 2 x 5 m round its hull and rotor. Hunter Drone: 0.7 m. Crate: 1.2 m, sitting on the ground.
+    /// </summary>
+    public Box Hitbox => Kind switch
+    {
+        StreakId.SentryTurret => new Box(Pos + new Vector3(0, 0.6f, 0), new Vector3(0.45f, 0.6f, 0.45f)),
+        StreakId.Gunship => new Box(Pos, new Vector3(2.5f, 1f, 2.5f)),
+        StreakId.HunterDrone => new Box(Pos, new Vector3(0.35f, 0.25f, 0.35f)),
+        StreakId.SupplyDrop => new Box(Pos + new Vector3(0, 0.6f, 0), new Vector3(0.6f, 0.6f, 0.6f)),
+        _ => new Box(Pos, new Vector3(0.75f, 0.3f, 0.75f)),
+    };
 
     /// <summary>Where its shots come from.</summary>
-    public Vector3 Muzzle(Vector3 pos, float yaw, float pitch) => Kind == StreakId.SentryTurret
-        ? pos + new Vector3(0, 1.05f, 0) + World.Forward(yaw, pitch) * 0.7f
-        : pos - new Vector3(0, 0.4f, 0);
+    public Vector3 Muzzle(Vector3 pos, float yaw, float pitch) => Kind switch
+    {
+        StreakId.SentryTurret => pos + new Vector3(0, 1.05f, 0) + World.Forward(yaw, pitch) * 0.7f,
+        StreakId.Gunship => pos - new Vector3(0, 1.1f, 0),
+        _ => pos - new Vector3(0, 0.4f, 0),
+    };
+
+    // ---- Server, later streaks ----
+    public Vector3 Vel; // Hunter Drone: flight velocity; crate: fall speed
+    public bool Landed; // crate: on the ground and ready to take
+    public bool Done; // detonated or taken: remove without a "destroyed" line
+    public float GroundY; // crate: where it lands
+
+    // ---- Both sides, later streaks ----
+    public double NextBeep; // Hunter Drone beeps, the gunship's engine
+    public bool FxLanded; // crate: the landing thump has played
 
     public const int NetBytes = 22;
 }
@@ -139,17 +174,27 @@ public sealed partial class Game
                 (gone ??= new()).Add(e);
                 continue;
             }
+            var emp = StreakMachinesDisabled(owner, now); // an enemy EMP Blast: no firing (KillStreaksMore.cs)
             if (e.Kind == StreakId.SentryTurret)
-                TickTurret(e, owner, now);
-            else
-                TickDrone(e, owner, now);
+                TickTurret(e, owner, now, emp);
+            else if (e.Kind == StreakId.AttackDrone)
+                TickDrone(e, owner, now, emp);
+            else if (TickMoreEntity(e, owner, now, emp)) // Hunter Drone, Gunship, crate (KillStreaksMore.cs)
+                (gone ??= new()).Add(e); // done (detonated or taken): removed silently, its own event says what happened
             e.RenderPos = e.Pos;
             e.RenderYaw = e.Yaw;
             e.RenderPitch = e.Pitch;
         }
         if (gone != null)
             foreach (var e in gone)
-                RemoveStreakEntity(e, byte.MaxValue, now); // ran out (or its owner left)
+            {
+                if (!e.Done && e.Kind == StreakId.HunterDrone && Players.TryGetValue(e.Owner, out var ho))
+                    DetonateHunter(e, ho, now); // out of fuel: it blows up where it is
+                if (e.Done)
+                    StreakEntities.Remove(e.Id);
+                else
+                    RemoveStreakEntity(e, byte.MaxValue, now); // ran out (or its owner left)
+            }
     }
 
     /// <summary>The nearest enemy of <paramref name="owner"/> in clear sight of <paramref name="from"/>, optionally inside a cone.</summary>
@@ -183,7 +228,7 @@ public sealed partial class Game
         return best;
     }
 
-    private void TickTurret(StreakEntity e, Player owner, double now)
+    private void TickTurret(StreakEntity e, Player owner, double now, bool emp = false)
     {
         var dt = World.TickDt;
         var head = e.Pos + new Vector3(0, 1.05f, 0);
@@ -205,7 +250,7 @@ public sealed partial class Game
             var turn = KillStreaks.TurretTurnRate * dt;
             e.Yaw = World.WrapAngle(e.Yaw + Math.Clamp(dy, -turn, turn));
             e.Pitch += Math.Clamp(wantPitch - e.Pitch, -turn, turn);
-            if (MathF.Abs(dy) < 0.08f && now - e.AcquiredAt >= KillStreaks.TurretWarmup && now >= e.NextShot)
+            if (!emp && MathF.Abs(dy) < 0.08f && now - e.AcquiredAt >= KillStreaks.TurretWarmup && now >= e.NextShot)
             {
                 e.NextShot = now + KillStreaks.TurretInterval;
                 StreakEntityShoot(e, owner, World.Forward(e.Yaw, e.Pitch), KillStreaks.TurretSpread, KillStreaks.TurretDamage, now);
@@ -222,7 +267,7 @@ public sealed partial class Game
         e.Firing = now - e.LastShot < 0.25;
     }
 
-    private void TickDrone(StreakEntity e, Player owner, double now)
+    private void TickDrone(StreakEntity e, Player owner, double now, bool emp = false)
     {
         e.OrbitAngle += e.OrbitDir * KillStreaks.DroneSpeed / e.OrbitRadius * World.TickDt;
         e.Pos = DronePosition(e);
@@ -247,7 +292,7 @@ public sealed partial class Game
         {
             var to = target.Chest - e.Muzzle(e.Pos, 0, 0);
             e.Pitch = MathF.Asin(Math.Clamp(to.Y / MathF.Max(to.Length(), 0.01f), -1f, 1f));
-            if (e.BurstLeft > 0 && now >= e.NextShot)
+            if (e.BurstLeft > 0 && now >= e.NextShot && !emp)
             {
                 e.BurstLeft--;
                 e.NextShot = now + KillStreaks.DroneBurstGap;
@@ -261,7 +306,7 @@ public sealed partial class Game
             e.BurstLeft = 0;
             e.NextScan = now + 0.3;
         }
-        e.Firing = e.BurstLeft > 0 || now - e.LastShot < 0.15;
+        e.Firing = !emp && (e.BurstLeft > 0 || now - e.LastShot < 0.15);
     }
 
     /// <summary>One hitscan shot from a turret or drone (no lag compensation: it sees the server's present).</summary>
@@ -305,7 +350,7 @@ public sealed partial class Game
         StreakEntity? best = null;
         foreach (var e in StreakEntities.Values)
         {
-            if (!Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, shooter))
+            if (!e.Targetable || !Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, shooter))
                 continue;
             if (e.Hitbox.Raycast(origin, dir, dist) is { } t && t < dist)
             {
@@ -341,6 +386,18 @@ public sealed partial class Game
         return Math.Max(1, (int)MathF.Round(amount * mult));
     }
 
+    /// <summary>
+    /// Server: a weapon hit on a streak machine (a launcher's rocket, say): <paramref name="amount"/> raw damage of
+    /// <paramref name="kind"/>, scaled by the streak's multipliers. Does nothing to the attacker's own or teammates'
+    /// machines or to a crate. Returns true if that destroyed it (the kill feed says who did).
+    /// </summary>
+    public bool DamageStreakMachine(StreakEntity e, Player attacker, int amount, DamageKind kind, double now) =>
+        IsServer && StreakMachineHostile(e, attacker) && DamageStreakEntity(e, attacker, amount, now, kind);
+
+    /// <summary>Is this streak machine an enemy's that <paramref name="p"/> can shoot (or lock onto, if it's airborne)?</summary>
+    public bool StreakMachineHostile(StreakEntity e, Player p) =>
+        e.Targetable && Players.TryGetValue(e.Owner, out var owner) && owner != p && StreakIsEnemy(owner, p);
+
     /// <summary>Self-test: damages a turret or drone through the server path. Returns true if that destroyed it.</summary>
     public bool SelfTestDamageStreakEntity(StreakEntity e, Player attacker, int amount, double now, DamageKind kind) =>
         DamageStreakEntity(e, attacker, amount, now, kind);
@@ -352,7 +409,7 @@ public sealed partial class Game
             return;
         foreach (var e in StreakEntities.Values.ToList())
         {
-            if (!Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, attacker))
+            if (!e.Targetable || !Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, attacker))
                 continue;
             DamageStreakEntity(e, attacker, (int)MathF.Round(BlastDamage(center, e.Hitbox.Center, radius, maxDamage)), now, DamageKind.Explosive);
         }
@@ -456,7 +513,7 @@ public sealed partial class Game
             e.RenderPos += (e.Pos - e.RenderPos) * k;
             e.RenderYaw = World.LerpAngle(e.RenderYaw, e.Yaw, k);
             e.RenderPitch += (e.Pitch - e.RenderPitch) * k;
-            if (e.Firing && now >= e.NextFx)
+            if (e.Firing && now >= e.NextFx && e.Kind is StreakId.SentryTurret or StreakId.AttackDrone)
             {
                 e.NextFx = now + (e.Kind == StreakId.SentryTurret ? KillStreaks.TurretInterval : KillStreaks.DroneBurstGap);
                 var from = e.Muzzle(e.RenderPos, e.RenderYaw, e.RenderPitch);
@@ -486,7 +543,7 @@ public sealed partial class Game
                 Log($"Your {name} is out of time");
             return;
         }
-        Blasts.Add(new Blast(pos + new Vector3(0, kind == StreakId.SentryTurret ? 0.6f : 0, 0), now, 2.5f, ThrowableKind.Impact));
+        Blasts.Add(new Blast(pos + new Vector3(0, kind == StreakId.SentryTurret ? 0.6f : 0, 0), now, kind == StreakId.Gunship ? 5f : 2.5f, ThrowableKind.Impact));
         Audio.Effect3D(Sfx.Explosion, pos, 0.7f);
         string Who(byte id) => id == LocalId ? "You" : NameOf(id);
         var whose = owner == LocalId ? "your" : $"{NameOf(owner)}'s";

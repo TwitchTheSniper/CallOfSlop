@@ -10,14 +10,17 @@ public static partial class SelfTest
         // ---- Definitions, kill ids and unlocks -------------------------------------------------
         var defs = KillStreaks.All.Where(s => s.Id != StreakId.None).ToArray();
         Line("streaks: " + string.Join(", ", defs.Select(s => $"{s.Name} ({s.Kills} kills, lvl {KillStreaks.UnlockLevel(s.Id)})")));
-        if (defs.Length is < 6 or > 8)
-            Fail($"{defs.Length} streaks (want 6-8)");
+        if (defs.Length is < 14 or > 16)
+            Fail($"{defs.Length} streaks (want 14-16)");
         if (defs.Select(s => s.Name).Distinct().Count() != defs.Length || defs.Any(s => s.Kills < 2 || s.Effect.Length < 20))
             Fail("streak names must be unique, cost at least 2 kills, and have a description");
         if (KillStreaks.All.Select((s, i) => (int)s.Id != i).Any(x => x))
             Fail("KillStreaks.All must be indexed by id");
-        if (KillStreaks.KillId(defs.Max(s => s.Id)) >= Game.MeleeKillId || KillStreaks.KillId(StreakId.None) != 230)
-            Fail("streak kill ids must sit in 230-238");
+        var killIds = defs.Select(s => KillStreaks.KillId(s.Id)).ToArray();
+        if (KillStreaks.KillId(StreakId.None) != 230 || killIds.Distinct().Count() != killIds.Length
+            || killIds.Any(k => k == Game.MeleeKillId || k >= Throwables.KillIdBase || k < KillStreaks.ExtraKillIdBase || k < Weapons.All.Length)
+            || defs.Any(s => KillStreaks.FromKillId(KillStreaks.KillId(s.Id)) != s.Id) || Weapons.MaxWeapons > KillStreaks.ExtraKillIdBase)
+            Fail($"streak kill ids must be unique and sit in 214-238 (not melee, throwables or weapons): {string.Join(",", killIds)}");
         if (Throwables.KillName(KillStreaks.KillId(StreakId.SentryTurret)) != "Sentry Turret" || Throwables.KillName(Game.MeleeKillId) != "Melee")
             Fail($"kill feed name for a turret kill: '{Throwables.KillName(KillStreaks.KillId(StreakId.SentryTurret))}'");
         if (KillStreaks.IsStreakKill(Game.MeleeKillId) || KillStreaks.IsStreakKill(Weapons.DefaultPrimary.Id) || !KillStreaks.IsStreakKill(KillStreaks.KillId(StreakId.StrafeRun)))

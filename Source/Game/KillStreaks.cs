@@ -3,7 +3,10 @@ using Brutal.RakNetApi;
 
 namespace CallOfSlop;
 
-/// <summary>The kill streaks. Values are saved by name, so the order here can change freely (ids must stay below 9: they're bits of a byte).</summary>
+/// <summary>
+/// The kill streaks. Loadouts save them by name, but packets send the byte, so new ones are appended. Ids must stay
+/// below 17: they're bits of <see cref="StreakState.Ready"/> (a ushort), and kill-feed ids have room for 24 (see <see cref="KillStreaks.KillId"/>).
+/// </summary>
 public enum StreakId : byte
 {
     None,
@@ -14,6 +17,16 @@ public enum StreakId : byte
     SentryTurret,
     AttackDrone,
     StrafeRun,
+
+    // Added later (KillStreaksMore.cs): appended so packet bytes never move.
+    SmokeScreen,
+    BallisticVests,
+    HunterDrone,
+    SupplyDrop,
+    NapalmStrike,
+    EmpBlast,
+    Gunship,
+    Juggernaut,
 }
 
 /// <summary>How a streak is called in.</summary>
@@ -23,7 +36,7 @@ public enum StreakAim : byte
     Instant,
     /// <summary>Look at a spot and press fire (Mortar Barrage).</summary>
     Spot,
-    /// <summary>Look at a spot and press fire: the run passes over it along the way you're facing (Strafe Run).</summary>
+    /// <summary>Look at a spot and press fire: the run passes over it along the way you're facing (Strafe Run, Napalm Strike), or a wall goes up across it (Smoke Screen).</summary>
     Line,
 }
 
@@ -118,18 +131,26 @@ public sealed class StreakState
     public byte Count;
 
     /// <summary>Earned and not used yet: one bit per <see cref="StreakId"/>. Earned streaks survive death until used.</summary>
-    public byte Ready;
+    public ushort Ready;
 
     /// <summary>
     /// Kills stored towards each streak, indexed by <see cref="StreakId"/>. Each streak fills on its own: using one empties
     /// it so it can be earned again with fresh kills; dying empties the ones not earned yet.
     /// </summary>
-    public readonly byte[] Progress = new byte[8];
+    public readonly byte[] Progress = new byte[KillStreaks.MaxIds];
+
+    /// <summary>
+    /// Armour from Ballistic Vests or the Juggernaut suit (server-owned, sent in Msg.StreakState). It soaks damage before
+    /// health and is gone on death. <see cref="ArmorHeavy"/>: the Juggernaut's (stops every bullet and blast, slows you);
+    /// otherwise a vest's (body-shot bullets only).
+    /// </summary>
+    public int Armor;
+    public bool ArmorHeavy;
 
     /// <summary>Server: bots pick random streaks once.</summary>
     public bool BotPicked;
 
-    public static byte Bit(StreakId id) => id == StreakId.None ? (byte)0 : (byte)(1 << ((int)id - 1));
+    public static ushort Bit(StreakId id) => id == StreakId.None || (int)id >= KillStreaks.MaxIds ? (ushort)0 : (ushort)(1 << ((int)id - 1));
 
     public bool IsReady(StreakId id) => (Ready & Bit(id)) != 0;
 
@@ -149,6 +170,8 @@ public sealed class StreakState
         Count = 0;
         Ready = 0;
         Array.Clear(Progress);
+        Armor = 0;
+        ArmorHeavy = false;
     }
 }
 
@@ -170,10 +193,16 @@ public sealed class StrikeFx
 public readonly record struct StrikeMarker(StreakId Kind, byte Owner, Vector3 Pos, float Yaw, double Born, double Until);
 
 /// <summary>Kill streak definitions, tuning and the deterministic strike planning both sides share.</summary>
-public static class KillStreaks
+public static partial class KillStreaks
 {
-    /// <summary>Kill-feed ids 230-238 are streaks (230 + id); 239 is melee and 240+ throwables.</summary>
+    /// <summary>Kill-feed ids 231-238 are the first eight streaks (230 + id); 239 is melee and 240+ throwables.</summary>
     public const byte KillIdBase = 230;
+
+    /// <summary>Streaks with ids 9 and up use kill-feed ids 214-229 (214 + id - 9). Weapon ids stay below this (<see cref="Weapons.MaxWeapons"/>).</summary>
+    public const byte ExtraKillIdBase = 214;
+
+    /// <summary>Room for streak ids (the Progress array size, and the 16 bits of Ready plus None).</summary>
+    public const int MaxIds = 17;
 
     // ---- Tuning ---------------------------------------------------------------------
     public const float MaxCallRange = 250f;
@@ -229,6 +258,32 @@ public static class KillStreaks
         new() { Id = StreakId.StrafeRun, Name = "Strafe Run", Kills = 11, Short = "Jet strafes a line", Aim = StreakAim.Line,
             Effect = "Look at a spot and press fire: a jet strafes a 50 m line through it, along the way you're facing. Roofs shield you.",
             Color = new(1f, 0.3f, 0.6f) },
+
+        // ---- Added later (KillStreaksMore.cs has their tuning and logic) ----
+        new() { Id = StreakId.SmokeScreen, Name = "Smoke Screen", Kills = 3, Short = "Wall of smoke", Aim = StreakAim.Line,
+            Effect = "Look at a spot and press fire: canisters lay a 24 m wall of smoke across it, square to the way you face, for 14 seconds. Nobody sees or locks on through it, turrets and bots included.",
+            Color = new(0.75f, 0.78f, 0.82f) },
+        new() { Id = StreakId.BallisticVests, Name = "Ballistic Vests", Kills = 4, Short = "Armour for your team",
+            Effect = "You and every living teammate get a vest that soaks 60 damage from body shots. Headshots, explosions and melee go straight through it. Lost on death.",
+            Color = new(0.45f, 0.7f, 1f) },
+        new() { Id = StreakId.HunterDrone, Name = "Hunter Drone", Kills = 5, Short = "Seeks and explodes",
+            Effect = "A small drone flies off after the nearest enemy and dives at them, beeping faster as it comes, then explodes. Shoot it down, get under a roof, or wear Flak Jacket. Cold Blooded hides you from it.",
+            Color = new(1f, 0.6f, 0.3f), Health = HunterHealth },
+        new() { Id = StreakId.SupplyDrop, Name = "Supply Drop", Kills = 6, Short = "Crate: restock and +1 kill",
+            Effect = "A crate parachutes down in front of you. Whoever touches it first, friend or enemy, gets full health, grenades and equipment, and one kill toward each streak they haven't earned yet.",
+            Color = new(0.95f, 0.85f, 0.4f) },
+        new() { Id = StreakId.NapalmStrike, Name = "Napalm Strike", Kills = 7, Short = "Jet leaves a fire line", Aim = StreakAim.Line,
+            Effect = "Look at a spot and press fire: a jet drops napalm on a 30 m line through it, along the way you face. The fire burns for 8 seconds. Roofs shield you and Flak Jacket cuts the burns.",
+            Color = new(1f, 0.42f, 0.1f) },
+        new() { Id = StreakId.EmpBlast, Name = "EMP Blast", Kills = 9, Short = "Kill enemy electronics",
+            Effect = "Fries enemy electronics: their Hunter Drones and tactical devices are destroyed, and for 12 seconds their turrets, drones and gunships can't fire and their HUD and recon are jammed. Strikes already called still land.",
+            Color = new(0.4f, 0.9f, 1f) },
+        new() { Id = StreakId.Gunship, Name = "Gunship", Kills = 13, Short = "Cannon gunship, 35 s",
+            Effect = "A gunship circles high over the map for 35 seconds, shelling any enemy it can see with explosive cannon rounds. Shoot it down (explosives hurt it most), hide under roofs, or wear Cold Blooded.",
+            Color = new(0.7f, 0.95f, 0.35f), Health = GunshipHealth, BulletDamageMult = GunshipBulletMult, ExplosiveDamageMult = GunshipExplosiveMult },
+        new() { Id = StreakId.Juggernaut, Name = "Juggernaut", Kills = 15, Short = "400 armour, slow",
+            Effect = "Suit up: 400 armour soaks every bullet and blast (explosives eat it 50% faster), but you move 25% slower. One melee hit still kills you. Lasts until the armour breaks or you die.",
+            Color = new(0.9f, 0.25f, 0.25f) },
     ];
 
     public static StreakDef Get(StreakId id) => All[(int)id < All.Length ? (int)id : 0];
@@ -242,7 +297,12 @@ public static class KillStreaks
     public static readonly StreakId[] Starters = [StreakId.ReconSweep, StreakId.Overdrive, StreakId.MortarBarrage];
 
     /// <summary>The rest, in unlock order (spread evenly from level 5 to two levels before max).</summary>
-    public static readonly StreakId[] UnlockOrder = [StreakId.CounterSweep, StreakId.SentryTurret, StreakId.AttackDrone, StreakId.StrafeRun];
+    // The first four kept their old unlock level or got an earlier one when the later streaks were slotted in between.
+    public static readonly StreakId[] UnlockOrder =
+    [
+        StreakId.CounterSweep, StreakId.SmokeScreen, StreakId.BallisticVests, StreakId.SentryTurret, StreakId.HunterDrone, StreakId.SupplyDrop,
+        StreakId.NapalmStrike, StreakId.AttackDrone, StreakId.EmpBlast, StreakId.Gunship, StreakId.StrafeRun, StreakId.Juggernaut,
+    ];
 
     public static int UnlockLevel(StreakId id)
     {
@@ -252,12 +312,14 @@ public static class KillStreaks
         return i < 0 ? Progress.MaxLevel : 5 + (int)MathF.Round(i * (Progress.MaxLevel - 7) / (float)(UnlockOrder.Length - 1));
     }
 
-    public static byte KillId(StreakId id) => (byte)(KillIdBase + (byte)id);
+    public static byte KillId(StreakId id) => (byte)id <= 8 ? (byte)(KillIdBase + (byte)id) : (byte)(ExtraKillIdBase + (byte)id - 9);
 
     /// <summary>Was this kill made by a streak? (Those never count toward the next streak.)</summary>
-    public static bool IsStreakKill(byte killId) => killId >= KillIdBase && killId < Game.MeleeKillId;
+    public static bool IsStreakKill(byte killId) => killId >= KillIdBase && killId < Game.MeleeKillId || killId >= ExtraKillIdBase && killId < KillIdBase;
 
-    public static StreakId FromKillId(byte killId) => IsStreakKill(killId) ? (StreakId)(killId - KillIdBase) : StreakId.None;
+    public static StreakId FromKillId(byte killId) =>
+        killId >= KillIdBase && killId < Game.MeleeKillId ? (StreakId)(killId - KillIdBase)
+        : killId >= ExtraKillIdBase && killId < KillIdBase ? (StreakId)(killId - ExtraKillIdBase + 9) : StreakId.None;
 
     // ---- Strike planning (identical on server and clients) ----------------------------
 
@@ -299,6 +361,27 @@ public static class KillStreaks
                 list.Add(new StrikeShell(StrafeDelay + (off + StrafeLength / 2) / StrafeSpeed, GroundAt(p.X, p.Z, target.Y)));
             }
         }
+        else if (id == StreakId.NapalmStrike)
+        {
+            var dir = World.FlatForward(yaw);
+            for (var i = 0; i < NapalmHits; i++)
+            {
+                var off = -NapalmLength / 2 + i * NapalmLength / (NapalmHits - 1);
+                var side = (Next() - 0.5f) * 1.2f;
+                var p = target + dir * off + new Vector3(-dir.Z, 0, dir.X) * side;
+                list.Add(new StrikeShell(NapalmDelay + (off + NapalmLength / 2) / NapalmSpeed, GroundAt(p.X, p.Z, target.Y)));
+            }
+        }
+        else if (id == StreakId.SmokeScreen)
+        {
+            var across = World.FlatForward(yaw + MathF.PI / 2);
+            for (var i = 0; i < SmokeScreenClouds; i++)
+            {
+                var off = -SmokeScreenLength / 2 + i * SmokeScreenLength / (SmokeScreenClouds - 1);
+                var p = target + across * off;
+                list.Add(new StrikeShell(SmokeScreenDelay + i * 0.12f + Next() * 0.1f, GroundAt(p.X, p.Z, target.Y)));
+            }
+        }
         return list;
     }
 
@@ -336,17 +419,18 @@ public static class KillStreaks
     public static (byte Evt, byte Owner, StreakId Id, Vector3 Pos, float Yaw, uint Seed, byte Other) ReadEvent(ref PacketReader r) =>
         (r.U8(), r.U8(), (StreakId)r.U8(), r.Vec(), r.F32(), r.U32(), r.U8());
 
-    /// <summary>Server -> one client: your streak count, earned streaks and carried slots.</summary>
+    /// <summary>Server -> one client: your streak count, earned streaks, carried slots and armour (protocol 28: Ready is 16 bits, armour added).</summary>
     public static void WriteState(PacketWriter w, StreakState s) =>
-        w.Begin(Msg.StreakState).U8(s.Count).U8(s.Ready).U8((byte)s.Slots.A).U8((byte)s.Slots.B).U8((byte)s.Slots.C)
-            .U8((byte)s.ProgressOf(s.Slots.A)).U8((byte)s.ProgressOf(s.Slots.B)).U8((byte)s.ProgressOf(s.Slots.C));
+        w.Begin(Msg.StreakState).U8(s.Count).U16(s.Ready).U8((byte)s.Slots.A).U8((byte)s.Slots.B).U8((byte)s.Slots.C)
+            .U8((byte)s.ProgressOf(s.Slots.A)).U8((byte)s.ProgressOf(s.Slots.B)).U8((byte)s.ProgressOf(s.Slots.C))
+            .U16((ushort)Math.Clamp(s.Armor, 0, 65535)).U8((byte)(s.ArmorHeavy ? 1 : 0));
 
-    public const int StateBytes = 8;
+    public const int StateBytes = 12;
 
     public static void ReadState(ref PacketReader r, StreakState s)
     {
         s.Count = r.U8();
-        s.Ready = r.U8();
+        s.Ready = r.U16();
         var a = (StreakId)r.U8();
         var b = (StreakId)r.U8();
         var c = (StreakId)r.U8();
@@ -358,6 +442,8 @@ public static class KillStreaks
                 s.Progress[(int)id] = got;
         }
         s.Slots = new StreakSet(a, b, c).Sanitized();
+        s.Armor = r.U16();
+        s.ArmorHeavy = (r.U8() & 1) != 0;
     }
 }
 
@@ -404,7 +490,7 @@ public sealed partial class Game
 
     private readonly List<(double At, byte Owner, Vector3 Pos, float Radius, float Damage, byte KillId)> _pendingBlasts = new();
     private int _streakMatch = -1;
-    private byte _lastReady;
+    private ushort _lastReady;
     private bool _streakHoldBlock;
     private double _streakSentAt = -10;
 
@@ -418,10 +504,12 @@ public sealed partial class Game
     /// <summary>After every kill (from DamagePlayer): the victim's streak resets, the killer's counts up.</summary>
     private void StreakOnKill(Player attacker, Player victim, byte killId, double now)
     {
-        if (victim.Streak.Count != 0)
+        if (victim.Streak.Count != 0 || victim.Streak.Armor != 0)
         {
             victim.Streak.Count = 0;
             victim.Streak.ClearUnearned();
+            victim.Streak.Armor = 0; // vests and the Juggernaut suit are lost on death
+            victim.Streak.ArmorHeavy = false;
             SendStreakState(victim);
         }
         // Classic rules: streak kills don't chain, suicides and kills after your own death don't count.
@@ -455,11 +543,13 @@ public sealed partial class Game
         }
         s.Slots = s.Want.Sanitized();
         s.Count = 0;
-        var keep = (byte)0;
+        var keep = (ushort)0;
         foreach (var id in s.Slots.Ids)
             keep |= StreakState.Bit(id);
         s.Ready &= keep;
         s.ClearUnearned();
+        s.Armor = 0;
+        s.ArmorHeavy = false;
         SendStreakState(p);
     }
 
@@ -531,6 +621,7 @@ public sealed partial class Game
                 o.Sim.BoostTicks = Math.Max(o.Sim.BoostTicks, (byte)20);
 
         ServerTickStreakEntities(now);
+        ServerTickFireZones(now); // Napalm Strike burns (KillStreaksMore.cs)
         if (ServerTick % World.SnapshotEvery == 0)
             SendStreakEntities();
     }
@@ -542,6 +633,7 @@ public sealed partial class Game
         StreakEffects.Clear();
         Strikes.Clear();
         StrikeMarkers.Clear();
+        FireZones.Clear();
     }
 
     /// <summary>Server: someone uses an earned streak. Everything is checked here; the client only asks.</summary>
@@ -564,10 +656,10 @@ public sealed partial class Game
             if (World.Map.Boundary is { } boundary)
                 target = boundary.ClampFeet(target, 0.5f);
             pos = target;
-            var radius = id == StreakId.MortarBarrage ? KillStreaks.MortarRadius : KillStreaks.StrafeRadius;
-            var damage = id == StreakId.MortarBarrage ? KillStreaks.MortarDamage : KillStreaks.StrafeDamage;
-            foreach (var shell in KillStreaks.Plan(id, target, yaw, seed))
-                _pendingBlasts.Add((now + shell.Delay, p.Id, shell.Pos, radius, damage, KillStreaks.KillId(id)));
+            var (radius, damage) = KillStreaks.StrikeBlast(id); // Smoke Screen: none
+            if (damage > 0)
+                foreach (var shell in KillStreaks.Plan(id, target, yaw, seed))
+                    _pendingBlasts.Add((now + shell.Delay, p.Id, shell.Pos, radius, damage, KillStreaks.KillId(id)));
         }
         else if (id == StreakId.SentryTurret)
         {
@@ -577,7 +669,11 @@ public sealed partial class Game
         {
             pos = SpawnDrone(p, now).Pos;
         }
-        s.Ready &= (byte)~StreakState.Bit(id);
+        else
+        {
+            pos = ServerUseMoreStreak(p, id, yaw, now); // the later streaks (KillStreaksMore.cs)
+        }
+        s.Ready &= (ushort)~StreakState.Bit(id);
         s.Progress[(int)id] = 0; // used: empty it so fresh kills earn it again
         SendStreakState(p);
         p.LastCombatTime = now;
@@ -662,14 +758,24 @@ public sealed partial class Game
                 break;
             case StreakId.MortarBarrage:
             case StreakId.StrafeRun:
+            case StreakId.NapalmStrike:
+            case StreakId.SmokeScreen:
             {
                 var plan = KillStreaks.Plan(id, pos, yaw, seed);
                 foreach (var shell in plan)
                     Strikes.Add(new StrikeFx { Kind = id, Owner = owner, Pos = shell.Pos, At = now + shell.Delay });
                 var last = plan.Count > 0 ? plan.Max(x => x.Delay) : 3f;
                 StrikeMarkers.Add(new StrikeMarker(id, owner, pos, yaw, now, now + last + 0.5));
+                OnStrikePlanned(id, owner, plan, now); // napalm fire and smoke clouds, both sides from the same plan (KillStreaksMore.cs)
                 break;
             }
+            case StreakId.EmpBlast:
+                StreakEffects.Add(new StreakEffect(id, owner, now, now + KillStreaks.EmpSeconds));
+                Audio.Effect(Sfx.EmpBurst, mine ? 0.8f : 0.65f);
+                break;
+            case StreakId.Juggernaut:
+                StreakEffects.Add(new StreakEffect(id, owner, now, now + KillStreaks.JuggernautMaxSeconds));
+                break;
         }
     }
 
@@ -679,7 +785,7 @@ public sealed partial class Game
         if (p == null)
             return false;
         foreach (var e in StreakEffects)
-            if (e.Kind == StreakId.CounterSweep && now < e.Until && Players.TryGetValue(e.Owner, out var o) && StreakIsEnemy(o, p))
+            if (e.Kind is StreakId.CounterSweep or StreakId.EmpBlast && now < e.Until && Players.TryGetValue(e.Owner, out var o) && StreakIsEnemy(o, p))
                 return true;
         return false;
     }
@@ -729,10 +835,18 @@ public sealed partial class Game
     /// <summary>Every frame: strike visuals and sounds, expiring effects, the local player's aim point and banners.</summary>
     private void UpdateStreakEffects(double now, float dt)
     {
-        // Overdrive ends when its owner dies; everything else just runs out.
-        StreakEffects.RemoveAll(e => now > e.Until || (e.Kind == StreakId.Overdrive && Players.TryGetValue(e.Owner, out var o) && !o.Alive)
-                                     || !Players.ContainsKey(e.Owner));
-        StrikeMarkers.RemoveAll(m => now > m.Until);
+        // Overdrive and the Juggernaut suit end when their owner dies; everything else just runs out.
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = StreakEffects.Count - 1; i >= 0; i--)
+        {
+            var e = StreakEffects[i];
+            if (now > e.Until || (e.Kind is StreakId.Overdrive or StreakId.Juggernaut && Players.TryGetValue(e.Owner, out var o) && !o.Alive)
+                || !Players.ContainsKey(e.Owner))
+                StreakEffects.RemoveAt(i);
+        }
+        for (var i = StrikeMarkers.Count - 1; i >= 0; i--)
+            if (now > StrikeMarkers[i].Until)
+                StrikeMarkers.RemoveAt(i);
 
         foreach (var s in Strikes)
         {
@@ -746,12 +860,17 @@ public sealed partial class Game
                 s.Whistled = true;
                 Audio.Effect3D(Sfx.TurretShot, s.Pos + new Vector3(0, 10, 0), 0.8f); // the jet's cannon
             }
+            if (!s.Done && now >= s.At && s.Kind == StreakId.SmokeScreen)
+            {
+                s.Done = true; // a canister popping (the cloud itself is in Smokes already, see OnStrikePlanned)
+                Audio.Effect3D(Sfx.SmokeHiss, s.Pos, 0.7f);
+            }
             if (!s.Done && now >= s.At)
             {
                 s.Done = true;
-                var radius = s.Kind == StreakId.MortarBarrage ? KillStreaks.MortarRadius : KillStreaks.StrafeRadius;
+                var radius = KillStreaks.StrikeBlast(s.Kind).Radius;
                 Blasts.Add(new Blast(s.Pos + new Vector3(0, 0.3f, 0), now, radius, ThrowableKind.Frag));
-                Audio.Effect3D(Sfx.Explosion, s.Pos, s.Kind == StreakId.MortarBarrage ? 1f : 0.75f);
+                Audio.Effect3D(s.Kind == StreakId.NapalmStrike ? Sfx.NapalmIgnite : Sfx.Explosion, s.Pos, s.Kind == StreakId.MortarBarrage ? 1f : 0.75f);
                 ImpactDecals.OnBlast(World.Map, s.Pos, s.Owner, now); // a scorch where it landed (Source/Decals)
                 if (Local is { } me)
                 {
@@ -764,15 +883,16 @@ public sealed partial class Game
         foreach (var m in StrikeMarkers)
         {
             // The strafe jet's roar as it passes over.
-            if (m.Kind == StreakId.StrafeRun)
+            if (m.Kind is StreakId.StrafeRun or StreakId.NapalmStrike)
             {
-                var pass = m.Born + KillStreaks.StrafeDelay + KillStreaks.StrafeLength / 2 / KillStreaks.StrafeSpeed - 0.6;
+                var pass = m.Born + KillStreaks.JetPassTime(m.Kind) - 0.6;
                 if (now >= pass && now - dt < pass)
                     Audio.Effect3D(Sfx.JetFlyby, m.Pos + new Vector3(0, KillStreaks.StrafeAltitude * 0.5f, 0), 1f);
             }
         }
 
         UpdateStreakEntitiesVisual(now, dt);
+        UpdateMoreStreakEffects(now, dt); // fire zones, hunter beeps, gunship drone (KillStreaksMore.cs)
 
         // Local: aim point while targeting, and banners for streaks you earn.
         if (Local is not { } local)
@@ -787,7 +907,7 @@ public sealed partial class Game
             StreakAimPoint = local.RenderEye + dir * d;
         }
         var ready = local.Streak.Ready;
-        var fresh = (byte)(ready & ~_lastReady);
+        var fresh = (ushort)(ready & ~_lastReady);
         if (fresh != 0 && StreaksEnabled)
         {
             var id = local.Streak.Slots.Ids.LastOrDefault(x => (fresh & StreakState.Bit(x)) != 0);
@@ -901,6 +1021,8 @@ public sealed partial class Game
                     OnStreakCalled(e.Owner, e.Id, e.Pos, e.Yaw, e.Seed, now);
                 else if (e.Evt == 1)
                     OnStreakEntityDestroyed(e.Owner, e.Id, e.Pos, e.Other, now);
+                else
+                    OnMoreStreakEvent(e.Evt, e.Owner, e.Id, e.Pos, e.Yaw, e.Other, now); // effect ended, crate taken, streak blast (KillStreaksMore.cs)
                 break;
             }
             case (byte)Msg.StreakState when !IsServer && r.Has(KillStreaks.StateBytes):

@@ -1789,6 +1789,8 @@ public static unsafe partial class Program
         }
         foreach (var cloud in _game.Smokes)
         {
+            if (now < cloud.Born)
+                continue; // a Smoke Screen canister still on its way down
             var age = (float)(now - cloud.Born);
             var grow = Math.Clamp(age / 1.2f, 0.15f, 1f);
             var fade = Math.Clamp((float)(cloud.Until - now) / 2.5f, 0f, 1f);

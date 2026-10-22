@@ -4,8 +4,9 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Bots using their earned kill streaks: a short "thinking" delay after earning one, then each streak where it makes
-/// sense (mortars and strafe runs on the last enemy they saw or the biggest group of enemies, turrets facing the busiest
-/// direction). Called from one line in BotTick, so the bot AI can change around it.
+/// sense (mortars, strafe runs and napalm on the last enemy they saw or the biggest group of enemies, turrets facing the
+/// busiest direction, a smoke wall between them and the enemy they just saw; the rest straight away). Called from one
+/// line in BotTick, so the bot AI can change around it (Insane squad members go through it too).
 /// </summary>
 public sealed partial class Game
 {
@@ -34,6 +35,7 @@ public sealed partial class Game
             {
                 case StreakId.MortarBarrage:
                 case StreakId.StrafeRun:
+                case StreakId.NapalmStrike:
                 {
                     if (BotStrikeTarget(p, b, now) is not { } target)
                         continue; // nobody to aim at yet: keep it
@@ -44,6 +46,24 @@ public sealed partial class Game
                 }
                 case StreakId.SentryTurret:
                     ServerUseStreak(p, id, p.Position, BotBusyYaw(p), now);
+                    return;
+                case StreakId.SmokeScreen:
+                {
+                    // A wall halfway to the enemy it just saw, square to the line between them.
+                    if (now - b.LastSeenTime > 6 || Vector3.Distance(b.LastSeenAt, p.Position) < 10)
+                        continue; // nobody to hide from yet: keep it
+                    var to = b.LastSeenAt - p.Position;
+                    var mid = p.Position + to * 0.5f;
+                    var spot = KillStreaks.GroundAt(mid.X, mid.Z, p.Position.Y);
+                    if (Vector3.Distance(spot, p.Eye) > KillStreaks.MaxCallRange)
+                        continue;
+                    ServerUseStreak(p, id, spot, MathF.Atan2(to.X, -to.Z), now);
+                    return;
+                }
+                case StreakId.SupplyDrop:
+                case StreakId.Gunship:
+                case StreakId.HunterDrone:
+                    ServerUseStreak(p, id, p.Position, BotBusyYaw(p), now); // (the crate lands where it faces)
                     return;
                 default:
                     ServerUseStreak(p, id, p.Position, p.Yaw, now);

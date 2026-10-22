@@ -14,7 +14,7 @@ public enum KillKind : byte
     /// <summary>A frag, impact grenade or other throwable.</summary>
     Throwable,
 
-    /// <summary>A kill-streak reward (kill ids 230-238) or any other id that isn't a gun.</summary>
+    /// <summary>A kill-streak reward (kill ids 230-238 and 214-229) or any other id that isn't a gun.</summary>
     Streak,
 
     /// <summary>Killed yourself (your own grenade).</summary>
@@ -62,7 +62,7 @@ public readonly record struct KillPacket(byte Killer, byte Victim, bool Headshot
 /// <summary>Everything the death camera and kill card need about the local player's last death.</summary>
 public sealed class KillInfo
 {
-    /// <summary>First kill id used for kill-streak rewards (230-238; melee is 239, throwables 240+).</summary>
+    /// <summary>First kill id of the first eight kill-streak rewards (230-238; the later ones use 214-229, melee is 239, throwables 240+).</summary>
     public const byte StreakKillIdFirst = 230;
 
     public byte KillerId, VictimId, KillId;
@@ -112,7 +112,7 @@ public sealed class KillInfo
             return Throwables.KillName(killId);
         // Not a gun: if KillName fell back to weapon 0, it doesn't know this id.
         var name = Throwables.KillName(killId);
-        return name.Length > 0 && name != Weapons.Get(killId).Name ? name : killId >= StreakKillIdFirst ? "Kill Streak" : "Unknown";
+        return name.Length > 0 && name != Weapons.Get(killId).Name ? name : KillStreaks.IsStreakKill(killId) ? "Kill Streak" : "Unknown";
     }
 
     /// <summary>Builds the info from the packet and what the client knows about the two players. Pure, so the self-test can call it.</summary>

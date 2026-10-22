@@ -79,6 +79,7 @@ public static partial class SelfTest
             Section("Grenade range", CheckGrenadeRange); // SelfTestGrenades.cs: throw range, fuse vs flight time, bot throw aim
             Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
             Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
+            Section("More kill streaks", CheckMoreKillStreaks); // SelfTestMoreStreaks.cs: Smoke Screen to Juggernaut, counters, bots, packets, allocations
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);

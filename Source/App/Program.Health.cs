@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>Health feedback drawn in GL: the regen glow on the health bar, Last Stand shield pips and the shield shimmer.</summary>
+/// <summary>Health feedback drawn in GL: the regen glow on the health bar, streak armour, Last Stand shield pips and the shield shimmer.</summary>
 public static unsafe partial class Program
 {
     private static readonly Vector3 ShieldColor = new(0.35f, 0.85f, 1f);
@@ -30,6 +30,15 @@ public static unsafe partial class Program
             var pulse = 0.5f + 0.5f * MathF.Sin((float)now * 5f);
             var g = 3 * k;
             Gfx.Rect(left - g, m - g, bw + 2 * g, bh + 2 * g, new Vector3(0.4f, 1f, 0.5f), 0.06f + 0.1f * pulse);
+        }
+        if (local.Streak.Armor > 0) // Ballistic Vests / the Juggernaut suit: a thin bar on top of the health bar
+        {
+            var heavy = local.Streak.ArmorHeavy;
+            var max = heavy ? KillStreaks.JuggernautArmor : KillStreaks.VestArmor;
+            var f = Math.Clamp(local.Streak.Armor / (float)max, 0f, 1f);
+            var ah = 7 * k;
+            Gfx.Rect(left, m + bh + 3 * k, bw, ah, new Vector3(0, 0, 0), 0.5f);
+            Gfx.Rect(left + 2 * k, m + bh + 5 * k, (bw - 4 * k) * f, ah - 4 * k, KillStreaks.Get(heavy ? StreakId.Juggernaut : StreakId.BallisticVests).Color, 0.95f);
         }
         if (local.ShieldCharges == 0)
             return;
