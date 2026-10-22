@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-prop/1",
-  "name": "Map Table",
+  "name": "Bunker Map Table",
   "category": "Timberline",
   "description": "A plotting table with a contour map and coloured pins on it.",
   "author": "Call of Slop",

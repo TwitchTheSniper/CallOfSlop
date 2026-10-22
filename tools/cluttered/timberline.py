@@ -357,7 +357,7 @@ def bunker_build(b, culvert):
     for px in (-44.4, -41.6, -38.8):
         put("Bunk Bed", px, -33.4, 0)                        # bunks along the north wall
     put("Metal Lockers", -36.4, -33.9, 0)
-    put("Map Table", -39.0, -29.2, 0)                         # the plotting table in the middle
+    put("Bunker Map Table", -39.0, -29.2, 0)                         # the plotting table in the middle
     put("Office Chair", -36.6, -26.7, 180)
     put("Office Desk", -35.6, -25.4, 180)
     put("Running Generator", -33.6, -33.2, 270)              # the generator in the corner, the lamps flicker on it
