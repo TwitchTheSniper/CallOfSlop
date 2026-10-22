@@ -107,11 +107,14 @@ public static partial class SelfTest
         if (of.W + radius > m.FarPlane)
             Fail($"{m.Name}: horizon fade ends {of.W:0} m from the centre, but the far plane ({m.FarPlane:0} m) cuts ground at {m.FarPlane - radius:0} m");
         var lights = new List<(string Name, LightSetup Light, Vector3 Flat)>();
+        var starts = m.OuterFogStarts;
         foreach (var preset in SkySettings.PresetNames)
-            lights.Add((preset, SkySettings.FromPreset(preset).Light() with { OuterFog = of }, m.Sky));
-        lights.Add(("flat sky", Lighting.Default with { OuterFog = of }, m.Sky));
-        if (m.Light.OuterFog != of)
-            Fail($"{m.Name}: the map's light doesn't carry its horizon fade");
+            lights.Add((preset, SkySettings.FromPreset(preset).Light() with { OuterFog = of, OuterStarts = starts }, m.Sky));
+        lights.Add(("flat sky", Lighting.Default with { OuterFog = of, OuterStarts = starts }, m.Sky));
+        if (m.Light.OuterFog != of || !ReferenceEquals(m.Light.OuterStarts, starts) || starts is not { Length: Map.OuterFogDirections })
+            Fail($"{m.Name}: the map's light doesn't carry its horizon fade (and its {Map.OuterFogDirections} start radii)");
+        else
+            CheckOuterStarts(m, b, lights[^1].Light, c);
         var worst = 0f;
         var cams = new List<Vector3>();
         foreach (var h in new[] { 1.7f, 13f, 40f, 90f })
@@ -152,7 +155,7 @@ public static partial class SelfTest
                     {
                         var hit = cam + dir * t;
                         var r = Vector2.Distance(new Vector2(hit.X, hit.Z), c);
-                        if (r >= of.W)
+                        if (r >= Lighting.OuterStart(light, new Vector2(hit.X, hit.Z) - c) + (of.W - of.Z)) // fully faded in this direction
                             d1 = Vector3.Distance(Lighting.ApplyFog(light, lit, hit, cam, flat, new Vector2(m.FogStart, m.FogEnd)), horizon);
                     }
                     var d = MathF.Max(d0, d1);
@@ -170,6 +173,97 @@ public static partial class SelfTest
                 Fail($"{m.Name} under {name}: the horizon fade changes the floor inside the outline");
         }
         return worst;
+    }
+
+    /// <summary>
+    /// The per-direction horizon fade (<see cref="Map.OuterFogStarts"/>): it never touches the floor (every outline point
+    /// pushed out by the floor margin in any direction stays unfaded), and it starts close past the floor on every side, not
+    /// at the farthest point's radius (Old Town, twice as wide as deep, had a band of dark far ground past its short sides).
+    /// </summary>
+    private static void CheckOuterStarts(Map m, MapBoundary b, in LightSetup light, Vector2 c)
+    {
+        var margin = MathF.Min(b.Spec.GroundMargin, 64f);
+        const int n = Map.OuterFogDirections;
+        var reach = new float[n]; // the floor's radial extent near each direction
+        var inside = 0;
+        for (var s = 0; s < b.Outline.Length; s++)
+        {
+            var a0 = b.Outline[s];
+            var a1 = b.Outline[(s + 1) % b.Outline.Length];
+            var pieces = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a0, a1)));
+            for (var k = 0; k < pieces; k++)
+            {
+                var p = Vector2.Lerp(a0, a1, k / (float)pieces);
+                for (var e = 0; e < 8; e++)
+                {
+                    var q = p + new Vector2(MathF.Cos(e * MathF.Tau / 8), MathF.Sin(e * MathF.Tau / 8)) * margin;
+                    var d = q - c;
+                    if (Lighting.OuterStart(light, d) < d.Length() - 1e-3f && inside++ == 0)
+                        Fail($"{m.Name}: the horizon fade starts {Lighting.OuterStart(light, d):0.0} m out towards ({q.X:0},{q.Y:0}), inside the floor ({d.Length():0.0} m)");
+                }
+                var pd = p - c;
+                var ang = MathF.Atan2(pd.Y, pd.X) * (n / MathF.Tau);
+                var j = (int)MathF.Round(ang < 0 ? ang + n : ang) % n;
+                reach[j] = MathF.Max(reach[j], pd.Length() + margin);
+            }
+        }
+        var worst = 0f;
+        var worstAt = 0;
+        for (var i = 0; i < n; i++)
+        {
+            if (reach[i] <= 0)
+                continue;
+            var band = light.OuterStarts![i] - reach[i];
+            if (band > worst)
+                (worst, worstAt) = (band, i);
+        }
+        // Outlines without deep notches (a notch's far ground has to wait for the floor on both sides of it) must fade
+        // close past the floor on every side.
+        var radii = b.Outline.Select(p => Vector2.Distance(p, c)).ToArray();
+        var notched = radii.Min() < 0.45f * radii.Max();
+        const float limit = 22f;
+        Line($"{m.Name}: horizon fade starts {light.OuterStarts!.Min():0}-{light.OuterStarts!.Max():0} m from the centre, at most {worst:0.0} m past the floor "
+             + $"(direction {worstAt}{(notched ? ", notched outline" : "")}); the farthest point's radius would be {light.OuterFog.Z:0} m");
+        if (!notched && worst > limit)
+            Fail($"{m.Name}: the horizon fade starts {worst:0.0} m past the floor in direction {worstAt} (max {limit:0}): a band of unfaded far ground shows there");
+        if (light.OuterStarts!.Max() > light.OuterFog.Z + 1e-3f)
+            Fail($"{m.Name}: a horizon fade start ({light.OuterStarts!.Max():0.0} m) is past the farthest point's radius ({light.OuterFog.Z:0.0} m)");
+        if (n % 4 != 0 || !Lighting.Glsl.Contains($"uniform vec4 uOuterR[{n / 4}];") || !Lighting.Glsl.Contains($"{n}.0 / 6.28318531") || !Lighting.Glsl.Contains($"% {n};"))
+            Fail($"the shader's uOuterR array isn't {n} radii long (Map.OuterFogDirections)");
+    }
+
+    /// <summary>
+    /// Gunsmith backdrop: the showcase pages have no ImGui window background (the 3D gun is drawn behind the UI), so the
+    /// loadout window paints itself opaque around the 3D view (Ui.ShowcaseBackdrop) and the HUD's key help and footer-side
+    /// panels can't show through. At the smoke window and the user's monitors, the four bands cover exactly the window
+    /// minus the view, without covering the view.
+    /// </summary>
+    private static void CheckShowcaseBackdrop()
+    {
+        foreach (var (w, h) in new[] { (2679f, 1786f), (5120f, 1440f), (3440f, 1440f), (1920f, 1080f) })
+        {
+            var scale = Math.Clamp(h / 900f, 0.8f, 3f); // Ui.TargetScale at the default UI scale
+            var size = new Brutal.Numerics.float2(MathF.Min(1150 * scale, w - 40), MathF.Min(760 * scale, h - 40));
+            var min = new Brutal.Numerics.float2((w - size.X) / 2, (h - size.Y) / 2);
+            var max = min + size;
+            // The attachment showcase's view (UiGunsmith: 20-96% across, 17-78% down the body).
+            var v0 = min + new Brutal.Numerics.float2(size.X * 0.2f, size.Y * 0.2f);
+            var v1 = min + new Brutal.Numerics.float2(size.X * 0.96f, size.Y * 0.75f);
+            var bands = Ui.ShowcaseBackdropRects(min, max, v0, v1);
+            var area = 0f;
+            foreach (var (a, b) in bands)
+            {
+                area += MathF.Max(0, b.X - a.X) * MathF.Max(0, b.Y - a.Y);
+                var ox = MathF.Min(b.X, v1.X) - MathF.Max(a.X, v0.X);
+                var oy = MathF.Min(b.Y, v1.Y) - MathF.Max(a.Y, v0.Y);
+                if (ox > 0.01f && oy > 0.01f)
+                    Fail($"gunsmith backdrop at {w}x{h}: a band ({a.X:0},{a.Y:0})-({b.X:0},{b.Y:0}) covers the 3D view");
+            }
+            var want = size.X * size.Y - (v1.X - v0.X) * (v1.Y - v0.Y);
+            if (MathF.Abs(area - want) > want * 1e-4f)
+                Fail($"gunsmith backdrop at {w}x{h}: the bands cover {area:0} px^2, the window minus the view is {want:0}");
+            Line($"{w}x{h}: loadout window {size.X:0}x{size.Y:0} at ({min.X:0},{min.Y:0}), backdrop bands cover {area / want * 100:0.00}% of it outside the 3D view");
+        }
     }
 
     /// <summary>A fake timestamp backend: stamps take the current fake time; results come back <see cref="Latency"/> frames later.</summary>

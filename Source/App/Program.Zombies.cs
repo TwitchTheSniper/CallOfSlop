@@ -263,7 +263,7 @@ public static unsafe partial class Program
     {
         if (_game.Mode != GameMode.Zombies)
             return;
-        _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact), now);
+        _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);
@@ -298,6 +298,31 @@ public static unsafe partial class Program
     private static double _zSmokeStart;
     private static int _zSmokeFrames;
     private static bool ZombiesSmokeActive => _zSmokeStage > 0;
+    private static bool _zSmokeUseHeld;
+
+    /// <summary>A zombie tearing boards off a window (null if none right now).</summary>
+    private static Zombie? SmokeTearingZombie(Game g) => g.Horde.FirstOrDefault(z => z.State == ZState.Tearing);
+
+    /// <summary>Points the camera from <paramref name="eye"/> at <paramref name="at"/>.</summary>
+    private static void SmokeLookAt(Game g, Vector3 at, Vector3 eye)
+    {
+        var to = at - eye;
+        g.LookYaw = MathF.Atan2(to.X, -to.Z);
+        g.LookPitch = MathF.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
+    }
+
+    /// <summary>Teleports the local player just inside the window a zombie is tearing at (false if none is).</summary>
+    private static bool SmokeStandAtTearingWindow(Game g)
+    {
+        if (SmokeTearingZombie(g) is not { } tz || World.Map.Zombies is not { } zw || tz.Window < 0 || tz.Window >= zw.Windows.Count || g.Local is not { } me)
+            return false;
+        var win = zw.Windows[tz.Window];
+        var inward = win.Inside - win.Outside;
+        inward.Y = 0;
+        inward = inward.LengthSquared() > 1e-4f ? Vector3.Normalize(inward) : World.FlatForward(win.Yaw);
+        me.Teleport(win.Inside + inward * 1.6f);
+        return true;
+    }
 
     private static void StartZombiesSmoke(double now)
     {
@@ -346,53 +371,89 @@ public static unsafe partial class Program
                 break;
             case 4 when g.Horde.Any(z => z.State == ZState.Tearing) || t > 40:
             {
-                // Look at the window a zombie is tearing at.
-                if (g.Horde.FirstOrDefault(z => z.State == ZState.Tearing) is { } z && g.Local is { } me)
-                {
-                    var to = z.Position + new Vector3(0, 1.3f, 0) - me.RenderEye;
-                    g.LookYaw = MathF.Atan2(to.X, -to.Z);
-                    g.LookPitch = MathF.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
-                }
+                // Stand inside the window a zombie is tearing at (the start room may not see it) and look at the zombie.
+                SmokeStandAtTearingWindow(g);
                 _zSmokeStart = now;
                 _zSmokeFrames = _smokeFrames;
                 _zSmokeStage = 5;
                 break;
             }
-            case 5 when t > 0.5:
-                SmokeShot("zombies_barrier");
-                Console.WriteLine($"[smoke] zombies at a barrier: {g.AliveZombies} alive, boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / 0.5:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick");
-                _zSmokeStage = 6;
+            case 5:
+            {
+                // Keep the camera on a zombie at a window (it moves, and the bot may kill it), then take the shot.
+                if ((SmokeTearingZombie(g) ?? g.Horde.Where(z => z.Window >= 0).OrderBy(z => g.Local is { } p ? Vector3.DistanceSquared(z.Position, p.Position) : 0).FirstOrDefault()) is { } az
+                    && g.Local is { } eyeOf)
+                    SmokeLookAt(g, az.Position + new Vector3(0, 1.3f, 0), eyeOf.Position + new Vector3(0, World.EyeHeight, 0));
+                if (t > 0.5)
+                {
+                    var torn = SmokeTearingZombie(g);
+                    SmokeShot("zombies_barrier");
+                    Console.WriteLine($"[smoke] zombies at a barrier: {g.AliveZombies} alive, {(torn != null ? $"one tearing at window {torn.Window} {Vector3.Distance(torn.Position, g.Local?.Position ?? torn.Position):0.0} m away" : "none tearing now")}, "
+                                      + $"boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / t:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick");
+                    _zSmokeStart = now;
+                    _zSmokeStage = 6;
+                }
                 break;
+            }
             case 6 when t > 0.7:
             {
-                // The box: walk there (teleport), buy a spin with points, look at it.
+                // The box: walk there (teleport), buy a spin with points, look at it, hold E (through the normal input path).
                 if (World.Map.Zombies is { BoxSpots.Count: > 0 } zm && g.Local is { } me)
                 {
                     var spot = zm.BoxSpots[g.BoxSpot];
                     var stand = spot.At + World.FlatForward(spot.Yaw) * -1.6f;
                     me.Teleport(stand);
                     g.ZP(me).Points += 2000;
-                    var to = spot.At + new Vector3(0, 1.1f, 0) - (stand + new Vector3(0, World.EyeHeight, 0));
-                    g.LookYaw = MathF.Atan2(to.X, -to.Z);
-                    g.LookPitch = MathF.Atan2(to.Y, new Vector2(to.X, to.Z).Length());
-                    g.SetUseHeld(true, now);
+                    SmokeLookAt(g, spot.At + new Vector3(0, 1.1f, 0), stand + new Vector3(0, World.EyeHeight, 0));
+                    _zSmokeUseHeld = true;
+                    Console.WriteLine($"[smoke] zombies box: holding E at the box, prompt \"{g.FindZUse(me)?.Text}\", points {g.ZP(me).Points}");
                 }
                 _zSmokeStart = now;
                 _zSmokeStage = 7;
                 break;
             }
-            case 7 when t > 0.6:
-                g.SetUseHeld(false, now);
+            case 7 when t > Math.Max(0.6, g.ZRules.BuyHoldSeconds + 0.3):
+            {
+                _zSmokeUseHeld = false;
+                if (g.BoxState == ZBoxState.Idle && g.IsServer && g.Local is { } host2)
+                {
+                    // The hold didn't take (input or focus): spin it through the server's interact path instead.
+                    Console.WriteLine("[smoke] zombies box: the held key didn't spin the box, using the server interact path");
+                    g.SelfTestUse(host2, now);
+                }
+                Console.WriteLine($"[smoke] zombies box: {g.BoxState} after the hold");
+                _zSmokeStart = now;
                 _zSmokeStage = 8;
                 break;
-            case 8 when t > 2.5:
+            }
+            case 8 when g.BoxState is ZBoxState.Offering or ZBoxState.Teddy || t > g.ZRules.BoxSpinSeconds + 2:
                 SmokeShot("zombies_box");
-                Console.WriteLine($"[smoke] zombies box: {g.BoxState}, build {(g.BoxBuild >= 0 && g.BoxBuild < StandardBuilds.All.Length ? StandardBuilds.All[g.BoxBuild].Name : g.BoxBuild.ToString())}");
+                Console.WriteLine($"[smoke] zombies box: {g.BoxState}, offered {(g.BoxBuild >= 0 && g.BoxBuild < StandardBuilds.All.Length ? StandardBuilds.All[g.BoxBuild].Name : g.BoxBuild == -2 ? "the teddy bear (box moves)" : "nothing (build " + g.BoxBuild + ")")}");
+                _zSmokeStart = now;
                 _zSmokeStage = 9;
                 break;
-            case 9 when t > 3.0:
-                SmokeShot("zombies_hud");
-                Console.WriteLine($"[smoke] zombies HUD: round {g.ZRound}, {g.ZRemaining} left, points {g.Local?.Let(p => g.ZP(p).Points)}, {g.Feed.Count} feed lines");
+            case 9 when t > 1.0 && g.AliveZombies > 0 || t > 12:
+            {
+                // The HUD mid-round: back at a window with a zombie at it (or the nearest zombie), so the shot has
+                // zombies, the round counter, points and the teammate list in it.
+                SmokeStandAtTearingWindow(g);
+                _zSmokeStart = now;
+                _zSmokeStage = 10;
+                break;
+            }
+            case 10:
+            {
+                if (g.Local is { } hudMe && (SmokeTearingZombie(g) ?? g.Horde.OrderBy(z => Vector3.DistanceSquared(z.Position, hudMe.Position)).FirstOrDefault()) is { } nz)
+                    SmokeLookAt(g, nz.Position + new Vector3(0, 1.3f, 0), hudMe.Position + new Vector3(0, World.EyeHeight, 0));
+                if (t < 0.4)
+                    break;
+                SmokeShot("zombies_hud"); // saved at the end of this frame, while the session is still up
+                Console.WriteLine($"[smoke] zombies HUD: map {World.Map.Name}, round {g.ZRound}, {g.ZRemaining} left, {g.AliveZombies} alive, points {g.Local?.Let(p => g.ZP(p).Points)}, {g.Feed.Count} feed lines");
+                _zSmokeStage = 11;
+                break;
+            }
+            case 11:
+                // A frame later (the HUD shot is on disk): end the session; the next smoke step starts after this.
                 EndSession("");
                 _settings.Mode = GameMode.FreeForAll;
                 _zSmokeStage = 0;

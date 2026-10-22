@@ -241,6 +241,7 @@ public sealed partial class MusicRenderer
         _bass.Resonance = 0.3f;
         _kick.Clip = 0;
         _kick.Punch = 0;
+        ResetHarder(); // MusicRendererHarder.cs
         _hb = false;
         _masterGain = 1f;
         _harmony1 = _harmony2 = 0;
@@ -361,6 +362,7 @@ public sealed partial class MusicRenderer
             {
                 var hb = _flavor = _track.Hardbass ?? MusicTracks.DefaultHardbass;
                 _hb = true;
+                _harder = hb.Harder;
                 var beat = 60f / _track.Bpm;
                 // A short, hard-clipped, pounding kick with a punchy click; short enough at any tempo that it never
                 // smears into the off-beat bass (it ends well before the next 8th).
@@ -401,6 +403,8 @@ public sealed partial class MusicRenderer
                 _leadVerb = 0.12f;
                 _masterGain = 1.6f;
                 _voxHz = Dsp.MidiHz(48 + _track.Root % 12);
+                if (_harder is { } harder)
+                    ApplyHarder(harder);
                 break;
             }
 
@@ -533,6 +537,8 @@ public sealed partial class MusicRenderer
                 _gLead = 0.32f;
                 break;
         }
+        if (_harder is { } h)
+            HarderLead(h, kind);
     }
 
     private void Kick(float start, float end, float pitchTime, float hold, float decay, float drive, float tone, float click)
@@ -1003,6 +1009,8 @@ public sealed partial class MusicRenderer
                 break;
             }
         }
+        if (_harder != null)
+            HarderStep(barIn, s, prog, lastBar);
     }
 
     private void Drums(int s, int variant, bool kick, bool snare, bool hats, bool open)
@@ -1168,6 +1176,8 @@ public sealed partial class MusicRenderer
             _vox.Render(vox, ref _noise);
         else
             vox.Clear();
+        if (_harder != null)
+            RenderSweeps(vox);
 
         // Levels, then the delay and reverb sends.
         float gKick = _gKick * _kickLevel, gSnare = _gSnare, gHat = _gHat, gBass = _gBass, gLead = _gLead, gPad = _gPad, gArp = _gArp;
