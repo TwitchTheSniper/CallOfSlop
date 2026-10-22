@@ -352,6 +352,12 @@ public struct HistoryEntry
     public Vector3 Position;
     public Stance Stance;
     public float Yaw;
+
+    /// <summary>
+    /// The server tick this entry was recorded at (0: not a recorded tick, e.g. a spawn or teleport fill). The ring is
+    /// reused every <see cref="Player.HistorySize"/> ticks, so a slot whose tick doesn't match the one asked for is stale.
+    /// </summary>
+    public uint Tick;
 }
 
 /// <summary>A remote player's state at one server tick, buffered on clients for interpolation.</summary>
