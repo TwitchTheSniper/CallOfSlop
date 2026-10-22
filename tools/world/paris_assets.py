@@ -205,8 +205,7 @@ for sx in (-1.55, 1.55):
     p += octo(0.26, 0.4, 0.0, GREEN_D, "metal", x=sx)
     p.append(part([0.11, 2.6, 0.11], [sx, 1.7, 0], GREEN, "metal"))
     p.append(part([0.09, 0.6, 0.09], [sx * 0.94, 3.15, 0], GREEN, "metal", rot=[0, 0, -12 if sx > 0 else 12]))
-    p.append(part([0.26, 0.34, 0.26], [sx * 0.88, 3.55, 0], "#ff9a30",
-                  anim={"type": "flicker", "rate": 2, "duty": 0.97, "color": "#ffb050", "off": "#a05a20", "glow": 1.2}))
+    p.append(part([0.26, 0.34, 0.26], [sx * 0.88, 3.55, 0], "#ffb050"))
 p.append(part([3.2, 0.09, 0.09], [0, 2.95, 0], GREEN, "metal"))
 p.append(part([2.6, 0.06, 0.06], [0, 2.4, 0], GREEN))
 for k in range(9):

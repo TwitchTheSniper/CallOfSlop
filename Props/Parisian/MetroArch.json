@@ -154,15 +154,7 @@
         3.55,
         0
       ],
-      "color": "#ff9a30",
-      "anim": {
-        "type": "flicker",
-        "rate": 2,
-        "duty": 0.97,
-        "color": "#ffb050",
-        "off": "#a05a20",
-        "glow": 1.2
-      }
+      "color": "#ffb050"
     },
     {
       "size": [
@@ -284,15 +276,7 @@
         3.55,
         0
       ],
-      "color": "#ff9a30",
-      "anim": {
-        "type": "flicker",
-        "rate": 2,
-        "duty": 0.97,
-        "color": "#ffb050",
-        "off": "#a05a20",
-        "glow": 1.2
-      }
+      "color": "#ffb050"
     },
     {
       "size": [
