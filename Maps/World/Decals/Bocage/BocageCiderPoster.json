@@ -1,0 +1,205 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Cider Poster",
+  "category": "Bocage",
+  "description": "An old enamel poster for the invented cider maker Cidre des Haies: a red apple over a green band.",
+  "author": "Call of Slop",
+  "size": [
+    0.8,
+    1.1
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": "wall",
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.84,
+        0.94
+      ],
+      "color": [
+        0.92,
+        0.86,
+        0.66
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.17
+      ],
+      "size": [
+        0.84,
+        0.24
+      ],
+      "color": [
+        0.22,
+        0.38,
+        0.18
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.5,
+        0.6
+      ],
+      "radius": 0.22,
+      "color": [
+        0.78,
+        0.16,
+        0.12
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.42,
+        0.67
+      ],
+      "radius": 0.06,
+      "color": [
+        0.92,
+        0.5,
+        0.4
+      ],
+      "alpha": 0.7
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.5,
+        0.8
+      ],
+      "to": [
+        0.52,
+        0.9
+      ],
+      "width": 0.02,
+      "color": [
+        0.35,
+        0.22,
+        0.12
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.6,
+        0.88
+      ],
+      "size": [
+        0.12,
+        0.05
+      ],
+      "rotation": 25,
+      "color": [
+        0.25,
+        0.5,
+        0.2
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.25,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.35000000000000003,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.45,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.55,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.65,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.75,
+        0.17
+      ],
+      "size": [
+        0.06,
+        0.12
+      ],
+      "color": [
+        0.95,
+        0.9,
+        0.7
+      ]
+    }
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Tricolour Bunting",
+  "category": "Bocage",
+  "description": "A string of blue, white and red pennants for the village fete.",
+  "author": "Call of Slop",
+  "size": [
+    3.2,
+    0.5
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": "wall",
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.08,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.0,
+        0.33,
+        0.64
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.08,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.2,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.93,
+        0.93,
+        0.9
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.2,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.32,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.94,
+        0.25,
+        0.21
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.32,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.44,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.0,
+        0.33,
+        0.64
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.44,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5599999999999999,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.93,
+        0.93,
+        0.9
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5599999999999999,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.6799999999999999,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.94,
+        0.25,
+        0.21
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.6799999999999999,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7999999999999999,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.0,
+        0.33,
+        0.64
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.7999999999999999,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.9199999999999999,
+        0.85
+      ],
+      "size": 0.16,
+      "rotation": 45,
+      "color": [
+        0.93,
+        0.93,
+        0.9
+      ]
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.9199999999999999,
+        0.93
+      ],
+      "size": [
+        0.24,
+        0.16
+      ],
+      "erase": true
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.02,
+        0.85
+      ],
+      "to": [
+        0.98,
+        0.85
+      ],
+      "width": 0.012,
+      "color": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    }
+  ]
+}

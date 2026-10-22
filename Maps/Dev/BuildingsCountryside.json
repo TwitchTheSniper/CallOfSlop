@@ -1,0 +1,351 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Countryside Buildings",
+ "description": "The Normandy country set: the stone farmhouse, the half-timbered barn and the thatched cottage, with every Countryside prop in a row.",
+ "author": "Call of Slop",
+ "order": 963,
+ "halfX": 70,
+ "halfZ": 36,
+ "sky": [
+  0.62,
+  0.72,
+  0.8
+ ],
+ "flagPool": [
+  "france"
+ ],
+ "ops": [
+  {
+   "op": "Ground",
+   "color": [
+    0.36,
+    0.46,
+    0.28
+   ]
+  },
+  {
+   "op": "Perimeter",
+   "height": 5,
+   "color": [
+    0.45,
+    0.5,
+    0.38
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -45,
+   "y0": 0,
+   "z0": -3,
+   "x1": 45,
+   "y1": 0.03,
+   "z1": 3,
+   "color": [
+    0.42,
+    0.34,
+    0.24
+   ]
+  },
+  {
+   "op": "Building",
+   "name": "Norman Farmhouse",
+   "at": [
+    -26,
+    -14
+   ],
+   "yaw": 0,
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Half-Timbered Barn",
+   "at": [
+    4,
+    -15
+   ],
+   "yaw": 0,
+   "spawns": true
+  },
+  {
+   "op": "Building",
+   "name": "Norman Cottage",
+   "at": [
+    30,
+    -14
+   ],
+   "yaw": 0,
+   "spawns": true,
+   "variant": {
+    "palette": "rose cob"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Norman Farmhouse",
+   "at": [
+    -24,
+    16
+   ],
+   "yaw": 180,
+   "spawns": true,
+   "variant": {
+    "palette": "whitewash"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Norman Cottage",
+   "at": [
+    4,
+    15
+   ],
+   "yaw": 180,
+   "spawns": true,
+   "variant": {
+    "palette": "ochre cob"
+   }
+  },
+  {
+   "op": "Prop",
+   "name": "Apple Tree",
+   "x": -40.0,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Apple Tree B",
+   "x": -37.4,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Bocage Hedgerow",
+   "x": -34.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Bocage Hedgerow B",
+   "x": -28.3,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Bocage Hedgerow End",
+   "x": -21.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Bocage Hedgerow Short",
+   "x": -15.3,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Calvary Cross",
+   "x": -8.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cider Barrel",
+   "x": -6.2,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Grain Silo",
+   "x": -3.6,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dairy Cow",
+   "x": 2.9,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Drystone Wall",
+   "x": 5.5,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fallen Apples",
+   "x": 8.1,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Gate Open",
+   "x": 10.7,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Firewood Stack",
+   "x": 13.3,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grazing Cow",
+   "x": 15.9,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Bale Stack",
+   "x": 18.5,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Wagon",
+   "x": 21.1,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Leaning Farm Tools",
+   "x": 27.6,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Loose Straw",
+   "x": 30.2,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Milk Churns",
+   "x": 32.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Muck Heap",
+   "x": 35.4,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Orchard Ladder",
+   "x": 38.0,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Post and Rail Fence",
+   "x": 40.6,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Round Hay Bale",
+   "x": 43.2,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rusty Plough",
+   "x": 45.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sheep",
+   "x": 48.4,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Water Trough",
+   "x": 51.0,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Well",
+   "x": 53.6,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tipped Farm Cart",
+   "x": 56.2,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Village Signpost",
+   "x": 58.8,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vintage Tractor",
+   "x": 61.4,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flag on a Pole",
+   "x": 36,
+   "z": 6,
+   "flag": "france"
+  },
+  {
+   "op": "RingSpawns",
+   "count": 10,
+   "frac": 0.85
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": 0
+  },
+  {
+   "op": "Spawn",
+   "x": 20,
+   "z": 0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ],
+ "foliage": {
+  "seed": 5,
+  "paths": [
+   {
+    "points": [
+     [
+      -45,
+      0
+     ],
+     [
+      45,
+      0
+     ]
+    ],
+    "width": 6
+   }
+  ],
+  "regions": [
+   {
+    "type": "grass",
+    "density": 2.0,
+    "rect": [
+     -70,
+     -36,
+     70,
+     36
+    ]
+   }
+  ]
+ }
+}
