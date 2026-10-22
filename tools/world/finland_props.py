@@ -339,12 +339,27 @@ def existing_names(skip_dirs):
     return names
 
 
+# Animated props live in the pack (Maps/World/Props/Finland): every animated prop in Props/ must stand on the Dev pack's
+# Animated Props gallery, which these map-specific pieces don't belong on.
+PACK = {"Tunnel Cage Lamp", "Belt Conveyor Incline", "Jaw Crusher Unit"}
+for _p in OUT["Mining"]:
+    if _p["name"] == "Mine Floodlight Mast":       # lamps always on: a plain bright colour, no light animation
+        for _q in _p["parts"]:
+            _q.pop("anim", None)
+
+
 def write():
-    dirs = [os.path.join(REPO, "Props", k) for k in OUT]
+    for folder in list(OUT):
+        moved = [p for p in OUT[folder] if p["name"] in PACK]
+        OUT[folder] = [p for p in OUT[folder] if p["name"] not in PACK]
+        for p in moved:
+            p["category"] = "Finland"
+            OUT.setdefault("@Finland", []).append(p)
+    dirs = [os.path.join(REPO, "Props", k) for k in OUT if not k.startswith("@")] + [os.path.join(REPO, "Maps/World/Props/Finland")]
     taken = existing_names(dirs)
     seen = set()
     for folder, props in OUT.items():
-        d = os.path.join(REPO, "Props", folder)
+        d = os.path.join(REPO, "Maps/World/Props", folder[1:]) if folder.startswith("@") else os.path.join(REPO, "Props", folder)
         os.makedirs(d, exist_ok=True)
         for p in props:
             if p["name"] in taken:

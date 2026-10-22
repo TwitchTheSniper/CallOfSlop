@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-prop/1",
   "name": "Belt Conveyor Incline",
-  "category": "Mining",
+  "category": "Finland",
   "description": "An 11 m belt conveyor climbing 4.5 m along +X on three trestles, its belt running with ore. You can walk under it.",
   "author": "Call of Slop",
   "collision": "solid",

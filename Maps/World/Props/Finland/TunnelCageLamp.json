@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-prop/1",
   "name": "Tunnel Cage Lamp",
-  "category": "Mining",
+  "category": "Finland",
   "description": "A caged bulb on a short cable in a mine drift, flickering now and then. Its top is 0.6 m up: hang it from a ceiling with the Prop op's y.",
   "author": "Call of Slop",
   "collision": "cosmetic",

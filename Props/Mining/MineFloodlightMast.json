@@ -12,12 +12,12 @@
     {"size": [0.24, 9.0, 0.24], "offset": [0, 4.6, 0], "color": "#9a9c9e", "material": "metal"},
     {"size": [2.4, 0.12, 0.12], "offset": [0, 9.1, 0], "color": "#3a3a3c"},
     {"size": [0.45, 0.4, 0.2], "offset": [-0.9, 9.35, 0.08], "color": "#1c1c1e"},
-    {"size": [0.38, 0.32, 0.02], "offset": [-0.9, 9.35, 0.19], "color": "#fff2c0", "anim": {"type": "flicker", "rate": 1.5, "duty": 0.97, "color": "#fff6d0", "off": "#806a40", "glow": 2.4, "freezeDistance": 220}},
+    {"size": [0.38, 0.32, 0.02], "offset": [-0.9, 9.35, 0.19], "color": "#fff2c0"},
     {"size": [0.45, 0.4, 0.2], "offset": [-0.3, 9.35, 0.08], "color": "#1c1c1e"},
-    {"size": [0.38, 0.32, 0.02], "offset": [-0.3, 9.35, 0.19], "color": "#fff2c0", "anim": {"type": "flicker", "rate": 1.5, "duty": 0.97, "color": "#fff6d0", "off": "#806a40", "glow": 2.4, "freezeDistance": 220}},
+    {"size": [0.38, 0.32, 0.02], "offset": [-0.3, 9.35, 0.19], "color": "#fff2c0"},
     {"size": [0.45, 0.4, 0.2], "offset": [0.3, 9.35, 0.08], "color": "#1c1c1e"},
-    {"size": [0.38, 0.32, 0.02], "offset": [0.3, 9.35, 0.19], "color": "#fff2c0", "anim": {"type": "flicker", "rate": 1.5, "duty": 0.97, "color": "#fff6d0", "off": "#806a40", "glow": 2.4, "freezeDistance": 220}},
+    {"size": [0.38, 0.32, 0.02], "offset": [0.3, 9.35, 0.19], "color": "#fff2c0"},
     {"size": [0.45, 0.4, 0.2], "offset": [0.9, 9.35, 0.08], "color": "#1c1c1e"},
-    {"size": [0.38, 0.32, 0.02], "offset": [0.9, 9.35, 0.19], "color": "#fff2c0", "anim": {"type": "flicker", "rate": 1.5, "duty": 0.97, "color": "#fff6d0", "off": "#806a40", "glow": 2.4, "freezeDistance": 220}}
+    {"size": [0.38, 0.32, 0.02], "offset": [0.9, 9.35, 0.19], "color": "#fff2c0"}
   ]
 }

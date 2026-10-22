@@ -198,7 +198,7 @@ public static partial class SelfTest
             }, out var end);
             Line($"{m.Name}: walk in through the {label}: {(ok ? "made it" : "stuck")} at ({end.Position.X:0.0}, {end.Position.Y:0.00}, {end.Position.Z:0.0}), under the roof {underRoof}");
             if (!ok || !underRoof || MathF.Abs(end.Position.Y + 8f) > 0.5f)
-                Fail($"{m.Name}: couldn't walk through the {label} to the shaft station");
+                Fail($"{m.Name}: couldn't walk through the {label} to the shaft station (ended at ({end.Position.X:0.0}, {end.Position.Y:0.00}, {end.Position.Z:0.0}), under the roof {underRoof})");
         }
 
         // No line of sight between the two teams' spawns (eye height: terrain, boxes, trunks, props, buildings).

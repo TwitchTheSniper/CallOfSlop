@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-prop/1",
   "name": "Jaw Crusher Unit",
-  "category": "Mining",
+  "category": "Finland",
   "description": "A jaw crusher on a concrete plinth: flywheels turning, the jaw shaking rock down to gravel.",
   "author": "Call of Slop",
   "collision": "solid",

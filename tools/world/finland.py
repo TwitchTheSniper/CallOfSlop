@@ -42,7 +42,7 @@ tk.glob.glob = lambda p, **kw: [f for f in _real_glob(p, **kw) if not f.replace(
 RIGHT = [(0, -86), (28, -84), (58, -80), (86, -66), (106, -44), (116, -16), (117, 14), (108, 40), (90, 62), (62, 78), (30, 86), (0, 88)]
 CTRL = RIGHT + [(-x, z) for x, z in reversed(RIGHT[1:-1])]
 NOISE = {"amplitude": 2.6, "scale": 24, "seed": 506, "octaves": 2}
-t = tk.Town(REPO, CTRL, NOISE)
+t = tk.Town(REPO, CTRL, NOISE, pack_props=[os.path.join(REPO, "Maps/World/Props")])
 rng = random.Random(506)
 HALF_X = max(abs(p[0]) for p in t.outline)
 HALF_Z = max(abs(p[1]) for p in t.outline)
@@ -202,10 +202,10 @@ building("Garage", -78, 2, 270, {"palette": "white block"}, 16)
 building("Red Barn Cottage", -104, 28, 90, {"palette": "yellow ochre"}, 17)
 building("Lakeside Sauna", -74, 30, 0, {"palette": "tarred log"}, 18)
 
-building("Hunting Lodge", 102, -40, 270, {"palette": "pine log"}, 21)
+building("Finnish Wooden House", 102, -40, 270, {"palette": "pale green"}, 21)
 building("Village Shop", 102, -22, 270, {"palette": "red ochre"}, 22)
 building("Finnish Wooden House", 102, 12, 270, {"palette": "red ochre"}, 23)
-building("Finnish Wooden House", 78, -44, 90, {"palette": "yellow ochre", "mirror": True}, 24)
+building("Hunting Lodge", 80, -44, 90, {"palette": "pine log"}, 24)
 building("Red Barn Cottage", 77, -30, 90, {"palette": "yellow ochre"}, 25)
 building("Garage", 78, 2, 90, {"palette": "sooty brick"}, 26)
 building("Red Barn Cottage", 104, 28, 270, {"palette": "weathered grey"}, 27)
@@ -325,7 +325,7 @@ def portal_zone(x, z, m=0.0):
 
 
 # ================================================================ objectives (decided before the dressing)
-BLUE_SP = [(-91, -48), (-87, -36), (-91, -26), (-89, -8), (-91, 4), (-87, 18), (-108, -30), (-109, -4), (-107, 0),
+BLUE_SP = [(-91, -48), (-87, -36), (-91, -26), (-89, -8), (-91, -2), (-87, 18), (-97, -31), (-109, -4), (-107, 0),
            (-97, -54), (-82, -12), (-84, 16)]
 RED_SP = [(-x, z) for x, z in BLUE_SP]
 FFA_SP = [(-40, -28), (40, -28), (-16, 32), (16, 32), (-46, -50), (46, -50), (-62, -36), (62, -36)]
@@ -628,7 +628,7 @@ for (x, z) in ((-22, 14), (22, 14), (0, -38)):
 for name, x, z, yaw in (("Jaw Crusher Unit", -2.5, -41.5, 0), ("Ore Bin Hopper", 3.2, -41.0, 0), ("Ore Mine Cart", -3.5, -35.0, 90), ("Mine Timber Stack", 4.0, -35.0, 90)):
     wprop(name, x, z, yaw, F, tag="crusher", mark=True)
 # carts parked in the drifts (cover)
-for (x, z, yaw) in ((-30.0, -4.6, 0), (30.0, -3.4, 0), (-12.5, 16.6, 10), (12.5, 16.6, 350), (-47.0, 6.0, 70), (47.0, 6.0, 290), (0.6, 28.0, 90), (-0.6, -26.0, 90)):
+for (x, z, yaw) in ((-30.0, -5.5, 0), (30.0, -2.5, 0), (-12.0, 17.6, 10), (12.0, 17.6, 350), (-46.0, 6.0, 70), (46.0, 6.0, 290), (1.5, 28.0, 90), (-1.5, -26.0, 90)):
     fl = cave_floor(x, z)
     if fl:
         wprop("Ore Mine Cart", x, z, yaw, fl[0], tag="cart", mark=True)
