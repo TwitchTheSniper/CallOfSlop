@@ -222,6 +222,7 @@ public sealed partial class Game : IDisposable
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
 
@@ -256,7 +257,7 @@ public sealed partial class Game : IDisposable
     private InputCmd SampleLocalInput(uint seq)
     {
         var def = Active.Def;
-        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming); // Lightweight, Stalker; the LMG frenzy buff
+        var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
         return new InputCmd
         {
             Seq = seq,
@@ -358,7 +359,7 @@ public sealed partial class Game : IDisposable
 
         var alive = Local is { Alive: true };
         Aiming = AimHeld && alive && !IsReloading(now) && now >= EquipUntil && !w.Def.NoAds; // carts and briefcases are hip fire only
-        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / (w.Def.AdsTime * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.AdsTime)), 0f, 1f); // optics and grips change aim speed (and the DMR frenzy buff)
+        AimT = Math.Clamp(AimT + (Aiming ? dt : -dt) / (w.Def.AdsTime * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.AdsTime)) * TacticalAdsMult(now), 0f, 1f); // optics and grips change aim speed (and the DMR frenzy buff); a stun slows it
         Bloom = MathF.Max(0, Bloom - dt * 0.12f);
         if (alive)
         {
@@ -497,6 +498,7 @@ public sealed partial class Game : IDisposable
                     predictedHit |= AreEnemies(me, other); // a teammate waits for the server's friendly marker (FriendlyHits.cs)
                 }
             }
+            dist = TacticalRayDrawn(o, d, dist); // Deployable Cover and enemy devices stop it (GameTactical.cs)
             if (Horde.Count > 0)
             {
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
@@ -678,7 +680,7 @@ public sealed partial class Game : IDisposable
     private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
-        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1); // a bullet-impact decal where it ends on a surface (Source/Decals)
+        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def)); // a bullet-impact decal where it ends on a surface (Source/Decals)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
@@ -877,6 +879,7 @@ public sealed partial class Game : IDisposable
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         ServerTickMatch(now);
         ServerTickProjectiles(now);
+        ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
@@ -913,7 +916,7 @@ public sealed partial class Game : IDisposable
                     OnLocalSpawn(p);
             }
 
-            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw };
+            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
         }
 
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
@@ -933,6 +936,7 @@ public sealed partial class Game : IDisposable
     private void ApplyCmd(Player p, InputCmd cmd)
     {
         cmd = FreezeFilter(cmd);
+        cmd = TacticalFilter(p, cmd); // stunned: slower (GameTactical.cs)
         cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
@@ -1016,6 +1020,7 @@ public sealed partial class Game : IDisposable
             }
         }
 
+        best = TacticalSpawnPoint(p, best, now); // a Tactical Insertion waiting for them (GameTactical.cs)
         p.Teleport(best);
         p.Yaw = MathF.Atan2(-best.X, best.Z);
         p.Pitch = 0;
@@ -1104,8 +1109,8 @@ public sealed partial class Game : IDisposable
         var t0 = (uint)Math.Floor(tick);
         var t1 = Math.Min(t0 + 1, ServerTick);
         var frac = (float)(tick - t0);
-        var a = p.History[t0 % Player.HistorySize];
-        var b = p.History[t1 % Player.HistorySize];
+        var a = RecordedState(p, t0);
+        var b = RecordedState(p, t1);
         return new HistoryEntry
         {
             Position = Vector3.Lerp(a.Position, b.Position, frac),
@@ -1113,6 +1118,25 @@ public sealed partial class Game : IDisposable
             Yaw = World.LerpAngle(a.Yaw, b.Yaw, frac),
         };
     }
+
+    /// <summary>
+    /// The history slot for <paramref name="tick"/>, or the player's live state when that slot is stale. The current
+    /// tick's slot is only written once the player has been simulated this tick, so a bot, turret or bot melee resolving
+    /// at <see cref="ServerTick"/> mid-tick used to read, for anyone later in the update order, the entry from
+    /// <see cref="Player.HistorySize"/> ticks ago (bots missed whoever joined after them). Those players haven't moved
+    /// yet this tick, so their live state is where they are. Past ticks use their recorded entry, or a spawn/teleport
+    /// fill (tick 0) as before; any other mismatch (a slot from an older lap of the ring) falls back to live too.
+    /// </summary>
+    private HistoryEntry RecordedState(Player p, uint tick)
+    {
+        var e = p.History[tick % Player.HistorySize];
+        if (tick != 0 && e.Tick == tick || e.Tick == 0 && tick < ServerTick)
+            return e;
+        return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick };
+    }
+
+    /// <summary>Self-test: where lag compensation puts <paramref name="p"/> for a shot aimed at <paramref name="tick"/>.</summary>
+    public HistoryEntry SelfTestHistoricState(Player p, double tick) => HistoricState(p, tick);
 
     /// <summary>
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
@@ -1235,6 +1259,12 @@ public sealed partial class Game : IDisposable
                     turret = null;
                 }
             }
+            var device = TacticalRaycast(o, d, ref dist, shooter); // Deployable Cover and enemy devices (GameTactical.cs)
+            if (device != null)
+            {
+                hit = null;
+                turret = null;
+            }
             var zombie = Horde.Count > 0 ? ZombieRayHit(o, d, ref dist, rewindTo, out zHead) : null; // Zombies (ZombieAI.cs)
             if (zombie != null)
             {
@@ -1248,6 +1278,8 @@ public sealed partial class Game : IDisposable
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
+            if (device != null)
+                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist), now);
             if (turret != null)
                 flags |= ShotHitMachine;
             if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
@@ -1481,6 +1513,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ProjSpawn:
             case (byte)Msg.Explode:
                 OnThrowablePacket(id, ref r, sender, now);
+                break;
+            case (byte)Msg.TacState:
+            case (byte)Msg.TacEvent:
+                OnTacticalPacket(id, ref r, now); // GameTactical.cs
                 break;
             case (byte)Msg.StreakUse:
             case (byte)Msg.StreakEvent:

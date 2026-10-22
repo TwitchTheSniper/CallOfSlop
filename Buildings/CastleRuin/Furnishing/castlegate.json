@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "castlegate",
+  "description": "The gate passage: the heritage sign, a brazier, rubble at the sides.",
+  "items": [
+    {"props": ["Castle Ruin Info Board"], "place": "wall"},
+    {"props": ["Castle Ruin Brazier"], "place": "corner"},
+    {"props": ["Rubble", "Loose Bricks", "Brick Pile"], "place": "floor", "count": [1, 2]}
+  ]
+}

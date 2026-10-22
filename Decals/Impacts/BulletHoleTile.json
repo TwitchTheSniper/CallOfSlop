@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Tile",
+  "description": "A hole in a glazed tile: straight cracks across it and a white chipped rim.",
+  "author": "Call of Slop",
+  "size": 0.15,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Tiles"], "weight": 2},
+  "layers": [
+    {"shape": "cracks", "count": 5, "length": 0.46, "width": 0.02, "jag": 0.15, "seed": 211, "color": [0.15, 0.15, 0.15], "alpha": 0.85},
+    {"shape": "splat", "radius": 0.22, "count": 8, "jag": 0.45, "seed": 212, "color": [0.94, 0.94, 0.92], "alpha": 0.85, "softness": 0.02},
+    {"shape": "splat", "radius": 0.13, "count": 6, "jag": 0.35, "seed": 213, "color": [0.45, 0.44, 0.42], "alpha": 0.95},
+    {"shape": "circle", "radius": 0.07, "color": [0.05, 0.05, 0.05], "softness": 0.02}
+  ]
+}

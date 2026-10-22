@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "chancel",
+  "description": "The chancel round the altar: candles, flowers, a red runner.",
+  "items": [
+    {"props": ["Church Candle Stand"], "place": "wall", "count": [2, 3]},
+    {"props": ["Large Flower Pot"], "place": "corner", "count": [1, 2]},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.8}
+  ]
+}

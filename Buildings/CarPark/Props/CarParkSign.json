@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Car Park Sign",
+  "description": "A big blue P sign with a lit white letter, bolted to the concrete.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.2, 1.2, 0.1], "offset": [0, 0.6, 0.05], "color": "#1e4aa0"},
+    {"size": [0.18, 0.8, 0.02], "offset": [-0.18, 0.6, 0.11], "color": "#ffffff", "anim": {"type": "pulse", "period": 4, "glow": 0.8}},
+    {"size": [0.36, 0.16, 0.02], "offset": [0, 0.92, 0.11], "color": "#ffffff", "anim": {"type": "pulse", "period": 4, "glow": 0.8}},
+    {"size": [0.36, 0.16, 0.02], "offset": [0, 0.6, 0.11], "color": "#ffffff", "anim": {"type": "pulse", "period": 4, "glow": 0.8}},
+    {"size": [0.16, 0.3, 0.02], "offset": [0.18, 0.76, 0.11], "color": "#ffffff", "anim": {"type": "pulse", "period": 4, "glow": 0.8}}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "airlock",
+  "description": "The blast lock between the doors: gas masks on hooks, a bench.",
+  "items": [{"props": ["Bunker Gas Mask Rack"], "place": "wall"}, {"props": ["Bench"], "place": "wall", "chance": 0.7}]
+}

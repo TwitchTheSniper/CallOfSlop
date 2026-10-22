@@ -8,6 +8,7 @@
         "style": "Western outlaw",
         "describe": "a whistled outlaw melody, a galloping twangy bass and a whip crack, the whole track in a canyon slap-back echo",
         "pool": "classic",
+        "tempo": { "level5": 1.10, "level6": 1.20 },
         "stems": { "drums": 1.0, "bass": 0.5, "lead": 0.75 },
         "fx": { "slapMs": 120, "slapFeedback": 0.3, "slapMix": 0.3 },
         "trim": 0.96,
@@ -32,6 +33,7 @@
         "style": "Chiptune breakcore",
         "describe": "square-wave arpeggios racing up the chords over chopped breakbeats, the track a little crunchy",
         "pool": "fast",
+        "tempo": { "level5": 1.12, "level6": 1.25 },
         "stems": { "drums": 0.6, "bass": 1.0, "lead": 0.6 },
         "fx": { "crushBits": 10, "crushHold": 2 },
         "trim": 1.1,
@@ -56,7 +58,8 @@
       "music": {
         "style": "Classic hardbass",
         "describe": "the hardbass track as it is: pounding kick, bouncing bass, hoovers and chants",
-        "pool": "any"
+        "pool": "any",
+        "tempo": { "level5": 1.10, "level6": 1.20 }
       },
       "visual": { "signature": "HeatShimmer", "color": "#ff801f", "accent": "#ffbf4c", "tracerWidth": 1.35, "sheath": 3, "trailLife": 0.2, "muzzleSparks": 3, "impactSparks": 3, "brassSparks": 0, "sparkSpeed": 4, "sparkGravity": 8, "sparkLife": 0.25, "barrelGlow": 0.7, "edgeAlpha": 0.12, "rainbow": false },
       "sound": { "signature": "HardbassThump", "about": "Distorted hardbass kick under every shot, off-beat hat, donk", "levels": [0.15, 0.3, 0.45, 0.6, 0.8, 1], "layer": 0.4, "drive": 0.35, "sub": 0.7, "clack": 0.3, "tail": 0.3, "width": 0.35, "pitch": 0.98 },
@@ -73,6 +76,7 @@
         "style": "Marching drums and brass",
         "describe": "a tight marching snare with rolls and a bass drum on the downbeats, brass section stabs on top",
         "pool": "any",
+        "tempo": { "level5": 1.08, "level6": 1.16 },
         "stems": { "drums": 0.85, "bass": 1.0, "lead": 0.7 },
         "trim": 0.97,
         "layers": [
@@ -96,6 +100,7 @@
         "style": "Cinematic braam",
         "describe": "the four-on-the-floor pulled back under a half-time sub boom and a huge reverb snare, with a giant brass braam every two bars",
         "pool": "slow",
+        "tempo": { "level5": 1.08, "level6": 1.16 },
         "stems": { "drums": 0.35, "bass": 0.7, "lead": 0.75 },
         "trim": 0.93,
         "layers": [
@@ -119,6 +124,7 @@
         "style": "Gabber stomp",
         "describe": "a distorted gabber kick stomping through the track, with double hits at the end of every phrase, everything driven hard",
         "pool": "harder",
+        "tempo": { "level5": 1.10, "level6": 1.22 },
         "stems": { "drums": 0.45, "bass": 0.8, "lead": 0.85 },
         "fx": { "drive": 1.2 },
         "trim": 0.72,
@@ -142,6 +148,7 @@
         "style": "Industrial grind",
         "describe": "palm-muted distorted power-chord chugs, metallic anvil clanks on the off-beats and a double kick at the top",
         "pool": "any",
+        "tempo": { "level5": 1.08, "level6": 1.18 },
         "stems": { "drums": 0.9, "bass": 0.55, "lead": 0.6 },
         "fx": { "drive": 0.8 },
         "trim": 0.8,
@@ -169,6 +176,7 @@
         "style": "Glitch weird",
         "describe": "the track bit-crushed and stuttering in beat-repeat edits, random square blips squeaking around it",
         "pool": "weird",
+        "tempo": { "level5": 1.12, "level6": 1.24 },
         "stems": { "drums": 1.0, "bass": 1.0, "lead": 0.9 },
         "fx": { "crushBits": 6, "crushHold": 3, "stutter": "......s.....S.s." },
         "trim": 1.04,

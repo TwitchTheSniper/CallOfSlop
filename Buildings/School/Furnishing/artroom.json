@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "artroom",
+  "description": "The art room: paint-splashed tables, easels, a sink, shelves of paint pots.",
+  "items": [
+    {"id": "table", "props": ["Table"], "place": "centre", "count": [1, 2]},
+    {"props": ["Plastic Chair"], "place": "around", "of": "table", "count": [2, 6]},
+    {"props": ["Paint Cans", "Book Pile"], "place": "on", "of": "table", "y": 0.75, "count": [1, 2]},
+    {"props": ["School Easel"], "place": "floor", "count": [2, 4]},
+    {"props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Paint Cans", "Bucket"], "place": "floor", "count": [1, 3]}
+  ]
+}

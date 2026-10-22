@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Small",
+  "description": "A small, neat fallback bullet hole for any surface without its own.",
+  "author": "Call of Slop",
+  "size": 0.1,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.06,
+  "impact": {"materials": ["Default"], "weight": 1},
+  "layers": [
+    {"shape": "circle", "radius": 0.26, "color": [0.35, 0.35, 0.35], "alpha": 0.45, "softness": 0.08},
+    {"shape": "circle", "radius": 0.09, "color": [0.05, 0.05, 0.05], "softness": 0.02}
+  ]
+}

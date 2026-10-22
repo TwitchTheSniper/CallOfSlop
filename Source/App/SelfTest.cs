@@ -122,6 +122,7 @@ public static partial class SelfTest
             Section("Weird hardbass", CheckWeirdHardbass); // SelfTestWeirdHardbass.cs: odd meters, swerves, toys, new voices, CPU vs the heaviest track
             Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
             Section("Frenzy classes", CheckFrenzyClasses); // SelfTestFrenzyClasses.cs: per-weapon-class frenzy music styles
+            Section("Frenzy tempo", CheckFrenzyTempo); // SelfTestFrenzyTempo.cs: levels 5 and 6 play faster, per class, on the bar grid
             Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
             Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
             Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
@@ -137,10 +138,13 @@ public static partial class SelfTest
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
             Section("Decals", CheckDecals); // SelfTestDecals.cs: decal files, atlas, Decal/DecalScatter baking, impact pool rules, costs, the Decal Test map
+            Section("Decal surfaces", CheckDecalSurfaces); // SelfTestDecalSurfaces.cs: the surface and object decal set (loads, surfaces, bold detail, paint cost) and the Decal Surfaces map
             Section("Body model", CheckBodyModel); // SelfTestBody.cs: torso and head parts vs the old boxes and hit boxes, hat fit, seeded variants, cost
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
+            Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
+            Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Line("");

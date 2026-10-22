@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Motel Neon Sign",
+  "description": "A tall 1960s roadside sign: MOTEL in chasing pink neon, a teal arrow and a blinking VACANCY.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 4.4, 0.4], "offset": [0, 2.2, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.3, 4.6, 0.3], "offset": [-0.6, 2.3, 0], "color": "#d8d8d0"},
+    {"size": [0.3, 4.6, 0.3], "offset": [0.6, 2.3, 0], "color": "#d8d8d0"},
+    {"size": [3, 1, 0.24], "offset": [0, 5.6, 0], "color": "#1e2a3a"},
+    {
+      "size": [0.5, 0.55, 0.04],
+      "offset": [-1, 5.6, 0.14],
+      "color": "#ff5aa0",
+      "anim": {"type": "cycle", "period": 3, "steps": 6, "on": [0, 1, 2, 3, 4, 5], "glow": 1.4, "off": "#5a2038"}
+    },
+    {
+      "size": [0.5, 0.55, 0.04],
+      "offset": [-0.5, 5.6, 0.14],
+      "color": "#ff5aa0",
+      "anim": {"type": "cycle", "period": 3, "steps": 6, "on": [1, 2, 3, 4, 5], "glow": 1.4, "off": "#5a2038"}
+    },
+    {
+      "size": [0.5, 0.55, 0.04],
+      "offset": [0, 5.6, 0.14],
+      "color": "#ff5aa0",
+      "anim": {"type": "cycle", "period": 3, "steps": 6, "on": [2, 3, 4, 5], "glow": 1.4, "off": "#5a2038"}
+    },
+    {
+      "size": [0.5, 0.55, 0.04],
+      "offset": [0.5, 5.6, 0.14],
+      "color": "#ff5aa0",
+      "anim": {"type": "cycle", "period": 3, "steps": 6, "on": [3, 4, 5], "glow": 1.4, "off": "#5a2038"}
+    },
+    {
+      "size": [0.5, 0.55, 0.04],
+      "offset": [1, 5.6, 0.14],
+      "color": "#ff5aa0",
+      "anim": {"type": "cycle", "period": 3, "steps": 6, "on": [4, 5], "glow": 1.4, "off": "#5a2038"}
+    },
+    {"size": [2.2, 0.35, 0.2], "offset": [0.2, 4.55, 0.05], "color": "#f0e8d0"},
+    {"size": [2, 0.22, 0.03], "offset": [0.2, 4.55, 0.16], "color": "#d02020", "anim": {"type": "blink", "period": 1.6, "duty": 0.6, "glow": 1.2}},
+    {
+      "size": [1.6, 0.18, 0.06],
+      "offset": [0.2, 6.35, 0],
+      "color": "#30d0c0",
+      "rotation": [0, 0, 12],
+      "anim": {"type": "pulse", "period": 2, "glow": 1.2}
+    },
+    {
+      "size": [0.4, 0.4, 0.06],
+      "offset": [1.15, 6.5, 0],
+      "color": "#30d0c0",
+      "rotation": [0, 0, 45],
+      "anim": {"type": "pulse", "period": 2, "glow": 1.2}
+    },
+    {"size": [1.4, 0.3, 1], "offset": [0, 0.15, 0], "color": "#a8a8a0", "material": "concrete"}
+  ]
+}

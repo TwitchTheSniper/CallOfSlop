@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Soot Plume",
+  "description": "Soot fanning up a wall from a window, vent or fire below.",
+  "author": "Call of Slop",
+  "size": [
+    2.0,
+    3.0
+  ],
+  "sizeVariation": 0.2,
+  "rotation": 0,
+  "blend": "multiply",
+  "surfaces": "wall",
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.5,
+        0.2
+      ],
+      "to": [
+        0.3,
+        0.86
+      ],
+      "width": 0.28,
+      "color": [
+        0.55,
+        0.53,
+        0.5
+      ],
+      "alpha": 0.55,
+      "softness": 0.18,
+      "noise": 0.4,
+      "noiseScale": 5,
+      "seed": 551
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.5,
+        0.2
+      ],
+      "to": [
+        0.52,
+        0.92
+      ],
+      "width": 0.32,
+      "color": [
+        0.5,
+        0.48,
+        0.45
+      ],
+      "alpha": 0.6,
+      "softness": 0.18,
+      "noise": 0.4,
+      "noiseScale": 5,
+      "seed": 552
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.5,
+        0.2
+      ],
+      "to": [
+        0.72,
+        0.84
+      ],
+      "width": 0.26,
+      "color": [
+        0.55,
+        0.53,
+        0.5
+      ],
+      "alpha": 0.55,
+      "softness": 0.18,
+      "noise": 0.4,
+      "noiseScale": 5,
+      "seed": 553
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.5,
+        0.2
+      ],
+      "radius": 0.14,
+      "count": 8,
+      "jag": 0.4,
+      "seed": 554,
+      "color": [
+        0.22,
+        0.21,
+        0.2
+      ],
+      "alpha": 0.85,
+      "softness": 0.08
+    }
+  ]
+}

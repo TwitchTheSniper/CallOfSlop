@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "The school corridor: lockers, coat pegs, a bench, a drinking fountain, bins.",
+  "items": [
+    {"props": ["Metal Lockers"], "place": "wall", "count": [3, 6]},
+    {"props": ["School Coat Pegs"], "place": "wall", "count": [2, 4]},
+    {"props": ["Bench"], "place": "wall", "count": [0, 2]},
+    {"props": ["Drinking Fountain"], "place": "wall", "chance": 0.8},
+    {"props": ["Trash Can"], "place": "corner", "count": [1, 2]},
+    {"props": ["Radiator"], "place": "wall", "count": [1, 2]}
+  ]
+}

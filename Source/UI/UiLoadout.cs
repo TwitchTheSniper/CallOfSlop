@@ -763,13 +763,16 @@ public sealed partial class Ui
                 var dl = ImGui.GetWindowDrawList();
                 var c = pos + new float2(width - 34 * _scale, height / 2 + 4 * _scale);
                 var col = new ImColor8((byte)(def.Color.X * 255), (byte)(def.Color.Y * 255), (byte)(def.Color.Z * 255), 255);
-                if (def.IsEquipment)
-                    ImDrawListExtensions.AddNgonFilled(dl, in c, 15 * _scale, col, 6);
-                else
-                    ImDrawListExtensions.AddCircleFilled(dl, in c, 14 * _scale, col, 20);
-                var top = c - new float2(4 * _scale, 22 * _scale);
-                var top2 = c + new float2(4 * _scale, -12 * _scale);
-                ImDrawListExtensions.AddRectFilled(dl, in top, in top2, new ImColor8(150, 150, 155, 255), 1, ImDrawFlags.None);
+                if (!TacticalHud.Icon(dl, def.Kind, c, 18 * _scale)) // the tactical items have their own icons (TacticalHud.cs)
+                {
+                    if (def.IsEquipment)
+                        ImDrawListExtensions.AddNgonFilled(dl, in c, 15 * _scale, col, 6);
+                    else
+                        ImDrawListExtensions.AddCircleFilled(dl, in c, 14 * _scale, col, 20);
+                    var top = c - new float2(4 * _scale, 22 * _scale);
+                    var top2 = c + new float2(4 * _scale, -12 * _scale);
+                    ImDrawListExtensions.AddRectFilled(dl, in top, in top2, new ImColor8(150, 150, 155, 255), 1, ImDrawFlags.None);
+                }
             }
         }
         ImGui.EndChild();

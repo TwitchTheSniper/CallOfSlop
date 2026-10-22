@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "narthex",
+  "description": "The tower porch: a bench, a coat stand, notices and hymn books.",
+  "items": [
+    {"props": ["Bench"], "place": "wall", "prefer": "far"},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Church Candle Stand"], "place": "wall", "chance": 0.7},
+    {"props": ["Book Pile", "Book Pile", "Newspaper Stack"], "place": "floor", "count": [1, 2]},
+    {"props": ["Flower Pot"], "place": "corner", "chance": 0.7}
+  ]
+}

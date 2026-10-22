@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "staffroom",
+  "description": "The staff room: tired armchairs, a sofa, a kettle on the counter, pigeon-holes, marking piles.",
+  "items": [
+    {"id": "sofa", "props": ["Fabric Sofa"], "place": "wall", "prefer": "far"},
+    {"id": "ct", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.35},
+    {"props": ["Book Pile", "Newspaper"], "place": "on", "of": "ct", "y": 0.45, "count": [1, 2]},
+    {"props": ["Armchair"], "place": "wall", "count": [1, 2]},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Kettle", "Coffee Maker", "Microwave"], "place": "on", "of": "counter", "y": 0.9, "count": [1, 3]},
+    {"props": ["Fridge"], "place": "corner"},
+    {"props": ["Bookshelf"], "place": "wall", "chance": 0.8},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

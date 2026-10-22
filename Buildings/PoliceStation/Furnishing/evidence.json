@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "evidence",
+  "description": "The evidence store: wire cages, shelving, boxes of exhibits, the safe.",
+  "items": [
+    {"props": ["Police Evidence Cage"], "place": "wall", "count": [2, 3]},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Safe"], "place": "corner"},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [1, 3]}
+  ]
+}

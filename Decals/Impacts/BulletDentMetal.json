@@ -10,7 +10,8 @@
   "impact": {
     "materials": [
       "Metal"
-    ]
+    ],
+    "weight": 1.5
   },
   "layers": [
     {

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "stairhall",
+  "description": "The stair hall: a notice board, lockers, a fire bucket.",
+  "items": [
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["School Coat Pegs"], "place": "wall", "chance": 0.7},
+    {"props": ["Trash Can", "Bucket"], "place": "corner"}
+  ]
+}

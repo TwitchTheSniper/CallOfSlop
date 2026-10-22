@@ -10,7 +10,8 @@
   "impact": {
     "materials": [
       "Default"
-    ]
+    ],
+    "weight": 1.5
   },
   "layers": [
     {

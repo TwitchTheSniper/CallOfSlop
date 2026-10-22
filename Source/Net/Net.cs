@@ -57,6 +57,8 @@ public enum Msg : byte
     BuildingUse, // client -> server: the interact key at building door N (reliable; GameBuildings.cs)
     BuildingEvent, // server -> all: a building door opened / shut / took damage / broke, or a window broke (kind, index, health, from)
     BuildingState, // server -> joining client: every door's state and health and the broken windows (reliable)
+    TacState, // server -> all: every tactical device (id, kind, owner, position, yaw, health, charges) with snapshots while any exist (unreliable; GameTactical.cs)
+    TacEvent, // server -> all: a tactical moment: flashed / stunned, trophy intercept, device destroyed, decoy burst, motion ping, stim, placed, inserted (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

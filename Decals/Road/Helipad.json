@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Helipad",
+  "description": "A landing pad: a dark disc with a yellow rim, a white ring and a big H.",
+  "author": "Call of Slop",
+  "size": 8.0,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 150,
+  "layers": [
+    {
+      "shape": "circle",
+      "radius": 0.48,
+      "color": [
+        0.2,
+        0.22,
+        0.21
+      ],
+      "softness": 0.005,
+      "noise": 0.15,
+      "noiseScale": 10,
+      "seed": 491
+    },
+    {
+      "shape": "ring",
+      "radius": 0.465,
+      "width": 0.02,
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ]
+    },
+    {
+      "shape": "ring",
+      "radius": 0.4,
+      "width": 0.025,
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 492
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.37,
+        0.5
+      ],
+      "size": [
+        0.07,
+        0.4
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 493
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.63,
+        0.5
+      ],
+      "size": [
+        0.07,
+        0.4
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 493
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "size": [
+        0.26,
+        0.07
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.2,
+      "noiseScale": 12,
+      "seed": 493
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "waiting",
+  "description": "The waiting room: rows of linked chairs, a low table of magazines, toys, a water cooler, leaflets.",
+  "items": [
+    {"props": ["Clinic Waiting Chairs"], "place": "wall", "count": [3, 5], "prefer": "near"},
+    {"id": "table", "props": ["Coffee Table"], "place": "centre"},
+    {"props": ["Newspaper", "Book Pile"], "place": "on", "of": "table", "y": 0.45, "count": [1, 2]},
+    {"props": ["Water Cooler"], "place": "corner"},
+    {"props": ["Clinic Leaflet Rack"], "place": "wall"},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner", "count": [1, 2]},
+    {"props": ["Toy Blocks", "Teddy Bear"], "place": "floor", "count": [1, 2]},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "chance": 0.5}
+  ]
+}

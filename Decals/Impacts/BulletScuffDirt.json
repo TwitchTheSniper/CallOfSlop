@@ -11,7 +11,8 @@
     "materials": [
       "Dirt",
       "Terrain"
-    ]
+    ],
+    "weight": 1.5
   },
   "layers": [
     {

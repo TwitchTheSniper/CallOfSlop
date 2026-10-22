@@ -1,0 +1,126 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Crosswalk Bars",
+  "description": "Six white crossing bars (bars run north-south, for a road running north-south).",
+  "author": "Call of Slop",
+  "size": 4.0,
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 120,
+  "layers": [
+    {
+      "shape": "rect",
+      "at": [
+        0.09,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 410
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.254,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 411
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.418,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 412
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.582,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 413
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.746,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 414
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.91,
+        0.5
+      ],
+      "size": [
+        0.1,
+        0.94
+      ],
+      "color": [
+        0.9,
+        0.9,
+        0.86
+      ],
+      "noise": 0.3,
+      "noiseScale": 9,
+      "seed": 415
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Rust Stain",
+  "description": "An orange-brown rust stain where something metal stood or dripped.",
+  "author": "Call of Slop",
+  "size": 1.2,
+  "sizeVariation": 0.35,
+  "rotation": "random",
+  "tintVariation": 0.1,
+  "blend": "multiply",
+  "surfaces": [
+    "floor",
+    "wall"
+  ],
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.3,
+      "count": 8,
+      "jag": 0.5,
+      "seed": 321,
+      "color": [
+        0.75,
+        0.48,
+        0.3
+      ],
+      "alpha": 0.8,
+      "softness": 0.1,
+      "noise": 0.4,
+      "noiseScale": 7
+    },
+    {
+      "shape": "splat",
+      "radius": 0.15,
+      "count": 6,
+      "jag": 0.45,
+      "seed": 322,
+      "color": [
+        0.55,
+        0.3,
+        0.16
+      ],
+      "alpha": 0.8,
+      "softness": 0.06
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.36,
+      "count": 20,
+      "width": 0.022,
+      "seed": 323,
+      "color": [
+        0.5,
+        0.27,
+        0.14
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Skid Marks",
+  "description": "Two black rubber skid marks, heavier where the tyres locked.",
+  "author": "Call of Slop",
+  "size": [
+    1.4,
+    5.0
+  ],
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": "floor",
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.32,
+        0.06
+      ],
+      "to": [
+        0.3,
+        0.94
+      ],
+      "width": 0.12,
+      "color": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "alpha": 0.75,
+      "softness": 0.05,
+      "noise": 0.45,
+      "noiseScale": 10,
+      "seed": 271
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.7,
+        0.06
+      ],
+      "to": [
+        0.68,
+        0.94
+      ],
+      "width": 0.12,
+      "color": [
+        0.35,
+        0.35,
+        0.35
+      ],
+      "alpha": 0.75,
+      "softness": 0.05,
+      "noise": 0.45,
+      "noiseScale": 10,
+      "seed": 272
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.31,
+        0.6
+      ],
+      "to": [
+        0.3,
+        0.94
+      ],
+      "width": 0.12,
+      "color": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "alpha": 0.6,
+      "softness": 0.05
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.69,
+        0.6
+      ],
+      "to": [
+        0.68,
+        0.94
+      ],
+      "width": 0.12,
+      "color": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "alpha": 0.6,
+      "softness": 0.05
+    }
+  ]
+}

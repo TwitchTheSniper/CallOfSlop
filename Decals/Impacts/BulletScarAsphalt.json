@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Scar Asphalt",
+  "description": "A glancing hit on asphalt: a pale scraped scar ending in a little crater.",
+  "author": "Call of Slop",
+  "size": 0.2,
+  "sizeVariation": 0.25,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Asphalt"], "weight": 0.7},
+  "layers": [
+    {"shape": "line", "at": [0.2, 0.5], "to": [0.68, 0.5], "width": 0.05, "color": [0.58, 0.58, 0.56], "alpha": 0.8},
+    {"shape": "splat", "at": [0.7, 0.5], "radius": 0.12, "count": 7, "jag": 0.5, "seed": 281, "color": [0.25, 0.25, 0.25], "alpha": 0.95},
+    {"shape": "circle", "at": [0.7, 0.5], "radius": 0.04, "color": [0.05, 0.05, 0.05], "softness": 0.02}
+  ]
+}

@@ -48,7 +48,7 @@ public sealed partial class MusicRenderer
         get
         {
             var stepsLeft = (16 - (_step & 15)) & 15;
-            return (int)Math.Ceiling(Math.Max(0, _toNextStep) + stepsLeft * _samplesPerStep);
+            return (int)Math.Ceiling(Math.Max(0, _toNextStep) + StepsFrames(stepsLeft)); // follows a tempo glide (MusicRenderer.Tempo.cs)
         }
     }
 

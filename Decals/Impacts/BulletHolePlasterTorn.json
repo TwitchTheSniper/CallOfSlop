@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Plaster Torn",
+  "description": "A big bite out of plaster showing the brown backing board behind it.",
+  "author": "Call of Slop",
+  "size": 0.22,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Plaster"], "weight": 0.6},
+  "layers": [
+    {"shape": "splat", "radius": 0.34, "count": 7, "jag": 0.6, "seed": 311, "color": [0.88, 0.86, 0.82], "alpha": 0.85, "softness": 0.02},
+    {"shape": "splat", "radius": 0.25, "count": 7, "jag": 0.55, "seed": 312, "color": [0.55, 0.45, 0.33], "alpha": 0.95, "softness": 0.02},
+    {"shape": "speckle", "radius": 0.22, "count": 8, "width": 0.02, "seed": 313, "color": [0.35, 0.28, 0.2], "alpha": 0.85},
+    {"shape": "circle", "radius": 0.08, "color": [0.06, 0.05, 0.04], "softness": 0.02}
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "stationcafe",
+  "description": "The station buffet: a counter with the tea urn, small tables, a chiller.",
+  "items": [
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 3], "prefer": "far"},
+    {"props": ["Coffee Maker", "Kettle", "Stacked Plates", "Microwave"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 4]},
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "table", "props": ["Table"], "place": "centre", "count": [1, 2]},
+    {"props": ["Wooden Chair"], "place": "around", "of": "table", "count": [2, 6]},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.7},
+    {"props": ["Sandwich Board"], "place": "floor", "chance": 0.7}
+  ]
+}

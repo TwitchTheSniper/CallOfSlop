@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "enquiry",
+  "description": "The public side of the front desk: benches, a notice board of wanted posters, a leaflet rack.",
+  "items": [
+    {"props": ["Bench"], "place": "wall", "count": [1, 2]},
+    {"props": ["Police Incident Board"], "place": "wall", "chance": 0.6},
+    {"props": ["Office Plant", "Trash Can"], "place": "corner", "count": [1, 2]},
+    {"props": ["Water Cooler"], "place": "corner", "chance": 0.6},
+    {"props": ["Payphone"], "place": "wall", "chance": 0.5}
+  ]
+}

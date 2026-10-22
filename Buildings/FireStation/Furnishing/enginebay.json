@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "enginebay",
+  "description": "The appliance bay round the engines: gear lockers, hose racks, breathing-apparatus cylinders, cones.",
+  "items": [
+    {"props": ["Fire Station Gear Locker"], "place": "wall", "count": [3, 6]},
+    {"props": ["Fire Station Hose Rack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Gas Cylinders"], "place": "wall", "count": [1, 2]},
+    {"props": ["Traffic Cone", "Toolbox", "Jerry Can", "Bucket"], "place": "floor", "count": [2, 4]},
+    {"props": ["Mop and Bucket"], "place": "corner"}
+  ]
+}

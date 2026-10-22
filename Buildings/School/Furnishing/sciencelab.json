@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "sciencelab",
+  "description": "Round the lab benches: a fume cupboard, shelves of jars, a sink, a skeleton-free corner.",
+  "items": [
+    {"props": ["Flammables Cabinet"], "place": "wall"},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Gas Cylinders"], "place": "corner", "chance": 0.6},
+    {"props": ["Cardboard Box Small", "Book Pile"], "place": "floor", "count": [0, 2]}
+  ]
+}

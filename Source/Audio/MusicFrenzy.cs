@@ -25,7 +25,8 @@ public sealed class FrenzyMeter : FrenzyMeterCore
 /// leaving the match) fades it out over <see cref="QuickFadeSeconds"/> with the filter closing; heat running out
 /// fades it over two bars. One renderer, reused: allocation-free, about the cost of one hardbass track at level 3-6
 /// and much less at levels 1-2 (the leads aren't rendered). Levels 5 and 6 only change gains (and the roar for a
-/// moment), so they cost the same as level 4.
+/// moment), so they cost the same as level 4. Levels 5 and 6 also play faster: a higher BPM per weapon class
+/// (MusicFrenzy.Tempo.cs), level 6 faster than level 5.
 /// </summary>
 public sealed partial class FrenzyLayer
 {
@@ -246,6 +247,8 @@ public sealed partial class FrenzyLayer
         _inLastDrop = level >= 4;
         _r.Load(track, _seed, _inLastDrop ? MusicRenderer.LastDropBar(track) : track.FirstDropBar);
         _r.LoopDrops = true;
+        BeginClass(level); // the class style first: it sets the tempo (MusicFrenzy.Classes.cs)
+        BeginTempo(level); // levels 5 and 6 play faster (MusicFrenzy.Tempo.cs)
         _active = true;
         _fading = false;
         _frames = 0;
@@ -263,7 +266,6 @@ public sealed partial class FrenzyLayer
         _duckDepth = LevelDuck[level];
         SetTargets(level, (float)_r.FramesPerBar); // fade in over a bar
         LastChangeFrame = 0;
-        BeginClass(level);
         Volatile.Write(ref _trackName, track.Name);
     }
 
@@ -271,15 +273,16 @@ public sealed partial class FrenzyLayer
     {
         ClassBar(next); // a class switch starts on the bar line (MusicFrenzy.Classes.cs)
         _barsAtLevel++;
+        var up = next > _level;
+        BarTempo(next, up); // levels 5 and 6 play faster (MusicFrenzy.Tempo.cs)
         if (next == _level)
             return;
-        var up = next > _level;
         if (next == FrenzyMeter.MaxLevel && up)
             Hit();
         _level = next;
         _barsAtLevel = 0;
         LastChangeFrame = _frames;
-        var bar = (float)_r.FramesPerBar;
+        var bar = (float)_r.NextBarFrames; // the coming bar at its new tempo
         SetTargets(next, up ? bar * 0.5f : bar * 2f);
     }
 
@@ -347,6 +350,7 @@ public sealed partial class FrenzyLayer
         PreClass();
         var buf = _buf.AsSpan(0, frames * 2);
         _r.Render(buf);
+        LogBarLines(frames); // MusicFrenzy.Tempo.cs
         PostClass(buf, frames);
         if (_roarLeft > 0)
             Roar(buf, frames);

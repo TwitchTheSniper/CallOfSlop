@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Train Station Ticket Counter",
+  "description": "The booking clerk's counter: a mahogany top, a brass money tray, ticket racks and a date stamp.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 150, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.6, 0.95, 0.6], "offset": [0, 0.475, 0], "color": "#5a2e1e", "material": "wood"},
+    {"size": [1.7, 0.05, 0.7], "offset": [0, 0.97, 0], "color": "#4a2416", "material": "wood"},
+    {"size": [0.3, 0.03, 0.2], "offset": [0, 1, -0.2], "color": "#d8b040"},
+    {"size": [0.9, 0.5, 0.15], "offset": [0.2, 1.25, 0.25], "color": "#6a3a22", "material": "wood"},
+    {"size": [0.05, 0.08, 0.02], "offset": [-0.15, 1.2, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [-0.05, 1.32, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.05, 1.44, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.15, 1.2, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.25, 1.32, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.35, 1.44, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.45, 1.2, 0.17], "color": "#f0e0a0"},
+    {"size": [0.05, 0.08, 0.02], "offset": [0.55, 1.32, 0.17], "color": "#f0e0a0"},
+    {"size": [0.1, 0.12, 0.1], "offset": [-0.5, 1.05, 0.1], "color": "#2a2a2a"}
+  ]
+}

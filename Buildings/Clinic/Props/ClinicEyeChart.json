@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Eye Chart",
+  "description": "A wall eye-test chart: rows of black letters getting smaller.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.55, 0.85, 0.02], "offset": [0, 1.55, 0.01], "color": "#f8f8f4"},
+    {"size": [0.4, 0.08, 0.005], "offset": [0, 1.85, 0.022], "color": "#1a1a1a"},
+    {"size": [0.34, 0.068, 0.005], "offset": [0, 1.73, 0.022], "color": "#1a1a1a"},
+    {"size": [0.28, 0.056, 0.005], "offset": [0, 1.61, 0.022], "color": "#1a1a1a"},
+    {"size": [0.22, 0.044, 0.005], "offset": [0, 1.49, 0.022], "color": "#1a1a1a"},
+    {"size": [0.16, 0.032, 0.005], "offset": [0, 1.37, 0.022], "color": "#1a1a1a"},
+    {"size": [0.1, 0.02, 0.005], "offset": [0, 1.25, 0.022], "color": "#1a1a1a"},
+    {"size": [0.4, 0.02, 0.005], "offset": [0, 1.15, 0.022], "color": "#d02020"}
+  ]
+}

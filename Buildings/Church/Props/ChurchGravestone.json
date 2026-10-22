@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Gravestone",
+  "description": "A weathered round-topped headstone leaning a little, with moss at the foot.",
+  "collision": "solid",
+  "collider": [{"size": [0.66, 1.05, 0.18]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.62, 0.9, 0.14], "offset": [0, 0.45, 0], "color": "#8e8b84", "material": "concrete", "roll": 3},
+    {"size": [0.44, 0.14, 0.14], "offset": [0.01, 0.95, 0], "color": "#8e8b84", "material": "concrete", "roll": 3},
+    {"size": [0.24, 0.08, 0.14], "offset": [0.02, 1.04, 0], "color": "#8e8b84", "material": "concrete", "roll": 3},
+    {"size": [0.36, 0.03, 0.02], "offset": [0.02, 0.75, 0.075], "color": "#5a5852"},
+    {"size": [0.7, 0.06, 1.6], "offset": [0, 0.03, 0.85], "color": "#4e6a3a"}
+  ]
+}

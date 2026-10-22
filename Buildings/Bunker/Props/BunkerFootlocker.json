@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Footlocker",
+  "description": "A green steel footlocker stencilled with a service number.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.9, 0.4, 0.45], "offset": [0, 0.2, 0], "color": "#4a5232", "material": "metal"},
+    {"size": [0.92, 0.04, 0.47], "offset": [0, 0.41, 0], "color": "#3a4228"},
+    {"size": [0.4, 0.06, 0.01], "offset": [0, 0.25, 0.23], "color": "#e8e8d0"},
+    {"size": [0.08, 0.06, 0.03], "offset": [0, 0.36, 0.24], "color": "#b0a060"}
+  ]
+}

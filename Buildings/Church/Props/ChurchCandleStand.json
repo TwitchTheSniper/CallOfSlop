@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Candle Stand",
+  "description": "A tall brass pricket stand with a lit church candle.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.32, 0.04, 0.32], "offset": [0, 0.02, 0], "color": "#a8862e"},
+    {"size": [0.05, 1.2, 0.05], "offset": [0, 0.62, 0], "color": "#c8a038"},
+    {"size": [0.24, 0.03, 0.24], "offset": [0, 1.23, 0], "color": "#c8a038"},
+    {"size": [0.07, 0.3, 0.07], "offset": [0, 1.4, 0], "color": "#f4ecd8"},
+    {"size": [0.035, 0.07, 0.035], "offset": [0, 1.59, 0], "color": "#ffc860", "anim": {"type": "flicker", "rate": 7, "duty": 0.9, "glow": 1.4}}
+  ]
+}

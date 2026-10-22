@@ -1,0 +1,184 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Graffiti Scribble",
+  "description": "A fast purple zig-zag tag with an underline (abstract, no letters).",
+  "author": "Call of Slop",
+  "size": [
+    2.0,
+    1.0
+  ],
+  "sizeVariation": 0.2,
+  "rotation": 0,
+  "tintVariation": 0.2,
+  "surfaces": "wall",
+  "fadeDistance": 70,
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.08,
+        0.35
+      ],
+      "to": [
+        0.2,
+        0.7
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.2,
+        0.7
+      ],
+      "to": [
+        0.3,
+        0.3
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.3,
+        0.3
+      ],
+      "to": [
+        0.42,
+        0.72
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.42,
+        0.72
+      ],
+      "to": [
+        0.5,
+        0.35
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.5,
+        0.35
+      ],
+      "to": [
+        0.62,
+        0.68
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.62,
+        0.68
+      ],
+      "to": [
+        0.72,
+        0.32
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.72,
+        0.32
+      ],
+      "to": [
+        0.86,
+        0.66
+      ],
+      "width": 0.045,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.1,
+        0.2
+      ],
+      "to": [
+        0.9,
+        0.24
+      ],
+      "width": 0.03,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "circle",
+      "at": [
+        0.92,
+        0.82
+      ],
+      "radius": 0.035,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.3,
+        0.27
+      ],
+      "to": [
+        0.3,
+        0.1
+      ],
+      "width": 0.015,
+      "color": [
+        0.62,
+        0.22,
+        0.82
+      ],
+      "alpha": 0.8
+    }
+  ]
+}

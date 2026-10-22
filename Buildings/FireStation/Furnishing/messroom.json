@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "messroom",
+  "description": "The mess: a long table, the crew's kitchen, a big fridge and the telly.",
+  "items": [
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 3]},
+    {"props": ["Kettle", "Toaster", "Coffee Maker", "Microwave"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 4]},
+    {"props": ["Cooker"], "place": "wall"},
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "table", "props": ["Dining Table"], "place": "centre"},
+    {"props": ["Dining Chair"], "place": "around", "of": "table", "count": [4, 6]},
+    {"props": ["TV Stand"], "place": "wall", "chance": 0.8},
+    {"props": ["Pedal Bin"], "place": "corner"}
+  ]
+}

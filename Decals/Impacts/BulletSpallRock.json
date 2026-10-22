@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Spall Rock",
+  "description": "A flake of rock split off by a heavy hit, with a crack running from it.",
+  "author": "Call of Slop",
+  "size": 0.19,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {"materials": ["Rock"], "weight": 0.8},
+  "layers": [
+    {"shape": "splat", "radius": 0.36, "count": 5, "jag": 0.7, "seed": 381, "color": [0.74, 0.72, 0.68], "alpha": 0.75, "softness": 0.02},
+    {"shape": "cracks", "count": 3, "length": 0.46, "width": 0.025, "jag": 0.75, "seed": 382, "color": [0.16, 0.15, 0.14], "alpha": 0.8},
+    {"shape": "speckle", "radius": 0.3, "count": 12, "width": 0.022, "seed": 383, "color": [0.3, 0.29, 0.27], "alpha": 0.85},
+    {"shape": "circle", "radius": 0.07, "color": [0.06, 0.06, 0.06], "softness": 0.02}
+  ]
+}

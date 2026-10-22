@@ -1,0 +1,62 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Mould",
+  "description": "Black-green mould spots spreading in a damp corner.",
+  "author": "Call of Slop",
+  "size": 1.4,
+  "sizeVariation": 0.4,
+  "rotation": "random",
+  "blend": "multiply",
+  "surfaces": [
+    "wall",
+    "ceiling"
+  ],
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.32,
+      "count": 10,
+      "jag": 0.5,
+      "seed": 531,
+      "color": [
+        0.72,
+        0.76,
+        0.64
+      ],
+      "alpha": 0.65,
+      "softness": 0.2,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.32,
+      "count": 50,
+      "width": 0.03,
+      "seed": 532,
+      "color": [
+        0.36,
+        0.42,
+        0.32
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "speckle",
+      "at": [
+        0.38,
+        0.58
+      ],
+      "radius": 0.16,
+      "count": 30,
+      "width": 0.026,
+      "seed": 533,
+      "color": [
+        0.2,
+        0.24,
+        0.18
+      ],
+      "alpha": 0.85
+    }
+  ]
+}

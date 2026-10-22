@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "School Drum Kit",
+  "description": "A battered school drum kit: bass drum, snare, toms, a cymbal and a stool.",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 0.9, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.228, 0.55, 0.4], "offset": [0, 0.3, 0], "color": "#a02020", "roll": 0},
+    {"size": [0.228, 0.55, 0.4], "offset": [0, 0.3, 0], "color": "#a02020", "roll": 45},
+    {"size": [0.228, 0.55, 0.4], "offset": [0, 0.3, 0], "color": "#a02020", "roll": 90},
+    {"size": [0.228, 0.55, 0.4], "offset": [0, 0.3, 0], "color": "#a02020", "roll": 135},
+    {"size": [0.36, 0.16, 0.149], "offset": [0.42, 0.62, 0.1], "color": "#d8d8d8", "yaw": 0},
+    {"size": [0.36, 0.16, 0.149], "offset": [0.42, 0.62, 0.1], "color": "#d8d8d8", "yaw": 45},
+    {"size": [0.36, 0.16, 0.149], "offset": [0.42, 0.62, 0.1], "color": "#d8d8d8", "yaw": 90},
+    {"size": [0.36, 0.16, 0.149], "offset": [0.42, 0.62, 0.1], "color": "#d8d8d8", "yaw": 135},
+    {"size": [0.28, 0.2, 0.116], "offset": [-0.15, 0.85, 0.05], "color": "#a02020", "yaw": 0},
+    {"size": [0.28, 0.2, 0.116], "offset": [-0.15, 0.85, 0.05], "color": "#a02020", "yaw": 45},
+    {"size": [0.28, 0.2, 0.116], "offset": [-0.15, 0.85, 0.05], "color": "#a02020", "yaw": 90},
+    {"size": [0.28, 0.2, 0.116], "offset": [-0.15, 0.85, 0.05], "color": "#a02020", "yaw": 135},
+    {"size": [0.03, 1.1, 0.03], "offset": [-0.5, 0.55, 0.1], "color": "#c8c8c8"},
+    {"size": [0.42, 0.02, 0.42], "offset": [-0.5, 1.12, 0.1], "color": "#d8b040"},
+    {"size": [0.32, 0.45, 0.32], "offset": [0, 0.22, -0.55], "color": "#1a1a1a"}
+  ]
+}

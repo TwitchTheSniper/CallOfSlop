@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pillbox",
+  "description": "The observation post: a periscope, sandbags under the slits, ammunition.",
+  "items": [
+    {"props": ["Bunker Periscope"], "place": "corner"},
+    {"props": ["Bunker Ammo Crates"], "place": "wall"},
+    {"props": ["Sandbag Wall"], "place": "wall", "chance": 0.6}
+  ]
+}

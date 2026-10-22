@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Church Lectern",
+  "description": "A brass eagle lectern holding an open bible.",
+  "collision": "solid",
+  "collider": [{"size": [0.5, 1.3, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.5, 0.08, 0.5], "offset": [0, 0.04, 0], "color": "#a8862e"},
+    {"size": [0.12, 1, 0.05], "offset": [0, 0.58, 0], "color": "#c8a038", "yaw": 0},
+    {"size": [0.12, 1, 0.05], "offset": [0, 0.58, 0], "color": "#c8a038", "yaw": 45},
+    {"size": [0.12, 1, 0.05], "offset": [0, 0.58, 0], "color": "#c8a038", "yaw": 90},
+    {"size": [0.12, 1, 0.05], "offset": [0, 0.58, 0], "color": "#c8a038", "yaw": 135},
+    {"size": [0.3, 0.12, 0.3], "offset": [0, 1.1, 0], "color": "#a8862e"},
+    {"size": [0.6, 0.05, 0.44], "offset": [0, 1.2, 0], "color": "#c8a038", "pitch": 18},
+    {"size": [0.5, 0.04, 0.36], "offset": [0, 1.24, 0.01], "color": "#f0e8d4", "pitch": 18},
+    {"size": [0.02, 0.05, 0.36], "offset": [0, 1.26, 0.01], "color": "#7a1e22", "pitch": 18}
+  ]
+}

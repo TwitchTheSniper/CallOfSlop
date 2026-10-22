@@ -997,17 +997,45 @@ internal sealed class PingPongDelay
 
     public void SetTime(float seconds) => _len = Math.Clamp((int)(seconds * Dsp.Sr), 1, _l.Length);
 
+    /// <summary>Samples the echo dips over on each side of a <see cref="Retime"/> (about 6 ms).</summary>
+    private const int RetimeFade = 256;
+
+    private int _newLen, _fade = -1;
+
+    /// <summary>
+    /// Changes the echo time while it plays (the frenzy's tempo changes): the echoes dip out over a few ms, the time
+    /// switches in the silence, and they come back, so the jump in the delay line never clicks (the dip circulates
+    /// as a dip, not a step).
+    /// </summary>
+    public void Retime(float seconds)
+    {
+        var len = Math.Clamp((int)(seconds * Dsp.Sr), 1, _l.Length);
+        if (len == _len && _fade < 0)
+            return;
+        _newLen = len;
+        if (_fade < 0)
+            _fade = 0;
+        else if (_fade > RetimeFade)
+            _fade = 2 * RetimeFade - _fade; // coming back in: dip out again from the same level
+    }
+
     public void Reset()
     {
         Array.Clear(_l);
         Array.Clear(_r);
         _pos = 0;
         _lpL = _lpR = 0;
+        _fade = -1;
     }
 
     /// <summary>Processes a block: input in, the wet left and right out.</summary>
     public void Render(ReadOnlySpan<float> input, Span<float> left, Span<float> right)
     {
+        if (_fade >= 0)
+        {
+            RenderRetiming(input, left, right);
+            return;
+        }
         var bl = _l;
         var br = _r;
         int pos = _pos, len = _len;
@@ -1030,6 +1058,46 @@ internal sealed class PingPongDelay
             right[i] = dr;
         }
         _pos = pos;
+        _lpL = MathF.Abs(lpL) < 1e-15f ? 0 : lpL;
+        _lpR = MathF.Abs(lpR) < 1e-15f ? 0 : lpR;
+    }
+
+    /// <summary><see cref="Render"/> during a <see cref="Retime"/>: the same, with the dip and the switch in the middle of it.</summary>
+    private void RenderRetiming(ReadOnlySpan<float> input, Span<float> left, Span<float> right)
+    {
+        var bl = _l;
+        var br = _r;
+        int pos = _pos, len = _len, fade = _fade;
+        float lpL = _lpL, lpR = _lpR, fb = Feedback;
+        for (var i = 0; i < input.Length; i++)
+        {
+            if (fade == RetimeFade)
+            {
+                len = _newLen; // in the silence
+                if (pos >= len)
+                    pos = 0;
+            }
+            var w = fade < 0 ? 1f : fade < RetimeFade ? 1f - fade / (float)RetimeFade : (fade - RetimeFade) / (float)RetimeFade;
+            if (fade >= 0 && ++fade > 2 * RetimeFade)
+                fade = -1;
+            var dl = bl[pos] * w;
+            var dr = br[pos] * w;
+            lpL += 0.4f * (dl - lpL);
+            lpR += 0.4f * (dr - lpR);
+            if (MathF.Abs(lpL) < 1e-15f)
+                lpL = 0;
+            if (MathF.Abs(lpR) < 1e-15f)
+                lpR = 0;
+            bl[pos] = input[i] + lpR * fb;
+            br[pos] = lpL * fb;
+            if (++pos >= len)
+                pos = 0;
+            left[i] = dl;
+            right[i] = dr;
+        }
+        _pos = pos;
+        _len = len;
+        _fade = fade;
         _lpL = MathF.Abs(lpL) < 1e-15f ? 0 : lpL;
         _lpR = MathF.Abs(lpR) < 1e-15f ? 0 : lpR;
     }

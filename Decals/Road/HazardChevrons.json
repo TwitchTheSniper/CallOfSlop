@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Hazard Chevrons",
+  "description": "Black chevrons on yellow pointing east, for barriers, bays and ramps.",
+  "author": "Call of Slop",
+  "size": [
+    2.4,
+    0.8
+  ],
+  "rotation": 0,
+  "surfaces": "all",
+  "fadeDistance": 90,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.98,
+        0.92
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.15,
+      "noiseScale": 12,
+      "seed": 471
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.14,
+        0.84
+      ],
+      "to": [
+        0.28,
+        0.5
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.28,
+        0.5
+      ],
+      "to": [
+        0.14,
+        0.16
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.38,
+        0.84
+      ],
+      "to": [
+        0.52,
+        0.5
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.52,
+        0.5
+      ],
+      "to": [
+        0.38,
+        0.16
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.62,
+        0.84
+      ],
+      "to": [
+        0.76,
+        0.5
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.76,
+        0.5
+      ],
+      "to": [
+        0.62,
+        0.16
+      ],
+      "width": 0.09,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ]
+    }
+  ]
+}

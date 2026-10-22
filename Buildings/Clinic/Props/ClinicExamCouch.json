@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Clinic Exam Couch",
+  "description": "A padded blue examination couch with a raised head end and a roll of paper.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "soft", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [1.9, 0.12, 0.65], "offset": [0, 0.72, 0], "color": "#3a6ab0"},
+    {"size": [0.55, 0.1, 0.63], "offset": [-0.75, 0.86, 0], "color": "#3a6ab0", "roll": -20},
+    {"size": [1.9, 0.005, 0.5], "offset": [0.15, 0.785, 0], "color": "#f8f8f4"},
+    {"size": [0.15, 0.15, 0.6], "offset": [0.95, 0.8, 0], "color": "#f8f8f4"},
+    {"size": [1.7, 0.6, 0.55], "offset": [0, 0.35, 0], "color": "#eef0f0"},
+    {"size": [1.9, 0.06, 0.65], "offset": [0, 0.03, 0], "color": "#8a8e94"},
+    {"size": [0.4, 0.2, 0.3], "offset": [0.5, 0.15, 0.45], "color": "#8a8e94"}
+  ]
+}

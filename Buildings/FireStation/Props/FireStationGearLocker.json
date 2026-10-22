@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fire Station Gear Locker",
+  "description": "An open gear locker: helmet on top, a yellow tunic and leggings over boots ready to step into.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.9, 1.9, 0.5], "offset": [0, 0.95, -0.02], "color": "#b0b4b8", "material": "metal"},
+    {"size": [0.86, 1.86, 0.02], "offset": [0, 0.95, -0.26], "color": "#6a6e72"},
+    {"size": [0.36, 0.22, 0.36], "offset": [0, 1.82, 0], "color": "#f0c020"},
+    {"size": [0.6, 0.8, 0.28], "offset": [0, 1.25, 0.05], "color": "#c8b040"},
+    {"size": [0.6, 0.06, 0.29], "offset": [0, 1, 0.05], "color": "#e8e8d0"},
+    {"size": [0.5, 0.5, 0.3], "offset": [0, 0.5, 0.06], "color": "#3a3a30"},
+    {"size": [0.5, 0.25, 0.32], "offset": [0, 0.13, 0.08], "color": "#1a1a1a"}
+  ]
+}

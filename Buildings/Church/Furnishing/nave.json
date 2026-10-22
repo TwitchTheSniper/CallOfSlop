@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "nave",
+  "description": "The nave beyond the pews: candle stands along the walls, a hymn board, flowers.",
+  "items": [
+    {"props": ["Church Hymn Board"], "place": "wall", "prefer": "far"},
+    {"props": ["Church Candle Stand"], "place": "wall", "count": [2, 4]},
+    {"props": ["Flower Pots", "Large Flower Pot"], "place": "corner", "count": [1, 2]},
+    {"props": ["Book Pile", "Bucket"], "place": "floor", "count": [0, 1]}
+  ]
+}
