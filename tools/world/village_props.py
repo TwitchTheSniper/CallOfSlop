@@ -52,8 +52,10 @@ def col(size, offset=None):
     return c
 
 
-def write(name, fname, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None):
+def write(name, fname, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None, concealment=False):
     d = {"format": "call-of-slop-prop/1", "name": name, "category": "Countryside", "description": desc, "collision": collision}
+    if concealment:
+        d["concealment"] = True
     if collision == "solid" and collider is not None:
         d["collider"] = collider
     if scatter is not None:
@@ -396,8 +398,8 @@ for k in range(6):
     bc.append(part((0.05, 0.05, 0.05), (rnd.uniform(-1.0, 1.0), rnd.uniform(0.6, 1.6), rnd.choice((-0.3, 0.3))), "#d83a2a"))   # scarlet flowers
 bc.append(box(-1.25, 0.0, -0.45, 1.25, 0.04, 0.45, "#5a4630"))   # the bed's dug earth
 write("Bean Canes", "BeanCanes.json",
-      "An allotment row of runner beans climbing an A-frame of bamboo canes, 2.5 m long. Looks only (concealment, not cover).",
-      bc, collision="cosmetic", scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 3}, fade=60)
+      "An allotment row of runner beans climbing an A-frame of bamboo canes, 2.5 m long. Looks only, but it hides people from bots (concealment, not cover).",
+      bc, collision="cosmetic", concealment=True, scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 3}, fade=60)
 
 wb = [
     box(-0.32, 0.0, -0.22, -0.12, 0.3, 0.22, "#8a4a36", "brick"),            # brick stand

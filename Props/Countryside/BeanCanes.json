@@ -2,8 +2,9 @@
   "format": "call-of-slop-prop/1",
   "name": "Bean Canes",
   "category": "Countryside",
-  "description": "An allotment row of runner beans climbing an A-frame of bamboo canes, 2.5 m long. Looks only (concealment, not cover).",
+  "description": "An allotment row of runner beans climbing an A-frame of bamboo canes, 2.5 m long. Looks only, but it hides people from bots (concealment, not cover).",
   "collision": "cosmetic",
+  "concealment": true,
   "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 3},
   "fadeDistance": 60,
   "parts": [
