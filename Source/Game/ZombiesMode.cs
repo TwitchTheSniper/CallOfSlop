@@ -1061,7 +1061,7 @@ public sealed partial class Game
             return;
         var now = Brutal.GlfwApi.Glfw.Time;
         ActiveSlot = slot;
-        EquipUntil = now + def.EquipTime;
+        EquipUntil = now + def.EquipTime * FrenzyBuffs.Value(Local, def, FrenzyStat.EquipTime); // the Pistol frenzy buff
         NextFireTime = Math.Max(NextFireTime, EquipUntil);
         Audio.Equip(def);
     }

@@ -1,7 +1,9 @@
 {
   "format": "call-of-slop-frenzy-classes/1",
+  "about": "One entry per weapon class: the frenzy's character when the player's most recent kill was with a weapon of that class. Sections are owned by different features: music (frenzy music), visual (frenzy visuals), sound (gunshot changes), buffs (gameplay buffs, see Source/Game/Frenzy/FrenzyBuffs.cs). Buff effects are multipliers (killHeal: hit points) that apply from minLevel (atMin) growing linearly to frenzy level 6 (atMax), only to weapons of that class, only while the host's Frenzy buffs setting is on.",
   "classes": {
     "Pistol": {
+      "character": "Snappy western / outlaw",
       "music": {
         "style": "Western outlaw",
         "describe": "a whistled outlaw melody, a galloping twangy bass and a whip crack, the whole track in a canyon slap-back echo",
@@ -14,9 +16,18 @@
           { "voice": "whip", "pattern": "............X...............X.x.", "level": 0.35, "from": 2, "reverb": 0.15 },
           { "voice": "whistle", "pattern": "0-------4-------7---6-4-2-4-----4-------7---4-2-0-----------....", "octave": 36, "level": 0.3, "from": 3, "reverb": 0.25 }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Quick draw",
+        "blurb": "Pistols come out faster",
+        "minLevel": 3,
+        "effects": [ { "stat": "equipTime", "atMin": 0.9, "atMax": 0.7 } ]
       }
     },
     "SMG": {
+      "character": "Fast chiptune / breakcore runs",
       "music": {
         "style": "Chiptune breakcore",
         "describe": "square-wave arpeggios racing up the chords over chopped breakbeats, the track a little crunchy",
@@ -30,16 +41,34 @@
           { "voice": "chip", "pattern": "02470247024702479742974297429742", "octave": 24, "level": 0.2, "from": 2 },
           { "voice": "chip", "pattern": "4.4.7.4.2.0.2.4.9.7.4.2.4-----..", "octave": 36, "level": 0.14, "from": 4 }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Run and gun",
+        "blurb": "SMGs lose less accuracy while moving, so firing out of a sprint hits",
+        "minLevel": 3,
+        "effects": [ { "stat": "moveSpread", "atMin": 0.85, "atMax": 0.6 } ]
       }
     },
-    "Assault Rifle": {
+    "AssaultRifle": {
+      "character": "Classic hardbass drive",
       "music": {
         "style": "Classic hardbass",
         "describe": "the hardbass track as it is: pounding kick, bouncing bass, hoovers and chants",
         "pool": "any"
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Steady hands",
+        "blurb": "Assault rifles kick less",
+        "minLevel": 3,
+        "effects": [ { "stat": "recoil", "atMin": 0.94, "atMax": 0.85 } ]
       }
     },
     "DMR": {
+      "character": "Punchy marching drums",
       "music": {
         "style": "Marching drums and brass",
         "describe": "a tight marching snare with rolls and a bass drum on the downbeats, brass section stabs on top",
@@ -51,9 +80,18 @@
           { "voice": "bassdrum", "pattern": "X.......x.......", "level": 0.4, "from": 2 },
           { "voice": "brass", "pattern": "X.....x.....X...X.......x.x.X...", "octave": 24, "level": 0.3, "from": 3, "reverb": 0.2, "chord": [0, 2, 4] }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Snap aim",
+        "blurb": "Marksman rifles aim down sights faster",
+        "minLevel": 3,
+        "effects": [ { "stat": "adsTime", "atMin": 0.92, "atMax": 0.8 } ]
       }
     },
     "Sniper": {
+      "character": "Slow huge drops / cinematic braams",
       "music": {
         "style": "Cinematic braam",
         "describe": "the four-on-the-floor pulled back under a half-time sub boom and a huge reverb snare, with a giant brass braam every two bars",
@@ -65,9 +103,18 @@
           { "voice": "bigsnare", "pattern": "........X.......", "level": 0.45, "from": 2, "reverb": 0.6 },
           { "voice": "braam", "pattern": "X-----------------------........", "octave": 12, "level": 0.45, "from": 3, "reverb": 0.4, "chord": [0, 4, 7] }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Held breath",
+        "blurb": "Sniper rifles hold a steadier, tighter aim through the scope",
+        "minLevel": 3,
+        "effects": [ { "stat": "aimedSpread", "atMin": 0.85, "atMax": 0.65 } ]
       }
     },
     "Shotgun": {
+      "character": "Stomping gabber kicks",
       "music": {
         "style": "Gabber stomp",
         "describe": "a distorted gabber kick stomping through the track, with double hits at the end of every phrase, everything driven hard",
@@ -79,9 +126,18 @@
           { "voice": "gabber", "pattern": "X...X...X...X...X...X...X.x.X.XX", "level": 0.55, "from": 1 },
           { "voice": "breaksnare", "pattern": "....X.......X...", "level": 0.25, "from": 3 }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Choke",
+        "blurb": "Shotguns fire a tighter spread",
+        "minLevel": 3,
+        "effects": [ { "stat": "spread", "atMin": 0.94, "atMax": 0.85 } ]
       }
     },
     "LMG": {
+      "character": "Industrial metal grind",
       "music": {
         "style": "Industrial grind",
         "describe": "palm-muted distorted power-chord chugs, metallic anvil clanks on the off-beats and a double kick at the top",
@@ -94,9 +150,21 @@
           { "voice": "anvil", "pattern": "......X.......X.", "level": 0.3, "from": 2, "reverb": 0.2 },
           { "voice": "breakkick", "pattern": "x.xxx.xxx.xxx.xx", "level": 0.3, "from": 4 }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Belt fed",
+        "blurb": "LMGs reload faster and slow you down less",
+        "minLevel": 3,
+        "effects": [
+          { "stat": "reload", "atMin": 0.94, "atMax": 0.85 },
+          { "stat": "movePenalty", "atMin": 0.85, "atMax": 0.6 }
+        ]
       }
     },
     "Special": {
+      "character": "Weird / glitch",
       "music": {
         "style": "Glitch weird",
         "describe": "the track bit-crushed and stuttering in beat-repeat edits, random square blips squeaking around it",
@@ -107,6 +175,14 @@
         "layers": [
           { "voice": "glitch", "pattern": "z..z.z...zz..z.z", "octave": 36, "level": 0.18, "from": 2 }
         ]
+      },
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Vampire rounds",
+        "blurb": "Kills with a Special weapon give you some health back",
+        "minLevel": 3,
+        "effects": [ { "stat": "killHeal", "atMin": 10, "atMax": 25 } ]
       }
     }
   }

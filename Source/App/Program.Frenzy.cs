@@ -15,6 +15,7 @@ public static unsafe partial class Program
     private static bool _frenzyAlive;
     private static double _frenzyShot = double.NaN;
     private static int _frenzyBannerLevel;
+    private static WeaponClass _frenzyClassSeen = WeaponClass.AssaultRifle;
 
     /// <summary>The HUD banner for a frenzy level (empty below 5).</summary>
     internal static string FrenzyBanner(int level) => level >= FrenzyMeter.MaxLevel ? "MAX FRENZY" : level >= 5 ? "FRENZY" : "";
@@ -47,6 +48,8 @@ public static unsafe partial class Program
             _frenzyHeads = heads;
             _frenzyAlive = alive;
             _frenzyShot = game.LastShotTime;
+            _frenzyClassSeen = me.FrenzyClass;
+            layer.Class = me.FrenzyClass;
         }
         _frenzy.Zombies = zombies;
         if (_frenzyAlive && !alive)
@@ -62,7 +65,12 @@ public static unsafe partial class Program
         for (var i = 0; i < newKills; i++)
             _frenzy.OnKill(now, i < newHeads);
         if (newKills > 0)
-            layer.Class = zombies ? me.WeaponDef.Class : game.LocalKillClass; // the class character: the latest kill's weapon
+            layer.Class = zombies ? me.WeaponDef.Class : game.LocalKillClass; // the class character: the latest kill's weapon (predicted)
+        if (me.FrenzyClass != _frenzyClassSeen)
+        {
+            _frenzyClassSeen = me.FrenzyClass; // the server's Player.FrenzyClass (same rule) wins once it arrives
+            layer.Class = me.FrenzyClass;
+        }
         _frenzyKills = kills;
         _frenzyHeads = heads;
         _frenzy.Update(now);
