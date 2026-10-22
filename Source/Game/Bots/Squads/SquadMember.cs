@@ -115,8 +115,17 @@ public sealed partial class Game
             case SquadOrderKind.Suppress:
                 if (now - b.SuppressLosAt > 0.25)
                 {
+                    // A line to the spot at chest height, or else just over it (fire over the cover they ducked behind).
                     b.SuppressLosAt = now;
-                    b.SuppressLos = Flat(o.Look - p.Position) < 45f && HasLineOfSight(p.Eye, o.Look);
+                    var inRange = Flat(o.Look - p.Position) < 45f;
+                    var over = o.Look + new Vector3(0, 0.5f, 0);
+                    b.SuppressAim = o.Look;
+                    b.SuppressLos = inRange && HasLineOfSight(p.Eye, o.Look);
+                    if (inRange && !b.SuppressLos && HasLineOfSight(p.Eye, over))
+                    {
+                        b.SuppressLos = true;
+                        b.SuppressAim = over;
+                    }
                 }
                 if (b.SuppressLos)
                     s.Stationary = true;
@@ -137,7 +146,7 @@ public sealed partial class Game
         if (o.HasLook && !s.Mantle)
         {
             s.HasLook = true;
-            s.Look = o.Look;
+            s.Look = o.Kind == SquadOrderKind.Suppress && b.SuppressLos ? b.SuppressAim : o.Look;
         }
     }
 
@@ -159,7 +168,7 @@ public sealed partial class Game
         SquadStats.SuppressLosTicks++;
         if (b.ReloadUntil != 0 || b.Ammo <= Math.Max(1, def.Mag / 4) || now < b.NextFire || !DamageEnabled)
             return;
-        var d = o.Look - p.Eye;
+        var d = b.SuppressAim - p.Eye;
         var dist = d.Length();
         if (dist < 1f || (dist > def.RangeM * 2.5f && def.Class != WeaponClass.Sniper))
             return;

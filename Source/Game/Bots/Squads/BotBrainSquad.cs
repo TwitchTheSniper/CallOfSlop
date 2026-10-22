@@ -19,6 +19,7 @@ public sealed partial class BotBrain
     internal uint SquadLifeTick = uint.MaxValue; // the life the squad-side per-life setup was done for
     internal double SuppressLosAt = -100; // when the line to the suppression point was last checked
     internal bool SuppressLos;
+    internal Vector3 SuppressAim; // the point suppressive fire goes at (the spot, or just above it over low cover)
 
     public bool Insane => Skill == BotDifficulty.Insane;
 
