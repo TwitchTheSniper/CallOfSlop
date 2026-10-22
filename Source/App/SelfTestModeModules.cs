@@ -92,11 +92,11 @@ public static partial class SelfTest
         return h;
     }
 
-    // Re-recorded for FFA, TDM, KOTH and CTF with the tactical equipment (bots carry and use tactical items; GameTactical.cs).
+    // Re-recorded for FFA, TDM, KOTH and CTF with the tactical equipment (bots carry and use tactical items; GameTactical.cs), on top of main 8d6dfa4.
     /// <summary>The matches digested by <see cref="ModeMatchDigest"/>: mode, bots, map, seed, seconds and the digest recorded before the refactor (0: not recorded yet).</summary>
     private static readonly (GameMode Mode, int Bots, byte MapId, int Seed, double Seconds, ulong Digest)[] ModeDigests =
     [
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x4915CDC055E35001),
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x68AA4290E4548C41),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0xAB446242C958370B),
         (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x6D520F69EECA8C3F),
         (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x270A335C4A69B399),
