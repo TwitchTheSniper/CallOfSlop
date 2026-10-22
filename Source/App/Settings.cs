@@ -46,6 +46,7 @@ public sealed class Settings
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
     public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
+    public FrenzyGunSoundMode FrenzyGunSound = FrenzyGunSoundMode.Full; // Settings > Audio "Frenzy gun sound": per-class frenzy layers on your gun (Source/Audio/FrenzyGunSound.cs)
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
     public int HeadBob = 100;
@@ -223,6 +224,7 @@ public sealed class Settings
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
                     case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
+                    case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
@@ -288,6 +290,7 @@ public sealed class Settings
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
                     $"frenzy_visuals={FrenzyVisuals}",
+                    $"frenzy_gunsound={FrenzyGunSound}",
                     $"head_bob={HeadBob}",
                     $"name_tags={NameTags}",
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
