@@ -1,0 +1,109 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Pool Ladder",
+ "category": "Truck Stop",
+ "description": "Chrome pool ladder rails (cosmetic): put it at a pool's edge.",
+ "author": "Call of Slop",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.05,
+    1.0,
+    0.05
+   ],
+   "offset": [
+    0,
+    0.5,
+    -0.3
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.6,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.3,
+    1.0,
+    -0.3
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.05,
+    1.0,
+    0.05
+   ],
+   "offset": [
+    0,
+    0.5,
+    0.3
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.6,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.3,
+    1.0,
+    0.3
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.06,
+    0.03,
+    0.6
+   ],
+   "offset": [
+    0,
+    0.1,
+    0
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.06,
+    0.03,
+    0.6
+   ],
+   "offset": [
+    0,
+    0.4,
+    0
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.06,
+    0.03,
+    0.6
+   ],
+   "offset": [
+    0,
+    0.7,
+    0
+   ],
+   "color": "chrome"
+  }
+ ]
+}

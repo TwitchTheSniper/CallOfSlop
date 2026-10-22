@@ -1,0 +1,115 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Tire Changer",
+ "category": "Truck Stop",
+ "description": "A tire changing machine: turntable, column and mount head. Breaks (heavy metal).",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "breakable": {
+  "health": 220,
+  "breakBy": "all",
+  "sound": "metal"
+ },
+ "parts": [
+  {
+   "size": [
+    0.9,
+    0.8,
+    0.8
+   ],
+   "offset": [
+    0,
+    0.4,
+    0
+   ],
+   "color": "#c83a2a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.75,
+    0.08,
+    0.75
+   ],
+   "offset": [
+    0,
+    0.84,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    0,
+    0.9,
+    0
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.16,
+    1.1,
+    0.16
+   ],
+   "offset": [
+    0,
+    1.35,
+    -0.32
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.6,
+    0.1,
+    0.12
+   ],
+   "offset": [
+    0,
+    1.85,
+    -0.1
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.08,
+    0.4,
+    0.08
+   ],
+   "offset": [
+    0,
+    1.62,
+    0.05
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.35,
+    0.05,
+    0.2
+   ],
+   "offset": [
+    0.25,
+    0.03,
+    0.45
+   ],
+   "color": "black"
+  }
+ ]
+}

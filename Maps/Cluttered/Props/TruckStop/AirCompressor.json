@@ -1,0 +1,178 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Air Compressor",
+ "category": "Truck Stop",
+ "description": "A wheeled air compressor: red tank, motor and gauge. Breaks (thin metal).",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "breakable": {
+  "health": 150,
+  "breakBy": "all",
+  "sound": "metal"
+ },
+ "parts": [
+  {
+   "size": [
+    1.3,
+    0.5,
+    0.5
+   ],
+   "offset": [
+    0,
+    0.45,
+    0
+   ],
+   "color": "#c83a2a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.4,
+    0.4
+   ],
+   "offset": [
+    0.1,
+    0.9,
+    0
+   ],
+   "color": "darkgrey",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.06
+   ],
+   "offset": [
+    0.1,
+    0.9,
+    0.23
+   ],
+   "color": "black"
+  },
+  {
+   "size": [
+    0.08,
+    0.08,
+    0.08
+   ],
+   "offset": [
+    0.45,
+    0.78,
+    0.0
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.249,
+    0.249,
+    0.08
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    -0.27
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.249,
+    0.249,
+    0.08
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    -0.27
+   ],
+   "color": "rubber",
+   "rotation": [
+    0,
+    0,
+    45
+   ]
+  },
+  {
+   "size": [
+    0.126,
+    0.126,
+    0.1
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    -0.27
+   ],
+   "color": "steel"
+  },
+  {
+   "size": [
+    0.249,
+    0.249,
+    0.08
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    0.27
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.249,
+    0.249,
+    0.08
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    0.27
+   ],
+   "color": "rubber",
+   "rotation": [
+    0,
+    0,
+    45
+   ]
+  },
+  {
+   "size": [
+    0.126,
+    0.126,
+    0.1
+   ],
+   "offset": [
+    -0.45,
+    0.15,
+    0.27
+   ],
+   "color": "steel"
+  },
+  {
+   "size": [
+    0.12,
+    0.2,
+    0.4
+   ],
+   "offset": [
+    0.55,
+    0.1,
+    0
+   ],
+   "color": "darkgrey"
+  }
+ ]
+}

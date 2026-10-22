@@ -1,0 +1,223 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Car Lift",
+ "category": "Truck Stop",
+ "description": "A two-post car lift, arms down. Unbreakable.",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.4,
+    3.5,
+    0.4
+   ],
+   "offset": [
+    0,
+    1.75,
+    -1.75
+   ]
+  },
+  {
+   "size": [
+    0.4,
+    3.5,
+    0.4
+   ],
+   "offset": [
+    0,
+    1.75,
+    1.75
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.36,
+    3.5,
+    0.36
+   ],
+   "offset": [
+    0,
+    1.75,
+    -1.75
+   ],
+   "color": "#2a5aa0",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.7,
+    0.04,
+    0.7
+   ],
+   "offset": [
+    0,
+    0.02,
+    -1.75
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.18,
+    3.3,
+    0.12
+   ],
+   "offset": [
+    0,
+    1.75,
+    -1.5
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.36,
+    3.5,
+    0.36
+   ],
+   "offset": [
+    0,
+    1.75,
+    1.75
+   ],
+   "color": "#2a5aa0",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.7,
+    0.04,
+    0.7
+   ],
+   "offset": [
+    0,
+    0.02,
+    1.75
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.18,
+    3.3,
+    0.12
+   ],
+   "offset": [
+    0,
+    1.75,
+    1.5
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.25,
+    0.25,
+    3.86
+   ],
+   "offset": [
+    0,
+    3.62,
+    0
+   ],
+   "color": "#2a5aa0",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.25,
+    0.4,
+    0.15
+   ],
+   "offset": [
+    0.25,
+    1.3,
+    -1.95
+   ],
+   "color": "yellow"
+  },
+  {
+   "size": [
+    1.5,
+    0.1,
+    0.16
+   ],
+   "offset": [
+    -0.75,
+    0.14,
+    -1.4
+   ],
+   "color": "darkgrey",
+   "rotation": [
+    0,
+    -18,
+    0
+   ]
+  },
+  {
+   "size": [
+    1.5,
+    0.1,
+    0.16
+   ],
+   "offset": [
+    0.75,
+    0.14,
+    -1.4
+   ],
+   "color": "darkgrey",
+   "rotation": [
+    0,
+    18,
+    0
+   ]
+  },
+  {
+   "size": [
+    1.5,
+    0.1,
+    0.16
+   ],
+   "offset": [
+    -0.75,
+    0.14,
+    1.4
+   ],
+   "color": "darkgrey",
+   "rotation": [
+    0,
+    18,
+    0
+   ]
+  },
+  {
+   "size": [
+    1.5,
+    0.1,
+    0.16
+   ],
+   "offset": [
+    0.75,
+    0.14,
+    1.4
+   ],
+   "color": "darkgrey",
+   "rotation": [
+    0,
+    -18,
+    0
+   ]
+  }
+ ]
+}

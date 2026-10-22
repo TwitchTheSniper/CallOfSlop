@@ -1,0 +1,192 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Housekeeping Cart",
+ "category": "Truck Stop",
+ "description": "A motel housekeeping cart with towels, linen and a trash bag. Breaks.",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "breakable": {
+  "health": 60,
+  "breakBy": "all",
+  "sound": "soft",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.05,
+    0.25
+   ],
+   "colors": [
+    "white",
+    "#d8d4c8",
+    "#3a3a40"
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    0.9,
+    0.5
+   ],
+   "offset": [
+    0,
+    0.55,
+    0
+   ],
+   "color": "#d8d4c8",
+   "material": "none"
+  },
+  {
+   "size": [
+    1.2,
+    0.04,
+    0.52
+   ],
+   "offset": [
+    0,
+    1.02,
+    0
+   ],
+   "color": "darkgrey"
+  },
+  {
+   "size": [
+    0.5,
+    0.3,
+    0.45
+   ],
+   "offset": [
+    -0.3,
+    1.2,
+    0
+   ],
+   "color": "white"
+  },
+  {
+   "size": [
+    0.4,
+    0.25,
+    0.4
+   ],
+   "offset": [
+    0.3,
+    1.17,
+    0
+   ],
+   "color": "#c8d8e8"
+  },
+  {
+   "size": [
+    0.35,
+    0.75,
+    0.45
+   ],
+   "offset": [
+    0.78,
+    0.6,
+    0
+   ],
+   "color": "#3a3a40"
+  },
+  {
+   "size": [
+    0.04,
+    0.04,
+    0.5
+   ],
+   "offset": [
+    -0.62,
+    1.0,
+    0
+   ],
+   "color": "chrome"
+  },
+  {
+   "size": [
+    0.06,
+    0.12,
+    0.06
+   ],
+   "offset": [
+    -0.35,
+    0.95,
+    0.27
+   ],
+   "color": "#40a0e0"
+  },
+  {
+   "size": [
+    0.06,
+    0.16,
+    0.06
+   ],
+   "offset": [
+    -0.2,
+    0.97,
+    0.27
+   ],
+   "color": "#e0e040"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    -0.5,
+    0.05,
+    -0.2
+   ],
+   "color": "black"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    -0.5,
+    0.05,
+    0.2
+   ],
+   "color": "black"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    0.5,
+    0.05,
+    -0.2
+   ],
+   "color": "black"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    0.5,
+    0.05,
+    0.2
+   ],
+   "color": "black"
+  }
+ ]
+}
