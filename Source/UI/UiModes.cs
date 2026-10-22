@@ -234,38 +234,35 @@ public sealed partial class Ui
         if (mode is FreeForAllModule)
             return false;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
-        ImGui.SetNextWindowSize(new float2(MathF.Min(620 * _scale, size.X - 16 * _scale), 0));
+        ImGui.SetNextWindowSize(new float2(MathF.Min(ScoreboardWidth * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
         {
-            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {mode.Name.ToUpperInvariant()}");
-            var (col1, col2) = mode.ScoreboardColumns;
-            if (ImGui.BeginTable("##modescores"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {ScoreboardModel.UpperName(mode)}");
+            var heads = ScoreboardModel.Headers(mode, false); // Player, Level, the mode's two columns, Weapon, Status (no HP)
+            if (ImGui.BeginTable("##modescores"u8, heads.Length, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
             {
-                ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn(col1, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-                ImGui.TableSetupColumn(col2, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-                ImGui.TableSetupColumn("Weapon"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Status"u8, ImGuiTableColumnFlags.WidthFixed, 80 * _scale);
-                ImGui.TableHeadersRow();
-                var groups = mode.TeamBased ? new byte[] { 0, 1 } : new[] { Game.NoTeam };
-                foreach (var team in groups)
+                SetupScoreColumns(heads, false);
+                ScoreboardModel.Rank(game, _scoreRanked);
+                for (var g = 0; g < (mode.TeamBased ? 2 : 1); g++)
                 {
+                    var team = mode.TeamBased ? (byte)g : Game.NoTeam;
                     if (team < 2)
                     {
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
-                        ImGuiSafe.TextColored(TeamRgba(team), $"{GameModes.TeamNames[team].ToUpperInvariant()} TEAM   {game.TeamScore[team]}");
+                        ImGuiSafe.TextColored(TeamRgba(team), $"{ScoreboardModel.TeamUpper[team]} TEAM   {game.TeamScore[team]}");
                     }
-                    var members = game.Players.Values.Where(p => !mode.TeamBased || p.Team == team)
-                        .OrderByDescending(mode.RankScore).ThenByDescending(p => p.Kills).ThenBy(p => p.Deaths);
-                    foreach (var p in members)
+                    foreach (var p in _scoreRanked)
                     {
+                        if (mode.TeamBased && p.Team != team)
+                            continue;
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
                         var tag = mode.ScoreboardTag(game, p);
-                        var carrier = (tag.Length > 0 ? " " + tag : "")
-                                      + (mode.TeamBased && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
-                        ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier);
+                        var picked = mode.TeamBased && p.Bot == null && p.TeamChoice < 2; // * picked their team (UiTeams.cs)
+                        ImGuiSafe.TextColored(Rgba(p.Color), $"{game.NameOf(p.Id)}{(p.Id == game.LocalId ? " (you)" : "")}{(tag.Length > 0 ? " " : "")}{tag}{(picked ? " *" : "")}");
+                        ImGui.TableNextColumn();
+                        DrawLevelCell(game, p);
                         var (cell1, cell2) = mode.ScoreboardCells(game, p);
                         ImGui.TableNextColumn();
                         ImGui.Text(cell1);
@@ -274,7 +271,7 @@ public sealed partial class Ui
                         ImGui.TableNextColumn();
                         ImGui.Text(p.WeaponDef.Name);
                         ImGui.TableNextColumn();
-                        ImGuiSafe.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health} HP" : "dead");
+                        ImGuiSafe.TextColored(p.Alive ? Green : Red, ScoreboardModel.Status(p, false));
                     }
                 }
                 ImGui.EndTable();
