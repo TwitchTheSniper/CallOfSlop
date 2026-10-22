@@ -85,6 +85,7 @@ public sealed class Settings
     public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
     public bool Advertise; // list my hosted game on the public server list
     public bool FrenzyBuffs = true; // host setting: per-class gameplay buffs during a kill frenzy (Source/Game/Frenzy/FrenzyBuffs.cs)
+    public bool Destruction = true; // host setting: destructible buildings on maps that have them (Source/Game/GameDestruction.cs)
     public string ServerName = ""; // empty: "<name>'s game"
     public string MasterServer = ""; // host[:port] of a master server for the public list (empty: LAN only)
 
@@ -220,6 +221,7 @@ public sealed class Settings
                     case "map_pack" when v.Length > 0: s.MapPack = v; break; // kept even if the pack is missing now (it may come back)
                     case "advertise": s.Advertise = v == "1"; break;
                     case "frenzy_buffs": s.FrenzyBuffs = v == "1"; break;
+                    case "destruction": s.Destruction = v != "0"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
                     case "master": s.MasterServer = CleanAddress(v); break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
@@ -302,6 +304,7 @@ public sealed class Settings
                     $"map_pack={MapPack}",
                     $"advertise={(Advertise ? 1 : 0)}",
                     $"frenzy_buffs={(FrenzyBuffs ? 1 : 0)}",
+                    $"destruction={(Destruction ? 1 : 0)}",
                     $"server_name={ServerName}",
                     $"master={MasterServer}",
                     $"mode={Mode}",
