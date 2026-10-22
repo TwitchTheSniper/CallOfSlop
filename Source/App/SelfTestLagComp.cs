@@ -21,7 +21,7 @@ public static partial class SelfTest
             var earlier = LagCompDuel(targetJoinsFirst: true);
             var note = $"bot v strafing target, 12 m, 3 s: target joined after the bot {later.Hits}/{later.Shots} hits, before it {earlier.Hits}/{earlier.Shots}";
             Line(note);
-            Line("::notice title=Bot lag compensation (results)::" + note);
+            Line("::warning title=Bot lag compensation (results)::" + note);
             if (later.Shots < 5 || earlier.Shots < 5)
                 Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots)");
             else
