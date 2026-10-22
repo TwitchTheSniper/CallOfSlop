@@ -201,6 +201,17 @@ public static partial class SelfTest
         for (var i = 0; i < def.Length; i++)
             if (Vector3.Distance(back[i].Color, def[i].Color) > 0.01f || back[i].MuzzleSparks != def[i].MuzzleSparks || MathF.Abs(back[i].TrailLife - def[i].TrailLife) > 1e-4f)
                 Fail($"frenzy visuals: {def[i].Class}'s look doesn't survive a write and read of its visual section");
+        // The shipped Weapons/Frenzy/classes.json: its "visual" sections are clean and match the built-in looks.
+        if (File.Exists(FrenzyLooks.DataFile))
+        {
+            var (shipped, shippedNotes) = FrenzyLooks.Parse(File.ReadAllText(FrenzyLooks.DataFile));
+            if (shippedNotes.Count > 0)
+                Fail($"frenzy visuals: Weapons/Frenzy/classes.json visual notes: {string.Join("; ", shippedNotes)}");
+            for (var i = 0; i < def.Length; i++)
+                if (Vector3.Distance(shipped[i].Color, def[i].Color) > 0.01f || Vector3.Distance(shipped[i].Accent, def[i].Accent) > 0.01f
+                    || shipped[i].ImpactSparks != def[i].ImpactSparks || MathF.Abs(shipped[i].TrailLife - def[i].TrailLife) > 1e-4f || shipped[i].Rainbow != def[i].Rainbow)
+                    Fail($"frenzy visuals: classes.json's {def[i].Class} visual section differs from the built-in look");
+        }
         FrenzyFxLine($"classes.json: overrides, clamps and both layouts read; {notes.Count} notes; data file {(File.Exists(FrenzyLooks.DataFile) ? "present" : "absent (built-in looks)")}");
     }
 
@@ -275,6 +286,24 @@ public static partial class SelfTest
             var n = FrenzyFx.BuildWorld(game, 1.0, buf) + FrenzyFx.BuildViewModel(Weapons.DefaultPrimary, Matrix4x4.Identity, 1.0, buf);
             if (col != baseCol || w != 0.02f || FrenzyParticles.Count != 0 || n != 0)
                 Fail($"frenzy visuals: level {lv} with {m} still changed the tracer ({col}, {w}) or drew {n} streaks / {FrenzyParticles.Count} particles");
+        }
+
+        // Other players' frenzy comes from the server-replicated Player.FrenzyLevel / FrenzyClass (bots included).
+        FrenzyFx.Override = null;
+        FrenzyFx.Mode = FrenzyVisualMode.Full;
+        if (players.FirstOrDefault(p => p.Id != me.Id) is { } other)
+        {
+            var (oldLv, oldCls) = (other.FrenzyLevel, other.FrenzyClass);
+            other.FrenzyLevel = 5;
+            other.FrenzyClass = WeaponClass.Sniper;
+            var seen = (FrenzyFx.LevelOf(game, other), FrenzyFx.ClassOf(game, other));
+            other.FrenzyLevel = 0;
+            var calm = FrenzyFx.LevelOf(game, other);
+            (other.FrenzyLevel, other.FrenzyClass) = (oldLv, oldCls);
+            if (seen != (5, WeaponClass.Sniper) || calm != 0)
+                Fail($"frenzy visuals: another player at replicated level 5 Sniper shows as {seen}, at level 0 as {calm}");
+            else
+                FrenzyFxLine("others: replicated Player.FrenzyLevel / FrenzyClass drive their look (level 5 Sniper read back)");
         }
 
         // Full vs Subtle particle counts for the same spree.

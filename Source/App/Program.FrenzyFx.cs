@@ -30,7 +30,7 @@ public static unsafe partial class Program
             return;
         }
         FrenzyFx.LocalLevel = _frenzy.Level;
-        // The class: the weapon of your most recent kill once the server replicates it (frenzy-buffs); until then the gun in hand.
+        // The class: the weapon of your most recent kill (server-replicated Player.FrenzyClass) while in frenzy, else the gun in hand.
         FrenzyFx.LocalClass = FrenzyFx.LocalClassOf(game.Local, game.Active.Def.Class);
         if (_frenzyFxGame != game)
         {

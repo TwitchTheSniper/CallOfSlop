@@ -90,11 +90,11 @@ public static class FrenzyFx
         return ReplicatedClass(p);
     }
 
-    // The server-replicated frenzy of other players (agent frenzy-buffs: Player.FrenzyLevel / FrenzyClass). Until that
-    // lands these are stubs: others show no frenzy, and the class falls back to the weapon in hand.
-    private static int ReplicatedLevel(Player p) => 0;
+    // The server-replicated frenzy of other players (Source/Game/Frenzy/FrenzyServer.cs: Player.FrenzyLevel / FrenzyClass,
+    // snapshot protocol 26). Bots carry it too, so a bot on a spree glows like a player.
+    private static int ReplicatedLevel(Player p) => p.FrenzyLevel;
 
-    private static WeaponClass ReplicatedClass(Player p) => p.WeaponDef.Class;
+    private static WeaponClass ReplicatedClass(Player p) => Enum.IsDefined(p.FrenzyClass) ? p.FrenzyClass : WeaponClass.Special;
 
     /// <summary>Your frenzy class: the server's (the weapon of your most recent kill) while you're in frenzy, else the gun in hand.</summary>
     public static WeaponClass LocalClassOf(Player me, WeaponClass held) => ReplicatedLevel(me) > 0 ? ReplicatedClass(me) : held;
