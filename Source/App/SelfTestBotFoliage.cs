@@ -61,6 +61,7 @@ public static partial class SelfTest
             BotFoliageMaths(lab);
             BotFoliageCosts();
             BotFoliageScenarios(lab);
+            BotFoliageSquad(lab);
             BotFoliageCpu();
         }
         finally
@@ -284,7 +285,7 @@ public static partial class SelfTest
         var nearB = aims.Count == 0 ? 999 : aims.Min(a => FlatOf(a - spotB).Length());
         var heights = aims.Count == 0 ? "-" : $"{aims.Min(a => a.Y):0.00}-{aims.Max(a => a.Y):0.00}";
         var stopAfter = lastInfo + Game.BlindMemory + 0.05;
-        BfNote($"blind fire: {aims.Count} shots in {Game.BlindMemory + 1.5:0.0} s ({b.BlindShots - shotsBefore} incl. before), aim points up to {nearA:0.0} m from the last known spot "
+        BfNote($"blind fire with {bot.WeaponDef.Name} ({bot.WeaponDef.Mag} rounds): {aims.Count} shots in {Game.BlindMemory + 1.5:0.0} s ({b.BlindShots - shotsBefore} incl. before), aim points up to {nearA:0.0} m from the last known spot "
                + $"(max error {maxErr:0.0} m), nearest {nearB:0.0} m from where the host really is, heights {heights} m; bursts {game.BotStats.BlindBursts}");
         if (aims.Count == 0)
             Fail("a bot didn't fire blind into the grass where it last saw someone");
@@ -331,6 +332,87 @@ public static partial class SelfTest
         BfNote($"wall: target through it {targeted}, blind shots at a spot behind it {b.BlindShots - wallShots}");
         if (targeted || b.BlindShots != wallShots)
             Fail("a bot saw or fired blind through a wall");
+        game.HeldButtons = Buttons.None;
+    }
+
+    // ---- 3b. Insane squads: a squadmate's sighting gives the others an estimate, still not aimed fire ---------------------
+
+    private static void BotFoliageSquad(Map lab)
+    {
+        World.SetMap(lab);
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id) { MapVoteEnabled = false };
+        game.Mode = GameMode.TeamDeathmatch;
+        World.SetMap(lab);
+        NavGraph.Pump(double.MaxValue);
+        game.AddBot(BotDifficulty.Insane, BotPersonality.Tactician, quiet: true);
+        game.AddBot(BotDifficulty.Insane, BotPersonality.Flanker, quiet: true);
+        game.AddBot(BotDifficulty.Normal, BotPersonality.Anchor, quiet: true);
+        var bots = game.Players.Values.Where(p => p.Bot != null).OrderBy(p => p.Id).ToList();
+        var host = game.Players[0];
+        foreach (var p in bots.Take(2))
+        {
+            p.Team = 0;
+            game.SelfTestSpawn(p);
+        }
+        bots[2].Team = 1; // kept dead, so the teams count as even
+        bots[2].Alive = false;
+        bots[2].RespawnAt = 1e9;
+        host.Team = 1;
+        var now = 0.0;
+        // The spotter sees the host from beside the hedge's end; the other looks at the hedge from the far side.
+        var hostAt = new Vector3(0, 0, 8.4f);
+        Vector3 spotterAt = new(11, 0, 8.4f), blindAt = new(0, 0, 26);
+        void Place()
+        {
+            game.SelfTestPlace(host, hostAt, MathF.PI);
+            host.Sim.Stance = Stance.Crouch;
+            host.ImmuneUntil = 1e9;
+            game.SelfTestPlace(bots[0], spotterAt, -MathF.PI / 2);
+            game.SelfTestPlace(bots[1], blindAt, 0);
+            foreach (var p in bots.Take(2))
+            {
+                p.Bot!.SelfTestHold = true;
+                p.GrenadesLeft = 0;
+                p.EquipmentLeft = 0;
+            }
+        }
+        Place();
+        Tick(game, ref now, Game.CountdownSeconds + 1.0);
+        Place();
+        game.HeldButtons = Buttons.Crouch;
+        var squad = game.Squads.FirstOrDefault(q => q.Team == 0);
+        if (squad == null || squad.Members.Count != 2)
+        {
+            BfNote($"squad: the two Insane bots formed no squad on the lab ({game.Squads.Count} squads; skipped)");
+            game.HeldButtons = Buttons.None;
+            return;
+        }
+        var spotter = bots[0];
+        var blind = bots[1].Bot!;
+        var aims = new List<Vector3>();
+        var blindSaw = false;
+        var spotterSaw = false;
+        for (var t = 0.0; t < 4.0; t += World.TickDt)
+        {
+            var shots = blind.BlindShots;
+            now += World.TickDt;
+            game.Update(now, World.TickDt);
+            host.Sim.Position = hostAt;
+            host.Health = World.MaxHealth;
+            foreach (var p in bots.Take(2))
+                p.Health = World.MaxHealth;
+            blindSaw |= game.SelfTestBotSees(bots[1], host) == BotSightLine.Clear;
+            spotterSaw |= now - spotter.Bot!.LastSeenTime < 0.05;
+            if (blind.BlindShots > shots)
+                aims.Add(blind.LastBlindAim);
+        }
+        var maxOff = aims.Count == 0 ? 0 : aims.Max(a => FlatOf(a - hostAt).Length());
+        BfNote($"squad ({string.Join(", ", squad.Members.Select(m => m.Bot!.Role))}): the spotter saw the host {spotterSaw}, the other never saw it {!blindSaw}; "
+               + $"it fired {blind.BlindShots} blind shots on the call ({aims.Count} from bursts, up to {maxOff:0.0} m off the real spot), mode {blind.Mode}/{blind.Order.Kind}");
+        if (blindSaw)
+            Fail("squad test: the hedge didn't hide the host from the second squad member");
+        else if (spotterSaw && blind.BlindShots == 0)
+            Fail("an Insane squadmate didn't fire blind into the hedge at the spot its squadmate called");
         game.HeldButtons = Buttons.None;
     }
 

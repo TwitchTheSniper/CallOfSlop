@@ -198,7 +198,7 @@ public sealed partial class Game
             BotReload(p, def, now);
             b.CoverReload = visible && _rng.NextDouble() < b.Profile.CoverUse;
         }
-        else if (!visible && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0)
+        else if (!visible && !b.BlindOn && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0) // not mid blind fire (BotFoliage.cs)
         {
             BotReload(p, def, now);
         }
