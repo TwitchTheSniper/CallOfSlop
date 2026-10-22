@@ -95,13 +95,20 @@ public sealed partial class Map
         _decalBake = null;
     }
 
-    private static void CheckDecalNames(string[] names)
+    /// <summary>
+    /// The decals this map can name: its pack's own (Maps/&lt;Pack&gt;/Decals) first, then the global Decals folder
+    /// ("global:Name" skips the pack). Decals stay cosmetic: pack decals are not part of the fingerprint.
+    /// </summary>
+    public DecalScope DecalScope => CallOfSlop.Decals.ForPack(PackDir);
+
+    private void CheckDecalNames(string[] names)
     {
         if (names.Length == 0)
             throw new InvalidOperationException("\"decals\" needs at least one decal name");
+        var scope = DecalScope;
         foreach (var n in names)
-            if (CallOfSlop.Decals.Find(n) == null)
-                throw new InvalidOperationException($"unknown decal \"{n}\": {CallOfSlop.Decals.Suggest(n)}");
+            if (scope.Find(n) == null)
+                throw new InvalidOperationException($"unknown decal \"{n}\": {scope.Suggest(n)}");
     }
 
     private static void CheckDecalNumbers(float minSize, float maxSize, float reach, int count)

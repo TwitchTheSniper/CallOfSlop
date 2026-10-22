@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// starting with "_", like the _Template, are skipped), loaded on first use. Names are unique (case-insensitive) and
 /// are how map ops refer to decals. A decal's <see cref="DecalDef.Index"/> is its layer in the decal atlas.
 /// </summary>
-public static class Decals
+public static partial class Decals
 {
     private static readonly object LoadLock = new();
     private static DecalDef[]? _all;
@@ -86,6 +86,7 @@ public static class Decals
             LoadErrors.Clear();
             _all = LoadAll(Folder, LoadErrors);
             _impacts = null;
+            ClearPacks();
             Generation++;
         }
     }
@@ -94,7 +95,8 @@ public static class Decals
     /// Loads every *.json under <paramref name="folder"/> (the first subfolder is the category; folders starting with "_" or
     /// "." are skipped). Bad files and duplicate names are skipped and described in <paramref name="errors"/>.
     /// </summary>
-    public static DecalDef[] LoadAll(string folder, List<string> errors)
+    /// <param name="cap">The most decals kept (<see cref="MaxGlobal"/> for the Decals folder, <see cref="MaxPerPack"/> for a pack).</param>
+    public static DecalDef[] LoadAll(string folder, List<string> errors, int cap = MaxGlobal)
     {
         var list = new List<DecalDef>();
         if (Directory.Exists(folder))
@@ -120,10 +122,10 @@ public static class Decals
                 }
             }
         }
-        if (list.Count > DecalAtlas.MaxLayers)
+        if (list.Count > cap)
         {
-            errors.Add($"{list.Count} decals is more than the atlas holds ({DecalAtlas.MaxLayers}); the rest are skipped");
-            list = list.Take(DecalAtlas.MaxLayers).ToList();
+            errors.Add($"{list.Count} decals is more than a library holds ({cap}); the rest are skipped");
+            list = list.Take(cap).ToList();
         }
         var sorted = list.OrderBy(d => d.Category, StringComparer.OrdinalIgnoreCase).ThenBy(d => d.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         for (var i = 0; i < sorted.Length; i++)
