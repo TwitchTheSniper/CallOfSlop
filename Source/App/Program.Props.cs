@@ -23,6 +23,11 @@ public static unsafe partial class Program
         ("yard", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), false),
         ("yard_break", "Prop Yard", new Vector3(-37f, 1.7f, 1f), new Vector3(8f, 1f, -1f), true),
         ("yard_overview", "Prop Yard", new Vector3(-30f, 24f, 34f), new Vector3(0f, 0f, 0f), false),
+        // The Dev pack's Building Yard (Program.Buildings.cs): every starter building from above, a furnished living room at eye
+        // height, then the corner shop with its doors opened and windows shot out (glass in the air): smoke_props_buildings_*.bmp.
+        ("buildings_overview", "Building Yard", new Vector3(-62f, 42f, 58f), new Vector3(2f, 0f, -4f), false),
+        ("buildings_room", "Building Yard", new Vector3(44.0f, 1.7f, -7.6f), new Vector3(41.0f, 0.8f, -10.5f), false),
+        ("buildings_interact", "Building Yard", new Vector3(31f, 1.7f, -0.5f), new Vector3(31f, 1.4f, -7.5f), true),
         ("cluttered_small", "Carousel", new Vector3(-27f, 13f, 25f), new Vector3(0f, 1f, -3f), false), // Cluttered pack: smoke_cluttered_small.bmp
         // The Cluttered pack's large map (thousands of props and plants): overview from the south-west, then the market at eye height.
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),
