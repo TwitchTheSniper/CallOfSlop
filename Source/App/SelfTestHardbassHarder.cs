@@ -56,33 +56,41 @@ public static partial class SelfTest
         if (harderKick < classicKick * 1.05)
             Fail($"the harder kicks ({harderKick:0.000}) aren't heavier than the classic hardbass kicks ({classicKick:0.000})");
 
-        // CPU: each harder track against the heaviest older track, interleaved medians on this machine.
+        // CPU: each harder track's drop against the most expensive drop of the older tracks, all timed the same way on
+        // this machine (median of 5 runs of 2 s each), so a slow or busy runner shifts both sides alike.
         var older = all.Where(t => t.Hardbass?.Harder == null).ToArray();
-        var heaviest = older.MaxBy(t => stats[Array.IndexOf(all, t)].MsPerSecond)!;
+        double DropMedian(MusicTrack t)
+        {
+            var runs = new double[5];
+            for (var i = 0; i < runs.Length; i++)
+                runs[i] = TimeMsPerSecond(r, t, 2);
+            Array.Sort(runs);
+            return runs[2];
+        }
+        var refCost = 0.0;
+        var refName = "";
+        foreach (var t in older)
+        {
+            var c = DropMedian(t);
+            if (c > refCost)
+                (refCost, refName) = (c, t.Name);
+        }
+        var heaviestWhole = older.Max(t => stats[Array.IndexOf(all, t)].MsPerSecond);
         double worstRatio = 0;
         var costLine = new System.Text.StringBuilder();
         foreach (var t in harder)
         {
-            var refRuns = new double[5];
-            var runs = new double[5];
-            for (var i = 0; i < runs.Length; i++)
-            {
-                refRuns[i] = TimeMsPerSecond(r, heaviest, 2);
-                runs[i] = TimeMsPerSecond(r, t, 2);
-            }
-            Array.Sort(refRuns);
-            Array.Sort(runs);
-            var ratio = runs[2] / Math.Max(1e-6, refRuns[2]);
+            var c = DropMedian(t);
+            var ratio = c / Math.Max(1e-6, refCost);
             worstRatio = Math.Max(worstRatio, ratio);
-            costLine.Append($" {t.Name} {stats[Array.IndexOf(all, t)].MsPerSecond:0.0} ms/s whole track, drop median {runs[2]:0.0} = {ratio:0.00}x;");
+            var whole = stats[Array.IndexOf(all, t)].MsPerSecond;
+            costLine.Append($" {t.Name} drop {c:0.0} ms/s = {ratio:0.00}x, whole track {whole:0.0} ms/s = {whole / heaviestWhole:0.00}x;");
             if (ratio > HarderCpuRatioMax)
-                Fail($"{t.Name}: costs {ratio:0.00}x the heaviest older track ({heaviest.Name}; drop medians {runs[2]:0.0} vs {refRuns[2]:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
+                Fail($"{t.Name}: its drop costs {ratio:0.00}x the most expensive older drop ({refName}; medians {c:0.0} vs {refCost:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
         }
-        notes.Add($"harder: CPU against {heaviest.Name} ({stats[Array.IndexOf(all, heaviest)].MsPerSecond:0.0} ms/s whole track):{costLine} worst {worstRatio:0.00}x");
+        notes.Add($"harder: CPU against the most expensive older drop ({refName}, {refCost:0.0} ms/s) and the heaviest older whole track ({heaviestWhole:0.0} ms/s):{costLine} worst {worstRatio:0.00}x");
 
         CheckHarderVoices(notes);
-        var names = harder.Select(t => t.Name).ToArray();
-        Fail("DIAG " + string.Join(" | ", notes.Where(n => names.Any(n.StartsWith)) .Concat(notes.Where(n => n.StartsWith("harder") || n.StartsWith("average") || n.StartsWith("siren") || n.StartsWith("pitch") || n.StartsWith("crowd")))));
     }
 
     /// <summary>ms of rendering per second of audio for a few seconds from a track's first drop.</summary>

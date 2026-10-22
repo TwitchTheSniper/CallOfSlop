@@ -16,7 +16,7 @@ public sealed record HardbassHarder(
     float SirenSemis = 5f, // how far the siren wails up and down
     float Riser = 0.28f, // pitch riser level through the builds
     float Crowd = 0.6f, // the octave-down crowd under every chant
-    float Master = 1.5f); // drive into the clipper and limiter (denser mixes need a little less to stay as loud as the rest)
+    float Master = 1.3f); // drive into the clipper and limiter (denser mixes need a little less to stay as loud as the rest)
 
 /// <summary>Hardbass that goes even harder: 163-175 BPM and one 215 BPM monster.</summary>
 public static class MusicTracksHarder
@@ -29,7 +29,7 @@ public static class MusicTracksHarder
             [0, 1, 0, 6, 0, 1, 5, 6], 0xBAB0_0011, "I4 B8 D16 K8 B8 D16 K4 B8 D16 O4",
             new(HardbassLead.Supersaw, HardbassLead.Hoover, "..xo..xo..xo..xf", "..xo..xo..xo.oxo",
                 "h...h...h...h...h.h.h.h.hhh.h...", ReverseBassUse.Alternate, KickClip: 2.4f, Bounce: 6f,
-                Harder: new("x...x...x...x.xx"))),
+                Harder: new("x...x...x...x.xx", Master: 1.2f))),
         new("Kettlebell Killstreak", MusicSet.Menu, MusicStyle.Hardbass, 175, 39, "D# phrygian dominant", [0, 1, 4, 5, 7, 8, 10],
             [0, 1, 0, 1, 6, 6, 5, 1], 0x4E77_0012, "I4 B8 D16 K8 B8 D16 K8 B8 D16 O4",
             new(HardbassLead.Hoover, HardbassLead.Screech, "..xx..xx..xx..xx", "..xo..xo..xf..xo",
