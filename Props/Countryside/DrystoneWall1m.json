@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Drystone Wall 1m",
+  "category": "Countryside",
+  "description": "A 1 m length of dry-stone wall (to finish a run or fill a gap), 1.1 m tall. Unbreakable.",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 1.1, 0.56]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 1, "scale": [1.0, 1.0]},
+  "parts": [
+    {"size": [1.0, 0.36, 0.58], "offset": [0.0, 0.18, 0.0], "color": "#b89c66", "material": "brick"},
+    {"size": [1.0, 0.32, 0.5], "offset": [0.0, 0.52, 0.0], "color": "#c2a670", "material": "brick"},
+    {"size": [1.0, 0.22, 0.42], "offset": [0.0, 0.79, 0.0], "color": "#a98d5a", "material": "brick"},
+    {"size": [1.0, 0.03, 0.4], "offset": [0.0, 0.915, 0.0], "color": "#8a744c"},
+    {"size": [0.2866, 0.0871, 0.04], "offset": [-0.0193, 0.79, -0.222], "color": "#a98d5a"},
+    {"size": [0.2905, 0.1101, 0.04], "offset": [-0.0133, 0.58, -0.262], "color": "#9f8454"},
+    {"size": [0.2388, 0.097, 0.04], "offset": [0.0944, 0.58, -0.262], "color": "#b89c66"},
+    {"size": [0.1433, 0.1723, 0.36], "offset": [-0.4167, 1.0161, 0.0], "rotation": [0, 0, -5.1047], "color": "#c2a670"},
+    {"size": [0.1433, 0.1356, 0.36], "offset": [-0.25, 0.9978, 0.0], "rotation": [0, 0, 2.1772], "color": "#a98d5a"},
+    {"size": [0.1433, 0.1789, 0.36], "offset": [-0.0833, 1.0195, 0.0], "rotation": [0, 0, -5.7767], "color": "#b89c66"},
+    {"size": [0.1433, 0.1168, 0.36], "offset": [0.0833, 0.9884, 0.0], "rotation": [0, 0, 0.1071], "color": "#9f8454"},
+    {"size": [0.1433, 0.1577, 0.36], "offset": [0.25, 1.0089, 0.0], "rotation": [0, 0, 5.3606], "color": "#b4975f"},
+    {"size": [0.1433, 0.1184, 0.36], "offset": [0.4167, 0.9892, 0.0], "rotation": [0, 0, 5.6559], "color": "#b4975f"}
+  ]
+}

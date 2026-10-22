@@ -17,7 +17,8 @@
   "door": "$door",
   "palettes": {
     "grey stone": {"wall": "#8a8780", "interior": "#e4ddcc", "floor": "#77726a", "ceiling": "#5a4030", "trim": "#4a463f", "door": "#5a3a20", "roof": "#3c4048"},
-    "red sandstone": {"wall": "#9a5e4a", "interior": "#eadfca", "floor": "#806a5a", "ceiling": "#4e3626", "trim": "#4e3a30", "door": "#3a4a2a", "roof": "#40393a"}
+    "red sandstone": {"wall": "#9a5e4a", "interior": "#eadfca", "floor": "#806a5a", "ceiling": "#4e3626", "trim": "#4e3a30", "door": "#3a4a2a", "roof": "#40393a"},
+    "honey limestone": {"wall": "#b49a68", "interior": "#ece2cc", "floor": "#7a705e", "ceiling": "#5a4030", "trim": "#7a6a4a", "door": "#4a3420", "roof": "#3e4248"}
   },
   "floors": [
     {

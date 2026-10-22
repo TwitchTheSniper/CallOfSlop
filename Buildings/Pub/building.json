@@ -36,6 +36,17 @@
       "roof": "#2e2e32",
       "tile": "#5a1a1a",
       "flat": "#e0e4dc"
+    },
+    "cotswold stone": {
+      "wall": "#b89c66",
+      "interior": "#5a3a24",
+      "floor": "#5a2a22",
+      "ceiling": "#e8dcc0",
+      "trim": "#e8e0cc",
+      "door": "#2a3a2a",
+      "roof": "#3c4046",
+      "tile": "#2a3a2a",
+      "flat": "#e6dcc4"
     }
   },
   "floors": [

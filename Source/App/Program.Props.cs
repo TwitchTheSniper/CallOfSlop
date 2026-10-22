@@ -67,6 +67,9 @@ public static unsafe partial class Program
         ("world_finland", "Vuorikoski", new Vector3(-118f, 48f, 60f), new Vector3(0f, 6f, -8f), false),
         ("world_finland_forest", "Vuorikoski", new Vector3(-66f, 5.3f, -46f), new Vector3(-40f, 2.6f, -30f), false),
         ("world_finland_tunnel", "Vuorikoski", new Vector3(-24f, -6.3f, -4f), new Vector3(0f, -6.5f, -4f), false),
+        // World Tour, 07 Cotswold Village: the hillside from above the meadow in the south-west, then up the green from the High Street at eye height.
+        ("world_village", "Cotswold Village", new Vector3(-48f, 30f, 46f), new Vector3(2f, 2f, -6f), false),
+        ("world_village_street", "Cotswold Village", new Vector3(13f, 3.5f, 13.6f), new Vector3(-4f, 5f, -14f), false),
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
