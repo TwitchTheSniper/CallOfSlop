@@ -129,7 +129,7 @@ BUILDINGS = [
     ("Church", (-2.0, -25.0), 270, 3, {"palette": "honey limestone"}),
     ("Stone Cottage", (-26.0, -1.0), 90, 5, {"palette": "honey stone"}),
     ("Row Houses", (29.0, 0.0), 270, None, {"palette": "yellow stone"}),
-    ("Village Shop", (-16.0, 21.0), 180, 7, {"palette": "honey stone"}),
+    ("Post Office Stores", (-16.0, 21.0), 180, 7, {"palette": "honey stone"}),
     ("Pub", (10.0, 21.0), 180, 8, {"palette": "cotswold stone"}),
     ("Thatched Cottage", (28.0, 21.0), 180, 9, {"palette": "honey stone"}),
 ]
@@ -603,7 +603,7 @@ for x in range(-34, 12, 4):
         decal("Grime Streaks", x + 2.2, -14.9, y=1.0, onto="wall-z", size=1.6)
 for zf, onto in ((8.4, "wall+z"), (15.6, "wall-z")):
     decal("Moss Patch", -31.0, zf - (0.5 if onto == "wall+z" else -0.5), y=0.7, onto=onto, size=1.4, anchor="world") if False else None
-shop_y = PADS[[b[0] for b in BUILDINGS].index("Village Shop") - 1][4]
+shop_y = PADS[[b[0] for b in BUILDINGS].index("Post Office Stores") - 1][4]
 decal("Village Stores Sign Left", -19.45, 15.0, y=shop_y + 2.73, onto="wall+z", anchor="world", reach=1.5)
 decal("Village Stores Sign Right", -16.8, 15.0, y=shop_y + 2.73, onto="wall+z", anchor="world", reach=1.5)
 decal("Post Office Sign", -11.5, 15.0, y=shop_y + 2.73, onto="wall+z", anchor="world", reach=1.5, size=0.88)

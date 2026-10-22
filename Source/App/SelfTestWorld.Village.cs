@@ -54,7 +54,7 @@ public static partial class SelfTest
 
         // Buildings.
         var names = m.PlacedBuildings.Select(b => b.Def.Name).ToList();
-        foreach (var want in new[] { "Church", "Pub", "Village Shop", "Stone Cottage", "Thatched Cottage", "Row Houses" })
+        foreach (var want in new[] { "Church", "Pub", "Post Office Stores", "Stone Cottage", "Thatched Cottage", "Row Houses" })
             if (!names.Contains(want))
                 Fail($"{m.Name}: no {want}");
 

@@ -76,7 +76,7 @@
     {"op": "Building", "name": "Church", "at": [-2.0, -25.0], "yaw": 270, "seed": 3, "variant": {"palette": "honey limestone"}},
     {"op": "Building", "name": "Stone Cottage", "at": [-26.0, -1.0], "yaw": 90, "seed": 5, "variant": {"palette": "honey stone"}},
     {"op": "Building", "name": "Row Houses", "at": [29.0, 0.0], "yaw": 270, "variant": {"palette": "yellow stone"}},
-    {"op": "Building", "name": "Village Shop", "at": [-16.0, 21.0], "yaw": 180, "seed": 7, "variant": {"palette": "honey stone"}},
+    {"op": "Building", "name": "Post Office Stores", "at": [-16.0, 21.0], "yaw": 180, "seed": 7, "variant": {"palette": "honey stone"}},
     {"op": "Building", "name": "Pub", "at": [10.0, 21.0], "yaw": 180, "seed": 8, "variant": {"palette": "cotswold stone"}},
     {"op": "Building", "name": "Thatched Cottage", "at": [28.0, 21.0], "yaw": 180, "seed": 9, "variant": {"palette": "honey stone"}},
     {"op": "Spawn", "x": -30.0, "z": -27.0},

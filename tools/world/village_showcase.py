@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes Maps/Dev/BuildingsVillage.json ("Village Buildings"): the Dev pack's showcase of the English-village set,
-the Stone Cottage, the Thatched Cottage and the Village Shop along a lane, and every prop in Props/Countryside on its
+the Stone Cottage, the Thatched Cottage and the Post Office Stores along a lane, and every prop in Props/Countryside on its
 own pad across the lane. (The self-test wants every building on a Dev Buildings* map and every prop on a Dev map.)
 
 Usage: python3 tools/world/village_showcase.py
@@ -17,7 +17,7 @@ ops = [
     {"op": "Block", "x0": -40, "y0": 0, "z0": -2.5, "x1": 40, "y1": 0.03, "z1": 2.5, "color": [0.27, 0.27, 0.29]},
     {"op": "Building", "name": "Stone Cottage", "at": [-24, -12], "yaw": 0, "spawns": True, "seed": 3},
     {"op": "Building", "name": "Thatched Cottage", "at": [-8, -12], "yaw": 0, "spawns": True, "seed": 4, "variant": {"palette": "old thatch"}},
-    {"op": "Building", "name": "Village Shop", "at": [10, -12.5], "yaw": 0, "spawns": True, "seed": 5},
+    {"op": "Building", "name": "Post Office Stores", "at": [10, -12.5], "yaw": 0, "spawns": True, "seed": 5},
     {"op": "Building", "name": "Stone Cottage", "at": [28, -12], "yaw": 0, "seed": 6, "variant": {"palette": "weathered stone", "mirror": True}},
 ]
 # the props: two rows of pads south of the lane

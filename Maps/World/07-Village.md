@@ -9,7 +9,7 @@ side of the road, the bus waits on the eastbound (north) side.
 
 `tools/world/village.py` regenerates `07-Village.json` (and prints the walks check; give it a PNG path for a top-down
 preview). The new assets come from `tools/world/village_props.py` (Props/Countryside), `village_buildings.py`
-(Buildings/StoneCottage, ThatchedCottage, VillageShop), `village_decals.py` (Maps/World/Decals/Village) and
+(Buildings/StoneCottage, ThatchedCottage, PostOfficeStores), `village_decals.py` (Maps/World/Decals/Village) and
 `village_showcase.py` (the Dev pack's **Village Buildings** map).
 
 ## Shape and terrain
@@ -40,7 +40,7 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
 - **West block:** a Stone Cottage facing West Lane, its front wall and gate, the orchard and a garden shed behind, the
   stream at the bottom of the garden. **East block:** the Row Houses terrace (yellow stone) facing East Lane with front
   walls; its ginnel runs through the back of the terrace from Church Lane to the High Street (an indoor flank).
-- **The High Street (south, Red):** the Village Shop and post office (VILLAGE STORES fascia, post box, crates), the
+- **The High Street (south, Red):** the Post Office Stores (village shop and post office) (VILLAGE STORES fascia, post box, crates), the
   footpath south between it and the pub, the pub garden with picnic tables and parasols, the pub (Cotswold stone
   palette, THE PLOUGH), a zebra crossing with zig-zags in front of it, the Thatched Cottage behind its wall; back yards
   behind them (bins, a skip, pallets, a shed). **The meadow** (south-west): long grass, willows, the stream, a log and a
@@ -65,7 +65,7 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
 
 ## Objects (generator numbers; the self-test line prints the game's)
 
-- 6 buildings (Church, Stone Cottage, Row Houses, Village Shop, Pub, Thatched Cottage): about 2,200 shell boxes in the
+- 6 buildings (Church, Stone Cottage, Row Houses, Post Office Stores, Pub, Thatched Cottage): about 2,200 shell boxes in the
   instanced building renderer.
 - 19 map boxes (retaining wall pieces, the bridge), about 370 cosmetic meshes (kerbs, water, scenery trees, the cottages
   beyond the hedge), about 200 hand-placed props (170 solid), plus ~170 Clutter props.
@@ -76,7 +76,7 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
 
 ## What changed outside the map
 
-- New general props `Props/Countryside` (18), buildings `Buildings/StoneCottage`, `ThatchedCottage`, `VillageShop`
+- New general props `Props/Countryside` (18), buildings `Buildings/StoneCottage`, `ThatchedCottage`, `PostOfficeStores`
   (with 5 shop props and a shop furnishing rule), and 3 global road decals (`Decals/Road`: Give Way Lines, Give Way
   Triangle, Road Zigzag Lines) with their Decal ops on `Maps/Dev/DecalSurfaces.json`.
 - New palettes: "honey limestone" on the Church and "cotswold stone" on the Pub (added; existing palettes unchanged).

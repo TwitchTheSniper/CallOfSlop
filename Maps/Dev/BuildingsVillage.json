@@ -14,7 +14,7 @@
     {"op": "Block", "x0": -40, "y0": 0, "z0": -2.5, "x1": 40, "y1": 0.03, "z1": 2.5, "color": [0.27, 0.27, 0.29]},
     {"op": "Building", "name": "Stone Cottage", "at": [-24, -12], "yaw": 0, "spawns": true, "seed": 3},
     {"op": "Building", "name": "Thatched Cottage", "at": [-8, -12], "yaw": 0, "spawns": true, "seed": 4, "variant": {"palette": "old thatch"}},
-    {"op": "Building", "name": "Village Shop", "at": [10, -12.5], "yaw": 0, "spawns": true, "seed": 5},
+    {"op": "Building", "name": "Post Office Stores", "at": [10, -12.5], "yaw": 0, "spawns": true, "seed": 5},
     {"op": "Building", "name": "Stone Cottage", "at": [28, -12], "yaw": 0, "seed": 6, "variant": {"palette": "weathered stone", "mirror": true}},
     {"op": "Block", "x0": -34.6, "y0": 0, "z0": 6.6, "x1": -29.4, "y1": 0.05, "z1": 11.4, "color": [0.6, 0.58, 0.52]},
     {"op": "Prop", "name": "Allotment Scarecrow", "x": -32, "z": 9},

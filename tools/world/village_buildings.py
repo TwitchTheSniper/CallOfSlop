@@ -3,11 +3,11 @@
 
     Buildings/StoneCottage     "Stone Cottage": a Cotswold two-up two-down in honey limestone under a slate roof
     Buildings/ThatchedCottage  "Thatched Cottage": the same plan under a steep straw thatch, with a gabled porch
-    Buildings/VillageShop      "Village Shop": the village stores and post office, with the shopkeeper's flat upstairs,
+    Buildings/PostOfficeStores      "Post Office Stores": the village stores and post office, with the shopkeeper's flat upstairs,
                                its own stocked shelves, post office counter, till, card and newspaper racks
 
 Usage: python3 tools/world/village_buildings.py [repo root]
-Then: python3 tools/buildings/buildings.py validate "Stone Cottage" "Thatched Cottage" "Village Shop"
+Then: python3 tools/buildings/buildings.py validate "Stone Cottage" "Thatched Cottage" "Post Office Stores"
 """
 import json
 import os
@@ -174,7 +174,7 @@ GOODS = ["#c8282a", "#e8c43a", "#2a5aa8", "#3a8a3a", "#e87a2a", "#f0ece0", "#8a3
 def shop_prop(fname, name, desc, parts, collider, breakable, scatter=None):
     d = {"format": "call-of-slop-prop/1", "name": name, "description": desc, "collision": "solid", "collider": collider,
          "scatter": scatter or {"randomYaw": False, "yawStep": 90}, "breakable": breakable, "parts": parts}
-    compact(os.path.join(B, "VillageShop", "Props", fname), d)
+    compact(os.path.join(B, "PostOfficeStores", "Props", fname), d)
 
 
 rnd = random.Random(14)
@@ -244,10 +244,10 @@ shop_prop("VillageShopNewspaperRack.json", "Village Shop Newspaper Rack",
           "A low wooden rack of the day's newspapers (mastheads in block colour, no names).",
           news, [{"size": [1.0, 0.9, 0.4]}], {"health": 50, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.04, 0.3]}})
 
-dump(os.path.join(B, "VillageShop", "Furnishing", "shop.json"), {
+dump(os.path.join(B, "PostOfficeStores", "Furnishing", "shop.json"), {
     "format": "call-of-slop-furnishing/1",
     "type": "shop",
-    "description": "The Village Shop's floor: the till by the door, shelves of groceries round the walls, a fridge, fruit and veg crates, cards and papers.",
+    "description": "The Post Office Stores floor: the till by the door, shelves of groceries round the walls, a fridge, fruit and veg crates, cards and papers.",
     "items": [
         {"id": "till", "props": ["Village Shop Till Counter"], "place": "wall", "prefer": "near"},
         {"props": ["Village Shop Grocery Shelf"], "place": "wall", "count": [3, 5], "prefer": "far"},
@@ -261,7 +261,7 @@ dump(os.path.join(B, "VillageShop", "Furnishing", "shop.json"), {
 
 shop = {
     "format": "call-of-slop-building/1",
-    "name": "Village Shop",
+    "name": "Post Office Stores",
     "theme": "The village stores and post office: honey stone, a dark green fascia and bay of shop windows, a striped awning, oak shelves of groceries, a glazed post counter, the shopkeeper's flat above",
     "category": "commercial",
     "description": "A two-storey village shop and post office: the shop floor with the post counter, a store room and a sorting office behind; the shopkeeper's flat upstairs (living room, bedroom, kitchen, bathroom).",
@@ -341,5 +341,5 @@ shop = {
         {"type": "point", "name": "flat window over the street", "floor": 1, "at": [-2.0, 4.0]},
     ],
 }
-dump(os.path.join(B, "VillageShop", "building.json"), shop)
-print("wrote Stone Cottage, Thatched Cottage, Village Shop (with", len(os.listdir(os.path.join(B, "VillageShop", "Props"))), "shop props)")
+dump(os.path.join(B, "PostOfficeStores", "building.json"), shop)
+print("wrote Stone Cottage, Thatched Cottage, Post Office Stores (with", len(os.listdir(os.path.join(B, "PostOfficeStores", "Props"))), "shop props)")

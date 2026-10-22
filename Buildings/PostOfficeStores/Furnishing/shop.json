@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-furnishing/1",
   "type": "shop",
-  "description": "The Village Shop's floor: the till by the door, shelves of groceries round the walls, a fridge, fruit and veg crates, cards and papers.",
+  "description": "The Post Office Stores floor: the till by the door, shelves of groceries round the walls, a fridge, fruit and veg crates, cards and papers.",
   "items": [
     {
       "id": "till",
