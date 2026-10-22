@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bankmanager",
+  "description": "The Bank manager's office: a partner's desk, leather armchairs, bookcases, a safe, a globe and a clock.",
+  "items": [
+    {"id": "desk", "props": ["Bank Manager Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.15},
+    {"props": ["Armchair"], "place": "around", "of": "desk", "count": 2, "distance": 0.5},
+    {"props": ["Spinning Globe"], "place": "on", "of": "desk", "y": 0.79},
+    {"props": ["Bookshelf"], "place": "wall", "count": [2, 3]},
+    {"props": ["Safe"], "place": "corner"},
+    {"props": ["Grandfather Clock"], "place": "wall", "chance": 0.7},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Large Flower Pot", "Office Plant"], "place": "corner", "count": [1, 2]}
+  ]
+}

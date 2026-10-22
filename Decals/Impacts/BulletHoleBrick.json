@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole Brick",
+  "description": "A bullet hole in brick: reddish chipped edge and a dark centre.",
+  "author": "Call of Slop",
+  "size": 0.17,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.08,
+  "impact": {
+    "materials": [
+      "Brick"
+    ]
+  },
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.34,
+      "count": 8,
+      "jag": 0.45,
+      "seed": 11,
+      "color": [
+        0.72,
+        0.42,
+        0.32
+      ],
+      "alpha": 0.7,
+      "softness": 0.04,
+      "noise": 0.35,
+      "noiseScale": 9
+    },
+    {
+      "shape": "speckle",
+      "radius": 0.42,
+      "count": 14,
+      "width": 0.025,
+      "seed": 4,
+      "color": [
+        0.45,
+        0.22,
+        0.16
+      ],
+      "alpha": 0.8
+    },
+    {
+      "shape": "splat",
+      "radius": 0.16,
+      "count": 6,
+      "jag": 0.35,
+      "seed": 2,
+      "color": [
+        0.25,
+        0.14,
+        0.11
+      ],
+      "alpha": 0.95
+    },
+    {
+      "shape": "circle",
+      "radius": 0.08,
+      "color": [
+        0.05,
+        0.04,
+        0.04
+      ],
+      "softness": 0.02
+    }
+  ]
+}

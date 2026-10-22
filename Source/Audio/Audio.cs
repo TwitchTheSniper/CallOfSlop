@@ -132,6 +132,7 @@ public sealed partial class Audio : IDisposable
             for (var i = 0; i < (int)Sfx.COUNT; i++)
                 _sfx[i] = pcm.Effects[i].Select(Upload).ToArray();
             _steps = pcm.Steps.Select(Upload).ToArray();
+            InitFrenzyGun(pcm); // Audio.FrenzyGun.cs: per-class frenzy layers on your own gun
             BufferCount = pcm.Count;
             BufferBytes = pcm.Bytes;
 
@@ -385,6 +386,8 @@ public sealed partial class Audio : IDisposable
             return;
         var gain = (position == null ? OwnShotGain : 1f) * (w.Suppressor ? 0.5f : 1f) * Jitter(0.07f);
         var pitch = Jitter(0.04f);
+        if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
+            gain = FrenzyOwnShot(w, gain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
         var near = PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]);
         if (position is { } p && !w.Suppressor && !_shotsFar[w.Id].IsNull())
         {
@@ -557,6 +560,7 @@ public sealed partial class Audio : IDisposable
                 s.Stop();
             Al.DeleteSources(set);
         }
+        DisposeFrenzyGun();
         DisposeEfx();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());

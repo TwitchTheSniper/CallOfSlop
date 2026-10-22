@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Bookshop Cafe",
+  "theme": "Cosy independent bookshop and cafe: a bottle-green shopfront under a slate roof, warm oak floors, floor-to-ceiling green bookcases, armchairs, a marble coffee bar",
+  "category": "commercial",
+  "description": "A two-storey bookshop with a cafe: the shop and the cafe through an arch downstairs with the cafe kitchen and stock room behind; a second-hand reading room, a children's corner, an office and a WC upstairs.",
+  "author": "Call of Slop",
+  "seed": 79,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.0,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "bottle green": {
+      "wall": "#7a6a5a",
+      "interior": "#efe2c4",
+      "floor": "#8a5a32",
+      "ceiling": "#f6eedc",
+      "trim": "#e8e0cc",
+      "door": "#24402e",
+      "roof": "#3a3e44",
+      "front": "#24402e"
+    },
+    "oxblood": {
+      "wall": "#d8ccb4",
+      "interior": "#f2e8d0",
+      "floor": "#7a4a2a",
+      "ceiling": "#faf4e4",
+      "trim": "#f4efe4",
+      "door": "#5a1a1e",
+      "roof": "#40403e",
+      "front": "#5a1a1e"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "bookshop",
+          "type": "bookshop",
+          "rect": [-6, -1, 1, 5],
+          "props": [
+            {"name": "Bookshop Till Counter", "wall": "W", "along": 1.3},
+            {"name": "Bookshop Island Shelf", "at": [-1.4, 0.6], "yaw": 90}
+          ]
+        },
+        {
+          "id": "cafe",
+          "type": "bookcafe",
+          "rect": [1, -1, 6, 5],
+          "floor": {"color": "#c8bca8", "material": "tiles"},
+          "props": [{"name": "Bookshop Cafe Counter", "wall": "N", "along": 0.9}]
+        },
+        {
+          "id": "cafe kitchen",
+          "type": "kitchen",
+          "rect": [1, -5, 6, -1],
+          "floor": {"color": "#b8b4a8", "material": "tiles"},
+          "wall": "#ece8dc",
+          "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.3, "head": 2.2}
+        },
+        {"id": "stairs", "type": "corridor", "rect": [-2.5, -5, 1, -1], "windows": false},
+        {
+          "id": "stock",
+          "type": "bookstock",
+          "rect": [-6, -5, -2.5, -1],
+          "floor": {"color": "#8a8478", "material": "none"},
+          "autoWindows": {"spacing": 3, "width": 0.8, "sill": 1.4, "head": 2.2}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-3, 5], "width": 1.1, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-4.95, 5], "width": 1.3, "sill": 0.5, "head": 2.3, "health": 8},
+        {"type": "window", "at": [-0.8, 5], "width": 2.4, "sill": 0.5, "head": 2.3, "health": 8},
+        {"type": "door", "at": [4.5, 5], "width": 1.1, "material": "glass", "health": 40, "hinge": "right"},
+        {"type": "window", "at": [2.4, 5], "width": 2.0, "sill": 0.5, "head": 2.3, "health": 8},
+        {"type": "window", "at": [-6, 1.0], "width": 1.2, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "window", "at": [6, 2.0], "width": 1.4, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "arch", "at": [1, 2.0], "width": 2.0},
+        {"type": "door", "at": [-1.5, -1], "width": 0.9},
+        {"type": "door", "at": [-4.2, -1], "width": 0.9},
+        {"type": "door", "at": [2.0, -1], "width": 0.9, "swing": "out"},
+        {"type": "door", "at": [6, -3], "width": 1.0, "material": "metal"}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2, "health": 1},
+      "rooms": [
+        {
+          "id": "reading room",
+          "type": "bookshop",
+          "rect": [-6, -1, 1, 5],
+          "seed": 5,
+          "autoWindows": {"spacing": 4.0, "width": 1.0, "sill": 0.9, "head": 2.2}
+        },
+        {
+          "id": "children's corner",
+          "type": "bookreading",
+          "rect": [1, -1, 6, 5],
+          "floor": {"color": "#6a8a5a", "material": "none"}
+        },
+        {"id": "landing", "type": "hall", "rect": [-2.5, -5, 1, -1], "windows": false},
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [-6, -5, -2.5, -1],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 0.7, "sill": 1.5, "head": 2.2}
+        },
+        {"id": "office", "type": "office", "rect": [1, -5, 6, -1]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, -1], "width": 0.9},
+        {"type": "door", "at": [-2.5, -3.0], "width": 0.9},
+        {"type": "door", "at": [3.5, -1], "width": 0.9},
+        {"type": "arch", "at": [1, 2.0], "width": 2.0}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [-0.4, -3.9, 0.75, -2.05], "dir": "-z", "color": {"color": "#4a2e1c", "material": "wood"}}],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.4, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "block", "min": [-6.15, 0, 5.12], "max": [6.15, 0.5, 5.22], "color": "$front"},
+    {"type": "block", "min": [-6.15, 2.35, 5.12], "max": [6.15, 2.95, 5.24], "color": "$front"},
+    {"type": "prop", "name": "Shop Sign", "at": [-3.0, 2.4, 5.24]},
+    {"type": "prop", "name": "Hanging Shop Sign", "at": [5.6, 0, 5.7]},
+    {"type": "awning", "rect": [1.2, 5.13, 5.8, 6.4], "height": 2.3, "color": "#e8e0cc"},
+    {"type": "prop", "name": "Patio Table", "at": [2.4, 7.2]},
+    {"type": "prop", "name": "Bookshop Chalkboard", "at": [0.4, 5.9], "yaw": -15},
+    {"type": "prop", "name": "Bicycle", "at": [-5.2, 5.8]},
+    {"type": "block", "min": [-1.0, 5.2, -0.6], "max": [-0.2, 8.0, 0.2], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "prop", "name": "Wheelie Bin", "at": [3.0, -5.8]}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "bookshop", "at": [-3.5, 2.0]},
+    {"type": "spawn", "name": "office", "floor": 1, "at": [3.5, -3.0]},
+    {"type": "point", "name": "cafe", "at": [3.5, 2.0]}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "pharmstock",
+  "description": "The Pharmacy's stock room: shelving and cartons of deliveries.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Stack", "Archive Boxes"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Cardboard Box Small", "Cardboard Box Large"], "place": "floor", "count": [1, 3]}
+  ]
+}

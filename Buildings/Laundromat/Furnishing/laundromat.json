@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "laundromat",
+  "description": "The Laundromat's floor round its machines: plastic chairs, the change machine, a vending machine, carts, baskets, magazines.",
+  "items": [
+    {"props": ["Laundromat Change Machine"], "place": "wall"},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.8},
+    {"props": ["Plastic Chair"], "place": "wall", "count": [3, 5], "gap": 0.1},
+    {"props": ["Laundromat Laundry Cart"], "place": "floor", "count": [1, 2]},
+    {"props": ["Laundry Basket", "Laundry Basket", "Newspaper Stack", "Backpack"], "place": "floor", "count": [2, 4]},
+    {"props": ["Pedal Bin"], "place": "corner"},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2}
+  ]
+}

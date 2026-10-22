@@ -1,0 +1,41 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bullet Hole",
+  "description": "The fallback bullet hole for any surface without its own.",
+  "author": "Call of Slop",
+  "size": 0.14,
+  "sizeVariation": 0.2,
+  "rotation": "random",
+  "tintVariation": 0.06,
+  "impact": {
+    "materials": [
+      "Default"
+    ]
+  },
+  "layers": [
+    {
+      "shape": "splat",
+      "radius": 0.3,
+      "count": 8,
+      "jag": 0.3,
+      "seed": 41,
+      "color": [
+        0.4,
+        0.4,
+        0.4
+      ],
+      "alpha": 0.6,
+      "softness": 0.05
+    },
+    {
+      "shape": "circle",
+      "radius": 0.09,
+      "color": [
+        0.05,
+        0.05,
+        0.05
+      ],
+      "softness": 0.02
+    }
+  ]
+}

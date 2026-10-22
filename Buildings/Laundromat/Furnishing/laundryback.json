@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "laundryback",
+  "description": "The Laundromat's plant room: the boiler, detergent, a broken washer waiting for parts.",
+  "items": [
+    {"props": ["Laundromat Boiler"], "place": "wall", "prefer": "far"},
+    {"props": ["Laundromat Detergent Drums"], "place": "wall", "count": [1, 2]},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Running Washer", "Laundromat Washer"], "place": "wall"},
+    {"props": ["Toolbox", "Cardboard Box", "Bucket"], "place": "floor", "count": [1, 3]},
+    {"props": ["Mop and Bucket"], "place": "corner"}
+  ]
+}

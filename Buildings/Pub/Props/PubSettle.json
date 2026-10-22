@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pub Settle",
+  "description": "A high-backed oak settle with a burgundy cushion.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 1.25, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.6, 0.45, 0.5], "offset": [0, 0.225, 0], "color": "#3a2216", "material": "wood"},
+    {"size": [1.6, 1.25, 0.08], "offset": [0, 0.625, -0.23], "color": "#3a2216", "material": "wood"},
+    {"size": [1.52, 0.08, 0.44], "offset": [0, 0.49, 0.03], "color": "#5a1a22"},
+    {"size": [0.06, 0.7, 0.5], "offset": [-0.78, 0.35, 0], "color": "#4e2e1c"},
+    {"size": [0.06, 0.7, 0.5], "offset": [0.78, 0.35, 0], "color": "#4e2e1c"}
+  ]
+}

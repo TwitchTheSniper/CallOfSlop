@@ -555,7 +555,7 @@ public static partial class SelfTest
             Fail("cart: E while manning should step off and give back the weapon you held before");
         Tick(90); // past the mode-change grace: switching away doesn't pick it up again
 
-        // Hold E at the bar: push it again, and it rolls.
+        // Hold interact at the bar: push it again, and it rolls.
         game.SelfTestInteract(me, t, hold: true);
         var pushed = c.Mode;
         Sync();
@@ -569,7 +569,7 @@ public static partial class SelfTest
             feet = me.Position;
         }
         if (log)
-            Line($"cart push again: hold E -> {pushed}, holding {game.Active.Def.Name}, rolled {F(c.Body.Rolled - rolled)} m in 0.5 s");
+            Line($"cart push again: hold interact -> {pushed}, holding {game.Active.Def.Name}, rolled {F(c.Body.Rolled - rolled)} m in 0.5 s");
         if (pushed != CartMode.Pushed || !Game.IsCart(game.Active.Def) || c.Body.Rolled - rolled < 0.8f)
             Fail("cart: holding E at a parked cart should push it again");
         sum.Append($"{pushed} {c.Body.Position} {c.Body.Rolled}");

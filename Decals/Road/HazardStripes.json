@@ -1,0 +1,45 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Hazard Stripes",
+  "description": "Yellow and black warning stripes for loading bays, kerbs and machinery.",
+  "author": "Call of Slop",
+  "size": [
+    2.0,
+    0.5
+  ],
+  "rotation": 0,
+  "surfaces": "all",
+  "fadeDistance": 90,
+  "layers": [
+    {
+      "shape": "rect",
+      "size": [
+        0.98,
+        0.94
+      ],
+      "color": [
+        0.92,
+        0.74,
+        0.12
+      ],
+      "noise": 0.15,
+      "noiseScale": 12
+    },
+    {
+      "shape": "stripes",
+      "size": [
+        0.98,
+        0.94
+      ],
+      "period": 0.14,
+      "duty": 0.5,
+      "color": [
+        0.08,
+        0.08,
+        0.08
+      ],
+      "noise": 0.15,
+      "noiseScale": 12
+    }
+  ]
+}

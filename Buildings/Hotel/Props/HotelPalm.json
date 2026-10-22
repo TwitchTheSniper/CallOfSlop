@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Palm",
+  "description": "A tall potted kentia palm in a black and gold urn.",
+  "collision": "solid",
+  "collider": [{"size": [0.54, 0.66, 0.54]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#2a6a2a", "#1a1a1e"]}},
+  "parts": [
+    {"size": [0.5, 0.6, 0.5], "offset": [0, 0.3, 0], "color": "#1a1a1e"},
+    {"size": [0.54, 0.06, 0.54], "offset": [0, 0.6, 0], "color": "#c9a24a"},
+    {"size": [0.06, 0.9, 0.06], "offset": [0, 1.05, 0], "color": "#5a4a2a"},
+    {"size": [0.9, 0.03, 0.18], "offset": [0.35, 1.4, 0.0], "color": "#2a6a2a", "rotation": [0, 0, 25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [0.245, 1.52, 0.245], "color": "#2a6a2a", "rotation": [0, 45, -25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [0.0, 1.4, 0.35], "color": "#2a6a2a", "rotation": [0, 90, 25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [-0.245, 1.52, 0.245], "color": "#2a6a2a", "rotation": [0, 135, -25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [-0.35, 1.4, 0.0], "color": "#2a6a2a", "rotation": [0, 180, 25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [-0.245, 1.52, -0.245], "color": "#2a6a2a", "rotation": [0, 225, -25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [0.0, 1.4, -0.35], "color": "#2a6a2a", "rotation": [0, 270, 25]},
+    {"size": [0.9, 0.03, 0.18], "offset": [0.245, 1.52, -0.245], "color": "#2a6a2a", "rotation": [0, 315, -25]}
+  ]
+}

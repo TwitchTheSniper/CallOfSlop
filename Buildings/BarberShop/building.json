@@ -1,0 +1,97 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Barber Shop",
+  "theme": "Old-school gentlemen's barber: red brick, a red-white-blue striped awning and barber pole, a black and white checker floor, oxblood chairs at mahogany mirror stations",
+  "category": "commercial",
+  "description": "A barber's: three chairs at mirror stations, waiting seats by the window, a back room with the towel washing and a WC.",
+  "author": "Call of Slop",
+  "seed": 71,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red brick": {
+      "wall": "#8e3b2e",
+      "interior": "#efe6cf",
+      "floor": "#e2e2de",
+      "ceiling": "#f6f2e8",
+      "trim": "#f2efe6",
+      "door": "#1f2d4a",
+      "roof": "#3e3e42",
+      "accent": "#b3262b",
+      "stripe": "#f4f4f0"
+    },
+    "navy paint": {
+      "wall": "#26324e",
+      "interior": "#e8eef0",
+      "floor": "#dcdcd8",
+      "ceiling": "#f4f4f2",
+      "trim": "#c9a24a",
+      "door": "#7a1c1f",
+      "roof": "#36363a",
+      "accent": "#1f2d4a",
+      "stripe": "#c8102e"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "shop",
+          "type": "barbershop",
+          "rect": [-4, -1, 4, 3.5],
+          "props": [
+            {"name": "Barber Shop Station", "wall": "N", "along": -0.2},
+            {"name": "Barber Shop Chair", "at": [-0.2, -1.0], "yaw": 180},
+            {"name": "Barber Shop Station", "wall": "N", "along": 1.4},
+            {"name": "Barber Shop Chair", "at": [1.4, -1.0], "yaw": 180},
+            {"name": "Barber Shop Station", "wall": "N", "along": 3.0},
+            {"name": "Barber Shop Chair", "at": [3.0, -1.0], "yaw": 180}
+          ]
+        },
+        {
+          "id": "back room",
+          "type": "barberback",
+          "rect": [-4, -3.5, 2, -1],
+          "floor": {"color": "#9a968c", "material": "tiles"},
+          "autoWindows": {"spacing": 3, "width": 0.9, "sill": 1.4, "head": 2.2}
+        },
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [2, -3.5, 4, -1],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "wall": "#e6ecee",
+          "windows": false
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [2.6, 3.5], "width": 1.0, "front": true, "material": "glass", "health": 40, "hinge": "right"},
+        {"type": "window", "at": [-1.4, 3.5], "width": 3.8, "sill": 0.55, "head": 2.45, "health": 15},
+        {"type": "window", "at": [4, 1.6], "width": 1.2, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "door", "at": [-3.0, -1], "width": 0.9},
+        {"type": "door", "at": [2, -2.3], "width": 0.9},
+        {"type": "door", "at": [-4, -2.3], "width": 1.0, "material": "metal"},
+        {"type": "window", "at": [3.0, -3.5], "width": 0.7, "sill": 1.6, "head": 2.2}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.6, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "awning", "rect": [-3.9, 3.63, 3.9, 4.8], "height": 2.75, "color": "$accent"},
+    {"type": "block", "min": [-3.9, 2.9, 4.75], "max": [3.9, 3.0, 4.82], "color": "$stripe"},
+    {"type": "block", "min": [-4.15, 2.75, 3.62], "max": [4.15, 3.3, 3.72], "color": "$accent"},
+    {"type": "prop", "name": "Shop Sign", "at": [-1.2, 3.0, 3.72]},
+    {"type": "prop", "name": "Barber Pole", "at": [3.55, 0, 3.86]},
+    {"type": "prop", "name": "Sandwich Board", "at": [0.9, 5.3], "yaw": 20},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [0.5, 0, -1.8], "onRoof": true},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-4.75, -1.0], "yaw": 90},
+    {"type": "prop", "name": "Electric Meter", "at": [-1.5, 0.6, -3.62], "yaw": 180}
+  ],
+  "anchors": [{"type": "spawn", "name": "back room", "at": [-1.0, -2.6]}, {"type": "point", "name": "chairs", "at": [1.4, 0.5]}]
+}

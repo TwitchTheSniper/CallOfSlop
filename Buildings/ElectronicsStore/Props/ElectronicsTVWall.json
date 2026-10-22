@@ -1,0 +1,81 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Electronics TV Wall",
+  "description": "A wall unit of nine TVs all showing the same flickering demo loop.",
+  "collision": "solid",
+  "collider": [{"size": [2.44, 2.8, 0.52]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 220,
+    "breakBy": "all",
+    "sound": "glass",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#1c1c20", "#3a8ad8", "#e85a3a", "#3ac87a"]}
+  },
+  "parts": [
+    {"size": [2.4, 2.6, 0.5], "offset": [0, 1.3, 0], "color": "#2a2a30"},
+    {"size": [2.44, 0.2, 0.52], "offset": [0, 2.7, 0], "color": "#1f4aa8"},
+    {"size": [0.7, 0.5, 0.3], "offset": [-0.78, 0.55, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [-0.78, 0.55, 0.205],
+      "color": "#3a8ad8",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.88, "color": "#e85a3a", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.0, 0.55, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.0, 0.55, 0.205],
+      "color": "#e85a3a",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.88, "color": "#3ac87a", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.78, 0.55, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.78, 0.55, 0.205],
+      "color": "#3ac87a",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.88, "color": "#d8c83a", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [-0.78, 1.3, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [-0.78, 1.3, 0.205],
+      "color": "#d8c83a",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.88, "color": "#a85ad8", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.0, 1.3, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.0, 1.3, 0.205],
+      "color": "#a85ad8",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.88, "color": "#3ad8d0", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.78, 1.3, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.78, 1.3, 0.205],
+      "color": "#3ad8d0",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.88, "color": "#3a8ad8", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [-0.78, 2.05, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [-0.78, 2.05, 0.205],
+      "color": "#3a8ad8",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.88, "color": "#e85a3a", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.0, 2.05, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.0, 2.05, 0.205],
+      "color": "#e85a3a",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.88, "color": "#3ac87a", "off": "#202838", "glow": 1.0}
+    },
+    {"size": [0.7, 0.5, 0.3], "offset": [0.78, 2.05, 0.05], "color": "#1c1c20"},
+    {
+      "size": [0.62, 0.42, 0.01],
+      "offset": [0.78, 2.05, 0.205],
+      "color": "#3ac87a",
+      "anim": {"type": "flicker", "rate": 7, "duty": 0.88, "color": "#d8c83a", "off": "#202838", "glow": 1.0}
+    }
+  ]
+}

@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Pizzeria",
+  "theme": "Italian family pizzeria: cream render under a terracotta roof, a green awning, red-checked tablecloths, Chianti bottles and a wood-fired brick oven",
+  "category": "commercial",
+  "description": "A pizzeria: a dining room of checked-cloth tables, a takeaway counter with its own door, a kitchen with a wood-fired oven and a serving hatch, a WC and a store room.",
+  "author": "Call of Slop",
+  "seed": 72,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.3,
+  "exterior": {"color": "$wall", "material": "concrete"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "cream and green": {
+      "wall": "#e8dcbc",
+      "interior": "#f0e2c4",
+      "floor": "#a8583a",
+      "ceiling": "#f8f0e0",
+      "trim": "#2f6b3a",
+      "door": "#2f6b3a",
+      "roof": "#b8562e",
+      "awning": "#2f6b3a"
+    },
+    "ochre and red": {
+      "wall": "#d4a052",
+      "interior": "#f2e6cc",
+      "floor": "#8a4a30",
+      "ceiling": "#faf2e2",
+      "trim": "#7a1c1c",
+      "door": "#7a1c1c",
+      "roof": "#a04a28",
+      "awning": "#a82020"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {"id": "dining", "type": "pizzeria", "rect": [-6, -0.5, 3, 4.5], "wall": "#f0e2c4"},
+        {
+          "id": "counter",
+          "type": "pizzacounter",
+          "rect": [3, -0.5, 6, 4.5],
+          "props": [{"name": "Pizzeria Counter", "wall": "E", "along": 0.0}]
+        },
+        {
+          "id": "kitchen",
+          "type": "pizzakitchen",
+          "rect": [-6, -4.5, 1.5, -0.5],
+          "floor": {"color": "#b8b4a8", "material": "tiles"},
+          "wall": "#ecece4",
+          "autoWindows": {"spacing": 2.6, "width": 1.0, "sill": 1.35, "head": 2.3},
+          "props": [{"name": "Pizzeria Oven", "wall": "N", "along": -0.8}]
+        },
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [1.5, -4.5, 3.5, -0.5],
+          "floor": {"color": "#c8d4d8", "material": "tiles"},
+          "windows": false
+        },
+        {
+          "id": "store",
+          "type": "pizzastore",
+          "rect": [3.5, -4.5, 6, -0.5],
+          "floor": {"color": "#9a968c", "material": "concrete"},
+          "windows": false
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, 4.5], "width": 1.2, "front": true, "material": "glass", "health": 40},
+        {"type": "window", "at": [-4.2, 4.5], "width": 2.2, "sill": 0.8, "head": 2.4, "health": 10},
+        {"type": "window", "at": [1.0, 4.5], "width": 2.2, "sill": 0.8, "head": 2.4, "health": 10},
+        {"type": "door", "at": [4.6, 4.5], "width": 1.0, "material": "glass", "health": 40, "hinge": "right"},
+        {"type": "window", "at": [6, 2.6], "width": 1.4, "sill": 0.9, "head": 2.3, "health": 2},
+        {"type": "window", "at": [-6, 2.0], "width": 1.6, "sill": 0.8, "head": 2.3, "health": 2},
+        {"type": "arch", "at": [3, 1.6], "width": 1.6},
+        {"type": "door", "at": [-2.6, -0.5], "width": 1.0, "swing": "out"},
+        {"type": "hole", "at": [-0.2, -0.5], "width": 1.4, "sill": 1.0, "head": 1.9},
+        {"type": "door", "at": [2.25, -0.5], "width": 0.9},
+        {"type": "door", "at": [4.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [-4.6, -4.5], "width": 1.0, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 26, "overhang": 0.45, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "awning", "rect": [-5.6, 4.63, 2.6, 5.9], "height": 2.7, "color": "$awning"},
+    {"type": "awning", "rect": [3.5, 4.63, 5.7, 5.6], "height": 2.7, "color": "$awning"},
+    {"type": "block", "min": [-5.6, 2.55, 5.84], "max": [2.6, 2.7, 5.92], "color": "#f4f0e6"},
+    {"type": "prop", "name": "Shop Sign", "at": [-1.5, 2.85, 4.72]},
+    {"type": "prop", "name": "Neon Sign", "at": [4.6, 2.12, 4.63]},
+    {"type": "prop", "name": "Patio Table", "at": [-4.0, 6.9]},
+    {"type": "prop", "name": "Patio Table", "at": [0.8, 6.9]},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-2.6, 5.4]},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-0.4, 5.4]},
+    {"type": "prop", "name": "Moped Scooter", "at": [7.0, 3.0], "yaw": 90},
+    {"type": "prop", "name": "Dumpster", "at": [-2.2, -5.4]},
+    {"type": "prop", "name": "Trash Bag", "at": [-0.6, -5.2]},
+    {"type": "prop", "name": "Pizzeria Flour Sacks", "at": [-6.9, -3.0], "yaw": 90},
+    {"type": "block", "min": [-3.4, 3.15, -3.8], "max": [-2.8, 6.2, -3.2], "color": {"color": "#8a3a26", "material": "brick"}}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "kitchen", "at": [-1.0, -2.3]},
+    {"type": "spawn", "name": "dining", "at": [-3.5, 2.0]},
+    {"type": "point", "name": "oven", "at": [-3.0, -2.5]}
+  ]
+}

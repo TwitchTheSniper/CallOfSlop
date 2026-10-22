@@ -1,0 +1,97 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Grime Streaks",
+  "description": "Rain streaks of dirt running down a wall.",
+  "author": "Call of Slop",
+  "size": [
+    1.6,
+    2.4
+  ],
+  "sizeVariation": 0.2,
+  "rotation": 0,
+  "blend": "multiply",
+  "surfaces": "wall",
+  "layers": [
+    {
+      "shape": "line",
+      "at": [
+        0.2,
+        0.95
+      ],
+      "to": [
+        0.22,
+        0.25
+      ],
+      "width": 0.06,
+      "color": [
+        0.55,
+        0.53,
+        0.5
+      ],
+      "alpha": 0.7,
+      "softness": 0.05,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.45,
+        0.95
+      ],
+      "to": [
+        0.44,
+        0.05
+      ],
+      "width": 0.09,
+      "color": [
+        0.5,
+        0.48,
+        0.45
+      ],
+      "alpha": 0.7,
+      "softness": 0.06,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "line",
+      "at": [
+        0.7,
+        0.95
+      ],
+      "to": [
+        0.71,
+        0.4
+      ],
+      "width": 0.05,
+      "color": [
+        0.55,
+        0.53,
+        0.5
+      ],
+      "alpha": 0.6,
+      "softness": 0.05,
+      "noise": 0.5,
+      "noiseScale": 6
+    },
+    {
+      "shape": "rect",
+      "at": [
+        0.5,
+        0.95
+      ],
+      "size": [
+        0.9,
+        0.1
+      ],
+      "color": [
+        0.5,
+        0.48,
+        0.45
+      ],
+      "alpha": 0.6,
+      "softness": 0.05
+    }
+  ]
+}

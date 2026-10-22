@@ -23,11 +23,11 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 | --- | --- | --- |
 | 1 | Fire style across receivers is **fixed by the grip** | Each grip file has one `"fireStyle"`; builds have no choice; the workbench shows it ("Fire style: VOLLEY (fixed by the Rifle Grip)"). Old saves that chose a style load with the grip's. |
 | 2 | **Weight** stays the main limiter; huge multi-receiver guns must be reachable late in a run | Rarer frames carry more (Mule Frame 16 kg / 6 receivers, Exo Harness 30 kg / 12, Gantry Rig 48 kg / 16), weight-relief parts raise the carry weight, and the drop tables put those tiers late (see "Run progression"). |
-| 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, E parks it, tap E at its bar to man its gun (aim within traverse limits, fire it by hand), hold E to push it again. No auto turret. Replicated (protocol 17). |
+| 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, F parks it, tap F at its bar to man its gun (aim within traverse limits, fire it by hand), hold F to push it again. No auto turret. Replicated (protocol 17). |
 | 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
 | 5 | A **shared feed** that feeds several receivers; per-receiver feeds still allowed | Five shared feeds on a grip's `hopper` socket, with rules for which receivers they feed, a pooled magazine and shared ammo. |
 | 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 25 standard builds by tier with where they come from (box, wall, start); the workbench loads them as presets. |
-| 7 | Weapon slots **2 -> 4** via an on-map upgrade, per run; the mode is a **roguelite** | Slots 3-4 exist in the game (keys 3 / 4, the swap key and wheel cycle them), unlocked per player per run (a flag the server owns); the range has a station (E) and the workbench a toggle. Drop tables by round are proposed data. |
+| 7 | Weapon slots **2 -> 4** via an on-map upgrade, per run; the mode is a **roguelite** | Slots 3-4 exist in the game (keys 3 / 4, the swap key and wheel cycle them), unlocked per player per run (a flag the server owns); the range has a station (F) and the workbench a toggle. Drop tables by round are proposed data. |
 | 8 | The chainsaw grip is just a grip; add a **melee slot** built from melee-only parts | Hilts, heads and mods (21 parts) build melee weapons with damage, swing time, reach, cleave and stun; the melee key swings them (in the range / Zombies only), with their own workbench section. |
 
 
@@ -379,7 +379,7 @@ workbench lists them under **Standard builds** and loads one as a preset into th
   (server-owned, sent to that client in `RunState`); otherwise everything behaves exactly as before (2 slots).
 - Keys: **3** = slot 3, slot 4 is unbound by default (bind it in the settings), and the swap key and mouse wheel cycle
   through every slot you have. The HUD lists your other slots.
-- **Workbench Range:** a station stands by the spawn line (right side); **E** there unlocks slots 3-4 (free in the
+- **Workbench Range:** a station stands by the spawn line (right side); **F** there unlocks slots 3-4 (free in the
   sandbox; proposed price 4000 points in Zombies). The workbench has a toggle to start with them unlocked; slots 3-4
   take the workbench slots that aren't the selected or second one.
 
@@ -400,20 +400,20 @@ When you hold a cart build, a **cart entity** exists in the world (server-author
   middle of the screen (the hands follow the bar in from the bottom). **It doesn't fire
   while you push it** (decided with the manned gun: both hands are on the bar, and it keeps "park it, then man it" the
   one way to use its firepower). Pulling the trigger tells you how.
-- **Parked (E while pushing).** The cart stays where it is and you go back to the weapon you held before. It does
+- **Parked (F while pushing).** The cart stays where it is and you go back to the weapon you held before. It does
   nothing on its own. Switching weapons while pushing parks it the same way. A dead owner's cart is gone (it comes
   back in front of you on respawn).
-- **Manned (tap E at a parked cart's bar).** Decided by the user: **a gun you fire yourself, not a turret**. You stand
+- **Manned (tap F at a parked cart's bar).** Decided by the user: **a gun you fire yourself, not a turret**. You stand
   at the push bar (your feet are held there; the movement keys do nothing) with your hands on its handles, and the
   cart body stays put. The view sits low behind the gun (just over the push bar, a step back) so the gun in the basket
   is in view, and your shots leave from there. The mouse turns its gun (everything mounted on the cart: the receivers
   and feeds in the basket turn as one block about their middle) up to **60 degrees either side** of the cart's facing,
   **15 degrees down and 30 up** (proposed); your view is held inside those limits. The fire key fires the cart's build
   through the normal server-authoritative shot path with the same stats (damage, fire rate, spread, rays per
-  receiver), reload works as usual, and the HUD shows the cart gun's ammo and "Leave: E   Push it: hold E". The
+  receiver), reload works as usual, and the HUD shows the cart gun's ammo and "Leave: F   Push it: hold F". The
   server clamps every shot's direction to the traverse limits too.
-- **Leaving.** Tap E again, or jump or sprint: you step off and get the weapon you held before back. **Hold E**
-  (0.4 s) at a parked or manned cart to push it again; tap E stays "man it / step off". Selecting the cart's slot next
+- **Leaving.** Tap F again, or jump or sprint: you step off and get the weapon you held before back. **Hold F**
+  (0.4 s) at a parked or manned cart to push it again; tap F stays "man it / step off". Selecting the cart's slot next
   to it also picks it up; far away you're told where it is.
 - **An auto turret may come later as a separate deployable.** The turret behaviour (auto-targeting, 30 s, two
   magazines) is removed from the cart entirely; nothing of it is left in the code.
@@ -503,7 +503,7 @@ Milestone 2 (the user's decisions):
       slots, cart physics and parking, melee builds, standard melee, determinism) and smoke shots (melee on the bench,
       the cart pushed and manned, a melee swing, the minigun). The manned cart: parked it never fires on its own (10 s,
       nobody manning), manned it hits a dummy, the traverse limits clamp the aim and the shots, leaving gives back the
-      weapon held before, hold E pushes it again, and the whole run is deterministic.
+      weapon held before, hold F pushes it again, and the whole run is deterministic.
 
 ## Decided (2026-10-21)
 

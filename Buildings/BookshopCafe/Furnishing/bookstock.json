@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bookstock",
+  "description": "The Bookshop's stock room: boxes of new books, a returns trolley, shelving.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bookshop Tall Bookcase"], "place": "wall"},
+    {"props": ["Cardboard Stack", "Cardboard Box Large"], "place": "wall", "count": [1, 2]},
+    {"props": ["Cardboard Box", "Open Cardboard Box", "Book Pile"], "place": "floor", "count": [2, 3]}
+  ]
+}

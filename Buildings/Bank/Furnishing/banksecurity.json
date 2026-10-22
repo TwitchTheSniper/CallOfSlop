@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "banksecurity",
+  "description": "The Bank's security office: the CCTV desk, lockers, a server rack.",
+  "items": [
+    {"id": "desk", "props": ["Bank CCTV Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Server Rack"], "place": "wall"},
+    {"props": ["Filing Cabinet", "Water Cooler"], "place": "wall"},
+    {"props": ["Desk Fan"], "place": "on", "of": "desk", "y": 0.78, "chance": 0.5}
+  ]
+}

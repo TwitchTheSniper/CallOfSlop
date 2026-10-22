@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Teller Desk",
+  "description": "A teller's position: a mahogany counter with a marble top, a cash drawer, a note counter and a green-screen terminal.",
+  "collision": "solid",
+  "collider": [{"size": [1.44, 0.95, 0.64]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 130,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#4a2214", "#e6e0d2"]}
+  },
+  "parts": [
+    {"size": [1.4, 0.9, 0.6], "offset": [0, 0.45, 0], "color": "#4a2214", "material": "wood"},
+    {"size": [1.44, 0.05, 0.64], "offset": [0, 0.925, 0], "color": "#e6e0d2"},
+    {"size": [0.6, 0.12, 0.04], "offset": [0.2, 0.75, 0.3], "color": "#6a3420"},
+    {"size": [0.08, 0.03, 0.02], "offset": [0.2, 0.75, 0.33], "color": "#c9a24a"},
+    {"size": [0.4, 0.34, 0.3], "offset": [-0.4, 1.12, -0.1], "color": "#d8d4c4"},
+    {
+      "size": [0.32, 0.24, 0.01],
+      "offset": [-0.4, 1.14, 0.055],
+      "color": "#1a3a1a",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.95, "color": "#40e070", "off": "#103010", "glow": 0.6}
+    },
+    {"size": [0.42, 0.04, 0.16], "offset": [-0.4, 0.97, 0.16], "color": "#c8c4b4"},
+    {"size": [0.26, 0.16, 0.24], "offset": [0.3, 1.03, -0.05], "color": "#3a3a3e"},
+    {"size": [0.16, 0.04, 0.08], "offset": [0.3, 1.12, 0.0], "color": "#5a9a5a"},
+    {"size": [0.14, 0.03, 0.07], "offset": [0.05, 0.965, 0.1], "color": "#6a9a6a"},
+    {"size": [0.14, 0.03, 0.07], "offset": [0.05, 0.995, 0.1], "color": "#6a9a6a"}
+  ]
+}

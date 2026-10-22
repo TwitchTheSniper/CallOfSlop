@@ -14,6 +14,7 @@ public enum BotDifficulty
     Easy,
     Normal,
     Hard,
+    Insane, // Hard+ aim and reactions; in team modes they play as squads (Source/Game/Bots/Squads)
 }
 
 /// <summary>Player preferences, saved to settings.txt next to the game.</summary>
@@ -45,7 +46,9 @@ public sealed class Settings
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
+    public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
     public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
+    public FrenzyGunSoundMode FrenzyGunSound = FrenzyGunSoundMode.Full; // Settings > Audio "Frenzy gun sound": per-class frenzy layers on your gun (Source/Audio/FrenzyGunSound.cs)
 
     /// <summary>Camera head bob when moving, in percent (0 = none, the steady camera; 100 = full). See HeadBob.</summary>
     public int HeadBob = 100;
@@ -169,6 +172,7 @@ public sealed class Settings
         {
             if (!File.Exists(path))
                 return s;
+            var bindsVersion = 1; // files without a binds_version line have the first defaults (Keybinds.Migrate)
             foreach (var line in File.ReadAllLines(path))
             {
                 var kv = line.Split('=', 2);
@@ -222,13 +226,19 @@ public sealed class Settings
                     case "head_bob" when int.TryParse(v, out var i): s.HeadBob = Math.Clamp(i, 0, 100); break;
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
+                    case "impact_decals" when Enum.TryParse<ImpactDecalQuality>(v, out var iq) && Enum.IsDefined(iq): s.ImpactDecals = iq; break;
                     case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
+                    case "frenzy_gunsound" when Enum.TryParse<FrenzyGunSoundMode>(v, true, out var fg) && Enum.IsDefined(fg): s.FrenzyGunSound = fg; break;
                     case var k when k.StartsWith("bind_") && Enum.TryParse<GameAction>(k[5..], out var action)
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
                         break;
+                    case "binds_version" when int.TryParse(v, out var bv): bindsVersion = bv; break;
                 }
             }
+            var moved = Keybinds.Migrate(s.Binds, bindsVersion);
+            if (moved.Count > 0)
+                Console.WriteLine($"[settings] keybinds updated to the new defaults: {string.Join(", ", moved.Select(a => $"{a} -> {(Brutal.GlfwApi.GlfwKey)s.Bind(a)}"))}");
         }
         catch
         {
@@ -287,10 +297,13 @@ public sealed class Settings
                     $"hud_width={HudWidth}",
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
+                    $"impact_decals={ImpactDecals}",
                     $"frenzy_visuals={FrenzyVisuals}",
+                    $"frenzy_gunsound={FrenzyGunSound}",
                     $"head_bob={HeadBob}",
                     $"name_tags={NameTags}",
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
+                    $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
             );

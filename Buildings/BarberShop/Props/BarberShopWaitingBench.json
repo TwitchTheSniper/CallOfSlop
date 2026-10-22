@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Barber Shop Waiting Bench",
+  "description": "Three chrome-framed waiting seats in red vinyl, joined on one rail.",
+  "collision": "solid",
+  "collider": [{"size": [1.72, 0.98, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#b3262b", "chrome"]}},
+  "parts": [
+    {"size": [1.7, 0.05, 0.08], "offset": [0, 0.2, 0], "color": "chrome", "material": "metal"},
+    {"size": [0.05, 0.4, 0.05], "offset": [-0.8, 0.2, 0], "color": "chrome"},
+    {"size": [0.05, 0.4, 0.05], "offset": [0.8, 0.2, 0], "color": "chrome"},
+    {"size": [0.5, 0.1, 0.46], "offset": [-0.56, 0.45, 0.02], "color": "#b3262b"},
+    {"size": [0.5, 0.1, 0.46], "offset": [0, 0.45, 0.02], "color": "#b3262b"},
+    {"size": [0.5, 0.1, 0.46], "offset": [0.56, 0.45, 0.02], "color": "#b3262b"},
+    {"size": [0.5, 0.44, 0.08], "offset": [-0.56, 0.74, -0.2], "color": "#b3262b"},
+    {"size": [0.5, 0.44, 0.08], "offset": [0, 0.74, -0.2], "color": "#b3262b"},
+    {"size": [0.5, 0.44, 0.08], "offset": [0.56, 0.74, -0.2], "color": "#b3262b"},
+    {"size": [1.72, 0.04, 0.04], "offset": [0, 0.96, -0.22], "color": "chrome"}
+  ]
+}

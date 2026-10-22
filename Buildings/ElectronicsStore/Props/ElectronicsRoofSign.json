@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Electronics Roof Sign",
+  "description": "The ZAPMART roof sign: a blue board with a yellow lightning bolt that flashes.",
+  "collision": "solid",
+  "collider": [{"size": [5.0, 1.2, 0.3], "offset": [0, 0.6, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.12, 1.2, 0.12], "offset": [-2.4, 0.6, 0], "color": "steel"},
+    {"size": [0.12, 1.2, 0.12], "offset": [2.4, 0.6, 0], "color": "steel"},
+    {"size": [5.4, 1.4, 0.2], "offset": [0, 1.9, 0], "color": "#1f4aa8"},
+    {"size": [5.5, 0.1, 0.24], "offset": [0, 2.62, 0], "color": "#f2c230"},
+    {"size": [5.5, 0.1, 0.24], "offset": [0, 1.18, 0], "color": "#f2c230"},
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [-1.5, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [-0.95, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [-0.4, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [0.15, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [0.7, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [1.25, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.4, 0.7, 0.04],
+      "offset": [1.8, 1.9, 0.12],
+      "color": "#f4f4f0",
+      "anim": {"type": "pulse", "period": 5, "glow": 0.9}
+    },
+    {
+      "size": [0.18, 0.7, 0.05],
+      "offset": [-2.3, 2.05, 0.13],
+      "color": "#f2c230",
+      "anim": {"type": "blink", "period": 1.1, "duty": 0.55, "color": "#fff060", "glow": 1.6},
+      "rotation": [0, 0, -25]
+    },
+    {
+      "size": [0.18, 0.7, 0.05],
+      "offset": [-2.15, 1.7, 0.13],
+      "color": "#f2c230",
+      "anim": {"type": "blink", "period": 1.1, "duty": 0.55, "color": "#fff060", "glow": 1.6},
+      "rotation": [0, 0, -25]
+    }
+  ]
+}

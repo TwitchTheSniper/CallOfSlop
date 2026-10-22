@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pizzeria Oven",
+  "description": "A wood-fired brick pizza oven: a stepped brick dome on a plinth, a glowing fire in its mouth, a flue to the ceiling and logs stacked underneath.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 1.95, 1.1]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.6, 0.9, 1.1], "offset": [0, 0.45, 0], "color": "#8a3a26", "material": "brick"},
+    {"size": [1.66, 0.08, 1.16], "offset": [0, 0.94, 0], "color": "#cfc6b4"},
+    {"size": [1.5, 0.35, 1.0], "offset": [0, 1.155, -0.02], "color": "#9a4630", "material": "brick"},
+    {"size": [1.24, 0.25, 0.86], "offset": [0, 1.455, -0.04], "color": "#9a4630", "material": "brick"},
+    {"size": [0.86, 0.2, 0.62], "offset": [0, 1.68, -0.06], "color": "#9a4630", "material": "brick"},
+    {"size": [0.5, 0.14, 0.4], "offset": [0, 1.85, -0.08], "color": "#9a4630", "material": "brick"},
+    {"size": [0.28, 1.3, 0.28], "offset": [0, 2.55, -0.12], "color": "#3a3a3a", "material": "metal"},
+    {"size": [0.56, 0.32, 0.04], "offset": [0, 1.15, 0.49], "color": "#1a0d08"},
+    {
+      "size": [0.48, 0.18, 0.02],
+      "offset": [0, 1.08, 0.5],
+      "color": "#ff7a1a",
+      "anim": {"type": "flicker", "rate": 9, "duty": 0.8, "color": "#ffa040", "off": "#a03a10", "glow": 1.6}
+    },
+    {"size": [0.6, 0.06, 0.06], "offset": [0, 1.33, 0.5], "color": "#cfc6b4"},
+    {"size": [1.2, 0.16, 0.5], "offset": [0, 0.18, 0.32], "color": "#5a3a22", "material": "wood"},
+    {"size": [1.2, 0.16, 0.5], "offset": [0, 0.36, 0.32], "color": "#6a4a2a", "material": "wood"},
+    {"size": [1.2, 0.16, 0.5], "offset": [0, 0.54, 0.32], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.06, 1.3, 0.04], "offset": [0.72, 0.65, 0.58], "color": "#8a6a44", "material": "wood"},
+    {"size": [0.3, 0.02, 0.3], "offset": [0.72, 1.32, 0.58], "color": "#8a8a8a"}
+  ]
+}

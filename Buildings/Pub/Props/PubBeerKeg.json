@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pub Beer Keg",
+  "description": "A steel beer keg with its coupler.",
+  "collision": "solid",
+  "collider": [{"size": [0.4, 0.64, 0.4]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.4, 0.56, 0.17], "offset": [0, 0.3, 0], "color": "steel", "material": "metal"},
+    {"size": [0.4, 0.56, 0.17], "offset": [0, 0.3, 0], "color": "steel", "material": "metal", "rotation": [0, 45, 0]},
+    {"size": [0.4, 0.56, 0.17], "offset": [0, 0.3, 0], "color": "steel", "material": "metal", "rotation": [0, 90, 0]},
+    {"size": [0.4, 0.56, 0.17], "offset": [0, 0.3, 0], "color": "steel", "material": "metal", "rotation": [0, 135, 0]},
+    {"size": [0.1, 0.06, 0.1], "offset": [0, 0.61, 0], "color": "#2a2a2a"},
+    {"size": [0.42, 0.03, 0.42], "offset": [0, 0.18, 0], "color": "#c8202a"}
+  ]
+}

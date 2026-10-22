@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hotelrestaurant",
+  "description": "The Majestic's restaurant: white-clothed tables with candelabras, palms, a service cart.",
+  "items": [
+    {"id": "t", "props": ["Hotel Dining Table"], "place": "floor", "count": [3, 4], "gap": 0.8},
+    {"props": ["Dining Chair"], "place": "around", "of": "t", "count": [2, 4], "distance": 0.1},
+    {"props": ["Hotel Palm"], "place": "corner", "count": [1, 2]},
+    {"props": ["Hotel Room Service Cart"], "place": "wall", "chance": 0.7},
+    {"props": ["Hotel Chandelier"], "place": "ceiling", "count": 2, "y": 0.05}
+  ]
+}
