@@ -222,9 +222,11 @@ public static partial class SelfTest
         var last = Enum.GetValues<Msg>().Max();
         TLine($"protocol {ServerInfo.ProtocolVersion}; Msg.TacState {(byte)Msg.TacState}, Msg.TacEvent {(byte)Msg.TacEvent} (last {last}); "
              + $"device {TacDevice.NetBytes} bytes, event {1 + Game.TacEventBytes} bytes");
-        if (ServerInfo.ProtocolVersion < 26 || (byte)Msg.TacEvent != (byte)Msg.TacState + 1)
+        // (Read into locals: comparing the constants directly is folded at compile time and warns about unreachable code.)
+        int protocol = ServerInfo.ProtocolVersion, state = (byte)Msg.TacState, tacEvent = (byte)Msg.TacEvent, flash = (byte)ThrowableKind.Flash, recon = (byte)ThrowableKind.Recon;
+        if (protocol < 26 || tacEvent != state + 1)
             Fail("tactical gear: protocol version not bumped, or the new messages aren't together");
-        if ((byte)ThrowableKind.Flash != (byte)ThrowableKind.Recon + 1)
+        if (flash != recon + 1)
             Fail("tactical gear: the new ThrowableKind values must come after the old ones");
     }
 
