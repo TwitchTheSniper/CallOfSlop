@@ -139,7 +139,14 @@ internal sealed class KickVoice
     /// <summary>Level and pitch of a short sine "tok" at the start of each hit (0 = none): a punchy click that cuts through.</summary>
     public float Punch, PunchHz = 2500;
 
+    /// <summary>
+    /// Level of a second, higher kick layered under the drive (0 = none): its own fast sweep from <see cref="TopStartHz"/>
+    /// to <see cref="TopEndHz"/> and a short decay. Summed before the clippers, it gives the gabber kick its crunch.
+    /// </summary>
+    public float Top, TopStartHz = 1100, TopEndHz = 160, TopDecay = 0.018f;
+
     private float _phase, _pitch, _amp, _ampCoef, _pitchCoef, _click, _lpA, _lp, _duck, _duckCoef, _punch, _punchPhase, _punchCoef;
+    private float _topPhase, _topPitch, _topAmp, _topCoef, _topPitchCoef;
     private int _hold;
 
     public void Configure(float duckTime)
@@ -149,11 +156,14 @@ internal sealed class KickVoice
         _lpA = Dsp.OnePole(ToneHz);
         _duckCoef = Dsp.Decay(duckTime);
         _punchCoef = Dsp.Decay(0.005f);
+        _topCoef = Dsp.Decay(TopDecay);
+        _topPitchCoef = Dsp.Decay(PitchTime * 0.5f);
     }
 
     public void Reset()
     {
         _phase = _pitch = _amp = _click = _lp = _duck = _punch = _punchPhase = 0;
+        _topPhase = _topPitch = _topAmp = 0;
         _hold = 0;
         _lpA = Dsp.OnePole(ToneHz);
     }
@@ -170,6 +180,9 @@ internal sealed class KickVoice
         _duck = 1;
         _punch = Punch * vel * muffle;
         _punchPhase = 0;
+        _topAmp = Top * vel * muffle;
+        _topPitch = 1;
+        _topPhase = 0;
     }
 
     /// <summary>Renders the kick into dst and its sidechain envelope (1 on every hit, falling back) into duck.</summary>
@@ -177,7 +190,7 @@ internal sealed class KickVoice
     {
         var n = dst.Length;
         var d = _duck;
-        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f && _click <= 1e-4f && _punch <= 1e-4f)
+        if (_amp <= 0 && MathF.Abs(_lp) < 1e-5f && _click <= 1e-4f && _punch <= 1e-4f && _topAmp <= 0)
         {
             // Silent: only the sidechain envelope moves.
             for (var i = 0; i < n; i++)
@@ -193,6 +206,7 @@ internal sealed class KickVoice
         float phase = _phase, pitch = _pitch, amp = _amp, click = _click, lp = _lp;
         float lpA = _lpA, startHz = StartHz, endHz = EndHz, drive = Drive, ampCoef = _ampCoef, pitchCoef = _pitchCoef, duckCoef = _duckCoef;
         float clip = Clip, punch = _punch, punchPhase = _punchPhase, punchCoef = _punchCoef, punchDt = PunchHz * Dsp.InvSr;
+        float top = _topAmp, topPhase = _topPhase, topPitch = _topPitch, topCoef = _topCoef, topPitchCoef = _topPitchCoef, topStart = TopStartHz, topEnd = TopEndHz;
         var hold = _hold;
         for (var i = 0; i < n; i++)
         {
@@ -208,6 +222,17 @@ internal sealed class KickVoice
                 hold--;
             else if ((amp *= ampCoef) < 1e-4f)
                 amp = 0;
+            if (top > 0)
+            {
+                // The layered top kick: its own faster sweep, summed before the drive so both crunch together.
+                topPhase += (topEnd + (topStart - topEnd) * topPitch) * Dsp.InvSr;
+                if (topPhase >= 1f)
+                    topPhase -= 1f;
+                topPitch *= topPitchCoef;
+                s += MathF.Sin(topPhase * Dsp.TwoPi) * top;
+                if ((top *= topCoef) < 1e-4f)
+                    top = 0;
+            }
             s = Dsp.Tanh(s * drive);
             if (clip > 0)
                 s = Math.Clamp(s * clip, -1f, 1f);
@@ -236,6 +261,9 @@ internal sealed class KickVoice
         _click = click;
         _punch = punch <= 1e-4f ? 0 : punch;
         _punchPhase = punchPhase;
+        _topAmp = top;
+        _topPhase = topPhase;
+        _topPitch = topPitch;
         _lp = MathF.Abs(lp) < 1e-15f ? 0 : lp;
         _hold = hold;
         _duck = d < 1e-4f ? 0 : d;
@@ -382,7 +410,7 @@ internal sealed class HatVoice
 /// </summary>
 internal sealed class SawSynth
 {
-    public const int MaxNotes = 4, MaxSaws = 7;
+    public const int MaxNotes = 4, MaxSaws = 9;
 
     /// <summary>The longest block <see cref="Render"/> takes.</summary>
     public const int MaxBlock = 1024;
@@ -1189,6 +1217,82 @@ internal sealed class ReverseBassVoice
     }
 }
 
+/// <summary>
+/// A screaming synth line steered by the arrangement: a siren (two detuned saws wailing up and down with an LFO) or a
+/// pitch riser (climbing octaves through a build). The level and pitch it is given glide smoothly; it's driven into a
+/// soft clipper and darkened by a one-pole low-pass. Costs nothing while silent.
+/// </summary>
+internal sealed class SweepVoice
+{
+    /// <summary>Target level (0 = silent) and pitch, set by the arrangement every step.</summary>
+    public float Level, Hz = 440f;
+
+    /// <summary>The wail: semitones up and down (0 = none) and its rate in Hz.</summary>
+    public float LfoSemis, LfoHz = 1f;
+
+    public float Drive = 2.5f, ToneHz = 4000f, Detune = 0.012f, GlideTime = 0.03f;
+
+    private float _p1, _p2, _hz = 440f, _level, _lfo, _lp, _lpA, _glide;
+
+    public void Configure()
+    {
+        _lpA = Dsp.OnePole(ToneHz);
+        _glide = 1f - Dsp.Decay(GlideTime);
+    }
+
+    public void Reset()
+    {
+        _p1 = _p2 = _level = _lfo = _lp = 0;
+        _hz = Hz;
+        Level = 0;
+    }
+
+    public void Render(Span<float> dst)
+    {
+        var target = Level;
+        if (_level < 1e-4f && target < 1e-4f && MathF.Abs(_lp) < 1e-6f)
+        {
+            dst.Clear();
+            _level = _lp = 0;
+            _hz = Hz;
+            return;
+        }
+        float p1 = _p1, p2 = _p2, hz = _hz, level = _level, lfo = _lfo, lp = _lp, lpA = _lpA, glide = _glide, goal = Hz, drive = Drive;
+        float up = 1f + Detune, down = 1f - Detune, lfoDt = LfoHz * Dsp.InvSr * 16f, depth = LfoSemis * 0.05776f, mul = 1f;
+        for (var i = 0; i < dst.Length; i++)
+        {
+            if ((i & 15) == 0 && depth != 0)
+            {
+                lfo += lfoDt;
+                if (lfo >= 1f)
+                    lfo -= 1f;
+                mul = MathF.Exp(depth * MathF.Sin(lfo * Dsp.TwoPi));
+            }
+            level += (target - level) * 0.002f;
+            hz += (goal - hz) * glide;
+            var dt = hz * mul * Dsp.InvSr;
+            float d1 = dt * up, d2 = dt * down;
+            p1 += d1;
+            if (p1 >= 1f)
+                p1 -= 1f;
+            p2 += d2;
+            if (p2 >= 1f)
+                p2 -= 1f;
+            var s = Dsp.Tanh((Dsp.Saw(p1, d1) + Dsp.Saw(p2, d2)) * 0.5f * drive) * level;
+            lp += lpA * (s - lp);
+            if (MathF.Abs(lp) < 1e-15f)
+                lp = 0;
+            dst[i] = lp;
+        }
+        _p1 = p1;
+        _p2 = p2;
+        _hz = hz;
+        _level = level < 1e-5f && target < 1e-4f ? 0 : level;
+        _lfo = lfo;
+        _lp = lp;
+    }
+}
+
 /// <summary>A word the vocal stab voice can shout.</summary>
 public enum VocalWord : byte
 {
@@ -1211,6 +1315,10 @@ internal sealed class VocalVoice
 
     public float Drive = 2.2f;
 
+    /// <summary>Level of a second, bigger crowd an octave below (two more detuned saws through the same formants; 0 = off).</summary>
+    public float Crowd;
+
+    private float _p4, _p5;
     private readonly float[] _from = new float[3], _to = new float[3];
     private Svf _f1, _f2, _f3;
     private float _p1, _p2, _p3, _hz, _hzEnd, _pitchCoef, _env, _vel, _breath, _x, _xInc, _k1, _k2, _k3;
@@ -1224,7 +1332,7 @@ internal sealed class VocalVoice
         _f1.Reset();
         _f2.Reset();
         _f3.Reset();
-        _p1 = _p2 = _p3 = _env = _breath = _x = 0;
+        _p1 = _p2 = _p3 = _p4 = _p5 = _env = _breath = _x = 0;
         _on = false;
         _t = _ctl = 0;
     }
@@ -1271,7 +1379,7 @@ internal sealed class VocalVoice
         }
         Svf f1 = _f1, f2 = _f2, f3 = _f3;
         float p1 = _p1, p2 = _p2, p3 = _p3, hz = _hz, hzEnd = _hzEnd, pitchCoef = _pitchCoef, env = _env, vel = _vel, breath = _breath, x = _x, xInc = _xInc;
-        float k1 = _k1, k2 = _k2, k3 = _k3, decay = _decay, drive = Drive;
+        float k1 = _k1, k2 = _k2, k3 = _k3, decay = _decay, drive = Drive, crowd = Crowd, p4 = _p4, p5 = _p5;
         float a11 = _a11, a12 = _a12, a13 = _a13, a21 = _a21, a22 = _a22, a23 = _a23, a31 = _a31, a32 = _a32, a33 = _a33;
         int t = _t, attack = _attack, hold = _hold, ctl = _ctl;
         var on = true;
@@ -1316,6 +1424,18 @@ internal sealed class VocalVoice
             var src = 0f;
             if (voiced)
                 src = (Dsp.Saw(p1, d1) + Dsp.Saw(p2, d2) + Dsp.Saw(p3, d3)) * 0.33f;
+            if (crowd > 0)
+            {
+                float d4 = dt * 0.497f, d5 = dt * 0.506f;
+                p4 += d4;
+                if (p4 >= 1f)
+                    p4 -= 1f;
+                p5 += d5;
+                if (p5 >= 1f)
+                    p5 -= 1f;
+                if (voiced)
+                    src += (Dsp.Saw(p4, d4) + Dsp.Saw(p5, d5)) * 0.4f * crowd;
+            }
             var noise = rng.Noise() * (t < attack ? breath : breath * 0.15f);
             var exc = src + noise;
             f1.Process(exc, k1, a11, a12, a13);
@@ -1343,6 +1463,8 @@ internal sealed class VocalVoice
         _p1 = p1;
         _p2 = p2;
         _p3 = p3;
+        _p4 = p4;
+        _p5 = p5;
         _hz = hz;
         _env = env;
         _x = x;
