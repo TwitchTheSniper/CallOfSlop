@@ -44,7 +44,7 @@ public sealed partial class Game
         var bestCos = MathF.Cos(def.LauncherLockCone * MathF.PI / 180f);
         foreach (var e in StreakEntities.Values)
         {
-            if (!Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, me) || !LauncherTargets.IsAirborne(e))
+            if (!StreakMachineHostile(e, me) || !LauncherTargets.IsAirborne(e))
                 continue;
             var c = e.Hitbox.Center - e.Pos + e.RenderPos;
             var to = c - eye;

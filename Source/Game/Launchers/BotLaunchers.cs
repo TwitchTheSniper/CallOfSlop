@@ -163,7 +163,7 @@ public sealed partial class Game
         var bestDist = float.MaxValue;
         foreach (var e in StreakEntities.Values)
         {
-            if (!Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, p))
+            if (!StreakMachineHostile(e, p))
                 continue;
             var air = LauncherTargets.IsAirborne(e);
             if (air && def.LauncherProjectile != LauncherProjectile.Rocket)

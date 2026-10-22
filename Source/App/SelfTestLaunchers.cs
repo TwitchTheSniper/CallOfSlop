@@ -280,21 +280,24 @@ public static partial class SelfTest
         if (game.StreakEntities.ContainsKey(drone.Id) || hits != 1)
             Fail($"a lock-on rocket should kill the attack drone in one hit ({hits} fired, alive {game.StreakEntities.ContainsKey(drone.Id)})");
 
-        // A "gunship-class" machine (a registered profile with 3 lock-on hits), and dumb fire on the sentry.
-        var turretProfile = LauncherTargets.Find(StreakId.SentryTurret);
-        LauncherTargets.Register(StreakId.SentryTurret, new LauncherTargetProfile { Airborne = true, LockOnHits = 3 });
-        var heavy = game.SelfTestSpawnEntity(b1, StreakId.SentryTurret, new Vector3(-6, 0, 20), now);
-        var heavyHits = 0;
-        while (game.StreakEntities.ContainsKey(heavy.Id) && heavyHits < 6)
+        // The Gunship (750 HP, explosives x1.5, one flare): locked Skylance rockets until it's down.
+        var ship = game.SelfTestSpawnEntity(b1, StreakId.Gunship, new Vector3(-10, 26, 0), now);
+        var shipHits = 0;
+        while (game.StreakEntities.ContainsKey(ship.Id) && shipHits < 5)
         {
-            game.TakeLauncherHit(heavy, me, sky, 0, true, now);
-            heavyHits++;
+            game.SelfTestRefillLauncher(me);
+            game.SelfTestFireLauncher(me, sky, Vector3.Normalize(ship.Hitbox.Center - me.Eye), ship.Id, now += 10);
+            shipHits++;
+            Run(8);
         }
-        LauncherTargets.Register(StreakId.SentryTurret, turretProfile ?? new LauncherTargetProfile());
+        var shipStated = LauncherTargets.HitsToKill(sky, StreakId.Gunship, true);
         var muleOnTurret = LauncherTargets.HitsToKill(mule, StreakId.SentryTurret, false);
-        Line($"gunship-class profile (3 lock-on hits): down after {heavyHits}; the sentry takes {muleOnTurret} Mule RPG direct hits, {LauncherTargets.HitsToKill(sky, StreakId.SentryTurret, false)} dumb-fire Skylance hits");
-        if (heavyHits != 3 || muleOnTurret is < 1 or > 3)
-            Fail("launchers vs streaks: a 3-hit profile should go down in exactly 3 lock-on hits and the sentry in 1-3 rocket hits");
+        Line($"Gunship ({KillStreaks.Get(StreakId.Gunship).Health} HP): down after {shipHits} locked Skylance rockets ({shipStated} hits plus its flare); "
+             + $"the sentry takes {muleOnTurret} Mule RPG direct hits, {LauncherTargets.HitsToKill(sky, StreakId.SentryTurret, false)} dumb-fire Skylance hits");
+        if (game.StreakEntities.ContainsKey(ship.Id) || shipHits is < 2 or > 3 || shipStated is < 2 or > 3)
+            Fail($"a gunship should need 2-3 lock-on rockets (took {shipHits}, stated {shipStated})");
+        if (muleOnTurret is < 1 or > 3)
+            Fail($"the sentry should take 1-3 rocket hits ({muleOnTurret})");
         if (game.StreakEntities.ContainsKey(turret.Id))
         {
             Ready(me, mule);

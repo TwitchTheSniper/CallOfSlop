@@ -31,8 +31,8 @@ public sealed class LauncherTargetProfile
 /// <see cref="Register"/> once (e.g. in a static constructor or where its definition is built), for example
 /// <c>LauncherTargets.Register(StreakId.Gunship, new() { Airborne = true, LockOnHits = 3, Flares = 1 })</c>. Rockets
 /// hit its <see cref="StreakEntity.Hitbox"/> and do their damage through <see cref="Game.TakeLauncherHit"/> (which also
-/// applies its <see cref="StreakDef.ExplosiveDamageMult"/>). A kind nobody registered counts as airborne when it is more
-/// than 8 m above the ground under it.
+/// applies its <see cref="StreakDef.ExplosiveDamageMult"/>, through <see cref="Game.DamageStreakMachine"/>). A kind nobody
+/// registered follows its own <see cref="StreakEntity.IsAirborne"/> (the Gunship, Attack and Hunter Drones fly).
 /// </summary>
 public static class LauncherTargets
 {
@@ -43,6 +43,11 @@ public static class LauncherTargets
         [StreakId.SentryTurret] = new LauncherTargetProfile { Airborne = false },
         // 200 hit points: one lock-on hit (the anti-air launcher's rocket alone does 250+).
         [StreakId.AttackDrone] = new LauncherTargetProfile { Airborne = true, LockOnHits = 1 },
+        // 60 hit points: anything brings it down.
+        [StreakId.HunterDrone] = new LauncherTargetProfile { Airborne = true, LockOnHits = 1 },
+        // 750 hit points, explosives x1.5: a locked Skylance rocket does (110 + 140) x 1.3 x 1.5 = 488, so two hits;
+        // it carries one flare, so a pilot who keeps locking needs three rockets. Dumb fire needs 2-4 by launcher.
+        [StreakId.Gunship] = new LauncherTargetProfile { Airborne = true, Flares = 1, FlareCooldown = 8f, FlareRange = 45f },
     };
 
     /// <summary>Registers (or replaces) how launchers treat a kind of streak machine.</summary>
@@ -60,12 +65,10 @@ public static class LauncherTargets
     }
 
     /// <summary>The profile for an entity (registered, or the height rule).</summary>
-    public static LauncherTargetProfile Get(StreakEntity e) => Find(e.Kind) ?? (IsHighUp(e.Pos) ? UnknownAir : Ground);
+    public static LauncherTargetProfile Get(StreakEntity e) => Find(e.Kind) ?? (e.IsAirborne ? UnknownAir : Ground);
 
-    /// <summary>Does it fly (lock-on and proximity fuses work on it)?</summary>
-    public static bool IsAirborne(StreakEntity e) => Get(e).Airborne;
-
-    private static bool IsHighUp(Vector3 p) => World.Query.Raycast(p, -Vector3.UnitY, 8f, QueryFilter.All) >= 7.99f;
+    /// <summary>Does it fly (lock-on and proximity fuses work on it)? A registered profile, else the streak's own <see cref="StreakEntity.IsAirborne"/>.</summary>
+    public static bool IsAirborne(StreakEntity e) => e.Targetable && Get(e).Airborne;
 
     /// <summary>
     /// The damage a launcher hit does to a machine before its own <see cref="StreakDef.ExplosiveDamageMult"/>: the direct

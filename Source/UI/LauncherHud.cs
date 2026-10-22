@@ -32,7 +32,7 @@ public static class LauncherHud
         {
             foreach (var e in game.StreakEntities.Values)
             {
-                if (!game.Players.TryGetValue(e.Owner, out var owner) || !game.StreakIsEnemy(owner, me) || !LauncherTargets.IsAirborne(e))
+                if (!game.StreakMachineHostile(e, me) || !LauncherTargets.IsAirborne(e))
                     continue;
                 var c = e.Hitbox.Center - e.Pos + e.RenderPos;
                 if (Vector3.Distance(cam.Eye, c) > def.LauncherLockRange || !Hud.Project(cam.ViewProj, c, area.X, area.Y, out var s, out _, 40f))

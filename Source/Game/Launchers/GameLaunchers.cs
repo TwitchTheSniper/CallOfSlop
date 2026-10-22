@@ -189,7 +189,7 @@ public sealed partial class Game
     /// <summary>Is a claimed lock-on target real: an enemy's airborne machine, in range, inside the cone (with slack) and in sight?</summary>
     private bool ValidLock(Player p, WeaponDef def, byte target, Vector3 eye, Vector3 dir)
     {
-        if (!StreakEntities.TryGetValue(target, out var e) || !Players.TryGetValue(e.Owner, out var owner) || !StreakIsEnemy(owner, p) || !LauncherTargets.IsAirborne(e))
+        if (!StreakEntities.TryGetValue(target, out var e) || !StreakMachineHostile(e, p) || !LauncherTargets.IsAirborne(e))
             return false;
         var to = e.Hitbox.Center - eye;
         var dist = to.Length();
@@ -349,8 +349,8 @@ public sealed partial class Game
             }
             foreach (var e in StreakEntities.Values)
             {
-                if (!Players.TryGetValue(e.Owner, out var eo) || !StreakIsEnemy(eo, owner))
-                    continue;
+                if (!StreakMachineHostile(e, owner))
+                    continue; // (yours, your team's, and crates: rockets fly through)
                 if (e.Hitbox.Raycast(start, dir, best) is { } t && t < best)
                 {
                     best = t;
@@ -395,7 +395,7 @@ public sealed partial class Game
         if (d.LauncherProximity > 0 && r.IsArmed && StreakEntities.Count > 0)
             foreach (var e in StreakEntities.Values)
             {
-                if (!Players.TryGetValue(e.Owner, out var eo) || !StreakIsEnemy(eo, owner) || !LauncherTargets.IsAirborne(e))
+                if (!StreakMachineHostile(e, owner) || !LauncherTargets.IsAirborne(e))
                     continue;
                 if (SegmentDistance(start, r.Pos, e.Hitbox.Center) <= d.LauncherProximity)
                 {
@@ -585,7 +585,7 @@ public sealed partial class Game
         {
             _blastEntities.Clear();
             foreach (var e in StreakEntities.Values)
-                if (e != directMachine && Players.TryGetValue(e.Owner, out var eo) && StreakIsEnemy(eo, owner))
+                if (e != directMachine && StreakMachineHostile(e, owner))
                     _blastEntities.Add(e);
             foreach (var e in _blastEntities)
             {
@@ -635,7 +635,7 @@ public sealed partial class Game
     /// </summary>
     public bool TakeLauncherHit(StreakEntity e, Player attacker, WeaponDef d, float raw, bool locked, double now)
     {
-        if (!DamageEnabled || !StreakEntities.ContainsKey(e.Id))
+        if (!DamageEnabled || !StreakEntities.ContainsKey(e.Id) || !StreakMachineHostile(e, attacker))
             return false;
         if (locked && LauncherTargets.Get(e) is { LockOnHits: > 0 } prof)
         {
@@ -645,7 +645,7 @@ public sealed partial class Game
             RemoveStreakEntity(e, attacker.Id, now);
             return true;
         }
-        return DamageStreakEntity(e, attacker, (int)MathF.Round(raw), now, DamageKind.Explosive);
+        return DamageStreakMachine(e, attacker, (int)MathF.Round(raw), DamageKind.Explosive, now); // the streaks' own rules (StreakEntities.cs)
     }
 
     /// <summary>A fresh match: nothing in the air, fresh ammo, no flares used, no lock.</summary>
