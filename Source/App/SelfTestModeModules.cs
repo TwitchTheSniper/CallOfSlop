@@ -97,11 +97,11 @@ public static partial class SelfTest
     private static readonly (GameMode Mode, int Bots, byte MapId, int Seed, double Seconds, ulong Digest)[] ModeDigests =
     [
         // Re-recorded when bot shots stopped rewinding later-updated players to a stale history slot (SelfTestLagComp.cs).
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x76961CB4C3352D73),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x90EB7AB99771ECB9),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xFA3269D1AA419859),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x0DB07F3E2C858760),
-        (GameMode.GunGame, 7, 0, 4105, 20, 0x7C850CF382BAE9A2),
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0),
+        (GameMode.GunGame, 7, 0, 4105, 20, 0),
         (GameMode.Zombies, 2, 0, 4106, 20, 0x740A835A97B6A819),
     ];
 

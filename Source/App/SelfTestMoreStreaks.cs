@@ -67,6 +67,7 @@ public static partial class SelfTest
             """, "morestreakstest.json");
         World.SetMap(flat);
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 2);
+        game.ScoreLimitOverride = game.ScoreLimit = int.MaxValue; // the kills here must never end the match
         game.SelfTestStreakTick(0);
         var me = game.Players[0];
         var bots = game.Players.Values.Where(p => p.Bot != null).ToArray();
@@ -214,7 +215,7 @@ public static partial class SelfTest
         var crate = game.StreakEntities.Values.FirstOrDefault(e => e.Kind == StreakId.SupplyDrop);
         var startY = crate?.Pos.Y ?? 0;
         Run(3.5);
-        var landed = crate is { Landed: true } && MathF.Abs(crate.Pos.Y) < 0.2f;
+        var landed = crate is { Landed: true } && MathF.Abs(crate.Pos.Y - crate.GroundY) < 0.01f && crate.GroundY < 0.5f;
         b1.Streak.Slots = StreakSet.Starter;
         b1.Streak.Ready = 0;
         Array.Clear(b1.Streak.Progress);
@@ -226,7 +227,7 @@ public static partial class SelfTest
         Run(0.2);
         var taken = !game.StreakEntities.Values.Any(e => e.Kind == StreakId.SupplyDrop);
         var prog = StreakSet.Starter.Ids.Select(b1.Streak.ProgressOf).ToArray();
-        Line($"Supply Drop: called {dropped}, fell from {startY:0} m, landed {landed}; an enemy on {hurt} HP took it: taken {taken}, health {b1.Health}, grenades {b1.GrenadesLeft}, streak kills {string.Join(",", prog)}");
+        Line($"Supply Drop: called {dropped}, fell from {startY:0.0} m to {crate?.GroundY:0.00}, landed {landed}; an enemy on {hurt} HP took it: taken {taken}, health {b1.Health}, grenades {b1.GrenadesLeft}, streak kills {string.Join(",", prog)}");
         if (!dropped || crate == null || startY < 20 || !landed || !taken || b1.Health != World.MaxHealth || b1.GrenadesLeft != Throwables.Get(b1.Grenade).PerLife || prog.Any(x => x != 1))
             Fail("Supply Drop should fall, land and be taken by whoever touches it first, with its rewards");
 
@@ -287,6 +288,9 @@ public static partial class SelfTest
             Fail("the gunship should shell enemies in the open and be shot down by enemies (not its owner)");
         Run(0.2);
 
+        if (game.Phase != MatchPhase.Playing)
+            Fail($"the match left Playing during the streak scenarios ({game.Phase})");
+
         // ---- Bots call them --------------------------------------------------------------------------
         Reset();
         game.SelfTestPlace(me, new Vector3(0, 0, 25), 0);
@@ -305,6 +309,7 @@ public static partial class SelfTest
         var botUsedMore = bot.Streak.Ready == 0;
         bot.Streak.Slots = new StreakSet(StreakId.SmokeScreen, StreakId.EmpBlast, StreakId.None).Sanitized();
         bot.Streak.Ready = (ushort)(StreakState.Bit(StreakId.SmokeScreen) | StreakState.Bit(StreakId.EmpBlast));
+        bot.Health = 50; // hurt: it wants cover
         bot.Bot!.LastSeenAt = me.Position;
         bot.Bot.LastSeenTime = now + 6;
         game.SelfTestBotStreaks(bot, now + 6);

@@ -49,9 +49,9 @@ public sealed partial class Game
                     return;
                 case StreakId.SmokeScreen:
                 {
-                    // A wall halfway to the enemy it just saw, square to the line between them.
-                    if (now - b.LastSeenTime > 6 || Vector3.Distance(b.LastSeenAt, p.Position) < 10)
-                        continue; // nobody to hide from yet: keep it
+                    // Cover to back off behind: once hurt, a wall halfway to the enemy it just saw, square to the line between them.
+                    if (p.Health >= 70 || now - b.LastSeenTime > 3 || Vector3.Distance(b.LastSeenAt, p.Position) < 10)
+                        continue; // not in trouble (or nobody to hide from): keep it
                     var to = b.LastSeenAt - p.Position;
                     var mid = p.Position + to * 0.5f;
                     var spot = KillStreaks.GroundAt(mid.X, mid.Z, p.Position.Y);
