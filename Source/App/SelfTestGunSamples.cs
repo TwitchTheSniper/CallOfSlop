@@ -49,7 +49,7 @@ public static partial class SelfTest
 
         foreach (var l in lib.Describe(Weapons.All))
             Line(l);
-        Line("::notice title=Gun samples::" + string.Join("%0A", GunSampleNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        Line("::error title=Gun samples (baseline, temporary)::" + string.Join("%0A", GunSampleNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     /// <summary>Every listed file: canonical 16-bit mono 44.1 kHz, a sane loudness (RMS of the first 200 ms) and no full-scale peaks.</summary>
