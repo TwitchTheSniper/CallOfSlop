@@ -165,8 +165,8 @@
     },
     {
       "shape": "ring",
-      "radius": 1.2,
-      "width": 0.9,
+      "radius": 1.0,
+      "width": 0.5,
       "at": [
         0.06,
         0.94
