@@ -211,13 +211,20 @@ public sealed partial class Game
 
     private void PickBotLoadout(Player bot) => PickBotLoadout(bot, bot.Bot?.Profile ?? BotPersonalities.Get(BotPersonality.Chaotic));
 
-    /// <summary>Bots run a couple of random attachments too (no optics: they don't need them).</summary>
-    private uint RandomKit(WeaponDef w)
+    /// <summary>
+    /// Bots run a couple of random attachments too (no optics: they don't need them), only ones their weapon XP at the
+    /// gear level has unlocked (BotGear.cs; the draws are the same at every level, a locked one is just left off).
+    /// </summary>
+    private uint RandomKit(WeaponDef w, int level)
     {
         uint kit = 0;
-        foreach (var a in Attachments.For(w))
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25)
+        var list = Attachments.For(w);
+        for (var i = 0; i < list.Count; i++) // indexed: no enumerator to allocate every life
+        {
+            var a = list[i];
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25 && BotGear.Attachment(w, a, level))
                 kit = Attachments.With(kit, a.Slot, a.Index);
+        }
         return kit;
     }
 
@@ -353,6 +360,7 @@ public sealed partial class Game
             WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        RefreshBotGear(); // someone joined, left or levelled up: the bots' gear follows the lobby's level (BotGear.cs)
     }
 
     private void ReadRoster(ref PacketReader r)

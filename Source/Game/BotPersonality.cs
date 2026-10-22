@@ -165,44 +165,96 @@ public sealed partial class Game
         return BotPersonality.Tactician;
     }
 
-    /// <summary>A loadout to suit the bot's personality: weighted by weapon class, the occasional silly special.</summary>
+    /// <summary>
+    /// A loadout to suit the bot's personality: weighted by weapon class, the occasional silly special, all from what its
+    /// gear level has unlocked (the lobby's level, BotGear.cs). At the max level the draws are exactly the old ones (same
+    /// shared random numbers in the same order), so seeded matches replay the same. Allocates nothing: it runs every life.
+    /// </summary>
     private void PickBotLoadout(Player bot, BotProfile prof)
     {
-        var primaries = Weapons.All.Where(w => w.Slot == Slot.Primary).ToArray();
-        var weights = primaries.Select(w =>
-        {
-            var c = (int)w.Class;
-            var weight = c < prof.ClassWeight.Length ? prof.ClassWeight[c] : 0f;
-            return w.Class == WeaponClass.Special && prof.Kind != BotPersonality.Chaotic ? weight * 0.4f : weight;
-        }).ToArray();
-        var total = weights.Sum();
-        var primary = primaries[_rng.Next(primaries.Length)];
+        RefreshBotGear(); // people come and go between lives
+        var level = BotGearLevel(bot);
+        if (bot.Bot is { } brain)
+            brain.GearLevel = level;
+        var all = Weapons.All;
+
+        // Primary: a random one as the fallback, then a roll weighted by class (the same draws as before).
+        var primaryLevel = BotWeaponCount(all, Slot.Primary, false, level) > 0 ? level : BotGear.Full; // nothing unlocked (odd weapon files): anything
+        var count = BotWeaponCount(all, Slot.Primary, false, primaryLevel);
+        var sum = 0.0; // a double sum cast to float, like Enumerable.Sum over floats
+        foreach (var w in all)
+            if (w.Slot == Slot.Primary && BotGear.Weapon(w, primaryLevel))
+                sum += BotClassWeight(w, prof);
+        var total = (float)sum;
+        var primary = BotNthWeapon(all, Slot.Primary, false, primaryLevel, _rng.Next(count));
         if (total > 0)
         {
             var r = _rng.NextDouble() * total;
-            for (var i = 0; i < primaries.Length; i++)
-                if ((r -= weights[i]) <= 0)
+            foreach (var w in all)
+                if (w.Slot == Slot.Primary && BotGear.Weapon(w, primaryLevel) && (r -= BotClassWeight(w, prof)) <= 0)
                 {
-                    primary = primaries[i];
+                    primary = w;
                     break;
                 }
         }
-        var secondaries = Weapons.All.Where(w => w.Slot == Slot.Secondary && !w.IsLauncher).ToArray(); // launchers: their own roll below
+        var secondaryLevel = BotWeaponCount(all, Slot.Secondary, true, level) > 0 ? level : BotGear.Full; // launchers: their own roll below
         bot.WantPrimary = primary.Id;
-        bot.WantSecondary = secondaries[_rng.Next(secondaries.Length)].Id;
-        bot.WantGrenade = _rng.NextDouble() < (prof.Kind == BotPersonality.Tactician ? 0.95 : 0.8) ? ThrowableKind.Frag : ThrowableKind.Impact;
-        bot.WantEquipment = TacticalGear.BotPick(prof.Kind, TacticalGear.Roll(bot.Id, bot.SpawnTick, 0xE0)); // own roll: the shared random sequence is untouched
-        bot.WantPrimaryKit = RandomKit(Weapons.Get(bot.WantPrimary));
-        bot.WantSecondaryKit = RandomKit(Weapons.Get(bot.WantSecondary));
-        bot.WantPerks = BotPerks(prof);
-        BotPickLauncher(bot, prof); // some bots carry a launcher instead (BotLaunchers.cs; its own roll, the shared random sequence is untouched)
+        bot.WantSecondary = BotNthWeapon(all, Slot.Secondary, true, secondaryLevel, _rng.Next(BotWeaponCount(all, Slot.Secondary, true, secondaryLevel))).Id;
+        var grenade = _rng.NextDouble() < (prof.Kind == BotPersonality.Tactician ? 0.95 : 0.8) ? ThrowableKind.Frag : ThrowableKind.Impact;
+        if (!BotGear.Throwable(grenade, level))
+            grenade = grenade == ThrowableKind.Frag ? ThrowableKind.Impact : ThrowableKind.Frag; // the other one, if that's unlocked
+        bot.WantGrenade = BotGear.Throwable(grenade, level) ? grenade : ThrowableKind.None; // a level-1 player has no grenade yet
+        bot.WantEquipment = BotGear.Equipment(prof.Kind, TacticalGear.Roll(bot.Id, bot.SpawnTick, 0xE0), level); // own roll: the shared random sequence is untouched
+        bot.WantPrimaryKit = RandomKit(Weapons.Get(bot.WantPrimary), level);
+        bot.WantSecondaryKit = RandomKit(Weapons.Get(bot.WantSecondary), level);
+        bot.WantPerks = BotPerks(prof, level);
+        BotPickLauncher(bot, prof, level); // some bots carry a launcher instead (BotLaunchers.cs; its own roll, the shared random sequence is untouched)
     }
 
-    /// <summary>Perks the personality likes (one per category), or random ones for an empty preference list.</summary>
-    private PerkSet BotPerks(BotProfile prof)
+    /// <summary>How much the personality likes the gun (specials are rarer for everyone but Chaotic).</summary>
+    private static float BotClassWeight(WeaponDef w, BotProfile prof)
     {
-        var random = RandomPerks();
-        PerkId Pick(PerkId[] options, PerkId fallback) => options.Length == 0 ? fallback : options[_rng.Next(options.Length)];
+        var c = (int)w.Class;
+        var weight = c < prof.ClassWeight.Length ? prof.ClassWeight[c] : 0f;
+        return w.Class == WeaponClass.Special && prof.Kind != BotPersonality.Chaotic ? weight * 0.4f : weight;
+    }
+
+    private static bool BotWeaponFits(WeaponDef w, Slot slot, bool noLaunchers, int level) =>
+        w.Slot == slot && !(noLaunchers && w.IsLauncher) && BotGear.Weapon(w, level);
+
+    /// <summary>How many guns for the slot the gear level has unlocked.</summary>
+    private static int BotWeaponCount(WeaponDef[] all, Slot slot, bool noLaunchers, int level)
+    {
+        var n = 0;
+        foreach (var w in all)
+            if (BotWeaponFits(w, slot, noLaunchers, level))
+                n++;
+        return n;
+    }
+
+    /// <summary>The n-th of those guns (in weapon list order).</summary>
+    private static WeaponDef BotNthWeapon(WeaponDef[] all, Slot slot, bool noLaunchers, int level, int n)
+    {
+        foreach (var w in all)
+            if (BotWeaponFits(w, slot, noLaunchers, level) && n-- == 0)
+                return w;
+        return slot == Slot.Primary ? Weapons.DefaultPrimary : Weapons.DefaultSecondary;
+    }
+
+    /// <summary>Perks the personality likes (one per category), or random ones for an empty preference list; all unlocked at the gear level.</summary>
+    private PerkSet BotPerks(BotProfile prof, int level)
+    {
+        var random = RandomPerks(level);
+        PerkId Pick(PerkId[] options, PerkId fallback)
+        {
+            if (options.Length == 0)
+                return fallback;
+            var start = _rng.Next(options.Length);
+            for (var i = 0; i < options.Length; i++) // a locked favourite: the next favourite that's unlocked
+                if (options[(start + i) % options.Length] is var id && BotGear.Perk(id, level))
+                    return id;
+            return fallback; // none unlocked yet: the random one
+        }
         return new PerkSet(Pick(prof.Movement, random.Movement), Pick(prof.Survival, random.Survival), Pick(prof.Damage, random.Damage)).Sanitized();
     }
 }

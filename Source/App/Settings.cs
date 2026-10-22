@@ -74,6 +74,7 @@ public sealed class Settings
     // Single player
     public int Bots = 3; // 0 = "No bots (test mode)": you alone, the match never ends on its own
     public BotDifficulty Difficulty = BotDifficulty.Normal;
+    public BotGearMode BotGear = BotGearMode.MatchPlayers; // single player and hosting: bots carry what the players' level has unlocked (BotGear.cs); files without it get Match players
 
     // Multiplayer
     public ushort Port = Program.DefaultPort;
@@ -211,6 +212,7 @@ public sealed class Settings
                     case "net_stats": s.ShowNetStats = v == "1"; break;
                     case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
+                    case "bot_gear": s.BotGear = CallOfSlop.BotGear.Parse(v); break;
                     case "port" when ushort.TryParse(v, out var p) && p > 0: s.Port = p; break;
                     case "upnp": s.UseUpnp = v == "1"; break;
                     case "host_bots" when int.TryParse(v, out var i): s.HostBots = Math.Clamp(i, 0, Game.MaxPlayers - 2); break;
@@ -293,6 +295,7 @@ public sealed class Settings
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
                     $"bots={Bots}",
                     $"difficulty={Difficulty}",
+                    $"bot_gear={CallOfSlop.BotGear.Key(BotGear)}",
                     $"port={Port}",
                     $"upnp={(UseUpnp ? 1 : 0)}",
                     $"host_bots={HostBots}",

@@ -199,6 +199,7 @@ public sealed partial class Ui
                             BotDifficulty.Insane => "Hard+ aim. In team modes they work as squads: one pins you down while another flanks you.",
                             _ => "Fast reactions, tight aim, they strafe and go for heads.",
                         });
+                        BotGearPicker(s); // UiBotGear.cs
                     }
                     ImGui.Spacing();
                     if (BigButton("START"))
@@ -270,7 +271,10 @@ public sealed partial class Ui
                     ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Math.Max(0, hostMax - 2));
                     ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.HostBots + 1, hostMax) + ". People who join take a bot's place.");
                     if (s.HostBots > 0)
+                    {
                         DifficultyPicker(ref s.Difficulty);
+                        BotGearPicker(s); // UiBotGear.cs
+                    }
                     else
                         TestModeHint();
                     ImGui.SetNextItemWidth(360 * _scale);
