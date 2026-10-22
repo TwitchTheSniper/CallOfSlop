@@ -834,6 +834,7 @@ A map needs **one spawn per player**. If it has fewer, the game adds spawns when
 - `CallOfSlop.exe --export-maps SomeFolder` rewrites every loaded map in the standard tidy layout, in its pack folder, which is handy after hand-editing.
 - Keep cover near spawns, and leave sightlines under ~60 m on Small maps.
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.
+- **Stairs must give 2.1 m headroom** and be walkable standing: nothing (a roof slab, a beam, a lintel, a railing's top rail, terrain) within 2.1 m over any step a player can stand on, steps of at most 0.55 m, at least 1.0 m clear between the sides, 1.2 m clear at the top and the foot (or room to turn off sideways), and nothing parked across the foot. The self-test's "Stairs" section finds every flight on every map (any run of three or more step-shaped boxes, whatever op or prop built it) and walks it standing with both movers; it names the flight and the clearance in cm when one fails. On terrain, keep the ground below the treads: a plateau or bank edge that rises over the upper steps makes them a wall.
 
 ## Zombies maps
 

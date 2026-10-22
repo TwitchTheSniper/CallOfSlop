@@ -47,7 +47,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Train Yard", 20.0f, -27.8f), ("Old Town", 26.1f, 24.9f), ("Blueprint", 5.2f, -26.5f), ("Sprawl", -65.0f, -42.3f),
+        ("Train Yard", 20.0f, -27.8f), ("Carousel", 5.2f, -23.6f), ("Sprawl", -65.0f, -42.3f), ("Adobe Mesa", -11.4f, -1.7f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -504,9 +504,10 @@ public static partial class SelfTest
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
             var edge = side < 0 ? f.C0 : f.C1;
-            // As near the foot as there's room (stepping on over the first tread or two; the walks tell whether the movers
-            // can), with a clear way across the treads to the lane.
-            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.02f)
+            // Beside the first tread only (a body reaching the second as it steps on can't climb onto the first), with a
+            // clear way across the treads to the lane.
+            var run = AlongHi(first, f.Axis, f.Dir) - AlongLo(first, f.Axis, f.Dir);
+            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + run - World.PlayerRadius - 0.01f; u += 0.02f)
             {
                 var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
                 var floor = SupportAt(m, phys, p.X, p.Z, top - StepMinRise + 0.01f, lowest, 0.15f); // firm footing under the middle
@@ -770,7 +771,7 @@ public static partial class SelfTest
             {
                 World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = sideYaw, SpeedPct = 100 });
                 var a = f.Axis == 0 ? s.Position.Z : s.Position.X;
-                reached = (c - a) * sgn <= 0.05f;
+                reached = (c - a) * sgn <= 0.35f; // (it carries on a bit: the lane steering takes over)
             }
             if (!reached)
                 return "coming onto the first step from the side: " + StairStuckWhy(m, phys, f, s, true, c);
@@ -795,7 +796,7 @@ public static partial class SelfTest
         {
             // Walk the lane like a player does: forward, strafing back onto it when the body drifts off it.
             var off = c - (f.Axis == 0 ? s.Position.Z : s.Position.X);
-            var steer = MathF.Abs(off) < 0.08f ? Buttons.None : off * rightAcross > 0 ? Buttons.Right : Buttons.Left;
+            var steer = MathF.Abs(off) < 0.04f ? Buttons.None : off * rightAcross > 0 ? Buttons.Right : Buttons.Left;
             World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward | steer, Yaw = yaw, SpeedPct = 100 });
             var u = Along(f, s.Position);
             if (s.Stance != Stance.Stand)
