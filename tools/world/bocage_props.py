@@ -182,7 +182,7 @@ wagon += [part((0.08, 0.08, 2.0), (1.25, 0.47, 0), IRON), part((0.08, 0.08, 2.0)
 for k in range(6):   # the load of loose hay, heaped
     wagon.append(part((3.0 - k * 0.32, 0.32, 1.55 - k * 0.12), (-0.05 + (k % 2) * 0.08, 1.2 + k * 0.24, 0), [HAY, HAY2, HAY3][k % 3],
                       material="dirt", texScale=2, rotation=[0, (k % 3 - 1) * 4, 0]))
-add("Hay Wagon", "A four-wheeled timber farm wagon heaped with loose hay, its shafts down. Solid cover.",
+add("Norman Hay Wagon", "A four-wheeled timber farm wagon heaped with loose hay, its shafts down. Solid cover.",
     wagon, collider=[{"size": [3.6, 2.6, 1.9], "offset": [0, 1.3, 0]}], scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 12})
 
 cart = []

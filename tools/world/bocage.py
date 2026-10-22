@@ -379,6 +379,13 @@ HEDGE_PIECES = []
 GATES = []
 
 
+def sink(nm, x, z, yaw):
+    """How far below the ground at its middle the game will stand this prop (the lowest of 9 points of its bounds)."""
+    r = t.foot(nm, x, z, yaw)
+    base = min(gy(px, pz) for px in (r[0], (r[0] + r[2]) / 2, r[2]) for pz in (r[1], (r[1] + r[3]) / 2, r[3]))
+    return gy(x, z) - base
+
+
 def hedge_run(pts, gaps, kind, seed):
     """Lays hedge props along a polyline, leaving the gaps. Pieces in a cleared zone are dropped."""
     own = kind.split(":")[1] if kind.startswith("lane:") else None
@@ -427,6 +434,14 @@ def hedge_run(pts, gaps, kind, seed):
             if any(kr < 4.0 and math.hypot(cx - kx, cz - kz) < kr + 1.2 for (kx, kz, kr) in t.keepout):   # spawns, flags, doors (hills keep their hedges)
                 continue
             yaw = yaw_along(x1 - x0, z1 - z0)
+            # The game stands a prop on the lowest ground under its (axis-aligned) bounds; on a bank that sinks a long,
+            # turned piece so far its top is in reach from the high side. Such pieces are halved.
+            if nm.startswith("Bocage Hedgerow") and "Short" not in nm and "End" not in nm and sink(nm, cx, cz, yaw) > 0.45:
+                for (u0, u1) in ((s0, s0 + 3.0), (s1 - 3.0, s1)):
+                    xa, za, _, _ = at_arc(pts, u0)
+                    xb, zb, _, _ = at_arc(pts, u1)
+                    HEDGE_PIECES.append(("Bocage Hedgerow Short", (xa + xb) / 2, (za + zb) / 2, yaw_along(xb - xa, zb - za)))
+                continue
             HEDGE_PIECES.append((nm, cx, cz, yaw))
     for (a, b, k, s) in cut:
         x, z, ux, uz = at_arc(pts, s)
@@ -438,7 +453,11 @@ for i, (pts, gaps, kind) in enumerate(HEDGES):
     hedge_run(pts, gaps, kind, 900 + i)
 
 for (nm, x, z, yaw) in HEDGE_PIECES:
-    t.ops.append({"op": "Prop", "name": nm, "x": R(x), "z": R(z), "yaw": R(yaw % 360)})
+    lift = min(0.4, max(0.0, sink(nm, x, z, yaw) - 0.5))     # the last few on steep banks: lifted a little (the bank still meets the slope)
+    op = {"op": "Prop", "name": nm, "x": R(x), "z": R(z), "yaw": R(yaw % 360)}
+    if lift > 0.02:
+        op["y"] = R(lift)
+    t.ops.append(op)
     t.props.append((nm, x, z, yaw, 0.0, "hedge"))
     r = t.foot(nm, x, z, yaw)
     # the rotated outline, marked as a fat line (the bounding box of a turned piece is far too big)
@@ -533,7 +552,7 @@ for (x, z) in (SILO_A, M(SILO_A)):
     t.prop("Concrete Grain Silo", x, z, 0, check=False, tag="farm")
     t.mark(t.occ, (x - 2.3, z - 2.3, x + 2.3, z + 2.3)); t.mark(t.walk, (x - 2.0, z - 2.0, x + 2.0, z + 2.0)); t.mark(t.tall, (x - 2.0, z - 2.0, x + 2.0, z + 2.0))
 # the farmyard (between the farmhouse, the barn and the lane): tractor, wagon, well, trough, muck heap, bales
-YARD = [("Vintage Tractor", -82.0, -8.0, 30.0), ("Hay Wagon", -91.5, -16.5, 85.0), ("Stone Well", -88.0, -6.0, 0.0),
+YARD = [("Vintage Tractor", -82.0, -8.0, 30.0), ("Norman Hay Wagon", -91.5, -16.5, 85.0), ("Stone Well", -88.0, -6.0, 0.0),
         ("Stone Water Trough", -76.5, -16.0, 90.0), ("Muck Heap", -100.0, -18.0, 15.0), ("Round Hay Bale", -79.5, 1.5, 10.0),
         ("Round Hay Bale", -77.8, 1.2, 80.0), ("Hay Bale Stack", -101.0, -6.0, 90.0), ("Tipped Farm Cart", -96.5, 3.5, 200.0),
         ("Milk Churns", -84.0, -17.0, 0.0), ("Firewood Stack", -102.0, -26.0, 90.0), ("Cider Barrel", -77.0, -20.5, 0.0),
@@ -584,7 +603,7 @@ FIELD_ITEMS_A = [
     # hay meadow, north fields: round bales scattered (solid cover across the open grass)
     ("Round Hay Bale", -55, -50, 20), ("Round Hay Bale", -48, -60, 80), ("Round Hay Bale", -44, -50, 140), ("Round Hay Bale", -52, -68, 10),
     ("Round Hay Bale", -26, -52, 60), ("Round Hay Bale", -18, -64, 110), ("Round Hay Bale", -30, -72, 30),
-    ("Hay Bale Stack", -42, -70, 0), ("Hay Wagon", -22, -48, 100),
+    ("Hay Bale Stack", -42, -70, 0), ("Norman Hay Wagon", -22, -48, 100),
     # pasture, south-west: the herd, a trough, a muck heap
     ("Dairy Cow", -90, 50, 30), ("Grazing Cow", -84, 48, 200), ("Grazing Cow", -78, 54, 120), ("Dairy Cow", -96, 52, 300),
     ("Grazing Cow", -60, 26, 60), ("Dairy Cow", -64, 16, 160), ("Stone Water Trough", -70, 48, 90), ("Stone Water Trough", -62, 30, 0),
@@ -998,12 +1017,5 @@ if os.environ.get("BOCAGE_HILLS"):
 if os.environ.get("BOCAGE_SMOKE"):
     for p in [(-62.0, 4.7), (-40.0, 6.5), (-86.0, -6.0), (0.0, 0.0)]:
         print("ground", p, round(gy(*p), 2))
-low = []
-for (nm, x, z, yaw) in HEDGE_PIECES:
-    a = math.radians(yaw); ux, uz = math.cos(a), -math.sin(a)
-    half = 3.0 if "Short" not in nm and "End" not in nm else (1.5 if "Short" in nm else 1.0)
-    pts_ = [(x + ux * f * half + uz * g * 1.15, z - (-uz * f * half) * 0 + uz * 0 + (uz * f * half) + (-ux) * g * 1.15) for f in (-1, 0, 1) for g in (-1, 0, 1)]
-    base = min(gy(px, pz) for px, pz in pts_)
-    low.append((4.3 + base - gy(x, z), x, z))
-low.sort()
-print("lowest hedge tops over their centre ground:", [(round(a, 2), round(b, 1), round(c, 1)) for a, b, c in low[:5]])
+low = sorted((4.3 - sink(nm, x, z, yaw) + min(0.4, max(0.0, sink(nm, x, z, yaw) - 0.5)), round(x, 1), round(z, 1), nm) for (nm, x, z, yaw) in HEDGE_PIECES)
+print("lowest hedge tops over their centre ground:", [(round(v[0], 2),) + v[1:] for v in low[:5]])
