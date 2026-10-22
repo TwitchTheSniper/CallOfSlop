@@ -12,21 +12,14 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>
-    /// CPU budget for any one track, in ms of rendering per second of music, as the median of repeated timed renders of
-    /// its drops (<see cref="MusicTrackCost"/>). It was a raw single-pass 50 for every track; the user allowed tracks up
-    /// to about 1.5x today's heaviest one for more complex music, so it's 1.5 x 50 = 75. The heaviest track measures
-    /// well under 10 on a CI runner, so this only catches real blow-ups; the relative 1.5x rule is checked separately.
+    /// A weird track may cost this much more than the heaviest classic track (the user's 1.5x rule plus room for timing
+    /// noise), measured as medians on the same machine (<see cref="MusicTrackCost"/>), not as a wall-clock cap.
     /// </summary>
-    private const double MusicTrackBudgetMsPerSecond = 75;
-
-    /// <summary>A weird track may cost this much more than the heaviest normal track (1.5x, plus room for timing noise).</summary>
     private const double WeirdCostRatioMax = 1.6;
-
-    private static readonly Dictionary<MusicTrack, double> MusicCosts = new();
 
     /// <summary>
     /// A track's CPU cost that a noisy runner can't fake: three timed 1 s renders from its first drop and three from
-    /// its last drop (the busiest parts), the median of each, the larger of the two. Recorded for the weird-track check.
+    /// its last drop (the busiest parts), the median of each, the larger of the two.
     /// </summary>
     private static double MusicTrackCost(MusicRenderer r, MusicTrack t, float[] block)
     {
@@ -50,7 +43,6 @@ public static partial class SelfTest
             Array.Sort(runs);
             worst = Math.Max(worst, runs[1]);
         }
-        MusicCosts[t] = worst;
         return worst;
     }
 
@@ -178,21 +170,31 @@ public static partial class SelfTest
 
         CheckWeirdVoices();
 
-        // ---- CPU: at most ~1.5x the heaviest normal track on the same machine (medians from the Music section) -----
-        var reference = MusicCosts.Where(kv => kv.Key.Weird == null).Select(kv => kv.Value).DefaultIfEmpty(0).Max();
-        var stat = new System.Text.StringBuilder($"heaviest normal track {reference:0.00} ms/s;");
+        // ---- CPU: at most ~1.5x the heaviest classic track (not the weird or harder ones), medians on the same machine -----
+        var cr = new MusicRenderer();
+        var block = new float[MusicPlayer.BlockFrames * 2];
+        cr.Load(MusicTracks.All[0], 1);
+        for (var i = 0; i < 40; i++)
+            cr.Render(block); // warm up
+        var reference = 0.0;
+        var refName = "";
+        foreach (var t in MusicTracks.All.Where(t => t.Weird == null && t.Hardbass?.Harder == null))
+        {
+            var c = MusicTrackCost(cr, t, block);
+            if (c > reference)
+                (reference, refName) = (c, t.Name);
+        }
+        var stat = new System.Text.StringBuilder($"heaviest classic track {refName} {reference:0.00} ms/s;");
         foreach (var t in weird)
         {
-            if (!MusicCosts.TryGetValue(t, out var cost))
-            {
-                Fail($"{t.Name}: no CPU measurement (the Music section should have timed it)");
-                continue;
-            }
+            var cost = MusicTrackCost(cr, t, block);
             var ratio = reference > 0 ? cost / reference : 0;
             var drop = Measure(RenderSeconds(new MusicRenderer(), t, 1234, t.FirstDropBar, 3)).Rms;
             stat.Append($" {t.Name} {t.Bpm}bpm {t.Seconds:0}s {cost:0.00}ms/s {ratio:0.00}x drop{drop:0.000};");
             if (ratio > WeirdCostRatioMax)
-                Fail($"{t.Name}: costs {cost:0.00} ms per s, {ratio:0.00}x the heaviest normal track (allowed {WeirdCostRatioMax}x)");
+                Fail($"{t.Name}: costs {cost:0.00} ms per s, {ratio:0.00}x the heaviest classic track {refName} (allowed {WeirdCostRatioMax}x)");
+            if (cost > MusicBudgetMsPerSecond)
+                Fail($"{t.Name}: costs {cost:0.00} ms per s (budget {MusicBudgetMsPerSecond} for every track)");
         }
         Line("WEIRDSTAT " + stat);
     }

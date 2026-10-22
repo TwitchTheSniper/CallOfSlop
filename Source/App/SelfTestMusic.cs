@@ -12,10 +12,13 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>
-    /// The CPU budget: at most this many ms of rendering per second of music, i.e. 0.5 ms per 10 ms of audio (half the
-    /// 1 ms target, so a slow CI runner still passes). It measures about 7 ms per second on the CI runner.
+    /// The CPU budget: at most this many ms of rendering per second of music on the CI runner (a generous cap for a slow,
+    /// shared machine; the classic tracks measure about 7 ms per second there and 0.1-0.5% of a core on a gaming PC).
+    /// Raised from 50 to 75 when the harder hardbass tracks came in: a track may now cost up to 1.5x the heaviest older
+    /// one (the user's rule, checked on its own in CheckHardbassHarder), keeping all music under ~1% of a core on a PC.
+    /// A track over the cap is re-timed (median of several runs) before it fails, so one noisy reading never fails CI.
     /// </summary>
-    private const double MusicBudgetMsPerSecond = 50;
+    private const double MusicBudgetMsPerSecond = 75;
 
     private static void CheckMusic()
     {
@@ -100,6 +103,7 @@ public static partial class SelfTest
                 }
                 frame += block.Length / 2;
             }
+            var finished = r.Finished; // (a re-timing below reloads the renderer)
             var ms = ticks * 1000.0 / Stopwatch.Frequency;
             var seconds = frame / (double)sr;
             renderMs += ms;
@@ -109,10 +113,19 @@ public static partial class SelfTest
             var clipPct = samples == 0 ? 0 : 100.0 * clipped / samples;
             stats[ti] = new MusicTrackStats(Rms(MusicPart.Intro), Rms(MusicPart.Build), Rms(MusicPart.Drop), Rms(MusicPart.Break), peak, clipped, ms / seconds,
                                             t.Style == MusicStyle.Hardbass ? r.LimiterMinGain : 1f);
+            if (ms / seconds > MusicBudgetMsPerSecond)
+            {
+                // A busy runner can stall one pass: re-time a few seconds of its drop and take the median before failing.
+                var median = MedianMsPerSecond(r, t, 5);
+                Line($"{t.Name}: {ms / seconds:0.0} ms per s over the budget on the first pass; median of 5 re-timed runs {median:0.0}");
+                renderMs += (median - ms / seconds) * seconds;
+                if (median > MusicBudgetMsPerSecond)
+                    Fail($"{t.Name}: rendering costs {median:0.0} ms per second of audio (median of 5 runs; budget {MusicBudgetMsPerSecond} for every track)");
+            }
             Line($"{t.Name,-24} {t.Set,-5} {t.Style,-11} {t.Bpm,3:0} BPM  {t.Key,-21} {seconds,4:0} s  rms intro {Rms(MusicPart.Intro):0.000} "
                  + $"build {Rms(MusicPart.Build):0.000} drop {Rms(MusicPart.Drop):0.000} break {Rms(MusicPart.Break):0.000} outro {Rms(MusicPart.Outro):0.000}  "
                  + $"peak {peak:0.000} clipped {clipPct:0.000}%  {ms / seconds:0.0} ms per s");
-            if (!r.Finished)
+            if (!finished)
                 Fail($"{t.Name}: never finished (rendered {seconds:0} s of {t.Seconds:0} s)");
             else if (Math.Abs(seconds - t.Seconds) > 1.0)
                 Fail($"{t.Name}: finished after {seconds:0.0} s, expected {t.Seconds:0.0} s");
@@ -132,11 +145,6 @@ public static partial class SelfTest
                 Fail($"{t.Name}: the intro ({Rms(MusicPart.Intro):0.000}) is louder than the drops ({Rms(MusicPart.Drop):0.000})");
             if (Rms(MusicPart.Drop) > 0.6)
                 Fail($"{t.Name}: drops are crushed (rms {Rms(MusicPart.Drop):0.000})");
-            // CPU per track: the median of repeated timed renders of its heaviest parts (one slow run on a shared CI runner
-            // used to fail the raw single-pass number); see MusicTrackCost in SelfTestWeirdHardbass.cs.
-            var cost = MusicTrackCost(r, t, block);
-            if (cost > MusicTrackBudgetMsPerSecond)
-                Fail($"{t.Name}: rendering costs {cost:0.0} ms per second of audio (median; budget {MusicTrackBudgetMsPerSecond} for every track)");
         }
         Line($"track costs (ms per s of audio):{costs}");
         var msPerSecond = renderMs / renderSeconds;
@@ -206,8 +214,9 @@ public static partial class SelfTest
             Fail($"want exactly one ~200 BPM hardbass track (have {hb.Count(t => t.Bpm is >= 195 and <= 205)})");
         foreach (var t in hb)
         {
-            if (t.Bpm is not (>= 145 and <= 165) && t.Bpm is not (>= 195 and <= 205))
-                Fail($"{t.Name}: {t.Bpm} BPM (hardbass is 145-165, or the 200 BPM track)");
+            // Classic hardbass is 145-165 BPM; the harder tracks go to 175, plus one 210-225 BPM monster.
+            if (t.Bpm is not (>= 145 and <= 165) && t.Bpm is not (>= 195 and <= 205) && (t.Hardbass?.Harder == null || t.Bpm is not ((>= 160 and <= 175) or (>= 210 and <= 225))))
+                Fail($"{t.Name}: {t.Bpm} BPM (hardbass is 145-165, or the 200 BPM track; harder tracks 160-175 or 210-225)");
             if (t.Hardbass is not { } f)
             {
                 Fail($"{t.Name}: no hardbass recipe");
@@ -292,6 +301,7 @@ public static partial class SelfTest
         }
 
         CheckHardbassVoices(notes);
+        CheckHardbassHarder(stats, r, notes); // SelfTestHardbassHarder.cs
         foreach (var n in notes)
             Line("hardbass: " + n); // log lines, not a notice: a CI step shows only 10 notices and the DONE line must stay visible
     }

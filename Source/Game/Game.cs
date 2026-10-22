@@ -129,7 +129,20 @@ public sealed partial class Game : IDisposable
     private readonly Dictionary<ulong, (RakNetGUID Guid, byte Id)> _clients = new();
     private readonly PacketWriter _w = new();
     private readonly PacketWriter _body = new();
-    private readonly Random _rng = new();
+    private readonly Random _rng = NextRng();
+
+    /// <summary>
+    /// Self-test: the seed the next <see cref="Game"/> created takes for its server randomness (spawn picks, bot choices),
+    /// so a bot match can be replayed exactly. Used once, then cleared; null (the default): an unseeded generator.
+    /// </summary>
+    public static int? SeedNextGame;
+
+    private static Random NextRng()
+    {
+        var seed = SeedNextGame;
+        SeedNextGame = null;
+        return seed is { } s ? new Random(s) : new Random();
+    }
 
     public readonly string LocalName;
 

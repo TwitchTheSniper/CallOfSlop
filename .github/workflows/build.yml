@@ -46,7 +46,7 @@ jobs:
             grep "FAIL:" "$log" | sed 's/^/::error title=Self-test::/' || true
             done=$(grep "^DONE" "$log" | tail -1)
             [ -n "$done" ] && echo "::notice title=Self-test::$done"
-            grep -E "WEIRDSTAT|section at bar|toys:|accordion:|chip:|music box:|tape deck:" "$log" | head -10 | sed 's/^/::warning title=Weird::/' || true
+            grep -E "WEIRDSTAT|section at bar" "$log" | head -6 | sed 's/^/::warning title=Weird::/' || true
           else
             echo "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           fi
