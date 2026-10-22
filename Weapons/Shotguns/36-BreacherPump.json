@@ -4,7 +4,7 @@
   "order": 36,
   "class": "Shotgun",
   "blurb": "Pump-action. One-shot kill up close.",
-  "damage": 13,
+  "damage": 14,
   "headMult": 1.5,
   "pellets": 9,
   "rangeM": 7,
