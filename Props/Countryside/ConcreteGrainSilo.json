@@ -79,7 +79,7 @@
     {"size": [1.9, 0.45, 0.787], "offset": [0.0, 11.5, 0.0], "color": "#8a8e90", "rotation": [0, 45, 0], "material": "metal"},
     {"size": [1.9, 0.45, 0.787], "offset": [0.0, 11.5, 0.0], "color": "#8a8e90", "rotation": [0, 90, 0], "material": "metal"},
     {"size": [1.9, 0.45, 0.787], "offset": [0.0, 11.5, 0.0], "color": "#8a8e90", "rotation": [0, 135, 0], "material": "metal"},
-    {"size": [0.6, 0.35, 0.6], "offset": [0, 11.85, 0], "color": "#6a6e70", "material": "metal"},
+    {"size": [0.6, 0.3, 0.6], "offset": [0, 11.7, 0], "color": "#6a6e70", "material": "metal"},
     {"size": [0.5, 0.04, 0.04], "offset": [0, 0.4, 2.12], "color": "#4a4a48"},
     {"size": [0.5, 0.04, 0.04], "offset": [0, 0.82, 2.12], "color": "#4a4a48"},
     {"size": [0.5, 0.04, 0.04], "offset": [0, 1.24, 2.12], "color": "#4a4a48"},

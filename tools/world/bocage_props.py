@@ -372,7 +372,7 @@ for k in range(10):
 for k in range(5):
     silo += octagon(4.06, 0.06, 1.1 + k * 2.1, "#5a5a58")
 silo += octagon(4.1, 0.25, 10.7, "#7a7e80", material="metal") + octagon(3.2, 0.5, 11.05, "#8a8e90", material="metal") + octagon(1.9, 0.45, 11.5, "#8a8e90", material="metal")
-silo += [part((0.6, 0.35, 0.6), (0, 11.85, 0), "#6a6e70", material="metal")]
+silo += [part((0.6, 0.3, 0.6), (0, 11.7, 0), "#6a6e70", material="metal")]
 for k in range(25):   # the ladder up the side, with its cage hoops
     silo.append(part((0.5, 0.04, 0.04), (0, 0.4 + k * 0.42, 2.12), "#4a4a48"))
 silo += [part((0.05, 10.6, 0.05), (sx, 5.4, 2.12), "#4a4a48") for sx in (0.25, -0.25)]

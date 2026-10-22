@@ -56,12 +56,6 @@
     },
     {
       "props": [
-        "Cooker"
-      ],
-      "place": "wall"
-    },
-    {
-      "props": [
         "Kitchen Sink"
       ],
       "place": "wall"

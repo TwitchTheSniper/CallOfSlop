@@ -221,7 +221,6 @@ def farmhouse():
             {"props": ["Wooden Chair", "Dining Chair"], "place": "around", "of": "table", "count": [3, 5]},
             {"props": ["Stacked Plates", "Apple Crate", "Cooking Pot"], "place": "on", "of": "table", "y": 0.77, "count": [1, 2]},
             {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
-            {"props": ["Cooker"], "place": "wall"},
             {"props": ["Kitchen Sink"], "place": "wall"},
             {"props": ["Kettle", "Knife Block", "Frying Pan"], "place": "on", "of": "counter", "y": 0.9, "count": [1, 2]},
             {"props": ["Bookshelf", "Chest of Drawers"], "place": "wall", "chance": 0.8},
