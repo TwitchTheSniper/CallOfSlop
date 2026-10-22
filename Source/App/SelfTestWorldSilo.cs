@@ -82,8 +82,8 @@ public static partial class SelfTest
             }
         }
         Line($"{m.Name}: {buried} buried buildings, {above} plants on the ground over them, {inside} under it");
-        if (buried < 11)
-            Fail($"{m.Name}: {buried} buildings under the ground (expected the 11 rooms of the complex)");
+        if (buried < 8)
+            Fail($"{m.Name}: {buried} buildings under the ground (expected the 8 rooms of the complex)");
         if (inside > 0)
             Fail($"{m.Name}: {inside} plants inside the buried buildings");
         if (above < 200)

@@ -703,9 +703,9 @@ BLUE_SP = [(-90.0, z) for z in (-24, -16, -8, 8, 16, 24)] + [(-86.0, z) for z in
 RED_SP = [mx(p) for p in BLUE_SP]
 FFA_SP = [(-46, -62), (46, -62), (-44, 60), (44, 60), (-30, -44), (30, -44), (-28, 44), (28, 44)]
 FLAGS = [(-104.0, 2.0), (104.0, 2.0)]
-HILLS = [dict(x=0.0, z=-47.5, y=Y_M + 0.1, radius=5.0, name="launch control"),
-         dict(x=0.0, z=0.0, y=Y_S, radius=6.5, name="silo floor"),
-         dict(x=0.0, z=44.4, y=Y_P + 0.1, radius=4.5, name="reactor floor")]
+HILLS = [dict(x=0.0, z=-44.6, y=Y_M + 0.1, radius=5.0, name="launch control"),
+         dict(x=0.0, z=4.6, y=Y_S, radius=6.5, name="silo floor"),
+         dict(x=0.0, z=44.8, y=Y_P + 0.1, radius=4.5, name="reactor floor")]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
 for x, z in FLAGS:
