@@ -199,7 +199,7 @@ def two_storey():
                room("kitchen", "kitchen", [-1.5, -4.5, 5, -1], floor={"color": "#c9c08a", "material": TILE}, wall="#d8e0a8"),
                room("utility", "laundry", [-5, -4.5, -1.5, -1], floor={"color": "#9a9a92", "material": TILE}),
            ],
-           "openings": [door(0.6, 4.5, 1.0, front=True, hinge="right"), door(-1.5, 1.6), door(1.5, 2.5), door(1.5, -0.25, 0.9),
+           "openings": [door(0.6, 4.5, 1.0, front=True, hinge="right"), door(-1.5, 3.75), door(1.5, 2.5), door(1.5, -0.25, 0.9),
                         door(0.0, -1), door(-1.5, -2.75), door(3.5, -4.5, 0.9, hinge="right"), win(-3.25, 4.5, 1.8)]},
           {"height": 2.8, "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 0.85, "head": 2.2},
            "rooms": [
@@ -212,7 +212,7 @@ def two_storey():
            ],
            "openings": [door(-1.5, -0.3), door(1.5, 2.6), door(-0.4, -1), door(3.25, -1, 0.9), door(-3.25, 4.5, 0.9, hinge="right")]},
       ],
-      stairs=[{"floor": 0, "rect": [-1.33, 0.65, -0.33, 3.6], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
+      stairs=[{"floor": 0, "rect": [-1.33, 0.35, -0.33, 3.3], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
       roof={"type": "hip", "pitch": 28, "overhang": 0.45, "color": {"color": "$roof", "material": "tiles"}},
       extras=[
           {"type": "balcony", "floor": 1, "rect": [-4.6, 4.63, -1.9, 6.0], "railing": 1.0, "color": "$trim"},

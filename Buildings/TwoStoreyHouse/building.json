@@ -59,7 +59,7 @@
       ],
       "openings": [
         {"type": "door", "at": [0.6, 4.5], "width": 1.0, "front": true, "hinge": "right"},
-        {"type": "door", "at": [-1.5, 1.6], "width": 0.9},
+        {"type": "door", "at": [-1.5, 3.75], "width": 0.9},
         {"type": "door", "at": [1.5, 2.5], "width": 0.9},
         {"type": "door", "at": [1.5, -0.25], "width": 0.9},
         {"type": "door", "at": [0.0, -1], "width": 0.9},
@@ -94,7 +94,7 @@
       ]
     }
   ],
-  "stairs": [{"floor": 0, "rect": [-1.33, 0.65, -0.33, 3.6], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
+  "stairs": [{"floor": 0, "rect": [-1.33, 0.35, -0.33, 3.3], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
   "roof": {"type": "hip", "pitch": 28, "overhang": 0.45, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
     {"type": "balcony", "floor": 1, "rect": [-4.6, 4.63, -1.9, 6.0], "railing": 1.0, "color": "$trim"},

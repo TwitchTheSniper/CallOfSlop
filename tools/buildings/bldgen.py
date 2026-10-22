@@ -18,6 +18,7 @@ GROUND_SLAB = 0.1
 LINING_T = 0.02
 STEP_RISE_MAX = 0.36
 MIN_DOOR_WIDTH = 0.9  # doors and arches (BuildingGen.MinDoorWidth)
+STAIR_END_CLEAR = 0.9  # step to wall at both ends of a flight (BuildingGen.StairEndClear)
 DOOR_CLEAR_DEPTH = 1.25
 CELL = 0.1
 
@@ -1049,11 +1050,30 @@ class Generator:
                 raise BuildingError(f"{w}: the top of the stairs {top} doesn't land in a room on the floor above (leave 0.7 m beyond the last step)")
             if f + 1 >= n and self.roof != "flat":
                 raise BuildingError(f"{w}: stairs onto the roof need a flat roof")
+            foot_room = self.clear_ahead(f, low, (-dx, -dz))
+            if foot_room < STAIR_END_CLEAR - 1e-6:
+                raise BuildingError(f"{w}: only {foot_room:.2f} m between the first step and the wall; leave at least {STAIR_END_CLEAR} m")
+            if f + 1 < n:
+                top_room = self.clear_ahead(f + 1, high, (dx, dz))
+                if top_room < STAIR_END_CLEAR - 1e-6:
+                    raise BuildingError(f"{w}: only {top_room:.2f} m between the last step and the wall on the floor above; leave at least {STAIR_END_CLEAR} m")
             self.holes_in[f + 1].append(r)
             width = (r[3] - r[1]) if dx != 0 else (r[2] - r[0])
             self.reserved[f].append(grow(r, bottom, width))
             self.reserved[f + 1].append(grow(r_inset(r, -0.1), top, width))
             self.stair_plans.append((s, f, r, bottom, top))
+
+    def clear_ahead(self, f, edge, dr):
+        """BuildingGenerator.ClearAhead: from a flight's end along dr to the wall's inner face (lining included)."""
+        px, pz = edge[0] + dr[0] * 0.05, edge[1] + dr[1] * 0.05
+        room = self.room_at(f, px, pz)
+        if room < 0:
+            return 0.0
+        rect = next((x for x in self.floors[f]["rooms"][room]["rects"] if r_contains(x, px, pz)), None)
+        if rect is None:
+            return 0.0
+        inner = r_inset(rect, self.t / 2 + LINING_T)
+        return inner[2] - edge[0] if dr[0] > 0 else edge[0] - inner[0] if dr[0] < 0 else inner[3] - edge[1] if dr[1] > 0 else edge[1] - inner[1]
 
     def stand_clear(self, f, p, toward, to_step):
         """BuildingGenerator.StandClear: a stair end's waypoint moved towards the flight until a body clears the wall behind it."""

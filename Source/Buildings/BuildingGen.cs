@@ -23,6 +23,9 @@ public static class BuildingGen
 
     /// <summary>The narrowest door or arch a file may have: a bot (0.8 m wide) must fit through with room to spare.</summary>
     public const float MinDoorWidth = 0.9f;
+
+    /// <summary>The least room at the foot and the top of a flight of stairs, step to wall.</summary>
+    public const float StairEndClear = 0.9f;
     public const float DoorClearDepth = 1.25f;
 
     /// <summary>Default door health by material: about 5 rifle hits for wood, a magazine for metal, two for glass.</summary>
@@ -644,6 +647,20 @@ internal sealed partial class BuildingGenerator
 
     private readonly List<(BStair S, int F, BRect R, Vector2 Bottom, Vector2 Top)> _stairPlans = new();
 
+    /// <summary>How far from <paramref name="edge"/> (a flight's end) along <paramref name="dir"/> to the wall's inner face (lining included) of the room there.</summary>
+    private float ClearAhead(int f, Vector2 edge, Vector2 dir)
+    {
+        var p = edge + dir * 0.05f;
+        var room = RoomAt(f, p.X, p.Y);
+        if (room < 0)
+            return 0f;
+        var rect = _floors[f].Rooms[room].Rects.FirstOrDefault(x => x.Contains(p.X, p.Y));
+        if (rect.W <= 0)
+            return 0f;
+        var inner = rect.Inset(_t / 2 + BuildingGen.LiningT);
+        return dir.X > 0 ? inner.X1 - edge.X : dir.X < 0 ? edge.X - inner.X0 : dir.Y > 0 ? inner.Z1 - edge.Y : edge.Y - inner.Z0;
+    }
+
     /// <summary>
     /// A stair end's waypoint where a standing body (0.4 m radius) clears the wall behind it: <paramref name="p"/> moved
     /// towards the stairs (<paramref name="toward"/>) if the wall is nearer than 0.47 m, but never nearer the flight than 0.42 m
@@ -690,6 +707,12 @@ internal sealed partial class BuildingGenerator
                 throw new BuildingFileException($"{w}: the top of the stairs ({top.X:0.##}, {top.Y:0.##}) doesn't land in a room on the floor above (leave 0.7 m beyond the last step)");
             if (f + 1 >= n && _roof != RoofKind.Flat)
                 throw new BuildingFileException($"{w}: stairs onto the roof need a flat roof");
+            // Room to stand at both ends (bots are 0.8 m wide and need a nav node there): 0.9 m to the wall's face.
+            var footRoom = ClearAhead(f, lowEdge, -d);
+            if (footRoom < BuildingGen.StairEndClear)
+                throw new BuildingFileException($"{w}: only {footRoom:0.##} m between the first step and the wall; leave at least {BuildingGen.StairEndClear} m");
+            if (f + 1 < n && ClearAhead(f + 1, highEdge, d) is var topRoom && topRoom < BuildingGen.StairEndClear)
+                throw new BuildingFileException($"{w}: only {topRoom:0.##} m between the last step and the wall on the floor above; leave at least {BuildingGen.StairEndClear} m");
             _holesIn[f + 1].Add(r);
             var width = s.Dx != 0 ? r.D : r.W;
             // Furniture keeps off the stairs and the spaces at both ends.
