@@ -164,7 +164,7 @@ Rooms on a floor must not overlap. An upper floor can be smaller than the one be
 | Field | Meaning |
 |---|---|
 | `type` | `door` (a leaf that opens, shuts and breaks), `window` (shootable glass), `arch` (a doorway with no door), `hole` (an opening at any height, no glass: a breach, a hatch, a serving hatch). |
-| `width` | Metres (default 1, windows 1.2). |
+| `width` | Metres (default 1, windows 1.2). Doors and arches must be at least 0.9 m wide: bots are 0.8 m wide. |
 | `sill`, `head` | Bottom and top above the floor. Doors and arches start at the floor; their top defaults to `doorHeight`. Windows default to 0.9 and 2.2. |
 | `front` | `true` on the main entrance (bots, the self-test and tools start from it). |
 | `material` | Doors: `wood` (150 health), `metal` (400) or `glass` (60). |

@@ -58,10 +58,10 @@
         {"type": "door", "at": [0, 5], "width": 1.2, "front": true, "material": "metal", "color": "$door"},
         {"type": "door", "at": [0, -5], "width": 1.0, "material": "metal", "color": "$door"},
         {"type": "door", "at": [-2, 3.0], "width": 0.9},
-        {"type": "door", "at": [-3.25, 1], "width": 0.8},
+        {"type": "door", "at": [-3.25, 1], "width": 0.9},
         {"type": "door", "at": [-6.2, -2], "width": 0.9},
         {"type": "door", "at": [2, 3.0], "width": 0.9},
-        {"type": "door", "at": [3.25, 1], "width": 0.8},
+        {"type": "door", "at": [3.25, 1], "width": 0.9},
         {"type": "door", "at": [6.2, -2], "width": 0.9},
         {"type": "window", "at": [-1.2, 5], "width": 0.6, "sill": 1.0, "head": 2.2}
       ]
@@ -103,10 +103,10 @@
       ],
       "openings": [
         {"type": "door", "at": [-2, 3.0], "width": 0.9},
-        {"type": "door", "at": [-3.25, 1], "width": 0.8},
+        {"type": "door", "at": [-3.25, 1], "width": 0.9},
         {"type": "door", "at": [-6.2, -2], "width": 0.9},
         {"type": "door", "at": [2, 3.0], "width": 0.9},
-        {"type": "door", "at": [3.25, 1], "width": 0.8},
+        {"type": "door", "at": [3.25, 1], "width": 0.9},
         {"type": "door", "at": [6.2, -2], "width": 0.9},
         {"type": "window", "at": [0, 5], "width": 1.6, "sill": 0.9, "head": 2.2},
         {"type": "window", "at": [0, -5], "width": 1.6, "sill": 0.9, "head": 2.2},

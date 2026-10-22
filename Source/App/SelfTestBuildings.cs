@@ -633,7 +633,13 @@ public static partial class SelfTest
                     missing.Add($"{key} stairs up to {top.Y:0.0} m");
                     var foot = Node(bottom);
                     if (detail.Count < 10)
-                        detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, top node {goal}; top {Why(top)}");
+                    {
+                        // The flight's middle waypoint follows the foot in the plan's waypoint list.
+                        var wi = b.Plan.Waypoints.IndexOf(bottom);
+                        var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
+                        detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
+                                   + $"mid node {Node(mid)}, top node {goal}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
+                    }
                 }
             }
             perBuilding[key] = pb;

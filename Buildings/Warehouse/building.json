@@ -38,7 +38,7 @@
         {"type": "door", "at": [-6, 4], "width": 1.0, "material": "metal"},
         {"type": "door", "at": [4, 4], "width": 1.0},
         {"type": "door", "at": [10, 4], "width": 0.9},
-        {"type": "door", "at": [8, 6], "width": 0.8},
+        {"type": "door", "at": [8, 6], "width": 0.9},
         {"type": "door", "at": [12, 2.2], "width": 1.0, "material": "metal"}
       ]
     }

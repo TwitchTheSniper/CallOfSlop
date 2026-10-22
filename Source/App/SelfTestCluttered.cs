@@ -48,6 +48,9 @@ public static partial class SelfTest
         CheckClutteredTruckStop(); // SelfTestCluttered.TruckStop.cs: 08 Truck Stop
         CheckClutteredPowderKeg(); // SelfTestCluttered.PowderKeg.cs: 12 Powder Keg
         CheckClutteredSupermarket(); // SelfTestCluttered.Supermarket.cs: 07 Supermarket
+        CheckClutteredTimberline(); // SelfTestCluttered.Timberline.cs: 10 Timberline
+        CheckClutteredDeepcut(); // SelfTestCluttered.Deepcut.cs: 11 Deepcut Mine
+        CheckClutteredBeachhead(); // SelfTestCluttered.Beachhead.cs: 09 Beachhead
         World.SetMap(Maps.All[0]);
         if (ClutteredNotes.Count > 0)
             Line("::notice title=Cluttered pack::" + string.Join("%0A", ClutteredNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
@@ -68,4 +71,6 @@ public static partial class SelfTest
     static partial void CheckClutteredOldTown();
     /// <summary>08 Truck Stop's checks: SelfTestCluttered.TruckStop.cs.</summary>
     static partial void CheckClutteredTruckStop();
+    /// <summary>10 Timberline's checks: SelfTestCluttered.Timberline.cs.</summary>
+    static partial void CheckClutteredTimberline();
 }

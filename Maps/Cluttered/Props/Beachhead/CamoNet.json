@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Camo Net",
+  "category": "Beachhead",
+  "description": "A camouflage net on four poles, 2.5 m up, over a vehicle or a gun pit. Looks only.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "fadeDistance": 120,
+  "parts": [
+    {"size": [0.08, 2.5, 0.08], "offset": [-2.4, 1.25, -1.9], "color": "darkwood"},
+    {"size": [0.08, 2.5, 0.08], "offset": [-2.4, 1.25, 1.9], "color": "darkwood"},
+    {"size": [0.08, 2.5, 0.08], "offset": [2.4, 1.25, -1.9], "color": "darkwood"},
+    {"size": [0.08, 2.5, 0.08], "offset": [2.4, 1.25, 1.9], "color": "darkwood"},
+    {"size": [5.2, 0.04, 4.2], "offset": [0, 2.45, 0], "color": "#4d5a2a"},
+    {"size": [2.0, 0.05, 1.6], "offset": [-1.2, 2.38, 0.6], "color": "#5f6a34"},
+    {"size": [1.6, 0.05, 1.8], "offset": [1.4, 2.36, -0.8], "color": "#3e4722"},
+    {"size": [1.4, 0.05, 1.2], "offset": [0.6, 2.4, 1.2], "color": "#6b6a45"},
+    {"size": [1.2, 0.05, 1.0], "offset": [-1.6, 2.37, -1.3], "color": "#556030"}
+  ]
+}

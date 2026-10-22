@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Radio Set",
+  "category": "Beachhead",
+  "description": "A field radio with a whip aerial and a blinking set light (desk or crate top).",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "breakable": {"health": 25, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.03, 0.1]}},
+  "parts": [
+    {"size": [0.46, 0.3, 0.3], "offset": [0, 0.15, 0], "color": "#4a5230", "material": "metal"},
+    {"size": [0.42, 0.18, 0.01], "offset": [0, 0.17, 0.152], "color": "#2b2b2b"},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.12, 0.2, 0.16], "color": "#c8c8c0"},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.0, 0.2, 0.16], "color": "#c8c8c0"},
+    {"size": [0.08, 0.04, 0.02], "offset": [0.13, 0.2, 0.16], "color": "#40d060", "anim": {"type": "blink", "period": 1.2, "duty": 0.5, "color": "#40ff70", "glow": 1.0}},
+    {"size": [0.012, 0.9, 0.012], "offset": [0.18, 0.75, -0.08], "color": "#2b2b2b"},
+    {"size": [0.08, 0.18, 0.06], "offset": [-0.27, 0.12, 0.05], "color": "#1e1e1e"}
+  ]
+}

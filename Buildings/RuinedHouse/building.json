@@ -30,9 +30,9 @@
         {"type": "arch", "at": [1.5, 4], "width": 1.0, "front": true},
         {"type": "hole", "at": [-2.5, 4], "width": 2.2, "sill": 0.4, "head": 2.4},
         {"type": "hole", "at": [-4.5, -2.0], "width": 1.6, "sill": 0.3, "head": 1.9},
-        {"type": "arch", "at": [0.5, 2.0], "width": 0.9},
-        {"type": "arch", "at": [0.5, -2.0], "width": 0.9},
-        {"type": "door", "at": [2.5, 0.0], "width": 0.9, "open": true},
+        {"type": "arch", "at": [0.5, 3.1], "width": 0.9},
+        {"type": "arch", "at": [0.5, -3.1], "width": 0.9},
+        {"type": "door", "at": [2.5, 3.1], "width": 0.9, "open": true},
         {"type": "hole", "at": [4.5, 2.0], "width": 1.0, "sill": 0.9, "head": 2.1},
         {"type": "hole", "at": [3.5, -4], "width": 0.9, "sill": 1.0, "head": 2.0},
         {"type": "door", "at": [1.5, -4], "width": 0.9, "material": "wood"},
@@ -42,17 +42,17 @@
     {
       "rooms": [{"id": "landing", "type": "ruin", "rect": [0.5, -4, 2.5, 4]}, {"id": "bedroom", "type": "ruin", "rect": [-4.5, -4, 0.5, 4]}],
       "openings": [
-        {"type": "arch", "at": [0.5, 0.0], "width": 0.9},
+        {"type": "arch", "at": [0.5, -3.1], "width": 0.9},
         {"type": "hole", "at": [-2.0, 4], "width": 1.2, "sill": 0.9, "head": 2.1},
         {"type": "hole", "at": [-4.5, 1.0], "width": 2.4, "sill": 0.2, "head": 2.6},
         {"type": "hole", "at": [-1.0, -4], "width": 1.2, "sill": 0.9, "head": 2.1}
       ]
     }
   ],
-  "stairs": [{"floor": 0, "rect": [0.7, -3.2, 2.3, 1.2], "dir": "-z", "railing": false}],
+  "stairs": [{"floor": 0, "rect": [0.7, -2.4, 2.3, 2.0], "dir": "-z", "railing": false}],
   "roof": {"type": "none"},
   "extras": [
-    {"type": "prop", "name": "Rubble Pile", "at": [3.5, 1.5]},
+    {"type": "prop", "name": "Rubble Pile", "at": [3.6, -1.2]},
     {"type": "prop", "name": "Rubble Pile", "at": [-2.0, 5.3], "yaw": 40},
     {"type": "prop", "name": "Brick Pile", "at": [-5.6, -1.0], "yaw": 80},
     {"type": "prop", "name": "Burnt Out Car", "at": [-1.0, 8.0], "yaw": 15},

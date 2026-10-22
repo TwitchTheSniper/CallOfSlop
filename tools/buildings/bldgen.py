@@ -17,6 +17,7 @@ SLAB = 0.2
 GROUND_SLAB = 0.1
 LINING_T = 0.02
 STEP_RISE_MAX = 0.36
+MIN_DOOR_WIDTH = 0.9  # doors and arches (BuildingGen.MinDoorWidth)
 DOOR_CLEAR_DEPTH = 1.25
 CELL = 0.1
 
@@ -478,6 +479,8 @@ def parse_floor(fe, d, surface, color, w):
              "material": oe.get("material", "wood"), "hingeRight": oe.get("hinge", "left") == "right", "swingOut": oe.get("swing", "in") == "out",
              "open": oe.get("open", False), "front": oe.get("front", False), "health": oe.get("health", 0),
              "color": color(oe["color"], ow) if "color" in oe else None, "auto": False}
+        if t in ("door", "arch") and o["width"] < MIN_DOOR_WIDTH:
+            raise BuildingError(f"{ow}: a {t} must be at least {MIN_DOOR_WIDTH} m wide (bots are 0.8 m wide), got {o['width']}")
         f["openings"].append(o)
     return f
 

@@ -36,7 +36,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server, solo match: team scores stay one short of the limit, so objectives score but never win.</summary>
-    private void SoloCapScores(int limit)
+    internal void SoloCapScores(int limit)
     {
         for (var t = 0; t < 2; t++)
             if (TeamScore[t] >= limit)

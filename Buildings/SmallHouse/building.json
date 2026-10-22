@@ -37,7 +37,7 @@
         { "type": "door", "at": [1, 1.8], "width": 0.9, "hinge": "right" },
         { "type": "door", "at": [-1.5, -1.25], "width": 0.9 },
         { "type": "door", "at": [1, -1.25], "width": 0.9 },
-        { "type": "door", "at": [-0.25, -2], "width": 0.8 },
+        { "type": "door", "at": [-0.25, -2], "width": 0.9 },
         { "type": "door", "at": [5.5, 1.2], "width": 0.9, "hinge": "right" }
       ]
     }

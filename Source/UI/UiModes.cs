@@ -5,8 +5,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// HUD and menus for game modes and ready-up: the warmup panel (who's ready, READY / FORCE START), the mode score in
-/// the match bar, objective indicators (hill, flags, Gun Game ladder), the team scoreboard, the results line, the
-/// loadout footer's READY button and the lobby's mode picker.
+/// the match bar, the objective panel, the team scoreboard, the results line, the loadout footer's READY button and
+/// the lobby's mode picker. What a mode shows comes from its module (GameModeModule's HUD hooks); this draws it.
 /// </summary>
 public sealed partial class Ui
 {
@@ -20,22 +20,21 @@ public sealed partial class Ui
     /// <summary>Compact game mode picker (single player and Host screens), with the rules underneath.</summary>
     private void ModePicker(Settings s)
     {
+        var map = s.MapRandom ? null : Maps.Find(s.MapName);
+        var mode = GameModeRegistry.Get(s.Mode);
         ImGui.SetNextItemWidth(260 * _scale);
-        if (ImGui.BeginCombo("Game mode"u8, GameModes.Name(s.Mode)))
+        if (ImGui.BeginCombo("Game mode"u8, mode.Name))
         {
-            foreach (var m in GameModes.ForMap(s.MapRandom ? null : Maps.Find(s.MapName))) // Zombies only on maps made for it
-                if (ImGui.Selectable(GameModes.Name(m), m == s.Mode))
-                    s.Mode = m;
+            foreach (var m in GameModeRegistry.ForMap(map)) // Zombies only on maps made for it; Dev-only modes on dev-pack maps
+                if (ImGui.Selectable(m.Name, m.Id == s.Mode))
+                    s.Mode = m.Id;
             ImGui.EndCombo();
         }
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 620 * _scale);
-        if (s.Mode == GameMode.Zombies)
-            ImGuiSafe.TextColored(GameModes.Fits(s.Mode, s.MapRandom ? null : Maps.Find(s.MapName)) ? Dim : Orange,
-                GameModes.Fits(s.Mode, s.MapRandom ? null : Maps.Find(s.MapName))
-                    ? GameModes.Rules(s.Mode)
-                    : "Zombies needs a Zombies map: pick one (Dev pack: Zombies Test), or it plays Free-for-all.");
+        if (!mode.Fits(map))
+            ImGuiSafe.TextColored(Orange, mode.MapWarning);
         else
-            ImGuiSafe.TextColored(Dim, $"{GameModes.Rules(s.Mode)} {Game.MatchSeconds / 60:0} minutes max.");
+            ImGuiSafe.TextColored(Dim, mode.HasTimeLimit ? $"{mode.Rules()} {Game.MatchSeconds / 60:0} minutes max." : mode.Rules());
         ImGui.PopTextWrapPos();
         ScoreLimitPicker(s);
     }
@@ -97,57 +96,13 @@ public sealed partial class Ui
             DrawReadyPanel(game, pos, size, settings);
         if (game.Phase != MatchPhase.Playing || game.Local is not { } me)
             return;
-        var lines = new List<(string Text, float4 Color)>();
+        var lines = new List<HudLine>();
+        System.Numerics.Vector3? pointAt = null;
+        game.Module.HudLines(game, me, lines, ref pointAt); // the mode's objective lines (the hill, the flags, the Gun Game ladder...)
         float? arrow = null;
         string? arrowText = null;
-        switch (game.Mode)
-        {
-            case GameMode.KingOfTheHill when game.ActiveHill is { } hill:
-            {
-                var state = game.HillContested ? ("HILL CONTESTED", Orange)
-                    : game.HillOwner < 2 ? ($"{GameModes.TeamNames[game.HillOwner].ToUpperInvariant()} HOLDS THE HILL", TeamRgba(game.HillOwner))
-                    : ("HILL EMPTY", new float4(1, 1, 1, 1));
-                lines.Add(state);
-                if (me.Alive && Game.InHill(me.RenderPosition, hill))
-                    lines.Add(("You're on the hill", Green));
-                else
-                    (arrow, arrowText) = Pointer(game, me, hill.Center);
-                var mv = Math.Max(0, (int)Math.Ceiling(game.HillMoveIn));
-                lines.Add(($"Hill moves in {mv / 60}:{mv % 60:00}", Dim));
-                break;
-            }
-            case GameMode.CaptureTheFlag:
-            {
-                for (byte t = 0; t < 2; t++)
-                {
-                    var f = game.Flags[t];
-                    var who = f.Carried ? (f.Carrier == game.LocalId ? "YOU" : game.NameOf(f.Carrier)) : "";
-                    var text = f.Home ? "at base" : f.Carried ? $"taken by {who}" : $"dropped - returns in {Math.Ceiling(f.ReturnIn):0} s";
-                    lines.Add(($"{GameModes.TeamNames[t].ToUpperInvariant()} FLAG: {text}", TeamRgba(t)));
-                }
-                var carrying = game.CarriedFlagOf(me);
-                if (carrying >= 0 && me.Team < 2)
-                {
-                    lines.Add((game.Flags[me.Team].Home ? "You have the flag - take it to your base!" : "You have the flag - your flag must be home to score", Orange));
-                    (arrow, arrowText) = Pointer(game, me, game.Objectives.Flags[me.Team]);
-                }
-                else if (me.Team < 2 && game.Flags[me.Team].Dropped)
-                    (arrow, arrowText) = Pointer(game, me, game.Flags[me.Team].Position);
-                else if (me.Team < 2 && !game.Flags[1 - me.Team].Carried)
-                    (arrow, arrowText) = Pointer(game, me, game.Flags[1 - me.Team].Position);
-                break;
-            }
-            case GameMode.GunGame:
-            {
-                var lvl = me.GunLevel;
-                var last = GunGame.Final;
-                lines.Add(($"WEAPON {lvl + 1}/{last + 1}: {GunGame.At(lvl).Name}", Orange));
-                lines.Add((lvl >= last ? "LAST GUN - one kill with it wins!" : $"Next: {GunGame.At(lvl + 1).Name}", lvl >= last ? Red : Dim));
-                if (game.GunLeader is { } lead)
-                    lines.Add(($"Leader: {(lead.Id == game.LocalId ? "you" : game.NameOf(lead.Id))} ({lead.GunLevel + 1}/{last + 1})", lead.Id == game.LocalId ? Green : new float4(1, 1, 1, 1)));
-                break;
-            }
-        }
+        if (pointAt is { } target)
+            (arrow, arrowText) = Pointer(game, me, target);
         if (lines.Count == 0)
             return;
 
@@ -157,7 +112,7 @@ public sealed partial class Ui
                                        | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav))
         {
             foreach (var (text, color) in lines)
-                ImGuiSafe.TextColored(color, text);
+                ImGuiSafe.TextColored(new float4(color.X, color.Y, color.Z, color.W), text);
             if (arrow is { } rel)
             {
                 // Arrow pointing at the objective relative to where you're looking, then the distance.
@@ -231,17 +186,19 @@ public sealed partial class Ui
         ImGuiSafe.TextColored(Dim, game.ModeGoalText);
     }
 
-    /// <summary>The match bar while playing a mode other than free-for-all. Returns false for free-for-all.</summary>
+    /// <summary>The match bar while playing a mode with its own bar (team scores, Gun Game's ladder, Zombies' round). Returns false for the plain free-for-all bar.</summary>
     private bool DrawModeScoreBar(Game game, string clock, int t)
     {
-        if (game.Mode == GameMode.FreeForAll)
-            return false;
         if (DrawZombiesBar(game))
             return true; // the round instead of a clock (UiZombies.cs)
+        var mode = game.Module;
+        var solo = mode.TeamBased ? null : mode.ScoreBar(game);
+        if (!mode.TeamBased && solo == null)
+            return false;
         ImGui.PushFont(default, 24);
         ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
         ImGui.SameLine(0, 24 * _scale);
-        if (game.IsTeamMode)
+        if (mode.TeamBased)
         {
             ImGuiSafe.TextColored(TeamRgba(0), $"BLUE {game.TeamScore[0]}");
             ImGui.SameLine();
@@ -250,44 +207,40 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(TeamRgba(1), $"{game.TeamScore[1]} RED");
             ImGui.PopFont();
             var team = game.Local?.Team ?? Game.NoTeam;
-            var limit = game.Mode switch
-            {
-                GameMode.TeamDeathmatch => $"first to {game.ScoreLimit} kills",
-                GameMode.KingOfTheHill => $"first to {game.ScoreLimit} points",
-                _ => $"first to {game.ScoreLimit} captures",
-            };
-            ImGuiSafe.TextColored(team < 2 ? TeamRgba(team) : Dim, team < 2 ? $"{GameModes.Name(game.Mode)} - you're on {GameModes.TeamNames[team]} - {limit}" : $"{GameModes.Name(game.Mode)} - {limit}");
+            var limit = $"first to {game.ScoreLimit} {mode.ScoreUnit}";
+            ImGuiSafe.TextColored(team < 2 ? TeamRgba(team) : Dim, team < 2 ? $"{mode.Name} - you're on {GameModes.TeamNames[team]} - {limit}" : $"{mode.Name} - {limit}");
         }
         else
         {
-            var lvl = game.Local?.GunLevel ?? 0;
-            ImGuiSafe.TextColored(Orange, $"GUN {lvl + 1}/{GunGame.Ladder.Length}");
+            var (big, sub) = solo!.Value;
+            ImGuiSafe.TextColored(Orange, big);
             ImGui.PopFont();
-            ImGui.TextColored(Dim, "Gun Game - a kill with the last gun wins"u8);
+            ImGuiSafe.TextColored(Dim, sub);
         }
         return true;
     }
 
-    /// <summary>Scoreboard for team modes (grouped by team) and Gun Game (by ladder step). False: use the normal one.</summary>
+    /// <summary>Scoreboard for team modes (grouped by team) and modes with their own columns (Gun Game: by ladder step). False: use the normal one.</summary>
     private bool DrawModeScoreboard(Game game, float2 size, float2 pos)
     {
-        if (game.Mode == GameMode.FreeForAll)
+        var mode = game.Module;
+        if (mode is FreeForAllModule)
             return false;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
         ImGui.SetNextWindowSize(new float2(MathF.Min(620 * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
         {
-            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {GameModes.Name(game.Mode).ToUpperInvariant()}");
-            var gun = game.Mode == GameMode.GunGame;
+            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {mode.Name.ToUpperInvariant()}");
+            var (col1, col2) = mode.ScoreboardColumns;
             if (ImGui.BeginTable("##modescores"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
             {
                 ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn(gun ? "Gun"u8 : "Kills"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-                ImGui.TableSetupColumn(gun ? "Kills"u8 : "Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableSetupColumn(col1, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
+                ImGui.TableSetupColumn(col2, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
                 ImGui.TableSetupColumn("Weapon"u8, ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("Status"u8, ImGuiTableColumnFlags.WidthFixed, 80 * _scale);
                 ImGui.TableHeadersRow();
-                var groups = game.IsTeamMode ? new byte[] { 0, 1 } : new[] { Game.NoTeam };
+                var groups = mode.TeamBased ? new byte[] { 0, 1 } : new[] { Game.NoTeam };
                 foreach (var team in groups)
                 {
                     if (team < 2)
@@ -296,19 +249,21 @@ public sealed partial class Ui
                         ImGui.TableNextColumn();
                         ImGuiSafe.TextColored(TeamRgba(team), $"{GameModes.TeamNames[team].ToUpperInvariant()} TEAM   {game.TeamScore[team]}");
                     }
-                    var members = game.Players.Values.Where(p => !game.IsTeamMode || p.Team == team)
-                        .OrderByDescending(p => gun ? p.GunLevel : p.Kills).ThenByDescending(p => p.Kills).ThenBy(p => p.Deaths);
+                    var members = game.Players.Values.Where(p => !mode.TeamBased || p.Team == team)
+                        .OrderByDescending(mode.RankScore).ThenByDescending(p => p.Kills).ThenBy(p => p.Deaths);
                     foreach (var p in members)
                     {
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
-                        var carrier = (game.Mode == GameMode.CaptureTheFlag && game.CarriedFlagOf(p) >= 0 ? "  [FLAG]" : "")
-                                      + (game.IsTeamMode && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
+                        var tag = mode.ScoreboardTag(game, p);
+                        var carrier = (tag.Length > 0 ? " " + tag : "")
+                                      + (mode.TeamBased && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
                         ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + carrier);
+                        var (cell1, cell2) = mode.ScoreboardCells(game, p);
                         ImGui.TableNextColumn();
-                        ImGui.Text(gun ? $"{p.GunLevel + 1}/{GunGame.Ladder.Length}" : $"{p.Kills}");
+                        ImGui.Text(cell1);
                         ImGui.TableNextColumn();
-                        ImGui.Text(gun ? $"{p.Kills}" : $"{p.Deaths}");
+                        ImGui.Text(cell2);
                         ImGui.TableNextColumn();
                         ImGui.Text(p.WeaponDef.Name);
                         ImGui.TableNextColumn();
@@ -324,14 +279,13 @@ public sealed partial class Ui
         return true;
     }
 
-    /// <summary>Results screen: the mode and, for team modes, the final team score.</summary>
+    /// <summary>Results screen: the mode and, for team modes, the final team score (other modes: their own line, if any).</summary>
     private void DrawModeResultsLine(Game game)
     {
-        if (game.Mode == GameMode.FreeForAll)
-            return;
-        if (game.IsTeamMode)
+        var mode = game.Module;
+        if (mode.TeamBased)
         {
-            ImGuiSafe.TextColored(Dim, $"{GameModes.Name(game.Mode)}:");
+            ImGuiSafe.TextColored(Dim, $"{mode.Name}:");
             ImGui.SameLine();
             ImGuiSafe.TextColored(TeamRgba(0), $"Blue {game.TeamScore[0]}");
             ImGui.SameLine();
@@ -344,9 +298,7 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, $"  (you were {GameModes.TeamNames[me.Team]})");
             }
         }
-        else
-        {
-            ImGuiSafe.TextColored(Dim, $"Gun Game - {GunGame.Ladder.Length} weapons, from the {GunGame.At(0).Name} to the {GunGame.At(GunGame.Final).Name}");
-        }
+        else if (mode.ResultsLine(game) is { } line)
+            ImGuiSafe.TextColored(Dim, line);
     }
 }

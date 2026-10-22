@@ -20,6 +20,9 @@ public static class BuildingGen
     public const float GroundSlab = 0.1f;
     public const float LiningT = 0.02f;
     public const float StepRiseMax = 0.36f;
+
+    /// <summary>The narrowest door or arch a file may have: a bot (0.8 m wide) must fit through with room to spare.</summary>
+    public const float MinDoorWidth = 0.9f;
     public const float DoorClearDepth = 1.25f;
 
     /// <summary>Default door health by material: about 5 rifle hits for wood, a magazine for metal, two for glass.</summary>

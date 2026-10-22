@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Campfire Ring",
+  "category": "Timberline",
+  "description": "A ring of stones round a small crackling fire.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 120,
+  "parts": [
+    {"size": [0.26, 0.2, 0.22], "offset": [0.55, 0.1, 0.0], "color": "#6a6862", "rotation": [0, 10, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [0.389, 0.1, 0.389], "color": "#7d7a72", "rotation": [0, 55, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [0.0, 0.1, 0.55], "color": "#6a6862", "rotation": [0, 100, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [-0.389, 0.1, 0.389], "color": "#7d7a72", "rotation": [0, 145, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [-0.55, 0.1, 0.0], "color": "#6a6862", "rotation": [0, 190, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [-0.389, 0.1, -0.389], "color": "#7d7a72", "rotation": [0, 235, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [-0.0, 0.1, -0.55], "color": "#6a6862", "rotation": [0, 280, 0]},
+    {"size": [0.26, 0.2, 0.22], "offset": [0.389, 0.1, -0.389], "color": "#7d7a72", "rotation": [0, 325, 0]},
+    {"size": [0.8, 0.03, 0.8], "offset": [0, 0.015, 0], "color": "#2a2420"},
+    {"size": [0.7, 0.1, 0.1], "offset": [0, 0.12, 0], "color": "#4e3a26", "rotation": [0, 0, 18]},
+    {"size": [0.7, 0.1, 0.1], "offset": [0, 0.12, 0], "color": "#4e3a26", "rotation": [0, 60, 18]},
+    {"size": [0.7, 0.1, 0.1], "offset": [0, 0.12, 0], "color": "#4e3a26", "rotation": [0, 120, 18]},
+    {"size": [0.3, 0.32, 0.3], "offset": [0, 0.24, 0], "color": "#ff9a30", "rotation": [0, 45, 0], "anim": {"type": "flicker", "rate": 12, "duty": 0.8, "color": "#ffb040", "off": "#a04010", "glow": 1.8}},
+    {"size": [0.18, 0.5, 0.18], "offset": [0.02, 0.36, -0.03], "color": "#ffd060", "rotation": [0, 20, 0], "anim": {"type": "flicker", "rate": 15, "duty": 0.7, "color": "#ffe080", "off": "#c06010", "glow": 2.2}}
+  ]
+}

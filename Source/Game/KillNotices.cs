@@ -114,7 +114,7 @@ public sealed partial class Game
     /// </summary>
     private void NoteLocalKill(in KillPacket kill)
     {
-        if (kill.Killer != LocalId || kill.Victim == LocalId || kill.Killer == kill.Victim || Mode == GameMode.Zombies)
+        if (kill.Killer != LocalId || kill.Victim == LocalId || kill.Killer == kill.Victim || !Module.ShowsKillNotices)
             return;
         var victim = Players.GetValueOrDefault(kill.Victim);
         var kind = KillInfo.KindOf(kill.Killer, kill.Victim, kill.KillId);

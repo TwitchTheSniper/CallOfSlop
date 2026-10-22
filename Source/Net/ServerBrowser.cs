@@ -34,9 +34,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 20: team selection: TeamPick / TeamReply at the end of Msg, the team rules and every player's pick at the end of the mode state
     // 21: score limits scale with the player count (ScoreLimits.cs): the mode state's last U16 is the current mode's score
     //     limit (free-for-all kills, team kills, hill points or captures), no longer only the TDM kill limit
-    // 22: buildings (Buildings folder, the Building op with a "name"): BuildingUse / BuildingEvent / BuildingState at the end
+    // 22: game modes are modules (Source/Game/Modes): the mode state no longer carries the hill and the flags for every
+    //     mode; after the team picks comes the active mode's own tail (a version byte, a U16 length, then whatever the
+    //     mode's GameModeModule.WriteState writes: KotH 7 bytes, CTF 36, others none). Game mode 6 is the Dev-only template.
+    // 23: buildings (Buildings folder, the Building op with a "name"): BuildingUse / BuildingEvent / BuildingState at the end
     //     of Msg (doors open, shut, take damage and break, windows break; the join-in-progress state), the Doors physics layer
-    public const byte ProtocolVersion = 22;
+    public const byte ProtocolVersion = 23;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

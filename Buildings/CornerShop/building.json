@@ -37,7 +37,7 @@
         {"type": "window", "at": [3.5, 4], "width": 1.2, "sill": 0.5, "head": 2.5, "health": 25},
         {"type": "door", "at": [-1.8, -0.5], "width": 0.9},
         {"type": "door", "at": [1.75, -0.5], "width": 0.9},
-        {"type": "door", "at": [3.75, -0.5], "width": 0.8},
+        {"type": "door", "at": [3.75, -0.5], "width": 0.9},
         {"type": "door", "at": [-3.0, -4], "width": 1.0, "material": "metal"}
       ]
     }

@@ -33,7 +33,7 @@
       "openings": [
         {"type": "door", "at": [1.5, 3], "width": 1.1, "front": true, "material": "glass", "health": 40},
         {"type": "door", "at": [-1.25, -0.5], "width": 0.9},
-        {"type": "door", "at": [2.75, -0.5], "width": 0.8},
+        {"type": "door", "at": [2.75, -0.5], "width": 0.9},
         {"type": "door", "at": [-4, -1.75], "width": 0.9, "material": "metal"}
       ]
     }

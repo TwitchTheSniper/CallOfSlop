@@ -199,7 +199,7 @@ def two_storey():
                room("kitchen", "kitchen", [-1.5, -4.5, 5, -1], floor={"color": "#c9c08a", "material": TILE}, wall="#d8e0a8"),
                room("utility", "laundry", [-5, -4.5, -1.5, -1], floor={"color": "#9a9a92", "material": TILE}),
            ],
-           "openings": [door(0.6, 4.5, 1.0, front=True, hinge="right"), door(-1.5, 1.6), door(1.5, 2.5), door(1.5, -0.25, 0.8),
+           "openings": [door(0.6, 4.5, 1.0, front=True, hinge="right"), door(-1.5, 1.6), door(1.5, 2.5), door(1.5, -0.25, 0.9),
                         door(0.0, -1), door(-1.5, -2.75), door(3.5, -4.5, 0.9, hinge="right"), win(-3.25, 4.5, 1.8)]},
           {"height": 2.8, "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 0.85, "head": 2.2},
            "rooms": [
@@ -210,7 +210,7 @@ def two_storey():
                room("bathroom", "bathroom", [1.5, -4.5, 5, -1], floor={"color": "#7fb3b0", "material": TILE}, wall="#cfe4e2",
                     autoWindows={"spacing": 2, "width": 0.7, "sill": 1.3, "head": 2.0}),
            ],
-           "openings": [door(-1.5, -0.3), door(1.5, 2.6), door(-0.4, -1), door(3.25, -1, 0.8), door(-3.25, 4.5, 0.9, hinge="right")]},
+           "openings": [door(-1.5, -0.3), door(1.5, 2.6), door(-0.4, -1), door(3.25, -1, 0.9), door(-3.25, 4.5, 0.9, hinge="right")]},
       ],
       stairs=[{"floor": 0, "rect": [-1.33, 0.65, -0.33, 3.6], "dir": "-z", "color": {"color": "$panel", "material": "wood"}}],
       roof={"type": "hip", "pitch": 28, "overhang": 0.45, "color": {"color": "$roof", "material": "tiles"}},
@@ -242,7 +242,7 @@ def apartments():
         ]
 
     def flat_doors(sx):
-        return [door(-2 * sx, 3.0), door(-3.25 * sx, 1, 0.8), door(-6.2 * sx, -2)]
+        return [door(-2 * sx, 3.0), door(-3.25 * sx, 1, 0.9), door(-6.2 * sx, -2)]
     hall = room("stairs", "corridor", [-2, -5, 2, 5], floor={"color": "#8a8a84", "material": "concrete"}, wall="#b7c2b0", windows=False)
     common = {"autoWindows": {"spacing": 2.5, "width": 1.3, "sill": 0.9, "head": 2.2}}
     ground = dict(common, rooms=[hall] + flat("w_", 1) + flat("e_", -1),
@@ -301,7 +301,7 @@ def corner_shop():
           ],
           "openings": [door(1.6, 4, 1.1, front=True, material="glass", health=40), win(-2.4, 4, 3.0, sill=0.5, head=2.5, health=25),
                        win(3.5, 4, 1.2, sill=0.5, head=2.5, health=25),
-                       door(-1.8, -0.5), door(1.75, -0.5, 0.9), door(3.75, -0.5, 0.8), door(-3.0, -4, 1.0, material="metal")]}],
+                       door(-1.8, -0.5), door(1.75, -0.5, 0.9), door(3.75, -0.5, 0.9), door(-3.0, -4, 1.0, material="metal")]}],
       roof={"type": "flat", "parapet": 0.8, "color": {"color": "$roof", "material": "concrete"}},
       extras=[
           {"type": "awning", "rect": [-4.65, 4.13, 4.65, 5.5], "height": 2.75, "color": "$trim"},
@@ -349,8 +349,8 @@ def diner():
               room("restrooms", "restroom", [2, -4, 4.5, -0.5], floor={"color": "#c8d8e0", "material": TILE}, windows=False),
               room("store", "storage", [4.5, -4, 7, -0.5], floor={"color": "#9a968c", "material": "concrete"}, windows=False),
           ],
-          "openings": [door(0, 4, 1.6, front=True, material="glass", health=40), door(-2.2, -0.5, 1.0, swing="out"), door(3.25, -0.5, 0.8),
-                       door(5.75, -0.5, 0.8), door(-5.5, -4, 1.0, material="metal"), door(7, 1.75, 1.0, material="glass", health=40)]}],
+          "openings": [door(0, 4, 1.6, front=True, material="glass", health=40), door(-2.2, -0.5, 1.0, swing="out"), door(3.25, -0.5, 0.9),
+                       door(5.75, -0.5, 0.9), door(-5.5, -4, 1.0, material="metal"), door(7, 1.75, 1.0, material="glass", health=40)]}],
       roof={"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "metal"}},
       extras=[
           {"type": "block", "min": [-7.2, 3.35, 4.12], "max": [7.2, 3.65, 4.3], "color": "$accent"},
@@ -443,7 +443,7 @@ def warehouse():
               room("wc", "restroom", [8, 4, 12, 8], windows=False),
           ],
           "openings": [door(-6, 8, 1.0, front=True, material="glass", health=40), arch(12, -2.5, 4.0, head=4.6), arch(-5, -8, 4.5, head=4.8),
-                       door(-6, 4, 1.0, material="metal"), door(4, 4, 1.0), door(10, 4, 0.9), door(8, 6, 0.8), door(12, 2.2, 1.0, material="metal")]}],
+                       door(-6, 4, 1.0, material="metal"), door(4, 4, 1.0), door(10, 4, 0.9), door(8, 6, 0.9), door(12, 2.2, 1.0, material="metal")]}],
       roof={"type": "gable", "ridge": "x", "pitch": 10, "overhang": 0.3, "color": {"color": "$roof", "material": "metal"}},
       extras=[
           {"type": "platform", "rect": [3.0, -7.85, 11.85, -3.0], "height": 3.2, "railing": 1.05, "color": {"color": "#6e6e6a", "material": "metal"},
@@ -483,7 +483,7 @@ def gas_station():
               room("store", "storage", [-4, -3, 1.5, -0.5], floor={"color": "#9a968c", "material": "concrete"}, windows=False),
               room("wc", "wc", [1.5, -3, 4, -0.5], windows=False),
           ],
-          "openings": [door(1.5, 3, 1.1, front=True, material="glass", health=40), door(-1.25, -0.5, 0.9), door(2.75, -0.5, 0.8),
+          "openings": [door(1.5, 3, 1.1, front=True, material="glass", health=40), door(-1.25, -0.5, 0.9), door(2.75, -0.5, 0.9),
                        door(-4, -1.75, 0.9, material="metal")]}],
       roof={"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "concrete"}},
       extras=[
@@ -560,21 +560,21 @@ def ruin():
               room("kitchen", "ruin", [2.5, -4, 4.5, 4]),
           ],
            "openings": [arch(1.5, 4, 1.0, front=True), {"type": "hole", "at": [-2.5, 4], "width": 2.2, "sill": 0.4, "head": 2.4},
-                        {"type": "hole", "at": [-4.5, -2.0], "width": 1.6, "sill": 0.3, "head": 1.9}, arch(0.5, 2.0, 0.9), arch(0.5, -2.0, 0.9),
-                        door(2.5, 0.0, 0.9, open=True), {"type": "hole", "at": [4.5, 2.0], "width": 1.0, "sill": 0.9, "head": 2.1},
+                        {"type": "hole", "at": [-4.5, -2.0], "width": 1.6, "sill": 0.3, "head": 1.9}, arch(0.5, 3.1, 0.9), arch(0.5, -3.1, 0.9),
+                        door(2.5, 3.1, 0.9, open=True), {"type": "hole", "at": [4.5, 2.0], "width": 1.0, "sill": 0.9, "head": 2.1},
                         {"type": "hole", "at": [3.5, -4], "width": 0.9, "sill": 1.0, "head": 2.0}, door(1.5, -4, 0.9, material="wood"),
                         {"type": "hole", "at": [-1.0, -4], "width": 1.2, "sill": 0.9, "head": 2.1}]},
           {"rooms": [
               room("landing", "ruin", [0.5, -4, 2.5, 4]),
               room("bedroom", "ruin", [-4.5, -4, 0.5, 4]),
           ],
-           "openings": [arch(0.5, 0.0, 0.9), {"type": "hole", "at": [-2.0, 4], "width": 1.2, "sill": 0.9, "head": 2.1},
+           "openings": [arch(0.5, -3.1, 0.9), {"type": "hole", "at": [-2.0, 4], "width": 1.2, "sill": 0.9, "head": 2.1},
                         {"type": "hole", "at": [-4.5, 1.0], "width": 2.4, "sill": 0.2, "head": 2.6}, {"type": "hole", "at": [-1.0, -4], "width": 1.2, "sill": 0.9, "head": 2.1}]},
       ],
-      stairs=[{"floor": 0, "rect": [0.7, -3.2, 2.3, 1.2], "dir": "-z", "railing": False}],
+      stairs=[{"floor": 0, "rect": [0.7, -2.4, 2.3, 2.0], "dir": "-z", "railing": False}],
       roof={"type": "none"},
       extras=[
-          {"type": "prop", "name": "Rubble Pile", "at": [3.5, 1.5]},
+          {"type": "prop", "name": "Rubble Pile", "at": [3.6, -1.2]},
           {"type": "prop", "name": "Rubble Pile", "at": [-2.0, 5.3], "yaw": 40},
           {"type": "prop", "name": "Brick Pile", "at": [-5.6, -1.0], "yaw": 80},
           {"type": "prop", "name": "Burnt Out Car", "at": [-1.0, 8.0], "yaw": 15},

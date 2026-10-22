@@ -198,6 +198,7 @@ public sealed partial class Game
         if (bot == null)
             return false;
         Players.Remove(bot.Id);
+        OnModePlayerLeave(bot);
         Log($"{bot.Name} left to make room");
         return true;
     }
@@ -241,11 +242,8 @@ public sealed partial class Game
         var b = p.Bot!;
         if (BotHeld(p, b, now))
             return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
-        if (Mode == GameMode.Zombies)
-        {
-            ZombieBotTick(p, b, now); // co-op bots fight zombies (ZombieBots.cs)
-            return;
-        }
+        if (Module.BotTick(this, p, b, now))
+            return; // the mode runs its own bots (Zombies: co-op bots fight zombies, ZombieBots.cs)
         if (!p.Alive)
         {
             b.Target = byte.MaxValue;

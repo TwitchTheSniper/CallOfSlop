@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Stake Ramp",
+  "category": "Beachhead",
+  "description": "A log ramp on posts driven into the sand, a rusty mine on its top end.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.8, 0.75, 0.32]}, {"size": [0.24, 1.15, 0.24], "offset": [1.0, 0.575, 0]}],
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [3.0, 0.24, 0.24], "offset": [0, 0.55, 0], "color": "darkwood", "rotation": [0, 0, 20], "material": "wood"},
+    {"size": [0.2, 1.0, 0.2], "offset": [1.0, 0.5, 0], "color": "darkwood", "material": "wood"},
+    {"size": [0.2, 0.5, 0.2], "offset": [-0.6, 0.25, 0], "color": "darkwood", "material": "wood"},
+    {"size": [0.3, 0.16, 0.3], "offset": [1.38, 1.1, 0], "color": "#3b4030", "material": "metal"},
+    {"size": [0.12, 0.08, 0.12], "offset": [1.38, 1.22, 0], "color": "#8a7a30"}
+  ]
+}

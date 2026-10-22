@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bunker Hatch Lid",
+  "category": "Timberline",
+  "description": "A steel hatch frame with its lid propped open. Lay it round a stairwell opening.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": false},
+  "parts": [
+    {"size": [1.2, 0.08, 1.2], "offset": [0, 0.04, 0], "color": "#5a5a52", "material": "metal"},
+    {"size": [1.0, 0.06, 1.0], "offset": [0, 0.55, -0.62], "color": "#6a6a5e", "rotation": [-75, 0, 0], "material": "metal"},
+    {"size": [0.3, 0.04, 0.04], "offset": [0, 0.95, -0.66], "color": "#303030"},
+    {"size": [0.08, 0.08, 0.08], "offset": [0.45, 0.12, -0.55], "color": "#303030"}
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Excavator",
+  "category": "DeepcutMine",
+  "description": "A tracked yellow excavator with its boom out and the bucket on the ground (+X).",
+  "collision": "solid",
+  "collider": [{"size": [4.6, 2.8, 3.4], "offset": [-0.2, 1.4, 0]}, {"size": [1.3, 1.4, 1.4], "offset": [7.0, 0.7, -0.3]}],
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [4.6, 0.9, 0.85], "offset": [0, 0.45, 1.25], "color": "#2a2a2c", "material": "metal"},
+    {"size": [4.6, 0.9, 0.85], "offset": [0, 0.45, -1.25], "color": "#2a2a2c", "material": "metal"},
+    {"size": [4.4, 0.08, 0.9], "offset": [0, 0.93, 1.25], "color": "#3a3a3c"},
+    {"size": [4.4, 0.08, 0.9], "offset": [0, 0.93, -1.25], "color": "#3a3a3c"},
+    {"size": [2.0, 0.5, 1.8], "offset": [0, 1.1, 0], "color": "#333335"},
+    {"size": [3.4, 1.4, 2.7], "offset": [-0.4, 2.05, 0], "color": "#d9a520", "material": "metal"},
+    {"size": [1.1, 1.2, 2.7], "offset": [-2.4, 1.95, 0], "color": "#a87a14", "material": "metal"},
+    {"size": [1.3, 1.5, 1.0], "offset": [0.9, 3.45, 0.85], "color": "#d9a520", "material": "metal"},
+    {"size": [0.04, 1.0, 0.8], "offset": [1.56, 3.55, 0.85], "color": "glass"},
+    {"size": [1.1, 0.9, 0.04], "offset": [0.9, 3.55, 1.36], "color": "glass"},
+    {"size": [0.25, 0.8, 0.25], "offset": [-1.4, 3.1, -0.8], "color": "#2a2a2c"},
+    {"size": [5.0, 0.6, 0.55], "offset": [2.9, 4.0, -0.3], "color": "#d9a520", "material": "metal", "rotation": [0, 0, 35]},
+    {"size": [3.6, 0.45, 0.45], "offset": [6.3, 3.6, -0.3], "color": "#d9a520", "material": "metal", "rotation": [0, 0, -62]},
+    {"size": [1.2, 0.9, 1.3], "offset": [7.0, 1.05, -0.3], "color": "#4a4a4c", "material": "metal", "rotation": [0, 0, 20]},
+    {"size": [0.25, 1.9, 0.18], "offset": [3.6, 4.3, 0.05], "color": "#c0c0c0", "rotation": [0, 0, 35]}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Dragons Tooth",
+  "category": "Beachhead",
+  "description": "A stepped concrete anti-tank block (dragon's tooth). Unbreakable cover.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.0, 1.2, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "parts": [
+    {"size": [1.0, 0.4, 1.0], "offset": [0, 0.2, 0], "color": "concrete", "material": "concrete"},
+    {"size": [0.76, 0.4, 0.76], "offset": [0, 0.6, 0], "color": "concrete", "material": "concrete"},
+    {"size": [0.5, 0.36, 0.5], "offset": [0, 0.98, 0], "color": "concrete", "material": "concrete"},
+    {"size": [0.3, 0.06, 0.3], "offset": [0, 1.19, 0], "color": "#8a8a84"},
+    {"size": [1.02, 0.08, 1.02], "offset": [0, 0.05, 0], "color": "#6a6a62"}
+  ]
+}

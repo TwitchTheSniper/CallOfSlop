@@ -276,6 +276,8 @@ public static class BuildingFile
                 var at = Nums(Need(oe, "at", ow), 2, ow);
                 var o = new BOpening { Kind = kind, X = at[0], Z = at[1] };
                 o.Width = Get(oe, "width") is { } wd ? Range(Num(wd, ow), 0.3f, 8f, $"{ow}: width") : kind == OpeningKind.Window ? 1.2f : 1f;
+                if (kind is OpeningKind.Door or OpeningKind.Arch && o.Width < BuildingGen.MinDoorWidth)
+                    throw new BuildingFileException($"{ow}: a {(kind == OpeningKind.Door ? "door" : "arch")} must be at least {BuildingGen.MinDoorWidth} m wide (bots are 0.8 m wide), got {o.Width}");
                 o.Bottom = kind is OpeningKind.Window or OpeningKind.Hole ? 0.9f : 0f;
                 o.Top = kind == OpeningKind.Window ? 2.2f : -1f; // doors: the building's door height (below); windows 1.3 m tall, so a broken one can be climbed through
                 if (Get(oe, "sill") is { } si) o.Bottom = Range(Num(si, ow), 0f, 6f, $"{ow}: sill");

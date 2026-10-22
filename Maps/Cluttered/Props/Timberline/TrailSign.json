@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Trail Sign",
+  "category": "Timberline",
+  "description": "A carved wooden trail marker pointing the way.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.14, 1.6, 0.14]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 50, "breakBy": "all", "sound": "wood"},
+  "parts": [
+    {"size": [0.12, 1.6, 0.12], "offset": [0, 0.8, 0], "color": "#5a4028"},
+    {"size": [0.9, 0.36, 0.05], "offset": [0.25, 1.35, 0.07], "color": "#6a4a2a", "material": "wood"},
+    {"size": [0.7, 0.05, 0.06], "offset": [0.25, 1.4, 0.1], "color": "#e8dcb0"},
+    {"size": [0.5, 0.05, 0.06], "offset": [0.2, 1.28, 0.1], "color": "#e8dcb0"},
+    {"size": [0.2, 0.2, 0.05], "offset": [0.62, 1.35, 0.07], "color": "#6a4a2a", "rotation": [0, 0, 45]}
+  ]
+}

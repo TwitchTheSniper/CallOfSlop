@@ -133,6 +133,9 @@ public sealed class PacketWriter
 
     /// <summary>Overwrites one byte already written (for counts filled in afterwards).</summary>
     public void PatchU8(int at, byte v) => _buf[at] = v;
+
+    /// <summary>Overwrites two bytes already written (for lengths filled in afterwards).</summary>
+    public void PatchU16(int at, ushort v) => BinaryPrimitives.WriteUInt16LittleEndian(_buf.AsSpan(at), v);
 }
 
 /// <summary>
@@ -148,6 +151,15 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     /// <summary>Bytes left to read.</summary>
     public int Remaining => _data.Length - _pos;
+
+    /// <summary>The next <paramref name="bytes"/> bytes as a span (for a nested reader), skipping past them.</summary>
+    public ReadOnlySpan<byte> Take(int bytes)
+    {
+        Need(bytes);
+        var s = _data.Slice(_pos, bytes);
+        _pos += bytes;
+        return s;
+    }
 
     private readonly void Need(int bytes)
     {

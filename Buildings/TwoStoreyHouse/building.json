@@ -61,7 +61,7 @@
         {"type": "door", "at": [0.6, 4.5], "width": 1.0, "front": true, "hinge": "right"},
         {"type": "door", "at": [-1.5, 1.6], "width": 0.9},
         {"type": "door", "at": [1.5, 2.5], "width": 0.9},
-        {"type": "door", "at": [1.5, -0.25], "width": 0.8},
+        {"type": "door", "at": [1.5, -0.25], "width": 0.9},
         {"type": "door", "at": [0.0, -1], "width": 0.9},
         {"type": "door", "at": [-1.5, -2.75], "width": 0.9},
         {"type": "door", "at": [3.5, -4.5], "width": 0.9, "hinge": "right"},
@@ -89,7 +89,7 @@
         {"type": "door", "at": [-1.5, -0.3], "width": 0.9},
         {"type": "door", "at": [1.5, 2.6], "width": 0.9},
         {"type": "door", "at": [-0.4, -1], "width": 0.9},
-        {"type": "door", "at": [3.25, -1], "width": 0.8},
+        {"type": "door", "at": [3.25, -1], "width": 0.9},
         {"type": "door", "at": [-3.25, 4.5], "width": 0.9, "hinge": "right"}
       ]
     }

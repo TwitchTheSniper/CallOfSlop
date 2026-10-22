@@ -59,8 +59,8 @@
       "openings": [
         {"type": "door", "at": [0, 4], "width": 1.6, "front": true, "material": "glass", "health": 40},
         {"type": "door", "at": [-2.2, -0.5], "width": 1.0, "swing": "out"},
-        {"type": "door", "at": [3.25, -0.5], "width": 0.8},
-        {"type": "door", "at": [5.75, -0.5], "width": 0.8},
+        {"type": "door", "at": [3.25, -0.5], "width": 0.9},
+        {"type": "door", "at": [5.75, -0.5], "width": 0.9},
         {"type": "door", "at": [-5.5, -4], "width": 1.0, "material": "metal"},
         {"type": "door", "at": [7, 1.75], "width": 1.0, "material": "glass", "health": 40}
       ]
