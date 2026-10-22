@@ -352,19 +352,21 @@ side and along the dock, brick backs of the neighbouring buildings across the al
   islands and the freezer wall.
 - **Mezzanine:** 3.6 m up over the deli, a walkway behind a 1.05 m parapet (cover and the view over the shelves) in front
   of the office and break room; the main stair climbs from the back aisle, the back stair from the stock room.
-- **Flags:** Blue's at the back of the car park, Red's at the back of the dock apron.
+- **Flags:** Blue's at the back of the car park, Red's on the dock apron behind the middle dock door.
 
 **Balance (not mirrored).** The two ends are different places on purpose: Red's side is closer to the mezzanine (the high
 ground over the floor, with its own back stair), Blue's side has more ways in (two doors, three windows, the alley flank)
 and more low cover on its way to the hills (checkout counters, promo stacks, cart nests). The generator measures the map
 instead of mirroring it: a 0.5 m grid walk from every spawn (anything 0.55-1.7 m tall can be mantled at 2 m extra, like
 the game's nav graph) puts the hills and spawns where both teams have the same walk (hill 1 51/51 m, hill 2 54/54 m,
-hill 3 61/64 m, the enemy flag 97/94 m, Blue/Red averaged over the team spawns), and checks that no Blue spawn can see a
-Red one. The self-test (`SelfTestCluttered.Supermarket.cs`) measures the same on the game's nav graph (within 10%), the
-solid cover within 6 m of each team's routes to the hills (at least 70% of the other team's), the spawn sight lines with
-real ray casts, that the mezzanine is on the main nav graph, and that the map really isn't mirrored (at most 35% of the
-solid props have a twin across x = 0, z = 0 or the centre). Those checks are this map's own, so the twin checks of the
-mirrored maps stay as strict as they were.
+hill 3 61/64 m, the enemy flag 93/94 m, Blue/Red averaged over the team spawns), and checks that no Blue spawn can see a
+Red one. The self-test (`SelfTestCluttered.Supermarket.cs`) measures the same on the game's nav graph (within 10%): hill 1
+54/52 m (+3%), hill 2 56/56 m (0%), hill 3 61/65 m (-6%), the enemy flag 98/95 m (+3%); solid cover within 6 m of each
+team's routes to the hills 143/169 (85%, at least 70% needed); 0 spawn-to-spawn sight lines (real ray casts at eye
+height); 12 nav nodes on the mezzanine in the main area; and that the map really isn't mirrored (0% of the 505 solid props
+have a twin across x = 0, z = 0 or the centre; at most 35% allowed). Those checks are this map's own, so the twin checks of
+the mirrored maps stay as strict as they were. Hill 3 leans to Blue because Red's way to the frozen section goes round the
+deli counters; Red gets the mezzanine and the back stair in exchange.
 
 **Placement rules** (`townkit.py` plus the map's own code in `supermarket.py`): shelves in rows square to the walls with
 end caps facing out of every run; fittings against the walls with their backs to them (chillers and bakery racks on the
@@ -387,14 +389,14 @@ Pallet of Water, Store Cardboard Bale, Pallet Rack, Cardboard Baler, Roll Cage, 
 Department Signs, Ceiling Light Panel, Flickering Ceiling Light, the Slop Mart Sign, Wet Floor Sign, Dropped Groceries and
 a Gumball Machine. Fittings are solid and unbreakable; loose stock breaks; lights and signs are cosmetic.
 
-**Object counts** (from the self-test): about 2,950 props (about 700 by hand, 2,240 from 13 cosmetic Clutter ops; about
-500 solid, 2,430 cosmetic, 1,580 breakable), about 7,000 plants (the roof removes about 9,800 and the paving 6,600),
-about 380 meshes, 116 boxes drawn one by one (walls with their openings, the roof, the mezzanine, stairs, columns, the
+**Object counts** (from the self-test): 2,948 props (about 700 by hand, 2,240 from 13 cosmetic Clutter ops; 505 solid,
+2,443 cosmetic, 1,599 breakable), 6,948 plants (16 trees; the roof removes 9,786 and the paving 6,655), 382 meshes,
+120 boxes drawn one by one (walls with their openings, the roof, the mezzanine, stairs, columns, the
 cooler), 96 animated props (flickering lights, freezer and chiller lights, checkout lane lights, the sign's letters,
 swinging signs), 19 spawns, about 300 waypoints and a 1,390-node nav graph. Bots (12 players, 90 s): about 60 kills in
-free-for-all and 50 in TDM, no stuck, fallen or escaped bots, under 1 ms of tick work.
+free-for-all and 52 in TDM, no stuck, fallen or escaped bots, worst tick 0.8 ms.
 
-**Performance.** Fewer boxes than any other Cluttered map (116 drawn), about the props of Dockside and less than half its
+**Performance.** Fewer boxes than any other Cluttered map (120 drawn), about the props of Dockside and less than half its
 plants, so it should run at least as fast as Dockside on the user's PC. Animated props freeze past their distance (40-80 m
 for the signs and lights, which also keeps the shelves' dense interior cheap). The smoke run's `cluttered_supermarket` (the
 car park and store front from above) and `cluttered_supermarket_inside` (the floor from the mezzanine) views log fps,
