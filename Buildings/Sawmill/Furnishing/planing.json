@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "planing",
+  "description": "The Sawmill's planing shed: planers, stacks of planed boards.",
+  "items": [
+    {"props": ["Sawmill Planer"], "place": "wall", "count": [1, 2]},
+    {"props": ["Scaffold Board Stack", "Plank Pile"], "place": "wall", "count": [1, 2]},
+    {"props": ["Plank Pile"], "place": "floor", "gap": 0.5},
+    {"props": ["Plank", "Broom"], "place": "floor", "count": [1, 3]}
+  ]
+}

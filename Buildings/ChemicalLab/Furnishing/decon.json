@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "decon",
+  "description": "The Chemical Lab's changing and decontamination room: lockers, a shower, lab coats.",
+  "items": [
+    {"props": ["Shower Cubicle"], "place": "corner"},
+    {"props": ["Metal Lockers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Bench"], "place": "centre", "chance": 0.8},
+    {"props": ["Laundry Basket", "Coat Stand"], "place": "floor"}
+  ]
+}

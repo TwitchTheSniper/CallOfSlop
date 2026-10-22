@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Machine Shop Milling Machine",
+  "description": "A knee-type milling machine: the spindle whirring over a vice on the table, handwheels on every axis.",
+  "collision": "solid",
+  "collider": [{"size": [1.3, 1.8, 1.2], "offset": [0, 0.9, 0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.7, 1.3, 0.8], "offset": [0, 0.65, -0.25], "color": "#5e6e62", "material": "metal"},
+    {"size": [0.6, 0.35, 1.2], "offset": [0, 1.6, -0.05], "color": "#5e6e62", "material": "metal"},
+    {"size": [1.3, 0.12, 0.45], "offset": [0, 1.0, 0.35], "color": "steel"},
+    {"size": [0.5, 0.25, 0.4], "offset": [0, 0.82, 0.3], "color": "#5e6e62"},
+    {"size": [0.3, 0.18, 0.2], "offset": [0, 1.15, 0.35], "color": "#3a3a3a"},
+    {
+      "size": [0.14, 0.35, 0.058],
+      "offset": [0, 1.3, 0.45],
+      "color": "chrome",
+      "yaw": 0,
+      "anim": {"type": "spin", "axis": "y", "rpm": 300, "pivot": [0, 1.3, 0.45]}
+    },
+    {
+      "size": [0.14, 0.35, 0.058],
+      "offset": [0, 1.3, 0.45],
+      "color": "chrome",
+      "yaw": 45,
+      "anim": {"type": "spin", "axis": "y", "rpm": 300, "pivot": [0, 1.3, 0.45]}
+    },
+    {
+      "size": [0.14, 0.35, 0.058],
+      "offset": [0, 1.3, 0.45],
+      "color": "chrome",
+      "yaw": 90,
+      "anim": {"type": "spin", "axis": "y", "rpm": 300, "pivot": [0, 1.3, 0.45]}
+    },
+    {
+      "size": [0.14, 0.35, 0.058],
+      "offset": [0, 1.3, 0.45],
+      "color": "chrome",
+      "yaw": 135,
+      "anim": {"type": "spin", "axis": "y", "rpm": 300, "pivot": [0, 1.3, 0.45]}
+    },
+    {"size": [0.04, 0.18, 0.075], "offset": [0.68, 1.0, 0.35], "color": "chrome", "pitch": 0},
+    {"size": [0.04, 0.18, 0.075], "offset": [0.68, 1.0, 0.35], "color": "chrome", "pitch": 45},
+    {"size": [0.04, 0.18, 0.075], "offset": [0.68, 1.0, 0.35], "color": "chrome", "pitch": 90},
+    {"size": [0.04, 0.18, 0.075], "offset": [0.68, 1.0, 0.35], "color": "chrome", "pitch": 135},
+    {"size": [0.075, 0.18, 0.04], "offset": [0, 0.8, 0.55], "color": "chrome", "roll": 0},
+    {"size": [0.075, 0.18, 0.04], "offset": [0, 0.8, 0.55], "color": "chrome", "roll": 45},
+    {"size": [0.075, 0.18, 0.04], "offset": [0, 0.8, 0.55], "color": "chrome", "roll": 90},
+    {"size": [0.075, 0.18, 0.04], "offset": [0, 0.8, 0.55], "color": "chrome", "roll": 135},
+    {
+      "size": [0.12, 0.12, 0.04],
+      "offset": [0.3, 1.6, 0.56],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 2.0, "color": "#40ff70", "glow": 0.8}
+    }
+  ]
+}

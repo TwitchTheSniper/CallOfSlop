@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "farm-workshop",
+  "description": "The Grain Barn's tool room: a bench, tools, tyres, a diesel drum for the tractor.",
+  "items": [
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Toolbox"], "place": "on", "of": "bench"},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Red Fuel Barrel"], "place": "corner"},
+    {"props": ["Tyre Stack", "Oil Drum"], "place": "wall"},
+    {"props": ["Garden Tools", "Jerry Can", "Hose Reel"], "place": "floor", "count": [1, 2]}
+  ]
+}

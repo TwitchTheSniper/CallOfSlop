@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Substation Relay Cabinet",
+  "description": "A tall relay protection cabinet behind a glass door: rows of relays and blinking status LEDs.",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 2.1, 0.6]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 240, "breakBy": "all", "sound": "metal", "debris": {"count": 12, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [0.8, 2.1, 0.6], "offset": [0, 1.05, 0], "color": "#9aa098", "material": "metal"},
+    {"size": [0.7, 1.8, 0.02], "offset": [0, 1.1, 0.305], "color": "#2a3a40"},
+    {"size": [0.5, 0.18, 0.03], "offset": [0, 0.5, 0.31], "color": "#cfd2c8"},
+    {"size": [0.5, 0.18, 0.03], "offset": [0, 0.8, 0.31], "color": "#cfd2c8"},
+    {"size": [0.5, 0.18, 0.03], "offset": [0, 1.1, 0.31], "color": "#cfd2c8"},
+    {"size": [0.5, 0.18, 0.03], "offset": [0, 1.4, 0.31], "color": "#cfd2c8"},
+    {"size": [0.5, 0.18, 0.03], "offset": [0, 1.7, 0.31], "color": "#cfd2c8"},
+    {
+      "size": [0.04, 0.04, 0.02],
+      "offset": [0.2, 0.5, 0.325],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 0.7, "color": "#30ff60", "glow": 1.0, "duty": 0.5}
+    },
+    {
+      "size": [0.04, 0.04, 0.02],
+      "offset": [0.2, 0.8, 0.325],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 1.0699999999999998, "color": "#30ff60", "glow": 1.0, "duty": 0.5, "phase": 0.13}
+    },
+    {
+      "size": [0.04, 0.04, 0.02],
+      "offset": [0.2, 1.1, 0.325],
+      "color": "#ff3030",
+      "anim": {"type": "blink", "period": 1.44, "color": "#ff3030", "glow": 1.0, "duty": 0.5, "phase": 0.26}
+    },
+    {
+      "size": [0.04, 0.04, 0.02],
+      "offset": [0.2, 1.4, 0.325],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 1.8099999999999998, "color": "#30ff60", "glow": 1.0, "duty": 0.5, "phase": 0.39}
+    },
+    {
+      "size": [0.04, 0.04, 0.02],
+      "offset": [0.2, 1.7, 0.325],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 2.1799999999999997, "color": "#30ff60", "glow": 1.0, "duty": 0.5, "phase": 0.52}
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "timber-store",
+  "description": "The Sawmill's timber store: sawn timber stacked to dry, pallets, a forklift.",
+  "items": [
+    {"props": ["Plank Pile"], "place": "wall", "count": [2, 4]},
+    {"props": ["Scaffold Board Stack"], "place": "wall", "count": [1, 2]},
+    {"props": ["Pallet Stack", "Plank Pile"], "place": "floor", "count": [1, 3], "gap": 0.5},
+    {"props": ["Plank"], "place": "floor", "count": [1, 2]}
+  ]
+}

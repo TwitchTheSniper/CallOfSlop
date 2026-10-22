@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "instrument-room",
+  "description": "The Chemical Lab's instrument room: server racks logging data, a big analyzer, gas cylinders chained up.",
+  "items": [
+    {"props": ["Server Rack"], "place": "wall", "count": [2, 3]},
+    {"props": ["Chemical Lab Analyzer"], "place": "wall"},
+    {"props": ["Gas Cylinders"], "place": "corner"},
+    {"props": ["Archive Boxes", "Cardboard Box"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bale-store",
+  "description": "The Recycling Plant's bale store: rows of bales waiting for lorries, a forklift.",
+  "items": [
+    {
+      "props": ["Recycling Can Bale", "Recycling Paper Bale", "Recycling Plastic Bale", "Recycling Paper Bale"],
+      "place": "wall",
+      "count": [4, 7]
+    },
+    {
+      "props": ["Recycling Can Bale", "Recycling Paper Bale", "Recycling Plastic Bale"],
+      "place": "floor",
+      "count": [2, 4],
+      "gap": 0.3
+    },
+    {"props": ["Pallet", "Plastic Bag"], "place": "floor", "count": [1, 2]}
+  ]
+}

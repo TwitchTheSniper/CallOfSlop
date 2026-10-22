@@ -429,6 +429,10 @@ public sealed class Player
     /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
     public double StunnedUntil;
 
+    /// <summary>Sprinting right now, and ticks left of the after-sprint spread recovery (Source/Game/SprintSpread.cs). Server and local prediction.</summary>
+    public bool Sprinting;
+    public int SprintRecoverTicks;
+
     /// <summary>The built weapon in slot 3 or 4 with this id, if the slots are unlocked.</summary>
     public WeaponDef? ExtraDef(byte weaponId) =>
         !ExtraSlots ? null : BuiltExtra[0]?.Id == weaponId ? BuiltExtra[0] : BuiltExtra[1]?.Id == weaponId ? BuiltExtra[1] : null;

@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "mill-floor",
+  "description": "The Sawmill's mill floor: sawn boards stacked by the walls, logs waiting, sawdust barrows, a fan.",
+  "items": [
+    {"props": ["Plank Pile"], "place": "wall", "count": [2, 3]},
+    {"props": ["Log"], "place": "floor", "count": [1, 2], "gap": 0.4},
+    {"props": ["Drum Fan"], "place": "corner"},
+    {"props": ["Pallet Stack", "Plank Pile"], "place": "floor", "count": [1, 2], "gap": 0.5},
+    {"props": ["Wheelbarrow"], "place": "floor"},
+    {"props": ["Plank", "Broom", "Plank"], "place": "floor", "count": [2, 4]}
+  ]
+}

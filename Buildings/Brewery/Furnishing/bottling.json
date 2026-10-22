@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bottling",
+  "description": "The Brewery's bottling line: crates of bottles stacked high, boxes and pallets.",
+  "items": [
+    {"props": ["Brewery Bottle Crates"], "place": "wall", "count": [3, 6]},
+    {"props": ["Cardboard Stack", "Pallet Stack"], "place": "floor", "count": [1, 3], "gap": 0.5},
+    {"props": ["Brewery Bottle Crates"], "place": "floor", "count": [1, 3], "gap": 0.3},
+    {"props": ["Cardboard Box Small", "Bottles", "Broom"], "place": "floor", "count": [1, 3]}
+  ]
+}

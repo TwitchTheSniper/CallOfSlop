@@ -751,6 +751,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Frenzy visuals"u8);
+            var frenzyFx = (int)s.FrenzyVisuals;
+            for (var i = 0; i <= (int)FrenzyVisualMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(FrenzyVisualMode)i}##frenzyfx", ref frenzyFx, i))
+                    s.FrenzyVisuals = (FrenzyVisualMode)frenzyFx;
+            }
+            ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();
