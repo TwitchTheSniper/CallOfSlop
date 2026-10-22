@@ -42,7 +42,8 @@ public sealed record HardbassFlavor(
     ReverseBassUse Reverse,
     float KickClip = 1.6f,
     float Bounce = 5f,
-    bool HalfTimeBreak = false);
+    bool HalfTimeBreak = false,
+    HardbassHarder? Harder = null);
 
 /// <summary>Settings > Audio > Music style: every track, or only the hardbass ones.</summary>
 public enum MusicChoice
@@ -239,6 +240,9 @@ public static class MusicTracks
             [0, 1, 0, 6, 0, 1, 5, 1], 0x6A55_0010, "I4 B8 D16 K4 B8 D24 O8",
             new(HardbassLead.Hoover, HardbassLead.Rave, "..x...x...x...x.", "..x.o.x...x.o.x.",
                 "y.......y.......y.......y...o...", ReverseBassUse.LaterDrops, KickClip: 1.3f, Bounce: 2f)),
+
+        // ---- Harder hardbass (menu and lobby; MusicTracksHarder.cs) ----------------------------------
+        .. MusicTracksHarder.Tracks,
     ];
 
     public static MusicTrack[] For(MusicSet set) => All.Where(t => t.Set == set).ToArray();
