@@ -69,7 +69,7 @@ public static partial class SelfTest
             Map.FoliageCoverDisabled = false;
             World.SetMap(Maps.All[0]);
             if (BotFoliageNotes.Count > 0)
-                Line("::error title=Bots and foliage (results)::" + string.Join("%0A", BotFoliageNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+                Line("::warning title=Bots and foliage (results)::" + string.Join("%0A", BotFoliageNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
