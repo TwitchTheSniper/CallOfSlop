@@ -122,7 +122,7 @@ BLUE_SP = [(-27.0, 44.4), (-17.5, 44.0), (-8.0, 44.6), (1.5, 44.8), (11.0, 44.6)
 RED_SP = [(-31.0, -38.4), (-23.0, -41.0), (-16.5, -38.8), (-6.5, -40.6), (4.5, -38.8), (13.0, -41.0)]
 FFA_SP = [(-33.5, 12.4), (-6.0, -8.0), (15.45, -3.0), (-17.5, -33.0), (17.0, -25.5), (-40.0, -16.0), (27.0, 16.6)]
 HILLS = [(2.5, 1.85, 3.3), (-27.0, 2.2, 3.5), (30.0, 0.2, 3.5)]
-FLAGS = [(-4.0, 44.6), (-4.5, -43.6)]
+FLAGS = [(-4.0, 44.6), (-4.5, -40.4)]
 # two keep-out lists: loose cover keeps well clear of spawns, hills and flags; fixtures (shelves, counters) only keep out of
 # what the self-test checks (1 m round a spawn, a hill's radius, 2 m round a flag), so the aisles can frame a hill
 SOFT = [(x, z, 2.6) for x, z in BLUE_SP + RED_SP + FFA_SP] + [(x, z, r + 0.3) for x, z, r in HILLS] + [(x, z, 2.6) for x, z in FLAGS]

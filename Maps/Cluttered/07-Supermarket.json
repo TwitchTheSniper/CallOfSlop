@@ -26,7 +26,7 @@
     {"x": -27.0, "z": 2.2, "radius": 3.5},
     {"x": 30.0, "z": 0.2, "radius": 3.5}
   ],
-  "flags": [[-4.0, 44.6], [-4.5, -43.6]],
+  "flags": [[-4.0, 44.6], [-4.5, -40.4]],
   "ops": [
     {"op": "Ground", "color": [0.36, 0.37, 0.3]},
     {"op": "Mesh", "mesh": "box", "x": 0.0, "z": 2.8, "y": 0.0, "width": 71.2, "height": 0.02, "depth": 33.6, "material": "Tiles", "color": [0.84, 0.82, 0.76]},
@@ -1178,6 +1178,8 @@
     {"op": "Prop", "name": "Chain Link Fence", "x": -23.37, "z": -48.5, "yaw": 343.1},
     {"op": "Prop", "name": "Chain Link Fence", "x": -20.27, "z": -47.61, "yaw": 351.1},
     {"op": "Prop", "name": "Chain Link Fence", "x": -11.62, "z": -45.84, "yaw": 343.9},
+    {"op": "Prop", "name": "Chain Link Fence", "x": -5.34, "z": -44.57, "yaw": 359.4},
+    {"op": "Prop", "name": "Chain Link Fence", "x": -2.17, "z": -45.27, "yaw": 9.0},
     {"op": "Prop", "name": "Chain Link Fence", "x": 3.87, "z": -46.4, "yaw": 13.0},
     {"op": "Prop", "name": "Chain Link Fence", "x": 9.59, "z": -47.71, "yaw": 7.1},
     {"op": "Prop", "name": "Chain Link Fence", "x": 15.07, "z": -48.3, "yaw": 349.2},
