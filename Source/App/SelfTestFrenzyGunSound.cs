@@ -124,10 +124,11 @@ public static partial class SelfTest
         // Every class on every weapon: a level-6 shot vs the normal one, and the frenzy part growing with the level.
         var win = GunSamples.LoudnessWindow;
         var mix = new float[win];
-        var part = new float[win];
+        var layer = new float[win];
         double minRatio = double.MaxValue, maxRatio = 0;
         string minAt = "", maxAt = "";
         var notMonotonic = 0;
+        var notMonotonicAt = new List<string>();
         foreach (var w in Weapons.All)
         {
             var shot = set.Shots[w.Id][0];
@@ -145,29 +146,37 @@ public static partial class SelfTest
                     var layers = bank.Layers[c][p.Tier];
                     var g = FrenzyGunSound.Gains(p, Audio.OwnShotGain, bank.ShotRms[w.Id], bank.DriveRms[w.Id], bank.LayerRms[c][p.Tier][0], false);
                     var drive = bank.Drive[w.Id];
+                    // The driven copy plays in step with the shot (same pitch: they add coherently); the layer voices play at
+                    // their own pitch, so their power adds.
                     for (var i = 0; i < win; i++)
                     {
-                        var x = (i < drive.Length ? drive[i] * g.Drive : 0f) + (i < layers[0].Length ? layers[0][i] * g.Layer : 0f);
-                        if (p.Spread > 0f && i < layers[1].Length)
-                            x += layers[1][i] * g.Layer;
-                        part[i] = x / 32768f;
-                        mix[i] = part[i] + (i < shot.Length ? shot[i] / 32768f * g.Base : 0f);
+                        mix[i] = ((i < drive.Length ? drive[i] * g.Drive : 0f) + (i < shot.Length ? shot[i] * g.Base : 0f)) / 32768f;
+                        layer[i] = i < layers[0].Length ? layers[0][i] * g.Layer / 32768f : 0f;
                     }
-                    var e = GunSamples.Rms(part, win);
+                    var layerPower = Math.Pow(GunSamples.Rms(layer, win), 2) * (p.Spread > 0f ? 2 : 1);
+                    var drivePart = FrenzyGunSound.Rms(drive) * g.Drive;
+                    var e = Math.Sqrt(drivePart * (double)drivePart + layerPower); // the frenzy part's loudness
+                    var total = Math.Sqrt(Math.Pow(GunSamples.Rms(mix, win), 2) + layerPower);
                     if (level == 1)
                         firstE = e;
                     if (e < prevE * 0.98 - 1e-4)
+                    {
                         notMonotonic++;
+                        notMonotonicAt.Add($"{w.Name} as {classes[c]} level {level} ({e:0.000} after {prevE:0.000})");
+                    }
                     prevE = e;
                     if (level == FrenzyMeterCore.MaxLevel)
                     {
-                        var ratio = GunSamples.Rms(mix, win) / baseRms;
+                        var ratio = total / baseRms;
                         if (ratio < minRatio)
                             (minRatio, minAt) = (ratio, $"{w.Name} as {classes[c]}");
                         if (ratio > maxRatio)
                             (maxRatio, maxAt) = (ratio, $"{w.Name} as {classes[c]}");
                         if (prevE < firstE * 1.5)
+                        {
                             notMonotonic++;
+                            notMonotonicAt.Add($"{w.Name} as {classes[c]}: level 6 {prevE:0.000} vs level 1 {firstE:0.000}");
+                        }
                     }
                 }
             }
@@ -178,7 +187,7 @@ public static partial class SelfTest
         if (maxRatio > FrenzyGunSound.MaxLoudnessRatio)
             Fail($"frenzy gun sound: a level-6 shot is {maxRatio:0.00}x the normal one ({maxAt}; max {FrenzyGunSound.MaxLoudnessRatio})");
         if (notMonotonic > 0)
-            Fail($"frenzy gun sound: {notMonotonic} weapon/class pair(s) whose frenzy layers don't grow with the level (or not 1.5x from level 1 to 6)");
+            Fail($"frenzy gun sound: {notMonotonic} weapon/class pair(s) whose frenzy layers don't grow with the level (or not 1.5x from level 1 to 6): {string.Join("; ", notMonotonicAt.Take(6))}");
 
         // The class layers sound different: low correlation between classes' top tiers.
         var n = Math.Min(8192, bank.Layers.Min(c => c[2][0].Length));
@@ -213,8 +222,8 @@ public static partial class SelfTest
         for (var i = 0; i < 2000; i++) // warm-up
             sum += FrenzyGunSound.Gains(FrenzyGunSound.Plan(i % 7, classes[i % classes.Length], FrenzyGunSoundMode.Full), 0.75f, 0.3f, 0.4f, 0.2f, false).Layer;
         const int calls = 200_000;
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var sw = Stopwatch.StartNew();
+        var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < calls; i++)
         {
             var p = FrenzyGunSound.Plan(i % 7, classes[i % classes.Length], (FrenzyGunSoundMode)(i % 3));

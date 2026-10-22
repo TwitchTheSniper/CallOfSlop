@@ -135,6 +135,9 @@ public static class FrenzyGunSound
     /// <summary>The loudest a level-6 shot may be next to the normal shot (RMS over the loudness window; checked by the self-test).</summary>
     public const float MaxLoudnessRatio = 1.41f;
 
+    /// <summary>The loudness the class layers are baked at (RMS over the loudness window, before the limiter).</summary>
+    public const float LayerRmsTarget = 0.25f;
+
     /// <summary>The driven copy is this long at most (the blast and body; the clean shot carries the tail).</summary>
     public const float DriveSeconds = 0.32f;
 
@@ -508,7 +511,33 @@ public static partial class Synth
                 b.S[i] = held;
             }
         }
-        return Finish(b, 0.9f);
+        return FinishRms(b);
+    }
+
+    /// <summary>
+    /// A layer normalised to <see cref="FrenzyGunSound.LayerRmsTarget"/> over the loudness window (so its play gain stays
+    /// well under OpenAL's cap of 1 and scales evenly with the level), through the gun bakes' look-ahead limiter, with a
+    /// 2 ms fade-out.
+    /// </summary>
+    private static short[] FinishRms(Buf b)
+    {
+        var win = Math.Min(b.Len, GunSamples.LoudnessWindow);
+        double sum = 0;
+        for (var i = 0; i < win; i++)
+            sum += b.S[i] * (double)b.S[i];
+        var rms = (float)Math.Sqrt(sum / Math.Max(1, win));
+        var gain = MathF.Min(FrenzyGunSound.LayerRmsTarget / MathF.Max(rms, 1e-6f), 40f);
+        for (var i = 0; i < b.Len; i++)
+            b.S[i] = float.IsFinite(b.S[i]) ? b.S[i] * gain : 0f;
+        GunSamples.Limit(b.S, GunSamples.LimiterThreshold);
+        var fade = Math.Min(b.Len, Sr / 500);
+        var pcm = new short[b.Len];
+        for (var i = 0; i < b.Len; i++)
+        {
+            var f = i >= b.Len - fade ? (b.Len - i) / (float)fade : 1f;
+            pcm[i] = (short)Math.Clamp((int)MathF.Round(b.S[i] * f * 32767f), -32767, 32767);
+        }
+        return pcm;
     }
 
     /// <summary>
