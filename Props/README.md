@@ -60,7 +60,7 @@ Unknown keys, numbers out of range and missing parts are errors with a message s
 
 | Field | Meaning |
 |---|---|
-| `size` | `[w, h, d]`, each 0.001 to 12 m. |
+| `size` | `[w, h, d]`, each 0.001 to 24 m (the whole model also fits in 24 m each way). |
 | `offset` | `[x, y, z]`, the box centre. Default `[0, h/2, 0]`: centred, standing on the ground. |
 | `rotation` | `[pitch, yaw, roll]` in degrees: about X, Y (turning it on the ground) and Z. Or give any of `pitch`, `yaw`, `roll` on their own. |
 | `color` | A name (below), `[r, g, b]` with values 0-1, or `"#rrggbb"`. Default grey. |
@@ -99,7 +99,7 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
 | `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
-| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. |
+| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. `trigger` makes it a pressure-plate mine (see [Landmines](#landmines)). |
 
 How breaking works in a match:
 
@@ -111,6 +111,34 @@ How breaking works in a match:
 - Bots plan their routes as if every prop were whole, so a broken one just gives them a little more room.
 
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
+
+A map can bring any breakable prop back during a match: `{ "op": "Prop", "name": "Landmine", "x": 18, "z": 10, "respawn": 8 }` puts it back 8 seconds after it broke (1 to 3600 s; the default 0 means not until the next match). It waits while anyone is standing on or right next to its spot, so it never comes back under someone's feet. `respawn` is for the `Prop` op only (not `Clutter`), and an unbreakable prop with one is an error.
+
+### Landmines
+
+`Props/Military/Landmine.json` is a half-buried pressure-plate mine: a low olive casing in a dirt ring with a small prong that glints now and then, cosmetic (you walk over it, not into it) and fair to spot if you look at the ground. **Mine Warning Sign** (a red MINES board on a stake, facing +Z) marks a minefield's edge. The Dev pack's **Landmines** map has a small minefield behind signs, a lone mine to try, a mine next to an explosive barrel, one behind a wall, one that comes back after 8 s and a lane bots walk round.
+
+A mine is an explosive breakable prop with a `trigger` in its `explode` block:
+
+```json
+"breakable": { "health": 10, "breakBy": "all", "sound": "metal",
+               "explode": { "radius": 5, "damage": 160, "fuse": 0.35, "knockback": 12,
+                            "trigger": { "radius": 0.6, "height": 0.5 } } }
+```
+
+| `trigger` key | Default | Meaning |
+|---|---|---|
+| `radius` | 0.6 | How far (metres across the ground, scaled with the prop) from its centre feet press the plate, 0.1-3. |
+| `height` | 0.5 | How high above its base feet still press it (0.05-2): jump over it and nothing happens. |
+
+How a mine plays:
+
+- **Step on it and it clicks** (every PC hears it). It goes off `fuse` seconds later (0.35 s; a mine without a `fuse` gets 0.35), whether you stay on it or not: the click commits. Standing still on it is death; a quick sprint off it the moment it clicks gets you out with a wound. Living players, bots and zombies all press it.
+- **Shoot it, knife it or blow it up** (grenades, launchers, kill streaks, a barrel or another mine) and it goes off after its fuse too; one caught in another blast burns 0.12-0.32 s, so a minefield ripples.
+- **The blast is neutral: it hurts everyone**, falling off with distance like a grenade's, shielded by walls, less for anyone prone or wearing Flak Jacket, with knockback, ragdolls, debris, a scorch mark and the smaller fireball. Whoever last hit the mine (shot it, knifed it, threw the grenade) gets the kills they could have made anyway: enemies, and themselves. Everyone else's death, and every death from a mine nobody hit, is nobody's kill: `Landmine` in the feed, a death, no XP or streak for anyone. What a neutral blast sets off (a barrel next to the mine) is neutral too.
+- **Bots know where the mines are** (they're part of the map): their routes keep about 1.6 m clear of every mine still there, and close up they step round one. They don't shoot mines on purpose.
+- **Network:** the host decides, through the same messages as other breakable props (lit, broken, and since protocol 31 back again). Every match starts with every mine in place.
+- **Zombies** maps don't use mines (zombies would set them off for free), but the mechanics work there: zombies press plates and a mine's blast kills them, as the shooter's kills if someone shot it.
 
 ## Pack props
 
@@ -295,6 +323,7 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 |---|---|
 | `Street` | Bins, dumpsters, benches, lamps, hydrants, mailboxes, cones, barriers, the vending machine, signs. |
 | `Industrial` | Crates, pallets, drums (one explosive), pipes, sandbags, tyres, cable spools, gas cylinders. |
+| `Military` | A pressure-plate **Landmine** and a **Mine Warning Sign** (see [Landmines](#landmines)). |
 | `Volatile` | Things that go off, with a short fuse: Red Fuel Barrel, Propane Tank, Propane Bulk Tank (an 11 m blast), Gas Bottle, Gas Bottle Cage, Flammables Cabinet; and two that only break: Chemical Drum, IBC Tote. |
 | `Debris` | Bricks, rubble, planks, cardboard, newspapers, bottles, cans, bags, litter. |
 | `Furniture` | Chairs, a table, a sofa, a filing cabinet. |
@@ -304,6 +333,7 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 | `Utility` | Power poles and transformers, junction boxes, street cabinets, manholes and drains, meters, fire escape stairs, landing and ladder, ladders, a scaffold tower and boards, generators, a gas valve, a floodlight tower, a road plate. |
 | `Signage` | Traffic lights, a pedestrian signal, road signs (speed limit, yield, one way, no parking, crossing, road works, direction), a parking meter, a bus stop sign, a billboard, shop signs (box, hanging, neon), an arrow board trailer, a price pylon, a street clock. |
 | `Urban` | A bus shelter, a phone booth, a payphone, a newsstand, a newspaper box, an ATM, a ticket machine, a post box, bins, a bike rack, a picnic table, a hot dog cart, a market stall, fences and barriers, a concrete block, a speed bump, a boom gate, a portable toilet, a builder's skip. |
+| `Military` | The reusable military set (see [Military/README.md](Military/README.md)): sandbag walls, corners, nests and piles, barbed wire, a steel hedgehog, tank traps, a stake barrier, a field cannon, an anti-tank gun, a howitzer, a mortar pit, a machine gun, ammunition crates, cases and cans, shell crates (explosive), pallets, a camo net, tents (the command tent is walk-in), fuel drum and jerrycan racks (explosive), a searchlight, a guard tower. Its `Vehicles` subfolder is the category `Military Vehicles`: five tanks (WWII medium, heavy, modern main battle tank, light, wrecked), four parked planes (WWII fighter, twin-engine bomber, jet fighter, a walk-in transport plane), a jeep, a covered cargo truck, an armoured car, a fuel tanker and a sidecar motorcycle, with Desert and Winter colour variants. Generated by `tools/propviz/gen_military.py`; shown on the Dev pack's **Military Props** map. |
 | `Animated` | Props with moving or lit parts (see [Animation](#animation)): fans (ceiling, desk, pedestal, drum, exhaust box, AC condenser, cooling unit), a roof turbine vent, a windmill, a small wind turbine, a weather vane, an anemometer, flags, a banner, a swinging shop sign, a hanging lantern, a flickering street lamp, a neon OPEN sign, beacons and alarm lights, a cycling traffic light, railway crossing lights, a police light bar, a lighthouse, radar and satellite dishes, a ticking street clock, a ferris wheel and a carousel, an oil pumpjack, conveyor rollers, a running generator and washer, a cement mixer, a water wheel, a barber pole, a rotating diner sign, a piston pump, a pinwheel, a lawn sprinkler, a rocking chair, a hammock, wind chimes, a grandfather clock, a metronome, a globe, a Newtons cradle, a swing set, a bell frame, a boom gate, a gantry hook, a freight hoist, a buoy, a fishing bobber, a duck on a pond, a bird on a perch, a laundry line, a smoking chimney, a fountain, a TV, a monitor, an arcade cabinet, a slot machine and a glowing vending machine. Most stand on the ground; the Ceiling Fan hangs (use `"y"`: its top is 0.7 m up). |
 
 Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.

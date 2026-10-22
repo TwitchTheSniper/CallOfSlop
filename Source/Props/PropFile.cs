@@ -17,8 +17,8 @@ public static class PropFile
     public const int MaxParts = 128;
     public const int MaxColliders = 8;
 
-    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale).</summary>
-    public const float MaxSize = 12f;
+    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale). 24 m fits a parked transport plane (Props/Military/Vehicles).</summary>
+    public const float MaxSize = 24f;
 
     /// <summary>Named colours a part can use instead of [r, g, b] or "#rrggbb".</summary>
     public static readonly Dictionary<string, Vector3> Colors = new(StringComparer.OrdinalIgnoreCase)
@@ -406,17 +406,47 @@ public static class PropFile
                             b.ExplodeFuse = Range(Num(q.Value, wq), 0, 5, wq);
                         else if (q.Name.Equals("knockback", StringComparison.OrdinalIgnoreCase))
                             b.ExplodeKnockback = Range(Num(q.Value, wq), 0, 20, wq);
+                        else if (q.Name.Equals("trigger", StringComparison.OrdinalIgnoreCase))
+                            ReadTrigger(q.Value, b, wq);
                         else
-                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage, fuse and knockback)");
+                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage, fuse, knockback and trigger)");
                     }
                     if (b.ExplodeRadius <= 0 || b.ExplodeDamage <= 0)
                         throw new PropFileException($"{w}: needs both \"radius\" and \"damage\"");
+                    if (b.IsMine && b.ExplodeFuse <= 0)
+                        b.ExplodeFuse = DefaultTriggerFuse; // a pressure plate always clicks first: the reaction window
                     break;
                 default:
                     throw new PropFileException($"{w}: unknown key. \"breakable\" uses: health, breakBy, debris, sound, explode");
             }
         }
         return b;
+    }
+
+    /// <summary>The click-to-blast delay (s) of a pressure plate whose "explode" block gives no "fuse".</summary>
+    public const float DefaultTriggerFuse = 0.35f;
+
+    /// <summary>The "trigger" block of "explode": a pressure plate, <c>{ "radius": 0.6, "height": 0.5 }</c>.</summary>
+    private static void ReadTrigger(JsonElement e, PropBreakable b, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new PropFileException($"{where}: an object like {{ \"radius\": 0.6, \"height\": 0.5 }}");
+        b.TriggerRadius = 0.6f;
+        foreach (var p in e.EnumerateObject())
+        {
+            var w = $"{where} (\"{p.Name}\")";
+            switch (p.Name.ToLowerInvariant())
+            {
+                case "radius":
+                    b.TriggerRadius = Range(Num(p.Value, w), 0.1f, 3f, w);
+                    break;
+                case "height":
+                    b.TriggerHeight = Range(Num(p.Value, w), 0.05f, 2f, w);
+                    break;
+                default:
+                    throw new PropFileException($"{w}: unknown key (\"trigger\" has radius and height)");
+            }
+        }
     }
 
     private static void ReadDebris(JsonElement e, PropBreakable b, string where)
