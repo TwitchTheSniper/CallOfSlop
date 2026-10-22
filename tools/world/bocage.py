@@ -141,8 +141,8 @@ BLUE_SP = [(-95, -12), (-87, -11), (-80, -14), (-96, -2), (-86, -1), (-78, -4), 
 RED_SP = [M(p) for p in BLUE_SP]
 FFA_A = [(-30, -60), (-60, 56), (16, -66)]
 FFA_SP = FFA_A + [M(p) for p in FFA_A]
-HILL_A = (-3.0, -59.0)                       # tuned on the walk grid (see the report); its twin is hill 3
-HILLS = [(0.0, 0.0, 5.0), (HILL_A[0], HILL_A[1], 4.5), (-HILL_A[0], -HILL_A[1], 4.5)]
+HILL_A = (-1.8, -53.0)                       # tuned on the walk grid (see the report); its twin is hill 3
+HILLS = [(0.0, 0.0, 5.0), (HILL_A[0], HILL_A[1], 4.0), (-HILL_A[0], -HILL_A[1], 4.0)]
 FLAGS = [(-98.0, -7.0), (98.0, 7.0)]
 for x, z in BLUE_SP + RED_SP + FFA_SP:
     t.keepout.append((x, z, 2.6))
@@ -337,7 +337,8 @@ for pts, gaps in FIELD_A:
     HEDGES.append((pts, gaps, "field"))
     HEDGES.append(([M(p) for p in pts], [(-x, -z, k) for (x, z, k) in gaps], "field"))
 
-LANE_OFF = 4.4
+LANE_OFF = 5.2
+EXTRA_LANE_GAPS = {("N", 1): [61.0], ("S", 1): [61.0]}   # into the hill fields beside the north and south lanes
 FARM_FRONT_A = (-97.0, -74.0)      # the Blue farmyard opens onto the west lane between these x (north side)
 for name, pts in LANES:
     for side in (1, -1):
@@ -350,6 +351,9 @@ for name, pts in LANES:
             x, z, ux, uz = at_arc(line, s)
             gaps.append((x, z, "gate" if (int(s) // 30) % 2 == 0 else "gap"))
             s += 30.0
+        for s in EXTRA_LANE_GAPS.get((name, side), ()):
+            x, z, ux, uz = at_arc(line, s)
+            gaps.append((x, z, "gap"))
         HEDGES.append((line, gaps, "lane:" + name))
 
 
@@ -360,7 +364,7 @@ def lane_clear(x, z, own=None):
             continue
         if poly_dist((x, z), pts) < LANE_OFF - 0.6:
             return True
-    if poly_dist((x, z), STREAM) < 4.2:
+    if poly_dist((x, z), STREAM) < 6.0:
         return True
     if min(math.hypot(x - J1[0], z - J1[1]), math.hypot(x - J2[0], z - J2[1])) < VILLAGE_R:
         return True
@@ -420,7 +424,7 @@ def hedge_run(pts, gaps, kind, seed):
             cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
             if lane_clear(cx, cz, own) or in_building(cx, cz, 1.6) or not t.inside(cx, cz, 1.4):
                 continue
-            if any(math.hypot(cx - kx, cz - kz) < kr + 1.2 for (kx, kz, kr) in t.keepout):
+            if any(kr < 4.0 and math.hypot(cx - kx, cz - kz) < kr + 1.2 for (kx, kz, kr) in t.keepout):   # spawns, flags, doors (hills keep their hedges)
                 continue
             yaw = yaw_along(x1 - x0, z1 - z0)
             HEDGE_PIECES.append((nm, cx, cz, yaw))
@@ -590,7 +594,6 @@ FIELD_ITEMS_A = [
     ("Rusty Plough", -58, -24, 30), ("Vintage Tractor", -52, -18, 300), ("Tipped Farm Cart", -55, -4, 160),
     ("Round Hay Bale", -86, 32, 0), ("Hay Bale Stack", -96, 34, 90),
     ("Round Hay Bale", 10, -58, 40), ("Round Hay Bale", -2, -70, 90), ("Grazing Cow", 12, -76, 20), ("Dairy Cow", 18, -70, 250),
-    ("Round Hay Bale", -6, -54, 0),
 ]
 for (nm, x, z, yaw) in FIELD_ITEMS_A:
     twin_prop(nm, x, z, yaw, tag="field")
@@ -995,3 +998,12 @@ if os.environ.get("BOCAGE_HILLS"):
 if os.environ.get("BOCAGE_SMOKE"):
     for p in [(-62.0, 4.7), (-40.0, 6.5), (-86.0, -6.0), (0.0, 0.0)]:
         print("ground", p, round(gy(*p), 2))
+low = []
+for (nm, x, z, yaw) in HEDGE_PIECES:
+    a = math.radians(yaw); ux, uz = math.cos(a), -math.sin(a)
+    half = 3.0 if "Short" not in nm and "End" not in nm else (1.5 if "Short" in nm else 1.0)
+    pts_ = [(x + ux * f * half + uz * g * 1.15, z - (-uz * f * half) * 0 + uz * 0 + (uz * f * half) + (-ux) * g * 1.15) for f in (-1, 0, 1) for g in (-1, 0, 1)]
+    base = min(gy(px, pz) for px, pz in pts_)
+    low.append((4.3 + base - gy(x, z), x, z))
+low.sort()
+print("lowest hedge tops over their centre ground:", [(round(a, 2), round(b, 1), round(c, 1)) for a, b, c in low[:5]])

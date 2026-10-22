@@ -248,17 +248,16 @@ def farmhouse():
 # ============================================================================================ Half-Timbered Barn
 def barn():
     t = 0.3
-    H0, H1 = 4.2, 3.2
+    H0, H1 = 3.4, 3.2
     rect = [-9, -5, 9, 5]
     g_ops = [
-        {"type": "door", "at": [-4.6, 5], "width": 2.0, "head": 3.6, "material": "wood", "swing": "out", "hinge": "right"},
-        {"type": "door", "at": [-2.4, 5], "width": 2.0, "head": 3.6, "material": "wood", "swing": "out", "hinge": "left"},
-        {"type": "door", "at": [-4.6, -5], "width": 2.0, "head": 3.6, "material": "wood", "swing": "out", "hinge": "left", "open": True},
-        {"type": "door", "at": [-2.4, -5], "width": 2.0, "head": 3.6, "material": "wood", "swing": "out", "hinge": "right", "open": True},
+        {"type": "door", "at": [-4.6, 5], "width": 2.0, "head": 2.9, "material": "wood", "swing": "out", "hinge": "right"},
+        {"type": "door", "at": [-2.4, 5], "width": 2.0, "head": 2.9, "material": "wood", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [2.6, -5], "width": 2.0, "head": 2.9, "material": "wood", "swing": "out", "hinge": "left", "open": True},
         {"type": "door", "at": [5, 0.0], "width": 1.2},
         {"type": "door", "at": [9, 2.5], "width": 1.2, "front": True, "material": "wood"},
-        win([1.5, 5], 1.0, 1.8, 2.9), win([-7.6, 5], 1.0, 1.8, 2.9), win([1.5, -5], 1.0, 1.8, 2.9), win([-7.6, -5], 1.0, 1.8, 2.9),
-        win([7.0, 5], 1.0, 1.6, 2.6), win([7.0, -5], 1.0, 1.6, 2.6), win([-9, 1.5], 1.0, 1.8, 2.9), win([9, -2.0], 1.0, 1.6, 2.6),
+        win([1.5, 5], 1.0, 1.7, 2.8), win([-7.6, 5], 1.0, 1.7, 2.8), win([-0.6, -5], 1.0, 1.7, 2.8), win([-7.6, -5], 1.0, 1.7, 2.8),
+        win([7.0, 5], 1.0, 1.6, 2.6), win([7.0, -5], 1.0, 1.6, 2.6), win([-9, 1.5], 1.0, 1.7, 2.8), win([9, -2.0], 1.0, 1.6, 2.6),
     ]
     u_ops = [
         {"type": "hole", "at": [-9, -0.5], "width": 1.8, "sill": 0.0, "head": 2.4},
@@ -302,7 +301,7 @@ def barn():
                 "openings": u_ops,
             },
         ],
-        "stairs": [{"floor": 0, "rect": [-7.7, -4.65, -3.7, -3.65], "dir": "+x", "color": {"color": "#5e4630", "material": "wood"}}],
+        "stairs": [{"floor": 0, "rect": [-7.9, -4.65, -1.9, -3.65], "dir": "+x", "color": {"color": "#5e4630", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 48, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
         "extras": [
             {"type": "prop", "name": "Hay Bale Stack", "at": [-11.0, 3.0], "yaw": 90},
@@ -313,7 +312,7 @@ def barn():
             {"type": "prop", "name": "Chicken", "at": [-1.0, 7.2], "yaw": 40},
             {"type": "prop", "name": "Chicken", "at": [0.0, 8.0], "yaw": 190},
             {"type": "prop", "name": "Loose Straw", "at": [-3.5, 6.6]},
-            {"type": "prop", "name": "Loose Straw", "at": [-3.5, -6.6]},
+            {"type": "prop", "name": "Loose Straw", "at": [2.6, -6.6]},
         ],
         "anchors": [
             {"type": "spawn", "name": "threshing floor", "at": [-1.0, 2.0]},
@@ -332,6 +331,7 @@ def barn():
     door_x = [(-5.6, -1.4)]
     for (a, b) in ((x0 - o, -5.6), (-1.4, x1 + o)):
         ex.append({"type": "block", "min": [R(a), 0, R(z1 + o)], "max": [R(b), plinth_h, R(z1 + o + 0.08)], "color": pl})
+    for (a, b) in ((x0 - o, 1.6), (3.6, x1 + o)):
         ex.append({"type": "block", "min": [R(a), 0, R(z0 - o - 0.08)], "max": [R(b), plinth_h, R(z0 - o)], "color": pl})
     ex.append({"type": "block", "min": [R(x0 - o - 0.08), 0, R(z0 - o)], "max": [R(x0 - o), plinth_h, R(z1 + o)], "color": pl})
     ex.append({"type": "block", "min": [R(x1 + o), 0, R(z0 - o)], "max": [R(x1 + o + 0.08), plinth_h, 1.9], "color": pl})
