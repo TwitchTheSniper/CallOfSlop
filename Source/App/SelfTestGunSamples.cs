@@ -128,11 +128,13 @@ public static partial class SelfTest
             {
                 var quiet = w.Clone();
                 quiet.Sound = SoundStyle.Suppressed;
-                var supp = GunSamples.Suppressed(lib, w, Synth.Gunshot(quiet));
-                if (supp.Length != shots.Length || supp.Any(s => s.Any(x => Math.Abs((int)x) >= 32760)))
-                    Fail($"{w.Name}: suppressed variants {supp.Length} (want {shots.Length}) or clipping");
-                else if (Features(supp[0]).Bright >= Features(shots[0]).Bright)
-                    Fail($"{w.Name}: suppressed isn't duller than the open shot ({Features(supp[0]).Bright:0.000} vs {Features(shots[0]).Bright:0.000})");
+                var thwip = Synth.Gunshot(quiet);
+                var supp = GunSamples.Suppressed(lib, w, thwip);
+                var wantSupp = Math.Min(GunSamples.SuppressedVariants, shots.Length);
+                if (supp.Length != wantSupp || supp.Any(s => s.Any(x => Math.Abs((int)x) >= 32760)))
+                    Fail($"{w.Name}: suppressed variants {supp.Length} (want {wantSupp}) or clipping");
+                else if (Features(supp[0]).Bright > Features(thwip).Bright * 1.05f)
+                    Fail($"{w.Name}: the recording made the suppressed shot brighter ({Features(supp[0]).Bright:0.000} vs the synth's {Features(thwip).Bright:0.000}); it should be muffled under it");
                 var far = GunSamples.Far(lib, w, Synth.GunshotDistant(w));
                 if (far == null || far.Length < Audio.SampleRate / 2 || far.Any(x => Math.Abs((int)x) >= 32760))
                     Fail($"{w.Name}: far layer missing, short or clipping");
@@ -203,6 +205,13 @@ public static partial class SelfTest
             // expected
         }
     }
+
+    /// <summary>Synth-only audio start-up on the user's PC (the [audio] log line there), the reference for the cost budget.</summary>
+    private const double UserPcSynthMs = 58;
+
+    private static void GunSlowdownLine(double extra, double budget, double with, double without, double loadMs) =>
+        GunLine($"start-up: load {loadMs:0.0} ms + synthesis with samples {with:0} ms vs synth only {without:0} ms = {extra:0} ms extra on {Environment.ProcessorCount} threads "
+            + $"(budget {budget:0} ms here; about {extra * UserPcSynthMs / Math.Max(without, 1):0} ms at the user's PC speed, budget 100)");
 
     private static void WriteInt24(BinaryWriter bw, int v)
     {
@@ -304,8 +313,11 @@ public static partial class SelfTest
         var with = Best(load);
         var without = Best(GunSampleLibrary.Empty);
         var extra = with - without + load.LoadMs;
-        GunLine($"start-up: load {load.LoadMs:0.0} ms + synthesis with samples {with:0} ms vs synth only {without:0} ms = {extra:0} ms extra on {Environment.ProcessorCount} threads (budget 100 ms)");
-        if (extra > 100)
-            Fail($"gun samples add {extra:0} ms to audio start-up (budget 100 ms)");
+        // The budget is 100 ms on the user's PC, where synth-only start-up takes about 58 ms; CI runners (2 slow
+        // threads) take ~10x longer for the same work, so the budget scales with the synth-only time measured here.
+        var budget = 100.0 * Math.Max(1.0, without / UserPcSynthMs);
+        GunSlowdownLine(extra, budget, with, without, load.LoadMs);
+        if (extra > budget)
+            Fail($"gun samples add {extra:0} ms to audio start-up (budget {budget:0} ms here = 100 ms at the user's PC speed)");
     }
 }

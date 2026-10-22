@@ -240,6 +240,9 @@ public static class GunSamples
 
     public const float Ceiling = 0.97f;
 
+    /// <summary>Suppressed variants per weapon (the open shot gets one per recording).</summary>
+    public const int SuppressedVariants = 2;
+
     /// <summary>
     /// Playback pitch for a weapon in a set: bigger calibers than the set's reference play lower (and longer), smaller
     /// ones higher; a brighter gun a touch higher. Kept within 0.82-1.18 so the recordings stay natural.
@@ -282,7 +285,7 @@ public static class GunSamples
         var pitch = PitchFor(set, w) * 0.97f;
         var synthF = ToFloat(synthSuppressed);
         var len = Math.Max(synthF.Length, (int)(0.35f * Sr));
-        var outv = new short[set.Shots.Count][];
+        var outv = new short[Math.Min(SuppressedVariants, set.Shots.Count)][]; // fewer: suppressed shots are quiet and short
         for (var v = 0; v < outv.Length; v++)
         {
             var x = Resample(set.Shots[v], pitch, len);
@@ -403,17 +406,20 @@ public static class GunSamples
     /// </summary>
     private static short[] Finish(float[] x, float targetRms)
     {
-        var y = new float[x.Length];
         var gain = MathF.Min(targetRms / MathF.Max(Rms(x, LoudnessWindow), 1e-6f), MaxGain);
-        for (var pass = 0; pass < 2; pass++)
-        {
-            for (var i = 0; i < x.Length; i++)
-                y[i] = x[i] * gain;
-            Limit(y, LimiterThreshold);
-            var got = Rms(y, LoudnessWindow);
-            if (pass == 0 && got > 1e-6f)
-                gain = MathF.Min(gain * targetRms / got, MaxGain);
-        }
+        // Calibrate on the loudness window only (the limiter looks 1 ms ahead, so a 2 ms longer prefix limits exactly
+        // as the whole buffer would), then limit the whole buffer once at the corrected gain.
+        var probe = new float[Math.Min(x.Length, LoudnessWindow + Sr / 500)];
+        for (var i = 0; i < probe.Length; i++)
+            probe[i] = x[i] * gain;
+        Limit(probe, LimiterThreshold);
+        var got = Rms(probe, LoudnessWindow);
+        if (got > 1e-6f)
+            gain = MathF.Min(gain * targetRms / got, MaxGain);
+        var y = new float[x.Length];
+        for (var i = 0; i < x.Length; i++)
+            y[i] = x[i] * gain;
+        Limit(y, LimiterThreshold);
         const float knee = 0.85f, span = Ceiling - knee;
         var fade = Math.Min(y.Length, Sr / 500);
         var pcm = new short[y.Length];
