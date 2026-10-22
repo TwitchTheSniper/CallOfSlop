@@ -1055,6 +1055,20 @@ class Generator:
             self.reserved[f + 1].append(grow(r_inset(r, -0.1), top, width))
             self.stair_plans.append((s, f, r, bottom, top))
 
+    def stand_clear(self, f, p, toward, to_step):
+        """BuildingGenerator.StandClear: a stair end's waypoint moved towards the flight until a body clears the wall behind it."""
+        room = self.room_at(f, p[0], p[1])
+        if room < 0:
+            return p
+        rect = next((x for x in self.floors[f]["rooms"][room]["rects"] if r_contains(x, p[0], p[1])), None)
+        if rect is None:
+            return p
+        inner = r_inset(rect, self.t / 2)
+        tx, tz = toward
+        behind = p[0] - inner[0] if tx > 0 else inner[2] - p[0] if tx < 0 else p[1] - inner[1] if tz > 0 else inner[3] - p[1]
+        shift = min(max(0.47 - behind, 0.0), max(0.0, to_step - 0.42))
+        return (p[0] + tx * shift, p[1] + tz * shift)
+
     def emit_stairs(self):
         n = len(self.floors)
         for s, f, r, bottom, top in self.stair_plans:
@@ -1078,8 +1092,12 @@ class Generator:
                     self.add(a, lf, r[1], b, y1, r[3], surf, "stairs")
                 else:
                     self.add(r[0], lf, a, r[2], y1, b, surf, "stairs")
-            pb = self.P(bottom[0], lf, bottom[1])
-            pt = self.P(top[0], self.level[f + 1], top[1])
+            to_step_b = abs(bottom[0] - (r[0] if dx > 0 else r[2])) if dx != 0 else abs(bottom[1] - (r[1] if dz > 0 else r[3]))
+            to_step_t = abs(top[0] - (r[2] if dx > 0 else r[0])) if dx != 0 else abs(top[1] - (r[3] if dz > 0 else r[1]))
+            foot = self.stand_clear(f, bottom, (dx, dz), to_step_b)
+            head = self.stand_clear(f + 1 if f + 1 < n else f, top, (-dx, -dz), to_step_t)
+            pb = self.P(foot[0], lf, foot[1])
+            pt = self.P(head[0], self.level[f + 1], head[1])
             self.plan.waypoints += [pb, pt]
             self.plan.stairs.append((pb, pt))
             if not s["railing"]:

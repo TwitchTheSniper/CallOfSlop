@@ -644,6 +644,25 @@ internal sealed partial class BuildingGenerator
 
     private readonly List<(BStair S, int F, BRect R, Vector2 Bottom, Vector2 Top)> _stairPlans = new();
 
+    /// <summary>
+    /// A stair end's waypoint where a standing body (0.4 m radius) clears the wall behind it: <paramref name="p"/> moved
+    /// towards the stairs (<paramref name="toward"/>) if the wall is nearer than 0.47 m, but never nearer the flight than 0.42 m
+    /// (<paramref name="toStep"/> is how far p is from the flight's end).
+    /// </summary>
+    private Vector2 StandClear(int f, Vector2 p, Vector2 toward, float toStep)
+    {
+        var room = RoomAt(f, p.X, p.Y);
+        if (room < 0)
+            return p;
+        var rect = _floors[f].Rooms[room].Rects.FirstOrDefault(x => x.Contains(p.X, p.Y));
+        if (rect.W <= 0)
+            return p;
+        var inner = rect.Inset(_t / 2);
+        var behind = toward.X > 0 ? p.X - inner.X0 : toward.X < 0 ? inner.X1 - p.X : toward.Y > 0 ? p.Y - inner.Z0 : inner.Z1 - p.Y;
+        var shift = Math.Clamp(0.47f - behind, 0f, MathF.Max(0f, toStep - 0.42f));
+        return p + toward * shift;
+    }
+
     private void PlanStairs()
     {
         var n = _floors.Count;
@@ -718,8 +737,11 @@ internal sealed partial class BuildingGenerator
                 else
                     Add(r.X0, lf, a, r.X1, y1, b, surf);
             }
-            var pb = P(bottom.X, lf, bottom.Y);
-            var pt = P(top.X, _level[f + 1], top.Y);
+            var d = new Vector2(s.Dx, s.Dz);
+            var foot = StandClear(f, bottom, d, s.Dx != 0 ? MathF.Abs(bottom.X - (s.Dx > 0 ? r.X0 : r.X1)) : MathF.Abs(bottom.Y - (s.Dz > 0 ? r.Z0 : r.Z1)));
+            var head = StandClear(f + 1 < _floors.Count ? f + 1 : f, top, -d, s.Dx != 0 ? MathF.Abs(top.X - (s.Dx > 0 ? r.X1 : r.X0)) : MathF.Abs(top.Y - (s.Dz > 0 ? r.Z1 : r.Z0)));
+            var pb = P(foot.X, lf, foot.Y);
+            var pt = P(head.X, _level[f + 1], head.Y);
             _plan.Waypoints.Add(pb);
             _plan.Waypoints.Add(pt);
             _plan.Stairs.Add((pb, pt));
