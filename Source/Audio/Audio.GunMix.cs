@@ -23,9 +23,6 @@ public sealed partial class Audio
     /// <summary>Another player's suppressed shot, on top of <see cref="OtherShotGain"/> (your own suppressed gun is <see cref="OwnSuppressedGain"/>).</summary>
     public const float OtherSuppressedGain = 0.5f, OwnSuppressedGain = 0.5f;
 
-    /// <summary>Another player's launcher (a rocket's roar, a grenade launcher's thoomp) up close: a little more than a gun, it has no distant layer.</summary>
-    public const float OtherLauncherGain = 0.7f;
-
     /// <summary>The distant layer's level against the near shot's (RMS over <see cref="FarTrimWindow"/>): a far shot is mostly the echo.</summary>
     public const float FarLevel = 0.8f;
 
@@ -46,17 +43,17 @@ public sealed partial class Audio
 
     /// <summary>
     /// The plan for a shot: <paramref name="own"/> = your own gun (listener-relative, no distance), else another
-    /// player's at <paramref name="distance"/>; <paramref name="hasFar"/> = the weapon has a distant layer;
-    /// <paramref name="launcher"/> = a rocket or grenade launcher.
+    /// player's at <paramref name="distance"/>; <paramref name="hasFar"/> = the weapon has a distant layer (launchers,
+    /// energy and novelty guns don't: their one layer just fades with distance).
     /// </summary>
-    internal static ShotPlan PlanShot(bool own, bool suppressed, bool hasFar, float distance, bool launcher = false)
+    internal static ShotPlan PlanShot(bool own, bool suppressed, bool hasFar, float distance)
     {
         if (own)
             return new(OwnShotGain * (suppressed ? OwnSuppressedGain : 1f), 0f, ShotFalloff, ShotFalloff);
         if (suppressed)
             return new(OtherShotGain * OtherSuppressedGain, 0f, SuppressedFalloff, SuppressedFalloff);
         if (!hasFar)
-            return new(launcher ? OtherLauncherGain : OtherShotGain, 0f, ShotFalloff, ShotFalloff);
+            return new(OtherShotGain, 0f, ShotFalloff, ShotFalloff);
         // Equal-power handover (the two layers are different sounds, so their power adds).
         var far = FarMix(distance);
         var near = far < 0.98f ? MathF.Sqrt(1f - far) : 0f;

@@ -110,6 +110,9 @@ public static partial class SelfTest
         if (medHigh[at80] < 0.04)
             Fail($"another player's shot at 80 m keeps only {medHigh[at80]:0%} of its energy above 2 kHz (the crack that locates it)");
 
+        if (Audio.DistanceLf(5) != 1f || !(Audio.DistanceLf(60) < 0.3f) || Audio.DistanceLf(500) < 0.15f - 1e-6f)
+            Fail($"distance low shelf: {Audio.DistanceLf(5)} at 5 m, {Audio.DistanceLf(60)} at 60 m, {Audio.DistanceLf(500)} at 500 m");
+
         CheckGunMixSuppressed(set, real);
         CheckGunMixRelations(set, real);
         CheckGunMixHeadroom(set, real);
@@ -165,7 +168,12 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>Your fastest full-auto gun for a second with a frag going off 8 m away, at the default master volume: under full scale.</summary>
+    /// <summary>
+    /// Your fastest full-auto gun for a second with a frag going off 3 m and 8 m away, at the default master volume: the
+    /// gun alone stays under <see cref="OwnFireCeiling"/> (nothing for the output limiter to do), and with the frag 8 m
+    /// away the summed peak is at most <see cref="LimiterAllowanceDb"/> over full scale (a few milliseconds of gentle
+    /// limiting, no pumping). The peaks at the old own-gun gain of 0.75 are logged next to them.
+    /// </summary>
     private static void CheckGunMixHeadroom(Audio.SoundSet set, WeaponDef[] real)
     {
         var w = real.Where(x => x.Mode != FireMode.Semi).OrderByDescending(x => x.Rpm).FirstOrDefault() ?? real[0];
@@ -180,27 +188,37 @@ public static partial class SelfTest
             for (var i = 0; i < shot.Length && (int)t + i < mix.Length; i++)
                 mix[(int)t + i] += shot[i] / 32768f * MathF.Min(1f, plan.Near);
         }
+        const float master = 0.8f; // Audio.MasterVolume's default (Settings > Audio)
+        const float oldOwn = 0.75f; // Audio.OwnShotGain before the gun mix
         double gunPeak = 0;
         foreach (var v in mix)
-            gunPeak = Math.Max(gunPeak, Math.Abs(v));
+            gunPeak = Math.Max(gunPeak, Math.Abs(v) * master);
+        if (gunPeak > OwnFireCeiling)
+            Fail($"{w.Name} full auto alone peaks at {gunPeak:0.00} at master {master:0.0} (want under {OwnFireCeiling})");
         var results = new List<string>();
-        const float master = 0.8f; // Audio.MasterVolume's default (Settings > Audio)
         foreach (var d in new[] { 3f, 8f })
         {
             var boom = RenderMixEffect(set.Effects[(int)Sfx.Explosion][0], d, Audio.FragExplosionGain);
-            double peak = 0;
+            double peak = 0, oldPeak = 0;
             var at = (int)(0.3f * sr);
             for (var i = 0; i < mix.Length; i++)
             {
-                var v = mix[i] + (i >= at && i - at < boom.Length ? boom[i - at] : 0f);
-                peak = Math.Max(peak, Math.Abs(v) * master);
+                var e = i >= at && i - at < boom.Length ? boom[i - at] : 0f;
+                peak = Math.Max(peak, Math.Abs(mix[i] + e) * master);
+                oldPeak = Math.Max(oldPeak, Math.Abs(mix[i] * oldOwn / MathF.Max(plan.Near, 1e-3f) + e) * master);
             }
-            results.Add($"explosion at {d:0} m -> peak {peak:0.00}");
-            if (d == 8f && peak > 1.0)
-                Fail($"{w.Name} full auto with a frag 8 m away peaks at {peak:0.00} at master {master:0.0} (over full scale: the output limiter would pump)");
+            results.Add($"frag at {d:0} m -> peak {peak:0.00} ({20 * Math.Log10(Math.Max(peak, 1e-9)):+0.0;-0.0} dBFS; {oldPeak:0.00} at the old 0.75)");
+            if (d == 8f && peak > Math.Pow(10, LimiterAllowanceDb / 20))
+                Fail($"{w.Name} full auto with a frag 8 m away peaks at {peak:0.00} at master {master:0.0} (more than {LimiterAllowanceDb} dB over full scale: the output limiter would pump)");
         }
-        MixLine($"headroom: your {w.Name} full auto ({w.Rpm:0} rpm) peaks {gunPeak * master:0.00} at master {master:0.0}; " + string.Join(", ", results));
+        MixLine($"headroom: your {w.Name} full auto ({w.Rpm} rpm) peaks {gunPeak:0.00} at master {master:0.0}; " + string.Join(", ", results));
     }
+
+    /// <summary>The most your own full-auto fire alone may peak at the default master volume.</summary>
+    private const double OwnFireCeiling = 0.8;
+
+    /// <summary>How far over full scale (dB) full-auto fire plus a frag 8 m away may peak: OpenAL Soft's output limiter takes off at most this much.</summary>
+    private const double LimiterAllowanceDb = 2;
 
     /// <summary>Planning a shot (what <see cref="Audio.Shot"/> does per shot before OpenAL) allocates nothing and is cheap.</summary>
     private static void CheckGunMixCost()
@@ -277,7 +295,7 @@ public static partial class SelfTest
         var near = (suppressed ? set.Suppressed : set.Shots)[w.Id][0];
         var far = suppressed ? null : set.Far[w.Id];
         var d = distance ?? 0f;
-        var plan = Audio.PlanShot(distance == null, suppressed, far != null, d, w.Sound is SoundStyle.Rocket or SoundStyle.Thump);
+        var plan = Audio.PlanShot(distance == null, suppressed, far != null, d);
         var len = Math.Max(near.Length, far?.Length ?? 0);
         var o = new float[len];
         AddLayer(o, near, plan.Near, plan.NearFalloff, distance);
