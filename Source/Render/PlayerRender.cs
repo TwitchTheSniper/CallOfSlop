@@ -15,10 +15,13 @@ public static class PlayerRender
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
+        var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)
 
         if (!p.Alive)
         {
             g.Draw(Matrix4x4.CreateScale(0.8f, 0.25f, 1.8f) * Matrix4x4.CreateTranslation(0, 0.125f, 0) * rot * at, color * 0.4f);
+            if (hat != null)
+                HatRender.Draw(g, hat, HatRender.OnGround(hat) * rot * at);
             return;
         }
 
@@ -35,6 +38,8 @@ public static class PlayerRender
                 g.Draw(Matrix4x4.CreateScale(0.6f, 0.4f, 0.6f) * Matrix4x4.CreateTranslation(0, 0.2f, -0.27f) * up, color);
                 g.Draw(Matrix4x4.CreateScale(0.4f, 0.38f, 0.4f) * Matrix4x4.CreateTranslation(0, 0.3f, -0.75f) * up, color * 1.1f);
                 g.Draw(Matrix4x4.CreateScale(0.34f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 0.36f, -0.96f) * up, visorColor);
+                if (hat != null)
+                    HatRender.Draw(g, hat, HatRender.OnHead(hat, new Vector3(0.4f, 0.38f, 0.4f), p, time) * Matrix4x4.CreateTranslation(0, 0.3f, -0.75f) * up);
                 DrawLegs(g, legs, body, color);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.25f, 0.3f, -0.9f) * up;
                 DrawArmed(g, p, gunPose, up, time);
@@ -47,6 +52,8 @@ public static class PlayerRender
                 g.Draw(Matrix4x4.CreateScale(0.8f, chest - hip, 0.6f) * Matrix4x4.CreateTranslation(0, (chest + hip) / 2, 0) * up, color);
                 g.Draw(Matrix4x4.CreateScale(0.45f, top - chest, 0.45f) * Matrix4x4.CreateTranslation(0, (chest + top) / 2, -0.05f) * up, color * 1.1f);
                 g.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.07f, -0.29f) * up, visorColor);
+                if (hat != null)
+                    HatRender.Draw(g, hat, HatRender.OnHead(hat, new Vector3(0.45f, top - chest, 0.45f), p, time) * Matrix4x4.CreateTranslation(0, (chest + top) / 2, -0.05f) * up);
                 DrawLegs(g, legs, body, color);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 0.82f, -0.3f) * up;
                 DrawArmed(g, p, gunPose, up, time);
@@ -60,6 +67,8 @@ public static class PlayerRender
                 var headH = World.PlayerHeight - World.HeadStart;
                 g.Draw(Matrix4x4.CreateScale(0.45f, headH, 0.45f) * Matrix4x4.CreateTranslation(0, World.HeadStart + headH / 2, 0) * up, color * 1.1f);
                 g.Draw(Matrix4x4.CreateScale(0.38f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 1.63f, -0.24f) * up, visorColor);
+                if (hat != null)
+                    HatRender.Draw(g, hat, HatRender.OnHead(hat, new Vector3(0.45f, headH, 0.45f), p, time) * Matrix4x4.CreateTranslation(0, World.HeadStart + headH / 2, 0) * up);
                 DrawLegs(g, legs, body, color);
                 var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * up;
                 DrawArmed(g, p, gunPose, up, time);
