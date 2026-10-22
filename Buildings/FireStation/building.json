@@ -70,7 +70,7 @@
       "openings": [{"type": "door", "at": [7.8, -0.5], "width": 0.9}, {"type": "door", "at": [6, 3], "width": 0.9}]
     }
   ],
-  "stairs": [{"floor": 0, "rect": [4.2, -0.2, 7, 0.9], "dir": "+x"}],
+  "stairs": [{"floor": 0, "rect": [4.4, -0.2, 7.2, 0.9], "dir": "+x"}],
   "roof": {"type": "flat", "parapet": 0.8, "color": {"color": "$roof", "material": "concrete"}},
   "extras": [
     {

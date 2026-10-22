@@ -64,11 +64,11 @@
     },
     {
       "type": "platform",
-      "rect": [6.4, -5.7, 8.7, -0.3],
+      "rect": [6.65, -5.7, 8.7, -0.3],
       "height": 3.4,
       "railing": 1,
       "color": {"color": "#5a4028", "material": "wood"},
-      "stairs": {"rect": [4.4, -5.4, 6.4, -4.3], "dir": "+x"}
+      "stairs": {"rect": [4.6, -5.4, 6.65, -4.3], "dir": "+x"}
     },
     {"type": "block", "min": [-8.75, 6.6, 4.7], "max": [-8.05, 7.4, 5.3], "color": {"color": "$wall", "material": "brick"}},
     {"type": "block", "min": [-7.15, 6.6, 4.7], "max": [-6.45, 7.4, 5.3], "color": {"color": "$wall", "material": "brick"}},

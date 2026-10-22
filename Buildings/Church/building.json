@@ -22,7 +22,7 @@
   "floors": [
     {
       "rooms": [
-        {"id": "tower porch", "type": "narthex", "rect": [-2.25, 7, 2.25, 12.8], "windows": false},
+        {"id": "tower porch", "type": "narthex", "rect": [-2.25, 7, 2.25, 13.2], "windows": false},
         {
           "id": "nave",
           "type": "nave",
@@ -69,8 +69,8 @@
         {"id": "vestry", "type": "vestry", "rect": [3.5, -13, 6.5, -9], "windows": false, "floor": {"color": "#6a4a32", "material": "wood"}}
       ],
       "openings": [
-        {"type": "door", "at": [0.8, 12.8], "width": 1.4, "front": true, "hinge": "right", "material": "wood"},
-        {"type": "window", "at": [-1, 12.8], "width": 0.6, "sill": 1.6, "head": 3.6},
+        {"type": "door", "at": [0.8, 13.2], "width": 1.4, "front": true, "hinge": "right", "material": "wood"},
+        {"type": "window", "at": [-1, 13.2], "width": 0.6, "sill": 1.6, "head": 3.6},
         {"type": "arch", "at": [0.8, 7], "width": 1.6, "head": 3.2},
         {"type": "arch", "at": [0, -9], "width": 3, "head": 4},
         {"type": "door", "at": [-5, 5.3], "width": 1},
@@ -86,21 +86,21 @@
         {
           "id": "bell chamber",
           "type": "belfry",
-          "rect": [-2.25, 7, 2.25, 12.8],
+          "rect": [-2.25, 7, 2.25, 13.2],
           "windows": false,
-          "props": [{"name": "Bell Frame", "at": [0.8, 0.7]}],
+          "props": [{"name": "Bell Frame", "at": [0.8, 0.5]}],
           "floor": {"color": "#5a4632", "material": "wood"}
         }
       ],
       "openings": [
         {"type": "hole", "at": [2.25, 10.2], "width": 1.6, "sill": 1.2, "head": 4.2},
-        {"type": "hole", "at": [0.6, 12.8], "width": 2, "sill": 1.2, "head": 4.2},
-        {"type": "hole", "at": [-2.25, 12.15], "width": 0.6, "sill": 1.2, "head": 4.2},
+        {"type": "hole", "at": [0.6, 13.2], "width": 2, "sill": 1.2, "head": 4.2},
+        {"type": "hole", "at": [-2.25, 12.4], "width": 0.6, "sill": 1.2, "head": 4.2},
         {"type": "hole", "at": [2.25, 8.1], "width": 0.6, "sill": 1.2, "head": 4.2}
       ]
     }
   ],
-  "stairs": [{"floor": 0, "rect": [-2, 8.2, -0.9, 11.6], "dir": "-z", "color": {"color": "#5a4632", "material": "wood"}}],
+  "stairs": [{"floor": 0, "rect": [-2, 8.45, -0.9, 11.75], "dir": "-z", "color": {"color": "#5a4632", "material": "wood"}}],
   "roof": {"type": "hip", "pitch": 60, "overhang": 0.25, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
     {"type": "block", "min": [-5.45, 5.6, -9.45], "max": [5.45, 6.6, 6.8], "color": {"color": "$roof", "material": "tiles"}},
@@ -142,16 +142,16 @@
     {"type": "prop", "name": "Church Gravestone", "at": [-8.2, -3.5], "yaw": 94},
     {"type": "prop", "name": "Church Gravestone", "at": [-7.9, -0.5], "yaw": 87},
     {"type": "prop", "name": "Church Gravestone", "at": [-8.1, 2.5], "yaw": 90},
-    {"type": "prop", "name": "Church Gravestone", "at": [-8, 5], "yaw": 96},
+    {"type": "prop", "name": "Church Gravestone", "at": [-8, 6.6], "yaw": 96},
     {"type": "prop", "name": "Church Gravestone", "at": [8, -6], "yaw": -90},
     {"type": "prop", "name": "Church Gravestone", "at": [8.2, -3], "yaw": -95},
     {"type": "prop", "name": "Church Gravestone", "at": [7.9, 0], "yaw": -87},
     {"type": "prop", "name": "Church Gravestone", "at": [8.1, 3], "yaw": -90},
     {"type": "prop", "name": "Church Gravestone", "at": [9.6, -1.5], "yaw": -82},
-    {"type": "prop", "name": "Church Notice Board", "at": [3.4, 13.8], "yaw": 0},
-    {"type": "prop", "name": "Bench", "at": [-3.6, 13.6], "yaw": 0},
-    {"type": "prop", "name": "Flower Pots", "at": [2.6, 13.4], "yaw": 0},
-    {"type": "prop", "name": "Hanging Lantern", "at": [2.6, 13.05], "yaw": 0},
+    {"type": "prop", "name": "Church Notice Board", "at": [3.4, 14.2], "yaw": 0},
+    {"type": "prop", "name": "Bench", "at": [-3.6, 14], "yaw": 0},
+    {"type": "prop", "name": "Flower Pots", "at": [2.6, 13.8], "yaw": 0},
+    {"type": "prop", "name": "Hanging Lantern", "at": [2.6, 13.45], "yaw": 0},
     {"type": "prop", "name": "Weather Vane", "at": [0, 4.6, 9.9], "yaw": 0, "onRoof": true}
   ],
   "anchors": [

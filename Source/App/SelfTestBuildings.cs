@@ -586,23 +586,6 @@ public static partial class SelfTest
             return $"at ({p.X:0.0}, {p.Y:0.00}, {p.Z:0.0}): nearest node {(k >= 0 ? $"({near.X:0.0}, {near.Y:0.00}, {near.Z:0.0})" : "none")}, "
                    + $"body there blocked {World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0))}, floor {1f - down:0.00} m below";
         }
-        // What the nav build sees at a waypoint (diagnostics): the ground under it, the 9 spots BotNav.Place tries, the nodes
-        // within 0.5 m, whether it's a building nav point and a declared link end.
-        string Probe(Vector3 p)
-        {
-            var parts = new List<string>();
-            foreach (var ox in new[] { 0f, 0.15f, -0.15f })
-            foreach (var oz in new[] { 0f, 0.15f, -0.15f })
-            {
-                var t = World.Physics.Raycast(new Vector3(p.X + ox, p.Y + 0.3f, p.Z + oz), -Vector3.UnitY, 0.6f, QueryFilter.Navigation);
-                var gy = p.Y + 0.3f - t;
-                parts.Add(t >= 0.6f ? "none" : World.Physics.BlockedNav(new Vector3(p.X + ox, gy + 0.01f, p.Z + oz)) ? $"blk{gy:0.00}" : $"ok{gy:0.00}");
-            }
-            var close = g.Nodes.Select((n, i) => (n, i)).Where(t => MathF.Abs(t.n.X - p.X) < 0.5f && MathF.Abs(t.n.Z - p.Z) < 0.5f)
-                .Select(t => $"{t.i}@{t.n.Y:0.00}");
-            return $"[probe {string.Join(",", parts)}; nodes {string.Join(",", close)}; navpoint {yard.BuildingNavPoints.Contains(p)}, "
-                   + $"waypoint {yard.Waypoints.IndexOf(p)}/{yard.Waypoints.Count}, link {yard.NavLinks.Count(l => l.A == p || l.B == p)}]";
-        }
         foreach (var b in yard.PlacedBuildings)
         {
             var front = b.Plan.Doors.FirstOrDefault(d => d.Front) ?? b.Plan.Doors.FirstOrDefault();
@@ -668,7 +651,7 @@ public static partial class SelfTest
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
                         var mid = wi >= 0 && wi + 1 < b.Plan.Waypoints.Count ? b.Plan.Waypoints[wi + 1] : (bottom + top) / 2;
                         detail.Add($"{key} stairs: foot node {foot} reachable {(foot >= 0 && start >= 0 && search.Find(g, start, foot, path, maxExpand: 60000) > 0)}, "
-                                   + $"mid node {Node(mid)}, top node {goal}; foot {Why(bottom)} {Probe(bottom)}; top {Why(top)} {Probe(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
+                                   + $"mid node {Node(mid)}, top node {goal}; foot {Why(bottom)}; top {Why(top)}; walk foot-mid: {WalkTrace(bottom, mid)}; walk mid-top: {WalkTrace(mid, top)}");
                     }
                 }
             }
