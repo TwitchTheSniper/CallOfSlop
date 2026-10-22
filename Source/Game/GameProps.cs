@@ -97,8 +97,104 @@ public sealed partial class Game
 
     private void DamageProp(Player? attacker, int i, float amount, PropDamage kind, Vector3 from, double now)
     {
-        if (World.Map.DamageProp(i, Math.Max(1, (int)MathF.Round(amount)), kind))
+        if (IsPropLit(i))
+            return; // already burning: it goes off on its own
+        if (!World.Map.DamageProp(i, Math.Max(1, (int)MathF.Round(amount)), kind))
+            return;
+        if (World.Map.PropInstances[i].Def.Breakable is { ExplodeRadius: > 0, ExplodeFuse: > 0 } br)
+            LightProp(i, kind is PropDamage.Explosion or PropDamage.Streak ? ChainFuse(i, br.ExplodeFuse) : br.ExplodeFuse, attacker, now);
+        else
             ServerBreakProp(i, from, kind, attacker, now);
+    }
+
+    // ---- Server: fuses (explosive props that burn for a moment before they go off) ---------------------------
+
+    /// <summary>Most explosive props that go off in one server tick; any others due wait for the next ticks, so a big chain stays cheap.</summary>
+    public const int MaxPropDetonationsPerTick = 4;
+
+    /// <summary>
+    /// Most prop fireballs shown within <see cref="PropBlastWindowTicks"/>: more explosions still hurt players and break
+    /// props (with their debris and sound), but send no extra fireball, so a mass chain reaction costs every PC a bounded
+    /// number of blast effects. An explosion that hurt someone always shows (the owner's hit marker rides on it).
+    /// </summary>
+    public const int MaxPropBlastsShown = 20;
+
+    /// <summary>The window (server ticks, 0.6 s: a fireball's life) that <see cref="MaxPropBlastsShown"/> counts over.</summary>
+    public const int PropBlastWindowTicks = 36;
+
+    /// <summary>Set on <see cref="Msg.PropBreak"/>'s kind byte when the prop was lit (its fuse started) rather than broken.</summary>
+    public const byte PropLitFlag = 0x80;
+
+    private readonly List<(int Index, double At, byte Attacker)> _propFuses = new();
+    private bool[] _propLit = [];
+    private Map? _fuseMap;
+    private int _fuseMatch = -1;
+    private readonly Queue<long> _propBlastTicks = new();
+
+    /// <summary>Explosive props burning right now (lit, not gone off yet).</summary>
+    public int PropFusesBurning => _propFuses.Count;
+
+    /// <summary>Explosive props that went off since this game started, and how many of them showed a fireball (for the self-test).</summary>
+    public int PropDetonations { get; private set; }
+
+    /// <inheritdoc cref="PropDetonations"/>
+    public int PropBlastsShown { get; private set; }
+
+    /// <summary>
+    /// Fuse of an explosive prop lit by another explosion: its own fuse, but at most 0.12-0.32 s, varying from prop to prop
+    /// (the same on every run), so a cluster goes up in a quick ripple instead of all in one tick.
+    /// </summary>
+    public static float ChainFuse(int index, float fuse) => MathF.Min(fuse, 0.12f + ((uint)index * 2654435761u >> 24) / 255f * 0.2f);
+
+    /// <summary>Is prop <paramref name="i"/> lit (burning down its fuse) in this match on this map?</summary>
+    public bool IsPropLit(int i) => ReferenceEquals(_fuseMap, World.Map) && _fuseMatch == MatchNumber && (uint)i < (uint)_propLit.Length && _propLit[i];
+
+    private void LightProp(int i, float fuse, Player? attacker, double now)
+    {
+        var map = World.Map;
+        if (!ReferenceEquals(_fuseMap, map) || _fuseMatch != MatchNumber || _propLit.Length != map.PropInstances.Count)
+        {
+            ClearPropFuses();
+            _fuseMap = map;
+            _fuseMatch = MatchNumber;
+            _propLit = new bool[map.PropInstances.Count];
+        }
+        _propLit[i] = true;
+        _propFuses.Add((i, now + fuse, attacker?.Id ?? byte.MaxValue));
+        WritePropBreak(_w, i, (PropDamage)PropLitFlag, map.PropInstances[i].Bounds.Center);
+        Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        OnPropLit(i);
+    }
+
+    private void ClearPropFuses()
+    {
+        _propFuses.Clear();
+        Array.Clear(_propLit);
+    }
+
+    /// <summary>Server, every tick: explosive props whose fuse has burnt down go off (the earliest first, a few a tick).</summary>
+    private void ServerTickPropFuses(double now)
+    {
+        if (_propFuses.Count == 0)
+            return;
+        if (!ReferenceEquals(_fuseMap, World.Map) || _fuseMatch != MatchNumber)
+        {
+            ClearPropFuses(); // a new match or map: every prop is whole again
+            return;
+        }
+        for (var done = 0; done < MaxPropDetonationsPerTick; done++)
+        {
+            var best = -1;
+            for (var k = 0; k < _propFuses.Count; k++)
+                if (_propFuses[k].At <= now && (best < 0 || _propFuses[k].At < _propFuses[best].At))
+                    best = k;
+            if (best < 0)
+                break;
+            var (i, _, by) = _propFuses[best];
+            _propFuses.RemoveAt(best);
+            Players.TryGetValue(by, out var attacker); // null if they left: the blast still breaks props
+            ServerBreakProp(i, World.Map.PropInstances[i].Bounds.Center, PropDamage.Explosion, attacker, now);
+        }
     }
 
     /// <summary>Projectile id used for the explosion of an explosive prop (thrown projectiles count up from 1 and only reach it after 65,534 throws).</summary>
@@ -107,7 +203,7 @@ public sealed partial class Game
     /// <summary>
     /// Server: breaks prop <paramref name="i"/> and tells everyone. An explosive prop (a fuel drum) then goes off like a
     /// frag grenade owned by whoever broke it: it hurts players and breaks other props nearby (chains are fine: a prop
-    /// only ever breaks once).
+    /// only ever breaks once). An explosive prop with a fuse gets here when its fuse has burnt down (see <see cref="LightProp"/>).
     /// </summary>
     internal void ServerBreakProp(int i, Vector3 from, PropDamage kind, Player? attacker = null, double now = 0)
     {
@@ -144,9 +240,17 @@ public sealed partial class Game
                     flags |= 4;
             }
         }
-        _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)ThrowableKind.Frag).U8(attacker?.Id ?? byte.MaxValue).Vec(center).U8(flags);
-        Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
-        OnDetonated(ThrowableKind.Frag, attacker?.Id ?? byte.MaxValue, center, flags, now);
+        PropDetonations++;
+        while (_propBlastTicks.Count > 0 && ServerTick - _propBlastTicks.Peek() >= PropBlastWindowTicks)
+            _propBlastTicks.Dequeue();
+        if (_propBlastTicks.Count < MaxPropBlastsShown || flags != 0)
+        {
+            _propBlastTicks.Enqueue(ServerTick);
+            PropBlastsShown++;
+            _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)ThrowableKind.Frag).U8(attacker?.Id ?? byte.MaxValue).Vec(center).U8(flags);
+            Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+            OnDetonated(ThrowableKind.Frag, attacker?.Id ?? byte.MaxValue, center, flags, now);
+        }
         BlastProps(attacker, center, br.ExplodeRadius, br.ExplodeDamage, PropDamage.Explosion, now);
     }
 
@@ -192,9 +296,12 @@ public sealed partial class Game
             case (byte)Msg.PropBreak when !IsServer && r.Has(15):
             {
                 int i = r.U16();
-                var kind = (PropDamage)r.U8();
+                var kind = r.U8();
                 var from = r.Vec();
-                ApplyPropBreak(World.Map, i, kind, from);
+                if ((kind & PropLitFlag) != 0)
+                    OnPropLit(i); // an explosive prop's fuse started: it goes off (a second PropBreak) a moment later
+                else
+                    ApplyPropBreak(World.Map, i, (PropDamage)kind, from);
                 break;
             }
             case (byte)Msg.PropState when !IsServer && r.Has(3):
@@ -225,6 +332,17 @@ public sealed partial class Game
             if ((uint)i < (uint)map.PropInstances.Count)
                 map.BreakProp(i);
         }
+    }
+
+    /// <summary>Both sides: an explosive prop was lit (sparks spurting from its top and a clank). It stays whole until it goes off.</summary>
+    private void OnPropLit(int i)
+    {
+        var map = World.Map;
+        if ((uint)i >= (uint)map.PropInstances.Count || map.IsPropBroken(i))
+            return;
+        var b = map.PropInstances[i].Bounds;
+        PropDebris.Sparks(new Vector3(b.Center.X, b.Max.Y, b.Center.Z), 10, i * 7919 + (int)(PropDebris.Spawned & 0xFFFF));
+        Audio.Effect3D(Sfx.BreakMetal, b.Center, 0.55f);
     }
 
     /// <summary>Both sides: debris and sound for a prop that just broke.</summary>
