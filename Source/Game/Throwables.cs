@@ -309,7 +309,7 @@ public sealed partial class Game
     {
         LocalGrenade = ChosenGrenade;
         LocalEquipment = ChosenEquipment;
-        if (Mode == GameMode.GunGame)
+        if (!Module.UsesThrowables)
             LocalGrenade = LocalEquipment = ThrowableKind.None; // Gun Game: the gun and nothing else
         GrenadesLeft = Throwables.Get(LocalGrenade).PerLife;
         EquipmentLeft = Throwables.Get(LocalEquipment).PerLife;

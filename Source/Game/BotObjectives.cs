@@ -5,6 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// What bots do for the game mode (kept apart from the movement and aim code in Bots.cs). BotTick asks two things:
 /// who is an enemy (<see cref="IsEnemy"/>), and, when nobody is in sight, where to head (<see cref="ObjectiveGoal"/>).
+/// The goal itself comes from the mode's module (<see cref="GameModeModule.BotObjective"/>):
 ///   - King of the Hill: everyone heads for the hill, each to their own spot inside it.
 ///   - Capture the Flag: a carrier runs home; your dropped flag gets picked up; an enemy carrier gets chased;
 ///     otherwise even ids attack the enemy flag and odd ids guard their own (or escort a teammate carrying).
@@ -30,41 +31,7 @@ public sealed partial class Game
     {
         if (Phase != MatchPhase.Playing)
             return null;
-        return Mode switch
-        {
-            GameMode.KingOfTheHill => HillGoal(bot),
-            GameMode.CaptureTheFlag => FlagGoal(bot),
-            _ => null,
-        };
-    }
-
-    private Vector3? HillGoal(Player bot)
-    {
-        if (ActiveHill is not { } hill)
-            return null;
-        // Spread out inside the zone instead of stacking on the centre.
-        var a = bot.Id * 2.4f;
-        return hill.Center + new Vector3(MathF.Cos(a), 0, MathF.Sin(a)) * hill.Radius * 0.45f;
-    }
-
-    private Vector3? FlagGoal(Player bot)
-    {
-        if (bot.Team > 1)
-            return null;
-        var own = bot.Team;
-        var enemy = 1 - own;
-        var home = Objectives.Flags[own];
-        if (CarriedFlagOf(bot) >= 0)
-            return home; // run it home (it scores once our flag is back)
-        var mine = Flags[own];
-        if (mine.Dropped)
-            return mine.Position; // return it
-        if (mine.Carried && Players.TryGetValue(mine.Carrier, out var thief))
-            return thief.Position; // chase the thief
-        var theirs = Flags[enemy];
-        if (theirs.Carried && Players.TryGetValue(theirs.Carrier, out var buddy) && buddy != bot)
-            return bot.Id % 2 == 0 ? buddy.Position : home; // escort or guard
-        return bot.Id % 2 == 0 ? theirs.Position : home + new Vector3(MathF.Cos(bot.Id), 0, MathF.Sin(bot.Id)) * 3f;
+        return Module.BotObjective(this, bot); // the mode's goal (KingOfTheHillModule: the hill; CaptureTheFlagModule: flags, carriers, home)
     }
 
     /// <summary>

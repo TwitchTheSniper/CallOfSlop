@@ -204,7 +204,7 @@ public sealed partial class Game
     /// Server: forget the last run (a new match, a mode change): the world resets (<see cref="ResetZombiesWorld"/>), every
     /// player's run (points, perks, parts) and the built guns go. Nothing happens outside Zombies.
     /// </summary>
-    private void ResetZombiesRun()
+    internal void ResetZombiesRun()
     {
         if (Mode != GameMode.Zombies && !_zBuildsGiven)
         {
@@ -233,7 +233,7 @@ public sealed partial class Game
     private bool _zBuildsGiven;
 
     /// <summary>Both sides: the map and the run state back to the start (doors shut, boards up, no zombies, round 0).</summary>
-    private void ResetZombiesWorld()
+    internal void ResetZombiesWorld()
     {
         Horde.Clear();
         ZDrops.Clear();
@@ -282,7 +282,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server, every tick while a Zombies match is playing.</summary>
-    private void ServerTickZombies(double now)
+    internal void ServerTickZombies(double now)
     {
         if (ZMap is not { } zm)
             return;
@@ -410,7 +410,7 @@ public sealed partial class Game
     // ---- Players ----------------------------------------------------------------------------------------
 
     /// <summary>Server, from Spawn: a Zombies player starts in the start area with the start gear (a fresh run, or back after bleeding out).</summary>
-    private void ZombiesOnSpawn(Player p)
+    internal void ZombiesOnSpawn(Player p)
     {
         if (World.Map.Zombies is not { } zm)
             return;

@@ -25,23 +25,17 @@ public static class ScoreLimits
     // Measured with bot matches on three maps (docs/SCORE-SCALING.md): the limit that takes as long at N players as the
     // classic one does at 8 grows about as (N/8)^0.85 in free-for-all (more targets around, and the leader is the best
     // of more players) and (N/8)^0.8 in Team Deathmatch. King of the Hill and Capture the Flag showed no clear trend
-    // (bots rarely finish them inside 10 minutes), so they keep their classic limits.
-    public static readonly Rule FreeForAll = new(Game.WinKills, 0.85, 1, 7);
-    public static readonly Rule TeamDeathmatch = new(GameModes.TdmScoreLimit, 0.80, 5, 20);
-    public static readonly Rule KingOfTheHill = new(GameModes.HillScoreLimit, 0.00, 10, 150);
-    public static readonly Rule CaptureTheFlag = new(GameModes.CtfCaptureLimit, 0.00, 1, 3);
+    // (bots rarely finish them inside 10 minutes), so they keep their classic limits. Each rule lives with its mode
+    // (Source/Game/Modes, GameModeModule.ScoreRule); these are the shipped ones by name.
+    public static readonly Rule FreeForAll = FreeForAllModule.Rule;
+    public static readonly Rule TeamDeathmatch = TeamDeathmatchModule.Rule;
+    public static readonly Rule KingOfTheHill = KingOfTheHillModule.Rule;
+    public static readonly Rule CaptureTheFlag = CaptureTheFlagModule.Rule;
 
     /// <summary>The modes that end at a score: free-for-all and the three team modes (not Gun Game or Zombies).</summary>
     public static bool HasLimit(GameMode m) => RuleFor(m) != null;
 
-    public static Rule? RuleFor(GameMode m) => m switch
-    {
-        GameMode.FreeForAll => FreeForAll,
-        GameMode.TeamDeathmatch => TeamDeathmatch,
-        GameMode.KingOfTheHill => KingOfTheHill,
-        GameMode.CaptureTheFlag => CaptureTheFlag,
-        _ => null,
-    };
+    public static Rule? RuleFor(GameMode m) => GameModeRegistry.Get(m).ScoreRule;
 
     /// <summary>The classic (Fixed) limit of a mode, or 0 for a mode without one.</summary>
     public static int Classic(GameMode m) => RuleFor(m)?.Base ?? 0;
@@ -65,12 +59,7 @@ public static class ScoreLimits
     }
 
     /// <summary>What a mode's score counts ("kills", "points", "captures").</summary>
-    public static string Unit(GameMode m) => m switch
-    {
-        GameMode.KingOfTheHill => "points",
-        GameMode.CaptureTheFlag => "captures",
-        _ => "kills",
-    };
+    public static string Unit(GameMode m) => GameModeRegistry.Get(m).ScoreUnit;
 
     public static string ChoiceName(ScoreLimitMode c) => c == ScoreLimitMode.Fixed ? "Fixed" : "Auto (scales with players)";
 

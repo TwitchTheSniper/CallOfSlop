@@ -305,7 +305,7 @@ public sealed partial class Ui : IDisposable
         }
 
         // ---- Centre messages --------------------------------------------------------
-        if (!local.Alive && !MenuOpen && game.Mode != GameMode.Zombies) // (Zombies says it itself: back next round)
+        if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
         {
             var wait = game.RespawnWait(now);
             CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout
@@ -394,8 +394,8 @@ public sealed partial class Ui : IDisposable
             var won = game.LocalWon;
             var draw = game.Winner == Game.NoWinner;
             ImGui.PushFont(default, 48);
-            if (game.Mode == GameMode.Zombies)
-                ImGuiSafe.TextColored(Red, "GAME OVER"u8);
+            if (game.Module.CoOp)
+                ImGuiSafe.TextColored(Red, "GAME OVER"u8); // (Zombies: the run ended)
             else
                 ImGuiSafe.TextColored(won ? Green : draw ? Orange : Red, won ? "VICTORY"u8 : draw ? "DRAW"u8 : "DEFEAT"u8);
             ImGui.PopFont();
@@ -410,7 +410,7 @@ public sealed partial class Ui : IDisposable
                 ImGui.TableSetupColumn("Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
                 ImGui.TableHeadersRow();
                 var rank = 1;
-                foreach (var p in game.Players.Values.OrderBy(q => game.IsTeamMode ? q.Team : 0).ThenByDescending(q => q.GunLevel).ThenByDescending(q => q.Kills).ThenBy(q => q.Deaths))
+                foreach (var p in game.Players.Values.OrderBy(q => game.IsTeamMode ? q.Team : 0).ThenByDescending(game.Module.RankScore).ThenByDescending(q => q.Kills).ThenBy(q => q.Deaths))
                 {
                     var c = game.SideColor(p); // Zombies: everyone in the friendly colour
                     ImGui.TableNextRow();

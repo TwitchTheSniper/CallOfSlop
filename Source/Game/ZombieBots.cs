@@ -24,7 +24,7 @@ public sealed partial class Game
         return len < 0.01f || World.Query.Raycast(eye, d / len, len, QueryFilter.Shots) >= len - 0.1f;
     }
 
-    private void ZombieBotTick(Player p, BotBrain b, double now)
+    internal void ZombieBotTick(Player p, BotBrain b, double now)
     {
         if (!p.Alive)
             return;
