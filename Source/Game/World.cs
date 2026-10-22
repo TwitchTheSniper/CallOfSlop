@@ -100,6 +100,7 @@ public static class World
         map.RestoreProps(); // a map always starts with its breakable props whole
         Map = map;
         _physics = null;
+        Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
     }
 
     /// <summary>A breakable prop's collider box changed (it broke): the physics world switches that box off.</summary>
@@ -107,6 +108,7 @@ public static class World
     {
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.UpdateBox(index, map.Solid[index]);
+        Ragdoll.WorldGeneration++; // ragdolls gather their colliders again
         LegacyCollision.SolidChanged(map, index);
         DecalEvents.SolidChanged(map, index); // impacts on it fade, map decals on it hide (Source/Decals)
     }
@@ -116,6 +118,7 @@ public static class World
     {
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.RefreshBoxes();
+        Ragdoll.WorldGeneration++;
         LegacyCollision.Invalidate(map);
         DecalEvents.BoxesRestored(map); // map decals on restored boxes show again
     }

@@ -70,6 +70,14 @@ public static partial class KillStreaks
         _ => (0f, 0f),
     };
 
+    /// <summary>The blast radius of a streak's explosions (strikes, Hunter Drone, gunship rounds); 0 for streaks that don't explode.</summary>
+    public static float BlastRadiusOf(StreakId id) => id switch
+    {
+        StreakId.HunterDrone => HunterRadius,
+        StreakId.Gunship => GunshipRadius,
+        _ => StrikeBlast(id).Radius,
+    };
+
     /// <summary>A line streak's marks: its length, how many impacts, and whether it runs across the way you face (Smoke Screen) or along it.</summary>
     public static (float Length, int Count, bool Across) LineShape(StreakId id) => id switch
     {
@@ -645,6 +653,9 @@ public sealed partial class Game
                 Blasts.Add(new Blast(pos, now, radius, radius < 1.5f ? ThrowableKind.Impact : ThrowableKind.Frag));
                 if (radius >= 1.5f)
                 {
+                    var push = KillStreaks.Get(id).Knockback;
+                    Ragdolls.Blast(pos, radius, push, now); // corpses fly (cosmetic, Source/Render/Ragdolls.cs)
+                    PropDebris.Push(pos, radius, push);
                     Audio.Effect3D(Sfx.Explosion, pos, id == StreakId.Gunship ? 0.8f : 0.9f);
                     ImpactDecals.OnBlast(World.Map, pos, owner, now); // a scorch where it hit (Source/Decals)
                     if (Local is { } me)

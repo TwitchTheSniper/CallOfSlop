@@ -34,6 +34,8 @@ public sealed class ThrowableDef
     public float MaxDamage;
     /// <summary>Damage falls off as (1 - distance / Radius) to this power: 1 is a straight line, higher drops off faster.</summary>
     public float Falloff = 1.4f;
+    /// <summary>Blast knockback: speed (m/s) added at the centre, falling off to nothing at <see cref="Radius"/> (0 = no push; Knockback.cs).</summary>
+    public float Knockback;
     public int PerLife;
     public Vector3 Color;
     public bool IsEquipment => Kind == ThrowableKind.Recon || Kind >= ThrowableKind.Flash; // every tactical item goes in the Equipment slot
@@ -61,9 +63,9 @@ public static class Throwables
     [
         new() { Kind = ThrowableKind.None, Name = "None", Blurb = "Nothing in this slot." },
         new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.5 s fuse, bounces off walls, throws about 34 m. Kills within about 4 m, hurts out to 9 m.",
-            Fuse = 2.5f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f) },
+            Fuse = 2.5f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f), Knockback = 11f },
         new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast: kills within about 2.5 m, hurts out to 6 m.",
-            Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f) },
+            Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f), Knockback = 9f },
         new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Pops where it lands: a thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
@@ -510,6 +512,7 @@ public sealed partial class Game
                 if (DamagePlayer(owner, victim, amount, false, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now, DamageKind.Explosive, center) && victim != owner)
                     flags |= 4;
             }
+            BlastKnockback(owner, center, radius, def.Knockback); // pushes the living (Knockback.cs); the dead ragdoll from the kill
             StreakBlastEntities(owner, center, radius, def.MaxDamage, now); // enemy turrets and drones too
             BlastProps(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
             BlastBuildings(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
@@ -536,7 +539,10 @@ public sealed partial class Game
         {
             case ThrowableKind.Frag:
             case ThrowableKind.Impact:
-                Blasts.Add(new Blast(pos, now, def.Radius * (Players.TryGetValue(owner, out var thrower) ? Perks.BlastRadiusMult(thrower.Perks) : 1f), kind));
+                var blastRadius = def.Radius * (Players.TryGetValue(owner, out var thrower) ? Perks.BlastRadiusMult(thrower.Perks) : 1f);
+                Blasts.Add(new Blast(pos, now, blastRadius, kind));
+                Ragdolls.Blast(pos + new Vector3(0, 0.15f, 0), blastRadius, def.Knockback, now); // corpses fly (cosmetic, Source/Render/Ragdolls.cs)
+                PropDebris.Push(pos + new Vector3(0, 0.15f, 0), blastRadius, def.Knockback); // and loose debris
                 Audio.Effect3D(Sfx.Explosion, pos, kind == ThrowableKind.Frag ? 1f : 0.8f);
                 ImpactDecals.OnBlast(World.Map, pos, owner, now); // a scorch on the nearest surface (Source/Decals)
                 if (Local is { } me)

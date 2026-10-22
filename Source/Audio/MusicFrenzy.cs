@@ -39,11 +39,11 @@ public sealed partial class FrenzyLayer
     /// The loudness level 6 matches: the RMS (sample level, effects volume 1) of a second of your own gun firing at its
     /// rate (<see cref="Audio.Shot"/> plays it at 0.75) with a frag explosion (gain 1) on top, median over the real
     /// firearms; measured from the game's own synthesised sounds by <see cref="Audio.CombatReferenceRms"/> and checked
-    /// against this constant by the self-test (measured with the recorded gunshot layers: about 0.48; gunfire alone
-    /// about 0.23, the explosion alone 0.42. The all-synth gunfire measured 0.552 / 0.35: its dense noise tails carried
-    /// more energy per second than real recordings, which die away naturally).
+    /// against this constant by the self-test (measured with the snappy recorded gunshots and per-weapon voices: 0.440;
+    /// gunfire alone 0.119, the explosion alone 0.424. Before the snappy bake: 0.48 / 0.22, the dry short bodies carry
+    /// less energy per second at the same peaks; the all-synth gunfire measured 0.552 / 0.35).
     /// </summary>
-    public const float SfxReferenceRms = 0.48f;
+    public const float SfxReferenceRms = 0.44f;
 
     /// <summary>The RMS of a frenzy track's drop as rendered (before any gain), the pool's median (0.47-0.54); checked by the self-test.</summary>
     public const float DropRms = 0.50f;

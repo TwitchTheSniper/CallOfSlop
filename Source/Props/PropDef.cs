@@ -108,6 +108,9 @@ public sealed class PropBreakable
     /// (<see cref="Game.ChainFuse"/>), so a cluster ripples instead of popping in one tick.
     /// </summary>
     public float ExplodeFuse;
+
+    /// <summary>An explosive prop's blast knockback (m/s at the centre, falling off to nothing at <see cref="ExplodeRadius"/>; Knockback.cs).</summary>
+    public float ExplodeKnockback = Knockback.DefaultProp;
 }
 
 /// <summary>

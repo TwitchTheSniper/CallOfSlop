@@ -399,6 +399,9 @@ public sealed partial class Audio : IDisposable
             return;
         var gain = (position == null ? OwnShotGain : 1f) * (w.Suppressor ? 0.5f : 1f) * Jitter(0.07f);
         var pitch = Jitter(0.04f);
+        var (kitPitch, kitGain) = KitVoice(w); // Audio.GunVoice.cs: the attachments' colour
+        pitch *= kitPitch;
+        gain *= kitGain;
         if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
             gain = FrenzyOwnShot(w, gain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
         var near = PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]);

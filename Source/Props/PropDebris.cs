@@ -165,6 +165,29 @@ public static class PropDebris
         return d >= 12f ? p.Y - 50f : p.Y + 0.3f - d;
     }
 
+    /// <summary>
+    /// A blast at <paramref name="center"/> throws the pieces around it outwards (resting ones too): <paramref name="strength"/>
+    /// m/s at the centre falling off to nothing at <paramref name="radius"/>, lifted a little (Knockback.cs). Cosmetic.
+    /// </summary>
+    public static void Push(Vector3 center, float radius, float strength)
+    {
+        if (_count == 0 || !(strength > 0) || !(radius > 0))
+            return;
+        for (var i = 0; i < _count; i++)
+        {
+            ref var p = ref Pool[i];
+            var to = p.Pos - center;
+            var d = to.Length();
+            if (d >= radius)
+                continue;
+            var dir = d > 0.05f ? to / d : Vector3.UnitY;
+            p.Vel += Vector3.Normalize(dir + new Vector3(0, 0.6f, 0)) * (strength * 1.3f * (1f - d / radius));
+            p.Spin = MathF.Max(p.Spin, 6f);
+            p.Resting = false;
+            p.Floor = FloorUnder(p.Pos);
+        }
+    }
+
     /// <summary>Moves, bounces, settles, ages and removes pieces. Call once per frame.</summary>
     public static void Update(float dt)
     {

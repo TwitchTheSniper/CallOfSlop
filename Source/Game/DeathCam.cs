@@ -301,7 +301,10 @@ public sealed class DeathCam
         if (Info == null && game.LastDeath is { } d && d.Time > Start - 1.0)
             Info = d;
         var killer = Info == null ? null : game.Players.GetValueOrDefault(Info.KillerId);
-        Update(now, dt, PickTarget(Info, killer, ref _killerDown, _hasTarget), Info?.Kind == KillKind.Self);
+        var target = PickTarget(Info, killer, ref _killerDown, _hasTarget);
+        if (target != null && killer is { Alive: false } && Ragdolls.BodyPoint(killer.Id) is { } body)
+            target = body + new Vector3(0, 0.3f, 0); // the killer died: look at where their ragdoll lies, not where they fell from
+        Update(now, dt, target, Info?.Kind == KillKind.Self);
     }
 
     /// <summary>
@@ -371,6 +374,7 @@ public sealed partial class Game
             _deathCamStreaks[kill.Killer] = s;
         }
         _deathCamStreaks[kill.Victim] = 0;
+        Ragdolls.NoteKill(kill, Brutal.GlfwApi.Glfw.Time); // the victim's body falls the way this kill pushed it (Source/Render/Ragdolls.cs)
         NoteLocalKill(kill); // the killer's "KILLED Ash" notice (KillNotices.cs)
         NoteFrenzyKill(kill); // the kill-frenzy music's feed (FrenzyFeed.cs)
         ScavengeLocal(kill, Brutal.GlfwApi.Glfw.Time); // Scavenger: your own grenade count (PerksMore.cs)
