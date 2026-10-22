@@ -31,6 +31,7 @@ public sealed class Settings
     public float MusicVolume = 0.5f; // menu and lobby music, on top of the master volume (0 = off)
     public float EffectsVolume = 1f; // gunfire, hits and every other sound effect, on top of the master volume
     public float FootstepVolume = 1f; // footsteps, jumps and landings, on top of the effects volume
+    public float OwnGunVolume = 1f; // your own gunshots, on top of the effects volume (1 = the tuned mix, see Audio.GunMix.cs)
     public MusicChoice MusicChoice = MusicChoice.Mixed; // Settings > Audio > Music style
     public bool FrenzyMusic = true; // Settings > Audio > Kill frenzy music: hard music fades in during kill sprees (MusicFrenzy.cs)
     public float FrenzyVolume = 0.8f; // Settings > Audio > Frenzy volume, on top of the music volume
@@ -191,6 +192,7 @@ public sealed class Settings
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
                     case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
                     case "footstep_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FootstepVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "own_gun_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.OwnGunVolume = Math.Clamp(f, 0f, 1f); break;
                     case "music_style" when Enum.TryParse<MusicChoice>(v, true, out var mc) && Enum.IsDefined(mc): s.MusicChoice = mc; break;
                     case "frenzy_music": s.FrenzyMusic = v != "0"; break;
                     case "frenzy_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FrenzyVolume = Math.Clamp(f, 0f, 1f); break;
@@ -265,6 +267,7 @@ public sealed class Settings
                     $"music_volume={MusicVolume.ToString(inv)}",
                     $"effects_volume={EffectsVolume.ToString(inv)}",
                     $"footstep_volume={FootstepVolume.ToString(inv)}",
+                    $"own_gun_volume={OwnGunVolume.ToString(inv)}",
                     $"music_style={MusicChoice}",
                     $"frenzy_music={(FrenzyMusic ? 1 : 0)}",
                     $"frenzy_volume={FrenzyVolume.ToString(inv)}",

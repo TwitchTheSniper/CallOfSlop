@@ -104,7 +104,7 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
 | `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
-| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. |
+| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. `trigger` makes it a pressure-plate mine (see [Landmines](#landmines)). |
 
 How breaking works in a match:
 
@@ -116,6 +116,34 @@ How breaking works in a match:
 - Bots plan their routes as if every prop were whole, so a broken one just gives them a little more room.
 
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
+
+A map can bring any breakable prop back during a match: `{ "op": "Prop", "name": "Landmine", "x": 18, "z": 10, "respawn": 8 }` puts it back 8 seconds after it broke (1 to 3600 s; the default 0 means not until the next match). It waits while anyone is standing on or right next to its spot, so it never comes back under someone's feet. `respawn` is for the `Prop` op only (not `Clutter`), and an unbreakable prop with one is an error.
+
+### Landmines
+
+`Props/Military/Landmine.json` is a half-buried pressure-plate mine: a low olive casing in a dirt ring with a small prong that glints now and then, cosmetic (you walk over it, not into it) and fair to spot if you look at the ground. **Mine Warning Sign** (a red MINES board on a stake, facing +Z) marks a minefield's edge. The Dev pack's **Landmines** map has a small minefield behind signs, a lone mine to try, a mine next to an explosive barrel, one behind a wall, one that comes back after 8 s and a lane bots walk round.
+
+A mine is an explosive breakable prop with a `trigger` in its `explode` block:
+
+```json
+"breakable": { "health": 10, "breakBy": "all", "sound": "metal",
+               "explode": { "radius": 5, "damage": 160, "fuse": 0.35, "knockback": 12,
+                            "trigger": { "radius": 0.6, "height": 0.5 } } }
+```
+
+| `trigger` key | Default | Meaning |
+|---|---|---|
+| `radius` | 0.6 | How far (metres across the ground, scaled with the prop) from its centre feet press the plate, 0.1-3. |
+| `height` | 0.5 | How high above its base feet still press it (0.05-2): jump over it and nothing happens. |
+
+How a mine plays:
+
+- **Step on it and it clicks** (every PC hears it). It goes off `fuse` seconds later (0.35 s; a mine without a `fuse` gets 0.35), whether you stay on it or not: the click commits. Standing still on it is death; a quick sprint off it the moment it clicks gets you out with a wound. Living players, bots and zombies all press it.
+- **Shoot it, knife it or blow it up** (grenades, launchers, kill streaks, a barrel or another mine) and it goes off after its fuse too; one caught in another blast burns 0.12-0.32 s, so a minefield ripples.
+- **The blast is neutral: it hurts everyone**, falling off with distance like a grenade's, shielded by walls, less for anyone prone or wearing Flak Jacket, with knockback, ragdolls, debris, a scorch mark and the smaller fireball. Whoever last hit the mine (shot it, knifed it, threw the grenade) gets the kills they could have made anyway: enemies, and themselves. Everyone else's death, and every death from a mine nobody hit, is nobody's kill: `Landmine` in the feed, a death, no XP or streak for anyone. What a neutral blast sets off (a barrel next to the mine) is neutral too.
+- **Bots know where the mines are** (they're part of the map): their routes keep about 1.6 m clear of every mine still there, and close up they step round one. They don't shoot mines on purpose.
+- **Network:** the host decides, through the same messages as other breakable props (lit, broken, and since protocol 31 back again). Every match starts with every mine in place.
+- **Zombies** maps don't use mines (zombies would set them off for free), but the mechanics work there: zombies press plates and a mine's blast kills them, as the shooter's kills if someone shot it.
 
 ## Pack props
 
@@ -300,6 +328,7 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 |---|---|
 | `Street` | Bins, dumpsters, benches, lamps, hydrants, mailboxes, cones, barriers, the vending machine, signs. |
 | `Industrial` | Crates, pallets, drums (one explosive), pipes, sandbags, tyres, cable spools, gas cylinders. |
+| `Military` | A pressure-plate **Landmine** and a **Mine Warning Sign** (see [Landmines](#landmines)). |
 | `Volatile` | Things that go off, with a short fuse: Red Fuel Barrel, Propane Tank, Propane Bulk Tank (an 11 m blast), Gas Bottle, Gas Bottle Cage, Flammables Cabinet; and two that only break: Chemical Drum, IBC Tote. |
 | `Debris` | Bricks, rubble, planks, cardboard, newspapers, bottles, cans, bags, litter. |
 | `Furniture` | Chairs, a table, a sofa, a filing cabinet. |
