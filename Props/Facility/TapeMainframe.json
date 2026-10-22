@@ -1,0 +1,327 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Tape Mainframe",
+ "category": "Facility",
+ "description": "A mainframe cabinet with two spinning tape reels and a strip of blinking lamps.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.2,
+    2.0,
+    0.8
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 220,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.05,
+    0.25
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    2.0,
+    0.8
+   ],
+   "offset": [
+    0,
+    1.0,
+    0
+   ],
+   "color": "#b8b29a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.1,
+    0.7,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.45,
+    0.41
+   ],
+   "color": "#2a2a2a"
+  },
+  {
+   "size": [
+    1.2,
+    0.05,
+    0.82
+   ],
+   "offset": [
+    0,
+    2.02,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.42,
+    0.42,
+    0.02
+   ],
+   "offset": [
+    -0.27,
+    1.5,
+    0.43
+   ],
+   "color": "#5a5a5a",
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "rpm": 40
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.03
+   ],
+   "offset": [
+    -0.27,
+    1.5,
+    0.44
+   ],
+   "color": "#e8e8dc",
+   "anim": {
+    "type": "follow",
+    "parent": 4
+   }
+  },
+  {
+   "size": [
+    0.42,
+    0.42,
+    0.02
+   ],
+   "offset": [
+    0.27,
+    1.5,
+    0.43
+   ],
+   "color": "#5a5a5a",
+   "rotation": [
+    0,
+    0,
+    0
+   ],
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "rpm": -40
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.03
+   ],
+   "offset": [
+    0.27,
+    1.5,
+    0.44
+   ],
+   "color": "#e8e8dc",
+   "anim": {
+    "type": "follow",
+    "parent": 6
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.42,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 0.5,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.3,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 0.71,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.18,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 0.9199999999999999,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.06,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.13,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.06,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.3399999999999999,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.18,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.55,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.3,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.76,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#ff3030"
+   }
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.42,
+    0.95,
+    0.41
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 1.97,
+    "duty": 0.5,
+    "glow": 1.0,
+    "color": "#40ff70"
+   }
+  },
+  {
+   "size": [
+    1.0,
+    0.5,
+    0.02
+   ],
+   "offset": [
+    0,
+    0.45,
+    0.41
+   ],
+   "color": "#9a9480"
+  }
+ ]
+}

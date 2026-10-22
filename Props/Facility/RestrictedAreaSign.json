@@ -1,0 +1,145 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Restricted Area Sign",
+ "category": "Facility",
+ "description": "A RESTRICTED AREA sign on two posts: a red header, warning lines below.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.5,
+    2.2,
+    0.15
+   ],
+   "offset": [
+    0,
+    1.1,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 100,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 8,
+   "size": [
+    0.05,
+    0.3
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.1,
+    2.2,
+    0.1
+   ],
+   "offset": [
+    -0.7,
+    1.1,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.1,
+    2.2,
+    0.1
+   ],
+   "offset": [
+    0.7,
+    1.1,
+    0
+   ],
+   "color": "#7e8286",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.7,
+    1.0,
+    0.04
+   ],
+   "offset": [
+    0,
+    1.6,
+    0.06
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    1.7,
+    0.3,
+    0.05
+   ],
+   "offset": [
+    0,
+    1.95,
+    0.065
+   ],
+   "color": "#b01818"
+  },
+  {
+   "size": [
+    1.2,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.95,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    1.3,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.55,
+    0.085
+   ],
+   "color": "#202020"
+  },
+  {
+   "size": [
+    1.1,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.4,
+    0.085
+   ],
+   "color": "#202020"
+  },
+  {
+   "size": [
+    1.3,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0,
+    1.25,
+    0.085
+   ],
+   "color": "#202020"
+  }
+ ]
+}

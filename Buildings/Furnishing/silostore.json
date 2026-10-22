@@ -1,0 +1,51 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silostore",
+ "description": "A store: steel shelving, crates, archive boxes, a ladder.",
+ "items": [
+  {
+   "props": [
+    "Metal Shelving",
+    "Armoury Shelf"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Wooden Crate",
+    "Archive Boxes",
+    "Cardboard Stack",
+    "Small Crate"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Toolbox",
+    "Cardboard Box",
+    "Paint Cans"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Step Ladder",
+    "Broom"
+   ],
+   "place": "corner",
+   "chance": 0.7
+  }
+ ]
+}

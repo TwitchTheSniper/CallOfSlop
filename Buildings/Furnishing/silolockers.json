@@ -1,0 +1,32 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silolockers",
+ "description": "A locker room: lockers along the walls, a bench.",
+ "items": [
+  {
+   "props": [
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Bench"
+   ],
+   "place": "centre",
+   "chance": 0.6
+  },
+  {
+   "props": [
+    "Duffel Bag",
+    "Backpack"
+   ],
+   "place": "floor",
+   "chance": 0.6
+  }
+ ]
+}

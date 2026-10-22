@@ -1,0 +1,83 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silomess",
+ "description": "The crew mess: tables and chairs, the galley counter, a fridge, vending machines.",
+ "items": [
+  {
+   "id": "t",
+   "props": [
+    "Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Plastic Chair"
+   ],
+   "place": "around",
+   "of": "t",
+   "count": [
+    3,
+    4
+   ]
+  },
+  {
+   "id": "k",
+   "props": [
+    "Kitchen Counter"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Kettle",
+    "Coffee Maker",
+    "Stacked Plates",
+    "Microwave"
+   ],
+   "place": "on",
+   "of": "k",
+   "y": 0.9,
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Cooker"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Fridge"
+   ],
+   "place": "corner"
+  },
+  {
+   "props": [
+    "Glowing Vending Machine",
+    "Water Cooler"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}

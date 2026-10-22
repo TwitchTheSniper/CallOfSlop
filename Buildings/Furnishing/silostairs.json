@@ -1,0 +1,21 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silostairs",
+ "description": "A stair hall: a junction box, a bucket.",
+ "items": [
+  {
+   "props": [
+    "Junction Box"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Bucket",
+    "Mop and Bucket"
+   ],
+   "place": "corner",
+   "chance": 0.7
+  }
+ ]
+}

@@ -1,0 +1,233 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Guard Booth",
+ "category": "Facility",
+ "description": "A sentry booth at a gate: glazed all round, an olive roof and an amber lamp.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.6,
+    2.7,
+    1.6
+   ],
+   "offset": [
+    0,
+    1.35,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 300,
+  "breakBy": [
+   "explosions",
+   "streaks"
+  ],
+  "sound": "metal",
+  "debris": {
+   "count": 16,
+   "size": [
+    0.05,
+    0.3
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.7,
+    0.2,
+    1.7
+   ],
+   "offset": [
+    0,
+    0.1,
+    0
+   ],
+   "color": "#8a8a84",
+   "material": "concrete"
+  },
+  {
+   "size": [
+    1.5,
+    1.0,
+    1.5
+   ],
+   "offset": [
+    0,
+    0.7,
+    0
+   ],
+   "color": "#d8d8cc",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.6,
+    0.25,
+    1.6
+   ],
+   "offset": [
+    0,
+    2.55,
+    0
+   ],
+   "color": "#4a5232",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.8,
+    0.08,
+    1.8
+   ],
+   "offset": [
+    0,
+    2.71,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.06,
+    1.2,
+    1.5
+   ],
+   "offset": [
+    -0.72,
+    1.8,
+    0
+   ],
+   "color": "#8ab0c0"
+  },
+  {
+   "size": [
+    0.06,
+    1.2,
+    1.5
+   ],
+   "offset": [
+    0.72,
+    1.8,
+    0
+   ],
+   "color": "#8ab0c0"
+  },
+  {
+   "size": [
+    1.5,
+    1.2,
+    0.06
+   ],
+   "offset": [
+    0,
+    1.8,
+    -0.72
+   ],
+   "color": "#8ab0c0"
+  },
+  {
+   "size": [
+    1.5,
+    1.2,
+    0.06
+   ],
+   "offset": [
+    0,
+    1.8,
+    0.72
+   ],
+   "color": "#8ab0c0"
+  },
+  {
+   "size": [
+    0.1,
+    1.25,
+    0.1
+   ],
+   "offset": [
+    -0.72,
+    1.825,
+    -0.72
+   ],
+   "color": "#d8d8cc"
+  },
+  {
+   "size": [
+    0.1,
+    1.25,
+    0.1
+   ],
+   "offset": [
+    0.72,
+    1.825,
+    -0.72
+   ],
+   "color": "#d8d8cc"
+  },
+  {
+   "size": [
+    0.1,
+    1.25,
+    0.1
+   ],
+   "offset": [
+    -0.72,
+    1.825,
+    0.72
+   ],
+   "color": "#d8d8cc"
+  },
+  {
+   "size": [
+    0.1,
+    1.25,
+    0.1
+   ],
+   "offset": [
+    0.72,
+    1.825,
+    0.72
+   ],
+   "color": "#d8d8cc"
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    0.2
+   ],
+   "offset": [
+    0,
+    2.85,
+    0
+   ],
+   "color": "#ffb020",
+   "anim": {
+    "type": "pulse",
+    "period": 2.0,
+    "glow": 1.2,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.6,
+    0.06,
+    0.4
+   ],
+   "offset": [
+    0,
+    1.22,
+    0.55
+   ],
+   "color": "#3a3d40"
+  }
+ ]
+}

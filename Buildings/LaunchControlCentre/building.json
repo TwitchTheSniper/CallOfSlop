@@ -1,0 +1,405 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Launch Control Centre",
+ "theme": "The heart of a Cold War missile complex, deep underground: beige launch consoles, a big tactical wall display, the two-key launch station, mainframes humming either side",
+ "category": "special",
+ "description": "The launch control room (three crew consoles under the wall display, the key station in the middle) between two computer rooms, a corridor with blast doors at both ends and the front.",
+ "author": "Call of Slop",
+ "seed": 503,
+ "wallThickness": 0.4,
+ "storeyHeight": 4.6,
+ "exterior": {
+  "color": "$wall",
+  "material": "concrete"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "concrete"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "concrete"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "concrete"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "dark concrete": {
+   "wall": "#6a6a64",
+   "interior": "#76766c",
+   "floor": "#4e4e4a",
+   "ceiling": "#5a5a54",
+   "trim": "#4a5232",
+   "door": "#4e5444",
+   "roof": "#5e5e58",
+   "stripe": "#c8a820"
+  },
+  "green paint": {
+   "wall": "#62665a",
+   "interior": "#6a7462",
+   "floor": "#4a5046",
+   "ceiling": "#5a6052",
+   "trim": "#c8a820",
+   "door": "#3e4636",
+   "roof": "#56584e",
+   "stripe": "#c8a820"
+  }
+ },
+ "floors": [
+  {
+   "rooms": [
+    {
+     "id": "launch control",
+     "type": "silocontrol",
+     "rect": [
+      -6,
+      -7,
+      6,
+      3.5
+     ],
+     "windows": false,
+     "furnish": "explicit",
+     "props": [
+      {
+       "name": "Launch Control Console",
+       "wall": "N",
+       "along": -3.3
+      },
+      {
+       "name": "Launch Control Console",
+       "wall": "N",
+       "along": 0.0
+      },
+      {
+       "name": "Launch Control Console",
+       "wall": "N",
+       "along": 3.3
+      },
+      {
+       "name": "Big Wall Display",
+       "wall": "N",
+       "along": 0.0,
+       "y": 1.95
+      },
+      {
+       "name": "Status Board",
+       "wall": "W",
+       "along": -2.2,
+       "y": 1.5
+      },
+      {
+       "name": "Status Board",
+       "wall": "E",
+       "along": -2.2,
+       "y": 1.5
+      },
+      {
+       "name": "Launch Key Console",
+       "at": [
+        0,
+        0.4
+       ],
+       "yaw": 180
+      },
+      {
+       "name": "Office Chair",
+       "at": [
+        -3.3,
+        -2.9
+       ],
+       "yaw": 180
+      },
+      {
+       "name": "Office Chair",
+       "at": [
+        0.0,
+        -2.9
+       ],
+       "yaw": 180
+      },
+      {
+       "name": "Office Chair",
+       "at": [
+        3.3,
+        -2.9
+       ],
+       "yaw": 180
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "S",
+       "along": -4.6,
+       "y": 1.6
+      },
+      {
+       "name": "Tube Light",
+       "at": [
+        -3,
+        -1.5
+       ],
+       "y": 3.9
+      },
+      {
+       "name": "Tube Light",
+       "at": [
+        3,
+        -1.5
+       ],
+       "y": 3.9
+      },
+      {
+       "name": "Tube Light",
+       "at": [
+        -3,
+        2.5
+       ],
+       "y": 3.9
+      },
+      {
+       "name": "Tube Light",
+       "at": [
+        3,
+        2.5
+       ],
+       "y": 3.9
+      }
+     ],
+     "floor": {
+      "color": "#5a5650",
+      "material": "tiles"
+     }
+    },
+    {
+     "id": "west computer room",
+     "type": "silocomputer",
+     "rect": [
+      -11,
+      -7,
+      -6,
+      3.5
+     ],
+     "windows": false
+    },
+    {
+     "id": "east computer room",
+     "type": "silocomputer",
+     "rect": [
+      6,
+      -7,
+      11,
+      3.5
+     ],
+     "windows": false
+    },
+    {
+     "id": "corridor",
+     "type": "silocorridor",
+     "rect": [
+      -11,
+      3.5,
+      11,
+      7
+     ],
+     "windows": false,
+     "props": [
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": -8.0,
+       "y": 2.6
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": -4.0,
+       "y": 2.6
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 0.0,
+       "y": 2.6
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 4.0,
+       "y": 2.6
+      },
+      {
+       "name": "Caged Bulkhead Lamp",
+       "wall": "N",
+       "along": 8.0,
+       "y": 2.6
+      },
+      {
+       "name": "Wall Cable Tray",
+       "wall": "S",
+       "along": -6,
+       "y": 3.3
+      },
+      {
+       "name": "Wall Cable Tray",
+       "wall": "S",
+       "along": 6,
+       "y": 3.3
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "S",
+       "along": -2.2,
+       "y": 1.7
+      },
+      {
+       "name": "Radiation Sign",
+       "wall": "S",
+       "along": 2.2,
+       "y": 1.7
+      }
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      7
+     ],
+     "width": 1.6,
+     "material": "metal",
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      -11,
+      5.25
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      11,
+      5.25
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -3,
+      3.5
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      3,
+      3.5
+     ],
+     "width": 1.4,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      -8.5,
+      3.5
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      8.5,
+      3.5
+     ],
+     "width": 1.0,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      -6,
+      -4.5
+     ],
+     "width": 1.2
+    },
+    {
+     "type": "arch",
+     "at": [
+      6,
+      -4.5
+     ],
+     "width": 1.2
+    },
+    {
+     "type": "window",
+     "at": [
+      -6,
+      0.0
+     ],
+     "width": 2.0,
+     "sill": 1.0,
+     "head": 2.1,
+     "health": 6
+    },
+    {
+     "type": "window",
+     "at": [
+      6,
+      0.0
+     ],
+     "width": 2.0,
+     "sill": 1.0,
+     "head": 2.1,
+     "health": 6
+    }
+   ]
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.1,
+  "color": {
+   "color": "$roof",
+   "material": "concrete"
+  }
+ },
+ "anchors": [
+  {
+   "type": "hill",
+   "name": "launch control",
+   "at": [
+    0,
+    -1.5
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "corridor west",
+   "at": [
+    -8,
+    5.25
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "corridor east",
+   "at": [
+    8,
+    5.25
+   ]
+  }
+ ]
+}

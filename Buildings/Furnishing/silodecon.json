@@ -1,0 +1,42 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silodecon",
+ "description": "Decontamination: showers, a sink, suit racks, bins for contaminated kit.",
+ "items": [
+  {
+   "props": [
+    "Shower Cubicle"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Bathroom Sink"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Hazmat Suit Rack"
+   ],
+   "place": "wall",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Laundry Basket",
+    "Trash Bag",
+    "Chemical Drum"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  }
+ ]
+}

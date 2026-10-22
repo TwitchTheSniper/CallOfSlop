@@ -17,6 +17,9 @@ public sealed class BuildingInstance
     public int ShellStart, ShellCount;
 
     public int DoorStart, DoorCount, WindowStart, WindowCount;
+
+    /// <summary>Height of the building's highest shell box (its roof or parapet top).</summary>
+    public float Top;
 }
 
 /// <summary>A door in a building: open or shut (the interact key), and it breaks after enough damage. Runtime state lives here.</summary>
@@ -166,6 +169,9 @@ public sealed partial class Map
         foreach (var b in plan.Shell)
             AddBuildingBox(b.Box, b, KindShell);
         inst.ShellCount = Solid.Count - inst.ShellStart;
+        inst.Top = baseY;
+        for (var i = inst.ShellStart; i < Solid.Count; i++)
+            inst.Top = MathF.Max(inst.Top, Solid[i].Max.Y);
         inst.DoorStart = BuildingDoors.Count;
         foreach (var d in plan.Doors)
         {
@@ -400,9 +406,13 @@ public sealed partial class Map
     public bool InsideBuilding(float x, float z)
     {
         foreach (var b in PlacedBuildings)
+        {
+            if (HasTerrain && b.Top < GroundHeight(x, z) - 0.5f)
+                continue; // a building buried in a terrain cave (World Tour "Silo"): plants grow on the ground above it
             foreach (var r in b.Plan.Footprint)
                 if (r.Contains(x, z, 0.3f))
                     return true;
+        }
         return false;
     }
 }

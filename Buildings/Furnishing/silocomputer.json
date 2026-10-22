@@ -1,0 +1,52 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silocomputer",
+ "description": "A computer room: tape mainframes along the walls, a teletype, patch cabinets, strip lights.",
+ "items": [
+  {
+   "props": [
+    "Tape Mainframe"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    4
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Patch Panel Cabinet",
+    "Server Rack"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Teletype Printer"
+   ],
+   "place": "wall",
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Archive Boxes",
+    "Filing Cabinet"
+   ],
+   "place": "corner",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloturbine",
+ "description": "A turbine hall (normally explicit).",
+ "items": [
+  {
+   "props": [
+    "Turbine Generator"
+   ],
+   "place": "centre"
+  }
+ ]
+}

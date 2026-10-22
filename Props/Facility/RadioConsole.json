@@ -1,0 +1,392 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Radio Console",
+ "category": "Facility",
+ "description": "An olive comms desk: three stacked radio sets with glowing dials, a headset and a message pad.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.2,
+    0.8,
+    0.85
+   ],
+   "offset": [
+    0,
+    0.4,
+    0
+   ]
+  },
+  {
+   "size": [
+    2.2,
+    1.0,
+    0.5
+   ],
+   "offset": [
+    0,
+    1.25,
+    -0.15
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "breakable": {
+  "health": 200,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.05,
+    0.25
+   ]
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    2.2,
+    0.76,
+    0.8
+   ],
+   "offset": [
+    0,
+    0.38,
+    0
+   ],
+   "color": "#5a6048",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.24,
+    0.05,
+    0.84
+   ],
+   "offset": [
+    0,
+    0.785,
+    0
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.62,
+    0.9,
+    0.45
+   ],
+   "offset": [
+    -0.7,
+    1.26,
+    -0.15
+   ],
+   "color": "#4a5040",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.18,
+    0.02
+   ],
+   "offset": [
+    -0.7,
+    1.5,
+    0.08
+   ],
+   "color": "#1a1c1e"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    -0.7,
+    1.5,
+    0.095
+   ],
+   "color": "#ffb020",
+   "anim": {
+    "type": "pulse",
+    "period": 1.5,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    -0.88,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    -0.7,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    -0.52,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.62,
+    0.9,
+    0.45
+   ],
+   "offset": [
+    0.0,
+    1.26,
+    -0.15
+   ],
+   "color": "#4a5040",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.18,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.5,
+    0.08
+   ],
+   "color": "#1a1c1e"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0.0,
+    1.5,
+    0.095
+   ],
+   "color": "#ffb020",
+   "anim": {
+    "type": "pulse",
+    "period": 1.9,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    -0.18,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    0.18,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.62,
+    0.9,
+    0.45
+   ],
+   "offset": [
+    0.7,
+    1.26,
+    -0.15
+   ],
+   "color": "#4a5040",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.18,
+    0.02
+   ],
+   "offset": [
+    0.7,
+    1.5,
+    0.08
+   ],
+   "color": "#1a1c1e"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.01
+   ],
+   "offset": [
+    0.7,
+    1.5,
+    0.095
+   ],
+   "color": "#ffb020",
+   "anim": {
+    "type": "pulse",
+    "period": 2.3,
+    "glow": 1.0,
+    "color": "#ffb020"
+   }
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    0.52,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    0.7,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.09,
+    0.09,
+    0.03
+   ],
+   "offset": [
+    0.88,
+    1.18,
+    0.09
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.25,
+    0.08,
+    0.2
+   ],
+   "offset": [
+    0.4,
+    0.84,
+    0.2
+   ],
+   "color": "#1a1c1e"
+  },
+  {
+   "size": [
+    0.3,
+    0.02,
+    0.22
+   ],
+   "offset": [
+    -0.5,
+    0.82,
+    0.15
+   ],
+   "color": "#e8e8dc"
+  },
+  {
+   "size": [
+    0.06,
+    0.4,
+    0.06
+   ],
+   "offset": [
+    -1.0,
+    1.95,
+    -0.3
+   ],
+   "color": "#3a3d40"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.03
+   ],
+   "offset": [
+    -0.6,
+    1.62,
+    0.08
+   ],
+   "color": "#3a3d40",
+   "anim": {
+    "type": "blink",
+    "period": 0.6,
+    "duty": 0.3,
+    "glow": 1.2,
+    "color": "#ff3030"
+   }
+  }
+ ]
+}

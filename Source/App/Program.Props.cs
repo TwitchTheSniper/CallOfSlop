@@ -73,6 +73,11 @@ public static unsafe partial class Program
         // Cluttered pack, 09 Beachhead: the beach and the bluff from out over the sea, then the bluff from behind a landing craft at eye height.
         ("cluttered_beachhead", "Beachhead", new Vector3(-60f, 32f, 92f), new Vector3(5f, 6f, 0f), false),
         ("cluttered_beachhead_beach", "Beachhead", new Vector3(-12f, 3.1f, 47f), new Vector3(1f, 10f, 9f), false),
+        // World Tour, 03 Silo: the forested hill and the open silo from over Blue's motor pool, down the shaft past the missile from
+        // the top gantry, and the launch control room at eye height.
+        ("world_silo", "Silo", new Vector3(-112f, 46f, 66f), new Vector3(0f, 8f, 0f), false),
+        ("world_silo_shaft", "Silo", new Vector3(0f, -2.1f, -11.2f), new Vector3(0f, -15f, 4f), false),
+        ("world_silo_control", "Silo", new Vector3(0f, -2.2f, -41.6f), new Vector3(0f, -2.4f, -52f), false),
         // World Tour, 04 Paris Quarter: the quarter from above the south-west, then the raised square at eye height towards the fountain and the north row.
         ("world_paris", "Paris Quarter", new Vector3(-74f, 40f, 52f), new Vector3(0f, 6f, -10f), false),
         ("world_paris_square", "Paris Quarter", new Vector3(-22f, 4.7f, 3f), new Vector3(6f, 7f, -16f), false),

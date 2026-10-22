@@ -1,0 +1,64 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloarmoury",
+ "description": "An armoury: steel rifle racks, ammunition shelving, crates on the floor.",
+ "items": [
+  {
+   "props": [
+    "Steel Rifle Rack"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ],
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Armoury Shelf"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Wooden Crate",
+    "Small Crate"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Table"
+   ],
+   "place": "centre",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}

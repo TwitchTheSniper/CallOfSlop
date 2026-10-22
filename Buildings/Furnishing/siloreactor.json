@@ -1,0 +1,29 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloreactor",
+ "description": "A reactor hall round its vessel: coolant pumps against the walls, gas bottles, a toolbox.",
+ "items": [
+  {
+   "props": [
+    "Coolant Pump"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Gas Cylinders",
+    "Toolbox",
+    "Cable Spool"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  }
+ ]
+}

@@ -1,0 +1,80 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "siloworkshop",
+ "description": "The maintenance workshop: work tables, shelving, generators and drums, an engine on the floor.",
+ "items": [
+  {
+   "id": "t",
+   "props": [
+    "Table"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Toolbox",
+    "Paint Cans"
+   ],
+   "place": "on",
+   "of": "t",
+   "y": 0.75,
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Metal Shelving"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Diesel Generator",
+    "Portable Generator"
+   ],
+   "place": "wall",
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Engine Block",
+    "Tyre Stack",
+    "Cable Spool"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Oil Drum",
+    "Gas Cylinders"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Tube Light"
+   ],
+   "place": "ceiling",
+   "count": 2,
+   "y": 0.0
+  }
+ ]
+}

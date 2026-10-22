@@ -1,0 +1,30 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "silocontrol",
+ "description": "The launch control room (normally explicit): consoles, chairs.",
+ "items": [
+  {
+   "id": "c",
+   "props": [
+    "Launch Control Console"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Office Chair"
+   ],
+   "place": "front",
+   "of": "c",
+   "distance": 0.2,
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}
