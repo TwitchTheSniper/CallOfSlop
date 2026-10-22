@@ -9,7 +9,7 @@ public enum CartMode : byte
     /// <summary>In its owner's hands: rolls in front of them. Both hands are on the bar, so it doesn't fire.</summary>
     Pushed,
 
-    /// <summary>Standing where it was left (parked, or switched away from). Tap E at its bar to man it, hold E to push it.</summary>
+    /// <summary>Standing where it was left (parked, or switched away from). Tap the interact key at its bar to man it, hold it to push it.</summary>
     Idle,
 
     /// <summary>
@@ -440,7 +440,7 @@ public sealed partial class Game
         ? c.Bar + new Vector3(0, c.Shape.BarHeight + 0.05f, 0) - World.FlatForward(c.Body.Yaw) * 0.55f
         : null;
 
-    /// <summary>The interact key (E): park your cart, man it (tap at its bar) or push it (<paramref name="hold"/>), step off, buy the slot upgrade.</summary>
+    /// <summary>The interact key (F by default): park your cart, man it (tap at its bar) or push it (<paramref name="hold"/>), step off, buy the slot upgrade.</summary>
     public void Interact(double now, bool hold = false)
     {
         if (!hold && MannedCart == null && TryUseDoor(now))
@@ -506,7 +506,7 @@ public sealed partial class Game
         if (!IsCart(Active.Def) || MannedCart != null)
             return false;
         if (pressed)
-            LoadoutNotice = "Both hands are on the bar: park the cart (E), then tap E at its bar to man its gun.";
+            LoadoutNotice = "Both hands are on the bar: park the cart ([E]), then tap [E] at its bar to man its gun.";
         return true;
     }
 
@@ -523,7 +523,7 @@ public sealed partial class Game
                     SwitchTo(i, now);
                     break;
                 }
-            LoadoutNotice = c.Mode == CartMode.Pushed ? "Pushing the cart. E parks it." : "Manning the cart gun. Leave: E (or jump / sprint). Hold E to push it.";
+            LoadoutNotice = c.Mode == CartMode.Pushed ? "Pushing the cart. [E] parks it." : "Manning the cart gun. Leave: [E] (or jump / sprint). Hold [E] to push it.";
             if (c.Mode == CartMode.Manned)
                 (LookYaw, LookPitch) = ClampCartAim(c.Body.Yaw, LookYaw, LookPitch);
         }
@@ -535,7 +535,7 @@ public sealed partial class Game
                     back = i;
             if (back >= 0)
                 SwitchTo(back, now);
-            LoadoutNotice = old == CartMode.Pushed ? "Cart parked. Tap E at its bar to man its gun, hold E to push it." : "You stepped off the cart gun.";
+            LoadoutNotice = old == CartMode.Pushed ? "Cart parked. Tap [E] at its bar to man its gun, hold [E] to push it." : "You stepped off the cart gun.";
         }
     }
 

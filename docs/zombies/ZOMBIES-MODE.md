@@ -71,7 +71,7 @@ listed bottom-right.
 
 ## Buyables (all placed in the map's "zombies" section)
 
-The prompt says what the interact key (**E**) does, with the price: "Hold E to buy the Wall SMG [1000]". You **hold E**
+The prompt says what the interact key (**F** by default) does, with the price: "Hold F to buy the Wall SMG [1000]". You **hold F**
 for `holdSeconds` (0.25 s) to buy; reviving and rebuilding boards go on while you hold it. Red: not enough points;
 grey: not possible now (needs the power, already owned...).
 
@@ -116,7 +116,7 @@ reloads.)
   rarity colour; walk over it to pick it up (a feed line says what it was). Each kill also gives 1 scrap.
 - **Inventory.** Per player, per run: loose parts (by name, with counts) and scrap. The parts on your guns are yours
   too.
-- **Workbench.** E at a workbench opens the same editor as the main menu's sandbox, but it lists **only the parts you
+- **Workbench.** F at a workbench opens the same editor as the main menu's sandbox, but it lists **only the parts you
   own this run** (loose plus those already on the build) and edits **your slots** (1-2, 3-4 with the upgrade, and the
   melee slot). APPLY sends the build to the server, which checks you're at a bench and that every added part is in
   your loose parts; parts taken off go back to your loose parts. Scrap: **break down** a loose part (its scrap value:
@@ -184,7 +184,7 @@ your player has died. And if you can't get to them in time, will despawn after 5
   "Tester's Minigun: 4:31 left".
 - **Who can pick up: anyone on the team** (proposed), so teammates can rescue your gear (and hand it back, or keep it).
   No points refund to the owner. The owner gets a feed line when someone else takes their build.
-- **Picking up**: **hold E** (like a buy, `buy.holdSeconds`): a gun goes into a free slot 3-4 if you have one, else
+- **Picking up**: **hold F** (like a buy, `buy.holdSeconds`): a gun goes into a free slot 3-4 if you have one, else
   it **swaps with the gun in your hands**; a melee build goes to the **melee slot**, swapping out the melee build there.
   A swapped-out build **drops in the same spot with the picked one's remaining time** (not a fresh 5 minutes: swapping
   back and forth can't keep builds on the floor forever). Bleed-out drops come with a full magazine and reserve; a
@@ -216,7 +216,7 @@ most 2 nav graph searches per tick (the rest steer straight until their turn). T
 
 ## Controls
 
-E (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench to open it (Esc / Close goes back).
+F (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench to open it (Esc / Close goes back).
 Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as before (3-4 after the upgrade).
 
 ## Open questions (for the user)
