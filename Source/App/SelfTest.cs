@@ -95,6 +95,7 @@ public static partial class SelfTest
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
+            Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
             Section("Recoil", CheckRecoil);
             Section("Death cam", CheckDeathCam);
             Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)

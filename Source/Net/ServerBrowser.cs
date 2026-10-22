@@ -41,7 +41,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     of Msg (doors open, shut, take damage and break, windows break; the join-in-progress state), the Doors physics layer
     // 24: prestige hats (GameCosmetics.cs): the Hello carries prestige and level after the name; every roster entry ends
     //     with prestige, level and hat (3 bytes)
-    public const byte ProtocolVersion = 24;
+    // 25: cosmetic loadout (GameCosmeticLoadout.cs): Msg.Loadout ends with the hat byte (after the kill streaks); the
+    //     server keeps it only if the player's reported prestige unlocks it, and the roster carries it (protocol 24).
+    public const byte ProtocolVersion = 25;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

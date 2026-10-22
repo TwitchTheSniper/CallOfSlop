@@ -362,10 +362,15 @@ public static unsafe partial class Program
                 break;
             case 5 when t > 3.1:
                 if (_smokeMap == 0)
+                {
                     SmokeShot("perks_0");
+                    Ui.SmokeTab(9); // the cosmetics page (hats; UiCosmetics.cs)
+                }
                 _smokeStage++;
                 break;
             case 6 when t > 3.4:
+                if (_smokeMap == 0)
+                    SmokeShot("cosmetics_0");
                 Ui.SmokeTab(0);
                 if (game != null)
                 {
@@ -900,7 +905,7 @@ public static unsafe partial class Program
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
-                { Progress = _smoke ? SmokeProgress() : _progress }; // the smoke test must never touch your real save
+                { Progress = _smoke ? SmokeProgress() : _progress, ChosenHat = loadout.Hat }; // the smoke test must never touch your real save (hat: GameCosmeticLoadout.cs)
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
