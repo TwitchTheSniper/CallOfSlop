@@ -311,9 +311,19 @@ public sealed partial class Audio : IDisposable
 
     // ---- Playback -----------------------------------------------------------
 
-    /// <summary>Distance falloff for a sound: where it starts to fade, how fast, and where it stops fading.</summary>
-    private readonly record struct Falloff(float Reference, float Rolloff, float Max)
+    /// <summary>
+    /// Distance falloff for a sound: where it starts to fade, how fast, and where it stops fading (OpenAL's default
+    /// inverse-distance-clamped model, see <see cref="Attenuation"/>).
+    /// </summary>
+    internal readonly record struct Falloff(float Reference, float Rolloff, float Max)
     {
+        /// <summary>The gain OpenAL gives this falloff at <paramref name="distance"/> (inverse distance, clamped to Reference..Max).</summary>
+        public float Attenuation(float distance)
+        {
+            var d = Math.Clamp(distance, Reference, MathF.Max(Reference, Max));
+            return Reference / (Reference + Rolloff * (d - Reference));
+        }
+
         public static readonly Falloff Normal = new(6f, 1.1f, 120f);
         public static readonly Falloff Far = new(25f, 0.6f, 400f); // the distant gunshot layer carries
         public static readonly Falloff Step = new(3f, 1f, 60f);
@@ -401,24 +411,20 @@ public sealed partial class Audio : IDisposable
     {
         if (!Enabled)
             return;
-        var gain = (position == null ? OwnShotGain : 1f) * (w.Suppressor ? 0.5f : 1f) * Jitter(0.07f);
+        var hasFar = !_shotsFar[w.Id].IsNull();
+        var plan = PlanShot(position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f); // Audio.GunMix.cs
+        var gain = Jitter(0.07f);
         var pitch = Jitter(0.04f);
         var (kitPitch, kitGain) = KitVoice(w); // Audio.GunVoice.cs: the attachments' colour
         pitch *= kitPitch;
         gain *= kitGain;
+        var nearGain = plan.Near * gain;
         if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
-            gain = FrenzyOwnShot(w, gain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
-        var near = PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]);
-        if (position is { } p && !w.Suppressor && !_shotsFar[w.Id].IsNull())
-        {
-            var far = FarMix(Vector3.Distance(p, _listener));
-            if (far < 0.98f)
-                Play(near, p, gain * (1f - 0.85f * far), pitch);
-            if (far > 0.02f)
-                Play(_shotsFar[w.Id], p, gain * 0.9f * far, pitch, Falloff.Far);
-            return;
-        }
-        Play(near, position, gain, pitch);
+            nearGain = FrenzyOwnShot(w, nearGain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
+        if (plan.Near > 0f)
+            Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff);
+        if (plan.Far > 0f && hasFar)
+            Play(_shotsFar[w.Id], position, plan.Far * gain * FarTrim(w.Id), pitch, plan.FarFalloff);
     }
 
     /// <summary>A random recorded variant (never the same one twice in a row when there are several).</summary>
