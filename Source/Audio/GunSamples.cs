@@ -352,9 +352,9 @@ public static class GunSamples
         {
             var repeat = Array.IndexOf(picks, picks[v]) < v; // the same take again: nudge its treatment
             var x = Resample(set.Shots[picks[v]], pitch * (1f + (v - 1.5f) * 0.006f + (repeat ? 0.014f : 0f)), len);
+            Blend(x, synthF, blend); // first, so the identity treatment colours the synthesised layer too
             Shape(x, voice, w, repeat ? 0.75f : 1f);
             FadeTail(x, 0.35f);
-            Blend(x, synthF, blend);
             outv[v] = Finish(x, target, MaxPeakReductionDb, SnapRelease);
         }
         return outv;
@@ -436,8 +436,17 @@ public static class GunSamples
             hpX = x[i];
             x[i] += hpY * crack * MathF.Exp(i * crackK);
         }
+        // Body resonance and tone colour the body, not the first milliseconds: the blast's peak (what the limiter
+        // acts on) stays the same, so neither costs loudness nor gets flattened by the limiter.
+        var dry = (float[])x.Clone();
         Body(x, voice.BodyHz * (2f - amount), voice.BodyQ, voice.BodyGain);
         Tilt(x, voice.Tilt * amount);
+        int r0 = (int)(0.0015f * Sr), r1 = (int)(0.006f * Sr);
+        for (var i = 0; i < Math.Min(r1, x.Length); i++)
+        {
+            var m = i < r0 ? 0f : (i - r0) / (float)(r1 - r0);
+            x[i] = dry[i] + (x[i] - dry[i]) * m;
+        }
         // Drier body: from a few ms after the blast (later for big calibers) an extra exponential decay.
         var hold = (int)((0.006f + 0.012f * w.Caliber) * Sr);
         var step = MathF.Exp(-1f / (voice.Dry * Sr));
