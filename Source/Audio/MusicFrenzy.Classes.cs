@@ -26,7 +26,7 @@ public sealed partial class FrenzyLayer
     public WeaponClass Class
     {
         get => (WeaponClass)Volatile.Read(ref _classTarget);
-        set => Volatile.Write(ref _classTarget, Enum.IsDefined(value) ? (int)value : (int)WeaponClass.AssaultRifle);
+        set => Volatile.Write(ref _classTarget, (int)value >= 0 && (int)value < FrenzyStyles.ClassCount ? (int)value : (int)WeaponClass.AssaultRifle); // no Enum.IsDefined: it boxes
     }
 
     /// <summary>The class whose style is playing now (the one fading in during a switch). Written by the mixing thread.</summary>

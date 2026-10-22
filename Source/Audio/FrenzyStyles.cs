@@ -84,7 +84,7 @@ public static class FrenzyStyles
     public static FrenzyStyle[] All => _all ??= Load(FilePath);
 
     /// <summary>The number of weapon classes.</summary>
-    public static int ClassCount => Enum.GetValues<WeaponClass>().Length;
+    public static readonly int ClassCount = Enum.GetValues<WeaponClass>().Length;
 
     /// <summary>Reads the file; classes without a valid "music" section play <see cref="FrenzyStyle.Plain"/>.</summary>
     public static FrenzyStyle[] Load(string path)

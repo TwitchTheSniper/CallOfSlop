@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>The smallest fingerprint distance two classes may have (see <see cref="ClassFingerprint"/>).</summary>
-    private const double FrenzyClassMinDistance = 0.08;
+    private const double FrenzyClassMinDistance = 0.15;
 
     private static readonly List<string> FrenzyClassNotes = new();
 
@@ -30,7 +30,11 @@ public static partial class SelfTest
         CheckFrenzyClassSound();
         CheckFrenzyClassSwitch();
         CheckFrenzyClassCpu();
-        Line("::warning title=Frenzy classes (results)::" + string.Join("%0A", FrenzyClassNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        // Two annotations on the CI run (one gets cut off): the classes and levels, then the comparisons, switch and CPU.
+        var half = Math.Min(FrenzyClassNotes.Count, 2 * AllClasses.Length);
+        string Join(IEnumerable<string> notes) => string.Join("%0A", notes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " ")));
+        Line("::warning title=Frenzy classes (styles)::" + Join(FrenzyClassNotes.Take(half)));
+        Line("::warning title=Frenzy classes (results)::" + Join(FrenzyClassNotes.Skip(half)));
     }
 
     private static WeaponClass[] AllClasses => Enum.GetValues<WeaponClass>();
@@ -48,7 +52,7 @@ public static partial class SelfTest
         {
             var s = styles[(int)c];
             var pool = FrenzyLayer.PoolTracks(tracks, s.Pool);
-            ClassLine($"{c}: \"{s.Name}\" ({s.Describe}); pool {s.Pool} ({pool.Length} tracks), stems {s.StemDrums}/{s.StemBass}/{s.StemLead}, "
+            ClassLine($"{c}: \"{s.Name}\"; pool {s.Pool} ({pool.Length} tracks), stems {s.StemDrums}/{s.StemBass}/{s.StemLead}, "
                       + $"{s.Layers.Length} layers ({string.Join(", ", s.Layers.Select(l => $"{l.Voice} from L{l.From}"))}), trim {s.Trim}");
             if (!names.Add(s.Name))
                 Fail($"{c}: style name \"{s.Name}\" is used by another class");
