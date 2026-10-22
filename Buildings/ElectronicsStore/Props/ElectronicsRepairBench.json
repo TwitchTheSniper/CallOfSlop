@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Electronics Repair Bench",
+  "description": "A repair bench: a gutted TV, a soldering station, a glowing oscilloscope and a magnifier lamp.",
+  "collision": "solid",
+  "collider": [{"size": [1.8, 1.0, 0.75]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 160, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.8, 0.05, 0.75], "offset": [0, 0.88, 0], "color": "#6a6e5a"},
+    {"size": [1.8, 0.85, 0.7], "offset": [0, 0.425, 0], "color": "#8a8e92", "material": "metal"},
+    {"size": [1.8, 0.9, 0.04], "offset": [0, 1.35, -0.355], "color": "#a8aca0"},
+    {"size": [0.6, 0.45, 0.5], "offset": [-0.45, 1.13, 0.0], "color": "#3a3a3e"},
+    {"size": [0.5, 0.36, 0.01], "offset": [-0.45, 1.13, 0.255], "color": "#5a6a5a"},
+    {"size": [0.34, 0.24, 0.3], "offset": [0.4, 1.03, -0.15], "color": "#c8c8c0"},
+    {
+      "size": [0.2, 0.14, 0.01],
+      "offset": [0.4, 1.05, 0.005],
+      "color": "#30e070",
+      "anim": {"type": "flicker", "rate": 8, "duty": 0.9, "color": "#40ff80", "glow": 1.0}
+    },
+    {"size": [0.14, 0.08, 0.14], "offset": [0.75, 0.94, 0.15], "color": "#c83030"},
+    {"size": [0.02, 0.5, 0.02], "offset": [0.05, 1.15, -0.2], "color": "#2a2a2a", "rotation": [25, 0, 0]},
+    {"size": [0.2, 0.06, 0.2], "offset": [0.05, 1.35, -0.05], "color": "#d8d8d0"},
+    {"size": [0.5, 0.02, 0.3], "offset": [0.1, 0.915, 0.2], "color": "#2a6a3a"}
+  ]
+}

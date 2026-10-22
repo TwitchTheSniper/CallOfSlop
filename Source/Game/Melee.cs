@@ -211,6 +211,7 @@ public sealed partial class Game
     {
         BotDifficulty.Easy => 0.6,
         BotDifficulty.Normal => 0.35,
+        BotDifficulty.Insane => 0.18,
         _ => 0.2,
     };
 

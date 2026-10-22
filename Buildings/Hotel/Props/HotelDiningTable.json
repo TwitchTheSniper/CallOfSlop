@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Dining Table",
+  "description": "A restaurant table under a starched white cloth, with a silver candelabra and place settings.",
+  "collision": "solid",
+  "collider": [{"size": [1.44, 0.78, 0.94]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["white", "#c8c8c8"]}},
+  "parts": [
+    {"size": [1.4, 0.74, 0.9], "offset": [0, 0.37, 0], "color": "#e8e4d8"},
+    {"size": [1.44, 0.03, 0.94], "offset": [0, 0.755, 0], "color": "white"},
+    {"size": [0.06, 0.3, 0.06], "offset": [0, 0.92, 0], "color": "#c8c8c8"},
+    {"size": [0.36, 0.03, 0.03], "offset": [0, 1.0, 0], "color": "#c8c8c8"},
+    {
+      "size": [0.03, 0.1, 0.03],
+      "offset": [-0.16, 1.06, 0],
+      "color": "#f8f0d8",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.9, "color": "#ffd070", "glow": 0.8}
+    },
+    {
+      "size": [0.03, 0.1, 0.03],
+      "offset": [0.16, 1.06, 0],
+      "color": "#f8f0d8",
+      "anim": {"type": "flicker", "rate": 6, "duty": 0.9, "color": "#ffd070", "glow": 0.8}
+    },
+    {"size": [0.24, 0.01, 0.24], "offset": [-0.4, 0.776, 0.25], "color": "white"},
+    {"size": [0.24, 0.01, 0.24], "offset": [0.4, 0.776, -0.25], "color": "white"},
+    {"size": [0.06, 0.14, 0.06], "offset": [0.4, 0.84, 0.2], "color": "#d8e4e8"}
+  ]
+}

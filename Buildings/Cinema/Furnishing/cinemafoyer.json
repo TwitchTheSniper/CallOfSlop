@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cinemafoyer",
+  "description": "The Roxy's foyer round its candy counter and ticket booth: poster stands, arcade cabinets, a bench, palms, spilt popcorn.",
+  "items": [
+    {"props": ["Cinema Poster Stand"], "place": "wall", "count": [3, 4]},
+    {"props": ["Arcade Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.7},
+    {"props": ["Bench"], "place": "wall", "chance": 0.8},
+    {"props": ["Large Flower Pot", "Large Flower Pot", "Post Litter Bin"], "place": "corner", "count": [2, 3]},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Cinema Popcorn Spill"], "place": "floor", "count": [1, 2]},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2, "y": 0.4}
+  ]
+}

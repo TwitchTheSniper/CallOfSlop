@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bookshop Till Counter",
+  "description": "An oak shop counter with an old brass cash register, paper bags and a bowl of bookmarks.",
+  "collision": "solid",
+  "collider": [{"size": [1.64, 1.0, 0.64]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.6, 0.95, 0.6], "offset": [0, 0.475, 0], "color": "#7a5232", "material": "wood"},
+    {"size": [1.64, 0.05, 0.64], "offset": [0, 0.975, 0], "color": "#4a2e1c"},
+    {"size": [0.4, 0.28, 0.34], "offset": [-0.4, 1.14, -0.05], "color": "#b8902a", "material": "metal"},
+    {"size": [0.36, 0.12, 0.12], "offset": [-0.4, 1.34, -0.1], "color": "#a07a20"},
+    {"size": [0.3, 0.2, 0.06], "offset": [0.2, 1.1, -0.15], "color": "#c8a878"},
+    {"size": [0.16, 0.06, 0.16], "offset": [0.55, 1.03, 0.1], "color": "#e8dcc0"}
+  ]
+}

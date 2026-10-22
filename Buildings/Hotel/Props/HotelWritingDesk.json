@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hotel Writing Desk",
+  "description": "A walnut writing desk with a green-shaded lamp, hotel notepaper and the room service menu.",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 0.76, 0.55]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [1.1, 0.04, 0.55], "offset": [0, 0.74, 0], "color": "#5a3018", "material": "wood"},
+    {"size": [0.06, 0.72, 0.5], "offset": [-0.5, 0.36, 0], "color": "#5a3018"},
+    {"size": [0.36, 0.72, 0.5], "offset": [0.35, 0.36, 0], "color": "#5a3018", "material": "wood"},
+    {"size": [0.1, 0.03, 0.1], "offset": [-0.35, 0.775, -0.12], "color": "#c9a24a"},
+    {"size": [0.02, 0.26, 0.02], "offset": [-0.35, 0.9, -0.12], "color": "#c9a24a"},
+    {"size": [0.22, 0.08, 0.12], "offset": [-0.35, 1.06, -0.1], "color": "#1f6a3a"},
+    {"size": [0.2, 0.01, 0.28], "offset": [0.1, 0.765, 0.05], "color": "white"},
+    {"size": [0.12, 0.01, 0.2], "offset": [0.35, 0.765, 0.0], "color": "#6a1a24"}
+  ]
+}

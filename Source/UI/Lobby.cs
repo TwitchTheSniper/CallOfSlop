@@ -196,6 +196,7 @@ public sealed partial class Ui
                         {
                             BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
                             BotDifficulty.Normal => "A fair fight.",
+                            BotDifficulty.Insane => "Hard+ aim. In team modes they work as squads: one pins you down while another flanks you.",
                             _ => "Fast reactions, tight aim, they strafe and go for heads.",
                         });
                     }
@@ -517,6 +518,8 @@ public sealed partial class Ui
         ImGui.RadioButton("Normal"u8, ref v, 1);
         ImGui.SameLine();
         ImGui.RadioButton("Hard"u8, ref v, 2);
+        ImGui.SameLine();
+        ImGui.RadioButton("Insane"u8, ref v, 3);
         d = (BotDifficulty)v;
     }
 

@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bank Manager Desk",
+  "description": "A mahogany partner's desk with a green leather top, a brass lamp and a pen stand.",
+  "collision": "solid",
+  "collider": [{"size": [1.8, 0.79, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 150,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#4a2214", "#1f4a32"]}
+  },
+  "parts": [
+    {"size": [0.5, 0.74, 0.8], "offset": [-0.6, 0.37, 0], "color": "#4a2214", "material": "wood"},
+    {"size": [0.5, 0.74, 0.8], "offset": [0.6, 0.37, 0], "color": "#4a2214", "material": "wood"},
+    {"size": [0.7, 0.12, 0.8], "offset": [0, 0.68, 0], "color": "#4a2214", "material": "wood"},
+    {"size": [1.8, 0.05, 0.9], "offset": [0, 0.765, 0], "color": "#4a2214"},
+    {"size": [1.5, 0.006, 0.6], "offset": [0, 0.793, 0], "color": "#1f4a32"},
+    {"size": [0.12, 0.03, 0.12], "offset": [-0.7, 0.81, -0.25], "color": "#c9a24a"},
+    {"size": [0.03, 0.32, 0.03], "offset": [-0.7, 0.97, -0.25], "color": "#c9a24a"},
+    {"size": [0.28, 0.08, 0.12], "offset": [-0.7, 1.15, -0.2], "color": "#1f6a3a"},
+    {"size": [0.16, 0.06, 0.08], "offset": [0.5, 0.82, -0.2], "color": "black"},
+    {"size": [0.3, 0.02, 0.22], "offset": [0.0, 0.805, 0.05], "color": "white"}
+  ]
+}

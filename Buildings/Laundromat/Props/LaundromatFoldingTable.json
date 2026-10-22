@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laundromat Folding Table",
+  "description": "A long laminate folding table in avocado green with a pile of folded clothes and a basket.",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.9, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.05, 0.2], "colors": ["#7a8a3a", "#e8e8f0"]}},
+  "parts": [
+    {"size": [1.6, 0.04, 0.7], "offset": [0, 0.88, 0], "color": "#7a8a3a"},
+    {"size": [1.5, 0.08, 0.6], "offset": [0, 0.82, 0], "color": "#5a6a2a"},
+    {"size": [0.06, 0.8, 0.06], "offset": [-0.74, 0.4, -0.3], "color": "chrome"},
+    {"size": [0.06, 0.8, 0.06], "offset": [0.74, 0.4, -0.3], "color": "chrome"},
+    {"size": [0.06, 0.8, 0.06], "offset": [-0.74, 0.4, 0.3], "color": "chrome"},
+    {"size": [0.06, 0.8, 0.06], "offset": [0.74, 0.4, 0.3], "color": "chrome"},
+    {"size": [0.36, 0.1, 0.3], "offset": [-0.4, 0.95, 0.0], "color": "#e8e8f0"},
+    {"size": [0.34, 0.06, 0.28], "offset": [-0.4, 1.03, 0.0], "color": "#4a6ab0"},
+    {"size": [0.3, 0.08, 0.3], "offset": [0.1, 0.94, 0.05], "color": "#c8302a"},
+    {"size": [0.46, 0.24, 0.34], "offset": [0.5, 1.02, -0.05], "color": "#e0e0d8"}
+  ]
+}

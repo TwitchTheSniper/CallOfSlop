@@ -11,6 +11,8 @@ public sealed partial class Game
     private void BotDecide(Player p, BotBrain b, Player? target, bool visible, WeaponDef def, double now)
     {
         var prof = b.Profile;
+        if (SquadDecide(p, b, target, visible, now))
+            return; // Insane: the squad's order (SquadMember.cs)
         if (now >= b.NextObjectiveCheck)
         {
             b.NextObjectiveCheck = now + 1 + _rng.NextDouble() * 0.5;

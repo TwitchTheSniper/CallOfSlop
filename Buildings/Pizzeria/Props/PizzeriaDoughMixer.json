@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pizzeria Dough Mixer",
+  "description": "A heavy spiral dough mixer on a steel stand.",
+  "collision": "solid",
+  "collider": [{"size": [0.56, 1.4, 0.56]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.56, 0.6, 0.56], "offset": [0, 0.3, 0], "color": "#d8d8d0", "material": "metal"},
+    {"size": [0.5, 0.36, 0.5], "offset": [0, 0.78, 0.04], "color": "steel", "material": "metal"},
+    {"size": [0.3, 0.5, 0.36], "offset": [0, 1.15, -0.16], "color": "#d8d8d0", "material": "metal"},
+    {"size": [0.2, 0.1, 0.4], "offset": [0, 1.35, 0.02], "color": "#d8d8d0"},
+    {"size": [0.06, 0.24, 0.06], "offset": [0, 1.18, 0.12], "color": "steel"},
+    {"size": [0.08, 0.06, 0.02], "offset": [0.08, 0.5, 0.29], "color": "#c8202a"}
+  ]
+}

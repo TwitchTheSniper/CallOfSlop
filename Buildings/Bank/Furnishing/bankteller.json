@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bankteller",
+  "description": "Behind the Bank's counter: filing, a cash cart, a note safe, a coffee for the cashiers.",
+  "items": [
+    {"props": ["Bank Cash Cart"], "place": "wall"},
+    {"props": ["Filing Cabinet"], "place": "wall", "count": [1, 3]},
+    {"props": ["Safe"], "place": "wall"},
+    {"props": ["Archive Boxes", "Paper Shredder", "Water Cooler"], "place": "wall", "count": [1, 2]}
+  ]
+}
