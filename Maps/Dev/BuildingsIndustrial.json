@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Buildings Industrial",
-  "description": "The ten industrial buildings on one works road: factory, brewery, sawmill, substation, cold store, recycling plant, print shop, chemical lab, machine shop and a grain barn. Walk in, open doors (E), shoot out windows.",
+  "description": "The ten industrial buildings on one works road: factory, brewery, sawmill, substation, cold store, recycling plant, print shop, chemical lab, machine shop and a grain barn. Walk in, open doors (F), shoot out windows.",
   "author": "Call of Slop",
   "order": 958,
   "halfX": 95,

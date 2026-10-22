@@ -170,6 +170,7 @@ public sealed class Settings
         {
             if (!File.Exists(path))
                 return s;
+            var bindsVersion = 1; // files without a binds_version line have the first defaults (Keybinds.Migrate)
             foreach (var line in File.ReadAllLines(path))
             {
                 var kv = line.Split('=', 2);
@@ -229,8 +230,12 @@ public sealed class Settings
                                     && action < GameAction.COUNT && int.TryParse(v, out var code):
                         s.Binds[(int)action] = code;
                         break;
+                    case "binds_version" when int.TryParse(v, out var bv): bindsVersion = bv; break;
                 }
             }
+            var moved = Keybinds.Migrate(s.Binds, bindsVersion);
+            if (moved.Count > 0)
+                Console.WriteLine($"[settings] keybinds updated to the new defaults: {string.Join(", ", moved.Select(a => $"{a} -> {(Brutal.GlfwApi.GlfwKey)s.Bind(a)}"))}");
         }
         catch
         {
@@ -294,6 +299,7 @@ public sealed class Settings
                     $"head_bob={HeadBob}",
                     $"name_tags={NameTags}",
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
+                    $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ]
             );

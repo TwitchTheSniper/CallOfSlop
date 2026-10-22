@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Residential Street",
-  "description": "The ten residential buildings from the Buildings folder on one street: walk in, open doors (E), shoot out windows.",
+  "description": "The ten residential buildings from the Buildings folder on one street: walk in, open doors (F), shoot out windows.",
   "author": "Call of Slop",
   "order": 963,
   "halfX": 62,
