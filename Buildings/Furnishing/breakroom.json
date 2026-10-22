@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "breakroom",
+  "description": "A staff break room: a table and chairs, a counter with a kettle and microwave, a fridge, a vending machine.",
+  "items": [
+    {
+      "props": [
+        "Fridge"
+      ],
+      "place": "corner"
+    },
+    {
+      "id": "counter",
+      "props": [
+        "Kitchen Counter"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Kettle",
+        "Microwave",
+        "Coffee Maker"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 0.9,
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "id": "table",
+      "props": [
+        "Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Plastic Chair",
+        "Wooden Chair"
+      ],
+      "place": "around",
+      "of": "table",
+      "count": [
+        2,
+        4
+      ]
+    },
+    {
+      "props": [
+        "Vending Machine",
+        "Water Cooler"
+      ],
+      "place": "wall",
+      "chance": 0.7
+    },
+    {
+      "props": [
+        "Pedal Bin"
+      ],
+      "place": "corner"
+    }
+  ]
+}

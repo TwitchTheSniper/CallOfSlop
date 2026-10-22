@@ -137,6 +137,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (BuildingHash != 0) // buildings (MapBuildings.cs); maps without any keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (BuildingHash >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (BoundaryHash != 0) // maps without a "boundary" section keep their old fingerprint
             {
                 for (var i = 0; i < 4; i++)
@@ -173,7 +181,7 @@ public static partial class MapFile
             $"{m.Name}({string.Join(", ", m.GetParameters().Select(p => $"{TypeName(p.ParameterType)} {p.Name}{(p.HasDefaultValue ? $" = {Fmt(p.DefaultValue)}" : p.IsDefined(typeof(ParamArrayAttribute)) ? " = []" : "")}"))})");
 
     private static string TypeName(Type t) => t == typeof(float) ? "number" : t == typeof(int) ? "integer" : t == typeof(bool) ? "true/false"
-        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
+        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : t == typeof(float[]) ? "list of numbers" : t == typeof(MapJson?) ? "object" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
 
     // ---- Writing --------------------------------------------------------------------------
 
@@ -251,6 +259,8 @@ public static partial class MapFile
         string s => Str(s),
         string[] list => "[" + string.Join(", ", list.Select(Str)) + "]",
         Vector3 c => Col(c),
+        float[] nums => "[" + string.Join(", ", nums.Select(Num)) + "]",
+        MapJson j => j.Text,
         Map.Hole[] holes => "[" + string.Join(", ", holes.Select(h => $"{{ \"center\": {Num(h.Center)}, \"width\": {Num(h.Width)}, \"bottom\": {Num(h.Bottom)}, \"top\": {Num(h.Top)} }}")) + "]",
         ValueTuple<float, float, float, float> r => $"{{ \"x0\": {Num(r.Item1)}, \"z0\": {Num(r.Item2)}, \"x1\": {Num(r.Item3)}, \"z1\": {Num(r.Item4)} }}",
         _ => throw new MapFileException($"can't write a {v.GetType().Name}"),
@@ -346,6 +356,8 @@ public static partial class MapFile
                     throw new MapFileException($"{where}: unknown \"op\" {(Prop(op, "op") is { } n ? n.ToString() : "(missing)")}. Known: {string.Join(", ", Builders.Keys.OrderBy(k => k))}");
                 if (method.Name == nameof(Map.Prop) && Prop(op, "name") != null)
                     method = Builders[nameof(Map.PlaceProp)]; // { "op": "Prop", "name": "Trash Can", ... } is a prop from the Props folder
+                else if (method.Name == nameof(Map.Building) && Prop(op, "name") != null)
+                    method = Builders[nameof(Map.PlaceBuilding)]; // { "op": "Building", "name": "Small House", "at": [...] } is a building from the Buildings folder
                 var ps = method.GetParameters();
                 var args = new object?[ps.Length];
                 for (var k = 0; k < ps.Length; k++)
@@ -435,6 +447,10 @@ public static partial class MapFile
                 ? new Map.Hole(Num(h[0], where), Num(h[1], where), Num(h[2], where), Num(h[3], where))
                 : new Map.Hole(Need(h, "center", where), Need(h, "width", where), Need(h, "bottom", where), Need(h, "top", where))).ToArray();
         }
+        if (t == typeof(float[]))
+            return e.ValueKind == JsonValueKind.Array ? e.EnumerateArray().Select(x => Num(x, where)).ToArray() : throw new MapFileException($"{where}: expected a list of numbers, got {e}");
+        if (t == typeof(MapJson?) || t == typeof(MapJson))
+            return e.ValueKind == JsonValueKind.Null ? null : e.ValueKind == JsonValueKind.Object ? new MapJson(JsonSerializer.Serialize(e)) : throw new MapFileException($"{where}: expected an object {{ ... }}, got {e}");
         if (Nullable.GetUnderlyingType(t) == typeof(ValueTuple<float, float, float, float>))
         {
             if (e.ValueKind == JsonValueKind.Null)

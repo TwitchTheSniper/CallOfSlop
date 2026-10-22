@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dining",
+  "description": "A dining room: a table in the middle with chairs round it, a sideboard (chest of drawers) and a cabinet against the walls.",
+  "items": [
+    {
+      "id": "table",
+      "props": [
+        "Dining Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Dining Chair"
+      ],
+      "place": "around",
+      "of": "table",
+      "count": [
+        4,
+        6
+      ]
+    },
+    {
+      "props": [
+        "Stacked Plates"
+      ],
+      "place": "on",
+      "of": "table",
+      "y": 0.77,
+      "chance": 0.8
+    },
+    {
+      "id": "side",
+      "props": [
+        "Chest of Drawers",
+        "Bookshelf"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ],
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Table Lamp"
+      ],
+      "place": "on",
+      "of": "side",
+      "y": 0.98,
+      "chance": 0.5
+    },
+    {
+      "props": [
+        "Grandfather Clock",
+        "Office Plant",
+        "Large Flower Pot"
+      ],
+      "place": "corner"
+    },
+    {
+      "props": [
+        "Rug"
+      ],
+      "place": "centre",
+      "chance": 0.5
+    }
+  ]
+}

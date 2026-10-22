@@ -1,0 +1,61 @@
+// The template building: copy this folder to Buildings/<YourName>/, rename "name", and edit.
+// Folders starting with "_" are not loaded. See Buildings/README.md for every key.
+{
+  "format": "call-of-slop-building/1",
+  "name": "Template Cottage",
+  "theme": "Example: a whitewashed stone cottage with a blue door and a slate roof; plain country furniture",
+  "category": "residential",
+  "description": "Two rooms: a kitchen-living room with the front door and a bedroom behind.",
+  "author": "Your Name",
+  "seed": 1,
+
+  // Building coordinates: metres, +X east, +Z south. The front of the building faces +Z.
+  // Room rects run to the wall centre lines; walls are wallThickness thick, centred on the rect edges.
+  "wallThickness": 0.25,
+  "storeyHeight": 2.8,
+
+  // Surfaces: a colour ("#rrggbb", [r, g, b], a colour name, or "$key" from the palette) and a material
+  // (brick, concrete, wood, metal, tiles, dirt, grid or none).
+  "exterior": { "color": "$wall", "material": "concrete" },
+  "interior": { "color": "$interior", "material": "none" },
+  "floor": { "color": "$floor", "material": "wood" },
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+
+  // The first palette is the default; a map picks another with "variant": { "palette": "..." }.
+  "palettes": {
+    "whitewash": { "wall": "#e8e4d8", "interior": "#efe6d2", "floor": "#7a5a3a", "ceiling": "#f4f0e6", "trim": "#5a6a7a", "door": "#2f5d9a", "roof": "#4a4e56" },
+    "stone":     { "wall": "#8a8478", "interior": "#e4dcc8", "floor": "#6a4e34", "ceiling": "#efeadf", "trim": "#3a3a36", "door": "#7a2b24", "roof": "#3e3a36" }
+  },
+
+  "floors": [
+    {
+      // Windows along every exterior wall (rooms can override or switch them off with "windows": false).
+      "autoWindows": { "spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2 },
+      "rooms": [
+        { "id": "living", "type": "living", "rect": [-4, -0.5, 4, 3] },
+        { "id": "kitchen", "type": "kitchen", "rect": [-4, -3, 0, -0.5], "floor": { "color": "#c8c0ae", "material": "tiles" } },
+        { "id": "bedroom", "type": "bedroom", "rect": [0, -3, 4, -0.5],
+          // Explicit props: placed first, then the room type's rule (Buildings/Furnishing/bedroom.json) adds the rest.
+          "props": [ { "name": "Wardrobe", "wall": "E", "along": 0 } ] }
+      ],
+      // "at" is a point on a wall's centre line; the opening is centred there.
+      "openings": [
+        { "type": "door", "at": [1.5, 3], "width": 1.0, "front": true },
+        { "type": "door", "at": [-2, -0.5], "width": 0.9 },
+        { "type": "door", "at": [2, -0.5], "width": 0.9, "hinge": "right" },
+        { "type": "window", "at": [-2, 3], "width": 1.6, "sill": 0.8, "head": 2.2 }
+      ]
+    }
+  ],
+  "roof": { "type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.4, "color": { "color": "$roof", "material": "tiles" } },
+  "extras": [
+    { "type": "porch", "rect": [0.3, 3.13, 2.7, 4.3], "height": 2.4, "color": "$trim" },
+    { "type": "prop", "name": "Template Milk Churn", "at": [3.2, 3.6] },
+    { "type": "block", "min": [-3.3, 2.4, -2.2], "max": [-2.6, 5.2, -1.5], "color": { "color": "$wall", "material": "brick" } }
+  ],
+  "anchors": [
+    { "type": "spawn", "name": "living room", "at": [-2, 1.5] }
+  ]
+}

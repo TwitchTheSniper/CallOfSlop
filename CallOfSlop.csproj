@@ -44,6 +44,8 @@
     <None Update="Parts\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Map props (trash cans, crates, litter...): one JSON file each, in category folders (see Props\README.md). -->
     <None Update="Props\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Buildings for the Building map op: one folder each (building.json, its own Props and Furnishing), plus shared Furnishing rules (see Buildings\README.md). -->
+    <None Update="Buildings\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Models (.glb / .gltf) for the Mesh and Model map ops (see Models\README.md). -->
     <None Update="Models\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Cosmetics catalog (prestige hats): Cosmetics\hats.json (see README, Prestige). -->

@@ -37,6 +37,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 22: game modes are modules (Source/Game/Modes): the mode state no longer carries the hill and the flags for every
     //     mode; after the team picks comes the active mode's own tail (a version byte, a U16 length, then whatever the
     //     mode's GameModeModule.WriteState writes: KotH 7 bytes, CTF 36, others none). Game mode 6 is the Dev-only template.
+    // 23: buildings (Buildings folder, the Building op with a "name"): BuildingUse / BuildingEvent / BuildingState at the end
+    //     of Msg (doors open, shut, take damage and break, windows break; the join-in-progress state), the Doors physics layer
     // 24: prestige hats (GameCosmetics.cs): the Hello carries prestige and level after the name; every roster entry ends
     //     with prestige, level and hat (3 bytes). (23 is taken by the buildings branch.)
     // 25: cosmetic loadout (GameCosmeticLoadout.cs): Msg.Loadout ends with the hat byte (after the kill streaks); the

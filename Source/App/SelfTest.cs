@@ -62,6 +62,7 @@ public static partial class SelfTest
             Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
+            Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Flag pool", CheckFlagPool); // SelfTestFlags.cs: flag designs (Props/Flags), flag props flying them, random picks, overrides, map pools
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
@@ -86,6 +87,7 @@ public static partial class SelfTest
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
             Section("Map vote: humans only", CheckMapVoteHumansOnly); // SelfTestMapVote.cs: bots don't vote, ties, early end
+            Section("Map vote: player fit", CheckMapVotePlayerFit); // SelfTestMapVote.cs: never a map too small for the humans here
             Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
             Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
             Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)

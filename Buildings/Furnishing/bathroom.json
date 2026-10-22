@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bathroom",
+  "description": "A bathroom: bath or shower in the far corner, toilet and basin against the walls, a laundry basket, a mirror.",
+  "items": [
+    {
+      "props": [
+        "Bathtub",
+        "Shower Cubicle"
+      ],
+      "place": "corner",
+      "prefer": "far"
+    },
+    {
+      "props": [
+        "Toilet"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Bathroom Sink"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Laundry Basket",
+        "Mop and Bucket",
+        "Rubber Duck"
+      ],
+      "place": "floor",
+      "count": [
+        0,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Radiator"
+      ],
+      "place": "wall",
+      "chance": 0.5
+    }
+  ]
+}

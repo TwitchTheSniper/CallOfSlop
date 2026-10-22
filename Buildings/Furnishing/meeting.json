@@ -1,0 +1,63 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "meeting",
+  "description": "A meeting room: a conference table with chairs round it, a whiteboard, a plant.",
+  "items": [
+    {
+      "id": "table",
+      "props": [
+        "Conference Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Office Chair"
+      ],
+      "place": "around",
+      "of": "table",
+      "count": [
+        4,
+        6
+      ],
+      "distance": 0.0
+    },
+    {
+      "props": [
+        "Laptop",
+        "Desk Phone",
+        "Book Pile"
+      ],
+      "place": "on",
+      "of": "table",
+      "y": 0.77,
+      "count": [
+        1,
+        3
+      ]
+    },
+    {
+      "props": [
+        "Whiteboard"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Office Plant"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Water Cooler"
+      ],
+      "place": "corner",
+      "chance": 0.5
+    }
+  ]
+}

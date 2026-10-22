@@ -1,0 +1,64 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Ruined House",
+  "theme": "Bombed-out 1930s townhouse: scorched brick, a collapsed roof and half the upper floor gone, breaches in the walls, rubble and wrecked furniture",
+  "category": "special",
+  "description": "A burnt-out two-storey house: no roof, half the upper floor collapsed, holes blown through the walls, rubble everywhere; the stairs still climb to what's left.",
+  "author": "Call of Slop",
+  "seed": 101,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.0,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "scorched brick": {"wall": "#5e3a30", "interior": "#8a8072", "floor": "#4a3a2e", "ceiling": "#6e665c", "trim": "#3a3530", "door": "#3e2e22"},
+    "grey stone": {"wall": "#6e6a64", "interior": "#8c8478", "floor": "#4e4438", "ceiling": "#706a62", "trim": "#3c3a36", "door": "#40342a"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {"id": "front room", "type": "ruin", "rect": [-4.5, 0, 0.5, 4]},
+        {"id": "hall", "type": "ruin", "rect": [0.5, -4, 2.5, 4]},
+        {"id": "back room", "type": "ruin", "rect": [-4.5, -4, 0.5, 0]},
+        {"id": "kitchen", "type": "ruin", "rect": [2.5, -4, 4.5, 4]}
+      ],
+      "openings": [
+        {"type": "arch", "at": [1.5, 4], "width": 1.0, "front": true},
+        {"type": "hole", "at": [-2.5, 4], "width": 2.2, "sill": 0.4, "head": 2.4},
+        {"type": "hole", "at": [-4.5, -2.0], "width": 1.6, "sill": 0.3, "head": 1.9},
+        {"type": "arch", "at": [0.5, 3.1], "width": 0.9},
+        {"type": "arch", "at": [0.5, -3.1], "width": 0.9},
+        {"type": "door", "at": [2.5, 3.1], "width": 0.9, "open": true},
+        {"type": "hole", "at": [4.5, 2.0], "width": 1.0, "sill": 0.9, "head": 2.1},
+        {"type": "hole", "at": [3.5, -4], "width": 0.9, "sill": 1.0, "head": 2.0},
+        {"type": "door", "at": [1.5, -4], "width": 0.9, "material": "wood"},
+        {"type": "hole", "at": [-1.0, -4], "width": 1.2, "sill": 0.9, "head": 2.1}
+      ]
+    },
+    {
+      "rooms": [{"id": "landing", "type": "ruin", "rect": [0.5, -4, 2.5, 4]}, {"id": "bedroom", "type": "ruin", "rect": [-4.5, -4, 0.5, 4]}],
+      "openings": [
+        {"type": "arch", "at": [0.5, -3.1], "width": 0.9},
+        {"type": "hole", "at": [-2.0, 4], "width": 1.2, "sill": 0.9, "head": 2.1},
+        {"type": "hole", "at": [-4.5, 1.0], "width": 2.4, "sill": 0.2, "head": 2.6},
+        {"type": "hole", "at": [-1.0, -4], "width": 1.2, "sill": 0.9, "head": 2.1}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [0.7, -2.4, 2.3, 2.0], "dir": "-z", "railing": false}],
+  "roof": {"type": "none"},
+  "extras": [
+    {"type": "prop", "name": "Rubble Pile", "at": [3.6, -1.2]},
+    {"type": "prop", "name": "Rubble Pile", "at": [-2.0, 5.3], "yaw": 40},
+    {"type": "prop", "name": "Brick Pile", "at": [-5.6, -1.0], "yaw": 80},
+    {"type": "prop", "name": "Burnt Out Car", "at": [-1.0, 8.0], "yaw": 15},
+    {"type": "prop", "name": "Loose Bricks", "at": [1.2, 5.0]},
+    {"type": "block", "min": [2.4, 3.0, -4.15], "max": [4.65, 4.2, -3.85], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [4.35, 3.0, -4.0], "max": [4.65, 3.9, 0.5], "color": {"color": "$wall", "material": "brick"}}
+  ],
+  "anchors": [{"type": "spawn", "name": "back room", "at": [-2, -2]}, {"type": "hill", "name": "upstairs", "floor": 1, "at": [-2, 0]}]
+}

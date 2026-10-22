@@ -1,0 +1,59 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Gas Station",
+  "theme": "Roadside 1980s gas station: white walls with a red stripe, a big red and white canopy over four pumps, a cramped kiosk shop",
+  "category": "commercial",
+  "description": "A small kiosk shop with a counter, a store room and a WC, and a canopy over two pump islands out front.",
+  "author": "Call of Slop",
+  "seed": 81,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.0,
+  "exterior": {"color": "$wall", "material": "none"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red and white": {"wall": "#eeeeea", "interior": "#f2efe4", "floor": "#d6d4cc", "ceiling": "#f6f6f2", "trim": "#c8102e", "door": "#4a4a4a", "roof": "#8a8a8a"},
+    "blue and yellow": {"wall": "#e8e4d2", "interior": "#eef0f2", "floor": "#c8ccd0", "ceiling": "#f6f6f2", "trim": "#1f4fa0", "door": "#3a3a3a", "roof": "#7a7a7a"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "kiosk",
+          "type": "kiosk",
+          "rect": [-4, -0.5, 4, 3],
+          "autoWindows": {"spacing": 2.4, "width": 1.8, "sill": 0.7, "head": 2.4, "health": 15}
+        },
+        {"id": "store", "type": "storage", "rect": [-4, -3, 1.5, -0.5], "floor": {"color": "#9a968c", "material": "concrete"}, "windows": false},
+        {"id": "wc", "type": "wc", "rect": [1.5, -3, 4, -0.5], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [1.5, 3], "width": 1.1, "front": true, "material": "glass", "health": 40},
+        {"type": "door", "at": [-1.25, -0.5], "width": 0.9},
+        {"type": "door", "at": [2.75, -0.5], "width": 0.9},
+        {"type": "door", "at": [-4, -1.75], "width": 0.9, "material": "metal"}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "block", "min": [-4.15, 2.3, 3.12], "max": [4.15, 2.9, 3.25], "color": "$trim"},
+    {"type": "awning", "rect": [-6.5, 5.5, 6.5, 13.0], "height": 4.6, "color": "$trim", "posts": true},
+    {"type": "block", "min": [-6.6, 4.0, 5.4], "max": [6.6, 4.48, 13.1], "color": "#f2f2ee"},
+    {"type": "block", "min": [-3.4, 0, 8.6], "max": [-1.6, 0.18, 10.0], "color": {"color": "#a8a8a2", "material": "concrete"}},
+    {"type": "block", "min": [1.6, 0, 8.6], "max": [3.4, 0.18, 10.0], "color": {"color": "#a8a8a2", "material": "concrete"}},
+    {"type": "prop", "name": "Fuel Pump", "at": [-2.5, 0.18, 9.0], "yaw": 0},
+    {"type": "prop", "name": "Fuel Pump", "at": [-2.5, 0.18, 9.6], "yaw": 180},
+    {"type": "prop", "name": "Fuel Pump", "at": [2.5, 0.18, 9.0], "yaw": 0},
+    {"type": "prop", "name": "Fuel Pump", "at": [2.5, 0.18, 9.6], "yaw": 180},
+    {"type": "prop", "name": "Pylon Sign", "at": [7.8, 4.0], "yaw": 0},
+    {"type": "prop", "name": "Chest Freezer", "at": [-3.0, 3.75], "yaw": 180},
+    {"type": "prop", "name": "Jerry Can", "at": [-2.0, 3.6]},
+    {"type": "prop", "name": "Air Duct Riser", "at": [2.5, 0, -1.5], "onRoof": true},
+    {"type": "prop", "name": "Sedan", "at": [-5.0, 9.3], "yaw": 0}
+  ],
+  "anchors": [{"type": "spawn", "name": "store room", "at": [-1.5, -1.8]}, {"type": "flag", "name": "pumps", "at": [0, 9.3]}]
+}

@@ -425,7 +425,7 @@ public sealed partial class Map
     public bool IsZombieBox(int i) => (uint)i < (uint)_zombieBox.Length && _zombieBox[i];
 
     /// <summary>Is <see cref="Solid"/>[i] a window opening: it blocks bodies (players, zombies, the nav graph) but not bullets?</summary>
-    public bool IsClipBox(int i) => (uint)i < (uint)_clipBox.Length && _clipBox[i];
+    public bool IsClipBox(int i) => (uint)i < (uint)_clipBox.Length && _clipBox[i] || IsBuildingGlass(i); // (and building window glass, MapBuildings.cs)
 
     /// <summary>Adds a Zombies box to <see cref="Solid"/> (not recorded as an op: the "zombies" section writes itself back).</summary>
     internal int AddZombieBox(Box b, Vector3 color, bool clip)

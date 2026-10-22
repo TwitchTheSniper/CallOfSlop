@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "diner",
+  "description": "The Diner's dining room: booths along the window wall, a counter run with stools along the back, a jukebox, a vending machine.",
+  "items": [
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [5, 7], "prefer": "far"},
+    {"props": ["Bar Stool"], "place": "front", "of": "counter", "count": [5, 7], "distance": 0.25},
+    {"props": ["Stacked Plates", "Coffee Maker", "Toaster"], "place": "on", "of": "counter", "y": 0.9, "count": [3, 5]},
+    {"props": ["Diner Booth"], "place": "wall", "count": [3, 5], "prefer": "near"},
+    {"props": ["Jukebox"], "place": "corner"},
+    {"props": ["Glowing Vending Machine"], "place": "wall", "chance": 0.8},
+    {"props": ["Ceiling Fan"], "place": "ceiling", "count": 2},
+    {"props": ["Pedal Bin", "Office Plant"], "place": "corner", "count": [1, 2]}
+  ]
+}
