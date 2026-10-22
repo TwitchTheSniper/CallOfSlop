@@ -1,0 +1,154 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Modern Villa",
+  "theme": "2010s minimalist villa: white render cubes, black frames, floor-to-ceiling glass, flat roofs and a pool; polished concrete and oak floors, grey and white designer furniture",
+  "category": "residential",
+  "description": "A two-storey modern villa: entry, study, cinema room, a great room with an open staircase, dining and a big island kitchen; a gallery, master suite and guest room upstairs with a roof terrace; a pool and sun deck in front.",
+  "author": "Call of Slop",
+  "seed": 108,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "none"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "white render": {
+      "wall": "#f2f1ec",
+      "interior": "#f4f3ef",
+      "floor": "#c8a070",
+      "ceiling": "#fafaf8",
+      "trim": "#1c1c1e",
+      "door": "#1c1c1e",
+      "roof": "#8a8a88",
+      "deck": "#c8b8a0"
+    },
+    "charcoal": {
+      "wall": "#3a3a3e",
+      "interior": "#eeede8",
+      "floor": "#a07850",
+      "ceiling": "#fafaf8",
+      "trim": "#c8a070",
+      "door": "#c8a070",
+      "roof": "#2a2a2c",
+      "deck": "#9a8a78"
+    },
+    "sandstone": {
+      "wall": "#d8c8a8",
+      "interior": "#f4efe4",
+      "floor": "#b88a60",
+      "ceiling": "#fafaf8",
+      "trim": "#2a2a2c",
+      "door": "#2a2a2c",
+      "roof": "#7a7268",
+      "deck": "#e0d8c8"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.8, "sill": 0.6, "head": 2.8},
+      "rooms": [
+        {"id": "entry", "type": "hall", "rect": [-3, 0, 0, 5], "floor": {"color": "#b8b6b0", "material": "concrete"}},
+        {"id": "office", "type": "office", "rect": [-8, 0, -3, 5], "floor": {"color": "$floor", "material": "wood"}},
+        {"id": "media", "type": "media", "rect": [-8, -5, -3, 0], "floor": {"color": "#3a3a40", "material": "none"}, "wall": "#3a3c44"},
+        {"id": "back", "type": "corridor", "rect": [-3, -5, 0, 0], "floor": {"color": "#b8b6b0", "material": "concrete"}},
+        {
+          "id": "living",
+          "type": "living",
+          "rect": [0, 0, 8, 5],
+          "floor": {"color": "#b8b6b0", "material": "concrete"},
+          "openTo": ["kitchen"],
+          "windows": false,
+          "props": [{"name": "Modern Villa Media Wall", "wall": "E", "along": 0.3}, {"name": "Modern Villa Sectional Sofa", "at": [0.2, 0.3], "yaw": 270}]
+        },
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [0, -5, 8, 0],
+          "floor": {"color": "#b8b6b0", "material": "concrete"},
+          "autoWindows": {"spacing": 2.4, "width": 1.6, "sill": 1.2, "head": 2.9}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, 5], "width": 1.2, "front": true, "material": "glass", "color": "#1c1c1e"},
+        {"type": "arch", "at": [0, 2.5], "width": 1.6, "head": 2.8},
+        {"type": "door", "at": [-3, 2.5], "width": 0.9},
+        {"type": "door", "at": [-1.5, 0], "width": 0.9},
+        {"type": "door", "at": [-3, -2.5], "width": 0.9},
+        {"type": "door", "at": [0, -2.5], "width": 0.9},
+        {"type": "door", "at": [-1.5, -5], "width": 1.0, "material": "glass", "color": "#1c1c1e"},
+        {"type": "door", "at": [6.0, 5], "width": 1.6, "material": "glass", "color": "#1c1c1e"},
+        {"type": "window", "at": [1.5, 5], "width": 2.4, "sill": 0.15, "head": 2.9},
+        {"type": "window", "at": [4.0, 5], "width": 1.9, "sill": 0.15, "head": 2.9}
+      ]
+    },
+    {
+      "height": 3.0,
+      "autoWindows": {"spacing": 2.6, "width": 1.8, "sill": 0.6, "head": 2.6},
+      "rooms": [
+        {"id": "gallery", "type": "corridor", "rect": [0, -1, 8, 2], "floor": {"color": "$floor", "material": "wood"}},
+        {
+          "id": "master",
+          "type": "bedroom",
+          "rect": [3, -5, 8, -1],
+          "floor": {"color": "$floor", "material": "wood"},
+          "autoWindows": {"spacing": 2.6, "width": 1.8, "sill": 0.9, "head": 2.6}
+        },
+        {
+          "id": "ensuite",
+          "type": "bathroom",
+          "rect": [0, -5, 3, -1],
+          "floor": {"color": "#d8d6d0", "material": "tiles"},
+          "wall": "#e8e6e2",
+          "autoWindows": {"spacing": 2.0, "width": 1.2, "sill": 1.4, "head": 2.6}
+        },
+        {
+          "id": "guest",
+          "type": "bedroom",
+          "rect": [-3, -5, 0, 2],
+          "floor": {"color": "$floor", "material": "wood"},
+          "autoWindows": {"spacing": 2.6, "width": 1.8, "sill": 0.9, "head": 2.6}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [4.6, -1], "width": 0.9},
+        {"type": "door", "at": [3, -4.0], "width": 0.9},
+        {"type": "door", "at": [0, -0.35], "width": 0.9},
+        {"type": "door", "at": [6.5, 2], "width": 1.2, "material": "glass", "color": "#1c1c1e"}
+      ]
+    }
+  ],
+  "stairs": [{"floor": 0, "rect": [1.1, 0.3, 4.1, 1.4], "dir": "+x", "color": {"color": "#c8c6c0", "material": "concrete"}}],
+  "roof": {"type": "flat", "parapet": 0.3, "color": {"color": "$roof", "material": "concrete"}},
+  "extras": [
+    {"type": "block", "min": [-3.2, 0.0, 5.15], "max": [9.0, 0.1, 6.7], "color": {"color": "$deck", "material": "wood"}},
+    {"type": "block", "min": [-3.2, 0.0, 12.3], "max": [9.0, 0.1, 13.2], "color": {"color": "$deck", "material": "wood"}},
+    {"type": "block", "min": [-3.2, 0.0, 6.7], "max": [-0.3, 0.1, 12.3], "color": {"color": "$deck", "material": "wood"}},
+    {"type": "block", "min": [8.3, 0.0, 6.7], "max": [9.0, 0.1, 12.3], "color": {"color": "$deck", "material": "wood"}},
+    {"type": "block", "min": [0.0, 0.0, 7.0], "max": [8.0, 0.06, 12.0], "color": {"color": "#3ab8d8", "material": "tiles"}},
+    {"type": "block", "min": [-0.3, 0.1, 6.7], "max": [8.3, 0.35, 7.0], "color": {"color": "#e8e6e0", "material": "concrete"}},
+    {"type": "block", "min": [-0.3, 0.1, 12.0], "max": [8.3, 0.35, 12.3], "color": {"color": "#e8e6e0", "material": "concrete"}},
+    {"type": "block", "min": [-0.3, 0.1, 7.0], "max": [0.0, 0.35, 12.0], "color": {"color": "#e8e6e0", "material": "concrete"}},
+    {"type": "block", "min": [8.0, 0.1, 7.0], "max": [8.3, 0.35, 12.0], "color": {"color": "#e8e6e0", "material": "concrete"}},
+    {"type": "prop", "name": "Modern Villa Pool Lounger", "at": [-1.2, 8.5], "yaw": 0},
+    {"type": "prop", "name": "Modern Villa Pool Lounger", "at": [-2.3, 8.5], "yaw": 0},
+    {"type": "prop", "name": "Modern Villa Parasol", "at": [-2.6, 10.8], "yaw": 90},
+    {"type": "prop", "name": "Large Flower Pot", "at": [8.6, 5.8]},
+    {"type": "prop", "name": "Giant Rubber Duck", "at": [4.0, 0.06, 9.5], "yaw": 200},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-3.0, 5.8]},
+    {"type": "prop", "name": "Large Flower Pot", "at": [-0.4, 5.8]},
+    {"type": "prop", "name": "SUV", "at": [-6.0, 8.0], "yaw": 90},
+    {"type": "prop", "name": "Solar Panel", "at": [-5.5, 0, -2.5], "yaw": 180, "onRoof": true},
+    {"type": "prop", "name": "Solar Panel", "at": [-5.5, 0, 1.5], "yaw": 180, "onRoof": true},
+    {"type": "prop", "name": "Split AC Unit", "at": [6.0, 0, -3.5], "yaw": 0, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "great room", "at": [5.0, 3.2]},
+    {"type": "spawn", "name": "cinema", "at": [-5.5, -2.5]},
+    {"type": "spawn", "name": "master suite", "floor": 1, "at": [5.5, -3.0]},
+    {"type": "point", "name": "pool", "at": [4.0, 9.5]},
+    {"type": "hill", "name": "roof terrace", "floor": 1, "at": [3.0, 3.5]}
+  ]
+}

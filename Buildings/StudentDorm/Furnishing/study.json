@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "study",
+  "description": "Dorm study room: long tables, plastic chairs, a whiteboard and bookshelves.",
+  "items": [
+    {"id": "t", "props": ["Conference Table"], "place": "centre"},
+    {"props": ["Plastic Chair"], "place": "around", "of": "t", "count": [4, 6]},
+    {"props": ["Laptop", "Book Pile"], "place": "on", "of": "t", "count": [1, 3]},
+    {"props": ["Whiteboard"], "place": "wall"},
+    {"props": ["Bookshelf"], "place": "wall"}
+  ]
+}

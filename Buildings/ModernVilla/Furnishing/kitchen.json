@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Modern villa kitchen: a quartz island with bar stools, flush white units, a steel fridge and a coffee machine.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall", "count": [2, 3]},
+    {"id": "s", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Dishwasher"], "place": "beside", "of": "s"},
+    {"props": ["Coffee Maker", "Knife Block", "Kettle"], "place": "on", "of": "c", "y": 0.9, "count": [2, 3]},
+    {"id": "isl", "props": ["Modern Villa Kitchen Island"], "place": "centre"},
+    {"props": ["Bar Stool"], "place": "front", "of": "isl", "count": [2, 3], "distance": 0.15},
+    {"id": "dt", "props": ["Dining Table"], "place": "floor"},
+    {"props": ["Dining Chair"], "place": "around", "of": "dt", "count": [4, 6]}
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Farmhouse Sewing Machine",
+  "description": "A treadle sewing machine on its cast-iron stand, with a spool of red thread.",
+  "collision": "solid",
+  "collider": [{"size": [0.9, 0.9, 0.45]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.9, 0.04, 0.45], "offset": [0, 0.76, 0], "color": "#6a4024", "material": "wood"},
+    {"size": [0.06, 0.72, 0.4], "offset": [-0.38, 0.36, 0], "color": "#26262a"},
+    {"size": [0.06, 0.72, 0.4], "offset": [0.38, 0.36, 0], "color": "#26262a"},
+    {"size": [0.6, 0.04, 0.3], "offset": [0, 0.14, 0], "color": "#26262a"},
+    {"size": [0.4, 0.12, 0.16], "offset": [0.05, 0.84, -0.02], "color": "#141414"},
+    {"size": [0.1, 0.26, 0.14], "offset": [0.2, 0.91, -0.02], "color": "#141414"},
+    {"size": [0.36, 0.08, 0.12], "offset": [0.05, 1.02, -0.02], "color": "#141414"},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.12, 1.09, -0.02], "color": "#c8102e"},
+    {"size": [0.4, 0.03, 0.03], "offset": [0.05, 0.855, 0.065], "color": "#c8a040"}
+  ]
+}

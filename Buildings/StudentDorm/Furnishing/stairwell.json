@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "stairwell",
+  "description": "Dorm stairwell: a notice board, a recycling bin and somebody's abandoned bike.",
+  "items": [
+    {"props": ["Student Dorm Notice Board"], "place": "wall"},
+    {"props": ["Recycling Bin", "Post Litter Bin"], "place": "corner"},
+    {"props": ["Bicycle", "Cardboard Box", "Soda Cans"], "place": "floor", "chance": 0.7}
+  ]
+}

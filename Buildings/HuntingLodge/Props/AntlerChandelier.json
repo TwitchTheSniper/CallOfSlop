@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Antler Chandelier",
+  "description": "A chandelier made of shed antlers with six glowing candle bulbs.",
+  "collision": "cosmetic",
+  "fadeDistance": 60,
+  "breakable": {"health": 15, "breakBy": "all", "sound": "glass", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.04, 0.3, 0.04], "offset": [0, 0.45, 0], "color": "#2a2a2a"},
+    {"size": [1.1, 0.06, 0.08], "offset": [0, 0.29, 0], "color": "#e8dcc0", "rotation": [0, 0, 8]},
+    {"size": [0.08, 0.06, 1.1], "offset": [0, 0.29, 0], "color": "#e8dcc0", "rotation": [8, 0, 0]},
+    {"size": [0.7, 0.06, 0.08], "offset": [0, 0.33, 0], "color": "#d8ccb0", "rotation": [0, 45, 0]},
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [0.5, 0.35, 0],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    },
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [-0.5, 0.35, 0],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    },
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [0, 0.35, 0.5],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    },
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [0, 0.35, -0.5],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    },
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [0.25, 0.35, 0.25],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    },
+    {
+      "size": [0.05, 0.1, 0.05],
+      "offset": [-0.25, 0.35, -0.25],
+      "color": "#fff0c0",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.92, "color": "#ffe0a0", "glow": 1.2}
+    }
+  ]
+}

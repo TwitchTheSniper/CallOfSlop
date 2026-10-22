@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bunkroom",
+  "description": "Hunting lodge bunk room: log bunks for the hunting party, footlockers and drying socks.",
+  "items": [
+    {"props": ["Hunting Lodge Log Bunk"], "place": "wall", "count": [2, 3], "prefer": "far"},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Duffel Bag", "Backpack", "Laundry Basket", "Suitcase"], "place": "floor", "count": [2, 3]}
+  ]
+}

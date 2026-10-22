@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bachelorkitchen",
+  "description": "Duplex bachelor kitchen: a fridge, a microwave, unwashed dishes and a folding table.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall"},
+    {"id": "s", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Microwave", "Stacked Plates", "Cooking Pot"], "place": "on", "of": "c", "y": 0.9, "count": [1, 2]},
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Plastic Chair"], "place": "around", "of": "t", "count": [1, 2]},
+    {"props": ["Duplex Pizza Boxes"], "place": "on", "of": "t", "y": 0.75},
+    {"props": ["Trash Bag", "Soda Cans", "Duplex Pizza Boxes"], "place": "floor", "count": [2, 3]}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dining",
+  "description": "Ranch House dining nook: a formica dinette, a sideboard, a starburst lamp.",
+  "items": [
+    {"id": "table", "props": ["Ranch House Dinette Table"], "place": "centre"},
+    {"props": ["Ranch House Dinette Chair"], "place": "around", "of": "table", "count": [3, 4]},
+    {"id": "side", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Table Lamp"], "place": "on", "of": "side", "chance": 0.7},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner"}
+  ]
+}

@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Mobile Home",
+  "theme": "1980s single-wide trailer: beige aluminium siding with a brown stripe, skirting, a tin roof; wood-veneer panelling, brown shag, a plaid sofa, beer cans, flamingos in the yard",
+  "category": "residential",
+  "description": "A single-wide mobile home: a bedroom, a narrow hallway and bathroom, a living room with a wood stove and a galley kitchen; a wooden deck, lawn chairs, a barbecue, a propane tank and a car up on blocks outside.",
+  "author": "Call of Slop",
+  "seed": 104,
+  "wallThickness": 0.15,
+  "storeyHeight": 2.5,
+  "doorHeight": 2.0,
+  "exterior": {"color": "$wall", "material": "metal"},
+  "interior": {"color": "$panel", "material": "wood"},
+  "floor": {"color": "$floor", "material": "none"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "beige and brown": {
+      "wall": "#d8ccaa",
+      "panel": "#8a6a44",
+      "floor": "#a89068",
+      "carpet": "#6a4a2a",
+      "ceiling": "#ece4d0",
+      "trim": "#6a4a2a",
+      "door": "#f0ece0",
+      "roof": "#a8a8a0",
+      "stripe": "#6a4a2a"
+    },
+    "mint and white": {
+      "wall": "#cce4d0",
+      "panel": "#9a7a50",
+      "floor": "#a89068",
+      "carpet": "#4a6a5a",
+      "ceiling": "#ece4d0",
+      "trim": "#f4f4f0",
+      "door": "#3a7a5a",
+      "roof": "#b0b0a8",
+      "stripe": "#3a7a5a"
+    },
+    "faded blue": {
+      "wall": "#b0c0cc",
+      "panel": "#7a5a3a",
+      "floor": "#9a8460",
+      "carpet": "#3a4a6a",
+      "ceiling": "#ece4d0",
+      "trim": "#f0ece0",
+      "door": "#a83a2a",
+      "roof": "#9a9a92",
+      "stripe": "#2a3a5a"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.2, "width": 1.0, "sill": 1.0, "head": 1.9},
+      "rooms": [
+        {"id": "master", "type": "bedroom", "rect": [-8, -2.2, -4.8, 2.2]},
+        {"id": "hallway", "type": "corridor", "rect": [-4.8, 0.6, -1.6, 2.2], "windows": false},
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [-4.8, -2.2, -1.6, 0.6],
+          "floor": {"color": "#c8c0a0", "material": "tiles"},
+          "wall": "#e8e0c0",
+          "autoWindows": {"spacing": 2.0, "width": 0.6, "sill": 1.3, "head": 1.9}
+        },
+        {"id": "living", "type": "living", "rect": [-1.6, -2.2, 3.6, 2.2], "floor": {"color": "$carpet", "material": "none"}},
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [3.6, -2.2, 8, 2.2],
+          "floor": {"color": "#c8b888", "material": "tiles"},
+          "autoWindows": {"spacing": 2.0, "width": 0.9, "sill": 1.15, "head": 1.9}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [0.6, 2.2], "width": 0.9, "front": true, "color": "$door", "material": "metal", "health": 120},
+        {"type": "door", "at": [-4.8, 1.4], "width": 0.9},
+        {"type": "door", "at": [-3.2, 0.6], "width": 0.9},
+        {"type": "arch", "at": [-1.6, 1.4], "width": 0.9},
+        {"type": "arch", "at": [3.6, 0.6], "width": 1.4},
+        {"type": "door", "at": [6.2, -2.2], "width": 0.9, "color": "$door", "material": "metal", "health": 120}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 8, "overhang": 0.15, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {"type": "block", "min": [-8.08, 1.0, 2.2], "max": [8.08, 1.12, 2.28], "color": "$stripe"},
+    {"type": "block", "min": [-8.08, 1.0, -2.28], "max": [8.08, 1.12, -2.2], "color": "$stripe"},
+    {"type": "porch", "rect": [-1.0, 2.28, 2.4, 4.2], "height": 2.3, "roof": false, "posts": false, "color": {"color": "#8a6a44", "material": "wood"}},
+    {"type": "prop", "name": "Mobile Home Lawn Chair", "at": [-2.4, 3.4], "yaw": 200},
+    {"type": "prop", "name": "Mobile Home Lawn Chair", "at": [-3.3, 3.6], "yaw": 160},
+    {"type": "prop", "name": "Kettle BBQ", "at": [3.6, 3.6], "yaw": 0},
+    {"type": "prop", "name": "Mobile Home Pink Flamingo", "at": [5.5, 4.4], "yaw": 30},
+    {"type": "prop", "name": "Mobile Home Pink Flamingo", "at": [-6.0, 4.0], "yaw": 120},
+    {"type": "prop", "name": "Propane Tank", "at": [8.6, -1.2], "yaw": 0},
+    {"type": "prop", "name": "Car On Bricks", "at": [0.0, 7.4], "yaw": 0},
+    {"type": "prop", "name": "Satellite Dish", "at": [-6.0, 0, -0.8], "yaw": 180, "onRoof": true},
+    {"type": "prop", "name": "Window AC Unit", "at": [-6.4, 1.2, -2.28], "yaw": 180},
+    {"type": "prop", "name": "Trash Bag", "at": [7.4, -3.0]},
+    {"type": "prop", "name": "Trash Bag", "at": [7.9, -2.8]},
+    {"type": "prop", "name": "Tyre Stack", "at": [-9.0, 2.5], "yaw": 0},
+    {"type": "prop", "name": "Wheelie Bin", "at": [8.8, 1.2], "yaw": 270}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "living room", "at": [1.0, 0.0]},
+    {"type": "spawn", "name": "bedroom", "at": [-6.4, 0.5]},
+    {"type": "point", "name": "deck", "at": [0.7, 3.4]}
+  ]
+}

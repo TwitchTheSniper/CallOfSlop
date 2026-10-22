@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Beach bungalow kitchenette: a short counter, a fridge, a little table with two chairs.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "c", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Kettle", "Toaster", "Coffee Maker", "Stacked Plates"], "place": "on", "of": "c", "y": 0.9, "count": [1, 2]},
+    {"id": "table", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair", "Beach Bungalow Rattan Chair"], "place": "around", "of": "table", "count": [2, 2]},
+    {"props": ["Orange Crate"], "place": "on", "of": "table", "y": 0.75, "chance": 0.6}
+  ]
+}

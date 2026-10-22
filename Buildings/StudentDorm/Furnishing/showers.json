@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "showers",
+  "description": "Dorm washroom: a row of shower stalls, sinks and a toilet, a mop and bucket.",
+  "items": [
+    {"props": ["Student Dorm Shower Stall"], "place": "wall", "count": [2, 3], "prefer": "far"},
+    {"props": ["Bathroom Sink"], "place": "wall", "count": [2, 2]},
+    {"props": ["Toilet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Mop and Bucket", "Pedal Bin", "Laundry Basket"], "place": "corner"}
+  ]
+}

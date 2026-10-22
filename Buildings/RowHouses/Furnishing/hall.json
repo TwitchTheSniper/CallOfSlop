@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hall",
+  "description": "Terrace hall: a coat stand, a runner and a bicycle under the stairs.",
+  "items": [
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Bicycle", "Backpack"], "place": "floor"},
+    {"props": ["Striped Rug"], "place": "floor", "chance": 0.6}
+  ]
+}

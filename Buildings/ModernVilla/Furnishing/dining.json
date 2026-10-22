@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dining",
+  "description": "Modern villa dining room: a long oak table, black chairs, a sideboard and art.",
+  "items": [
+    {"id": "t", "props": ["Dining Table"], "place": "centre"},
+    {"props": ["Dining Chair"], "place": "around", "of": "t", "count": [6, 6]},
+    {"props": ["Stacked Plates"], "place": "on", "of": "t"},
+    {"id": "sb", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Table Lamp"], "place": "on", "of": "sb"},
+    {"props": ["Large Flower Pot"], "place": "corner"}
+  ]
+}

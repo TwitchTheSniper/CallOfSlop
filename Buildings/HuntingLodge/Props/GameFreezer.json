@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Game Freezer",
+  "description": "A big chest freezer with a butcher's block beside it, a cleaver and string-tied packets of venison.",
+  "collision": "solid",
+  "collider": [{"size": [1.32, 0.94, 0.72]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 250, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.3, 0.9, 0.7], "offset": [0, 0.45, 0], "color": "#f0f0ea", "material": "metal"},
+    {"size": [1.32, 0.04, 0.72], "offset": [0, 0.92, 0], "color": "#e0e0d8"},
+    {"size": [0.3, 0.06, 0.3], "offset": [-0.35, 0.97, 0], "color": "#c8a888"},
+    {"size": [0.25, 0.06, 0.2], "offset": [0.2, 0.97, 0.05], "color": "#e8d8c8"},
+    {"size": [0.2, 0.02, 0.08], "offset": [0.1, 1.01, -0.15], "color": "steel"}
+  ]
+}

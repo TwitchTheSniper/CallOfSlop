@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "kitchen",
+  "description": "Mobile home galley kitchen: a fridge with magnets, a short counter run, a dinette table and dishes piling up.",
+  "items": [
+    {"props": ["Fridge"], "place": "corner"},
+    {"id": "counter", "props": ["Kitchen Counter"], "place": "wall", "count": [1, 2]},
+    {"id": "sink", "props": ["Kitchen Sink"], "place": "wall"},
+    {"props": ["Cooker"], "place": "wall"},
+    {"props": ["Microwave", "Stacked Plates", "Toaster", "Cooking Pot"], "place": "on", "of": "counter", "y": 0.9, "count": [2, 3]},
+    {"id": "table", "props": ["Table"], "place": "centre"},
+    {"props": ["Plastic Chair", "Wooden Chair"], "place": "around", "of": "table", "count": [2, 3]},
+    {"props": ["Mobile Home Beer Cans"], "place": "on", "of": "table", "y": 0.75},
+    {"props": ["Trash Bag", "Pedal Bin", "Mobile Home Beer Cans"], "place": "floor", "count": [1, 2]}
+  ]
+}

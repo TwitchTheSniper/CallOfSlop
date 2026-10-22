@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Farmhouse parlour: a stone fireplace, a horsehair sofa, rocking chairs, the upright piano and the grandfather clock.",
+  "items": [
+    {"id": "fire", "props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"props": ["Rug"], "place": "centre"},
+    {"id": "sofa", "props": ["Old Sofa", "Fabric Sofa"], "place": "wall"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Newspaper"], "place": "on", "of": "table", "y": 0.45, "chance": 0.7},
+    {"props": ["Rocking Chair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Upright Piano", "Bookshelf"], "place": "wall"},
+    {"props": ["Grandfather Clock"], "place": "corner"},
+    {"props": ["Floor Lamp", "Large Flower Pot"], "place": "corner", "chance": 0.7},
+    {"props": ["Dog", "Cat", "Newspaper"], "place": "floor", "count": [1, 2]}
+  ]
+}

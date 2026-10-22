@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Dress Form",
+  "description": "A tailor's dress form on a mahogany tripod, half-dressed in a bustle skirt.",
+  "collision": "solid",
+  "collider": [{"size": [0.5, 1.48, 0.44]}],
+  "breakable": {"health": 30, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.3, 0.04, 0.3], "offset": [0, 0.02, 0], "color": "#4a2418"},
+    {"size": [0.04, 0.8, 0.04], "offset": [0, 0.44, 0], "color": "#4a2418"},
+    {"size": [0.34, 0.46, 0.24], "offset": [0, 1.07, 0], "color": "#d8c8a8"},
+    {"size": [0.22, 0.1, 0.16], "offset": [0, 1.35, 0], "color": "#d8c8a8"},
+    {"size": [0.06, 0.08, 0.06], "offset": [0, 1.44, 0], "color": "#4a2418"},
+    {"size": [0.5, 0.4, 0.44], "offset": [0, 0.7, -0.02], "color": "#3a2a5a"}
+  ]
+}
