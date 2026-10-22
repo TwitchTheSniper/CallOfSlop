@@ -8,7 +8,7 @@ A building is a folder in this `Buildings` folder: a `building.json` that descri
 
 The game turns the file into walls with real openings, floors, ceilings, stairs, a roof, doors you can open, shut and break, windows you can shoot out, and furniture placed room by room. Everything is deterministic: the same file, seed and placement give the same building on every PC.
 
-The Dev pack's **Building Yard** map (`Maps/Dev/BuildingYard.json`) shows every building in this folder, with a few variants. Start there.
+The Dev pack's **Building Yard** map (`Maps/Dev/BuildingYard.json`) shows the starter buildings, with a few variants. Start there. Each later set of buildings has its own Dev showcase map, `Maps/Dev/Buildings<Set>.json` (the commercial set is **Commercial Street**, `Maps/Dev/BuildingsCommercial.json`); the self-test wants every building on the Building Yard or one of these, and checks that bots reach every room on each.
 
 - [The quick version](#the-quick-version)
 - [Step by step: a new building](#step-by-step-a-new-building)

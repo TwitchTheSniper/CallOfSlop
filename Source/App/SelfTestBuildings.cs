@@ -39,6 +39,8 @@ public static partial class SelfTest
         CheckBuildingDoors(yard);
         CheckBuildingState(yard);
         CheckBuildingNav(yard);
+        foreach (var show in BuildingShowcases())
+            CheckBuildingNav(show); // each content set's Dev showcase map (Maps/Dev/Buildings*.json): bots reach every room there too
         // Maps without Building ops are unchanged: no building boxes, no building fingerprint (the pinned fingerprints
         // of every shipped map are checked in "Pack assets").
         var plain = Maps.All.Where(m => m.PlacedBuildings.Count == 0).ToList();
@@ -223,9 +225,20 @@ public static partial class SelfTest
              + $"(at most {runs.Length} + 2 draw calls, 3 when everything is in view), {yard.BuildingDoors.Count} doors, {yard.BuildingWindows.Count} windows, "
              + $"{props} props, {drawn} boxes still drawn one by one; loads in {loadMs:0} ms ({loadMs / Math.Max(1, yard.PlacedBuildings.Count):0.0} ms per building), "
              + $"fingerprint {yard.ContentHash:x8}, same on a second load {copy.ContentHash == yard.ContentHash}");
+        // Every building is on the Building Yard or on one of the Dev showcase maps (Maps/Dev/Buildings*.json).
+        var showcases = BuildingShowcases();
+        foreach (var show in showcases)
+        {
+            var blockedThere = show.Spawns.Count(s => show.IsBlocked(s));
+            Line($"showcase {show.Name} ({show.SourceFile}): {show.PlacedBuildings.Count} buildings, {show.PlacedBuildings.Sum(b => b.ShellCount)} shell boxes, "
+                 + $"{show.BuildingDoors.Count} doors, {show.BuildingWindows.Count} windows, {show.PropInstances.Count} props, {show.Spawns.Count} spawns ({blockedThere} blocked)");
+            if (blockedThere > 0)
+                Fail($"{blockedThere} {show.Name} spawns are inside geometry");
+        }
+        var shown = names.Concat(showcases.SelectMany(m => m.PlacedBuildings.Select(b => b.Def.Name))).ToHashSet();
         foreach (var d in Buildings.All)
-            if (!names.Contains(d.Name) && !d.Folder.StartsWith('_'))
-                Fail($"Building Yard doesn't show {d.Name}");
+            if (!shown.Contains(d.Name) && !d.Folder.StartsWith('_'))
+                Fail($"neither the Building Yard nor a Dev/Buildings*.json showcase map shows {d.Name}");
         if (copy.ContentHash != yard.ContentHash)
             Fail("Building Yard's fingerprint differs between two loads");
         if (runs.Length != yard.PlacedBuildings.Count || runs.Sum(r => r.Count) != shell)
@@ -557,7 +570,12 @@ public static partial class SelfTest
         yard.RestoreProps();
     }
 
-    /// <summary>Bots: the nav graph reaches every room of every building on the Building Yard from outside, and up every staircase.</summary>
+    /// <summary>The Dev pack's building showcase maps besides the Building Yard: Maps/Dev/Buildings*.json, one per set of building content.</summary>
+    private static List<Map> BuildingShowcases() =>
+        Maps.All.Where(m => m.Pack?.Name == "Dev" && m.SourceFile != null && m.PlacedBuildings.Count > 0
+                            && Path.GetFileName(m.SourceFile).StartsWith("Buildings", StringComparison.OrdinalIgnoreCase)).ToList();
+
+    /// <summary>Bots: the nav graph reaches every room of every building on the Building Yard (or a showcase map) from outside, and up every staircase.</summary>
     private static void CheckBuildingNav(Map yard)
     {
         World.SetMap(yard);
@@ -649,17 +667,17 @@ public static partial class SelfTest
             }
             perBuilding[key] = pb;
         }
-        Line($"bots on Building Yard: nav graph {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.BuildMs:0} ms); rooms reached from the front door {reached} of {rooms} ({noNode} without a node), "
+        Line($"bots on {yard.Name}: nav graph {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.BuildMs:0} ms); rooms reached from the front door {reached} of {rooms} ({noNode} without a node), "
              + $"stair tops reached {climbed} of {stairs}");
         foreach (var m in missing.Take(40))
             Line("  unreachable: " + m);
         foreach (var d in detail)
             Line("  why: " + d);
         if (g.Nodes.Length == 0)
-            Fail("no nav graph for Building Yard");
+            Fail($"no nav graph for {yard.Name}");
         else if (reached < rooms || climbed < stairs)
         {
-            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on Building Yard: "
+            Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
             foreach (var d in detail.Take(6))
