@@ -26,6 +26,7 @@ public static partial class SelfTest
     {
         try
         {
+            CheckInsaneSingleMatch(); // TEMPORARY (exp branch only, never merged): one Insane v Hard match the user asked for
             CheckInsaneTuning();
             CheckInsaneSquadRoster();
             CheckInsaneFlanks();
@@ -41,6 +42,24 @@ public static partial class SelfTest
                 Line("::warning title=Insane bots (results)::" + string.Join("%0A", InsaneNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
             World.SetMap(Maps.All[0]);
         }
+    }
+
+    private static void CheckInsaneSingleMatch()
+    {
+        var map = InsaneMap("Crossroads", 7);
+        var sw = Stopwatch.StartNew();
+        using var game = Duel(9101, map, BotDifficulty.Insane, 4, BotDifficulty.Hard, 4, aTeam0: true, squadsOff: false, aFirst: true);
+        var now = 0.0;
+        Tick(game, ref now, 600, () => game.Phase == MatchPhase.Ended);
+        int ins = game.TeamScore[0], hard = game.TeamScore[1];
+        var ended = game.Phase == MatchPhase.Ended;
+        string winner = ended && game.Winner >= Game.TeamWinBase ? (game.Winner - Game.TeamWinBase == 0 ? "Insane" : "Hard") : (ins > hard ? "Insane (on score)" : ins < hard ? "Hard (on score)" : "draw");
+        var bots = string.Join("; ", game.Players.Values.Where(p => p.Bot != null).OrderBy(p => p.Team).ThenByDescending(p => p.Kills)
+            .Select(p => $"{(p.Team == 0 ? "Insane" : "Hard")} {p.Name} ({p.Bot!.Personality}) {p.Kills}-{p.Deaths}"));
+        var msg = $"SINGLE MATCH Insane v Hard, 4 v 4 TDM on {map.Name}, seed 9101, alternating join order: score Insane {ins} - Hard {hard}, "
+            + $"{(ended ? "ended" : "time cap")} after {now:0} s game time, winner {winner}. Bots: {bots}. ({sw.Elapsed.TotalSeconds:0.0} s real)";
+        Line("::warning title=Insane v Hard single match::" + msg.Replace("%", "%25"));
+        Line(msg);
     }
 
     // ---- Helpers ------------------------------------------------------------------------------------------------
