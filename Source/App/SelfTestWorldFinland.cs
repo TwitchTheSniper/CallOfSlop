@@ -88,7 +88,7 @@ public static partial class SelfTest
                    + $"{explosive.Count} explosive), {buildings} buildings ({shell} shell boxes), {m.MeshPlacements.Count} meshes; spawns {m.Spawns.Count} "
                    + $"(teams {o.TeamSpawns[0].Count}+{o.TeamSpawns[1].Count}), hills {o.Hills.Count}, waypoints {m.Waypoints.Count}";
         Line(line);
-        Line("::notice title=World: Vuorikoski::" + line.Replace("%", "%25"));
+        Line("::warning title=World: Vuorikoski (results)::" + line.Replace("%", "%25"));
         if (drawn > 200)
             Fail($"{m.Name}: {drawn} boxes drawn one by one (keep it under 200: use props, meshes and buildings)");
         if (trees is < 300 or > 900)
@@ -246,6 +246,6 @@ public static partial class SelfTest
         Check("enemy flag", Walk(0, o.Flags[1]), Walk(1, o.Flags[0]));
         var balance = $"{m.Name} balance (Blue/Red nav walk): {string.Join(", ", walks)}; spawn pairs in sight {seen.Count}; nav graph {g.Nodes.Length} nodes";
         Line(balance);
-        Line("::notice title=Vuorikoski balance::" + balance.Replace("%", "%25"));
+        Line("::warning title=Vuorikoski balance (results)::" + balance.Replace("%", "%25"));
     }
 }
