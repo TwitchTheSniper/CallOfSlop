@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-frenzy-classes/1",
+  "about": "One entry per weapon class: the frenzy's character when the player's most recent kill was with a weapon of that class. Sections are owned by different features: music (frenzy music), visual (frenzy visuals), sound (gunshot changes), buffs (gameplay buffs, see Source/Game/Frenzy/FrenzyBuffs.cs). Buff effects are multipliers (killHeal: hit points) that apply from minLevel (atMin) growing linearly to frenzy level 6 (atMax), only to weapons of that class, only while the host's Frenzy buffs setting is on.",
+  "classes": {
+    "Pistol": {
+      "character": "Snappy western / outlaw",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Quick draw",
+        "blurb": "Pistols come out faster",
+        "minLevel": 3,
+        "effects": [ { "stat": "equipTime", "atMin": 0.9, "atMax": 0.7 } ]
+      }
+    },
+    "SMG": {
+      "character": "Fast chiptune / breakcore runs",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Run and gun",
+        "blurb": "SMGs lose less accuracy while moving, so firing out of a sprint hits",
+        "minLevel": 3,
+        "effects": [ { "stat": "moveSpread", "atMin": 0.85, "atMax": 0.6 } ]
+      }
+    },
+    "AssaultRifle": {
+      "character": "Classic hardbass drive",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Steady hands",
+        "blurb": "Assault rifles kick less",
+        "minLevel": 3,
+        "effects": [ { "stat": "recoil", "atMin": 0.94, "atMax": 0.85 } ]
+      }
+    },
+    "DMR": {
+      "character": "Punchy marching drums",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Snap aim",
+        "blurb": "Marksman rifles aim down sights faster",
+        "minLevel": 3,
+        "effects": [ { "stat": "adsTime", "atMin": 0.92, "atMax": 0.8 } ]
+      }
+    },
+    "Sniper": {
+      "character": "Slow huge drops / cinematic braams",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Held breath",
+        "blurb": "Sniper rifles hold a steadier, tighter aim through the scope",
+        "minLevel": 3,
+        "effects": [ { "stat": "aimedSpread", "atMin": 0.85, "atMax": 0.65 } ]
+      }
+    },
+    "Shotgun": {
+      "character": "Stomping gabber kicks",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Choke",
+        "blurb": "Shotguns fire a tighter spread",
+        "minLevel": 3,
+        "effects": [ { "stat": "spread", "atMin": 0.94, "atMax": 0.85 } ]
+      }
+    },
+    "LMG": {
+      "character": "Industrial metal grind",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Belt fed",
+        "blurb": "LMGs reload faster and slow you down less",
+        "minLevel": 3,
+        "effects": [
+          { "stat": "reload", "atMin": 0.94, "atMax": 0.85 },
+          { "stat": "movePenalty", "atMin": 0.85, "atMax": 0.6 }
+        ]
+      }
+    },
+    "Special": {
+      "character": "Weird / glitch",
+      "music": {},
+      "visual": {},
+      "sound": {},
+      "buffs": {
+        "name": "Vampire rounds",
+        "blurb": "Kills with a Special weapon give you some health back",
+        "minLevel": 3,
+        "effects": [ { "stat": "killHeal", "atMin": 10, "atMax": 25 } ]
+      }
+    }
+  }
+}

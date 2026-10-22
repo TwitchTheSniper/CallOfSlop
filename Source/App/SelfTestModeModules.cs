@@ -20,6 +20,7 @@ public static partial class SelfTest
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: bots, mapId: map.Id)
         {
             MapVoteEnabled = false,
+            FrenzyBuffsEnabled = false, // the digests were recorded before the frenzy buffs (which change how fights go); the frenzy self-test covers them
         };
         if (zombies)
         {

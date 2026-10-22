@@ -1630,6 +1630,8 @@ ROOT = os.environ.get("CALLOFSLOP", os.path.join(os.path.dirname(os.path.abspath
 def load_weapons():
     out = []
     for f in sorted(glob.glob(os.path.join(ROOT, "Weapons", "**", "*.json"), recursive=True)):
+        if os.sep + "Frenzy" + os.sep in f:
+            continue  # Weapons/Frenzy/classes.json is frenzy data, not a weapon
         with open(f) as fh:
             w = json.load(fh)
         w["_file"] = os.path.relpath(f, os.path.join(ROOT, "Weapons"))
