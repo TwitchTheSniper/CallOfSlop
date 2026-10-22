@@ -50,7 +50,7 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 - **Score limit: Auto (default) or Fixed** (Single player and Host screens, under the game mode). Auto scales the limit with the number of players (people + bots) so a 24-player match takes about as long as an 8-player one: 11 kills is the limit at 8 players, more above that, fewer below (never under 7). It's set from everyone present when the match starts and only ever goes **up** if people join mid-match (never down when they leave). Fixed keeps the classic limits (11 kills, 40 team kills, 150 points, 3 captures). The match bar always shows the current limit. Formulas and measurements: [docs/SCORE-SCALING.md](docs/SCORE-SCALING.md). Saved in `settings.txt` as `score_limit`.
 - **Warmup and ready-up** before every match (the first one and each one after the map vote): see *Ready-up* below.
 - **5-second countdown** once everyone is ready: everyone is frozen (you can still look around), the loadout menu opens, and whatever you have selected deploys automatically at GO.
-- **10 minutes max.** When the clock runs out, the kill leader wins; a tie at the top is a draw.
+- **10 minutes max** (the host can pick 5, 10, 15, 20 or 30 in the lobby room; saved as `match_minutes`). When the clock runs out, the kill leader wins; a tie at the top is a draw.
 - The clock and the score (you vs. the best other player) sit at the top of the screen. It turns orange with "Win by 2!" when the match goes to deuce.
 - At the end you get VICTORY / DEFEAT / DRAW and the final scoreboard. Nobody can be hurt on that screen, and a new match starts on the same map after 12 seconds.
 - Same rules in single player and multiplayer; the host's game decides when a match ends.
@@ -62,6 +62,23 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 - **Single player:** Ready, Deploy or Respawn starts the countdown straight away.
 - **Hosting:** the panel has a **FORCE START** button. The Host screen also has *Auto-start the match once someone is ready* (off by default): when it's on, the match starts that many seconds after the first person readies up, even if others haven't.
 - When the countdown starts, everyone is put back at a spawn point. People who join during the warmup start not ready. People who join mid-match, or who leave, never hold anyone up.
+- The warmup panel also shows the **map and mode**, and in team modes the players are listed under a **BLUE / RED** heading each.
+
+### Pre-match lobby
+
+When you **host or join** a game you land in the **lobby room** first, a menu in front of the map (drawn slowly orbiting behind it), before anyone is in the match:
+- **Players:** name, rank (prestige/level) and hat, team (`*` = picked), ping, ready tick, a crown for the host. Bots are listed as filler.
+- **Teams** (team modes): Join Blue / Join Red / Auto with the usual rules (*Picking teams*), but **no switch cooldown** in the lobby. The host has **SHUFFLE** (everyone on Auto, random even split) and **BALANCE** (picks kept, the rest split evenly).
+- **Next match:** the map with its size, player limit and description, the mode and its goal, the pack (which the vote draws from) and the settings. The **host** changes them live and everyone sees it at once: mode, pack and map (maps too small for the people here, or not for this mode, are greyed out: the same rule as the map vote), **Random map**, score limit, **time limit**, auto-start, **Return to lobby between matches**, frenzy buffs, bots and their difficulty, team rules and team balance. The host's choices are saved to `settings.txt` when the match starts.
+- **LOADOUT** opens the loadout screen (you spawn with the selected loadout; it can still change during the countdown). Your hat is shown beside it.
+- **Chat:** type and press Enter. Lines are printable ASCII, at most 120 characters (pasting an image or anything odd is safe), at most 4 lines at once then one every 1.5 s each (checked by the server too); the last 50 lines are kept.
+- **READY UP** (or F3). The host's **START** works once every other person is ready (it readies the host too); **FORCE START** works any time. With *Auto-start* on, the countdown starts by itself once everyone is ready, or that many seconds after the first person readies. A **5-second countdown** follows; if someone un-readies it's cancelled (not a forced one; the host can **CANCEL** any). People leaving never stall it.
+- At zero the match starts: everyone spawns, and the normal 5-second match countdown runs with the loadout screen open (the lobby replaces the first warmup). The map was already loaded and drawn in the lobby, so the start is quick.
+- **People who join during a match** skip the lobby and join the match, as before.
+- **Return to lobby between matches** (host setting, Host screen and lobby room, default **off**, saved as `lobby_return`): on, everyone comes back to the lobby after the results screen and the map vote (with the voted map); off, the next match's warmup starts straight away.
+- **Single player** has no lobby room: its menu page already has every setting, and the in-map warmup starts the match.
+- The **server browser** shows what a game is doing: **In lobby** (green: join now and ready up), Warmup, Starting, In match or Results.
+- Online it's server-authoritative: the lobby state (map, settings, every player's ping, ~30 bytes + 3 per player) is sent on every change and once a second; chat goes through the server (protocol 32).
 
 ### Game modes
 
@@ -85,6 +102,10 @@ On dev-pack maps (Zombies Test) the mode list also offers **Last Man Standing** 
 - **Size rule:** a side may be at most **2 players bigger** than the other (host setting *Max team size difference*, 0-4). Only people who picked a side count: bots and people on Auto fill the smaller side, so a group of friends can stack a little but not 6v2. A full side's button is greyed out with the reason. **Bots never block you:** join a side that has a bot and that bot moves to the other side.
 - **Switching:** before the match (warmup, countdown, results) or while dead, at most once every **10 s**, never while carrying the flag. It's a respawn, not a suicide: no death, no score or kill streak change. While alive in a live match the buttons say to switch while dead.
 - **Autobalance** only moves bots and people on **Auto** (people only while dead or between matches). Someone who picked a team is never moved; a new match keeps everyone's pick. People who join get the smaller side on Auto.
+- **Team balance** (host setting: Host and Single player screens, the lobby room and Esc > TEAMS; saved as `team_balance=auto|off|humans_vs_bots` and `humans_team=0|1`; older files get Auto):
+  - **Auto** (default): everything above.
+  - **Off:** no autobalance and no size limit on picks, so a group of friends can all stack one side; bots stay wherever they were put (a new match still splits people on Auto and bots evenly, then nobody is moved).
+  - **Humans vs Bots:** every person on one side (pick **People on Blue** or **People on Red**, default Blue), every bot on the other; the bot slider sets how many bots you face. People who join mid-match go to the people's side, new bots to the bots' side; picking the bots' side is refused, and autobalance, SHUFFLE and BALANCE are off. Score limits, team spawns and map player limits work as in any team match.
 - **Host settings** (Host and Single player screens, shown for team modes; the host can also change them in Esc > TEAMS): **Team selection: Manual / Auto only** (default Manual; Auto only is the old automatic split) and **Max team size difference** (default 2). Saved in `settings.txt` as `team_select=manual|auto` and `team_max_diff=2`; older files get the defaults. Online, a client asks the server, which checks the rules and answers (protocol 20).
 
 Maps can place team spawns, hills and flags by hand; otherwise the game works them out from the map (see Maps/README.md).
