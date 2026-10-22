@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Steel Ammo Can",
+  "category": "Military",
+  "description": "A small olive steel ammunition can with a carry handle. Looks only.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 12, "breakBy": "all", "sound": "metal", "debris": {"count": 5, "size": [0.03, 0.08], "speed": 4, "colors": ["#4f5a2c", "#4a4c4a"]}},
+  "parts": [
+    {"size": [0.29, 0.17, 0.11], "offset": [0.0, 0.085, 0.0], "color": "#4f5a2c"},
+    {"size": [0.3, 0.025, 0.12], "offset": [0.0, 0.183, 0.0], "color": "#46502a"},
+    {"size": [0.12, 0.012, 0.02], "offset": [0.0, 0.206, 0.0], "color": "#2a2c26"},
+    {"size": [0.04, 0.05, 0.015], "offset": [0.12, 0.155, 0.06], "color": "#4a4c4a"},
+    {"size": [0.16, 0.03, 0.005], "offset": [0.0, 0.085, 0.056], "color": "#d8c040"}
+  ]
+}

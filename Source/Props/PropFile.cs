@@ -17,8 +17,8 @@ public static class PropFile
     public const int MaxParts = 128;
     public const int MaxColliders = 8;
 
-    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale).</summary>
-    public const float MaxSize = 12f;
+    /// <summary>The largest a prop may be in any direction (metres, before an instance's scale). 24 m fits a parked transport plane (Props/Military/Vehicles).</summary>
+    public const float MaxSize = 24f;
 
     /// <summary>Named colours a part can use instead of [r, g, b] or "#rrggbb".</summary>
     public static readonly Dictionary<string, Vector3> Colors = new(StringComparer.OrdinalIgnoreCase)

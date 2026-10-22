@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ammo Case Metal",
+  "category": "Military",
+  "description": "A ribbed olive steel transit case with four latches and end handles.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [0.84, 0.48, 0.54]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 15},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.22], "speed": 4, "colors": ["#55603a", "#4a4c4a"]}},
+  "parts": [
+    {"size": [0.8, 0.4, 0.5], "offset": [0.0, 0.22, 0.0], "color": "#55603a", "material": "metal"},
+    {"size": [0.82, 0.05, 0.52], "offset": [0.0, 0.285, 0.0], "color": "#4a5432"},
+    {"size": [0.76, 0.06, 0.46], "offset": [0.0, 0.45, 0.0], "color": "#55603a"},
+    {"size": [0.84, 0.02, 0.54], "offset": [0.0, 0.01, 0.0], "color": "#3a4228"},
+    {"size": [0.07, 0.08, 0.02], "offset": [-0.25, 0.29, 0.265], "color": "#4a4c4a"},
+    {"size": [0.07, 0.08, 0.02], "offset": [-0.25, 0.29, -0.265], "color": "#4a4c4a"},
+    {"size": [0.07, 0.08, 0.02], "offset": [0.25, 0.29, 0.265], "color": "#4a4c4a"},
+    {"size": [0.07, 0.08, 0.02], "offset": [0.25, 0.29, -0.265], "color": "#4a4c4a"},
+    {"size": [0.02, 0.04, 0.18], "offset": [0.41, 0.32, 0.0], "color": "#2a2c26"},
+    {"size": [0.02, 0.04, 0.18], "offset": [-0.41, 0.32, 0.0], "color": "#2a2c26"},
+    {"size": [0.3, 0.08, 0.01], "offset": [0.0, 0.14, 0.255], "color": "#e0e0d4"},
+    {"size": [0.12, 0.03, 0.01], "offset": [0.25, 0.135, 0.256], "color": "#d8c040"}
+  ]
+}
