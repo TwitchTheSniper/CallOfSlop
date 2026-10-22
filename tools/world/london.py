@@ -147,7 +147,7 @@ def build_terrain():
     # the embankments at both ends: the railway runs out of the arches onto a grassy bank
     mirrored_rect_plateau(BANK_X, VIA_Z0, 90.0, VIA_Z1, DECK_Y, "fill", 15.0)
     # level pads (the town is built on them): canal-side yards, the viaduct, Arches Lane, the shops, the high street
-    mirrored_flatten(-BANK_X + 0.1, -35.0, BANK_X - 0.1, 8.0, 0.0, 0.4)
+    mirrored_flatten(-BANK_X - 0.4, -35.0, BANK_X + 0.4, 8.0, 0.0, 0.05)
     feat(type="flatten", x=0, z=14.0, w=160, d=12.0, height=0.0, edge=1.0, mode="set")
     # the south side: terraces on a low pad, the back alley a little higher, the raised park
     mirrored_flatten(15.6, 21.6, 64.0, 38.3, TERRACE_Y, 1.2)
@@ -555,6 +555,16 @@ def viaduct():
         M("box", x, -10.08, "#6a6a66", yw=DECK_Y, width=12.0, depth=0.4, height=0.28, material="Concrete")
     P("Plank Pile", 44.0, -13.4, 0, yw=DECK_Y, check=False)
     P("Pigeons", 21.0, -13.4, 0, yw=DECK_Y, check=False)
+    # the abutment where the arches meet the embankment: brick from the ground to the deck, so the deck runs on level
+    B(48.3, 0.0, VIA_Z0, 49.6, DECK_Y, VIA_Z1, "#7a6650")
+    # brick retaining walls where the embankment's flanks meet the level town (cosmetic faces on the terrain step)
+    for z0, z1 in ((-34.8, -19.3), (VIA_Z1, 7.8)):
+        n = max(1, int(math.ceil((z1 - z0) / 2.5)))
+        for k in range(n):
+            a_, b_ = z0 + (z1 - z0) * k / n, z0 + (z1 - z0) * (k + 1) / n
+            h = max(ground(49.3, a_), ground(49.3, b_), ground(49.3, (a_ + b_) / 2)) + 0.25
+            if h > 0.35:
+                M("box", 48.78, (a_ + b_) / 2, "#6e5442", yw=-0.1, width=0.56, depth=b_ - a_ + 0.02, height=h + 0.1, material="Brick")
     # parapets along the embankment top (the building's own end there; posts and a low wall on the bank)
     for z0, z1 in ((VIA_Z0, VIA_Z0 + 0.5), (VIA_Z1 - 0.5, VIA_Z1)):
         B(48.3, DECK_Y - 0.4, z0, 54.0, DECK_Y + 0.9, z1, "#857256")
