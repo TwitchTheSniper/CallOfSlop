@@ -37,7 +37,8 @@ VX = AX1 - BAL
 BRIDGES = [(-13.5, -10.5), (10.5, 13.5)]
 ESC_RUN, ESC_STEPS = 5.85, 18          # 0.256 m risers: a 0.6 m nav sample never spans more than 0.55 m of rise
 FOOD_STALLS = [-10.5, 0.0, 10.5]     # the food court's three stalls along its east wall (z)
-ESC_LANES = [(-3.0, -1.7), (1.7, 3.0)]  # z bands of the two escalators on each side
+ESC_LANES = [(-3.2, -1.5), (1.5, 3.2)]  # z bands of the two escalators on each side (1.7 m wide)
+ESC_GAP = 0.2                            # the railing gap at the top is this much wider on each side
 
 # north row (z -20..-8) and south row (z 8..20) shop units, x ranges; (id, type) per floor
 NORTH = [(-24, -12), (-12, -3), (3, 12), (12, 24)]
@@ -233,7 +234,7 @@ for (b0, b1) in BRIDGES:
     # the outer side has gaps where the escalators arrive
     xo = outer - RT / 2 if outer == b1 else outer + RT / 2
     xo = outer + RT / 2 if outer < 0 else outer - RT / 2
-    edges = [-VZ] + [v for lane in ESC_LANES for v in lane] + [VZ]
+    edges = [-VZ] + [v + (ESC_GAP if k % 2 else -ESC_GAP) for lane in ESC_LANES for k, v in enumerate(lane)] + [VZ]
     for k in range(0, len(edges), 2):
         rail_z(edges[k], edges[k + 1], xo)
 # escalators: from the walkway up to the bridges' outer sides

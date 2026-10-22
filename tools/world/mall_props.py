@@ -665,14 +665,14 @@ ang = math.degrees(math.atan2(RISE, RUN))
 slope = math.hypot(RISE, RUN)
 ps = []
 for s in (-1, 1):
-    x = s * 0.72
+    x = s * 0.92
     ps += [part((0.1, 1.0, slope + 0.6), (x, RISE / 2 + 0.5, 0), "#c8dce4", rotation=[ang, 0, 0]),
            part((0.14, 0.08, slope + 1.4), (x, RISE / 2 + 1.04, 0), "#202020", rotation=[ang, 0, 0]),
            part((0.16, 0.3, slope + 0.6), (x, RISE / 2 - 0.05, 0), "#9a9aa4", rotation=[ang, 0, 0], material="metal"),
            part((0.14, 1.04, 0.9), (x, 0.52, RUN / 2 + 0.55), "#9a9aa4", material="metal"), part((0.14, 1.04, 0.9), (x, RISE + 0.52, -RUN / 2 - 0.55), "#9a9aa4", material="metal")]
-ps += [part((1.3, 0.02, 0.6), (0, 0.01, RUN / 2 + 0.4), "#b8b8c0", material="metal"), part((1.3, 0.02, 0.6), (0, RISE + 0.01, -RUN / 2 - 0.4), "#b8b8c0", material="metal")]
-ps += [part((1.34, 0.6, slope), (0, RISE / 2 - 0.2, 0.12), "#8a8a94", rotation=[ang, 0, 0], material="metal")]
-add(RETAIL, "Escalator Balustrade", "The glass sides, black handrails and steel skirt of a mall escalator climbing 4.6 m over 5.85 m towards -Z. Cosmetic: the steps are separate solid blocks.", ps, collision="cosmetic")
+ps += [part((1.7, 0.02, 0.6), (0, 0.01, RUN / 2 + 0.4), "#b8b8c0", material="metal"), part((1.7, 0.02, 0.6), (0, RISE + 0.01, -RUN / 2 - 0.4), "#b8b8c0", material="metal")]
+ps += [part((1.74, 0.6, slope), (0, RISE / 2 - 0.2, 0.12), "#8a8a94", rotation=[ang, 0, 0], material="metal")]
+add(RETAIL, "Escalator Balustrade", "The glass sides, black handrails and steel skirt of a mall escalator climbing 4.6 m over 5.85 m towards -Z, for steps 1.7 m wide. Cosmetic: the steps are separate solid blocks.", ps, collision="cosmetic")
 
 ps = [part((1.2, 0.08, 0.6), (0, 0.04, 0), "#e8e8ec")]
 for x in (-0.55, 0.55):
