@@ -943,6 +943,7 @@ public static unsafe partial class Program
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
+            _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack

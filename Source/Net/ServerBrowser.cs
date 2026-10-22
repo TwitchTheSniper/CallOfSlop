@@ -60,9 +60,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 33: blood marks (BodyBlood.cs): every snapshot fast entry ends with the player's 32-bit blood word (hit body parts,
     //     generation, last hit direction; Snapshot.FastBytes 24 -> 28).
     // 34: meaty gibs (Gibs.cs, GameGibs.cs): bit 1 of Msg.Kill's headshot byte is "gibbed" (blown apart by a blast).
-    // 35: in-match text chat and voice chat (LobbyChat.cs, GameVoice.cs): ChatSay gains a flags byte (team), ChatLine gains
+    // 35: destructible buildings (GameDestruction.cs): Msg.StructBreak / StructState at the end of Msg; destructible maps'
+    //     fingerprints include their chunks (MapDestruction.Map.cs).
+    // 36: in-match text chat and voice chat (LobbyChat.cs, GameVoice.cs): ChatSay gains a flags byte (team), ChatLine gains
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
-    public const byte ProtocolVersion = 35;
+    public const byte ProtocolVersion = 36;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

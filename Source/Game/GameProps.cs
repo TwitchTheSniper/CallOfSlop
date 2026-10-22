@@ -304,6 +304,7 @@ public sealed partial class Game
         try
         {
             BlastProps(attacker, center, br.ExplodeRadius, br.ExplodeDamage, PropDamage.Explosion, now);
+            BlastStructures(attacker, center, br.ExplodeRadius, br.ExplodeDamage, br.IsMine ? StructureHit.Landmine : StructureHit.PropBlast, killId, now); // destructible buildings (GameDestruction.cs)
         }
         finally
         {

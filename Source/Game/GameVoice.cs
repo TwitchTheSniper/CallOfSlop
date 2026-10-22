@@ -3,7 +3,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Voice chat over the network (protocol 35). A talker's client sends each 20 ms frame to the server
+/// Voice chat over the network (protocol 36). A talker's client sends each 20 ms frame to the server
 /// (<see cref="Msg.VoiceUp"/>, unreliable: a late voice frame is useless, and the jitter buffer reorders and conceals).
 /// The server rate-limits each talker (<see cref="VoiceRules.TalkRate"/>) and each listener
 /// (<see cref="VoiceRules.ListenRate"/>), works out who hears the frame and how (<see cref="VoiceRules.Route"/>: proximity

@@ -260,6 +260,10 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
                         ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
                         : "Off: kill frenzies are music and effects only.");
+                    ImGui.Checkbox("Destruction"u8, ref s.Destruction); // destructible buildings (GameDestruction.cs)
+                    ImGuiSafe.TextColored(Dim, s.Destruction
+                        ? "On: on maps with destructible buildings (World Tour), explosives blast holes and floors can come down."
+                        : "Off: buildings stay whole (the map is the same, nothing breaks).");
                     ImGui.Checkbox("Allow voice chat"u8, ref s.AllowVoice); // GameVoice.cs
                     ImGui.SameLine();
                     ImGui.Checkbox("Dead players' chat reaches only the dead"u8, ref s.DeadChatPrivate); // LobbyChat.cs

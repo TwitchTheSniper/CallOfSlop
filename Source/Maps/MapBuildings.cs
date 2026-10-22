@@ -20,6 +20,9 @@ public sealed class BuildingInstance
 
     /// <summary>Height of the building's highest shell box (its roof or parapet top).</summary>
     public float Top;
+
+    /// <summary>Its <see cref="MapDestruction"/> structure (its shell is cut into chunks), or -1: not destructible.</summary>
+    public int Structure = -1;
 }
 
 /// <summary>A door in a building: open or shut (the interact key), and it breaks after enough damage. Runtime state lives here.</summary>
@@ -96,7 +99,7 @@ public sealed partial class Map
     public bool IsBuildingGlass(int i) => (uint)i < (uint)_buildingKind.Length && _buildingKind[i] == KindGlass;
 
     /// <summary>The box the fingerprint uses for a door or window: as built (opening or breaking never changes it).</summary>
-    internal bool BuildingHashBox(int i, out Box b) => _buildingOriginal.TryGetValue(i, out b);
+    internal bool BuildingHashBox(int i, out Box b) => _buildingOriginal.TryGetValue(i, out b) || DestructionHashBox(i, out b); // a broken chunk: as built too (MapDestruction.Map.cs)
 
     /// <summary>The prop renderer's library: the pack's (or global) props, plus building-local props this map uses.</summary>
     public PropDef[] PropLibrary => _buildingLocalProps.Count == 0
@@ -107,12 +110,13 @@ public sealed partial class Map
     /// A building from the Buildings folder, its origin at <paramref name="at"/> ([x, z] or [x, y, z]; y is above the
     /// ground), turned by <paramref name="yaw"/> degrees (a multiple of 90). <paramref name="seed"/> 0 uses the building's
     /// own seed. <paramref name="variant"/>: { "palette", "floors", "mirror", "roof", "furnish", "doors" }. With
-    /// <paramref name="spawns"/> its spawn anchors become spawn points.
+    /// <paramref name="spawns"/> its spawn anchors become spawn points. <paramref name="destructible"/> overrides the map's
+    /// "destructible" for this building (Buildings/README.md, "Destruction").
     /// </summary>
     [MapOp]
-    public void PlaceBuilding(string name, float[] at, float yaw = 0, int seed = 0, MapJson? variant = null, bool spawns = false)
+    public void PlaceBuilding(string name, float[] at, float yaw = 0, int seed = 0, MapJson? variant = null, bool spawns = false, bool? destructible = null)
     {
-        using var __ = Op([name, at, yaw, seed, variant, spawns]);
+        using var __ = Op([name, at, yaw, seed, variant, spawns, destructible]);
         var def = CallOfSlop.Buildings.Find(name) ?? throw new InvalidOperationException($"unknown building \"{name}\": {CallOfSlop.Buildings.Suggest(name)}");
         if (at.Length is not (2 or 3))
             throw new InvalidOperationException("\"at\" is [x, z] or [x, y, z]");
@@ -162,12 +166,31 @@ public sealed partial class Map
         }
         var inst = new BuildingInstance { Def = def, Plan = plan, Index = PlacedBuildings.Count, ShellStart = Solid.Count };
         var foundation = def.FloorSurface.Color.Resolve(def.Palette(v.Palette)) * 0.8f;
-        if (world != null && baseY > lowest + 0.05f)
-            foreach (var r in plan.Footprint)
-                AddBuildingBox(new Box(new Vector3((r.X0 + r.X1) / 2, (lowest - 0.3f + baseY) / 2, (r.Z0 + r.Z1) / 2),
-                    new Vector3(r.W / 2, (baseY - lowest + 0.3f) / 2, r.D / 2)), new BuildingBox(default, foundation, (int)Material.Concrete), KindShell);
-        foreach (var b in plan.Shell)
-            AddBuildingBox(b.Box, b, KindShell);
+        if (destructible ?? Destructible)
+        {
+            // Destructible (MapDestruction.Map.cs): the same shell, cut into chunks. Over the map's chunk budget it stays whole.
+            var shell = new List<(BuildingBox, bool)>(plan.Shell.Count + plan.Footprint.Count);
+            if (world != null && baseY > lowest + 0.05f)
+                foreach (var r in plan.Footprint)
+                {
+                    var fb = new Box(new Vector3((r.X0 + r.X1) / 2, (lowest - 0.3f + baseY) / 2, (r.Z0 + r.Z1) / 2), new Vector3(r.W / 2, (baseY - lowest + 0.3f) / 2, r.D / 2));
+                    shell.Add((new BuildingBox(fb, foundation, (int)Material.Concrete), true));
+                }
+            foreach (var b in plan.Shell)
+                shell.Add((b, false));
+            if (!AddDestructibleShell(inst, plan, shell))
+                foreach (var (b, _) in shell)
+                    AddBuildingBox(b.Box, b, KindShell);
+        }
+        else
+        {
+            if (world != null && baseY > lowest + 0.05f)
+                foreach (var r in plan.Footprint)
+                    AddBuildingBox(new Box(new Vector3((r.X0 + r.X1) / 2, (lowest - 0.3f + baseY) / 2, (r.Z0 + r.Z1) / 2),
+                        new Vector3(r.W / 2, (baseY - lowest + 0.3f) / 2, r.D / 2)), new BuildingBox(default, foundation, (int)Material.Concrete), KindShell);
+            foreach (var b in plan.Shell)
+                AddBuildingBox(b.Box, b, KindShell);
+        }
         inst.ShellCount = Solid.Count - inst.ShellStart;
         inst.Top = baseY;
         for (var i = inst.ShellStart; i < Solid.Count; i++)
@@ -372,6 +395,7 @@ public sealed partial class Map
     /// <summary>Every door back to its starting state and every window whole (a new match, a new session on this map).</summary>
     public void RestoreBuildings()
     {
+        RestoreDestruction(); // destructible chunks whole again (MapDestruction.Map.cs)
         if (BuildingDoors.Count == 0 && BuildingWindows.Count == 0)
             return;
         var changed = false;

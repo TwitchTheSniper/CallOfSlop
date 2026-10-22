@@ -98,6 +98,7 @@ public static class World
     public static void SetMap(Map map)
     {
         map.RestoreProps(); // a map always starts with its breakable props whole
+        map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)

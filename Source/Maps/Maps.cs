@@ -458,6 +458,8 @@ public static partial class Maps
         Props.Reload(); // maps place props from the library, so it's re-read first
         Decals.Reload(); // and decals (Source/Decals)
         Buildings.Reload(); // and buildings from the Buildings folder
+        MaterialDestruction.Reload(); // and how building materials break (Materials/destruction.json)
+        MapPack.ForgetDestructibleDefaults();
         var fresh = LoadAll();
         _all = fresh;
         Generation++;
