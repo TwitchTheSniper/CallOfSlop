@@ -3,9 +3,9 @@ using System.Diagnostics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Frenzy music": the kill-frenzy heat model (quick kills climb to level 4, a real spree to 5 and
-/// 6, slow kills stay low, the hold and decay timings, death, Zombies, frame-rate independence) and the adaptive layer
-/// mixed headlessly (levels change on bar lines, ease down one level at a time, drops loop, level 4 jumps to the last
+/// Self-test section "Frenzy music": the kill-frenzy heat model (quick kills climb to level 4, a streak to 5 and 6 at
+/// the paces in SelfTestFrenzyPacing.cs, slow kills stay low, the hold and decay timings, death, Zombies, frame-rate
+/// independence) and the adaptive layer mixed headlessly (levels change on bar lines, ease down one level at a time, drops loop, level 4 jumps to the last
 /// drop, level 5 louder, level 6 as loud as the game's own gunfire and explosions, measured, ducking per level, the
 /// limiter, the volume sliders still multiply, death and the setting off go silent, deterministic, allocation-free,
 /// CPU against the heaviest hardbass track), plus the settings.
@@ -58,35 +58,14 @@ public static partial class SelfTest
             if (levels[i] < levels[i - 1])
                 Fail($"the level went down during a burst ({string.Join(" ", levels)})");
 
-        // A real spree: kills a second apart reach level 5 on the 9th and level 6 (MAX FRENZY) on the 15th; half a
-        // second apart on the 8th and 13th; every 2 s level 5 on the 10th and 6 only on the 22nd; every 2.5 s level 5
-        // on the 12th and never 6; every 3 s level 5 after 14, never 6.
-        foreach (var (gap, want5, want6) in new[] { (1.0, 9, 15), (0.5, 8, 13), (2.0, 10, 22), (2.5, 12, 0), (3.0, 14, 0) })
-        {
-            var sp = new FrenzyMeter();
-            int first5 = 0, first6 = 0;
-            var top = 0;
-            for (var i = 0; i < 30; i++)
-            {
-                sp.OnKill(i * gap, false);
-                top = Math.Max(top, sp.Level);
-                if (first5 == 0 && sp.Level >= 5)
-                    first5 = i + 1;
-                if (first6 == 0 && sp.Level >= 6)
-                    first6 = i + 1;
-            }
-            FrenzyLine($"a kill every {gap:0.0} s: level 5 on kill {first5}, level 6 on kill {first6} (0 = never in 30 kills), top {top}, heat {sp.Heat:0} after 30 (cap {FrenzyMeter.MaxHeat})");
-            if (Math.Abs(first5 - want5) > 1)
-                Fail($"kills {gap} s apart reach level 5 on kill {first5} (want about {want5})");
-            if (want6 == 0 ? first6 != 0 : Math.Abs(first6 - want6) > 1)
-                Fail($"kills {gap} s apart reach level 6 on kill {first6} (want {(want6 == 0 ? "never" : $"about {want6}")})");
-        }
+        // The kills needed per level at fixed paces (and the design targets) are pinned in SelfTestFrenzyPacing.cs.
+        CheckFrenzyPacing();
         for (var l = 0; l < FrenzyMeter.MaxLevel; l++)
             if (!(FrenzyMeter.Down[l] < FrenzyMeter.Up[l] && (l == 0 || FrenzyMeter.Down[l] > FrenzyMeter.Up[l - 1])))
                 Fail($"level {l + 1}: thresholds up {FrenzyMeter.Up[l]} / down {FrenzyMeter.Down[l]} aren't a proper hysteresis band");
         FrenzyLine($"thresholds up {string.Join("/", FrenzyMeter.Up)}, down {string.Join("/", FrenzyMeter.Down)}; max spree on paper: {Program.FrenzyBurstLine(16, 0.7, true)}");
 
-        // The hold at the top and the way down from a maxed-out frenzy: level 6 holds about 5 s, then one level at a time.
+        // The hold at the top and the way down from a maxed-out frenzy: level 6 holds about 8-10 s (the 8 s hold), then one level at a time.
         var mx = new FrenzyMeter();
         for (var i = 0; i < 20; i++)
             mx.OnKill(i * 0.7, true);
@@ -102,8 +81,8 @@ public static partial class SelfTest
                     downAt[l] = t - lastKill;
         }
         FrenzyLine($"after a maxed spree: level 5 at +{downAt[5]:0.0} s, 4 at +{downAt[4]:0.0}, 3 at +{downAt[3]:0.0}, 2 at +{downAt[2]:0.0}, 1 at +{downAt[1]:0.0}, off at +{downAt[0]:0.0}");
-        if (downAt[5] < 4.5 || downAt[5] > 8)
-            Fail($"level 6 lasts {downAt[5]:0.0} s after the last kill (want about 5-6 s)");
+        if (downAt[5] < 7.5 || downAt[5] > 12)
+            Fail($"level 6 lasts {downAt[5]:0.0} s after the last kill (want about 8-10 s)");
         if (downAt[0] is < 25 or > 45)
             Fail($"a maxed frenzy is gone {downAt[0]:0.0} s after the last kill (want about 30-40 s)");
         for (var l = 1; l <= 5; l++)
@@ -126,15 +105,15 @@ public static partial class SelfTest
                 toOff = since;
         }
         FrenzyLine($"after the burst: level 3 at +{toL3:0.0} s, 2 at +{toL2:0.0} s, 1 at +{toL1:0.0} s, off at +{toOff:0.0} s; {Program.FrenzyBurstLine(5, 0.8)}");
-        if (toL3 < 4.5)
-            Fail($"level 4 lasts only {toL3:0.0} s after the last kill (want a hold of about 5 s)");
-        if (toOff is < 15 or > 26)
-            Fail($"the frenzy is gone {toOff:0.0} s after the last kill (want about 15-25 s)");
+        if (toL3 < FrenzyMeter.HoldSeconds - 0.5)
+            Fail($"level 4 lasts only {toL3:0.0} s after the last kill (want at least the hold of {FrenzyMeter.HoldSeconds} s)");
+        if (toOff is < 18 or > 32)
+            Fail($"the frenzy is gone {toOff:0.0} s after the last kill (want about 20-30 s)");
         if (!(toL3 < toL2 && toL2 < toL1 && toL1 < toOff))
             Fail("the levels don't come down one after the other");
 
-        // Slow kills never pass level 2; really slow ones never start it.
-        foreach (var (gap, max) in new[] { (6.0, 2), (8.0, 1), (12.0, 0) })
+        // Slow kills stay low (even all headshots): every 8 s at most level 4, every 10 s at most 2; every 12 s never starts it.
+        foreach (var (gap, max) in new[] { (6.0, 5), (8.0, 4), (10.0, 2), (12.0, 0) })
         {
             var s = new FrenzyMeter();
             var top = 0;
