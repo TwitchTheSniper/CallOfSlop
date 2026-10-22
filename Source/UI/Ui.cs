@@ -226,9 +226,10 @@ public sealed partial class Ui : IDisposable
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
             ImGui.ProgressBar(Progress.LevelFraction, new float2(220 * _scale, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
+            var prestigeTag = Progress.Prestige > 0 ? $"P{Progress.Prestige} " : ""; // prestige (Progression.cs)
             ImGuiSafe.TextColored(Dim, Progress.Level >= CallOfSlop.Progress.MaxLevel
-                ? $"Level {Progress.Level} (max)"
-                : $"Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
+                ? $"{prestigeTag}Level {Progress.Level} (max)"
+                : $"{prestigeTag}Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
             if (local.Alive)
                 ImGuiSafe.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
                 {
@@ -417,7 +418,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -495,7 +496,7 @@ public sealed partial class Ui : IDisposable
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(col, p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id));
+                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();

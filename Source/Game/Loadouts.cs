@@ -11,6 +11,13 @@ public sealed class Loadout
     public PerkSet Perks = PerkSet.Empty;
     public StreakSet Streaks = StreakSet.Starter;
 
+    /// <summary>
+    /// The hat worn with this loadout. Hats are identity, not tactics: one choice per profile
+    /// (<see cref="LoadoutStore.Hat"/>) applies to every slot, so a slot itself never stores one;
+    /// <see cref="LoadoutStore.Effective"/> fills this in from the profile (None while it's locked).
+    /// </summary>
+    public HatId Hat;
+
     public Loadout Clone() => (Loadout)MemberwiseClone();
 
     public uint KitFor(int slot) => slot == 0 ? PrimaryKit : SecondaryKit;
@@ -32,6 +39,16 @@ public static class LoadoutStore
 
     /// <summary>The slot you spawn with.</summary>
     public static int Selected;
+
+    /// <summary>
+    /// The hat you wear (one cosmetic choice for the whole profile, used by every loadout slot; saved as
+    /// <c>hat=&lt;key&gt;</c>). A hat that's locked at your prestige is kept here for later but worn as None.
+    /// </summary>
+    public static HatId Hat;
+
+    /// <summary>The hat you'd actually wear: <see cref="Hat"/> if your prestige unlocks it, otherwise None.</summary>
+    public static HatId EffectiveHat(Progress progress) =>
+        Cosmetics.IsUnlocked(Hat, CosmeticPrestige.Of(progress)) ? Hat : HatId.None;
 
     /// <summary>Last attachments used on each weapon (the starting kit when a gun goes into a slot).</summary>
     private static readonly Dictionary<byte, uint> LastKit = new();
@@ -81,6 +98,7 @@ public static class LoadoutStore
                 perks = perks.With(c, PerkId.None);
         e.Perks = perks;
         e.Streaks = EffectiveStreaks(l.Streaks, progress);
+        e.Hat = EffectiveHat(progress); // profile-wide (see Loadout.Hat)
         return e;
     }
 
@@ -141,6 +159,7 @@ public static class LoadoutStore
     //   loadout1.perks=Low Profile, Bloodthirst, Point Blank
     //   loadout1.streaks=Recon Sweep, Mortar Barrage, Sentry Turret   (files from before kill streaks: the starters)
     //   kit.Hornet SMG=Red Dot, Suppressor      (last build per gun)
+    //   hat=fedora                              (the profile's hat, for every slot; files without it: none)
     //
     // Older files had one loadout (primary=..., secondary=..., grenade=..., equipment=...): it becomes slot 1.
 
@@ -165,6 +184,7 @@ public static class LoadoutStore
         for (var i = 0; i < Slots.Length; i++)
             Slots[i] = DefaultLoadout(i);
         Selected = 0;
+        Hat = HatId.None;
         LastKit.Clear();
         var fresh = fileLines == null;
         try
@@ -180,6 +200,8 @@ public static class LoadoutStore
                     var value = parts[1].Trim();
                     if (key == "selected" && int.TryParse(value, out var sel))
                         Selected = Math.Clamp(sel, 0, Slots.Length - 1);
+                    else if (key == "hat")
+                        Hat = Cosmetics.FromKey(value); // unknown or "none": no hat
                     else if (key.StartsWith("kit.") && Weapons.Find(key[4..]) is { } kw)
                         LastKit[kw.Id] = Attachments.Sanitize(kw, ParseKit(value));
                     else if (key.StartsWith("loadout") && key.IndexOf('.') is var dot and > 7
@@ -289,7 +311,7 @@ public static class LoadoutStore
     /// <summary>The lines loadout.txt is saved as.</summary>
     public static List<string> SaveLines()
     {
-        var lines = new List<string> { $"selected={Selected}" };
+        var lines = new List<string> { $"selected={Selected}", $"hat={Cosmetics.KeyOf(Hat)}" };
         for (var i = 0; i < Slots.Length; i++)
         {
             var l = Slots[i];

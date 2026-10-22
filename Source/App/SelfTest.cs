@@ -95,6 +95,7 @@ public static partial class SelfTest
             Section("HUD layout", CheckHudLayout);
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
+            Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
             Section("Recoil", CheckRecoil);
             Section("Death cam", CheckDeathCam);
             Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
@@ -129,6 +130,7 @@ public static partial class SelfTest
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
+            Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Line("");
