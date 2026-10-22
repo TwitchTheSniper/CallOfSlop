@@ -11,10 +11,11 @@ public enum BotMode : byte
     Cover, // breaking line of sight to reload or because it's hurt
     Investigate, // checking a last-seen spot or gunfire it heard
     Objective, // the game mode's objective
+    Squad, // Insane: following its squad's order (Source/Game/Bots/Squads)
 }
 
 /// <summary>Per-bot AI state. Bots live only on the server and play through the same input commands as people.</summary>
-public sealed class BotBrain
+public sealed partial class BotBrain
 {
     public readonly BotDifficulty Skill;
     public readonly BotPersonality Personality;
@@ -140,6 +141,8 @@ public sealed class BotBrain
             if (d < FlankWidth && t is > 0.15f and < 0.9f)
                 extra += cost * 2.5f * (1f - d / FlankWidth);
         }
+        if (Squad != null)
+            extra += SquadEdgePenalty(to, cost); // Insane squads: out of the target's sight, off squadmates' routes
         return extra;
     }
 
@@ -152,11 +155,11 @@ public sealed class BotBrain
     }
 
     // Tuning per difficulty
-    public double Reaction => Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, _ => 0.2 };
-    public float AimError => Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, _ => 0.03f }; // radians
-    public float TurnSpeed => Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, _ => 10f }; // rad/s
-    public float Settle => Skill switch { BotDifficulty.Easy => 1.2f, BotDifficulty.Normal => 2.4f, _ => 4.5f }; // aim error decay /s
-    public double TriggerDelay => Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, _ => 0.05 }; // extra delay on semi-autos
+    public double Reaction => Skill switch { BotDifficulty.Easy => 0.65, BotDifficulty.Normal => 0.38, BotDifficulty.Insane => 0.16, _ => 0.2 };
+    public float AimError => Skill switch { BotDifficulty.Easy => 0.14f, BotDifficulty.Normal => 0.075f, BotDifficulty.Insane => 0.024f, _ => 0.03f }; // radians
+    public float TurnSpeed => Skill switch { BotDifficulty.Easy => 3.5f, BotDifficulty.Normal => 6f, BotDifficulty.Insane => 12f, _ => 10f }; // rad/s
+    public float Settle => Skill switch { BotDifficulty.Easy => 1.2f, BotDifficulty.Normal => 2.4f, BotDifficulty.Insane => 5.2f, _ => 4.5f }; // aim error decay /s
+    public double TriggerDelay => Skill switch { BotDifficulty.Easy => 0.25, BotDifficulty.Normal => 0.12, BotDifficulty.Insane => 0.04, _ => 0.05 }; // extra delay on semi-autos
 }
 
 /// <summary>
@@ -258,7 +261,7 @@ public sealed partial class Game
             b.ReloadUntil = 0;
             b.CoverReload = false;
         }
-        BotTickShared();
+        BotTickShared(now);
         var nav = NavGraph.Current;
         if (b.PathGraph != nav)
         {
@@ -268,11 +271,13 @@ public sealed partial class Game
         }
 
         var target = BotPerceive(p, b, now, out var visible);
+        SquadPerceive(p, b, target, visible, now); // Insane squads: report to the blackboard (Source/Game/Bots/Squads)
         BotDecide(p, b, target, visible, def, now);
         var steer = BotSteer(p, b, target, visible, def, now);
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
         var aim = BotAim(p, b, target, visible, def, steer, now);
         BotShoot(p, b, target, visible, def, aim, now);
+        SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
         BotGrenade(p, b, target, visible, aim.Distance, now);
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
 
@@ -304,6 +309,7 @@ public sealed partial class Game
     /// <summary>Called by DamagePlayer for every kill: bookkeeping and reactions.</summary>
     private void BotNoteKill(Player killer, Player victim, bool head, byte killId, double now)
     {
+        SquadNoteKill(killer, victim, now); // Insane squads: callouts and trades (SquadPlanner.cs)
         if (killer.Bot is not { } b || killer == victim)
             return;
         // Marksmen move on after a kill instead of sitting on a spot everyone now knows about.

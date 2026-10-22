@@ -14,6 +14,7 @@ public enum BotDifficulty
     Easy,
     Normal,
     Hard,
+    Insane, // Hard+ aim and reactions; in team modes they play as squads (Source/Game/Bots/Squads)
 }
 
 /// <summary>Player preferences, saved to settings.txt next to the game.</summary>
