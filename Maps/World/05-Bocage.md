@@ -22,25 +22,27 @@ flattened; the lanes are painted dirt and cut 1.3 m below the ground on long str
 the farms and the village, the north and south lanes out to their lobes) with banks either side; the brook is a level
 sandy bed 1.8 m down (2.6 m under the bridge) with flat water strips on it and stepping stones at two fords.
 
-**Hedgerows** (the point of the map): 418 `Bocage Hedgerow` props (6 m pieces every 5.6 m along each hedge line, 3 m pieces
-for the odd lengths, rounded 2 m ends at every gap) along 26 field hedges and both sides of every lane, outside the village
+**Hedgerows** (the point of the map): 452 `Bocage Hedgerow` props (6 m pieces every 5.6 m along each hedge line, 3 m pieces
+for the odd lengths and on banks, rounded 2 m ends at every gap; a few on steep banks lifted up to 0.4 m so every top stays
+at least 3.8 m over the ground at its middle) along 26 field hedges and both sides of every lane, outside the village
 squares, the farm fronts and the brook. Each is an earth bank under a dense hedge: one solid collider 4.3 m tall and 2.3 m
 deep, so it stops bullets, grenades and sight, can't be walked through and is above a Parkour mantle's reach. Gaps are
 field gates (4.6 m, timber gate swung open between granite posts) or worn 3.4 m gaps, two or three per field and every
 ~30 m along the lanes, staggered side to side; each gap has waypoints on both sides so bots path through. Sight lines are
 short in the fields (25-35 m across), long down the lanes and the brook, and longest from the barn haylofts (loft doors in
-both gables and over the front doors: the eye is 6 m up, over the hedges).
+both gables and over the front doors: the eye is 5 m up, over the hedges).
 
 **Fairness.** Everything that shapes play (terrain shapes, lanes, hedges and gaps, buildings, spawns, objectives) is
 point-symmetric about the centre; only the village plots differ (chapel / mairie) and the dressing. Blue holds the west
 farm, Red the east farm. Hills: 1 on the bridge deck in the middle (y 0.35, radius 5), 2 and 3 in the narrow fields beside
-the north and south lanes, placed where the averaged walks are equal on the generator's 0.5 m grid (Blue/Red 102/100,
-145/142, 142/145 m; enemy flag 207/205 m). No Blue spawn sees a Red one. The self-test ("World Tour: Bocage") measures
+the north and south lanes, placed where the averaged walks are equal on the generator's 0.5 m grid (Blue/Red 99/98,
+123/126, 125/123 m; enemy flag 202/202 m; on the game's nav graph in CI 100/100, 120/124, 124/124 and 198/197 m). No Blue spawn sees a Red one. The self-test ("World Tour: Bocage") measures
 the same on the game's nav graph (within 10%), casts every spawn-to-spawn eye ray, checks the nav graph reaches every
 spawn, hill and flag, and that bots reach every room of every building.
 
-**Objects** (generator counts): 12 buildings (2 Norman Farmhouses and 2 Half-Timbered Barns at the farms, 6 Norman
-Cottages, the chapel and the mairie), about 615 hand-placed props (418 hedgerow pieces, 37 field gates, the yards,
+**Objects** (self-test counts: 1,554 props, 990 solid; 44,967 plants, 88 trees; 1,058 meshes; 91 boxes drawn one by one, the
+bridge and the trunks; 8,337 boxes in all with the buildings and colliders): 12 buildings (2 Norman Farmhouses and 2 Half-Timbered Barns at the farms, 6 Norman
+Cottages, the chapel and the mairie), about 650 hand-placed props (452 hedgerow pieces, 37 field gates, the yards,
 orchards, fields and village), a few cosmetic Clutter ops (windfalls, straw, sheep), 3 boxes drawn one by one (the
 bridge deck and parapets) plus about 90 tree trunks, about 1,060 meshes (scenery trees, the water, the bridge's arch and
 copings, stepping stones), about 240 decals plus scatters (cart ruts, mud and puddles down the lanes, hoof prints and mud
