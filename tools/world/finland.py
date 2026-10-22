@@ -821,8 +821,8 @@ BX0, BZ0, BX1, BZ1 = t.x0, t.z0, t.x1, t.z1
 AUTUMN_BIRCH = [0.82, 0.62, 0.16]
 SPRUCE = [0.13, 0.24, 0.14]
 # the forest: dark spruce and pine with stands of yellowing birch
-t.region("pine", 0.024, rect=[BX0, BZ0, BX1, BZ1], height=[13, 21], color=SPRUCE)
-t.region("tree", 0.007, rect=[BX0, BZ0, BX1, BZ1], height=[9, 14], color=AUTUMN_BIRCH)
+t.region("pine", 0.040, rect=[BX0, BZ0, BX1, BZ1], height=[13, 21], color=SPRUCE)
+t.region("tree", 0.012, rect=[BX0, BZ0, BX1, BZ1], height=[9, 14], color=AUTUMN_BIRCH)
 for sx in (1, -1):
     t.region("tree", 0.012, polygon=[[sx * a, b] for a, b in ((-110, -60), (-70, -76), (-60, -40), (-104, -28))], height=[9, 14], color=[0.86, 0.68, 0.18])
     t.region("tree", 0.010, polygon=[[sx * a, b] for a, b in ((-64, 56), (-30, 64), (-30, 84), (-66, 78))], height=[8, 13], color=[0.78, 0.52, 0.14])

@@ -49,7 +49,6 @@ public static partial class SelfTest
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
             Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
-            Section("World: Vuorikoski (results first, temporary)", CheckWorldFinland); // TEMP: read this map's results in CI (removed before merge)
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
             Section("Map reload", CheckMapReload);
