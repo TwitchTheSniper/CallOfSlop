@@ -627,9 +627,13 @@ public static partial class SelfTest
                 else
                 {
                     missing.Add($"{key} room {r.Floor}:{r.Id}");
-                    if (detail.Count < 10)
+                    if (!b.Def.Name.StartsWith("Hotel") && !detail.Any(x => x.StartsWith(key))) // DEBUG (temporary)
+                    {
+                        var door = b.Plan.Doors.FirstOrDefault(d => Vector3.Distance(d.SwingSide, r.Waypoint) < 0.05f || Vector3.Distance(d.OtherSide, r.Waypoint) < 0.05f);
+                        var walk = door == null ? "no door" : WalkTrace(r.Waypoint, Vector3.Distance(door.SwingSide, r.Waypoint) < 0.05f ? door.OtherSide : door.SwingSide);
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
-                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent})");
+                                   + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); door walk: {walk}");
+                    }
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)
@@ -646,7 +650,7 @@ public static partial class SelfTest
                 {
                     missing.Add($"{key} stairs up to {top.Y:0.0} m");
                     var foot = Node(bottom);
-                    if (detail.Count < 10)
+                    if (detail.Count < 12) // DEBUG (temporary)
                     {
                         // The flight's middle waypoint follows the foot in the plan's waypoint list.
                         var wi = b.Plan.Waypoints.IndexOf(bottom);
@@ -671,7 +675,7 @@ public static partial class SelfTest
             Fail($"bots can't reach {rooms - reached} room(s) and {stairs - climbed} stair top(s) on {yard.Name}: "
                  + string.Join("; ", perBuilding.Where(kv => kv.Value.Reached < kv.Value.Rooms || kv.Value.Climbed < kv.Value.Stairs)
                      .Select(kv => $"{kv.Key} rooms {kv.Value.Reached}/{kv.Value.Rooms} stairs {kv.Value.Climbed}/{kv.Value.Stairs}")));
-            foreach (var d in detail.Take(6))
+            foreach (var d in detail.Take(12))
                 Fail("  nav detail: " + d);
         }
     }
