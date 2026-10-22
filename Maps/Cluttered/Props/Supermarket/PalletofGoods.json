@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pallet of Goods",
+  "category": "Supermarket",
+  "description": "A pallet stacked with strapped cases of stock, chest high.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.54, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
+  "breakable": {"health": 100, "breakBy": "all", "sound": "soft", "debris": {"count": 18, "size": [0.06, 0.35], "speed": 3.5, "colors": ["#c8a070", "#a8865a", "white"]}},
+  "parts": [
+    {"size": [1.2, 0.14, 1.0], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [0.576, 0.7, 0.48], "offset": [-0.3, 0.49, -0.25], "color": "cardboard"},
+    {"size": [0.576, 0.7, 0.48], "offset": [0.3, 0.49, -0.25], "color": "cardboard"},
+    {"size": [0.576, 0.7, 0.48], "offset": [-0.3, 0.49, 0.25], "color": "cardboard"},
+    {"size": [0.576, 0.7, 0.48], "offset": [0.3, 0.49, 0.25], "color": "cardboard"},
+    {"size": [1.152, 0.68, 0.96], "offset": [0, 1.19, 0], "color": "cardboard"},
+    {"size": [1.176, 0.05, 0.98], "offset": [0, 0.868, 0], "color": "#e8ecef"},
+    {"size": [0.2, 0.14, 0.012], "offset": [0.24, 1.19, 0.482], "color": "white"}
+  ]
+}

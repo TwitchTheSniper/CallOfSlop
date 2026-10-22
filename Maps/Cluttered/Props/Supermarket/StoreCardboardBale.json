@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Store Cardboard Bale",
+  "category": "Supermarket",
+  "description": "A compressed bale of flattened cardboard tied with black straps, ready for collection.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.1, 0.85, 0.75]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 10},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "soft", "debris": {"count": 16, "size": [0.08, 0.4], "speed": 3.0, "colors": ["#c8a070", "#9a7a4a"]}},
+  "parts": [
+    {"size": [1.1, 0.85, 0.75], "offset": [0, 0.425, 0], "color": "cardboard"},
+    {"size": [1.12, 0.03, 0.77], "offset": [0, 0.2, 0], "color": "#8a6a40"},
+    {"size": [1.12, 0.03, 0.77], "offset": [0, 0.45, 0], "color": "#9a7a4a"},
+    {"size": [1.12, 0.03, 0.77], "offset": [0, 0.7, 0], "color": "#8a6a40"},
+    {"size": [0.03, 0.87, 0.78], "offset": [-0.35, 0.435, 0], "color": "black"},
+    {"size": [0.03, 0.87, 0.78], "offset": [0.0, 0.435, 0], "color": "black"},
+    {"size": [0.03, 0.87, 0.78], "offset": [0.35, 0.435, 0], "color": "black"},
+    {"size": [0.3, 0.2, 0.012], "offset": [0.2, 0.55, 0.381], "color": "#d8d0b8"}
+  ]
+}

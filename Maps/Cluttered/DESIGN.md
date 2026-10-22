@@ -397,3 +397,89 @@ flickering tubes are animated props that hold still past 80 m. The smoke run's `
 south-west) and `cluttered_powderkeg_hall` (the staging band at eye height) views log fps, props and plants drawn.
 
 `tools/cluttered/powderkeg.py` regenerates the file (and a top-down preview PNG with the walk and sight-line checks).
+## 07 Supermarket (medium, noisy polygon, about 101 x 99 m, 8,135 m2, 12 players): SLOP MART after closing
+
+**Theme.** A run-down supermarket on a grey evening (`overcast` preset, sun at 17:36), most of the map indoors under one
+roof (6.5 m): rows of gondola shelving stocked with cans, cereal, bottles, snacks and household goods, end caps with SALE
+headers, hanging blue aisle signs and department signs, pendant fluorescent lights (about one in eight flickering, more in
+the stock room), tilted produce bins and crates, bakery racks and bread tables, open dairy chillers, a deli counter with
+its prep kitchen behind it, glass-door freezer cases and open freezer islands, ten checkout lanes (belt, scanner,
+register, sweets rack, a lit lane number), the front end (customer service desk, nested carts, vending and gumball
+machines), and over the deli a staff mezzanine with an office and a break room looking out over the floor. Behind the
+shop floor: the stock room (pallet racks, pallets of goods and water, roll cages, staff lockers, a forklift, a baler with
+its cardboard bales, a walk-in cooler) and the loading dock (three open dock doors, a closed one with a box truck backed up
+to it, dumpsters with trash round them, a smokers' bench). Outside: the car park in front (bays, planted islands with
+trees and lamps, cart corrals, abandoned carts, a bus stop, the price pylon), a service alley down the west side (a
+delivery truck, AC condensers, the bins at the side doors) and the dock apron. The `SLOP MART` sign is lit over the
+entrance.
+
+**Shape.** A `polygon` of 23 corners with `noise` (0.8 m, 9 m bumps), 107 segments: it hugs the store's blank east wall,
+takes in the west alley and the dock apron, and bulges round the car park with bites in its south and west edges. No
+`edge` style: `townkit.edge_run` dresses it per section, a tall hedge round the car park, chain-link fence along its east
+side and along the dock, brick backs of the neighbouring buildings across the alley.
+
+**Layout and routes.** Blue spawns in the far drive aisle of the car park (z about 44), Red on the dock apron (z about -40).
+- **Front (Blue's way in):** the entrance and exit doors under their canopies, three smashed shop windows with 1 m sills
+  to mantle over, then the checkouts (waist-high counters you can vault) and the front aisle. The west alley is Blue's
+  long flank: past the delivery truck to the produce fire exit or on to the stock room's side door.
+- **Back (Red's way in):** three dock doors into the stock room, then the bakery door, the main double door (a rack
+  island stops anyone looking straight from the middle dock door through it) or the deli's back door under the
+  mezzanine. Red also owns the back stair from the stock room up to the break room.
+- **Shop floor:** eleven rows of shelving (two runs each, a cross aisle between them) form ten aisles with a back aisle
+  and a front aisle; the middle of row 5 is taken out for the **centre court** (hill 1, radius 3.3, two roof columns for
+  cover). **Produce** (hill 2) is the open west side among the bins, **frozen** (hill 3) the east side between the freezer
+  islands and the freezer wall.
+- **Mezzanine:** 3.6 m up over the deli, a walkway behind a 1.05 m parapet (cover and the view over the shelves) in front
+  of the office and break room; the main stair climbs from the back aisle, the back stair from the stock room.
+- **Flags:** Blue's at the back of the car park, Red's on the dock apron behind the middle dock door.
+
+**Balance (not mirrored).** The two ends are different places on purpose: Red's side is closer to the mezzanine (the high
+ground over the floor, with its own back stair), Blue's side has more ways in (two doors, three windows, the alley flank)
+and more low cover on its way to the hills (checkout counters, promo stacks, cart nests). The generator measures the map
+instead of mirroring it: a 0.5 m grid walk from every spawn (anything 0.55-1.7 m tall can be mantled at 2 m extra, like
+the game's nav graph) puts the hills and spawns where both teams have the same walk (hill 1 51/51 m, hill 2 54/54 m,
+hill 3 61/64 m, the enemy flag 93/94 m, Blue/Red averaged over the team spawns), and checks that no Blue spawn can see a
+Red one. The self-test (`SelfTestCluttered.Supermarket.cs`) measures the same on the game's nav graph (within 10%): hill 1
+54/52 m (+3%), hill 2 56/56 m (0%), hill 3 61/65 m (-6%), the enemy flag 98/95 m (+3%); solid cover within 6 m of each
+team's routes to the hills 143/169 (85%, at least 70% needed); 0 spawn-to-spawn sight lines (real ray casts at eye
+height); 12 nav nodes on the mezzanine in the main area; and that the map really isn't mirrored (0% of the 505 solid props
+have a twin across x = 0, z = 0 or the centre; at most 35% allowed). Those checks are this map's own, so the twin checks of
+the mirrored maps stay as strict as they were. Hill 3 leans to Blue because Red's way to the frozen section goes round the
+deli counters; Red gets the mezzanine and the back stair in exchange.
+
+**Placement rules** (`townkit.py` plus the map's own code in `supermarket.py`): shelves in rows square to the walls with
+end caps facing out of every run; fittings against the walls with their backs to them (chillers and bakery racks on the
+back wall, freezer cases on the east wall, the deli's kitchen on the partition behind the counters); checkouts in a row
+across the front with the belt towards the aisles and the register towards the doors; nested carts by the doors, cart
+corrals in car park bays, lamps and trees in the planted islands; dumpsters with their backs to the dock wall and the
+alley wall beside a door, trash bags heaped round them and litter around (`bins_by_door`); AC condensers, meters and
+vents on the outside walls, rooftop plant on the roof (`roof_kit`, `wall_kit`); office and break room furnished on the
+mezzanine floor (desks, chairs, monitors, filing cabinets, a safe, a table and chairs, a fridge, a counter with a
+microwave and kettle, lockers, a sofa); ceiling lights and hanging signs with their tops at the ceiling. Every doorway is
+kept clear for 1.1 m each side, solid loose cover stays off the walking lanes, and fixtures keep out of what the
+self-test protects (1 m round a spawn, a hill's radius, 2 m round a flag). **Foliage:** none indoors (the roof), none on
+the intact pavement in front of the store (`Concrete`), 10% on the busted asphalt (`"surfaces": {"Plain": 0.1}`), lush
+verges between the car park and the hedge and along the dock fence, planted islands, weeds along the foot of the walls.
+
+**Pack props** (`Maps/Cluttered/Props/Supermarket`, written by `tools/cluttered/supermarket_props.py`, 40 props): five
+Grocery Shelf kinds, Shelf End Cap, Dairy Chiller, Freezer Case, Freezer Island, Deli Counter, Bakery Rack, Bread Display,
+three Produce Bins, Promo Stack, Checkout Counter, Shopping Cart Nest, Cart Corral, Shopping Basket Stack, Pallet of Goods,
+Pallet of Water, Store Cardboard Bale, Pallet Rack, Cardboard Baler, Roll Cage, Pallet Jack, Hanging Aisle Sign, six
+Department Signs, Ceiling Light Panel, Flickering Ceiling Light, the Slop Mart Sign, Wet Floor Sign, Dropped Groceries and
+a Gumball Machine. Fittings are solid and unbreakable; loose stock breaks; lights and signs are cosmetic.
+
+**Object counts** (from the self-test): 2,948 props (about 700 by hand, 2,240 from 13 cosmetic Clutter ops; 505 solid,
+2,443 cosmetic, 1,599 breakable), 6,948 plants (16 trees; the roof removes 9,786 and the paving 6,655), 382 meshes,
+120 boxes drawn one by one (walls with their openings, the roof, the mezzanine, stairs, columns, the
+cooler), 96 animated props (flickering lights, freezer and chiller lights, checkout lane lights, the sign's letters,
+swinging signs), 19 spawns, about 300 waypoints and a 1,390-node nav graph. Bots (12 players, 90 s): about 60 kills in
+free-for-all and 52 in TDM, no stuck, fallen or escaped bots, worst tick 0.8 ms.
+
+**Performance.** Fewer boxes than any other Cluttered map (120 drawn), about the props of Dockside and less than half its
+plants, so it should run at least as fast as Dockside on the user's PC. Animated props freeze past their distance (40-80 m
+for the signs and lights, which also keeps the shelves' dense interior cheap). The smoke run's `cluttered_supermarket` (the
+car park and store front from above) and `cluttered_supermarket_inside` (the floor from the mezzanine) views log fps,
+props and plants drawn.
+
+`tools/cluttered/supermarket.py` regenerates the map and, given a PNG path, a top-down preview with the spawns, hills and
+any spawn-to-spawn sight lines (run `supermarket_props.py` first if the props changed).

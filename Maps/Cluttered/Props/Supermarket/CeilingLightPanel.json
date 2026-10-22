@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ceiling Light Panel",
+  "category": "Supermarket",
+  "description": "A pendant fluorescent light panel, hung on two rods (its top is 1 m up: place it with y = ceiling - 1).",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "fadeDistance": 120,
+  "scatter": {"randomYaw": false},
+  "parts": [
+    {"size": [1.3, 0.08, 0.36], "offset": [0, 0.06, 0], "color": "#d8dadc"},
+    {"size": [0.012, 0.9, 0.012], "offset": [0.55, 0.55, 0], "color": "#3a3a3a"},
+    {"size": [0.012, 0.9, 0.012], "offset": [-0.55, 0.55, 0], "color": "#3a3a3a"},
+    {"size": [1.24, 0.02, 0.3], "offset": [0, 0.01, 0], "color": "#fbfcff"}
+  ]
+}

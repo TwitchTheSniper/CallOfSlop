@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bread Display",
+  "category": "Supermarket",
+  "description": "A wooden bakery table with wicker baskets of fresh loaves and a price card.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.6, 0.95, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood", "debris": {"count": 14, "size": [0.06, 0.3], "speed": 3.5, "colors": ["#c88a40", "#e0b070", "#b88a50"]}},
+  "parts": [
+    {"size": [1.6, 0.72, 0.9], "offset": [0, 0.36, 0], "color": "lightwood", "material": "wood"},
+    {"size": [1.64, 0.04, 0.94], "offset": [0, 0.74, 0], "color": "darkwood"},
+    {"size": [0.46, 0.14, 0.7], "offset": [-0.52, 0.83, 0], "color": "#b88a50", "material": "wood"},
+    {"size": [0.34, 0.11, 0.16], "offset": [-0.55, 0.95, -0.18], "color": "#c88a40"},
+    {"size": [0.34, 0.11, 0.16], "offset": [-0.48, 0.95, 0.0], "color": "#e0b070"},
+    {"size": [0.34, 0.11, 0.16], "offset": [-0.55, 0.95, 0.18], "color": "#a86a30"},
+    {"size": [0.46, 0.14, 0.7], "offset": [0.0, 0.83, 0], "color": "#b88a50", "material": "wood"},
+    {"size": [0.34, 0.11, 0.16], "offset": [-0.03, 0.95, -0.18], "color": "#e0b070"},
+    {"size": [0.34, 0.11, 0.16], "offset": [0.04, 0.95, 0.0], "color": "#a86a30"},
+    {"size": [0.34, 0.11, 0.16], "offset": [-0.03, 0.95, 0.18], "color": "#c88a40"},
+    {"size": [0.46, 0.14, 0.7], "offset": [0.52, 0.83, 0], "color": "#b88a50", "material": "wood"},
+    {"size": [0.34, 0.11, 0.16], "offset": [0.49, 0.95, -0.18], "color": "#a86a30"},
+    {"size": [0.34, 0.11, 0.16], "offset": [0.56, 0.95, 0.0], "color": "#c88a40"},
+    {"size": [0.34, 0.11, 0.16], "offset": [0.49, 0.95, 0.18], "color": "#e0b070"},
+    {"size": [0.03, 0.4, 0.03], "offset": [0.72, 0.95, 0.38], "color": "darkwood"},
+    {"size": [0.3, 0.2, 0.02], "offset": [0.72, 1.2, 0.38], "color": "white"},
+    {"size": [0.22, 0.05, 0.012], "offset": [0.72, 1.24, 0.392], "color": "#c02828"}
+  ]
+}
