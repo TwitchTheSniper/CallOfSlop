@@ -899,6 +899,7 @@ public sealed partial class Game : IDisposable
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
+        ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 

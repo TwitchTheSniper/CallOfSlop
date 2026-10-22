@@ -66,6 +66,7 @@ public static partial class SelfTest
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Flag pool", CheckFlagPool); // SelfTestFlags.cs: flag designs (Props/Flags), flag props flying them, random picks, overrides, map pools
+            Section("Landmines", CheckLandmines); // SelfTestLandmines.cs: pressure plates, neutral blasts, chains, walls, Flak Jacket, bots, zombies, respawn, cost
             Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
             Section("Attachments", CheckAttachments);
             Section("Optics", CheckOptics);
