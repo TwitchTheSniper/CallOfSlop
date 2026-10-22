@@ -1,0 +1,241 @@
+{
+ "format": "call-of-slop-prop/1",
+ "category": "British",
+ "author": "Call of Slop",
+ "name": "Railway Track",
+ "description": "Six metres of standard-gauge track on ballast: sleepers and two rails. Runs along X; line pieces up 6 m apart.",
+ "collision": "cosmetic",
+ "fadeDistance": 120,
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "scale": [
+   1,
+   1
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    6.0,
+    0.14,
+    2.9
+   ],
+   "offset": [
+    0,
+    0.07,
+    0
+   ],
+   "color": "#6e6a64",
+   "material": "dirt"
+  },
+  {
+   "size": [
+    6.0,
+    0.06,
+    2.4
+   ],
+   "offset": [
+    0,
+    0.16,
+    0
+   ],
+   "color": "#7c7870",
+   "material": "dirt"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    -2.7,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    -2.1,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    -1.5,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    -0.9,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    -0.3,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    0.3,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    0.9,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    1.5,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    2.1,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    0.24,
+    0.12,
+    2.5
+   ],
+   "offset": [
+    2.7,
+    0.22,
+    0
+   ],
+   "color": "#3a3430",
+   "material": "wood"
+  },
+  {
+   "size": [
+    6.0,
+    0.08,
+    0.14
+   ],
+   "offset": [
+    0,
+    0.3,
+    0.72
+   ],
+   "color": "#5a5048"
+  },
+  {
+   "size": [
+    6.0,
+    0.08,
+    0.07
+   ],
+   "offset": [
+    0,
+    0.38,
+    0.72
+   ],
+   "color": "#a8a8a4",
+   "material": "metal"
+  },
+  {
+   "size": [
+    6.0,
+    0.08,
+    0.14
+   ],
+   "offset": [
+    0,
+    0.3,
+    -0.72
+   ],
+   "color": "#5a5048"
+  },
+  {
+   "size": [
+    6.0,
+    0.08,
+    0.07
+   ],
+   "offset": [
+    0,
+    0.38,
+    -0.72
+   ],
+   "color": "#a8a8a4",
+   "material": "metal"
+  }
+ ]
+}
