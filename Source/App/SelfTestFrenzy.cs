@@ -207,12 +207,8 @@ public static partial class SelfTest
             return count == 0 ? 0 : Math.Sqrt(sum / count);
         }
 
-        bool OnGrid(FrenzyLayer f)
-        {
-            var fpb = f.Renderer.FramesPerBar;
-            var bars = f.LastChangeFrame / fpb;
-            return Math.Abs(bars - Math.Round(bars)) * fpb <= 2.0;
-        }
+        // On a bar line the track really played (levels 5 and 6 change the tempo, so the bars aren't all one length).
+        bool OnGrid(FrenzyLayer f) => f.IsBarLine(f.LastChangeFrame);
 
         // Off: nothing, no cost.
         var layer = new FrenzyLayer(7);
@@ -226,13 +222,15 @@ public static partial class SelfTest
         for (var level = 1; level <= 6; level++)
         {
             layer.Target = level;
+            var bar = layer.Active ? layer.Renderer.FramesPerBar / sr : 0.0; // the bar it waits through, at the old tempo
             var waited = 0.0;
             while (layer.Level != level && waited < 4)
             {
                 Run(layer, blockSeconds);
                 waited += blockSeconds;
             }
-            var bar = layer.Renderer.FramesPerBar / sr;
+            if (bar <= 0)
+                bar = layer.Renderer.FramesPerBar / sr;
             if (layer.Level != level)
                 Fail($"level {level} never came (playing {layer.Level})");
             else if (waited > bar + 2 * blockSeconds)

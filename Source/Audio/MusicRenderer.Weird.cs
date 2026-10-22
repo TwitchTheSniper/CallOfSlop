@@ -100,7 +100,7 @@ public sealed partial class MusicRenderer
             _repeatBar = -1; // a jump (or the load point): no beat comes round again here
         _wPrevBar = bar;
         _wv = bar == _repeatBar ? s + 4 : s;
-        _samplesPerStep = tl.StepSeconds(bar, _wv) * Sr;
+        _samplesPerStep = tl.StepSeconds(bar, _wv) * Sr / _tempo; // the frenzy's tempo (MusicRenderer.Tempo.cs)
         _pitchMul = tl.Pitch(bar, _wv);
 
         var code = tl.Code(bar);

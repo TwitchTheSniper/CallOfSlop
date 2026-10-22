@@ -98,6 +98,7 @@ public sealed partial class MusicRenderer
         _var = new MusicRng(track.Seed ^ (seed * 0x9E3779B9u) ^ 0x5bd1e995u);
         _samplesPerStep = Sr * 60.0 / track.Bpm / 4.0;
         _toNextStep = 0;
+        ResetTempo(); // the frenzy's tempo changes (MusicRenderer.Tempo.cs)
         _step = Math.Clamp(startBar, 0, track.TotalBars) * 16;
         _rendered = 0;
         _drops = 0;
@@ -113,6 +114,7 @@ public sealed partial class MusicRenderer
         _dcInL = _dcInR = _dcOutL = _dcOutR = 0;
 
         ConfigureStyle();
+        CaptureTempoBase();
         _kick.Reset();
         _snare.Reset();
         _hat.Reset();
@@ -521,7 +523,7 @@ public sealed partial class MusicRenderer
                 _lead.Resonance = 0.88f;
                 _lead.BandPass = true;
                 _lead.FilterLfo = 1.1f;
-                _lead.FilterLfoHz = _track.Bpm / 60f * 2f; // wah in 8ths
+                _lead.FilterLfoHz = EffBpm / 60f * 2f; // wah in 8ths (at the frenzy's tempo, MusicRenderer.Tempo.cs)
                 _lead.Vibrato = 0.5f;
                 _lead.VibratoHz = 7f;
                 _lead.BendSemis = -4f;
@@ -1134,6 +1136,8 @@ public sealed partial class MusicRenderer
         {
             if (_toNextStep <= 0)
             {
+                if (_tempoRamp > 0)
+                    TempoStep(); // a frenzy tempo glide (MusicRenderer.Tempo.cs)
                 OnStep();
                 if (StepLogOn)
                     LogStep(i); // the frenzy's class styles (MusicRenderer.FrenzyClass.cs)
