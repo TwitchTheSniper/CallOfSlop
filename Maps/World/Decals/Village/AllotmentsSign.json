@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Allotments Sign",
+  "description": "A small green ALLOTMENTS sign for the gate.",
+  "author": "Call of Slop",
+  "size": [
+    1.6,
+    0.36
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "fadeDistance": 60,
+  "image": "allotments.png"
+}

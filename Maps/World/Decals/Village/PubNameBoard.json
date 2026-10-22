@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Pub Name Board",
+  "description": "The pub's name board over its door: THE PLOUGH, cream on black.",
+  "author": "Call of Slop",
+  "size": [
+    3.6,
+    0.5
+  ],
+  "rotation": 0,
+  "blend": "alpha",
+  "surfaces": [
+    "wall"
+  ],
+  "fadeDistance": 60,
+  "image": "the_plough.png"
+}

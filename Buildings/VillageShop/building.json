@@ -375,15 +375,6 @@
       "color": "$trim"
     },
     {
-      "type": "prop",
-      "name": "Shop Sign",
-      "at": [
-        -1.6,
-        2.5,
-        5.26
-      ]
-    },
-    {
       "type": "awning",
       "rect": [
         -5.3,

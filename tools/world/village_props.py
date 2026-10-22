@@ -452,5 +452,39 @@ write("Allotment Scarecrow", "AllotmentScarecrow.json",
       sc, collider=[col((0.1, 1.86, 0.1))], scatter={"randomYaw": True},
       breakable={"health": 40, "breakBy": "all", "sound": "soft", "debris": {"count": 12, "size": [0.04, 0.3], "speed": 3, "colors": ["#d8c890", "#5a6a8a", "#6a4e30"]}})
 
+# ------------------------------------------------------------------------------------------------ churchyard memorials
+
+GRAVE = "#a8a290"
+GRAVE_D = "#8a8676"
+hs = [
+    box(-0.32, 0.0, -0.07, 0.32, 0.82, 0.07, GRAVE, "concrete"),
+    box(-0.24, 0.82, -0.07, 0.24, 0.9, 0.07, GRAVE),                 # rounded top in two steps
+    box(-0.14, 0.9, -0.07, 0.14, 0.95, 0.07, GRAVE),
+    box(-0.36, 0.0, -0.12, 0.36, 0.08, 0.12, GRAVE_D),               # the base
+    box(-0.2, 0.45, 0.07, 0.2, 0.47, 0.072, "#5a584e"),              # worn lettering (lines, no names)
+    box(-0.16, 0.38, 0.07, 0.16, 0.4, 0.072, "#5a584e"),
+    box(-0.22, 0.6, 0.07, 0.22, 0.63, 0.072, "#5a584e"),
+    box(-0.1, 0.7, 0.07, 0.1, 0.78, 0.072, "#6a685c"),               # a carved cross
+    box(-0.04, 0.66, 0.07, 0.04, 0.82, 0.072, "#6a685c"),
+    part((0.3, 0.06, 0.12), (0.2, 0.03, 0.18), "#4a6a2a"),           # moss at the foot
+]
+write("Churchyard Headstone", "ChurchyardHeadstone.json",
+      "A weathered round-topped limestone headstone with worn lines of lettering (no names). Low cover; unbreakable.",
+      hs, collider=[col((0.72, 0.95, 0.24))], scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 7})
+ct = [
+    box(-0.95, 0.0, -0.5, 0.95, 0.12, 0.5, GRAVE_D, "concrete"),
+    box(-0.85, 0.12, -0.42, 0.85, 0.74, 0.42, GRAVE, "concrete"),
+    box(-0.98, 0.74, -0.53, 0.98, 0.84, 0.53, GRAVE),                 # the lid
+    box(-0.6, 0.84, -0.3, 0.6, 0.86, 0.3, GRAVE_D),
+]
+for sx in (-1, 1):
+    ct.append(box(sx * 0.86 - 0.04, 0.12, -0.44, sx * 0.86 + 0.04, 0.74, 0.44, GRAVE_D))      # corner balusters
+for sz in (-1, 1):
+    ct.append(box(-0.5, 0.3, sz * 0.425 - 0.004, 0.5, 0.56, sz * 0.425 + 0.004, "#8e8a7a"))     # panels
+ct.append(part((0.5, 0.05, 0.3), (0.5, 0.875, 0.1), "#5a7a34"))                                   # lichen
+write("Churchyard Chest Tomb", "ChurchyardChestTomb.json",
+      "A Georgian chest tomb: a stone box with a heavy lid and panelled sides. Waist-high cover; unbreakable.",
+      ct, collider=[col((1.96, 0.86, 1.06))], scatter={"randomYaw": False, "yawStep": 90, "yawJitter": 3})
+
 if __name__ == "__main__":
     print("wrote", len([f for f in os.listdir(OUT) if f.endswith(".json")]), "props to", OUT)

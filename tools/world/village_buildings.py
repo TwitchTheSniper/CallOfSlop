@@ -324,7 +324,6 @@ shop = {
     "extras": [
         {"type": "block", "min": [-5.65, 2.45, 5.12], "max": [5.65, 3.0, 5.26], "color": "$trim"},                   # the fascia
         {"type": "block", "min": [-5.65, 0.0, 5.12], "max": [5.65, 0.55, 5.2], "color": "$trim"},                    # stall risers
-        {"type": "prop", "name": "Shop Sign", "at": [-1.6, 2.5, 5.26]},
         {"type": "awning", "rect": [-5.3, 5.13, 4.4, 6.3], "height": 2.4, "color": "$trim"},
         {"type": "prop", "name": "Hanging Shop Sign", "at": [5.0, 0, 5.75]},
         {"type": "prop", "name": "Post Box", "at": [6.3, 5.8], "yaw": 0},

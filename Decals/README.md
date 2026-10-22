@@ -109,7 +109,7 @@ Every placeable decal that ships (bullet impacts are listed under [Bullet impact
 | Tyre Tracks | 2 x 4 | multiply | floor | random | Muddy tread tracks from a truck, two wheels wide. |
 | Water Stain | 2.2 | multiply | floor | random | A dried puddle: a faint darker patch with a tide-mark rim. |
 
-**Road** (17)
+**Road** (20)
 
 | Decal | Size | Blend | Surfaces | Turn | What it is |
 | --- | --- | --- | --- | --- | --- |
@@ -130,6 +130,9 @@ Every placeable decal that ships (bullet impacts are listed under [Bullet impact
 | Stop Line | 3.5 x 0.4 | alpha | floor | 0 | A thick white stop line across a lane. |
 | Turn Arrow | 1.6 x 3 | alpha | floor | 0 | A worn white arrow bending right, for junction lanes. |
 | Yellow Kerb Paint | 3 x 0.3 | alpha | all | 0 | A worn strip of yellow kerb paint (for the kerb's top or its side). |
+| Give Way Lines | 3.4 x 0.6 | alpha | floor | 0 | UK give-way marking: two rows of broken white dashes across a lane (runs east-west; turn it 90). |
+| Give Way Triangle | 1.4 x 3.2 | alpha | floor | 0 | UK give-way triangle: a long white outline on the approach (its base points north, towards the lines). |
+| Road Zigzag Lines | 6 x 0.45 | alpha | floor | 0 | UK white zig-zags along the kerb either side of a pedestrian crossing (runs east-west). |
 
 **Wall** (23)
 
