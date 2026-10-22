@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Calvary Cross",
+  "category": "Countryside",
+  "description": "A Breton-Norman calvary: a granite cross on a stepped plinth at a village crossroads, flowers at its foot.",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 0.9, 2.4], "offset": [0, 0.45, 0]}, {"size": [0.7, 4.5, 0.7], "offset": [0, 3.15, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [2.4, 0.3, 2.4], "offset": [0, 0.15, 0], "color": "#76746c", "material": "concrete"},
+    {"size": [1.8, 0.3, 1.8], "offset": [0, 0.45, 0], "color": "#8a877e", "material": "concrete"},
+    {"size": [1.2, 0.3, 1.2], "offset": [0, 0.75, 0], "color": "#76746c", "material": "concrete"},
+    {"size": [0.7, 0.9, 0.7], "offset": [0, 1.35, 0], "color": "#8a877e", "material": "concrete"},
+    {"size": [0.8, 0.1, 0.8], "offset": [0, 1.84, 0], "color": "#76746c", "material": "concrete"},
+    {"size": [0.34, 2.6, 0.141], "offset": [0.0, 3.19, 0.0], "color": "#8a877e", "rotation": [0, 0, 0], "material": "concrete"},
+    {"size": [0.34, 2.6, 0.141], "offset": [0.0, 3.19, 0.0], "color": "#8a877e", "rotation": [0, 45, 0], "material": "concrete"},
+    {"size": [0.34, 2.6, 0.141], "offset": [0.0, 3.19, 0.0], "color": "#8a877e", "rotation": [0, 90, 0], "material": "concrete"},
+    {"size": [0.34, 2.6, 0.141], "offset": [0.0, 3.19, 0.0], "color": "#8a877e", "rotation": [0, 135, 0], "material": "concrete"},
+    {"size": [0.18, 1.2, 0.14], "offset": [0, 5.05, 0], "color": "#5a5852", "material": "concrete"},
+    {"size": [0.85, 0.16, 0.14], "offset": [0, 5.15, 0], "color": "#5a5852", "material": "concrete"},
+    {"size": [0.5, 0.06, 0.03], "offset": [0, 4.45, 0.08], "color": "#3a3a36"},
+    {"size": [0.12, 0.4, 0.06], "offset": [0, 4.95, 0.1], "color": "#c8c4b8", "material": "concrete"},
+    {"size": [0.42, 0.08, 0.05], "offset": [0, 5.12, 0.1], "color": "#c8c4b8", "material": "concrete"},
+    {"size": [0.07, 0.07, 0.07], "offset": [0, 5.26, 0.1], "color": "#c8c4b8", "material": "concrete"},
+    {"size": [0.3, 0.32, 0.3], "offset": [0.55, 1.06, 0.55], "color": "#9a3a3a"},
+    {"size": [0.22, 0.2, 0.22], "offset": [0.55, 1.32, 0.55], "color": "#c84a3a"},
+    {"size": [0.26, 0.3, 0.26], "offset": [-0.55, 1.05, 0.58], "color": "#8a7a62"},
+    {"size": [0.2, 0.18, 0.2], "offset": [-0.55, 1.29, 0.58], "color": "#e0d070"}
+  ]
+}

@@ -78,6 +78,9 @@ public static unsafe partial class Program
         ("world_silo", "Silo", new Vector3(-112f, 46f, 66f), new Vector3(0f, 8f, 0f), false),
         ("world_silo_shaft", "Silo", new Vector3(0f, -2.1f, -11.2f), new Vector3(0f, -15f, 4f), false),
         ("world_silo_control", "Silo", new Vector3(0f, -2.2f, -41.6f), new Vector3(0f, -2.4f, -52f), false),
+        // World Tour, 05 Bocage: the hedgerow maze and the hamlet from above the south-west, then down the sunken west lane at eye height.
+        ("world_bocage", "Bocage", new Vector3(-112f, 46f, 86f), new Vector3(-6f, 0f, -4f), false),
+        ("world_bocage_lane", "Bocage", new Vector3(-64f, 0.75f, 4.4f), new Vector3(-36f, 0.2f, 5.5f), false),
         // World Tour, 04 Paris Quarter: the quarter from above the south-west, then the raised square at eye height towards the fountain and the north row.
         ("world_paris", "Paris Quarter", new Vector3(-74f, 40f, 52f), new Vector3(0f, 6f, -10f), false),
         ("world_paris_square", "Paris Quarter", new Vector3(-22f, 4.7f, 3f), new Vector3(6f, 7f, -16f), false),

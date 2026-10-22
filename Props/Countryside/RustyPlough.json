@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Rusty Plough",
+  "category": "Countryside",
+  "description": "An old three-furrow horse plough left at a field edge, rusting.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 55,
+  "parts": [
+    {"size": [1.6, 0.1, 0.1], "offset": [0, 0.55, 0], "color": "#4a4a46", "rotation": [0, 0, -10]},
+    {"size": [0.06, 0.55, 0.06], "offset": [-0.3, 0.3, -0.35], "color": "#3a3a36"},
+    {"size": [0.45, 0.06, 0.28], "offset": [-0.45, 0.06, -0.35], "color": "#5a5650", "rotation": [0, 20, 25]},
+    {"size": [0.06, 0.55, 0.06], "offset": [0.0, 0.3, 0.0], "color": "#3a3a36"},
+    {"size": [0.45, 0.06, 0.28], "offset": [-0.15, 0.06, 0.0], "color": "#5a5650", "rotation": [0, 20, 25]},
+    {"size": [0.06, 0.55, 0.06], "offset": [0.3, 0.3, 0.35], "color": "#3a3a36"},
+    {"size": [0.45, 0.06, 0.28], "offset": [0.15, 0.06, 0.35], "color": "#5a5650", "rotation": [0, 20, 25]},
+    {"size": [0.7, 0.06, 0.06], "offset": [0.75, 0.75, 0.25], "color": "#6e5536", "rotation": [0, 0, 30]},
+    {"size": [0.7, 0.06, 0.06], "offset": [0.75, 0.75, -0.25], "color": "#6e5536", "rotation": [0, 0, 30]},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.55, 0.25, 0], "color": "#3a3a36", "rotation": [0, 0, 0]},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.55, 0.25, 0], "color": "#3a3a36", "rotation": [0, 0, 45]},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.55, 0.25, 0], "color": "#3a3a36", "rotation": [0, 0, 90]},
+    {"size": [0.207, 0.5, 0.06], "offset": [0.55, 0.25, 0], "color": "#3a3a36", "rotation": [0, 0, 135]}
+  ]
+}

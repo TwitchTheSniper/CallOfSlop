@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Bocage Lichen",
+  "category": "Bocage",
+  "description": "Yellow and grey lichen rosettes on old granite and limestone.",
+  "author": "Call of Slop",
+  "size": 1.2,
+  "rotation": "random",
+  "blend": "alpha",
+  "surfaces": [
+    "wall",
+    "floor"
+  ],
+  "sizeVariation": 0.4,
+  "layers": [
+    {
+      "shape": "splat",
+      "at": [
+        0.4,
+        0.55
+      ],
+      "radius": 0.16,
+      "count": 9,
+      "jag": 0.6,
+      "seed": 506,
+      "color": [
+        0.78,
+        0.68,
+        0.3
+      ],
+      "alpha": 0.7,
+      "noise": 0.5,
+      "noiseScale": 12
+    },
+    {
+      "shape": "splat",
+      "at": [
+        0.65,
+        0.35
+      ],
+      "radius": 0.12,
+      "count": 8,
+      "jag": 0.6,
+      "seed": 507,
+      "color": [
+        0.7,
+        0.72,
+        0.62
+      ],
+      "alpha": 0.65,
+      "noise": 0.5,
+      "noiseScale": 12
+    },
+    {
+      "shape": "speckle",
+      "at": [
+        0.5,
+        0.5
+      ],
+      "radius": 0.4,
+      "count": 22,
+      "width": 0.03,
+      "seed": 508,
+      "color": [
+        0.8,
+        0.62,
+        0.28
+      ],
+      "alpha": 0.7
+    }
+  ]
+}

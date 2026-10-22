@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Bocage Hedgerow End",
+  "category": "Countryside",
+  "description": "A 2 m bocage hedgerow end, rounded off where the hedge stops at a gateway or a gap.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 4.3, 2.3], "offset": [0, 2.15, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "scale": 1},
+  "parts": [
+    {"size": [2.1, 0.9, 2.4], "offset": [0, 0.45, 0], "color": "#6a5534", "material": "dirt", "texScale": 2},
+    {"size": [2.05, 0.35, 2.1], "offset": [0, 0.98, 0], "color": "#5e4c30", "material": "dirt", "texScale": 2},
+    {"size": [2.0, 0.08, 2.18], "offset": [0, 1.12, 0], "color": "#56692f", "material": "dirt"},
+    {"size": [1.9, 2.6, 1.7], "offset": [0, 2.35, 0], "color": "#2f4a24", "material": "dirt", "texScale": 1.5},
+    {"size": [1.362, 1.533, 2.016], "offset": [-0.559, 3.359, 0.046], "color": "#324d26", "rotation": [-2.678565467875237, 9.854975793402474, 3.1590404727841577], "material": "dirt", "texScale": 1.5},
+    {"size": [1.374, 2.198, 1.657], "offset": [0.255, 3.268, 0.117], "color": "#466833", "rotation": [-2.173389926477303, -6.789632481855562, 2.294441576669225], "material": "dirt", "texScale": 1.5},
+    {"size": [1.449, 0.51, 0.5], "offset": [0.067, 1.35, -0.98], "color": "#466833", "rotation": [-15.348301277747254, -8.545650582576098, 0], "material": "dirt"},
+    {"size": [0.69, 0.35, 0.722], "offset": [-0.168, 4.057, -0.401], "color": "#5f7d3a", "rotation": [0, 61.996636100668084, 0], "material": "dirt"},
+    {"size": [0.9, 3.0, 1.5], "offset": [-0.8, 2.4, 0], "color": "#3b5a2c", "rotation": [0, 45, 0], "material": "dirt"},
+    {"size": [0.6, 0.9, 1.9], "offset": [-0.95, 0.45, 0], "color": "#6a5534", "material": "dirt"},
+    {"size": [0.9, 3.0, 1.5], "offset": [0.8, 2.4, 0], "color": "#35522a", "rotation": [0, 45, 0], "material": "dirt"},
+    {"size": [0.6, 0.9, 1.9], "offset": [0.95, 0.45, 0], "color": "#6a5534", "material": "dirt"}
+  ]
+}
