@@ -342,11 +342,11 @@ public static class GunSamples
             LowPass(x, 1400f);
             Decay(x, 0.07f); // a suppressor kills the blast's ring-out
             Body(x, voice.BodyHz * 0.8f, voice.BodyQ, voice.BodyGain * 1.5f); // what's left is the gun's own body
+            Tilt(x, voice.Tilt * 0.6f); // on the muffled recording only: the synthesised thwip stays as it is
             var mix = new float[len];
             var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f) * 0.7f;
             for (var i = 0; i < len; i++)
                 mix[i] = x[i] * k + (i < synthF.Length ? synthF[i] : 0f);
-            Tilt(mix, voice.Tilt * 0.6f);
             FadeTail(mix, 0.3f);
             outv[v] = Finish(mix, Rms(synthF, LoudnessWindow) * LoudnessMatch);
         }
