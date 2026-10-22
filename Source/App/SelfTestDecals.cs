@@ -199,7 +199,6 @@ public static partial class SelfTest
         const int f = DecalMesh.FloatsPerVertex;
         var v = mesh.Vertices;
         int owned = 0, onTerrain = 0, overHole = 0, onMesh = 0, walls = 0;
-        var kerbYs = new List<float>(); // floor-facing decal vertices round the kerb's edge
         var terrain = map.Terrain;
         for (var i = 0; i < mesh.VertexCount; i++)
         {
@@ -222,18 +221,11 @@ public static partial class SelfTest
                 onTerrain++;
             if (owner < 0 && MathF.Abs(p.X + 20f) < 1.7f && MathF.Abs(p.Z - 8f) < 1.7f && p.Y > map.GroundHeight(-20, 8) + 0.3f)
                 onMesh++;
-            if (owner >= 0 && p.X is > -7.9f and < -4.7f && p.Z is > 2.5f and < 6.5f && n.Y > 0.9f)
-                kerbYs.Add(p.Y);
             if (MathF.Abs(n.Y) < 0.3f)
                 walls++;
         }
         if (onTerrain < 30 || onMesh < 3 || walls < 30)
             Fail($"Decal Test: decals missing from the terrain ({onTerrain}), the mesh ({onMesh}) or the walls ({walls})");
-
-        // The kerb: decal vertices on its top and on the slab 0.4 m below it.
-        var kerbMax = kerbYs.Count > 0 ? kerbYs.Max() : 0f;
-        var kerbTop = kerbYs.Count(y => y > kerbMax - 0.05f);
-        var kerbGround = kerbYs.Count(y => y < kerbMax - 0.3f);
 
         // Hole cells really get no triangles: every terrain decal triangle's centre is over solid ground.
         for (var i = 0; i + 2 < mesh.VertexCount; i += 3)
@@ -245,12 +237,9 @@ public static partial class SelfTest
             if (terrain.IsHole(c.X, c.Z) && MathF.Abs(c.Y - terrain.Sample(c.X, c.Z)) > 0.3f)
                 overHole++;
         }
-        Line($"Decal Test vertices: {owned} on boxes, {onTerrain} on the terrain ({overHole} triangles over the hole), {onMesh} on the mesh tank, {walls} on walls, "
-             + $"kerb wrap {kerbTop} top / {kerbGround} below");
+        Line($"Decal Test vertices: {owned} on boxes, {onTerrain} on the terrain ({overHole} triangles over the hole), {onMesh} on the mesh tank, {walls} on walls");
         if (overHole > 0)
             Fail($"{overHole} decal triangles lie over the terrain hole");
-        if (kerbTop < 3 || kerbGround < 3)
-            Fail($"the Oil Stain over the kerb should wrap onto both levels ({kerbTop} top, {kerbGround} below)");
 
         // Cosmetic: no boxes added, the fingerprint is the same without the decal ops, and the ops survive a file round trip.
         var json = MapFile.ToJson(map);
@@ -321,22 +310,34 @@ public static partial class SelfTest
                                 + "{ \"op\": \"Block\", \"x0\": -2, \"y0\": 0, \"z0\": -6, \"x1\": 2, \"y1\": 3, \"z1\": -5, \"color\": [0.6, 0.6, 0.6] }, "
                                 + "{ \"op\": \"Decal\", \"decal\": \"Manhole Cover\", \"x\": 3, \"z\": 3, \"rotation\": 0 }, "
                                 + "{ \"op\": \"Decal\", \"decal\": \"Torn Poster\", \"x\": 0, \"z\": -3, \"y\": 1.5, \"onto\": \"wall-z\" }, "
-                                + "{ \"op\": \"Decal\", \"decal\": \"Torn Poster\", \"x\": 0, \"z\": 5, \"y\": 1.5, \"onto\": \"wall+z\", \"reach\": 2 } ] }", "flat-decals.json");
+                                + "{ \"op\": \"Decal\", \"decal\": \"Torn Poster\", \"x\": 0, \"z\": 5, \"y\": 1.5, \"onto\": \"wall+z\", \"reach\": 2 }, "
+                                + "{ \"op\": \"Block\", \"x0\": 4, \"y0\": 0, \"z0\": -3, \"x1\": 9, \"y1\": 0.3, \"z1\": 3, \"color\": [0.6, 0.6, 0.6] }, "
+                                + "{ \"op\": \"Decal\", \"decal\": \"Oil Stain\", \"x\": 4.3, \"z\": -0.5, \"y\": 0.3, \"size\": 3.2 } ] }", "flat-decals.json");
         var fm = flat.DecalMesh;
         var floorOk = true;
         var wallOk = true;
+        int kerbTop = 0, kerbGround = 0, kerbOther = 0;
         for (var i = 0; i < fm.VertexCount; i++)
         {
             var k = i * f;
             var p = new Vector3(fm.Vertices[k], fm.Vertices[k + 1], fm.Vertices[k + 2]);
-            if (fm.Vertices[k + 4] > 0.9f)
-                floorOk &= MathF.Abs(p.Y - DecalBaker.SurfaceLift) < 0.001f && MathF.Abs(p.X - 3) <= 0.46f && MathF.Abs(p.Z - 3) <= 0.46f;
-            else
+            if (fm.Vertices[k + 4] < 0.9f)
                 wallOk &= MathF.Abs(p.Z - (-5 + DecalBaker.SurfaceLift)) < 0.001f && fm.Vertices[k + 5] > 0.99f;
+            else if (p.Z > 2.4f)
+                floorOk &= MathF.Abs(p.Y - DecalBaker.SurfaceLift) < 0.001f && MathF.Abs(p.X - 3) <= 0.46f && MathF.Abs(p.Z - 3) <= 0.46f;
+            else if (MathF.Abs(p.Y - (0.3f + DecalBaker.SurfaceLift)) < 0.001f)
+                kerbTop++;
+            else if (MathF.Abs(p.Y - DecalBaker.SurfaceLift) < 0.001f)
+                kerbGround++;
+            else
+                kerbOther++;
         }
-        Line($"flat check: {fm.Placed} placed, {fm.Missed} missed (the poster facing open space), {fm.Triangles} triangles");
-        if (fm.Placed != 2 || fm.Missed != 1 || !floorOk || !wallOk)
+        Line($"flat check: {fm.Placed} placed, {fm.Missed} missed (the poster facing open space), {fm.Triangles} triangles; "
+             + $"the stain over the 0.3 m kerb: {kerbTop} vertices on top, {kerbGround} on the ground, {kerbOther} elsewhere");
+        if (fm.Placed != 3 || fm.Missed != 1 || !floorOk || !wallOk)
             Fail($"flat decals: placed {fm.Placed}, missed {fm.Missed}, floor on the ground {floorOk}, poster on the wall {wallOk}");
+        if (kerbTop < 3 || kerbGround < 3 || kerbOther > 0)
+            Fail($"a floor decal over a kerb should wrap onto both levels ({kerbTop} top, {kerbGround} ground, {kerbOther} elsewhere)");
     }
 
     private static void CheckImpactPool()
