@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Makeup Counter",
+  "category": "Retail",
+  "description": "An island make-up counter with two light-bulb mirrors and tester pots. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.4,
+        0.95,
+        0.7
+      ],
+      "offset": [
+        0.0,
+        0.475,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.4, 0.9, 0.7], "offset": [0, 0.45, 0], "color": "#202024"},
+    {"size": [1.42, 0.04, 0.72], "offset": [0, 0.92, 0], "color": "#f0f0f0"},
+    {"size": [0.36, 0.46, 0.03], "offset": [-0.4, 1.2, -0.25], "color": "#e8e8ec"},
+    {"size": [0.3, 0.4, 0.01], "offset": [-0.4, 1.2, -0.232], "color": "#c8dce4"},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.58, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.46, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.34, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [-0.22, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.36, 0.46, 0.03], "offset": [0.4, 1.2, -0.25], "color": "#e8e8ec"},
+    {"size": [0.3, 0.4, 0.01], "offset": [0.4, 1.2, -0.232], "color": "#c8dce4"},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.22, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.34, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.46, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.05, 0.02], "offset": [0.58, 1.45, -0.233], "color": "#fff8e0", "anim": {"type": "pulse", "period": 6, "color": "#fff8e0", "off": "#b7b2a1", "glow": 1.0}},
+    {"size": [0.05, 0.1366, 0.05], "offset": [-0.6, 0.98, 0.12], "color": "#d03060"},
+    {"size": [0.05, 0.1019, 0.05], "offset": [-0.45, 0.98, 0.12], "color": "#d03060"},
+    {"size": [0.05, 0.1242, 0.05], "offset": [-0.3, 0.98, 0.12], "color": "#e8c8b0"},
+    {"size": [0.05, 0.1339, 0.05], "offset": [-0.15, 0.98, 0.12], "color": "#f0a0b0"},
+    {"size": [0.05, 0.0797, 0.05], "offset": [0.0, 0.98, 0.12], "color": "#f0a0b0"},
+    {"size": [0.05, 0.1393, 0.05], "offset": [0.15, 0.98, 0.12], "color": "#e8c8b0"},
+    {"size": [0.05, 0.1147, 0.05], "offset": [0.3, 0.98, 0.12], "color": "#a02040"},
+    {"size": [0.05, 0.0763, 0.05], "offset": [0.45, 0.98, 0.12], "color": "#e8c8b0"},
+    {"size": [0.05, 0.1023, 0.05], "offset": [0.6, 0.98, 0.12], "color": "#a02040"}
+  ]
+}

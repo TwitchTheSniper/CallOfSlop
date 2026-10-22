@@ -1,0 +1,59 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "foodcourt",
+ "description": "Food court: tables and chairs, tray returns and bins.",
+ "items": [
+  {
+   "props": [
+    "Tray Return Station"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Trash Bin"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Food Court Table Set",
+    "Food Court Table Set Teal"
+   ],
+   "place": "floor",
+   "count": [
+    10,
+    16
+   ]
+  },
+  {
+   "props": [
+    "Mall Planter Palm"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Pendant Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    6,
+    10
+   ],
+   "y": 0.0
+  }
+ ]
+}

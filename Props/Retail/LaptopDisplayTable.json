@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Laptop Display Table",
+  "category": "Retail",
+  "description": "A white display table of open laptops with their screens lit. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.6,
+        0.93,
+        0.9
+      ],
+      "offset": [
+        0.0,
+        0.465,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.6, 0.05, 0.9], "offset": [0, 0.9, 0], "color": "#e8e8ec"},
+    {"size": [1.5, 0.88, 0.8], "offset": [0, 0.44, 0], "color": "#d0d0d4"},
+    {"size": [1.52, 0.05, 0.82], "offset": [0, 0.025, 0], "color": "#303034"},
+    {"size": [0.32, 0.015, 0.22], "offset": [-0.5, 0.935, -0.16], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [-0.5, 1.04, -0.27], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [-0.5, 1.04, -0.262], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.0}},
+    {"size": [0.32, 0.015, 0.22], "offset": [-0.5, 0.935, 0.26], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [-0.5, 1.04, 0.15], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [-0.5, 1.04, 0.158], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.1}},
+    {"size": [0.32, 0.015, 0.22], "offset": [0.0, 0.935, -0.16], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [0.0, 1.04, -0.27], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [0.0, 1.04, -0.262], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.2}},
+    {"size": [0.32, 0.015, 0.22], "offset": [0.0, 0.935, 0.26], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [0.0, 1.04, 0.15], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [0.0, 1.04, 0.158], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.30000000000000004}},
+    {"size": [0.32, 0.015, 0.22], "offset": [0.5, 0.935, -0.16], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [0.5, 1.04, -0.27], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [0.5, 1.04, -0.262], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.4}},
+    {"size": [0.32, 0.015, 0.22], "offset": [0.5, 0.935, 0.26], "color": "#b8b8c0"},
+    {"size": [0.32, 0.22, 0.012], "offset": [0.5, 1.04, 0.15], "color": "#a8a8b0", "rotation": [-12, 0, 0]},
+    {"size": [0.28, 0.18, 0.005], "offset": [0.5, 1.04, 0.158], "color": "#2050a0", "rotation": [-12, 0, 0], "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.5}}
+  ]
+}

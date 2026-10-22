@@ -1,0 +1,59 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "candy",
+ "description": "Sweet shop: pick-and-mix walls and candy tables.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Candy Bin Wall"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Candy Display Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Candy Display Table"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Glowing Vending Machine"
+   ],
+   "place": "wall",
+   "chance": 0.5
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

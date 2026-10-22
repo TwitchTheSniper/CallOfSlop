@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Holloway Finch Logo",
+  "category": "Mall",
+  "description": "The HOLLOWAY & FINCH logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#1d2a3a"},
+    {"size": [0.1429, 0.7143, 0.025], "offset": [-0.4286, 0.6, 0.0775], "color": "#e8d6a0"},
+    {"size": [0.1429, 0.7143, 0.025], "offset": [-0.1429, 0.6, 0.0775], "color": "#e8d6a0"},
+    {"size": [0.1429, 0.1429, 0.025], "offset": [-0.2857, 0.6, 0.0775], "color": "#e8d6a0"},
+    {"size": [0.1429, 0.2857, 0.029], "offset": [0.4286, 0.8143, 0.0795], "color": "#c8a050"},
+    {"size": [0.2857, 0.1429, 0.029], "offset": [0.2143, 0.7429, 0.0795], "color": "#c8a050"},
+    {"size": [0.1429, 0.4286, 0.029], "offset": [0.2857, 0.4571, 0.0795], "color": "#c8a050"},
+    {"size": [0.1429, 0.1429, 0.029], "offset": [0.4286, 0.4571, 0.0795], "color": "#c8a050"}
+  ]
+}

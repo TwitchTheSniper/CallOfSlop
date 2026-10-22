@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mall Pendant Light",
+  "category": "Retail",
+  "description": "A hanging dome pendant lamp on a long cord (1.5 m tall: place its top under the ceiling). Cosmetic.",
+  "collision": "cosmetic",
+  "parts": [
+    {"size": [0.02, 1.2, 0.0083], "offset": [0.0, 0.9, 0.0], "color": "#303030", "rotation": [0, 0, 0]},
+    {"size": [0.02, 1.2, 0.0083], "offset": [0.0, 0.9, 0.0], "color": "#303030", "rotation": [0, 45, 0]},
+    {"size": [0.02, 1.2, 0.0083], "offset": [0.0, 0.9, 0.0], "color": "#303030", "rotation": [0, 90, 0]},
+    {"size": [0.02, 1.2, 0.0083], "offset": [0.0, 0.9, 0.0], "color": "#303030", "rotation": [0, 135, 0]},
+    {"size": [0.5, 0.25, 0.207], "offset": [0.0, 0.175, 0.0], "color": "#2a2a2e", "rotation": [0, 0, 0]},
+    {"size": [0.5, 0.25, 0.207], "offset": [0.0, 0.175, 0.0], "color": "#2a2a2e", "rotation": [0, 45, 0]},
+    {"size": [0.5, 0.25, 0.207], "offset": [0.0, 0.175, 0.0], "color": "#2a2a2e", "rotation": [0, 90, 0]},
+    {"size": [0.5, 0.25, 0.207], "offset": [0.0, 0.175, 0.0], "color": "#2a2a2e", "rotation": [0, 135, 0]},
+    {"size": [0.3, 0.05, 0.1242], "offset": [0.0, 0.025, 0.0], "color": "#fff4d8", "rotation": [0, 0, 0], "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#b7af9b", "glow": 1.3}},
+    {"size": [0.3, 0.05, 0.1242], "offset": [0.0, 0.025, 0.0], "color": "#fff4d8", "rotation": [0, 45, 0], "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#b7af9b", "glow": 1.3}},
+    {"size": [0.3, 0.05, 0.1242], "offset": [0.0, 0.025, 0.0], "color": "#fff4d8", "rotation": [0, 90, 0], "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#b7af9b", "glow": 1.3}},
+    {"size": [0.3, 0.05, 0.1242], "offset": [0.0, 0.025, 0.0], "color": "#fff4d8", "rotation": [0, 135, 0], "anim": {"type": "pulse", "period": 6, "color": "#fff4d8", "off": "#b7af9b", "glow": 1.3}}
+  ]
+}

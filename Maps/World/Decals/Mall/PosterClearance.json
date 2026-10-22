@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Poster Clearance",
+  "category": "Mall",
+  "description": "A shop poster: clearance up to 70% off.",
+  "author": "Call of Slop",
+  "size": [
+    0.7,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 60,
+  "image": "PosterClearance.png"
+}

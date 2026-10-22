@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Sign Food Court Left",
+  "category": "Mall",
+  "description": "A food court sign with an arrow.",
+  "author": "Call of Slop",
+  "size": [
+    1.0,
+    0.7
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 70,
+  "image": "SignFoodCourtLeft.png"
+}

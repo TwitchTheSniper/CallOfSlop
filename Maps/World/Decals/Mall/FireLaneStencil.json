@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Fire Lane Stencil",
+  "category": "Mall",
+  "description": "FIRE LANE stencilled in red on the road.",
+  "author": "Call of Slop",
+  "size": [
+    4.0,
+    1.0
+  ],
+  "rotation": 0,
+  "surfaces": "floor",
+  "fadeDistance": 80,
+  "image": "FireLaneStencil.png",
+  "opacity": 0.85
+}

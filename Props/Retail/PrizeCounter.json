@@ -1,0 +1,48 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Prize Counter",
+  "category": "Retail",
+  "description": "An arcade prize counter: a glass front of toys and big plush prizes on top. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        2.0,
+        1.05,
+        0.6
+      ],
+      "offset": [
+        0.0,
+        0.525,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [2.0, 1.0, 0.6], "offset": [0, 0.5, 0], "color": "#4a2a6a"},
+    {"size": [2.0, 0.04, 0.6], "offset": [0, 1.02, 0], "color": "#f0f0f0"},
+    {"size": [1.96, 0.5, 0.02], "offset": [0, 0.6, 0.31], "color": "#c8dce4"},
+    {"size": [0.16, 0.16, 0.16], "offset": [-0.85, 0.45, 0.05], "color": "#ffd020"},
+    {"size": [0.16, 0.16, 0.16], "offset": [-0.61, 0.45, 0.05], "color": "#ffd020"},
+    {"size": [0.16, 0.16, 0.16], "offset": [-0.37, 0.45, 0.05], "color": "#c89060"},
+    {"size": [0.16, 0.16, 0.16], "offset": [-0.13, 0.45, 0.05], "color": "#a0d070"},
+    {"size": [0.16, 0.16, 0.16], "offset": [0.11, 0.45, 0.05], "color": "#a0d070"},
+    {"size": [0.16, 0.16, 0.16], "offset": [0.35, 0.45, 0.05], "color": "#c89060"},
+    {"size": [0.16, 0.16, 0.16], "offset": [0.59, 0.45, 0.05], "color": "#ffd020"},
+    {"size": [0.16, 0.16, 0.16], "offset": [0.83, 0.45, 0.05], "color": "#ffd020"},
+    {"size": [0.22, 0.28, 0.2], "offset": [-0.7, 1.18, -0.15], "color": "#ff4060"},
+    {"size": [0.22, 0.28, 0.2], "offset": [-0.42, 1.18, -0.15], "color": "#80c0e0"},
+    {"size": [0.22, 0.28, 0.2], "offset": [-0.14, 1.18, -0.15], "color": "#c89060"},
+    {"size": [0.22, 0.28, 0.2], "offset": [0.14, 1.18, -0.15], "color": "#e87aa0"},
+    {"size": [0.22, 0.28, 0.2], "offset": [0.42, 1.18, -0.15], "color": "#a0d070"},
+    {"size": [0.22, 0.28, 0.2], "offset": [0.7, 1.18, -0.15], "color": "#e87aa0"}
+  ]
+}
