@@ -129,6 +129,7 @@ public static partial class SelfTest
             Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
             Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
             Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
+            Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
@@ -142,6 +143,7 @@ public static partial class SelfTest
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
             Section("Decals", CheckDecals); // SelfTestDecals.cs: decal files, atlas, Decal/DecalScatter baking, impact pool rules, costs, the Decal Test map
             Section("Decal surfaces", CheckDecalSurfaces); // SelfTestDecalSurfaces.cs: the surface and object decal set (loads, surfaces, bold detail, paint cost) and the Decal Surfaces map
+            Section("Pack decals", CheckPackDecals); // SelfTestPackDecals.cs: pack-local decals (Maps/<Pack>/Decals), shadowing, scope, atlas budget
             Section("Body model", CheckBodyModel); // SelfTestBody.cs: torso and head parts vs the old boxes and hit boxes, hat fit, seeded variants, cost
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting

@@ -103,6 +103,7 @@ public static unsafe partial class Program
             AudioSystem.MasterVolume = _settings.Volume;
             AudioSystem.Music.Volume = _settings.MusicVolume;
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
+            AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
             CreateWindow();
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 

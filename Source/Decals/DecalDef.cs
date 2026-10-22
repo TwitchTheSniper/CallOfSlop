@@ -147,8 +147,14 @@ public sealed class DecalDef
     /// <summary>How likely this impact is picked among the others for the same material (1 = normal).</summary>
     public float ImpactWeight = 1f;
 
-    /// <summary>Position in <see cref="Decals.All"/>, which is also its layer in the decal atlas.</summary>
+    /// <summary>Its layer in the decal atlas: the position in <see cref="Decals.All"/> for a global decal, in <see cref="Decals.AtlasDefs"/> for a pack decal.</summary>
     public int Index;
+
+    /// <summary>
+    /// The pack folder (in Maps) a pack-local decal comes from (Maps/&lt;Pack&gt;/Decals), or null for a decal in the global
+    /// Decals folder. Pack decals are only visible to that pack's maps.
+    /// </summary>
+    public string? Pack;
 
     /// <summary>Is this a bullet-impact decal?</summary>
     public bool IsImpact => ImpactMaterials.Length > 0;

@@ -149,7 +149,9 @@ public sealed unsafe class DecalRenderer
     private int _sLocViewProj, _sLocCam, _sLocFog, _sLocFogRange, _sLocMultiply;
     private int _iLocViewProj, _iLocCam, _iLocFog, _iLocFogRange, _iLocMultiply, _iLocTime, _iLocFadeTime, _iLocDrawDist;
     private int _atlasGeneration = -1, _atlasLayers, _atlasTaskGeneration = -1;
-    private Task<(DecalDef[] Defs, byte[] Data, double Ms)>? _atlasTask;
+    private Task<(DecalDef[] Defs, byte[] Data, double Ms, int Painted)>? _atlasTask;
+    private DecalDef[]? _atlasDefs; // what the uploaded atlas holds (CPU copy kept so new pack layers paint alone)
+    private byte[]? _atlasData;
     private double _atlasMs;
     private DecalMesh? _mesh;
     private Map? _meshMap;
@@ -208,7 +210,7 @@ public sealed unsafe class DecalRenderer
             return;
         try
         {
-            if (_atlasGeneration != Decals.Generation && !UploadAtlas())
+            if (_atlasGeneration != Decals.AtlasVersion && !UploadAtlas())
                 return; // the atlas is still being painted on a worker thread (a few frames at startup)
             if (!ReferenceEquals(mesh, _mesh) || !ReferenceEquals(map, _meshMap))
                 UploadMesh(map, mesh);
@@ -364,26 +366,35 @@ public sealed unsafe class DecalRenderer
     /// </summary>
     private bool UploadAtlas()
     {
-        var generation = Decals.Generation;
+        var generation = Decals.AtlasVersion;
         if (_atlasTask == null || _atlasTaskGeneration != generation)
         {
             _atlasTaskGeneration = generation;
-            var defs0 = Decals.All;
+            var defs0 = Decals.AtlasDefs; // global decals, then every loaded pack's (a pack's map loading adds layers)
+            var prevDefs = _atlasDefs;
+            var prevData = _atlasData;
             _atlasTask = Task.Run(() =>
             {
                 var sw0 = Stopwatch.StartNew();
-                var bytes = DecalAtlas.Build(defs0); // (image problems are logged; the self-test reports them)
-                return (defs0, bytes, sw0.Elapsed.TotalMilliseconds);
+                // Layers already painted are copied; only new ones (a pack's decals) are painted. Image problems are logged.
+                var bytes = DecalAtlas.Build(defs0, null, prevDefs, prevData, out var painted);
+                return (defs0, bytes, sw0.Elapsed.TotalMilliseconds, painted);
             });
         }
         if (!_atlasTask.IsCompleted)
             return false;
-        var (defs, data, paintMs) = _atlasTask.IsCompletedSuccessfully ? _atlasTask.Result : (Array.Empty<DecalDef>(), new byte[DecalAtlas.BytesPerLayer], 0.0);
+        var (defs, data, paintMs, paintedLayers) = _atlasTask.IsCompletedSuccessfully ? _atlasTask.Result : (Array.Empty<DecalDef>(), new byte[DecalAtlas.BytesPerLayer], 0.0, 0);
         if (!_atlasTask.IsCompletedSuccessfully)
             Console.WriteLine($"[decals] painting the atlas failed: {_atlasTask.Exception?.GetBaseException().Message}");
         _atlasTask = null;
+        _atlasDefs = defs;
+        _atlasData = data;
         var sw = Stopwatch.StartNew();
         _atlasLayers = Math.Max(1, defs.Length);
+        int maxLayers;
+        Native.glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &maxLayers);
+        if (maxLayers > 0 && _atlasLayers > maxLayers)
+            Console.WriteLine($"[decals] atlas: {_atlasLayers} layers but this GPU allows {maxLayers}; decals past that will look wrong");
         Native.glActiveTexture(GL_TEXTURE0 + AtlasUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _atlas);
         Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -398,7 +409,7 @@ public sealed unsafe class DecalRenderer
         Native.glActiveTexture(GL_TEXTURE0);
         _atlasGeneration = generation;
         _atlasMs = sw.Elapsed.TotalMilliseconds;
-        Console.WriteLine($"[decals] atlas: {_atlasLayers} layer(s) of {DecalAtlas.LayerSize} px ({data.Length / 1024} KB + mipmaps), painted in {paintMs:0.0} ms (worker thread), uploaded in {_atlasMs:0.0} ms");
+        Console.WriteLine($"[decals] atlas: {_atlasLayers} layer(s) of {DecalAtlas.LayerSize} px ({data.Length / 1024} KB + mipmaps), {paintedLayers} painted in {paintMs:0.0} ms (worker thread), uploaded in {_atlasMs:0.0} ms");
         return true;
     }
 
