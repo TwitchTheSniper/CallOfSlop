@@ -99,7 +99,7 @@ public static class Knockback
         {
             var id = KillStreaks.FromKillId(killId);
             var def = KillStreaks.Get(id);
-            return (def.Knockback, id == StreakId.MortarBarrage ? KillStreaks.MortarRadius : id == StreakId.StrafeRun ? KillStreaks.StrafeRadius : 0f);
+            return (def.Knockback, KillStreaks.BlastRadiusOf(id));
         }
         return (0f, 0f);
     }

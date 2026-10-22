@@ -49,7 +49,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     new Msg.TacState (devices with the snapshots) and Msg.TacEvent (flash / stun, intercepts, pings...) at the end.
     // 28: ragdolls and blast knockback (Knockback.cs): Msg.Knock at the end of Msg (server -> the pushed client: input
     //     sequence + impulse, put into the prediction replay); blasts change living players' velocity on the server.
-    public const byte ProtocolVersion = 28;
+    // 29: eight more kill streaks (KillStreaksMore.cs): Msg.StreakState carries 16 earned-streak bits and armour (8 -> 12
+    //     bytes), Msg.StreakEvent gains kinds 2-4 (effect ended, crate taken, streak blast), StreakIds 8-15 on the wire.
+    public const byte ProtocolVersion = 29;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

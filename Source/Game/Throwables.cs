@@ -645,8 +645,8 @@ public sealed partial class Game
         var r = Throwables.Get(ThrowableKind.Smoke).Radius * 0.8f;
         foreach (var s in Smokes)
         {
-            if (now - s.Born < 0.8)
-                continue; // still billowing out
+            if (now - s.Born < 0.8 || now > s.Until)
+                continue; // still billowing out (or a Smoke Screen canister still falling), or gone
             var ab = b - a;
             var t = Math.Clamp(Vector3.Dot(s.Pos + new Vector3(0, 1.5f, 0) - a, ab) / MathF.Max(ab.LengthSquared(), 1e-4f), 0f, 1f);
             if (Vector3.Distance(a + ab * t, s.Pos + new Vector3(0, 1.5f, 0)) < r)

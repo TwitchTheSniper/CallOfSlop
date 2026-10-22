@@ -259,6 +259,86 @@ public sealed partial class Ui
                 ImDrawListExtensions.AddConcavePolyFilled(dl, jet, col);
                 break;
             }
+            default:
+                DrawMoreStreakIcon(dl, id, c, u, t, col); // the later streaks (below)
+                break;
+        }
+    }
+
+    /// <summary>Glyphs for the streaks added later, same style: <paramref name="u"/> is half the badge radius, <paramref name="t"/> the line width.</summary>
+    private void DrawMoreStreakIcon(ImDrawListPtr dl, StreakId id, float2 c, float u, float t, ImColor8 col)
+    {
+        float2 P(float x, float y) => c + new float2(x * u, y * u);
+        switch (id)
+        {
+            case StreakId.SmokeScreen: // a row of three puffs
+                for (var i = -1; i <= 1; i++)
+                {
+                    ImDrawListExtensions.AddCircleFilled(dl, P(i * 0.75f, 0.2f), u * 0.45f, col, 14);
+                    ImDrawListExtensions.AddCircleFilled(dl, P(i * 0.75f + 0.3f, -0.3f), u * 0.32f, col, 12);
+                }
+                break;
+            case StreakId.BallisticVests: // a vest
+            {
+                Span<float2> vest = [P(-0.45f, -1.1f), P(-0.15f, -0.8f), P(0.15f, -0.8f), P(0.45f, -1.1f), P(1f, -0.7f), P(0.85f, 1.1f),
+                    P(-0.85f, 1.1f), P(-1f, -0.7f)];
+                ImDrawListExtensions.AddConcavePolyFilled(dl, vest, col);
+                Line(dl, P(0, -0.7f), P(0, 1.05f), new ImColor8(18, 20, 26, 255), t * 0.8f);
+                break;
+            }
+            case StreakId.HunterDrone: // a dart with a target ring
+            {
+                Span<float2> dart = [P(0, -1.2f), P(0.45f, 0.4f), P(0, 0.1f), P(-0.45f, 0.4f)];
+                ImDrawListExtensions.AddConcavePolyFilled(dl, dart, col);
+                ImDrawListExtensions.AddCircle(dl, P(0, 0.85f), u * 0.4f, col, 14, t * 0.7f);
+                break;
+            }
+            case StreakId.SupplyDrop: // a crate under a parachute
+            {
+                var a = P(-0.55f, 0.15f);
+                var b = P(0.55f, 1.15f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 2 * _scale, ImDrawFlags.None);
+                Line(dl, P(-1f, -0.6f), P(1f, -0.6f), col, t);
+                Line(dl, P(-1f, -0.6f), P(-0.5f, 0.15f), col, t * 0.6f);
+                Line(dl, P(1f, -0.6f), P(0.5f, 0.15f), col, t * 0.6f);
+                Line(dl, P(-1f, -0.6f), P(0, -1.2f), col, t);
+                Line(dl, P(1f, -0.6f), P(0, -1.2f), col, t);
+                break;
+            }
+            case StreakId.NapalmStrike: // a flame
+            {
+                Span<float2> flame = [P(0, -1.3f), P(0.55f, -0.3f), P(0.8f, 0.5f), P(0.4f, 1.1f), P(-0.4f, 1.1f), P(-0.8f, 0.5f), P(-0.35f, -0.1f)];
+                ImDrawListExtensions.AddConcavePolyFilled(dl, flame, col);
+                break;
+            }
+            case StreakId.EmpBlast: // a burst: rings and spikes
+                ImDrawListExtensions.AddCircle(dl, in c, u * 0.5f, col, 16, t);
+                for (var i = 0; i < 8; i++)
+                {
+                    var a = i * MathF.Tau / 8;
+                    Line(dl, P(MathF.Cos(a) * 0.75f, MathF.Sin(a) * 0.75f), P(MathF.Cos(a) * 1.25f, MathF.Sin(a) * 1.25f), col, t * 0.8f);
+                }
+                break;
+            case StreakId.Gunship: // a helicopter from the side
+            {
+                var a = P(-0.8f, -0.25f);
+                var b = P(0.5f, 0.55f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, col, 4 * _scale, ImDrawFlags.None);
+                Line(dl, P(0.4f, 0.1f), P(1.3f, -0.05f), col, t);
+                Line(dl, P(-1.3f, -0.65f), P(1f, -0.65f), col, t);
+                Line(dl, P(-0.15f, -0.65f), P(-0.15f, -0.25f), col, t * 0.8f);
+                Line(dl, P(-0.7f, 0.95f), P(0.4f, 0.95f), col, t * 0.8f);
+                break;
+            }
+            case StreakId.Juggernaut: // a heavy helmet with a visor slit
+            {
+                Span<float2> helm = [P(-0.9f, 1.1f), P(-0.95f, -0.3f), P(-0.5f, -1.05f), P(0.5f, -1.05f), P(0.95f, -0.3f), P(0.9f, 1.1f)];
+                ImDrawListExtensions.AddConcavePolyFilled(dl, helm, col);
+                var a = P(-0.65f, -0.2f);
+                var b = P(0.65f, 0.1f);
+                ImDrawListExtensions.AddRectFilled(dl, in a, in b, new ImColor8(18, 20, 26, 255), 1 * _scale, ImDrawFlags.None);
+                break;
+            }
         }
     }
 
@@ -339,15 +419,22 @@ public sealed partial class Ui
             if (me.Alive)
                 SizedText(dl, new float2(pos.X + size.X / 2, baseY - r - font * 2 - 8 * _scale), font * 0.9f, Dim8, $"STREAK {s.Count}", 0.5f);
             var od = game.StreakEffectLeft(StreakId.Overdrive, me.Id, now);
+            var emp = game.StreakEffectLeft(StreakId.EmpBlast, me.Id, now);
+            var timerY = baseY - r - font * 3 - 10 * _scale;
             if (od > 0 && me.Alive)
-                SizedText(dl, new float2(pos.X + size.X / 2, baseY - r - font * 3 - 10 * _scale), font, new ImColor8(255, 205, 60, 255), $"OVERDRIVE {od:0}s", 0.5f);
+            {
+                SizedText(dl, new float2(pos.X + size.X / 2, timerY), font, new ImColor8(255, 205, 60, 255), $"OVERDRIVE {od:0}s", 0.5f);
+                timerY -= font + 2 * _scale;
+            }
+            if (emp > 0)
+                SizedText(dl, new float2(pos.X + size.X / 2, timerY), font, Col(KillStreaks.Get(StreakId.EmpBlast).Color), $"EMP {emp:0}s: enemy machines down", 0.5f);
         }
 
         // Targeting an aimed streak
         if (game.StreakTargeting != StreakId.None)
         {
             var def = KillStreaks.Get(game.StreakTargeting);
-            var line = def.Aim == StreakAim.Line ? "the run passes over the spot, along the way you face" : "shells land around the spot";
+            var line = KillStreaks.AimHint(def.Id);
             CenterText(size, pos, $"{def.Name.ToUpperInvariant()}: look at a spot and press {Keybinds.Name(settings.Bind(GameAction.Fire))} ({line})", 0.62f);
             CenterText(size, pos, game.StreakAimValid ? $"{Keybinds.Name(settings.Bind(GameAction.Aim))} or the streak key to cancel" : "No spot under the crosshair", 0.655f);
         }

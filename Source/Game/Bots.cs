@@ -321,7 +321,7 @@ public sealed partial class Game
         }
         if (killId == MeleeKillId)
             BotStats.MeleeKills++;
-        if (killId >= MeleeKillId)
+        if (killId >= MeleeKillId || KillStreaks.IsStreakKill(killId))
             return;
         BotStats.GunKills++;
         if (head)

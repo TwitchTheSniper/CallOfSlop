@@ -57,6 +57,11 @@ public enum Sfx
     SensorBeep, // a Motion Sensor's own beep in the world (so it can be found)
     StimHiss, // a Stim Shot going in
     DeployDevice, // a device clicking down (trophy, cover, insertion, a landed decoy)
+    EmpBurst, // kill streaks added later (SynthStreaks.cs): an EMP going off
+    HunterBeep, // a Hunter Drone's seeker beep
+    GunshipCannon, // a gunship's cannon round leaving the barrel
+    NapalmIgnite, // napalm bursting into flame
+    CrateLand, // a Supply Drop crate thumping down
     COUNT,
 }
 
@@ -865,6 +870,8 @@ public static partial class Synth
             return foley;
         if (TacticalFoley(sfx, variant) is { } tactical)
             return tactical; // SynthTactical.cs
+        if (StreakFoley(sfx, variant) is { } streak)
+            return streak; // SynthStreaks.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

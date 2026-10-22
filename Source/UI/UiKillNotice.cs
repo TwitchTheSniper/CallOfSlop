@@ -80,10 +80,12 @@ public sealed partial class Ui
                 if (e.Owner != me.Id)
                     continue;
                 var f = Math.Clamp(e.Health / (float)Math.Max(1, e.MaxHealth), 0f, 1f);
-                var life = e.Kind == StreakId.SentryTurret ? KillStreaks.TurretSeconds : KillStreaks.DroneSeconds;
+                var life = KillStreaks.EntityLife(e.Kind);
                 var left = Math.Max(0, (e.Until > 0 ? e.Until : e.Born + life) - now); // clients don't get Until: count from when it appeared
                 var col = KillStreaks.Get(e.Kind).Color;
                 ImGuiSafe.TextColored(new float4(col.X, col.Y, col.Z, 1f), $"{KillStreaks.Get(e.Kind).Name.ToUpperInvariant()}  {left:0}s");
+                if (!e.Targetable)
+                    continue; // a crate has no health
                 ImGui.PushStyleColor(ImGuiCol.PlotHistogram, f > 0.35f ? Green : Red);
                 ImGui.ProgressBar(f, new float2(160 * _scale, 6 * _scale), ""u8);
                 ImGui.PopStyleColor();

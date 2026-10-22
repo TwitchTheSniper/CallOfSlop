@@ -269,7 +269,7 @@ public sealed class WeaponDef
 public static class Weapons
 {
     /// <summary>Weapon ids are bytes; 239 and up are melee and throwables in the kill feed.</summary>
-    public const int MaxWeapons = Game.MeleeKillId;
+    public const int MaxWeapons = KillStreaks.ExtraKillIdBase; // weapon ids are kill-feed ids: the later streaks use 214-229
 
     private static readonly object LoadLock = new();
     private static WeaponDef[]? _all;
