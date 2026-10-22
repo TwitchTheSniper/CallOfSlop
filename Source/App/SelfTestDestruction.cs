@@ -172,8 +172,8 @@ public static partial class SelfTest
             return;
         }
         // A frag 0.6 m in front of each wall.
-        game.BlastStructures(me, new Vector3(11, 1.2f, 13.4f), frag.Radius, frag.MaxDamage, StructureHit.Grenade, fragKill, 0);
-        game.BlastStructures(me, new Vector3(27, 1.2f, 13.4f), frag.Radius, frag.MaxDamage, StructureHit.Grenade, fragKill, 0);
+        game.BlastStructures(me, new Vector3(11, 1.2f, 13.4f), frag.Radius, frag.ObjectDamage, StructureHit.Grenade, fragKill, 0);
+        game.BlastStructures(me, new Vector3(27, 1.2f, 13.4f), frag.Radius, frag.ObjectDamage, StructureHit.Grenade, fragKill, 0);
         Line($"a frag 0.6 m from a plaster wall breaks {Broken(plaster)} of its {d.Structures[plaster].ChunkCount} chunks; from a concrete wall {Broken(concrete)} of {d.Structures[concrete].ChunkCount}");
         if (Broken(plaster) == 0)
             Fail("a frag next to a plaster wall broke nothing");
@@ -255,7 +255,7 @@ public static partial class SelfTest
         var concreteCentre = new Vector3(27, 1.2f, 12.5f); // 1.5 m out: it hurts the concrete a little, never enough to break it here
         for (var warm = 0; warm < 3; warm++)
         {
-            game.BlastStructures(me, concreteCentre, frag.Radius, frag.MaxDamage, StructureHit.Grenade, fragKill, 0);
+            game.BlastStructures(me, concreteCentre, frag.Radius, frag.ObjectDamage, StructureHit.Grenade, fragKill, 0);
             game.ShotStructures(me, cfrom, Vector3.UnitZ, 2, 30, Weapons.DefaultPrimary.Id, 0);
             game.SelfTestTickDestruction(1);
         }
@@ -263,7 +263,7 @@ public static partial class SelfTest
         var bytes = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 10; k++)
         {
-            game.BlastStructures(me, concreteCentre, frag.Radius, frag.MaxDamage, StructureHit.Grenade, fragKill, 0);
+            game.BlastStructures(me, concreteCentre, frag.Radius, frag.ObjectDamage, StructureHit.Grenade, fragKill, 0);
             game.ShotStructures(me, cfrom, Vector3.UnitZ, 2, 30, Weapons.DefaultPrimary.Id, 0);
             game.SelfTestTickDestruction(1);
         }
