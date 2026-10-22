@@ -21,6 +21,16 @@ public sealed class GunSampleLibrary
     public sealed class SampleSet
     {
         public required string Name;
+
+        /// <summary>Position of the set in the manifest (rotates the identity presets, so two sets' first weapons differ).</summary>
+        public int Index;
+
+        /// <summary>
+        /// The weapons on this set, by name, ranked by their identity seed (name hash or "voice" seed, not file order),
+        /// and how many there are: <see cref="GunVoice"/> spreads recordings and characters over the ranks so no two
+        /// weapons on a set get the same pair.
+        /// </summary>
+        public readonly Dictionary<string, int> Roster = new(StringComparer.Ordinal);
         public string About = "";
         /// <summary>The weapon caliber the set sounds right at unpitched; bigger calibers play it lower.</summary>
         public float RefCaliber = 0.5f;
@@ -119,6 +129,7 @@ public sealed class GunSampleLibrary
                         s.RefCaliber = rc.GetSingle();
                     if (p.Value.TryGetProperty("synthBlend"u8, out var sb))
                         s.SynthBlend = Math.Clamp(sb.GetSingle(), 0f, 1f);
+                    s.Index = lib.Sets.Count;
                     lib.Sets[p.Name] = s;
                 }
             if (root.TryGetProperty("rules"u8, out var rules))
@@ -210,8 +221,24 @@ public sealed class GunSampleLibrary
         {
             lib.Problems.Add($"manifest: {ex.Message}");
         }
+        lib.BuildRosters(Weapons.All);
         lib.LoadMs = sw.Elapsed.TotalMilliseconds;
         return lib;
+    }
+
+    /// <summary>Fills every set's <see cref="SampleSet.Roster"/> from the weapon list.</summary>
+    public void BuildRosters(IEnumerable<WeaponDef> weapons)
+    {
+        foreach (var set in Sets.Values)
+            set.Roster.Clear();
+        foreach (var g in weapons.Where(w => w.Sound is SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed).GroupBy(w => SetFor(w)?.Name ?? ""))
+        {
+            if (g.Key == "")
+                continue;
+            var rank = 0;
+            foreach (var w in g.OrderBy(w => GunVoice.SeedOf(w)).ThenBy(w => w.Name, StringComparer.Ordinal))
+                Sets[g.Key].Roster.TryAdd(w.Name, rank++);
+        }
     }
 
     /// <summary>The set a weapon uses, or null (synth only: no rule matches, or the set has no shot recordings).</summary>
@@ -281,7 +308,7 @@ public static class GunSamples
     public const int Variants = 4;
 
     /// <summary>The most a near shot's peak is turned down by the limiter (dB): beyond it the bake gives up loudness to keep the transient sharp.</summary>
-    public const float MaxPeakReductionDb = 3f;
+    public const float MaxPeakReductionDb = 5f;
 
     /// <summary>
     /// The synthesised layer under a recording only keeps its first <see cref="SynthWindow"/> seconds (crack, thump and
@@ -341,8 +368,8 @@ public static class GunSamples
             LowPass(x, 900f);
             LowPass(x, 1400f);
             Decay(x, 0.07f); // a suppressor kills the blast's ring-out
-            Body(x, voice.BodyHz * 0.8f, voice.BodyQ, voice.BodyGain * 1.5f); // what's left is the gun's own body
-            Tilt(x, voice.Tilt * 0.6f); // on the muffled recording only: the synthesised thwip stays as it is
+            Body(x, voice.BodyHz * 0.5f, voice.BodyQ, voice.BodyGain * 1.5f); // what's left is the gun's own body
+            Tilt(x, MathF.Min(voice.Tilt, 0f) * 0.6f); // darker only (it stays muffled), on the recording only
             var mix = new float[len];
             var k = Rms(synthF, LoudnessWindow) / MathF.Max(Rms(x, LoudnessWindow), 1e-6f) * 0.7f;
             for (var i = 0; i < len; i++)
@@ -430,14 +457,14 @@ public static class GunSamples
         }
     }
 
-    /// <summary>Tone tilt around 1.2 kHz: +1 lifts the highs about 4 dB and dips the lows 3 dB, -1 the reverse.</summary>
+    /// <summary>Tone tilt around 1.2 kHz: +1 lifts the highs about 5 dB and dips the lows 4 dB, -1 dips the highs 14 dB and lifts the lows 3 dB.</summary>
     private static void Tilt(float[] x, float tilt)
     {
         if (MathF.Abs(tilt) < 1e-3f)
             return;
         var a = 1f - MathF.Exp(-2f * MathF.PI * 1200f / Sr);
         float lo = 0;
-        float gl = 1f - 0.3f * tilt, gh = 1f + 0.55f * tilt;
+        float gl = 1f - 0.4f * tilt, gh = 1f + 0.8f * tilt;
         for (var i = 0; i < x.Length; i++)
         {
             lo += a * (x[i] - lo);

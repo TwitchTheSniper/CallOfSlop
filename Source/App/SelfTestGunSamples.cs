@@ -116,11 +116,11 @@ public static partial class SelfTest
                     Fail($"{w.Name} #{v}: {clipped} clipped samples");
                 var ratio = PcmRms(s, GunSamples.LoudnessWindow) / synthRms;
                 ratios.Add(($"{w.Name} #{v}", ratio));
-                // Lower bound 0.3: the synthesised pistols are almost square-wave dense over 80 ms; a recording's blast
+                // Lower bound 0.25: the synthesised pistols are almost square-wave dense over 80 ms; a recording's blast
                 // decays inside that window, and the snappy bake limits its peak by at most
                 // GunSamples.MaxPeakReductionDb (a sharp transient over raw RMS), so it lands well under their RMS.
-                if (ratio is < 0.3 or > 1.25)
-                    Fail($"{w.Name} #{v}: loudness {ratio:0.00}x the synth it replaces (want 0.3-1.25x)");
+                if (ratio is < 0.25 or > 1.25)
+                    Fail($"{w.Name} #{v}: loudness {ratio:0.00}x the synth it replaces (want 0.25-1.25x)");
             }
             for (var v = 1; v < shots.Length; v++)
                 if (shots[v].AsSpan().SequenceEqual(shots[0]))

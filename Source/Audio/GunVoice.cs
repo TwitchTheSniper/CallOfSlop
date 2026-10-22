@@ -99,9 +99,10 @@ public sealed class VoiceSpec
 
 /// <summary>
 /// A weapon's own sonic identity, derived deterministically from its definition: a hash of its name (or the "voice"
-/// block's seed) plus its stats (caliber, length, fire rate, brightness, tail). Same weapon = same identity on every
-/// client and every run; two weapons on the same sample set get different recordings, pitch, tone, body resonance,
-/// transient, mechanism click, synth blend and body length, so they don't sound alike. Baked once at start-up
+/// block's seed), its stats (caliber, length, fire rate, brightness, tail) and its rank among the weapons on its sample
+/// set (by that hash, so it doesn't depend on file order or ids). Same weapons = same identities on every client and
+/// every run; two weapons on the same sample set get different main recordings or a different character (tone, body,
+/// crack, length), plus their own pitch, resonance, mechanism click and synth blend, so they don't sound alike. Baked once at start-up
 /// (<see cref="GunSamples"/>); nothing here runs per shot.
 /// </summary>
 public sealed class GunVoice
@@ -160,42 +161,73 @@ public sealed class GunVoice
         return (z >> 8) / 16777216f;
     }
 
-    /// <summary>The identity of weapon <paramref name="w"/> on sample set <paramref name="set"/> (null set: a synth-only weapon, only the seed-derived numbers).</summary>
+    /// <summary>The seed a weapon's identity comes from: the "voice" block's seed, or the hash of its name.</summary>
+    public static uint SeedOf(WeaponDef w) => w.Voice?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
+
+    /// <summary>
+    /// Characters the weapons sharing a main recording rotate through (tone tilt, body length, body resonance amount,
+    /// crack), so weapons on the same recorded firearm still sound clearly apart: bright and tight, dark and heavy,
+    /// neutral with a sharp crack, then two in-betweens.
+    /// </summary>
+    private static readonly (float Tilt, float Tail, float Body, float Crack)[] Characters =
+    [
+        (0.7f, 0.8f, 0.25f, 0.8f),
+        (-0.7f, 1.2f, 0.9f, 0.35f),
+        (0.05f, 1.0f, 0.55f, 0.95f),
+        (0.4f, 1.12f, 0.75f, 0.55f),
+        (-0.4f, 0.88f, 0.4f, 0.7f),
+    ];
+
+    /// <summary>
+    /// The identity of weapon <paramref name="w"/> on sample set <paramref name="set"/>. On a set's roster (every
+    /// shipped and modded weapon file) the weapons, ranked by seed, take the set's recorded firearms in turn as their
+    /// main one, and the ones sharing a main firearm take different <see cref="Characters"/>; small hash and stat
+    /// offsets come on top. Off the roster (a weapon made at run time) everything comes from the seed.
+    /// </summary>
     public static GunVoice For(WeaponDef w, GunSampleLibrary.SampleSet? set)
     {
         var spec = w.Voice;
-        var seed = spec?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
+        var seed = SeedOf(w);
         float S(float lo, float hi, int k) => lo + (hi - lo) * U(seed, k);
         var c = w.Caliber;
         var v = new GunVoice { Seed = seed };
 
-        // Recordings: main and second firearm of the set, by hash (or the voice block).
         var guns = set?.Guns ?? [];
-        if (guns.Count > 0)
+        var g = guns.Count;
+        var rank = 0;
+        var onRoster = set != null && set.Roster.TryGetValue(w.Name, out rank);
+        var turn = onRoster && g > 0 ? rank / g : -1; // how many weapons before this one got the same main firearm
+        (float Tilt, float Tail, float Body, float Crack) ch = turn >= 0
+            ? Characters[(turn + set!.Index) % Characters.Length]
+            : (S(-0.7f, 0.7f, 3), S(0.8f, 1.2f, 12), S(0.25f, 0.9f, 6), S(0.3f, 0.95f, 7));
+
+        // Recordings: main and second firearm of the set (or the voice block's).
+        if (g > 0)
         {
-            v.Main = (int)(U(seed, 0) * guns.Count) % guns.Count;
-            if (spec?.Recording is { } r && guns.FindIndex(g => g.Equals(r, StringComparison.OrdinalIgnoreCase)) is >= 0 and var ri)
+            v.Main = onRoster ? (rank + set!.Index) % g : (int)(U(seed, 0) * g) % g;
+            if (spec?.Recording is { } r && guns.FindIndex(x => x.Equals(r, StringComparison.OrdinalIgnoreCase)) is >= 0 and var ri)
                 v.Main = ri;
-            if (guns.Count > 1)
+            if (g > 1)
             {
-                v.Second = (v.Main + 1 + (int)(U(seed, 1) * (guns.Count - 1)) % (guns.Count - 1)) % guns.Count;
-                if (spec?.SecondRecording is { } r2 && guns.FindIndex(g => g.Equals(r2, StringComparison.OrdinalIgnoreCase)) is >= 0 and var r2i && r2i != v.Main)
+                var step = onRoster ? turn % (g - 1) : (int)(U(seed, 1) * (g - 1)) % (g - 1);
+                v.Second = (v.Main + 1 + step) % g;
+                if (spec?.SecondRecording is { } r2 && guns.FindIndex(x => x.Equals(r2, StringComparison.OrdinalIgnoreCase)) is >= 0 and var r2i && r2i != v.Main)
                     v.Second = r2i;
             }
             v.MainName = guns[v.Main];
             v.SecondName = v.Second >= 0 ? guns[v.Second] : "";
         }
 
-        // Pitch: +-4% by hash, a longer barrel a touch lower.
-        v.Pitch = spec?.Pitch ?? Math.Clamp(S(0.96f, 1.04f, 2) * (1f + (0.4f - w.Length) * 0.05f), 0.93f, 1.07f);
-        // Tone: brightness stat plus a hash offset.
-        v.Tilt = spec?.Tone ?? Math.Clamp((w.Bright - 0.55f) * 1.4f + S(-0.55f, 0.55f, 3), -1f, 1f);
-        // Body resonance: lower for big calibers and long, heavy guns; quality and amount by hash.
+        // Pitch: +-3% by hash, a longer barrel a touch lower.
+        v.Pitch = spec?.Pitch ?? Math.Clamp(S(0.97f, 1.03f, 2) * (1f + (0.4f - w.Length) * 0.05f), 0.93f, 1.07f);
+        // Tone: the character, nudged by the brightness stat and the hash.
+        v.Tilt = spec?.Tone ?? Math.Clamp(ch.Tilt + (w.Bright - 0.55f) * 0.4f + S(-0.1f, 0.1f, 13), -1f, 1f);
+        // Body resonance: lower for big calibers and long, heavy guns; quality by hash, amount by character.
         var hz = (620f - 380f * c) / MathF.Sqrt(Math.Clamp(w.Length, 0.15f, 1.2f) / 0.4f) * S(0.75f, 1.3f, 4);
         v.BodyHz = spec?.BodyHz ?? Math.Clamp(hz, 110f, 1200f);
         v.BodyQ = S(3.5f, 9f, 5);
-        v.BodyGain = (spec?.Body ?? S(0.1f, 0.9f, 6)) * 0.45f;
-        v.Crack = spec?.Crack ?? Math.Clamp(S(0.25f, 0.85f, 7) + (w.Bright - 0.5f) * 0.4f, 0f, 1f);
+        v.BodyGain = (spec?.Body ?? Math.Clamp(ch.Body + S(-0.08f, 0.08f, 14), 0f, 1f)) * 0.45f;
+        v.Crack = spec?.Crack ?? Math.Clamp(ch.Crack + (w.Bright - 0.5f) * 0.3f + S(-0.08f, 0.08f, 15), 0f, 1f);
         // Mechanism: automatic and burst guns and pistols cycle a bolt / slide right after the shot (sooner the faster
         // they fire); manual actions (bolt, lever, pump at low rates) don't click on the shot itself.
         var cycles = w.Mode != FireMode.Semi || w.Class == WeaponClass.Pistol || w.Rpm >= 200;
@@ -203,8 +235,8 @@ public sealed class GunVoice
         v.ClickLevel = (spec?.Click ?? (cycles ? S(0.35f, 1f, 9) : 0f)) * 0.16f;
         v.ClickDelay = Math.Clamp(60f / Math.Max(w.Rpm, 1) * S(0.18f, 0.32f, 10), 0.01f, 0.05f);
         v.SynthBlend = S(0.6f, 1.45f, 11);
-        // Dryness: the gun's tail stat sets the base; hash and the voice block's tail scale it.
-        var tail = spec?.Tail ?? S(0.8f, 1.2f, 12);
+        // Dryness: the gun's tail stat sets the base; the character (or the voice block's tail) scales it.
+        var tail = spec?.Tail ?? Math.Clamp(ch.Tail + S(-0.05f, 0.05f, 16), 0.5f, 1.5f);
         v.Dry = (0.045f + 0.16f * w.Tail) * tail;
         v.Length = Math.Clamp(0.75f + 0.25f * tail, 0.6f, 1.15f);
         return v;
