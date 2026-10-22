@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Recycling Plant",
+  "theme": "Council materials recycling facility: green corrugated steel, a tipping hall of rubbish, a rattling sorting line, bales stacked high",
+  "category": "industrial",
+  "description": "A tipping hall open to the trucks, a sorting hall with a trommel and conveyor line, a baler room, a bale store with loading doors, a control office, lockers and a WC.",
+  "author": "Call of Slop",
+  "seed": 306,
+  "wallThickness": 0.3,
+  "storeyHeight": 6.0,
+  "exterior": {"color": "$wall", "material": "metal"},
+  "interior": {"color": "$interior", "material": "metal"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "council green": {"wall": "#3e6e46", "interior": "#9aa49a", "floor": "#6e6a62", "ceiling": "#8a9290", "trim": "#e8c020", "door": "#5a6a5e", "roof": "#58605a"},
+    "blue steel": {"wall": "#2f5a7a", "interior": "#9aa2a8", "floor": "#6e6c66", "ceiling": "#8a9096", "trim": "#e88a20", "door": "#5a646e", "roof": "#525a62"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "tipping",
+          "type": "tipping-hall",
+          "rect": [-14, -9, 0, 3],
+          "autoWindows": {"spacing": 4.0, "width": 2.6, "sill": 4.0, "head": 5.4},
+          "floor": {"color": "#5e5a52", "material": "concrete"}
+        },
+        {
+          "id": "sorting",
+          "type": "sorting-hall",
+          "rect": [0, -9, 14, 3],
+          "autoWindows": {"spacing": 4.0, "width": 2.6, "sill": 4.0, "head": 5.4},
+          "props": [
+            {"name": "Recycling Trommel", "at": [-3.5, -3.6]},
+            {"name": "Conveyor Rollers", "at": [0.6, -3.6]},
+            {"name": "Conveyor Rollers", "at": [3.6, -3.6]},
+            {"name": "Conveyor Rollers", "at": [-1.0, -0.3]},
+            {"name": "Conveyor Rollers", "at": [2.0, -0.3]}
+          ]
+        },
+        {
+          "id": "baler",
+          "type": "baler-room",
+          "rect": [0, 3, 8, 9],
+          "autoWindows": {"spacing": 3.0, "width": 1.6, "sill": 2.6, "head": 3.6},
+          "props": [{"name": "Recycling Baler", "wall": "W", "along": 0.0}]
+        },
+        {"id": "bales", "type": "bale-store", "rect": [8, 3, 14, 9], "windows": false},
+        {"id": "office", "type": "industrial-control", "rect": [-14, 3, -6, 9], "autoWindows": {"spacing": 2.6, "width": 1.4, "sill": 1.0, "head": 2.5}},
+        {"id": "lockers", "type": "industrial-lockers", "rect": [-6, 3, -2, 9], "autoWindows": {"spacing": 2.4, "width": 1.0, "sill": 1.8, "head": 2.5}},
+        {"id": "wc", "type": "restroom", "rect": [-2, 3, 0, 9], "windows": false}
+      ],
+      "openings": [
+        {"type": "door", "at": [-10, 9], "width": 1.1, "front": true, "material": "glass", "health": 50},
+        {"type": "door", "at": [-10, 3], "width": 1.0},
+        {"type": "door", "at": [-4, 3], "width": 1.0},
+        {"type": "door", "at": [-2, 6], "width": 0.9},
+        {"type": "arch", "at": [0, -3], "width": 3.0, "head": 4.2},
+        {"type": "door", "at": [4, 3], "width": 1.4, "material": "metal"},
+        {"type": "arch", "at": [8, 6], "width": 2.0, "head": 3.2},
+        {"type": "door", "at": [11, 3], "width": 1.2, "material": "metal"},
+        {"type": "arch", "at": [-7, -9], "width": 5.0, "head": 5.0},
+        {"type": "door", "at": [7, -9], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [4, 9], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [14, 5.0], "width": 1.8, "head": 3.8, "material": "metal", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [14, 7.0], "width": 1.8, "head": 3.8, "material": "metal", "swing": "out", "hinge": "right"}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 12, "overhang": 0.4, "color": {"color": "$roof", "material": "metal"}},
+  "anchors": [
+    {"type": "spawn", "name": "office", "floor": 0, "at": [-10, 6]},
+    {"type": "spawn", "name": "lockers", "floor": 0, "at": [-4, 6]},
+    {"type": "spawn", "name": "bale store", "floor": 0, "at": [11, 6]},
+    {"type": "hill", "name": "tipping hall", "floor": 0, "at": [-7, -3]},
+    {"type": "point", "name": "sorting line", "floor": 0, "at": [7, -3]}
+  ],
+  "extras": [
+    {"type": "prop", "name": "Builders Skip", "at": [-12.0, -11.6], "yaw": 0},
+    {"type": "prop", "name": "Builders Skip", "at": [-2.5, -11.6], "yaw": 0},
+    {"type": "prop", "name": "Box Truck", "at": [-7.0, -14.5], "yaw": 0},
+    {"type": "prop", "name": "Gas Bottle Cage", "at": [12.5, -10.2], "yaw": 180},
+    {"type": "prop", "name": "Recycling Can Bale", "at": [16.0, 0.4]},
+    {"type": "prop", "name": "Recycling Paper Bale", "at": [17.3, 0.4]},
+    {"type": "prop", "name": "Recycling Paper Bale", "at": [16.6, 1.1, 0.4]},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-15.0, 4.0], "yaw": 90},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [-15.0, 5.0], "yaw": 90},
+    {"type": "prop", "name": "Recycling Bin", "at": [-15.0, 6.2], "yaw": 90},
+    {"type": "prop", "name": "Shop Sign", "at": [-10.0, 2.8, 9.17], "yaw": 0},
+    {"type": "prop", "name": "Bollard", "at": [-11.5, 10.0]},
+    {"type": "prop", "name": "Bollard", "at": [-8.5, 10.0]},
+    {"type": "prop", "name": "Hatchback", "at": [-2.0, 11.5], "yaw": 90},
+    {"type": "prop", "name": "Floodlight Tower", "at": [-16.5, -11.0], "yaw": 135},
+    {"type": "block", "min": [-14.15, 4.8, 9.15], "max": [14.15, 5.05, 9.32], "color": "$trim"}
+  ]
+}

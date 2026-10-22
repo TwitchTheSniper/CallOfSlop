@@ -3,3 +3,8 @@ BRUTAL game development framework is Copyright (c) 2024 Ahwoo Limited.
 This product is built with BRUTAL, a game development framework by Ahwoo Limited, used under the BRUTAL License v1.0.
 
 www.ahwoo.com/brutal
+
+Recorded gunshot sounds (Audio/Samples/Guns) are from The Free Firearm Sound Library
+(freefirearmsfx.com, distributed on OpenGameArt as "Prepared SFX Library"), released under
+CC0 1.0 Universal (no rights reserved). Recorded by Ben Jaszczak, Brian Nelson, Kevin Heras
+and Matthew Nanney. Trimmed, mixed to mono and resampled for this game.

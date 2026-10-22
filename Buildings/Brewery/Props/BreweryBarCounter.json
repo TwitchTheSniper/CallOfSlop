@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Bar Counter",
+  "description": "A polished oak bar with brass beer taps, a drip tray and a row of glasses.",
+  "collision": "solid",
+  "collider": [{"size": [2.5, 1.06, 0.72], "offset": [0, 0.53, 0.04]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 150,
+    "breakBy": "all",
+    "sound": "wood",
+    "debris": {"count": 16, "size": [0.06, 0.35], "colors": ["#5a3a20", "#c8a040", "glass"]}
+  },
+  "parts": [
+    {"size": [2.4, 1.0, 0.6], "offset": [0, 0.5, 0], "color": "#5a3a20", "material": "wood"},
+    {"size": [2.5, 0.06, 0.72], "offset": [0, 1.03, 0.04], "color": "#3a2410", "material": "wood"},
+    {"size": [2.4, 0.06, 0.06], "offset": [0, 0.12, 0.33], "color": "#c8a040"},
+    {"size": [1.2, 0.04, 0.12], "offset": [0, 1.08, -0.1], "color": "chrome"},
+    {"size": [0.05, 0.3, 0.05], "offset": [-0.4, 1.24, -0.1], "color": "#c8a040"},
+    {"size": [0.05, 0.3, 0.05], "offset": [0, 1.24, -0.1], "color": "#c8a040"},
+    {"size": [0.05, 0.3, 0.05], "offset": [0.4, 1.24, -0.1], "color": "#c8a040"},
+    {"size": [0.08, 0.14, 0.04], "offset": [-0.4, 1.42, -0.1], "color": "#7a2b24"},
+    {"size": [0.08, 0.14, 0.04], "offset": [0, 1.42, -0.1], "color": "#2f5d3a"},
+    {"size": [0.08, 0.14, 0.04], "offset": [0.4, 1.42, -0.1], "color": "#c8a040"},
+    {"size": [0.07, 0.14, 0.07], "offset": [0.8, 1.13, 0.1], "color": "glass"},
+    {"size": [0.07, 0.14, 0.07], "offset": [0.95, 1.13, 0.1], "color": "glass"},
+    {"size": [0.07, 0.14, 0.07], "offset": [-0.9, 1.13, 0.15], "color": "#d89a30"}
+  ]
+}

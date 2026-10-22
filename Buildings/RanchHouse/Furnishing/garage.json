@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "garage",
+  "description": "Ranch House carport garage: the family station wagon, a workbench, a chest freezer, the lawnmower and junk.",
+  "items": [
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Toolbox", "Paint Cans"], "place": "on", "of": "bench", "count": [1, 2]},
+    {"props": ["Chest Freezer"], "place": "wall"},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Lawnmower", "Bicycle", "Garden Tools", "Paint Cans", "Cardboard Box"], "place": "floor", "count": [2, 3]}
+  ]
+}

@@ -28,6 +28,9 @@ public static unsafe partial class Program
         ("buildings_overview", "Building Yard", new Vector3(-62f, 42f, 58f), new Vector3(2f, 0f, -4f), false),
         ("buildings_room", "Building Yard", new Vector3(44.0f, 1.7f, -7.6f), new Vector3(41.0f, 0.8f, -10.5f), false),
         ("buildings_interact", "Building Yard", new Vector3(31f, 1.7f, -0.5f), new Vector3(31f, 1.4f, -7.5f), true),
+        // The residential set's showcase (Maps/Dev/BuildingsResidential.json): the whole street, then the Modern Villa's great room.
+        ("buildings_residential", "Residential Street", new Vector3(-72f, 40f, 52f), new Vector3(0f, 0f, 0f), false),
+        ("buildings_residential_villa", "Residential Street", new Vector3(19f, 1.8f, -15f), new Vector3(13f, 0.9f, -18f), false),
         ("cluttered_small", "Carousel", new Vector3(-27f, 13f, 25f), new Vector3(0f, 1f, -3f), false), // Cluttered pack: smoke_cluttered_small.bmp
         // The Cluttered pack's large map (thousands of props and plants): overview from the south-west, then the market at eye height.
         ("cluttered_large", "Sprawl", new Vector3(-96f, 42f, 84f), new Vector3(8f, 0f, -12f), false),

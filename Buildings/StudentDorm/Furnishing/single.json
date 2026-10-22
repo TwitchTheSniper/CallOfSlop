@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "single",
+  "description": "A single dorm room: a bed, a desk, a beanbag's worth of clutter in a tiny space.",
+  "items": [
+    {"id": "bed", "props": ["Single Bed"], "place": "wall", "prefer": "far"},
+    {"id": "desk", "props": ["Student Dorm Study Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": 0.05},
+    {"props": ["Student Dorm Mini Fridge"], "place": "corner"},
+    {"props": ["Student Dorm Poster"], "place": "wall"},
+    {"props": ["Laundry Basket", "Backpack", "Soda Cans", "Book Pile"], "place": "floor", "count": [1, 2]}
+  ]
+}

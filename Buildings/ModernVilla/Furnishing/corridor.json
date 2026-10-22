@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "Modern villa gallery: sculpture plants, a bench and art.",
+  "items": [{"props": ["Large Flower Pot", "Office Plant"], "place": "corner", "count": [1, 2]}, {"props": ["Bench"], "place": "wall", "chance": 0.7}]
+}

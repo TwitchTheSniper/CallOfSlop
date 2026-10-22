@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "tool-crib",
+  "description": "The Machine Shop's stores and tool crib: shelving, tool cabinets, parts in crates.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 4]},
+    {"props": ["Machine Shop Tool Cabinet"], "place": "wall", "count": [1, 2]},
+    {"props": ["Small Crate", "Wooden Crate", "Cardboard Box"], "place": "floor", "count": [2, 3], "gap": 0.3},
+    {"props": ["Aluminium Step Ladder"], "place": "corner"}
+  ]
+}

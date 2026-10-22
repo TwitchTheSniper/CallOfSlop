@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "factory-dispatch",
+  "description": "The Factory's dispatch bay: boxed products on pallets, racking, a forklift.",
+  "items": [
+    {"props": ["Factory Product Pallet"], "place": "floor", "count": [5, 8], "gap": 0.5},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 3]},
+    {"props": ["Forklift"], "place": "floor"},
+    {"props": ["Pallet Stack", "Pallet", "Cardboard Stack"], "place": "floor", "count": [2, 4], "gap": 0.4},
+    {"props": ["Flattened Cardboard", "Trash Bag", "Plastic Bag"], "place": "floor", "count": [1, 3]}
+  ]
+}

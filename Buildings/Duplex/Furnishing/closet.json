@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "closet",
+  "description": "Duplex storage closet under the eaves: boxes, a vacuum and a suitcase.",
+  "items": [{"props": ["Cardboard Box", "Archive Boxes", "Suitcase", "Vacuum Cleaner"], "place": "floor", "count": [1, 3]}]
+}

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "industrial-lockers",
+  "description": "Industrial changing room: banks of steel lockers, benches, kit bags, a mop.",
+  "items": [
+    {"props": ["Metal Lockers"], "place": "wall", "count": [2, 4]},
+    {"props": ["Bench"], "place": "centre", "chance": 0.9},
+    {"props": ["Duffel Bag", "Backpack", "Laundry Basket"], "place": "floor", "count": [1, 3]},
+    {"props": ["Mop and Bucket", "Pedal Bin"], "place": "corner"},
+    {"props": ["Radiator"], "place": "wall", "chance": 0.6}
+  ]
+}

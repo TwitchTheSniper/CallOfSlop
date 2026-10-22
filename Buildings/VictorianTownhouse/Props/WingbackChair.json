@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Wingback Chair",
+  "description": "A bottle-green velvet wingback armchair on carved mahogany feet.",
+  "collision": "solid",
+  "collider": [{"size": [0.82, 1.28, 0.78]}],
+  "breakable": {"health": 90, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.8, 0.4, 0.75], "offset": [0, 0.28, 0], "color": "#1f4a32"},
+    {"size": [0.8, 0.8, 0.14], "offset": [0, 0.88, -0.31], "color": "#1f4a32"},
+    {"size": [0.12, 0.62, 0.5], "offset": [-0.36, 0.79, -0.1], "color": "#1a3e2a"},
+    {"size": [0.12, 0.62, 0.5], "offset": [0.36, 0.79, -0.1], "color": "#1a3e2a"},
+    {"size": [0.12, 0.24, 0.3], "offset": [-0.36, 0.6, 0.2], "color": "#1a3e2a"},
+    {"size": [0.12, 0.24, 0.3], "offset": [0.36, 0.6, 0.2], "color": "#1a3e2a"},
+    {"size": [0.56, 0.08, 0.56], "offset": [0, 0.52, 0.06], "color": "#22543a"},
+    {"size": [0.06, 0.08, 0.06], "offset": [-0.34, 0.04, 0.32], "color": "#4a2418"},
+    {"size": [0.06, 0.08, 0.06], "offset": [0.34, 0.04, 0.32], "color": "#4a2418"},
+    {"size": [0.06, 0.08, 0.06], "offset": [-0.34, 0.04, -0.32], "color": "#4a2418"},
+    {"size": [0.06, 0.08, 0.06], "offset": [0.34, 0.04, -0.32], "color": "#4a2418"}
+  ]
+}

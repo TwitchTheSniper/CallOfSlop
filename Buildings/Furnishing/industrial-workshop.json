@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "industrial-workshop",
+  "description": "Industrial maintenance workshop: a bench of tools, shelving, drums, cable and a generator.",
+  "items": [
+    {"id": "bench", "props": ["Table"], "place": "wall", "count": [1, 2]},
+    {"props": ["Toolbox", "Paint Cans"], "place": "on", "of": "bench"},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Oil Drum", "Cable Spool", "Gas Cylinders"], "place": "wall", "count": [1, 2]},
+    {"props": ["Portable Generator", "Aluminium Step Ladder"], "place": "corner"},
+    {"props": ["Toolbox", "Extension Ladder", "Paint Cans", "Bucket"], "place": "floor", "count": [1, 3]}
+  ]
+}

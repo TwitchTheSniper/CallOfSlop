@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Factory",
+  "theme": "1960s appliance factory: soot-dark red brick, green machinery, yellow safety lines, a thumping assembly line",
+  "category": "industrial",
+  "description": "An assembly hall with a conveyor line, presses and robot arms, a foreman's mezzanine, a dispatch bay with double loading doors, offices, lockers and a canteen.",
+  "author": "Call of Slop",
+  "seed": 301,
+  "wallThickness": 0.3,
+  "storeyHeight": 5.5,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "concrete"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red brick": {"wall": "#7c3a2e", "interior": "#c9c7b8", "floor": "#7d7b72", "ceiling": "#a9aba4", "trim": "#3f7a4e", "door": "#3f7a4e", "roof": "#4c5054"},
+    "yellow stock brick": {"wall": "#a88a58", "interior": "#cfd3c4", "floor": "#807c70", "ceiling": "#b1b3aa", "trim": "#2f5d8a", "door": "#2f5d8a", "roof": "#55585a"}
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "hall",
+          "type": "assembly",
+          "rect": [-14, -9, 6, 4],
+          "autoWindows": {"spacing": 4.0, "width": 2.4, "sill": 3.4, "head": 4.8},
+          "props": [
+            {"name": "Conveyor Rollers", "at": [-7.5, 1.0]},
+            {"name": "Conveyor Rollers", "at": [-4.5, 1.0]},
+            {"name": "Conveyor Rollers", "at": [1.5, 1.0]},
+            {"name": "Conveyor Rollers", "at": [4.5, 1.0]},
+            {"name": "Factory Press", "at": [7.0, 1.0]},
+            {"name": "Factory Robot Arm", "at": [-6.0, 2.1], "yaw": 180},
+            {"name": "Factory Robot Arm", "at": [3.0, -0.10000000000000009]},
+            {"name": "Factory Robot Arm", "at": [-4.5, -0.10000000000000009]},
+            {"name": "Flammables Cabinet", "wall": "W", "along": 4.6}
+          ]
+        },
+        {"id": "dispatch", "type": "factory-dispatch", "rect": [6, -9, 14, 4], "autoWindows": {"spacing": 4.0, "width": 2.4, "sill": 3.4, "head": 4.8}},
+        {"id": "office", "type": "office", "rect": [-14, 4, -7, 9], "autoWindows": {"spacing": 2.6, "width": 1.3, "sill": 1.0, "head": 2.3}},
+        {"id": "lockers", "type": "industrial-lockers", "rect": [-7, 4, -2, 9], "autoWindows": {"spacing": 2.4, "width": 1.0, "sill": 1.7, "head": 2.3}},
+        {"id": "wc", "type": "restroom", "rect": [-2, 4, 1, 9], "autoWindows": {"spacing": 2.0, "width": 0.7, "sill": 1.8, "head": 2.3}},
+        {"id": "canteen", "type": "breakroom", "rect": [1, 4, 8, 9], "autoWindows": {"spacing": 2.6, "width": 1.3, "sill": 1.0, "head": 2.3}},
+        {"id": "stores", "type": "storage", "rect": [8, 4, 14, 9], "autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 1.7, "head": 2.4}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-10.5, 9], "width": 1.1, "front": true, "material": "glass", "health": 50},
+        {"type": "door", "at": [-10.5, 4], "width": 1.0},
+        {"type": "door", "at": [-4.5, 4], "width": 1.0},
+        {"type": "door", "at": [-2, 6.5], "width": 0.9},
+        {"type": "door", "at": [3.0, 4], "width": 1.0},
+        {"type": "door", "at": [5.0, 9], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [8, 6.5], "width": 0.9},
+        {"type": "door", "at": [11, 4], "width": 1.2, "material": "metal"},
+        {"type": "arch", "at": [6, -3], "width": 3.2, "head": 4.0},
+        {"type": "door", "at": [-6, -9], "width": 1.0, "material": "metal"},
+        {"type": "door", "at": [-14, -3], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [14, -6.1], "width": 2.0, "head": 4.2, "material": "metal", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [14, -3.9], "width": 2.0, "head": 4.2, "material": "metal", "swing": "out", "hinge": "right"}
+      ]
+    }
+  ],
+  "roof": {"type": "flat", "parapet": 0.8, "color": {"color": "$roof", "material": "metal"}},
+  "extras": [
+    {
+      "type": "platform",
+      "rect": [-13.85, -8.85, -8.5, -5.2],
+      "height": 2.8,
+      "railing": 1.05,
+      "color": {"color": "#5d6a60", "material": "metal"},
+      "stairs": {"rect": [-8.4, -8.6, -6.4, -7.6], "dir": "-x"}
+    },
+    {"type": "prop", "name": "Office Desk", "at": [-12.2, 2.91, -8.3], "yaw": 0},
+    {"type": "prop", "name": "Office Chair", "at": [-12.2, 2.91, -7.45], "yaw": 180},
+    {"type": "prop", "name": "Filing Cabinet", "at": [-10.3, 2.91, -8.4], "yaw": 0},
+    {"type": "prop", "name": "Computer Monitor", "at": [-12.4, 3.67, -8.4], "yaw": 0},
+    {"type": "prop", "name": "Desk Phone", "at": [-11.8, 3.67, -8.3], "yaw": 0},
+    {"type": "prop", "name": "Whiteboard", "at": [-13.5, 2.91, -6.6], "yaw": 90},
+    {"type": "prop", "name": "Box Truck", "at": [20.5, -5.0], "yaw": 90},
+    {"type": "prop", "name": "Pallet Stack", "at": [16.8, 1.8]},
+    {"type": "prop", "name": "Pallet Stack", "at": [16.8, 2.9]},
+    {"type": "prop", "name": "Gas Bottle Cage", "at": [12.0, -10.4], "yaw": 180},
+    {"type": "prop", "name": "Dumpster", "at": [-2.0, -10.4], "yaw": 180},
+    {"type": "prop", "name": "Wheelie Bin Grey", "at": [0.0, -10.1], "yaw": 180},
+    {"type": "prop", "name": "Floodlight Tower", "at": [17.5, -11.0], "yaw": 225},
+    {"type": "prop", "name": "Shop Sign", "at": [-10.5, 2.75, 9.15], "yaw": 0},
+    {"type": "prop", "name": "Bollard", "at": [-12.0, 10.0]},
+    {"type": "prop", "name": "Bollard", "at": [-9.0, 10.0]},
+    {"type": "prop", "name": "Bike Rack", "at": [-4.5, 10.1], "yaw": 90},
+    {"type": "prop", "name": "Cigarette Bin", "at": [6.3, 9.7]},
+    {"type": "prop", "name": "Electric Meter", "at": [-14.15, 0.0, 6.5], "yaw": 270},
+    {"type": "prop", "name": "Skylight", "at": [-10.0, -3.0], "onRoof": true},
+    {"type": "prop", "name": "Skylight", "at": [-5.0, -3.0], "onRoof": true},
+    {"type": "prop", "name": "Skylight", "at": [0.0, -3.0], "onRoof": true},
+    {"type": "prop", "name": "Skylight", "at": [10.0, -3.0], "onRoof": true},
+    {"type": "prop", "name": "Roof Turbine Vent", "at": [-7.5, 1.0], "onRoof": true},
+    {"type": "prop", "name": "Roof Turbine Vent", "at": [2.5, 1.0], "onRoof": true},
+    {"type": "prop", "name": "Exhaust Fan", "at": [-3.0, 6.5], "onRoof": true},
+    {"type": "prop", "name": "Rooftop HVAC Unit", "at": [9.0, 6.5], "onRoof": true},
+    {"type": "block", "min": [-13.6, 0, -11.2], "max": [-12.0, 9.5, -9.6], "color": {"color": "#6a3226", "material": "brick"}},
+    {"type": "prop", "name": "Smoking Chimney", "at": [-12.8, 9.5, -10.4]}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "office", "floor": 0, "at": [-10.5, 6.5]},
+    {"type": "spawn", "name": "canteen", "floor": 0, "at": [4.5, 6.5]},
+    {"type": "spawn", "name": "dispatch", "floor": 0, "at": [10.0, -1.0]},
+    {"type": "hill", "name": "assembly line", "floor": 0, "at": [-4, -4]},
+    {"type": "point", "name": "mezzanine", "floor": 0, "at": [-11.5, -7]}
+  ]
+}

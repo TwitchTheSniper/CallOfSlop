@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bachelorliving",
+  "description": "Duplex east unit living room (the bachelor): an old sofa, a gaming setup, a bean bag, pizza boxes and laundry everywhere.",
+  "items": [
+    {"id": "desk", "props": ["Duplex Gaming Setup"], "place": "wall"},
+    {"props": ["Duplex Gaming Chair"], "place": "front", "of": "desk", "distance": 0.05},
+    {"id": "sofa", "props": ["Old Sofa"], "place": "wall", "prefer": "far"},
+    {"id": "t", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Duplex Pizza Boxes", "Laptop"], "place": "on", "of": "t", "y": 0.45},
+    {"props": ["Duplex Bean Bag"], "place": "corner"},
+    {"props": ["Flickering TV"], "place": "corner"},
+    {"props": ["Duplex Pizza Boxes", "Laundry Basket", "Soda Cans", "Litter", "Duffel Bag"], "place": "floor", "count": [3, 5]}
+  ]
+}

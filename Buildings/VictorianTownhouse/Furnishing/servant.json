@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "servant",
+  "description": "Victorian maid's room: an iron single bed, a washstand, a plain chair and a trunk.",
+  "items": [
+    {"id": "bed", "props": ["Single Bed"], "place": "wall", "prefer": "far"},
+    {"props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Wooden Chair"], "place": "corner"},
+    {"props": ["Victorian Townhouse Steamer Trunk"], "place": "wall"},
+    {"props": ["Bucket", "Broom", "Mop and Bucket"], "place": "floor", "count": [1, 2]}
+  ]
+}

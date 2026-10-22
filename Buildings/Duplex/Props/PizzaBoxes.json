@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Duplex Pizza Boxes",
+  "description": "A leaning stack of empty pizza boxes with a crust on top.",
+  "collision": "cosmetic",
+  "fadeDistance": 35,
+  "breakable": {"health": 3, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.42, 0.05, 0.42], "offset": [0, 0.025, 0], "color": "#d8c49a"},
+    {"size": [0.42, 0.05, 0.42], "offset": [0.02, 0.075, 0.01], "color": "#e0cca0"},
+    {"size": [0.42, 0.05, 0.42], "offset": [-0.01, 0.125, 0.03], "color": "#d8c49a"},
+    {"size": [0.42, 0.05, 0.42], "offset": [0.03, 0.175, 0.02], "color": "#e0cca0"},
+    {"size": [0.3, 0.012, 0.3], "offset": [0.02, 0.206, 0.02], "color": "#c8302a"},
+    {"size": [0.12, 0.03, 0.04], "offset": [0.1, 0.215, 0.1], "color": "#d8a050"}
+  ]
+}

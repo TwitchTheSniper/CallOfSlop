@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "office",
+  "description": "Modern villa study: a white desk, a designer chair, bookshelves and a plant.",
+  "items": [
+    {"id": "d", "props": ["Modern Villa Desk"], "place": "wall", "prefer": "far"},
+    {"props": ["Office Chair"], "place": "front", "of": "d", "distance": 0.05},
+    {"props": ["Bookshelf"], "place": "wall", "count": [1, 2]},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Office Plant", "Modern Villa Arc Lamp"], "place": "corner"}
+  ]
+}

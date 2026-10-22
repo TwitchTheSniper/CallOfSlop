@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "studio",
+  "description": "The Print Shop's design studio: drawing tables, a desk with a computer, paper and posters.",
+  "items": [
+    {"props": ["Print Shop Drafting Table"], "place": "wall", "count": [1, 2]},
+    {"id": "desk", "props": ["Office Desk"], "place": "wall"},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "distance": -0.1},
+    {"props": ["Print Shop Poster Board"], "place": "wall"},
+    {"props": ["Bookshelf"], "place": "wall"},
+    {"props": ["Office Plant", "Floor Lamp"], "place": "corner"},
+    {"props": ["Book Pile", "Newspaper Stack"], "place": "floor", "count": [0, 2]}
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "typesetting",
+  "description": "The Print Shop's composing room: oak type cabinets, a proofing table, galleys of set type.",
+  "items": [
+    {"props": ["Print Shop Type Cabinet"], "place": "wall", "count": [3, 5]},
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [1, 2]},
+    {"props": ["Book Pile", "Newspaper"], "place": "on", "of": "t"},
+    {"props": ["Archive Boxes"], "place": "floor", "count": [0, 1]}
+  ]
+}

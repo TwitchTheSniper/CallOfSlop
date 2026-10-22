@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "freezer",
+  "description": "Cold Storage's freezer: frosted racks of frozen goods, rails of hanging meat, frozen pallets.",
+  "items": [
+    {"props": ["Cold Storage Freezer Rack"], "place": "wall", "count": [3, 5]},
+    {"props": ["Cold Storage Meat Rail"], "place": "floor", "count": [1, 2], "gap": 0.8},
+    {"props": ["Cold Storage Frozen Pallet"], "place": "floor", "count": [2, 4], "gap": 0.5},
+    {"props": ["Chest Freezer"], "place": "wall"},
+    {"props": ["Cardboard Box", "Open Cardboard Box"], "place": "floor", "count": [1, 2]}
+  ]
+}

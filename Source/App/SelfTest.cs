@@ -97,6 +97,7 @@ public static partial class SelfTest
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
             Section("Recoil", CheckRecoil);
+            Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
             Section("Death cam", CheckDeathCam);
             Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
             Section("Ready-up", CheckReadyUp);
@@ -118,7 +119,10 @@ public static partial class SelfTest
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
             Section("Weird hardbass", CheckWeirdHardbass); // SelfTestWeirdHardbass.cs: odd meters, swerves, toys, new voices, CPU vs the heaviest track
             Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
+            Section("Frenzy classes", CheckFrenzyClasses); // SelfTestFrenzyClasses.cs: per-weapon-class frenzy music styles
+            Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
             Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
+            Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
             Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
@@ -130,6 +134,8 @@ public static partial class SelfTest
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
+            Section("Body model", CheckBodyModel); // SelfTestBody.cs: torso and head parts vs the old boxes and hit boxes, hat fit, seeded variants, cost
+            Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)

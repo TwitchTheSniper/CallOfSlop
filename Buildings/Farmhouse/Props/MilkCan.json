@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Farmhouse Milk Can",
+  "description": "A pair of galvanized milk cans waiting on the porch for the dairy truck.",
+  "collision": "solid",
+  "collider": [{"size": [0.66, 0.66, 0.36]}],
+  "breakable": {"health": 80, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.3, 0.5, 0.3], "offset": [-0.18, 0.25, 0], "color": "galvanized", "material": "metal"},
+    {"size": [0.2, 0.12, 0.2], "offset": [-0.18, 0.56, 0], "color": "galvanized"},
+    {"size": [0.24, 0.04, 0.24], "offset": [-0.18, 0.64, 0], "color": "steel"},
+    {"size": [0.3, 0.5, 0.3], "offset": [0.18, 0.25, 0.04], "color": "galvanized", "material": "metal"},
+    {"size": [0.2, 0.12, 0.2], "offset": [0.18, 0.56, 0.04], "color": "galvanized"},
+    {"size": [0.24, 0.04, 0.24], "offset": [0.18, 0.64, 0.04], "color": "steel"}
+  ]
+}

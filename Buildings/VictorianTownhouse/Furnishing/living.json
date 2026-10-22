@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Victorian parlour: a marble fireplace, a Chesterfield, wingback chairs, a piano, a gasolier and a Persian rug.",
+  "items": [
+    {"props": ["Fireplace"], "place": "wall", "prefer": "far"},
+    {"id": "sofa", "props": ["Victorian Townhouse Chesterfield"], "place": "wall"},
+    {"props": ["Rug"], "place": "centre"},
+    {"id": "table", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Stacked Plates"], "place": "on", "of": "table", "y": 0.45, "chance": 0.7},
+    {"props": ["Victorian Townhouse Wingback Chair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Upright Piano"], "place": "wall"},
+    {"props": ["Grandfather Clock", "Large Flower Pot"], "place": "corner"},
+    {"props": ["Victorian Townhouse Gasolier"], "place": "ceiling"},
+    {"props": ["Cat", "Spinning Globe"], "place": "floor", "chance": 0.5}
+  ]
+}

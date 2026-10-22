@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Leather Couch",
+  "description": "A heavy cognac leather couch on a log frame, with a plaid wool blanket.",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 0.89, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 140, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.1, 0.2, 0.9], "offset": [0, 0.1, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [2.0, 0.24, 0.8], "offset": [0, 0.32, 0.02], "color": "#9a5a2a"},
+    {"size": [2.0, 0.45, 0.2], "offset": [0, 0.665, -0.32], "color": "#9a5a2a"},
+    {"size": [0.2, 0.5, 0.9], "offset": [-1.0, 0.45, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.2, 0.5, 0.9], "offset": [1.0, 0.45, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.7, 0.04, 0.82], "offset": [0.45, 0.46, 0.0], "color": "#a82a2a"},
+    {"size": [0.7, 0.03, 0.02], "offset": [0.45, 0.475, 0.0], "color": "#1a1a1a"}
+  ]
+}

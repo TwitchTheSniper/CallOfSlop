@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "chiller",
+  "description": "Cold Storage's chiller: shelving and crates of fruit and veg, sacks of potatoes.",
+  "items": [
+    {"props": ["Metal Shelving"], "place": "wall", "count": [2, 4]},
+    {"props": ["Produce Crates"], "place": "wall", "count": [2, 3]},
+    {"props": ["Potato Sacks", "Cold Storage Frozen Pallet"], "place": "floor", "count": [1, 3], "gap": 0.5},
+    {"props": ["Apple Crate", "Cabbage Crate", "Orange Crate"], "place": "floor", "count": [2, 4], "gap": 0.2}
+  ]
+}

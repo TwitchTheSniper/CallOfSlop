@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Modern villa great room: a grey sectional, a media wall, an arc lamp, a big rug and a sculptural plant.",
+  "items": [
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Modern Villa Arc Lamp"], "place": "corner"},
+    {"props": ["Armchair", "Large Flower Pot"], "place": "corner", "count": [1, 2]},
+    {"props": ["Office Plant", "Large Flower Pot"], "place": "corner"},
+    {"props": ["Dog"], "place": "floor", "chance": 0.5}
+  ]
+}

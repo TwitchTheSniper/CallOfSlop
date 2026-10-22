@@ -43,9 +43,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     with prestige, level and hat (3 bytes)
     // 25: cosmetic loadout (GameCosmeticLoadout.cs): Msg.Loadout ends with the hat byte (after the kill streaks); the
     //     server keeps it only if the player's reported prestige unlocks it, and the roster carries it (protocol 24).
-    // 26: tactical equipment (GameTactical.cs): ThrowableKind gains Flash .. Stim (Msg.Throw / Loadout bytes), and the
+    // 26: frenzy per weapon class (Source/Game/Frenzy): every snapshot slow entry ends with the player's frenzy level
+    //     and frenzy class (+ the host's frenzy-buffs bit), 2 bytes (Snapshot.SlowBytes 16 -> 18).
+    // 27: tactical equipment (GameTactical.cs): ThrowableKind gains Flash .. Stim (Msg.Throw / Loadout bytes), and the
     //     new Msg.TacState (devices with the snapshots) and Msg.TacEvent (flash / stun, intercepts, pings...) at the end.
-    public const byte ProtocolVersion = 26;
+    public const byte ProtocolVersion = 27;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

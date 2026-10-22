@@ -15,6 +15,7 @@ public static unsafe partial class Program
     private static bool _frenzyAlive;
     private static double _frenzyShot = double.NaN;
     private static int _frenzyBannerLevel;
+    private static WeaponClass _frenzyClassSeen = WeaponClass.AssaultRifle;
 
     /// <summary>The HUD banner for a frenzy level (empty below 5).</summary>
     internal static string FrenzyBanner(int level) => level >= FrenzyMeter.MaxLevel ? "MAX FRENZY" : level >= 5 ? "FRENZY" : "";
@@ -47,6 +48,8 @@ public static unsafe partial class Program
             _frenzyHeads = heads;
             _frenzyAlive = alive;
             _frenzyShot = game.LastShotTime;
+            _frenzyClassSeen = me.FrenzyClass;
+            layer.Class = me.FrenzyClass;
         }
         _frenzy.Zombies = zombies;
         if (_frenzyAlive && !alive)
@@ -61,6 +64,13 @@ public static unsafe partial class Program
             newKills = 0; // a counter reset (new zombies run): resync
         for (var i = 0; i < newKills; i++)
             _frenzy.OnKill(now, i < newHeads);
+        if (newKills > 0)
+            layer.Class = zombies ? me.WeaponDef.Class : game.LocalKillClass; // the class character: the latest kill's weapon (predicted)
+        if (me.FrenzyClass != _frenzyClassSeen)
+        {
+            _frenzyClassSeen = me.FrenzyClass; // the server's Player.FrenzyClass (same rule) wins once it arrives
+            layer.Class = me.FrenzyClass;
+        }
         _frenzyKills = kills;
         _frenzyHeads = heads;
         _frenzy.Update(now);
@@ -79,7 +89,7 @@ public static unsafe partial class Program
         }
         if (_smoke && _frenzy.Level != _frenzyLoggedLevel)
         {
-            Console.WriteLine($"[smoke] frenzy: meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {layer.Level} \"{layer.TrackName ?? "-"}\"");
+            Console.WriteLine($"[smoke] frenzy: meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {layer.Level} \"{layer.TrackName ?? "-"}\", class {layer.Class} style \"{layer.StyleName}\"");
             _frenzyLoggedLevel = _frenzy.Level;
         }
     }
@@ -112,7 +122,7 @@ public static unsafe partial class Program
         if (_smokeFrenzyStep <= SmokeFrenzyKills && t > 0.2 + SmokeFrenzyGap * (_smokeFrenzyStep - 1))
         {
             var line = _session?.SmokeKillNearestBot(now) ?? "no session";
-            Console.WriteLine($"[smoke] frenzy: kill {_smokeFrenzyStep}: {line}; meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {AudioSystem.Music.Frenzy.Level}");
+            Console.WriteLine($"[smoke] frenzy: kill {_smokeFrenzyStep}: {line}; meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {AudioSystem.Music.Frenzy.Level}, style \"{AudioSystem.Music.Frenzy.StyleName}\"");
             _smokeFrenzyStep++;
         }
         else if (_smokeFrenzyStep == SmokeFrenzyKills + 1 && t > 0.2 + SmokeFrenzyGap * SmokeFrenzyKills + 3.0)
@@ -120,7 +130,7 @@ public static unsafe partial class Program
             var layer = AudioSystem.Music.Frenzy;
             _smokeFrenzyTop = Math.Max(_smokeFrenzyTop, layer.Level);
             Console.WriteLine($"[smoke] frenzy: after the spree: meter level {_frenzy.Level} (heat {_frenzy.Heat:0}), music level {layer.Level} \"{layer.TrackName ?? "-"}\", "
-                              + $"top music level {_smokeFrenzyTop} (want {FrenzyMeter.MaxLevel}), level-6 hits {layer.Hits}, banner \"{_session?.PerkBanner}\", "
+                              + $"top music level {_smokeFrenzyTop} (want {FrenzyMeter.MaxLevel}), level-6 hits {layer.Hits}, class {layer.ClassPlaying} style \"{layer.StyleName}\" ({layer.ClassSwitches} switches), banner \"{_session?.PerkBanner}\", "
                               + $"limiter min gain {AudioSystem.Music.FrenzyLimiterMinGain:0.00}, music mixing {AudioSystem.Music.RenderMsPerSecond:0.0} ms per s of audio");
             _smokeFrenzyStep++;
             _smokeStepStart += t; // the usual steps carry on where they were

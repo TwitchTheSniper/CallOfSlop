@@ -12,7 +12,8 @@ public static unsafe partial class Program
     /// <summary>
     /// Smoke step on the first map (after the name tags): five bots lined up in front of you, each wearing one of the five
     /// prestige hats through the test-only <see cref="HatRender.TestOverride"/> (bots never wear hats in real play), then a
-    /// screenshot (smoke_prestige_hats.bmp). Adds bots if the match has fewer than five.
+    /// screenshot (smoke_prestige_hats.bmp); then the same line-up without hats, showing the body model's seeded variants
+    /// and headwear (smoke_body_lineup.bmp, Source/Render/BodyModel.cs). Adds bots if the match has fewer than five.
     /// </summary>
     private static void SmokeHats(double now)
     {
@@ -32,7 +33,7 @@ public static unsafe partial class Program
             HatRender.TestOverride = p => hats.GetValueOrDefault(p.Id); // test only: never set outside the smoke test / self-test
             _smokeHatStep = 1;
         }
-        if (_smokeHatStep <= 2 && _game.IsServer && _game.Local is { Alive: true } me)
+        if (_smokeHatStep <= 3 && _game.IsServer && _game.Local is { Alive: true } me)
         {
             // Hold the line-up every frame (their AI would walk off), facing you.
             _game.LookPitch = 0;
@@ -55,6 +56,13 @@ public static unsafe partial class Program
                     + string.Join(", ", _smokeHatBots.Select((id, i) => Cosmetics.Get((HatId)(i + 1))?.Name ?? "?"))
                     + $" (test override); catalog {(Cosmetics.LoadError ?? "loaded")}, tallest {Cosmetics.Hats.Max(h => h.Height):0.00} m");
                 HatRender.TestOverride = null;
+                _smokeHatStep++;
+                break;
+            case 3 when t > 1.5:
+                SmokeShot("body_lineup");
+                Console.WriteLine("[smoke] body line-up: " + string.Join(", ", _smokeHatBots.Select(id => _game.Players.TryGetValue(id, out var b)
+                    ? $"{b.Name} {BodyModel.VariantFor(b.Name, b.Id).Headwear}{(BodyModel.VariantFor(b.Name, b.Id).Beard ? "+beard" : "")}" : "?"))
+                    + $"; body {BodyModel.MaxParts} boxes up close (was 3), detail within {BodyModel.DetailRange:0} m");
                 _smokeStepStart += t; // give the usual steps their clock back
                 _smokeHatStep++;
                 break;

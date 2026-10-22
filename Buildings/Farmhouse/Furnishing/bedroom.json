@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Farmhouse bedroom: an iron bed with a patchwork quilt, a dresser, a rocking chair and a washstand.",
+  "items": [
+    {"id": "bed", "props": ["Farmhouse Quilt Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bedside", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bedside", "y": 0.6, "chance": 0.8},
+    {"id": "dresser", "props": ["Wardrobe", "Chest of Drawers"], "place": "wall", "count": [1, 2]},
+    {"props": ["Rocking Chair"], "place": "corner", "chance": 0.8},
+    {"props": ["Rug", "Striped Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Suitcase", "Laundry Basket", "Book Pile"], "place": "floor", "count": [1, 2]}
+  ]
+}

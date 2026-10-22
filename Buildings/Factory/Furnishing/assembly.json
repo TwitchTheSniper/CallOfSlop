@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "assembly",
+  "description": "The Factory's assembly hall: benches and machines along the walls, parts carts, gantry hooks, fans, pallets of stock.",
+  "items": [
+    {"props": ["Factory Control Panel"], "place": "wall", "count": [2, 3]},
+    {"props": ["Factory Assembly Bench"], "place": "wall", "count": [2, 4]},
+    {"props": ["Factory Press"], "place": "wall", "count": [1, 2], "prefer": "far"},
+    {"props": ["Gantry Hook"], "place": "floor", "count": [1, 2], "gap": 0.8},
+    {"props": ["Factory Parts Cart"], "place": "floor", "count": [2, 4], "gap": 0.5},
+    {"props": ["Drum Fan"], "place": "corner", "count": [1, 2]},
+    {"props": ["Metal Shelving"], "place": "wall", "count": [1, 2]},
+    {"props": ["Pallet Stack", "Small Crate", "Cardboard Stack"], "place": "floor", "count": [2, 4], "gap": 0.6},
+    {"props": ["Toolbox", "Cable Spool", "Oil Drum"], "place": "floor", "count": [1, 3], "gap": 0.4},
+    {"props": ["Mop and Bucket", "Broom", "Cardboard Box Small", "Litter"], "place": "floor", "count": [2, 4]}
+  ]
+}

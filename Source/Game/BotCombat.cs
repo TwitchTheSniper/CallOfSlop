@@ -193,7 +193,8 @@ public sealed partial class Game
             || (dist >= def.RangeM * 3f && def.Class != WeaponClass.Sniper))
             return;
 
-        var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : Perks.SpreadMult(p.Perks, 0f)) + (b.Skill == BotDifficulty.Easy ? 0.02f : 0f); // Steady Aim
+        var spread = BotShotSpread(p, def, aim.Ads, b.Skill) // Steady Aim, sprint penalty (SprintSpread.cs)
+                     * FrenzyBuffs.ConeMult(p, def, aim.Ads ? 1f : 0f); // the Shotgun and Sniper frenzy buffs
         ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);
@@ -212,6 +213,9 @@ public sealed partial class Game
         }
         // Recoil nudges their aim off target; they have to pull it back (and they pull down harder than up).
         var (kickPitch, kickYaw) = Recoil.BotKick(def, _rng);
+        var frenzyKick = FrenzyBuffs.Value(p, def, FrenzyStat.Recoil); // the AR frenzy buff
+        kickPitch *= frenzyKick;
+        kickYaw *= frenzyKick;
         b.AimErrPitch += kickPitch * BotKickPitchScale;
         b.AimErrYaw += kickYaw;
     }

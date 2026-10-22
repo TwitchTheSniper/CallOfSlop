@@ -1,0 +1,68 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Cold Storage Compressor",
+  "description": "A green refrigeration compressor set on a skid: motor and compressor shuddering, gauges, copper pipes.",
+  "collision": "solid",
+  "collider": [{"size": [1.8, 1.0, 0.9]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 300,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 14, "size": [0.05, 0.25], "colors": ["#3e6e52", "#b8693a"]}
+  },
+  "parts": [
+    {"size": [1.8, 0.15, 0.9], "offset": [0, 0.075, 0], "color": "#3a3a3a"},
+    {
+      "size": [0.8, 0.7, 0.6],
+      "offset": [-0.4, 0.5, 0],
+      "color": "#3e6e52",
+      "material": "metal",
+      "anim": {"type": "shake", "distance": 0.006, "period": 0.06, "axis": [1, 0.4, 0.3]}
+    },
+    {
+      "size": [0.8, 0.55, 0.228],
+      "offset": [0.45, 0.5, 0],
+      "color": "#3e6e52",
+      "material": "metal",
+      "pitch": 0,
+      "anim": {"type": "shake", "distance": 0.005, "period": 0.07}
+    },
+    {
+      "size": [0.8, 0.55, 0.228],
+      "offset": [0.45, 0.5, 0],
+      "color": "#3e6e52",
+      "material": "metal",
+      "pitch": 45,
+      "anim": {"type": "shake", "distance": 0.005, "period": 0.07}
+    },
+    {
+      "size": [0.8, 0.55, 0.228],
+      "offset": [0.45, 0.5, 0],
+      "color": "#3e6e52",
+      "material": "metal",
+      "pitch": 90,
+      "anim": {"type": "shake", "distance": 0.005, "period": 0.07}
+    },
+    {
+      "size": [0.8, 0.55, 0.228],
+      "offset": [0.45, 0.5, 0],
+      "color": "#3e6e52",
+      "material": "metal",
+      "pitch": 135,
+      "anim": {"type": "shake", "distance": 0.005, "period": 0.07}
+    },
+    {"size": [0.06, 0.8, 0.06], "offset": [0.7, 1.1, -0.3], "color": "#b8693a"},
+    {"size": [0.06, 0.8, 0.06], "offset": [0.85, 1.1, -0.3], "color": "#b8693a"},
+    {"size": [0.5, 0.06, 0.06], "offset": [0.6, 1.5, -0.3], "color": "#b8693a"},
+    {"size": [0.4, 0.4, 0.15], "offset": [-0.4, 1.15, -0.2], "color": "#d8d8d0"},
+    {"size": [0.1, 0.1, 0.02], "offset": [-0.5, 1.2, -0.12], "color": "white"},
+    {"size": [0.1, 0.1, 0.02], "offset": [-0.3, 1.2, -0.12], "color": "white"},
+    {
+      "size": [0.06, 0.04, 0.02],
+      "offset": [-0.4, 1.05, -0.12],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 2.0, "color": "#40ff70", "glow": 1.0}
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Malt Sacks",
+  "description": "A pile of hessian sacks of malted barley on a pallet.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 0.74, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 50,
+    "breakBy": "all",
+    "sound": "soft",
+    "debris": {"count": 16, "size": [0.05, 0.25], "colors": ["#c8b07a", "#e0d0a0"]}
+  },
+  "parts": [
+    {"size": [1.2, 0.14, 0.8], "offset": [0, 0.07, 0], "color": "pallet", "material": "wood"},
+    {"size": [0.55, 0.3, 0.75], "offset": [-0.3, 0.29, 0], "color": "#c8b07a"},
+    {"size": [0.55, 0.3, 0.75], "offset": [0.3, 0.29, 0], "color": "#bca46e"},
+    {"size": [0.55, 0.3, 0.75], "offset": [0, 0.59, 0], "color": "#c8b07a", "yaw": 8},
+    {"size": [0.2, 0.12, 0.01], "offset": [0, 0.59, 0.38], "color": "#7a2b24"}
+  ]
+}

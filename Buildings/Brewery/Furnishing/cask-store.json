@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cask-store",
+  "description": "The Brewery's cask store: oak stillages full of casks, more casks on the floor, a sack trolley's worth of clutter.",
+  "items": [
+    {"props": ["Brewery Cask Rack"], "place": "wall", "count": [3, 5]},
+    {"props": ["Brewery Cask"], "place": "floor", "count": [3, 6], "gap": 0.15},
+    {"props": ["Pallet", "Small Crate"], "place": "floor", "count": [1, 2]}
+  ]
+}

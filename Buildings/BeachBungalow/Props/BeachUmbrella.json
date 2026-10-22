@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Beach Bungalow Beach Umbrella",
+  "description": "A striped beach umbrella in a sand-filled base, with a cool box beside it.",
+  "collision": "solid",
+  "collider": [{"size": [0.4, 2.3, 0.4]}],
+  "parts": [
+    {"size": [0.4, 0.15, 0.4], "offset": [0, 0.075, 0], "color": "#e8e0c8"},
+    {"size": [0.05, 2.2, 0.05], "offset": [0, 1.25, 0], "color": "white"},
+    {"size": [2.0, 0.06, 2.0], "offset": [0, 2.23, 0], "color": "#e8503a"},
+    {"size": [1.4, 0.06, 1.4], "offset": [0, 2.29, 0], "color": "white"},
+    {"size": [0.6, 0.06, 0.6], "offset": [0, 2.35, 0], "color": "#e8503a"},
+    {"size": [0.5, 0.36, 0.34], "offset": [0.5, 0.18, 0.3], "color": "#2a7ac8"},
+    {"size": [0.52, 0.06, 0.36], "offset": [0.5, 0.39, 0.3], "color": "white"}
+  ]
+}

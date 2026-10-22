@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "cold-dock",
+  "description": "Cold Storage's loading dock: pallets waiting to go in, a forklift, wrap and cardboard.",
+  "items": [
+    {"props": ["Forklift"], "place": "floor"},
+    {"props": ["Cold Storage Frozen Pallet", "Pallet Stack"], "place": "floor", "count": [3, 5], "gap": 0.6},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Pallet", "Flattened Cardboard", "Plastic Bag"], "place": "floor", "count": [2, 3]}
+  ]
+}

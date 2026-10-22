@@ -267,6 +267,7 @@ public sealed partial class Ui : IDisposable
         }
 
         DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
+        DrawFrenzyHud(game, now, pos, size); // frenzy edge tint, class screen effect and meter (UiFrenzy.cs)
         DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
         DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
 

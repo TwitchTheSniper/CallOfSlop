@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Mobile home bedroom: a double bed wall to wall, a dresser, clothes on the floor.",
+  "items": [
+    {"id": "bed", "props": ["Double Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bs", "props": ["Bedside Table"], "place": "beside", "of": "bed"},
+    {"props": ["Table Lamp"], "place": "on", "of": "bs", "y": 0.6},
+    {"id": "dr", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Table Lamp", "Book Pile"], "place": "on", "of": "dr"},
+    {"props": ["Laundry Basket", "Duffel Bag", "Plastic Bag", "Acoustic Guitar"], "place": "floor", "count": [2, 3]}
+  ]
+}

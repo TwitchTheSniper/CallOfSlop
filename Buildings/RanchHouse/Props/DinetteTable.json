@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ranch House Dinette Table",
+  "description": "A turquoise formica dinette table with a chrome edge band and chrome legs.",
+  "collision": "solid",
+  "collider": [{"size": [1.32, 0.76, 0.87]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "metal", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.3, 0.04, 0.85], "offset": [0, 0.74, 0], "color": "#5ac0b8"},
+    {"size": [1.32, 0.04, 0.87], "offset": [0, 0.71, 0], "color": "chrome"},
+    {"size": [0.05, 0.69, 0.05], "offset": [-0.58, 0.345, -0.36], "color": "chrome"},
+    {"size": [0.05, 0.69, 0.05], "offset": [0.58, 0.345, -0.36], "color": "chrome"},
+    {"size": [0.05, 0.69, 0.05], "offset": [-0.58, 0.345, 0.36], "color": "chrome"},
+    {"size": [0.05, 0.69, 0.05], "offset": [0.58, 0.345, 0.36], "color": "chrome"}
+  ]
+}
