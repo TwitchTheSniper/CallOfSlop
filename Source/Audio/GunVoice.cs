@@ -165,23 +165,21 @@ public sealed class GunVoice
     public static uint SeedOf(WeaponDef w) => w.Voice?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
 
     /// <summary>
-    /// Characters the recorded weapons of a class take in turn by their class rank (tone tilt, body length, body resonance amount,
-    /// crack), so weapons on the same recorded firearm still sound clearly apart: bright and tight, dark and heavy,
-    /// neutral with a sharp crack, then two in-betweens.
+    /// Characters the recorded weapons of a class take in turn by their class rank: a 3 x 3 grid of tone tilt (bright,
+    /// neutral, dark) and body resonance band (a low thump, a mid knock, a high ring), so any two differ in tone or in
+    /// where the gun's body rings; body length and crack vary along with them.
     /// </summary>
-    private static readonly (float Tilt, float Tail, float Body, float Crack)[] Characters =
+    private static readonly (float Tilt, float Tail, float BodyHz, float Crack)[] Characters =
     [
-        // Nine (tone, body length) pairs: five tone steps from bright to dark and three body lengths, no two alike;
-        // the ones sharing a tone differ most in length. Body resonance and crack vary along with them.
-        (0.9f, 0.65f, 0.2f, 0.85f),
-        (-0.9f, 1.4f, 0.95f, 0.3f),
-        (0f, 1.0f, 0.55f, 0.95f),
-        (0.45f, 1.0f, 0.7f, 0.5f),
-        (-0.45f, 1.0f, 0.4f, 0.65f),
-        (0.9f, 1.4f, 0.85f, 0.4f),
-        (-0.9f, 0.65f, 0.45f, 0.7f),
-        (0f, 0.65f, 0.25f, 0.8f),
-        (0f, 1.4f, 0.3f, 0.6f),
+        (0.9f, 0.7f, 230f, 0.85f),
+        (-0.9f, 1.35f, 1350f, 0.3f),
+        (0f, 1.0f, 560f, 0.95f),
+        (0.9f, 1.0f, 1350f, 0.5f),
+        (-0.9f, 0.7f, 230f, 0.65f),
+        (0f, 1.35f, 230f, 0.4f),
+        (0.9f, 1.35f, 560f, 0.7f),
+        (-0.9f, 0.7f, 560f, 0.8f),
+        (0f, 1.0f, 1350f, 0.6f),
     ];
 
     /// <summary>
@@ -204,9 +202,9 @@ public sealed class GunVoice
         var onRoster = set != null && set.Roster.TryGetValue(w.Name, out ranks);
         var rank = ranks.Set;
         var turn = onRoster && g > 0 ? rank / g : -1; // how many weapons before this one got the same main firearm
-        (float Tilt, float Tail, float Body, float Crack) ch = onRoster
+        (float Tilt, float Tail, float BodyHz, float Crack) ch = onRoster
             ? Characters[ranks.Class % Characters.Length] // every recorded weapon of a class (up to 9) has its own
-            : (S(-0.7f, 0.7f, 3), S(0.8f, 1.2f, 12), S(0.25f, 0.9f, 6), S(0.3f, 0.95f, 7));
+            : (S(-0.7f, 0.7f, 3), S(0.8f, 1.2f, 12), 230f * MathF.Pow(5.9f, S(0f, 1f, 6)), S(0.3f, 0.95f, 7));
 
         // Recordings: main and second firearm of the set (or the voice block's).
         if (g > 0)
@@ -229,11 +227,11 @@ public sealed class GunVoice
         v.Pitch = spec?.Pitch ?? Math.Clamp(S(0.97f, 1.03f, 2) * (1f + (0.4f - w.Length) * 0.05f), 0.93f, 1.07f);
         // Tone: the character, nudged by the brightness stat and the hash.
         v.Tilt = spec?.Tone ?? Math.Clamp(ch.Tilt + (w.Bright - 0.55f) * 0.4f + S(-0.1f, 0.1f, 13), -1f, 1f);
-        // Body resonance: lower for big calibers and long, heavy guns; quality by hash, amount by character.
-        var hz = (620f - 380f * c) / MathF.Sqrt(Math.Clamp(w.Length, 0.15f, 1.2f) / 0.4f) * S(0.75f, 1.3f, 4);
-        v.BodyHz = spec?.BodyHz ?? Math.Clamp(hz, 110f, 1200f);
-        v.BodyQ = S(3.5f, 9f, 5);
-        v.BodyGain = (spec?.Body ?? Math.Clamp(ch.Body + S(-0.08f, 0.08f, 14), 0f, 1f)) * 0.45f;
+        // Body resonance: the character's band, a little lower for big calibers and long guns; quality by hash.
+        var hz = ch.BodyHz * (1.1f - 0.2f * c) / MathF.Pow(Math.Clamp(w.Length, 0.15f, 1.2f) / 0.4f, 0.15f) * S(0.92f, 1.08f, 4);
+        v.BodyHz = spec?.BodyHz ?? Math.Clamp(hz, 110f, 1500f);
+        v.BodyQ = S(4f, 7f, 5);
+        v.BodyGain = (spec?.Body ?? S(0.85f, 1f, 14)) * 0.6f;
         v.Crack = spec?.Crack ?? Math.Clamp(ch.Crack + (w.Bright - 0.5f) * 0.3f + S(-0.08f, 0.08f, 15), 0f, 1f);
         // Mechanism: automatic and burst guns and pistols cycle a bolt / slide right after the shot (sooner the faster
         // they fire); manual actions (bolt, lever, pump at low rates) don't click on the shot itself.
