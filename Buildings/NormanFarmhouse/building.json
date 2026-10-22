@@ -1,0 +1,1612 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Norman Farmhouse",
+  "theme": "A Normandy stone longere: thick limestone walls, small deep-set windows, a steep slate roof, stone chimneys; a farm kitchen with a hearth, cider and oak furniture",
+  "category": "residential",
+  "description": "A long two-storey stone farmhouse: the farm kitchen with its hearth, the hall and stairs and a parlour downstairs; three bedrooms upstairs; firewood, milk churns and a bench outside.",
+  "author": "Call of Slop",
+  "seed": 505,
+  "wallThickness": 0.5,
+  "storeyHeight": 2.9,
+  "exterior": {
+    "color": "$wall",
+    "material": "brick"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "none"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "wood"
+  },
+  "ceiling": {
+    "color": "$ceiling",
+    "material": "wood"
+  },
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "limestone": {
+      "wall": "#b4a98e",
+      "interior": "#e8dfc8",
+      "floor": "#6e5236",
+      "ceiling": "#5e4630",
+      "trim": "#4a4038",
+      "door": "#3e5a6e",
+      "roof": "#3a3e46"
+    },
+    "granite": {
+      "wall": "#8c887e",
+      "interior": "#e4dccb",
+      "floor": "#6a4e34",
+      "ceiling": "#58422e",
+      "trim": "#3e3a34",
+      "door": "#7a2e26",
+      "roof": "#33363c"
+    },
+    "whitewash": {
+      "wall": "#ddd6c4",
+      "interior": "#efe8d6",
+      "floor": "#74563a",
+      "ceiling": "#62492f",
+      "trim": "#4e5a3a",
+      "door": "#2f5a3e",
+      "roof": "#3c4048"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "salle",
+          "type": "kitchen",
+          "rules": "salle",
+          "rect": [
+            -7,
+            -3.5,
+            -1,
+            3.5
+          ],
+          "floor": {
+            "color": "#8a7e6a",
+            "material": "tiles"
+          }
+        },
+        {
+          "id": "hall",
+          "type": "hall",
+          "rect": [
+            -1,
+            -3.5,
+            2,
+            3.5
+          ],
+          "floor": {
+            "color": "#8a7e6a",
+            "material": "tiles"
+          }
+        },
+        {
+          "id": "parlour",
+          "type": "living",
+          "rect": [
+            2,
+            -3.5,
+            7,
+            3.5
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -0.2,
+            3.5
+          ],
+          "width": 1.0,
+          "front": true,
+          "material": "wood"
+        },
+        {
+          "type": "door",
+          "at": [
+            -4.0,
+            -3.5
+          ],
+          "width": 0.95,
+          "material": "wood"
+        },
+        {
+          "type": "door",
+          "at": [
+            -1,
+            1.9
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            2,
+            2.3
+          ],
+          "width": 0.9,
+          "hinge": "right"
+        },
+        {
+          "type": "window",
+          "at": [
+            -5.6,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -2.6,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            4.0,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            5.9,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -6.0,
+            -3.5
+          ],
+          "width": 0.7,
+          "sill": 1.1,
+          "head": 1.9
+        },
+        {
+          "type": "window",
+          "at": [
+            4.5,
+            -3.5
+          ],
+          "width": 0.8,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -7,
+            0.0
+          ],
+          "width": 0.8,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            7,
+            -1.0
+          ],
+          "width": 0.8,
+          "sill": 0.9,
+          "head": 2.0
+        }
+      ]
+    },
+    {
+      "height": 2.8,
+      "rooms": [
+        {
+          "id": "landing",
+          "type": "corridor",
+          "rect": [
+            -1,
+            -3.5,
+            2,
+            3.5
+          ]
+        },
+        {
+          "id": "bed1",
+          "type": "bedroom",
+          "rect": [
+            -7,
+            -3.5,
+            -1,
+            3.5
+          ]
+        },
+        {
+          "id": "bed2",
+          "type": "bedroom",
+          "rect": [
+            2,
+            -3.5,
+            7,
+            0
+          ]
+        },
+        {
+          "id": "bed3",
+          "type": "kidsroom",
+          "rect": [
+            2,
+            0,
+            7,
+            3.5
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -1,
+            -1.0
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            2,
+            -2.4
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            2,
+            2.2
+          ],
+          "width": 0.9,
+          "hinge": "right"
+        },
+        {
+          "type": "window",
+          "at": [
+            -5.0,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -2.6,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            0.3,
+            3.5
+          ],
+          "width": 0.7,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            4.5,
+            3.5
+          ],
+          "width": 0.9,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -4.0,
+            -3.5
+          ],
+          "width": 0.8,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            0.0,
+            -3.5
+          ],
+          "width": 0.6,
+          "sill": 1.2,
+          "head": 1.9
+        },
+        {
+          "type": "window",
+          "at": [
+            4.6,
+            -3.5
+          ],
+          "width": 0.8,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            -7,
+            1.2
+          ],
+          "width": 0.7,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            7,
+            1.5
+          ],
+          "width": 0.7,
+          "sill": 0.9,
+          "head": 2.0
+        },
+        {
+          "type": "window",
+          "at": [
+            7,
+            -1.8
+          ],
+          "width": 0.7,
+          "sill": 0.9,
+          "head": 2.0
+        }
+      ]
+    }
+  ],
+  "stairs": [
+    {
+      "floor": 0,
+      "rect": [
+        0.75,
+        -1.95,
+        1.65,
+        1.05
+      ],
+      "dir": "-z",
+      "color": {
+        "color": "#5a4430",
+        "material": "wood"
+      }
+    }
+  ],
+  "roof": {
+    "type": "gable",
+    "ridge": "x",
+    "pitch": 50,
+    "overhang": 0.35,
+    "color": {
+      "color": "$roof",
+      "material": "tiles"
+    }
+  },
+  "extras": [
+    {
+      "type": "block",
+      "min": [
+        -7.2,
+        0,
+        -0.6
+      ],
+      "max": [
+        -6.0,
+        11.8,
+        0.6
+      ],
+      "color": {
+        "color": "$wall",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.3,
+        11.8,
+        -0.7
+      ],
+      "max": [
+        -5.9,
+        12.0,
+        0.7
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.0,
+        5.0,
+        -0.6
+      ],
+      "max": [
+        7.2,
+        11.8,
+        0.6
+      ],
+      "color": {
+        "color": "$wall",
+        "material": "brick"
+      }
+    },
+    {
+      "type": "block",
+      "min": [
+        5.9,
+        11.8,
+        -0.7
+      ],
+      "max": [
+        7.3,
+        12.0,
+        0.7
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -0.95,
+        0,
+        3.75
+      ],
+      "max": [
+        0.55,
+        0.12,
+        4.5
+      ],
+      "color": {
+        "color": "#8a857a",
+        "material": "concrete"
+      }
+    },
+    {
+      "type": "prop",
+      "name": "Firewood Stack",
+      "at": [
+        -5.2,
+        4.1
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Bench",
+      "at": [
+        2.9,
+        4.25
+      ],
+      "yaw": 0
+    },
+    {
+      "type": "prop",
+      "name": "Milk Churns",
+      "at": [
+        -8.0,
+        2.2
+      ],
+      "yaw": 90
+    },
+    {
+      "type": "prop",
+      "name": "Flower Pots",
+      "at": [
+        1.2,
+        4.0
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Leaning Farm Tools",
+      "at": [
+        -2.6,
+        -4.05
+      ],
+      "yaw": 180
+    },
+    {
+      "type": "prop",
+      "name": "Cider Barrel",
+      "at": [
+        -6.2,
+        -4.2
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Cider Barrel",
+      "at": [
+        -5.4,
+        -4.25
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Wheelbarrow",
+      "at": [
+        7.9,
+        -2.0
+      ],
+      "yaw": 80
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        0.3,
+        -3.79
+      ],
+      "max": [
+        -6.7,
+        0.62,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        0.3,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        0.62,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        0.92,
+        -3.79
+      ],
+      "max": [
+        -6.95,
+        1.24,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        0.92,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        1.24,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        1.54,
+        -3.79
+      ],
+      "max": [
+        -6.7,
+        1.86,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        1.54,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        1.86,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        2.16,
+        -3.79
+      ],
+      "max": [
+        -6.95,
+        2.48,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        2.16,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        2.48,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        2.78,
+        -3.79
+      ],
+      "max": [
+        -6.7,
+        3.1,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        2.78,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        3.1,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        3.4,
+        -3.79
+      ],
+      "max": [
+        -6.95,
+        3.72,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        3.4,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        3.72,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        4.02,
+        -3.79
+      ],
+      "max": [
+        -6.7,
+        4.34,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        4.02,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        4.34,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        4.64,
+        -3.79
+      ],
+      "max": [
+        -6.95,
+        4.96,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        4.64,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        4.96,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        5.26,
+        -3.79
+      ],
+      "max": [
+        -6.7,
+        5.58,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        5.26,
+        -3.75
+      ],
+      "max": [
+        -7.25,
+        5.58,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        0.3,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        0.62,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        0.3,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        0.62,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        0.92,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        1.24,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        0.92,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        1.24,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        1.54,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        1.86,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        1.54,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        1.86,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        2.16,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        2.48,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        2.16,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        2.48,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        2.78,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        3.1,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        2.78,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        3.1,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        3.4,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        3.72,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        3.4,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        3.72,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        4.02,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        4.34,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        4.02,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        4.34,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        4.64,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        4.96,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        4.64,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        4.96,
+        -3.2
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        5.26,
+        -3.79
+      ],
+      "max": [
+        7.25,
+        5.58,
+        -3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        5.26,
+        -3.75
+      ],
+      "max": [
+        7.29,
+        5.58,
+        -3.45
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        0.3,
+        3.75
+      ],
+      "max": [
+        -6.7,
+        0.62,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        0.3,
+        3.45
+      ],
+      "max": [
+        -7.25,
+        0.62,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        0.92,
+        3.75
+      ],
+      "max": [
+        -6.95,
+        1.24,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        0.92,
+        3.2
+      ],
+      "max": [
+        -7.25,
+        1.24,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        1.54,
+        3.75
+      ],
+      "max": [
+        -6.7,
+        1.86,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        1.54,
+        3.45
+      ],
+      "max": [
+        -7.25,
+        1.86,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        2.16,
+        3.75
+      ],
+      "max": [
+        -6.95,
+        2.48,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        2.16,
+        3.2
+      ],
+      "max": [
+        -7.25,
+        2.48,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        2.78,
+        3.75
+      ],
+      "max": [
+        -6.7,
+        3.1,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        2.78,
+        3.45
+      ],
+      "max": [
+        -7.25,
+        3.1,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        3.4,
+        3.75
+      ],
+      "max": [
+        -6.95,
+        3.72,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        3.4,
+        3.2
+      ],
+      "max": [
+        -7.25,
+        3.72,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        4.02,
+        3.75
+      ],
+      "max": [
+        -6.7,
+        4.34,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        4.02,
+        3.45
+      ],
+      "max": [
+        -7.25,
+        4.34,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        4.64,
+        3.75
+      ],
+      "max": [
+        -6.95,
+        4.96,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        4.64,
+        3.2
+      ],
+      "max": [
+        -7.25,
+        4.96,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.25,
+        5.26,
+        3.75
+      ],
+      "max": [
+        -6.7,
+        5.58,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        -7.29,
+        5.26,
+        3.45
+      ],
+      "max": [
+        -7.25,
+        5.58,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        0.3,
+        3.75
+      ],
+      "max": [
+        7.25,
+        0.62,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        0.3,
+        3.45
+      ],
+      "max": [
+        7.29,
+        0.62,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        0.92,
+        3.75
+      ],
+      "max": [
+        7.25,
+        1.24,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        0.92,
+        3.2
+      ],
+      "max": [
+        7.29,
+        1.24,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        1.54,
+        3.75
+      ],
+      "max": [
+        7.25,
+        1.86,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        1.54,
+        3.45
+      ],
+      "max": [
+        7.29,
+        1.86,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        2.16,
+        3.75
+      ],
+      "max": [
+        7.25,
+        2.48,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        2.16,
+        3.2
+      ],
+      "max": [
+        7.29,
+        2.48,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        2.78,
+        3.75
+      ],
+      "max": [
+        7.25,
+        3.1,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        2.78,
+        3.45
+      ],
+      "max": [
+        7.29,
+        3.1,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        3.4,
+        3.75
+      ],
+      "max": [
+        7.25,
+        3.72,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        3.4,
+        3.2
+      ],
+      "max": [
+        7.29,
+        3.72,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        4.02,
+        3.75
+      ],
+      "max": [
+        7.25,
+        4.34,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        4.02,
+        3.45
+      ],
+      "max": [
+        7.29,
+        4.34,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.95,
+        4.64,
+        3.75
+      ],
+      "max": [
+        7.25,
+        4.96,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        4.64,
+        3.2
+      ],
+      "max": [
+        7.29,
+        4.96,
+        3.75
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        6.7,
+        5.26,
+        3.75
+      ],
+      "max": [
+        7.25,
+        5.58,
+        3.79
+      ],
+      "color": "$trim"
+    },
+    {
+      "type": "block",
+      "min": [
+        7.25,
+        5.26,
+        3.45
+      ],
+      "max": [
+        7.29,
+        5.58,
+        3.75
+      ],
+      "color": "$trim"
+    }
+  ],
+  "anchors": [
+    {
+      "type": "spawn",
+      "name": "farm kitchen",
+      "at": [
+        -4.0,
+        0.5
+      ]
+    },
+    {
+      "type": "spawn",
+      "name": "parlour",
+      "at": [
+        4.5,
+        0.0
+      ]
+    },
+    {
+      "type": "spawn",
+      "name": "big bedroom",
+      "floor": 1,
+      "at": [
+        -4.0,
+        0.0
+      ]
+    },
+    {
+      "type": "point",
+      "name": "front door",
+      "at": [
+        -0.2,
+        5.0
+      ]
+    }
+  ]
+}

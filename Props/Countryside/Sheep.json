@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sheep",
+  "category": "Countryside",
+  "description": "A woolly sheep with a black face. Looks only.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.85, 1.1]},
+  "fadeDistance": 60,
+  "parts": [
+    {"size": [0.85, 0.5, 0.52], "offset": [0, 0.6, 0], "color": "#e2dcc8"},
+    {"size": [0.6, 0.12, 0.46], "offset": [0, 0.9, 0], "color": "#d6d0bc"},
+    {"size": [0.3, 0.42, 0.56], "offset": [-0.32, 0.6, 0], "color": "#d8d2be"},
+    {"size": [0.22, 0.24, 0.2], "offset": [0.5, 0.72, 0], "color": "#2a2622", "rotation": [0, 0, -20]},
+    {"size": [0.12, 0.05, 0.1], "offset": [0.46, 0.84, 0.13], "color": "#2a2622"},
+    {"size": [0.12, 0.05, 0.1], "offset": [0.46, 0.84, -0.13], "color": "#2a2622"},
+    {"size": [0.07, 0.38, 0.07], "offset": [0.28, 0.19, 0.14], "color": "#2a2622"},
+    {"size": [0.07, 0.38, 0.07], "offset": [0.28, 0.19, -0.14], "color": "#2a2622"},
+    {"size": [0.07, 0.38, 0.07], "offset": [-0.28, 0.19, 0.14], "color": "#2a2622"},
+    {"size": [0.07, 0.38, 0.07], "offset": [-0.28, 0.19, -0.14], "color": "#2a2622"}
+  ]
+}

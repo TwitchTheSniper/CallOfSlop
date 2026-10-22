@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Tipped Farm Cart",
+  "category": "Countryside",
+  "description": "A two-wheeled tumbril farm cart tipped back on its axle, shafts up in the air.",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 1.3, 1.9], "offset": [-0.3, 0.65, 0]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 150, "breakBy": ["explosions", "streaks"], "sound": "wood", "debris": {"count": 18, "size": [0.08, 0.5], "colors": ["#7a5e3c", "#6e5536"]}},
+  "parts": [
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, 0.85], "color": "#4a3826", "rotation": [0, 0, 0], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, 0.85], "color": "#4a3826", "rotation": [0, 0, 45], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, 0.85], "color": "#4a3826", "rotation": [0, 0, 90], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, 0.85], "color": "#4a3826", "rotation": [0, 0, 135], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, -0.85], "color": "#4a3826", "rotation": [0, 0, 0], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, -0.85], "color": "#4a3826", "rotation": [0, 0, 45], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, -0.85], "color": "#4a3826", "rotation": [0, 0, 90], "material": "wood"},
+    {"size": [0.559, 1.35, 0.1], "offset": [0, 0.675, -0.85], "color": "#4a3826", "rotation": [0, 0, 135], "material": "wood"},
+    {"size": [0.12, 0.12, 1.9], "offset": [0, 0.675, 0], "color": "#2e2e2c"},
+    {"size": [2.2, 0.1, 1.5], "offset": [-0.25, 0.85, 0], "color": "#7a5e3c", "material": "wood", "rotation": [0, 0, -18.0]},
+    {"size": [2.2, 0.45, 0.07], "offset": [-0.25, 1.08, 0.74], "color": "#6a5034", "material": "wood", "rotation": [0, 0, -18.0]},
+    {"size": [2.2, 0.45, 0.07], "offset": [-0.25, 1.08, -0.74], "color": "#6a5034", "material": "wood", "rotation": [0, 0, -18.0]},
+    {"size": [0.07, 0.45, 1.5], "offset": [-1.3, 0.55, 0], "color": "#6a5034", "material": "wood", "rotation": [0, 0, -18.0]},
+    {"size": [2.4, 0.08, 0.08], "offset": [1.75, 1.35, 0.5], "color": "#6e5536", "material": "wood", "rotation": [0, 0, -24.0]},
+    {"size": [2.4, 0.08, 0.08], "offset": [1.75, 1.35, -0.5], "color": "#6e5536", "material": "wood", "rotation": [0, 0, -24.0]},
+    {"size": [0.08, 0.08, 1.0], "offset": [2.85, 1.7, 0], "color": "#6e5536", "material": "wood"}
+  ]
+}

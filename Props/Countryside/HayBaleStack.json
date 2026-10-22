@@ -1,0 +1,26 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hay Bale Stack",
+  "category": "Countryside",
+  "description": "Square hay bales stacked three high against a barn wall.",
+  "collision": "solid",
+  "collider": [{"size": [2.3, 1.0, 1.15], "offset": [0, 0.5, 0]}, {"size": [1.15, 0.5, 1.15], "offset": [0, 1.25, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 6},
+  "breakable": {"health": 140, "breakBy": ["explosions", "streaks"], "sound": "soft", "debris": {"count": 24, "size": [0.06, 0.25], "speed": 3, "colors": ["#c9ad5f", "#b89c52"]}},
+  "parts": [
+    {"size": [1.1, 0.5, 0.56], "offset": [-0.58, 0.25, -0.29], "color": "#c9ad5f", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [-0.88, 0.25, -0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [0.58, 0.25, -0.29], "color": "#b89c52", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [0.28, 0.25, -0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [-0.58, 0.25, 0.29], "color": "#d6bd6e", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [-0.88, 0.25, 0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [0.58, 0.25, 0.29], "color": "#c9ad5f", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [0.28, 0.25, 0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [0, 0.75, -0.29], "color": "#b89c52", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [-0.3, 0.75, -0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [0, 0.75, 0.29], "color": "#d6bd6e", "material": "dirt", "texScale": 2, "rotation": [0, 0, 0]},
+    {"size": [0.02, 0.51, 0.58], "offset": [-0.3, 0.75, 0.29], "color": "#8a6a3a", "rotation": [0, 0, 0]},
+    {"size": [1.1, 0.5, 0.56], "offset": [-0.3, 1.25, 0.0], "color": "#c9ad5f", "material": "dirt", "texScale": 2, "rotation": [0, 90, 0]},
+    {"size": [0.58, 0.51, 0.02], "offset": [-0.3, 1.25, -0.3], "color": "#8a6a3a", "rotation": [0, 0, 0]}
+  ]
+}

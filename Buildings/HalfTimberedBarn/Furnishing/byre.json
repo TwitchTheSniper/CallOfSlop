@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "byre",
+  "description": "The byre: water troughs along the wall, hay for the cows, milk churns and buckets.",
+  "items": [
+    {
+      "props": [
+        "Stone Water Trough"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Hay Bale"
+      ],
+      "place": "wall",
+      "count": [
+        2,
+        4
+      ],
+      "gap": 0.02
+    },
+    {
+      "props": [
+        "Milk Churns"
+      ],
+      "place": "corner"
+    },
+    {
+      "props": [
+        "Grazing Cow",
+        "Dairy Cow"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        2
+      ],
+      "gap": 0.6
+    },
+    {
+      "props": [
+        "Bucket",
+        "Loose Straw",
+        "Loose Straw"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        3
+      ]
+    }
+  ]
+}

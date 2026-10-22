@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Muck Heap",
+  "category": "Countryside",
+  "description": "A steaming farmyard muck heap with a fork stuck in it. Waist-high: you can mantle it, if you must.",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 1.1, 1.8], "offset": [0, 0.55, 0]}],
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [2.6, 0.5, 2.0], "offset": [0, 0.25, 0], "color": "#4a3a26", "material": "dirt"},
+    {"size": [2.0, 0.4, 1.5], "offset": [0.1, 0.65, 0], "color": "#56442c", "material": "dirt", "rotation": [0, 10, 0]},
+    {"size": [1.2, 0.3, 0.9], "offset": [-0.1, 0.98, 0.05], "color": "#5e4a30", "material": "dirt", "rotation": [0, -15, 0]},
+    {"size": [0.7, 0.12, 0.5], "offset": [0.4, 1.15, 0], "color": "#b89c52", "material": "dirt"},
+    {"size": [0.03, 1.3, 0.03], "offset": [0.2, 1.4, -0.2], "color": "#8a6a44", "rotation": [20, 0, 15]}
+  ]
+}

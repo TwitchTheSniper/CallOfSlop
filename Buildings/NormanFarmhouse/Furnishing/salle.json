@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "salle",
+  "description": "A Normandy farm kitchen: the hearth, a long oak table with chairs, a dresser, the range and the sink, cider and apples.",
+  "items": [
+    {
+      "props": [
+        "Fireplace"
+      ],
+      "place": "wall",
+      "prefer": "far"
+    },
+    {
+      "id": "table",
+      "props": [
+        "Dining Table"
+      ],
+      "place": "centre"
+    },
+    {
+      "props": [
+        "Wooden Chair",
+        "Dining Chair"
+      ],
+      "place": "around",
+      "of": "table",
+      "count": [
+        3,
+        5
+      ]
+    },
+    {
+      "props": [
+        "Stacked Plates",
+        "Apple Crate",
+        "Cooking Pot"
+      ],
+      "place": "on",
+      "of": "table",
+      "y": 0.77,
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "id": "counter",
+      "props": [
+        "Kitchen Counter"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Cooker"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Kitchen Sink"
+      ],
+      "place": "wall"
+    },
+    {
+      "props": [
+        "Kettle",
+        "Knife Block",
+        "Frying Pan"
+      ],
+      "place": "on",
+      "of": "counter",
+      "y": 0.9,
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Bookshelf",
+        "Chest of Drawers"
+      ],
+      "place": "wall",
+      "chance": 0.8
+    },
+    {
+      "props": [
+        "Cider Barrel",
+        "Apple Crate",
+        "Potato Sacks"
+      ],
+      "place": "corner",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Cat",
+        "Broom",
+        "Bucket"
+      ],
+      "place": "floor",
+      "count": [
+        1,
+        2
+      ]
+    }
+  ]
+}

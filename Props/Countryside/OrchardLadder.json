@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Orchard Ladder",
+  "category": "Countryside",
+  "description": "A tall three-legged orchard ladder for picking apples. Looks only.",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "fadeDistance": 50,
+  "parts": [
+    {"size": [0.06, 3.2, 0.06], "offset": [-0.28, 1.55, 0.15], "color": "#6e5536", "rotation": [-14, 0, 4]},
+    {"size": [0.06, 3.2, 0.06], "offset": [0.28, 1.55, 0.15], "color": "#6e5536", "rotation": [-14, 0, -4]},
+    {"size": [0.06, 3.0, 0.06], "offset": [0.0, 1.45, -0.55], "color": "#6e5536", "rotation": [22, 0, 0]},
+    {"size": [0.6, 0.04, 0.04], "offset": [0, 0.3, 0.462], "color": "#6e5536"},
+    {"size": [0.56, 0.04, 0.04], "offset": [0, 0.66, 0.372], "color": "#6e5536"},
+    {"size": [0.52, 0.04, 0.04], "offset": [0, 1.02, 0.282], "color": "#6e5536"},
+    {"size": [0.48, 0.04, 0.04], "offset": [0, 1.38, 0.192], "color": "#6e5536"},
+    {"size": [0.44, 0.04, 0.04], "offset": [0, 1.74, 0.103], "color": "#6e5536"},
+    {"size": [0.4, 0.04, 0.04], "offset": [0, 2.1, 0.013], "color": "#6e5536"},
+    {"size": [0.36, 0.04, 0.04], "offset": [0, 2.46, -0.077], "color": "#6e5536"},
+    {"size": [0.32, 0.04, 0.04], "offset": [0, 2.82, -0.167], "color": "#6e5536"}
+  ]
+}

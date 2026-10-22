@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Stone Water Trough",
+  "category": "Countryside",
+  "description": "A granite cattle trough with a hand pump, full of water.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 0.7, 0.72], "offset": [0, 0.35, 0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [2.0, 0.62, 0.72], "offset": [0, 0.31, 0], "color": "#8a877e", "material": "concrete"},
+    {"size": [1.8, 0.04, 0.52], "offset": [0, 0.6, 0], "color": "#3e5a5c"},
+    {"size": [2.04, 0.08, 0.1], "offset": [0, 0.66, 0.33], "color": "#76746c", "material": "concrete"},
+    {"size": [2.04, 0.08, 0.1], "offset": [0, 0.66, -0.33], "color": "#76746c", "material": "concrete"},
+    {"size": [0.1, 0.08, 0.72], "offset": [0.98, 0.66, 0], "color": "#76746c", "material": "concrete"},
+    {"size": [0.1, 0.08, 0.72], "offset": [-0.98, 0.66, 0], "color": "#76746c", "material": "concrete"},
+    {"size": [0.08, 0.9, 0.08], "offset": [1.15, 0.45, 0], "color": "#2e2e2c"},
+    {"size": [0.3, 0.06, 0.06], "offset": [1.08, 0.9, 0], "color": "#2e2e2c"},
+    {"size": [0.04, 0.3, 0.04], "offset": [1.18, 1.05, 0], "color": "#2e2e2c"}
+  ]
+}

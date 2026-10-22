@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "hayloft",
+  "description": "The hayloft: bales stacked under the roof, loose straw, a cat.",
+  "items": [
+    {
+      "props": [
+        "Hay Bale"
+      ],
+      "place": "wall",
+      "count": [
+        6,
+        10
+      ],
+      "gap": 0.02
+    },
+    {
+      "props": [
+        "Hay Bale Stack"
+      ],
+      "place": "wall",
+      "count": [
+        1,
+        2
+      ]
+    },
+    {
+      "props": [
+        "Hay Bale"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        4
+      ],
+      "gap": 0.6
+    },
+    {
+      "props": [
+        "Loose Straw",
+        "Loose Straw",
+        "Cat",
+        "Plank"
+      ],
+      "place": "floor",
+      "count": [
+        2,
+        4
+      ]
+    }
+  ]
+}
