@@ -284,7 +284,7 @@
     {"op": "Prop", "name": "Bench", "x": 3.4, "z": -6.45, "yaw": 270},
     {"op": "Prop", "name": "Bench", "x": -7.5, "z": 4.8, "yaw": 120},
     {"op": "Prop", "name": "Bench", "x": 8.2, "z": -4.4, "yaw": 300},
-    {"op": "Prop", "name": "Timber Bus Shelter", "x": -6.0, "z": 7.0, "yaw": 180},
+    {"op": "Prop", "name": "Timber Bus Shelter", "x": -6.0, "z": 7.0},
     {"op": "Prop", "name": "Bus Stop Sign", "x": -2.6, "z": 8.6, "yaw": 180},
     {"op": "Prop", "name": "Phone Booth", "x": 11.4, "z": 6.8, "yaw": 180},
     {"op": "Prop", "name": "Village Noticeboard", "x": -12.0, "z": -7.3},

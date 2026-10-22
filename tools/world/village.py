@@ -395,7 +395,7 @@ for k, (x, z, yaw) in enumerate(((-3.4, -6.45, 90), (3.4, -6.45, 270), (-7.5, 4.
 fol.tree(-8.0, 1.5, 10.5)            # the oaks
 fol.tree(8.5, 3.5, 9.5)
 fol.tree(-10.5, -6.0, 7.5)
-S.prop("Timber Bus Shelter", -6.0, 7.0, 180, lanes=False, check=False)
+S.prop("Timber Bus Shelter", -6.0, 7.0, 0, lanes=False, check=False)
 S.prop("Bus Stop Sign", -2.6, 8.6, 180, check=False)
 S.prop("Phone Booth", 11.4, 6.8, 180, lanes=False, check=False)
 S.prop("Village Noticeboard", -12.0, -7.3, 0, lanes=False, check=False)

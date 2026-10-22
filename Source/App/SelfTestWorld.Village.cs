@@ -184,6 +184,11 @@ public static partial class SelfTest
             Compare($"hill {h + 1}", TeamWalk(0, o.Hills[h].Center), TeamWalk(1, o.Hills[h].Center));
         Compare("enemy flag", TeamWalk(0, o.Flags[1]), TeamWalk(1, o.Flags[0]));
         Line($"  walks blue/red: {string.Join(", ", walks)}");
+        var notice = $"{m.Name}: {bd.Area:0} m2 ({m.Size}), max {m.MaxPlayers}, ground {t?.MinHeight:0.0}..{t?.MaxHeight:0.0} m; {m.PlacedBuildings.Count} buildings, "
+                     + $"{m.Solid.Count} boxes ({Enumerable.Range(0, m.Solid.Count).Count(m.IsDrawnBox)} drawn one by one), {props.Count} props ({solid} solid), "
+                     + $"{m.FoliageInstances.Length} plants, {m.MeshPlacements.Count} meshes, {m.DecalCount} decals asked; nav {g.Nodes.Length} nodes ({g.MainNodes.Length} main), "
+                     + $"{rooms} rooms reached; walks blue/red: {string.Join(", ", walks)}";
+        Line("::notice title=World Tour: Village::" + notice.Replace("%", "%25"));
         World.SetMap(Maps.All[0]);
     }
 }
