@@ -328,6 +328,7 @@ public sealed partial class Game
     {
         if (!IsServer)
             return;
+        RefreshHostProfile(); // the host's own prestige / level (GameCosmetics.cs)
         _w.Begin(Msg.Roster).U8((byte)Players.Count);
         foreach (var p in Players.Values)
         {
@@ -335,6 +336,7 @@ public sealed partial class Game
             _w.U8(p.Id).U8(p.Bot != null ? (byte)1 : (byte)0).U8((byte)bytes.Length);
             foreach (var c in bytes)
                 _w.U8(c);
+            WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
     }
@@ -352,9 +354,14 @@ public sealed partial class Game
                 chars[k] = (char)r.U8();
             // Bot names carry their personality, e.g. "[BOT] Brick (Rusher)", so they get a little more room.
             var name = isBot ? CleanBotName(new string(chars)) : Settings.Clean(new string(chars));
+            var cosmetics = ReadRosterCosmetics(ref r, isBot); // prestige, level, hat (GameCosmetics.cs)
             _names[id] = name;
+            _cosmetics[id] = cosmetics;
             if (Players.TryGetValue(id, out var p))
+            {
                 p.Name = name;
+                ApplyCosmetics(p, cosmetics);
+            }
         }
     }
 
