@@ -140,6 +140,12 @@ public sealed partial class Game
             }
         }
 
+        if (b.SelfTestHold)
+        {
+            s.Wish = Vector3.Zero; // self-test: stay on the spot (BotFoliage.cs)
+            s.Sprint = false;
+            s.Stationary = true;
+        }
         BotSeparate(p, ref s.Wish);
         BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);

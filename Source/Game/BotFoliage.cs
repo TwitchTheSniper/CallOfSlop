@@ -36,6 +36,9 @@ public sealed partial class BotBrain
     public int BlindShots;
 
     public Vector3 LastBlindAim;
+
+    /// <summary>Self-test: the bot stays where it is (it still looks, aims and shoots). Never set in the game.</summary>
+    public bool SelfTestHold;
 }
 
 /// <summary>

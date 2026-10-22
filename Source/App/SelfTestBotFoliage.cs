@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// hides a crouched player, tree canopies hide what's behind them but not what's under them, everyone is seen within
 /// 2.5 m, walls still block and blind fire never goes through them, the cornfield concealment still works; blind fire goes
 /// at the last known spot (never the real one), wide, and stops when the information goes stale; and the costs: per
-/// query, no allocation, the grid build on the biggest foliage maps, and 31 bots on a heavy foliage map for a few seconds.
+/// query, no allocation, the grid build on the biggest foliage maps, and 31 bots on Sprawl (23 on Vuorikoski, its limit) for a few seconds.
 /// Every run here is short (seconds), per the no-long-matches rule.
 /// </summary>
 public static partial class SelfTest
@@ -203,6 +203,7 @@ public static partial class SelfTest
         var host = game.Players[0];
         var bot = game.Players.Values.First(p => p.Bot != null);
         var b = bot.Bot!;
+        b.SelfTestHold = true; // it would walk over to investigate (and, pinned, think it's stuck)
         var now = 0.0;
         var botAt = new Vector3(0, 0, 6);
         game.SelfTestPlace(host, new Vector3(30, 0, 30), 0);
@@ -337,47 +338,50 @@ public static partial class SelfTest
 
     private static void BotFoliageCpu()
     {
-        var map = Maps.Find("Vuorikoski") ?? Maps.Find("Sprawl");
-        if (map == null || map.FoliageInstances.Length == 0)
+        foreach (var name in new[] { "Sprawl", "Vuorikoski" })
         {
-            BfNote("CPU: no heavy foliage map (skipped)");
-            return;
-        }
-        var medians = new double[2];
-        var stats = new string[2];
-        for (var pass = 0; pass < 2; pass++)
-        {
-            Map.FoliageCoverDisabled = pass == 1; // the same few seconds without foliage cover, for comparison
-            Game.SeedNextGame = 4242;
-            World.SetMap(map);
-            using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
-                bots: Math.Min(31, map.MaxPlayers - 1), botSkill: BotDifficulty.Hard, mapId: map.Id) { MapVoteEnabled = false };
-            game.Mode = GameMode.TeamDeathmatch;
-            NavGraph.Pump(double.MaxValue);
-            Game.SettleMemory();
-            var now = 0.0;
-            var wall = new List<double>();
-            var warm = (int)(Game.CountdownSeconds * World.TickRate) + World.TickRate;
-            for (var i = 0; i < warm + 4 * World.TickRate; i++)
+            var map = Maps.Find(name);
+            if (map == null || map.FoliageInstances.Length == 0)
             {
-                now += World.TickDt;
-                var t0 = Stopwatch.GetTimestamp();
-                game.Update(now, World.TickDt);
-                if (i >= warm)
-                    wall.Add(Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+                BfNote($"CPU: {name} not found or has no plants (skipped)");
+                continue;
             }
-            wall.Sort();
-            medians[pass] = wall[wall.Count / 2];
-            var st = game.BotStats;
-            stats[pass] = $"tick median {medians[pass]:0.00} ms, p99 {wall[(int)(wall.Count * 0.99)]:0.00} ms, blind shots {st.BlindShots} ({st.BlindBursts} bursts), footstep cues {st.FootstepCues}";
-            if (pass == 0)
-                BfNote($"CPU {game.BotCount} Hard bots on {map.Name} for 4 s, foliage cover on: {stats[0]}");
+            var medians = new double[2];
+            var stats = new string[2];
+            var bots = 0;
+            for (var pass = 0; pass < 2; pass++)
+            {
+                Map.FoliageCoverDisabled = pass == 1; // the same few seconds without foliage cover, for comparison
+                Game.SeedNextGame = 4242;
+                World.SetMap(map);
+                using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+                    bots: Math.Min(31, map.MaxPlayers - 1), botSkill: BotDifficulty.Hard, mapId: map.Id) { MapVoteEnabled = false };
+                game.Mode = GameMode.TeamDeathmatch;
+                NavGraph.Pump(double.MaxValue);
+                Game.SettleMemory();
+                var now = 0.0;
+                var wall = new List<double>();
+                var warm = (int)(Game.CountdownSeconds * World.TickRate) + World.TickRate;
+                for (var i = 0; i < warm + 6 * World.TickRate; i++)
+                {
+                    now += World.TickDt;
+                    var t0 = Stopwatch.GetTimestamp();
+                    game.Update(now, World.TickDt);
+                    if (i >= warm)
+                        wall.Add(Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
+                }
+                wall.Sort();
+                medians[pass] = wall[wall.Count / 2];
+                bots = game.BotCount;
+                var st = game.BotStats;
+                stats[pass] = $"tick median {medians[pass]:0.00} ms, p99 {wall[(int)(wall.Count * 0.99)]:0.00} ms, gun kills {st.GunKills}, blind shots {st.BlindShots} ({st.BlindBursts} bursts), footstep cues {st.FootstepCues}";
+            }
+            Map.FoliageCoverDisabled = false;
+            BfNote($"CPU {bots} Hard bots on {map.Name} for 6 s: foliage cover on: {stats[0]}; off: {stats[1]}; difference {medians[0] - medians[1]:+0.00;-0.00} ms per tick");
+            if (medians[0] > MaxTickWorkMs)
+                Fail($"{bots} bots on {map.Name} with foliage cover: tick median {medians[0]:0.00} ms (budget {MaxTickWorkMs} ms)");
+            if (medians[0] - medians[1] > 1.5)
+                Fail($"foliage cover costs {medians[0] - medians[1]:0.00} ms per tick with {bots} bots on {map.Name} (budget 1.5 ms)");
         }
-        Map.FoliageCoverDisabled = false;
-        BfNote($"... the same with foliage cover off: {stats[1]}; difference {medians[0] - medians[1]:+0.00;-0.00} ms per tick");
-        if (medians[0] > MaxTickWorkMs)
-            Fail($"31 bots on {map.Name} with foliage cover: tick median {medians[0]:0.00} ms (budget {MaxTickWorkMs} ms)");
-        if (medians[0] - medians[1] > 1.5)
-            Fail($"foliage cover costs {medians[0] - medians[1]:0.00} ms per tick with 31 bots (budget 1.5 ms)");
     }
 }
