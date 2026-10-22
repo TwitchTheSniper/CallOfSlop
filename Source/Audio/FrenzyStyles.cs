@@ -47,9 +47,9 @@ public sealed record FrenzyLayerSpec(FrenzyVoice Voice, string Pattern, int Octa
 /// off; and a sample-and-hold decimation), beat-repeat stutters (a 16-step pattern: 's' repeats a 32nd, 'S' a 64th
 /// through the 16th), and a slap-back echo (ms, feedback, mix; 0 ms = off).
 /// </summary>
-public sealed record FrenzyFx(float Drive, int CrushBits, int CrushHold, string Stutter, float SlapMs, float SlapFeedback, float SlapMix)
+public sealed record FrenzyMusicFx(float Drive, int CrushBits, int CrushHold, string Stutter, float SlapMs, float SlapFeedback, float SlapMix)
 {
-    public static readonly FrenzyFx None = new(0, 0, 1, "", 0, 0, 0);
+    public static readonly FrenzyMusicFx None = new(0, 0, 1, "", 0, 0, 0);
 }
 
 /// <summary>
@@ -57,10 +57,10 @@ public sealed record FrenzyFx(float Drive, int CrushBits, int CrushHold, string 
 /// Weapons/Frenzy/classes.json): a name, the track pool, gains on the track's own stems, effects on the track, a trim
 /// that keeps level 6 as loud as every other class, and the instrument layers on top.
 /// </summary>
-public sealed record FrenzyStyle(string Name, string Describe, FrenzyPool Pool, float StemDrums, float StemBass, float StemLead, FrenzyFx Fx, float Trim, FrenzyLayerSpec[] Layers)
+public sealed record FrenzyStyle(string Name, string Describe, FrenzyPool Pool, float StemDrums, float StemBass, float StemLead, FrenzyMusicFx Fx, float Trim, FrenzyLayerSpec[] Layers)
 {
     /// <summary>The classic frenzy: the track as it is (Assault Rifle, and every class without data).</summary>
-    public static readonly FrenzyStyle Plain = new("Classic hardbass", "the hardbass track as it is", FrenzyPool.Any, 1, 1, 1, FrenzyFx.None, 1, []);
+    public static readonly FrenzyStyle Plain = new("Classic hardbass", "the hardbass track as it is", FrenzyPool.Any, 1, 1, 1, FrenzyMusicFx.None, 1, []);
 
     /// <summary>True when the style leaves the track untouched (the mixer skips it entirely).</summary>
     public bool IsPlain => Layers.Length == 0 && StemDrums == 1f && StemBass == 1f && StemLead == 1f && Trim == 1f
@@ -174,13 +174,13 @@ public static class FrenzyStyles
             sb = Num(stems, "bass", 1, 0, 1.5f);
             sl = Num(stems, "lead", 1, 0.05f, 1.5f); // never 0: a muted lead stem means "skip the leads" to the renderer
         }
-        var fx = FrenzyFx.None;
+        var fx = FrenzyMusicFx.None;
         if (m.TryGetProperty("fx", out var f))
         {
             var stutter = Str(f, "stutter", "");
             if (stutter.Any(c => c is not ('.' or 's' or 'S')))
                 throw new FormatException($"stutter pattern \"{stutter}\" may only hold '.', 's' and 'S'");
-            fx = new FrenzyFx(Num(f, "drive", 0, 0, 8), (int)Num(f, "crushBits", 0, 0, 16), (int)Num(f, "crushHold", 1, 1, 16), stutter,
+            fx = new FrenzyMusicFx(Num(f, "drive", 0, 0, 8), (int)Num(f, "crushBits", 0, 0, 16), (int)Num(f, "crushHold", 1, 1, 16), stutter,
                 Num(f, "slapMs", 0, 0, 180), Num(f, "slapFeedback", 0, 0, 0.8f), Num(f, "slapMix", 0, 0, 1));
         }
         var trim = Num(m, "trim", 1, 0.2f, 3f);
