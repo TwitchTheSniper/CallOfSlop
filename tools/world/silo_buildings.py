@@ -121,7 +121,6 @@ BUILDINGS["LaunchControlCentre"] = base(
 
 # ---------------------------------------------------------------------------------------------- Silo Power Plant
 hall_props = [P("Reactor Vessel", at=[0, 0.25]), P("Reactor Control Desk", wall="S", along=0.0),
-              P("Coolant Pump", at=[-4.8, -0.95], yaw=90), P("Coolant Pump", at=[3.8, 1.25], yaw=90),
               P("Wall Pipe Run", wall="N", along=-3.5, y=4.4), P("Wall Pipe Run", wall="N", along=3.5, y=4.4),
               P("Radiation Sign", wall="S", along=2.0, y=1.8), P("Radiation Sign", wall="W", along=1.5, y=1.8),
               P("Radiation Sign", wall="E", along=1.5, y=1.8), P("Status Board", wall="S", along=3.6, y=1.4),
@@ -138,7 +137,7 @@ BUILDINGS["SiloPowerPlant"] = base(
     504, 7.0, {
         "floors": [{
             "rooms": [
-                room("reactor hall", "siloreactor", [-6.5, -8, 6.5, 3.5], furnish="explicit", props=hall_props,
+                room("reactor hall", "siloreactor", [-6.5, -8, 6.5, 3.5], props=hall_props,
                      floor={"color": "#565a56", "material": "tiles"}),
                 room("switchgear", "siloswitchgear", [-12, -8, -6.5, 3.5]),
                 room("turbine hall", "siloturbine", [6.5, -8, 12, 3.5], furnish="explicit", props=turb_props),
@@ -339,7 +338,9 @@ RULES = {
                      [{"props": ["Junction Box"], "place": "wall", "count": [1, 2]},
                       {"props": ["Gas Bottle", "Bucket", "Mop and Bucket"], "place": "corner", "chance": 0.6},
                       {"props": ["Tube Light"], "place": "ceiling", "count": 3, "y": 0.0}]),
-    "siloreactor": ("A reactor hall (normally explicit).", [{"props": ["Coolant Pump"], "place": "wall", "count": [1, 2]}]),
+    "siloreactor": ("A reactor hall round its vessel: coolant pumps against the walls, gas bottles, a toolbox.",
+                    [{"props": ["Coolant Pump"], "place": "wall", "count": [1, 2]},
+                     {"props": ["Gas Cylinders", "Toolbox", "Cable Spool"], "place": "corner", "count": [1, 2]}]),
     "siloswitchgear": ("Switchgear: transformers, switchboards, a standby generator, cable reels.",
                        [{"props": ["Pad Transformer"], "place": "wall", "count": [1, 2], "prefer": "far"},
                         {"props": ["Running Generator"], "place": "wall", "chance": 0.8},

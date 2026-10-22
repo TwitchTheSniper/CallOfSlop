@@ -61,7 +61,6 @@
       3.5
      ],
      "windows": false,
-     "furnish": "explicit",
      "props": [
       {
        "name": "Reactor Vessel",
@@ -74,22 +73,6 @@
        "name": "Reactor Control Desk",
        "wall": "S",
        "along": 0.0
-      },
-      {
-       "name": "Coolant Pump",
-       "at": [
-        -4.8,
-        -0.95
-       ],
-       "yaw": 90
-      },
-      {
-       "name": "Coolant Pump",
-       "at": [
-        3.8,
-        1.25
-       ],
-       "yaw": 90
       },
       {
        "name": "Wall Pipe Run",
