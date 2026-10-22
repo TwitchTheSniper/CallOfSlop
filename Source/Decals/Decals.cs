@@ -101,25 +101,43 @@ public static partial class Decals
         var list = new List<DecalDef>();
         if (Directory.Exists(folder))
         {
+            var files = new List<(string File, string Rel, string Category)>();
             foreach (var file in Directory.GetFiles(folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
                 var rel = Path.GetRelativePath(folder, file);
                 var parts = rel.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
                 if (parts.Take(parts.Length - 1).Any(p => p.StartsWith('_') || p.StartsWith('.')))
                     continue; // the _Template and other parked folders
-                var category = parts.Length > 1 ? parts[0] : "Misc";
+                files.Add((file, rel, parts.Length > 1 ? parts[0] : "Misc"));
+            }
+            // Read and parse on all cores (a pack may hold thousands of decal files), then check names in file order.
+            var parsed = new (DecalDef? Def, string? Error)[files.Count];
+            Parallel.For(0, files.Count, i =>
+            {
+                var (file, rel, category) = files[i];
                 try
                 {
-                    var def = DecalFile.Load(File.ReadAllText(file), rel, category, Path.GetDirectoryName(file));
-                    if (list.FirstOrDefault(x => x.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase)) is { } dup)
-                        throw new DecalFileException($"{rel}: another decal is already called '{def.Name}' ({dup.SourceFile})");
-                    list.Add(def);
+                    parsed[i] = (DecalFile.Load(File.ReadAllText(file), rel, category, Path.GetDirectoryName(file)), null);
                 }
                 catch (Exception ex) when (ex is DecalFileException or IOException or UnauthorizedAccessException)
                 {
-                    errors.Add(ex.Message);
-                    Console.WriteLine($"[decals] skipped: {ex.Message}");
+                    parsed[i] = (null, ex.Message);
                 }
+            });
+            var byName = new Dictionary<string, DecalDef>(StringComparer.OrdinalIgnoreCase);
+            for (var i = 0; i < parsed.Length; i++)
+            {
+                var (def, error) = parsed[i];
+                if (def != null && byName.TryGetValue(def.Name, out var dup))
+                    error = $"{files[i].Rel}: another decal is already called '{def.Name}' ({dup.SourceFile})";
+                else if (def != null)
+                {
+                    byName[def.Name] = def;
+                    list.Add(def);
+                    continue;
+                }
+                errors.Add(error!);
+                Console.WriteLine($"[decals] skipped: {error}");
             }
         }
         if (list.Count > cap)
