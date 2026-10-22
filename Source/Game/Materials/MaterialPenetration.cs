@@ -192,8 +192,15 @@ public static class MaterialPenetration
                     var list = new List<(string, MaterialKey)>();
                     foreach (var e in p.Value.EnumerateArray())
                     {
-                        var match = e.TryGetProperty("match", out var me) ? me.GetString() : null;
-                        var mat = e.TryGetProperty("material", out var ma) ? ma.GetString() : null;
+                        string? match = null, mat = null;
+                        if (e.ValueKind == JsonValueKind.Object)
+                            foreach (var f in e.EnumerateObject())
+                            {
+                                if (f.Name == "match" && f.Value.ValueKind == JsonValueKind.String)
+                                    match = f.Value.GetString();
+                                else if (f.Name == "material" && f.Value.ValueKind == JsonValueKind.String)
+                                    mat = f.Value.GetString();
+                            }
                         if (string.IsNullOrWhiteSpace(match) || !MaterialKeys.TryParse(mat, out var key))
                             throw new FormatException($"{source}: each \"props\" entry is {{ \"match\": \"<words in the prop's name>\", \"material\": \"<material>\" }} (got {e})");
                         list.Add((match.Trim(), key));
