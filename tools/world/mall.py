@@ -151,7 +151,6 @@ for uid, (brand, x0, x1, row, fl) in UNITS.items():
     yaw = 0 if row == "n" else 180
     if brand is None:
         prop("Store Hoarding", cx, face - s * 0.06, yaw, y=yb)
-        decal("Poster Clearance", cx - 3.0, face - s * 1.2, y=yb + 1.6, onto="wall+z" if s > 0 else "wall-z")
         continue
     prop(f"{brand} Sign", cx, face, yaw, y=SIGN_Y[fl])
     back = s * 20 - s * 0.22
@@ -201,11 +200,11 @@ decal("Sign Dock 1", -1.0, -29.6, y=3.95, onto="wall+z", reach=1.2)
 decal("Sign Dock 2", 6.0, -29.6, y=3.95, onto="wall+z", reach=1.2)
 decal("Sign Staff Only", -17, -29.6, y=2.75, onto="wall+z", reach=1.2)
 decal("Sign Staff Only", 17, -29.6, y=2.75, onto="wall+z", reach=1.2)
-decal("Sign Deliveries", 42.6, -26, y=2.6, onto="wall-x", reach=1.2)
+decal("Sign Deliveries", 42.6, -20, y=2.6, onto="wall-x", reach=1.2)
 decal("Sign Fire Lane", -14, 23.6, y=2.75, onto="wall-z", reach=1.0)
 decal("Sign Fire Lane", 14, 23.6, y=2.75, onto="wall-z", reach=1.0)
-decal("Sign Food Court Left", 21.6, -7.6, y=2.6, onto="wall-z", reach=1.2)
-decal("Sign Department Store Left", -21.6, 7.6, y=2.6, onto="wall+z", reach=1.2)
+decal("Sign Food Court Left", 23.0, -7.0, y=2.6, onto="wall+x", reach=1.5)
+decal("Sign Department Store Left", -23.0, 7.0, y=2.6, onto="wall-x", reach=1.5)
 decal("Slopview Floor Medallion", 0, 20, y=0.1)
 
 # ================================================================ the atrium

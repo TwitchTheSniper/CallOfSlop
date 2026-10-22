@@ -101,10 +101,10 @@ public static partial class SelfTest
         var bad = new List<string>();
         foreach (var s in m.Spawns)
             if (Reach(s) < 0)
-                bad.Add($"spawn ({s.X:0.#}, {s.Y:0.#}, {s.Z:0.#})");
+                bad.Add($"spawn ({s.X:0.#}, {s.Y:0.#}, {s.Z:0.#}) [{MallBlockers(m, s)}]");
         foreach (var h in m.Objectives.Hills)
             if (Reach(h.Center) < 0)
-                bad.Add($"hill ({h.Center.X:0.#}, {h.Center.Y:0.#}, {h.Center.Z:0.#})");
+                bad.Add($"hill ({h.Center.X:0.#}, {h.Center.Y:0.#}, {h.Center.Z:0.#}) [{MallBlockers(m, h.Center)}]");
         foreach (var f in m.Objectives.Flags)
             if (Reach(f) < 0)
                 bad.Add($"flag ({f.X:0.#}, {f.Z:0.#})");
@@ -122,12 +122,34 @@ public static partial class SelfTest
             if (a >= 0 && b >= 0 && MathF.Abs(g.Nodes[b].Y - MallLevel1) < 0.6f && g.Nodes[a].Y < 1f && search.Find(g, a, b, path, maxExpand: 300) is > 0 and < 6)
                 climbed++;
             else
-                bad.Add($"escalator at ({e.Position.X:0.#}, {e.Position.Z:0.#}): foot node {(a >= 0 ? $"{g.Nodes[a]}" : "none")}, top node {(b >= 0 ? $"{g.Nodes[b]}" : "none")}");
+                bad.Add($"escalator at ({e.Position.X:0.#}, {e.Position.Z:0.#}): foot node {(a >= 0 ? $"{g.Nodes[a]}" : "none")}, top node {(b >= 0 ? $"{g.Nodes[b]}" : "none")}; at the foot {MallBlockers(m, new Vector3(foot.X, 0.1f, foot.Z))}, "
+                    + $"waypoint there {m.Waypoints.Any(w => MathF.Abs(w.X - foot.X) < 0.6f && MathF.Abs(w.Z - foot.Z) < 0.6f)}");
         }
         Line($"{m.Name}: nav {g.Nodes.Length} nodes; escalators climbed {climbed} of {escalators.Count}; unreachable: {(bad.Count == 0 ? "none" : string.Join("; ", bad.Take(12)))}");
         if (bad.Count > 0)
-            Fail($"{m.Name}: bots can't reach {bad.Count} spawn(s)/objective(s)/escalator(s): {string.Join("; ", bad.Take(8))}");
+        {
+            Fail($"{m.Name}: bots can't reach {bad.Count} spawn(s)/objective(s)/escalator(s)");
+            foreach (var b in bad.Take(10))
+                Fail("  " + b);
+        }
         World.SetMap(Maps.All[0]);
+    }
+
+    /// <summary>What a standing body at <paramref name="p"/> overlaps (boxes: building, prop or map; the terrain), for failure lines.</summary>
+    private static string MallBlockers(Map m, Vector3 p)
+    {
+        const float r = World.PlayerRadius + 0.05f;
+        var hits = new List<string>();
+        for (var i = 0; i < m.Solid.Count && hits.Count < 4; i++)
+        {
+            var b = m.Solid[i];
+            if (b.Max.X > p.X - r && b.Min.X < p.X + r && b.Max.Z > p.Z - r && b.Min.Z < p.Z + r && b.Max.Y > p.Y + 0.05f && b.Min.Y < p.Y + World.PlayerHeight)
+            {
+                var prop = m.IsPropCollider(i) ? m.PropInstances.FirstOrDefault(q => i >= q.SolidStart && i < q.SolidStart + q.SolidCount).Def?.Name : null;
+                hits.Add($"{(m.IsBuildingBox(i) ? "building" : prop != null ? "prop " + prop : m.IsTrunk(i) ? "trunk" : "box")} {b.Min.X:0.##},{b.Min.Y:0.##},{b.Min.Z:0.##}..{b.Max.X:0.##},{b.Max.Y:0.##},{b.Max.Z:0.##}");
+            }
+        }
+        return $"ground {m.GroundHeight(p.X, p.Z):0.##}, blocked {m.IsBlocked(p)}{(hits.Count > 0 ? ": " + string.Join(", ", hits) : "")}";
     }
 
     /// <summary>The Shopping Mall's upper floor level above its ground (Buildings/ShoppingMall: 0.1 + 4.6).</summary>
