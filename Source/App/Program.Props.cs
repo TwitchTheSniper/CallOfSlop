@@ -43,6 +43,9 @@ public static unsafe partial class Program
         // Cluttered pack, 08 Truck Stop: the whole stop from above the highway, then the motel courtyard from its balcony.
         ("cluttered_truckstop", "Truck Stop", new Vector3(-6f, 30f, 52f), new Vector3(2f, 0f, -6f), false),
         ("cluttered_truckstop_street", "Truck Stop", new Vector3(-44.8f, 5.1f, 10f), new Vector3(-30f, 0.5f, -10f), false),
+        // Cluttered pack, 10 Timberline: the forest from above the lake in the south-west, then the woods at eye height on Blue's trail to the middle camp.
+        ("cluttered_timberline", "Timberline", new Vector3(-96f, 44f, 72f), new Vector3(6f, 0f, -6f), false),
+        ("cluttered_timberline_forest", "Timberline", new Vector3(-34f, 2.0f, -6f), new Vector3(0.5f, 1.2f, 2f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

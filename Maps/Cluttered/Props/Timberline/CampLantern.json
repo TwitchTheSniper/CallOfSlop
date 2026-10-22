@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Camp Lantern",
+  "category": "Timberline",
+  "description": "A camping lantern, its mantle glowing.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 5, "breakBy": "all", "sound": "glass"},
+  "parts": [
+    {"size": [0.16, 0.03, 0.16], "offset": [0, 0.015, 0], "color": "#2a3a2a"},
+    {"size": [0.11, 0.18, 0.11], "offset": [0, 0.12, 0], "color": "amber", "anim": {"type": "flicker", "rate": 8, "duty": 0.9, "color": "#ffd070", "off": "#705020", "glow": 1.3}},
+    {"size": [0.15, 0.03, 0.15], "offset": [0, 0.225, 0], "color": "#2a3a2a"},
+    {"size": [0.1, 0.06, 0.02], "offset": [0, 0.28, 0], "color": "#2a3a2a"}
+  ]
+}

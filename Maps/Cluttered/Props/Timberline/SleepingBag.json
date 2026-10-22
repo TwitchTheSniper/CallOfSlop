@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sleeping Bag",
+  "category": "Timberline",
+  "description": "A blue sleeping bag with a pillow.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true},
+  "parts": [
+    {"size": [0.75, 0.12, 1.9], "offset": [0, 0.06, 0], "color": "#2c4a7a"},
+    {"size": [0.7, 0.14, 0.4], "offset": [0, 0.08, -0.8], "color": "#3a5a8c"},
+    {"size": [0.5, 0.1, 0.3], "offset": [0, 0.16, -0.78], "color": "#d8d0b8"}
+  ]
+}

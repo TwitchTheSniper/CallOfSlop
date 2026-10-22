@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Fire Danger Sign",
+  "category": "Timberline",
+  "description": "The ranger's fire danger board, the needle on HIGH.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.4, 2.0, 0.2]}],
+  "scatter": {"randomYaw": false},
+  "breakable": {"health": 90, "breakBy": "all", "sound": "wood"},
+  "parts": [
+    {"size": [0.1, 2.0, 0.1], "offset": [0.6, 1.0, 0], "color": "#5a4028"},
+    {"size": [0.1, 2.0, 0.1], "offset": [-0.6, 1.0, 0], "color": "#5a4028"},
+    {"size": [1.5, 0.9, 0.06], "offset": [0, 1.5, 0.06], "color": "#6a4a2a", "material": "wood"},
+    {"size": [1.2, 0.18, 0.04], "offset": [0, 1.8, 0.1], "color": "#e8dcb0"},
+    {"size": [1.1, 0.4, 0.03], "offset": [0, 1.36, 0.1], "color": "#e8dcb0"},
+    {"size": [0.2, 0.36, 0.03], "offset": [-0.44, 1.36, 0.115], "color": "#2a8a2a"},
+    {"size": [0.2, 0.36, 0.03], "offset": [-0.22, 1.36, 0.115], "color": "#3060c0"},
+    {"size": [0.2, 0.36, 0.03], "offset": [0.0, 1.36, 0.115], "color": "#e0c020"},
+    {"size": [0.2, 0.36, 0.03], "offset": [0.22, 1.36, 0.115], "color": "#e07020"},
+    {"size": [0.2, 0.36, 0.03], "offset": [0.44, 1.36, 0.115], "color": "#c02020"},
+    {"size": [0.06, 0.32, 0.02], "offset": [0.22, 1.36, 0.135], "color": "black", "rotation": [0, 0, -60]}
+  ]
+}

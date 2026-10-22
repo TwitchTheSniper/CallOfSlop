@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Forest Stones",
+  "category": "Timberline",
+  "description": "A few mossy stones.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.7, 1.6]},
+  "fadeDistance": 45,
+  "parts": [
+    {"size": [0.4, 0.22, 0.32], "offset": [0, 0.1, 0], "color": "#7d7a72", "rotation": [0, 20, 6]},
+    {"size": [0.26, 0.16, 0.22], "offset": [0.3, 0.07, 0.15], "color": "#6a6862", "rotation": [0, -30, 0]},
+    {"size": [0.2, 0.12, 0.2], "offset": [-0.25, 0.05, 0.18], "color": "#85827a", "rotation": [0, 50, 8]},
+    {"size": [0.3, 0.03, 0.2], "offset": [0.0, 0.215, 0], "color": "#4f6a2c", "rotation": [0, 20, 6]}
+  ]
+}

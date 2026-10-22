@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Toadstools",
+  "category": "Timberline",
+  "description": "A cluster of toadstools.",
+  "author": "Call of Slop",
+  "collision": "cosmetic",
+  "scatter": {"randomYaw": true, "scale": [0.8, 1.5]},
+  "fadeDistance": 25,
+  "parts": [
+    {"size": [0.03, 0.14, 0.03], "offset": [0, 0.07, 0], "color": "#e8e0c8"},
+    {"size": [0.1, 0.04, 0.1], "offset": [0, 0.14, 0], "color": "#c83020", "rotation": [0, 0, 0]},
+    {"size": [0.03, 0.1, 0.03], "offset": [0.12, 0.05, 0.08], "color": "#e8e0c8"},
+    {"size": [0.1, 0.04, 0.1], "offset": [0.12, 0.1, 0.08], "color": "#c83020", "rotation": [0, 45, 0]},
+    {"size": [0.03, 0.08, 0.03], "offset": [-0.1, 0.04, 0.1], "color": "#e8e0c8"},
+    {"size": [0.1, 0.04, 0.1], "offset": [-0.1, 0.08, 0.1], "color": "#e8d8b0", "rotation": [0, 90, 0]},
+    {"size": [0.03, 0.11, 0.03], "offset": [0.05, 0.055, -0.12], "color": "#e8e0c8"},
+    {"size": [0.1, 0.04, 0.1], "offset": [0.05, 0.11, -0.12], "color": "#b07040", "rotation": [0, 135, 0]}
+  ]
+}

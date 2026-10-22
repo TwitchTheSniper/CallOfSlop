@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mossy Boulder",
+  "category": "Timberline",
+  "description": "A big lichened granite boulder, about chest high.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 1.3, 1.9]}],
+  "scatter": {"randomYaw": true, "scale": [0.8, 1.3]},
+  "parts": [
+    {"size": [1.8, 1.2, 1.5], "offset": [0, 0.55, 0], "color": "#7d7a72", "rotation": [8, 20, 5], "material": "concrete"},
+    {"size": [1.3, 0.9, 1.2], "offset": [0.6, 0.6, 0.3], "color": "#6a6862", "rotation": [-6, 55, 10], "material": "concrete"},
+    {"size": [1.0, 0.7, 1.0], "offset": [-0.6, 0.4, -0.3], "color": "#85827a", "rotation": [12, -30, -8], "material": "concrete"},
+    {"size": [1.2, 0.08, 0.9], "offset": [0.1, 1.15, -0.1], "color": "#4f6a2c", "rotation": [8, 20, 5]}
+  ]
+}
