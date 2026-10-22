@@ -617,7 +617,7 @@ public sealed partial class Game
         if (head)
             zp.Headshots++;
         attacker.Kills++;
-        FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, half weight (FrenzyServer.cs)
+        FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
         AddPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints);
         zp.Scrap += ZRules.ScrapPerKill;
         RollDrop(z.Position, ZRound, now);
