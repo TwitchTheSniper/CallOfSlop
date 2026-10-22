@@ -26,11 +26,11 @@ public sealed class GunSampleLibrary
         public int Index;
 
         /// <summary>
-        /// The weapons on this set, by name, ranked by their identity seed (name hash or "voice" seed, not file order),
-        /// and how many there are: <see cref="GunVoice"/> spreads recordings and characters over the ranks so no two
-        /// weapons on a set get the same pair.
+        /// The weapons on this set, by name: their rank among the set's weapons and among all recorded weapons of their
+        /// class, by identity seed (name hash or "voice" seed, not file order). <see cref="GunVoice"/> spreads the set's
+        /// recordings over the set ranks and its characters over the class ranks, so no two weapons of a class match.
         /// </summary>
-        public readonly Dictionary<string, int> Roster = new(StringComparer.Ordinal);
+        public readonly Dictionary<string, (int Set, int Class)> Roster = new(StringComparer.Ordinal);
         public string About = "";
         /// <summary>The weapon caliber the set sounds right at unpitched; bigger calibers play it lower.</summary>
         public float RefCaliber = 0.5f;
@@ -231,13 +231,20 @@ public sealed class GunSampleLibrary
     {
         foreach (var set in Sets.Values)
             set.Roster.Clear();
-        foreach (var g in weapons.Where(w => w.Sound is SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed).GroupBy(w => SetFor(w)?.Name ?? ""))
+        var recorded = weapons.Where(w => w.Sound is SoundStyle.Gun or SoundStyle.Boom or SoundStyle.Suppressed && SetFor(w) != null)
+            .OrderBy(w => GunVoice.SeedOf(w)).ThenBy(w => w.Name, StringComparer.Ordinal).ToArray();
+        var setRank = new Dictionary<string, int>(StringComparer.Ordinal);
+        var classRank = new Dictionary<WeaponClass, int>();
+        foreach (var w in recorded)
         {
-            if (g.Key == "")
+            var set = SetFor(w)!;
+            if (set.Roster.ContainsKey(w.Name))
                 continue;
-            var rank = 0;
-            foreach (var w in g.OrderBy(w => GunVoice.SeedOf(w)).ThenBy(w => w.Name, StringComparer.Ordinal))
-                Sets[g.Key].Roster.TryAdd(w.Name, rank++);
+            var sr = setRank.GetValueOrDefault(set.Name);
+            var cr = classRank.GetValueOrDefault(w.Class);
+            set.Roster[w.Name] = (sr, cr);
+            setRank[set.Name] = sr + 1;
+            classRank[w.Class] = cr + 1;
         }
     }
 
@@ -363,7 +370,7 @@ public static class GunSamples
 
     private static short[][] SuppressedFrom(GunSampleLibrary.SampleSet set, WeaponDef w, GunVoice voice, short[] synthSuppressed, int variants)
     {
-        var pitch = PitchFor(set, w) * voice.Pitch * 0.97f;
+        var pitch = PitchFor(set, w) * MathF.Min(voice.Pitch, 1f) * 0.97f; // never brighter than the plain gun
         var synthF = ToFloat(synthSuppressed);
         var len = Math.Max(synthF.Length, (int)(0.35f * Sr));
         var picks = voice.Picks(set, variants);

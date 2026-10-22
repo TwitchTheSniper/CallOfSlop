@@ -165,23 +165,29 @@ public sealed class GunVoice
     public static uint SeedOf(WeaponDef w) => w.Voice?.Seed is { } s ? (uint)s * 2654435761u ^ 0x5bd1e995u : NameHash(w.Name);
 
     /// <summary>
-    /// Characters the weapons on a set rotate through by rank (tone tilt, body length, body resonance amount,
+    /// Characters the recorded weapons of a class take in turn by their class rank (tone tilt, body length, body resonance amount,
     /// crack), so weapons on the same recorded firearm still sound clearly apart: bright and tight, dark and heavy,
     /// neutral with a sharp crack, then two in-betweens.
     /// </summary>
     private static readonly (float Tilt, float Tail, float Body, float Crack)[] Characters =
     [
-        (0.8f, 0.75f, 0.2f, 0.8f),
-        (-0.8f, 1.25f, 0.95f, 0.3f),
-        (0.05f, 1.0f, 0.55f, 0.95f),
-        (0.45f, 1.15f, 0.8f, 0.5f),
-        (-0.45f, 0.85f, 0.35f, 0.7f),
+        // A 3 x 3 grid of tone (bright / neutral / dark) and body length (short / medium / long), in an order where
+        // neighbours differ in both; body resonance and crack vary along with them.
+        (0.85f, 0.7f, 0.2f, 0.85f),
+        (-0.85f, 1.35f, 0.95f, 0.3f),
+        (0f, 1.0f, 0.55f, 0.95f),
+        (0.85f, 1.35f, 0.7f, 0.5f),
+        (-0.85f, 0.7f, 0.4f, 0.65f),
+        (0f, 0.7f, 0.85f, 0.4f),
+        (0.85f, 1.0f, 0.45f, 0.7f),
+        (-0.85f, 1.0f, 0.25f, 0.8f),
+        (0f, 1.35f, 0.3f, 0.6f),
     ];
 
     /// <summary>
     /// The identity of weapon <paramref name="w"/> on sample set <paramref name="set"/>. On a set's roster (every
     /// shipped and modded weapon file) the weapons, ranked by seed, take the set's recorded firearms in turn as their
-    /// main one, and the ones sharing a main firearm take different <see cref="Characters"/>; small hash and stat
+    /// main one, and every recorded weapon of a class takes its own <see cref="Characters"/> entry; small hash and stat
     /// offsets come on top. Off the roster (a weapon made at run time) everything comes from the seed.
     /// </summary>
     public static GunVoice For(WeaponDef w, GunSampleLibrary.SampleSet? set)
@@ -194,11 +200,12 @@ public sealed class GunVoice
 
         var guns = set?.Guns ?? [];
         var g = guns.Count;
-        var rank = 0;
-        var onRoster = set != null && set.Roster.TryGetValue(w.Name, out rank);
+        var ranks = (Set: 0, Class: 0);
+        var onRoster = set != null && set.Roster.TryGetValue(w.Name, out ranks);
+        var rank = ranks.Set;
         var turn = onRoster && g > 0 ? rank / g : -1; // how many weapons before this one got the same main firearm
-        (float Tilt, float Tail, float Body, float Crack) ch = turn >= 0
-            ? Characters[(rank + set!.Index) % Characters.Length] // neighbours differ in recording, same-recording ones in character
+        (float Tilt, float Tail, float Body, float Crack) ch = onRoster
+            ? Characters[ranks.Class % Characters.Length] // every recorded weapon of a class (up to 9) has its own
             : (S(-0.7f, 0.7f, 3), S(0.8f, 1.2f, 12), S(0.25f, 0.9f, 6), S(0.3f, 0.95f, 7));
 
         // Recordings: main and second firearm of the set (or the voice block's).
