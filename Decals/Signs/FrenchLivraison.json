@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "French Livraison Marking",
+  "description": "The yellow word LIVRAISON painted in a delivery bay (reads along x: turn it 90 for a bay along z).",
+  "author": "Call of Slop",
+  "size": [
+    2.7,
+    0.6
+  ],
+  "rotation": 0,
+  "tintVariation": 0.04,
+  "blend": "alpha",
+  "surfaces": [
+    "floor"
+  ],
+  "image": "FrenchLivraison.png"
+}

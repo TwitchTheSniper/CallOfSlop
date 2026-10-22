@@ -1,0 +1,417 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Boulangerie",
+  "theme": "A neighbourhood bakery: a painted wooden shopfront under a striped awning, a glass counter of pastries and racks of baguettes, a hot bakehouse behind, the bakers' flat upstairs",
+  "category": "commercial",
+  "description": "A narrow two-storey bakery: shop and bakehouse downstairs, the bakers' living room and bedroom upstairs with a front balcony, stairs up to a flat roof terrace.",
+  "author": "Call of Slop",
+  "seed": 506,
+  "wallThickness": 0.25,
+  "storeyHeight": 3.2,
+  "exterior": {
+    "color": "$wall",
+    "material": "concrete"
+  },
+  "interior": {
+    "color": "$interior",
+    "material": "none"
+  },
+  "floor": {
+    "color": "$floor",
+    "material": "wood"
+  },
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "sky blue": {
+      "wall": "#d8cdb4",
+      "trim": "#ece6d8",
+      "front": "#3a6a8a",
+      "awning": "#e8e0d0",
+      "door": "#2a4a62",
+      "roof": "#7a746a",
+      "floor": "#7a5534",
+      "interior": "#f0e6d0",
+      "ceiling": "#f6f0e2"
+    },
+    "burgundy": {
+      "wall": "#cfc4ae",
+      "trim": "#e6e0d2",
+      "front": "#6a1e2a",
+      "awning": "#c8a050",
+      "door": "#4a1420",
+      "roof": "#76706a",
+      "floor": "#6a4a2e",
+      "interior": "#efe4cc",
+      "ceiling": "#f6f0e2"
+    }
+  },
+  "floors": [
+    {
+      "height": 3.6,
+      "rooms": [
+        {
+          "id": "shop",
+          "type": "boulangerie",
+          "rect": [
+            -3.5,
+            0,
+            3.5,
+            5
+          ],
+          "floor": {
+            "color": "#c8b898",
+            "material": "tiles"
+          },
+          "wall": "#f0e0c0",
+          "props": [
+            {
+              "name": "Bread Display Counter",
+              "at": [
+                -1.0,
+                -0.55
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bakehouse",
+          "type": "bakehouse",
+          "rect": [
+            -3.5,
+            -5,
+            0.3,
+            0
+          ],
+          "floor": {
+            "color": "#a8a49a",
+            "material": "tiles"
+          },
+          "wall": "#ece8dc"
+        },
+        {
+          "id": "stairs",
+          "type": "corridor",
+          "rect": [
+            0.3,
+            -5,
+            3.5,
+            0
+          ],
+          "floor": {
+            "color": "#a8a49a",
+            "material": "tiles"
+          },
+          "windows": false
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            1.9,
+            5
+          ],
+          "width": 1.1,
+          "front": true,
+          "material": "glass",
+          "health": 40
+        },
+        {
+          "type": "window",
+          "at": [
+            -1.5,
+            5
+          ],
+          "width": 3.0,
+          "sill": 0.5,
+          "head": 2.9,
+          "health": 12
+        },
+        {
+          "type": "door",
+          "at": [
+            2.6,
+            0
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            -1.6,
+            0
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            -1.6,
+            -5
+          ],
+          "width": 1.0,
+          "material": "metal"
+        },
+        {
+          "type": "window",
+          "at": [
+            2.0,
+            -5
+          ],
+          "width": 0.9,
+          "sill": 1.5,
+          "head": 2.6
+        }
+      ]
+    },
+    {
+      "height": 3.2,
+      "rooms": [
+        {
+          "id": "living",
+          "type": "living",
+          "rect": [
+            -3.5,
+            0,
+            3.5,
+            5
+          ],
+          "floor": {
+            "color": "$floor",
+            "material": "wood"
+          }
+        },
+        {
+          "id": "bedroom",
+          "type": "bedroom",
+          "rect": [
+            -3.5,
+            -5,
+            0.3,
+            0
+          ],
+          "floor": {
+            "color": "$floor",
+            "material": "wood"
+          }
+        },
+        {
+          "id": "landing",
+          "type": "corridor",
+          "rect": [
+            0.3,
+            -5,
+            3.5,
+            0
+          ],
+          "floor": {
+            "color": "#6a4a2e",
+            "material": "wood"
+          },
+          "windows": false
+        }
+      ],
+      "openings": [
+        {
+          "type": "door",
+          "at": [
+            -1.4,
+            5
+          ],
+          "width": 1.0,
+          "material": "glass",
+          "health": 30
+        },
+        {
+          "type": "window",
+          "at": [
+            1.8,
+            5
+          ],
+          "width": 1.2,
+          "sill": 0.5,
+          "head": 2.6
+        },
+        {
+          "type": "door",
+          "at": [
+            0.3,
+            -4.3
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "door",
+          "at": [
+            -1.6,
+            0
+          ],
+          "width": 0.9
+        },
+        {
+          "type": "window",
+          "at": [
+            -1.6,
+            -5
+          ],
+          "width": 1.1,
+          "sill": 0.9,
+          "head": 2.4
+        },
+        {
+          "type": "window",
+          "at": [
+            2.6,
+            -5
+          ],
+          "width": 0.8,
+          "sill": 1.2,
+          "head": 2.4
+        }
+      ]
+    }
+  ],
+  "stairs": [
+    {
+      "floor": 0,
+      "rect": [
+        0.8,
+        -3.7,
+        1.85,
+        -1.5
+      ],
+      "dir": "-z",
+      "color": {
+        "color": "#5a3a22",
+        "material": "wood"
+      }
+    },
+    {
+      "floor": 1,
+      "rect": [
+        2.15,
+        -3.7,
+        3.2,
+        -1.5
+      ],
+      "dir": "+z",
+      "color": {
+        "color": "#5a3a22",
+        "material": "wood"
+      }
+    }
+  ],
+  "roof": {
+    "type": "flat",
+    "parapet": 1.0,
+    "color": {
+      "color": "$roof",
+      "material": "concrete"
+    }
+  },
+  "extras": [
+    {
+      "type": "awning",
+      "rect": [
+        -3.4,
+        5.13,
+        3.4,
+        6.4
+      ],
+      "height": 2.95,
+      "color": "$awning"
+    },
+    {
+      "type": "balcony",
+      "floor": 1,
+      "rect": [
+        -3.0,
+        5.13,
+        0.4,
+        5.95
+      ],
+      "railing": 1.0,
+      "color": {
+        "color": "#2a2a2a",
+        "material": "metal"
+      }
+    },
+    {
+      "type": "block",
+      "min": [
+        -3.62,
+        3.0,
+        5.13
+      ],
+      "max": [
+        3.62,
+        3.62,
+        5.27
+      ],
+      "color": "$front"
+    },
+    {
+      "type": "block",
+      "min": [
+        -3.62,
+        0.1,
+        5.13
+      ],
+      "max": [
+        3.62,
+        0.45,
+        5.25
+      ],
+      "color": "$front"
+    },
+    {
+      "type": "prop",
+      "name": "Chimney Pot Stack",
+      "at": [
+        -1.6,
+        0,
+        -4.3
+      ],
+      "onRoof": true,
+      "scale": 0.8
+    },
+    {
+      "type": "prop",
+      "name": "Window Flower Box",
+      "at": [
+        1.8,
+        5.1,
+        5.27
+      ]
+    },
+    {
+      "type": "prop",
+      "name": "Bicycle",
+      "at": [
+        -2.4,
+        6.0
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "type": "spawn",
+      "name": "shop",
+      "at": [
+        1.5,
+        2.8
+      ]
+    },
+    {
+      "type": "spawn",
+      "name": "flat",
+      "floor": 1,
+      "at": [
+        0.0,
+        2.5
+      ]
+    }
+  ]
+}
