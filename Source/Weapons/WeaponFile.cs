@@ -83,6 +83,8 @@ public static class WeaponFile
         }
         if (w.Model != null)
             Add("model", w.Model.ToJson());
+        if (w.Voice != null)
+            Add("voice", w.Voice.ToJson());
         sb.Length -= 2;
         sb.Append("\n}\n");
         return sb.ToString();
@@ -134,6 +136,9 @@ public static class WeaponFile
                 case "model":
                     model = p.Value; // read after the loop: its sizes scale with the weapon's length and bulk
                     break;
+                case "voice":
+                    w.Voice = VoiceSpec.Read(p.Value, where);
+                    break;
                 case "order":
                     w.Order = Int(p.Value, where);
                     break;
@@ -145,7 +150,7 @@ public static class WeaponFile
                     break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, model, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, model, voice, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }

@@ -7,7 +7,7 @@ Pure Python, stdlib only. Reproducible: the same library gives byte-identical ou
 
 Source files are 96 kHz / 24-bit stereo BWF recordings, each holding 2-5 single shots a few seconds
 apart ("near" = beside the shooter, "mid" = in front of the shooter at mid distance). For each pick
-below we find the Nth shot (onset detection on a 5 ms peak envelope), cut from 3 ms before it,
+below we find the Nth shot (onset detection on a 5 ms peak envelope), cut right at its leading edge (0.2 ms pre-roll),
 high-pass at 30 Hz, mix to mono, resample to 44.1 kHz (windowed-sinc), fade the tail out, normalise
 the loudness (RMS of the first 200 ms) to a common level and soft-limit the peaks to -0.3 dBFS.
 """
@@ -29,76 +29,98 @@ CREDITS = ("The Free Firearm Sound Library (Prepared SFX Library), CC0 1.0; reco
 
 # set name -> description, reference caliber (the weapon caliber this set sounds right at), synth blend
 SETS = {
-    "pistol_light": ("9mm / .380 semi-auto pistols (Walther PPQ, Bersa)", 0.25, 0.22),
-    "pistol_heavy": (".45 pistol and .38 revolver (Colt 1911, S&W 642)", 0.5, 0.22),
-    "smg": ("9mm / 7.62x25 sub machine guns (Carl Gustav M45, PPSh)", 0.25, 0.22),
-    "rifle": ("5.56 / 7.62x39 assault rifles (AR-15, AK-47)", 0.42, 0.2),
-    "rifle_heavy": ("7.62x39 rifles for heavy ARs and LMGs (AK-47, SKS)", 0.6, 0.2),
-    "dmr": ("semi-auto and light bolt rifles (SKS, Savage 10 .300 BLK)", 0.62, 0.2),
+    "pistol_light": ("9mm / .380 / .22 semi-auto pistols (Walther PPQ, Bersa, Ruger Mark III)", 0.25, 0.22),
+    "pistol_heavy": (".45 pistol and revolvers (Colt 1911, S&W 642 .38, Ruger Single Six)", 0.5, 0.22),
+    "smg": ("9mm / 7.62x25 sub machine guns (Carl Gustav M45, PPSh, Walther PPQ 9mm)", 0.25, 0.22),
+    "rifle": ("5.56 / 7.62x39 / .300 BLK assault rifles (AR-15, AK-47, Savage 10)", 0.42, 0.2),
+    "rifle_heavy": ("7.62x39 rifles for heavy ARs and LMGs (AK-47, SKS, AR-15 pitched down)", 0.6, 0.2),
+    "dmr": ("semi-auto and light bolt rifles (SKS, Savage 10 .300 BLK, Tikka T3)", 0.62, 0.2),
     "lever": ("lever-action rifles (Marlin 336 .30-30, Winchester 1894)", 0.78, 0.2),
-    "sniper": ("full-power bolt-action rifles (Mosin Nagant, Tikka T3 .30-06)", 0.85, 0.2),
-    "sniper_heavy": ("old military bolt-actions for the .50 and the musket (Springfield 1917, Arisaka)", 0.9, 0.4),
-    "shotgun_pump": ("12 gauge pump shotguns (Winchester Model 12, Benelli Nova)", 0.72, 0.2),
-    "shotgun_heavy": ("12 gauge shotguns, heavier report (Charles Daly pump, Mossberg 190 bolt)", 0.88, 0.2),
+    "sniper": ("full-power bolt-action rifles (Mosin Nagant, Tikka T3 .30-06, Springfield 1917)", 0.85, 0.2),
+    "sniper_heavy": ("old military bolt-actions for the .50 and the musket (Springfield 1917, Arisaka, Mosin Nagant)", 0.9, 0.4),
+    "shotgun_pump": ("12 gauge pump shotguns (Winchester Model 12, Benelli Nova, Charles Daly)", 0.72, 0.2),
+    "shotgun_heavy": ("12 gauge shotguns, heavier report (Charles Daly pump, Mossberg 190 bolt, Model 12)", 0.88, 0.2),
 }
 
-# (set, role, source folder, source file, which shot (0-based), length s)
+# (set, role, source folder, source file, which shot (0-based), length s). The near shots of a set come from 2-3
+# different firearms ("gun" in the manifest = the source folder); every weapon on the set picks its own main and second
+# recording gun from them (GunVoice.cs), so two weapons on one set don't play the same recordings.
 PICKS = [
-    ("pistol_light", "shot", "Walther PPQ", "X_39P.wav", 0, 0.7),
-    ("pistol_light", "shot", "Walther PPQ", "X_39P.wav", 1, 0.7),
-    ("pistol_light", "shot", "Bersa", "F_47P.wav", 0, 0.7),
-    ("pistol_light", "shot", "Bersa", "F_47P.wav", 1, 0.7),
-    ("pistol_light", "tail", "Walther PPQ", "X_31P.wav", 0, 1.4),
-    ("pistol_heavy", "shot", "1911", "A_42P.wav", 0, 0.8),
-    ("pistol_heavy", "shot", "1911", "A_42P.wav", 1, 0.8),
-    ("pistol_heavy", "shot", "Smith & Wesson 642", "V_27P.wav", 0, 0.8),
-    ("pistol_heavy", "shot", "Smith & Wesson 642", "V_27P.wav", 1, 0.8),
-    ("pistol_heavy", "tail", "1911", "A_34P.wav", 0, 1.4),
-    ("smg", "shot", "Carl Gustav M45", "G_31P.wav", 0, 0.6),
-    ("smg", "shot", "Carl Gustav M45", "G_31P.wav", 1, 0.6),
-    ("smg", "shot", "PPSh", "P_30P.wav", 0, 0.6),
-    ("smg", "shot", "PPSh", "P_30P.wav", 2, 0.6),
-    ("smg", "tail", "Carl Gustav M45", "G_20P.wav", 0, 1.4),
-    ("rifle", "shot", "AR-15", "D_32P.wav", 0, 0.8),
-    ("rifle", "shot", "AR-15", "D_32P.wav", 1, 0.8),
-    ("rifle", "shot", "AK-47", "C_28P.wav", 0, 0.8),
-    ("rifle", "shot", "AK-47", "C_28P.wav", 1, 0.8),
-    ("rifle", "tail", "AR-15", "D_24P.wav", 0, 1.5),
-    ("rifle_heavy", "shot", "AK-47", "C_28P.wav", 2, 0.9),
-    ("rifle_heavy", "shot", "AK-47", "C_28P.wav", 3, 0.9),
-    ("rifle_heavy", "shot", "SKS", "U_14P.wav", 0, 0.9),
-    ("rifle_heavy", "shot", "SKS", "U_14P.wav", 1, 0.9),
-    ("rifle_heavy", "tail", "AK-47", "C_31P.wav", 0, 1.5),
-    ("dmr", "shot", "SKS", "U_14P.wav", 2, 1.0),
-    ("dmr", "shot", "SKS", "U_14P.wav", 3, 1.0),
-    ("dmr", "shot", "Savage 10 .300 Blackout", "T_27P.wav", 0, 1.0),
-    ("dmr", "shot", "Savage 10 .300 Blackout", "T_27P.wav", 1, 1.0),
-    ("dmr", "tail", "Savage 10 .300 Blackout", "T_17P.wav", 0, 1.6),
-    ("lever", "shot", "Marlin 336", "I_22P.wav", 0, 1.0),
-    ("lever", "shot", "Marlin 336", "I_22P.wav", 1, 1.0),
-    ("lever", "shot", "Model 1894", "L_23P.wav", 0, 1.0),
-    ("lever", "shot", "Model 1894", "L_23P.wav", 1, 1.0),
-    ("lever", "tail", "Marlin 336", "I_17P.wav", 0, 1.6),
-    ("sniper", "shot", "Mosin Nagant", "M_21P.wav", 0, 1.3),
-    ("sniper", "shot", "Mosin Nagant", "M_21P.wav", 1, 1.3),
-    ("sniper", "shot", "Tikka", "W_29P.wav", 0, 1.3),
-    ("sniper", "shot", "Tikka", "W_29P.wav", 1, 1.3),
-    ("sniper", "tail", "Mosin Nagant", "M_26P.wav", 0, 1.8),
-    ("sniper_heavy", "shot", "1917", "B_24P.wav", 0, 1.4),
-    ("sniper_heavy", "shot", "1917", "B_24P.wav", 1, 1.4),
-    ("sniper_heavy", "shot", "Arisaka", "E_25P.wav", 0, 1.4),
-    ("sniper_heavy", "shot", "Arisaka", "E_25P.wav", 1, 1.4),
-    ("sniper_heavy", "tail", "1917", "B_16P.wav", 0, 1.8),
-    ("shotgun_pump", "shot", "Model 12", "K_22P.wav", 0, 0.9),
-    ("shotgun_pump", "shot", "Model 12", "K_22P.wav", 1, 0.9),
-    ("shotgun_pump", "shot", "Nova", "O_21P.wav", 0, 0.9),
-    ("shotgun_pump", "shot", "Nova", "O_21P.wav", 1, 0.9),
-    ("shotgun_pump", "tail", "Model 12", "K_17P.wav", 0, 1.6),
-    ("shotgun_heavy", "shot", "CD", "H_21P.wav", 0, 1.0),
-    ("shotgun_heavy", "shot", "CD", "H_21P.wav", 1, 1.0),
-    ("shotgun_heavy", "shot", "Mossberg", "N_30P.wav", 0, 1.0),
-    ("shotgun_heavy", "shot", "Mossberg", "N_30P.wav", 1, 1.0),
-    ("shotgun_heavy", "tail", "CD", "H_16P.wav", 0, 1.6),
+    ('pistol_light', "shot", 'Walther PPQ', 'X_39P.wav', 0, 0.55),
+    ('pistol_light', "shot", 'Walther PPQ', 'X_39P.wav', 1, 0.55),
+    ('pistol_light', "shot", 'Bersa', 'F_47P.wav', 0, 0.55),
+    ('pistol_light', "shot", 'Bersa', 'F_47P.wav', 1, 0.55),
+    ('pistol_light', "shot", 'Ruger Mark III', 'R_35P.wav', 0, 0.55),
+    ('pistol_light', "shot", 'Ruger Mark III', 'R_35P.wav', 1, 0.55),
+    ('pistol_light', "tail", 'Walther PPQ', 'X_31P.wav', 0, 1.4),
+    ('pistol_heavy', "shot", '1911', 'A_42P.wav', 0, 0.55),
+    ('pistol_heavy', "shot", '1911', 'A_42P.wav', 1, 0.55),
+    ('pistol_heavy', "shot", 'Smith & Wesson 642', 'V_27P.wav', 0, 0.55),
+    ('pistol_heavy', "shot", 'Smith & Wesson 642', 'V_27P.wav', 1, 0.55),
+    ('pistol_heavy', "shot", 'Ruger Single Six', 'S_14P.wav', 0, 0.55),
+    ('pistol_heavy', "shot", 'Ruger Single Six', 'S_14P.wav', 1, 0.55),
+    ('pistol_heavy', "tail", '1911', 'A_34P.wav', 0, 1.4),
+    ('smg', "shot", 'Carl Gustav M45', 'G_31P.wav', 0, 0.5),
+    ('smg', "shot", 'Carl Gustav M45', 'G_31P.wav', 1, 0.5),
+    ('smg', "shot", 'PPSh', 'P_30P.wav', 0, 0.5),
+    ('smg', "shot", 'PPSh', 'P_30P.wav', 2, 0.5),
+    ('smg', "shot", 'Walther PPQ', 'X_39P.wav', 1, 0.5),
+    ('smg', "shot", 'Walther PPQ', 'X_39P.wav', 2, 0.5),
+    ('smg', "tail", 'Carl Gustav M45', 'G_20P.wav', 0, 1.4),
+    ('rifle', "shot", 'AR-15', 'D_32P.wav', 0, 0.65),
+    ('rifle', "shot", 'AR-15', 'D_32P.wav', 1, 0.65),
+    ('rifle', "shot", 'AK-47', 'C_28P.wav', 0, 0.65),
+    ('rifle', "shot", 'AK-47', 'C_28P.wav', 1, 0.65),
+    ('rifle', "shot", 'Savage 10 .300 Blackout', 'T_27P.wav', 0, 0.65),
+    ('rifle', "shot", 'Savage 10 .300 Blackout', 'T_27P.wav', 1, 0.65),
+    ('rifle', "tail", 'AR-15', 'D_24P.wav', 0, 1.5),
+    ('rifle_heavy', "shot", 'AK-47', 'C_28P.wav', 2, 0.65),
+    ('rifle_heavy', "shot", 'AK-47', 'C_28P.wav', 3, 0.65),
+    ('rifle_heavy', "shot", 'SKS', 'U_14P.wav', 0, 0.65),
+    ('rifle_heavy', "shot", 'SKS', 'U_14P.wav', 1, 0.65),
+    ('rifle_heavy', "shot", 'AR-15', 'D_32P.wav', 0, 0.65),
+    ('rifle_heavy', "shot", 'AR-15', 'D_32P.wav', 1, 0.65),
+    ('rifle_heavy', "tail", 'AK-47', 'C_31P.wav', 0, 1.5),
+    ('dmr', "shot", 'SKS', 'U_14P.wav', 2, 0.75),
+    ('dmr', "shot", 'SKS', 'U_14P.wav', 3, 0.75),
+    ('dmr', "shot", 'Savage 10 .300 Blackout', 'T_27P.wav', 0, 0.75),
+    ('dmr', "shot", 'Savage 10 .300 Blackout', 'T_27P.wav', 1, 0.75),
+    ('dmr', "shot", 'Tikka', 'W_29P.wav', 0, 0.75),
+    ('dmr', "shot", 'Tikka', 'W_29P.wav', 1, 0.75),
+    ('dmr', "tail", 'Savage 10 .300 Blackout', 'T_17P.wav', 0, 1.6),
+    ('lever', "shot", 'Marlin 336', 'I_22P.wav', 0, 0.8),
+    ('lever', "shot", 'Marlin 336', 'I_22P.wav', 1, 0.8),
+    ('lever', "shot", 'Model 1894', 'L_23P.wav', 0, 0.8),
+    ('lever', "shot", 'Model 1894', 'L_23P.wav', 1, 0.8),
+    ('lever', "tail", 'Marlin 336', 'I_17P.wav', 0, 1.6),
+    ('sniper', "shot", 'Mosin Nagant', 'M_21P.wav', 0, 1.0),
+    ('sniper', "shot", 'Mosin Nagant', 'M_21P.wav', 1, 1.0),
+    ('sniper', "shot", 'Tikka', 'W_29P.wav', 0, 1.0),
+    ('sniper', "shot", 'Tikka', 'W_29P.wav', 1, 1.0),
+    ('sniper', "shot", '1917', 'B_24P.wav', 0, 1.0),
+    ('sniper', "shot", '1917', 'B_24P.wav', 1, 1.0),
+    ('sniper', "tail", 'Mosin Nagant', 'M_26P.wav', 0, 1.8),
+    ('sniper_heavy', "shot", '1917', 'B_24P.wav', 0, 1.0),
+    ('sniper_heavy', "shot", '1917', 'B_24P.wav', 1, 1.0),
+    ('sniper_heavy', "shot", 'Arisaka', 'E_25P.wav', 0, 1.0),
+    ('sniper_heavy', "shot", 'Arisaka', 'E_25P.wav', 1, 1.0),
+    ('sniper_heavy', "shot", 'Mosin Nagant', 'M_21P.wav', 2, 1.0),
+    ('sniper_heavy', "shot", 'Mosin Nagant', 'M_21P.wav', 3, 1.0),
+    ('sniper_heavy', "tail", '1917', 'B_16P.wav', 0, 1.8),
+    ('shotgun_pump', "shot", 'Model 12', 'K_22P.wav', 0, 0.8),
+    ('shotgun_pump', "shot", 'Model 12', 'K_22P.wav', 1, 0.8),
+    ('shotgun_pump', "shot", 'Nova', 'O_21P.wav', 0, 0.8),
+    ('shotgun_pump', "shot", 'Nova', 'O_21P.wav', 1, 0.8),
+    ('shotgun_pump', "shot", 'CD', 'H_21P.wav', 0, 0.8),
+    ('shotgun_pump', "shot", 'CD', 'H_21P.wav', 1, 0.8),
+    ('shotgun_pump', "tail", 'Model 12', 'K_17P.wav', 0, 1.6),
+    ('shotgun_heavy', "shot", 'CD', 'H_21P.wav', 0, 0.8),
+    ('shotgun_heavy', "shot", 'CD', 'H_21P.wav', 1, 0.8),
+    ('shotgun_heavy', "shot", 'Mossberg', 'N_30P.wav', 0, 0.8),
+    ('shotgun_heavy', "shot", 'Mossberg', 'N_30P.wav', 1, 0.8),
+    ('shotgun_heavy', "shot", 'Model 12', 'K_22P.wav', 0, 0.8),
+    ('shotgun_heavy', "shot", 'Model 12', 'K_22P.wav', 1, 0.8),
+    ('shotgun_heavy', "tail", 'CD', 'H_16P.wav', 0, 1.6),
 ]
 
 # Which set a weapon uses: the first rule that matches (class, optional sound styles, caliber / rpm limits).
@@ -140,6 +162,17 @@ def onsets(m, rate):
         elif e < 0.06 * pk:
             armed = True
     return out
+
+
+def attack_start(m, onset, rate):
+    """Where to cut a shot: back from the onset to where the signal is still under 4% of the blast's first
+    millisecond (at most 1.5 ms back), then 0.2 ms more, so the cut has ~no silent pre-roll but keeps the leading edge."""
+    pk = max(abs(v) for v in m[onset:onset + rate // 1000])
+    j = onset
+    lo = max(0, onset - int(0.0015 * rate))
+    while j > lo and abs(m[j - 1]) >= 0.04 * pk:
+        j -= 1
+    return max(0, j - int(0.0002 * rate))
 
 
 def highpass(x, rate, fc=30.0):
@@ -224,15 +257,16 @@ def main():
         rate, ch, mono, ons = cache[key]
         if shot >= len(ons):
             raise SystemExit("%s/%s has only %d shots (wanted #%d)" % (folder, fname, len(ons), shot))
-        start = max(0, ons[shot] - int(0.003 * rate))
+        start = attack_start(mono, ons[shot], rate)
         end = min(len(mono), start + int(length * rate) + 64)
         if shot + 1 < len(ons):
             end = min(end, ons[shot + 1] - int(0.01 * rate))
         seg = highpass(mono[start:end], rate)
         seg = resample(seg, rate, OUT_RATE)[:int(length * OUT_RATE)]
         n = len(seg)
-        # fade: 1 ms fade-in, the last 40% fades out on a raised cosine
-        fi = int(0.001 * OUT_RATE)
+        # fade: 0.1 ms fade-in (just enough to start on zero; the cut sits right on the blast), the last 40% fades
+        # out on a raised cosine
+        fi = max(1, int(0.0001 * OUT_RATE))
         fo0 = int(n * 0.6)
         for i in range(n):
             g = 1.0
@@ -250,7 +284,7 @@ def main():
         write_wav16(os.path.join(out_dir, out_name), OUT_RATE, seg)
         clipped = sum(1 for v in mono[ons[shot]:ons[shot] + int(0.05 * rate)] if abs(v) > 0.999)
         samples.append({
-            "file": out_name, "set": set_name, "role": role, "gain": 1.0,
+            "file": out_name, "set": set_name, "role": role, "gun": folder, "gain": 1.0,
             "source": "%s/%s shot %d at %.3f s" % (folder, fname, shot + 1, ons[shot] / rate),
             "seconds": round(n / OUT_RATE, 3),
         })

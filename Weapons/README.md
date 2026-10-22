@@ -204,6 +204,26 @@ The gunshot is synthesised from these when the game starts. Real firearms (`Gun`
 | `bright` | High-frequency crack of the blast. | `0.5` | 0-1 |
 | `tail` | Length of the echo. | `0.5` | 0-1 |
 
+**Every weapon sounds like itself.** On top of its sample set, each weapon gets its own sonic identity (`Source/Audio/GunVoice.cs`), derived from a hash of its `name`, its stats and its rank among the weapons of its set and class (ranked by that hash, so file order and ids don't matter; the same weapon files give the same sounds on every client and every run): which of the set's recorded firearms it mostly plays (the weapons of a set take them in turn; a main one for about three shots in four, a second one mixed in), a character (five tone steps from bright to dark and a body resonance band, a low thump or a high ring, so no two weapons of a class share one), a pitch offset (about +-3%, a longer gun a touch lower), the tone nudged by `bright`, the resonance a little lower for a big `caliber` and a long gun, how sharp the crack is, a mechanism click for guns that cycle a bolt or slide (timed by `rpm`), how much of the synthesised shot is blended in, and how dry and short the body is (from `tail`). The log lists every weapon's identity as a `[gunvoice]` line. Barrel and muzzle attachments colour it a little more (a long or heavy barrel lower, a short barrel or brake higher and louder).
+
+To pin any of it, add an optional `"voice"` block (every key optional; the rest stays derived):
+
+```json
+"voice": { "recording": "Walther PPQ", "secondRecording": "Bersa", "pitch": 1.04, "tone": -0.3, "body": 0.6, "bodyHz": 420, "crack": 0.7, "click": 0.5, "tail": 0.9 }
+```
+
+| Key | Meaning | Allowed |
+| --- | --- | --- |
+| `seed` | Replaces the name hash: a different whole number gives a different-sounding gun. | any whole number |
+| `recording` / `secondRecording` | The main and second recorded firearm, by the `gun` names in `Audio/Samples/Guns/manifest.json` (the source folder, e.g. `"Walther PPQ"`, `"AK-47"`, `"Mosin Nagant"`). A name that isn't in the weapon's set is ignored. | text |
+| `pitch` | Extra pitch on top of the caliber's. | 0.85-1.15 |
+| `tone` | Tilt: -1 dark, +1 bright. | -1 to 1 |
+| `body` | Body resonance amount (the receiver / barrel ring). | 0-1 |
+| `bodyHz` | Body resonance frequency. | 80-1500 |
+| `crack` | How sharp the transient is. | 0-1 |
+| `click` | Mechanism click level (0 = none). | 0-1 |
+| `tail` | Body length and dryness (lower = drier, shorter). | 0.5-1.5 |
+
 Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30), an SMG fires 650-1150 rpm with 11-18 m of range, and a sniper does 70-140 damage. `--check-weapon` prints DPS and shots to kill so you can compare with the shipped guns.
 
 ## Ids and order
