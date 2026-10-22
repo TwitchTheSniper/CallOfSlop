@@ -80,33 +80,40 @@ HUSK = "#a3b05c"
 
 
 def corn_patch(seed):
-    """3 x 3 m of field corn: four rows along X (0.75 m apart), six stalks a row, two leaves a stalk, a tassel and the odd
-    ear. Each row sways gently as one (its first stalk swings, the rest follow), the rows out of step."""
+    """3 x 3 m of field corn: four rows along X (0.75 m apart), seven stalks a row with two broad leaves and a tassel
+    each (the odd ear), and a few leafy "curtain" slabs at mid height so a row reads as a wall of leaves, not a fence of
+    sticks. Each row sways gently as one (its first stalk swings, the rest follow), the rows out of step."""
     rng = random.Random(seed)
     ps = []
     for ri, rz in enumerate((-1.125, -0.375, 0.375, 1.125)):
         first = None
-        for k in range(6):
-            x = -1.25 + k * 0.5 + rng.uniform(-0.09, 0.09)
+        group = []
+        for k in range(7):
+            x = -1.29 + k * 0.43 + rng.uniform(-0.07, 0.07)
             z = rz + rng.uniform(-0.06, 0.06)
             h = rng.uniform(2.15, 2.6)
-            group = []
-            group.append(part((0.045, h, 0.045), (x, h / 2, z), rng.choice(STALK)))
-            for li, (fy, roll) in enumerate(((0.38, -14), (0.64, 12))):
-                yaw = rng.uniform(0, 180) if li == 0 else (group[-1]["rotation"][1] + rng.uniform(70, 110)) % 180
+            group.append(part((0.05, h, 0.05), (x, h / 2, z), rng.choice(STALK)))
+            yaw0 = rng.uniform(-35, 35)    # leaves reach mostly across the row (towards the next one)
+            for li, (fy, roll) in enumerate(((0.4, -16), (0.66, 14))):
+                yaw = (90 + yaw0 + (0 if li == 0 else rng.uniform(-50, 50))) % 180
                 col = DRY if (li == 0 and rng.random() < 0.3) else rng.choice(LEAF)
-                group.append(part((rng.uniform(0.8, 1.0), 0.018, 0.1), (x, h * fy, z), col, rotation=[0, R(yaw), roll]))
+                group.append(part((rng.uniform(0.95, 1.15), 0.02, 0.15), (x, h * fy, z), col, rotation=[0, R(yaw), roll]))
             group.append(part((0.06, 0.3, 0.06), (x, h + 0.13, z), TASSEL))
-            if rng.random() < 0.33:
-                group.append(part((0.07, 0.22, 0.07), (x + 0.05, h * 0.5, z), HUSK, rotation=[0, 0, -18]))
-            for p in group:
-                if first is None:
-                    first = len(ps) + 1
-                    p["anim"] = {"type": "swing", "axis": "x", "pivot": [R(x), 0, R(rz)], "angle": 1.4, "period": R(rng.uniform(3.2, 4.2)),
-                                 "wind": 1, "jitter": 0.2, "phase": R(ri * 0.27)}
-                else:
-                    p["anim"] = {"type": "follow", "parent": first}
-                ps.append(p)
+        for k in range(3):
+            y = rng.uniform(0.9, 1.5)
+            group.append(part((rng.uniform(0.6, 0.85), rng.uniform(0.7, 1.0), 0.03), (-0.95 + k * 0.95 + rng.uniform(-0.1, 0.1), y, rz + rng.uniform(-0.08, 0.08)),
+                              rng.choice(LEAF), rotation=[0, R(rng.uniform(-25, 25)), 0]))
+        if rng.random() < 0.8:
+            x = rng.uniform(-1.1, 1.1)
+            group.append(part((0.08, 0.24, 0.08), (x, 1.15, rz + 0.06), HUSK, rotation=[0, 0, -18]))
+        for p in group:
+            if first is None:
+                first = len(ps) + 1
+                p["anim"] = {"type": "swing", "axis": "x", "pivot": [0, 0, R(rz)], "angle": 1.4, "period": R(rng.uniform(3.2, 4.2)),
+                             "wind": 1, "jitter": 0.2, "phase": R(ri * 0.27)}
+            else:
+                p["anim"] = {"type": "follow", "parent": first}
+            ps.append(p)
     return ps
 
 
@@ -261,7 +268,7 @@ add("Farm", "Roadside Farm Stand", "A roadside produce stand: a wooden counter w
     breakable={"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 18, "size": [0.06, 0.4], "speed": 3, "colors": ["#9a7a52", "#d9752a", "#e0c35a"]}})
 
 # Stock tank: a round galvanized water trough.
-ps = upright(2.0, 0.62, 0, 0, 0, GAL, material="metal") + upright(2.04, 0.06, 0, 0.6, 0, "#8d9293") + upright(1.86, 0.02, 0, 0.5, 0, "#40606a")
+ps = upright(2.0, 0.62, 0, 0, 0, GAL, material="metal") + upright(2.04, 0.04, 0, 0.6, 0, "#8d9293") + upright(1.86, 0.01, 0, 0.64, 0, "#40606a")
 add("Farm", "Stock Tank", "A round galvanized stock tank 2 m across, full of water. Knee-high cover.",
     ps, collider=[box((1.9, 0.66, 0.9), (0, 0.33, 0)), box((0.9, 0.66, 1.9), (0, 0.33, 0)), box((1.45, 0.66, 1.45), (0, 0.33, 0))],
     breakable={"health": 160, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.06, 0.25], "speed": 3}})

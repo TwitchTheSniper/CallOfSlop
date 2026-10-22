@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "MS Lost Dog Flyer",
+  "category": "MainStreet",
+  "description": "Main Street (World Tour): Lost Dog Flyer. Invented for the town of Prairie Hollow.",
+  "author": "Call of Slop",
+  "size": [
+    0.32,
+    0.45
+  ],
+  "rotation": 0,
+  "surfaces": "wall",
+  "fadeDistance": 70,
+  "image": "MSLostDogFlyer.png"
+}
