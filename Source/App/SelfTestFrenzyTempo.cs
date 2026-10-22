@@ -48,7 +48,7 @@ public static partial class SelfTest
             rows.Add($"{c} x{s.Tempo5:0.00}/x{s.Tempo6:0.00} ({s.Pool}, {pool.Length}): L1-4 {lo4:0.#}-{hi4:0.#}, L5 {lo5:0.#}-{hi5:0.#}, L6 {lo6:0.#}-{hi6:0.#}");
         }
         Line($"frenzy BPM per class (boost share 1 up to {FrenzyLayer.TaperStartBpm} BPM, down to {FrenzyLayer.MinBoost}): {string.Join("; ", rows)}");
-        Line("::notice title=Frenzy tempo (BPM per class)::" + string.Join("%0A", rows));
+        var notes = new List<string>(rows);
 
         // Live, per class, on the middle-tempo track of its own pool.
         var block = new float[MusicPlayer.BlockFrames * 2];
@@ -181,7 +181,7 @@ public static partial class SelfTest
         }
         foreach (var l in live)
             Line(l);
-        Line("::notice title=Frenzy tempo (live)::" + string.Join("%0A", live.Select(l => l.Replace("%", "%25"))));
+        notes.AddRange(live);
 
         // A class switch at level 6 to a class with another tempo glides over the switch's bar.
         var sw = new FrenzyLayer(67) { Class = WeaponClass.SMG, TestTrack = tracks.First(t => t.Name == "Tracksuit Tactical") };
@@ -195,6 +195,7 @@ public static partial class SelfTest
         RunLayer(sw, 3);
         var dmr6 = sw.Bpm;
         var wantDmr = FrenzyLayer.LevelBpm(sw.Renderer.Track.Bpm, styles[(int)WeaponClass.DMR], 6);
+        notes.Add($"class switch at level 6, SMG -> DMR on \"{sw.TrackName}\": {smg6:0.0} -> {dmr6:0.0} BPM (want {wantDmr:0.0}), glided {switchGlides}, {sw.StepGlitches} stumbles");
         Line($"class switch at level 6, SMG -> DMR on \"{sw.TrackName}\": {smg6:0.0} -> {dmr6:0.0} BPM (want {wantDmr:0.0}), glided over the switch's bar: {switchGlides}, crossfade {sw.Crossfade:0.00}, {sw.StepGlitches} stumbles");
         if (!switchGlides || Math.Abs(dmr6 - wantDmr) > 1e-3 || sw.Crossfade < 1f || sw.StepGlitches > 0)
             Fail($"a class switch at level 6 didn't glide to the new class's tempo ({smg6:0.0} -> {dmr6:0.0}, want {wantDmr:0.0}; glided {switchGlides}, crossfade {sw.Crossfade:0.00}, stumbles {sw.StepGlitches})");
@@ -222,6 +223,9 @@ public static partial class SelfTest
         var warm = Pass();
         var allocated = Math.Max(Pass(), Pass());
         Line($"frenzy tempo: allocations through speed-ups and glides {allocated} bytes after warm-up (first pass {warm}); {g.TempoChanges} tempo changes");
+        notes.Add($"allocations through speed-ups and glides: {allocated} bytes after warm-up; {g.TempoChanges} tempo changes");
+        // One annotation on the CI run (a warning, like "Frenzy classes": the run keeps only the first few notices).
+        Line("::warning title=Frenzy tempo (results)::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         if (allocated > 0)
             Fail($"the frenzy tempo changes allocated {allocated} bytes while mixing (want 0)");
         if (g.TempoChanges < 9)
