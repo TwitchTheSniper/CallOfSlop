@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Planer",
+  "description": "A four-sided planer: a grey-green steel bed, a cutter head spinning under its hood, a board half fed through.",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 1.35, 1.0]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {
+    "health": 300,
+    "breakBy": "all",
+    "sound": "metal",
+    "debris": {"count": 14, "size": [0.05, 0.3], "colors": ["#4a5a3e", "steel", "lightwood"]}
+  },
+  "parts": [
+    {"size": [2.4, 0.8, 0.9], "offset": [0, 0.4, 0], "color": "#4a5a3e", "material": "metal"},
+    {"size": [2.4, 0.05, 0.9], "offset": [0, 0.83, 0], "color": "steel"},
+    {"size": [0.8, 0.5, 1.0], "offset": [0, 1.1, 0], "color": "#4a5a3e", "material": "metal"},
+    {
+      "size": [0.083, 0.2, 0.8],
+      "offset": [0, 0.95, 0],
+      "color": "chrome",
+      "roll": 0,
+      "anim": {"type": "spin", "axis": "z", "rpm": 400, "pivot": [0, 0.95, 0]}
+    },
+    {
+      "size": [0.083, 0.2, 0.8],
+      "offset": [0, 0.95, 0],
+      "color": "chrome",
+      "roll": 45,
+      "anim": {"type": "spin", "axis": "z", "rpm": 400, "pivot": [0, 0.95, 0]}
+    },
+    {
+      "size": [0.083, 0.2, 0.8],
+      "offset": [0, 0.95, 0],
+      "color": "chrome",
+      "roll": 90,
+      "anim": {"type": "spin", "axis": "z", "rpm": 400, "pivot": [0, 0.95, 0]}
+    },
+    {
+      "size": [0.083, 0.2, 0.8],
+      "offset": [0, 0.95, 0],
+      "color": "chrome",
+      "roll": 135,
+      "anim": {"type": "spin", "axis": "z", "rpm": 400, "pivot": [0, 0.95, 0]}
+    },
+    {"size": [2.6, 0.04, 0.2], "offset": [0.3, 0.88, 0], "color": "lightwood", "material": "wood"},
+    {"size": [0.4, 0.3, 0.3], "offset": [0.9, 1.0, -0.3], "color": "#2a2a2a"},
+    {"size": [0.5, 0.5, 0.3], "offset": [-0.8, 0.95, -0.35], "color": "#d8d0b8"},
+    {"size": [0.25, 0.25, 0.06], "offset": [0.3, 1.4, 0.5], "color": "red"}
+  ]
+}

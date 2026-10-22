@@ -97,6 +97,7 @@ public static partial class SelfTest
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
             Section("Recoil", CheckRecoil);
+            Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
             Section("Death cam", CheckDeathCam);
             Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
             Section("Ready-up", CheckReadyUp);
@@ -118,6 +119,7 @@ public static partial class SelfTest
             Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
             Section("Weird hardbass", CheckWeirdHardbass); // SelfTestWeirdHardbass.cs: odd meters, swerves, toys, new voices, CPU vs the heaviest track
             Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
+            Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
             Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
             Section("Text", CheckText); // SelfTestText.cs: player-visible text
             Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)

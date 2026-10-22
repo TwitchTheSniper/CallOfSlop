@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Substation Mimic Board",
+  "description": "A wall-wide mimic panel: the grid drawn in coloured lines, breaker lamps glowing red and green.",
+  "collision": "solid",
+  "collider": [{"size": [3.0, 2.46, 0.24]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 200, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.05, 0.3]}},
+  "parts": [
+    {"size": [3.0, 2.0, 0.2], "offset": [0, 1.4, 0], "color": "#d8dcd0", "material": "metal"},
+    {"size": [3.0, 0.4, 0.2], "offset": [0, 0.2, 0], "color": "#8a8e88"},
+    {"size": [3.04, 0.06, 0.24], "offset": [0, 2.43, 0], "color": "#8a8e88"},
+    {"size": [2.6, 0.04, 0.02], "offset": [0, 2.0, 0.105], "color": "#3060c0"},
+    {"size": [2.6, 0.04, 0.02], "offset": [0, 1.0, 0.105], "color": "#c03030"},
+    {"size": [0.04, 1.0, 0.02], "offset": [-1.0, 1.5, 0.105], "color": "#c03030"},
+    {"size": [0.04, 1.0, 0.02], "offset": [0.0, 1.5, 0.105], "color": "#3060c0"},
+    {"size": [0.04, 1.0, 0.02], "offset": [1.0, 1.5, 0.105], "color": "#30a050"},
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [-1.0, 1.75, 0.11],
+      "color": "#ff3030",
+      "anim": {"type": "pulse", "period": 1.0, "color": "#ff3030", "glow": 1.2}
+    },
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [0.0, 1.75, 0.11],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 1.4, "color": "#30ff60", "glow": 1.2}
+    },
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [1.0, 1.75, 0.11],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 1.8, "color": "#30ff60", "glow": 1.2}
+    },
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [-1.0, 1.25, 0.11],
+      "color": "#ff3030",
+      "anim": {"type": "pulse", "period": 2.2, "color": "#ff3030", "glow": 1.2}
+    },
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [0.0, 1.25, 0.11],
+      "color": "#30ff60",
+      "anim": {"type": "blink", "period": 2.6, "color": "#30ff60", "glow": 1.2, "duty": 0.5}
+    },
+    {
+      "size": [0.14, 0.1, 0.03],
+      "offset": [1.0, 1.25, 0.11],
+      "color": "#30ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#30ff60", "glow": 1.2}
+    },
+    {
+      "size": [0.5, 0.18, 0.03],
+      "offset": [0.9, 2.2, 0.11],
+      "color": "#ffb020",
+      "anim": {"type": "flicker", "rate": 2, "duty": 0.9, "color": "#ffc040", "glow": 0.8}
+    }
+  ]
+}

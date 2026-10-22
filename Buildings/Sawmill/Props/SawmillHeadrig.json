@@ -1,0 +1,80 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Headrig",
+  "description": "A big band headrig: two spoked wheels whirring in a dark green frame, the blade running down between them.",
+  "collision": "solid",
+  "collider": [{"size": [1.4, 3.5, 0.5], "offset": [0, 1.75, -0.25]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.4, 0.3, 1.0], "offset": [0, 0.15, 0], "color": "#3a3a3a", "material": "metal"},
+    {"size": [0.3, 3.2, 0.3], "offset": [0, 1.7, -0.35], "color": "#4a5a3e", "material": "metal"},
+    {"size": [1.4, 0.25, 0.4], "offset": [0, 3.35, -0.2], "color": "#4a5a3e", "material": "metal"},
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 0.95, 0.0],
+      "color": "#6a6a62",
+      "yaw": 0,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 0.95, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 0.95, 0.0],
+      "color": "#6a6a62",
+      "yaw": 45,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 0.95, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 0.95, 0.0],
+      "color": "#6a6a62",
+      "yaw": 90,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 0.95, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 0.95, 0.0],
+      "color": "#6a6a62",
+      "yaw": 135,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 0.95, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 2.7, 0.0],
+      "color": "#6a6a62",
+      "yaw": 0,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 2.7, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 2.7, 0.0],
+      "color": "#6a6a62",
+      "yaw": 45,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 2.7, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 2.7, 0.0],
+      "color": "#6a6a62",
+      "yaw": 90,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 2.7, 0.0]}
+    },
+    {
+      "size": [1.2, 0.14, 0.497],
+      "offset": [0, 2.7, 0.0],
+      "color": "#6a6a62",
+      "yaw": 135,
+      "anim": {"type": "spin", "axis": "z", "rpm": 180, "pivot": [0, 2.7, 0.0]}
+    },
+    {"size": [1.3, 0.6, 0.18], "offset": [0, 3.0, 0.12], "color": "#4a5a3e"},
+    {"size": [0.04, 1.75, 0.03], "offset": [0.6, 1.82, 0.0], "color": "chrome"},
+    {"size": [0.04, 1.75, 0.03], "offset": [-0.6, 1.82, 0.0], "color": "chrome"},
+    {"size": [0.2, 0.3, 0.2], "offset": [0.6, 2.1, 0.2], "color": "yellow"},
+    {"size": [0.5, 0.4, 0.4], "offset": [-0.45, 0.5, -0.25], "color": "#2a2a2a"},
+    {
+      "size": [0.1, 0.1, 0.03],
+      "offset": [-0.45, 0.6, -0.04],
+      "color": "#ff3020",
+      "anim": {"type": "blink", "period": 1.0, "duty": 0.5, "color": "#ff4030", "glow": 1.0}
+    }
+  ]
+}

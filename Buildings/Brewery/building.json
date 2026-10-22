@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Brewery",
+  "theme": "Victorian red-brick tower brewery: copper kettles, oak casks, cream window arches, a taproom with a fire",
+  "category": "industrial",
+  "description": "A brewhouse with a copper kettle and mash tun, a fermenting room of steel tanks, a bottling line, a cask store with cart doors, and a taproom with a bar.",
+  "author": "Call of Slop",
+  "seed": 302,
+  "wallThickness": 0.3,
+  "storeyHeight": 5.0,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "tiles"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "victorian red": {
+      "wall": "#8a3c2c",
+      "interior": "#e2d6b8",
+      "floor": "#8c6a50",
+      "ceiling": "#d8ccb0",
+      "trim": "#e6dcc0",
+      "door": "#2f5d3a",
+      "roof": "#3e4048",
+      "bar": "#6b3a26"
+    },
+    "blue engineering brick": {
+      "wall": "#3e4250",
+      "interior": "#d8d4c4",
+      "floor": "#7a6a5a",
+      "ceiling": "#cfc9b8",
+      "trim": "#c8b48a",
+      "door": "#7a2b24",
+      "roof": "#353840",
+      "bar": "#4a2c1c"
+    }
+  },
+  "floors": [
+    {
+      "rooms": [
+        {
+          "id": "brewhouse",
+          "type": "brewhouse",
+          "rect": [-12, -8, 0, 1],
+          "autoWindows": {"spacing": 3.0, "width": 1.4, "sill": 1.3, "head": 3.8},
+          "floor": {"color": "#a8a090", "material": "tiles"},
+          "props": [{"name": "Brewery Copper Kettle", "at": [2.5, -2.0]}]
+        },
+        {
+          "id": "fermenting",
+          "type": "fermenting",
+          "rect": [0, -8, 12, 1],
+          "autoWindows": {"spacing": 3.0, "width": 1.6, "sill": 3.4, "head": 4.5},
+          "floor": {"color": "#a8a090", "material": "tiles"}
+        },
+        {
+          "id": "taproom",
+          "type": "taproom",
+          "rect": [-12, 1, -5, 8],
+          "autoWindows": {"spacing": 2.4, "width": 1.4, "sill": 0.9, "head": 2.7},
+          "floor": {"color": "$bar", "material": "wood"},
+          "wall": {"color": "#5a3a2a", "material": "wood"}
+        },
+        {"id": "office", "type": "office", "rect": [-5, 1, -2, 5], "windows": false, "floor": {"color": "#6b4a30", "material": "wood"}},
+        {
+          "id": "wc",
+          "type": "wc",
+          "rect": [-5, 5, -2, 8],
+          "autoWindows": {"spacing": 2.0, "width": 0.7, "sill": 1.8, "head": 2.4},
+          "wall": {"color": "#2f6a5a", "material": "tiles"}
+        },
+        {
+          "id": "bottling",
+          "type": "bottling",
+          "rect": [-2, 1, 6, 8],
+          "autoWindows": {"spacing": 3.0, "width": 1.4, "sill": 1.6, "head": 3.6},
+          "props": [{"name": "Brewery Bottling Machine", "at": [2.6, -1.9]}, {"name": "Conveyor Rollers", "at": [1.9, 1.3]}]
+        },
+        {"id": "casks", "type": "cask-store", "rect": [6, 1, 12, 8], "windows": false, "floor": {"color": "#6e6a62", "material": "concrete"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [-8.5, 8], "width": 1.1, "front": true, "material": "wood"},
+        {"type": "door", "at": [-10, 1], "width": 1.0},
+        {"type": "door", "at": [-5, 3], "width": 0.9},
+        {"type": "door", "at": [-5, 6.5], "width": 0.9},
+        {"type": "door", "at": [-2, 3], "width": 0.9},
+        {"type": "door", "at": [-1, 1], "width": 1.0},
+        {"type": "arch", "at": [0, -3.5], "width": 2.2, "head": 3.4},
+        {"type": "door", "at": [3, 1], "width": 1.0, "material": "metal"},
+        {"type": "arch", "at": [9, 1], "width": 1.8, "head": 3.0},
+        {"type": "door", "at": [6, 4.5], "width": 1.2},
+        {"type": "door", "at": [2, 8], "width": 1.2, "material": "metal"},
+        {"type": "door", "at": [-6, -8], "width": 1.0},
+        {"type": "door", "at": [12, 3.6], "width": 1.6, "head": 3.4, "material": "wood", "swing": "out", "hinge": "left"},
+        {"type": "door", "at": [12, 5.4], "width": 1.6, "head": 3.4, "material": "wood", "swing": "out", "hinge": "right"}
+      ]
+    }
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 32, "overhang": 0.4, "color": {"color": "$roof", "material": "tiles"}},
+  "anchors": [
+    {"type": "spawn", "name": "taproom", "floor": 0, "at": [-8.5, 4.5]},
+    {"type": "spawn", "name": "bottling", "floor": 0, "at": [2.0, 5.5]},
+    {"type": "spawn", "name": "brewhouse", "floor": 0, "at": [-8.0, -2.0]},
+    {"type": "hill", "name": "fermenting room", "floor": 0, "at": [6, -3.5]},
+    {"type": "point", "name": "cask store", "floor": 0, "at": [9, 4.5]}
+  ],
+  "extras": [
+    {"type": "block", "min": [-11.6, 0, -9.3], "max": [-10.2, 12.5, -8.15], "color": {"color": "#7a3426", "material": "brick"}},
+    {"type": "block", "min": [-11.75, 12.5, -9.45], "max": [-10.05, 12.8, -8.0], "color": {"color": "#e6dcc0", "material": "concrete"}},
+    {"type": "prop", "name": "Smoking Chimney", "at": [-10.9, 12.8, -8.72]},
+    {"type": "block", "min": [-12.15, 3.4, 8.15], "max": [12.15, 3.6, 8.3], "color": "$trim"},
+    {"type": "prop", "name": "Hanging Shop Sign", "at": [-6.4, 0, 8.6], "yaw": 0},
+    {"type": "prop", "name": "Park Picnic Table", "at": [-10.5, 10.4], "yaw": 0},
+    {"type": "prop", "name": "Park Picnic Table", "at": [-6.5, 10.6], "yaw": 0},
+    {"type": "prop", "name": "Patio Table", "at": [-3.4, 10.2]},
+    {"type": "prop", "name": "Sandwich Board", "at": [-7.6, 9.2], "yaw": 20},
+    {"type": "prop", "name": "Flower Pots", "at": [-12.6, 8.9]},
+    {"type": "prop", "name": "Brewery Cask", "at": [14.6, 0.6], "yaw": 90},
+    {"type": "prop", "name": "Brewery Cask", "at": [15.4, 0.6], "yaw": 90},
+    {"type": "prop", "name": "Brewery Cask", "at": [15.0, 0.6], "yaw": 90, "scale": 0.95},
+    {"type": "prop", "name": "Utility Trailer", "at": [17.0, 4.5], "yaw": 90},
+    {"type": "prop", "name": "Pickup Truck", "at": [16.0, 11.0], "yaw": 0},
+    {"type": "prop", "name": "Propane Bulk Tank", "at": [5.0, -10.6], "yaw": 0},
+    {"type": "prop", "name": "Brewery Bottle Crates", "at": [-3.0, -8.6]},
+    {"type": "prop", "name": "Brewery Bottle Crates", "at": [-2.3, -8.6]},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-1.2, -8.8], "yaw": 180},
+    {"type": "prop", "name": "Dumpster", "at": [-8.5, -9.6], "yaw": 180},
+    {"type": "prop", "name": "Electric Meter", "at": [12.15, 0, -5.0], "yaw": 90}
+  ]
+}

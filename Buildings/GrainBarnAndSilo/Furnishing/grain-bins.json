@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "grain-bins",
+  "description": "The Grain Barn's bin room: hopper bins of grain, sacks waiting to be filled, a broom.",
+  "items": [
+    {"props": ["Grain Barn Hopper Bin"], "place": "wall", "count": [2, 3]},
+    {"props": ["Grain Barn Sack Pile"], "place": "wall", "count": [1, 2]},
+    {"props": ["Pallet", "Broom", "Bucket"], "place": "floor", "count": [1, 2]}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "saw-doctor",
+  "description": "The Sawmill's saw doctor's shop: blade grinders, racks of saw blades, a bench of tools.",
+  "items": [
+    {"props": ["Sawmill Blade Grinder"], "place": "wall"},
+    {"props": ["Sawmill Blade Rack"], "place": "wall", "count": [1, 2]},
+    {"id": "bench", "props": ["Table"], "place": "wall"},
+    {"props": ["Toolbox"], "place": "on", "of": "bench"},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Oil Drum", "Gas Cylinders"], "place": "corner"}
+  ]
+}

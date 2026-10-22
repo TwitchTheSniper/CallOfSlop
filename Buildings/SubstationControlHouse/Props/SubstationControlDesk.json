@@ -1,0 +1,37 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Substation Control Desk",
+  "description": "A beige control console: three monitors of trend lines, a bank of switches and a telephone.",
+  "collision": "solid",
+  "collider": [{"size": [2.4, 1.0, 0.9], "offset": [0, 0.5, 0.05]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 200, "breakBy": "all", "sound": "metal", "debris": {"count": 14, "size": [0.05, 0.25]}},
+  "parts": [
+    {"size": [2.4, 0.75, 0.8], "offset": [0, 0.375, 0], "color": "#c8c0a8", "material": "metal"},
+    {"size": [2.4, 0.05, 0.9], "offset": [0, 0.78, 0.05], "color": "#4a4a48"},
+    {"size": [2.4, 0.3, 0.3], "offset": [0, 0.95, -0.25], "color": "#c8c0a8", "pitch": -25},
+    {"size": [0.6, 0.42, 0.05], "offset": [-0.75, 1.25, -0.25], "color": "#1a1a1a"},
+    {"size": [0.6, 0.42, 0.05], "offset": [0, 1.25, -0.25], "color": "#1a1a1a"},
+    {"size": [0.6, 0.42, 0.05], "offset": [0.75, 1.25, -0.25], "color": "#1a1a1a"},
+    {
+      "size": [0.54, 0.36, 0.02],
+      "offset": [-0.75, 1.25, -0.22],
+      "color": "#40c060",
+      "anim": {"type": "flicker", "rate": 4, "duty": 0.95, "color": "#50e070", "glow": 0.8}
+    },
+    {
+      "size": [0.54, 0.36, 0.02],
+      "offset": [0, 1.25, -0.22],
+      "color": "#4090e0",
+      "anim": {"type": "flicker", "rate": 3, "duty": 0.96, "color": "#50a0f0", "glow": 0.8}
+    },
+    {
+      "size": [0.54, 0.36, 0.02],
+      "offset": [0.75, 1.25, -0.22],
+      "color": "#e0a040",
+      "anim": {"type": "flicker", "rate": 5, "duty": 0.93, "color": "#f0b050", "glow": 0.8}
+    },
+    {"size": [0.5, 0.03, 0.2], "offset": [0.5, 0.82, 0.25], "color": "#2a2a2a"},
+    {"size": [0.2, 0.08, 0.16], "offset": [-0.8, 0.85, 0.25], "color": "#7a2b24"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "brewhouse",
+  "description": "The Brewery's brewhouse: mash tun and copper kettle, sacks of malt, a pump, hoses and buckets.",
+  "items": [
+    {"props": ["Brewery Mash Tun"], "place": "wall", "prefer": "far"},
+    {"props": ["Piston Pump"], "place": "wall"},
+    {"props": ["Brewery Malt Sacks"], "place": "wall", "count": [2, 3]},
+    {"props": ["Metal Shelving"], "place": "wall"},
+    {"props": ["Brewery Malt Sacks", "Pallet Stack"], "place": "floor", "count": [1, 2], "gap": 0.4},
+    {"props": ["Hose Reel", "Bucket", "Mop and Bucket", "Broom"], "place": "floor", "count": [2, 3]}
+  ]
+}

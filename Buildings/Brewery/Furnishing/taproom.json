@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "taproom",
+  "description": "The Brewery's taproom: an oak bar with taps, stools, tables and chairs, a fire and a piano.",
+  "items": [
+    {"id": "bar", "props": ["Brewery Bar Counter"], "place": "wall", "prefer": "far"},
+    {"props": ["Bar Stool"], "place": "front", "of": "bar", "distance": 0.25},
+    {"id": "t", "props": ["Table"], "place": "floor", "count": [1, 2], "gap": 0.9},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [2, 4]},
+    {"props": ["Fireplace"], "place": "wall", "chance": 0.8},
+    {"props": ["Upright Piano"], "place": "wall", "chance": 0.6},
+    {"props": ["Bar Stool"], "place": "floor", "count": [1, 3], "gap": 0.3},
+    {"props": ["Brewery Cask"], "place": "corner"},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Bottles", "Newspaper"], "place": "floor", "count": [0, 2]}
+  ]
+}

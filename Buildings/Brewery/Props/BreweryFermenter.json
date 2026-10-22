@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brewery Fermenter",
+  "description": "A tall stainless conical fermenter on four legs, a temperature controller blinking on its side.",
+  "collision": "solid",
+  "collider": [{"size": [1.4, 3.4, 1.4]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.08, 0.9, 0.08], "offset": [-0.5, 0.45, -0.5], "color": "steel"},
+    {"size": [0.08, 0.9, 0.08], "offset": [0.5, 0.45, -0.5], "color": "steel"},
+    {"size": [0.08, 0.9, 0.08], "offset": [-0.5, 0.45, 0.5], "color": "steel"},
+    {"size": [0.08, 0.9, 0.08], "offset": [0.5, 0.45, 0.5], "color": "steel"},
+    {"size": [0.5, 0.3, 0.207], "offset": [0, 0.75, 0], "color": "chrome", "material": "metal", "yaw": 0},
+    {"size": [0.5, 0.3, 0.207], "offset": [0, 0.75, 0], "color": "chrome", "material": "metal", "yaw": 45},
+    {"size": [0.5, 0.3, 0.207], "offset": [0, 0.75, 0], "color": "chrome", "material": "metal", "yaw": 90},
+    {"size": [0.5, 0.3, 0.207], "offset": [0, 0.75, 0], "color": "chrome", "material": "metal", "yaw": 135},
+    {"size": [1.0, 0.3, 0.414], "offset": [0, 1.05, 0], "color": "chrome", "material": "metal", "yaw": 0},
+    {"size": [1.0, 0.3, 0.414], "offset": [0, 1.05, 0], "color": "chrome", "material": "metal", "yaw": 45},
+    {"size": [1.0, 0.3, 0.414], "offset": [0, 1.05, 0], "color": "chrome", "material": "metal", "yaw": 90},
+    {"size": [1.0, 0.3, 0.414], "offset": [0, 1.05, 0], "color": "chrome", "material": "metal", "yaw": 135},
+    {"size": [1.4, 2.0, 0.58], "offset": [0, 2.2, 0], "color": "chrome", "material": "metal", "yaw": 0},
+    {"size": [1.4, 2.0, 0.58], "offset": [0, 2.2, 0], "color": "chrome", "material": "metal", "yaw": 45},
+    {"size": [1.4, 2.0, 0.58], "offset": [0, 2.2, 0], "color": "chrome", "material": "metal", "yaw": 90},
+    {"size": [1.4, 2.0, 0.58], "offset": [0, 2.2, 0], "color": "chrome", "material": "metal", "yaw": 135},
+    {"size": [1.1, 0.2, 0.455], "offset": [0, 3.3, 0], "color": "chrome", "material": "metal", "yaw": 0},
+    {"size": [1.1, 0.2, 0.455], "offset": [0, 3.3, 0], "color": "chrome", "material": "metal", "yaw": 45},
+    {"size": [1.1, 0.2, 0.455], "offset": [0, 3.3, 0], "color": "chrome", "material": "metal", "yaw": 90},
+    {"size": [1.1, 0.2, 0.455], "offset": [0, 3.3, 0], "color": "chrome", "material": "metal", "yaw": 135},
+    {"size": [1.44, 0.06, 0.596], "offset": [0, 2.8, 0], "color": "#3a7ab8", "yaw": 0},
+    {"size": [1.44, 0.06, 0.596], "offset": [0, 2.8, 0], "color": "#3a7ab8", "yaw": 45},
+    {"size": [1.44, 0.06, 0.596], "offset": [0, 2.8, 0], "color": "#3a7ab8", "yaw": 90},
+    {"size": [1.44, 0.06, 0.596], "offset": [0, 2.8, 0], "color": "#3a7ab8", "yaw": 135},
+    {"size": [0.22, 0.3, 0.06], "offset": [0, 2.0, 0.72], "color": "#2a2a2a"},
+    {
+      "size": [0.14, 0.06, 0.03],
+      "offset": [0, 2.07, 0.76],
+      "color": "#ff4030",
+      "anim": {"type": "blink", "period": 2.0, "duty": 0.5, "color": "#ff5040", "glow": 1.0}
+    },
+    {
+      "size": [0.14, 0.06, 0.03],
+      "offset": [0, 1.95, 0.76],
+      "color": "#40ff60",
+      "anim": {"type": "pulse", "period": 3.0, "color": "#50ff70", "glow": 0.7}
+    },
+    {"size": [0.06, 0.4, 0.06], "offset": [0, 0.45, 0], "color": "steel"},
+    {"size": [0.2, 0.06, 0.06], "offset": [0.1, 0.32, 0], "color": "red"}
+  ]
+}

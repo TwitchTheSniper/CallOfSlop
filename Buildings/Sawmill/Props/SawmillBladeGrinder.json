@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Sawmill Blade Grinder",
+  "description": "A saw doctor's grinder: a blade clamped on the jig, the grinding wheel spinning, sparks of orange.",
+  "collision": "solid",
+  "collider": [{"size": [0.8, 0.95, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 220, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.05, 0.2]}},
+  "parts": [
+    {"size": [0.7, 0.9, 0.6], "offset": [0, 0.45, 0], "color": "#5a5e58", "material": "metal"},
+    {"size": [0.8, 0.05, 0.7], "offset": [0, 0.92, 0], "color": "steel"},
+    {"size": [0.373, 0.9, 0.03], "offset": [0, 1.4, -0.1], "color": "chrome", "roll": 0},
+    {"size": [0.373, 0.9, 0.03], "offset": [0, 1.4, -0.1], "color": "chrome", "roll": 45},
+    {"size": [0.373, 0.9, 0.03], "offset": [0, 1.4, -0.1], "color": "chrome", "roll": 90},
+    {"size": [0.373, 0.9, 0.03], "offset": [0, 1.4, -0.1], "color": "chrome", "roll": 135},
+    {"size": [0.15, 0.6, 0.15], "offset": [0.3, 1.25, 0.15], "color": "#5a5e58"},
+    {
+      "size": [0.05, 0.25, 0.103],
+      "offset": [0.3, 1.5, 0.15],
+      "color": "#c8c0a8",
+      "pitch": 0,
+      "anim": {"type": "spin", "axis": "x", "rpm": 300, "pivot": [0.3, 1.5, 0.15]}
+    },
+    {
+      "size": [0.05, 0.25, 0.103],
+      "offset": [0.3, 1.5, 0.15],
+      "color": "#c8c0a8",
+      "pitch": 45,
+      "anim": {"type": "spin", "axis": "x", "rpm": 300, "pivot": [0.3, 1.5, 0.15]}
+    },
+    {
+      "size": [0.05, 0.25, 0.103],
+      "offset": [0.3, 1.5, 0.15],
+      "color": "#c8c0a8",
+      "pitch": 90,
+      "anim": {"type": "spin", "axis": "x", "rpm": 300, "pivot": [0.3, 1.5, 0.15]}
+    },
+    {
+      "size": [0.05, 0.25, 0.103],
+      "offset": [0.3, 1.5, 0.15],
+      "color": "#c8c0a8",
+      "pitch": 135,
+      "anim": {"type": "spin", "axis": "x", "rpm": 300, "pivot": [0.3, 1.5, 0.15]}
+    },
+    {
+      "size": [0.06, 0.06, 0.06],
+      "offset": [0.22, 1.45, 0.1],
+      "color": "#ffa030",
+      "anim": {"type": "flicker", "rate": 14, "duty": 0.5, "color": "#ffc040", "glow": 2.0}
+    }
+  ]
+}
