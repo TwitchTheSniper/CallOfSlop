@@ -55,7 +55,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     RocketBoom / RocketDetonate at the end, and the Fire packet's trailing lock-on byte.
     // 31: landmines and prop respawns (GameMines.cs): Msg.PropBreak's kind byte gains Game.PropRestoreFlag (0x40, a prop
     //     placed with "respawn" is back), and kill id 254 (Game.LandmineKillId, "Landmine") for neutral blasts.
-    public const byte ProtocolVersion = 31;
+    // 32: the pre-match lobby room (PreMatchLobby.cs): MatchPhase.Lobby (4) in snapshots, the server info and MatchStart,
+    //     and Msg.LobbyState / ChatSay / ChatLine at the end of Msg (lobby settings and pings, lobby chat).
+    public const byte ProtocolVersion = 32;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

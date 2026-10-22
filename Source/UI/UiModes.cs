@@ -152,10 +152,17 @@ public sealed partial class Ui
             var (ready, humans) = game.ReadyCount;
             ImGui.TextColored(Orange, "WARMUP"u8);
             ImGuiSafe.TextColored(Dim, $"{ready}/{humans} ready");
+            ImGuiSafe.TextColored(new float4(0.9f, 0.9f, 0.92f, 1f), $"{World.Map.Name} - {game.Module.Name}"); // the map and mode being warmed up on
             if (game.IsTeamMode && game.Local is { Team: < 2 } mine)
                 ImGuiSafe.TextColored(TeamRgba(mine.Team), game.ManualTeams ? $"You: {GameModes.TeamNames[mine.Team]} - TEAMS to switch" : $"You: {GameModes.TeamNames[mine.Team]}"); // TEAMS window: UiTeams.cs
+            var lastTeam = (byte)254;
             foreach (var p in game.Players.Values.OrderBy(p => p.Team).ThenBy(p => p.Bot != null).ThenBy(p => p.Id))
             {
+                if (game.IsTeamMode && p.Team < 2 && p.Team != lastTeam)
+                {
+                    lastTeam = p.Team; // a heading per team: the team list
+                    ImGuiSafe.TextColored(TeamRgba(p.Team), $"{GameModes.TeamNames[p.Team].ToUpperInvariant()} ({game.Players.Values.Count(o => o.Team == p.Team)})");
+                }
                 var ok = p.Ready || p.Bot != null;
                 ImGui.TextColored(ok ? Green : Red, ok ? "[x]"u8 : "[ ]"u8);
                 ImGui.SameLine();
