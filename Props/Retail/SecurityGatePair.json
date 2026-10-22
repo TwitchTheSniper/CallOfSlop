@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Security Gate Pair",
+  "category": "Retail",
+  "description": "The two anti-theft pedestals at a shop doorway (1.2 m apart, light strips glowing). Cosmetic.",
+  "collision": "cosmetic",
+  "parts": [
+    {"size": [0.12, 1.5, 0.3], "offset": [-0.6, 0.75, 0], "color": "#d8d8e0"},
+    {"size": [0.04, 1.2, 0.02], "offset": [-0.6, 0.8, 0.16], "color": "#60a0ff", "anim": {"type": "pulse", "period": 2.0, "color": "#80c0ff", "off": "#203050", "glow": 0.6}},
+    {"size": [0.12, 1.5, 0.3], "offset": [0.6, 0.75, 0], "color": "#d8d8e0"},
+    {"size": [0.04, 1.2, 0.02], "offset": [0.6, 0.8, 0.16], "color": "#60a0ff", "anim": {"type": "pulse", "period": 2.0, "color": "#80c0ff", "off": "#203050", "glow": 0.6}}
+  ]
+}

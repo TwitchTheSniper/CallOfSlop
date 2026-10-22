@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mall Planter Palm",
+  "category": "Retail",
+  "description": "A square stone planter with a potted palm, for atriums and lobbies. Solid (the planter), unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.44,
+        0.75,
+        1.44
+      ],
+      "offset": [
+        0.0,
+        0.375,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.4, 0.7, 1.4], "offset": [0, 0.35, 0], "color": "#c8c0b0", "material": "concrete"},
+    {"size": [1.3, 0.04, 1.3], "offset": [0, 0.69, 0], "color": "#4a3a28"},
+    {"size": [1.44, 0.06, 1.44], "offset": [0, 0.72, 0], "color": "#a8a090"},
+    {"size": [0.2, 2.6, 0.0828], "offset": [0.0, 2.0, 0.0], "color": "#8a6a40", "rotation": [0, 0, 0]},
+    {"size": [0.2, 2.6, 0.0828], "offset": [0.0, 2.0, 0.0], "color": "#8a6a40", "rotation": [0, 45, 0]},
+    {"size": [0.2, 2.6, 0.0828], "offset": [0.0, 2.0, 0.0], "color": "#8a6a40", "rotation": [0, 90, 0]},
+    {"size": [0.2, 2.6, 0.0828], "offset": [0.0, 2.0, 0.0], "color": "#8a6a40", "rotation": [0, 135, 0]},
+    {"size": [1.4, 0.06, 0.28], "offset": [0.0, 3.15, 0.6], "color": "#3a7a30", "rotation": [0, 90, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [0.4243, 3.15, 0.4243], "color": "#3a7a30", "rotation": [0, 135, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [0.6, 3.15, 0.0], "color": "#3a7a30", "rotation": [0, 180, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [0.4243, 3.15, -0.4243], "color": "#3a7a30", "rotation": [0, 225, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [0.0, 3.15, -0.6], "color": "#3a7a30", "rotation": [0, 270, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [-0.4243, 3.15, -0.4243], "color": "#3a7a30", "rotation": [0, 315, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [-0.6, 3.15, -0.0], "color": "#3a7a30", "rotation": [0, 360, -22]},
+    {"size": [1.4, 0.06, 0.28], "offset": [-0.4243, 3.15, 0.4243], "color": "#3a7a30", "rotation": [0, 405, -22]},
+    {"size": [1.0, 0.05, 0.24], "offset": [0.1573, 3.35, 0.3894], "color": "#4a8a38", "rotation": [0, 112, -35]},
+    {"size": [1.0, 0.05, 0.24], "offset": [0.3894, 3.35, -0.1573], "color": "#4a8a38", "rotation": [0, 202, -35]},
+    {"size": [1.0, 0.05, 0.24], "offset": [-0.1573, 3.35, -0.3894], "color": "#4a8a38", "rotation": [0, 292, -35]},
+    {"size": [1.0, 0.05, 0.24], "offset": [-0.3894, 3.35, 0.1573], "color": "#4a8a38", "rotation": [0, 382, -35]},
+    {"size": [0.5, 0.25, 0.5], "offset": [0.3, 0.84, 0.3], "color": "#3a7a30"},
+    {"size": [0.4, 0.2, 0.4], "offset": [-0.35, 0.82, -0.25], "color": "#4a8a38"}
+  ]
+}

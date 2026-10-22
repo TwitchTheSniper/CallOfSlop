@@ -41,6 +41,9 @@ public static unsafe partial class Program
         ("cluttered_powderkeg_hall", "Powder Keg", new Vector3(-26f, 1.7f, -1.5f), new Vector3(14f, 1.4f, -5f), false), // the hall's staging band at eye height, racks and barrels
         ("cluttered_supermarket", "Supermarket", new Vector3(-48f, 24f, 60f), new Vector3(0f, 2f, 6f), false), // 07 Supermarket: the car park and store front
         ("cluttered_supermarket_inside", "Supermarket", new Vector3(12.5f, 5.3f, -8f), new Vector3(-12f, 1.2f, 8f), false), // over the shop floor from the mezzanine
+        // World Tour 02 Slopview Mall: the mall and its sloping car park from the south-west, then the atrium from the west balcony.
+        ("world_mall", "Slopview Mall", new Vector3(-72f, 34f, 78f), new Vector3(0f, 0f, 2f), false),
+        ("world_mall_atrium", "Slopview Mall", new Vector3(-20.5f, 6.4f, -6.4f), new Vector3(8f, 2.2f, 2.5f), false),
         // 11 Deepcut Mine: the pit and the terraces from above the camp, then inside the North Drift at eye height, looking up the tunnel.
         ("cluttered_deepcut", "Deepcut Mine", new Vector3(-84f, 34f, 46f), new Vector3(14f, 0f, -6f), false),
         ("cluttered_deepcut_tunnel", "Deepcut Mine", new Vector3(-40f, 1.9f, -40f), new Vector3(-18f, 3.0f, -40f), false),

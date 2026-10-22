@@ -1,0 +1,62 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "jewellery",
+ "description": "Jeweller: glass counters and lit tower cases.",
+ "items": [
+  {
+   "props": [
+    "Jewellery Display Case"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Jewellery Tower Case"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Jewellery Display Case"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Office Chair",
+    "Bar Stool"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Safe"
+   ],
+   "place": "corner",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

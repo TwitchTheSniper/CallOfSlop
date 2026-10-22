@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Customer Service Logo",
+  "category": "Mall",
+  "description": "The CUSTOMER SERVICE logo on a square plaque (1.2 m) for the wall inside the shop. Cosmetic.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "parts": [
+    {"size": [1.2, 1.2, 0.06], "offset": [0, 0.6, 0.03], "color": "#2a4a7a"},
+    {"size": [0.1667, 0.1667, 0.025], "offset": [0.0, 1.0167, 0.0775], "color": "#ffffff"},
+    {"size": [0.3333, 0.1667, 0.025], "offset": [-0.0833, 0.6833, 0.0775], "color": "#ffffff"},
+    {"size": [0.1667, 0.5, 0.025], "offset": [0.0, 0.35, 0.0775], "color": "#ffffff"},
+    {"size": [0.1667, 0.1667, 0.025], "offset": [-0.1667, 0.1833, 0.0775], "color": "#ffffff"},
+    {"size": [0.1667, 0.1667, 0.025], "offset": [0.1667, 0.1833, 0.0775], "color": "#ffffff"}
+  ]
+}

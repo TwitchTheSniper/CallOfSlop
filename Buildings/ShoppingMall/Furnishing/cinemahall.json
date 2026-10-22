@@ -1,0 +1,24 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "cinemahall",
+ "description": "Cinema auditorium: the big screen and rows of plush seats.",
+ "items": [
+  {
+   "props": [
+    "Cinema Big Screen"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Auditorium Seat Row"
+   ],
+   "place": "floor",
+   "count": [
+    6,
+    9
+   ]
+  }
+ ]
+}

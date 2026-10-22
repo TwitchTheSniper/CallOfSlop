@@ -1,0 +1,59 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "phones",
+ "description": "Phone shop: phone islands, a tablet table, accessories walls.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Retail Wall Shelving"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Phone Display Island"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Phone Display Island",
+    "Laptop Display Table"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Office Plant"
+   ],
+   "place": "corner"
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

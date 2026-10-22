@@ -1,0 +1,73 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "toys",
+ "description": "Toy shop: toy shelving, plush bins, a ride-on car and a claw machine.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Toy Shelf Unit"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Plush Toy Bin"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Plush Toy Bin",
+    "Retail Gondola"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Claw Machine"
+   ],
+   "place": "corner",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Ride-On Toy Car",
+    "Teddy Bear",
+    "Toy Blocks",
+    "Sports Balls"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

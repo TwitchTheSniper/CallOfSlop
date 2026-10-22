@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Mall Directory Board",
+  "category": "Retail",
+  "description": "A free-standing lit mall directory: a floor plan with coloured shops and a red 'you are here' dot. Solid, unbreakable.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        1.1,
+        2.0,
+        0.3
+      ],
+      "offset": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [1.1, 2.0, 0.3], "offset": [0, 1.0, 0], "color": "#3a3a40"},
+    {"size": [1.0, 1.5, 0.02], "offset": [0, 1.15, 0.16], "color": "#e8e8ec", "anim": {"type": "blink", "period": 10, "duty": 1, "color": "#f4f4f8", "off": "#f4f4f8", "glow": 0.5}},
+    {"size": [1.0, 0.25, 0.02], "offset": [0, 1.75, 0.165], "color": "#2a5a9a"},
+    {"size": [0.18, 0.12, 0.01], "offset": [-0.35, 1.45, 0.172], "color": "#3aa05a"},
+    {"size": [0.18, 0.12, 0.01], "offset": [-0.12, 1.45, 0.172], "color": "#2a6ad0"},
+    {"size": [0.18, 0.12, 0.01], "offset": [0.11, 1.45, 0.172], "color": "#e86ab0"},
+    {"size": [0.18, 0.12, 0.01], "offset": [0.34, 1.45, 0.172], "color": "#ff8a20"},
+    {"size": [0.18, 0.12, 0.01], "offset": [-0.35, 0.95, 0.172], "color": "#e86ab0"},
+    {"size": [0.18, 0.12, 0.01], "offset": [-0.12, 0.95, 0.172], "color": "#8a4ac8"},
+    {"size": [0.18, 0.12, 0.01], "offset": [0.11, 0.95, 0.172], "color": "#ff8a20"},
+    {"size": [0.18, 0.12, 0.01], "offset": [0.34, 0.95, 0.172], "color": "#f0b81e"},
+    {"size": [0.06, 0.06, 0.012], "offset": [0.1, 1.0, 0.172], "color": "#e02020", "anim": {"type": "blink", "period": 1.2, "color": "#ff3030", "off": "#601010", "glow": 1}},
+    {"size": [0.022, 0.154, 0.01], "offset": [-0.506, 1.75, 0.175], "color": "white"},
+    {"size": [0.022, 0.154, 0.01], "offset": [-0.418, 1.75, 0.175], "color": "white"},
+    {"size": [0.066, 0.022, 0.01], "offset": [-0.33, 1.816, 0.175], "color": "white"},
+    {"size": [0.022, 0.154, 0.01], "offset": [-0.242, 1.75, 0.175], "color": "white"},
+    {"size": [0.022, 0.154, 0.01], "offset": [-0.11, 1.75, 0.175], "color": "white"},
+    {"size": [0.022, 0.154, 0.01], "offset": [0.154, 1.75, 0.175], "color": "white"},
+    {"size": [0.022, 0.154, 0.01], "offset": [0.242, 1.75, 0.175], "color": "white"},
+    {"size": [0.066, 0.022, 0.01], "offset": [0.33, 1.816, 0.175], "color": "white"},
+    {"size": [0.088, 0.022, 0.01], "offset": [0.451, 1.816, 0.175], "color": "white"},
+    {"size": [0.022, 0.022, 0.01], "offset": [-0.484, 1.794, 0.175], "color": "white"},
+    {"size": [0.022, 0.022, 0.01], "offset": [-0.44, 1.794, 0.175], "color": "white"},
+    {"size": [0.022, 0.132, 0.01], "offset": [-0.374, 1.739, 0.175], "color": "white"},
+    {"size": [0.022, 0.132, 0.01], "offset": [-0.286, 1.739, 0.175], "color": "white"},
+    {"size": [0.022, 0.022, 0.01], "offset": [0.176, 1.794, 0.175], "color": "white"},
+    {"size": [0.022, 0.022, 0.01], "offset": [0.22, 1.794, 0.175], "color": "white"},
+    {"size": [0.022, 0.132, 0.01], "offset": [0.286, 1.739, 0.175], "color": "white"},
+    {"size": [0.022, 0.132, 0.01], "offset": [0.374, 1.739, 0.175], "color": "white"},
+    {"size": [0.022, 0.132, 0.01], "offset": [0.418, 1.739, 0.175], "color": "white"},
+    {"size": [0.022, 0.044, 0.01], "offset": [0.506, 1.783, 0.175], "color": "white"},
+    {"size": [0.022, 0.044, 0.01], "offset": [-0.462, 1.761, 0.175], "color": "white"},
+    {"size": [0.022, 0.044, 0.01], "offset": [0.198, 1.761, 0.175], "color": "white"},
+    {"size": [0.066, 0.022, 0.01], "offset": [-0.33, 1.75, 0.175], "color": "white"},
+    {"size": [0.066, 0.022, 0.01], "offset": [0.33, 1.75, 0.175], "color": "white"},
+    {"size": [0.066, 0.022, 0.01], "offset": [0.462, 1.75, 0.175], "color": "white"},
+    {"size": [0.088, 0.022, 0.01], "offset": [-0.187, 1.684, 0.175], "color": "white"},
+    {"size": [0.088, 0.022, 0.01], "offset": [-0.055, 1.684, 0.175], "color": "white"}
+  ]
+}

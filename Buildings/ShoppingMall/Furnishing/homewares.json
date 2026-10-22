@@ -1,0 +1,85 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "homewares",
+ "description": "Home store: room sets of sofas, beds and lamps, shelving of homewares.",
+ "items": [
+  {
+   "id": "till",
+   "props": [
+    "Shop Checkout Counter"
+   ],
+   "place": "wall",
+   "prefer": "near"
+  },
+  {
+   "props": [
+    "Fabric Sofa"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Double Bed"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Retail Wall Shelving",
+    "Bookshelf"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Rug",
+    "Striped Rug"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Coffee Table",
+    "Armchair",
+    "Floor Lamp",
+    "Dining Table"
+   ],
+   "place": "floor",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Office Plant",
+    "Table Lamp"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

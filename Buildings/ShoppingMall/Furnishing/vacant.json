@@ -1,0 +1,44 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "vacant",
+ "description": "An empty unit being fitted out: ladders, paint, sheeting and boxes.",
+ "items": [
+  {
+   "props": [
+    "Step Ladder"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Paint Cans",
+    "Toolbox",
+    "Cardboard Box",
+    "Plank"
+   ],
+   "place": "floor",
+   "count": [
+    3,
+    6
+   ]
+  },
+  {
+   "props": [
+    "Metal Shelving"
+   ],
+   "place": "wall",
+   "chance": 0.5
+  },
+  {
+   "props": [
+    "Scaffold Tower"
+   ],
+   "place": "floor",
+   "chance": 0.6
+  }
+ ]
+}

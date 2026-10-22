@@ -1,0 +1,62 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "arcade",
+ "description": "Arcade: rows of cabinets, a claw machine, air hockey and a prize counter.",
+ "items": [
+  {
+   "id": "prize",
+   "props": [
+    "Prize Counter"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Arcade Cabinet"
+   ],
+   "place": "wall",
+   "count": [
+    5,
+    8
+   ]
+  },
+  {
+   "props": [
+    "Air Hockey Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Claw Machine"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Arcade Cabinet"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Mall Ceiling Light"
+   ],
+   "place": "ceiling",
+   "count": [
+    2,
+    4
+   ],
+   "y": 0.0
+  }
+ ]
+}

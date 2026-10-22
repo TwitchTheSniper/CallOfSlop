@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "TV Wall Display",
+  "category": "Retail",
+  "description": "An electronics shop wall of six big flat screens showing different pictures. Solid, unbreakable: back it against a wall.",
+  "collision": "solid",
+  "collider": [
+    {
+      "size": [
+        2.4,
+        2.4,
+        0.35
+      ],
+      "offset": [
+        0.0,
+        1.2,
+        0.0
+      ]
+    }
+  ],
+  "scatter": {
+    "randomYaw": false,
+    "yawStep": 90,
+    "scale": [
+      1,
+      1
+    ]
+  },
+  "parts": [
+    {"size": [2.4, 2.4, 0.05], "offset": [0, 1.2, -0.15], "color": "#2a2a30"},
+    {"size": [0.72, 0.44, 0.06], "offset": [-0.78, 0.85, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [-0.78, 0.85, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#5aa8f0", "off": "#1a3050", "glow": 0.9, "phase": 0.0}},
+    {"size": [0.72, 0.44, 0.06], "offset": [0.0, 0.85, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [0.0, 0.85, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#f0a050", "off": "#1a3050", "glow": 0.9, "phase": 0.13}},
+    {"size": [0.72, 0.44, 0.06], "offset": [0.78, 0.85, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [0.78, 0.85, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#60e090", "off": "#1a3050", "glow": 0.9, "phase": 0.26}},
+    {"size": [0.72, 0.44, 0.06], "offset": [-0.78, 1.6, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [-0.78, 1.6, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#e070c0", "off": "#1a3050", "glow": 0.9, "phase": 0.39}},
+    {"size": [0.72, 0.44, 0.06], "offset": [0.0, 1.6, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [0.0, 1.6, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#f0e060", "off": "#1a3050", "glow": 0.9, "phase": 0.52}},
+    {"size": [0.72, 0.44, 0.06], "offset": [0.78, 1.6, -0.12], "color": "#101014"},
+    {"size": [0.66, 0.38, 0.01], "offset": [0.78, 1.6, -0.088], "color": "#2050a0", "anim": {"type": "flicker", "rate": 4, "duty": 0.93, "color": "#70d0f0", "off": "#1a3050", "glow": 0.9, "phase": 0.65}},
+    {"size": [2.4, 0.4, 0.3], "offset": [0, 0.2, 0], "color": "#3a3a40"},
+    {"size": [2.0, 0.06, 0.01], "offset": [0, 0.3, 0.151], "color": "#c02020"}
+  ]
+}
