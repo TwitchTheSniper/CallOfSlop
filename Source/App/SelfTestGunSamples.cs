@@ -37,6 +37,7 @@ public static partial class SelfTest
             Fail($"gun samples take {lib.BytesLoaded / 1024} KB (budget 8 MB)");
         CheckGunSampleFiles(lib, folder);
         CheckGunSampleBakes(lib);
+        CheckGunSnap(lib);
         CheckWavLoader();
         CheckGunSampleFallback(folder);
         CheckGunSampleCost(folder);
@@ -143,6 +144,24 @@ public static partial class SelfTest
         ratios.Sort((a, b) => a.Ratio.CompareTo(b.Ratio));
         if (ratios.Count > 0)
             GunLine($"baked: {sampled} weapons from recordings, {Weapons.All.Length - sampled} synth only; loudness vs synth {ratios[0].Ratio:0.00}x ({ratios[0].Name}) to {ratios[^1].Ratio:0.00}x ({ratios[^1].Name}), median {ratios[ratios.Count / 2].Ratio:0.00}x");
+    }
+
+    /// <summary>Snappiness (<see cref="GunSnap"/>) of the baked near shots, per class and overall.</summary>
+    private static void CheckGunSnap(GunSampleLibrary lib)
+    {
+        var byClass = new SortedDictionary<string, List<short[]>>(StringComparer.Ordinal);
+        foreach (var w in Weapons.All)
+        {
+            if (w.Sound is not (SoundStyle.Gun or SoundStyle.Boom) || lib.SetFor(w) == null)
+                continue;
+            if (!byClass.TryGetValue(w.Class.ToString(), out var list))
+                byClass[w.Class.ToString()] = list = new();
+            list.AddRange(GunSamples.Shots(lib, w, Synth.Gunshot(w)));
+        }
+        var all = GunSnap.Median(byClass.Values.SelectMany(v => v));
+        GunLine($"snappiness (median of baked shots): {GunSnap.Describe(all)}");
+        foreach (var (cls, list) in byClass)
+            Line($"  snappiness {cls}: {GunSnap.Describe(GunSnap.Median(list))}");
     }
 
     private static double PcmRms(short[] s, int window)
