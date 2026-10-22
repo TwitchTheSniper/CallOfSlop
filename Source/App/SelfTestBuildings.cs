@@ -631,6 +631,29 @@ public static partial class SelfTest
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
                                    + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
                                    + NoPathTrace(g, search, path, start, goal));
+                    if (detail.Count < 10) // TEMP (stair-headroom): the nodes round the room and their links
+                    {
+                        var wp = r.Waypoint;
+                        var ids = Enumerable.Range(0, g.Nodes.Length).Where(i => MathF.Abs(g.Nodes[i].Y - wp.Y) < 0.6f && Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(wp.X, wp.Z)) < 5f).ToList();
+                        var reach = new bool[g.Nodes.Length];
+                        if (start >= 0)
+                        {
+                            var st = new Stack<int>();
+                            reach[start] = true;
+                            st.Push(start);
+                            while (st.Count > 0)
+                            {
+                                var i = st.Pop();
+                                for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1]; e++)
+                                    if (!reach[g.EdgeTo[e]])
+                                    {
+                                        reach[g.EdgeTo[e]] = true;
+                                        st.Push(g.EdgeTo[e]);
+                                    }
+                            }
+                        }
+                        detail.Add($"{key} {r.Floor}:{r.Id} NODES " + string.Join(" ", ids.Select(i => $"{i}({g.Nodes[i].X:0.0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0.0}){(reach[i] ? "R" : "")}->" + string.Join(",", Enumerable.Range(g.EdgeStart[i], g.EdgeStart[i + 1] - g.EdgeStart[i]).Select(e => g.EdgeTo[e])))));
+                    }
                     if (detail.Count < 10) // TEMP (stair-headroom): walks through the doors near the room
                         foreach (var dd in b.Plan.Doors.Where(dd => dd.Floor == r.Floor && Vector3.Distance(dd.SwingSide, r.Waypoint) < 4f))
                             detail.Add($"{key} {r.Floor}:{r.Id} door at ({dd.Closed.Center.X:0.0}, {dd.Closed.Center.Z:0.0}): nodes {Node(dd.SwingSide)}/{Node(dd.OtherSide)} walk {WalkTrace(dd.SwingSide, dd.OtherSide)}; props near: "

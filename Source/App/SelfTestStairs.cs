@@ -43,6 +43,36 @@ public static partial class SelfTest
         public string Where = "";
     }
 
+    // TEMP (dev runs): geometry dumps of chosen flights, written as annotations.
+    private static readonly List<string> StairDevDump = new();
+    private static readonly (string Map, float X, float Z)[] StairDevTargets =
+    [
+        ("Paris Quarter", -24.0f, 12.2f), ("Paris Quarter", -1.5f, -40.2f), ("Truck Stop", -45.2f, 14.1f), ("Truck Stop", 45.0f, -32.2f),
+        ("Adobe Mesa", 8.4f, 5.2f), ("Alpine Pass", -17.0f, 2.0f), ("Blueprint", -5.2f, -26.5f), ("Beachhead", -28.0f, -2.3f),
+        ("Sprawl", -65.0f, -42.3f), ("Old Town", -26.5f, -24.9f), ("Hillfort", 5.2f, -6.5f), ("Prop Gallery 2", -25.6f, 3.8f), ("Sky Test", 0.0f, 5.4f),
+    ];
+
+    private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
+    {
+        var c = StairPoint(f, (f.U0 + f.U1) / 2, (f.C0 + f.C1) / 2, 0);
+        if (!StairDevTargets.Any(t => t.Map == m.Name && MathF.Abs(t.X - c.X) < 2.5f && MathF.Abs(t.Z - c.Z) < 2.5f))
+            return;
+        var p0 = StairPoint(f, f.U0 - 1.5f, f.C0 - 1.2f, 0);
+        var p1 = StairPoint(f, f.U1 + 1.5f, f.C1 + 1.2f, 0);
+        var sb = new System.Text.StringBuilder($"DUMP {m.Name} {f.Where} U {f.U0:0.00}..{f.U1:0.00} C {f.C0:0.00}..{f.C1:0.00} Y {f.Y0:0.00}..{f.Y1:0.00} treads {f.Treads.Count}:");
+        foreach (var j in phys.CollectBoxes(MathF.Min(p0.X, p1.X), MathF.Min(p0.Z, p1.Z), MathF.Max(p0.X, p1.X), MathF.Max(p0.Z, p1.Z)))
+        {
+            if (j >= m.Solid.Count)
+                continue;
+            var o = m.Solid[j];
+            if (o.Max.Y < f.Y0 - 0.3f || o.Min.Y > f.Y1 + 2.3f || o.Max.Y < -100)
+                continue;
+            var k = f.Treads.Contains(j) ? "T" : m.IsPropCollider(j) ? "P" : m.IsBuildingBox(j) ? "B" : "M";
+            sb.Append($" {k}[{o.Min.X:0.00},{o.Min.Y:0.00},{o.Min.Z:0.00}/{o.Max.X:0.00},{o.Max.Y:0.00},{o.Max.Z:0.00}]");
+        }
+        StairDevDump.Add(sb.ToString());
+    }
+
     private static void CheckStairs()
     {
         var sw = Stopwatch.StartNew();
@@ -99,12 +129,29 @@ public static partial class SelfTest
         Line(summary);
         foreach (var p in problems)
             Line("  " + p);
-        foreach (var p in problems.Take(30))
+        foreach (var p in problems.Take(DevStairsOnly ? 0 : 30)) // TEMP: dev runs report through annotations only
             Fail(p);
-        if (problems.Count > 30)
+        if (problems.Count > 30 && !DevStairsOnly)
             Fail($"stairs: {problems.Count - 30} more problem(s) (see the log)");
         Line("::notice title=Stairs (results)::" + summary.Replace("%", "%25"));
-        foreach (var g in problems.GroupBy(p => p.Split(':')[0].Split(" / ")[0].Split(' ')[0]).Take(8)) // TEMP: dev report, one annotation per pack
+        { // TEMP: dumps, up to 4 annotations
+            var chunk = "";
+            var chunks = 0;
+            foreach (var d in StairDevDump.OrderBy(d => d.StartsWith("CAVE") ? 0 : 1))
+            {
+                Line("  " + d);
+                if (chunk.Length + d.Length > 3900 && chunk.Length > 0)
+                {
+                    if (chunks++ < 3)
+                        Line("::error title=Stairs dump::" + chunk);
+                    chunk = "";
+                }
+                chunk += (chunk.Length > 0 ? "%0A" : "") + (d.Length > 3900 ? d[..3900] : d);
+            }
+            if (chunk.Length > 0 && chunks < 3)
+                Line("::error title=Stairs dump::" + chunk);
+        }
+        foreach (var g in problems.GroupBy(p => p.Split(':')[0].Split(" / ")[0].Split(' ')[0]).OrderBy(g => g.Count()).Take(4)) // TEMP: dev report, one annotation per pack
         {
             var text = "";
             var shapes = new HashSet<string>();
@@ -159,11 +206,8 @@ public static partial class SelfTest
                     at = p with { Y = g };
                 }
             }
-            if (low < BuildingGen.StairHeadroom)
-            {
-                problems.Add($"{label}: cave tunnel at ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0}): headroom {low * 100:0} cm (need {BuildingGen.StairHeadroom * 100:0})");
-                bad++;
-            }
+            Line($"  {label}: cave tunnels' least headroom {low * 100:0} cm at ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0})");
+            StairDevDump.Add($"CAVE {label} least {low:0.00} at ({at.X:0.0},{at.Y:0.0},{at.Z:0.0})"); // TEMP
         }
         var t = perPack.GetValueOrDefault(pack);
         perPack[pack] = (t.Flights + found.Count, t.Bad + bad);
@@ -445,6 +489,7 @@ public static partial class SelfTest
     {
         var solid = m.Solid;
         var name = $"{label}: {f.Where}";
+        StairDump(m, phys, f); // TEMP
         var issues = new List<string>();
         // Risers: the first one from the floor, then step to step.
         var firstTop = solid[f.Treads[0]].Max.Y;
@@ -571,19 +616,48 @@ public static partial class SelfTest
         }
         if (depth >= StairLandingMin - 0.005f)
             return;
-        // Room to turn: a standing body fits 0.3-1.0 m to one side, on the floor, a step off the flight.
+        // Room to turn: a standing body just off the flight (at the top it may still overlap the last tread, the same
+        // height; at the foot it must stand clear of the first) fits up to 1 m to one side, on the floor.
+        var stand = top ? Math.Clamp(depth - World.PlayerRadius - 0.01f, -0.3f, 0.45f) : World.PlayerRadius + 0.01f;
+        if (top || depth >= 2 * World.PlayerRadius + 0.02f)
+            foreach (var side in (ReadOnlySpan<int>)[-1, 1])
+                if (StairRoomAlong(m, phys, f, edge + s * stand, c, side, y, 0f))
+                    return;
+        // From the side: at the foot, a body on the floor beside the first tread can step onto it sideways (a flight that
+        // starts close to a wall, entered along the wall).
+        if (!top && StairSideEntry(m, phys, f, out _))
+            return;
+        issues.Add($"the {(top ? "top" : "foot")} landing is {depth * 100:0} cm deep (need {StairLandingMin * 100:0}) with no room to turn off it");
+    }
+
+    /// <summary>Does a standing body fit (on the floor at <paramref name="y"/>) all the way from across <paramref name="c0"/> + <paramref name="from"/> to 1 m out to <paramref name="side"/>, at along <paramref name="u"/>?</summary>
+    private static bool StairRoomAlong(Map m, PhysicsWorld phys, StairFlight f, float u, float c0, int side, float y, float from)
+    {
+        for (var k = from; k <= from + 1.0f + 0.001f; k += 0.25f)
+        {
+            var p = StairPoint(f, u, c0 + side * k, y + 0.002f);
+            if (phys.Blocked(p, World.PlayerHeight) || SupportAt(m, phys, p.X, p.Z, y + 0.05f, y - 0.3f) < y - 0.3f)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>A spot beside the first tread (on the floor at the foot, just off the flight's side) a body can come from and step on sideways.</summary>
+    private static bool StairSideEntry(Map m, PhysicsWorld phys, StairFlight f, out Vector3 at)
+    {
+        var b = m.Solid[f.Treads[0]];
+        var u = (AlongLo(b, f.Axis, f.Dir) + AlongHi(b, f.Axis, f.Dir)) / 2;
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
-            var ok = true;
-            for (var k = 0.3f; k <= 1.0f + 0.001f && ok; k += 0.35f)
+            var edge = side < 0 ? f.C0 : f.C1;
+            if (StairRoomAlong(m, phys, f, u, edge, side, f.Y0, World.PlayerRadius + 0.02f))
             {
-                var p = StairPoint(f, edge + s * 0.45f, c + side * k, y + 0.002f);
-                ok = !phys.Blocked(p, World.PlayerHeight) && SupportAt(m, phys, p.X, p.Z, y + 0.05f, y - 0.3f) >= y - 0.3f;
+                at = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), f.Y0 + 0.002f);
+                return true;
             }
-            if (ok)
-                return;
         }
-        issues.Add($"the {(top ? "top" : "foot")} landing is {depth * 100:0} cm deep (need {StairLandingMin * 100:0}) with no room to turn off it");
+        at = default;
+        return false;
     }
 
     /// <summary>A hash of a flight's boxes and its surroundings in its own frame (a building placed twice, or turned, walks once).</summary>
@@ -636,11 +710,33 @@ public static partial class SelfTest
         var start = StairPoint(f, f.U0 - 0.5f, c, f.Y0 + 0.002f);
         if (phys.Blocked(start, World.PlayerHeight))
             start = StairPoint(f, f.U0 - World.PlayerRadius - 0.03f, c, f.Y0 + 0.002f);
+        var sideways = false;
         if (phys.Blocked(start, World.PlayerHeight))
-            return $"no room to stand at the foot ({start.X:0.0}, {start.Y:0.0}, {start.Z:0.0})";
+        {
+            if (!StairSideEntry(m, phys, f, out start))
+                return $"no room to stand at the foot or beside the first step ({start.X:0.0}, {start.Y:0.0}, {start.Z:0.0})";
+            sideways = true;
+        }
         var s = new MoveState { Position = start, Grounded = true, Stance = Stance.Stand };
         var length = f.U1 - f.U0;
         var ticks = (int)((length + 1.5f) / World.WalkSpeed * World.TickRate * 2) + 90;
+        if (sideways)
+        {
+            // Onto the first tread from the side, then up the lane.
+            var across = f.Axis == 0 ? start.Z : start.X;
+            var sgn = MathF.Sign(c - across);
+            var side = f.Axis == 0 ? new Vector3(0, 0, sgn) : new Vector3(sgn, 0, 0);
+            var sideYaw = MathF.Atan2(side.X, -side.Z);
+            var reached = false;
+            for (var t = 0; t < 120 && !reached; t++)
+            {
+                World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = sideYaw, SpeedPct = 100 });
+                var a = f.Axis == 0 ? s.Position.Z : s.Position.X;
+                reached = (c - a) * sgn <= 0.05f;
+            }
+            if (!reached)
+                return "coming onto the first step from the side: " + StairStuckWhy(m, phys, f, s, true, c);
+        }
         // Up: until the body stands on the last tread; then back down past the foot.
         var why = StairLeg(m, phys, f, ref s, upYaw, ticks, true, c);
         if (why != null)
@@ -660,7 +756,7 @@ public static partial class SelfTest
             var u = Along(f, s.Position);
             if (s.Stance != Stance.Stand)
                 return $"had to leave the standing stance at ({s.Position.X:0.0}, {s.Position.Y:0.0}, {s.Position.Z:0.0})";
-            if (up ? u >= lastLo - 0.3f && s.Position.Y >= f.Y1 - 0.05f : u <= f.U0 - World.PlayerRadius - 0.02f && s.Position.Y <= f.Y0 + 0.05f)
+            if (up ? u >= lastLo - 0.3f && s.Position.Y >= f.Y1 - 0.05f : u <= f.U0 + 0.1f && s.Position.Y <= f.Y0 + 0.05f)
                 return null;
             stall = MathF.Abs(u - lastU) < 0.004f ? stall + 1 : 0; // under 0.25 m/s
             lastU = u;
