@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "lounge",
+  "description": "Dorm common room: vinyl sofas, a ping pong table, a TV, a vending machine and a notice board.",
+  "items": [
+    {"props": ["Student Dorm Ping Pong Table"], "place": "centre"},
+    {"props": ["Student Dorm Lounge Sofa"], "place": "wall", "count": [1, 2]},
+    {"props": ["Flickering TV", "TV Stand"], "place": "wall"},
+    {"props": ["Glowing Vending Machine"], "place": "wall"},
+    {"props": ["Student Dorm Notice Board"], "place": "wall"},
+    {"props": ["Arcade Cabinet", "Armchair"], "place": "corner"},
+    {"props": ["Soda Cans", "Litter", "Backpack"], "place": "floor", "count": [1, 2]}
+  ]
+}

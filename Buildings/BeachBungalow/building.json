@@ -1,0 +1,77 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Beach Bungalow",
+  "theme": "A weathered beach bungalow: pale-blue clapboard, white trim, a big front deck with tiki torches; sandy wood floors, rattan furniture, surfboards, shells and ceiling fans",
+  "category": "residential",
+  "description": "A one-storey beach house: an open living room and kitchenette onto a wide deck, a bedroom, a bathroom and a bunk room for the surf kids, with an outdoor shower, a hammock and a beach umbrella.",
+  "author": "Call of Slop",
+  "seed": 105,
+  "wallThickness": 0.2,
+  "storeyHeight": 3.0,
+  "exterior": {"color": "$wall", "material": "wood"},
+  "interior": {"color": "$interior", "material": "wood"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "sea blue": {"wall": "#8ab8c8", "interior": "#f2efe6", "floor": "#c8b090", "ceiling": "#f8f6f0", "trim": "#f8f8f4", "door": "#e8b830", "roof": "#c8b890"},
+    "sea foam": {"wall": "#a8d8c0", "interior": "#f2efe6", "floor": "#c0a888", "ceiling": "#f8f6f0", "trim": "#f8f8f4", "door": "#e8603a", "roof": "#b8a880"},
+    "coral": {"wall": "#e8a090", "interior": "#f6f0e6", "floor": "#c8b090", "ceiling": "#f8f6f0", "trim": "#f8f8f4", "door": "#2a8ab0", "roof": "#c8b890"}
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.3, "width": 1.2, "sill": 0.9, "head": 2.3},
+      "rooms": [
+        {"id": "living", "type": "living", "rect": [-5, 0, 2, 4], "openTo": ["kitchen"], "floor": {"color": "$floor", "material": "wood"}},
+        {
+          "id": "kitchen",
+          "type": "kitchen",
+          "rect": [2, 0, 5, 4],
+          "floor": {"color": "#e8e0c8", "material": "tiles"},
+          "autoWindows": {"spacing": 2.0, "width": 1.0, "sill": 1.2, "head": 2.3}
+        },
+        {"id": "bedroom", "type": "bedroom", "rect": [-5, -4, -1, 0]},
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [-1, -4, 1.5, 0],
+          "floor": {"color": "#a8d8d8", "material": "tiles"},
+          "wall": "#e0f0f0",
+          "autoWindows": {"spacing": 2.0, "width": 0.7, "sill": 1.4, "head": 2.1}
+        },
+        {"id": "bunks", "type": "bunkroom", "rect": [1.5, -4, 5, 0]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-1.5, 4], "width": 1.6, "front": true, "material": "glass", "color": "$trim"},
+        {"type": "door", "at": [-3.0, 0], "width": 0.9},
+        {"type": "door", "at": [0.25, 0], "width": 0.9},
+        {"type": "door", "at": [3.8, 0], "width": 0.9},
+        {"type": "door", "at": [5, -2.0], "width": 0.9, "color": "$door"}
+      ]
+    }
+  ],
+  "roof": {"type": "hip", "pitch": 24, "overhang": 0.7, "color": {"color": "$roof", "material": "wood"}},
+  "extras": [
+    {"type": "porch", "rect": [-5.6, 4.1, 5.6, 7.4], "height": 2.6, "roof": true, "posts": true, "color": {"color": "#b8a080", "material": "wood"}},
+    {"type": "block", "min": [-5.6, 0.0, 7.4], "max": [5.6, 0.15, 8.2], "color": {"color": "#e8d8a8", "material": "dirt"}},
+    {"type": "prop", "name": "Hammock", "at": [-3.2, 6.5], "yaw": 0},
+    {"type": "prop", "name": "Beach Bungalow Tiki Torch", "at": [-5.4, 7.2]},
+    {"type": "prop", "name": "Beach Bungalow Tiki Torch", "at": [5.4, 7.2]},
+    {"type": "prop", "name": "Beach Bungalow Tiki Torch", "at": [-1.0, 8.6]},
+    {"type": "prop", "name": "Beach Bungalow Tiki Torch", "at": [1.8, 8.6]},
+    {"type": "prop", "name": "Sun Lounger", "at": [2.4, 6.2], "yaw": 180},
+    {"type": "prop", "name": "Sun Lounger", "at": [3.6, 6.2], "yaw": 180},
+    {"type": "prop", "name": "Beach Bungalow Beach Umbrella", "at": [4.2, 10.0]},
+    {"type": "prop", "name": "Beach Bungalow Outdoor Shower", "at": [6.2, -1.0], "yaw": 270},
+    {"type": "prop", "name": "Wind Chimes", "at": [0.0, 6.9]},
+    {"type": "prop", "name": "Kick Scooter", "at": [-6.0, 2.0], "yaw": 80},
+    {"type": "prop", "name": "Giant Rubber Duck", "at": [-4.5, 10.5], "yaw": 30},
+    {"type": "prop", "name": "Paddling Pool", "at": [6.6, 3.0], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "living room", "at": [-2.0, 2.0]},
+    {"type": "spawn", "name": "bunk room", "at": [3.2, -2.0]},
+    {"type": "point", "name": "deck", "at": [0.0, 5.8]}
+  ]
+}

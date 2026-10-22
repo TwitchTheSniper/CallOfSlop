@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Victorian Townhouse",
+  "theme": "1890s Victorian townhouse: red brick, cream stone dressings, a black door, a steep slate roof; wallpaper, mahogany, leather, velvet and brass gasoliers",
+  "category": "residential",
+  "description": "A tall, narrow three-storey townhouse: hall and stairs, parlour, dining room and kitchen; a library with the bathroom off it and the master bedroom beyond, and a nursery; a front bedroom, the maid's room and an attic box room at the top.",
+  "author": "Call of Slop",
+  "seed": 103,
+  "wallThickness": 0.3,
+  "storeyHeight": 3.2,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door",
+  "palettes": {
+    "red brick": {
+      "wall": "#8a3a2c",
+      "interior": "#d8c8a4",
+      "paper": "#7a3a3a",
+      "floor": "#5a3420",
+      "ceiling": "#efe8d6",
+      "trim": "#e8dcc0",
+      "door": "#141414",
+      "roof": "#3a3e46"
+    },
+    "london stock": {
+      "wall": "#b89a68",
+      "interior": "#d4ccb0",
+      "paper": "#2f4a3a",
+      "floor": "#4a2c1c",
+      "ceiling": "#efe8d6",
+      "trim": "#f2ede0",
+      "door": "#1f3a6a",
+      "roof": "#3a3e46"
+    },
+    "painted lady": {
+      "wall": "#9a7ab0",
+      "interior": "#e8dcc8",
+      "paper": "#a86a7a",
+      "floor": "#5a3420",
+      "ceiling": "#f4ece0",
+      "trim": "#f0d870",
+      "door": "#2f6a5a",
+      "roof": "#4a3a46"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.2, "width": 1.0, "sill": 0.8, "head": 2.6},
+      "rooms": [
+        {"id": "hall", "type": "hall", "rect": [0.5, -3, 3.5, 6.5], "floor": {"color": "#c8c0b0", "material": "tiles"}},
+        {"id": "parlour", "type": "living", "rect": [-3.5, 1.5, 0.5, 6.5], "wall": "$paper"},
+        {"id": "dining", "type": "dining", "rect": [-3.5, -3, 0.5, 1.5], "wall": "$paper"},
+        {"id": "kitchen", "type": "kitchen", "rect": [-3.5, -6.5, 3.5, -3], "floor": {"color": "#a89a88", "material": "tiles"}, "wall": "#e8e4d8"}
+      ],
+      "openings": [
+        {"type": "door", "at": [1.5, 6.5], "width": 1.0, "front": true, "color": "$door"},
+        {"type": "door", "at": [0.5, 4.5], "width": 0.9},
+        {"type": "door", "at": [0.5, -0.5], "width": 0.9},
+        {"type": "door", "at": [1.5, -3], "width": 0.9},
+        {"type": "door", "at": [-1.5, -3], "width": 0.9},
+        {"type": "door", "at": [2.5, -6.5], "width": 0.9, "color": "$door"},
+        {"type": "window", "at": [-1.5, 6.5], "width": 1.8, "sill": 0.7, "head": 2.7}
+      ]
+    },
+    {
+      "autoWindows": {"spacing": 2.2, "width": 1.0, "sill": 0.8, "head": 2.6},
+      "rooms": [
+        {"id": "landing", "type": "corridor", "rect": [0.5, -3, 3.5, 6.5]},
+        {"id": "master", "type": "bedroom", "rect": [-3.5, 1.5, 0.5, 6.5], "wall": "$paper"},
+        {"id": "library", "type": "library", "rect": [-3.5, -3, 0.5, 1.5], "wall": "$paper"},
+        {
+          "id": "bath",
+          "type": "bathroom",
+          "rect": [-3.5, -6.5, 0.5, -3],
+          "floor": {"color": "#e8e8e0", "material": "tiles"},
+          "wall": "#d8e8e0",
+          "autoWindows": {"spacing": 2.0, "width": 0.8, "sill": 1.4, "head": 2.5}
+        },
+        {"id": "nursery", "type": "nursery", "rect": [0.5, -6.5, 3.5, -3]}
+      ],
+      "openings": [
+        {"type": "door", "at": [-2.5, 1.5], "width": 0.9},
+        {"type": "door", "at": [0.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [-0.4, -3], "width": 0.9},
+        {"type": "door", "at": [2.0, -3], "width": 0.9}
+      ]
+    },
+    {
+      "height": 3.0,
+      "autoWindows": {"spacing": 2.2, "width": 0.9, "sill": 0.8, "head": 2.3},
+      "rooms": [
+        {"id": "landing", "type": "corridor", "rect": [0.5, -3, 3.5, 6.5]},
+        {"id": "front", "type": "bedroom", "rect": [-3.5, 1.5, 0.5, 6.5]},
+        {"id": "maid", "type": "servant", "rect": [-3.5, -3, 0.5, 1.5]},
+        {"id": "attic", "type": "attic", "rect": [-3.5, -6.5, 3.5, -3], "floor": {"color": "#7a6a52", "material": "wood"}}
+      ],
+      "openings": [
+        {"type": "door", "at": [0.5, 5.0], "width": 0.9},
+        {"type": "door", "at": [0.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [2.0, -3], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [2.3, 0.5, 3.3, 3.7], "dir": "-z", "color": {"color": "$floor", "material": "wood"}},
+    {"floor": 1, "rect": [0.7, -0.2, 1.7, 3.0], "dir": "+z", "color": {"color": "$floor", "material": "wood"}}
+  ],
+  "roof": {"type": "gable", "ridge": "z", "pitch": 48, "overhang": 0.3, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "porch", "rect": [0.6, 6.65, 2.4, 7.7], "height": 2.7, "posts": true, "color": "$trim"},
+    {"type": "block", "min": [-3.65, 0.1, 6.65], "max": [3.65, 0.4, 6.8], "color": "$trim"},
+    {"type": "block", "min": [-3.65, 3.25, 6.65], "max": [3.65, 3.45, 6.8], "color": "$trim"},
+    {"type": "block", "min": [-3.65, 6.45, 6.65], "max": [3.65, 6.65, 6.8], "color": "$trim"},
+    {"type": "block", "min": [-3.9, 9.0, -1.0], "max": [-3.1, 12.6, 0.4], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [3.1, 9.0, -1.0], "max": [3.9, 12.6, 0.4], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "prop", "name": "Wheelie Bin", "at": [-2.5, -7.4], "yaw": 0},
+    {"type": "prop", "name": "Post Box", "at": [-2.8, 8.4], "yaw": 0},
+    {"type": "prop", "name": "Street Lamp", "at": [4.6, 8.2], "yaw": 180},
+    {"type": "prop", "name": "Flower Pot", "at": [3.0, 7.1], "yaw": 0},
+    {"type": "prop", "name": "Flower Pot", "at": [0.0, 7.1], "yaw": 0}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "kitchen", "at": [0.0, -5.0]},
+    {"type": "spawn", "name": "master", "floor": 1, "at": [-1.5, 4.0]},
+    {"type": "spawn", "name": "attic", "floor": 2, "at": [-1.0, -4.8]}
+  ]
+}

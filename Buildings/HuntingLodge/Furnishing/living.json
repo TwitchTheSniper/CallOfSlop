@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "living",
+  "description": "Hunting lodge great room: the stone hearth, leather couches, a bear rug, mounted heads, an antler chandelier.",
+  "items": [
+    {"id": "fire", "props": ["Hunting Lodge Stone Hearth"], "place": "wall", "prefer": "far"},
+    {"props": ["Hunting Lodge Bear Rug"], "place": "centre"},
+    {"id": "sofa", "props": ["Hunting Lodge Leather Couch"], "place": "wall", "count": [1, 2]},
+    {"id": "t", "props": ["Coffee Table"], "place": "front", "of": "sofa", "distance": 0.4},
+    {"props": ["Book Pile", "Newspaper"], "place": "on", "of": "t", "y": 0.45},
+    {"props": ["Rocking Chair", "Armchair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Hunting Lodge Deer Mount"], "place": "wall", "count": [1, 2]},
+    {"props": ["Hunting Lodge Antler Chandelier"], "place": "ceiling"},
+    {"props": ["Dog", "Log", "Duck Decoy"], "place": "floor", "count": [1, 2]}
+  ]
+}

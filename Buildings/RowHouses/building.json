@@ -1,0 +1,188 @@
+{
+  "format": "call-of-slop-building/1",
+  "name": "Row Houses",
+  "theme": "A terrace of three Victorian two-up two-downs: sooty red brick, slate roof, chimney stacks, three coloured front doors; coal fires, black ranges, dressers",
+  "category": "residential",
+  "description": "Three terraced houses in a row (Nos. 1, 3 and 5), each with a front room, a hall and stairs and a back kitchen, two bedrooms and a bathroom upstairs; a covered back passage behind joins their kitchens.",
+  "author": "Call of Slop",
+  "seed": 107,
+  "wallThickness": 0.25,
+  "storeyHeight": 2.8,
+  "exterior": {"color": "$wall", "material": "brick"},
+  "interior": {"color": "$interior", "material": "none"},
+  "floor": {"color": "$floor", "material": "wood"},
+  "ceiling": "$ceiling",
+  "trim": "$trim",
+  "door": "$door1",
+  "palettes": {
+    "sooty red": {
+      "wall": "#7a3a2e",
+      "interior": "#e0d4b8",
+      "floor": "#5a3e28",
+      "ceiling": "#efe8d8",
+      "trim": "#e8e0cc",
+      "roof": "#3a3e44",
+      "door1": "#2f5a3a",
+      "door2": "#8a1e1e",
+      "door3": "#1f3a6a",
+      "paper1": "#c8b888",
+      "paper2": "#a8b89a",
+      "paper3": "#c8a8a0"
+    },
+    "yellow stone": {
+      "wall": "#b8a070",
+      "interior": "#e4dcc4",
+      "floor": "#5a3e28",
+      "ceiling": "#efe8d8",
+      "trim": "#3a3a36",
+      "roof": "#3a3e44",
+      "door1": "#1f1f1f",
+      "door2": "#2f6a8a",
+      "door3": "#c8a020",
+      "paper1": "#b8c8b0",
+      "paper2": "#d0c0a0",
+      "paper3": "#b0b8c8"
+    }
+  },
+  "floors": [
+    {
+      "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "no1_front", "type": "living", "rect": [-7.5, 1, -2.5, 4.5], "wall": "$paper1"},
+        {"id": "no1_hall", "type": "hall", "rect": [-7.5, -1.5, -2.5, 1], "windows": false},
+        {
+          "id": "no1_kitchen",
+          "type": "kitchen",
+          "rect": [-7.5, -4.5, -2.5, -1.5],
+          "floor": {"color": "#a89a88", "material": "tiles"},
+          "wall": "#e8e0c8"
+        },
+        {"id": "no3_front", "type": "living", "rect": [-2.5, 1, 2.5, 4.5], "wall": "$paper2"},
+        {"id": "no3_hall", "type": "hall", "rect": [-2.5, -1.5, 2.5, 1], "windows": false},
+        {
+          "id": "no3_kitchen",
+          "type": "kitchen",
+          "rect": [-2.5, -4.5, 2.5, -1.5],
+          "floor": {"color": "#a89a88", "material": "tiles"},
+          "wall": "#e8e0c8"
+        },
+        {"id": "no5_front", "type": "living", "rect": [2.5, 1, 7.5, 4.5], "wall": "$paper3"},
+        {"id": "no5_hall", "type": "hall", "rect": [2.5, -1.5, 7.5, 1], "windows": false},
+        {
+          "id": "no5_kitchen",
+          "type": "kitchen",
+          "rect": [2.5, -4.5, 7.5, -1.5],
+          "floor": {"color": "#a89a88", "material": "tiles"},
+          "wall": "#e8e0c8"
+        },
+        {
+          "id": "ginnel",
+          "type": "storage",
+          "rect": [-7.5, -6.9, 7.5, -4.5],
+          "rules": "ginnel",
+          "windows": false,
+          "props": [
+            {"name": "Wheelie Bin", "wall": "N", "along": -2.0},
+            {"name": "Wheelie Bin Grey", "wall": "N", "along": 2.0},
+            {"name": "Row Houses Tin Bath", "wall": "N", "along": -5.2},
+            {"name": "Bicycle", "wall": "N", "along": 5.0}
+          ],
+          "floor": {"color": "#6a6660", "material": "concrete"},
+          "wall": "#8a4a36"
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-3.4000000000000004, 4.5], "width": 0.9, "front": false, "color": "$door1"},
+        {"type": "door", "at": [-6.7, 1], "width": 0.9},
+        {"type": "door", "at": [-3.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [-3.5, -4.5], "width": 0.9, "color": "$door1"},
+        {"type": "door", "at": [1.5999999999999996, 4.5], "width": 0.9, "front": true, "color": "$door2"},
+        {"type": "door", "at": [-1.7, 1], "width": 0.9},
+        {"type": "door", "at": [1.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [1.5, -4.5], "width": 0.9, "color": "$door2"},
+        {"type": "door", "at": [6.6, 4.5], "width": 0.9, "front": false, "color": "$door3"},
+        {"type": "door", "at": [3.3, 1], "width": 0.9},
+        {"type": "door", "at": [6.5, -1.5], "width": 0.9},
+        {"type": "door", "at": [6.5, -4.5], "width": 0.9, "color": "$door3"},
+        {"type": "door", "at": [-7.5, -5.7], "width": 0.9, "color": "#3a3a3a"},
+        {"type": "door", "at": [7.5, -5.7], "width": 0.9, "color": "#3a3a3a"}
+      ]
+    },
+    {
+      "height": 2.7,
+      "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2},
+      "rooms": [
+        {"id": "no1_landing", "type": "corridor", "rect": [-7.5, -1.5, -2.5, 1], "windows": false},
+        {"id": "no1_front", "type": "bedroom", "rect": [-7.5, 1, -2.5, 4.5], "wall": "$paper1"},
+        {"id": "no1_back", "type": "kidsroom", "rect": [-7.5, -4.5, -4.5, -1.5]},
+        {
+          "id": "no1_bath",
+          "type": "bathroom",
+          "rect": [-4.5, -4.5, -2.5, -1.5],
+          "floor": {"color": "#d8d8d0", "material": "tiles"},
+          "wall": "#d8e8e0",
+          "autoWindows": {"spacing": 1.6, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "no3_landing", "type": "corridor", "rect": [-2.5, -1.5, 2.5, 1], "windows": false},
+        {"id": "no3_front", "type": "bedroom", "rect": [-2.5, 1, 2.5, 4.5], "wall": "$paper2"},
+        {"id": "no3_back", "type": "kidsroom", "rect": [-2.5, -4.5, 0.5, -1.5]},
+        {
+          "id": "no3_bath",
+          "type": "bathroom",
+          "rect": [0.5, -4.5, 2.5, -1.5],
+          "floor": {"color": "#d8d8d0", "material": "tiles"},
+          "wall": "#d8e8e0",
+          "autoWindows": {"spacing": 1.6, "width": 0.6, "sill": 1.4, "head": 2.0}
+        },
+        {"id": "no5_landing", "type": "corridor", "rect": [2.5, -1.5, 7.5, 1], "windows": false},
+        {"id": "no5_front", "type": "bedroom", "rect": [2.5, 1, 7.5, 4.5], "wall": "$paper3"},
+        {"id": "no5_back", "type": "kidsroom", "rect": [2.5, -4.5, 5.5, -1.5]},
+        {
+          "id": "no5_bath",
+          "type": "bathroom",
+          "rect": [5.5, -4.5, 7.5, -1.5],
+          "floor": {"color": "#d8d8d0", "material": "tiles"},
+          "wall": "#d8e8e0",
+          "autoWindows": {"spacing": 1.6, "width": 0.6, "sill": 1.4, "head": 2.0}
+        }
+      ],
+      "openings": [
+        {"type": "door", "at": [-3.1500000000000004, 1], "width": 0.9},
+        {"type": "door", "at": [-6.6, -1.5], "width": 0.9},
+        {"type": "door", "at": [-3.1500000000000004, -1.5], "width": 0.9},
+        {"type": "door", "at": [1.8499999999999996, 1], "width": 0.9},
+        {"type": "door", "at": [-1.6, -1.5], "width": 0.9},
+        {"type": "door", "at": [1.8499999999999996, -1.5], "width": 0.9},
+        {"type": "door", "at": [6.85, 1], "width": 0.9},
+        {"type": "door", "at": [3.4, -1.5], "width": 0.9},
+        {"type": "door", "at": [6.85, -1.5], "width": 0.9}
+      ]
+    }
+  ],
+  "stairs": [
+    {"floor": 0, "rect": [-6.05, -0.05, -3.65, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [-1.05, -0.05, 1.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [3.95, -0.05, 6.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}}
+  ],
+  "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.3, "color": {"color": "$roof", "material": "tiles"}},
+  "extras": [
+    {"type": "block", "min": [-2.9, 7.0, -0.5], "max": [-2.1, 9.8, 0.5], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [2.1, 7.0, -0.5], "max": [2.9, 9.8, 0.5], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [-7.9, 6.6, -0.5], "max": [-7.1, 9.0, 0.5], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [7.1, 6.6, -0.5], "max": [7.9, 9.0, 0.5], "color": {"color": "$wall", "material": "brick"}},
+    {"type": "block", "min": [-7.6, 0.0, 4.63], "max": [7.6, 0.18, 5.4], "color": {"color": "#9a9890", "material": "concrete"}},
+    {"type": "prop", "name": "Laundry Line", "at": [0.0, -8.6], "yaw": 0},
+    {"type": "prop", "name": "Post Box", "at": [8.6, 5.8], "yaw": 0},
+    {"type": "prop", "name": "Street Lamp", "at": [-3.0, 6.6], "yaw": 180},
+    {"type": "prop", "name": "Row Houses Coal Scuttle", "at": [-0.6, 5.0]},
+    {"type": "prop", "name": "Flower Pot", "at": [1.6, 5.0]},
+    {"type": "prop", "name": "Bicycle", "at": [-6.4, 5.4], "yaw": 90},
+    {"type": "prop", "name": "TV Antenna", "at": [0.0, 0, 0.8], "yaw": 0, "onRoof": true}
+  ],
+  "anchors": [
+    {"type": "spawn", "name": "No. 1 kitchen", "at": [-5.0, -3.0]},
+    {"type": "spawn", "name": "No. 5 kitchen", "at": [5.0, -3.0]},
+    {"type": "spawn", "name": "No. 3 front bedroom", "floor": 1, "at": [0.0, 2.8]},
+    {"type": "point", "name": "back passage", "at": [0.0, -5.7]}
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Chesterfield",
+  "description": "A deep-buttoned oxblood leather Chesterfield sofa with rolled arms.",
+  "collision": "solid",
+  "collider": [{"size": [2.0, 0.92, 0.87]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 130, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.0, 0.42, 0.85], "offset": [0, 0.27, 0], "color": "#6a1a14"},
+    {"size": [2.0, 0.36, 0.2], "offset": [0, 0.66, -0.33], "color": "#6a1a14"},
+    {"size": [0.24, 0.36, 0.85], "offset": [-0.9, 0.66, 0], "color": "#5e1610"},
+    {"size": [0.24, 0.36, 0.85], "offset": [0.9, 0.66, 0], "color": "#5e1610"},
+    {"size": [0.26, 0.08, 0.87], "offset": [-0.9, 0.88, 0], "color": "#6a1a14"},
+    {"size": [0.26, 0.08, 0.87], "offset": [0.9, 0.88, 0], "color": "#6a1a14"},
+    {"size": [1.56, 0.08, 0.62], "offset": [0, 0.52, 0.08], "color": "#7a2218"},
+    {"size": [0.06, 0.06, 0.06], "offset": [-0.92, 0.03, 0.36], "color": "#2a1a10"},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.92, 0.03, 0.36], "color": "#2a1a10"},
+    {"size": [0.06, 0.06, 0.06], "offset": [-0.92, 0.03, -0.36], "color": "#2a1a10"},
+    {"size": [0.06, 0.06, 0.06], "offset": [0.92, 0.03, -0.36], "color": "#2a1a10"},
+    {"size": [0.03, 0.03, 0.01], "offset": [-0.6, 0.715, -0.225], "color": "#3a0a08"},
+    {"size": [0.03, 0.03, 0.01], "offset": [-0.3, 0.715, -0.225], "color": "#3a0a08"},
+    {"size": [0.03, 0.03, 0.01], "offset": [0.0, 0.715, -0.225], "color": "#3a0a08"},
+    {"size": [0.03, 0.03, 0.01], "offset": [0.3, 0.715, -0.225], "color": "#3a0a08"},
+    {"size": [0.03, 0.03, 0.01], "offset": [0.6, 0.715, -0.225], "color": "#3a0a08"}
+  ]
+}

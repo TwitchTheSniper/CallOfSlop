@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Victorian Townhouse Steamer Trunk",
+  "description": "A leather-strapped steamer trunk with brass corners, stencilled with old shipping labels.",
+  "collision": "solid",
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 70, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [0.95, 0.55, 0.55], "offset": [0, 0.275, 0], "color": "#5a3a22", "material": "wood"},
+    {"size": [0.97, 0.04, 0.57], "offset": [0, 0.54, 0], "color": "#3a2414"},
+    {"size": [0.06, 0.56, 0.57], "offset": [-0.3, 0.28, 0], "color": "#2a1a10"},
+    {"size": [0.06, 0.56, 0.57], "offset": [0.3, 0.28, 0], "color": "#2a1a10"},
+    {"size": [0.08, 0.08, 0.02], "offset": [0, 0.46, 0.28], "color": "#c8a040"},
+    {"size": [0.2, 0.14, 0.01], "offset": [-0.15, 0.29, 0.28], "color": "#e8d8a0"},
+    {"size": [0.16, 0.12, 0.01], "offset": [0.15, 0.36, 0.28], "color": "#a0c8d8"}
+  ]
+}

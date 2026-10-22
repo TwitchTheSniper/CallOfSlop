@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "loft",
+  "description": "Hunting lodge loft lounge: rocking chairs, a card table, bookshelves and a view down the stairs.",
+  "items": [
+    {"id": "t", "props": ["Table"], "place": "centre"},
+    {"props": ["Wooden Chair"], "place": "around", "of": "t", "count": [3, 4]},
+    {"props": ["Book Pile", "Bottles"], "place": "on", "of": "t", "y": 0.75},
+    {"props": ["Bookshelf"], "place": "wall"},
+    {"props": ["Rocking Chair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Hunting Lodge Deer Mount"], "place": "wall"}
+  ]
+}

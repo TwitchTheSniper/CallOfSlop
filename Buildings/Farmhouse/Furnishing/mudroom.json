@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "mudroom",
+  "description": "Farmhouse mudroom: a boot bench, the washer, buckets, brooms and garden tools by the back door.",
+  "items": [
+    {"props": ["Farmhouse Boot Bench"], "place": "wall", "prefer": "near"},
+    {"props": ["Washing Machine", "Running Washer"], "place": "wall"},
+    {"props": ["Tumble Dryer"], "place": "wall", "chance": 0.5},
+    {"props": ["Bucket", "Watering Can", "Mop and Bucket", "Broom"], "place": "floor", "count": [2, 3]},
+    {"props": ["Coat Stand"], "place": "corner"},
+    {"props": ["Garden Tools", "Laundry Basket"], "place": "floor", "chance": 0.7}
+  ]
+}

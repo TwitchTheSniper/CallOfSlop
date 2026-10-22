@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "nursery",
+  "description": "Victorian nursery: a cot, a rocking chair, a toy chest and a rocking horse's worth of toys.",
+  "items": [
+    {"props": ["Baby Cot"], "place": "wall", "prefer": "far"},
+    {"props": ["Single Bed"], "place": "wall"},
+    {"props": ["Rocking Chair"], "place": "corner"},
+    {"props": ["Victorian Townhouse Steamer Trunk"], "place": "wall"},
+    {"props": ["Striped Rug"], "place": "centre"},
+    {"props": ["Teddy Bear", "Toy Blocks", "Spinning Globe"], "place": "floor", "count": [2, 3]}
+  ]
+}

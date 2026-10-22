@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Modern villa bedroom: a low oak platform bed, floating bedside tables, a reading chair.",
+  "items": [
+    {"id": "bed", "props": ["Modern Villa Platform Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bs", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [2, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bs", "y": 0.6},
+    {"props": ["Wardrobe"], "place": "wall", "count": [1, 2]},
+    {"props": ["Armchair"], "place": "corner"},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Suitcase", "Large Flower Pot"], "place": "floor"}
+  ]
+}

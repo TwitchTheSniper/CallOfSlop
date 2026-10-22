@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "bedroom",
+  "description": "Victorian bedroom: a four-poster bed, a wardrobe, a dressing table and a washstand.",
+  "items": [
+    {"id": "bed", "props": ["Victorian Townhouse Four Poster Bed"], "place": "wall", "prefer": "far"},
+    {"id": "bedside", "props": ["Bedside Table"], "place": "beside", "of": "bed", "count": [1, 2]},
+    {"props": ["Table Lamp"], "place": "on", "of": "bedside", "y": 0.6, "chance": 0.8},
+    {"props": ["Wardrobe"], "place": "wall"},
+    {"id": "dresser", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Book Pile", "Table Lamp"], "place": "on", "of": "dresser"},
+    {"props": ["Standing Mirror", "Victorian Townhouse Wingback Chair"], "place": "corner"},
+    {"props": ["Rug"], "place": "centre", "chance": 0.7},
+    {"props": ["Victorian Townhouse Steamer Trunk"], "place": "floor", "chance": 0.5}
+  ]
+}

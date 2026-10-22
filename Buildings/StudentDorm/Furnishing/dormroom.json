@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dormroom",
+  "description": "A shared dorm room: two single beds, two desks with chairs, a mini fridge, posters and laundry.",
+  "items": [
+    {"id": "bed", "props": ["Single Bed", "Bunk Bed"], "place": "wall", "count": [2, 2], "prefer": "far"},
+    {"id": "desk", "props": ["Student Dorm Study Desk"], "place": "wall", "count": [1, 2]},
+    {"props": ["Office Chair"], "place": "front", "of": "desk", "count": [1, 2], "distance": 0.05},
+    {"props": ["Student Dorm Mini Fridge"], "place": "corner"},
+    {"props": ["Wardrobe"], "place": "wall", "chance": 0.7},
+    {"props": ["Student Dorm Poster"], "place": "wall", "count": [1, 2]},
+    {"props": ["Striped Rug"], "place": "centre", "chance": 0.5},
+    {"props": ["Laundry Basket", "Backpack", "Duffel Bag", "Acoustic Guitar", "Soda Cans", "Sports Balls"], "place": "floor", "count": [2, 3]}
+  ]
+}

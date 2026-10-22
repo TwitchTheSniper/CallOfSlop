@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "storage",
+  "description": "Hunting lodge attic store: camping gear, crates, spare blankets and snowshoes.",
+  "items": [
+    {"props": ["Wooden Crate", "Small Crate", "Cardboard Stack"], "place": "wall", "count": [1, 3]},
+    {"props": ["Duffel Bag", "Backpack", "Cardboard Box", "Log"], "place": "floor", "count": [1, 3]}
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Farmhouse Farm Table",
+  "description": "A long scrubbed-pine farm table on turned legs, big enough for the harvest crew.",
+  "collision": "solid",
+  "collider": [{"size": [2.2, 0.78, 0.95]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 120, "breakBy": "all", "sound": "wood", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [2.2, 0.06, 0.95], "offset": [0, 0.75, 0], "color": "#c8a070", "material": "wood"},
+    {"size": [2.1, 0.1, 0.85], "offset": [0, 0.67, 0], "color": "#9a7044"},
+    {"size": [0.09, 0.62, 0.09], "offset": [-1.0, 0.31, -0.38], "color": "#8a6038"},
+    {"size": [0.09, 0.62, 0.09], "offset": [1.0, 0.31, -0.38], "color": "#8a6038"},
+    {"size": [0.09, 0.62, 0.09], "offset": [-1.0, 0.31, 0.38], "color": "#8a6038"},
+    {"size": [0.09, 0.62, 0.09], "offset": [1.0, 0.31, 0.38], "color": "#8a6038"}
+  ]
+}

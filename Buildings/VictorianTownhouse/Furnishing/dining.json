@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "dining",
+  "description": "Victorian dining room: a long mahogany table under the gasolier, a sideboard, a longcase clock.",
+  "items": [
+    {"id": "table", "props": ["Dining Table"], "place": "centre"},
+    {"props": ["Dining Chair"], "place": "around", "of": "table", "count": [5, 6]},
+    {"props": ["Stacked Plates"], "place": "on", "of": "table", "chance": 0.8},
+    {"id": "side", "props": ["Chest of Drawers"], "place": "wall"},
+    {"props": ["Table Lamp", "Stacked Plates"], "place": "on", "of": "side"},
+    {"props": ["Grandfather Clock"], "place": "corner"},
+    {"props": ["Victorian Townhouse Gasolier"], "place": "ceiling"},
+    {"props": ["Rug"], "place": "centre", "chance": 0.5}
+  ]
+}

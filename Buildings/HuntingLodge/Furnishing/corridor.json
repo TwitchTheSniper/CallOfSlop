@@ -1,0 +1,6 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "corridor",
+  "description": "Hunting lodge upstairs hall: a deer mount, a coat stand hung with blaze-orange vests.",
+  "items": [{"props": ["Hunting Lodge Deer Mount"], "place": "wall"}, {"props": ["Coat Stand"], "place": "corner"}]
+}

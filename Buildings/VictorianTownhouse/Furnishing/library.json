@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-furnishing/1",
+  "type": "library",
+  "description": "Victorian library: walls of bookcases, a writing bureau, wingback chairs by the fire, a globe.",
+  "items": [
+    {"props": ["Victorian Townhouse Library Shelves"], "place": "wall", "count": [2, 4]},
+    {"id": "desk", "props": ["Victorian Townhouse Writing Desk"], "place": "wall"},
+    {"props": ["Dining Chair"], "place": "front", "of": "desk", "distance": 0.05},
+    {"props": ["Fireplace"], "place": "wall", "chance": 0.7},
+    {"props": ["Victorian Townhouse Wingback Chair"], "place": "corner", "count": [1, 2]},
+    {"props": ["Rug"], "place": "centre"},
+    {"props": ["Spinning Globe", "Book Pile", "Metronome"], "place": "floor", "count": [1, 2]},
+    {"props": ["Victorian Townhouse Gasolier"], "place": "ceiling"}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Hunting Lodge Bear Rug",
+  "description": "A black bear skin rug with its head and claws, in front of the fire.",
+  "collision": "cosmetic",
+  "fadeDistance": 40,
+  "breakable": {"health": 60, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.4, 0.03, 1.0], "offset": [0, 0.015, 0], "color": "#1a1410"},
+    {"size": [0.35, 0.03, 0.35], "offset": [-0.75, 0.015, 0.45], "color": "#1a1410"},
+    {"size": [0.35, 0.03, 0.35], "offset": [0.75, 0.015, 0.45], "color": "#1a1410"},
+    {"size": [0.35, 0.03, 0.35], "offset": [-0.75, 0.015, -0.45], "color": "#1a1410"},
+    {"size": [0.35, 0.03, 0.35], "offset": [0.75, 0.015, -0.45], "color": "#1a1410"},
+    {"size": [0.32, 0.16, 0.3], "offset": [0, 0.08, 0.62], "color": "#241a12"},
+    {"size": [0.14, 0.08, 0.14], "offset": [0, 0.04, 0.8], "color": "#3a2a1e"},
+    {"size": [0.04, 0.04, 0.04], "offset": [-0.1, 0.14, 0.72], "color": "#e8dcc0"},
+    {"size": [0.04, 0.04, 0.04], "offset": [0.1, 0.14, 0.72], "color": "#e8dcc0"}
+  ]
+}

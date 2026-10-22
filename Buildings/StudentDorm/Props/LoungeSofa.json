@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Student Dorm Lounge Sofa",
+  "description": "An institutional blue vinyl lounge sofa on a chrome frame, one cushion split.",
+  "collision": "solid",
+  "collider": [{"size": [1.96, 0.87, 0.75]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "breakable": {"health": 110, "breakBy": "all", "sound": "soft", "debris": {"count": 8, "size": [0.04, 0.2]}},
+  "parts": [
+    {"size": [1.9, 0.12, 0.75], "offset": [0, 0.42, 0], "color": "#2a4a8a"},
+    {"size": [1.9, 0.45, 0.12], "offset": [0, 0.645, -0.32], "color": "#2a4a8a"},
+    {"size": [0.06, 0.6, 0.75], "offset": [-0.95, 0.3, 0], "color": "chrome"},
+    {"size": [0.06, 0.6, 0.75], "offset": [0.95, 0.3, 0], "color": "chrome"},
+    {"size": [1.9, 0.04, 0.04], "offset": [0, 0.32, 0.33], "color": "chrome"},
+    {"size": [0.2, 0.02, 0.1], "offset": [0.4, 0.49, 0.1], "color": "#e8e0c0"}
+  ]
+}
