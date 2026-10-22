@@ -873,6 +873,7 @@ public sealed partial class Game : IDisposable
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
+        ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         foreach (var p in Players.Values)
         {
@@ -1158,6 +1159,7 @@ public sealed partial class Game : IDisposable
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
         RecordKill(kill);
+        FrenzyOnKill(attacker, victim, killId, head, now); // per-player kill frenzy (FrenzyServer.cs)
         OnModeKill(attacker, victim, killId, now);
         BotNoteKill(attacker, victim, head, killId, now);
         return true;
