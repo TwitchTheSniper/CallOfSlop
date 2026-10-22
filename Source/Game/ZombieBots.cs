@@ -134,8 +134,8 @@ public sealed partial class Game
         if (aimed && target != null && b.Ammo > 0 && b.ReloadUntil == 0 && now >= b.NextFire && DamageEnabled && !use)
         {
             var dir = World.Forward(yaw, pitch);
-            var aimed = Flat(target.Position - p.Position) > 8f;
-            var spread = def.HipSpreadRad * (aimed ? def.AdsSpreadMult : 1f) * FrenzyBuffs.ConeMult(p, def, aimed ? 1f : 0f); // the frenzy buffs
+            var scoped = Flat(target.Position - p.Position) > 8f;
+            var spread = def.HipSpreadRad * (scoped ? def.AdsSpreadMult : 1f) * FrenzyBuffs.ConeMult(p, def, scoped ? 1f : 0f); // the frenzy buffs
             ServerResolveShot(p, def, p.Eye, dir, spread, ZNext(), ServerTick, now);
             b.Ammo--;
             b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p) + (def.Mode == FireMode.Semi ? b.TriggerDelay : 0);
