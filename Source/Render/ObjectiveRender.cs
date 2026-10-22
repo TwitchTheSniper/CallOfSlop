@@ -3,61 +3,20 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Draws the game-mode objectives in the world: the King of the Hill zone (a glowing ring with a halo of light rising
-/// out of the ground in the holder's colour, orange while contested, plus a light beam so it can be found from
-/// anywhere), and Capture the Flag flags with their base rings and halos and a beam over a flag that's carried or
-/// dropped. Rings and halos follow the ground on terrain maps. Called from Program.Render inside the blended,
-/// no-depth-write pass. A handful of unlit cubes per frame: no measurable cost.
+/// Draws the game-mode objectives in the world. The pieces (rings, halos, beams, a flag) are here; which to draw where is
+/// the mode's call (KingOfTheHillModule: a glowing ring with a halo of light rising out of the ground in the holder's
+/// colour, orange while contested, plus a light beam so it can be found from anywhere; CaptureTheFlagModule: flags with
+/// their base rings and halos and a beam over a flag that's carried or dropped). Rings and halos follow the ground on
+/// terrain maps. Called from Program.Render inside the blended, no-depth-write pass. A handful of unlit cubes per frame:
+/// no measurable cost.
 /// </summary>
 public static class ObjectiveRender
 {
     private const int RingSegments = 28;
     private const int HaloSegments = 24, HaloBands = 5;
-    private const float HillHaloHeight = 2.4f, FlagHaloHeight = 1.6f;
 
-    public static void Draw(Renderer gfx, Game game, double now)
-    {
-        switch (game.Mode)
-        {
-            case GameMode.KingOfTheHill when game.ActiveHill is { } hill:
-            {
-                var color = game.HillContested
-                    ? new Vector3(1f, 0.55f, 0.15f) * (0.75f + 0.25f * MathF.Sin((float)now * 10f))
-                    : GameModes.TeamColor(game.HillOwner);
-                Ring(gfx, hill.Center, hill.Radius, color, 0.85f, 0.12f);
-                Halo(gfx, hill.Center, hill.Radius, HillHaloHeight, color, 0.42f);
-                Beam(gfx, hill.Center, 0.35f, 40f, color, 0.18f);
-                break;
-            }
-            case GameMode.CaptureTheFlag:
-            {
-                for (byte t = 0; t < 2; t++)
-                {
-                    var c = GameModes.TeamColors[t];
-                    var home = game.Objectives.Flags[t];
-                    Ring(gfx, home, GameModes.FlagTouchRadius, c, 0.6f, 0.08f);
-                    Halo(gfx, home, GameModes.FlagTouchRadius, FlagHaloHeight, c, 0.38f);
-                    var f = game.Flags[t];
-                    var at = f.Position;
-                    if (f.Carried && game.Players.TryGetValue(f.Carrier, out var carrier))
-                    {
-                        at = carrier.RenderPosition + new Vector3(0, 0.9f, 0); // on the carrier's back
-                        if (carrier.Id == game.LocalId && carrier.Alive)
-                            continue; // you know you've got it (the HUD says so)
-                    }
-                    Flag(gfx, at, c, now);
-                    if (!f.Home)
-                    {
-                        // Seen through walls: carriers and dropped flags can't hide.
-                        gfx.SetDepthTest(false);
-                        Beam(gfx, at, 0.18f, 30f, c, f.Carried ? 0.35f : 0.22f);
-                        gfx.SetDepthTest(true);
-                    }
-                }
-                break;
-            }
-        }
-    }
+    /// <summary>The active mode draws its objectives (<see cref="GameModeModule.DrawObjectives"/>) with the helpers below.</summary>
+    public static void Draw(Renderer gfx, Game game, double now) => game.Module.DrawObjectives(gfx, game, now);
 
     /// <summary>
     /// The height a ring or halo segment stands on at (x, z): the objective's own height, or on a terrain map the ground
@@ -67,7 +26,7 @@ public static class ObjectiveRender
         World.Map.HasTerrain ? World.Map.GroundHeight(x, z) : center.Y;
 
     /// <summary>A ring of thin glowing boxes lying on the ground (following it on terrain).</summary>
-    private static void Ring(Renderer gfx, Vector3 center, float radius, Vector3 color, float alpha, float height, float width = 0.14f)
+    internal static void Ring(Renderer gfx, Vector3 center, float radius, Vector3 color, float alpha, float height, float width = 0.14f)
     {
         var seg = MathF.Tau * radius / RingSegments * 1.08f;
         for (var i = 0; i < RingSegments; i++)
@@ -87,7 +46,7 @@ public static class ObjectiveRender
     /// small mismatches between the zone and the terrain never leave a gap. Stacked bands give the fade with the
     /// existing unlit cube (24 x 5 small draws per objective).
     /// </summary>
-    private static void Halo(Renderer gfx, Vector3 center, float radius, float height, Vector3 color, float alpha)
+    internal static void Halo(Renderer gfx, Vector3 center, float radius, float height, Vector3 color, float alpha)
     {
         var seg = MathF.Tau * radius / HaloSegments * 1.04f;
         for (var i = 0; i < HaloSegments; i++)
@@ -109,11 +68,11 @@ public static class ObjectiveRender
         }
     }
 
-    private static void Beam(Renderer gfx, Vector3 foot, float width, float height, Vector3 color, float alpha) =>
+    internal static void Beam(Renderer gfx, Vector3 foot, float width, float height, Vector3 color, float alpha) =>
         gfx.Draw(Matrix4x4.CreateScale(width, height, width) * Matrix4x4.CreateTranslation(foot + new Vector3(0, height / 2, 0)), color, alpha, mode: 2);
 
     /// <summary>A pole and a waving cloth.</summary>
-    private static void Flag(Renderer gfx, Vector3 foot, Vector3 color, double now)
+    internal static void Flag(Renderer gfx, Vector3 foot, Vector3 color, double now)
     {
         gfx.Draw(Matrix4x4.CreateScale(0.06f, 2.2f, 0.06f) * Matrix4x4.CreateTranslation(foot + new Vector3(0, 1.1f, 0)), new Vector3(0.75f, 0.75f, 0.78f), 1f, mode: 2);
         var wave = MathF.Sin((float)now * 3f) * 0.15f;

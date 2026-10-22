@@ -21,7 +21,7 @@ public sealed partial class Game
     private BotDifficulty _botSkill = BotDifficulty.Normal;
 
     /// <summary>The current map's player limit (people + bots).</summary>
-    public int MapMaxPlayers => Math.Min(Mode == GameMode.Zombies ? ZombiesMaxPlayers : World.Map.MaxPlayers, MaxPlayers); // Zombies: co-op for up to 4
+    public int MapMaxPlayers => Math.Min(Module.MaxPlayers(World.Map), MaxPlayers); // (Zombies: co-op for up to 4)
 
     /// <summary>People in the game (not bots).</summary>
     public int HumanCount => Players.Values.Count(p => p.Bot == null);
@@ -47,6 +47,7 @@ public sealed partial class Game
             if (bot == null)
                 break;
             Players.Remove(bot.Id);
+            OnModePlayerLeave(bot);
             removed++;
         }
         if (removed > 0)

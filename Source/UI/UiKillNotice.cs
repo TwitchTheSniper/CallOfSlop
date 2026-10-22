@@ -17,7 +17,7 @@ public sealed partial class Ui
     {
         var list = game.KillNotices;
         var alpha = list.Alpha(now);
-        if (alpha <= 0 || MenuOpen || game.Mode == GameMode.Zombies)
+        if (alpha <= 0 || MenuOpen || !game.Module.ShowsKillNotices)
             return;
         const float nameSize = 22, tagSize = 16;
 

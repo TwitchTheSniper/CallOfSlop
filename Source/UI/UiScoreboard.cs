@@ -16,8 +16,7 @@ public sealed partial class Ui
     /// <summary>Splits players into the scoreboard's two columns (team modes: by team; otherwise the ranking in halves).</summary>
     public static (List<Player> Left, List<Player> Right) ScoreColumns(Game game)
     {
-        var gun = game.Mode == GameMode.GunGame;
-        var ranked = game.Players.Values.OrderByDescending(p => gun ? p.GunLevel : p.Kills).ThenByDescending(p => p.Kills).ThenBy(p => p.Deaths).ThenBy(p => p.Id).ToList();
+        var ranked = game.Players.Values.OrderByDescending(game.Module.RankScore).ThenByDescending(p => p.Kills).ThenBy(p => p.Deaths).ThenBy(p => p.Id).ToList();
         if (game.IsTeamMode)
             return (ranked.Where(p => p.Team == 0).ToList(), ranked.Where(p => p.Team != 0).ToList());
         var half = (ranked.Count + 1) / 2;
@@ -32,11 +31,12 @@ public sealed partial class Ui
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
         {
             var bots = game.Players.Values.Count(p => p.Bot != null);
-            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {GameModes.Name(game.Mode).ToUpperInvariant()}");
+            var mode = game.Module;
+            ImGuiSafe.TextColored(Orange, $"SCOREBOARD - {mode.Name.ToUpperInvariant()}");
             ImGui.SameLine();
             ImGuiSafe.TextColored(Dim, $"   {game.Players.Count} / {World.Map.MaxPlayers} players on {World.Map.Name}" + (game.IsServer && bots > 0 ? $" ({bots} bots)" : ""));
             var (left, right) = ScoreColumns(game);
-            var gun = game.Mode == GameMode.GunGame;
+            var (col1, col2) = mode.ScoreboardColumnsShort;
             if (ImGui.BeginTable("##bigscores"u8, 2, ImGuiTableFlags.None))
             {
                 ImGui.TableSetupColumn("##l"u8, ImGuiTableColumnFlags.WidthStretch);
@@ -53,8 +53,8 @@ public sealed partial class Ui
                     {
                         ImGui.TableSetupColumn("#"u8, ImGuiTableColumnFlags.WidthFixed, 26 * _scale);
                         ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
-                        ImGui.TableSetupColumn(gun ? "Gun"u8 : "K"u8, ImGuiTableColumnFlags.WidthFixed, 48 * _scale);
-                        ImGui.TableSetupColumn(gun ? "K"u8 : "D"u8, ImGuiTableColumnFlags.WidthFixed, 36 * _scale);
+                        ImGui.TableSetupColumn(col1, ImGuiTableColumnFlags.WidthFixed, 48 * _scale);
+                        ImGui.TableSetupColumn(col2, ImGuiTableColumnFlags.WidthFixed, 36 * _scale);
                         ImGui.TableSetupColumn(""u8, ImGuiTableColumnFlags.WidthFixed, 56 * _scale);
                         ImGui.TableHeadersRow();
                         for (var i = 0; i < list.Count; i++)
@@ -64,12 +64,13 @@ public sealed partial class Ui
                             ImGui.TableNextColumn();
                             ImGuiSafe.TextColored(Dim, $"{rankBase + i + 1}");
                             ImGui.TableNextColumn();
-                            var carrier = game.Mode == GameMode.CaptureTheFlag && game.CarriedFlagOf(p) >= 0 ? " [FLAG]" : "";
+                            var carrier = mode.ScoreboardTag(game, p); // " [FLAG]"
                             ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + carrier);
+                            var (cell1, cell2) = mode.ScoreboardCells(game, p);
                             ImGui.TableNextColumn();
-                            ImGui.Text(gun ? $"{p.GunLevel + 1}/{GunGame.Ladder.Length}" : $"{p.Kills}");
+                            ImGui.Text(cell1);
                             ImGui.TableNextColumn();
-                            ImGui.Text(gun ? $"{p.Kills}" : $"{p.Deaths}");
+                            ImGui.Text(cell2);
                             ImGui.TableNextColumn();
                             ImGuiSafe.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health}" : "dead");
                         }

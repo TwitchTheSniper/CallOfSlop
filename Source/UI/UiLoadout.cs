@@ -311,7 +311,7 @@ public sealed partial class Ui
                 ReadyButton(game, backBtn); // warmup only (UiModes.cs)
                 if (ImGui.Button(_nav.Depth > 1 ? "< BACK###back"u8 : "CLOSE###back"u8, backBtn))
                     GoBack();
-                hint = game.Mode == GameMode.GunGame ? "Gun Game: everyone gets the same gun, so your loadout isn't used this match."
+                hint = game.Module.LoadoutHint is { } modeHint ? modeHint // (Gun Game: the loadout isn't used)
                     : game.IsWarmup ? $"Warmup: \"{name}\" applies right away. Ready up when you're set."
                     : dead
                     ? $"Respawn with \"{name}\". Loadouts only change between lives."

@@ -255,7 +255,7 @@ public sealed partial class Game
 
     // ---- Packets ------------------------------------------------------------------------------------------
 
-    private void OnZombiesPacket(byte id, ref PacketReader r, RakNetGUID sender, double now)
+    internal void OnZombiesPacket(byte id, ref PacketReader r, RakNetGUID sender, double now)
     {
         switch (id)
         {
