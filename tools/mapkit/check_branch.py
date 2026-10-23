@@ -6,7 +6,7 @@
 Run from the repository root with the game built (`dotnet build -c Release --no-restore`). It:
 
   1. lists the maps, props, decals, buildings and tools the branch adds or changes (committed and uncommitted);
-  2. runs `CallOfSlop --check-map` on every changed map and shows its verdict (the game writes to callofslop.log);
+  2. runs `CallOfSlop --check-map` on every changed map (it loads the file and runs the Map contract checks) and shows its verdict (the game writes to callofslop.log);
   3. checks that every new or changed global prop is on a Dev gallery map: the generated galleries must be current
      (tools/props/gallery.py --check; --fix regenerates them) and a prop no gallery or hand-made Dev map shows is named;
   4. looks for prop-name clashes: a new prop's name against every other prop in the tree and against props that
@@ -124,6 +124,8 @@ def run_game(exe, *args):
     except OSError:
         pass
     out = (r.stdout + r.stderr).strip()
+    if out and out in log:
+        out = ""  # --check-map prints to the terminal and the log alike: don't show it twice
     return r.returncode, (log.strip() + ("\n" + out if out else "")).strip()
 
 
@@ -224,7 +226,8 @@ def main(argv):
             if not os.path.exists(full):
                 continue
             code, log = run_game(exe, "--check-map", full)
-            verdict = next((ln for ln in log.splitlines() if ln.startswith(("OK:", "ERROR:"))), log.splitlines()[-1] if log else "(no output)")
+            verdict = next((ln for ln in log.splitlines() if ln.startswith(("FAILED:", "ERROR:"))),
+                           next((ln for ln in log.splitlines() if ln.startswith("OK:")), log.splitlines()[-1] if log else "(no output)"))
             if code == 0:
                 ok(f"{m}: {verdict}")
                 for ln in log.splitlines():

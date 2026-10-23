@@ -751,11 +751,20 @@ public static partial class Maps
         Map m;
         try
         {
-            // A file inside the Maps folder keeps its pack (its pack's own props and models); anything else stands alone.
+            // A file inside the Maps folder keeps its pack (its pack's own props, decals, models and skies); so does one in a
+            // pack folder of another Maps folder (the source tree's Maps/<Pack>/x.json); anything else stands alone.
             var full = Path.GetFullPath(file);
             var rel = Path.GetRelativePath(Folder, full);
             var inMaps = !rel.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(rel);
-            m = MapFile.Load(File.ReadAllText(file), inMaps ? rel : Path.GetFileName(file), inMaps ? null : "");
+            var packDir = inMaps ? null : "";
+            var source = inMaps ? rel : Path.GetFileName(file);
+            if (!inMaps && Path.GetDirectoryName(full) is { } dir && Path.GetDirectoryName(dir) is { } mapsDir
+                && Path.GetFileName(mapsDir).Equals("Maps", StringComparison.OrdinalIgnoreCase))
+            {
+                packDir = dir;
+                source = Path.GetFileName(dir) + "/" + Path.GetFileName(file);
+            }
+            m = MapFile.Load(File.ReadAllText(file), source, packDir);
             var spawnsBefore = m.Spawns.ToList();
             m.Validate();
             var moved = spawnsBefore.Where((p, i) => p != m.Spawns[i]).Count();
