@@ -94,18 +94,28 @@ public static partial class SelfTest
         var spot = World.Map.Spawns.Count > 0 ? World.Map.Spawns[0] : Vector3.Zero;
         double now = 1;
 
-        // A direction with open, level ground: 10 m clear behind the victim (where it flies) and 4 m on the blast side.
-        game.SelfTestPlace(foe, spot, 0);
+        // A direction with open ground: 10 m clear behind the victim (where it flies) and 8 m on the blast side (the
+        // blasts go off up to 7 m away), at chest and knee height.
         var away = Vector3.UnitX;
-        for (var k = 0; k < 16; k++)
+        var found = false;
+        var spots = World.Map.Spawns.Count > 0 ? World.Map.Spawns : [spot];
+        for (var k = 0; k < 16 * spots.Count && !found; k++)
         {
-            var dir = World.FlatForward(k * MathF.PI / 8);
-            if (World.RaycastWorld(foe.Chest, dir, 10f) >= 10f && World.RaycastWorld(foe.Chest, -dir, 4f) >= 4f
-                && World.RaycastWorld(foe.Position + new Vector3(0, 0.3f, 0), dir, 6f) >= 6f)
+            game.SelfTestPlace(foe, spots[k / 16], 0);
+            spot = spots[k / 16];
+            var dir = World.FlatForward(k % 16 * MathF.PI / 8);
+            var knee = foe.Position + new Vector3(0, 0.3f, 0);
+            if (World.RaycastWorld(foe.Chest, dir, 10f) >= 10f && World.RaycastWorld(foe.Chest, -dir, 8f) >= 8f
+                && World.RaycastWorld(knee, dir, 6f) >= 6f && World.RaycastWorld(knee, -dir, 7.5f) >= 7.5f)
             {
                 away = dir;
-                break;
+                found = true;
             }
+        }
+        if (!found)
+        {
+            spot = spots[0];
+            PLine($"[{mode}] (no fully open direction at any spawn; using +X)");
         }
 
         void Clear(Player victim, PerkSet perks)
