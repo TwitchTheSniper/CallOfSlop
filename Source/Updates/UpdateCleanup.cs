@@ -283,26 +283,31 @@ public static class UpdateCleanup
             return plan;
         }
         var builds = new List<(string Path, BuildMarker.Info Marker)>();
+        var resumeOnly = o.ResumeOnly || current == null; // a dev build only finishes removals already started
+        if (current == null && !o.ResumeOnly)
+            plan.Kept.Add(new CleanupKept(plan.Root, "this is a dev build: only release builds remove old versions"));
         foreach (var e in entries.OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase))
         {
             var path = e.FullName;
             if (!SavePaths.SameFolder(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path)) ?? "", plan.Root))
                 continue; // never anything but a direct child of the root
+            if (IsLink(e))
+            {
+                if (e.Name.StartsWith("CallOfSlop", StringComparison.OrdinalIgnoreCase))
+                    plan.Kept.Add(new CleanupKept(path, "a link, not a real build folder or file"));
+                continue;
+            }
             if (e is FileInfo file)
             {
-                PlanFile(plan, file, current, o);
+                if (!resumeOnly)
+                    PlanFile(plan, file, current!, o);
                 continue;
             }
             var parsed = ParseFolderName(e.Name);
             if (parsed == null)
             {
-                if (e.Name.StartsWith("CallOfSlop", StringComparison.OrdinalIgnoreCase) && !IsLink(e) && UpdateInstaller.FindGame(path) != null)
+                if (e.Name.StartsWith("CallOfSlop", StringComparison.OrdinalIgnoreCase) && UpdateInstaller.FindGame(path) != null)
                     plan.Kept.Add(new CleanupKept(path, SavePaths.SameFolder(path, plan.CurrentBuild) ? "the build you're running" : "not installed by the updater (unzipped by hand)"));
-                continue;
-            }
-            if (IsLink(e))
-            {
-                plan.Kept.Add(new CleanupKept(path, "a link to another folder, not a real build folder"));
                 continue;
             }
             if (SavePaths.SameFolder(path, plan.CurrentBuild))
@@ -323,7 +328,7 @@ public static class UpdateCleanup
                     plan.Kept.Add(new CleanupKept(path, "an unfinished removal without the updater's marker: delete it yourself if you don't need it"));
                 continue;
             }
-            if (o.ResumeOnly)
+            if (resumeOnly)
                 continue;
             if (marker == null)
             {
@@ -353,12 +358,7 @@ public static class UpdateCleanup
                 plan.Kept.Add(new CleanupKept(path, "it has no CallOfSlop.exe"));
                 continue;
             }
-            if (current == null)
-            {
-                plan.Kept.Add(new CleanupKept(path, "this is a dev build: only release builds remove old versions"));
-                continue;
-            }
-            if (version > current)
+            if (version > current!)
             {
                 plan.Kept.Add(new CleanupKept(path, $"newer than this build (v{current})"));
                 continue;
@@ -396,16 +396,14 @@ public static class UpdateCleanup
         return plan;
     }
 
-    private static void PlanFile(CleanupPlan plan, FileInfo file, Version? current, CleanupOptions o)
+    private static void PlanFile(CleanupPlan plan, FileInfo file, Version current, CleanupOptions o)
     {
-        if (o.ResumeOnly || IsLink(file))
-            return;
         if (DownloadName.Match(file.Name) is { Success: true } dm && BuildInfo.ParseRelease(dm.Groups[1].Value) is { } v)
         {
-            if (current != null && v <= current)
+            if (v <= current)
                 plan.Remove.Add(new CleanupItem(file.FullName, CleanupKind.Download, file.Length, $"a download of v{v} (this build is v{current})"));
             else
-                plan.Kept.Add(new CleanupKept(file.FullName, current == null ? "a download (this is a dev build)" : $"a paused download of v{v}: Install continues it"));
+                plan.Kept.Add(new CleanupKept(file.FullName, $"a paused download of v{v}: Install continues it"));
             return;
         }
         if (ProbeName.Match(file.Name) is { Success: true } pm && file.Length == 0 && int.TryParse(pm.Groups[1].Value, out var pid)

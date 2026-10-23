@@ -331,6 +331,7 @@ public static partial class SelfTest
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
+        Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
     }
 
