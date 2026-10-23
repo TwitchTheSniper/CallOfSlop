@@ -69,6 +69,30 @@ public static partial class SelfTest
                  + $"while {Math.Min(props, breakable.Length)} props broke, {doors} doors swung, {windows} windows and {(chunks + 6) / 7} chunks broke: {h1:x8}; 50 ms slices {h2:x8}");
             if (h1 != h0 || h2 != h0)
                 Fail($"{name}: the nav graph isn't deterministic (whole {h0:x8}, sliced while the match changed things {h1:x8}, 50 ms slices {h2:x8})");
+
+            // Destruction patches (run within a time budget per tick in a match) are gone once the map is whole again.
+            if (map.Destruction is { } dest && NavGraph.Current is { ExtraHead.Length: > 0 } live)
+            {
+                var min = new System.Numerics.Vector3(float.MaxValue);
+                var max = new System.Numerics.Vector3(float.MinValue);
+                for (var c = 0; c < dest.Count; c += 5)
+                    if (map.BreakChunk(c))
+                    {
+                        min = System.Numerics.Vector3.Min(min, dest.Original[c].Min);
+                        max = System.Numerics.Vector3.Max(max, dest.Original[c].Max);
+                    }
+                if (min.X <= max.X)
+                    foreach (var _ in live.PatchSteps(map, new Box((min + max) / 2, (max - min) / 2), []))
+                    {
+                    }
+                var patched = NavFingerprint(live);
+                var version = live.PatchVersion;
+                map.RestoreProps();
+                var restored = NavFingerprint(live);
+                Line($"{name,-16} a destruction patch (version {version}): fingerprint {patched:x8}, after the map is restored {restored:x8}");
+                if (restored != h0)
+                    Fail($"{name}: the nav graph keeps destruction patches after the map is restored ({restored:x8}, as built {h0:x8}, patched {patched:x8})");
+            }
         }
         Line($"nav determinism: {sw.Elapsed.TotalSeconds:0.0} s");
     }
@@ -100,6 +124,10 @@ public static partial class SelfTest
             MixF(g.EdgeLedge[e].Y);
             MixF(g.EdgeLedge[e].Z);
         }
+        foreach (var off in g.NodeOff)
+            Mix(off ? 1u : 0u);
+        foreach (var off in g.EdgeOff)
+            Mix(off ? 1u : 0u);
         return h;
     }
 }

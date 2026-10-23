@@ -112,6 +112,22 @@ public sealed partial class NavGraph
         }
     }
 
+    /// <summary>
+    /// The map's chunks are whole again (<see cref="Map.RestoreDestruction"/>): its cached graphs go back to as built too, so
+    /// whoever uses one next (a new match, a self-test audit) never sees last match's patches. Those ran within a time
+    /// budget per tick, so what they had reached depended on the PC's speed.
+    /// </summary>
+    public static void ResetPatches(Map map)
+    {
+        foreach (var g in Cache.Values)
+            if (g.MapName == map.Name && g.PatchVersion != 0)
+            {
+                g.ResetRuntime();
+                g.PatchOwner = null;
+                g.PatchMatch = -1;
+            }
+    }
+
     /// <summary>Undoes every patch: spares parked, nothing off, the extra edges gone. No-op on an unpatched graph.</summary>
     public void ResetRuntime()
     {
