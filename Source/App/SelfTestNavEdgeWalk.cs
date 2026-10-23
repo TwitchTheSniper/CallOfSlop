@@ -53,6 +53,9 @@ public static partial class SelfTest
                         int Find(Vector3 p) { for (var q = 0; q < nav.Nodes.Length; q++) if (Vector3.Distance(nav.Nodes[q], p) < 0.6f) return q; return -1; }
                         int ia = Find(la), ib = Find(lb);
                         string Edges(int n) => n < 0 ? "-" : string.Join(" ", Enumerable.Range(nav.EdgeStart[n], nav.EdgeStart[n + 1] - nav.EdgeStart[n]).Select(e => FormattableString.Invariant($"({nav.Nodes[nav.EdgeTo[e]].X:0.0},{nav.Nodes[nav.EdgeTo[e]].Y:0.0},{nav.Nodes[nav.EdgeTo[e]].Z:0.0})f{nav.EdgeFlags[e]}")));
+                        var downA = World.Physics.Raycast(la + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 0.6f, QueryFilter.Navigation);
+                        var downB = World.Physics.Raycast(lb + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 0.6f, QueryFilter.Navigation);
+                        stairNotes.Add(FormattableString.Invariant($"  ends: foot floor {0.3f - downA:0.00} blocked {World.Physics.BlockedNav(la + new Vector3(0, 0.01f, 0))}, top floor {0.3f - downB:0.00} blocked {World.Physics.BlockedNav(lb + new Vector3(0, 0.01f, 0))}"));
                         stairNotes.Add(FormattableString.Invariant($"link {m.Name} ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) node {ia} -> ({lb.X:0.00},{lb.Y:0.00},{lb.Z:0.00}) node {ib}; top's edges: {Edges(ib)}"));
                         foreach (var r in rejects.Where(r => r.Map == m.Name && Vector3.Distance(r.From, lb) < 0.7f).Take(6))
                             stairNotes.Add(FormattableString.Invariant($"  dropped from top -> ({r.To.X:0.00},{r.To.Y:0.00},{r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00},{r.End.Y:0.00},{r.End.Z:0.00})"));

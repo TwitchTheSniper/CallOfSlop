@@ -261,6 +261,12 @@ public sealed partial class NavGraph
         foreach (var (la, lb) in map.NavLinks)
         {
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
+            // No node right on a stair end (its spot is a squeeze): the nearest node in plain view of it on the same floor,
+            // so the stairs still join the floors (else the floor above is only reached over railings, if at all).
+            if (ia < 0)
+                ia = NearLinkEnd(g.Nodes, la);
+            if (ib < 0)
+                ib = NearLinkEnd(g.Nodes, lb);
             if (ia < 0 || ib < 0 || ia == ib)
                 continue;
             var len = Vector3.Distance(g.Nodes[ia], g.Nodes[ib]);
@@ -377,6 +383,26 @@ public sealed partial class NavGraph
                 continue;
             var d = (n.X - p.X) * (n.X - p.X) + (n.Z - p.Z) * (n.Z - p.Z);
             if (d < bestD)
+            {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>The node within 1.2 m of a stair end <paramref name="p"/> (and level with it) nearest to it in plain view, or -1.</summary>
+    private static int NearLinkEnd(Vector3[] nodes, Vector3 p)
+    {
+        var best = -1;
+        var bestD = 1.2f * 1.2f;
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            var n = nodes[i];
+            if (MathF.Abs(n.Y - p.Y) > 0.4f)
+                continue;
+            var d = (n.X - p.X) * (n.X - p.X) + (n.Z - p.Z) * (n.Z - p.Z);
+            if (d < bestD && Clear(n, p))
             {
                 bestD = d;
                 best = i;
