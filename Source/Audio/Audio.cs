@@ -154,6 +154,7 @@ public sealed partial class Audio : IDisposable
                 _sfx[i] = pcm.Effects[i].Select(Upload).ToArray();
             _steps = pcm.Steps.Select(Upload).ToArray();
             InitFrenzyGun(pcm); // Audio.FrenzyGun.cs: per-class frenzy layers on your own gun
+            BuildEnvelopes(); // Audio.Mixer.cs: the mixer window's meters
             BufferCount = pcm.Count;
             BufferBytes = pcm.Bytes;
 
@@ -190,6 +191,7 @@ public sealed partial class Audio : IDisposable
         catch (Exception ex)
         {
             Enabled = false;
+            _pendingEnv = null;
             Console.WriteLine($"Audio disabled: {ex.Message}");
         }
     }
@@ -296,7 +298,7 @@ public sealed partial class Audio : IDisposable
         return set;
     }
 
-    private static AlBuffer Upload(short[] pcm)
+    private static AlBuffer UploadRaw(short[] pcm)
     {
         var buffer = Al.GenBuffer();
         buffer.SetData(AlFormat.Mono16, System.Runtime.InteropServices.MemoryMarshal.AsBytes(pcm.AsSpan()), SampleRate);
@@ -306,11 +308,13 @@ public sealed partial class Audio : IDisposable
     public void SetListener(Vector3 position, Vector3 forward)
     {
         _listener = position;
+        _listenerForward = forward;
         if (!Enabled)
             return;
+        SyncMix(); // the mix's music levels to the music thread, when they changed (Audio.Mixer.cs)
         Al.Listener.Position = new float3(position.X, position.Y, position.Z);
         Al.Listener.Orientation = (new float3(forward.X, forward.Y, forward.Z), new float3(0, 1, 0));
-        Al.Listener.Gain = MasterVolume;
+        Al.Listener.Gain = ListenerGain; // the master volume times the mix's master level
     }
 
     // ---- Playback -----------------------------------------------------------
@@ -334,12 +338,13 @@ public sealed partial class Audio : IDisposable
         public static readonly Falloff Small = new(3f, 1.3f, 60f); // impacts, whizzes
     }
 
-    /// <summary>Plays a buffer. Null position = attached to the listener (our own gun / UI).</summary>
-    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch) => Play(buffer, position, gain, pitch, Falloff.Normal);
+    /// <summary>Plays a buffer on a bus. Null position = attached to the listener (our own gun / UI).</summary>
+    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch, MixBus bus) => Play(buffer, position, gain, pitch, Falloff.Normal, bus, Mix.Gain(bus));
 
-    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff)
+    /// <summary>Plays a buffer: <paramref name="mix"/> is the bus's gain from the mix (0 = muted: nothing starts).</summary>
+    private void Play(AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff, MixBus bus, float mix)
     {
-        if (!Enabled || buffer.IsNull())
+        if (!Enabled || buffer.IsNull() || mix <= 0f)
             return;
         var t0 = Stopwatch.GetTimestamp();
 
@@ -361,17 +366,18 @@ public sealed partial class Audio : IDisposable
             }
         }
 
-        Start(_sources[pick], buffer, position, gain * EffectsVolume * DeafenGain, pitch, falloff); // muffled after a flash (Audio.Tactical.cs)
+        Start(pick, _sources[pick], buffer, position, gain * EffectsVolume * DeafenGain, pitch, falloff, mix, bus); // muffled after a flash (Audio.Tactical.cs)
         _startedAt[pick] = now;
         _played++;
         _cpuTicks += Stopwatch.GetTimestamp() - t0;
     }
 
-    private void Start(AlSource src, AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff)
+    /// <summary>Starts a voice (<paramref name="slot"/>: its index for the mix's caps and the meters, see Audio.Mixer.cs).</summary>
+    private void Start(int slot, AlSource src, AlBuffer buffer, Vector3? position, float gain, float pitch, Falloff falloff, float mix, MixBus bus)
     {
         src.Stop();
         src.Buffer = buffer;
-        src.Gain = gain;
+        ApplyVoiceGain(slot, src, gain, mix);
         src.Pitch = pitch;
         src.ReferenceDistance = falloff.Reference;
         src.RolloffFactor = falloff.Rolloff;
@@ -388,6 +394,8 @@ public sealed partial class Audio : IDisposable
         }
         ApplyDistanceFilter(src, position, falloff.Thin);
         src.Play();
+        if (Meters.Enabled)
+            MeterVoice(slot, buffer, position, gain, pitch, falloff, mix, bus);
     }
 
     private static double Now() => Brutal.GlfwApi.Glfw.Time;
@@ -404,11 +412,7 @@ public sealed partial class Audio : IDisposable
     /// How much of a near gunshot is replaced by its distant layer at a distance (0 up close, 1 far away): a smooth
     /// crossfade from 25 m to 90 m (equal power, on one falloff curve: see <see cref="PlanShot"/>).
     /// </summary>
-    public static float FarMix(float distance)
-    {
-        var x = Math.Clamp((distance - 25f) / 65f, 0f, 1f);
-        return x * x * (3 - 2 * x);
-    }
+    public static float FarMix(float distance) => AudioMix.Defaults.FarMix(distance); // the crossfade distances are mixer rows (AudioMixDefaults.cs)
 
     // Every public sound call checks Enabled first: with no audio device the sound tables are empty.
     public void Shot(WeaponDef w, Vector3? position)
@@ -416,7 +420,7 @@ public sealed partial class Audio : IDisposable
         if (!Enabled)
             return;
         var hasFar = !_shotsFar[w.Id].IsNull();
-        var plan = PlanShot(position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f); // Audio.GunMix.cs
+        var plan = PlanShot(Mix, position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f, w.Class == WeaponClass.Launcher); // Audio.GunMix.cs
         var gain = Jitter(0.07f);
         var pitch = Jitter(0.04f);
         var (kitPitch, kitGain) = KitVoice(w); // Audio.GunVoice.cs: the attachments' colour
@@ -426,9 +430,9 @@ public sealed partial class Audio : IDisposable
         if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
             nearGain = FrenzyOwnShot(w, nearGain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
         if (plan.Near > 0f)
-            Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff);
+            Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff, plan.NearBus, plan.NearBusGain);
         if (plan.Far > 0f && hasFar)
-            Play(_shotsFar[w.Id], position, plan.Far * gain * FarTrim(w.Id), pitch, plan.FarFalloff);
+            Play(_shotsFar[w.Id], position, plan.Far * gain * FarTrim(w.Id), pitch, plan.FarFalloff, plan.FarBus, plan.FarBusGain);
     }
 
     /// <summary>A random recorded variant (never the same one twice in a row when there are several).</summary>
@@ -448,33 +452,36 @@ public sealed partial class Audio : IDisposable
     public void Reload(WeaponDef w, Vector3? position)
     {
         if (Enabled)
-            Play(_reloads[w.Id], position, 0.8f, 1f);
+            Play(_reloads[w.Id], position, 0.8f, 1f, MixBus.GunMechanism);
     }
 
     public void Equip(WeaponDef w)
     {
         if (Enabled)
-            Play(_equips[w.Id], null, 0.6f, Jitter(0.03f));
+            Play(_equips[w.Id], null, 0.6f, Jitter(0.03f), MixBus.GunMechanism);
     }
 
-    public void Effect(Sfx sfx, float gain = 0.7f)
+    /// <summary>A sound effect at your ear; <paramref name="bus"/>: its mixer bus (Auto: <see cref="BusFor"/>).</summary>
+    public void Effect(Sfx sfx, float gain = 0.7f, MixBus bus = MixBus.Auto)
     {
         if (Enabled)
-            Play(Pick(sfx), null, gain, Synth.VariantCount(sfx) > 1 ? Jitter(0.03f) : 1f);
+            Play(Pick(sfx), null, gain, Synth.VariantCount(sfx) > 1 ? Jitter(0.03f) : 1f, bus == MixBus.Auto ? BusFor(sfx, false) : bus);
     }
 
     /// <summary>A sound effect positioned in the world (explosions, bounces, beeps).</summary>
-    public void Effect3D(Sfx sfx, System.Numerics.Vector3 position, float gain = 1f)
+    public void Effect3D(Sfx sfx, System.Numerics.Vector3 position, float gain = 1f, MixBus bus = MixBus.Auto)
     {
         if (Enabled)
-            Play(Pick(sfx), position, gain, Jitter(0.05f));
+            Play(Pick(sfx), position, gain, Jitter(0.05f), bus == MixBus.Auto ? BusFor(sfx, true) : bus);
     }
 
     /// <summary>A small, short sound in the world (impacts, whizzes): fades out sooner and is skipped beyond <paramref name="range"/>.</summary>
-    public void Effect3DSmall(Sfx sfx, Vector3 position, float gain, float range = 50f)
+    public void Effect3DSmall(Sfx sfx, Vector3 position, float gain, float range = 50f, MixBus bus = MixBus.Auto)
     {
-        if (Enabled && Vector3.DistanceSquared(position, _listener) <= range * range)
-            Play(Pick(sfx), position, gain, Jitter(0.07f), Falloff.Small);
+        if (!Enabled || Vector3.DistanceSquared(position, _listener) > range * range)
+            return;
+        var b = bus == MixBus.Auto ? BusFor(sfx, true) : bus;
+        Play(Pick(sfx), position, gain, Jitter(0.07f), Falloff.Small, b, Mix.Gain(b));
     }
 
     // ---- Footsteps ----------------------------------------------------------
@@ -516,7 +523,9 @@ public sealed partial class Audio : IDisposable
         var (gain, range) = StepLoudness(e.Kind, e.Strength, silenced && !self);
         var d = self ? 0f : Vector3.Distance(e.Position, _listener);
         gain *= FootstepVolume * EffectsVolume * (self ? SelfStepGain : 1f);
-        if (gain > 0.002f && d <= range)
+        var bus = BusFor(e.Kind, self); // Audio.Mixer.cs
+        var mix = Mix.Gain(bus);
+        if (gain > 0.002f && d <= range && mix > 0f)
         {
             var run = e.Kind is StepKind.Run or StepKind.Land;
             var step = _steps[StepIndex(e.Surface, run, _rng.Next(Synth.StepVariants))];
@@ -525,30 +534,30 @@ public sealed partial class Audio : IDisposable
             switch (e.Kind)
             {
                 case StepKind.Crawl:
-                    StepVoice(Pick(Sfx.Scuffle), at, d, gain, pitch);
+                    StepVoice(Pick(Sfx.Scuffle), at, d, gain, pitch, mix, bus);
                     break;
                 case StepKind.Land:
-                    StepVoice(step, at, d, gain * 0.8f, pitch * 0.92f);
-                    StepVoice(Pick(Sfx.LandThud), at, d, gain * (0.4f + 0.6f * e.Strength), Jitter(0.05f));
+                    StepVoice(step, at, d, gain * 0.8f, pitch * 0.92f, mix, bus);
+                    StepVoice(Pick(Sfx.LandThud), at, d, gain * (0.4f + 0.6f * e.Strength), Jitter(0.05f), mix, bus);
                     break;
                 case StepKind.Jump:
-                    StepVoice(Pick(Sfx.JumpPush), at, d, gain, Jitter(0.05f));
-                    StepVoice(step, at, d, gain * 0.5f, pitch * 1.05f);
+                    StepVoice(Pick(Sfx.JumpPush), at, d, gain, Jitter(0.05f), mix, bus);
+                    StepVoice(step, at, d, gain * 0.5f, pitch * 1.05f, mix, bus);
                     break;
                 default:
-                    StepVoice(step, at, d, gain * Jitter(0.12f), pitch);
+                    StepVoice(step, at, d, gain * Jitter(0.12f), pitch, mix, bus);
                     break;
             }
         }
         _cpuTicks += Stopwatch.GetTimestamp() - t0;
     }
 
-    private void StepVoice(AlBuffer buffer, Vector3? position, float distance, float gain, float pitch)
+    private void StepVoice(AlBuffer buffer, Vector3? position, float distance, float gain, float pitch, float mix, MixBus bus)
     {
         var v = StepPool.Acquire(Now(), distance, 0.45f / MathF.Max(pitch, 0.5f));
         if (v < 0)
             return;
-        Start(_stepSources[v], buffer, position, gain, pitch, Falloff.Step);
+        Start(StepSlot(v), _stepSources[v], buffer, position, gain, pitch, Falloff.Step, mix, bus);
         _stepsPlayed++;
     }
 

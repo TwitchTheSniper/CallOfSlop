@@ -33,6 +33,7 @@ public enum GameAction
     Interact,
     Weapon3,
     Weapon4,
+    AudioMixer, // the Audio mixer debug window (UiAudioMixer.cs)
     COUNT,
 }
 
@@ -77,6 +78,7 @@ public static class Keybinds
         Key(GlfwKey.F), // Interact: E until binds version 2
         Key(GlfwKey.Number3),
         Unbound,
+        Key(GlfwKey.F8), // AudioMixer
     ];
 
     /// <summary>
@@ -163,6 +165,7 @@ public static class Keybinds
             GameAction.Interact => "Interact (doors; Zombies: cart, slot upgrade)",
             GameAction.Weapon3 => "Weapon slot 3 (Zombies)",
             GameAction.Weapon4 => "Weapon slot 4 (Zombies)",
+            GameAction.AudioMixer => "Audio mixer (debug window)",
             _ => a.ToString(),
         };
 

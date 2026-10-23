@@ -33,31 +33,59 @@ public sealed partial class Audio
     /// A gunshot from another player: inverse distance from 5 m, a little gentler than the physical law (about -5 dB per
     /// doubling, so a fight 80 m away still carries), still falling at 250 m; thinned by distance.
     /// </summary>
-    internal static readonly Falloff ShotFalloff = new(5f, 0.8f, 250f, Thin: true);
+    internal static Falloff ShotFalloff => AudioMix.Defaults.ShotFalloff; // 5 m, 0.8, 250 m: mixer rows (AudioMixDefaults.cs)
 
     /// <summary>A suppressed shot from another player: fades sooner (a suppressor's report is quiet and doesn't carry).</summary>
     internal static readonly Falloff SuppressedFalloff = new(3f, 1.3f, 120f, Thin: true);
 
-    /// <summary>How one gunshot plays: the near and far layers' gains (before distance) and their falloffs.</summary>
-    internal readonly record struct ShotPlan(float Near, float Far, Falloff NearFalloff, Falloff FarFalloff);
+    /// <summary>
+    /// How one gunshot plays: the near and far layers' gains (before distance) and their falloffs; and the mixer buses
+    /// they play on with those buses' gains (<c>NearBusGain</c>, <c>FarBusGain</c>: 1 with the built-in mix), which
+    /// scale the voice and its OpenAL cap together (Audio.Mixer.cs).
+    /// </summary>
+    internal readonly record struct ShotPlan(float Near, float Far, Falloff NearFalloff, Falloff FarFalloff,
+        MixBus NearBus = MixBus.GunOtherNear, MixBus FarBus = MixBus.GunOtherFar, float NearBusGain = 1f, float FarBusGain = 1f)
+    {
+        /// <summary>The near layer's gain with the mix (what plays, before effects volume, jitter and distance).</summary>
+        public float NearMixed => Near * NearBusGain;
+
+        /// <summary>The far layer's gain with the mix.</summary>
+        public float FarMixed => Far * FarBusGain;
+    }
 
     /// <summary>
     /// The plan for a shot: <paramref name="own"/> = your own gun (listener-relative, no distance), else another
     /// player's at <paramref name="distance"/>; <paramref name="hasFar"/> = the weapon has a distant layer (launchers,
     /// energy and novelty guns don't: their one layer just fades with distance).
     /// </summary>
-    internal static ShotPlan PlanShot(bool own, bool suppressed, bool hasFar, float distance)
+    internal static ShotPlan PlanShot(bool own, bool suppressed, bool hasFar, float distance) => PlanShot(AudioMix.Defaults, own, suppressed, hasFar, distance);
+
+    /// <summary>
+    /// <see cref="PlanShot(bool, bool, bool, float)"/> through a mix: its gunshot falloff and crossfade distances, and
+    /// the buses (own gun, own suppressed, launchers, other players' near and far layers, their suppressed shots) with
+    /// their gains. <paramref name="launcher"/>: a launcher's shot (its own buses).
+    /// </summary>
+    internal static ShotPlan PlanShot(AudioMix mix, bool own, bool suppressed, bool hasFar, float distance, bool launcher = false)
     {
+        var fall = mix.ShotFalloff;
         if (own)
-            return new(OwnShotGain * (suppressed ? OwnSuppressedGain : 1f), 0f, ShotFalloff, ShotFalloff);
+        {
+            var ob = launcher ? MixBus.LauncherOwn : suppressed ? MixBus.GunOwnSuppressed : MixBus.GunOwn;
+            return new(OwnShotGain * (suppressed ? OwnSuppressedGain : 1f), 0f, fall, fall, ob, ob, mix.Gain(ob), mix.Gain(ob));
+        }
+        if (suppressed && !launcher)
+            return new(OtherShotGain * OtherSuppressedGain, 0f, SuppressedFalloff, SuppressedFalloff, MixBus.GunOtherSuppressed, MixBus.GunOtherSuppressed,
+                mix.Gain(MixBus.GunOtherSuppressed), mix.Gain(MixBus.GunOtherSuppressed));
+        var nb = launcher ? MixBus.LauncherOther : MixBus.GunOtherNear;
+        var fb = launcher ? MixBus.LauncherOther : MixBus.GunOtherFar;
         if (suppressed)
-            return new(OtherShotGain * OtherSuppressedGain, 0f, SuppressedFalloff, SuppressedFalloff);
+            return new(OtherShotGain * OtherSuppressedGain, 0f, SuppressedFalloff, SuppressedFalloff, nb, nb, mix.Gain(nb), mix.Gain(nb));
         if (!hasFar)
-            return new(OtherShotGain, 0f, ShotFalloff, ShotFalloff);
+            return new(OtherShotGain, 0f, fall, fall, nb, nb, mix.Gain(nb), mix.Gain(nb));
         // Equal-power handover (the two layers are different sounds, so their power adds).
-        var far = FarMix(distance);
+        var far = mix.FarMix(distance);
         var near = far < 0.98f ? MathF.Sqrt(1f - far) : 0f;
-        return new(OtherShotGain * near, far > 0.02f ? OtherShotGain * MathF.Sqrt(far) : 0f, ShotFalloff, ShotFalloff);
+        return new(OtherShotGain * near, far > 0.02f ? OtherShotGain * MathF.Sqrt(far) : 0f, fall, fall, nb, fb, mix.Gain(nb), mix.Gain(fb));
     }
 
     /// <summary>The falloff of a positional effect (<see cref="Effect3D"/>: explosions, bounces, beeps).</summary>
@@ -67,7 +95,7 @@ public sealed partial class Audio
     /// Low-shelf gain (below about 250 Hz) of the distance filter on gunshots: 1 within 8 m, about 0.53 at 30 m, 0.23
     /// at 60 m, never below 0.15 (far gunfire loses its boom, not its crack).
     /// </summary>
-    public static float DistanceLf(float distance) => Math.Clamp(MathF.Exp(-MathF.Max(0f, distance - 8f) / 35f), 0.15f, 1f);
+    public static float DistanceLf(float distance) => AudioMix.Defaults.DistanceLf(distance); // the mixer's Distance rows (AudioMixDefaults.cs)
 
     /// <summary>The distance filter's (low-shelf, high-shelf) gains for a layer with <paramref name="falloff"/> at <paramref name="distance"/>.</summary>
     internal static (float Lf, float Hf) DistanceFilter(Falloff falloff, float distance) =>

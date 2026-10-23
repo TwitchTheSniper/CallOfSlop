@@ -23,7 +23,7 @@ public sealed partial class Audio
             return;
         var keep = Deafen;
         Deafen = 0;
-        Play(Pick(Sfx.Tinnitus), null, 0.25f + 0.35f * Math.Clamp(s, 0f, 1f), 1f);
+        Play(Pick(Sfx.Tinnitus), null, 0.25f + 0.35f * Math.Clamp(s, 0f, 1f), 1f, MixBus.Tactical);
         Deafen = keep;
     }
 }
