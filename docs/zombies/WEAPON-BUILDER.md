@@ -240,8 +240,9 @@ saves and the network are unchanged (the action still plugs into the receiver's 
   brass pipes and tip, 13 cm) reach forward from the receiver's front face, just under the barrel. Each receiver's
   `front` point is on its front face (its barrel socket's z) just under its lowest barrel at the receiver's bore size,
   and under the cooling fins on the Bastille and Hammerfall; at least 1.1 cm above the receiver's bottom so it stays
-  clear of the grips' rail and plate (the Hellwheel's and Pepperbox's bottom barrel and the Sawmill's lowest fin plates
-  overlap the forend by a few mm; the Sawmill's point sits up at 1.7 cm to clear a Shell Tube under it).
+  clear of the grips' rail and plate (the Hellwheel's sits at 1.5 cm to clear an Angled Foregrip; its and the
+  Pepperbox's bottom barrel and the Sawmill's lowest fin plates overlap the forend by a few mm; the Sawmill's point
+  sits up at 1.7 cm to clear a Shell Tube under it).
 - **Side** (9 actions, as before): Turn Bolt, Straight-Pull Bolt, Lever Action, Break Action, Hand-Crank Rotary,
   Electric Rotary Drive, Chain Drive Motor, Autocannon Drive, Bicycle Chain Drive.
 - **Checks.** The self-test section **Action placement** (`SelfTestActionPlacement.cs`) holds the table above (a new

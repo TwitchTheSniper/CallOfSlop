@@ -249,7 +249,7 @@ def action_clearance(lib, order):
     placed = [p for p in order if p["category"].lower() == "action" and str(p.get("placement", "side")).lower() != "side"]
     feeds = [p for p in order if p["category"].lower() == "feed" and str(p.get("mount", "feed")).lower() == "feed"]
     fores = [p for p in order if p["category"].lower() == "grip" and str(p.get("mount", "")).lower() == "foregrip"
-             and all(b.c[1] + sum(b.h[i] * abs(b.ax[i][1]) for i in range(3)) <= 0.001 for b in lib.part_boxes(p))]
+             and all(pos[1] + size[1] / 2 <= 0.001 for (_, size, pos, *_rest) in p["_boxes"])]  # as the self-test: unturned extents
     problems = checks = exempt = 0
     for gname in ("Rifle Grip", "Service Pistol Grip"):
         g = lib.part(gname)
