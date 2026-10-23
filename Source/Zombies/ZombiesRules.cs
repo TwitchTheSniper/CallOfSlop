@@ -140,6 +140,57 @@ public sealed class ZombiesRules
     /// <summary>Scrap every zombie kill gives the killer (on top of part drops), and scrap per salvage pile.</summary>
     public int ScrapPerKill = 1, SalvageScrap = 25;
 
+    // ---- Power-ups (World at War style; ZombiesPowerUps.cs) ---------------------------------------------
+    /// <summary>Chance a zombie kill drops a power-up, and the most that drop in one round.</summary>
+    public float PowerDropChance = 0.03f;
+
+    public int PowerMaxPerRound = 4;
+
+    /// <summary>A power-up floats this long (seconds), blinking for the last <see cref="PowerBlinkSeconds"/>; Insta-Kill and Double Points last <see cref="PowerDuration"/>.</summary>
+    public float PowerLifetime = 30f, PowerBlinkSeconds = 10f, PowerDuration = 30f, PowerPickupRange = 1.3f;
+
+    /// <summary>Points the Nuke and the Carpenter give every player.</summary>
+    public int NukePoints = 400, CarpenterPoints = 200;
+
+    /// <summary>How often each power-up drops, by <see cref="ZPowerKind"/> (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter).</summary>
+    public float[] PowerWeights = [1f, 1f, 1f, 1f, 1f];
+
+    // ---- Special ammo effects (part flags against zombies; ZombiesAmmoEffects.cs) ------------------------
+    /// <summary>Incendiary: a burn of this share of the hit's damage (at least <see cref="BurnMin"/>) over <see cref="BurnSeconds"/>.</summary>
+    public float BurnFraction = 0.6f, BurnSeconds = 3f;
+
+    public int BurnMin = 40;
+
+    /// <summary>Explosive: a splash this wide (metres) doing this share of the hit's damage to the zombies round the one hit.</summary>
+    public float SplashRadius = 2.2f, SplashFraction = 0.5f;
+
+    /// <summary>Shock: arcs to this many more zombies within the range, for this share of the hit, stunning them.</summary>
+    public int ShockTargets = 3;
+
+    public float ShockRange = 3.5f, ShockFraction = 0.4f, ShockStun = 0.4f;
+
+    /// <summary>Penetrating: the round goes on through this many more zombies within the range behind, at this share.</summary>
+    public int PierceTargets = 2;
+
+    public float PierceRange = 8f, PierceFraction = 0.6f;
+
+    /// <summary>Bouncy: the round bounces on to the nearest zombie within the range, at this share.</summary>
+    public float BounceRange = 4f, BounceFraction = 0.5f;
+
+    /// <summary>Plasma: zombies hit move at this share of their speed for this long.</summary>
+    public float SlowSeconds = 2f, SlowMult = 0.5f;
+
+    /// <summary>Bonk (frying pan): stun seconds; squeaky: a short stun; rocket and fish: knockback speed (m/s).</summary>
+    public float BonkStun = 1f, SqueakStun = 0.3f, Knockback = 6f;
+
+    /// <summary>Nails and chainsaw: a bleed of this share of the hit over <see cref="BurnSeconds"/>.</summary>
+    public float BleedFraction = 0.3f;
+
+    /// <summary>Refreshing: health back per kill; bayonet: damage multiplier within the range.</summary>
+    public int RefreshHealth = 5;
+
+    public float BayonetRange = 2.2f, BayonetMult = 1.5f;
+
     private static ZombiesRules? _loaded;
     public static readonly List<string> LoadErrors = new();
 
@@ -221,7 +272,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -394,6 +445,70 @@ public sealed class ZombiesRules
                         return true;
                     });
                     break;
+                case "powerUps":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "dropChance": r.PowerDropChance = Real(v, w, 0, 1); break;
+                            case "maxPerRound": r.PowerMaxPerRound = Whole(v, w, 0, 100); break;
+                            case "lifetime": r.PowerLifetime = Real(v, w, 1, 600); break;
+                            case "blinkSeconds": r.PowerBlinkSeconds = Real(v, w, 0, 600); break;
+                            case "duration": r.PowerDuration = Real(v, w, 1, 600); break;
+                            case "pickupRange": r.PowerPickupRange = Real(v, w, 0.3f, 5); break;
+                            case "nukePoints": r.NukePoints = Whole(v, w, 0, 100000); break;
+                            case "carpenterPoints": r.CarpenterPoints = Whole(v, w, 0, 100000); break;
+                            case "weights":
+                                if (v.ValueKind != JsonValueKind.Object)
+                                    throw new WeaponFileException($"{w}: an object of weights ({string.Join(", ", PowerKeys)})");
+                                foreach (var pw in v.EnumerateObject())
+                                {
+                                    var i = Array.IndexOf(PowerKeys, pw.Name);
+                                    if (i < 0)
+                                        throw new WeaponFileException($"{w}: unknown power-up \"{pw.Name}\" ({string.Join(", ", PowerKeys)})");
+                                    r.PowerWeights[i] = Real(pw.Value, $"{w}.{pw.Name}", 0, 100);
+                                }
+                                break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
+                case "ammoEffects":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "burnFraction": r.BurnFraction = Real(v, w, 0, 5); break;
+                            case "burnSeconds": r.BurnSeconds = Real(v, w, 0.25f, 30); break;
+                            case "burnMin": r.BurnMin = Whole(v, w, 0, 100000); break;
+                            case "splashRadius": r.SplashRadius = Real(v, w, 0.2f, 10); break;
+                            case "splashFraction": r.SplashFraction = Real(v, w, 0, 5); break;
+                            case "shockTargets": r.ShockTargets = Whole(v, w, 0, 10); break;
+                            case "shockRange": r.ShockRange = Real(v, w, 0.2f, 15); break;
+                            case "shockFraction": r.ShockFraction = Real(v, w, 0, 5); break;
+                            case "shockStun": r.ShockStun = Real(v, w, 0, 5); break;
+                            case "pierceTargets": r.PierceTargets = Whole(v, w, 0, 10); break;
+                            case "pierceRange": r.PierceRange = Real(v, w, 0.2f, 50); break;
+                            case "pierceFraction": r.PierceFraction = Real(v, w, 0, 5); break;
+                            case "bounceRange": r.BounceRange = Real(v, w, 0.2f, 15); break;
+                            case "bounceFraction": r.BounceFraction = Real(v, w, 0, 5); break;
+                            case "slowSeconds": r.SlowSeconds = Real(v, w, 0, 30); break;
+                            case "slowMult": r.SlowMult = Real(v, w, 0.05f, 1); break;
+                            case "bonkStun": r.BonkStun = Real(v, w, 0, 5); break;
+                            case "squeakStun": r.SqueakStun = Real(v, w, 0, 5); break;
+                            case "knockback": r.Knockback = Real(v, w, 0, 20); break;
+                            case "bleedFraction": r.BleedFraction = Real(v, w, 0, 5); break;
+                            case "refreshHealth": r.RefreshHealth = Whole(v, w, 0, 200); break;
+                            case "bayonetRange": r.BayonetRange = Real(v, w, 0, 10); break;
+                            case "bayonetMult": r.BayonetMult = Real(v, w, 1, 10); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
                 default:
                     throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" ({string.Join(", ", Sections)})");
             }
@@ -406,6 +521,9 @@ public sealed class ZombiesRules
             throw new WeaponFileException($"{source}: rounds \"spawnDelayMin\" is above \"spawnDelay\"");
         return r;
     }
+
+    /// <summary>The power-up keys in the rules file's "weights", in <see cref="ZPowerKind"/> order.</summary>
+    public static readonly string[] PowerKeys = ["maxAmmo", "instaKill", "doublePoints", "nuke", "carpenter"];
 
     private static ZombiePerkDef ReadPerk(JsonElement e, string where, List<ZombiePerkDef> others)
     {

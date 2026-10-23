@@ -238,6 +238,8 @@ public sealed partial class Game
         Horde.Clear();
         ZDrops.Clear();
         ZWeaponDrops.Clear();
+        ResetPowerUps(); // ZombiesPowerUps.cs
+        ZFxList.Clear();
         ZPlayers.Clear();
         ZRound = 0;
         ZPhase = ZRoundPhase.Waiting;
@@ -286,6 +288,7 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm)
             return;
+        _zNow = now;
         if (_zRunMatch != MatchNumber)
             StartZombiesRun(now);
 
@@ -309,6 +312,7 @@ public sealed partial class Game
         TickBox(zm, now);
         TickDrops(now);
         TickWeaponDrops(now); // ZombiesDrops.cs
+        TickPowerUps(now); // ZombiesPowerUps.cs
 
         // The game over: nobody left standing (everyone downed or bled out).
         if (_zAnySpawned && ZRound > 0 && Players.Count > 0 && !Players.Values.Any(p => IsStanding(p) || (p.Alive && ZP(p).SelfReviveAt > 0)))
@@ -328,6 +332,7 @@ public sealed partial class Game
         ZPhase = ZRoundPhase.Round;
         _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0)));
         _zNextSpawn = now + 1.0;
+        _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
         foreach (var p in Players.Values)
         {
             ZP(p).RepairPointsThisRound = 0;
@@ -561,7 +566,7 @@ public sealed partial class Game
                     if (zp.RepairPointsThisRound + ZRules.RepairPoints <= ZRules.RepairCapPerRound)
                     {
                         zp.RepairPointsThisRound += ZRules.RepairPoints;
-                        AddPoints(p, ZRules.RepairPoints);
+                        EarnPoints(p, ZRules.RepairPoints, now); // (Double Points doubles boards too)
                     }
                     Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
                 }

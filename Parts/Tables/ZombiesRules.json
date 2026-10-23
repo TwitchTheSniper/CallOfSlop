@@ -86,5 +86,43 @@
     "pickupRange": 1.4,
     "scrapPerKill": 1,
     "salvageScrap": 25
+  },
+  "powerUps": {
+    "note": "PROPOSED (milestone 3): World at War style power-ups. A kill drops one with dropChance, at most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). Insta-Kill and Double Points last duration seconds.",
+    "dropChance": 0.03,
+    "maxPerRound": 4,
+    "lifetime": 30,
+    "blinkSeconds": 10,
+    "duration": 30,
+    "pickupRange": 1.3,
+    "nukePoints": 400,
+    "carpenterPoints": 200,
+    "weights": {"maxAmmo": 1.2, "instaKill": 1, "doublePoints": 1, "nuke": 0.8, "carpenter": 0.8}
+  },
+  "ammoEffects": {
+    "note": "PROPOSED (milestone 3): what part flags do to zombies (docs/zombies/ZOMBIES-MODE.md, Special ammo effects). One effect of each kind per shot or swing, never stacked.",
+    "burnFraction": 0.6,
+    "burnSeconds": 3,
+    "burnMin": 40,
+    "splashRadius": 2.2,
+    "splashFraction": 0.5,
+    "shockTargets": 3,
+    "shockRange": 3.5,
+    "shockFraction": 0.4,
+    "shockStun": 0.4,
+    "pierceTargets": 2,
+    "pierceRange": 8,
+    "pierceFraction": 0.6,
+    "bounceRange": 4,
+    "bounceFraction": 0.5,
+    "slowSeconds": 2,
+    "slowMult": 0.5,
+    "bonkStun": 1,
+    "squeakStun": 0.3,
+    "knockback": 6,
+    "bleedFraction": 0.3,
+    "refreshHealth": 5,
+    "bayonetRange": 2.2,
+    "bayonetMult": 1.5
   }
 }

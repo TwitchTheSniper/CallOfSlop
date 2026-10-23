@@ -71,7 +71,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
     // 37: the Co-op mode (Source/Game/Pve, docs/pve/DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
     //     soldiers and co-op events), the Co-op module's mode-state tail (the objective panel), kill id 253 (killed by an enemy).
-    public const byte ProtocolVersion = 37;
+    // 40: Zombies milestone 3 (ZombiesPowerUps.cs, ZombiesAmmoEffects.cs): Msg.ZWorld ends with the floating power-ups
+    //     and the Insta-Kill / Double Points timers; ZEventKind MaxAmmo and Fx (a position after the text); bits 6-7 of a
+    //     zombie's state byte in Msg.ZEnts (burning, zapped). (38 and 39 are taken on main.)
+    public const byte ProtocolVersion = 40;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

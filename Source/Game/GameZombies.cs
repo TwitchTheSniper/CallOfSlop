@@ -191,7 +191,7 @@ public sealed partial class Game
                 flags |= 4;
         }
         var taken = Math.Min(hits.Count, m.Cleave);
-        flags |= ZombieMelee(attacker, origin, dir, m.Reach, m.ConeCos, m.Damage, m.Cleave - taken, m.Stun, viewTick, now); // Zombies (ZombieAI.cs)
+        flags |= ZombieMelee(attacker, origin, dir, m.Reach, m.ConeCos, m.Damage, m.Cleave - taken, m.Stun, viewTick, now, m.Flags); // Zombies (ZombieAI.cs; the build's part flags: ZombiesAmmoEffects.cs)
         if (hits.Count == 0 && flags == 0)
             MeleeProps(attacker, origin, dir, now);
         if (attacker.Id == LocalId)

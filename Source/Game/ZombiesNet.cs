@@ -15,6 +15,12 @@ public enum ZEventKind : byte
 
     /// <summary>A big line across the middle of the screen (ROUND 3, THE POWER IS ON).</summary>
     Banner,
+
+    /// <summary>Max Ammo: every gun in your slots gets a full reserve (protocol 40).</summary>
+    MaxAmmo,
+
+    /// <summary>A special ammo effect went off (arg: the <see cref="ZFxKind"/>; the position follows the text; protocol 40).</summary>
+    Fx,
 }
 
 /// <summary>
@@ -93,7 +99,7 @@ public sealed partial class Game
             var p = z.Position;
             w.U16(z.Id).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8((byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
-                .U8((byte)((byte)z.State | ((byte)z.Speed << 4)))
+                .U8((byte)((byte)z.State | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0))) // bits 6-7: burning, zapped (protocol 40)
                 .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255))
                 .U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
         }
@@ -132,7 +138,11 @@ public sealed partial class Game
             var idx = Array.FindIndex(Parts.All, x => x.Name == d.Part);
             w.U16(d.Id).U16((ushort)Math.Max(0, idx)).U16(Q(d.At.X, 32)).U16(Q(d.At.Y, 64)).U16(Q(d.At.Z, 32));
         }
+        WritePowerUps(w, _zNow); // power-ups and their timers (protocol 40, ZombiesPowerUps.cs)
     }
+
+    /// <summary>Server: the time of the last Zombies tick (what the power-up times in ZWorld count from).</summary>
+    private double _zNow;
 
     private static void WriteBuild(PacketWriter w, byte player, int slot, byte weapon, byte flags, string text)
     {
@@ -299,6 +309,16 @@ public sealed partial class Game
                         ZBannerText = text;
                         ZBannerTime = now;
                         break;
+                    case ZEventKind.MaxAmmo:
+                        LocalMaxAmmo();
+                        break;
+                    case ZEventKind.Fx when r.Has(12):
+                    {
+                        var at = new Vector3(r.F32(), r.F32(), r.F32());
+                        if (float.IsFinite(at.X + at.Y + at.Z))
+                            LocalFx((ZFxKind)Math.Min(arg, (ushort)ZFxKind.COUNT - 1), at, sound, now);
+                        break;
+                    }
                 }
                 break;
             }
@@ -404,7 +424,9 @@ public sealed partial class Game
                 Audio.Effect3D(Sfx.FleshHit3D, pos + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
             }
             z.State = state;
-            z.Speed = (ZSpeed)Math.Min(sb >> 4, (int)ZSpeed.Sprint);
+            z.Speed = (ZSpeed)Math.Min((sb >> 4) & 3, (int)ZSpeed.Sprint);
+            z.FxBurning = (sb & 64) != 0;
+            z.FxZapped = (sb & 128) != 0;
             z.HealthByte = health;
             z.Window = window == 255 ? -1 : window;
             z.Sim.Position = pos;
@@ -496,6 +518,7 @@ public sealed partial class Game
             var at = new Vector3(DQ(r.U16(), 32), DQ(r.U16(), 64), DQ(r.U16(), 32));
             ZDrops.Add(new ZDrop { Id = id, Part = part < Parts.All.Length ? Parts.All[part].Name : "?", At = at });
         }
+        ReadPowerUps(ref r, now); // (ZombiesPowerUps.cs)
     }
 
     // ---- Both sides, every frame ------------------------------------------------------------------------
