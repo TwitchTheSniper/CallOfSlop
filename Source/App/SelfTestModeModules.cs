@@ -102,6 +102,7 @@ public static partial class SelfTest
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
         // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs),
         // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
+        // TDM / KotH / CTF again when the nav build started checking risky links with the real mover (fix/map-stuck-spots, BotNavWalk.cs).
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB269F244E4FE3775),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x86DCD49BE2C8707B),
         (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x947A787E71B72D3F),
