@@ -48,7 +48,7 @@ public static unsafe partial class Program
     private static bool _mouseCaptured;
     private static bool _skipNextMouseDelta = true;
     private static double2 _lastCursor;
-    private static bool _wasDeadUi, _wasVoting;
+    private static bool _wasDeadUi, _wasResults;
     private static readonly bool[] _voteKeyDown = new bool[3];
     private static double _deathMenuAt;
     private static readonly DeathCam _deathCam = new(); // the camera after you die (DeathCam.cs)
@@ -1242,10 +1242,16 @@ public static unsafe partial class Program
 
     private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom; // (a Zombies workbench too; the lobby room)
 
+    /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
+    private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
+
+    /// <summary>This frame's inputs to the one mouse capture rule (CursorPolicy.cs).</summary>
+    private static CursorState CursorNow() => new(_session != null, MenusOpen, ResultsScreen, _window != null && _window.GetAttribute(GlfwWindowAttribute.Focused) != 0);
+
     private static void SetMouseCaptured(bool captured)
     {
-        if (captured && (MenusOpen || _session == null))
-            captured = false;
+        if (captured && !CursorPolicy.MayCapture(CursorNow()))
+            captured = false; // a menu or the results screen is up: keep the cursor free
         _mouseCaptured = captured;
         _window.SetInputMode(GlfwInputMode.Cursor, (int)(captured ? GlfwCursorMode.Disabled : GlfwCursorMode.Normal));
         if (captured && Glfw.RawMotionSupported())
@@ -1319,7 +1325,7 @@ public static unsafe partial class Program
             return;
         }
 
-        if (_session != null && !_mouseCaptured && !MenusOpen && !Ui.WantsMouse)
+        if (CursorPolicy.ClickCaptures(CursorNow(), _mouseCaptured, Ui.WantsMouse))
         {
             SetMouseCaptured(true);
             _swallowClick = true; // the click that recaptures the mouse shouldn't fire
@@ -1377,14 +1383,21 @@ public static unsafe partial class Program
                 SetMouseCaptured(true);
         }
 
-        // Results screen: free the mouse so players can click a map in the vote; 1/2/3 also vote.
-        var votingNow = _game.VoteOpen;
-        if (votingNow && !_wasVoting)
+        // Results screen: free the mouse so players can click a map in the vote; 1/2/3 also vote. The cursor stays
+        // free until the next match starts (CursorPolicy refuses every capture meanwhile), then comes back by itself.
+        var resultsNow = ResultsScreen;
+        if (resultsNow && !_wasResults)
         {
             Ui.MenuOpen = false;
             SetMouseCaptured(false);
         }
-        _wasVoting = votingNow;
+        else if (CursorPolicy.RecaptureAfterResults(_wasResults, CursorNow(), _mouseCaptured))
+        {
+            SetMouseCaptured(true);
+            _swallowClick = true;
+        }
+        _wasResults = resultsNow;
+        var votingNow = _game.VoteOpen;
         if (votingNow && !Ui.PauseOpen)
         {
             GlfwKey[] voteKeys = [GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3];
