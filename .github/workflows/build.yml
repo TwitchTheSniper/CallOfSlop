@@ -5,6 +5,12 @@ name: Build and self-test
 
 # To save Actions minutes (private repo, Windows runner minutes bill at 2x): docs-only and tool-script-only pushes don't
 # run, a newer push to the same branch cancels the older run, and a commit message containing [skip ci] skips the run.
+#
+# Focused tests: on a push to a branch other than main, a "[tests: Section A, Section B]" tag in the head commit's message
+# runs only those self-test sections (CallOfSlop --selftest-only "Section A, Section B"; names as --selftest-list prints
+# them, any case, a prefix picks every section starting with it). A manual run takes the same list in its "tests" input.
+# main (pushes and manual runs) and release.yml ALWAYS run the full suite and ignore the tag, so a filtered run can never
+# make main look green; a main run whose log says FILTERED fails.
 on:
   push:
     paths-ignore:
@@ -12,6 +18,11 @@ on:
       - 'docs/**'
       - 'tools/**'
   workflow_dispatch:
+    inputs:
+      tests:
+        description: "Self-test sections to run, comma-separated (--selftest-only; see --selftest-list). Empty: the full suite. Ignored on main."
+        required: false
+        default: ""
 
 concurrency:
   group: build-${{ github.ref }}
@@ -40,20 +51,54 @@ jobs:
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
+      - name: Pick self-test sections
+        id: pick
+        shell: bash
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+          INPUT_TESTS: ${{ inputs.tests }}
+        run: |
+          # The [tests: ...] tag (branch pushes) or the "tests" input (manual runs); main always gets the full suite.
+          tag=$(printf '%s' "$HEAD_MSG" | grep -oiE '\[tests:[^]]*\]' | head -1 || true)
+          only=""
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            if [ -n "$tag$INPUT_TESTS" ]; then echo "::notice title=Self-test filter::main always runs the full suite (tests tag/input ignored)"; fi
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            only="$INPUT_TESTS"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" == refs/heads/* ]]; then
+            only=$(printf '%s' "$tag" | sed -E 's/^\[[Tt][Ee][Ss][Tt][Ss]:[[:space:]]*//; s/[[:space:]]*\]$//')
+          fi
+          only=$(printf '%s' "$only" | tr -d '\r\n"')
+          if [ -n "$only" ]; then echo "::notice title=Self-test filter::FILTERED run, sections: $only (main still runs the full suite)"; fi
+          echo "only=$only" >> "$GITHUB_OUTPUT"
+
       - name: Self-test
         shell: bash
+        env:
+          ONLY: ${{ steps.pick.outputs.only }}
         run: |
           dir=bin/Release/net10.0
           set +e
-          timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest
+          if [ -n "$ONLY" ]; then
+            timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest-only "$ONLY"
+          else
+            timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest
+          fi
           code=$?
           set -e
           log="$dir/selftest.log"
           if [ -f "$log" ]; then
+            # The summary first: a step shows only its first 10 notices, and sections print notices of their own.
+            done=$(grep "^DONE" "$log" | tail -1 || true)
+            [ -n "$done" ] && echo "::notice title=Self-test::$done"
+            slow=$(grep "^SLOWEST" "$log" | tail -1 || true)
+            [ -n "$slow" ] && echo "::notice title=Self-test timings::$slow"
+            if [ "$GITHUB_REF" = "refs/heads/main" ] && { [ -z "$done" ] || grep -q "FILTERED" <<< "$done"; }; then
+              echo "::error title=Self-test::main must run the full suite to the end, but this run was filtered or didn't finish"
+              code=1
+            fi
             cat "$log"
             grep "FAIL:" "$log" | sed 's/^/::error title=Self-test::/' || true
-            done=$(grep "^DONE" "$log" | tail -1)
-            [ -n "$done" ] && echo "::notice title=Self-test::$done"
           else
             echo "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           fi
@@ -102,20 +147,51 @@ jobs:
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
+      - name: Pick self-test sections
+        id: pick
+        shell: bash
+        env:
+          HEAD_MSG: ${{ github.event.head_commit.message }}
+          INPUT_TESTS: ${{ inputs.tests }}
+        run: |
+          # The [tests: ...] tag (branch pushes) or the "tests" input (manual runs); main always gets the full suite.
+          tag=$(printf '%s' "$HEAD_MSG" | grep -oiE '\[tests:[^]]*\]' | head -1 || true)
+          only=""
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            if [ -n "$tag$INPUT_TESTS" ]; then echo "::notice title=Self-test filter::main always runs the full suite (tests tag/input ignored)"; fi
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            only="$INPUT_TESTS"
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [[ "$GITHUB_REF" == refs/heads/* ]]; then
+            only=$(printf '%s' "$tag" | sed -E 's/^\[[Tt][Ee][Ss][Tt][Ss]:[[:space:]]*//; s/[[:space:]]*\]$//')
+          fi
+          only=$(printf '%s' "$only" | tr -d '\r\n"')
+          if [ -n "$only" ]; then echo "::notice title=Self-test filter::FILTERED run, sections: $only (main still runs the full suite)"; fi
+          echo "only=$only" >> "$GITHUB_OUTPUT"
+
       - name: Self-test
         shell: pwsh
+        env:
+          ONLY: ${{ steps.pick.outputs.only }}
         run: |
           # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
           $dir = "bin/Release/net10.0"
-          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          $argv = if ("$env:ONLY" -ne "") { "--selftest-only `"$env:ONLY`"" } else { "--selftest" }
+          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList $argv -Wait -PassThru -NoNewWindow
           $code = $p.ExitCode
           $log = "$dir/selftest.log"
           # Each failed check becomes an annotation on the run, so it's visible without opening the log.
           if (Test-Path $log) {
-            Get-Content $log
-            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
+            # The summary first: a step shows only its first 10 notices, and sections print notices of their own.
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
+            $slow = Select-String -Path $log -Pattern "^SLOWEST" | Select-Object -Last 1
+            if ($slow) { Write-Output "::notice title=Self-test timings::$($slow.Line.Trim())" }
+            if ("$env:GITHUB_REF" -eq "refs/heads/main" -and (-not $done -or $done.Line -match "FILTERED")) {
+              Write-Output "::error title=Self-test::main must run the full suite to the end, but this run was filtered or didn't finish"
+              $code = 1
+            }
+            Get-Content $log
+            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written - the game didn't get far enough to run the checks"
           }

@@ -95,14 +95,16 @@ jobs:
         shell: pwsh
         run: |
           # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
+          # Always the FULL suite: never --selftest-only, and no commit-message [tests: ...] tag applies here.
           $dir = "bin/Release/net10.0"
           $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
           $code = $p.ExitCode
           $log = "$dir/selftest.log"
           if (Test-Path $log) {
-            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
             $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
             if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
+            if (-not $done -or $done.Line -match "FILTERED") { Write-Output "::error title=Self-test::the release needs a complete, unfiltered self-test run"; $code = 1 }
+            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written"
           }

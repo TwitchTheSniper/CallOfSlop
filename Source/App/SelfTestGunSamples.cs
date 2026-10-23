@@ -271,7 +271,10 @@ public static partial class SelfTest
         var shortBarrel = all.FirstOrDefault(a => a.Name == "Short Barrel");
         var kitted = Weapons.All[0].Clone();
         kitted.Kit = longBarrel != null ? KitOf(longBarrel) : 1u;
-        audio.KitVoiceForTest(kitted);
+        // Warm up well past the JIT's tier-up (one call wasn't enough run alone with --selftest-only: 88 one-off bytes
+        // landed in the measured window, which earlier sections had already paid in the full suite).
+        for (var i = 0; i < 1000; i++)
+            audio.KitVoiceForTest(kitted);
         var before = GC.GetAllocatedBytesForCurrentThread();
         for (var i = 0; i < 1000; i++)
             audio.KitVoiceForTest(kitted);
