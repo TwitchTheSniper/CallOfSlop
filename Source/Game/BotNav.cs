@@ -252,6 +252,7 @@ public sealed partial class NavGraph
         g.BuildCells(map);
         var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
         var failed = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(); // directions the mover couldn't walk
+        var pending = new List<PendingWalk>(); // directions waiting for their mover walk (BotNavWalk.cs)
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)
@@ -264,7 +265,7 @@ public sealed partial class NavGraph
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
                 var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
-                if (!link || !TryLink(g, c, i, j, edges, failed))
+                if (!link || !TryLink(g, c, i, j, edges, failed, pending))
                     continue;
                 // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -272,6 +273,30 @@ public sealed partial class NavGraph
                 t0 = Stopwatch.GetTimestamp();
             }
         }
+
+        // The mover walks, one per slice (a slice can't hold many: a few milliseconds each on a big terrain map).
+        foreach (var pw in pending)
+        {
+            var w0 = Stopwatch.GetTimestamp();
+            var ok = true;
+            foreach (var (from, sprint) in WalkStarts(pw))
+            {
+                ok = MoverWalk(from, pw.B, pw.Flags, pw.Ledge, sprint).Reached;
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                g.WalkTicks += Stopwatch.GetTimestamp() - w0;
+                yield return null;
+                t0 = w0 = Stopwatch.GetTimestamp();
+                if (!ok)
+                    break;
+            }
+            if (ok)
+                continue;
+            var e = edges[pw.Slot];
+            g.WalkRejected++;
+            failed.Add((e.From, e.To, e.Cost + LastResortCost, (byte)(e.Flags | FlagLastResort), e.Ledge));
+            edges[pw.Slot] = (-1, -1, 0f, (byte)0, Vector3.Zero);
+        }
+        edges.RemoveAll(e => e.From < 0);
 
         // Declared links (building stairs, Map.NavLinks): between the waypoint nodes at either end, without a walk.
         foreach (var (la, lb) in map.NavLinks)
@@ -517,7 +542,8 @@ public sealed partial class NavGraph
     }
 
     /// <summary>Links nodes i and j where a player can walk between them. False if they were rejected without a walk (cheap).</summary>
-    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges, List<(int, int, float, byte, Vector3)> failed)
+    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges, List<(int, int, float, byte, Vector3)> failed,
+        List<PendingWalk>? pending = null)
     {
         var a = g.Nodes[i];
         var b = g.Nodes[j];
@@ -538,6 +564,24 @@ public sealed partial class NavGraph
         var needs = (fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight, steepest);
         var walkStart = Stopwatch.GetTimestamp();
         g.PrepTicks += walkStart - prep;
+        if (needs && pending != null)
+        {
+            // The build walks these later, a walk per slice (BuildSteps), into the slots kept for them here (so the edge
+            // order, and every route, is the same as walking them right away).
+            g.WalkChecked++;
+            if (fwd)
+            {
+                pending.Add(new PendingWalk(edges.Count, a, b, fFlags, fLedge, steepest));
+                edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
+            }
+            if (back)
+            {
+                pending.Add(new PendingWalk(edges.Count, b, a, bFlags, bLedge, steepest));
+                edges.Add((j, i, SlopeCost(b, a, len) + ((bFlags & FlagMantle) != 0 ? 2f : 0f), bFlags, bLedge));
+            }
+            g.WalkTicks += Stopwatch.GetTimestamp() - walkStart;
+            return true;
+        }
         if (needs)
         {
             g.WalkChecked++;

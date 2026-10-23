@@ -288,26 +288,30 @@ public sealed partial class NavGraph
         }
     }
 
+    /// <summary>One direction of a link waiting for its mover walk during the build: its slot in the edge list.</summary>
+    private readonly record struct PendingWalk(int Slot, Vector3 A, Vector3 B, byte Flags, Vector3 Ledge, float Steepest);
+
     /// <summary>
-    /// Walking gets there, and sprinting too where the ground is steep enough to slide on (bots do either). A ledge is also tried from half a body
-    /// width to either side of the start (bots seldom arrive dead on the node), so one that only works from one exact spot isn't an edge.
+    /// The walks a direction must pass: walking from its start; sprinting too where the ground is steep enough to slide on
+    /// (bots do either; elsewhere sprinting walks the same); and for a real ledge (one climb of most of a mantle's reach, not
+    /// stairs sampled as small mantles) walking from half a body width to either side of the start (bots seldom arrive dead
+    /// on the node), so a ledge that only works from one exact spot isn't an edge.
     /// </summary>
-    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge, float steepest)
+    private static IEnumerable<(Vector3 From, bool Sprint)> WalkStarts(PendingWalk w)
     {
-        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached)
-            return false;
-        // Sprinting changes things only where the ground is steep enough to slide on (more speed into it); elsewhere it walks the same.
-        if (steepest < SlopeRules.MinWalkNormalY && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
-            return false;
-        // Side starts only for a real ledge (one climb of most of a mantle's reach), not for stairs sampled as small mantles.
+        var (a, b, flags, ledge) = (w.A, w.B, w.Flags, w.Ledge);
+        yield return (a, false);
+        if (w.Steepest < SlopeRules.MinWalkNormalY)
+            yield return (a, true);
         if ((flags & FlagMantle) == 0 || ledge.Y - a.Y < 0.9f || b.Y - ledge.Y > 0.3f)
-            return true;
+            yield break;
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
         if (d.LengthSquared() < 1e-4f)
-            return true;
+            yield break;
         d = Vector2.Normalize(d);
-        foreach (var side in (ReadOnlySpan<float>)[0.45f, -0.45f])
+        for (var k = 0; k < 2; k++)
         {
+            var side = k == 0 ? 0.45f : -0.45f;
             var p = new Vector3(a.X - d.Y * side, a.Y, a.Z + d.X * side);
             var t = World.Physics.Raycast(p + new Vector3(0, 0.4f, 0), -Vector3.UnitY, 0.8f, QueryFilter.Navigation);
             if (t >= 0.8f || MathF.Abs(0.4f - t) > 0.1f)
@@ -315,9 +319,16 @@ public sealed partial class NavGraph
             p.Y += 0.4f - t;
             if (World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0)))
                 continue;
-            if (!MoverWalk(p, b, flags, ledge, sprint: false).Reached)
-                return false;
+            yield return (p, false);
         }
+    }
+
+    /// <summary>All of <see cref="WalkStarts"/> at once (for blasted holes, BotNavPatch.cs: a handful of links).</summary>
+    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge, float steepest)
+    {
+        foreach (var (from, sprint) in WalkStarts(new PendingWalk(-1, a, b, flags, ledge, steepest)))
+            if (!MoverWalk(from, b, flags, ledge, sprint).Reached)
+                return false;
         return true;
     }
 
