@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Keelspar Bay Number 1",
+ "category": "KeelsparDrydock",
+ "description": "A boxed amber stencil, bay B1.",
+ "author": "Call of Slop",
+ "size": 2.4,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "keelspar_bay_number_1.png",
+ "fadeDistance": 110
+}

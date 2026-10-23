@@ -1,0 +1,470 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Oxygen Tank Bank",
+ "category": "Space",
+ "description": "Four white oxygen tanks strapped on a frame. Shoot it and it bursts after a short fuse.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    3.0,
+    1.6,
+    1.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 90,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  },
+  "explode": {
+   "radius": 5.0,
+   "damage": 100,
+   "fuse": 0.6,
+   "knockback": 12
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    3.0,
+    0.12,
+    1.0
+   ],
+   "offset": [
+    0.0,
+    0.06,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -1.05,
+    0.82,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    -1.05,
+    1.58,
+    0.0
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.44,
+    0.1,
+    0.02
+   ],
+   "offset": [
+    -1.05,
+    0.95,
+    0.26
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -0.35,
+    0.82,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    -0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    -0.35,
+    1.58,
+    0.0
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.44,
+    0.1,
+    0.02
+   ],
+   "offset": [
+    -0.35,
+    0.95,
+    0.26
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    0.35,
+    0.82,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    0.35,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    0.35,
+    1.58,
+    0.0
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.44,
+    0.1,
+    0.02
+   ],
+   "offset": [
+    0.35,
+    0.95,
+    0.26
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    1.05,
+    0.82,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    1.4,
+    0.207
+   ],
+   "offset": [
+    1.05,
+    0.82,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#e6e4de",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    1.05,
+    1.58,
+    0.0
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    0.44,
+    0.1,
+    0.02
+   ],
+   "offset": [
+    1.05,
+    0.95,
+    0.26
+   ],
+   "color": "#4a7ab0"
+  },
+  {
+   "size": [
+    3.0,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.13,
+    0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    3.0,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.13,
+    -0.5
+   ],
+   "color": "#6c6f73"
+  }
+ ],
+ "author": "Call of Slop"
+}

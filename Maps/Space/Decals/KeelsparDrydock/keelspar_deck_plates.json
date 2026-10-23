@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Keelspar Deck Plates",
+ "category": "KeelsparDrydock",
+ "description": "Quay deck plate seams and bolt heads (darkens the deck).",
+ "author": "Call of Slop",
+ "size": 4,
+ "rotation": 0,
+ "blend": "multiply",
+ "surfaces": "floor",
+ "image": "keelspar_deck_plates.png",
+ "fadeDistance": 60
+}

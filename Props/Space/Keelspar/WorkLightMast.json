@@ -1,0 +1,179 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Work Light Mast",
+ "category": "Space",
+ "description": "A tripod floodlight mast with three warm lamps facing +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.3,
+    3.7,
+    0.3
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.8,
+    0.08,
+    0.8
+   ],
+   "offset": [
+    0.0,
+    0.04,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.08,
+    1.4,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.3
+   ],
+   "rotation": [
+    14.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.08,
+    1.4,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.3
+   ],
+   "rotation": [
+    14.0,
+    120.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.08,
+    1.4,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.3
+   ],
+   "rotation": [
+    14.0,
+    240.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    3.0,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    2.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.9,
+    0.3,
+    0.2
+   ],
+   "offset": [
+    0.0,
+    3.55,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.04
+   ],
+   "offset": [
+    -0.3,
+    3.55,
+    0.11
+   ],
+   "color": "#fff0c8",
+   "anim": {
+    "type": "pulse",
+    "color": "#fff0c8",
+    "glow": 1.8,
+    "period": 3.0,
+    "off": "#c8b898"
+   }
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    3.55,
+    0.11
+   ],
+   "color": "#fff0c8",
+   "anim": {
+    "type": "pulse",
+    "color": "#fff0c8",
+    "glow": 1.8,
+    "period": 3.0,
+    "off": "#c8b898"
+   }
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.04
+   ],
+   "offset": [
+    0.3,
+    3.55,
+    0.11
+   ],
+   "color": "#fff0c8",
+   "anim": {
+    "type": "pulse",
+    "color": "#fff0c8",
+    "glow": 1.8,
+    "period": 3.0,
+    "off": "#c8b898"
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

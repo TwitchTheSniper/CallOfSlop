@@ -1,0 +1,85 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Hazard Bollard",
+ "category": "Space",
+ "description": "A short yellow bollard with a blinking amber lamp: marks drops and gantry runs.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.3,
+    1.02,
+    0.3
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.3,
+    0.1,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.05,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.16,
+    0.8,
+    0.16
+   ],
+   "offset": [
+    0.0,
+    0.5,
+    0.0
+   ],
+   "color": "#f0c040"
+  },
+  {
+   "size": [
+    0.16,
+    0.12,
+    0.16
+   ],
+   "offset": [
+    0.0,
+    0.51,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.12,
+    0.2
+   ],
+   "offset": [
+    0.0,
+    0.96,
+    0.0
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 1.6,
+    "period": 1.5,
+    "duty": 0.4
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

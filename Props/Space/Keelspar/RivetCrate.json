@@ -1,0 +1,83 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Rivet Crate",
+ "category": "Space",
+ "description": "A small ribbed steel crate with a hazard label: stackable, breaks.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 180,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.2
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.8,
+    0.6,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.3,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.84,
+    0.05,
+    0.64
+   ],
+   "offset": [
+    0.0,
+    0.595,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.84,
+    0.05,
+    0.64
+   ],
+   "offset": [
+    0.0,
+    0.045,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.3,
+    0.1,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    0.35,
+    0.31
+   ],
+   "color": "#f0c040"
+  }
+ ],
+ "author": "Call of Slop"
+}

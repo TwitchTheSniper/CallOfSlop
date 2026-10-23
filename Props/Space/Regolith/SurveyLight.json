@@ -1,0 +1,72 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Survey Light",
+ "category": "Space",
+ "description": "A slim orange survey pole with a blinking cyan lamp.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.3,
+    2.7,
+    0.3
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.15,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.08,
+    2.2,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    1.4,
+    0.0
+   ],
+   "color": "#e8701e"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.22
+   ],
+   "offset": [
+    0.0,
+    2.61,
+    0.0
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 1.8,
+    "period": 2.4,
+    "duty": 0.2
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}
