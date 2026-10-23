@@ -176,20 +176,6 @@ public static partial class SelfTest
             Fail($"{m.Name}: {offMain.Count} spawn(s) or objective(s) off the main nav area: {string.Join(", ", offMain.Take(4).Select(p => $"({p.X:0},{p.Y:0.0},{p.Z:0})"))}");
         if (mainPct < 90)
             Fail($"{m.Name}: only {mainPct:0}% of the nav nodes are on the main area (pockets bots can't leave?)");
-        // DEBUG
-        var weak = Enumerable.Range(0, g.Nodes.Length).Where(i => g.Component[i] == g.MainComponent && !g.MainNodes.Contains(i)).ToList();
-        Line($"  DEBUG {weak.Count} nodes in the main component but not strongly connected: " + string.Join(" ", weak.Take(80).Select(i => $"({g.Nodes[i].X:0},{g.Nodes[i].Y:0.0},{g.Nodes[i].Z:0})")));
-        foreach (var t in new[] { 0, 1 })
-        {
-            var n = search.Find(g, g.Nearest(o.TeamSpawns[t][0], needSight: false), g.Nearest(o.Hills[0].Center, needSight: false), path, maxExpand: g.Nodes.Length);
-            Line($"  DEBUG team {t} path to hill 1 ({n} nodes): " + string.Join(" ", Enumerable.Range(0, n).Select(k => $"({g.Nodes[path[k]].X:0},{g.Nodes[path[k]].Y:0.0},{g.Nodes[path[k]].Z:0})")));
-        }
-        foreach (var pt in new[] { new Vector3(-18, 0, 0), new Vector3(18, 0, 0), new Vector3(-13, 1.2f, 0), new Vector3(13, 1.2f, 0), new Vector3(-22, 0, -4), new Vector3(22, 0, 4), new Vector3(-16.2f, 0, 0), new Vector3(16.2f, 0, 0) })
-        {
-            var k = g.Nearest(pt, needSight: false);
-            Line($"  DEBUG node near ({pt.X},{pt.Y},{pt.Z}): ({g.Nodes[k].X:0.0},{g.Nodes[k].Y:0.00},{g.Nodes[k].Z:0.0}) links: "
-                 + string.Join(" ", Enumerable.Range(g.EdgeStart[k], g.EdgeStart[k + 1] - g.EdgeStart[k]).Select(e => $"({g.Nodes[g.EdgeTo[e]].X:0.0},{g.Nodes[g.EdgeTo[e]].Y:0.0},{g.Nodes[g.EdgeTo[e]].Z:0.0})")));
-        }
         return g;
     }
 
