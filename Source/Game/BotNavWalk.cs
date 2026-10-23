@@ -217,15 +217,16 @@ public sealed partial class NavGraph
         {
             var dir = d / dist;
             var side = Vector3.Normalize(new Vector3(-dir.Z, 0, dir.X) + new Vector3(0, 1e-6f, 0)) * (World.PlayerRadius - 0.05f);
-            foreach (var o in (ReadOnlySpan<float>)[0f, 1f, -1f]) // the middle and both sides of the body
-                if (World.Physics.Raycast(a + shin + side * o, dir, dist, ShinFilter) < dist - 0.05f)
-                    return true;
+            foreach (var h in (ReadOnlySpan<float>)[0f, 0.8f]) // shin and waist height
+                foreach (var o in (ReadOnlySpan<float>)[0f, 1f, -1f]) // the middle and both sides of the body
+                    if (World.Physics.Raycast(a + shin + new Vector3(0, h, 0) + side * o, dir, dist, ShinFilter) < dist - 0.05f)
+                        return true;
         }
         return SlopedLink(a, b, WalkCheckNormalY);
     }
 
-    /// <summary>cos(33 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
-    private const float WalkCheckNormalY = 0.83867057f;
+    /// <summary>cos(40 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
+    private const float WalkCheckNormalY = 0.76604444f;
 
     /// <summary>
     /// Does a body walking a -> b run into a shut building door? Bots open doors by walking into them (GameBuildings.cs) and the
