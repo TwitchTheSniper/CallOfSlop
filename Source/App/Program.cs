@@ -72,8 +72,13 @@ public static unsafe partial class Program
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
-        if (args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
-            return SelfTest.Run(); // headless checks, see SelfTest.cs
+        if (args.Any(a => a.Equals("--selftest-list", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.List(); // the self-test's section names, for --selftest-only
+        var selfTestOnly = args.SkipWhile(a => !a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
+        if (selfTestOnly?.StartsWith("--") == true || selfTestOnly == null && args.Any(a => a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)))
+            selfTestOnly = ""; // given without names: an error that lists the valid ones, never a silent full run
+        if (selfTestOnly != null || args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
             return Maps.Export(exportDir); // writes the loaded maps back out as map files
         if (args.SkipWhile(a => !a.Equals("--check-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkFile)
