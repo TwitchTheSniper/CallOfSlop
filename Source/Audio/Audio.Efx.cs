@@ -38,7 +38,7 @@ public sealed partial class Audio
     public AudioSpace Space { get; private set; } = AudioSpace.Urban;
 
     /// <summary>High-frequency gain of the distance low-pass: 1 within 8 m, about 0.4 at 60 m, never below 0.12.</summary>
-    public static float DistanceHf(float distance) => Math.Clamp(MathF.Exp(-MathF.Max(0f, distance - 8f) / 55f), 0.12f, 1f);
+    public static float DistanceHf(float distance) => AudioMix.Defaults.DistanceHf(distance); // the mixer's Distance rows (AudioMixDefaults.cs)
 
     private void InitEfx()
     {
@@ -134,11 +134,11 @@ public sealed partial class Audio
             if (position is { } p)
             {
                 var d = Vector3.Distance(p, _listener);
-                var hf = DistanceHf(d) * DeafenHf;
+                var hf = Mix.DistanceHf(d) * DeafenHf; // the player's mix (Audio.Mixer.cs)
                 if (thin && !_bandpass.Filter.IsNull())
                 {
                     _bandpass.GainHf = hf;
-                    _bandpass.GainLf = DistanceLf(d);
+                    _bandpass.GainLf = Mix.DistanceLf(d);
                     src.DirectFilter = _bandpass; // copies the filter's settings into the source
                 }
                 else

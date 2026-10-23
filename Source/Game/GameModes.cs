@@ -348,7 +348,7 @@ public sealed partial class Game
     internal void ModeEvent(string text, Sfx sound)
     {
         Log(text, true);
-        Audio.Effect(sound, 0.6f);
+        Audio.Effect(sound, 0.6f, MixBus.Notify);
         if (!IsServer || Net.IsOffline)
             return;
         _w.Begin(Msg.ModeEvent).U8((byte)sound).Str(text.Length > 100 ? text[..100] : text);
@@ -429,7 +429,7 @@ public sealed partial class Game
                 var sound = (Sfx)r.U8();
                 Log(r.Text(), true); // printable ASCII from the host
                 if (sound < Sfx.COUNT)
-                    Audio.Effect(sound, 0.6f);
+                    Audio.Effect(sound, 0.6f, MixBus.Notify);
                 break;
             }
             case (byte)Msg.Ready when IsServer && r.Has(1):

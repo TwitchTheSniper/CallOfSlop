@@ -11,7 +11,8 @@ public static unsafe partial class Program
     private static void UpdateFrenzyGunSound()
     {
         AudioSystem.FrenzyGunMode = _settings.FrenzyGunSound;
-        AudioSystem.FrenzyGunLevel = FrenzyFx.LocalShownLevel;
+        var preview = Ui.FrenzyPreviewLevel(Brutal.GlfwApi.Glfw.Time); // the Audio mixer's frenzy preview drives your gun's layer too
+        AudioSystem.FrenzyGunLevel = preview >= 0 ? preview : FrenzyFx.LocalShownLevel;
         AudioSystem.FrenzyGunClass = FrenzyFx.Override?.Class ?? FrenzyFx.LocalClass;
     }
 }

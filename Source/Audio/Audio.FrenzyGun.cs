@@ -93,7 +93,8 @@ public sealed partial class Audio
     /// <summary>Starts a listener-relative frenzy voice (a free one, else the oldest), <paramref name="x"/> metres to the side.</summary>
     private void FrenzyVoice(AlBuffer buffer, float gain, float pitch, float x)
     {
-        if (buffer.IsNull() || gain * EffectsVolume <= 0.002f)
+        var mix = Mix.Gain(MixBus.GunFrenzyLayer); // the mixer's "Frenzy gun-sound layer" (Audio.Mixer.cs)
+        if (buffer.IsNull() || gain * EffectsVolume <= 0.002f || mix <= 0f)
             return;
         var now = Now();
         var pick = 0;
@@ -112,7 +113,7 @@ public sealed partial class Audio
             }
         }
         var src = _frenzySources[pick];
-        Start(src, buffer, null, MathF.Min(1f, gain * EffectsVolume), pitch, Falloff.Normal);
+        Start(FrenzySlot(pick), src, buffer, null, MathF.Min(1f, gain * EffectsVolume), pitch, Falloff.Normal, mix, MixBus.GunFrenzyLayer);
         if (x != 0f)
             src.Position = new float3(x, 0f, -0.4f);
         _frenzyStartedAt[pick] = now;

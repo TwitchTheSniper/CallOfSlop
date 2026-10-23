@@ -164,6 +164,7 @@ public sealed partial class Audio
         public AlBuffer[] Free = [], All = [];
         public int FreeCount;
         public VoiceStream? Bound;
+        public float MaxGain = 1f; // the OpenAL cap last set (the audio mixer's Voice chat row lifts it for a boost)
     }
 
     private VoiceOut[] _voiceOut = [];
@@ -308,7 +309,14 @@ public sealed partial class Audio
             src.SourceRelative = true;
             src.Position = new float3(0, 0, 0);
         }
-        src.Gain = gain;
+        var mix = Mix.Gain(MixBus.Voice); // the audio mixer's Voice chat row (Audio.Mixer.cs): exactly 1 by default
+        var cap = MathF.Max(1f, mix);
+        if (v.MaxGain != cap)
+        {
+            src.MaxGain = cap; // a boost may pass OpenAL's default cap of 1 (scaled with it, like the other buses)
+            v.MaxGain = cap;
+        }
+        src.Gain = mix == 1f ? gain : gain * mix;
         if (EfxEnabled)
         {
             try

@@ -273,7 +273,7 @@ public sealed partial class Game
                 {
                     ZBoards[z.Window]--;
                     z.NextTear = now + ZRules.BoardTearSeconds;
-                    Audio.Effect3D(Sfx.BreakWood, w.Opening.Center, 0.9f);
+                    Audio.Effect3D(Sfx.BreakWood, w.Opening.Center, 0.9f, MixBus.Zombies);
                 }
                 return;
             }
@@ -529,7 +529,7 @@ public sealed partial class Game
             if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < 1.6f)
             {
                 ZombieHurt(t, ZRules.ZombieDamage, now, z.Position);
-                Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f);
+                Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f, MixBus.Zombies);
             }
         }
         if (backToWindow && z.Window >= 0)
@@ -622,7 +622,7 @@ public sealed partial class Game
         AddPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints);
         zp.Scrap += ZRules.ScrapPerKill;
         RollDrop(z.Position, ZRound, now);
-        Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f);
+        Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);
         return true;
     }
 
