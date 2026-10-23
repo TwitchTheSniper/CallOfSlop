@@ -165,13 +165,13 @@ public static class BuildModel
                 mode = 2; // flat and bright: reads as a marker, not as a real part
             }
             var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (bx.Tag == "irons" ? GunPartFlags.Top : 0);
-            var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(PartDef.Rot(bx.RotDeg)) * Matrix4x4.CreateTranslation(bx.Pos);
+            var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos);
             var n = pn.Add($"box{i}", m, Renderable.Box(color, alpha, mode));
             n.Tag = f;
             if (bx.Shape == "rod")
             {
                 // An octagonal rod: a second box turned 45 degrees about the rod's own axis (Z).
-                var m2 = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateRotationZ(MathF.PI / 4) * Matrix4x4.CreateFromQuaternion(PartDef.Rot(bx.RotDeg))
+                var m2 = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateRotationZ(MathF.PI / 4) * Matrix4x4.CreateFromQuaternion(bx.Rotation)
                          * Matrix4x4.CreateTranslation(bx.Pos);
                 pn.Add($"box{i}r", m2, Renderable.Box(color * 0.93f, alpha, mode)).Tag = f;
             }
@@ -299,6 +299,8 @@ public static class WeaponBuilder
     {
         var def = BuildStats.Compute(b, out var problems);
         var a = new AssembledWeapon { Build = b, Problems = problems, Def = def };
+        if (def != null)
+            def.BuildText = b.ToText(); // so a part hot reload can rebuild this weapon in place (Source/Zombies/PartReload.cs)
         if (b.Root == null)
             return a;
         var accent = def?.Accent ?? PartDef.RarityColor(b.Nodes.Max(n => n.Part.Rarity));
@@ -312,7 +314,10 @@ public static class WeaponBuilder
                 pts[i] = pts[i] with { Muzzle = model.Muzzles[i] };
         a.PreviewDef = shown;
         if (b.IsMelee && problems.Count == 0)
+        {
             a.Melee = MeleeStats.Compute(b, shown);
+            a.Melee.BuildText = b.ToText();
+        }
         return a;
     }
 

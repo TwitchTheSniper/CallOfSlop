@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Screw Head",
+  "about": "A slotted screw head facing +Y (turn it with \"rot\" for the sides).",
+  "model": [
+    {"size": [0.007, 0.002, 0.007], "pos": [0, 0.001, 0], "color": "steel"},
+    {"size": [0.0075, 0.0025, 0.0015], "pos": [0, 0.0012, 0], "color": "black"}
+  ]
+}

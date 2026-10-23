@@ -1,0 +1,18 @@
+// A model fragment (format call-of-slop-fragment/1): boxes any part can bring in with
+//   {"use": "Picatinny Rail", "pos": [x, y, z], "rot": [x, y, z], "scale": 1 or [x, y, z], "color": "accent"}
+// Boxes are in the fragment's own space (metres, -Z forward, +Y up); "scale" stretches them along the fragment's axes,
+// "rot" turns them, "pos" moves them; "color", "alpha" and "tag" override every box it brings. Fragments may use
+// other fragments. See docs/zombies/WEAPON-BUILDER.md, "Making parts".
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Picatinny Rail",
+  "about": "A 12 cm accessory rail lying along -Z, its base on y = 0.",
+  "model": [
+    {"size": [0.022, 0.006, 0.12], "pos": [0, 0.003, 0], "color": "black"},
+    {"size": [0.024, 0.004, 0.008], "pos": [0, 0.008, -0.05], "color": "black"},
+    {"size": [0.024, 0.004, 0.008], "pos": [0, 0.008, -0.025], "color": "black"},
+    {"size": [0.024, 0.004, 0.008], "pos": [0, 0.008, 0], "color": "black"},
+    {"size": [0.024, 0.004, 0.008], "pos": [0, 0.008, 0.025], "color": "black"},
+    {"size": [0.024, 0.004, 0.008], "pos": [0, 0.008, 0.05], "color": "black"}
+  ]
+}

@@ -17,7 +17,8 @@ namespace CallOfSlop;
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
-/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
+/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -83,6 +84,12 @@ public static unsafe partial class Program
             return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
         if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
+        if (args.SkipWhile(a => !a.Equals("--check-part", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partFile)
+            return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
+        if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))
+            return PartTools.CheckAll(args.SkipWhile(a => !a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")));
+        if (args.SkipWhile(a => !a.Equals("--export-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partDir)
+            return PartTools.Export(partDir, args.Any(a => a.Equals("--resolved", StringComparison.OrdinalIgnoreCase))); // part files normalised (or resolved)
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
 
@@ -1046,6 +1053,7 @@ public static unsafe partial class Program
                 }
             }
             UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;

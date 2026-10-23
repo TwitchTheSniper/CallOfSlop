@@ -30,6 +30,9 @@ public sealed class MeleeDef
     /// <summary>The stand-in drawn in first person during a swing (the built model, swung with the one-handed melee arc).</summary>
     public required WeaponDef View;
 
+    /// <summary>The melee build as text (<see cref="WeaponBuild.ToText"/>), so a part hot reload can rebuild it in place.</summary>
+    public string? BuildText;
+
     /// <summary>Length of the swing animation: a bit over half the swing time, within the existing animation's range.</summary>
     public float SwingAnim => Math.Clamp(Swing * 0.55f, 0.25f, 0.6f);
 

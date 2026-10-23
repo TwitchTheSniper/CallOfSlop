@@ -1470,7 +1470,8 @@ public sealed partial class Game : IDisposable
                 _clients[sender.G] = (sender, newId);
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
-                    .U8((byte)World.PhysicsMode); // protocol 13: which movement to predict with
+                    .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
+                    .U32(PartSet.Hash).U16((ushort)Parts.All.Length); // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -1651,6 +1652,14 @@ public sealed partial class Game : IDisposable
                     break;
                 }
                 World.PhysicsMode = r.Has(1) && r.U8() == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic; // predict with the host's movement
+                // Parts are data files too (Zombies sends them by position): a different Parts folder can't join. Older hosts don't send it.
+                if (r.Has(6) && PartSet.Mismatch(r.U32(), r.U16()) is { } partProblem)
+                {
+                    Status = partProblem;
+                    Log(Status, true);
+                    Disconnected = true;
+                    break;
+                }
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.

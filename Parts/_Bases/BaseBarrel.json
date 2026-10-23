@@ -1,0 +1,19 @@
+// A base template (Parts/_Bases): never a part in the game itself, and allowed to leave things out. Parts start from
+// it with "extends": "Base Barrel" and change only what differs. This one is the Standard Barrel without its name.
+{
+  "format": "call-of-slop-part/1",
+  "name": "Base Barrel",
+  "category": "barrel",
+  "rarity": "common",
+  "bores": ["pistol", "rifle"],
+  "weight": 0.35,
+  "hand": [0, -0.03, -0.08],
+  "muzzles": [[0, 0, -0.2]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.2]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.022, 0.022, 0.2], "pos": [0, 0, -0.1], "color": "black"}
+  ],
+  "stats": []
+}
