@@ -8,9 +8,10 @@ namespace CallOfSlop;
 /// The player's audio mix (the Audio mixer debug window): a level in dB (and a mute) per <see cref="MixBus"/> and the
 /// gun-mix shape values (<see cref="MixParam"/>), starting from <see cref="AudioMixDefaults"/>. Only changes local
 /// playback. <see cref="Gain"/> is an array lookup (the linear gains are worked out when a value changes), so the
-/// sound calls pay nothing for it; with the built-in defaults every gain is exactly 1 and every shape function returns
-/// what the game computed before the mixer existed. Saved as human-readable JSON (<c>audio_mix.json</c> next to the
-/// game, loaded at start-up; named presets in <c>AudioMixes/</c>).
+/// sound calls pay nothing for it. The built-in defaults are a baked player mix (<see cref="AudioMixDefaults.BakedMix"/>:
+/// some levels boosted or cut, so not every default gain is 1; a level at 0 dB is exactly 1), and with them every shape
+/// function returns what the game computed before the mixer existed. Saved as human-readable JSON (<c>audio_mix.json</c>
+/// in the save folder, loaded at start-up; named presets in <c>AudioMixes/</c>).
 /// </summary>
 public sealed class AudioMix
 {
@@ -246,17 +247,34 @@ public sealed class AudioMix
 
     private static double Round(float v) => Math.Round(v, 3);
 
-    /// <summary>What loading a JSON mix did.</summary>
-    public readonly record struct LoadReport(bool Ok, int Applied, int Unknown, int Clamped, string? Name, string? Game, string? Error)
+    /// <summary>
+    /// What loading a JSON mix did. <paramref name="Updated"/>: levels saved at their then-default that moved to today's
+    /// default (see <see cref="LoadJson"/>).
+    /// </summary>
+    public readonly record struct LoadReport(bool Ok, int Applied, int Unknown, int Clamped, string? Name, string? Game, string? Error, int Updated = 0)
     {
         public override string ToString() => Ok
-            ? $"{Applied} value(s) applied, {Unknown} unknown key(s) ignored, {Clamped} clamped{(Name != null ? $", preset \"{Name}\"" : "")}{(Game != null ? $", saved by {Game}" : "")}"
+            ? $"{Applied} value(s) applied, {Unknown} unknown key(s) ignored, {Clamped} clamped{(Updated > 0 ? $", {Updated} untouched level(s) moved to the new defaults" : "")}{(Name != null ? $", preset \"{Name}\"" : "")}{(Game != null ? $", saved by {Game}" : "")}"
             : $"not loaded: {Error}";
+    }
+
+    /// <summary>
+    /// The level a saved one loads as: a level saved at the default it had then (its "default" in the file) was never
+    /// moved by the player, so it follows the default when that changed since (a new baked mix); any other value is the
+    /// player's and stays. Without a saved default (hand-edited files, bare numbers) the value is taken as it is.
+    /// </summary>
+    internal static float UpdatedLevel(MixBus bus, float savedDb, float? savedDefault, out bool updated)
+    {
+        var now = AudioMixDefaults.Of(bus).Default;
+        updated = savedDefault is { } old && MathF.Abs(savedDb - old) < 0.0005f && MathF.Abs(old - now) >= 0.0005f;
+        return updated ? now : savedDb;
     }
 
     /// <summary>
     /// Loads a JSON mix (from <see cref="ToJson"/>) over the defaults: missing keys keep their default, unknown keys and
     /// values of the wrong type are ignored, out-of-range values are clamped. A level may also be a bare number (dB).
+    /// A level still at the "default" saved with it, when the built-in default has changed since, loads as today's
+    /// default (<see cref="UpdatedLevel"/>: an old save gets the new baked mix for every level the player never moved).
     /// On a parse error nothing changes.
     /// </summary>
     public LoadReport LoadJson(string json)
@@ -276,7 +294,7 @@ public sealed class AudioMix
             if (root.ValueKind != JsonValueKind.Object)
                 return new(false, 0, 0, 0, null, null, "not a JSON object");
             var fresh = new AudioMix();
-            int applied = 0, unknown = 0, clamped = 0;
+            int applied = 0, unknown = 0, clamped = 0, updated = 0;
             string? name = null, game = null;
             foreach (var prop in root.EnumerateObject())
             {
@@ -297,7 +315,7 @@ public sealed class AudioMix
                                 unknown++;
                                 continue;
                             }
-                            float? db = null;
+                            float? db = null, savedDefault = null;
                             bool? mute = null;
                             if (lv.Value.ValueKind == JsonValueKind.Number)
                                 db = (float)lv.Value.GetDouble();
@@ -307,11 +325,16 @@ public sealed class AudioMix
                                     db = (float)d.GetDouble();
                                 if (lv.Value.TryGetProperty("mute", out var m) && m.ValueKind is JsonValueKind.True or JsonValueKind.False)
                                     mute = m.GetBoolean();
+                                if (lv.Value.TryGetProperty("default", out var od) && od.ValueKind == JsonValueKind.Number && float.IsFinite((float)od.GetDouble()))
+                                    savedDefault = (float)od.GetDouble();
                             }
                             if (db is { } v && float.IsFinite(v))
                             {
                                 if (v < AudioMixDefaults.MinDb || v > AudioMixDefaults.MaxDb)
                                     clamped++;
+                                v = UpdatedLevel(bus.Value, v, savedDefault, out var moved);
+                                if (moved)
+                                    updated++;
                                 fresh.SetDb(bus.Value, v);
                                 applied++;
                             }
@@ -351,7 +374,7 @@ public sealed class AudioMix
                 }
             }
             CopyFrom(fresh);
-            return new(true, applied, unknown, clamped, name, game, null);
+            return new(true, applied, unknown, clamped, name, game, null, updated);
         }
     }
 

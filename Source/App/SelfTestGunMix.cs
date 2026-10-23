@@ -10,11 +10,26 @@ namespace CallOfSlop;
 /// your own shot is clearly louder than another player's at 5 m; another player's shot gets steadily quieter and thinner
 /// (less low end) with distance yet stays audible at 80 m; a suppressor stays quiet far away; explosions stay big and
 /// launchers aren't drowned out; full-auto fire with an explosion on top stays under full scale; and planning a shot
-/// allocates nothing and costs next to no CPU. Headless (no OpenAL needed); stereo panning and reverb are left out.
+/// allocates nothing and costs next to no CPU. Those checks measure the voices as tuned (every mixer level at 0 dB,
+/// <see cref="VoiceTune"/>); <see cref="CheckGunMixDefaultLevels"/> then renders through the built-in default mix (the
+/// baked SeabMix2: own gun +20 dB, others' near layer +14.1, distant layer +10, explosions +20.1) and checks that its
+/// boosts are heard in full through the per-voice cap and that your own shot still clearly leads.
+/// Headless (no OpenAL needed); stereo panning and reverb are left out.
 /// </summary>
 public static partial class SelfTest
 {
     private static readonly List<string> GunMixNotes = new();
+
+    /// <summary>Every mixer level at 0 dB (the factory shape): the voices as tuned, before the default mix's levels.</summary>
+    private static readonly AudioMix VoiceTune = UnityLevels();
+
+    private static AudioMix UnityLevels()
+    {
+        var m = new AudioMix();
+        for (var i = 0; i < (int)MixBus.COUNT; i++)
+            m.SetDb((MixBus)i, 0f);
+        return m;
+    }
 
     private static void MixLine(string s)
     {
@@ -117,6 +132,7 @@ public static partial class SelfTest
         CheckGunMixRelations(set, real);
         CheckGunMixHeadroom(set, real);
         CheckGunMixCost();
+        CheckGunMixDefaultLevels(set, real);
         CheckOwnGunVolumeSetting();
         Line("::notice title=Gun mix (results)::" + string.Join("%0A", GunMixNotes.Select(t => t.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
@@ -179,7 +195,7 @@ public static partial class SelfTest
         var w = real.Where(x => x.Mode != FireMode.Semi).OrderByDescending(x => x.Rpm).FirstOrDefault() ?? real[0];
         var sr = Audio.SampleRate;
         var mix = new float[(int)(1.5f * sr)];
-        var plan = Audio.PlanShot(true, false, true, 0f);
+        var plan = Audio.PlanShot(VoiceTune, true, false, true, 0f);
         var period = 60.0 * sr / Math.Max(1, w.Rpm);
         var k = 0;
         for (var t = 0.0; t < sr; t += period)
@@ -244,6 +260,68 @@ public static partial class SelfTest
             Fail($"planning a shot takes {ns:0} ns (budget 2 us)");
     }
 
+    /// <summary>
+    /// The built-in default mix (the baked SeabMix2) against the tuned voices: your own shot plays exactly its level
+    /// louder (+20 dB: the per-voice cap lifted with it, not clipped at 1), another player's 5 m shot its near level
+    /// louder, so your own still leads by at least <see cref="OwnShotMarginDb"/> (by the tuned margin plus own minus near
+    /// level); explosions still beat gunfire at 15 m. The launchers and headroom at the default levels are logged.
+    /// </summary>
+    private static void CheckGunMixDefaultLevels(Audio.SoundSet set, WeaponDef[] real)
+    {
+        var mix = AudioMix.Defaults;
+        float ownDb = mix.Db(MixBus.GunOwn), nearDb = mix.Db(MixBus.GunOtherNear), farDb = mix.Db(MixBus.GunOtherFar);
+        var ownGain = new List<double>();
+        var margins = new List<double>();
+        var tuneMargins = new List<double>();
+        var at80 = new List<double>();
+        foreach (var w in real)
+        {
+            var own = MeasureMix(RenderMixShot(set, w, null, false, mix));
+            var ownTune = MeasureMix(RenderMixShot(set, w, null, false));
+            ownGain.Add(own.Lufs - ownTune.Lufs);
+            margins.Add(own.Lufs - MeasureMix(RenderMixShot(set, w, 5f, false, mix)).Lufs);
+            tuneMargins.Add(ownTune.Lufs - MeasureMix(RenderMixShot(set, w, 5f, false)).Lufs);
+            at80.Add(MeasureMix(RenderMixShot(set, w, 80f, false, mix)).Lufs - own.Lufs);
+        }
+        var shift = Median(margins) - Median(tuneMargins);
+        MixLine($"default mix ({AudioMixDefaults.BakedMix}: own {ownDb:+0.0;-0.0} dB, near {nearDb:+0.0;-0.0}, far {farDb:+0.0;-0.0}): own shot {Median(ownGain):+0.00;-0.00} dB over the tuned voice (least {ownGain.Min():+0.00;-0.00}); "
+                + $"own vs another player's at 5 m {Median(margins):+0.0;-0.0} dB median ({margins.Min():+0.0;-0.0} least; tuned {Median(tuneMargins):+0.0;-0.0}, so {shift:+0.0;-0.0} dB); another player's at 80 m {Median(at80):+0.0;-0.0} dB under your own");
+        if (ownGain.Any(g => Math.Abs(g - ownDb) > 0.05))
+            Fail($"your own shot at the default {ownDb:+0.0;-0.0} dB plays {ownGain.Min():+0.00;-0.00}..{ownGain.Max():+0.00;-0.00} dB over the tuned voice (want {ownDb:+0.0;-0.0}: clipped by the per-voice cap?)");
+        if (Median(margins) < OwnShotMarginDb || margins.Min() < OwnShotMarginDb - 2)
+            Fail($"with the default mix your own shot is only {Median(margins):+0.0;-0.0} dB (median; least {margins.Min():+0.0;-0.0}) louder than another player's at 5 m (want {OwnShotMarginDb} dB, {OwnShotMarginDb - 2} for every gun)");
+        if (Math.Abs(shift - (ownDb - nearDb)) > 0.2)
+            Fail($"the default mix moves own vs another player's at 5 m by {shift:+0.0;-0.0} dB (want own minus near level, {ownDb - nearDb:+0.0;-0.0} dB)");
+
+        var rifle = real.FirstOrDefault(w => w.Class == WeaponClass.AssaultRifle) ?? real[0];
+        var boomPcm = set.Effects[(int)Sfx.Explosion][0];
+        var boomBus = mix.Gain(MixBus.Explosion);
+        var e15 = MeasureMix(RenderMixEffect(boomPcm, 15f, Audio.FragExplosionGain, boomBus)).Lufs - MeasureMix(RenderMixShot(set, rifle, 15f, false, mix)).Lufs;
+        if (e15 < 6)
+            Fail($"with the default mix a frag explosion at 15 m is only {e15:+0.0;-0.0} dB louder than {rifle.Name} fired from there (want 6 dB)");
+        var ownRifle = MeasureMix(RenderMixShot(set, rifle, null, false, mix)).Lufs;
+        var launchers = Weapons.All.Where(w => w.Sound is SoundStyle.Rocket or SoundStyle.Thump).ToArray();
+        var lOwn = launchers.Select(w => MeasureMix(RenderMixShot(set, w, null, false, mix)).Lufs - ownRifle).ToList();
+        var lFar = launchers.Select(w => MeasureMix(RenderMixShot(set, w, 30f, false, mix)).Lufs - MeasureMix(RenderMixShot(set, rifle, 30f, false, mix)).Lufs).ToList();
+
+        // Headroom at the default levels (logged: the tuned-voice check above is the one that must hold).
+        var fast = real.Where(x => x.Mode != FireMode.Semi).OrderByDescending(x => x.Rpm).FirstOrDefault() ?? real[0];
+        var plan = Audio.PlanShot(mix, true, false, true, 0f);
+        var sr = Audio.SampleRate;
+        var period = 60.0 * sr / Math.Max(1, fast.Rpm);
+        var buf = new float[sr];
+        var k = 0;
+        for (var t = 0.0; t < sr; t += period)
+        {
+            var shot = set.Shots[fast.Id][k++ % set.Shots[fast.Id].Length];
+            for (var i = 0; i < shot.Length && (int)t + i < buf.Length; i++)
+                buf[(int)t + i] += shot[i] / 32768f * plan.NearBusGain * MathF.Min(1f, plan.Near);
+        }
+        var peak = buf.Max(MathF.Abs) * 0.8f;
+        MixLine($"default mix: frag at 15 m {e15:+0.0;-0.0} dB over {rifle.Name} there; launchers vs {rifle.Name}: your own {Median(lOwn):+0.0;-0.0} dB, another player's at 30 m {Median(lFar):+0.0;-0.0} dB; "
+                + $"your {fast.Name} full auto peaks {peak:0.00} ({20 * Math.Log10(Math.Max(peak, 1e-9)):+0.0;-0.0} dBFS) at master 0.8 before OpenAL's output limiter");
+    }
+
     /// <summary>Settings > Audio "Own gun volume": an old settings file loads it as 1, a bad value is ignored or clamped, and it saves.</summary>
     private static void CheckOwnGunVolumeSetting()
     {
@@ -288,35 +366,37 @@ public static partial class SelfTest
     /// <summary>
     /// A weapon's shot as the game would play it (variant 0, no pitch or gain jitter): your own (<paramref name="distance"/>
     /// null) or another player's at a distance, near and far layers each at their plan gain times OpenAL's attenuation
-    /// (capped at 1, AL_MAX_GAIN), each through the distance filter.
+    /// (capped at 1, AL_MAX_GAIN), each through the distance filter, through <paramref name="mix"/> (default
+    /// <see cref="VoiceTune"/>): the bus gain scales the voice and its cap together (Audio.Mixer.cs).
     /// </summary>
-    private static float[] RenderMixShot(Audio.SoundSet set, WeaponDef w, float? distance, bool suppressed)
+    private static float[] RenderMixShot(Audio.SoundSet set, WeaponDef w, float? distance, bool suppressed, AudioMix? mix = null)
     {
         var near = (suppressed ? set.Suppressed : set.Shots)[w.Id][0];
         var far = suppressed ? null : set.Far[w.Id];
         var d = distance ?? 0f;
-        var plan = Audio.PlanShot(distance == null, suppressed, far != null, d);
+        var plan = Audio.PlanShot(mix ?? VoiceTune, distance == null, suppressed, far != null, d, w.Class == WeaponClass.Launcher);
         var len = Math.Max(near.Length, far?.Length ?? 0);
         var o = new float[len];
-        AddLayer(o, near, plan.Near, plan.NearFalloff, distance);
+        AddLayer(o, near, plan.Near, plan.NearFalloff, distance, plan.NearBusGain);
         if (far != null && plan.Far > 0f)
-            AddLayer(o, far, plan.Far * Audio.FarTrimFor(set.Shots[w.Id][0], far), plan.FarFalloff, distance);
+            AddLayer(o, far, plan.Far * Audio.FarTrimFor(set.Shots[w.Id][0], far), plan.FarFalloff, distance, plan.FarBusGain);
         return o;
     }
 
-    /// <summary>A positional effect (<see cref="Audio.Effect3D"/>: the normal falloff) at a distance.</summary>
-    private static float[] RenderMixEffect(short[] pcm, float distance, float gain)
+    /// <summary>A positional effect (<see cref="Audio.Effect3D"/>: the normal falloff) at a distance, at bus gain <paramref name="bus"/>.</summary>
+    private static float[] RenderMixEffect(short[] pcm, float distance, float gain, float bus = 1f)
     {
         var o = new float[pcm.Length];
-        AddLayer(o, pcm, gain, Audio.EffectFalloff, distance);
+        AddLayer(o, pcm, gain, Audio.EffectFalloff, distance, bus);
         return o;
     }
 
-    private static void AddLayer(float[] o, short[] pcm, float gain, Audio.Falloff falloff, float? distance)
+    /// <summary>One voice: OpenAL plays min(AL_GAIN x attenuation, AL_MAX_GAIN), with both scaled by the bus gain.</summary>
+    private static void AddLayer(float[] o, short[] pcm, float gain, Audio.Falloff falloff, float? distance, float bus = 1f)
     {
-        if (gain <= 0f)
+        if (gain <= 0f || bus <= 0f)
             return;
-        var g = MathF.Min(1f, gain * (distance is { } d ? falloff.Attenuation(d) : 1f));
+        var g = bus * MathF.Min(1f, gain * (distance is { } d ? falloff.Attenuation(d) : 1f));
         var x = new float[pcm.Length];
         for (var i = 0; i < x.Length; i++)
             x[i] = pcm[i] / 32768f * g;

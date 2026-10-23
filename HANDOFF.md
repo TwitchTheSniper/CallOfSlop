@@ -94,7 +94,7 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
 - "Test Range": a killed bot didn't respawn. Once, on Proto Box.
-- "Audio mixer meters": 1,800 bytes allocated. Linux, once.
+- "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
 
 **Environment**
 - The cloud agent container has no .NET SDK, and the proxy blocks dot.net, builds.dotnet.microsoft.com and packages.microsoft.com, so agents cannot build or run the self-test locally. They verify with `floaters.py` and branch CI (`[tests: ...]`) instead. Allowing those hosts under Settings > Capabilities would let agents build locally; restoring the Ahwoo packages would still need the NuGet API, which the user's rule forbids.
@@ -142,7 +142,7 @@ Defaults are in place for all of them.
    - Zombies: more maps, perk machine visuals, bots buying things;
    - co-op phases 2–4;
    - planet-map limits (mantling, death cam, Insane squads, flying streaks);
-   - baking the user's audio mix as the new defaults, once they share it;
+   - ~~baking the user's audio mix as the new defaults~~ done 2026-10-23: SeabMix2 is the built-in mix (`AudioMixDefaults.cs`; old saves move untouched levels to it);
    - Azure code signing;
    - the Foxhole-style sandbox mode.
 

@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// measured numbers are the game's.
 /// <para>
 /// Your own gun plays listener-relative at <see cref="OwnShotGain"/> (OpenAL's per-source cap of 1, so the baked
-/// peak of 0.85 is never pushed past it); another player's shot plays at <see cref="OtherShotGain"/> of that up close
+/// peak of 0.85 is never pushed past it; the mixer's level then scales the voice and the cap together); another
+/// player's shot plays at <see cref="OtherShotGain"/> of that up close
 /// and then follows the inverse-distance law (<see cref="ShotFalloff"/>: about 5 dB down for every doubling from 5 m), the
 /// near layer handing over to the distant one on the same curve, level-matched (<see cref="FarTrimFor"/>), so the
 /// handover never makes a far shot louder. With EFX the distance filter thins it as it goes: a low shelf takes the boom
@@ -40,8 +41,9 @@ public sealed partial class Audio
 
     /// <summary>
     /// How one gunshot plays: the near and far layers' gains (before distance) and their falloffs; and the mixer buses
-    /// they play on with those buses' gains (<c>NearBusGain</c>, <c>FarBusGain</c>: 1 with the built-in mix), which
-    /// scale the voice and its OpenAL cap together (Audio.Mixer.cs).
+    /// they play on with those buses' gains (<c>NearBusGain</c>, <c>FarBusGain</c>: the built-in mix has your own gun at
+    /// +20 dB = 10, another player's near layer +14.1 dB and the distant one +10 dB), which scale the voice and its
+    /// OpenAL cap together (Audio.Mixer.cs), so a boost is heard in full even for a voice at the cap.
     /// </summary>
     internal readonly record struct ShotPlan(float Near, float Far, Falloff NearFalloff, Falloff FarFalloff,
         MixBus NearBus = MixBus.GunOtherNear, MixBus FarBus = MixBus.GunOtherFar, float NearBusGain = 1f, float FarBusGain = 1f)
