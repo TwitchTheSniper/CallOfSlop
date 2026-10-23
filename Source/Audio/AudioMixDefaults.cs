@@ -87,8 +87,17 @@ public readonly record struct MixEntry(string Key, string Group, string Label, f
 /// </summary>
 public static class AudioMixDefaults
 {
-    /// <summary>Slider range of every level row (dB).</summary>
-    public const float MinDb = -40f, MaxDb = 12f;
+    /// <summary>
+    /// Slider range of every level row (dB). It was -40..+12 before 2026-10-23: a saved mix inside the old range loads
+    /// the same, and a value outside the new range loads clamped (counted in the load report).
+    /// </summary>
+    public const float MinDb = -50f, MaxDb = 50f;
+
+    /// <summary>
+    /// The linear gain of <see cref="MaxDb"/> (+50 dB, about 316x): the highest level a bus can apply. Every place a bus
+    /// gain goes through (the voices' AL_MAX_GAIN, the music trims) accepts at least this much.
+    /// </summary>
+    public static readonly float MaxLevelGain = MathF.Pow(10f, MaxDb / 20f);
 
     private static MixEntry L(string key, string group, string label, string help, float db = 0f) =>
         new(key, group, label, db, MinDb, MaxDb, "%+.1f dB", help, true);

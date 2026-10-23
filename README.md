@@ -688,7 +688,7 @@ A debug window for tuning the game's sound landscape: a level slider for every k
 **Opening it:** press **F8** (rebindable in Settings > Controls as *Audio mixer (debug window)*) or click **Open audio mixer** in **Settings > Audio**. It works in the main menu, in the lobby and live in a match. In a match the mouse is freed while it's open; F8 or Esc closes it and gives the mouse back to the game. It only changes what *you* hear, never anyone else's game. While it's closed it costs nothing (no meters run).
 
 **What's in it:**
-- **Levels** in dB (-40 to +12), each with a **mute** box, a **reset** button (R), its **default** and a live **meter** (RMS bar, peak line, peak-hold tick) with the number of sounds playing. 0 dB is the game as tuned. The rows, by group:
+- **Levels** in dB (-50 to +50; Ctrl+click a slider to type a value, Ctrl+wheel moves it 0.5 dB, Ctrl+Shift+wheel 0.1 dB), each with a **mute** box, a **reset** button (R), its **default** and a live **meter** (RMS bar, peak line, peak-hold tick) with the number of sounds playing. 0 dB is the game as tuned. A boost really applies (+20 dB is 10x, +50 dB about 316x): each sound's OpenAL cap rises with it, and boosted music goes through the music limiter instead of clipping. The output itself can't go past full scale, so watch the **CLIP** light when you push levels up. The rows, by group:
   - *Master*: everything, on top of Settings > Audio's master volume.
   - *Guns*: own gun; own gun suppressed; other players' guns (near layer); distant gunfire layer / tail; other players' suppressed guns; the frenzy gun-sound layer; reload / equip / dry fire.
   - *Launchers*: own launcher; other players' launchers and rocket motors; lock-on tones / detonator.
