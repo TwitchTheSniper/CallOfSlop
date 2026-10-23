@@ -50,6 +50,8 @@ public static partial class SelfTest
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
             Section("Nav edge walks (results first, temporary)", CheckNavEdgeWalks); // TEMP: to read the notice
+            Section("Matches", CheckMatches); // TEMP: moved up with the stuck notice below, to read it
+            Section("Stuck notes (temporary)", () => Line("::notice title=Stuck kills in the matches::" + (StuckNotes.Count == 0 ? "none" : string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\n", " "))))));
             Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
@@ -91,7 +93,6 @@ public static partial class SelfTest
             Section("More kill streaks", CheckMoreKillStreaks); // SelfTestMoreStreaks.cs: Smoke Screen to Juggernaut, counters, bots, packets, allocations
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
-            Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
             Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)

@@ -80,6 +80,8 @@ public sealed partial class NavGraph
     /// </summary>
     private static bool NeedsMoverWalk(Vector3 a, Vector3 b, byte flags, bool tight)
     {
+        if (CrossesDoor(World.Map, a, b))
+            return false; // through a shut door: bots open it, the plain mover can't (see CrossesDoor)
         if (flags != 0 || tight || MathF.Abs(a.Y - b.Y) > 0.3f)
             return true;
         if (World.Map.TerrainCollision is not { } ground)
@@ -94,6 +96,45 @@ public sealed partial class NavGraph
                 return true;
         }
         return false;
+    }
+
+    /// <summary>
+    /// Does a body walking a -> b run into a shut building door? Bots open doors by walking into them (GameBuildings.cs) and the
+    /// nav ignores doors, but the plain mover can't open one, so such links are left to the sampled checks.
+    /// </summary>
+    public static bool CrossesDoor(Map map, Vector3 a, Vector3 b)
+    {
+        if (map.BuildingDoors.Count == 0)
+            return false;
+        const float r = World.PlayerRadius + 0.05f;
+        float y0 = MathF.Min(a.Y, b.Y), y1 = MathF.Max(a.Y, b.Y) + World.PlayerHeight;
+        foreach (var d in map.BuildingDoors)
+        {
+            if (d.Open || d.Broken)
+                continue;
+            var box = map.Solid[d.SolidIndex];
+            if (box.Max.Y < y0 || box.Min.Y > y1)
+                continue;
+            // Segment against the box grown by the body radius (XZ slabs).
+            float t0 = 0f, t1 = 1f;
+            float dx = b.X - a.X, dz = b.Z - a.Z;
+            if (!Slab(a.X, dx, box.Min.X - r, box.Max.X + r, ref t0, ref t1) || !Slab(a.Z, dz, box.Min.Z - r, box.Max.Z + r, ref t0, ref t1))
+                continue;
+            return true;
+        }
+        return false;
+
+        static bool Slab(float o, float d, float lo, float hi, ref float t0, ref float t1)
+        {
+            if (MathF.Abs(d) < 1e-6f)
+                return o >= lo && o <= hi;
+            float ta = (lo - o) / d, tb = (hi - o) / d;
+            if (ta > tb)
+                (ta, tb) = (tb, ta);
+            t0 = MathF.Max(t0, ta);
+            t1 = MathF.Min(t1, tb);
+            return t0 <= t1;
+        }
     }
 
     /// <summary>Walking and sprinting both get there (bots do either).</summary>

@@ -68,6 +68,8 @@ public static partial class SelfTest
         var sum = $"{totalWalked} of {totalEdges} nav edges walked on {Maps.All.Length} maps, {totalFailed} failed on {badMaps} map(s), {sw.Elapsed.TotalSeconds:0.0} s";
         Line(sum);
         notes.Add(sum);
+        if (totalFailed > 0)
+            Fail($"nav edge walks: {totalFailed} edge(s) on {badMaps} map(s) the mover can't walk the way bots follow them ({string.Join(", ", perMap.Take(10))})");
         notes.Add($"the nav builder walked {builderChecked} links with the mover and dropped {builderRejected} directions; most on "
                   + string.Join(", ", rejectedBy.OrderByDescending(x => x.Count).Take(12).Select(x => $"{x.Map} {x.Count}")));
         notes.Add("by kind: " + string.Join(", ", byKind.Select(kv => $"{kv.Key} {kv.Value.Count}")));
@@ -118,6 +120,8 @@ public static partial class SelfTest
                 from[e] = i;
                 var a = nav.Nodes[i];
                 var b = nav.Nodes[j];
+                if (NavGraph.CrossesDoor(m, a, b))
+                    continue; // through a shut door: bots open it, the walker can't
                 if (nav.EdgeFlags[e] != 0 || MathF.Abs(a.Y - b.Y) > 0.3f || (terrain != null && EdgeWalkSloped(terrain, a, b)))
                     interesting.Add(e);
                 else
