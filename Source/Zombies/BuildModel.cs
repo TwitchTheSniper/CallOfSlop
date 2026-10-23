@@ -42,14 +42,18 @@ public static class BuildModel
         _ => s.Name,
     };
 
-    /// <summary>Builds the model of any build with a root (complete or not). <paramref name="accent"/> colours "accent" boxes.</summary>
-    public static BuiltModel Build(WeaponBuild b, Vector3 accent)
+    /// <summary>
+    /// Builds the model of any build with a root (complete or not). <paramref name="accent"/> colours "accent" boxes.
+    /// <paramref name="tints"/> (the workbench) recolours some parts' own boxes: rgb is blended in, w is their opacity
+    /// (missing parts as a red outline-like ghost, a part previewed in a socket as a bright highlight).
+    /// </summary>
+    public static BuiltModel Build(WeaponBuild b, Vector3 accent, IReadOnlyDictionary<BuildNode, Vector4>? tints = null)
     {
         var root = new SceneNode("weapon");
         var map = new Dictionary<BuildNode, SceneNode>();
         var hasOptic = b.Root != null && b.Root.Part.Frame?.Ads != false && b.Nodes.Any(n => n.Part.Category == PartCategory.Optic);
         if (b.Root != null)
-            AddPart(root, b.Root, accent, hasOptic, map);
+            AddPart(root, b.Root, accent, hasOptic, map, tints);
         root.UpdateWorld();
 
         // Muzzles: one socket per barrel muzzle, after any muzzle device on that barrel.
@@ -132,7 +136,8 @@ public static class BuildModel
         return new BuiltModel { Root = root, Mesh = mesh, Muzzles = muzzles, Grip = grip, Support = support, MagWell = magWell, Nodes = map };
     }
 
-    private static void AddPart(SceneNode parent, BuildNode node, Vector3 accent, bool hasOptic, Dictionary<BuildNode, SceneNode> map)
+    private static void AddPart(SceneNode parent, BuildNode node, Vector3 accent, bool hasOptic, Dictionary<BuildNode, SceneNode> map,
+        IReadOnlyDictionary<BuildNode, Vector4>? tints)
     {
         var p = node.Part;
         var pn = parent.Add(new SceneNode(p.Name));
@@ -144,6 +149,7 @@ public static class BuildModel
             PartCategory.Utility => GunPartFlags.Underbarrel,
             _ => GunPartFlags.None,
         };
+        Vector4? tint = tints != null && tints.TryGetValue(node, out var tv) ? tv : null;
         for (var i = 0; i < p.Boxes.Length; i++)
         {
             var bx = p.Boxes[i];
@@ -151,24 +157,57 @@ public static class BuildModel
                 continue;
             var color = bx.Color.Resolve(accent);
             var mode = bx.Tag == "glow" ? 2 : 0;
-            var f = flags | (bx.Alpha < 0.999f ? GunPartFlags.Blend : 0) | (bx.Tag == "irons" ? GunPartFlags.Top : 0);
+            var alpha = bx.Alpha;
+            if (tint is { } t)
+            {
+                color = Vector3.Lerp(color, new Vector3(t.X, t.Y, t.Z), 0.7f);
+                alpha = MathF.Min(alpha, t.W);
+                mode = 2; // flat and bright: reads as a marker, not as a real part
+            }
+            var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (bx.Tag == "irons" ? GunPartFlags.Top : 0);
             var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(PartDef.Rot(bx.RotDeg)) * Matrix4x4.CreateTranslation(bx.Pos);
-            var n = pn.Add($"box{i}", m, Renderable.Box(color, bx.Alpha, mode));
+            var n = pn.Add($"box{i}", m, Renderable.Box(color, alpha, mode));
             n.Tag = f;
             if (bx.Shape == "rod")
             {
                 // An octagonal rod: a second box turned 45 degrees about the rod's own axis (Z).
                 var m2 = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateRotationZ(MathF.PI / 4) * Matrix4x4.CreateFromQuaternion(PartDef.Rot(bx.RotDeg))
                          * Matrix4x4.CreateTranslation(bx.Pos);
-                pn.Add($"box{i}r", m2, Renderable.Box(color * 0.93f, bx.Alpha, mode)).Tag = f;
+                pn.Add($"box{i}r", m2, Renderable.Box(color * 0.93f, alpha, mode)).Tag = f;
             }
         }
         foreach (var s in p.Sockets)
         {
             var sn = pn.AddSocket(SceneName(s), s.Pos, s.Rotation);
             if (node.Child(s.Name) is { } child)
-                AddPart(sn, child, accent, hasOptic, map);
+                AddPart(sn, child, accent, hasOptic, map, tints);
         }
+    }
+
+    /// <summary>
+    /// The boxes of <paramref name="node"/> and everything plugged into it, as a range of <see cref="GunMesh.Parts"/>
+    /// (<see cref="Flatten"/> walks depth first, so a part's subtree is one run of boxes). (0, 0) if it isn't on the model.
+    /// </summary>
+    public static (int From, int To) NodeRange(BuiltModel m, BuildNode node)
+    {
+        if (!m.Nodes.TryGetValue(node, out var target))
+            return (0, 0);
+        var count = 0;
+        var from = -1;
+        var to = -1;
+        void Visit(SceneNode n)
+        {
+            if (n == target)
+                from = count;
+            if (n.Renderable.Kind == RenderKind.Box && (n.Flags & NodeFlags.Socket) == 0)
+                count++;
+            for (var i = 0; i < n.ChildCount && to < 0; i++)
+                Visit(n.Child(i));
+            if (n == target)
+                to = count;
+        }
+        Visit(m.Root);
+        return from >= 0 && to >= from ? (from, to) : (0, 0);
     }
 
     /// <summary>Every box under <paramref name="root"/> (world matrices) as a gun body.</summary>
@@ -255,15 +294,15 @@ public sealed class AssembledWeapon
 /// <summary>Puts builds together: rules, stats, model, muzzle positions (docs/zombies/WEAPON-BUILDER.md).</summary>
 public static class WeaponBuilder
 {
-    /// <summary>Checks, computes and models <paramref name="b"/>.</summary>
-    public static AssembledWeapon Assemble(WeaponBuild b)
+    /// <summary>Checks, computes and models <paramref name="b"/> (<paramref name="tints"/>: see <see cref="BuildModel.Build"/>).</summary>
+    public static AssembledWeapon Assemble(WeaponBuild b, IReadOnlyDictionary<BuildNode, Vector4>? tints = null)
     {
         var def = BuildStats.Compute(b, out var problems);
         var a = new AssembledWeapon { Build = b, Problems = problems, Def = def };
         if (b.Root == null)
             return a;
         var accent = def?.Accent ?? PartDef.RarityColor(b.Nodes.Max(n => n.Part.Rarity));
-        var model = BuildModel.Build(b, accent);
+        var model = BuildModel.Build(b, accent, tints);
         a.Model = model;
         var shown = def ?? Stub(b, accent);
         shown.BuiltMesh = model.Mesh;

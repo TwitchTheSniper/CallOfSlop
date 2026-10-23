@@ -1057,6 +1057,8 @@ public static unsafe partial class Program
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
+            if (Ui.WorkbenchOpen)
+                PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
             if (_session != null && InLobbyRoom)
                 RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
             else if (_session != null)
@@ -1935,6 +1937,21 @@ public static unsafe partial class Program
         Gfx.ClearDepthBuffer();
         Gfx.SetDepthTest(true);
         var def = pv.Def;
+        if (pv.Camera is { } benchCam)
+        {
+            // The workbench: its own orbit camera, and a part sliding into its socket (Source/UI/UiWorkbench.cs).
+            benchCam.Matrices(vw / MathF.Max(vh, 1), out var bpose, out var bview, out var bproj);
+            Gfx.SetCamera(bview, bproj);
+            if (pv.AnimRest != null && pv.AnimPart != null)
+            {
+                DrawGun(pv.AnimRest, bpose, false);
+                DrawGun(pv.AnimPart, Matrix4x4.CreateTranslation(pv.AnimOffset) * bpose, false);
+            }
+            else
+                DrawGun(def, bpose, false);
+            Gfx.SetViewport(0, 0, fb.X, fb.Y);
+            return;
+        }
         var front = -def.Length * 1.25f - 0.2f; // roughly the muzzle (with a suppressor)
         var backEnd = 0.3f; // end of the stock
         var span = backEnd - front;

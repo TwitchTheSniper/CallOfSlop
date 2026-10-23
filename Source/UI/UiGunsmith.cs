@@ -3,8 +3,14 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>Where the gunsmith wants the 3D gun drawn this frame (ImGui pixel coordinates). Program renders it behind the UI.</summary>
-public readonly record struct GunsmithPreview(WeaponDef Def, float2 WinMin, float2 WinMax, float2 ViewMin, float2 ViewMax);
+/// <summary>
+/// Where the gunsmith wants the 3D gun drawn this frame (ImGui pixel coordinates). Program renders it behind the UI.
+/// The workbench passes its own orbit <paramref name="Camera"/> (null: the slow automatic sway), and while a part slides
+/// into its socket the build without it (<paramref name="AnimRest"/>) and the part alone (<paramref name="AnimPart"/>,
+/// drawn moved by <paramref name="AnimOffset"/> in gun space).
+/// </summary>
+public readonly record struct GunsmithPreview(WeaponDef Def, float2 WinMin, float2 WinMax, float2 ViewMin, float2 ViewMax,
+    BenchCamera? Camera = null, WeaponDef? AnimRest = null, WeaponDef? AnimPart = null, System.Numerics.Vector3 AnimOffset = default);
 
 /// <summary>
 /// The attachment "showcase": the selected gun rendered large in the middle, one card per attachment

@@ -98,6 +98,15 @@ public sealed class GunMesh
         return m;
     }
 
+    /// <summary>A copy without parts <paramref name="from"/> to <paramref name="to"/> (exclusive): the workbench draws a part sliding in on its own.</summary>
+    public GunMesh Without(int from, int to)
+    {
+        var m = (GunMesh)MemberwiseClone();
+        m.Parts = [.. Parts[..from], .. Parts[to..]];
+        m.Matrices = [.. Matrices[..from], .. Matrices[to..]];
+        return m;
+    }
+
     // What the mesh was built from (rebuilt when any of these change on the same WeaponDef).
     internal GunSpec? Spec;
     internal uint Kit;
