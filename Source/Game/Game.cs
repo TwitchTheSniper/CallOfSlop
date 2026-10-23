@@ -768,6 +768,7 @@ public sealed partial class Game : IDisposable
     {
         _pendingInputs.RemoveAll(c => c.Seq <= ackSeq);
         DropAckedKnocks(ackSeq); // blast pushes the server's state already includes (Knockback.cs)
+        server = WithStagger(server, ackSeq, alive, respawned); // and the stagger they left in it (snapshots don't carry it)
         (_lastServerMove, _lastAckSeq, _haveServerMove) = (server, ackSeq, alive);
 
         var predicted = me.Position;
