@@ -42,9 +42,17 @@ public static partial class SelfTest
             if (!Available)
                 return;
             var c = Cycles() - _start;
+            // JIT compiling is one-off warm-up (the first time a method runs), not the tick's steady work: leave it out of
+            // the worst tick (the detail still shows it). Cycles per ms comes from the calibration so far.
+            var jitTime = System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - _jit0;
+            if (_calMs > 0 && _calCycles > 0 && jitTime.TotalMilliseconds > 0)
+            {
+                var jitCycles = (ulong)Math.Min(c, jitTime.TotalMilliseconds * (_calCycles / _calMs));
+                c -= jitCycles;
+            }
             if (count && c > _worstCycles)
             {
-                var jit = System.Runtime.JitInfo.GetCompilationTime(currentThread: true) - _jit0;
+                var jit = jitTime;
                 var methods = System.Runtime.JitInfo.GetCompiledMethodCount(currentThread: true) - _methods0;
                 var pause = GC.GetTotalPauseDuration() - _pause0;
                 WorstDetail = $"wall {wallMs:0.0} ms, JIT {jit.TotalMilliseconds:0.0} ms ({methods} methods), GC pause {pause.TotalMilliseconds:0.0} ms "

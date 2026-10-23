@@ -628,7 +628,7 @@ public static partial class SelfTest
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
             // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
             if (cpu.WorstMs > MaxTickWorkMs)
-                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
+                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work, JIT compiling left out (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
             if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)
