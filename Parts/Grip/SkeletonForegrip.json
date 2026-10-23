@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Skeleton Foregrip",
+  "category": "grip",
+  "rarity": "common",
+  "flavor": "A vertical grip with the middle milled out. Half the weight, most of the grip, rattles a bit.",
+  "mount": "foregrip",
+  "weight": 0.1,
+  "hand": [
+    0,
+    -0.05,
+    0
+  ],
+  "model": [
+    {"size": [   0.008,   0.11,   0.03 ], "pos": [   -0.012,   -0.055,   0 ], "color": "polymer" },
+    {"size": [   0.008,   0.11,   0.03 ], "pos": [   0.012,   -0.055,   0 ], "color": "polymer" },
+    {"size": [   0.03,   0.008,   0.03 ], "pos": [   0,   -0.025,   0 ], "color": "black" },
+    {"size": [   0.03,   0.008,   0.03 ], "pos": [   0,   -0.055,   0 ], "color": "black" },
+    {"size": [   0.03,   0.008,   0.03 ], "pos": [   0,   -0.085,   0 ], "color": "black" },
+    {"size": [   0.034,   0.01,   0.034 ], "pos": [   0,   -0.11,   0 ], "color": "black" }
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 0.85 },
+    {"stat": "mobility", "add": 0.01 },
+    {"stat": "recoilJitter", "mul": 1.1 },
+    {"stat": "hipSpreadDeg", "mul": 1.04 }
+  ]
+}

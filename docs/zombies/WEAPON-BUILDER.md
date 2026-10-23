@@ -79,7 +79,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 19 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand: vertical, angled, skeleton, thumb stub, recoil pad, pogo, chaingun handle) | 27 |
 | Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
@@ -743,16 +743,16 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 187 parts
+## The part set: 191 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
-universal-ammo pass's 4 extra round types and 8 feeds, and the six optics and seven muzzle devices of the attachments pass
+universal-ammo pass's 4 extra round types and 8 feeds, and the six optics, seven muzzle devices and four foregrips of the attachments pass
 (2026-10-23). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (21) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
+| Grip (27) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip, Skeleton Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip, Thumb Stub | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
 | Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |

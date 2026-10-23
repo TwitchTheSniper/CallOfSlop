@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Pogo Grip",
+  "slot": "Underbarrel",
+  "order": 15,
+  "unlockOrder": 17,
+  "blurb": "A spring-loaded grip on a piston. It bounces the gun back to where it was: tight from the hip, but it springs up with every shot.",
+  "pros": ["-20% hip spread", "Recovers 30% faster"],
+  "cons": ["+15% vertical recoil", "Slower to aim"],
+  "fits": { "classes": ["SMG", "Shotgun"] },
+  "model": "pogoGrip",
+  "effects": [
+    { "stat": "hipSpreadDeg", "mul": 0.8 },
+    { "stat": "recoilRecovery", "mul": 1.3 },
+    { "stat": "recoilVertical", "mul": 1.15 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}

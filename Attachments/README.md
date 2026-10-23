@@ -1,6 +1,6 @@
 # Making attachments for Call of Slop
 
-Every attachment is a single `.json` file in this folder. The 88 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
+Every attachment is a single `.json` file in this folder. The 93 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
 
 An attachment says which slot it goes in, which weapons it fits, and a list of stat changes ("effects") it makes to the weapon's numbers. The weapon numbers are the fields described in [Weapons/README.md](../Weapons/README.md).
 
@@ -93,6 +93,8 @@ Recoil fields from a weapon's `recoil` block are changed by their names with a `
 | Recoil Hook | -25% vertical kick, recovers 25% faster |
 | Vent Collar | -30% jitter, -15% sway, +10% camera shake |
 | Vertical Grip | -30% vertical kick, steadier viewmodel |
+| Recoil Pad Grip | -30% vertical kick, -20% camera shake |
+| Tripod | -55% recoil crouched, -65% prone (the Bipod: -40% / -50%) |
 | Angled Grip | -40% first-shot kick, +10% vertical kick |
 | Heavy Stock / Heavy Barrel | -20% / -15% overall recoil; the Heavy Stock also recovers 40% faster |
 | Light Stock / No Stock | +10% / +25% overall recoil; No Stock also recovers 20% slower |
@@ -109,7 +111,7 @@ Any attachment file can borrow any of these with `"model"`. They're built from b
 | --- | --- |
 | Muzzle | `Suppressor`, `Compensator`, `Muzzle Brake`, `Choke`, `flashHider` (slotted prongs), `slideComp` (chunky pistol comp), `longSuppressor` (long rifle can), `fullChoke`, `tankBrake` (big boxy brake), `focuser` (glowing lens ring), `nozzle` (flared splitter), `bell` (brass blunderbuss bell), `weight` (heavy collar), `bayonet` (socket bayonet, blade under the muzzle), `loudener` (a 27 cm brass horn with a glowing throat), `shroudedCan` (a can inside a slotted shroud), `duckbill` (flat flare), `recoilHook` (collar with a claw under the muzzle), `threadProtector` (a knurled cap), `ventCollar` (sleeve with four angled vents) |
 | Barrel | `Long Barrel`, `Short Barrel`, `Heavy Barrel`, `extendedBarrel` (+4 cm, threaded collar), `snubBarrel`, `slugBarrel` (thicker, with a rib), `quickChange` (handle on the left of the barrel), `matchBarrel` (+5 cm, fluted), `straightPull` (T-handle bolt), `overclock` (glowing coils), `precisionBore` (thicker, accent band; same length, so a musket can still be loaded from the muzzle), `sawnOff` (barrel and forend cut back) |
-| Underbarrel | `Vertical Grip`, `Angled Grip`, `Laser`, `handstop`, `bipod` (folded legs), `light` (with a lit lens), `foldingGrip`, `gyro` (flywheel), `weightedGrip` |
+| Underbarrel | `Vertical Grip`, `Angled Grip`, `Laser`, `handstop`, `bipod` (folded legs), `light` (with a lit lens), `foldingGrip`, `gyro` (flywheel), `weightedGrip`, `skeletonGrip` (cut-out vertical grip), `thumbStub` (stub with a thumb shelf), `padGrip` (rubber-wrapped grip with a pad), `tripod` (three folded legs), `pogoGrip` (a grip on a coil spring) |
 | Magazine | `Extended Mag`, `Fast Mag`, `Drum Mag`, `Hollow Point Mag` (a short magazine), `shotgunDrum` (a drum instead of a shotgun's tube, swapped whole on a reload), `apRounds` (blue band), `incendiary` (glowing orange band), `overcharged` (glowing accent band), `stripper` (brass clips on the receiver), `fastLoader` (paper cartridges on the receiver) |
 | Stock | `Light Stock`, `Heavy Stock`, `No Stock`, `pistolBrace`, `holsterStock` (wooden), `shoulderBrace`, `collapsedStock`, `cheekRiser`, `recoilPad`, `shellHolder` (the last three add to the gun's own stock) |
 
@@ -255,6 +257,11 @@ Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Ext
 | Underbarrel | Folding Grip | 125 | - | all | - | - | - | - | - | - |
 | Underbarrel | Gyro Stabiliser | 103 | - | - | - | - | - | - | - | all |
 | Underbarrel | Weighted Grip | 185 | - | - | all | - | - | - | - | - |
+| Underbarrel | Skeleton Grip | 37 | - | all | all | - | - | all | all | - |
+| Underbarrel | Thumb Stub | 67 | - | all | all | all | - | - | - | - |
+| Underbarrel | Recoil Pad Grip | 147 | - | - | all | all | - | all | all | - |
+| Underbarrel | Tripod | 223 | - | - | - | - | all | - | all | - |
+| Underbarrel | Pogo Grip | 17 | - | all | - | - | - | all | - | - |
 | Magazine | Extended Mag | 80 | 8/9 | all | all | all | all | 5/6 | all | 3/4 |
 | Magazine | Fast Mag | 50 | 8/9 | all | all | all | all | 5/6 | all | 3/4 |
 | Magazine | Drum Mag | 180 | - | all | all | - | - | - | all | - |

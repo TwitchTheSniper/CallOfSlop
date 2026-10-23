@@ -188,7 +188,7 @@ public sealed class GunBuilder
         // barrel
         "extendedBarrel", "snubBarrel", "slugBarrel", "quickChange", "matchBarrel", "straightPull", "overclock", "precisionBore", "sawnOff",
         // underbarrel
-        "handstop", "bipod", "light", "foldingGrip", "gyro", "weightedGrip",
+        "handstop", "bipod", "light", "foldingGrip", "gyro", "weightedGrip", "skeletonGrip", "thumbStub", "padGrip", "tripod", "pogoGrip",
         // magazine / ammunition
         "shotgunDrum", "apRounds", "incendiary", "overcharged", "stripper", "fastLoader",
         // stock
@@ -1435,6 +1435,50 @@ public sealed class GunBuilder
                 Box(0.04f, 0.115f, 0.04f, 0, y - 0.0575f, z, Metal * 0.65f);
                 Box(0.05f, 0.03f, 0.05f, 0, y - 0.125f, z, Dark * 1.2f); // weight
                 return new Vector3(0, y - 0.055f, z);
+            case "skeletonGrip":
+                // A vertical grip with the middle cut out: two thin rails, a foot and three rungs
+                Box(0.008f, 0.11f, 0.03f, -0.012f, y - 0.055f, z, Metal * 0.8f);
+                Box(0.008f, 0.11f, 0.03f, 0.012f, y - 0.055f, z, Metal * 0.8f);
+                for (var i = 0; i < 3; i++)
+                    Box(0.03f, 0.008f, 0.03f, 0, y - 0.025f - 0.03f * i, z, Metal * 0.7f);
+                Box(0.034f, 0.01f, 0.034f, 0, y - 0.11f, z, Metal * 0.6f); // foot
+                return new Vector3(0, y - 0.05f, z);
+            case "thumbStub":
+            {
+                // A short stub with a shelf for the thumb over the top of the handguard's side
+                var hz = z - MathF.Min(0.04f, MathF.Max(0.01f, (z - (bstart - BL)) * 0.4f));
+                Box(0.026f, 0.03f, 0.03f, 0, y - 0.015f, hz, Metal * 0.8f, rx: 0.25f);
+                Box(0.03f, 0.008f, 0.04f, 0.024f, y + 0.012f, hz, Metal * 0.7f); // the thumb shelf
+                return new Vector3(0, y - 0.012f, hz);
+            }
+            case "padGrip":
+                // A fat grip wrapped in rubber, with a thick pad at the bottom
+                Box(0.042f, 0.1f, 0.044f, 0, y - 0.05f, z, Rubber * 1.6f);
+                for (var i = 0; i < 3; i++)
+                    Box(0.046f, 0.006f, 0.048f, 0, y - 0.025f - 0.025f * i, z, Rubber); // the wrap's ridges
+                Box(0.05f, 0.022f, 0.052f, 0, y - 0.111f, z, Rubber * 1.3f); // the pad
+                return new Vector3(0, y - 0.05f, z);
+            case "tripod":
+            {
+                // Three folded legs under the handguard: two out to the sides and one down the middle, on a round hinge
+                var tz = bstart - BL * 0.55f;
+                Box(0.056f, 0.018f, 0.026f, 0, y - 0.007f, tz, Metal * 0.6f); // hinge
+                Box(0.009f, 0.009f, 0.16f, 0.024f, y - 0.009f, tz + 0.08f, Metal * 0.75f);
+                Box(0.009f, 0.009f, 0.16f, -0.024f, y - 0.009f, tz + 0.08f, Metal * 0.75f);
+                Box(0.009f, 0.009f, 0.16f, 0, y - 0.021f, tz + 0.08f, Metal * 0.75f);
+                Box(0.012f, 0.012f, 0.014f, 0.024f, y - 0.009f, tz + 0.16f, Dark); // feet
+                Box(0.012f, 0.012f, 0.014f, -0.024f, y - 0.009f, tz + 0.16f, Dark);
+                Box(0.012f, 0.012f, 0.014f, 0, y - 0.021f, tz + 0.16f, Dark);
+                break;
+            }
+            case "pogoGrip":
+                // A spring-loaded grip: a sleeve over a coil spring, with a piston foot
+                Box(0.034f, 0.05f, 0.034f, 0, y - 0.025f, z, Metal * 0.8f); // the sleeve
+                for (var i = 0; i < 4; i++)
+                    Box(0.03f, 0.005f, 0.03f, 0, y - 0.055f - 0.011f * i, z, A, rz: PI / 4); // the spring's coils
+                Box(0.014f, 0.05f, 0.014f, 0, y - 0.075f, z, Metal * 0.6f); // the piston
+                Box(0.036f, 0.012f, 0.036f, 0, y - 0.106f, z, Rubber * 1.4f); // the foot
+                return new Vector3(0, y - 0.03f, z);
         }
         if (att == null)
         {

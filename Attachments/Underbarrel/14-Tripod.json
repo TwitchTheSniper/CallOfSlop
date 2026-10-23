@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Tripod",
+  "slot": "Underbarrel",
+  "order": 14,
+  "unlockOrder": 223,
+  "blurb": "Three folding legs instead of two. Rock steady when you get low; a lump to carry and the legs get in the way of a snap shot.",
+  "pros": ["-55% recoil while crouched", "-65% recoil while prone"],
+  "cons": ["-8% speed", "Slower to aim", "+10% hip spread"],
+  "fits": { "classes": ["LMG", "Sniper"] },
+  "model": "tripod",
+  "effects": [
+    { "stat": "recoilCrouchVertical", "mul": 0.45 },
+    { "stat": "recoilCrouchHorizontal", "mul": 0.45 },
+    { "stat": "recoilProneVertical", "mul": 0.35 },
+    { "stat": "recoilProneHorizontal", "mul": 0.35 },
+    { "stat": "mobility", "add": -0.08 },
+    { "stat": "adsTime", "add": 0.05 },
+    { "stat": "hipSpreadDeg", "mul": 1.1 }
+  ]
+}

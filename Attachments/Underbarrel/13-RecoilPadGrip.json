@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Recoil Pad Grip",
+  "slot": "Underbarrel",
+  "order": 13,
+  "unlockOrder": 147,
+  "blurb": "A fat grip wrapped in rubber with a thick pad on the end. Soaks up the kick and the shake; heavy and slow to shoulder.",
+  "pros": ["-30% vertical recoil", "-20% camera shake"],
+  "cons": ["-4% speed", "Slower to aim"],
+  "fits": { "classes": ["AssaultRifle", "LMG", "Shotgun", "DMR"] },
+  "model": "padGrip",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.7 },
+    { "stat": "recoilShake", "mul": 0.8 },
+    { "stat": "mobility", "add": -0.04 },
+    { "stat": "adsTime", "add": 0.02 }
+  ]
+}
