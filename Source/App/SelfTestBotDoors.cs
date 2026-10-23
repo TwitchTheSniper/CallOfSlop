@@ -67,7 +67,7 @@ public static partial class SelfTest
                 Events++;
                 Game.ApplyBuildingEvent(Client, kind, i, health, Vector3.Zero);
             };
-            Step(0.3);
+            Step(Game.CountdownSeconds + 0.3); // past the countdown (play starting respawns everyone)
         }
 
         public Player AddBot(BotPersonality kind, byte team, Vector3 at, Vector3 goal, float? closeChance)
@@ -316,20 +316,22 @@ public static partial class SelfTest
         int door = -1;
         Vector3 from = default, to = default, n = default;
         string building = "";
-        foreach (var b in silo.PlacedBuildings.Where(b => b.Def.Name is "Silo Blast Lock" or "Silo Access Bunker").OrderByDescending(b => b.Def.Name == "Silo Blast Lock"))
+        var candidates = 0;
+        foreach (var b in silo.PlacedBuildings.OrderByDescending(b => b.Def.Name == "Silo Blast Lock").ThenByDescending(b => b.Def.Name == "Silo Access Bunker"))
         {
             for (var i = b.DoorStart; i < b.DoorStart + b.DoorCount && door < 0; i++)
             {
                 var d = silo.BuildingDoors[i];
                 if (d.Open || d.Broken || d.Plan.Material != DoorMaterial.Metal)
                     continue;
+                candidates++;
                 var nn = Vector3.Normalize(new Vector3(d.Plan.SwingSide.X - d.Plan.OtherSide.X, 0, d.Plan.SwingSide.Z - d.Plan.OtherSide.Z));
-                foreach (var s in new[] { 1f, -1f })
+                foreach (var (s, ea, ha) in Orientations())
                 {
                     var floor = new Vector3(d.Center.X, d.Plan.Closed.Min.Y, d.Center.Z);
-                    if (Snap(floor + nn * s * 1.8f) is not { } a || Snap(floor - nn * s * 4.5f) is not { } h)
+                    if (Snap(floor + nn * s * ea) is not { } a || Snap(floor - nn * s * ha) is not { } h)
                         continue;
-                    if (Vector3.Dot(a - floor, nn * s) < 1f || Vector3.Dot(h - floor, nn * s) > -3.5f)
+                    if (Vector3.Dot(a - floor, nn * s) < 1f || Vector3.Dot(h - floor, nn * s) > -3.4f)
                         continue;
                     if (silo.BuildingDoors.Any(o => o != d && FlatDistance(o.Center, h) < 2.5f) || silo.BuildingDoors.Any(o => o != d && WalkThrough(o, a, h)))
                         continue;
@@ -346,7 +348,7 @@ public static partial class SelfTest
         }
         if (door < 0)
         {
-            Fail("co-op doors: no shut metal door on Silo's blast locks or access bunkers with room either side");
+            Fail($"co-op doors: none of Silo's {candidates} shut metal doors has room either side for the scenario");
             return;
         }
         var dd = silo.BuildingDoors[door];
@@ -391,7 +393,15 @@ public static partial class SelfTest
             if (k < 0)
                 return null;
             var q = nav.Nodes[k];
-            return FlatDistance(q, p) < 0.9f && MathF.Abs(q.Y - p.Y) < 0.6f ? q : null;
+            return FlatDistance(q, p) < 1.3f && MathF.Abs(q.Y - p.Y) < 0.6f ? q : null;
+        }
+
+        static IEnumerable<(float Side, float Enemy, float Host)> Orientations()
+        {
+            foreach (var host in new[] { 4.5f, 4f, 5.5f, 3.7f })
+            foreach (var enemy in new[] { 1.8f, 2.4f })
+            foreach (var side in new[] { 1f, -1f })
+                yield return (side, enemy, host);
         }
 
         static bool WalkThrough(BuildingDoor o, Vector3 a, Vector3 b) => Game.WalkCrossesDoor(o, a, b, 0.1f);
