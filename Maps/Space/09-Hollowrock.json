@@ -31,7 +31,8 @@
   },
   "botMatchSeconds": 8,
   "botMatchPlayers": 8,
-  "hillWalks": "zone"
+  "hillWalks": "zone",
+  "propsClear": false
  },
  "flagPool": "none",
  "skybox": {

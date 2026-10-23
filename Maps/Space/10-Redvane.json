@@ -18,7 +18,8 @@
   "botMatchSeconds": 8,
   "botMatchPlayers": 8,
   "hillWalks": "zone",
-  "propsInside": false
+  "propsInside": false,
+  "propsClear": false
  },
  "flagPool": "none",
  "skybox": {

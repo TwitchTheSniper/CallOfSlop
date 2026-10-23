@@ -129,7 +129,8 @@
     0.0
    ]
   },
-  "botMatchSeconds": 0
+  "botMatchSeconds": 0,
+  "propsClear": false
  },
  "skybox": {
   "image": "Skies/stratos_dusk.png",
