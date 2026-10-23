@@ -58,6 +58,16 @@ public static class StandardBuilds
         }
     }
 
+    /// <summary>Forgets the loaded builds so they're read again on next use (after a part hot reload).</summary>
+    public static void Reload()
+    {
+        lock (LoadLock)
+        {
+            _all = null;
+            LoadErrors.Clear();
+        }
+    }
+
     public static StandardBuild? Find(string name) => All.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>The builds that can come from <paramref name="source"/> ("box", "wall", "start").</summary>

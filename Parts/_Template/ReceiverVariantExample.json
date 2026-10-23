@@ -1,0 +1,16 @@
+// A receiver variant: the base's sockets, model and stats, a faster action, one socket fewer and a screw for show.
+{
+  "extends": "Base Auto Receiver",
+  "name": "Template Sprinter Receiver",
+  "rarity": "uncommon",
+  "flavor": "The workhorse after a strong coffee.",
+  "receiver": {"rpm": 760, "soundOf": "Vanguard AR"},
+  "-sockets": ["upgrade_side"],
+  "+model": [
+    {"use": "Screw Head", "pos": [0.031, 0.05, -0.1], "rot": [0, 0, -90]}
+  ],
+  "-stats": ["reload"],
+  "+stats": [
+    {"stat": "reload", "set": 2.0}
+  ]
+}

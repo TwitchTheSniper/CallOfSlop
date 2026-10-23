@@ -12,12 +12,20 @@ public static class PartFile
 {
     public const string Format = "call-of-slop-part/1";
 
-    /// <summary>Socket types (what a part's "mount" and a socket's "type" may be).</summary>
-    public static readonly string[] SocketTypes =
-        ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility", "upgrade", "amp", "hopper", "head", "mod"];
+    /// <summary>
+    /// Socket types (what a part's "mount" and a socket's "type" may be): from Parts/_Registry.json (see
+    /// <see cref="PartRegistry"/>; the built-in list when there is no registry file).
+    /// </summary>
+    public static string[] SocketTypes => Registry.SocketTypes;
 
-    /// <summary>Calibre classes ("bore").</summary>
-    public static readonly string[] BoreNames = ["pistol", "rifle", "heavy", "shell", "launcher", "energy"];
+    /// <summary>Calibre classes ("bore"), from the registry too.</summary>
+    public static string[] BoreNames => Registry.Bores;
+
+    /// <summary>The registry the part being loaded is checked against (its library's, else the game's).</summary>
+    private static PartRegistry Registry => _lib?.Registry ?? Parts.Registry;
+
+    /// <summary>The library (fragments, bases, registry) of the part being loaded on this thread; see <see cref="Load(string, string, PartLibrary)"/>.</summary>
+    [ThreadStatic] private static PartLibrary? _lib;
 
     /// <summary>Box shapes a part's model may use.</summary>
     public static readonly string[] Shapes = ["box", "rod", "plate"];
@@ -28,8 +36,11 @@ public static class PartFile
         "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
-    /// <summary>The mount a category gets when the file doesn't say.</summary>
-    public static string DefaultMount(PartCategory c) => c switch
+    /// <summary>The mount a category gets when the file doesn't say (the registry's "mount" for it).</summary>
+    public static string DefaultMount(PartCategory c) => Registry.MountOf(c);
+
+    /// <summary>The built-in default mounts (used when there is no registry file, and checked against it by the self-test).</summary>
+    public static string BuiltInMount(PartCategory c) => c switch
     {
         PartCategory.Receiver => "receiver",
         PartCategory.Barrel or PartCategory.Splitter => "barrel",
@@ -47,8 +58,34 @@ public static class PartFile
         _ => "utility",
     };
 
-    /// <summary>Builds a part from a part file. Throws <see cref="WeaponFileException"/> with a readable message if anything is wrong.</summary>
-    public static PartDef Load(string json, string source)
+    /// <summary>Builds a part from a part file, with the game's part library (fragments, bases, registry). Throws <see cref="WeaponFileException"/> with a readable message if anything is wrong.</summary>
+    public static PartDef Load(string json, string source) => Load(json, source, Parts.Library);
+
+    /// <summary>
+    /// Builds a part from a part file. "extends" is resolved against <paramref name="lib"/>'s parts and bases, and model
+    /// entries with "use" against its fragments (Source/Zombies/PartLibrary.cs). Throws <see cref="WeaponFileException"/>
+    /// with a readable message if anything is wrong.
+    /// </summary>
+    public static PartDef Load(string json, string source, PartLibrary lib)
+    {
+        var outer = _lib;
+        _lib = lib;
+        try
+        {
+            using var raw = WeaponFile.Parse(json, source);
+            if (raw.RootElement.ValueKind == JsonValueKind.Object && PartLibrary.Get(raw.RootElement, "extends") != null)
+                json = lib.ResolveExtends(raw.RootElement, source); // the merged file: the base's keys with this file's on top
+            else
+                PartLibrary.CheckNoMergeKeys(raw.RootElement, source);
+            return LoadResolved(json, source);
+        }
+        finally
+        {
+            _lib = outer;
+        }
+    }
+
+    private static PartDef LoadResolved(string json, string source)
     {
         using var doc = WeaponFile.Parse(json, source);
         var root = doc.RootElement;
@@ -122,9 +159,7 @@ public static class PartFile
                 ? so.EnumerateArray().Select((x, i) => ReadSocket(x, $"{where}: socket #{i + 1}")).ToArray()
                 : throw new WeaponFileException($"{where}: \"sockets\" should be a list of {{ \"name\", \"type\", \"pos\" }}");
         if (Get("model") is { } md)
-            part.Boxes = md.ValueKind == JsonValueKind.Array
-                ? md.EnumerateArray().Select((x, i) => ReadBox(x, $"{where}: model box #{i + 1}")).ToArray()
-                : throw new WeaponFileException($"{where}: \"model\" should be a list of boxes");
+            part.Boxes = ReadModel(md, where, 0);
         if (Get("stats") is { } st)
             part.Effects = st.ValueKind == JsonValueKind.Array
                 ? st.EnumerateArray().Select((x, i) => ReadEffect(x, $"{where}: stat #{i + 1}")).ToArray()
@@ -199,7 +234,7 @@ public static class PartFile
             if (p.Frame != null)
                 throw new WeaponFileException($"{where}: only root grips have a \"frame\" block");
             if (p.Category != PartCategory.Hilt && !SocketTypes.Contains(p.Mount))
-                throw new WeaponFileException($"{where}: \"mount\" \"{p.Mount}\" isn't a socket type ({string.Join(", ", SocketTypes)})");
+                throw new WeaponFileException($"{where}: \"mount\" \"{p.Mount}\" isn't a socket type ({string.Join(", ", SocketTypes)}; socket types are listed in Parts/_Registry.json)");
         }
         if (p.ReceiverCapacity > 0 && p.Frame == null)
             throw new WeaponFileException($"{where}: only root grips have \"receiver\" sockets");
@@ -229,8 +264,8 @@ public static class PartFile
         foreach (var s in p.Sockets)
             if (!names.Add(s.Name))
                 throw new WeaponFileException($"{where}: two sockets are called \"{s.Name}\"");
-        if (p.Boxes.Length > 64)
-            throw new WeaponFileException($"{where}: at most 64 model boxes per part");
+        if (p.Boxes.Length > MaxBoxes)
+            throw new WeaponFileException($"{where}: {p.Boxes.Length} model boxes, at most {MaxBoxes} per part (fragments count with every box they bring)");
         if (p.Sockets.Length > 24)
             throw new WeaponFileException($"{where}: at most 24 sockets per part");
         foreach (var f in p.Flags)
@@ -445,10 +480,51 @@ public static class PartFile
         if (string.IsNullOrWhiteSpace(name) || name.Length > 24 || !name.All(ch => char.IsAsciiLetterOrDigit(ch) || ch == '_'))
             throw new WeaponFileException($"{where}: a socket needs a \"name\" of letters, digits and _ (at most 24)");
         if (type == null || !SocketTypes.Contains(type))
-            throw new WeaponFileException($"{where} ('{name}'): \"type\" must be one of {string.Join(", ", SocketTypes)}");
+            throw new WeaponFileException($"{where} ('{name}'): {(type == null ? "missing \"type\"" : $"\"type\" \"{type}\" isn't a socket type")}: use one of {string.Join(", ", SocketTypes)} (socket types are listed in Parts/_Registry.json)");
         s.Name = name;
         s.Type = type;
         return s;
+    }
+
+    /// <summary>Most model boxes one part may have (after fragments are expanded).</summary>
+    public const int MaxBoxes = 64;
+
+    /// <summary>
+    /// A "model" list: boxes, and fragment uses (<c>{ "use": "Picatinny Rail", "pos", "rot", "scale", "color" }</c>)
+    /// expanded into the fragment's boxes, moved, turned and scaled (see <see cref="PartLibrary"/>).
+    /// </summary>
+    internal static PartBox[] ReadModel(JsonElement md, string where, int depth)
+    {
+        if (md.ValueKind != JsonValueKind.Array)
+            throw new WeaponFileException($"{where}: \"model\" should be a list of boxes");
+        var list = new List<PartBox>();
+        var i = 0;
+        foreach (var x in md.EnumerateArray())
+        {
+            i++;
+            var at = $"{where}: model box #{i}";
+            if (x.ValueKind == JsonValueKind.Object && PartLibrary.Get(x, "use") != null)
+                list.AddRange((_lib ?? Parts.Library).Use(x, at, depth));
+            else
+                list.Add(ReadBox(x, at));
+        }
+        return list.ToArray();
+    }
+
+    /// <summary>A position (metres, within 2 m of the part's origin).</summary>
+    internal static Vector3 ReadVec(JsonElement e, string where) => Vec(e, where);
+
+    /// <summary>Euler angles in degrees (X, Y, Z; applied Z, X, Y).</summary>
+    internal static Vector3 ReadAngles(JsonElement e, string where) => Angles(e, where);
+
+    /// <summary>A number between <paramref name="min"/> and <paramref name="max"/>.</summary>
+    internal static float ReadRange(JsonElement e, float min, float max, string where) => Range(WeaponFile.Number(e, where), min, max, where);
+
+    /// <summary>A box tag ("", "irons" or "glow").</summary>
+    internal static string ReadTag(JsonElement v, string at)
+    {
+        var t = WeaponFile.Text(v, at).ToLowerInvariant();
+        return t is "" or "irons" or "glow" ? t : throw new WeaponFileException($"{at}: \"{t}\" isn't a tag (irons, glow)");
     }
 
     private static PartBox ReadBox(JsonElement e, string where)
@@ -475,11 +551,7 @@ public static class PartFile
                 case "rot": b.RotDeg = Angles(v, at); break;
                 case "color": b.Color = ReadColor(v, at); break;
                 case "alpha": b.Alpha = Range(WeaponFile.Number(v, at), 0.05f, 1, at); break;
-                case "tag":
-                    b.Tag = WeaponFile.Text(v, at).ToLowerInvariant();
-                    if (b.Tag is not ("" or "irons" or "glow"))
-                        throw new WeaponFileException($"{at}: \"{b.Tag}\" isn't a tag (irons, glow)");
-                    break;
+                case "tag": b.Tag = ReadTag(v, at); break;
             }
         }
         if (!hasSize)
@@ -554,11 +626,17 @@ public static class PartFile
     }
 }
 
-/// <summary>Every weapon part, loaded from the Parts folder next to the game (Zombies weapon builder).</summary>
-public static class Parts
+/// <summary>
+/// Every weapon part, loaded from the Parts folder next to the game (Zombies weapon builder). Top-level folders and files
+/// starting with "_" aren't parts: _Registry.json (socket types, bores, categories), _Fragments (reusable model pieces),
+/// _Bases (templates parts can "extend") and _Template (the commented starting point); see <see cref="PartLibrary"/>.
+/// <see cref="Reload"/> re-reads the folder while the game runs (Source/Zombies/PartReload.cs).
+/// </summary>
+public static partial class Parts
 {
     private static readonly object LoadLock = new();
     private static PartDef[]? _all;
+    private static PartLibrary? _library;
 
     /// <summary>Problems found while loading (bad files are skipped). Shown on the workbench and in the log.</summary>
     public static readonly List<string> LoadErrors = new();
@@ -574,15 +652,39 @@ public static class Parts
             if (all != null)
                 return all;
             lock (LoadLock)
-                return _all ??= LoadFrom(Folder, LoadErrors);
+            {
+                if (_all == null)
+                {
+                    var (parts, lib, _) = LoadDetailed(Folder, LoadErrors);
+                    _library = lib;
+                    _all = parts;
+                }
+                return _all;
+            }
         }
     }
 
-    /// <summary>Files under Parts that aren't part files: Builds/ (standard complete builds) and Tables/ (drop tables).</summary>
+    /// <summary>The game's part library: the registry, fragments, bases and every part file's text (for "extends").</summary>
+    public static PartLibrary Library
+    {
+        get
+        {
+            _ = All;
+            return _library!;
+        }
+    }
+
+    /// <summary>The game's registry (socket types, bores, categories): Parts/_Registry.json, or the built-in one.</summary>
+    public static PartRegistry Registry => Library.Registry;
+
+    /// <summary>
+    /// Files under Parts that aren't part files: Builds/ (standard complete builds), Tables/ (drop tables), and anything
+    /// whose top-level folder or file name starts with "_" (the registry, fragments, bases and templates).
+    /// </summary>
     public static bool IsDataFile(string relative)
     {
         var first = relative.Replace('\\', '/').Split('/')[0];
-        return first.Equals("Builds", StringComparison.OrdinalIgnoreCase) || first.Equals("Tables", StringComparison.OrdinalIgnoreCase);
+        return first.Equals("Builds", StringComparison.OrdinalIgnoreCase) || first.Equals("Tables", StringComparison.OrdinalIgnoreCase) || first.StartsWith('_');
     }
 
     public static PartDef? Find(string name) => All.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
@@ -590,33 +692,44 @@ public static class Parts
     public static IEnumerable<PartDef> InCategory(PartCategory c) => All.Where(p => p.Category == c);
 
     /// <summary>Loads every *.json under <paramref name="folder"/> (bad files go to <paramref name="errors"/>; duplicate names are errors).</summary>
-    public static PartDef[] LoadFrom(string folder, List<string> errors)
+    public static PartDef[] LoadFrom(string folder, List<string> errors) => LoadDetailed(folder, errors).Parts;
+
+    /// <summary>
+    /// <see cref="LoadFrom"/>, also returning the library it built and the part files that didn't load (relative paths;
+    /// hot reload keeps their previous definitions).
+    /// </summary>
+    public static (PartDef[] Parts, PartLibrary Library, HashSet<string> Failed) LoadDetailed(string folder, List<string> errors)
     {
         var list = new List<PartDef>();
+        var failed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var lib = PartLibrary.FromFolder(folder, errors);
         if (!Directory.Exists(folder))
         {
             errors.Add($"no Parts folder at {folder}");
-            return [];
+            return ([], lib, failed);
         }
-        foreach (var file in Directory.GetFiles(folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        foreach (var (rel, text) in lib.PartTexts)
         {
-            var rel = Path.GetRelativePath(folder, file);
-            if (IsDataFile(rel))
-                continue; // standard builds and drop tables live in Parts/Builds and Parts/Tables (StandardBuilds.cs, RunTables.cs)
             try
             {
-                var p = PartFile.Load(File.ReadAllText(file), rel);
+                var p = PartFile.Load(text, rel, lib);
                 if (list.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)) is { } dup)
                     throw new WeaponFileException($"{rel}: another part is already called '{p.Name}' ({dup.SourceFile})");
                 list.Add(p);
             }
-            catch (Exception ex) when (ex is WeaponFileException or IOException or UnauthorizedAccessException)
+            catch (WeaponFileException ex)
             {
+                failed.Add(rel);
                 errors.Add(ex.Message);
                 Console.WriteLine($"[parts] skipped: {ex.Message}");
             }
         }
-        Console.WriteLine($"[parts] {list.Count} part(s) from {folder}");
-        return list.OrderBy(p => p.Category).ThenBy(p => p.Rarity).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
+        Console.WriteLine($"[parts] {list.Count} part(s) from {folder}"
+                          + (lib.Fragments.Count + lib.Bases.Count > 0 ? $" ({lib.Fragments.Count} fragment(s), {lib.Bases.Count} base(s))" : ""));
+        return (Sort(list), lib, failed);
     }
+
+    /// <summary>The order <see cref="All"/> is in: category, tier, name. Network ids are positions in it.</summary>
+    internal static PartDef[] Sort(IEnumerable<PartDef> parts) =>
+        parts.OrderBy(p => p.Category).ThenBy(p => p.Rarity).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
 }

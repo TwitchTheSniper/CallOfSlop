@@ -994,6 +994,8 @@ public sealed partial class Ui
                     _pauseSettings = true;
                 if (game.IsServer && BigButton("RELOAD MAP FILES"))
                     _mapReloadMsg = (game.ReloadMapFiles(), (Environment.TickCount64 / 1000.0) + 10);
+                if (game.IsServer && (game.Mode == GameMode.Zombies || game.BuilderRange) && BigButton("RELOAD PART FILES"))
+                    _mapReloadMsg = (game.ReloadPartFiles(), (Environment.TickCount64 / 1000.0) + 10); // weapon builder parts (GamePartsReload.cs)
                 if (_mapReloadMsg is { } rm && (Environment.TickCount64 / 1000.0) < rm.Until)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);

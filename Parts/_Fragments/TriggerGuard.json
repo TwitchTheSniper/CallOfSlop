@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Trigger Guard",
+  "about": "A trigger guard and trigger hanging below y = 0, like the rifle grip's.",
+  "model": [
+    {"size": [0.03, 0.01, 0.05], "pos": [0, -0.012, 0.01], "color": "black"},
+    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.012, 0.025], "color": "steel"}
+  ]
+}

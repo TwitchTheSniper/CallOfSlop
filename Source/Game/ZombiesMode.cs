@@ -972,6 +972,13 @@ public sealed partial class Game
 
     private static readonly Dictionary<string, AssembledWeapon> AssembledCache = new();
 
+    /// <summary>Drops every cached assembled weapon (after a part hot reload: the same text now assembles differently).</summary>
+    internal static void ForgetAssembled()
+    {
+        lock (AssembledCache)
+            AssembledCache.Clear();
+    }
+
     /// <summary>A build assembled (cached by its text: the same text always gives the same weapon, on every PC).</summary>
     public static AssembledWeapon AssembleCached(WeaponBuild b)
     {
