@@ -60,7 +60,12 @@ public sealed partial class Ui
     private float2 _dragStart, _dragHome;
     private bool[] _dragValid = new bool[64];
     private int _dragValidCount;
-    private int _hoverSpot = -1, _hoverRow = -1;
+    private int _hoverSpot = -1, _hoverRow = -1, _hoverRowPrev = -1;
+    private bool _ctxShown, _escUsed;
+    private Vector3 _camCenterGoal;
+    private float _camRadiusGoal = 0.4f;
+    private int _camGoalVersion = -1;
+    private float2 _invMin, _invMax;
     private (int Version, int Spot, PartDef? Part, BuildNode? Node) _trialKey = (-1, -1, null, null);
     private AssembledWeapon? _trialAsm;
     private PartDef? _hoverPart; // an inventory part under the mouse: stat diffs for its best free socket
@@ -224,6 +229,23 @@ public sealed partial class Ui
     {
         _wbCam = BenchCamera.Default;
         _wbCam.Frame(_bm?.Asm.PreviewDef?.BuiltMesh);
+        (_camCenterGoal, _camRadiusGoal, _camGoalVersion) = (_wbCam.Center, _wbCam.Radius, _bm?.Version ?? -1);
+    }
+
+    /// <summary>The view keeps the whole gun framed as it grows or shrinks: it eases to the new bounds (orbit and zoom stay yours).</summary>
+    private void FollowFraming(float dt)
+    {
+        if (_bm == null)
+            return;
+        if (_camGoalVersion != _bm.Version)
+        {
+            var goal = _wbCam;
+            goal.Frame(_bm.Asm.PreviewDef?.BuiltMesh);
+            (_camCenterGoal, _camRadiusGoal, _camGoalVersion) = (goal.Center, goal.Radius, _bm.Version);
+        }
+        var k = 1 - MathF.Exp(-dt * 7f);
+        _wbCam.Center = Vector3.Lerp(_wbCam.Center, _camCenterGoal, k);
+        _wbCam.Radius += (_camRadiusGoal - _wbCam.Radius) * k;
     }
 
     private void CancelDrag()
@@ -278,6 +300,7 @@ public sealed partial class Ui
         var dt = (float)Math.Clamp(now - _wbLastFrame, 0, 0.1);
         _wbLastFrame = now;
         _wbCam.Nudge = MathF.Max(0, _wbCam.Nudge - dt);
+        FollowFraming(dt);
         var stock = WbStock();
         if (!ReferenceEquals(stock, Bm.Stock))
             Bm.SetStock(stock);
@@ -285,8 +308,10 @@ public sealed partial class Ui
         _loadoutDrawn = true; // keeps the 3D preview alive (see EndFrame)
         Preview = null;
         _hoverPart = null;
+        _hoverRowPrev = _hoverRow;
         _hoverRow = -1;
         _rowRectCount = 0;
+        _escUsed = false;
         var vp = ImGui.GetMainViewport();
         var size = new float2(MathF.Min(1600 * _scale, vp.WorkSize.X - 30), MathF.Min(900 * _scale, vp.WorkSize.Y - 30));
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X / 2, vp.WorkPos.Y + vp.WorkSize.Y / 2), ImGuiCond.Always, new float2(0.5f, 0.5f));
@@ -314,7 +339,8 @@ public sealed partial class Ui
             return null;
         UpdateDrag();
         DrawDragOverlay();
-        WbShortcuts();
+        if (!_escUsed && !_ctxShown)
+            WbShortcuts();
         return launch;
     }
 
@@ -474,6 +500,8 @@ public sealed partial class Ui
         var leftW = width * 0.22f;
         var rightW = width * 0.3f;
         var midW = width - leftW - rightW - 16 * _scale;
+        _invMin = ImGui.GetCursorScreenPos();
+        _invMax = _invMin + new float2(leftW, height);
         if (ImGui.BeginChild("##wbinv"u8, new float2(leftW, height), ImGuiChildFlags.Borders))
             DrawInventory(leftW);
         ImGui.EndChild();
@@ -722,7 +750,7 @@ public sealed partial class Ui
         _hoverSpot = -1;
         if (_viewHovered && Ray(mouse, out var ro, out var rd))
         {
-            var tol = 22 * _scale * 2 * MathF.Tan(BenchCamera.Fov / 2) / MathF.Max(1, viewSize.Y);
+            var tol = (_dragging ? 22 : 12) * _scale * 2 * MathF.Tan(BenchCamera.Fov / 2) / MathF.Max(1, viewSize.Y); // generous while dropping, tight for picking (so a click near the gun still turns it)
             if (_dragging)
                 _hoverSpot = BenchModel.PickRay(Bm.Spots, _dragValid.AsSpan(0, Math.Min(_dragValid.Length, Bm.Spots.Count)), ro, rd, tol);
             else
@@ -837,7 +865,7 @@ public sealed partial class Ui
     {
         var dl = ImGui.GetWindowDrawList();
         var pulse = 0.5f + 0.5f * MathF.Sin((float)_wbNow * 6f);
-        var rowSpot = _hoverRow >= 0 && _hoverRow < Bm.Rows.Count ? RowSpot(_hoverRow) : -1;
+        var rowSpot = _hoverRowPrev >= 0 && _hoverRowPrev < Bm.Rows.Count ? RowSpot(_hoverRowPrev) : -1; // the list is drawn after the view: last frame's row
         for (var i = 0; i < Bm.Spots.Count; i++)
         {
             if (!_spotOn[i] || !In(_spotScreen[i], _viewMin, _viewMax))
@@ -1189,7 +1217,8 @@ public sealed partial class Ui
             ImGui.OpenPopup("##wbctx"u8);
             _ctxOpen = false;
         }
-        if (!ImGui.BeginPopup("##wbctx"u8))
+        _ctxShown = ImGui.BeginPopup("##wbctx"u8);
+        if (!_ctxShown)
             return;
         var n = _ctxNode;
         if (n == null || !Bm.Build.Nodes.Contains(n))
@@ -1331,7 +1360,7 @@ public sealed partial class Ui
         if (_dragArmed && !_dragging)
         {
             var d = mouse - _dragStart;
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && d.X * d.X + d.Y * d.Y > 25 * _scale * _scale && _dragPart != null)
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && d.X * d.X + d.Y * d.Y > 36 * _scale * _scale && _dragPart != null)
             {
                 _dragging = true;
                 if (_dragValid.Length < Bm.Spots.Count)
@@ -1351,10 +1380,11 @@ public sealed partial class Ui
         }
         if (_dragging && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
             Drop(mouse);
-        if (_dragging && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
+        if ((_dragging || _orbiting) && ImGui.IsKeyPressed(ImGuiKey.Escape, false))
         {
             WbSay("Cancelled.");
             CancelDrag();
+            _escUsed = true; // the same Esc doesn't also close the workbench
         }
     }
 
@@ -1393,8 +1423,9 @@ public sealed partial class Ui
         }
         if (node != null)
         {
-            // Dragged off the gun (anywhere but the view): it comes off.
-            if (!In(mouse, _viewMin, _viewMax))
+            // Dragged off the gun onto your parts (or out of the view and the list): it comes off.
+            var inList = In(mouse, new float2(_listClip.X, _listClip.Y), new float2(_listClip.Z, _listClip.W));
+            if (In(mouse, _invMin, _invMax) || (!In(mouse, _viewMin, _viewMax) && !inList))
                 WbRemove(node);
             return;
         }
