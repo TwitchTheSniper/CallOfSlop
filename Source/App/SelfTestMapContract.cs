@@ -31,6 +31,44 @@ public static partial class SelfTest
         Line($"{Maps.All.Length} maps checked, {withBlock} with a \"test\" block, in {sw.Elapsed.TotalSeconds:0.0} s");
         if (withBlock == 0)
             Fail("no map has a \"test\" block (the Space pack's maps should)");
+
+        // The block itself: not fingerprinted, round-trips through a file, and a bad one is refused with a reason.
+        var src = Maps.All.First(x => x.TestSpec != null);
+        var text = File.ReadAllText(Path.Combine(Maps.Folder, src.SourceFile!));
+        var start = text.IndexOf("\"test\":", StringComparison.Ordinal);
+        var end = text.IndexOf("\n },", start, StringComparison.Ordinal) + 4;
+        var stripped = MapFile.Load(text[..start] + text[end..], src.SourceFile!);
+        var again = MapFile.Load(text, src.SourceFile!);
+        var back = MapFile.Load(MapFile.ToJson(again), src.SourceFile!);
+        if (stripped.TestSpec != null || again.TestSpec == null || back.TestSpec == null)
+            Fail($"{src.Name}: the \"test\" block wasn't read (stripped {stripped.TestSpec != null}, again {again.TestSpec != null}, round trip {back.TestSpec != null})");
+        if (stripped.ContentHash != again.ContentHash || again.ContentHash != back.ContentHash || again.ContentHash != src.ContentHash)
+            Fail($"{src.Name}: the \"test\" block changes the fingerprint ({stripped.ContentHash:x8} without, {again.ContentHash:x8} with, {back.ContentHash:x8} round trip)");
+        if (back.TestSpec is { } rt && (rt.Symmetry != src.TestSpec!.Symmetry || rt.Probes.Length != src.TestSpec.Probes.Length || rt.MinProps != src.TestSpec.MinProps))
+            Fail($"{src.Name}: the \"test\" block changed in a file round trip");
+        foreach (var (bad, expect) in new[]
+                 {
+                     ("\"test\": { \"shpae\": \"turn\" }", "unknown key"),
+                     ("\"test\": { \"symmetry\": \"spin\" }", "one of"),
+                     ("\"test\": { \"probes\": [[1, 2, 3, 4]] }", "name"),
+                     ("\"test\": { \"botMatchSeconds\": 99 }", "0 to 60"),
+                     ("\"test\": 7", "object"),
+                 })
+        {
+            try
+            {
+                MapFile.Load($"{{ \"name\": \"X\", \"halfX\": 20, \"halfZ\": 20, {bad}, \"ops\": [ {{ \"op\": \"Spawn\", \"x\": 1, \"z\": 1 }} ] }}", "bad.json");
+                Fail($"a map with a bad \"test\" block loaded without complaint ({bad})");
+            }
+            catch (MapFileException ex) when (ex.Message.Contains(expect, StringComparison.OrdinalIgnoreCase))
+            {
+            }
+            catch (MapFileException ex)
+            {
+                Fail($"a bad \"test\" block gave the wrong error: {ex.Message} (expected '{expect}')");
+            }
+        }
+        Line($"the \"test\" block isn't fingerprinted ({src.Name}: {src.ContentHash:x8} with and without), round-trips, and bad blocks are refused with a reason");
         if (notes.Count > 0)
             Line("::notice title=Map contract::" + string.Join("%0A", notes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
@@ -68,8 +106,8 @@ public static partial class SelfTest
 
     // ---- One named check -----------------------------------------------------------------------------------------
 
-    /// <summary>Runs one check; in verbose mode (the tools) says whether it passed, with its detail line.</summary>
-    private static bool MapCheck(string name, bool verbose, Func<string?> body)
+    /// <summary>Runs one check; in verbose mode (the tools) says whether it passed, with its detail line. Quiet: the detail only in verbose mode.</summary>
+    private static bool MapCheck(string name, bool verbose, Func<string?> body, bool quiet = false)
     {
         var before = _failures;
         string? detail;
@@ -85,7 +123,7 @@ public static partial class SelfTest
         var ok = _failures == before;
         if (verbose)
             Line($"  {(ok ? "ok  " : "FAIL")} {name}{(detail != null ? ": " + detail : "")}");
-        else if (detail != null)
+        else if (detail != null && quiet == false)
             Line($"    {name}: {detail}");
         return ok;
     }
@@ -114,7 +152,7 @@ public static partial class SelfTest
                 Fail($"{m.Name}: a team has no spawns");
             return $"{o.TeamSpawns[0].Count}+{o.TeamSpawns[1].Count} team spawns ({(o.TeamSpawnsGenerated ? "generated" : "placed")}), "
                    + $"{o.Hills.Count} hills ({(o.HillsGenerated ? "generated" : "placed")}), flags {(o.FlagsGenerated ? "generated" : "placed")}";
-        });
+        }, quiet: true);
         if (m.Boundary is not { } bd)
             return;
         MapCheck("inside the outline", verbose, () =>
@@ -147,7 +185,7 @@ public static partial class SelfTest
             if (outside.Count > 0)
                 Fail($"{m.Name}: {outside.Count} thing(s) outside the outline: {string.Join(", ", outside.Take(6))}");
             return $"{bd.Spec.Shape.ToString().ToLowerInvariant()} outline, {bd.SegmentCount} segments, {bd.Area:0} m2; spawns, waypoints and objectives{(dressed > 0 ? ", props and boxes" : "")} inside";
-        });
+        }, quiet: true);
     }
 
     // ---- The full contract: maps with a "test" block ---------------------------------------------------------------

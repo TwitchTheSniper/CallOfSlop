@@ -16,7 +16,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Some sections only | `--selftest-only "Save folder, Frenzy"`: comma-separated, case-insensitive, prefix match. `--selftest-list` prints the names |
 | Window smoke test | `--smoketest`: drives the real window, writes `smoke_*.bmp` and `[smoke]` log lines. Uses a throwaway save copy |
 | Quick host or join | `CallOfSlop host [port]`, `CallOfSlop join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
-| Modding checks | `--check-map FILE`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
+| Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
 
@@ -85,7 +85,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Avoid per-frame and per-tick allocations; the self-tests measure allocations.
   - Music CPU must stay ≤1.5x the baseline.
 - **Self-tests.**
-  - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`).
+  - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`). A new **map** adds no section: it gets a `test` block in its JSON (Maps/README.md, "Testing a map"), which the "Map contract" section and `--check-map` run; only checks the block can't express get a small section.
   - Use short, seeded, scripted scenarios. No long bot matches.
   - Remove temporary or diagnostic test code before finishing.
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.

@@ -65,6 +65,7 @@
 - Invite codes, STUN, UPnP, and an automatic server list started by hosts.
 - F8 audio mixer, -50 to +50 dB, with a limiter on boosted music.
 - Self-test section filter, and the `[tests: ...]` tag on branch CI.
+- "Map contract" (`Source/App/SelfTestMapContract.cs`): one data-driven self-test of every map against its file's optional `test` block (Maps/README.md, "Testing a map"), replacing the Space pack's six bespoke sections (Space: Stratos Station, refinery and processor, arboretum and reactor, vault and bazaar, shipyard and outpost, gravity maps; only "Space: gravity physics" remains). A new map gets a `test` block, not a section; `--check-map FILE` / `--check-maps DIR` run the same checks on files and print each result.
 
 ## In progress
 
