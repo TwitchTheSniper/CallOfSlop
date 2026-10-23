@@ -115,7 +115,7 @@ def hull():
         decal("Keelspar Crane Mark", x, 0, SY, size=4.5, rotation=0)
     # Waypoints: the keel deck, the spine and the crown.
     waypoint_grid(-39, -4, 39, 4, KY, spacing=9.0)
-    for x in range(-38, 39, 8):
+    for x in range(-36, 37, 8):
         waypoint(x, 0, SY)
     for (x, z) in ((-4, 3), (4, -3), (-4, -3), (4, 3)):
         waypoint(x, z, SY)
@@ -382,7 +382,7 @@ def rotated(ops):
             at = o["at"]
             d["at"] = [K.r(-at[0]), at[1], K.r(-at[2])] if len(at) == 3 else [K.r(-at[0]), K.r(-at[1])]
             d["yaw"] = (o.get("yaw", 0) + 180) % 360
-            d["seed"] = o.get("seed", 1) + 100
+            d["seed"] = o.get("seed", 1)  # the same furniture, turned with the building
         out.append(d)
     return out
 
