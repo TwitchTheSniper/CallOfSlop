@@ -96,14 +96,17 @@ public static unsafe partial class Program
             var spot = zm.BoxSpots[s];
             var rot = Matrix4x4.CreateRotationY(-spot.Yaw);
             var here = !live || s == _game.BoxSpot;
-            Gfx.Draw(Matrix4x4.CreateScale(1.5f, 0.04f, 0.8f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.02f, 0)), here ? new Vector3(0.35f, 0.3f, 0.2f) : new Vector3(0.25f, 0.25f, 0.25f));
+            var props = zm.MachineProps; // a solid crate stands at every spot (Props/Zombies): the box is drawn a little bigger over it
+            if (!props)
+                Gfx.Draw(Matrix4x4.CreateScale(1.5f, 0.04f, 0.8f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.02f, 0)), here ? new Vector3(0.35f, 0.3f, 0.2f) : new Vector3(0.25f, 0.25f, 0.25f));
             if (!here || (live && _game.BoxState == ZBoxState.Teddy && _game.BoxLeft < 1.5))
                 continue;
             var open = live && _game.BoxState != ZBoxState.Idle;
-            Gfx.Draw(Matrix4x4.CreateScale(1.3f, 0.6f, 0.65f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.3f, 0)), new Vector3(0.32f, 0.2f, 0.1f));
-            Gfx.Draw(Matrix4x4.CreateScale(1.32f, 0.08f, 0.67f) * Matrix4x4.CreateTranslation(0, 0, open ? -0.33f : 0) * Matrix4x4.CreateRotationX(open ? 1.2f : 0) * Matrix4x4.CreateTranslation(0, 0, open ? 0.33f : 0) * rot
-                     * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.64f, 0)), new Vector3(0.36f, 0.24f, 0.12f));
-            Gfx.Draw(Matrix4x4.CreateScale(0.3f, 0.3f, 0.01f) * Matrix4x4.CreateTranslation(0, 0, -0.33f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.32f, 0)), new Vector3(0.9f, 0.8f, 0.3f), 1f, mode: 2); // the "?"
+            var grow = props ? 0.05f : 0f;
+            Gfx.Draw(Matrix4x4.CreateScale(1.3f + grow, 0.6f + grow * 0.5f, 0.65f + grow) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.3f + grow * 0.25f, 0)), new Vector3(0.32f, 0.2f, 0.1f));
+            Gfx.Draw(Matrix4x4.CreateScale(1.32f + grow, 0.08f, 0.67f + grow) * Matrix4x4.CreateTranslation(0, 0, open ? -0.33f : 0) * Matrix4x4.CreateRotationX(open ? 1.2f : 0) * Matrix4x4.CreateTranslation(0, 0, open ? 0.33f : 0) * rot
+                     * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.64f + grow * 0.5f, 0)), new Vector3(0.36f, 0.24f, 0.12f));
+            Gfx.Draw(Matrix4x4.CreateScale(0.3f, 0.3f, 0.01f) * Matrix4x4.CreateTranslation(0, 0, -0.33f - grow * 0.6f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.32f, 0)), new Vector3(0.9f, 0.8f, 0.3f), 1f, mode: 2); // the "?"
             if (open)
             {
                 Gfx.Draw(Matrix4x4.CreateScale(1.1f, 0.02f, 0.5f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.62f, 0)), new Vector3(0.6f, 0.9f, 1f), 1f, mode: 2); // the glow inside
@@ -136,8 +139,11 @@ public static unsafe partial class Program
             var c = perk?.Color ?? new Vector3(0.6f);
             var lit = !m.NeedsPower || _game.ZPower;
             var rot = Matrix4x4.CreateRotationY(-m.Yaw);
-            Gfx.Draw(Matrix4x4.CreateScale(0.9f, 2.0f, 0.7f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1f, 0)), c * 0.55f);
-            Gfx.Draw(Matrix4x4.CreateScale(0.7f, 0.5f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1.55f, 0)),
+            if (zm.MachineProps)
+                Gfx.Draw(Matrix4x4.CreateScale(0.8f, 0.97f, 0.01f) * Matrix4x4.CreateTranslation(0, 0, -0.337f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.9f, 0)), c * 0.6f); // the perk's colour on the Perk Machine prop's front
+            else
+                Gfx.Draw(Matrix4x4.CreateScale(0.9f, 2.0f, 0.7f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1f, 0)), c * 0.55f);
+            Gfx.Draw(Matrix4x4.CreateScale(0.7f, 0.5f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1.62f, 0)),
                 lit ? c * (1.1f + 0.15f * MathF.Sin(t * 3)) : c * 0.3f, 1f, mode: lit ? 2 : 0);
             Gfx.Draw(Matrix4x4.CreateScale(0.25f, 0.4f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.8f, 0)), new Vector3(0.1f, 0.1f, 0.1f));
         }
@@ -147,14 +153,16 @@ public static unsafe partial class Program
         {
             var owned = _game.Local?.ExtraSlots == true;
             var rot = Matrix4x4.CreateRotationY(-su.Yaw);
-            Gfx.Draw(Matrix4x4.CreateScale(1.0f, 1.2f, 0.6f) * rot * Matrix4x4.CreateTranslation(su.At + new Vector3(0, 0.6f, 0)), new Vector3(0.25f, 0.3f, 0.25f));
+            if (!zm.MachineProps) // (with machine props: the Weapon Locker prop)
+                Gfx.Draw(Matrix4x4.CreateScale(1.0f, 1.2f, 0.6f) * rot * Matrix4x4.CreateTranslation(su.At + new Vector3(0, 0.6f, 0)), new Vector3(0.25f, 0.3f, 0.25f));
             Gfx.Draw(Matrix4x4.CreateScale(0.8f, 0.3f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.31f) * rot * Matrix4x4.CreateTranslation(su.At + new Vector3(0, 1.0f, 0)),
                 owned ? new Vector3(0.3f, 0.9f, 0.4f) : new Vector3(1f, 0.75f, 0.2f) * (0.8f + 0.2f * MathF.Sin(t * 3)), 1f, mode: 2);
         }
         if (zm.Power is { } pw)
         {
             var rot = Matrix4x4.CreateRotationY(-pw.Yaw);
-            Gfx.Draw(Matrix4x4.CreateScale(0.7f, 1.0f, 0.25f) * rot * Matrix4x4.CreateTranslation(pw.At + new Vector3(0, 1.1f, 0)), new Vector3(0.3f, 0.32f, 0.35f));
+            if (!zm.MachineProps) // (with machine props: the Power Switch Box prop)
+                Gfx.Draw(Matrix4x4.CreateScale(0.7f, 1.0f, 0.25f) * rot * Matrix4x4.CreateTranslation(pw.At + new Vector3(0, 1.1f, 0)), new Vector3(0.3f, 0.32f, 0.35f));
             var lever = _game.ZPower ? -0.6f : 0.6f;
             Gfx.Draw(Matrix4x4.CreateScale(0.08f, 0.45f, 0.08f) * Matrix4x4.CreateTranslation(0, 0.2f, 0) * Matrix4x4.CreateRotationX(lever) * Matrix4x4.CreateTranslation(0, 0, -0.18f) * rot
                      * Matrix4x4.CreateTranslation(pw.At + new Vector3(0, 1.1f, 0)), new Vector3(0.7f, 0.1f, 0.1f));
@@ -163,6 +171,8 @@ public static unsafe partial class Program
         }
         foreach (var b in zm.Benches)
         {
+            if (zm.MachineProps)
+                break; // the Zombies Workbench prop
             var rot = Matrix4x4.CreateRotationY(-b.Yaw);
             Gfx.Draw(Matrix4x4.CreateScale(1.6f, 0.08f, 0.8f) * rot * Matrix4x4.CreateTranslation(b.At + new Vector3(0, 0.9f, 0)), new Vector3(0.45f, 0.33f, 0.2f));
             foreach (var (x, z) in new[] { (-0.7f, -0.3f), (0.7f, -0.3f), (-0.7f, 0.3f), (0.7f, 0.3f) })
@@ -184,6 +194,8 @@ public static unsafe partial class Program
             var c = Parts.Find(d.Part) is { } part ? PartDef.RarityColor(part.Rarity) : new Vector3(1);
             Gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateRotationY(t * 2 + d.Id) * Matrix4x4.CreateTranslation(d.At + new Vector3(0, 0.25f + 0.06f * MathF.Sin(t * 3 + d.Id), 0)), c, 1f, mode: 2);
         }
+
+        DrawPowerUps(now); // power-ups and special ammo flashes (below)
 
         // Dropped builds (ZombiesDrops.cs): the weapon's own model lying over a glowing ring, slowly turning and bobbing;
         // in their last seconds the ring goes red and the whole pickup blinks.
@@ -258,7 +270,84 @@ public static unsafe partial class Program
                      * Matrix4x4.CreateTranslation(side * 0.38f, 0.55f, 0) * upper, ZSkin * 0.92f);
         }
         BodyBloodRender.Unbind(Gfx);
+        if (z.State != ZState.Dead && (z.FxBurning || z.FxZapped))
+        {
+            // Burning: orange licks of flame round the body; zapped: blue sparks (special ammo, ZombiesAmmoEffects.cs).
+            var ft = (float)now * (z.FxBurning ? 9f : 23f) + z.Id;
+            for (var k = 0; k < 4; k++)
+            {
+                var a = ft * 0.7f + k * 1.7f;
+                var o = new Vector3(MathF.Sin(a) * 0.25f, 0.5f + 0.35f * k + 0.1f * MathF.Sin(ft + k), MathF.Cos(a) * 0.2f);
+                var c = z.FxBurning ? new Vector3(1f, 0.45f + 0.25f * (k & 1), 0.08f) : new Vector3(0.45f, 0.75f, 1f);
+                var sz = z.FxBurning ? new Vector3(0.12f, 0.22f, 0.12f) : new Vector3(0.06f, 0.18f, 0.06f);
+                Gfx.Draw(Matrix4x4.CreateScale(sz) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(z.RenderPos + o), c, 0.85f, mode: 2);
+            }
+        }
     }
+
+    /// <summary>Power-ups (a glowing token per kind over a green halo and a beam, blinking at the end) and the special ammo flashes.</summary>
+    private static void DrawPowerUps(double now)
+    {
+        var t = (float)now;
+        foreach (var pu in _game.ZPowerUps)
+        {
+            var left = pu.Until - now;
+            if (left < _game.ZRules.PowerBlinkSeconds && ((int)(now * (left < 3 ? 8 : 4)) & 1) == 0)
+                continue; // the blink, faster at the very end
+            var c = Game.PowerColor(pu.Kind);
+            var at = pu.At + new Vector3(0, 0.9f + 0.1f * MathF.Sin(t * 2.5f + pu.Id), 0);
+            var spin = Matrix4x4.CreateRotationY(t * 1.8f + pu.Id);
+            Gfx.Draw(Matrix4x4.CreateScale(0.62f, 0.62f, 0.08f) * spin * Matrix4x4.CreateTranslation(at), new Vector3(0.25f, 1f, 0.3f), 0.35f, mode: 2); // the green halo (World at War)
+            Gfx.Draw(Matrix4x4.CreateScale(0.05f, 1.6f, 0.05f) * Matrix4x4.CreateTranslation(pu.At + new Vector3(0, 0.8f, 0)), new Vector3(0.3f, 1f, 0.35f), 0.25f, mode: 2);
+            switch (pu.Kind)
+            {
+                case ZPowerKind.MaxAmmo: // an ammo can with rounds on top
+                    PowerPart(spin, at, 0.36f, 0.24f, 0.2f, 0, -0.04f, c * 0.8f);
+                    for (var k = -1; k <= 1; k++)
+                        PowerPart(spin, at, 0.05f, 0.14f, 0.05f, k * 0.1f, 0.15f, new Vector3(1f, 0.8f, 0.3f));
+                    break;
+                case ZPowerKind.InstaKill: // a skull
+                    PowerPart(spin, at, 0.3f, 0.26f, 0.24f, 0, 0.04f, c);
+                    PowerPart(spin, at, 0.2f, 0.1f, 0.2f, 0, -0.13f, c * 0.9f);
+                    PowerPart(spin, at, 0.07f, 0.07f, 0.26f, -0.07f, 0.05f, new Vector3(0.05f));
+                    PowerPart(spin, at, 0.07f, 0.07f, 0.26f, 0.07f, 0.05f, new Vector3(0.05f));
+                    break;
+                case ZPowerKind.DoublePoints: // two gold coins
+                    PowerPart(spin, at, 0.22f, 0.22f, 0.05f, -0.1f, 0, c);
+                    PowerPart(spin, at, 0.22f, 0.22f, 0.05f, 0.1f, 0.03f, c * 0.85f);
+                    break;
+                case ZPowerKind.Nuke: // a round bomb with fins
+                    PowerPart(spin, at, 0.26f, 0.26f, 0.26f, 0, 0, c * 0.7f);
+                    PowerPart(spin, at, 0.2f, 0.06f, 0.06f, 0, 0.18f, new Vector3(0.3f));
+                    PowerPart(spin, at, 0.06f, 0.18f, 0.2f, 0, 0.18f, new Vector3(0.3f));
+                    break;
+                default: // the Carpenter: a hammer
+                    PowerPart(spin, at, 0.05f, 0.34f, 0.05f, 0, -0.04f, new Vector3(0.6f, 0.4f, 0.2f));
+                    PowerPart(spin, at, 0.24f, 0.08f, 0.08f, 0, 0.14f, c);
+                    break;
+            }
+        }
+        foreach (var (time, kind, pos) in _game.ZFxList)
+        {
+            var age = (float)(now - time);
+            if (age < 0 || age > 0.4f)
+                continue;
+            var k = age / 0.4f;
+            var (size, col) = kind switch
+            {
+                ZFxKind.Splash => (0.4f + 2.2f * k, new Vector3(1f, 0.55f, 0.15f)),
+                ZFxKind.Shock => (0.3f + 0.5f * k, new Vector3(0.5f, 0.8f, 1f)),
+                ZFxKind.Ignite => (0.3f + 0.6f * k, new Vector3(1f, 0.4f, 0.05f)),
+                ZFxKind.Party => (0.2f + 0.4f * k, new Vector3(1f, 0.4f, 0.8f)),
+                ZFxKind.Fish => (0.25f + 0.4f * k, new Vector3(0.6f, 0.85f, 1f)),
+                _ => (0.15f + 0.3f * k, new Vector3(1f, 1f, 0.7f)),
+            };
+            Gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(k * 2f) * Matrix4x4.CreateTranslation(pos), col, 0.8f * (1 - k), mode: 2);
+        }
+    }
+
+    private static void PowerPart(Matrix4x4 spin, Vector3 at, float sx, float sy, float sz, float x, float y, Vector3 col) =>
+        Gfx.Draw(Matrix4x4.CreateScale(sx, sy, sz) * Matrix4x4.CreateTranslation(x, y, 0) * spin * Matrix4x4.CreateTranslation(at), col, 1f, mode: 2);
 
     // ---- Input -------------------------------------------------------------------------------------------
 
@@ -330,9 +419,9 @@ public static unsafe partial class Program
 
     private static void StartZombiesSmoke(double now)
     {
-        if (Maps.Find("Zombies Test") is not { } map)
+        if ((Maps.Find("Blackmoor Asylum") ?? Maps.Find("Zombies Test")) is not { } map) // the first real Zombies map (milestone 3), else the dev map
         {
-            Console.WriteLine("[smoke] zombies: the Zombies Test map is missing, skipped");
+            Console.WriteLine("[smoke] zombies: no Zombies map, skipped");
             return;
         }
         _settings.MapName = map.Name;
@@ -405,10 +494,12 @@ public static unsafe partial class Program
                 if (World.Map.Zombies is { BoxSpots.Count: > 0 } zm && g.Local is { } me)
                 {
                     var spot = zm.BoxSpots[g.BoxSpot];
-                    var stand = spot.At + World.FlatForward(spot.Yaw) * -1.6f;
+                    var stand = spot.At + World.FlatForward(spot.Yaw) * 1.6f; // in front of the box (its "?" side)
                     me.Teleport(stand);
                     g.ZP(me).Points += 2000;
                     SmokeLookAt(g, spot.At + new Vector3(0, 1.1f, 0), stand + new Vector3(0, World.EyeHeight, 0));
+                    if (g.IsServer) // a power-up floating beside the box, in the box shot
+                        g.SpawnPowerUp(ZPowerKind.DoublePoints, spot.At + World.FlatForward(spot.Yaw + MathF.PI / 2) * 1.6f + World.FlatForward(spot.Yaw) * 0.6f, now);
                     _zSmokeUseHeld = true;
                     Console.WriteLine($"[smoke] zombies box: holding interact at the box, prompt \"{g.FindZUse(me)?.Text}\", points {g.ZP(me).Points}");
                 }

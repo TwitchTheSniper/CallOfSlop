@@ -108,7 +108,8 @@ public static partial class SelfTest
         (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x947A787E71B72D3F),
         (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x07254C84991E1BB7),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
-        (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
+        // Zombies re-recorded for milestone 3: kills roll for power-ups (one more random draw each; ZombiesPowerUps.cs).
+        (GameMode.Zombies, 2, 0, 4106, 20, 0x331A7AEF90245AF6),
     ];
 
     private static readonly List<string> ModeNotes = new();

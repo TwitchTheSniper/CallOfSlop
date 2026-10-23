@@ -124,6 +124,20 @@ public sealed class ZombiesMap
     public ZSpot? Power;
     public readonly List<ZSpot> Salvage = new();
 
+    /// <summary>
+    /// "machineProps": true: every machine stands as a solid prop from <c>Props/Zombies</c> (<see cref="MachineProp"/>):
+    /// perk machines, workbenches, the power switch, the slot upgrade, and a crate at every mystery box spot (the box is
+    /// drawn over the crate at its spot). Players, zombies and bullets can't pass through them. Off (Zombies Test): the
+    /// machines are drawn but have no collision.
+    /// </summary>
+    public bool MachineProps;
+
+    /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
+    public static class MachineProp
+    {
+        public const string Perk = "Perk Machine", BoxSpot = "Mystery Box Crate", Bench = "Zombies Workbench", Power = "Power Switch Box", Slots = "Weapon Locker";
+    }
+
     /// <summary>The section as it was in the file (written back unchanged).</summary>
     public string Raw = "{}";
 
@@ -155,7 +169,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "machineProps"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -315,13 +329,42 @@ public sealed class ZombiesMap
         if (Get(e, "salvage") is { } sv)
             foreach (var s in List(sv, $"{where}.salvage"))
                 z.Salvage.Add(Spot(map, z, s, $"{where}.salvage"));
+        if (Get(e, "machineProps") is { } mp)
+            z.MachineProps = mp.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => throw new MapFileException($"{where}.machineProps: true or false"),
+            };
+        if (z.MachineProps)
+            foreach (var (name, _) in z.Machines())
+                if (map.PropScope.Find(name) == null)
+                    throw new MapFileException($"{where}.machineProps: the prop \"{name}\" is missing (Props/Zombies)");
 
         // The boxes, last (after every check, so a refused section adds nothing).
         foreach (var d in z.Doors)
             d.SolidIndex = map.AddZombieBox(d.Box, d.Debris ? new Vector3(0.38f, 0.33f, 0.28f) : new Vector3(0.45f, 0.3f, 0.18f), clip: false);
         foreach (var win in z.Windows)
             win.SolidIndex = map.AddZombieBox(win.Opening, new Vector3(0.4f, 0.3f, 0.2f), clip: true);
+        if (z.MachineProps)
+            foreach (var (name, spot) in z.Machines())
+                map.AddMachineProp(name, spot);
         return z;
+    }
+
+    /// <summary>Every machine and the prop it stands as with <see cref="MachineProps"/>, in a fixed order (the box spots, perk machines, workbenches, the slot upgrade, the power switch).</summary>
+    public IEnumerable<(string Prop, ZSpot Spot)> Machines()
+    {
+        foreach (var s in BoxSpots)
+            yield return (MachineProp.BoxSpot, s);
+        foreach (var s in PerkMachines)
+            yield return (MachineProp.Perk, s);
+        foreach (var s in Benches)
+            yield return (MachineProp.Bench, s);
+        if (SlotUpgrade is { } su)
+            yield return (MachineProp.Slots, su);
+        if (Power is { } pw)
+            yield return (MachineProp.Power, pw);
     }
 
     private static ZSpot Spot(Map map, ZombiesMap z, JsonElement s, string w, string extra = "")
@@ -439,6 +482,17 @@ public sealed partial class Map
         _clipBox[i] = clip;
         _zombieOriginal[i] = b;
         return i;
+    }
+
+    /// <summary>
+    /// A Zombies machine's solid prop (the section's "machineProps"; not recorded as an op: the section writes itself back
+    /// and places it again). Machine yaws turn the other way from prop yaws, so the prop's front (its -Z side) faces the
+    /// way the machine does. It counts towards the prop fingerprint like any placed prop.
+    /// </summary>
+    internal void AddMachineProp(string name, ZSpot spot)
+    {
+        var def = PropScope.Find(name) ?? throw new MapFileException($"zombies.machineProps: no prop \"{name}\"");
+        AddProp(def, spot.At, -spot.Yaw, 1f, null);
     }
 
     /// <summary>Is door <paramref name="door"/> open (its box parked out of the world)?</summary>

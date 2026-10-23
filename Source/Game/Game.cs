@@ -1454,7 +1454,7 @@ public sealed partial class Game : IDisposable
         }
 
         if (Horde.Count > 0)
-            flags |= ZombieShotApply(shooter, now); // one damage event per zombie per trigger pull
+            flags |= ZombieShotApply(shooter, def, now); // one damage event per zombie per trigger pull (then the gun's special ammo effects)
         if (_pveShotCount > 0)
             flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 

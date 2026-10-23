@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Zombies Test",
-  "description": "Zombies test map: a start room and three areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade and the power switch.",
+  "description": "Zombies test map: a start room and three areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade and the power switch. The machine props (Props/Zombies) stand in a row outside the west wall.",
   "author": "Call of Slop",
   "order": 985,
   "halfX": 24,
@@ -35,6 +35,12 @@
     {"op": "Block", "x0": 2.5, "y0": 0, "z0": 9, "x1": 4.5, "y1": 1.0, "z1": 10, "color": "#5a4632"},
     {"op": "Block", "x0": -14, "y0": 0, "z0": 0.5, "x1": -13, "y1": 1.1, "z1": 2.5, "color": "#5a4632"},
     {"op": "Block", "x0": 12, "y0": 0, "z0": 2, "x1": 14, "y1": 0.9, "z1": 3, "color": "#5a4632"},
+
+    {"op": "Prop", "name": "Perk Machine", "x": -22, "z": 12, "yaw": 180},
+    {"op": "Prop", "name": "Mystery Box Crate", "x": -19.3, "z": 12, "yaw": 180},
+    {"op": "Prop", "name": "Zombies Workbench", "x": -16.3, "z": 12, "yaw": 180},
+    {"op": "Prop", "name": "Weapon Locker", "x": -13.4, "z": 12, "yaw": 180},
+    {"op": "Prop", "name": "Power Switch Box", "x": -11.2, "z": 12, "yaw": 180},
 
     {"op": "Spawn", "x": -2, "z": -3},
     {"op": "Spawn", "x": 2, "z": -3},

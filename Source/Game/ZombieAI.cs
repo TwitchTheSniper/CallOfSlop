@@ -59,6 +59,16 @@ public sealed class Zombie
     public uint SpawnTick;
     public bool KilledByHead;
 
+    // Special ammo effects (server; ZombiesAmmoEffects.cs): a burn or bleed ticking, slowed, a corpse that floats away.
+    public double BurnUntil, BurnNext;
+    public float BurnPerTick;
+    public byte BurnBy = byte.MaxValue;
+    public double SlowUntil, ZapUntil;
+    public bool Floaty;
+
+    /// <summary>Drawn burning / crackling with electricity (the server sets these each tick; clients get them in ZEnts).</summary>
+    public bool FxBurning, FxZapped;
+
     // Path within an area (nav graph nodes).
     public readonly int[] Path = new int[64];
     public int PathLen, PathIdx;
@@ -194,6 +204,12 @@ public sealed partial class Game
             {
                 if (now - z.StateAt > 1.5)
                     Horde.RemoveAt(i);
+                else if (z.Floaty)
+                {
+                    z.PrevPos = z.Sim.Position;
+                    z.Sim.Position.Y += 1.6f * World.TickDt; // the party balloons carry it off (ZombiesAmmoEffects.cs)
+                }
+                z.FxBurning = z.FxZapped = false;
                 continue;
             }
             alive++;
@@ -205,6 +221,10 @@ public sealed partial class Game
             z.PrevPos = z.Sim.Position;
             ThinkZombie(zm, z, now);
             z.History[ServerTick % z.History.Length] = z.Sim.Position;
+            if (z.BurnUntil > 0)
+                BurnTick(z, now); // a burn or bleed ticking (ZombiesAmmoEffects.cs)
+            z.FxBurning = z.BurnUntil > now;
+            z.FxZapped = z.ZapUntil > now;
         }
         if (alive > 0)
         {
@@ -214,12 +234,12 @@ public sealed partial class Game
         }
     }
 
-    private float SpeedOf(Zombie z) => z.Speed switch
+    private float SpeedOf(Zombie z) => (z.Speed switch
     {
         ZSpeed.Sprint => ZRules.SprintSpeed,
         ZSpeed.Run => ZRules.RunSpeed,
         _ => ZRules.WalkSpeed,
-    };
+    }) * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f); // plasma slows (ZombiesAmmoEffects.cs)
 
     private void ThinkZombie(ZombiesMap zm, Zombie z, double now)
     {
@@ -571,43 +591,65 @@ public sealed partial class Game
                 head = World.IsHeadshot(at, Stance.Stand, z.Yaw, o + d * t);
             }
         }
+        if (hit != null)
+            _zLastRay = (o, d, dist); // the pellet that hit it (special ammo: pierce goes on along it)
         return hit;
     }
+
+    private (Vector3 O, Vector3 D, float Dist) _zLastRay;
+    private readonly Dictionary<Zombie, (Vector3 O, Vector3 D, float Dist)> _zShotRay = new();
 
     /// <summary>Server: one pellet's damage on a zombie, added up per trigger pull (one damage event per zombie, like on players).</summary>
     private void ZombieShotAdd(Zombie z, float damage, bool head)
     {
         _zShotDamage[z] = _zShotDamage.GetValueOrDefault(z) + damage * (head ? ZRules.ZombieHeadMult : 1f);
+        _zShotRay.TryAdd(z, _zLastRay);
         if (head)
             _zShotHead.Add(z);
     }
 
-    /// <summary>Server: applies a trigger pull's zombie damage. Returns hit flags (1 hit, 2 headshot, 4 kill).</summary>
-    private byte ZombieShotApply(Player shooter, double now)
+    /// <summary>Server: applies a trigger pull's zombie damage, then the gun's special ammo effects (ZombiesAmmoEffects.cs). Returns hit flags (1 hit, 2 headshot, 4 kill).</summary>
+    private byte ZombieShotApply(Player shooter, WeaponDef def, double now)
     {
         byte flags = 0;
+        var fx = def.BuildFlags.Length > 0 && ZEffectFlags(def.BuildFlags) != 0;
+        if (fx)
+            _zFxHits.Clear();
         foreach (var (z, dmg) in _zShotDamage.OrderBy(kv => kv.Key.Id))
         {
             var head = _zShotHead.Contains(z);
             flags |= (byte)(head ? 3 : 1);
-            if (DamageZombie(shooter, z, (int)MathF.Round(dmg), head, melee: false, now))
+            var amount = (int)MathF.Round(dmg);
+            if (fx && def.BuildFlags.Contains("bayonet") && Flat(z.Position - shooter.Position) <= ZRules.BayonetRange)
+                amount = (int)MathF.Round(dmg * ZRules.BayonetMult); // bayonet: point-blank hits hurt more
+            var killed = DamageZombie(shooter, z, amount, head, melee: false, now);
+            if (killed)
                 flags |= 4;
+            if (fx)
+                _zFxHits.Add(new ZFxHit(z, amount, killed, _zShotRay.TryGetValue(z, out var ray) ? ray : (shooter.Eye, World.FlatForward(shooter.Yaw), Flat(z.Position - shooter.Position))));
         }
         _zShotDamage.Clear();
         _zShotHead.Clear();
+        _zShotRay.Clear();
+        if (fx && _zFxHits.Count > 0)
+            ApplyZombieEffects(shooter, def.BuildFlags, _zFxHits, now);
         return flags;
     }
 
     /// <summary>Server: damage on a zombie from <paramref name="attacker"/> (points for the hit or the kill). Returns true if it killed.</summary>
-    public bool DamageZombie(Player attacker, Zombie z, int amount, bool head, bool melee, double now, bool explosive = false)
+    /// <remarks><paramref name="dot"/>: a burn or bleed tick (no points for the hit, only for the kill). Insta-Kill makes any hit a kill; Double Points doubles the points (ZombiesPowerUps.cs).</remarks>
+    public bool DamageZombie(Player attacker, Zombie z, int amount, bool head, bool melee, double now, bool explosive = false, bool dot = false)
     {
         if (z.State == ZState.Dead || amount <= 0 || !DamageEnabled)
             return false;
+        if (now < ZInstaKillUntil)
+            amount = Math.Max(amount, z.Health);
         z.Health -= amount;
         attacker.LastCombatTime = now;
         if (z.Health > 0)
         {
-            AddPoints(attacker, ZRules.HitPoints);
+            if (!dot)
+                EarnPoints(attacker, ZRules.HitPoints, now);
             return false;
         }
         z.Health = 0;
@@ -619,9 +661,10 @@ public sealed partial class Game
             zp.Headshots++;
         attacker.Kills++;
         FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
-        AddPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints);
+        EarnPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints, now);
         zp.Scrap += ZRules.ScrapPerKill;
         RollDrop(z.Position, ZRound, now);
+        RollPowerUp(z.Position, now); // ZombiesPowerUps.cs
         Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);
         return true;
     }
@@ -630,7 +673,8 @@ public sealed partial class Game
     /// Server: a melee swing against zombies: up to <paramref name="cleave"/> of them in reach and in the arc, nearest
     /// first, not through walls. Returns hit flags (1 hit, 4 kill).
     /// </summary>
-    private byte ZombieMelee(Player attacker, Vector3 origin, Vector3 dir, float reach, float coneCos, float damage, int cleave, float stun, double viewTick, double now)
+    /// <remarks><paramref name="flags"/>: the melee build's part flags (shock coil, nails, frozen fish...: ZombiesAmmoEffects.cs).</remarks>
+    private byte ZombieMelee(Player attacker, Vector3 origin, Vector3 dir, float reach, float coneCos, float damage, int cleave, float stun, double viewTick, double now, string[]? flags = null)
     {
         if (Mode != GameMode.Zombies || cleave <= 0)
             return 0;
@@ -654,16 +698,25 @@ public sealed partial class Game
             list.Add((z, dist));
         }
         list.Sort((a, b) => a.Dist != b.Dist ? a.Dist.CompareTo(b.Dist) : a.Z.Id.CompareTo(b.Z.Id));
-        byte flags = 0;
-        foreach (var (z, _) in list.Take(cleave))
+        byte hitFlags = 0;
+        var fx = flags is { Length: > 0 } && ZEffectFlags(flags) != 0;
+        if (fx)
+            _zFxHits.Clear();
+        foreach (var (z, dist) in list.Take(cleave))
         {
-            flags |= 1;
+            hitFlags |= 1;
             if (stun > 0)
                 z.StunnedUntil = Math.Max(z.StunnedUntil, now + stun);
-            if (DamageZombie(attacker, z, (int)MathF.Round(damage), false, melee: true, now))
-                flags |= 4;
+            var amount = (int)MathF.Round(damage);
+            var killed = DamageZombie(attacker, z, amount, false, melee: true, now);
+            if (killed)
+                hitFlags |= 4;
+            if (fx)
+                _zFxHits.Add(new ZFxHit(z, amount, killed, (origin, dir, dist)));
         }
-        return flags;
+        if (fx && _zFxHits.Count > 0)
+            ApplyZombieEffects(attacker, flags!, _zFxHits, now);
+        return hitFlags;
     }
 
     /// <summary>Server: a grenade or blast: zombies in the radius take damage falling off with distance (walls shield).</summary>

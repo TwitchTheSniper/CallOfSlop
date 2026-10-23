@@ -1,0 +1,8 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Zombies",
+  "description": "Purpose-built maps for the Zombies mode: areas behind doors, boarded windows, the mystery box, perks and the power.",
+  "author": "Call of Slop",
+  "order": 8,
+  "trueRandom": false
+}

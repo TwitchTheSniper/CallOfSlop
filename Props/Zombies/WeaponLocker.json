@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Weapon Locker",
+  "category": "Zombies",
+  "description": "An olive steel locker with gun racks on top: the Zombies weapon-slot upgrade. The game lights the screen on its -Z face.",
+  "collision": "solid",
+  "collider": [ { "size": [1.0, 1.2, 0.6] } ],
+  "scatter": { "randomYaw": false, "yawStep": 90 },
+  "parts": [
+    { "size": [0.98, 1.18, 0.58], "offset": [0, 0.6, 0], "color": "#3d4a3a", "material": "metal" },
+    { "size": [1.0, 0.05, 0.6], "offset": [0, 1.2, 0], "color": "darkgrey" },
+    { "size": [0.01, 0.6, 0.01], "offset": [0, 0.45, -0.295], "color": "black" },
+    { "size": [0.04, 0.12, 0.02], "offset": [-0.08, 0.5, -0.3], "color": "chrome" },
+    { "size": [0.04, 0.12, 0.02], "offset": [0.08, 0.5, -0.3], "color": "chrome" },
+    { "size": [0.06, 0.25, 0.06], "offset": [-0.4, 1.35, 0.15], "color": "darkgrey" },
+    { "size": [0.06, 0.25, 0.06], "offset": [0.4, 1.35, 0.15], "color": "darkgrey" },
+    { "size": [0.9, 0.05, 0.08], "offset": [0, 1.42, 0.15], "color": "darkgrey" },
+    { "size": [0.8, 0.07, 0.05], "offset": [0, 1.32, 0.12], "color": "#2a2420" },
+    { "size": [0.6, 0.06, 0.05], "offset": [0.05, 1.5, 0.12], "color": "#2a2420" },
+    { "size": [0.9, 0.08, 0.02], "offset": [0, 0.08, -0.295], "color": "yellow" }
+  ]
+}

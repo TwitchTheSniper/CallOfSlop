@@ -76,7 +76,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     The text format is unchanged, but servers and clients must agree on what a build fires like and what fits.
     // 39: the Test Range mode (Source/Game/Modes/TestRange): game mode 8, free-for-all that never ends (an older build would
     //     show it as free-for-all with a score limit and a clock that never apply).
-    public const byte ProtocolVersion = 39;
+    // 40: Zombies milestone 3 (ZombiesPowerUps.cs, ZombiesAmmoEffects.cs): Msg.ZWorld ends with the floating power-ups
+    //     and the Insta-Kill / Double Points timers; ZEventKind MaxAmmo and Fx (a position after the text); bits 6-7 of a
+    //     zombie's state byte in Msg.ZEnts (burning, zapped).
+    public const byte ProtocolVersion = 40;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

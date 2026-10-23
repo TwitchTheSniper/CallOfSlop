@@ -93,6 +93,34 @@ public sealed partial class Ui
             ImGui.End();
         }
 
+        // Power-ups: Insta-Kill and Double Points timers bottom centre (blinking in their last 5 s); the floating ones labelled.
+        var insta = game.InstaKillLeft(now);
+        var dbl = game.DoublePointsLeft(now);
+        if (insta > 0 || dbl > 0)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y - pad - 120 * _scale), ImGuiCond.Always, new float2(0.5f, 1));
+            if (ImGui.Begin("##zpowers"u8, Overlay))
+            {
+                ImGui.PushFont(default, 26);
+                foreach (var (kind, left) in new[] { (ZPowerKind.InstaKill, insta), (ZPowerKind.DoublePoints, dbl) })
+                {
+                    if (left <= 0 || (left < 5 && ((int)(now * 4) & 1) == 0))
+                        continue;
+                    var c = Game.PowerColor(kind);
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), $"{Game.PowerName(kind).ToUpperInvariant()}  {Math.Ceiling(left):0}");
+                }
+                ImGui.PopFont();
+            }
+            ImGui.End();
+        }
+        foreach (var pu in game.ZPowerUps)
+        {
+            var dx = pu.At.X - me.Position.X;
+            var dz = pu.At.Z - me.Position.Z;
+            if (dx * dx + dz * dz <= 12 * 12)
+                Hud.WorldLabel(pu.At + new System.Numerics.Vector3(0, 1.45f, 0), Game.PowerName(pu.Kind), Game.PowerColor(pu.Kind), 1f, 15f * _scale);
+        }
+
         // The banner (ROUND 3, THE POWER IS ON).
         if (now - game.ZBannerTime < 3.5 && game.ZBannerText.Length > 0)
         {
