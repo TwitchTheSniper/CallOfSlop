@@ -337,7 +337,10 @@ public sealed partial class Game
             return;
         }
         if (noProgress && moved >= 0.45f)
+        {
             b.SlopeStalls++;
+            b.SlopeStallAt = now;
+        }
         b.StuckCount++;
         b.StrafeDir = -b.StrafeDir;
         switch (b.StuckCount)
