@@ -31,7 +31,7 @@ public static partial class SelfTest
         }
         finally
         {
-            Line("::notice title=Bot doors (results)::" + string.Join("%0A", DoorNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            Line("::warning title=Bot doors (results)::" + string.Join("%0A", DoorNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
             World.SetMap(Maps.All[0]);
         }
     }
@@ -221,7 +221,7 @@ public static partial class SelfTest
                     shutOnB = true;
                 return aAt >= 0 && bAt >= 0 && lab.Now - start > bAt + 2.5;
             });
-            DoorNote($"two teammates, one door: first through at {aAt:0.00} s, second at {bAt:0.00} s; shut on the second {shutOnB}; "
+            DoorNote($"two teammates, one door: first through at {aAt:0.00} s, second at {bAt:0.00} s (ended {lab.Side(a):0.0} / {lab.Side(b):0.0} m in, {FlatDistance(a.Position, b.Position):0.0} m apart, waits {a.Bot!.DoorWaitTicks}/{b.Bot!.DoorWaitTicks} ticks, door open {lab.D.Open}); shut on the second {shutOnB}; "
                      + $"afterwards open {lab.D.Open} (the last one through, alone, may shut it); opens {lab.Game.BotDoorOpens}, shuts {lab.Game.BotDoorCloses}");
             if (aAt < 0 || bAt < 0 || bAt > 6)
                 Fail("two teammates didn't both get through one door within 6 s");
@@ -247,7 +247,7 @@ public static partial class SelfTest
                     bAt = lab.Now - start;
                 return aAt >= 0 && bAt >= 0;
             });
-            DoorNote($"head on through an open doorway: in at {aAt:0.00} s, out at {bAt:0.00} s");
+            DoorNote($"head on through an open doorway: in at {aAt:0.00} s, out at {bAt:0.00} s (ended {lab.Side(a):0.0} / {lab.Side(b):0.0} m in, waits {a.Bot!.DoorWaitTicks}/{b.Bot!.DoorWaitTicks} ticks, door open {lab.D.Open}, toggles {a.Bot.DoorToggles}/{b.Bot.DoorToggles})");
             if (aAt < 0 || bAt < 0 || Math.Max(aAt, bAt) > 6)
                 Fail("two bots meeting head on in a doorway didn't both get through within 6 s");
             spam = Math.Max(spam, lab.MaxToggles);
