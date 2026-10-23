@@ -118,7 +118,7 @@ fire), **Cover** (move to a cover node, crouch, peek and fire, reload there), **
 - **Movement**: near enemies (within 90 m of a player) step through the shared player physics (`World.Simulate`: stairs,
   slopes, mantles); far enemies move **kinematically** along their nav path (lerp between nodes, no collision) at their
   speed: invisible to players, a fraction of the cost.
-- **Pathing**: the bots' nav graph and `NavSearch` A*, `PveSearchesPerTick` = 3 per tick for everyone (the rest keep
+- **Pathing**: the bots' nav graph and `NavSearch` A*, `PveSearchesPerTick` = 2 per tick for everyone (the rest keep
   their path or steer straight), paths re-planned every 1.5-3 s or when the goal moves.
 - **Cover**: a cover node is a nav node within 8 m with low `NavGraph.Openness` (close to walls) that still sees the
   target from standing; crouched there the enemy is mostly hidden. Picked at most every 2 s per enemy.
@@ -168,6 +168,11 @@ The director is a small, pure class (no Game, no map), so it is easy to test:
 | Events | rare, reliable | `Msg.PEvent`: a feed line, a banner (STAGE 2: ...), a charge planted/blew, XP for a kill / an objective |
 | Server CPU | **< 3 ms per tick** with 80 enemies (60 Hz), < 40 us per enemy per tick | think LOD, kinematic far movement, a shared A* budget, pooled entities, no LINQ or allocation in the tick |
 | Client CPU/GPU | the enemy draw ~0.3 ms | box rig like the zombies but LOD: full rig with gun within 35 m (at most 24), 5-box figure to 150 m, frustum-culled; later instanced |
+
+Measured by the self-test on the CI runner (phase 1): 80 alive (40 fighting near the squad, 40 far) cost 0.1-0.5 ms per
+server tick (2-7 us per enemy), the nearest client gets 40 of them in a 526-byte packet, 7.4 KB/s per client at 20 Hz; the
+co-op tick allocates nothing in steady state (the shared player physics allocates a `TerrainLayer` per terrain query on
+cave maps such as Silo, for players as well as enemies: an engine fix for later).
 
 Clients interpolate enemies from the last two updates (like zombies), drop one not updated for 1.2 s, and draw a tracer
 and a gunshot for each new shot in the counter (direction from yaw and pitch, the end from a ray in their own world).
