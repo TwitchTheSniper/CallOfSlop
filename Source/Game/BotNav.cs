@@ -32,7 +32,7 @@ public sealed partial class NavGraph
     public const byte FlagLastResort = 8;
 
     /// <summary>Extra route cost of a <see cref="FlagLastResort"/> edge (metres).</summary>
-    public const float LastResortCost = 40f;
+    public const float LastResortCost = 500f;
 
     public string MapName = "";
     public uint MapHash;
