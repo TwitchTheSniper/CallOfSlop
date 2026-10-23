@@ -537,7 +537,7 @@ public sealed class BenchModel
                 var child = n.Child(s.Name);
                 Spots.Add(new SocketSpot
                 {
-                    Parent = n, Socket = s, ParentPath = path, Child = child, Pos = sn.ToWorld(s.PosFor(child?.Part)),
+                    Parent = n, Socket = s, ParentPath = path, Child = child, Pos = sn.ToWorld(child != null ? s.PosFor(child.Part) : EmptyPos(n.Part, s)),
                     Needed = child == null && (BuildRules.NeedsFilling(Build, n, s, fed) || (s.Type == "receiver" && n == root && Build.Receivers.Count == 0 && !Build.IsMelee)),
                     Missing = child != null && Missing.Nodes.Contains(child),
                 });
@@ -546,6 +546,21 @@ public sealed class BenchModel
             }
         }
         Visit(root, "");
+    }
+
+    /// <summary>
+    /// Where the marker of an EMPTY socket sits (in <paramref name="part"/>'s space). An action socket has no action yet
+    /// to say where it goes, so it uses the receiver's stock action (the one it comes with), the same rule a fitted
+    /// action follows, else the "under" point (the trigger group spot, where most actions sit), else the socket's own
+    /// position. Every other empty socket sits at its position.
+    /// </summary>
+    public Vector3 EmptyPos(PartDef part, PartSocket s)
+    {
+        if (s.Type != "action")
+            return s.Pos;
+        if (ActionMigration.StockActionOf(part, _find) is { } stock)
+            return s.PosFor(stock);
+        return s.Points.TryGetValue("under", out var under) ? under : s.Pos;
     }
 
     /// <summary>The spot index of <paramref name="parentPath"/>/<paramref name="socket"/>, or -1.</summary>
