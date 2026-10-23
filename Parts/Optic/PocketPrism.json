@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Pocket 1.8x Prism",
+  "category": "optic",
+  "rarity": "uncommon",
+  "flavor": "A stubby prism with a horseshoe. A touch of zoom for the small frames.",
+  "weight": 0.25,
+  "optic": "Prism2",
+  "stats": [
+    {"stat": "adsZoom", "set": 1.8},
+    {"stat": "adsSpreadMult", "mul": 0.72},
+    {"stat": "adsTime", "add": 0.04},
+    {"stat": "hipSpreadDeg", "mul": 1.04}
+  ],
+  "sight": {"reticle": "Horseshoe", "reticleColor": [1, 0.32, 0.1], "screen": 0.76, "housing": 1.28, "vignette": 0.35, "tint": [1, 0.82, 0.55], "tintAlpha": 0.06}
+}

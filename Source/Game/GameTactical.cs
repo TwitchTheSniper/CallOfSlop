@@ -963,6 +963,20 @@ public sealed partial class Game
 
     public bool SelfTestBotBlinded(Player p, double now) => BotBlinded(p, now);
 
+    /// <summary>
+    /// Self-test (the Loudener section): one perception scan for a bot right now, as if its scan were due and nothing
+    /// else had used this tick's scans. Did it hear a shot (its HeardTime is now)?
+    /// </summary>
+    public bool SelfTestBotHears(Player bot, double now)
+    {
+        var b = bot.Bot!;
+        b.HeardTime = -100;
+        b.NextScan = now;
+        _botScanBudget = BotScansPerTick;
+        BotPerceive(bot, b, now, out _);
+        return b.HeardTime == now;
+    }
+
     public byte SelfTestShotTactical(TacDevice e, Player shooter, float damage, double now) => ShotTactical(e, shooter, damage, now);
 
     public TacDevice? SelfTestTacticalRay(Vector3 origin, Vector3 dir, float dist, Player shooter) => TacticalRaycast(origin, dir, ref dist, shooter);

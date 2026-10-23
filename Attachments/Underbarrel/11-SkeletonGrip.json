@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Skeleton Grip",
+  "slot": "Underbarrel",
+  "order": 11,
+  "unlockOrder": 37,
+  "blurb": "A vertical grip with the middle milled out. Half the weight, most of the grip, and it rattles a bit.",
+  "pros": ["-15% vertical recoil", "+1% speed"],
+  "cons": ["+10% recoil jitter", "+4% hip spread"],
+  "fits": { "classes": ["SMG", "AssaultRifle", "Shotgun", "LMG"] },
+  "model": "skeletonGrip",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.85 },
+    { "stat": "mobility", "add": 0.01 },
+    { "stat": "recoilJitter", "mul": 1.1 },
+    { "stat": "hipSpreadDeg", "mul": 1.04 }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Thumb Stub",
+  "category": "grip",
+  "rarity": "uncommon",
+  "flavor": "A stub with a shelf for your thumb. The spray stops snaking and climbs a little more instead.",
+  "mount": "foregrip",
+  "weight": 0.08,
+  "hand": [
+    0,
+    -0.012,
+    -0.01
+  ],
+  "model": [
+    {"size": [   0.026,   0.03,   0.03 ], "pos": [   0,   -0.015,   -0.01 ], "rot": [   14,   0,   0 ], "color": "polymer" },
+    {"size": [   0.03,   0.008,   0.04 ], "pos": [   0.024,   0.004,   -0.01 ], "color": "black" },
+    {"size": [   0.012,   0.012,   0.03 ], "pos": [   0.014,   0.0,   -0.01 ], "color": "black" }
+  ],
+  "stats": [
+    {"stat": "recoilSway", "mul": 0.7 },
+    {"stat": "recoilJitter", "mul": 0.85 },
+    {"stat": "recoilVertical", "mul": 1.05 },
+    {"stat": "hipSpreadDeg", "mul": 1.03 }
+  ]
+}

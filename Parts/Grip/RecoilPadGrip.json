@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Recoil Pad Grip",
+  "category": "grip",
+  "rarity": "rare",
+  "flavor": "A fat grip wrapped in rubber with a thick pad on the end. Soaks up the kick; heavy and slow to shoulder.",
+  "mount": "foregrip",
+  "weight": 0.45,
+  "hand": [
+    0,
+    -0.05,
+    0
+  ],
+  "model": [
+    {"size": [   0.042,   0.1,   0.044 ], "pos": [   0,   -0.05,   0 ], "color": "#2a2a2c" },
+    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.025,   0 ], "color": "black" },
+    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.05,   0 ], "color": "black" },
+    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.075,   0 ], "color": "black" },
+    {"size": [   0.05,   0.022,   0.052 ], "pos": [   0,   -0.111,   0 ], "color": "#1e1e20" }
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 0.7 },
+    {"stat": "recoilShake", "mul": 0.8 },
+    {"stat": "mobility", "add": -0.04 },
+    {"stat": "adsTime", "add": 0.02 }
+  ]
+}

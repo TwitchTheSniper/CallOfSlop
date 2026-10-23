@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rangefinder 4x",
+  "category": "optic",
+  "rarity": "legendary",
+  "flavor": "A 4.5x scope with a smart reticle: brackets, a lit dot and a drop ladder. It knows how far the horde is.",
+  "weight": 0.6,
+  "optic": "Scope4",
+  "stats": [
+    {"stat": "adsZoom", "set": 4.5},
+    {"stat": "adsSpreadMult", "mul": 0.46},
+    {"stat": "adsTime", "add": 0.11},
+    {"stat": "mobility", "add": -0.03}
+  ],
+  "sight": {"reticle": "Rangefinder", "reticleColor": [1, 0.35, 0.1], "screen": 1.35, "housing": 1.2, "vignette": 0.35}
+}

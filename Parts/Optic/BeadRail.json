@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Bead Rail",
+  "category": "optic",
+  "rarity": "common",
+  "flavor": "A brass bead and a ghost ring on a short rail. No glass to fog, nothing to magnify.",
+  "weight": 0.1,
+  "optic": "Bead",
+  "stats": [
+    {"stat": "adsZoom", "set": 1.3},
+    {"stat": "adsSpreadMult", "mul": 0.92},
+    {"stat": "adsTime", "add": -0.02, "min": 0.08},
+    {"stat": "hipSpreadDeg", "mul": 0.95},
+    {"stat": "equipTime", "mul": 1.06}
+  ],
+  "sight": {"reticle": "Dot", "reticleColor": [1, 0.8, 0.35], "reticleSize": 1.2, "vignette": 0, "tintAlpha": 0}
+}

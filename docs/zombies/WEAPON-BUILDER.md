@@ -79,7 +79,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 19 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand: vertical, angled, skeleton, thumb stub, recoil pad, pogo, chaingun handle) | 27 |
 | Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
@@ -89,8 +89,8 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
 | Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
 | Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
-| Optic | The game's optics (red dot, holo, ACOG, 4x, 8x) with their reticles and lens | 5 |
-| Muzzle | Flash hider, compensator, brake, suppressor | 4 |
+| Optic | The game's optics (red dot, holo, ACOG, 4x, 8x, scout, night tube, periscope, rangefinder, bead, pocket prism) with their reticles and lens | 11 |
+| Muzzle | Flash hider, compensator, brake, suppressor, Loudener (2.5x the report: bots and the gunshot mix hear it that much further), shrouded can, duckbill, recoil hook, thread protector, vent collar, blunderbuss flare | 11 |
 | Utility | Laser, bayonet, cup holder, and weight relief (sling, anti-grav coil, helium balloons) | 6 |
 | Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 6 |
 | Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
@@ -743,15 +743,16 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 174 parts
+## The part set: 191 parts
 
-Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, and the
-universal-ammo pass's 4 extra round types and 8 feeds (2026-10-23). By tier, all
+Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
+universal-ammo pass's 4 extra round types and 8 feeds, and the six optics, seven muzzle devices and four foregrips of the attachments pass
+(2026-10-23). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (21) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
+| Grip (27) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip, Skeleton Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip, Thumb Stub | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
 | Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
@@ -760,8 +761,8 @@ categories (first-tier grips, common and uncommon, hold exactly **one receiver**
 | Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
 | Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
 | Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
-| Optic (5) | Red Dot | Holographic | 2.5x ACOG | 4x Scope | 8x Sniper Scope | |
-| Muzzle (4) | Flash Hider | Compensator, Muzzle Brake | Suppressor | | | |
+| Optic (11) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x | 8x Sniper Scope, Rangefinder 4x | |
+| Muzzle (11) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Duckbill Spreader, Blunderbuss Flare | Shrouded Can | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg) | |
 | Utility (6) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | | | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
 | Hilt (6, new) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | | |
 | Head (8, new) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | | Frozen Fish |

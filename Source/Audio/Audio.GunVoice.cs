@@ -37,6 +37,8 @@ public sealed partial class Audio
                 "Short Barrel" => (pitch * 1.035f, gain * 1.04f),
                 "Muzzle Brake" => (pitch * 1.02f, gain * 1.1f),
                 "Compensator" => (pitch * 1.01f, gain * 1.05f),
+                "Loudener" => (pitch * 0.9f, gain * 1.1f), // deeper and bigger (the carry comes from WeaponDef.Loudness: Audio.GunMix.cs)
+                "Vent Collar" => (pitch * 1.015f, gain * 1.05f),
                 _ => (pitch, gain),
             };
         return (pitch, gain);

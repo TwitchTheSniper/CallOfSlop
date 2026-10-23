@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Pocket 1.8x Prism",
+  "slot": "Optic",
+  "order": 21,
+  "unlockOrder": 77,
+  "blurb": "A stubby little prism for the small guns: a touch of magnification on a pistol, SMG or shotgun. Slower to raise, and the hip shot wanders.",
+  "pros": ["1.8x zoom on a small gun", "-28% aimed spread", "Horseshoe reticle"],
+  "cons": ["Slower to aim", "+4% hip spread"],
+  "fits": { "classes": ["Pistol", "SMG", "Shotgun"] },
+  "effects": [
+    { "stat": "optic", "set": "Prism2" },
+    { "stat": "adsZoom", "set": 1.8 },
+    { "stat": "adsSpreadMult", "mul": 0.72 },
+    { "stat": "adsTime", "add": 0.04 },
+    { "stat": "hipSpreadDeg", "mul": 1.04 }
+  ],
+  "sight": { "reticle": "Horseshoe", "reticleColor": [1, 0.32, 0.1], "screen": 0.76, "housing": 1.28, "vignette": 0.35, "tint": [1, 0.82, 0.55], "tintAlpha": 0.06 }
+}

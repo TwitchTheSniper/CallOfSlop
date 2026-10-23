@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Loudener",
+  "slot": "Muzzle",
+  "order": 15,
+  "unlockOrder": 173,
+  "blurb": "The opposite of a suppressor: a brass horn the size of a bucket that makes every shot a public announcement. Hits a little harder, kicks a lot harder, and the whole map hears it.",
+  "pros": ["2.5x louder: bots hear it 2.5x further", "Enormous muzzle flash", "+6% damage", "+10% range"],
+  "cons": ["+25% recoil", "+60% camera shake", "+15% hip spread", "-4% speed", "Everyone knows where you are"],
+  "fits": { "sounds": ["Gun", "Boom"] },
+  "model": "loudener",
+  "effects": [
+    { "stat": "loudness", "mul": 2.5 },
+    { "stat": "damage", "mul": 1.06 },
+    { "stat": "rangeM", "mul": 1.1 },
+    { "stat": "recoilDeg", "mul": 1.25 },
+    { "stat": "recoilShake", "mul": 1.6 },
+    { "stat": "recoilPunchFov", "mul": 1.5 },
+    { "stat": "hipSpreadDeg", "mul": 1.15 },
+    { "stat": "mobility", "add": -0.04 }
+  ]
+}

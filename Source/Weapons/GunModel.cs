@@ -139,6 +139,9 @@ public static class GunModel
         FineCross,
         Stadia,
         MilDot,
+
+        /// <summary>A lit dot between two brackets, hairlines to the rim and a range ladder below (SightLens style 10).</summary>
+        Rangefinder,
     }
 
     /// <summary>
@@ -171,6 +174,10 @@ public static class GunModel
             case OpticKind.Hybrid3: return Cup(z + 0.071f, 0.016f, 0.02f);
             case OpticKind.Lpvo6: return Eye(z + 0.16f, 0.018f, 0.0215f);
             case OpticKind.Scope12: return Eye(z + 0.24f, 0.019f, 0.0225f);
+            case OpticKind.Scout: return Eye(z + 0.065f, 0.0135f, 0.017f);
+            case OpticKind.NightTube: return Eye(z + 0.08f, 0.02f, 0.0235f);
+            case OpticKind.Periscope: return Window(z + 0.004f, 0.014f);
+            case OpticKind.Bead: return Eye(z + 0.033f, 0.01f, 0.013f); // the rear ghost ring: no glass, just the aperture
             case OpticKind.Scope4 or OpticKind.Scope8:
             {
                 var k = d.Optic == OpticKind.Scope8 ? 1.25f : 1f;
@@ -321,6 +328,10 @@ public static class GunModel
             OpticKind.Lpvo6 => mount + 0.05f,
             OpticKind.Scope4 or OpticKind.Scope8 => mount + 0.055f,
             OpticKind.Scope12 => mount + 0.062f,
+            OpticKind.Scout => mount + 0.046f,
+            OpticKind.NightTube => mount + 0.05f,
+            OpticKind.Periscope => mount + 0.07f,
+            OpticKind.Bead => mount + 0.02f,
             _ => BuiltInScope(d) ? top + 0.05f : top + 0.02f,
         };
     }
@@ -337,6 +348,10 @@ public static class GunModel
         OpticKind.Lpvo6 => 0.05f,
         OpticKind.Scope4 or OpticKind.Scope8 => 0.055f,
         OpticKind.Scope12 => 0.062f,
+        OpticKind.Scout => 0.046f,
+        OpticKind.NightTube => 0.05f,
+        OpticKind.Periscope => 0.07f,
+        OpticKind.Bead => 0.02f,
         _ => 0f,
     };
 
@@ -390,6 +405,22 @@ public static class GunModel
             case OpticKind.Scope12:
                 rear = z + 0.24f;
                 relief = 0.05f;
+                break;
+            case OpticKind.Scout:
+                rear = z + 0.065f;
+                relief = 0.05f;
+                break;
+            case OpticKind.NightTube:
+                rear = z + 0.08f;
+                relief = 0.05f;
+                break;
+            case OpticKind.Periscope:
+                rear = z + 0.01f;
+                relief = 0.15f;
+                break;
+            case OpticKind.Bead:
+                rear = z + 0.033f;
+                relief = 0.1f; // a ghost ring is looked through up close
                 break;
             case OpticKind.Acog:
                 rear = z + 0.05f;
@@ -640,11 +671,18 @@ public static class GunModel
             DrawFlash(d, barrelY, muzzleZ, time);
     }
 
-    private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time, float x = 0f)
+    /// <summary>The muzzle flash's size (metres): the calibre and pellets, 40% with a suppressor, and the square root of the gun's <see cref="WeaponDef.Loudness"/> (a Loudener's is 1.6x).</summary>
+    public static float FlashSize(WeaponDef d)
     {
         var size = 0.08f + d.Caliber * 0.12f + (d.Pellets > 1 ? 0.06f : 0);
         if (d.Suppressor)
             size *= 0.4f;
+        return d.Loudness == 1f ? size : size * MathF.Sqrt(d.Loudness);
+    }
+
+    private static void DrawFlash(WeaponDef d, float barrelY, float muzzleZ, float time, float x = 0f)
+    {
+        var size = FlashSize(d);
         var color = d.Sound == SoundStyle.Zap ? CyanGlow : new Vector3(1f, 0.85f, 0.3f);
         var alpha = d.Sound == SoundStyle.Suppressed ? 0.3f : 0.9f;
         if (_emit != null)
@@ -1143,6 +1181,59 @@ public static class GunModel
             case OpticKind.Scope8:
                 DrawScope(d.Optic == OpticKind.Scope8 ? 1.25f : 1f, mount, sight, z);
                 break;
+            case OpticKind.Scout:
+            {
+                // Long-eye-relief scout scope: a slim tube well forward of the eye on two low rings, a wide eyepiece at the back
+                const float len = 0.14f, r = 0.0135f;
+                Shell(0.018f, sight - mount, 0.012f, 0, (mount + sight) / 2, z - 0.07f, OpticBody * 0.8f); // rings
+                Shell(0.018f, sight - mount, 0.012f, 0, (mount + sight) / 2, z, OpticBody * 0.8f);
+                ShellCyl(r, len, 0, sight, z - 0.035f, OpticBody * 0.85f); // tube: z - 0.105 .. z + 0.035
+                ShellCyl(r * 1.2f, 0.02f, 0, sight, z - 0.115f, OpticBody * 0.8f); // objective
+                ShellCyl(r * 1.26f, 0.03f, 0, sight, z + 0.05f, OpticBody * 0.78f); // eyepiece: rear at z + 0.065
+                Shell(0.011f, 0.012f, 0.011f, 0, sight + r * 1.5f, z - 0.035f, Metal * 0.7f); // capped turret
+                Shell(r * 2.1f, r * 2.1f, 0.002f, 0, sight, z - 0.126f, CyanGlow * 0.4f, mode: 2); // lens glint
+                break;
+            }
+            case OpticKind.NightTube:
+            {
+                // Night-vision tube: a fat short body, a rubber eyecup, a battery pack on the side and a green glow at the objective
+                const float r = 0.024f;
+                Shell(0.034f, 0.014f, 0.08f, 0, mount + 0.007f, z, OpticBody * 0.85f); // base
+                ShellCyl(r, 0.11f, 0, sight, z, OpticBody * 0.8f); // body: z - 0.055 .. z + 0.055
+                ShellCyl(r * 1.12f, 0.02f, 0, sight, z - 0.065f, OpticBody * 0.75f); // objective hood
+                ShellCyl(r * 0.92f, 0.025f, 0, sight, z + 0.0675f, Rubber); // eyecup: rear at z + 0.08
+                Shell(0.02f, 0.03f, 0.04f, 0.034f, sight - 0.005f, z + 0.01f, Metal * 0.6f); // battery pack
+                Shell(0.008f, 0.008f, 0.03f, 0, sight + r * 1.25f, z - 0.04f, Dark * 1.2f); // illuminator
+                Shell(0.006f, 0.006f, 0.004f, 0, sight + r * 1.25f, z - 0.057f, GreenGlow, mode: 2);
+                Shell(r * 1.9f, r * 1.9f, 0.004f, 0, sight, z - 0.077f, GreenGlow * 0.8f, mode: 2); // the tube's glow at the objective
+                break;
+            }
+            case OpticKind.Periscope:
+            {
+                // Over-the-wall sight: a tall riser, a hollow head you look through (a mirror block in front of it) and a window at the back
+                var head = sight - 0.02f;
+                Box(0.03f, 0.01f, 0.05f, 0, mount + 0.005f, z, OpticBody * 0.9f); // base plate
+                Box(0.02f, head - (mount + 0.01f), 0.02f, 0, (mount + 0.01f + head) / 2, z + 0.01f, OpticBody * 0.85f); // riser
+                Tube(0.014f, 0.005f, 0.05f, 0, sight, z - 0.02f, OpticBody); // the head: z - 0.045 .. z + 0.005, hollow
+                Box(0.03f, 0.03f, 0.012f, 0, sight, z - 0.052f, OpticBody * 0.75f); // mirror block
+                Box(0.006f, 0.014f, 0.016f, 0.021f, sight - 0.012f, z + 0.012f, Metal * 0.7f); // brightness knob
+                Blend(true);
+                Box(0.028f, 0.028f, 0.002f, 0, sight, z + 0.004f, new Vector3(0.6f, 0.9f, 0.7f), mode: 2, alpha: 0.12f); // the window
+                Blend(false);
+                Shell(0.004f, 0.004f, 0.002f, 0, sight, z + 0.003f, RedGlow, mode: 2); // the lens pass draws the dot when aimed
+                break;
+            }
+            case OpticKind.Bead:
+            {
+                // A shotgun's sights on a short rail: a brass bead up front, a ghost ring at the back; nothing to look through but the ring
+                var railTop = mount + 0.008f;
+                Box(0.024f, 0.008f, 0.09f, 0, mount + 0.004f, z - 0.01f, OpticBody * 0.9f); // rail
+                Box(0.006f, sight - 0.008f - railTop, 0.006f, 0, (railTop + sight - 0.008f) / 2, z + 0.03f, OpticBody); // ring post
+                Tube(0.01f, 0.003f, 0.006f, 0, sight, z + 0.03f, OpticBody * 1.1f); // ghost ring: rear at z + 0.033
+                Box(0.004f, sight - 0.011f - railTop, 0.004f, 0, (railTop + sight - 0.011f) / 2, z - 0.05f, OpticBody); // bead post
+                Box(0.005f, 0.005f, 0.005f, 0, sight - 0.0085f, z - 0.05f, new Vector3(0.85f, 0.65f, 0.25f)); // the bead, just under the sight line
+                break;
+            }
             default:
                 if (BuiltInScope(d))
                     DrawScope(0.85f, mount, sight, z);

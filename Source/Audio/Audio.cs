@@ -424,6 +424,7 @@ public sealed partial class Audio : IDisposable
             return;
         var hasFar = !_shotsFar[w.Id].IsNull();
         var plan = PlanShot(Mix, position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f, w.Class == WeaponClass.Launcher); // Audio.GunMix.cs
+        plan = Louder(plan, w.Loudness, position == null); // a Loudener carries further (Audio.GunMix.cs)
         var gain = Jitter(0.07f);
         var pitch = Jitter(0.04f);
         var (kitPitch, kitGain) = KitVoice(w); // Audio.GunVoice.cs: the attachments' colour

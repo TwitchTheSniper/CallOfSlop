@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Recoil Hook",
+  "category": "muzzle",
+  "rarity": "uncommon",
+  "flavor": "A hooked claw under the muzzle that drags the climb back down. It drags the hip shot about too.",
+  "weight": 0.25,
+  "muzzles": [
+    [ 0, 0, -0.035
+    ]
+  ],
+  "model": [
+    {"shape": "rod", "size": [   0.036,   0.036,   0.035 ], "pos": [   0,   0,   -0.0175 ], "color": "steel" },
+    {"size": [   0.012,   0.012,   0.05 ], "pos": [   0,   -0.016,   -0.04 ], "color": "gunmetal" },
+    {"size": [   0.012,   0.03,   0.012 ], "pos": [   0,   -0.03,   -0.062 ], "rot": [   28,   0,   0 ], "color": "gunmetal" }
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 0.75 },
+    {"stat": "recoilRecovery", "mul": 1.25 },
+    {"stat": "hipSpreadDeg", "mul": 1.1 },
+    {"stat": "rangeM", "mul": 0.95 }
+  ]
+}

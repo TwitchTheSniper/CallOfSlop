@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Owl Tube 2x",
+  "slot": "Optic",
+  "order": 17,
+  "unlockOrder": 137,
+  "blurb": "A fat night-vision tube with a glowing objective. Everything goes green and a bit grainy, but it's 2x and you can see the tube from across the map.",
+  "pros": ["2x zoom", "-26% aimed spread", "Green night-vision picture"],
+  "cons": ["Slower to aim", "-2% speed", "+5% draw time", "The glow gives you away"],
+  "fits": { "classes": ["SMG", "AssaultRifle", "LMG", "DMR", "Shotgun"] },
+  "effects": [
+    { "stat": "optic", "set": "NightTube" },
+    { "stat": "adsZoom", "set": 2 },
+    { "stat": "adsSpreadMult", "mul": 0.74 },
+    { "stat": "adsTime", "add": 0.045 },
+    { "stat": "mobility", "add": -0.02 },
+    { "stat": "equipTime", "mul": 1.05 }
+  ],
+  "sight": { "reticle": "CircleDot", "reticleColor": [0.75, 1, 0.8], "screen": 0.8, "housing": 1.18, "vignette": 0.5, "tint": [0.25, 1, 0.35], "tintAlpha": 0.3 }
+}

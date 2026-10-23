@@ -37,13 +37,25 @@ public enum OpticKind : byte
 
     /// <summary>Long-range 12x sniper scope with a mil-dot reticle.</summary>
     Scope12,
+
+    /// <summary>Slim long-eye-relief scout scope mounted forward on the rail (about 2x).</summary>
+    Scout,
+
+    /// <summary>Fat night-vision tube with a glowing objective and a green picture (about 2x).</summary>
+    NightTube,
+
+    /// <summary>Over-the-wall sight: a tall riser with a mirror head, so the gun sits low under the sight line (1x reflex).</summary>
+    Periscope,
+
+    /// <summary>A shotgun's bead and rear ghost ring on a short rail: no glass at all (1x).</summary>
+    Bead,
 }
 
 /// <summary>One attachment: where it goes, what it fits, and how it changes the gun. Loaded from the Attachments folder.</summary>
 public sealed class AttachmentDef
 {
     public required AttachSlot Slot;
-    public byte Index; // 1..15 inside its slot (0 = empty slot); assigned from "order" when the files load
+    public byte Index; // 1..31 inside its slot (0 = empty slot); assigned from "order" when the files load
     public required string Name;
     public string Blurb = "";
     public string[] Pros = [];
@@ -85,7 +97,7 @@ public sealed class AttachmentDef
 
 /// <summary>
 /// Call of Duty style gunsmith. Every weapon has 6 slots; each slot holds one attachment or nothing.
-/// A weapon's attachments are a "kit": 4 bits per slot packed into a uint (sent as 3 bytes).
+/// A weapon's attachments are a "kit": 5 bits per slot packed into a uint (sent as 4 bytes; protocol 46, 4 bits and 3 bytes before).
 /// Attachments unlock per weapon with weapon XP (kills with that gun, plus a match bonus; see <see cref="UnlockXp"/>).
 /// The server applies the same kit to the same base stats, so attachments are fully authoritative.
 /// </summary>
@@ -93,8 +105,17 @@ public static class Attachments
 {
     public const int SlotCount = 6;
 
-    /// <summary>Kits pack 4 bits per slot and 0 means empty, so a slot holds at most 15 attachments.</summary>
-    public const int MaxPerSlot = 15;
+    /// <summary>Bits per slot in a kit (<see cref="KitBits"/> in all): 0 means empty, so a slot holds at most <see cref="MaxPerSlot"/> attachments.</summary>
+    public const int SlotBits = 5;
+
+    /// <summary>Bits a kit takes on the wire (<see cref="SlotCount"/> x <see cref="SlotBits"/> = 30: one U32).</summary>
+    public const int KitBits = SlotCount * SlotBits;
+
+    /// <summary>Kits pack 5 bits per slot and 0 means empty, so a slot holds at most 31 attachments (15 until protocol 46).</summary>
+    public const int MaxPerSlot = (1 << SlotBits) - 1;
+
+    /// <summary>A kit with every slot set to its highest index (the self-test's junk kit).</summary>
+    public const uint FullKit = (1u << KitBits) - 1;
 
     private static readonly object LoadLock = new();
     private static AttachmentDef[][]? _bySlot;
@@ -209,9 +230,10 @@ public static class Attachments
 
     /// <summary>
     /// Weapon XP to unlock everything on this gun. A typical match earns ~1,000 weapon XP for the gun you use, so the
-    /// fewest attachments (15, a derringer) take ~3.7 matches and the most (33, a sniper) ~6.9 matches.
+    /// fewest attachments (17, a derringer) take ~3.5 matches and the most (about 45, an assault rifle) ~7.4 matches.
+    /// (1000 + 180 per attachment until the 2026-10-23 attachments pass; the older attachments' XP is capped anyway.)
     /// </summary>
-    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (1000 + 180 * For(w).Count) / 50 * 50; // multiple of 50
+    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (1100 + 140 * For(w).Count) / 50 * 50; // multiple of 50
 
     /// <summary>
     /// Weapon XP for the k-th attachment (in unlock order) on a gentle curve: the first few come fast,
@@ -273,7 +295,8 @@ public static class Attachments
     //
     // Snipers (and any weapon whose file names a "defaultOptic") start with a scope: it is in their default kit, it needs
     // no weapon XP, and bots always run it. Their iron sights are the empty optic slot, which unlocks part-way through the
-    // gun's attachment XP (IronSightsShare). The optic slot is full (15), so iron sights are not an attachment of their own:
+    // gun's attachment XP (IronSightsShare). Iron sights are not an attachment of their own (they were designed when the
+    // optic slot was full at 15):
     // on such a gun an empty optic slot simply means "iron sights" and stays locked until then (see Sanitize).
 
     /// <summary>Iron sights on a gun that starts scoped unlock at this share of its max weapon XP (half-way).</summary>
@@ -329,10 +352,10 @@ public static class Attachments
 
     // ---- Kits ---------------------------------------------------------------------------
 
-    public static int Slot(uint kit, AttachSlot slot) => (int)((kit >> ((int)slot * 4)) & 15);
+    public static int Slot(uint kit, AttachSlot slot) => (int)((kit >> ((int)slot * SlotBits)) & MaxPerSlot);
 
     public static uint With(uint kit, AttachSlot slot, int index) =>
-        (kit & ~(15u << ((int)slot * 4))) | ((uint)(index & 15) << ((int)slot * 4));
+        (kit & ~((uint)MaxPerSlot << ((int)slot * SlotBits))) | ((uint)(index & MaxPerSlot) << ((int)slot * SlotBits));
 
     public static IEnumerable<AttachmentDef> InKit(uint kit)
     {
@@ -384,6 +407,7 @@ public static class Attachments
                     a.Apply(def);
             def.Mobility = Math.Clamp(def.Mobility, 0.6f, 1.25f);
             def.AdsTime = Math.Clamp(def.AdsTime, 0.08f, 0.5f);
+            def.Loudness = Math.Clamp(def.Loudness, WeaponDef.MinLoudness, WeaponDef.MaxLoudness);
             // However much is stacked, a kitted gun keeps at least half its hip spread and 40% of its recoil.
             def.HipSpreadDeg = MathF.Max(def.HipSpreadDeg, baseDef.HipSpreadDeg * 0.5f);
             Recoil.ClampKit(baseDef, def);

@@ -11,6 +11,7 @@
     {"shape": "rod", "size": [0.04, 0.04, 0.18], "pos": [0, 0, -0.09], "color": "gunmetal"}
   ],
   "stats": [
+    {"stat": "loudness", "mul": 0.5},
     {"stat": "rangeM", "mul": 0.9}
   ]
 }

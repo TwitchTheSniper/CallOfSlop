@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Vent Collar",
+  "category": "muzzle",
+  "rarity": "uncommon",
+  "flavor": "A sleeve with four angled vents: takes the wobble out of the spray and puts it into the noise.",
+  "weight": 0.25,
+  "muzzles": [
+    [ 0, 0, -0.06
+    ]
+  ],
+  "model": [
+    {"shape": "rod", "size": [   0.038,   0.038,   0.06 ], "pos": [   0,   0,   -0.03 ], "color": "steel" },
+    {"size": [   0.008,   0.008,   0.03 ], "pos": [   0.014,   0.014,   -0.03 ], "rot": [   25,   0,   45 ], "color": "black" },
+    {"size": [   0.008,   0.008,   0.03 ], "pos": [   -0.014,   0.014,   -0.03 ], "rot": [   25,   0,   -45 ], "color": "black" },
+    {"size": [   0.008,   0.008,   0.03 ], "pos": [   0.014,   -0.014,   -0.03 ], "rot": [   25,   0,   -45 ], "color": "black" },
+    {"size": [   0.008,   0.008,   0.03 ], "pos": [   -0.014,   -0.014,   -0.03 ], "rot": [   25,   0,   45 ], "color": "black" },
+    {"shape": "rod", "size": [   0.04,   0.04,   0.006 ], "pos": [   0,   0,   -0.057 ], "color": "accent" }
+  ],
+  "stats": [
+    {"stat": "recoilJitter", "mul": 0.7 },
+    {"stat": "recoilSway", "mul": 0.85 },
+    {"stat": "loudness", "mul": 1.15 },
+    {"stat": "recoilShake", "mul": 1.1 },
+    {"stat": "rangeM", "mul": 0.97 }
+  ]
+}

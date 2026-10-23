@@ -22,7 +22,7 @@ public static class WeaponFile
 
     /// <summary>The stat fields a weapon file holds, in declaration order (everything except per-copy attachment state).</summary>
     public static readonly FieldInfo[] Fields = typeof(WeaponDef).GetFields(BindingFlags.Public | BindingFlags.Instance)
-        .Where(f => f.Name is not (nameof(WeaponDef.Id) or nameof(WeaponDef.Optic) or nameof(WeaponDef.Suppressor) or nameof(WeaponDef.Kit)))
+        .Where(f => f.Name is not (nameof(WeaponDef.Id) or nameof(WeaponDef.Optic) or nameof(WeaponDef.Suppressor) or nameof(WeaponDef.Loudness) or nameof(WeaponDef.Kit)))
         .Where(f => !f.IsDefined(typeof(RecoilKeyAttribute))) // these live in the "recoil" block (see Recoil.cs)
         .Where(f => !f.IsDefined(typeof(LauncherKeyAttribute))) // and these in a launcher's "launcher" block (LauncherStats.cs)
         .OrderBy(f => f.MetadataToken)

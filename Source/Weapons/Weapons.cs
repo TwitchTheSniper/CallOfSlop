@@ -51,7 +51,7 @@ public enum Slot : byte
 /// <summary>
 /// Stats, look and sound recipe for one weapon. Shared by client and server.
 /// Weapons are loaded from files in the Weapons folder (see <see cref="WeaponFile"/> and Weapons/README.md):
-/// every public field below except Id, Optic, Suppressor and Kit is a key in a weapon file (the Recoil* fields sit in its "recoil" block).
+/// every public field below except Id, Optic, Suppressor, Loudness and Kit is a key in a weapon file (the Recoil* fields sit in its "recoil" block).
 /// </summary>
 public sealed partial class WeaponDef
 {
@@ -132,6 +132,16 @@ public sealed partial class WeaponDef
     // ---- Attachments (set on kitted copies, see Attachments.Apply) -------------
     public OpticKind Optic = OpticKind.Iron;
     public bool Suppressor;
+
+    /// <summary>
+    /// How loud the gun's report is against the stock gun (1): the "loudness" stat of attachments and parts (the Loudener:
+    /// 2.5). Bots hear it that much further (BotCombat.cs), another player's shot carries that much further and louder
+    /// (Audio.GunMix.cs) and the muzzle flash grows with it (GunModel.DrawFlash). Clamped to <see cref="MinLoudness"/>..<see cref="MaxLoudness"/>.
+    /// </summary>
+    public float Loudness = 1f;
+
+    public const float MinLoudness = 0.25f, MaxLoudness = 4f;
+
     public uint Kit; // which attachments made this copy (0 = stock weapon)
 
     /// <summary>The fitted optic's "sight" block (null = the default for <see cref="Optic"/>; see <see cref="Sights.Spec"/>). A property, so it isn't a stat.</summary>

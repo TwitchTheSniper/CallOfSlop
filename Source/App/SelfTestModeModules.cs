@@ -104,11 +104,12 @@ public static partial class SelfTest
         // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
         // TDM / KotH / CTF again when the nav build started checking risky links with the real mover (fix/map-stuck-spots, BotNavWalk.cs).
         // KotH / CTF (Courtyard) again when window climbs that clip the frame became last resorts (fix/rooftops-flake, LedgeRoom).
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB269F244E4FE3775),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x86DCD49BE2C8707B),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xD115C4916268755B),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x646C4EADE7EB9199),
-        (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
+        // All five again for the 2026-10-23 attachments pass (feat/attachments): bots roll their kits from a longer unlock list.
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x3443E22BC1957A1D),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0xC998DF198BC41C34),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xED616C9A438AD258),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x60AAFE4F8D6CB936),
+        (GameMode.GunGame, 7, 0, 4105, 20, 0xC225FD53DFE7A5E4),
         // Zombies re-recorded for milestone 3: kills roll for power-ups (one more random draw each; ZombiesPowerUps.cs).
         (GameMode.Zombies, 2, 0, 4106, 20, 0x331A7AEF90245AF6),
     ];

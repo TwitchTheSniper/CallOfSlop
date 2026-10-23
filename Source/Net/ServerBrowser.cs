@@ -90,7 +90,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     server takes them as sent (no stock actions added), so both ends must agree on the part set and the rules.
     // 45: the APPEARANCE screen's look (Source/Cosmetics/Appearance.cs): 3 bytes after the profile in Msg.Loadout, and
     //     3 more per player after the hat in Msg.Roster (a nibble per axis, 0 = Auto; bots always Auto).
-    public const byte ProtocolVersion = 45;
+    // 46: attachment kits are 5 bits a slot (Source/Weapons/Attachments.cs: up to 31 attachments per slot; the optic slot
+    //     was full at 15): kits are U32 instead of U24 in Msg.Loadout, Msg.Roster, the death cam and the rocket messages.
+    public const byte ProtocolVersion = 46;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
