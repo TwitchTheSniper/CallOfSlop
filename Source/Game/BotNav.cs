@@ -317,7 +317,12 @@ public sealed partial class NavGraph
 
         // Directions the mover couldn't walk come back only where they're the only way in or out of somewhere: kept at a high
         // cost, so a room or a floor never drops out of the graph because its one way in is awkward (BotNavWalk.cs).
-        KeepLastResorts(g, g.Nodes.Length, edges, failed);
+        foreach (var _ in KeepLastResorts(g, g.Nodes.Length, edges, failed))
+        {
+            work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            yield return null;
+            t0 = Stopwatch.GetTimestamp();
+        }
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
         t0 = Stopwatch.GetTimestamp();
@@ -377,6 +382,9 @@ public sealed partial class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         g.BuildComponents();
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null; // (each of these looks at every edge: a slice apiece)
+        t0 = Stopwatch.GetTimestamp();
         g.DropTraps();
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;

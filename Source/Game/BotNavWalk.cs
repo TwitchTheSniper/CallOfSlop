@@ -22,14 +22,18 @@ public sealed partial class NavGraph
     /// <summary>
     /// Adds back the failed directions (<paramref name="failed"/>) that are the only way in or out of somewhere: while some node
     /// that has edges isn't in the biggest group of nodes that can all reach each other, failed directions touching nodes
-    /// outside it are added (flagged <see cref="FlagLastResort"/>, costed high), a few rounds at most.
+    /// outside it are added (flagged <see cref="FlagLastResort"/>, costed high), a few rounds at most (one per build slice).
     /// </summary>
-    private static void KeepLastResorts(NavGraph g, int n, List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> edges,
+    private static IEnumerable<bool> KeepLastResorts(NavGraph g, int n, List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> edges,
         List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> failed)
     {
+        if (failed.Count == 0)
+            yield break;
         var used = new bool[failed.Count];
         for (var round = 0; round < 4; round++)
         {
+            if (round > 0)
+                yield return false; // a round per slice (each looks at every edge)
             var inMain = StrongMain(n, edges);
             var added = 0;
             for (var k = 0; k < failed.Count; k++)
@@ -43,7 +47,7 @@ public sealed partial class NavGraph
             }
             g.LastResorts += added;
             if (added == 0)
-                return;
+                yield break;
         }
     }
 
