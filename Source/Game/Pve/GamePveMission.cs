@@ -193,6 +193,7 @@ public sealed partial class Game
             case CoopStatus.Active:
             {
                 // The director: squads out of sight, never over the budget.
+                AllocProfile.Mark("coop: director");
                 PveAttackPoint = _coopFocus;
                 PveHuntPlayers = st.Kind != StageKind.Defend;
                 var want = Director.Update(now, AliveEnemies);
@@ -206,12 +207,14 @@ public sealed partial class Game
                         Director.Retry(now);
                 }
                 TickEnemies(now); // GamePveAi.cs
+                AllocProfile.Mark("coop: stage");
                 TickStage(mission, st, now);
                 if (Coop.Status == CoopStatus.Active && _coopHadAlive && !AnyAlive())
                     FailStage("SQUAD WIPED", now);
                 break;
             }
         }
+        AllocProfile.Mark("coop: send");
         Coop.Alive = AliveEnemies;
         Coop.Budget = Director.Budget;
         Coop.Phase = Director.Phase;
@@ -611,7 +614,9 @@ public sealed partial class Game
     public void SelfTestCoopTick(double now)
     {
         ServerTick++;
+        AllocProfile.Mark("coop: tick");
         ServerTickCoop(now);
+        AllocProfile.Stop();
     }
 
     /// <summary>Self-test: play <paramref name="m"/> (built in code) from its first stage now.</summary>

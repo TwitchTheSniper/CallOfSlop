@@ -520,17 +520,32 @@ public static partial class SelfTest
             var killsDone = 0;
             var lastKillSum = 0;
             var lastMatch = game.MatchNumber;
+            var tick = 0;
+            // Made once (a lambda per tick would allocate in the measured window, and could set off a GC there).
+            Func<string> context = () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}";
+            AllocProfile.Reset();
+            long allocBytes = 0;
+            var gcs = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
+                    tick = i;
+                    AllocProfile.On = i > 60; // where the game allocates (after the first second's warm-up)
+                    var gc0 = GC.CollectionCount(0);
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
                     cpu.Start();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                    var tick = i;
-                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}"); // said only if the check fails
+                    cpu.Stop(ms, count: i > 60, context); // said only if the check fails
+                    AllocProfile.On = false;
+                    if (i > 60)
+                    {
+                        allocBytes += GC.GetAllocatedBytesForCurrentThread() - a0;
+                        gcs += GC.CollectionCount(0) - gc0;
+                    }
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -543,7 +558,9 @@ public static partial class SelfTest
                         killsDone += lastKillSum; // scores reset at a new match
                         lastMatch = game.MatchNumber;
                     }
-                    lastKillSum = game.Players.Values.Sum(p => (int)p.Kills);
+                    lastKillSum = 0;
+                    foreach (var p in game.Players.Values)
+                        lastKillSum += p.Kills;
                     if (i % 60 == 0)
                     {
                         foreach (var p in game.Players.Values.Where(p => p.Bot != null && p.Alive))
@@ -573,6 +590,10 @@ public static partial class SelfTest
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            var measuredTicks = 90 * World.TickRate - 61;
+            var allocLine = $"{m.Name}: {allocBytes / (double)measuredTicks:0} B/tick, {gcs} GCs ({AllocProfile.Top(6, measuredTicks)})";
+            Line($"  allocations: {allocLine}");
+            _matchAllocDiag.Add((allocBytes / (double)measuredTicks, allocLine));
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -598,7 +619,13 @@ public static partial class SelfTest
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
+        // TEMP DIAG (windows-ci-fix): every map's allocations as failures so CI shows them.
+        var diag = _matchAllocDiag.OrderByDescending(x => x.Bytes).ToList();
+        Fail($"DIAG alloc {diag.Count} maps, {diag.Count(x => x.Bytes == 0)} at 0: " + string.Join(" | ", diag.Take(6).Select(x => x.Text)));
+        Fail("DIAG alloc2 " + string.Join(" | ", diag.Skip(6).Take(8).Select(x => x.Text)) + " || planet: " + string.Join(" | ", diag.Where(x => x.Text.Contains("Planet")).Select(x => x.Text)));
     }
+
+    private static readonly List<(double Bytes, string Text)> _matchAllocDiag = new();
 
     private static BotStats _matchBotStats = new();
 

@@ -507,6 +507,7 @@ public sealed partial class Game
     internal void TickEnemies(double now)
     {
         var t0 = Stopwatch.GetTimestamp();
+        AllocProfile.Mark("coop: enemies");
         _pvePathBudget = PveSearchesPerTick;
         for (var i = Enemies.Count - 1; i >= 0; i--)
         {
@@ -528,6 +529,7 @@ public sealed partial class Game
             TickEnemy(e, now); // GamePveAi.cs
             e.History[ServerTick % e.History.Length] = e.Sim.Position;
         }
+        AllocProfile.Mark("coop: recycle");
         if (ServerTick % World.TickRate == 0)
             RecycleEnemies(now);
         if (alive > 0)

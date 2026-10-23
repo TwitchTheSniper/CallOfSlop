@@ -217,8 +217,14 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        AllocProfile.Mark("poll");
+        if (!Net.IsOffline)
+        {
+            _pollNow = now;
+            Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        }
 
+        AllocProfile.Mark("frame effects");
         UpdateWeaponState(now, (float)frameDt);
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
@@ -240,6 +246,7 @@ public sealed partial class Game : IDisposable
             _accumulator = 0;
         _alpha = (float)(_accumulator / World.TickDt);
 
+        AllocProfile.Mark("frame after ticks");
         if (!IsServer)
         {
             AdvanceInterpolationClock(now, frameDt);
@@ -247,14 +254,24 @@ public sealed partial class Game : IDisposable
         }
 
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
+        AllocProfile.Mark("render states");
         UpdateRenderStates((float)frameDt);
+        AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
         UpdatePveFrame(now, (float)frameDt); // Co-op: where enemies are drawn (GamePveNet.cs)
+        AllocProfile.Mark("feedback");
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
+        AllocProfile.Mark("sounds");
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
+        AllocProfile.Stop();
     }
+
+    /// <summary>The packet handler for <see cref="NetPeer.Poll"/>, made once (a lambda per frame would allocate), and its clock.</summary>
+    private NetPeer.PacketHandler? _onPacket;
+
+    private double _pollNow;
 
     /// <summary>
     /// Where <see cref="LookYaw"/> and <see cref="LookPitch"/> are measured: on a planet map they're relative to the tangent
@@ -929,14 +946,21 @@ public sealed partial class Game : IDisposable
     {
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
+        AllocProfile.Mark("match and mode");
         ServerTickMatch(now);
+        AllocProfile.Mark("projectiles");
         ServerTickProjectiles(now);
+        AllocProfile.Mark("rockets");
         ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
+        AllocProfile.Mark("tactical");
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
+        AllocProfile.Mark("streaks");
         ServerTickStreaks(now);
+        AllocProfile.Mark("props, mines, destruction");
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
+        AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
@@ -954,6 +978,7 @@ public sealed partial class Game : IDisposable
 
             if (p.Id == LocalId)
             {
+                AllocProfile.Mark("local player");
                 var cmd = FreezeFilter(SampleLocalInput(0));
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
@@ -968,9 +993,11 @@ public sealed partial class Game : IDisposable
             }
             else
             {
+                AllocProfile.Mark("client input");
                 ConsumeClientInput(p);
             }
 
+            AllocProfile.Mark("respawn, history");
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
             if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
@@ -982,6 +1009,7 @@ public sealed partial class Game : IDisposable
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
         }
 
+        AllocProfile.Mark("carts, snapshots");
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
