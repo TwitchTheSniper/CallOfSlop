@@ -25,8 +25,8 @@ Double-click **`Start.bat`**. It builds the game if anything changed (the first 
 | --- | --- |
 | **Single player** | You against up to 31 bots (as many as the map takes, see [Lobby size](#lobby-size); Easy, Normal, Hard or Insane), or **No bots (test mode)** with the slider at 0. Fully offline, nothing touches the network. The game pauses while the Esc menu is open. |
 | **Multiplayer: Host** | Starts a match others can join. It opens the port on your router automatically with **UPnP** (can be turned off), and you can fill empty slots with bots. Real players replace bots as they join. The address friends should use appears at the top-left of your screen. |
-| **Multiplayer: Join** | Type the host's address and join. Esc cancels while connecting. |
-| **Settings** | Four tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, gore, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt` (in the [save folder](#where-your-saves-live)); the same screen is in the Esc menu during a match. |
+| **Multiplayer: Join** | Paste the host's **invite code** (or type their address) and join. Esc cancels while connecting. See [Playing with friends](#playing-with-friends). |
+| **Settings** | Five tabs. **Player:** name, sensitivity, invert Y, FOV, network stats. **Multiplayer:** server lists, run a server list, public address lookup, invite links ([Playing with friends](#playing-with-friends)). **Controls:** rebind every action to any key or mouse button. **Video:** windowed / borderless fullscreen / fullscreen, resolution, UI scale, HUD width, name tags, head bob, frenzy visuals, gore, VSync. **Audio:** master, music, effects, own gun and footstep volume, music style, kill frenzy music, frenzy gun sound. Changes apply immediately and are saved to `settings.txt` (in the [save folder](#where-your-saves-live)); the same screen is in the Esc menu during a match. |
 
 In a match, **Esc** opens the menu (Resume, Change loadout, **Kill yourself**, Settings, Leave match, Quit). Leaving takes you back to the lobby, and as host it ends the match and closes the router port.
 
@@ -375,11 +375,26 @@ Up to **32 players** (people and bots), but every map has its own limit: **8-10*
 
 **Multiplayer** has three tabs:
 
-- **Server browser:** lists games to join with name, map (with an orange **True Random** tag when the host plays True Random), players / the map's limit (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds.
-- **Host a game:** the map (**Change map...** opens the [map select screen](#map-select): random from a pack by default, one map, or True Random), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
-- **Join by address:** type an IP and port directly.
+- **Server browser:** lists games to join with name, map (with an orange **True Random** tag when the host plays True Random), players / the map's limit (and bots), ping and where it was found (**LAN**, **list**, or both: a game found twice is one row). Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Internet games show up from your **server lists** (see below). Games from a different build are shown greyed with their protocol number instead of a Join button. The list refreshes every few seconds.
+- **Host a game:** the map (**Change map...** opens the [map select screen](#map-select): random from a pack by default, one map, or True Random), port, UPnP, bots, **server name**, **Share on our server lists** and **Run one if none answers** (both on by default; see below).
+- **Join by code or address:** paste an invite code or `callofslop://` link, or type an address (`ip`, `ip:port` or a host name; the port box is used when none is given).
 
-**About public listing:** a public list needs something always online that hosts can report to and browsers can ask. That's the **master server**, built into the game: run `CallOfSlop.exe --master` (optionally followed by a port; the default is UDP 27050) on any always-on PC with that UDP port reachable. It tries UPnP itself. Then everyone enters that PC's address under **Settings > Player > Master server**. The master only stores addresses: names, maps, players and pings come straight from each game. Without a master server, the browser still finds every game on your LAN.
+### Playing with friends
+
+Nobody needs to run or pay for anything:
+
+1. **Host** (Multiplayer > Host a game). The lobby room shows your address and an **invite code** like `ABCD-EFGH-JKMN-PQRS`, with **Copy invite link** and **Copy code** buttons (the code is also at the top-left of the screen in a match). Send it to your friends.
+2. **Friends join** with Multiplayer > Join by code or address: paste the code (or link) and press Join. A typo is caught by the code's check digits, and a code from a different build says so.
+3. **After that, the server browser just works.** When you host, the game looks for a server list your group already has; if none answers within a second or two, **your game runs one** (UDP 27050, opened on the router with UPnP like the game port) and puts it in your invite code. Anyone who joins you (by code, by address or on your network) adds that list to **Settings > Multiplayer > Server lists** by themselves, so next time everyone's games show up in everyone's browser. If several hosts started lists, they settle on one: an automatic list hands over to a hand-started one (or to the automatic one with the lower id) at its next check, once a minute, and the browser asks every list you know anyway.
+
+The code holds your public address, so the game asks a public **STUN** server (Google's or Cloudflare's: one 20-byte request, nothing else) when you host; turn that off in Settings > Multiplayer if you like (the code then uses the router's or your LAN address). Your game must be reachable: UPnP on, or UDP port 27015 forwarded. Behind carrier-grade NAT (the settings say so when they spot it) friends outside can't reach you directly: let one of them host.
+
+**Settings > Multiplayer** also has:
+- **Server lists:** the lists you know, comma separated (up to 8; typed or learned). A group can also put an always-on list in **masters.txt** next to `CallOfSlop.exe` (one `host[:port]` per line) before sharing its zip.
+- **Run a server list for friends on this PC:** keeps a list running while the game is open, without hosting. Without the game, run **`RunServerList.bat`** from the release folder (the same as `CallOfSlop.exe --master [port]`): a console window shows what it does (close it to stop it; the log is `serverlist.log`). Friends add this PC's public address under Server lists, or just join one of your group's games by code once.
+- **Make invite links open the game** (Windows): registers `callofslop://` links for your Windows account only, so a friend can click your link in Discord or a browser; the same place removes it or points it at a newer build. Nothing is registered unless you click it.
+
+**What sharing means:** anyone who knows a server list's address sees the games on it: name, map, mode, player count and the host's IP address and port (what LAN broadcasts always showed). Lists are run by players, never by a company, and keep nothing else. Untick **Share on our server lists** to stay off them; invite codes still work. Details and the options considered (including a serverless DHT list, which was declined): [docs/net/SERVER-DISCOVERY.md](docs/net/SERVER-DISCOVERY.md).
 
 Single player works the same way: **Change map...** shows the current choice and opens the map select screen. With random picked, the lobby background tours the pack's maps (True Random: every pack's).
 
@@ -928,7 +943,7 @@ Source/
                      MapMeshes (the Mesh and Model ops)
   Props/             PropDef + PropFile (prop JSON), Props (library), MapProps (PlaceProp/Clutter ops, collision, breakable
                      state), PropMeshes + PropBatches (GPU-ready data), PropDebris (pooled debris); GameProps (in Game/) breaks them
-  Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), Upnp
+  Net/               Net (RakNet wrapper, packets), ServerBrowser (+ master server), ListServer (in-game lists), InviteCode, Stun, UrlProtocol, Upnp
   Weapons/           Weapons (WeaponDef + loader), Attachments (kits + loader), WeaponFile (weapon/attachment JSON,
                      fingerprint, --check-weapon), GunModel (optic models and lenses, per-class fallback models), Sights (sight maths, "sight" blocks), GunSpec + GunBuild (weapons built from their "model" block)
   Render/            Renderer (shader, cube mesh, boxes), Textures (procedural texture array), StreakRender (turrets, drones, strikes),
@@ -950,7 +965,7 @@ Source/
                      FrenzyGunSound + Audio.FrenzyGun (per-class frenzy layers on your own gun)
 ```
 
-**Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master` (run a public server list), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).
+**Command-line options:** `--selftest`, `--smoketest`, `--lag=MS`, `--loss=PCT`, `--no-upnp`, `--master [port]` (run a server list; `RunServerList.bat`), `join CODE` or a `callofslop://join/CODE` link (join from an invite), and for map makers `--check-map FILE`, `--map-ops` (list every op and its parameters) and `--export-maps DIR` (rewrite every loaded map in the standard layout), and for weapon makers `--check-weapon FILE` (check a weapon or attachment file) and `--export-weapons DIR` (write the loaded weapons and attachments back out).
 
 All tuning values (damage, fire rate, speeds, arena size) live at the top of `World.cs`.
 

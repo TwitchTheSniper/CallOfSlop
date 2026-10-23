@@ -1,0 +1,5 @@
+# Call of Slop community server lists, shipped next to CallOfSlop.exe in the release zip.
+# One "host" or "host:port" per line (default port 27050); lines starting with # are ignored.
+# Every copy of the game made from this zip asks these lists for games, in addition to the lists in
+# Settings > Multiplayer > Server lists. Leave it empty if your group has no always-on list: hosts
+# run one automatically when none answers, and invite codes carry it to friends.

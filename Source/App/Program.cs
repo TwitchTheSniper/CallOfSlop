@@ -65,7 +65,7 @@ public static unsafe partial class Program
 
     public static int Main(string[] args)
     {
-        SetUpLogFile();
+        SetUpLogFile(args);
         // No full blocking garbage collections mid-match (one took 34 ms in the self-test): gen 2 is collected in the
         // background instead, unless memory runs low. Server ticks and frames only see the short gen 0/1 pauses.
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
@@ -115,12 +115,16 @@ public static unsafe partial class Program
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
             // Command-line shortcuts skip the lobby.
-            if (plain.Length > 0 && plain[0].Equals("host", StringComparison.OrdinalIgnoreCase))
+            if (UrlProtocol.FindLink(plain) is { } inviteLink)
+                JoinFromInvite(inviteLink); // a clicked callofslop://join/... link (Program.Listing.cs)
+            else if (plain.Length > 0 && plain[0].Equals("host", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1 && ushort.TryParse(plain[1], out var hp))
                     _settings.Port = hp;
                 StartSession(LobbyAction.Host);
             }
+            else if (plain.Length > 1 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase) && InviteCode.LooksLikeInvite(plain[1]))
+                JoinFromInvite(plain[1]); // "join ABCD-EFGH-JKMN-PQRS"
             else if (plain.Length > 0 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1)
@@ -140,6 +144,7 @@ public static unsafe partial class Program
         finally
         {
             EndSession("");
+            _manualList?.Dispose(); // "Run a server list for friends" (Program.Listing.cs)
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
@@ -807,12 +812,13 @@ public static unsafe partial class Program
         _smokeWorstDt = 0;
     }
 
-    /// <summary>The game runs without a console window, so console output goes to callofslop.log.</summary>
-    private static void SetUpLogFile()
+    /// <summary>The game runs without a console window, so console output goes to callofslop.log (serverlist.log for --master, which can run beside the game).</summary>
+    private static void SetUpLogFile(string[] args)
     {
         try
         {
-            var writer = new StreamWriter(Path.Combine(AppContext.BaseDirectory, "callofslop.log"), append: false) { AutoFlush = true };
+            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log" : "callofslop.log";
+            var writer = new StreamWriter(Path.Combine(AppContext.BaseDirectory, name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
             Console.SetError(writer);
         }
@@ -887,7 +893,7 @@ public static unsafe partial class Program
     // Sessions (lobby <-> match)
     // =====================================================================
 
-    private static void StartSession(LobbyAction kind)
+    private static void StartSession(LobbyAction kind, Invite? invite = null)
     {
         EndSession("");
         _lobbyMessage = "";
@@ -907,28 +913,11 @@ public static unsafe partial class Program
                 case LobbyAction.Host:
                     net = NetPeer.Host(_settings.Port, Game.MaxPlayers - 1);
                     bots = _settings.HostBots;
-                    var lan = UpnpMapping.GetLocalIPv4()?.ToString() ?? "this PC's IP";
-                    var suffix = _settings.Port == DefaultPort ? "" : $" port {_settings.Port}";
-                    _joinAddress = lan + suffix + " (LAN)";
-                    if (_settings.UseUpnp && !_forceNoUpnp)
-                    {
-                        // Router discovery takes a few seconds; don't freeze the game while it happens.
-                        var port = _settings.Port;
-                        _joinAddress += " - opening router port...";
-                        _upnpTask = Task.Run(() =>
-                        {
-                            var m = UpnpMapping.TryCreate(port, Console.WriteLine);
-                            _upnp = m;
-                            _joinAddress = m is { ExternalIp: { } ext, BehindSecondNat: false }
-                                ? $"{ext}{suffix} (internet) or {lan}{suffix} (LAN)"
-                                : m is { BehindSecondNat: true }
-                                    ? $"{lan}{suffix} (LAN only - your connection is behind a second NAT)"
-                                    : $"{lan}{suffix} (LAN only - UPnP unavailable, forward UDP {port} for internet play)";
-                        });
-                    }
+                    BeginHostAddressing(); // the address line, UPnP, STUN and the invite code (Program.Listing.cs)
                     break;
                 default:
                     net = NetPeer.Join(_settings.JoinAddress, _settings.Port);
+                    LearnListFromHost(_settings.JoinAddress, _settings.Port, invite); // the host's server list, for next time (Program.Listing.cs)
                     break;
             }
 
@@ -958,9 +947,7 @@ public static unsafe partial class Program
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
                 _session.GamePort = _settings.Port;
-                _session.AdvertiseTo = _settings.Advertise ? _settings.Master : null;
-                if (_settings.Advertise && _settings.Master is { } m)
-                    Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
+                StartHostListing(_session); // register on a server list, or run one (Program.Listing.cs)
             }
             if (_rangeLaunch != null)
                 ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
@@ -989,6 +976,7 @@ public static unsafe partial class Program
             _session.Dispose();
             _session = null;
         }
+        StopHostListing(); // Program.Listing.cs
         if (_upnpTask is { IsCompleted: false })
             _upnpTask.Wait(TimeSpan.FromSeconds(4));
         _upnpTask = null;
@@ -1046,6 +1034,7 @@ public static unsafe partial class Program
                 }
             }
             UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;

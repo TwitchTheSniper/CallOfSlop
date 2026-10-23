@@ -73,6 +73,7 @@ public sealed partial class Ui
             {
                 ImGui.SameLine(0, 18 * _scale);
                 ImGuiSafe.TextColored(Dim, address);
+                InviteHeader(); // Copy invite link / code (UiInvite.cs)
             }
             var leaveW = 120 * _scale;
             ImGui.SameLine(ImGui.GetWindowSize().X - ImGui.GetStyle().WindowPadding.X - leaveW);
