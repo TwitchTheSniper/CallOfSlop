@@ -30,6 +30,7 @@ public static partial class SelfTest
         var sw = Stopwatch.StartNew();
         NavGraph.RejectLog = new();
         var rejects = NavGraph.RejectLog;
+        var stairNotes = new List<string>();
         try
         {
             foreach (var m in Maps.All)
@@ -41,6 +42,22 @@ public static partial class SelfTest
                 if (nav.Nodes.Length == 0)
                     continue;
                 var (walked, fails) = EdgeWalkMap(m, nav);
+                if (m.Name is "Finnish Buildings" or "Commercial Street")
+                {
+                    // TEMP diagnostics: the stair links near the rooms bots can't reach.
+                    var centre = m.Name == "Finnish Buildings" ? new Vector3(-46, 3, 18) : new Vector3(9.8f, 3.3f, -12f);
+                    foreach (var (la, lb) in m.NavLinks)
+                    {
+                        if (SlopeFlat(lb - centre) > 7f && SlopeFlat(la - centre) > 7f)
+                            continue;
+                        int Find(Vector3 p) { for (var q = 0; q < nav.Nodes.Length; q++) if (Vector3.Distance(nav.Nodes[q], p) < 0.6f) return q; return -1; }
+                        int ia = Find(la), ib = Find(lb);
+                        string Edges(int n) => n < 0 ? "-" : string.Join(" ", Enumerable.Range(nav.EdgeStart[n], nav.EdgeStart[n + 1] - nav.EdgeStart[n]).Select(e => FormattableString.Invariant($"({nav.Nodes[nav.EdgeTo[e]].X:0.0},{nav.Nodes[nav.EdgeTo[e]].Y:0.0},{nav.Nodes[nav.EdgeTo[e]].Z:0.0})f{nav.EdgeFlags[e]}")));
+                        stairNotes.Add(FormattableString.Invariant($"link {m.Name} ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) node {ia} -> ({lb.X:0.00},{lb.Y:0.00},{lb.Z:0.00}) node {ib}; top's edges: {Edges(ib)}"));
+                        foreach (var r in rejects.Where(r => r.Map == m.Name && Vector3.Distance(r.From, lb) < 0.7f).Take(6))
+                            stairNotes.Add(FormattableString.Invariant($"  dropped from top -> ({r.To.X:0.00},{r.To.Y:0.00},{r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00},{r.End.Y:0.00},{r.End.Z:0.00})"));
+                    }
+                }
                 builderChecked += nav.WalkChecked;
                 builderRejected += nav.WalkRejected;
                 if (nav.WalkRejected > 0)
@@ -86,6 +103,7 @@ public static partial class SelfTest
         foreach (var (map, at) in spots)
             foreach (var r in rejects.Where(r => r.Map == map && MathF.Abs(r.To.Y - at.Y) < 0.6f && SlopeFlat(r.To - at) < 2.6f).Take(5))
                 notes.Add(FormattableString.Invariant($"dropped {map} near ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0}): ({r.From.X:0.00}, {r.From.Y:0.00}, {r.From.Z:0.00}) -> ({r.To.X:0.00}, {r.To.Y:0.00}, {r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00}, {r.End.Y:0.00}, {r.End.Z:0.00})"));
+        notes.AddRange(stairNotes.Take(30));
         foreach (var (kind, l) in byKind)
         {
             // A few examples of each kind, from different maps (walking first).
