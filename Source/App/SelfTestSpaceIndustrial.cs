@@ -84,18 +84,31 @@ public static partial class SelfTest
                 len += Vector3.Distance(g.Nodes[path[i - 1]], g.Nodes[path[i]]);
             return len;
         }
-        // A hill is a zone, not a point: the walk to it is the shortest walk to any of five spots across it.
+        // A hill is a zone, not a point, and it may be a raised deck: the walk to it is the shortest walk to any nav node
+        // inside the zone at the hill's own height (a node on the ground under a gantry doesn't count).
+        int[] HillNodes(Vector3 c, float radius) => Enumerable.Range(0, g.Nodes.Length)
+            .Where(i => MathF.Abs(g.Nodes[i].Y - c.Y) < 1.5f && Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(c.X, c.Z)) < radius)
+            .ToArray();
         float WalkTo(Vector3 s, Vector3 to, float radius)
         {
-            var best = Walk(s, to);
-            foreach (var (dx, dz) in new[] { (0.7f, 0f), (-0.7f, 0f), (0f, 0.7f), (0f, -0.7f) })
+            var best = float.NaN;
+            var from = g.Nearest(s, needSight: false);
+            foreach (var k in HillNodes(to, radius))
             {
-                var w = Walk(s, to + new Vector3(dx * radius, 0, dz * radius));
-                if (!float.IsNaN(w) && (float.IsNaN(best) || w < best))
-                    best = w;
+                var n = search.Find(g, from, k, path);
+                if (n == 0)
+                    continue;
+                var len = 0f;
+                for (var i = 1; i < n; i++)
+                    len += Vector3.Distance(g.Nodes[path[i - 1]], g.Nodes[path[i]]);
+                if (float.IsNaN(best) || len < best)
+                    best = len;
             }
             return best;
         }
+        foreach (var h in o.Hills)
+            if (HillNodes(h.Center, h.Radius).Length < 3)
+                Fail($"{name}: the hill at ({h.Center.X:0}, {h.Center.Z:0}, y {h.Center.Y:0.0}) has only {HillNodes(h.Center, h.Radius).Length} nav nodes on it");
         float Average(List<Vector3> from, Vector3 to, float radius = 0f)
         {
             var sum = 0f;
@@ -115,13 +128,6 @@ public static partial class SelfTest
         {
             float blue = Average(o.TeamSpawns[0], forBlue, radius), red = Average(o.TeamSpawns[1], forRed, radius);
             walks.Add($"{label} {blue:0}/{red:0} m");
-            if (label == "hill 1") // DIAG
-                for (var t = 0; t < 2; t++)
-                {
-                    var sp = o.TeamSpawns[t][0];
-                    var n = search.Find(g, g.Nearest(sp, needSight: false), g.Nearest(forBlue, needSight: false), path);
-                    Line($"  DIAG team {t} from {sp}: {n} nodes: " + string.Join(" ", Enumerable.Range(0, n).Select(i => g.Nodes[path[i]]).Where((v, i) => i % 2 == 0 || v.Y > 1).Select(v => $"({v.X:0},{v.Y:0.0},{v.Z:0})")));
-                }
             if (float.IsNaN(blue) || float.IsNaN(red))
                 Fail($"{name}: no route from a team's spawns to {label}: " + string.Join(", ",
                     o.TeamSpawns.SelectMany((l, t) => l.Where(sp => float.IsNaN(Walk(sp, t == 0 ? forBlue : forRed)))
