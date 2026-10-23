@@ -123,7 +123,7 @@ def vault():
     K.prop("Specimen Tank", 4.6, -4.6, 0)
     for (x, z) in [(-2.6, -5.4), (2.6, -5.4), (-5.4, -2.6), (-5.4, 2.6)]:
         K.prop("Hex Floor Light", x, z, 0)
-    K.prop("Cryo Dewar", -5.6, 0.0, 0)
+    K.prop("Cryo Dewar", 3.4, 3.2, 0)
     K.prop("Specimen Crate", -3.2, 3.6, 30)
     # Podium dressing.
     for (x, z, yw) in [(-13.2, -13.2, 135), (13.2, -13.2, 225)]:
