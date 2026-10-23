@@ -85,19 +85,19 @@ public static partial class SelfTest
         // Maps outside the Dev pack can't see its decals, and see the green Exit Sign.
         try
         {
-            MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Dev Pack Badge\", \"x\": 0, \"z\": 0 }"), "Classic/DecalLeakTest.json");
-            Fail("a Classic map could use the Dev Pack Badge from the Dev pack");
+            MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Dev Pack Badge\", \"x\": 0, \"z\": 0 }"), "Legacy/DecalLeakTest.json");
+            Fail("a Legacy map could use the Dev Pack Badge from the Dev pack");
         }
         catch (MapFileException ex)
         {
             if (!ex.Message.Contains("Dev Pack Badge", StringComparison.Ordinal))
                 Fail($"unknown decal message doesn't name it: {ex.Message}");
         }
-        var classic = MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Exit Sign\", \"x\": 0, \"z\": 0 }"), "Classic/DecalLeakTest.json");
+        var classic = MapFile.Load(PackTestMap("Decal Leak Test", "{ \"op\": \"Decal\", \"decal\": \"Exit Sign\", \"x\": 0, \"z\": 0 }"), "Legacy/DecalLeakTest.json");
         if (classic.DecalScope.Find("Exit Sign") is not { Pack: null })
-            Fail("a Classic map sees the Dev pack's Exit Sign");
+            Fail("a Legacy map sees the Dev pack's Exit Sign");
         Line($"Dev pack decals: {scope.Local.Length} pack decal(s) ({string.Join(", ", scope.Local.Select(d => $"{d.Name} layer {d.Index}"))}), "
-             + $"shadowing [{string.Join(", ", scope.Shadowed)}]; Pack Decals placed {mesh.Placed}/{mesh.Requested}; Classic maps can't see them");
+             + $"shadowing [{string.Join(", ", scope.Shadowed)}]; Pack Decals placed {mesh.Placed}/{mesh.Requested}; Legacy maps can't see them");
     }
 
     private static void CheckPackDecalFolders(string dir)

@@ -16,8 +16,9 @@ public static partial class SelfTest
     private const string ShapeTestMap = "Shape Test";
 
     /// <summary>
-    /// Fingerprints of the shipped maps (by file name) as origin/main computed them before boundaries existed (taken with
-    /// --check-map on 02717b3). A map whose file is later edited on purpose can be dropped from this list.
+    /// Fingerprints of the shipped maps (by file name; the Legacy pack's 25-36 were Collision Point and High Ground 01-06)
+    /// as origin/main computed them before boundaries existed (taken with --check-map on 02717b3). A map whose file is
+    /// later edited on purpose can be dropped from this list.
     /// </summary>
     private static readonly (string File, uint Hash)[] ShapeBaseline =
     [
@@ -27,11 +28,11 @@ public static partial class SelfTest
         ("14-OfficePark", 0xbf692394u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x5b03f45fu),
         ("17-Farmland", 0xfcc5a090u), ("18-Downtown", 0x2a9960f5u), ("19-Canyon", 0x03353c42u), ("20-Airfield", 0xf47d65a6u),
         ("21-Village", 0x8004499bu), ("22-Industrial", 0x87c760edu), ("23-Highlands", 0xe932e450u), ("24-MilitaryBase", 0xe6122c44u),
-        ("01-Blueprint", 0xde9e3279u), ("02-Galleria", 0x429afd78u), ("03-Floodgate", 0xcb35e9deu), ("04-Trefoil", 0x39b08239u),
-        ("05-Citadel", 0x340e65a1u), ("06-Confluence", 0x3aad3033u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
+        ("25-Blueprint", 0xde9e3279u), ("26-Galleria", 0x429afd78u), ("27-Floodgate", 0xcb35e9deu), ("28-Trefoil", 0x39b08239u),
+        ("29-Citadel", 0x340e65a1u), ("30-Confluence", 0x3aad3033u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
         ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0x59b1babcu), ("TerrainTest", 0x6ad80326u),
-        ("01-GravelPit", 0x1010fd2au), ("02-Hillfort", 0xddcb110bu), ("03-Riverbend", 0xa7be54dau),
-        ("05-Ridgeline", 0xb945fc4au), // High Ground: new fingerprints since the foliage no-go rules
+        ("31-GravelPit", 0x1010fd2au), ("32-Hillfort", 0xddcb110bu), ("33-Riverbend", 0xa7be54dau),
+        ("35-Ridgeline", 0xb945fc4au), // High Ground (Legacy 31-36): new fingerprints since the foliage no-go rules
         // (Warehouse 9, Train Yard, Adobe Mesa and Alpine Pass dropped: their stairs were rebuilt for 2.1 m headroom)
     ];
 

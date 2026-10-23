@@ -1,6 +1,6 @@
 # Making maps for Call of Slop
 
-Every map is a single `.json` file, kept in a **map pack**: a folder in this `Maps` folder. The 24 maps that ship with the game are ordinary map files in the `Classic` pack (`Maps/Classic`). Open any of them to see how a real map is put together.
+Every map is a single `.json` file, kept in a **map pack**: a folder in this `Maps` folder. The maps that ship with the game are ordinary map files in packs such as `Legacy` (`Maps/Legacy`: the 24 Classic maps, the six Collision Point maps and the six High Ground terrain maps). Open any of them to see how a real map is put together.
 
 To add a map, drop its file into a pack folder, for example your own `Maps/MyPack/Bunker.json`, then click **Refresh maps** in the lobby. You don't need to restart or recompile. See [Map packs](#map-packs) below.
 
@@ -301,7 +301,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - Keep slopes where people fight below about 25° (full speed), so movement feels smooth.
 - `CallOfSlop.exe --check-map` prints the terrain size, height range and how much of it is rock.
 
-**Lessons from the High Ground pack** (`Maps/HighGround`, see its DESIGN.md):
+**Lessons from the High Ground maps** (`Maps/Legacy` 31-36, see `DESIGN-HighGround.md` there):
 
 - **Fair terrain:** build one half and turn it 180 degrees about the centre for the other team (negate every x and z, swap N/S and E/W doors, flip stair and ramp `dir`). A cliff's `side` stays the same when you turn it. Keep `noise` small (under about 1 m) so it doesn't tip the balance.
 - **Hill zones need level ground.** Players count as on a hill from 1 m below its centre to 3 m above it, so put a `flatten` pad (radius a little over the zone) under a hill on uneven ground. Hand-place `hills` on the line where both teams have the same walk.
@@ -410,7 +410,7 @@ Zone shapes are the [boundary](#boundaries) shapes, with the same fields: `rect`
 
 The rules are deterministic like the rest of the placement, so they're part of the foliage fingerprint (a map's online version); maps without foliage are unaffected. They cost about one or two short ray casts per scattered plant against the map's BVH at load (the self-test reports the time per map; Sprawl's 70,000 plants stay well under a second on a desktop). The log says how many plants each rule removed. `"auto": false` brings back the old placement (plus your explicit zones).
 
-The older `Tree` and `TreeIfClear` ops still work: they build a blocky tree out of solid boxes (trunk and leaves both solid), as in the Classic maps.
+The older `Tree` and `TreeIfClear` ops still work: they build a blocky tree out of solid boxes (trunk and leaves both solid), as in the Classic maps (Legacy 1-24).
 
 ## Movers
 
@@ -590,7 +590,7 @@ Props are the small things that make a map look lived in: trash cans, dumpsters,
 - **`props`** in Clutter is a list of prop names and category names (`"Debris"` means every prop in the Debris folder). Repeat a name to make it more common; each prop's own `weight` counts too.
 - **Clutter turns and sizes** each prop the way its file says (random angle, square to the walls, a size range). With `"align": true` on a strip, props turn to follow it (benches along a pavement).
 - **Deterministic:** the same file and `seed` give the same props on every PC. Change the seed to reshuffle.
-- **Mirrored maps:** on a map built as one half plus the same half turned 180 degrees (like the High Ground pack), give Clutter the area in one team's half and `"mirror": true`. Each prop then also goes at (-x, -z), facing the other way, and a pair is only placed when both spots are free, so both teams get exactly the same props. `count` is per half. Place hand-placed props in pairs the same way: (x, z, yaw) and (-x, -z, yaw + 180).
+- **Mirrored maps:** on a map built as one half plus the same half turned 180 degrees (like the Legacy pack's High Ground maps), give Clutter the area in one team's half and `"mirror": true`. Each prop then also goes at (-x, -z), facing the other way, and a pair is only placed when both spots are free, so both teams get exactly the same props. `count` is per half. Place hand-placed props in pairs the same way: (x, z, yaw) and (-x, -z, yaw + 180).
 - **Clutter runs last**, after every op, the foliage and the objectives, whatever its place in the list, so it can keep out of their way. Every prop stays out of walls, boxes and other clutter. **Solid** props also keep clear of spawns (2.5 m), waypoints (1.2 m), the routes between neighbouring waypoints, hills, flags and movers, and stay 1.1 m from any wall or box they can't step over, so they never close a doorway or a gap a player fits through. If there's no room for all of them, fewer are placed (the log says how many).
 - **Collision:** solid props (bins, crates, barriers) block movement, bullets and sight like any box, and bots walk round them. Cosmetic ones (litter, newspapers, bottles) are looks only. Cosmetic props marked `"concealment"` (the Farm folder's corn patches) also hide people from bots: see [Props/README.md](../Props/README.md#concealment).
 - **Breakable props** (crates, boxes, bottles, bins, chairs...) break when shot, hit or blown up, and every match starts with them whole again. See [Props/README.md](../Props/README.md#breakable-props).
@@ -610,7 +610,7 @@ Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Ba
 
 - **`flag`** on a placement: a flag id, `"random"` (from the map's pool) or `"none"` (the prop's own striped cloth). Leave it out for the prop's default (random for a Flag on a Pole, its own cloth for pennants and banners).
 - **`"flagPool"`** at the top of the map file limits the random ones, e.g. `"flagPool": ["uk", "us"]` for a map set in one place, or `"flagPool": "none"` to keep every flag's own cloth. A placement's own `flag` always wins.
-- Flags are looks only: they never change a map's fingerprint. Maps in the older packs (Classic, Collision Point, High Ground) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
+- Flags are looks only: they never change a map's fingerprint. Maps in the Legacy pack (the old Classic, Collision Point and High Ground packs) have no flag props and keep their look; if you add one there, give that map `"flagPool": "none"`. The **Flag Lineup** map in the Dev pack shows all four flags side by side.
 
 ## Buildings
 
@@ -829,7 +829,7 @@ Each folder directly inside `Maps` is a pack. In the lobby, players first pick a
 ```
 Maps/
   README.md            this guide
-  Classic/             the shipped pack
+  Legacy/              the shipped pack (Classic, Collision Point and High Ground maps)
     pack.json
     01-ProtoBox.json
     ...
@@ -858,7 +858,7 @@ Maps/
 | `name` | Shown in the lobby's pack list. Without it (or without a pack.json at all) the folder name is used. |
 | `description` | One line, shown under the pack's map count. Plain ASCII only, like map descriptions. |
 | `author` | Shown as "(by ...)". |
-| `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
+| `order` | Sort position in the pack list (Legacy is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 | `trueRandom` | `false` keeps the pack out of **True Random** (random from every pack), like the Dev test maps. Its maps can still be picked directly. Default `true`. Packs with `false` are listed last. |
 | `destructible` | `true`: the pack's maps have destructible buildings unless a map says `"destructible": false` (the World Tour). Default `false`. See [Buildings/README.md](../Buildings/README.md#destruction). |
 

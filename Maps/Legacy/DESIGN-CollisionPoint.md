@@ -1,5 +1,7 @@
 # Collision Point: design notes
 
+*The six Collision Point maps (Blueprint, Galleria, Floodgate, Trefoil, Citadel, Confluence) were a pack of their own; they are now files 25-30 of the Legacy pack, in this folder.*
+
 Six free-for-all maps (two small, two medium, two large) built around the ideas in Güttler & Johansson, *Spatial Principles of Level-Design in Multi-Player First-Person Shooters*. The paper's central idea is the **collision point**: the place where the routes of opposing players cross. Good maps decide where these points are and build them well, with cover, height differences and several ways in. Bad maps let the fight happen somewhere unplanned. In the paper's cs_citymall the fights broke out in an open area with no cover, while the showpiece hall stood empty.
 
 The paper's examples are team maps. For deathmatch, each map has clusters of spawns (**spawn regions**), and its collision points sit at equal walking distance between two or more regions. All six maps were checked with a top-down flow analysis: the shortest walking routes between every pair of spawns, with their overlaps shown as heat. The bright spots had to land on the cover-rich places that were designed for them, not on open ground. The other checks were spawn-to-spawn lines of sight (none, except between spawns in the same pocket) and the longest open sightlines.

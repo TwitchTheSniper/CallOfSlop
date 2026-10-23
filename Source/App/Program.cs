@@ -196,7 +196,7 @@ public static unsafe partial class Program
     private static int _smokeStage;
     private static int _smokeFrames;
     private static double _smokeWorstDt;
-    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test", "Adobe Mesa"]; // Adobe Mesa: the High Ground pack (terrain, foliage, movers)
+    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test", "Adobe Mesa"]; // Adobe Mesa: a former High Ground map, now in Legacy (terrain, foliage, movers)
 
     private static void SmokeTick(double now)
     {

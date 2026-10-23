@@ -110,7 +110,7 @@ public static partial class SelfTest
             ("\"skybox\": { \"type\": \"procedural\", \"image\": \"Skies/sample.hdr\" },", "need type \"equirect\" or \"cubemap\""),
             ("\"skybox\": { \"image\": \"Skies/missing.hdr\" },", "image \"Skies/missing.hdr\" not found"),
             ("\"skybox\": { \"image\": \"Skies/sample.jpg\" },", "not found"),
-            ("\"skybox\": { \"image\": \"../Classic/pack.json\" },", "must be a path inside the Maps folder"),
+            ("\"skybox\": { \"image\": \"../Legacy/pack.json\" },", "must be a path inside the Maps folder"),
             ("\"skybox\": { \"faces\": [\"a.png\", \"b.png\"] },", "\"faces\" is 6 file names"),
             ("\"skybox\": { \"faces\": \"Skies/sample_{face}.png\", \"image\": \"Skies/sample.hdr\" },", "a cubemap sky has \"faces\", not one \"image\""),
             ("\"skybox\": { \"fog\": { \"max\": 2 } },", "fog: \"max\" is a number from 0 to 1"),
@@ -207,11 +207,11 @@ public static partial class SelfTest
             if (json.Contains("\"skybox\"") || !json.Contains("\"sky\""))
                 Fail($"{m.Name}: a map without a sky must write \"sky\" and no \"skybox\"");
         }
-        // A sky never changes the fingerprint: the High Ground maps with their old flat colours instead hash the same.
+        // A sky never changes the fingerprint: the High Ground maps (Legacy 31-36) with their old flat colours instead hash the same.
         (string File, string OldSky)[] old =
         [
-            ("HighGround/01-GravelPit.json", "#c8c3b4"), ("HighGround/02-Hillfort.json", "#a9b7c0"), ("HighGround/03-Riverbend.json", "#9fb8cc"),
-            ("HighGround/04-AdobeMesa.json", "#e0c9a6"), ("HighGround/05-Ridgeline.json", "#a8bccb"), ("HighGround/06-AlpinePass.json", "#c3d3e2"),
+            ("Legacy/31-GravelPit.json", "#c8c3b4"), ("Legacy/32-Hillfort.json", "#a9b7c0"), ("Legacy/33-Riverbend.json", "#9fb8cc"),
+            ("Legacy/34-AdobeMesa.json", "#e0c9a6"), ("Legacy/35-Ridgeline.json", "#a8bccb"), ("Legacy/36-AlpinePass.json", "#c3d3e2"),
         ];
         var hashesKept = 0;
         foreach (var (file, oldSky) in old)

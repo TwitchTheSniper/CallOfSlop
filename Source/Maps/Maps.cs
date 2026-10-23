@@ -512,7 +512,7 @@ public static partial class Maps
 
     /// <summary>
     /// Every map in the Maps folder, sorted by "order" then name, and the packs they belong to.
-    /// The shipped maps are ordinary map files too (in Maps/Classic).
+    /// The shipped maps are ordinary map files too (in Maps/Legacy and the other pack folders).
     /// Ids are positions in this list (local only: the network refers to maps by name + fingerprint).
     /// </summary>
     private static Map[] LoadAll()
@@ -562,9 +562,10 @@ public static partial class Maps
                     var m = MapFile.Load(File.ReadAllText(file), rel, packDir); // packDir: the pack's own props and models come first
                     if (maps.FirstOrDefault(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)) is { } other)
                     {
-                        // A loose copy identical to a map in a pack: most likely a file left over from before the
-                        // maps moved into pack folders (builds don't delete old files). Skip it quietly.
-                        if (loose && MapFile.ToJson(other) == MapFile.ToJson(m))
+                        // A loose copy identical to a map in a pack, or the same map in a retired pack folder (Classic,
+                        // CollisionPoint, HighGround: their maps moved to Legacy): most likely files left over from
+                        // before the maps moved (builds don't delete old files). Skip it quietly.
+                        if ((loose || MapPack.IsRetiredFolder(pack.Folder)) && MapFile.ToJson(other) == MapFile.ToJson(m))
                         {
                             Console.WriteLine($"[maps] ignored {rel}: same map as {other.SourceFile}");
                             continue;
@@ -583,8 +584,9 @@ public static partial class Maps
             packs.Add(pack);
         }
 
-        // Pack folders first, so a stray loose duplicate never pushes a pack's own map out.
-        foreach (var dir in Directory.GetDirectories(folder).OrderBy(d => d, StringComparer.OrdinalIgnoreCase))
+        // Pack folders first, so a stray loose duplicate never pushes a pack's own map out; retired pack folders last,
+        // so an old copy of Maps/Classic never pushes Legacy's maps out either.
+        foreach (var dir in Directory.GetDirectories(folder).OrderBy(d => MapPack.IsRetiredFolder(Path.GetFileName(d)) ? 1 : 0).ThenBy(d => d, StringComparer.OrdinalIgnoreCase))
         {
             var name = Path.GetFileName(dir);
             if (name.StartsWith('.'))

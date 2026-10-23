@@ -55,8 +55,8 @@ Source/
   UI/         Ui.cs (ImGui menus) + Ui*.cs per screen (UiWorkbench, UiLoadout, UiAppearance, UiAudioMixer, UiZombies...)
   Audio/      Audio*.cs (OpenAL, buses, EFX), AudioMix* (F8 mixer), Music*/MusicRenderer* (procedural hardbass), Synth*
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
-Maps/<Pack>/        map JSON files + pack.json (packs: Classic, Cluttered, CollisionPoint, Dev, HighGround, Space,
-                    World [World Tour], Zombies). Maps/README.md documents the map ops.
+Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
+                    packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.
 Weapons/ Attachments/   one JSON per gun / attachment (Weapons/README.md)
 Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, Muzzle, Optic, Receiver, Splitter, Stock,
                         Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod); Parts/Builds (64 standard builds);

@@ -1,0 +1,7 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Legacy",
+  "description": "Every map made before the Cluttered pack: the 24 Classic maps from the Proto Box dev room to Military Base, the six Collision Point maps built on spatial level-design principles, and the six High Ground terrain maps.",
+  "author": "Call of Slop",
+  "order": 1
+}

@@ -19,10 +19,10 @@ public static partial class SelfTest
 
     private static readonly List<string> ScoreNotes = [];
 
-    /// <summary>The smallest Classic map that takes 16 bots and the waiting host (a 24-player map): where 8 and 16 player matches both make sense.</summary>
+    /// <summary>The smallest Classic map (Legacy 1-24) that takes 16 bots and the waiting host (a 24-player map): where 8 and 16 player matches both make sense.</summary>
     private static Map ScoreMap()
     {
-        var classic = Maps.All.Where(m => m.Pack?.Name == "Classic" && m.MaxPlayers >= 17).ToList();
+        var classic = Maps.All.Where(m => m.Pack?.Name == "Legacy" && m.Order <= 24 && m.MaxPlayers >= 17).ToList(); // the Classic maps keep order 1-24 inside Legacy
         var pool = classic.Count > 0 ? classic : Maps.All.Where(m => m.MaxPlayers >= 17).ToList();
         return pool.OrderBy(m => m.MaxPlayers).ThenBy(m => m.PlayArea).ThenBy(m => m.Id).FirstOrDefault() ?? Maps.All.OrderByDescending(m => m.MaxPlayers).First();
     }

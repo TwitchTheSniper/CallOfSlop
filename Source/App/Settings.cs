@@ -97,7 +97,26 @@ public sealed class Settings
     public string JoinAddress = "127.0.0.1";
     public string MapName = "Proto Box"; // map for single player and hosting (when not random)
     public bool MapRandom = true; // default: a random map each time you start
-    public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
+    public string MapPack = DefaultMapPack; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
+
+    /// <summary>The pack a fresh settings file picks random maps from: Legacy (the shipped maps, Proto Box first).</summary>
+    public const string DefaultMapPack = "Legacy";
+
+    /// <summary>
+    /// Packs that were folded into the Legacy pack: a settings.txt from before that still names one of them. Mapped to
+    /// Legacy on load (<see cref="MigrateMapPack"/>) unless a pack of that name is back (someone's own folder).
+    /// </summary>
+    private static readonly string[] LegacyPackNames = ["Classic", "Collision Point", "High Ground"];
+
+    /// <summary>The map_pack value to use for a saved one: an old pack name becomes Legacy, anything else is kept as it is.</summary>
+    public static string MigrateMapPack(string saved, IReadOnlyList<MapPack> packs)
+    {
+        if (!LegacyPackNames.Any(n => n.Equals(saved.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return saved;
+        if (packs.Any(p => p.Name.Equals(saved.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return saved; // a pack of that name exists again: keep the choice
+        return DefaultMapPack;
+    }
     public bool ShareOnLists = true; // hosting: register my game on my server lists (friends who have one see it); files with only the old advertise=0 get on
     public bool AutoListServer = true; // hosting: if none of my server lists answers, run one in this game (HostListing)
     public bool RunListServer; // "Run a server list for friends": keep one running in this game while it's open (ListServer)
@@ -337,7 +356,11 @@ public sealed class Settings
                     case "join_address": s.JoinAddress = CleanAddress(v); break;
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
-                    case "map_pack" when v.Length > 0: s.MapPack = v; break; // kept even if the pack is missing now (it may come back)
+                    case "map_pack" when v.Length > 0: // kept even if the pack is missing now (it may come back)
+                        s.MapPack = MigrateMapPack(v, Maps.Packs); // the old Classic, Collision Point and High Ground packs became Legacy
+                        if (s.MapPack != v)
+                            Console.WriteLine($"[settings] map pack '{v}' is now part of {s.MapPack}");
+                        break;
                     case "advertise" when v == "1": s.ShareOnLists = true; break; // the old opt-in (before share_on_lists)
                     case "share_on_lists": s.ShareOnLists = v != "0"; break;
                     case "auto_list": s.AutoListServer = v != "0"; break;

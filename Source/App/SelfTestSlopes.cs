@@ -469,7 +469,7 @@ public static partial class SelfTest
         return spawns.MinBy(p => SlopeFlat(p - c));
     }
 
-    private static List<Map> SlopeHighGroundMaps() => Maps.FindPack(HighGroundPack)?.Maps.ToList() ?? [];
+    private static List<Map> SlopeHighGroundMaps() => HighGroundMaps(); // the former High Ground pack, now in Legacy (SelfTestHighGround.cs)
 
     private static void SlopeRoutes()
     {

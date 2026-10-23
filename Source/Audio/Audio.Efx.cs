@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>The acoustic character of a map: picks the reverb (<see cref="Audio.SetEnvironment"/>).</summary>
 public enum AudioSpace : byte
 {
-    /// <summary>Open terrain (the High Ground maps): a faint, wide reverb.</summary>
+    /// <summary>Open terrain (the Legacy pack's High Ground maps): a faint, wide reverb.</summary>
     Open,
 
     /// <summary>Streets and yards between buildings: short reflections.</summary>

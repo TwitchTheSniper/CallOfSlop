@@ -26,6 +26,16 @@ public sealed partial class MapPack
     /// <summary>The pack holding map files that sit directly in the Maps folder.</summary>
     public const string LooseName = "Other";
 
+    /// <summary>
+    /// Pack folders whose maps moved into Maps/Legacy (the Classic, Collision Point and High Ground packs). A copy left
+    /// over from an older build loads last, and its maps that are identical to loaded ones are skipped quietly.
+    /// </summary>
+    public static readonly string[] RetiredFolders = ["Classic", "CollisionPoint", "HighGround"];
+
+    /// <summary>Is this a folder name from <see cref="RetiredFolders"/>?</summary>
+    public static bool IsRetiredFolder(string? folder) =>
+        folder != null && RetiredFolders.Any(f => f.Equals(folder, StringComparison.OrdinalIgnoreCase));
+
     public required string Name;
     public string Description = "";
     public string Author = "";
