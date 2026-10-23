@@ -222,7 +222,7 @@ public sealed partial class Game
         for (var i = 0; i < list.Count; i++) // indexed: no enumerator to allocate every life
         {
             var a = list[i];
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25 && BotGear.Attachment(w, a, level))
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))
                 kit = Attachments.With(kit, a.Slot, a.Index);
         }
         return kit;

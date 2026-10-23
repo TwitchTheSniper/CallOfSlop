@@ -82,20 +82,77 @@ public static class BotGear
     }
 
     /// <summary>May a bot of this gear level carry the weapon?</summary>
-    public static bool Weapon(WeaponDef w, int level) => level >= Full || WeaponSelect.UnlockLevel(w) <= level;
+    public static bool Weapon(WeaponDef w, int level) => level >= Full || UnlockLevel(w) <= level;
+
+    /// <summary>The account level that unlocks the weapon (<see cref="Progress.UnlockLevel(WeaponDef)"/>, cached per weapon list).</summary>
+    public static int UnlockLevel(WeaponDef w)
+    {
+        var all = Weapons.All;
+        var levels = _weaponLevels;
+        if (!ReferenceEquals(all, _weaponSource) || levels == null)
+        {
+            levels = new int[all.Length];
+            foreach (var x in all)
+                if (x.Id < levels.Length)
+                    levels[x.Id] = Progress.UnlockLevel(x);
+            _weaponLevels = levels;
+            _weaponSource = all;
+            _attachXp = new int[all.Length][];
+        }
+        return w.Id < levels.Length && ReferenceEquals(all[w.Id], w) ? levels[w.Id] : Progress.UnlockLevel(w);
+    }
+
+    private static WeaponDef[]? _weaponSource;
+    private static int[]? _weaponLevels;
+    private static int[]?[] _attachXp = [];
 
     /// <summary>The weapon XP a bot of this gear level has on the gun (see the class notes).</summary>
     public static int WeaponXp(WeaponDef w, int level)
     {
         if (level >= Full)
             return int.MaxValue;
-        var past = Math.Clamp(level - WeaponSelect.UnlockLevel(w), 0, AttachmentLevels);
-        return (int)((long)Attachments.MaxXp(w) * past / AttachmentLevels);
+        if (_maxXp.Length != Weapons.All.Length || !ReferenceEquals(_maxXpSource, Weapons.All))
+        {
+            var all = Weapons.All;
+            var m = new int[all.Length];
+            foreach (var x in all)
+                if (x.Id < m.Length)
+                    m[x.Id] = Attachments.MaxXp(x);
+            _maxXp = m;
+            _maxXpSource = all;
+        }
+        var maxXp = w.Id < _maxXp.Length ? _maxXp[w.Id] : Attachments.MaxXp(w);
+        var past = Math.Clamp(level - UnlockLevel(w), 0, AttachmentLevels);
+        return (int)((long)maxXp * past / AttachmentLevels);
     }
+
+    private static int[] _maxXp = [];
+    private static WeaponDef[]? _maxXpSource;
 
     /// <summary>May a bot of this gear level put the attachment on the gun?</summary>
     public static bool Attachment(WeaponDef w, AttachmentDef a, int level) =>
         level >= Full || Attachments.UnlockXp(w, a) <= WeaponXp(w, level);
+
+    /// <summary>The same for the <paramref name="index"/>-th of <see cref="Attachments.For"/> (cached unlock XP: bots check these every life).</summary>
+    public static bool Attachment(WeaponDef w, int index, int level)
+    {
+        if (level >= Full)
+            return true;
+        UnlockLevel(w); // (re)builds the per-weapon caches for this weapon list
+        var cache = _attachXp;
+        if (w.Id >= cache.Length || !ReferenceEquals(Weapons.All[w.Id], w))
+            return Attachment(w, Attachments.For(w)[index], level);
+        var xps = cache[w.Id];
+        if (xps == null)
+        {
+            var list = Attachments.For(w);
+            xps = new int[list.Count];
+            for (var i = 0; i < xps.Length; i++)
+                xps[i] = Attachments.UnlockXp(w, list[i]);
+            cache[w.Id] = xps;
+        }
+        return index < xps.Length && xps[index] <= WeaponXp(w, level);
+    }
 
     /// <summary>May a bot of this gear level carry the grenade or equipment? (None always.)</summary>
     public static bool Throwable(ThrowableKind k, int level)
@@ -119,7 +176,24 @@ public static class BotGear
     }
 
     /// <summary>May a bot of this gear level run the perk?</summary>
-    public static bool Perk(PerkId id, int level) => level >= Full || Progress.PerkLevel(id) <= level;
+    public static bool Perk(PerkId id, int level)
+    {
+        if (level >= Full)
+            return true;
+        var levels = _perkLevels ??= BuildPerkLevels();
+        return (int)id < levels.Length ? levels[(int)id] <= level : Progress.PerkLevel(id) <= level;
+    }
+
+    private static int[]? _perkLevels;
+
+    private static int[] BuildPerkLevels()
+    {
+        var levels = new int[Perks.All.Length];
+        foreach (var p in Perks.All)
+            if ((int)p.Id < levels.Length)
+                levels[(int)p.Id] = Progress.PerkLevel(p.Id);
+        return levels;
+    }
 
     /// <summary>May a bot of this gear level call in the kill streak?</summary>
     public static bool Streak(StreakId id, int level) => level >= Full || KillStreaks.UnlockLevel(id) <= level;
@@ -274,6 +348,12 @@ public sealed partial class Game
         PickBotLoadout(bot);
         BotStreakPick(bot, bot.Streak);
     }
+
+    /// <summary>Self-test: only the kill streak part of a bot's spawn.</summary>
+    public void SelfTestStreakPick(Player bot) => BotStreakPick(bot, bot.Streak);
+
+    /// <summary>Self-test: only the loadout draw.</summary>
+    public void SelfTestDrawOnly(Player bot) => PickBotLoadout(bot);
 
     /// <summary>Self-test: the lobby level as the roster code works it out after a join or a leave.</summary>
     public void SelfTestRefreshBotGear() => RefreshBotGear();
