@@ -19,6 +19,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `settings.txt` | Your settings and keybinds |
 | `workbench.txt` | Your workbench weapon builds |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
+| `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
 
 ### The easy way (automatic)
 
@@ -45,6 +46,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `settings.txt`
    - `workbench.txt`
    - `audio_mix.json`
+   - `appearance.txt` (if you have it)
    - the `AudioMixes` folder
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
 5. Start the new build and check your level in the main menu.

@@ -12,6 +12,9 @@ progress*.txt
 settings.txt
 loadout*.txt
 workbench.txt
+appearance.txt
+audio_mix.json
+AudioMixes/
 portable.txt
 *.txt.bak
 *.txt.tmp
@@ -21,3 +24,6 @@ smoke_*.bmp
 tools/run_smoke.flag
 __pycache__/
 *.pyc
+
+# Agent worktrees (Claude Code)
+.claude/

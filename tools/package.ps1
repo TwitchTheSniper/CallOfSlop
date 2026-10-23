@@ -93,7 +93,7 @@ if ($Step -ne "zip") {
     }
 
     # Belt and braces: no personal or debug files in the shared copy.
-    $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "audio_mix.json", "portable.txt", "update_check.txt",
+    $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt",
                   "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log")
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
