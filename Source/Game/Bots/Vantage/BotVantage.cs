@@ -408,6 +408,8 @@ public sealed partial class Game
             if (threat is { } t)
             {
                 var dt = Flat(s.Pos - t);
+                if (exclude >= 0 && exclude < vm.Spots.Length && dt < Flat(vm.Spots[exclude].Pos - t) - 8f)
+                    continue; // relocating from a threat: never to a spot well closer to it than the one being left
                 if (dt < 25f)
                     score -= (25f - dt) * 0.3f;
             }

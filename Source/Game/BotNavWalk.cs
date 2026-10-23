@@ -200,8 +200,9 @@ public sealed partial class NavGraph
 
     /// <summary>
     /// Does a link a -> b need the mover's say (<see cref="MoverWalk"/>)? Mantles and drops, height changes beyond a small
-    /// step, a body sample squeezed past a ledge (<paramref name="tight"/>) and, on terrain, slopes past the full-speed
-    /// angle near the line. Plain level walks are left to the sampled checks.
+    /// step off the terrain, a body sample squeezed past a ledge (<paramref name="tight"/>), something low or waist-high in
+    /// the way, and terrain steeper than <see cref="WalkCheckNormalY"/> near the line (<paramref name="steepest"/>). Plain
+    /// walks are left to the sampled checks.
     /// </summary>
     private static readonly QueryFilter ShinFilter = new(QueryLayers.StaticShapes & ~QueryLayers.Doors); // boxes, props, meshes (not the terrain's own bumps)
 
@@ -209,7 +210,10 @@ public sealed partial class NavGraph
     {
         if (CrossesDoor(World.Map, a, b))
             return false; // through a shut door: bots open it, the plain mover can't (see CrossesDoor)
-        if (flags != 0 || tight || MathF.Abs(a.Y - b.Y) > 0.3f)
+        if (flags != 0 || tight)
+            return true;
+        // A height change off the terrain (steps, ramps of boxes); on the terrain the slope says it (below).
+        if (MathF.Abs(a.Y - b.Y) > 0.3f && !(OnTerrain(a) && OnTerrain(b)))
             return true;
         // Something low in the way the samples stepped past (a thin kerb or rail under the body check's height, a step under
         // a shelf): a ray at shin height along the link.
@@ -219,7 +223,7 @@ public sealed partial class NavGraph
         if (dist > 0.01f)
         {
             var dir = d / dist;
-            var side = Vector3.Normalize(new Vector3(-dir.Z, 0, dir.X) + new Vector3(0, 1e-6f, 0)) * (World.PlayerRadius - 0.05f);
+            var side = Vector3.Normalize(new Vector3(-dir.Z, 0, dir.X) + new Vector3(0, 1e-6f, 0)) * (World.PlayerRadius + 0.05f); // just outside the body: a jamb it would catch on
             foreach (var h in (ReadOnlySpan<float>)[0f, 0.8f]) // shin and waist height
                 foreach (var o in (ReadOnlySpan<float>)[0f, 1f, -1f]) // the middle and both sides of the body
                     if (World.Physics.Raycast(a + shin + new Vector3(0, h, 0) + side * o, dir, dist, ShinFilter) < dist - 0.05f)
@@ -230,6 +234,10 @@ public sealed partial class NavGraph
 
     /// <summary>cos(40 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
     private const float WalkCheckNormalY = 0.76604444f;
+
+    /// <summary>Feet right on the terrain (not on a box floor over it)?</summary>
+    private static bool OnTerrain(Vector3 p) =>
+        World.Map.TerrainCollision?.Layer(p.Y) is { } t && MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.1f;
 
     /// <summary>
     /// Does a body walking a -> b run into a shut building door? Bots open doors by walking into them (GameBuildings.cs) and the

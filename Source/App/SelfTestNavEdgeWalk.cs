@@ -126,7 +126,7 @@ public static partial class SelfTest
                 var b = nav.Nodes[j];
                 if (NavGraph.CrossesDoor(m, a, b))
                     continue; // through a shut door: bots open it, the walker can't
-                if (nav.EdgeFlags[e] != 0 || MathF.Abs(a.Y - b.Y) > 0.3f || (terrain != null && EdgeWalkSloped(terrain, a, b)))
+                if (nav.EdgeFlags[e] != 0 || (MathF.Abs(a.Y - b.Y) > 0.3f && !(EdgeWalkOnTerrain(terrain, a) && EdgeWalkOnTerrain(terrain, b))) || (terrain != null && EdgeWalkSloped(terrain, a, b)))
                     interesting.Add(e);
                 else
                     plain.Add(e);
@@ -164,6 +164,8 @@ public static partial class SelfTest
         }
         return (list.Count, fails);
     }
+
+    private static bool EdgeWalkOnTerrain(ITerrainCollision? t, Vector3 p) => t != null && MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.1f;
 
     /// <summary>Is any stretch of the terrain under a -> b steeper than the full-speed limit (25 degrees)?</summary>
     private static bool EdgeWalkSloped(ITerrainCollision t, Vector3 a, Vector3 b)
