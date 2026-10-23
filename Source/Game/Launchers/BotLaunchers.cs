@@ -24,7 +24,7 @@ public sealed partial class Game
     public const float BotLauncherMinRange = 12f, BotLauncherGroup = 4.5f;
 
     /// <summary>Bot loadouts: about a quarter of bots (four in ten tacticians) carry a launcher instead of a pistol; never on Easy.</summary>
-    private void BotPickLauncher(Player bot, BotProfile prof)
+    private void BotPickLauncher(Player bot, BotProfile prof, int level)
     {
         if (bot.Bot is not { } b || b.Skill == BotDifficulty.Easy)
             return;
@@ -34,7 +34,7 @@ public sealed partial class Game
         WeaponDef? pick = null;
         var n = 0;
         foreach (var w in Weapons.All)
-            if (w.IsLauncher)
+            if (w.IsLauncher && BotGear.Weapon(w, level)) // only launchers the gear level has unlocked (BotGear.cs)
                 n++;
         if (n == 0)
             return;
@@ -42,7 +42,7 @@ public sealed partial class Game
         var lockOn = TacticalGear.Roll(bot.Id, bot.SpawnTick, 0x1A2) < 0.45; // the anti-air launcher, more often than its share
         foreach (var w in Weapons.All)
         {
-            if (!w.IsLauncher)
+            if (!w.IsLauncher || !BotGear.Weapon(w, level))
                 continue;
             if (lockOn && w.LauncherGuidance == LauncherGuidance.LockOn)
             {

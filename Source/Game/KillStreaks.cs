@@ -539,11 +539,8 @@ public sealed partial class Game
     private void StreakOnSpawn(Player p)
     {
         var s = p.Streak;
-        if (p.Bot != null && !s.BotPicked)
-        {
-            s.Want = RandomStreaks();
-            s.BotPicked = true;
-        }
+        if (p.Bot != null)
+            BotStreakPick(p, s); // once, and again when the bot's gear level changes (BotGear.cs)
         s.Slots = s.Want.Sanitized();
         s.Count = 0;
         var keep = (ushort)0;
@@ -568,10 +565,12 @@ public sealed partial class Game
     }
 
     /// <summary>Bots carry three random streaks.</summary>
-    private StreakSet RandomStreaks()
+    private StreakSet RandomStreaks(int level)
     {
-        var pool = KillStreaks.All.Where(s => s.Id != StreakId.None).Select(s => s.Id).OrderBy(_ => _rng.Next()).Take(3).ToArray();
-        return new StreakSet(pool[0], pool[1], pool[2]).Sanitized();
+        // Every streak still takes its random number (the shared sequence is the same at every level); locked ones are skipped.
+        var pool = KillStreaks.All.Where(s => s.Id != StreakId.None).Select(s => s.Id).OrderBy(_ => _rng.Next()).Where(id => BotGear.Streak(id, level)).Take(3).ToArray();
+        StreakId At(int i) => i < pool.Length ? pool[i] : StreakId.None;
+        return new StreakSet(At(0), At(1), At(2)).Sanitized();
     }
 
     private void SendStreakState(Player p)

@@ -672,6 +672,7 @@ public sealed partial class Game
                 Audio.Effect3D(Sfx.ReconBeep, s.Pos, 0.45f);
         }
         Shake *= MathF.Exp(-4f * dt);
+        UpdateKnockFeedback(dt); // a blast push's view kick settles (Knockback.cs)
     }
 
     /// <summary>
