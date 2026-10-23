@@ -122,6 +122,12 @@ Fixed 2026-10-23: "Test Range" ("adding bots mid-session gave 5 (4 alive)", main
 - **Nav graphs are built from the map as built**, so runs are deterministic; frame-clipping window climbs are only a last resort. This was the root cause of the flaky Rooftops and Mall tests.
 - **One-off JIT is left out of the 8 ms tick-work rule.** It is warm-up, not steady cost, and it was blocking releases.
 - **Zombie health scales slower (user).** At round 20 it is 1,196 instead of 2,711.
+- **Zombies round flow (user, 2026-10-23; branch `feat/zombies-downed-flow`, protocol 47).** Downed players crawl
+  (0.8 x prone speed, no stand / jump / buy / bench / revive; crawling out of reach interrupts a revive; downed bots crawl
+  to the nearest teammate standing). The dead spectate living teammates over the shoulder (Right / Left arrows or
+  Fire / Aim), and come back when the round's last zombie dies. Rounds wait for ready-up (F3; bots ready, the dead
+  don't block; 3-minute fallback, host presses F3 again to force). Bots-only runs keep the 10 s timer. See
+  ZOMBIES-MODE.md, "Between rounds, downs and spectating"; self-test "Zombies flow".
 
 ## Open questions for the user
 
@@ -131,7 +137,8 @@ Defaults are in place for all of them.
    - the power-up numbers: 3% a kill, at most 4 a round, 30 s;
    - should special ammo hurt players in other modes;
    - should co-op bots buy things;
-   - downed weapon: today it's the gun in your hands;
+   - downed weapon: today it's the gun in your hands; the crawl speed (0.8 x prone);
+   - ready-up: 3-minute fallback, 3 s countdown, host force start by pressing F3 again; spectating over the shoulder only;
    - melee builds from the box;
    - Second Wind's price (1500) and whether it counts toward the perk limit;
    - Blackmoor's layout and prices, and more maps.

@@ -27,17 +27,18 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   start area with the **start builds** (today: Wall Rifle in slot 1, Wall Pistol in slot 2, the Machete on the melee
   key) and **500 points**. No loadout screen, no multiplayer perks, no grenades, no kill streaks.
 - **Rounds.** Each round sends a number of zombies (below); they come out of the **active spawners** one by one (at
-  most 24 alive at once, the rest wait in a queue). When every zombie of the round is dead there's a **10 s break**,
-  then the next round. The HUD shows the round in red tally marks (I to IIIII, then the number) bottom-left, the round
+  most 24 alive at once, the rest wait in a queue). When every zombie of the round is dead there's a **break**: the
+  next round waits until everyone alive is **ready** (see "Between rounds"; a plain 10 s break in a bots-only run). The HUD shows the round in red tally marks (I to IIIII, then the number) bottom-left, the round
   and what's left of it at the top.
 - **Zombies** come from spawners behind **windows**: they walk to the window, tear the boards off one at a time,
   climb in, then go after the nearest player standing, through open doors. Some spawners are in the ground of an area
   (they climb out of it, arms first, in `zombie.riseSeconds`: 1.4 s, 0.9 s before the animations). A zombie swipes at you when it's close (a windup you can back out of). Zombies at a window
   swipe through it at players standing right at it.
-- **Downs.** Zombie hits take health (it regenerates as usual). At 0 you're **downed**: you lie there (no walking, you
-  can still shoot), lose **every perk** (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the
-  interact key on you for 3 s (Quick Revive halves it). Bleeding out: you're out until the **start of the next round**,
-  then back in the start area with the start gear; perks and 10 percent of your points are lost
+- **Downs.** Zombie hits take health (it regenerates as usual). At 0 you're **downed**: you lie on the floor and
+  **crawl** (see "Between rounds, downs and spectating"; you can still shoot), lose **every perk**
+  (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the interact key on you for 3 s (Quick Revive
+  halves it). Bleeding out: you **spectate** a living teammate and are out until the **end of the round** (its last
+  zombie dies), then back in the start area with the start gear; perks and 10 percent of your points are lost
   (`downs.bleedoutPointLoss`), and your **builds drop on the floor where you went down** (see "Dropped builds").
 - **Self-revive: Second Wind** (a perk machine in the start room, no power needed): when you go down with it you get
   back up on your own after `downs.selfReviveSeconds` (5 s), **solo or co-op**; the perk is used up by it, and you can
@@ -46,6 +47,59 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 - **Game over** when nobody is left standing (everyone downed or bled out). The results screen says
   "Game over on round N: survived N-1 rounds"; after it a fresh run starts on the same map (no map vote in Zombies).
 - **No friendly fire**; your own grenade still hurts you.
+
+## Between rounds, downs and spectating (user requests, 2026-10-23)
+
+The user asked for four changes: crawl while downed, spectate living players when dead, ready-up between rounds
+instead of the 10 s interval, and the dead back at the end of a round. Code: `Source/Game/ZombiesFlow.cs` (ready-up,
+the respawn, the spectator helpers), `ZombieBots.cs` (`ZombieInput`: the crawl; `ZombieBotCrawl`),
+`Source/App/Program.Zombies.cs` (the spectator camera and keys), `Source/UI/UiZombies.cs` (HUD lines); self-test
+section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
+
+- **Crawling.** Downed, the move keys still work, at `downs.crawlSpeed` (0.8) x the prone speed: about 1.06 m/s
+  (prone is 0.22 x 6 m/s). Turning and aiming as usual, and you shoot with the gun in your hands. No sprint, jump (so
+  no mantling), crouch or standing up; no doors, buying, workbench, pickups or reviving (the interact key does nothing).
+  The camera is the prone eye (0.45 m). The server runs the same input filter as the client's prediction, so it's
+  server-authoritative and predicted like any movement; the downed flag already went over the wire (`ZWorld`), so the
+  crawl itself needs no new fields. **Revives**: the reviver must stay within `downs.reviveRange` (1.8 m) of you;
+  crawling out of reach interrupts the revive (its bar resets; it starts again from nothing once you're back in reach,
+  as letting go of the key always did). The bleed-out clock runs on while you crawl; bleeding out drops your builds
+  where you are then. Zombies still ignore downed players (as before: they go for whoever is standing).
+- **Downed bots crawl** (decision: crawl, not stay put): away from a chasing zombie within 4 m, else straight towards
+  the nearest teammate standing until well inside revive reach (1.1 m), else they lie still. Walls and window openings
+  stop them like anyone. They don't shoot while down (as before).
+- **Spectating.** After bleeding out the death cam plays (or a click skips it), then you watch a **living** teammate
+  (downed ones count: they're alive) from **over their shoulder** (2.1 m back, 0.35 m up, 0.45 m right, pulled in short
+  of walls; the death cam was a third-person camera already, and first person would need the other player's arms and
+  gun drawn from your PC). **Spectate next / previous** (new keys: **Right / Left arrow**, rebindable; **Fire / Aim**
+  work too while you're out) cycle through the living by player id, wrapping round; if the one you watch dies you move
+  on to the next. The HUD says "Spectating Name - [Mouse Left] or [Right] next / [Mouse Right] or [Left] previous". It
+  ends when you're back. If everyone is down or out the run ends as before. Client-side only (no wire change).
+- **Ready-up between rounds.** When a round's last zombie dies the break **waits**: every living person presses the
+  **Ready key** (the existing **F3**, "Ready up (warmup; Zombies: the next round)"; pressing it again takes it back).
+  Bots count as ready; the dead (and a host sitting out, in the self-tests) don't block. When everyone is ready the
+  next round starts `rounds.readyGoSeconds` (3 s) later, with its banner and sound as before ("ROUND 4", the whistle).
+  The HUD shows "Press [F3] when ready - 1/2 ready" (centre) and "Break: 1/2 ready" in the match bar; the scoreboard
+  (Tab) tags each player [READY] / [not ready]. **Safety valve**: `rounds.readyFallbackSeconds` (180 s = 3 minutes,
+  0 = off) after the round ended it starts anyway (the bar counts it down); the **host** can force it: once ready, press
+  F3 again ("host: press [F3] again to start now"). Walking about, buying and the workbench all work during the break.
+  `rounds.readyUp: false` brings back the plain `breakSeconds` timer, which bots-only runs (nobody to ready up) still
+  use, so the bots' digests didn't change.
+- **Back at the round's end.** Bleeding out during a round, you're back the moment its last zombie dies (before the
+  break), in the start area with the start gear (the usual respawn rules: an untouched start kit, 2 slots, slots 3-4
+  gone with the upgrade, your dropped builds still on the floor for their 5 minutes). Bleeding out **during the break**
+  (downed at the round's end and nobody revived you) you're back when the next round starts (the old rule).
+- **Network (protocol 47).** `ZWorld`'s player flags gain bit 3 (ready) and bit 4 (counts for ready-up), and the
+  message ends with one byte (bit 0: the break is waiting for ready-up); `ZPhaseLeft` is then the fallback's seconds
+  left. `Msg.Ready` during a Zombies match means "ready for the next round". The crawl and spectating add nothing.
+
+| Rules (`Parts/Tables/ZombiesRules.json`) | Default | What |
+| --- | --- | --- |
+| `rounds.readyUp` | true | ready-up between rounds (false: the `breakSeconds` timer) |
+| `rounds.readyFallbackSeconds` | 180 | start anyway this long after the round ended (0 = never; the host can still force it) |
+| `rounds.readyGoSeconds` | 3 | the countdown once everyone is ready |
+| `rounds.breakSeconds` | 10 | the break when ready-up is off or nobody can ready up (bots only) |
+| `downs.crawlSpeed` | 0.8 | crawl speed, as a fraction of the prone speed |
 
 ## The round curve (proposed, World at War like; `Parts/Tables/ZombiesRules.json` "rounds")
 
@@ -408,6 +462,9 @@ most 2 nav graph searches per tick (the rest steer straight until their turn). T
 ## Controls
 
 F (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench to open it (Esc / Close goes back).
+F3 (Ready): between rounds, ready for the next one (again: not ready; the host, once ready: start it now).
+Right / Left arrow (or Fire / Aim): while out after bleeding out, spectate the next / previous living teammate.
+Downed: the move keys crawl.
 At the workbench, D twice (or Disassemble clicked twice) takes the slot's build apart.
 Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as before (3-4 after the upgrade).
 
@@ -426,9 +483,13 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything (still the default).
    Should they buy doors / guns / perks with their own points?
 7. **Downed**: shoot with whatever is in your hands (still the default), or a forced pistol (World at War's last stand)?
+   Crawling (2026-10-23) is 0.8 x the prone speed (`downs.crawlSpeed`): slower or faster?
 8. **Melee builds from the box** go to the melee slot (still the default): or should the box give guns only?
 9. ~~Machines have no collision~~: **done in milestone 3** on real maps (`"machineProps": true`, solid props from
    `Props/Zombies`); Zombies Test keeps them collision-free.
 10. **Second Wind's price** (still a fixed 1500, counting toward the 4 perks; see question 3).
 11. **Blackmoor Asylum**: the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500, the power shutter 750) are
     proposed; more Zombies maps next?
+12. **Ready-up** (2026-10-23): the fallback is 3 minutes and the countdown 3 s; the host forces the start by pressing F3
+    again once ready (rather than a separate key). Spectating is over the shoulder only (first person would need the
+    watched player's arms and gun drawn). OK?
