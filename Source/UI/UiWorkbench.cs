@@ -101,11 +101,10 @@ public sealed partial class Ui
     private bool _ctxOpen;
 
     // The inventory list, cached until the build, stock, filter or search changes.
-    private readonly List<PartDef> _invParts = new();
-    private readonly List<bool> _invFits = new();
-    private readonly List<int> _invFree = new();
-    private readonly List<PartCategory> _invCats = new();
-    private (int Version, int Stock, int Filter, string Search, bool Melee) _invKey = (-1, 0, 0, "", false);
+    private readonly BenchInventory _inv = new();
+
+    /// <summary>The settings the "Show incompatible parts" checkbox lives in (saved to settings.txt); set by Program.</summary>
+    public Settings? BenchSettings;
 
     // Missing-part badges on saved builds and presets.
     private readonly int[] _slotMissing = new int[BuildStore.SlotCount + 1];
@@ -119,6 +118,7 @@ public sealed partial class Ui
     private static readonly string[] WbRowIds = Enumerable.Range(0, 512).Select(i => $"##wbrow{i}").ToArray();
     private static readonly string[] WbInvIds = Enumerable.Range(0, 512).Select(i => $"##wbinv{i}").ToArray();
     private static readonly string[] WbCountText = Enumerable.Range(0, 100).Select(i => $"x{i}").ToArray();
+    private static readonly string[] WbHiddenText = Enumerable.Range(0, 1000).Select(i => $"({i} hidden)").ToArray();
 
     private BenchModel Bm => _bm!;
 
@@ -217,7 +217,7 @@ public sealed partial class Ui
         PartThumbs.Invalidate();
         _wbPracticeStock = null;
         _runStockKey = int.MinValue;
-        _invKey = (-1, 0, 0, "", false);
+        _inv.Invalidate();
         _rowVersion = -1;
         _badgeKey = (int.MinValue, -1, false);
         _trialKey = (-1, -1, null, null);
@@ -545,33 +545,8 @@ public sealed partial class Ui
 
     // ---- Left: your parts --------------------------------------------------------------------------------------
 
-    private void RefreshInventory()
-    {
-        var key = (Bm.Version, Bm.Stock.Fingerprint, _wbFilter, _wbSearch, _wbMelee);
-        if (key == _invKey)
-            return;
-        _invKey = key;
-        _invParts.Clear();
-        _invFits.Clear();
-        _invFree.Clear();
-        _invCats.Clear();
-        foreach (var p in Bm.Stock.Parts(Parts.All))
-        {
-            if (p.IsRoot || p.IsMeleePart != _wbMelee)
-                continue;
-            if (!_invCats.Contains(p.Category))
-                _invCats.Add(p.Category);
-            if (_wbFilter >= 0 && (int)p.Category != _wbFilter)
-                continue;
-            if (_wbSearch.Length > 0 && !p.Name.Contains(_wbSearch, StringComparison.OrdinalIgnoreCase)
-                && !PartDef.CategoryName(p.Category).Contains(_wbSearch, StringComparison.OrdinalIgnoreCase))
-                continue;
-            var free = Bm.Stock.Free(p, Bm.Build);
-            _invParts.Add(p);
-            _invFree.Add(free);
-            _invFits.Add(free > 0 && Bm.FitsAnywhere(p));
-        }
-    }
+    private void RefreshInventory() =>
+        _inv.Refresh(Bm, Parts.All, _wbFilter, _wbSearch, _wbMelee, BenchSettings?.WorkbenchShowIncompatible ?? false);
 
     private void DrawInventory(float width)
     {
@@ -586,14 +561,30 @@ public sealed partial class Ui
         {
             ImGuiSafe.FieldFailed("part search", ex);
         }
+        // OFF (default): only parts that fit somewhere on this build. ON: every owned part, incompatible ones dimmed.
+        var showAll = BenchSettings?.WorkbenchShowIncompatible ?? false;
+        if (ImGui.Checkbox("Show incompatible parts"u8, ref showAll) && BenchSettings != null)
+        {
+            BenchSettings.WorkbenchShowIncompatible = showAll;
+            BenchSettings.Save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build are dimmed (hover one for why)."
+                : "Showing only parts that fit somewhere on this build. Tick to see all your parts.");
         RefreshInventory();
-        // Category chips.
-        if (WbChip("All", _wbFilter < 0))
+        if (!showAll && _inv.Hidden > 0)
+        {
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, _inv.Hidden < WbHiddenText.Length ? WbHiddenText[_inv.Hidden] : "(more hidden)");
+        }
+        // Category chips (with counts of the listed parts).
+        if (WbChip(_inv.AllLabel, _wbFilter < 0))
             _wbFilter = -1;
         var x = ImGui.GetItemRectMax().X;
-        foreach (var c in _invCats)
+        for (var ci = 0; ci < _inv.Cats.Count; ci++)
         {
-            var label = PartDef.CategoryName(c);
+            var c = _inv.Cats[ci];
+            var label = _inv.CatLabels[ci];
             var w = ImGui.CalcTextSize(label).X + 14 * _scale;
             if (x + w + 8 * _scale < ImGui.GetWindowPos().X + width - 8 * _scale)
                 ImGui.SameLine();
@@ -610,12 +601,13 @@ public sealed partial class Ui
         var dl = ImGui.GetWindowDrawList();
         var rowH = 46 * _scale;
         var rowW = ImGui.GetContentRegionAvail().X;
-        if (_invParts.Count == 0)
-            ImGuiSafe.TextColored(Dim, BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with." : "Nothing matches.");
+        if (_inv.Items.Count == 0)
+            ImGuiSafe.TextColored(Dim, _inv.Hidden > 0 ? "None of these fit this build. Tick \"Show incompatible parts\" to see them anyway."
+                : BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with." : "Nothing matches.");
         PartCategory? group = null;
-        for (var i = 0; i < _invParts.Count; i++)
+        for (var i = 0; i < _inv.Items.Count; i++)
         {
-            var p = _invParts[i];
+            var p = _inv.Items[i];
             if (p.Category != group)
             {
                 group = p.Category;
@@ -626,8 +618,8 @@ public sealed partial class Ui
             ImGui.InvisibleButton(WbInvIds[i & 511], new float2(rowW, rowH));
             var hot = ImGui.IsItemHovered();
             var p1 = p0 + new float2(rowW, rowH - 2 * _scale);
-            var fits = _invFits[i];
-            var free = _invFree[i];
+            var fits = _inv.Fits[i];
+            var free = _inv.Free[i];
             var dragged = _dragging && _dragNode == null && _dragPart == p;
             dl.AddRectFilled(p0, p1, dragged ? new ImColor8(40, 60, 44, 240) : hot ? Hover8 : Card8, 4 * _scale);
             DrawPartIcon(dl, p, p0 + new float2(3 * _scale, 3 * _scale), new float2(p0.X + 64 * _scale, p1.Y - 3 * _scale), !fits);
@@ -650,7 +642,7 @@ public sealed partial class Ui
                 var tip = $"{p.Name} - {PartDef.RarityName(p.Rarity)} {PartDef.CategoryName(p.Category)}\n{p.Flavor}\n{PartSummary(p)}";
                 if (!Bm.Stock.IsUnlimited)
                     tip += $"\nYou have {Bm.Stock.Owned(p)} ({Math.Max(0, free)} free).";
-                tip += !fits ? $"\nDoesn't fit this build: {(free <= 0 ? "none left to fit." : Bm.WhyNowhere(p))}" : "\nDrag it onto the gun, or double-click to fit it.";
+                tip += _inv.Why[i] is { } incompat ? $"\nIncompatible: {incompat}." : free <= 0 ? "\nNone left to fit." : "\nDrag it onto the gun, or double-click to fit it.";
                 ImGuiSafe.SetTooltip(tip);
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                 {
