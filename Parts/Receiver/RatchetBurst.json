@@ -10,7 +10,7 @@
     {"name": "barrel", "type": "barrel", "pos": [0, 0.0397, -0.095], "accepts": ["barrel", "splitter"], "required": true},
     {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.0428], "required": true},
     {"name": "ammo", "type": "ammo", "pos": [0, 0.032, 0], "required": true},
-    {"name": "action", "type": "action", "pos": [0.025, 0.0224, 0.05], "required": true},
+    {"name": "action", "type": "action", "pos": [0.025, 0.0224, 0.05], "points": {"under": [0, 0, 0.017], "front": [0, 0.03, -0.095]}, "required": true},
     {"name": "utility", "type": "utility", "pos": [0.027, 0.032, -0.057]},
     {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0454, 0.1]},
     {"name": "upgrade_side", "type": "upgrade", "pos": [0.026, 0.0454, 0.02]},

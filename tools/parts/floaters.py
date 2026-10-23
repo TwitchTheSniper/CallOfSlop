@@ -11,8 +11,12 @@ What is checked (the same as the self-test section "Model connectivity", Source/
   1. every part on its own, drawn as on an empty grip: no "irons" boxes, no "with:SOCKET" boxes;
   2. every root grip assembled: empty; a receiver (--receiver, default the Workhorse) in receiver_1; one in every
      receiver socket; that plus an optic; that plus every other socket filled (stock, foregrip, hopper, utility);
-  3. every standard build in Parts/Builds.
-The grip rules match BuildModel: "irons" boxes only with a receiver fitted and no optic, "with:SOCKET" boxes only while
+  3. every receiver with every action in its action socket (on the Rifle Grip); and (3b) actions placed under the
+     receiver or at its front don't cut into the grip's handle, a foregrip under the gun, or a magazine that leaves
+     them room in front of the handle (Rifle Grip, Service Pistol Grip; the self-test section "Action placement");
+  4. every standard build in Parts/Builds.
+A part sits at the socket point its "placement" names (an action's "under" or "front": a receiver action socket's
+"points"), else at the socket's "pos", as in BuildModel. The grip rules match BuildModel: "irons" boxes only with a receiver fitted and no optic, "with:SOCKET" boxes only while
 that socket holds a part. ALLOWED lists the intentional separated pieces (keep it in step with the self-test's list).
 Exit code 1 if anything not allowed floats.
 """
@@ -211,12 +215,69 @@ def assemble(lib, tree):
         for s in p.get("sockets", []):
             s = viz.lower_keys(s)
             if s["name"] in kids:
-                pos = [s.get("pos", [0, 0, 0])[k] * scale[k] for k in range(3)]
+                pos = placed_at(s, lib.part(kids[s["name"]][0]))
+                pos = [pos[k] * scale[k] for k in range(3)]
                 SM = mmul(M, mmul(m_trans(pos), m_rot(viz.mat_rot(s.get("rot", [0, 0, 0])))))
                 walk(kids[s["name"]], SM, recv_bore, f"{path}{s['name']}:")
 
     walk(tree, IDENT, None, "")
     return out
+
+
+def placed_at(sock, part):
+    """Where <part> sits in socket <sock>: the socket point its "placement" names, else the socket's "pos" (BuildModel)."""
+    place = str(part.get("placement", "") or "").strip().lower()
+    points = {str(k).lower(): v for k, v in (sock.get("points") or {}).items()}
+    return points.get(place, sock.get("pos", [0, 0, 0])) if place and place != "side" else sock.get("pos", [0, 0, 0])
+
+
+def _inside(b, p):
+    d = [p[k] - b.c[k] for k in range(3)]
+    return all(abs(dot(d, b.ax[i])) <= b.h[i] + 1e-5 for i in range(3))
+
+
+def _zr(bs):
+    return (min(b.c[2] - sum(b.h[i] * abs(b.ax[i][2]) for i in range(3)) for b in bs),
+            max(b.c[2] + sum(b.h[i] * abs(b.ax[i][2]) for i in range(3)) for b in bs))
+
+
+def action_clearance(lib, order):
+    """Actions placed "under" or "front" vs the handle, foregrips that hang under the gun and every magazine that leaves
+    room in front of the handle, on the Rifle Grip and the Service Pistol Grip (the self-test section "Action placement").
+    Returns (problems, checks, exempt)."""
+    receivers = [p for p in order if p["category"].lower() == "receiver"]
+    placed = [p for p in order if p["category"].lower() == "action" and str(p.get("placement", "side")).lower() != "side"]
+    feeds = [p for p in order if p["category"].lower() == "feed" and str(p.get("mount", "feed")).lower() == "feed"]
+    fores = [p for p in order if p["category"].lower() == "grip" and str(p.get("mount", "")).lower() == "foregrip"
+             and all(pos[1] + size[1] / 2 <= 0.001 for (_, size, pos, *_rest) in p["_boxes"])]  # as the self-test: unturned extents
+    problems = checks = exempt = 0
+    for gname in ("Rifle Grip", "Service Pistol Grip"):
+        g = lib.part(gname)
+        socks = [viz.lower_keys(s) for s in g["sockets"]]
+        rs = next(s["name"] for s in socks if s["type"] == "receiver")
+        fs = next((s["name"] for s in socks if s["type"] == "foregrip"), None)
+        handle = [b for b in lib.part_boxes(g) if _inside(b, g.get("hand", [0, 0, 0]))]
+        front = _zr(handle)[0]
+        under = [b for f in (fores if fs else []) for b in assemble(lib, (gname, {fs: (f["name"], {})})) if b.part == f["name"]]
+        for r in receivers:
+            bore = viz.lower_keys(r["receiver"])["bore"]
+            mags = [(f["name"], [b for b in assemble(lib, (gname, {rs: (r["name"], {"feed": (f["name"], {})})})) if b.part == f["name"]])
+                    for f in feeds if not f.get("bores") or bore in [x.lower() for x in f["bores"]]]
+            for a in placed:
+                ab = [b for b in assemble(lib, (gname, {rs: (r["name"], {"action": (a["name"], {})})})) if b.part == a["name"]]
+                checks += 1
+                length = _zr(ab)[1] - _zr(ab)[0]
+                hits = [w for w, bs in (("handle", handle), ("foregrip", under)) if any(touches(x, y, -0.001) for x in ab for y in bs)]
+                for fn, fb in mags:
+                    if any(touches(x, y, -0.001) for x in ab for y in fb):
+                        if front - _zr(fb)[1] < length + 0.001:
+                            exempt += 1  # reaches back to the handle: no room for a trigger group in front of it
+                        else:
+                            hits.append(fn)
+                if hits:
+                    print(f"{a['name']} ({a.get('placement')}) on the {r['name']} [{gname}] cuts into: {', '.join(hits)}")
+                    problems += 1
+    return problems, checks, exempt
 
 
 def grip_configs(lib, g, recv):
@@ -282,7 +343,22 @@ def main(argv):
             if fl:
                 report(f"{g['name']} [{what}]", fl)
                 problems += 1
-    print("\n== 3. standard builds ==")
+    print("\n== 3. every receiver x every action (on the Rifle Grip) ==")
+    receivers = [p for p in order if p["category"].lower() == "receiver"]
+    actions = [p for p in order if p["category"].lower() == "action"]
+    for r in receivers:
+        for a in actions:
+            tree = ("Rifle Grip", {"receiver_1": (r["name"], {"action": (a["name"], {})})})
+            fl = [b for b in floaters(assemble(lib, tree), tol, 0) if b.part not in ALLOWED]
+            if fl:
+                report(f"{a['name']} ({a.get('placement') or 'side'}) on the {r['name']}", fl)
+                problems += 1
+    print(f"   {len(receivers)} receivers x {len(actions)} actions checked")
+    print("\n== 3b. under/front actions clear the handle, foregrips and magazines ==")
+    bad, checks, exempt = action_clearance(lib, order)
+    problems += bad
+    print(f"   {checks} checks; {exempt} overlaps with feeds that reach back to the handle (allowed)")
+    print("\n== 4. standard builds ==")
     for f in sorted(os.listdir(os.path.join(folder, "Builds"))):
         d = viz.lower_keys(viz.lenient_json(open(os.path.join(folder, "Builds", f), encoding="utf-8").read(), f))
         fl = floaters(assemble(lib, parse_build(d["build"])), tol, 0)

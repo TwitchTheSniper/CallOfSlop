@@ -186,8 +186,12 @@ public static class BuildModel
         }
         foreach (var s in p.Sockets)
         {
-            var sn = pn.AddSocket(SceneName(s), scaled ? s.Pos * scale : s.Pos, s.Rotation);
-            if (node.Child(s.Name) is { } child)
+            // The part in the socket picks which of the socket's points it sits at (an action: under the receiver, on
+            // its side or at its front; docs/zombies/WEAPON-BUILDER.md, "Where actions sit"). Only the model moves.
+            var child = node.Child(s.Name);
+            var at = s.PosFor(child?.Part);
+            var sn = pn.AddSocket(SceneName(s), scaled ? at * scale : at, s.Rotation);
+            if (child != null)
                 AddPart(sn, child, accent, irons, map, tints);
         }
     }

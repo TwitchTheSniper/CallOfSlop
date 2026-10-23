@@ -253,6 +253,19 @@ public static partial class SelfTest
             return new ModelBox(w.Translation, x / lx, y / ly, z / lz, new Vector3(lx, ly, lz) * 0.5f);
         }
 
+        /// <summary>The box's reach along Z (world): its smallest and largest z.</summary>
+        public float MinZ => C.Z - (H.X * MathF.Abs(X.Z) + H.Y * MathF.Abs(Y.Z) + H.Z * MathF.Abs(Z.Z));
+
+        /// <inheritdoc cref="MinZ"/>
+        public float MaxZ => C.Z + (H.X * MathF.Abs(X.Z) + H.Y * MathF.Abs(Y.Z) + H.Z * MathF.Abs(Z.Z));
+
+        /// <summary>Whether point <paramref name="p"/> is inside the box (on its surface counts).</summary>
+        public bool Contains(Vector3 p)
+        {
+            var d = p - C;
+            return MathF.Abs(Vector3.Dot(d, X)) <= H.X + 1e-5f && MathF.Abs(Vector3.Dot(d, Y)) <= H.Y + 1e-5f && MathF.Abs(Vector3.Dot(d, Z)) <= H.Z + 1e-5f;
+        }
+
         /// <summary>Separating axes: no axis splits the two boxes by more than <paramref name="tol"/>.</summary>
         public bool Touches(ModelBox o, float tol)
         {

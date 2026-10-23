@@ -15,7 +15,7 @@
     {"name": "barrel_6", "type": "barrel", "pos": [0.017, 0.052, -0.1], "accepts": ["barrel"]},
     {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.036], "required": true},
     {"name": "ammo", "type": "ammo", "pos": [0, 0.035, 0], "required": true},
-    {"name": "action", "type": "action", "pos": [0.03, 0.0245, 0.035], "required": true},
+    {"name": "action", "type": "action", "pos": [0.03, 0.0245, 0.035], "points": {"under": [0, 0, 0.017], "front": [0, 0.012, -0.1]}, "required": true},
     {"name": "utility", "type": "utility", "pos": [0.032, 0.035, -0.048]},
     {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.1]},
     {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0497, 0.02]},

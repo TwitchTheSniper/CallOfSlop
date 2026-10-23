@@ -32,7 +32,7 @@ public static class PartFile
 
     private static readonly string[] Keys =
     [
-        "format", "name", "category", "rarity", "flavor", "author", "mount", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
+        "format", "name", "category", "rarity", "flavor", "author", "mount", "placement", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
         "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
@@ -117,6 +117,14 @@ public static class PartFile
             part.Author = WeaponFile.Text(au, $"{where}: \"author\"");
         if (Get("mount") is { } mo)
             part.Mount = WeaponFile.Text(mo, $"{where}: \"mount\"").ToLowerInvariant();
+        if (Get("placement") is { } pl)
+        {
+            part.Placement = WeaponFile.Text(pl, $"{where}: \"placement\"").Trim().ToLowerInvariant();
+            if (!IsPointName(part.Placement))
+                throw new WeaponFileException($"{where}: \"placement\" should name one of its socket's points (\"under\", \"front\", or \"side\" for the socket's own position)");
+            if (part.Placement == "side")
+                part.Placement = null;
+        }
         if (Get("bores") is { } bo)
             part.Bores = WeaponFile.TextList(bo, $"{where}: \"bores\"").Select(x => x.ToLowerInvariant()).ToArray();
         if (Get("sizedFor") is { } sf)
@@ -507,7 +515,7 @@ public static class PartFile
     {
         string? name = null, type = null;
         var s = new PartSocket { Name = "", Type = "" };
-        foreach (var (k, v) in Props(e, where, "name", "type", "accepts", "pos", "rot", "required"))
+        foreach (var (k, v) in Props(e, where, "name", "type", "accepts", "pos", "points", "rot", "required"))
         {
             var at = $"{where}.{k}";
             switch (k)
@@ -520,6 +528,18 @@ public static class PartFile
                         : throw new WeaponFileException($"{at}: expected a list like [\"barrel\", \"splitter\"]");
                     break;
                 case "pos": s.Pos = Vec(v, at); break;
+                case "points":
+                    if (v.ValueKind != JsonValueKind.Object)
+                        throw new WeaponFileException($"{at}: expected named points like {{\"under\": [0, 0, 0.017], \"front\": [0, 0.03, -0.14]}}");
+                    foreach (var pt in v.EnumerateObject())
+                    {
+                        var key = pt.Name.Trim().ToLowerInvariant();
+                        if (!IsPointName(key) || key == "side")
+                            throw new WeaponFileException($"{at}: \"{pt.Name}\" isn't a point name (letters and _; \"side\" is the socket's own \"pos\")");
+                        if (!s.Points.TryAdd(key, Vec(pt.Value, $"{at}.{pt.Name}")))
+                            throw new WeaponFileException($"{at}: \"{pt.Name}\" is given twice");
+                    }
+                    break;
                 case "rot": s.RotDeg = Angles(v, at); break;
                 case "required": s.Required = (bool)WeaponFile.FromJson(v, typeof(bool), at); break;
             }
@@ -532,6 +552,9 @@ public static class PartFile
         s.Type = type;
         return s;
     }
+
+    /// <summary>A socket point or placement name: 1 to 16 lowercase letters and _.</summary>
+    private static bool IsPointName(string n) => n.Length is > 0 and <= 16 && n.All(ch => ch is (>= 'a' and <= 'z') or '_');
 
     /// <summary>Most model boxes one part may have (after fragments are expanded).</summary>
     public const int MaxBoxes = 64;

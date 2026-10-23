@@ -170,6 +170,7 @@ public static partial class SelfTest
             Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
             Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
             Section("Workbench actions", CheckWorkbenchActions); // SelfTestActions.cs: the fire type is an Action part: sockets, migration, fire timing per type, old builds' feel kept
+            Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
             Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
             Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
             Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
