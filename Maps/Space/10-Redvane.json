@@ -6,21 +6,6 @@
  "order": 610,
  "destructible": false,
  "maxPlayers": 16,
- "test": {
-  "shape": "ellipse",
-  "minProps": 260,
-  "minDecals": 150,
-  "symmetry": "turn",
-  "symmetryTolerance": 1.5,
-  "unpairedSpawns": 1,
-  "minTeamSpawns": 8,
-  "walkFairness": 0.12,
-  "botMatchSeconds": 8,
-  "botMatchPlayers": 8,
-  "hillWalks": "zone",
-  "propsInside": false,
-  "propsClear": false
- },
  "flagPool": "none",
  "skybox": {
   "preset": "desert",

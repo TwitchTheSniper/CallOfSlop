@@ -16,7 +16,8 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Some sections only | `--selftest-only "Save folder, Frenzy"`: comma-separated, case-insensitive, prefix match. `--selftest-list` prints the names |
 | Window smoke test | `--smoketest`: drives the real window, writes `smoke_*.bmp` and `[smoke]` log lines. Uses a throwaway save copy |
 | Quick host or join | `CallOfSlop host [port]`, `CallOfSlop join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
-| Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
+| Modding checks | `--check-map FILE`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
+| Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
 | Sections for a change | `python3 -I tools/ci/sections_for.py [BASE]` prints the `[tests: ...]` line for the files changed vs BASE (default origin/main); `tools/ci/merge_check.sh` builds and runs them (what the coordinator runs before committing a merge) |
@@ -55,6 +56,9 @@ Source/
               Building/Decal renderers, Mesh/, Sky/, FrenzyFx/
   UI/         Ui.cs (ImGui menus) + Ui*.cs per screen (UiWorkbench, UiLoadout, UiAppearance, UiAudioMixer, UiZombies...)
   Audio/      Audio*.cs (OpenAL, buses, EFX), AudioMix* (F8 mixer), Music*/MusicRenderer* (procedural hardbass), Synth*
+  MapKit/     the C# map kit (CallOfSlop.MapKit): JsonTree (ordered map-file JSON), Kit (ops + symmetry + objectives), Geometry,
+              Structures (railings/stairs/ramps/catwalks), Clusters (prop groups), Plan (PNG), MapChecks (the real-game report),
+              Generators.cs (IMapGenerator, registry, CLI), Generators/<Map>.cs (Twin Shard); docs/mapkit/MAPKIT.md
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.
@@ -63,7 +67,8 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod); Parts/Builds (64 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
-docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md
+docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
+                    docs/mapkit/MAPKIT.md (writing a map generator with the C# map kit)
 tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the zip's READ ME FIRST), MIGRATING.md,
                     parts/floaters.py (connectivity checker), props/gallery.py (the generated Dev prop galleries),
                     mapkit/ (new_map.py scaffold, check_branch.py pre-push checklist, plan_min.py plan PNGs),
@@ -88,7 +93,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Avoid per-frame and per-tick allocations; the self-tests measure allocations.
   - Music CPU must stay ≤1.5x the baseline.
 - **Self-tests.**
-  - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`). A new **map** adds no section: it gets a `test` block in its JSON (Maps/README.md, "Testing a map"), which the "Map contract" section and `--check-map` run; only checks the block can't express get a small section.
+  - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`).
   - Use short, seeded, scripted scenarios. No long bot matches.
   - Remove temporary or diagnostic test code before finishing.
   - **A branch that adds or edits a map, prop or decal always runs the all-maps sections** before its final push and
@@ -123,6 +128,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Windows-only checks.** CPU-time tick checks only measure on Windows (`SelfTestTiming.Available`), so some failures only show up with `[windows ci]`. That includes GC pauses on big maps, stuck-spot counts and tick work.
 - **Nav graph building must stay deterministic.** It builds from an as-built copy of the map. Destruction patches are reset when a map is restored. "Nav determinism" tests this, and "Nav edge walks" walks risky edges with the real mover.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
+- **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**
   - Parts must form one connected piece, which the "Model connectivity" section and `tools/parts/floaters.py` check.
   - Box tags: `"irons"` draws a box only with a receiver fitted and no optic; `"with:SOCKET"` draws a box only while that socket holds a part.

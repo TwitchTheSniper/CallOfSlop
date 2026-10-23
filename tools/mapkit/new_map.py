@@ -16,9 +16,8 @@ and prints: the registry line to add to the kit's generator registry, the `order
 (Space: 600 + NN), the reminder to fill the map's test block / self-test section, the `[tests: ...]` line the branch's
 commits should carry, and how to produce the JSON (`CallOfSlop --gen-map "<Name>"`, or the Python script).
 
-Nothing here needs the kit to exist yet: the C# template compiles against the kit's interface as the coordinator
-described it (IMapGenerator with Name, Pack, Number, Build(MapKit kit)); if the interface differs when it lands, fix
-the one template below, not every generator. Existing files are never overwritten without --force.
+The C# template compiles against the kit (Source/MapKit: IMapGenerator with Name, Pack, Number and Build(Kit kit);
+docs/mapkit/MAPKIT.md); if the kit's API changes, fix the one template below, not every generator. Existing files are never overwritten without --force.
 """
 from __future__ import annotations
 
@@ -92,8 +91,9 @@ CS_TEMPLATE = '''namespace CallOfSlop.MapKit.Generators;
 
 /// <summary>
 /// {pack} {nn} {name}: {theme}
-/// Generated map: `CallOfSlop --gen-map "{name}"` writes Maps/{pack}/{nn}-{slug}.json (run it after every change and
-/// commit the JSON; the "Map kit" self-test checks the committed file matches). Design notes: Maps/{pack}/{nn}-{slug}.md.
+/// Generated map: `CallOfSlop --gen-map "{name}"` writes Maps/{pack}/{nn}-{slug}.json, loads it back and prints the
+/// MapChecks report (run it after every change and commit the JSON; the "Map kit" self-test checks the committed file
+/// matches). Design notes: Maps/{pack}/{nn}-{slug}.md. The kit: docs/mapkit/MAPKIT.md.
 /// </summary>
 public sealed class {slug} : IMapGenerator
 {{
@@ -101,37 +101,36 @@ public sealed class {slug} : IMapGenerator
     public string Pack => "{pack}";
     public int Number => {number};
 
-    public void Build(MapKit kit)
+    public void Build(Kit kit)
     {{
-        // 1. Header: size, order ({order} is the pack's convention: see new_map.py), players, sky.
-        kit.Header(
-            description: "{theme}",
-            order: {order},
-            halfX: 40, halfZ: 30,
-            maxPlayers: 12);
+        // 1. Header: description, order ({order} is the pack's convention: see new_map.py), players, size, sky.
+        kit.Describe("{theme}", order: {order}, maxPlayers: 12);
+        kit.Size(40, 30); // a rectangle; a shaped map calls kit.Boundary(Geometry.Ellipse(...) or FromHalf(...), "smooth", Kit.Edge("wall", height: 6))
+        kit.Skybox("day");
 
-        // 2. Shape and floor. Replace with the map's outline (kit.Boundary(...)) when it isn't a rectangle.
-        kit.Ground(0.30f, 0.31f, 0.33f);
-        kit.Perimeter(height: 4f, 0.45f, 0.47f, 0.5f);
+        // 2. The floor and the edge.
+        kit.Ground("#4d4f54");
+        kit.Perimeter(4, "#737880");
 
-        // 3. Layout: lanes, cover, levels. Build one half and let the kit turn or mirror it (kit.Symmetry).
-        // kit.Symmetry(Symmetry.Turn180);
-        // kit.Block(x0, y0, z0, x1, y1, z1, colour);
-
-        // 4. Objectives: hills along the symmetry axis, flags at the far ends, team spawns behind cover.
-        // kit.Hill(0, 0, 0, radius: 5);
-        // kit.Flag(Team.Blue, -32, 0, 0);
-        // kit.TeamSpawn(Team.Blue, -34, 0, -8);
-
-        // 5. Dressing: props (Props/, and this pack's own), decals (Maps/{pack}/Decals/{slug}/), clutter.
-        // kit.Prop("Wooden Crate", 4, 6, yaw: 90);
-        // kit.Decal("{slug_lower}_emblem", 0, 0, rotation: 0);
+        // 3. Layout: lanes, cover, levels. Build Blue's half inside Symmetric(); the kit adds Red's twin of every op,
+        //    spawn, hill and flag (Symmetry.Turn180, MirrorX or MirrorZ).
+        kit.Symmetric(Symmetry.Turn180, () =>
+        {{
+            // kit.Block(-20, 0, -6, -14, 2.2, -4, "#80828a");
+            // Structures.Stairs(kit, -14, -5, 0, 2.2, 1, 0, width: 1.6);
+            // 4. Objectives: hills along the symmetry axis (a hill at the centre stays single), the flag and spawns behind cover.
+            // kit.Hill(-20, 0, 5);
+            // kit.Flag(-32, 0);
+            // kit.Spawn(0, -34, -8);
+            // 5. Dressing: props (Props/, and this pack's own), decals (Maps/{pack}/Decals/{slug}/), clusters.
+            // kit.Prop("Wooden Crate", -10, 4, yaw: 90);
+            // kit.Decal("{slug_lower}_emblem", -30, 0, size: 3);
+            // Clusters.CargoStack(kit, -24, 6, 0);
+        }});
+        kit.Hill(0, 0, 5);
 
         // 6. Nav last: waypoints see everything built before them.
-        kit.AutoWaypoints(spacing: 6);
-
-        // 7. The map's test block (what the "Map kit" self-test checks for this map beyond the all-maps rules):
-        //    kit.Test(t => {{ t.FairWalks(tolerance: 0.1f); t.Symmetric(); t.ReachEverySpawn(); t.ShortBotMatch(seconds: 12); }});
+        kit.AutoWaypoints(6);
     }}
 }}
 '''
@@ -342,14 +341,14 @@ def main(argv: list[str]) -> int:
     if use_python:
         print(f"  1. Fill in build() in {generator}, then `{gen_cmd}` writes Maps/{pack}/{nn}-{slug}.json.")
     else:
-        print(f"  1. Fill in Build() in {generator} and register it: add to the kit's generator registry (Source/MapKit) the line")
+        print(f"  1. Fill in Build() in {generator} and register it: add to GeneratorRegistry.All (Source/MapKit/Generators.cs) the line")
         print(f"         new Generators.{slug}(),")
-        print(f"     then `{gen_cmd}` writes Maps/{pack}/{nn}-{slug}.json. Commit the JSON too: the game loads the file, not the class.")
+        print(f"     then `{gen_cmd}` writes Maps/{pack}/{nn}-{slug}.json, loads it back and prints the MapChecks report (objectives,")
+        print(f"     horizon fade, nav reach, fair walks, stairs, counts). Commit the JSON too: the game loads the file, not the class.")
     print(f"  2. `order` is {order} ({pack}'s convention; the map select sorts by it). Keep it unless the pack says otherwise.")
-    print(f"  3. Fill the map's test block (kit.Test in the generator, or a section in Source/App/SelfTest*.cs when the pack has one):")
-    print("     fair walks to every hill and flag, symmetry, every spawn reachable, a short seeded bot match. The all-maps rules")
-    print("     (Map horizons: fog within 22 m of the floor; Map objectives: hills clear of geometry; Stairs; Nav) run on main only,")
-    print("     so run them yourself before pushing.")
+    print(f"  3. The map's own checks beyond MapChecks (a short seeded bot match, what its areas must have) go in a section in")
+    print("     Source/App/SelfTest*.cs when the pack has one. The all-maps rules (Map horizons: fog within 22 m of the floor;")
+    print("     Map objectives: hills clear of geometry; Stairs; Nav) run on main only, so run them yourself before pushing.")
     print(f"  4. Fill Maps/{pack}/{nn}-{slug}.md (theme, shape, layout, lanes, fairness, counts) and add the map to Maps/{pack}/pack.json's description.")
     print(f"  5. Check the branch: `python3 -I tools/mapkit/check_branch.py` (changed maps, --check-map, props on a gallery, name clashes).")
     print("  6. Every commit on the branch carries this line (CI then runs only these sections; main runs everything):")

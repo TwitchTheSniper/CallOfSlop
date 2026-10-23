@@ -68,9 +68,7 @@
 
 ## In progress
 
-- **feat/mapkit-tests** (map development tooling, to merge after the release): the "Map contract" section (`Source/App/SelfTestMapContract.cs`) checks every map against its file's optional `test` block (Maps/README.md, "Testing a map") and replaced the Space pack's six bespoke sections (Space: Stratos Station, refinery and processor, arboretum and reactor, vault and bazaar, shipyard and outpost, gravity maps; those names are gone from `--selftest-list`, only "Space: gravity physics" remains). A new map gets a `test` block, not a section; `--check-map FILE` / `--check-maps DIR` run the same checks on files and print each result. The Space generators (`tools/space/*.py`) don't write the `test` block yet: re-generating a map drops it until they do (the block is inserted after `"maxPlayers"`, json indent 1).
-
-Otherwise nothing. All agents finished and every branch is merged. A weekly scheduled task (Mondays, 8:51 Chicago time) reminds the user about the Foxhole-style sandbox idea; see the project doc `claude/ideas-backlog.md`.
+Nothing. All agents finished and every branch is merged. A weekly scheduled task (Mondays, 8:51 Chicago time) reminds the user about the Foxhole-style sandbox idea; see the project doc `claude/ideas-backlog.md`.
 
 ## Open bugs and loose ends
 
@@ -97,7 +95,6 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
 - "Maps" tick work on Main Street: one 9.6 ms server tick (limit 8 ms; no JIT, no GC) on Windows CI, run 40012259653 on 763445c (2026-10-23); passed on rerun. If it recurs, suspect the attachments branch's bot hearing (loudness) or the gravity-zone field lookup.
 - "Matches" on Keelhaul Yard: "4 player(s) below the floor" once in the agent container (2026-10-23, fix/test-range-qol, unseeded bot match on the gravity-zone map); passed on rerun.
-- "Space: gravity maps" (now the "Map contract" bot match on Twin Shard): "3 bots barely moved in a KingOfTheHill match" on main's Linux run 40035032503 (2026-10-23). The seeded 12 s match is the same every run on one machine but not across machines (float differences); the map's `test` block allows 4 stuck bots since.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
 
 Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).

@@ -30,7 +30,7 @@ public static partial class SelfTest
         ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x8a64c7d3u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ad80326u), ("Dev/PhysicsTest.json", 0x476984bcu),
         ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0x71ea278bu),
-        ("Dev/PropGallery3.json", 0xd5277ab0u), ("Dev/AnimatedProps.json", 0x6833679du), ("Dev/MeshTest.json", 0xb7a01a63u),
+        ("Dev/PropGallery3.json", 0xd5277ab0u), ("Dev/AnimatedProps.json", 0xa6ffc46bu), ("Dev/MeshTest.json", 0xb7a01a63u),
         ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x5fbf936fu), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 

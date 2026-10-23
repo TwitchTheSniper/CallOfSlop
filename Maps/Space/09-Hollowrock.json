@@ -7,33 +7,6 @@
  "destructible": false,
  "fallKill": -4.0,
  "maxPlayers": 16,
- "test": {
-  "shape": "smooth",
-  "minProps": 220,
-  "minDecals": 150,
-  "symmetry": "turn",
-  "symmetryTolerance": 1.5,
-  "unpairedSpawns": 1,
-  "minTeamSpawns": 8,
-  "walkFairness": 0.12,
-  "void": false,
-  "fallKill": {
-   "drop": [
-    -24.0,
-    2.0,
-    -10.0
-   ],
-   "safe": [
-    -38.0,
-    -2.5,
-    8.0
-   ]
-  },
-  "botMatchSeconds": 8,
-  "botMatchPlayers": 8,
-  "hillWalks": "zone",
-  "propsClear": false
- },
  "flagPool": "none",
  "skybox": {
   "preset": "night",

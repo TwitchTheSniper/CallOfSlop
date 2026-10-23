@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Writes the Space pack's gravity-yard props (Props/Space/Gravity/): the salvage and gravity-plating set used by Keelhaul Yard
-and Twin Shard (tools/space/keelhaul.py, tools/space/twinshard.py). All original: an invented breaker's yard.
+and Twin Shard (tools/space/keelhaul.py; Twin Shard is a C# generator, Source/MapKit/Generators/TwinShard.cs). All original: an invented breaker's yard.
 
     python3 tools/space/gravity_props.py          (run from the repository root)
 """

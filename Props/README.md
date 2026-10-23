@@ -79,6 +79,32 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 
 **Round things:** a box and the same box turned 45 degrees makes an 8-pointed star, not a cylinder. For an octagon `d` across, use four boxes `d x h x 0.414d` turned 0, 45, 90 and 135 degrees (that's how the drums, cones and the hydrant are made). Lying down, turn them with `pitch` (along X) or `roll` (along Z).
 
+### Prefabs: a prop made of other props
+
+A part can place a whole other prop instead of a box: `{ "use": "<Prop Name>", "pos": [x, y, z], "rotation": [pitch, yaw, roll], "scale": s }`. The used prop's parts are copied in, moved, turned and scaled when the file loads, so the loaded prop is flat (the renderer and the physics never see the composition) and the part budget (128) counts the copied parts. `pos` and `rotation` default to zero, `scale` to 1 (0.1 to 4). A prop whose own parts are turned can only be used with a yaw (pitch or roll on the use would need a combined rotation). Prefabs may use other prefabs, in any file order; a prefab that uses itself round a chain is refused with the chain in the message. A pack prefab (`Maps/<Pack>/Props`) can use the props of its own pack folder only.
+
+A solid prefab's default collider is the union of the used props' colliders, turned with them (at most 8; give it `"collider"` yourself for more), so people still walk between the pieces. Its `scatter`, `breakable` and `flag` blocks are its own: a breakable used prop doesn't break inside a prefab.
+
+```json
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Landing Pad Set",
+  "category": "Space",
+  "description": "Two landing beacons, a cargo pod and a supply case round a pad rim: one piece of pad dressing.",
+  "collision": "solid",
+  "parts": [
+    { "use": "Landing Beacon", "pos": [-3.2, 0, 0] },
+    { "use": "Landing Beacon", "pos": [3.2, 0, 0] },
+    { "use": "Station Cargo Pod", "pos": [0, 0, -2.6], "rotation": [0, 90, 0] },
+    { "use": "Station Supply Case", "pos": [1.4, 0, 2.4], "yaw": 20, "scale": 1.1 },
+    { "use": "Deck Floor Light", "pos": [-3.2, 0, 3.2] },
+    { "use": "Deck Floor Light", "pos": [3.2, 0, 3.2] }
+  ]
+}
+```
+
+That file is `Props/Space/Prefabs/LandingPadSet.json` (category Space, so the generated Space Props gallery shows it); the map kit's generators (docs/mapkit/MAPKIT.md) and the Space maps' hand-built landing pads use the same pieces. A map generator that places the same group of props again and again is the sign that it should be a prefab.
+
 ### Scatter hints
 
 | Field | Default | Meaning |

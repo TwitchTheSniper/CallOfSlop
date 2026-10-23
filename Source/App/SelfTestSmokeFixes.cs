@@ -14,81 +14,73 @@ public static partial class SelfTest
     {
         var shaped = 0;
         foreach (var m in Maps.All)
-            if (MapHorizonCheck(m))
-                shaped++;
+        {
+            if (m.Boundary is not { } b)
+            {
+                // No boundary (every Legacy map: the old Classic, Collision Point and High Ground packs): exactly the fog maps always had.
+                var (start, end) = m.PointGravity != null ? (400f, 0f) : m.Size switch // (a planet: no fog in space, MapPlanet.cs)
+                {
+                    MapSize.Large => (70f, m.FarPlane * 0.9f),
+                    MapSize.Medium => (90f, 260f),
+                    _ => (400f, 0f),
+                };
+                if (m.FogStart != start || m.FogEnd != end)
+                    Fail($"{m.Name}: fog {m.FogStart:0.#}-{m.FogEnd:0.#} m, was {start:0.#}-{end:0.#} m (a map without a boundary changed its look)");
+                var old = m.Skybox is { } sky ? sky.Light() : Lighting.Default;
+                if (m.OuterFog != Vector4.Zero || m.Light != old)
+                    Fail($"{m.Name}: light changed (outer fog {m.OuterFog}) on a map without a boundary");
+                continue;
+            }
+            shaped++;
+            // Fog must reach its full strength by the far plane, where the far ground is cut off, so the cut never shows.
+            if (!(m.FogEnd > m.FogStart) || m.FogEnd > m.FarPlane)
+                Fail($"{m.Name}: shaped map with fog {m.FogStart:0.#}-{m.FogEnd:0.#} m (needs start < end <= far plane {m.FarPlane:0} m)");
+            // Small shaped maps: nothing inside the outline is fogged.
+            var across = 0f;
+            foreach (var p in b.Outline)
+            foreach (var q in b.Outline)
+                across = MathF.Max(across, Vector2.Distance(p, q));
+            if (m.Size == MapSize.Small && m.FogStart < across)
+                Fail($"{m.Name}: fog starts at {m.FogStart:0} m, inside the {across:0} m wide playable area");
+            if (m.HasTerrain)
+                continue; // terrain maps: the land itself runs past the outline (shaded darker)
+            if (m.FallKillY != null)
+                continue; // void maps (Space pack): no ground on purpose, the sky image is the view below
+            // Flat shaped maps: the floor plus a far ground covering the far plane's reach from anywhere inside the outline.
+            var floor = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary floor");
+            var far = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary far ground");
+            if (floor == null || far?.Mesh == null)
+            {
+                Fail($"{m.Name}: shaped flat map without {(floor == null ? "a boundary floor" : "a far ground")} (the view past the edge would be empty)");
+                continue;
+            }
+            var bb = far.Mesh.Bounds;
+            Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+            for (var c = 0; c < 8; c++)
+            {
+                var corner = new Vector3((c & 1) != 0 ? bb.Max.X : bb.Min.X, (c & 2) != 0 ? bb.Max.Y : bb.Min.Y, (c & 4) != 0 ? bb.Max.Z : bb.Min.Z);
+                var w = Vector3.Transform(corner, far.Transform);
+                lo = Vector3.Min(lo, w);
+                hi = Vector3.Max(hi, w);
+            }
+            var reach = m.FarPlane;
+            if (lo.X > b.Min.X - reach || lo.Z > b.Min.Y - reach || hi.X < b.Max.X + reach || hi.Z < b.Max.Y + reach)
+                Fail($"{m.Name}: far ground covers x {lo.X:0}..{hi.X:0}, z {lo.Z:0}..{hi.Z:0}; needs the outline plus the far plane ({reach:0} m) on every side");
+            if (hi.Y > 0.001f || hi.Y < -1f)
+                Fail($"{m.Name}: far ground top at y {hi.Y:0.00} (should sit just under the floor)");
+            if (far.Color.X + far.Color.Y + far.Color.Z <= 0.01f)
+                Fail($"{m.Name}: far ground is black");
+            var worst = CheckFarGroundHorizon(m, b, far.Color, hi.Y);
+            Line($"{m.Name}: {b.Spec.Shape} outline {across:0} m across ({m.Size}), far ground {hi.X - lo.X:0} x {hi.Z - lo.Z:0} m, "
+                 + $"fog {m.FogStart:0}-{m.FogEnd:0} m, horizon fade {m.OuterFog.Z:0}-{m.OuterFog.W:0} m from the centre, far plane {m.FarPlane:0} m, "
+                 + $"far ground vs sky horizon worst {worst:0.0000} over {SkySettings.PresetNames.Length} presets + flat sky");
+        }
         if (shaped == 0)
             Fail("no map has a boundary (the Cluttered pack should)");
         var carousel = Maps.All.FirstOrDefault(x => x.Name == "Carousel");
         if (carousel != null && (carousel.Size != MapSize.Small || !(carousel.FogEnd > carousel.FogStart)))
             Fail("Carousel: a small circle map without fog over its far ground (the smoke run's black void below the horizon)");
         Line($"{shaped} shaped maps have ground and fog past the outline; maps without a boundary keep their fog");
-    }
-
-    /// <summary>
-    /// One map's horizon checks (also run by the "Map contract" section and --check-map): fog past a boundary, the far
-    /// ground and its fade. Returns whether the map has a boundary.
-    /// </summary>
-    private static bool MapHorizonCheck(Map m)
-    {
-        if (m.Boundary is not { } b)
-        {
-            // No boundary (every Legacy map: the old Classic, Collision Point and High Ground packs): exactly the fog maps always had.
-            var (start, end) = m.PointGravity != null ? (400f, 0f) : m.Size switch // (a planet: no fog in space, MapPlanet.cs)
-            {
-                MapSize.Large => (70f, m.FarPlane * 0.9f),
-                MapSize.Medium => (90f, 260f),
-                _ => (400f, 0f),
-            };
-            if (m.FogStart != start || m.FogEnd != end)
-                Fail($"{m.Name}: fog {m.FogStart:0.#}-{m.FogEnd:0.#} m, was {start:0.#}-{end:0.#} m (a map without a boundary changed its look)");
-            var old = m.Skybox is { } sky ? sky.Light() : Lighting.Default;
-            if (m.OuterFog != Vector4.Zero || m.Light != old)
-                Fail($"{m.Name}: light changed (outer fog {m.OuterFog}) on a map without a boundary");
-            return false;
-        }
-        // Fog must reach its full strength by the far plane, where the far ground is cut off, so the cut never shows.
-        if (!(m.FogEnd > m.FogStart) || m.FogEnd > m.FarPlane)
-            Fail($"{m.Name}: shaped map with fog {m.FogStart:0.#}-{m.FogEnd:0.#} m (needs start < end <= far plane {m.FarPlane:0} m)");
-        // Small shaped maps: nothing inside the outline is fogged.
-        var across = 0f;
-        foreach (var p in b.Outline)
-        foreach (var q in b.Outline)
-            across = MathF.Max(across, Vector2.Distance(p, q));
-        if (m.Size == MapSize.Small && m.FogStart < across)
-            Fail($"{m.Name}: fog starts at {m.FogStart:0} m, inside the {across:0} m wide playable area");
-        if (m.HasTerrain)
-            return true; // terrain maps: the land itself runs past the outline (shaded darker)
-        if (m.FallKillY != null)
-            return true; // void maps (Space pack): no ground on purpose, the sky image is the view below
-        // Flat shaped maps: the floor plus a far ground covering the far plane's reach from anywhere inside the outline.
-        var floor = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary floor");
-        var far = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary far ground");
-        if (floor == null || far?.Mesh == null)
-        {
-            Fail($"{m.Name}: shaped flat map without {(floor == null ? "a boundary floor" : "a far ground")} (the view past the edge would be empty)");
-            return true;
-        }
-        var bb = far.Mesh.Bounds;
-        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
-        for (var c = 0; c < 8; c++)
-        {
-            var corner = new Vector3((c & 1) != 0 ? bb.Max.X : bb.Min.X, (c & 2) != 0 ? bb.Max.Y : bb.Min.Y, (c & 4) != 0 ? bb.Max.Z : bb.Min.Z);
-            var w = Vector3.Transform(corner, far.Transform);
-            lo = Vector3.Min(lo, w);
-            hi = Vector3.Max(hi, w);
-        }
-        var reach = m.FarPlane;
-        if (lo.X > b.Min.X - reach || lo.Z > b.Min.Y - reach || hi.X < b.Max.X + reach || hi.Z < b.Max.Y + reach)
-            Fail($"{m.Name}: far ground covers x {lo.X:0}..{hi.X:0}, z {lo.Z:0}..{hi.Z:0}; needs the outline plus the far plane ({reach:0} m) on every side");
-        if (hi.Y > 0.001f || hi.Y < -1f)
-            Fail($"{m.Name}: far ground top at y {hi.Y:0.00} (should sit just under the floor)");
-        if (far.Color.X + far.Color.Y + far.Color.Z <= 0.01f)
-            Fail($"{m.Name}: far ground is black");
-        var worst = CheckFarGroundHorizon(m, b, far.Color, hi.Y);
-        Line($"{m.Name}: {b.Spec.Shape} outline {across:0} m across ({m.Size}), far ground {hi.X - lo.X:0} x {hi.Z - lo.Z:0} m, "
-             + $"fog {m.FogStart:0}-{m.FogEnd:0} m, horizon fade {m.OuterFog.Z:0}-{m.OuterFog.W:0} m from the centre, far plane {m.FarPlane:0} m, "
-             + $"far ground vs sky horizon worst {worst:0.0000} over {SkySettings.PresetNames.Length} presets + flat sky");
-        return true;
     }
 
     /// <summary>
@@ -186,58 +178,19 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The per-direction horizon fade (<see cref="Map.OuterFogStarts"/>): it never touches the floor (every outline point
-    /// pushed out by the floor margin in any direction stays unfaded), and it starts close past the floor on every side, not
-    /// at the farthest point's radius (Old Town, twice as wide as deep, had a band of dark far ground past its short sides).
+    /// The per-direction horizon fade (<see cref="Map.OuterFogStarts"/>): it never touches the floor and it starts close
+    /// past the floor on every side (Old Town, twice as wide as deep, had a band of dark far ground past its short sides).
+    /// The rules live in <see cref="MapKit.MapChecks.HorizonFade"/>, so a generated map is checked the same way before
+    /// it is committed.
     /// </summary>
     private static void CheckOuterStarts(Map m, MapBoundary b, in LightSetup light, Vector2 c)
     {
-        var margin = MathF.Min(b.Spec.GroundMargin, 64f);
+        var fade = MapKit.MapChecks.HorizonFade(m, light);
         const int n = Map.OuterFogDirections;
-        var reach = new float[n]; // the floor's radial extent near each direction
-        var inside = 0;
-        for (var s = 0; s < b.Outline.Length; s++)
-        {
-            var a0 = b.Outline[s];
-            var a1 = b.Outline[(s + 1) % b.Outline.Length];
-            var pieces = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(a0, a1)));
-            for (var k = 0; k < pieces; k++)
-            {
-                var p = Vector2.Lerp(a0, a1, k / (float)pieces);
-                for (var e = 0; e < 8; e++)
-                {
-                    var q = p + new Vector2(MathF.Cos(e * MathF.Tau / 8), MathF.Sin(e * MathF.Tau / 8)) * margin;
-                    var d = q - c;
-                    if (Lighting.OuterStart(light, d) < d.Length() - 1e-3f && inside++ == 0)
-                        Fail($"{m.Name}: the horizon fade starts {Lighting.OuterStart(light, d):0.0} m out towards ({q.X:0},{q.Y:0}), inside the floor ({d.Length():0.0} m)");
-                }
-                var pd = p - c;
-                var ang = MathF.Atan2(pd.Y, pd.X) * (n / MathF.Tau);
-                var j = (int)MathF.Round(ang < 0 ? ang + n : ang) % n;
-                reach[j] = MathF.Max(reach[j], pd.Length() + margin);
-            }
-        }
-        var worst = 0f;
-        var worstAt = 0;
-        for (var i = 0; i < n; i++)
-        {
-            if (reach[i] <= 0)
-                continue;
-            var band = light.OuterStarts![i] - reach[i];
-            if (band > worst)
-                (worst, worstAt) = (band, i);
-        }
-        // Outlines without deep notches (a notch's far ground has to wait for the floor on both sides of it) must fade
-        // close past the floor on every side.
-        var radii = b.Outline.Select(p => Vector2.Distance(p, c)).ToArray();
-        var notched = radii.Min() < 0.45f * radii.Max();
-        const float limit = 22f;
-        Line($"{m.Name}: horizon fade starts {light.OuterStarts!.Min():0}-{light.OuterStarts!.Max():0} m from the centre, at most {worst:0.0} m past the floor "
-             + $"(direction {worstAt}{(notched ? ", notched outline" : "")}); the farthest point's radius would be {light.OuterFog.Z:0} m");
-        if (!notched && worst > limit)
-            Fail($"{m.Name}: the horizon fade starts {worst:0.0} m past the floor in direction {worstAt} (max {limit:0}): a band of unfaded far ground shows there");
-        if (light.OuterStarts!.Max() > light.OuterFog.Z + 1e-3f)
-            Fail($"{m.Name}: a horizon fade start ({light.OuterStarts!.Max():0.0} m) is past the farthest point's radius ({light.OuterFog.Z:0.0} m)");
+        Line($"{m.Name}: horizon fade starts {light.OuterStarts!.Min():0}-{light.OuterStarts!.Max():0} m from the centre, at most {fade.Worst:0.0} m past the floor "
+             + $"(direction {fade.WorstAt}{(fade.Notched ? ", notched outline" : "")}); the farthest point's radius would be {light.OuterFog.Z:0} m");
+        foreach (var f in fade.Failures)
+            Fail($"{m.Name}: {f}");
         if (n % 4 != 0 || !Lighting.Glsl.Contains($"uniform vec4 uOuterR[{n / 4}];") || !Lighting.Glsl.Contains($"{n}.0 / 6.28318531") || !Lighting.Glsl.Contains($"% {n};"))
             Fail($"the shader's uOuterR array isn't {n} radii long (Map.OuterFogDirections)");
     }

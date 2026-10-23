@@ -264,8 +264,6 @@ public static partial class MapFile
             sb.Append(",\n  \"movers\": ").Append(MoversToJson(m.Movers));
         if (m.Zombies is { } zombies)
             sb.Append(",\n  \"zombies\": ").Append(zombies.Raw); // written back as it was read (MapZombies.cs)
-        if (m.TestSpec is { } test)
-            sb.Append(",\n  \"test\": ").Append(test.Raw); // written back as it was read (MapFile.Test.cs)
         sb.Append("\n}\n");
         return sb.ToString();
     }
@@ -443,8 +441,6 @@ public static partial class MapFile
             }
             if (Prop(root, "zombies") is { ValueKind: not JsonValueKind.Null } zombies)
                 map.Zombies = ZombiesMap.Read(zombies, map, source); // the Zombies mode: areas, doors, windows, buyables (MapZombies.cs)
-            if (Prop(root, MapTestSpec.Key) is { ValueKind: not JsonValueKind.Null } test)
-                map.TestSpec = MapTestSpec.Parse(test, source); // what the "Map contract" self-test checks here (MapFile.Test.cs); not fingerprinted
             MapObjectiveJson.Read(root, map, source);
             map.CheckInsideBoundary(source);
             map.FinishDestruction(); // the destructible chunks' support graph (MapDestruction.Map.cs; no-op without)

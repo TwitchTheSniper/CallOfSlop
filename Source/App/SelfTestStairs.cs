@@ -107,6 +107,31 @@ public static partial class SelfTest
         Line("::notice title=Stairs (results)::" + summary.Replace("%", "%25"));
     }
 
+    /// <summary>
+    /// The stairs audit for one map, for the map kit's <see cref="MapKit.MapChecks"/>: every flight's headroom, risers,
+    /// width, landings and walks, as problems (empty when all is well). The caller's map stays current.
+    /// </summary>
+    internal static List<string> StairProblems(Map m, out int flights)
+    {
+        var previousMover = World.Mover;
+        var previousMap = World.Map;
+        var problems = new List<string>();
+        var seen = new HashSet<ulong>();
+        int walked = 0;
+        flights = 0;
+        var worst = float.MaxValue;
+        try
+        {
+            AuditMapStairs(m, m.Name, problems, seen, ref flights, ref walked, ref worst, new Dictionary<string, (int Flights, int Bad)>(), m.Pack?.Name ?? "?");
+        }
+        finally
+        {
+            World.Mover = previousMover;
+            World.SetMap(previousMap);
+        }
+        return problems;
+    }
+
     /// <summary>Finds and checks every flight on one map (and, on maps with caves, the tunnel paths' headroom).</summary>
     private static void AuditMapStairs(Map m, string label, List<string> problems, HashSet<ulong> seen, ref int flights, ref int walked,
         ref float worst, Dictionary<string, (int Flights, int Bad)> perPack, string pack)

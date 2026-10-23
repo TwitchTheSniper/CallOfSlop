@@ -1,0 +1,36 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Landing Pad Set",
+ "category": "Space",
+ "description": "Two landing beacons, a cargo pod and a supply case round a pad rim: one piece of pad dressing (a prefab of Station props).",
+ "collision": "solid",
+ "parts": [
+  {
+   "use": "Landing Beacon",
+   "pos": [-3.2, 0, 0]
+  },
+  {
+   "use": "Landing Beacon",
+   "pos": [3.2, 0, 0]
+  },
+  {
+   "use": "Station Cargo Pod",
+   "pos": [0, 0, -2.6],
+   "rotation": [0, 90, 0]
+  },
+  {
+   "use": "Station Supply Case",
+   "pos": [1.4, 0, 2.4],
+   "yaw": 20,
+   "scale": 1.1
+  },
+  {
+   "use": "Deck Floor Light",
+   "pos": [-3.2, 0, 3.2]
+  },
+  {
+   "use": "Deck Floor Light",
+   "pos": [3.2, 0, 3.2]
+  }
+ ]
+}

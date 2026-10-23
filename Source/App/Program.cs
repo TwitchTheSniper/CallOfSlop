@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
-/// Modding helpers: --check-map FILE, --check-maps DIR, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -82,11 +82,15 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
             return Maps.Export(exportDir); // writes the loaded maps back out as map files
         if (args.SkipWhile(a => !a.Equals("--check-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkFile)
-            return Maps.Check(checkFile); // for map makers: does this file load, and does it pass the "Map contract" checks?
-        if (args.SkipWhile(a => !a.Equals("--check-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkDir)
-            return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
+            return Maps.Check(checkFile); // for map makers: does this file load?
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
+        if (args.SkipWhile(a => !a.Equals("--gen-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genName)
+            return MapKit.MapKitCli.GenMap(genName, args); // the map kit (Source/MapKit): run one generator, write and check its map
+        if (args.Any(a => a.Equals("--gen-maps", StringComparison.OrdinalIgnoreCase)))
+            return MapKit.MapKitCli.GenMaps(args); // every generator: which outputs differ from the committed files
+        if (args.SkipWhile(a => !a.Equals("--gen-plan", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var planMap, var planPng])
+            return MapKit.MapKitCli.GenPlan(planMap, planPng); // a top-down PNG plan of any map file
         if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)
             return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
         if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)

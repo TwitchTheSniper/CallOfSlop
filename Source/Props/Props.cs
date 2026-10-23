@@ -83,6 +83,22 @@ public static partial class Props
         return d[b.Length];
     }
 
+    /// <summary>The "name" of a prop file without loading it fully (for ordering prefab loads).</summary>
+    private static string PrefabName(string json)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json, new System.Text.Json.JsonDocumentOptions { CommentHandling = System.Text.Json.JsonCommentHandling.Skip, AllowTrailingCommas = true });
+            foreach (var p in doc.RootElement.EnumerateObject())
+                if (p.Name.Equals("name", StringComparison.OrdinalIgnoreCase) && p.Value.ValueKind == System.Text.Json.JsonValueKind.String)
+                    return p.Value.GetString()!.Trim();
+        }
+        catch (System.Text.Json.JsonException)
+        {
+        }
+        return "";
+    }
+
     /// <summary>
     /// Loads every *.json under <paramref name="folder"/> (subfolders are categories; README and other files are ignored).
     /// Bad files and duplicate names are skipped and described in <paramref name="errors"/>.
@@ -92,6 +108,9 @@ public static partial class Props
         var list = new List<PropDef>();
         if (Directory.Exists(folder))
         {
+            // Two passes: plain props first, then prefabs (props that "use" others), which may use each other in any
+            // file order; a prefab that uses itself round a chain is refused with the chain in the message.
+            var prefabs = new List<(string File, string Rel, string Category, string Json)>();
             foreach (var file in Directory.GetFiles(folder, "*.json", SearchOption.AllDirectories).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
             {
                 var rel = Path.GetRelativePath(folder, file);
@@ -101,10 +120,13 @@ public static partial class Props
                     continue; // Props/Flags holds the flag pool's designs, not props (FlagPool.cs)
                 try
                 {
-                    var def = PropFile.Load(File.ReadAllText(file), rel, category);
-                    if (list.FirstOrDefault(x => x.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase)) is { } dup)
-                        throw new PropFileException($"{rel}: another prop is already called '{def.Name}' ({dup.SourceFile})");
-                    list.Add(def);
+                    var json = File.ReadAllText(file);
+                    if (PropFile.UsesPrefabs(json))
+                    {
+                        prefabs.Add((file, rel, category, json));
+                        continue;
+                    }
+                    Add(PropFile.Load(json, rel, category), rel);
                 }
                 catch (Exception ex) when (ex is PropFileException or IOException or UnauthorizedAccessException)
                 {
@@ -112,6 +134,55 @@ public static partial class Props
                     Console.WriteLine($"[props] skipped: {ex.Message}");
                 }
             }
+            var visiting = new List<string>();
+            PropDef? Resolve(string name)
+            {
+                if (list.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } found)
+                    return found;
+                // Not loaded yet: a prefab further down the list, loaded now (recursively), unless we're already inside it.
+                foreach (var (file, rel, category, json) in prefabs)
+                {
+                    if (!PrefabName(json).Equals(name, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (visiting.Any(v => v.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                        throw new PropFileException($"{rel}: prop '{name}' uses itself through {string.Join(" -> ", visiting.Append(name))} (a prefab can't contain itself)");
+                    visiting.Add(name);
+                    try
+                    {
+                        var def = PropFile.Load(json, rel, category, Resolve);
+                        Add(def, rel);
+                        return def;
+                    }
+                    finally
+                    {
+                        visiting.RemoveAt(visiting.Count - 1);
+                    }
+                }
+                return null;
+            }
+            foreach (var (file, rel, category, json) in prefabs)
+            {
+                var name = PrefabName(json);
+                if (list.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && x.SourceFile == rel))
+                    continue; // loaded while resolving another prefab
+                try
+                {
+                    visiting.Clear();
+                    visiting.Add(name);
+                    Add(PropFile.Load(json, rel, category, Resolve), rel);
+                }
+                catch (PropFileException ex)
+                {
+                    errors.Add(ex.Message);
+                    Console.WriteLine($"[props] skipped: {ex.Message}");
+                }
+            }
+        }
+        void Add(PropDef def, string rel)
+        {
+            if (list.FirstOrDefault(x => x.Name.Equals(def.Name, StringComparison.OrdinalIgnoreCase)) is { } dup)
+                throw new PropFileException($"{rel}: another prop is already called '{def.Name}' ({dup.SourceFile})");
+            list.Add(def);
         }
         var sorted = list.OrderBy(p => p.Category, StringComparer.OrdinalIgnoreCase).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         for (var i = 0; i < sorted.Length; i++)
