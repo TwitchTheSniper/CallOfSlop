@@ -4,7 +4,6 @@
   "category": "muzzle",
   "rarity": "uncommon",
   "flavor": "Side vents keep the muzzle from wandering sideways.",
-  "bores": ["pistol", "rifle", "heavy", "shell"],
   "weight": 0.2,
   "muzzles": [[0, 0, -0.07]],
   "model": [

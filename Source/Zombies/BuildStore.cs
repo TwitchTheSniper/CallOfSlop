@@ -215,7 +215,7 @@ public static class BuilderExamples
         });
         Try(() =>
         {
-            var b = new WeaponBuild("Minigun", Need("Tactical Rifle Grip", find));
+            var b = new WeaponBuild("Minigun", Need("Rifle Grip", find));
             var r = b.Root!.Attach("receiver_1", Need("Hellwheel Rotary Receiver", find));
             for (var i = 1; i <= 6; i++)
                 r.Attach($"barrel_{i}", Need("Standard Barrel", find));

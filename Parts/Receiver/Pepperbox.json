@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Pepperbox Receiver",
+  "category": "receiver",
+  "rarity": "wonder",
+  "flavor": "A ring of pistol barrels that turns one notch per shot. Grandad's idea of a minigun.",
+  "weight": 0.9,
+  "receiver": {"action": "rotary", "class": "Pistol", "bore": "pistol", "soundOf": "Viper .45", "rpm": 900, "rpmPerBarrel": 150, "spoolTime": 0.3, "spoolStart": 0.5, "minBarrels": 2, "maxBarrels": 6},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0, 0.062, -0.1], "accepts": ["barrel"], "required": true},
+    {"name": "barrel_2", "type": "barrel", "pos": [-0.017, 0.052, -0.1], "accepts": ["barrel"], "required": true},
+    {"name": "barrel_3", "type": "barrel", "pos": [-0.017, 0.032, -0.1], "accepts": ["barrel"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0, 0.022, -0.1], "accepts": ["barrel"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [0.017, 0.032, -0.1], "accepts": ["barrel"]},
+    {"name": "barrel_6", "type": "barrel", "pos": [0.017, 0.052, -0.1], "accepts": ["barrel"]},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.036], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.035, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.032, 0.035, -0.048]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.1]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0497, 0.02]},
+    {"name": "amp", "type": "amp", "pos": [-0.031, 0.0497, 0.02]}
+  ],
+  "model": [
+    {"size": [0.06, 0.07, 0.16], "pos": [0, 0.035, 0.0], "color": "brass"},
+    {"size": [0.03, 0.014, 0.08], "pos": [0, 0.074, 0.004], "color": "black"},
+    {"size": [0.062, 0.01, 0.04], "pos": [0, 0.042, 0.07], "color": "accent"},
+    {"size": [0.06, 0.06, 0.02], "pos": [0, 0.042, -0.09], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 2.2},
+    {"stat": "reload", "set": 2.8}
+  ]
+}

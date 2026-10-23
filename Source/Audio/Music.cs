@@ -113,6 +113,9 @@ public sealed class MusicPlayer : IDisposable
     private readonly MasterLimiter _frenzyLimiter = new() { Ceiling = FrenzyLayer.LimiterCeiling };
     private bool _limiting;
 
+    /// <summary>The music limiter ran on the last block (the frenzy plays, or the mixer boosts the menu/lobby music).</summary>
+    public bool Limiting => _limiting;
+
     /// <summary>The lowest gain the frenzy limiter has applied since the frenzy started (1 = never limited).</summary>
     public float FrenzyLimiterMinGain => _frenzyLimiter.MinGain;
 
@@ -182,6 +185,7 @@ public sealed class MusicPlayer : IDisposable
         if (_meter)
             MeterBegin();
         var frames = output.Length / 2;
+        var boosted = false; // a deck plays with the mixer's menu/lobby level above 0 dB (this block or the last)
         for (var d = 0; d < _decks.Length; d++)
         {
             var deck = _decks[d];
@@ -195,6 +199,7 @@ public sealed class MusicPlayer : IDisposable
             var t0 = deck.Trim;
             var t1 = deck.Set == MusicSet.Menu ? MenuTrim : LobbyTrim;
             deck.Trim = t1;
+            boosted |= t0 > 1f || t1 > 1f;
             var s0 = g0 * t0;
             var s1 = g1 * t1;
             var dg = (s1 - s0) / frames;
@@ -232,7 +237,10 @@ public sealed class MusicPlayer : IDisposable
             a += da;
         }
         _appliedGain = target;
-        if (Frenzy.Active)
+        // The limiter also runs while the mixer boosts the menu or lobby music (up to +50 dB): the boosted bus is held
+        // under the ceiling by the limiter and its soft clipper instead of hard-clipping at full scale in Fill. With the
+        // built-in mix (0 dB) the menu and lobby music never reach it and stay bit-for-bit as before.
+        if (Frenzy.Active || boosted)
         {
             if (!_limiting)
             {
@@ -265,14 +273,14 @@ public sealed class MusicPlayer : IDisposable
     public float MenuTrim
     {
         get => Volatile.Read(ref _menuTrim);
-        set => Volatile.Write(ref _menuTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, 4f) : 1f);
+        set => Volatile.Write(ref _menuTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, AudioMixDefaults.MaxLevelGain) : 1f);
     }
 
     /// <summary>The mixer's lobby-music level (linear; 1 = as tuned).</summary>
     public float LobbyTrim
     {
         get => Volatile.Read(ref _lobbyTrim);
-        set => Volatile.Write(ref _lobbyTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, 4f) : 1f);
+        set => Volatile.Write(ref _lobbyTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, AudioMixDefaults.MaxLevelGain) : 1f);
     }
 
     /// <summary>The frenzy limiter's ceiling (the mixer's "Music limiter ceiling"; default <see cref="FrenzyLayer.LimiterCeiling"/>).</summary>

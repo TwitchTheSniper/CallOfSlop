@@ -18,12 +18,13 @@ public enum GameMode : byte
     Zombies, // co-op (1-4) against rounds of zombies, World at War style; only on maps with a "zombies" section (ZombiesMode.cs)
     LastManStanding, // one life each (the template mode, Dev-only: Source/Game/Modes/README.md)
     Coop, // co-op PvE missions against waves of enemy soldiers; only on maps with a mission (docs/pve/DESIGN.md)
+    TestRange, // free-for-all with no win condition: no score or time limit, the match never ends, the map stays
 }
 
 /// <summary>Names, limits and colours for the game modes: a thin front for <see cref="GameModeRegistry"/>, plus the shared team names and colours.</summary>
 public static class GameModes
 {
-    /// <summary>The player-versus-player modes (every map plays them). Zombies is separate: see <see cref="Every"/> and <see cref="ForMap"/>.</summary>
+    /// <summary>The classic player-versus-player match modes (every map plays them). Zombies, Co-op and Test Range are separate: see <see cref="Every"/> and <see cref="ForMap"/>.</summary>
     public static readonly GameMode[] All = [GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame];
 
     /// <summary>Every shipped mode, Zombies included (not the Dev-only ones: <see cref="GameModeRegistry.All"/> has those too).</summary>

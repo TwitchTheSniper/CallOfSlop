@@ -1,7 +1,11 @@
 // The weapon builder's registry (format call-of-slop-part-registry/1; see docs/zombies/WEAPON-BUILDER.md, "Making parts").
 // Socket types: what a part's "mount" and a socket's "type" may be. Add one here and it works in part files straight
 // away (a new utility rail, a bayonet lug...). The core types the rules in code use can't be removed.
-// Bores: the calibre classes receivers fire and bore-bound parts list.
+// Bores: the calibre classes receivers fire; feeds and ammo list the bores they hold. Barrels fit EVERY receiver: the
+// receiver's bore adapts them. "barrelScale" [width, height, length] sizes a barrel's model relative to how it is drawn
+// (barrels are drawn for rifles unless their file says "sizedFor"), "barrelStrength" scales the barrel's own stat
+// modifiers (1 = as written), "barrelPellets" lets barrels change the pellet count (shotguns only). A receiver file may
+// override the size with "barrelScale" in its "receiver" block (an autocannon's barrels are fatter still).
 // Categories: fixed in code; here each one gets its default mount (used when a part file has no "mount") and the name
 // the workbench shows.
 {
@@ -23,12 +27,12 @@
     {"name": "mod", "about": "Melee: a hilt's modifier sockets (nails, wraps, weights)."}
   ],
   "bores": [
-    {"name": "pistol", "about": "9 mm and friends."},
-    {"name": "rifle", "about": "5.56 and up to battle-rifle rounds."},
-    {"name": "heavy", "about": ".50 BMG and the chain guns."},
-    {"name": "shell", "about": "Shotgun shells."},
-    {"name": "launcher", "about": "Grenades, rockets, anything round that fits."},
-    {"name": "energy", "about": "Plasma cells and coil guns."}
+    {"name": "pistol", "about": "9 mm and friends.", "barrelScale": [0.8, 0.8, 0.7], "barrelStrength": 0.85},
+    {"name": "rifle", "about": "5.56 and up to battle-rifle rounds.", "barrelScale": [1, 1, 1], "barrelStrength": 1},
+    {"name": "heavy", "about": ".50 BMG and the chain guns.", "barrelScale": [1.35, 1.35, 1.3], "barrelStrength": 1.15},
+    {"name": "shell", "about": "Shotgun shells.", "barrelScale": [1.5, 1.5, 1], "barrelStrength": 1, "barrelPellets": true},
+    {"name": "launcher", "about": "Grenades, rockets, anything round that fits.", "barrelScale": [2.7, 2.7, 1.3], "barrelStrength": 0.5},
+    {"name": "energy", "about": "Plasma cells and coil guns.", "barrelScale": [1, 1, 1.2], "barrelStrength": 1}
   ],
   "categories": [
     {"name": "receiver", "mount": "receiver", "display": "Receiver"},

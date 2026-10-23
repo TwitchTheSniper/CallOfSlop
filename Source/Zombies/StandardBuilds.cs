@@ -22,9 +22,12 @@ public sealed class StandardBuild
 
     public string? SourceFile;
 
+    /// <summary>"chainFire" in the file: true = chain fire, false = volley, absent = the grip's default.</summary>
+    public bool? ChainFire;
+
     /// <summary>A fresh copy of the build (parts that no longer exist are dropped and listed).</summary>
     public WeaponBuild Build(Func<string, PartDef?>? find = null, List<string>? dropped = null) =>
-        WeaponBuild.Parse($"{Name}|volley|{Tree}", find ?? Parts.Find, dropped);
+        WeaponBuild.Parse($"{Name}|{(ChainFire is { } c ? c ? "rotate" : "volley" : "grip")}|{Tree}", find ?? Parts.Find, dropped);
 
     public bool IsMelee => Build().IsMelee;
 }
@@ -82,6 +85,7 @@ public static class StandardBuilds
             throw new WeaponFileException($"{source}: a build file is one JSON object {{ \"name\", \"tier\", \"build\", ... }}");
         string? name = null, tree = null, flavor = "";
         Rarity? tier = null;
+        bool? chain = null;
         var sources = Array.Empty<string>();
         foreach (var p in root.EnumerateObject())
         {
@@ -99,12 +103,20 @@ public static class StandardBuilds
                     break;
                 case "flavor": flavor = WeaponFile.Text(p.Value, at); break;
                 case "build": tree = WeaponFile.Text(p.Value, at).Trim(); break;
-                default: throw new WeaponFileException($"{source}: unknown key \"{p.Name}\". Build files know: format, name, tier, source, flavor, build");
+                case "chainFire":
+                    chain = p.Value.ValueKind switch
+                    {
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        _ => throw new WeaponFileException($"{at}: true (receivers fire in turn) or false (all together)"),
+                    };
+                    break;
+                default: throw new WeaponFileException($"{source}: unknown key \"{p.Name}\". Build files know: format, name, tier, source, flavor, build, chainFire");
             }
         }
         if (name == null || tree == null || tier == null)
             throw new WeaponFileException($"{source}: a build file needs \"name\", \"tier\" and \"build\"");
-        var b = new StandardBuild { Name = name, Tier = tier.Value, Sources = sources, Flavor = flavor, Tree = tree, SourceFile = source };
+        var b = new StandardBuild { Name = name, Tier = tier.Value, Sources = sources, Flavor = flavor, Tree = tree, SourceFile = source, ChainFire = chain };
         var dropped = new List<string>();
         WeaponBuild build;
         try

@@ -19,7 +19,9 @@
   "rarity": "uncommon",                       // common, uncommon, rare, epic, legendary, wonder
   "flavor": "A barrel with fins. The fins are mostly for show.",
   // "mount": "barrel",                       // the socket type it plugs into (default: the category's, Parts/_Registry.json)
-  "bores": ["pistol", "rifle"],               // calibres it works with (empty = any); bores are listed in the registry
+  // "bores": ["rifle"],                     // feeds and ammo: the calibres they hold (empty = any; bores are listed in the registry).
+                                              // Barrels and muzzle devices fit every receiver: no bores.
+  // "sizedFor": "rifle",                     // barrels: the bore class the model is drawn for (default rifle); the receiver resizes it
   "weight": 0.45,                             // kg
   "hand": [0, -0.03, -0.1],                   // where the off hand holds it when there's no foregrip
   "muzzles": [[0, 0, -0.24]],                 // barrels: where shots come out (several = a bundle)

@@ -102,10 +102,11 @@ public static partial class SelfTest
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
         // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs),
         // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
+        // TDM / KotH / CTF again when the nav build started checking risky links with the real mover (fix/map-stuck-spots, BotNavWalk.cs).
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB269F244E4FE3775),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x53346F4122D4CC97),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x0EDF29DF2B72A36A),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x2B74CFD49C25E46A),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x86DCD49BE2C8707B),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x947A787E71B72D3F),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x07254C84991E1BB7),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
         (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
@@ -148,7 +149,7 @@ public static partial class SelfTest
             (GameMode.FreeForAll, 0, typeof(FreeForAllModule)), (GameMode.TeamDeathmatch, 1, typeof(TeamDeathmatchModule)),
             (GameMode.KingOfTheHill, 2, typeof(KingOfTheHillModule)), (GameMode.CaptureTheFlag, 3, typeof(CaptureTheFlagModule)),
             (GameMode.GunGame, 4, typeof(GunGameModule)), (GameMode.Zombies, 5, typeof(ZombiesModule)), (GameMode.LastManStanding, 6, typeof(LastManStandingModule)),
-            (GameMode.Coop, 7, typeof(CoopModule)),
+            (GameMode.Coop, 7, typeof(CoopModule)), (GameMode.TestRange, 8, typeof(TestRangeModule)),
         };
         foreach (var (id, wire, type) in expected)
         {
@@ -159,7 +160,7 @@ public static partial class SelfTest
         }
         if (all.Select(m => m.Id).Distinct().Count() != all.Count)
             Fail("two modules share a mode id");
-        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop }))
+        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop, GameMode.TestRange }))
             Fail($"GameModes.Every changed: {string.Join(",", GameModes.Every)}");
         if (GameModeRegistry.Get((GameMode)200).Id != GameMode.FreeForAll || GameModeRegistry.IsKnown((GameMode)200))
             Fail("an unknown mode byte didn't fall back to free-for-all");
@@ -168,14 +169,15 @@ public static partial class SelfTest
             foreach (var text in new[] { m.Name, m.Short, m.Rules(), m.Rules(17), m.Description, m.MapWarning, m.ScoreUnit, m.ScoreboardColumns.First, m.ScoreboardColumns.Second })
                 if (text.Any(c => c > 126 || c < 32))
                     Fail($"{m.Name}: non-ASCII text '{text}'");
-        // Where modes show up: random map / a plain map -> the five PvP modes; Zombies Test -> Zombies and the Dev template too.
+        // Where modes show up: random map / a plain map -> the five PvP modes and Test Range; Zombies Test -> Zombies and the Dev template too.
         var plain = GameModes.ForMap(null);
         var courtyard = GameModes.ForMap(Maps.All[0]);
         var ztest = ZTestMap != null ? GameModes.ForMap(ZTestMap) : Array.Empty<GameMode>();
         ModeNote($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {Maps.All[0].Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
-        if (!plain.SequenceEqual(GameModes.All) || !courtyard.SequenceEqual(GameModes.All))
-            Fail("a plain map should offer exactly the five PvP modes");
-        if (ZTestMap != null && (!ztest.Contains(GameMode.Zombies) || !ztest.Contains(GameMode.LastManStanding) || ztest.Length != GameModes.All.Length + 2))
+        var plainWant = GameModes.All.Append(GameMode.TestRange).ToArray();
+        if (!plain.SequenceEqual(plainWant) || !courtyard.SequenceEqual(plainWant))
+            Fail("a plain map should offer exactly the five PvP modes and Test Range");
+        if (ZTestMap != null && (!ztest.Contains(GameMode.Zombies) || !ztest.Contains(GameMode.LastManStanding) || ztest.Length != plainWant.Length + 2))
             Fail("Zombies Test should offer Zombies and the Dev-only template on top of the PvP modes");
         if (!GameModes.Fits(GameMode.LastManStanding, Maps.All[0]) || GameModes.Fits(GameMode.Zombies, Maps.All[0]) || (ZTestMap != null && !GameModes.Fits(GameMode.Zombies, ZTestMap)))
             Fail("Fits is wrong for Zombies or the template");
@@ -200,6 +202,7 @@ public static partial class SelfTest
             (GameMode.Zombies, false, false, false, null, true, false, false, 0, "kills"),
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
             (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
+            (GameMode.TestRange, false, true, true, null, false, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {

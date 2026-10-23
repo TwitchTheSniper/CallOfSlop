@@ -4,7 +4,6 @@
   "category": "muzzle",
   "rarity": "uncommon",
   "flavor": "Ports on top push the muzzle down. Less climb.",
-  "bores": ["pistol", "rifle", "heavy", "shell"],
   "weight": 0.2,
   "muzzles": [[0, 0, -0.06]],
   "model": [

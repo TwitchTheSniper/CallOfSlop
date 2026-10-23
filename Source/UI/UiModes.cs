@@ -203,8 +203,11 @@ public sealed partial class Ui
         if (!mode.TeamBased && solo == null)
             return false;
         ImGui.PushFont(default, 24);
-        ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
-        ImGui.SameLine(0, 24 * _scale);
+        if (!mode.Endless) // (Test Range: no clock, the match never ends)
+        {
+            ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);
+            ImGui.SameLine(0, 24 * _scale);
+        }
         if (mode.TeamBased)
         {
             ImGuiSafe.TextColored(TeamRgba(0), $"BLUE {game.TeamScore[0]}");
@@ -231,8 +234,8 @@ public sealed partial class Ui
     private bool DrawModeScoreboard(Game game, float2 size, float2 pos)
     {
         var mode = game.Module;
-        if (mode is FreeForAllModule)
-            return false;
+        if (mode is FreeForAllModule or TestRangeModule)
+            return false; // the plain free-for-all scoreboard (kills and deaths)
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
         ImGui.SetNextWindowSize(new float2(MathF.Min(ScoreboardWidth * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))

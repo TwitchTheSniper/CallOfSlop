@@ -4,7 +4,6 @@
   "category": "barrel",
   "rarity": "common",
   "flavor": "Barely a barrel. Handy in a hallway, hopeless across a field.",
-  "bores": ["pistol", "rifle", "shell"],
   "weight": 0.15,
   "hand": [0, -0.03, -0.032],
   "muzzles": [[0, 0, -0.08]],

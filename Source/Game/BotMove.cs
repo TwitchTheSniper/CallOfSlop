@@ -189,6 +189,8 @@ public sealed partial class Game
         Vector3 aimAt;
         if (b.PathIdx >= b.PathLen)
         {
+            if (b.GoalTrapped && b.PathGraph == nav && !b.NeedPath)
+                return Vector3.Zero; // the goal is down a pit we couldn't climb out of: stop at its edge
             aimAt = goal;
             if (Flat(goal - pos) < 0.7f)
                 return Vector3.Zero;
@@ -196,13 +198,13 @@ public sealed partial class Game
         else
         {
             // Look-ahead: skip a node when the one after it is in plain, level, walkable view.
-            if (now >= b.NextShortcut && b.PathIdx + 1 < b.PathLen && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle | NavGraph.FlagDrop))
+            if (now >= b.NextShortcut && b.PathIdx + 1 < b.PathLen && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope))
             {
                 b.NextShortcut = now + 0.25;
                 var next = nav.Nodes[b.Path[b.PathIdx + 1]];
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
                 AllocProfile.Mark("bot: shortcut");
-                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && CanShortcut(pos, next))
+                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope) && CanShortcut(pos, next)) // (steep slopes: only the walked edges)
                     BotAdvance(b, nav);
                 AllocProfile.Mark("bot: steer");
             }
@@ -277,6 +279,9 @@ public sealed partial class Game
         var end = nav.Nearest(goal, needSight: false);
         if (start < 0 || end < 0)
             return;
+        b.GoalTrapped = nav.IsTrapped(end) && !nav.IsTrapped(start);
+        if (b.GoalTrapped)
+            end = NearestOpen(nav, goal); // a goal in a one-way spot (a pit): go as near as the main area gets, never in
         b.SearchGraph = nav;
         b.SearchNow = now;
         b.Hazard = MineHazard(nav); // nodes next to a landmine cost extra (GameMines.cs)
@@ -295,6 +300,20 @@ public sealed partial class Game
             if (Flat(n1 - p.Position) < Flat(n1 - n0) && CanShortcut(p.Position, n1))
                 BotAdvance(b, nav);
         }
+    }
+
+    /// <summary>The main-area node nearest <paramref name="p"/> (a rare linear scan: only for goals in one-way spots).</summary>
+    private static int NearestOpen(NavGraph nav, Vector3 p)
+    {
+        var best = -1;
+        var bestD = float.MaxValue;
+        foreach (var i in nav.MainNodes)
+        {
+            var d = Vector3.DistanceSquared(nav.Nodes[i], p);
+            if (d < bestD && (nav.NodeOff.Length == 0 || !nav.NodeOff[i]))
+                (bestD, best) = (d, i);
+        }
+        return best;
     }
 
     /// <summary>Simple separation: step away from bots closer than 1.2 m so doorways don't jam.</summary>
@@ -342,7 +361,10 @@ public sealed partial class Game
             return;
         }
         if (noProgress && moved >= 0.45f)
+        {
             b.SlopeStalls++;
+            b.SlopeStallAt = now;
+        }
         b.StuckCount++;
         b.StrafeDir = -b.StrafeDir;
         switch (b.StuckCount)
