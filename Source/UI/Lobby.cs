@@ -55,7 +55,7 @@ public sealed partial class Ui
         _portInput = s.Port;
         _serverNameInput = new ImInputString(33);
         ImGuiSafe.SetInput(_serverNameInput, s.ServerName);
-        _masterInput = new ImInputString(128);
+        _masterInput = new ImInputString(256);
         ImGuiSafe.SetInput(_masterInput, s.MasterServer);
     }
 
@@ -226,7 +226,7 @@ public sealed partial class Ui
                             _mpTab = 1;
                             ImGui.EndTabItem();
                         }
-                        if (ImGui.BeginTabItem("Join by address"u8))
+                        if (ImGui.BeginTabItem("Join by code or address"u8))
                         {
                             _mpTab = 2;
                             ImGui.EndTabItem();
@@ -294,13 +294,7 @@ public sealed partial class Ui
                     {
                         ImGuiSafe.FieldFailed("server name", ex);
                     }
-                    ImGui.Checkbox("Advertise server (list it publicly in the server browser)"u8, ref s.Advertise);
-                    if (s.Advertise && s.Master == null)
-                        ImGui.TextColored(Orange, "No master server set (Settings > Player), so only people on your network will see it."u8);
-                    else
-                        ImGuiSafe.TextColored(Dim, s.Advertise
-                            ? "Listed publicly through your master server; people on your network always see it too."
-                            : "Not listed publicly. People on your network still see it in their browser.");
+                    HostSharingOptions(s); // server lists and invite codes (UiInvite.cs)
                     ImGui.Checkbox("Return to lobby between matches"u8, ref s.LobbyReturn); // the lobby room (PreMatchLobby.cs)
                     if (BigButton("HOST GAME"))
                     {
@@ -355,9 +349,9 @@ public sealed partial class Ui
             _browser.Refresh(s);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, _browser.Searching ? "Searching your network..." : $"{list.Count} game(s) found");
-        ImGuiSafe.TextColored(Dim, s.Master is { } m
-            ? $"Public list: {(_browser.MasterStatus.Length > 0 ? _browser.MasterStatus : $"master server {m.Host}:{m.Port}")}"
-            : "Showing games on your network. To see public internet games, set a master server in Settings > Player.");
+        ImGuiSafe.TextColored(Dim, _browser.MasterStatus.Length > 0
+            ? $"Server lists: {_browser.MasterStatus}"
+            : "Showing games on your network. Join a friend by invite code once and their server list is added for you (or add one in Settings > Multiplayer).");
 
         if (ImGui.BeginTable("##servers"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(820 * _scale, 300 * _scale)))
         {
@@ -374,9 +368,11 @@ public sealed partial class Ui
                 var humans = i.Players - i.Bots;
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text(i.Name.Length > 0 ? i.Name : "(unnamed)");
+                ImGuiSafe.TextColored(e.VersionOk ? new float4(1, 1, 1, 1) : Dim, i.Name.Length > 0 ? i.Name : "(unnamed)");
                 ImGui.SameLine();
-                ImGuiSafe.TextColored(Dim, e.FromMaster ? "  public" : "  LAN");
+                ImGuiSafe.TextColored(Dim, SourceLabel(e));
+                if (!e.VersionOk)
+                    ImGuiSafe.TextColored(Orange, $"Different version (protocol {i.Version}, yours {ServerInfo.ProtocolVersion}): everyone needs the same build");
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
@@ -390,10 +386,13 @@ public sealed partial class Ui
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
                 ImGui.TableNextColumn();
-                if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
+                if (!e.VersionOk)
+                    ImGui.TextColored(Dim, "-"u8);
+                else if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
                 {
                     s.JoinAddress = e.Address;
                     s.Port = i.Port;
+                    s.LearnMaster(ListLearner.FromInfo(e.Address, i)); // the host's server list, for next time
                     s.Save();
                     action = LobbyAction.Join;
                 }
@@ -408,29 +407,49 @@ public sealed partial class Ui
 
     private void DrawDirectJoin(Settings s, ref LobbyAction action)
     {
-        ImGui.SetNextItemWidth(360 * _scale);
+        ImGui.SetNextItemWidth(420 * _scale);
         try
         {
-            ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+            ImGui.InputTextWithHint("Invite code or address"u8, "ABCD-EFGH-JKMN-PQRS, or an IP such as 203.0.113.45"u8, _addressInput!);
         }
         catch (Exception ex)
         {
             ImGuiSafe.FieldFailed("address", ex);
         }
-        ImGui.SetNextItemWidth(200 * _scale);
-        if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
-            _portInput = Math.Clamp(_portInput, 1024, 65535);
-        ImGui.TextColored(Dim, "Ask the host for the address shown at the top-left of their screen."u8);
+        var text = _addressInput!.ToString();
+        var isInvite = InviteCode.LooksLikeInvite(text);
+        if (!isInvite)
+        {
+            ImGui.SetNextItemWidth(200 * _scale);
+            if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
+                _portInput = Math.Clamp(_portInput, 1024, 65535);
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+        ImGuiSafe.TextColored(Dim, "Paste the invite code (or link) the host copied from their lobby, or type the address shown at the top-left of their screen (\"ip:port\" works too).");
+        ImGui.PopTextWrapPos();
+        if (_joinError.Length > 0)
+            ImGuiSafe.TextColored(Red, _joinError);
         if (BigButton("JOIN GAME"))
         {
-            var addr = Settings.CleanAddress(_addressInput!.ToString());
-            s.JoinAddress = addr.Length > 0 ? addr : "127.0.0.1";
-            s.Port = (ushort)_portInput;
-            s.Save();
-            action = LobbyAction.Join;
+            if (InviteCode.TryParseJoin(text.Length > 0 ? text : "127.0.0.1", (ushort)_portInput, out var host, out var port, out var invite, out var error))
+            {
+                _joinError = "";
+                s.JoinAddress = host;
+                s.Port = port;
+                if (invite is { } inv)
+                    s.LearnMaster(ListLearner.FromInvite(inv)); // the host's server list: the group shares one without typing it
+                else
+                    _portInput = port;
+                s.Save();
+                action = LobbyAction.Join;
+            }
+            else
+                _joinError = error;
         }
         ImGui.Spacing();
     }
+
+    private string _joinError = "";
 
     /// <summary>
     /// The current map choice and "Change map...", which opens the map select screen (UiMapSelect.cs). The lobby
@@ -568,18 +587,6 @@ public sealed partial class Ui
             }
             ImGui.TextColored(Dim, "Name changes apply to your next match."u8);
             ImGui.SetNextItemWidth(w);
-            try
-            {
-                if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
-                    s.MasterServer = Settings.CleanAddress(_masterInput!.ToString());
-            }
-            catch (Exception ex)
-            {
-                ImGuiSafe.FieldFailed("master server", ex);
-            }
-            ImGui.TextColored(Dim, "Public server list. Anyone can run one with: CallOfSlop.exe --master  (UDP 27050). Leave empty for LAN only."u8);
-            ImGui.Spacing();
-            ImGui.SetNextItemWidth(w);
             ImGui.SliderFloat("Mouse sensitivity"u8, ref s.Sensitivity, 0.1f, 4f, "%.2fx"u8);
             ImGui.Checkbox("Invert mouse Y"u8, ref s.InvertY);
             ImGui.SetNextItemWidth(w);
@@ -620,6 +627,15 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
+            ImGui.EndChild();
+            ImGui.EndTabItem();
+        }
+
+        // ---- Multiplayer: server lists, invite links (UiInvite.cs) ------------------------
+        if (ImGui.BeginTabItem("Multiplayer"u8))
+        {
+            ImGui.BeginChild("##mpsettings"u8, panel);
+            MultiplayerSettings(s, w);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

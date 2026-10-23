@@ -24,6 +24,8 @@ rem Belt and braces: no personal or debug files in the shared copy.
 del /q "%OUT%\settings.txt" "%OUT%\progress*.txt" "%OUT%\loadout*.txt" "%OUT%\workbench.txt" "%OUT%\audio_mix.json" "%OUT%\portable.txt" "%OUT%\*.bak" "%OUT%\*.tmp" "%OUT%\*.corrupt" "%OUT%\*.log" "%OUT%\smoke_*.bmp" "%OUT%\selftest.log" 2>nul
 if exist "%OUT%\AudioMixes" rmdir /s /q "%OUT%\AudioMixes"
 copy /y tools\TESTERS.txt "%OUT%\READ ME FIRST.txt" > nul
+copy /y tools\RunServerList.bat "%OUT%\RunServerList.bat" > nul
+copy /y tools\masters.txt "%OUT%\masters.txt" > nul
 
 set ZIP=bin\package\CallOfSlop-%DAY%-%VER%.zip
 powershell -NoProfile -Command "Compress-Archive -Path '%OUT%' -DestinationPath '%ZIP%' -Force" >> bin\package.log 2>&1
