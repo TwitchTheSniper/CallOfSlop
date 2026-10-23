@@ -215,6 +215,32 @@ public static class BodyBloodRender
         Note(t0);
     }
 
+    /// <summary>The frames of a zombie posed by <see cref="ZombieAnim"/>: head and torso frames, the thigh bones (Y along them).</summary>
+    public static void ZombieFrames(in ZombiePose p, float yaw, out BloodFrames f) => f = new BloodFrames
+    {
+        Head = p.Head, HeadC = new Vector3(0, 0.8f, -0.05f), HeadH = new Vector3(0.175f, 0.17f, 0.175f),
+        Torso = p.Upper, TorsoC = new Vector3(0, 0.3f, 0), TorsoH = new Vector3(0.31f, 0.31f, 0.18f),
+        LegR = p.LegUpR, LegL = p.LegUpL, LegC = Vector3.Zero, LegH = new Vector3(0.105f, (ZombieAnim.LegUp + 0.04f) * 0.5f, 0.115f),
+        LegAxis = 1, Yaw = yaw,
+    };
+
+    /// <summary>A posed zombie's marks for the body about to be drawn (call <see cref="Bind"/> next).</summary>
+    public static void PlaceZombie(Zombie z, in ZombiePose pose, float yaw)
+    {
+        _count = 0;
+        if (Mode == BloodMode.Off)
+            return;
+        var frac = z.State == ZState.Dead ? 0f : ZombieFrac(z);
+        if (frac >= BloodMarks.Thresholds[0])
+            return;
+        var t0 = Stopwatch.GetTimestamp();
+        ZombieFrames(pose, yaw, out var f);
+        _count = Place(0x10000u + z.Id, 0, frac, f, Mode, Data);
+        _color = ZombieColor;
+        _yaw = yaw;
+        Note(t0);
+    }
+
     private static void Note(long t0)
     {
         _ticks += Stopwatch.GetTimestamp() - t0;

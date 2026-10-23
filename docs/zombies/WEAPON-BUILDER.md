@@ -164,7 +164,7 @@ be caliber selection, basically. So single, semi, burst, muzzle load is determin
 - **Stats** (BuildStats.cs): the receiver's base numbers start from its action's rate and trigger (`ModeOf`: burst; auto
   for auto, rotary and chain; one shot per pull for the rest), then the stages run: receiver, ammo, feed, **action**,
   damage multiplier, upgrades, splitters. Spool-up and the rotary flag come from the action. The server checks builds
-  with the same rules and takes the text as sent (no stock actions added; protocol 42).
+  with the same rules and takes the text as sent (no stock actions added; protocol 44).
 - **Migration.** Each receiver file names the action it fired like before (`"stockAction"`), and gave that action its
   weight (the receiver is lighter by the action's weight, so an old build weighs the same). A build text with **no
   action part anywhere** was written before actions: loading it (workbench.txt, standard build files, hot reload)

@@ -387,8 +387,17 @@ public static class BodyModel
 
     private static readonly Matrix4x4[] ZombieLocal = ZombieParts.Select(p => Matrix4x4.CreateScale(p.Size) * Matrix4x4.CreateTranslation(p.Center)).ToArray();
 
+    /// <summary>Which <see cref="ZombieParts"/> belong to the head (cranium, jaw, brow): they follow the head frame when it tilts.</summary>
+    public static readonly bool[] ZombieHeadPart = [false, false, true, true, false, true];
+
     /// <summary>Draws a zombie's torso and head under <paramref name="upper"/>. Returns the number of boxes drawn.</summary>
-    public static int DrawZombieUpper(Renderer g, in Matrix4x4 upper, Vector3 shirt, Vector3 skin, bool detail)
+    public static int DrawZombieUpper(Renderer g, in Matrix4x4 upper, Vector3 shirt, Vector3 skin, bool detail) => DrawZombieUpper(g, upper, upper, shirt, skin, detail);
+
+    /// <summary>
+    /// Draws a zombie's torso under <paramref name="upper"/> and its head parts under <paramref name="head"/> (the upper frame
+    /// turned about the neck: the head hangs and nods, Source/Render/ZombieAnim.cs). Returns the number of boxes drawn.
+    /// </summary>
+    public static int DrawZombieUpper(Renderer g, in Matrix4x4 upper, in Matrix4x4 head, Vector3 shirt, Vector3 skin, bool detail)
     {
         var c = BodyColors.Zombie(shirt, skin);
         var n = 0;
@@ -396,7 +405,7 @@ public static class BodyModel
         {
             if (ZombieParts[i].Detail && !detail)
                 continue;
-            g.Draw(ZombieLocal[i] * upper, c.Of(ZombieParts[i].Paint));
+            g.Draw(ZombieLocal[i] * (ZombieHeadPart[i] ? head : upper), c.Of(ZombieParts[i].Paint));
             n++;
         }
         return n;

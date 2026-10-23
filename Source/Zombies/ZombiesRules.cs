@@ -87,6 +87,9 @@ public sealed class ZombiesRules
     /// <summary>Seconds to tear one board off a window, and to climb in once they're all off.</summary>
     public float BoardTearSeconds = 1.4f, ClimbSeconds = 1.1f;
 
+    /// <summary>Seconds a zombie from a ground spawner takes to climb out of the ground (it stands still meanwhile; 0.9 before the animations).</summary>
+    public float RiseSeconds = 1.4f;
+
     /// <summary>Headshot damage multiplier on zombies (on top of the weapon's own).</summary>
     public float ZombieHeadMult = 1f;
 
@@ -338,6 +341,7 @@ public sealed class ZombiesRules
                             case "swing": r.ZombieSwing = Real(v, w, 0.1f, 5); break;
                             case "boardTearSeconds": r.BoardTearSeconds = Real(v, w, 0.1f, 20); break;
                             case "climbSeconds": r.ClimbSeconds = Real(v, w, 0.1f, 10); break;
+                            case "riseSeconds": r.RiseSeconds = Real(v, w, 0.1f, 10); break;
                             case "headMult": r.ZombieHeadMult = Real(v, w, 0.5f, 10); break;
                             default: return false;
                         }
