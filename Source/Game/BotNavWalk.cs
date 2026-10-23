@@ -148,8 +148,9 @@ public sealed partial class NavGraph
     /// <summary>
     /// Walks from standing at <paramref name="a"/> to <paramref name="b"/> with the classic mover, like a bot on that edge:
     /// facing b, Forward (and Sprint), Jump + Forward facing the ledge when it's a mantle edge (<paramref name="flags"/>,
-    /// <paramref name="ledge"/>) within 1.4 m. Reached is the bots' "at the node" rule (BotFollow), within the time a walk
-    /// at the slowest uphill speed takes plus a second (and another for a mantle). Deterministic (mover tick 1).
+    /// <paramref name="ledge"/>) within 1.4 m, and one hop after 0.8 s without getting closer (the bots' first unstick try).
+    /// Reached is the bots' "at the node" rule (BotFollow), within the time a walk at the slowest uphill speed takes plus a
+    /// second (and another for a mantle). Deterministic (mover tick 1).
     /// </summary>
     public static WalkResult MoverWalk(Vector3 a, Vector3 b, byte flags, Vector3 ledge, bool sprint)
     {
@@ -161,6 +162,7 @@ public sealed partial class NavGraph
         var mover = ClassicMover.Instance;
         var lastGain = 0;
         var gainAt = float.MaxValue;
+        var hopPending = false;
         for (var t = 0; t < limit; t++)
         {
             var pos = s.Position;
@@ -173,8 +175,8 @@ public sealed partial class NavGraph
                 gainAt = dist; // 0.2 m closer (or climbing): still going
                 lastGain = t;
             }
-            else if (t - lastGain > World.TickRate * 3 / 4)
-                break; // no closer for 0.75 s: stuck or sliding back (fail early, the build walks thousands of these)
+            else if (t - lastGain > World.TickRate * 6 / 5)
+                break; // no closer for 1.2 s, a hop included: stuck or sliding back (fail early, the build walks thousands of these)
             r.Closest = MathF.Min(r.Closest, dist);
             if (dist < 0.8f && dy < 1.0f && dy > -2.5f)
             {
@@ -189,6 +191,14 @@ public sealed partial class NavGraph
             {
                 keys |= Buttons.Jump;
                 aim = ledge;
+            }
+            // No closer for 0.8 s: one hop forward, like a bot's first unstick try (BotUnstick: a ledge it didn't know about,
+            // a second lip after the first mantle).
+            if (t - lastGain == World.TickRate * 4 / 5 || (hopPending && s.Grounded))
+            {
+                hopPending = !s.Grounded;
+                if (s.Grounded)
+                    keys |= Buttons.Jump;
             }
             var yaw = MathF.Atan2(aim.X - pos.X, -(aim.Z - pos.Z));
             mover.Simulate(ref s, new InputCmd { Buttons = keys, Yaw = yaw, SpeedPct = 100, Tick = 1 });
