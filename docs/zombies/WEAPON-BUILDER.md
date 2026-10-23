@@ -300,6 +300,85 @@ A save naming a part that no longer exists, or a receiver past a grip's capacity
 style field is the grip's (an older save's own choice is ignored). Milestone 2 adds `melee=` (the melee slot),
 `slots4=` and `dummies=` lines; files without them load as before.
 
+## Making parts (fragments, bases, hot reload, tools)
+
+Parts are data, and the folder is set up for fast iteration. Nothing here changes what a part *is*: everything resolves
+at load time into the same part a file written out in full would give (the self-test proves it), so builds, saves, the
+network and the fingerprint can't tell the difference. Top-level entries in `Parts/` starting with `_` are never parts.
+
+| Where | What |
+| --- | --- |
+| `Parts/_Template/` | `Template.json`: every key, commented, to copy into a category folder. Two more examples show `extends`. Checked by the self-test, never in the game. |
+| `Parts/_Fragments/*.json` | Reusable model pieces (format `call-of-slop-fragment/1`: `name`, `about`, `model`): Picatinny Rail, Screw Head, Cooling Fins, Drum Shell, Scope Tube, Magazine Body, Barrel Shroud, Muzzle Ring, Trigger Guard. |
+| `Parts/_Bases/*.json` | Templates to `extends` (Base Barrel, Base Box Mag, Base Auto Receiver). Never in the game; may leave things out. |
+| `Parts/_Registry.json` | Socket types, bores and each category's default mount and display name (format `call-of-slop-part-registry/1`). |
+
+**Fragments.** In a `model` list, `{"use": "Picatinny Rail", "pos": [0, 0.07, -0.02], "rot": [0, 0, 0], "scale": 1.5,
+"color": "accent"}` brings the fragment's boxes: scaled along the fragment's own axes (a number or `[x, y, z]`; exact for
+boxes that aren't turned inside the fragment), turned by `rot` (the box's own turn first, then the use's), then moved by
+`pos`. `color`, `alpha` and `tag` override every box it brings. Fragments may use fragments (8 deep at most; a loop is
+reported). The 64-box limit counts the expanded boxes.
+
+**extends.** `"extends": "Base Barrel"` (a base or any other part) starts from that file:
+
+- the part's own keys replace the base's, objects (`receiver`, `frame`, `split`, `hilt`, `melee`...) merge key by key
+  (`"receiver": {"rpm": 760}` keeps the action, class and bore), and `null` removes a key;
+- `"+model"`, `"+sockets"`, `"+stats"`, `"+muzzles"`, `"+flags"`, `"+bores"` append to the base's lists (`+sockets`
+  replaces a base socket with the same name);
+- `"-sockets"`, `"-stats"`, `"-flags"`, `"-bores"` remove entries by name (a socket's name, a stat's `stat`).
+
+A variant is a few lines (`Parts/_Template/ReceiverVariantExample.json`):
+
+```json
+{
+  "extends": "Base Auto Receiver",
+  "name": "Template Sprinter Receiver",
+  "rarity": "uncommon",
+  "flavor": "The workhorse after a strong coffee.",
+  "receiver": {"rpm": 760},
+  "-sockets": ["upgrade_side"],
+  "+model": [{"use": "Screw Head", "pos": [0.031, 0.05, -0.1], "rot": [0, 0, -90]}]
+}
+```
+
+**The registry.** Adding a socket type (a bayonet lug, a second rail) or a bore is a line in `_Registry.json`; part
+files can use it straight away. The core socket types the rules in code rely on (receiver, barrel, feed, ammo, stock,
+foregrip, optic, muzzle, hopper, head) can't be removed; the categories themselves are fixed in code (each one is
+treated differently by the stats and rules), the registry gives each its default mount and workbench name (grip, hilt
+and receiver mounts are fixed). Without the file the game uses the same built-in lists.
+
+**Hot reload.** Run `CallOfSlop.exe --watch-parts` and open the workbench: saving any file under `Parts` reloads the
+parts within a second and redraws the preview. In the Workbench Range or an offline Zombies game the guns in your hands
+are rebuilt in place too (same slots; ammo refilled). The pause menu has **RELOAD PART FILES** (Zombies and the range)
+for the same by hand. How it works: a part that already existed keeps its object and gets the new fields, so every build
+holding it follows; built weapons are re-assembled from their build text (`WeaponDef.BuildText`); a file with an error
+keeps its previous version until you fix it (the error is shown); new files are added, deleted ones drop out. The
+standard builds (`Parts/Builds`) are re-read too. Rules: only offline or as a host with nobody connected (other players
+built their weapons from the old files). Every Welcome now carries the part set's fingerprint (`PartSet`, after the
+existing fields, so older builds ignore it): a joiner whose Parts folder differs is told so and disconnected, like
+weapons and attachments.
+
+**Tools.**
+
+- `CallOfSlop.exe --check-part FILE`: a part (or fragment, base, registry) file: errors, sockets, every socket it fits,
+  and the set-wide problems it causes. Fragments and bases come from the Parts folder the file is in.
+- `CallOfSlop.exe --check-parts [DIR]`: every part, fragment and template, plus the set-wide checks: a part that fits
+  nowhere (no socket of its mount type takes its category), a socket nothing fits; notes for unused socket types and
+  `accepts` entries nothing can fill. Prints the part set fingerprint. Exit code 1 on any problem.
+- `CallOfSlop.exe --export-parts DIR`: writes every part, fragment and base file normalised (keys in the standard order,
+  one socket, box or stat per line; comments dropped), for tidy diffs. `--resolved` writes each part out in full instead
+  (`extends` merged, fragments expanded into plain boxes).
+- `python3 tools/parts/viz.py [Parts] [out.png]`: a contact sheet of every part with its sockets (labelled, coloured by
+  type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
+  examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
+
+The self-test section **Part library** checks the registry against the built-in lists, that every fragment expands and
+every template loads, that `extends` and fragment uses give byte-identical parts, the merge rules, readable errors for
+broken files (unknown fragment or base, loops, typos, bad scale, unknown socket type, broken registries), the set-wide
+checks, that normalising is stable and lossless, and hot reload from a temporary copy (in-place updates, a broken file
+kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
+loading) before restoring the real folder.
+
 ## The part set: 123 parts
 
 Milestone 1's 75 parts plus 48 new ones (milestone 2). By tier, all categories:
