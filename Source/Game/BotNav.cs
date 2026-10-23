@@ -79,6 +79,8 @@ public sealed partial class NavGraph
     private static NavGraph? _last;
     private static IEnumerator<NavGraph?>? _builder;
     private static Map? _builderMap;
+    private static PhysicsWorld? _builderPhysics; // the map as built, for the build in progress (null: the live world, where nothing changes)
+    private static bool _builderChanging; // can anything in the build's map break or open (Map.HasChangingBoxes)?
     private static Map? _hashMap;
     private static uint _hash;
 
@@ -139,12 +141,25 @@ public sealed partial class NavGraph
             return;
         if (_builder != null && !ReferenceEquals(_builderMap, map))
             _builder = null; // the map changed under it
+        // Every slice probes the map as built (props whole, doors as they start), never the match as it is now: the graph
+        // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps). On a map
+        // where things can break or open, the build runs on a copy of the map as built (PhysicsWorld.AsBuilt), made in its
+        // first slice (with the match: a build starts when the map does); elsewhere the map's own collision world never changes.
         if (_builder == null)
         {
             _builderMap = map;
+            _builderChanging = map.HasChangingBoxes;
+            _builderPhysics = null;
             _builder = BuildSteps(map).GetEnumerator();
         }
+        if (_builderPhysics == null && _builderChanging)
+        {
+            _builderPhysics = PhysicsWorld.AsBuilt(map);
+            if (budgetMs < 10)
+                return; // a game tick: that copy is this tick's share of the work
+        }
         var start = Stopwatch.GetTimestamp();
+        var previous = World.UseNavBuildPhysics(_builderPhysics);
         try
         {
             while (_builder.MoveNext())
@@ -166,6 +181,12 @@ public sealed partial class NavGraph
             Store(map, CreateEmpty()); // don't retry every tick
             _builder = null;
         }
+        finally
+        {
+            World.UseNavBuildPhysics(previous);
+            if (_builder == null)
+                _builderPhysics = null;
+        }
     }
 
     private static void Store(Map map, NavGraph g)
@@ -178,9 +199,17 @@ public sealed partial class NavGraph
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
     public static NavGraph Build(Map map)
     {
-        foreach (var g in BuildSteps(map))
-            if (g != null)
-                return g;
+        var previous = World.UseNavBuildPhysics(map.HasChangingBoxes && !map.IsAsBuilt() ? PhysicsWorld.AsBuilt(map) : null); // the map as built (see PumpGraph)
+        try
+        {
+            foreach (var g in BuildSteps(map))
+                if (g != null)
+                    return g;
+        }
+        finally
+        {
+            World.UseNavBuildPhysics(previous);
+        }
         throw new InvalidOperationException("nav graph build ended without a result");
     }
 
@@ -204,13 +233,14 @@ public sealed partial class NavGraph
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
-        var c = World.Physics; // the map's collision world: every probe below goes through its BVH (map is World.Map)
+        // Every probe below goes through World.Physics, read afresh in every slice: during a build that's the map as built
+        // (PumpGraph and Build point it there), never the live match world kept from an earlier slice.
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
 
         var top = 2f;
-        foreach (var b in map.Solid)
-            top = MathF.Max(top, b.Max.Y);
+        for (var k = 0; k < World.Physics.BoxCount; k++) // (the boxes as built, see PumpGraph: a broken prop mustn't lower the probes)
+            top = MathF.Max(top, World.Physics.Boxes[k].Max.Y);
         top = MathF.Min(top + 1f, 59f);
         if (map.TerrainCollision is { } terrain)
             top = MathF.Max(top, terrain.Data.MaxHeight + 2f); // hills can rise above every box
@@ -221,7 +251,7 @@ public sealed partial class NavGraph
         {
             for (var z = -map.HalfZ + s / 2; z < map.HalfZ; z += s)
             {
-                AddColumn(map, c, nodes, x, z, s, top);
+                AddColumn(map, World.Physics, nodes, x, z, s, top);
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 yield return null;
                 t0 = Stopwatch.GetTimestamp();
@@ -233,10 +263,10 @@ public sealed partial class NavGraph
         // grid misses them.
         foreach (var w in map.Waypoints.Concat(map.Spawns).Concat(map.Terrain?.Voids?.NavPoints ?? Array.Empty<Vector3>()))
         {
-            var y = Ground(c, w.X, w.Z, w.Y + 1f, 3f);
+            var y = Ground(World.Physics, w.X, w.Z, w.Y + 1f, 3f);
             // Building waypoints (doorways, stairs): placed tight and kept apart from grid nodes only by other waypoints.
             var exact = map.BuildingNavPoints.Count > 0 && map.BuildingNavPoints.Contains(w);
-            if (float.IsFinite(y) && Place(map, c, new Vector3(w.X, y, w.Z), exact ? 0.5f : 1.2f) is { } p
+            if (float.IsFinite(y) && Place(map, World.Physics, new Vector3(w.X, y, w.Z), exact ? 0.5f : 1.2f) is { } p
                 && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.1f : 0.8f))
                 nodes.Add(p);
             if (++extra % 4 == 0)
@@ -265,7 +295,7 @@ public sealed partial class NavGraph
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
                 var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
-                if (!link || !TryLink(g, c, i, j, edges, failed, pending))
+                if (!link || !TryLink(g, World.Physics, i, j, edges, failed, pending))
                     continue;
                 // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -394,7 +424,7 @@ public sealed partial class NavGraph
         g.Openness = new byte[g.Nodes.Length]; // (with the spare nodes on a destructible map)
         for (var i = 0; i < g.Nodes.Length; i++)
         {
-            g.Openness[i] = g.SpareCount > 0 && i >= g.SpareStart ? (byte)0 : OpennessAt(c, g.Nodes[i]); // parked spares: nothing to see
+            g.Openness[i] = g.SpareCount > 0 && i >= g.SpareStart ? (byte)0 : OpennessAt(World.Physics, g.Nodes[i]); // parked spares: nothing to see
             if (i % 4 == 3)
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -560,6 +590,20 @@ public sealed partial class NavGraph
         if (TooSteep(a, b) || LeavesBoundary(a, b))
             return true;
         Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);
+        var len = Vector3.Distance(a, b);
+        // A squeezed climb (a window) must cross where a crouched body fits on the sill, not clip the frame (BotNavWalk.cs).
+        if (tight && fwd && (fFlags & FlagMantle) != 0 && !LedgeRoom(c, a, b, fLedge))
+        {
+            fwd = false;
+            g.WalkRejected++;
+            failed.Add((i, j, SlopeCost(a, b, len) + LastResortCost, (byte)(fFlags | FlagLastResort), fLedge));
+        }
+        if (tight && back && (bFlags & FlagMantle) != 0 && !LedgeRoom(c, b, a, bLedge))
+        {
+            back = false;
+            g.WalkRejected++;
+            failed.Add((j, i, SlopeCost(b, a, len) + LastResortCost, (byte)(bFlags | FlagLastResort), bLedge));
+        }
         // The mover has the last word where the samples can't tell (BotNavWalk.cs): a direction it can't walk gets no edge.
         var prep = Stopwatch.GetTimestamp();
         var steepest = SteepestNormalY(a, b);
@@ -568,7 +612,6 @@ public sealed partial class NavGraph
             fFlags |= FlagSlope;
             bFlags |= FlagSlope;
         }
-        var len = Vector3.Distance(a, b);
         var needs = (fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight, steepest);
         var walkStart = Stopwatch.GetTimestamp();
         g.PrepTicks += walkStart - prep;

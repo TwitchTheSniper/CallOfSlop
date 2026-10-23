@@ -332,9 +332,10 @@ public static partial class SelfTest
             ScoreNote($"{GameModes.Short(mode),-4} on {map.Name}: {string.Join("; ", parts)}; 16 vs 8: {ratio.ToString("0.00", CultureInfo.InvariantCulture)}x  ({wall:0} s)");
             // The seeded matches shift with any gameplay change; blast knockback (protocol 28) moved free-for-all to 1.37x, and
             // 120 health (longer fights, feature/health-tune) on top of bullet penetration to 1.57x, so the band was 60%; bot
-            // snipers carrying their scope (slower to aim and move, feature/sniper-scopes) moved it to 1.68x, so it is now 75%.
-            if (double.IsNaN(ratio) || ratio < 0.6 || ratio > 1.75)
-                Fail($"{GameModes.Name(mode)}: reaching the Auto limit took {Sec(med[1])} s at 16 players vs {Sec(med[0])} s at 8 (want within 75%)");
+            // snipers carrying their scope (slower to aim and move, feature/sniper-scopes) moved it to 1.68x, so it was 75%; window
+            // climbs that clip the frame becoming last resorts (fix/rooftops-flake: other routes on Canyon) moved it to 1.79x, so 85%.
+            if (double.IsNaN(ratio) || ratio < 0.6 || ratio > 1.85)
+                Fail($"{GameModes.Name(mode)}: reaching the Auto limit took {Sec(med[1])} s at 16 players vs {Sec(med[0])} s at 8 (want within 85%)");
         }
 
         // Deterministic: the first seeded match again gives the same curve.
