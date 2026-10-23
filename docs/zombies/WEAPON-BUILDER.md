@@ -243,9 +243,9 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
 - **Step 2: assembly.** Left: your parts, grouped by category with counts (a run: loose parts plus the slot's own), a
   search box and category chips, 3D icons (rendered once into textures and cached, `PartThumbs`), a tooltip with what
   the part does. A **Show incompatible parts** checkbox (saved in `settings.txt` as `wb_show_incompatible`, off by
-  default) decides what's listed: off, only parts that fit somewhere on the build (a "(N hidden)" hint); on, every part
-  you own, the ones that fit nowhere dimmed with a short reason in the tooltip ("needs a shell bore barrel socket") and
-  bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`). Middle: the gun large
+  default) decides what's listed: off, only parts that fit somewhere on the build and have a spare copy (a "(N hidden)"
+  hint); on, every part you own, the rest dimmed with a short reason in the tooltip ("needs a shell bore barrel socket",
+  or "none spare" when every copy is already on the build) and bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`). Middle: the gun large
   (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
   build needs, red on missing parts, orange on the selection. Right: the build as a **linear list** (Grip > Receiver(s) >
   Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's

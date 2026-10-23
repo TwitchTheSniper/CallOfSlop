@@ -939,7 +939,7 @@ public sealed class BenchModel
 /// <summary>
 /// The workbench's part inventory as a filtered list (left panel): owned parts of the editing kind, narrowed by the
 /// category chip and the search, and, unless "Show incompatible parts" is on, only the parts that fit somewhere on the
-/// build. Incompatible parts that are shown carry a short reason. Rebuilt only when its inputs change: calling
+/// build and have a spare copy. Parts shown that can't be fitted carry a short reason (incompatible, or "none spare"). Rebuilt only when its inputs change: calling
 /// <see cref="Refresh"/> every frame with the same inputs allocates nothing.
 /// </summary>
 public sealed class BenchInventory
@@ -956,7 +956,7 @@ public sealed class BenchInventory
     /// <summary>Per item: how many are free (int.MaxValue when unlimited).</summary>
     public readonly List<int> Free = new();
 
-    /// <summary>Per item: the short reason it's incompatible (null when compatible).</summary>
+    /// <summary>Per item: the short reason it can't be fitted now: incompatible, or "none spare" (null when it fits).</summary>
     public readonly List<string?> Why = new();
 
     /// <summary>The category chips: categories with listed parts (search and the toggle applied, not the chip itself), with counts.</summary>
@@ -970,8 +970,11 @@ public sealed class BenchInventory
     /// <summary>The "All" chip's label with the count of every listed part across categories.</summary>
     public string AllLabel { get; private set; } = "All";
 
-    /// <summary>Incompatible parts left out by the toggle (search applied): "N hidden" hint.</summary>
+    /// <summary>Parts left out by the toggle (search applied): incompatible ones and ones with none spare. "N hidden" hint.</summary>
     public int Hidden { get; private set; }
+
+    /// <summary>The reason for a compatible part with no spare copy (every one owned is already on the build).</summary>
+    public const string NoneSpare = "none spare";
 
     private BenchModel? _model;
     private (int Version, int Stock, int Filter, string Search, bool Melee, bool ShowAll) _key = (-1, 0, 0, "", false, false);
@@ -1008,7 +1011,8 @@ public sealed class BenchInventory
                 && !PartDef.CategoryName(p.Category).Contains(search, StringComparison.OrdinalIgnoreCase))
                 continue;
             var compatible = bm.FitsAnywhere(p);
-            if (!compatible && !showIncompatible)
+            var free = bm.Stock.Free(p, bm.Build);
+            if ((!compatible || free <= 0) && !showIncompatible)
             {
                 Hidden++;
                 continue;
@@ -1024,12 +1028,11 @@ public sealed class BenchInventory
             total++;
             if (filter >= 0 && (int)p.Category != filter)
                 continue;
-            var free = bm.Stock.Free(p, bm.Build);
             Items.Add(p);
             Compatible.Add(compatible);
             Free.Add(free);
             Fits.Add(compatible && free > 0);
-            Why.Add(compatible ? null : bm.WhyNowhereShort(p));
+            Why.Add(!compatible ? bm.WhyNowhereShort(p) : free <= 0 ? NoneSpare : null);
         }
         // The chosen chip stays visible even when nothing in it is listed now (so it can be switched off).
         if (filter >= 0 && !Cats.Contains((PartCategory)filter))
