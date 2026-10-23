@@ -71,7 +71,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
     // 37: the Co-op mode (Source/Game/Pve, docs/pve/DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
     //     soldiers and co-op events), the Co-op module's mode-state tail (the objective panel), kill id 253 (killed by an enemy).
-    public const byte ProtocolVersion = 37;
+    // 38: the Test Range mode (Source/Game/Modes/TestRange): game mode 8, free-for-all that never ends (an older build would
+    //     show it as free-for-all with a score limit and a clock that never apply).
+    public const byte ProtocolVersion = 38;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
