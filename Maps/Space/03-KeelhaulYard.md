@@ -14,7 +14,7 @@ Mirror-symmetric about z = 0: Blue holds the north dock (z < 0), Red the south. 
 
 | Area | Where | Gravity | What's there |
 |---|---|---|---|
-| The Yard | the middle deck, x -16..30, z +-30 | plain | Hill 1 under the Rock; plate stacks, cutter rigs, cargo pods, barriers and plating nodes as cover; the foot of both masts |
+| The Yard | the middle deck, x -16..30, z +-30 | plain | Hill 1 under the Rock; cut plate stacks, cutter rigs, cargo pods, barriers and plating nodes as cover; the foot of both masts |
 | The Hull | the hauler's hull plate, x = 30, 72 x 26 m | sideways: down is +X | The whole wall is a floor you fight on. Steel ribs and a brass ledge are cover in its frame; hill 3 is on it at 16 m up; a lip at the top and the ends keeps you on |
 | The Bowl | a quarter pipe from the yard deck up onto the hull, 24 m wide | turns in three 30-degree steps | Nine solid slabs under three zones; walk (or run) from the deck straight up onto the wall. Bots use it |
 | The Hold | the cargo hold, sunk 3 m, x -46..-16, z +-24 | a third of normal (7 m/s2) | An 18 m void hatch across the middle with a railed catwalk over it (hill 2); container stacks you can jump onto only here; ramps up to the yard at both ends |
@@ -56,7 +56,7 @@ Rock's sphere (point field, radius 8), the hold (uniform, 7 m/s2). The default i
 - Decals: the pack's Gravity set (`Maps/Space/Decals/Gravity`, by `tools/space/gravity_decals.py`): the Verrin Salvage
   mark, plating-fault / low-gravity / hull-plating-live signs, plating seams, arrows; plus global stains, hazard
   stripes, vents, panels and the Stratos pad ring.
-- Props: `Props/Space` (by `tools/space/gravity_props.py`: plating node, cutter rig, mooring clamp, plate stack,
+- Props: `Props/Space/Gravity` (by `tools/space/gravity_props.py`: plating node, cutter rig, mooring clamp, cut plate stack,
   warning beacon, scrap; shown on the Dev map **Gravity Props**), `Props/Station`, `Props/Industrial`.
 - Sky: a night preset with a big moon, stars and no clouds (no horizon: the void below is the sky's ground colour).
 

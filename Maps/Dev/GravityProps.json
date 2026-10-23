@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-map/1",
  "name": "Gravity Props",
- "description": "The Space pack's gravity-yard props (Props/Space) on their own pads: plating node, cutter rig, mooring clamp, plate stack, beacon, scrap.",
+ "description": "The Space pack's gravity-yard props (Props/Space/Gravity) on their own pads: plating node, cutter rig, mooring clamp, plate stack, beacon, scrap.",
  "author": "Call of Slop",
  "order": 970,
  "halfX": 22,
@@ -106,7 +106,7 @@
   },
   {
    "op": "Prop",
-   "name": "Hull Plate Stack",
+   "name": "Cut Plate Stack",
    "x": 3,
    "z": 0
   },

@@ -274,7 +274,7 @@ def tethers():
     prop("Gravity Plating Node", 0, 4.5, TETHER_Y)
     prop("Station Deck Barrier", -4, 2.5, TETHER_Y, yaw=90)
     prop("Station Deck Barrier", 4, 2.5, TETHER_Y, yaw=90)
-    prop("Mooring Clamp", 0, 17.5, TETHER_Y)
+    prop("Mooring Clamp", 4.2, 18.6, TETHER_Y)  # (off hill 3's centre)
     prop("Gravity Warning Beacon", -4.5, 15, TETHER_Y)
     prop("Gravity Warning Beacon", 4.5, 15, TETHER_Y)
     prop("Station Supply Case", 3.5, -4, TETHER_Y, yaw=20)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the Space pack's gravity-yard props (Props/Space/): the salvage and gravity-plating set used by Keelhaul Yard
+"""Writes the Space pack's gravity-yard props (Props/Space/Gravity/): the salvage and gravity-plating set used by Keelhaul Yard
 and Twin Shard (tools/space/keelhaul.py, tools/space/twinshard.py). All original: an invented breaker's yard.
 
     python3 tools/space/gravity_props.py          (run from the repository root)
@@ -7,7 +7,7 @@ and Twin Shard (tools/space/keelhaul.py, tools/space/twinshard.py). All original
 import json
 import os
 
-OUT = os.path.join("Props", "Space")
+OUT = os.path.join("Props", "Space", "Gravity")
 
 STEEL = "#6c6f73"
 DARK = "#34363a"
@@ -94,7 +94,7 @@ def hull_plate_stack():
     parts.append(box([0.8, 0.1, 0.2], [0.6, 1.25, 0.3], WARN))
     parts.append(box([0.2, 1.3, 0.2], [-1.3, 0.65, -0.8], DARK))
     parts.append(box([0.2, 1.3, 0.2], [1.3, 0.65, -0.8], DARK))
-    save("Hull Plate Stack", "Cut hull plates stacked between two posts: waist-high cover, 3 m long.", parts,
+    save("Cut Plate Stack", "Cut hull plates stacked between two posts: waist-high cover, 3 m long.", parts,
          collider=[{"size": [3.0, 1.3, 2.0]}], scatter={"randomYaw": True, "scale": [0.9, 1.1]})
 
 

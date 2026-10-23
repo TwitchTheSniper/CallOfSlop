@@ -141,8 +141,8 @@ def yard():
     decal("Verrin Salvage Mark", 0, 0, 0, size=7)
     for s in (-1, 1):
         # Cover in each half: plate stacks, cutter rigs, pods and plating nodes, in a loose ring round the middle.
-        prop("Hull Plate Stack", -9, 9 * s, yaw=90)
-        prop("Hull Plate Stack", 12, 9 * s, yaw=90)
+        prop("Cut Plate Stack", -9, 9 * s, yaw=90)
+        prop("Cut Plate Stack", 12, 9 * s, yaw=90)
         prop("Salvage Cutter Rig", 6, 20 * s, yaw=180 if s > 0 else 0)
         prop("Station Cargo Pod", -6, 21 * s, yaw=0)
         prop("Station Cargo Pod", -4, 22.6 * s, yaw=0)
@@ -408,7 +408,7 @@ def dock(s):
     prop("Deck Light Post", 15, Z(45), 0, yaw=270)
     prop("Landing Beacon", -15, Z(31), 0)
     prop("Landing Beacon", 15, Z(31), 0)
-    prop("Hull Plate Stack", -12, Z(39), 0, yaw=0)
+    prop("Cut Plate Stack", -12, Z(39), 0, yaw=0)
     prop("Gravity Plating Node", 0, Z(33), 0)
     prop("Salvage Scrap", -8, Z(31.5), 0)
     # Spawns: four inside the office, four outside.

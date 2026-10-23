@@ -46,7 +46,7 @@ shard inside the shard's own pull and the walk on and off is a gentle curve. The
   1,950 nodes, built in about half a second. No buildings, no terrain, no movers.
 - Shards are solid icosphere meshes, and everything on them is a solid mesh stood along the surface by its own yaw and
   pitch: a map has one `Planet` op, so the Surface ops can't dress two rocks.
-- Decals and props: the pack's Gravity set and `Props/Space` (see 03 Keelhaul Yard), plus `Props/Station`.
+- Decals and props: the pack's Gravity set and `Props/Space/Gravity` (see 03 Keelhaul Yard), plus `Props/Station`.
 - Sky: a night preset with stars, a dim moon and no clouds.
 
 ## What to check in game
