@@ -67,7 +67,7 @@ jobs:
         shell: bash
         run: |
           log=bin/Release/net10.0/selftest.log
-          [ -f "$log" ] && { echo "::error title=VDBG1::$(grep -E 'FAIL:' "$log" | head -40 | tr '\n' '~' | sed 's/%/%25/g')"; echo "::error title=VDBG2::$(grep -iE 'vantage|sniper|SMG|sidearm|spots;|Insane squad on|two snipers|holding a spot|shot from out|players to|King of the Hill on' "$log" | grep -v '::' | head -40 | tr '\n' '~' | sed 's/%/%25/g')"; } || true
+          [ -f "$log" ] && { echo "::error title=VDBG1::$(grep -E 'FAIL:' "$log" | head -40 | tr '\n' '~' | sed 's/%/%25/g')"; echo "::error title=VDBG2::$(sed -n '/== Bot vantage points ==/,/^== /p' "$log" | grep -v '::' | grep -v ' Medium:\| MediumLong:' | head -40 | tr '\n' '~' | sed 's/%/%25/g')"; } || true
 
       - name: Failure context
         if: failure()

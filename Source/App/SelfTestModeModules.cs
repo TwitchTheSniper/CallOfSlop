@@ -93,6 +93,7 @@ public static partial class SelfTest
     }
 
     // Re-recorded for FFA, TDM, KOTH and CTF with the tactical equipment (bots carry and use tactical items; GameTactical.cs), on top of main 8d6dfa4.
+    // Re-recorded (FFA, TDM, KOTH, CTF) when long-range bots started playing from vantage points (Source/Game/Bots/Vantage).
     /// <summary>The matches digested by <see cref="ModeMatchDigest"/>: mode, bots, map, seed, seconds and the digest recorded before the refactor (0: not recorded yet).</summary>
     private static readonly (GameMode Mode, int Bots, byte MapId, int Seed, double Seconds, ulong Digest)[] ModeDigests =
     [
@@ -100,10 +101,10 @@ public static partial class SelfTest
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
         // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x0D56DC507AADB99E),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0xE7013AE460DCA8F0),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x9E68286035F22AF9),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x552B3D198EC1698F),
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x9FC932C1DC0F47E7),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x3CE88EBD16DE8B0B),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xE898CB1E6A4176E1),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0xE94816616C482F62),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
         (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
