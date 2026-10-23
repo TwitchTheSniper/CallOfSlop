@@ -48,7 +48,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("London", 41.9f, 7.9f), ("Slopview Mall", -59.0f, -7.0f),
+        ("London", 41.9f, 7.9f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
