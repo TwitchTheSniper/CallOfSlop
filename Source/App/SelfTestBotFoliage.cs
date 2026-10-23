@@ -205,6 +205,7 @@ public static partial class SelfTest
     private static void BotFoliageScenarios(Map lab)
     {
         World.SetMap(lab);
+        Game.SeedNextGame = 4141; // seeded: the same bot every run
         using var game = ModeGame(1, GameMode.FreeForAll);
         World.SetMap(lab);
         NavGraph.Pump(double.MaxValue);
@@ -220,6 +221,12 @@ public static partial class SelfTest
         Tick(game, ref now, Game.CountdownSeconds + 1.0); // past the countdown
         bot.GrenadesLeft = 0;
         bot.EquipmentLeft = 0;
+        // The default rifle, whatever gear the bot drew: blind fire is measured in bursts, which a 2-round Double Barrel
+        // (one possible draw since bots carry varied loadouts) can't give, so the check failed on unlucky draws.
+        bot.Primary = bot.Weapon = Weapons.DefaultPrimary.Id;
+        bot.PrimaryKit = 0;
+        b.Ammo = Weapons.DefaultPrimary.Mag;
+        b.ReloadUntil = 0;
 
         // Run, keeping the bot pinned at its spot (it would walk over to investigate) and the host at its spot and stance.
         Vector3 hostAt = default;
