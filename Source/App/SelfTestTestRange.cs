@@ -112,22 +112,43 @@ public static partial class SelfTest
                 game.RequestRespawn();
                 Run(game, ref now, World.RespawnDelay + 0.5);
             }
-            if (game.Players.Values.FirstOrDefault(p => p.Bot != null && p.Alive) is not { } victim)
+            // All three bots can be dead at once (they kill each other): wait for one, at most one respawn delay.
+            Player? victim = null;
+            for (var t = 0.0; t < World.RespawnDelay + 1 && (victim = game.Players.Values.FirstOrDefault(p => p.Bot != null && p.Alive)) == null; t += 1.0 / World.TickRate)
+                Run(game, ref now, 1.0 / World.TickRate);
+            if (victim == null)
             {
                 Fail("Test Range: no bot alive to shoot");
                 continue;
             }
+            // The other bots are still fighting (live, unseeded), so nothing may save the victim from this shot: no Last
+            // Stand to come and none already running (a bot saved a moment ago sits on 1 HP behind a shield that eats
+            // the shot), and the kill and the comeback are checked as they happen, since another bot can kill the
+            // victim again any time after it is back (Proto Box is small and has no spawn protection).
             victim.ImmuneUntil = 0;
             victim.LastStandUsed = true;
+            victim.ShieldCharges = 0;
             int kills = me.Kills, deaths = victim.Deaths;
             var killed = game.SelfTestDamageWith(me, victim, 100000, Weapons.DefaultPrimary.Id, now);
-            Run(game, ref now, World.RespawnDelay + 1);
+            int killsAfter = me.Kills, deathsAfter = victim.Deaths;
+            var killedAt = now;
+            var backAfter = -1.0;
+            const double dt = 1.0 / World.TickRate;
+            for (var t = 0.0; t < World.RespawnDelay + 1 && backAfter < 0; t += dt)
+            {
+                now += dt;
+                game.Update(now, dt);
+                if (victim.Alive)
+                    backAfter = now - killedAt;
+            }
             var cells = game.Module.ScoreboardCells(game, me);
-            Line($"Test Range kill: killed {killed}, kills {kills}->{me.Kills}, victim deaths {deaths}->{victim.Deaths}, victim back {victim.Alive}, my cells {cells.First}/{cells.Second}");
-            if (!killed || me.Kills != kills + 1 || victim.Deaths != deaths + 1)
+            Line($"Test Range kill: killed {killed}, kills {kills}->{killsAfter}, victim deaths {deaths}->{deathsAfter}, victim back after {backAfter:0.00} s, my cells {cells.First}/{cells.Second}");
+            if (!killed || killsAfter != kills + 1 || deathsAfter != deaths + 1)
                 Fail("Test Range: the kill wasn't counted");
-            if (!victim.Alive)
+            if (backAfter < 0)
                 Fail("Test Range: a killed bot didn't respawn");
+            else if (backAfter < World.RespawnDelay - 0.1)
+                Fail($"Test Range: a killed bot came back after {backAfter:0.00} s, before the {World.RespawnDelay} s respawn delay");
             if (game.Phase != MatchPhase.Playing)
                 Fail("Test Range: the match ended after a kill");
         }

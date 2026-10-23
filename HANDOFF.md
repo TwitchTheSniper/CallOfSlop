@@ -93,8 +93,9 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 **Flaky tests (passed on rerun; root cause unknown)**
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
-- "Test Range": a killed bot didn't respawn. Once, on Proto Box.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
+
+Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).
 
 **Environment**
 - The cloud agent container has no .NET SDK, and the proxy blocks dot.net, builds.dotnet.microsoft.com and packages.microsoft.com, so agents cannot build or run the self-test locally. They verify with `floaters.py` and branch CI (`[tests: ...]`) instead. Allowing those hosts under Settings > Capabilities would let agents build locally; restoring the Ahwoo packages would still need the NuGet API, which the user's rule forbids.
