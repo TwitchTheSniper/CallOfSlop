@@ -31,7 +31,7 @@ concrete), fields and alleys dirt.
 - **Blue (west):** the co-op farm yard: two grain bins, tractor, hay wagon, fuel tank, round bales, farm stand,
   welcome sign. **Red (east):** behind the freight train (an open boxcar to climb through, a covered hopper across the
   crossing, a boxcar, 1.6 m gaps between cars), crossing lights and crossbucks.
-- **Hills:** the crossroads (0, 0) and Elm Street in the north alley (2.5, -19.7). **Flags:** at the back of each
+- **Hills:** the crossroads (0, 0) and Elm Street in the north alley (0, -19.7). **Flags:** at the back of each
   team's spawn. Generator walk check: hill 1 44/44 m, hill 2 49/49 m, enemy flag 89/89 m; no spawn-to-spawn sight.
 
 **Concealment (engine addition).** Corn patches are cosmetic (walk and shoot through) props with the new
