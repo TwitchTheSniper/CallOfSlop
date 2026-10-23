@@ -77,9 +77,15 @@ public static partial class SelfTest
                   + string.Join(", ", rejectedBy.OrderByDescending(x => x.Count).Take(12).Select(x => $"{x.Map} {x.Count}")));
         notes.Add("by kind: " + string.Join(", ", byKind.Select(kv => $"{kv.Key} {kv.Value.Count}")));
         notes.Add("by map: " + string.Join(", ", perMap));
-        // TEMP diagnostics: climbs of over 2 m the mover walk dropped on building maps (stairs).
-        foreach (var r in rejects.Where(r => r.To.Y - r.From.Y > 2f && r.Map is "Commercial Street" or "Finnish Buildings").Take(14))
-            notes.Add(FormattableString.Invariant($"dropped climb {r.Map}: ({r.From.X:0.0}, {r.From.Y:0.0}, {r.From.Z:0.0}) -> ({r.To.X:0.0}, {r.To.Y:0.0}, {r.To.Z:0.0}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.0}, {r.End.Y:0.0}, {r.End.Z:0.0})"));
+        // TEMP diagnostics: dropped walks into rooms bots can no longer reach (building maps).
+        var spots = new (string Map, Vector3 P)[]
+        {
+            ("Commercial Street", new(-39.9f, 0.1f, -18.2f)), ("Commercial Street", new(9.8f, 3.3f, -14.0f)), ("Commercial Street", new(9.8f, 3.3f, -11.6f)),
+            ("Finnish Buildings", new(-46.6f, 3.0f, 21.3f)), ("Finnish Buildings", new(-46.8f, 3.0f, 16.6f)),
+        };
+        foreach (var (map, at) in spots)
+            foreach (var r in rejects.Where(r => r.Map == map && MathF.Abs(r.To.Y - at.Y) < 0.6f && SlopeFlat(r.To - at) < 2.6f).Take(5))
+                notes.Add(FormattableString.Invariant($"dropped {map} near ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0}): ({r.From.X:0.00}, {r.From.Y:0.00}, {r.From.Z:0.00}) -> ({r.To.X:0.00}, {r.To.Y:0.00}, {r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00}, {r.End.Y:0.00}, {r.End.Z:0.00})"));
         foreach (var (kind, l) in byKind)
         {
             // A few examples of each kind, from different maps (walking first).
