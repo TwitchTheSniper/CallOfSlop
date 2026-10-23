@@ -137,6 +137,8 @@ public static partial class SelfTest
             target.ImmuneUntil = 0;
             if (Vector3.Distance(bot.Position, home) > 0.5f)
                 bot.Teleport(home); // the bot holds its spot (fixed range)
+            if (bot.Bot!.Target == byte.MaxValue)
+                bot.Yaw = MathF.Atan2(centre.X - home.X, -(centre.Z - home.Z)); // and faces the duel (wherever its route would have it look)
             foreach (var other in game.Players.Values)
                 if (other != bot && other != target && other.Alive)
                 {
