@@ -16,6 +16,9 @@ public sealed partial class NavGraph
     /// <summary>Links checked with the mover during the build, directions dropped because the walk failed, and of those the ones kept as last resorts.</summary>
     public int WalkChecked, WalkRejected, LastResorts;
 
+    /// <summary>TEMP diagnostics: rejected directions on Main Street.</summary>
+    public static readonly List<string> DebugRejects = new();
+
     /// <summary>Build work spent on the mover walks and on deciding which links need one (Stopwatch ticks).</summary>
     public long WalkTicks, PrepTicks;
 
@@ -284,8 +287,12 @@ public sealed partial class NavGraph
     /// </summary>
     private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
     {
-        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached)
+        if (MoverWalk(a, b, flags, ledge, sprint: false) is { Reached: false } w0)
+        {
+            if (World.Map.Name == "Main Street" && DebugRejects.Count < 60 && a.X > 8 && a.X < 36 && a.Z > -12 && a.Z < -2)
+                DebugRejects.Add(FormattableString.Invariant($"({a.X:0.0},{a.Y:0.00},{a.Z:0.0})->({b.X:0.0},{b.Y:0.00},{b.Z:0.0}) f{flags} end ({w0.End.X:0.0},{w0.End.Y:0.00},{w0.End.Z:0.0})"));
             return false;
+        }
         // Sprinting changes things on slopes (more speed into a slide); ledges, drops, steps and squeezes walk the same.
         if ((flags & FlagSlope) != 0 && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
             return false;

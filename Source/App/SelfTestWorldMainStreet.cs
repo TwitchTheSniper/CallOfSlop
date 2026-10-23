@@ -151,6 +151,7 @@ public static partial class SelfTest
                     }
                     Fail($"  route {team}: {string.Join(" ", parts)}");
                 }
+                Fail("  rejected: " + string.Join(" ", NavGraph.DebugRejects));
             }
         }
         for (var i = 0; i < o.Hills.Count; i++)
