@@ -386,8 +386,27 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   wrap bar, the cart's push bar, the wheel's rim), else the lead barrel. The reload hand goes to the lead receiver's
   feed.
 - **Sight line:** the optic sits on the grip's `optic` socket; the sight lens uses the mount height and position from
-  it. Iron-sight boxes (`"tag": "irons"`) come off when an optic is fitted. Grips with `"ads": false` (cart,
-  briefcase) are hip fire only and drop the optic's zoom.
+  it. Iron-sight boxes (`"tag": "irons"`, only grips have them) stand on the receiver: they are drawn only when a
+  receiver is fitted and no optic is. Grips with `"ads": false` (cart, briefcase) are hip fire only and drop the optic's
+  zoom.
+- **Conditional boxes:** `"tag": "with:SOCKET"` draws a box only while that socket of the same part holds something (the
+  hopper chute under the rifle and rack grips, the big frames' stock mounts). A part file naming a socket it doesn't
+  have is refused.
+- **Nothing floats (2026-10-23).** The user: "remove the weird frame pieces that float above the grips when it's not
+  intentional and just there to support the optics". Every part's boxes form one connected piece (within 1 cm), and
+  every part of an assembled weapon touches the rest. The pass fixed: the grips' iron sights (hovering over an empty
+  plate; now only with a receiver, front post moved back over the receiver and both reaching down to it); the rack
+  grips' cage posts (Quad to Rifle Grip: they stood 4.4 cm behind the plate, so the crossbar, optic rail and irons hung
+  in the air; now on the plate's back corners); the Gantry Rig's optic mount (a box and post hanging between the
+  crossbars; now on a spine between them); the Chainsaw Grip's receiver plate (3 cm off the body); the Steering Wheel's
+  rim (gaps between segments; diagonal spokes now carry the diagonal receivers); the Exo Harness, Gantry Rig and Mule
+  Frame plates (1.7 cm under the receivers; shelf bars under each upper row); hopper chutes and stock mounts on the
+  frames whose hopper or stock socket hangs off them; the push cart's basket floor; small fixes to the Longbow screw,
+  the Street Sweeper drum, the Shoulder Harness, the Frozen Fish (on a short line now) and the Whoopee Cushion.
+  Sockets, stats and sight heights are unchanged. `python3 tools/parts/floaters.py` lists floaters; the self-test
+  section **Model connectivity** fails on any, with an allow-list for intentional separate pieces (the cooling fins of
+  the Bastille, Sawmill and Hammerfall receivers, which the barrel runs through; the Barbed Wire Wrap and Nail Ring on
+  the hilt; the push cart's upper rows of receivers, piled in the basket).
 
 **Chainsaw view.** The chainsaw grip is just a grip (decided): the normal first-person pose with the off hand on its
 top wrap bar. The push cart is no longer a held gun: see "The push cart".
@@ -498,6 +517,9 @@ weapons and attachments.
 - `CallOfSlop.exe --export-parts DIR`: writes every part, fragment and base file normalised (keys in the standard order,
   one socket, box or stat per line; comments dropped), for tidy diffs. `--resolved` writes each part out in full instead
   (`extends` merged, fragments expanded into plain boxes).
+- `python3 tools/parts/floaters.py [Parts] [--receiver NAME]`: boxes floating free of their part, of an assembled grip
+  (empty, one receiver, every receiver, an optic, everything) or of a standard build, like the self-test's Model
+  connectivity section. Exit code 1 on any not on its allow-list.
 - `python3 tools/parts/viz.py [Parts] [out.png]`: a contact sheet of every part with its sockets (labelled, coloured by
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
