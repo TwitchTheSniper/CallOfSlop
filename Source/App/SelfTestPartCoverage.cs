@@ -100,10 +100,10 @@ public static partial class SelfTest
                 var perPull = def.Damage * def.Pellets;
                 var basePull = cal.Damage * cal.Pellets;
                 lines.Add($"{bore}/{a.Name}: {def.Damage}x{def.Pellets} = {perPull} per shot, {def.RangeM:0} m");
-                // A round type changes the calibre's numbers by a sensible ratio: within x0.5 to x1.6 of what the bore fires plain
+                // A round type changes the calibre's numbers by a sensible ratio: damage within x0.5 to x1.6 of what the bore fires plain, range x0.5 to x3
                 // (a split round keeps the total within rounding), and never below 1 damage a projectile.
                 var ratio = perPull / (float)basePull;
-                if (ratio < 0.5f || ratio > 1.6f || def.Damage < 1 || def.Pellets < 1 || def.Pellets > 30 || def.RangeM < cal.RangeM * 0.5f || def.RangeM > cal.RangeM * 2.5f)
+                if (ratio < 0.5f || ratio > 1.6f || def.Damage < 1 || def.Pellets < 1 || def.Pellets > 30 || def.RangeM < cal.RangeM * 0.5f || def.RangeM > cal.RangeM * 3f)
                     problems.Add($"{a.Name} on the {r.Name}: {perPull} per shot ({def.Damage}x{def.Pellets}) and {def.RangeM:0} m against the {bore} calibre's {basePull} and {cal.RangeM:0} m");
                 if (a.Round is { Pellets: > 0 } rd && def.Pellets != rd.Pellets && !(reg.ClassOf(bore).Pellets && a.Effects.Any(e => e.Field.Name == nameof(WeaponDef.Pellets))))
                     problems.Add($"{a.Name} on the {r.Name}: {def.Pellets} pellets, its round block says {rd.Pellets}");
@@ -112,6 +112,18 @@ public static partial class SelfTest
         Line($"assembled: {reg.Bores.Length} bores x every feed and ammo; {string.Join("; ", lines.Where(l => l.Contains("Buckshot") || l.Contains("Slug") || l.Contains("FMJ")))}");
         if (problems.Count > 0)
             Fail($"part coverage: {string.Join(" | ", problems)}");
+
+        // ---- Old saves name the calibre their receiver fires: they load as the round type with the same numbers -------
+        var dropped = new List<string>();
+        var oldText = "Old Cannon|volley|Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Long Barrel,feed:Heavy Box,ammo:.50 BMG,action:Revolver Hammer},"
+                      + "receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},"
+                      + "receiver_3:Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Tube,ammo:00 Buckshot,action:Pump Slide}}";
+        var old = WeaponBuild.Parse(oldText, Parts.Find, dropped);
+        var oldDef = BuildRules.IsComplete(old) ? WeaponBuilder.Assemble(old).Def : null;
+        var names = string.Join(", ", old.Receivers.Select(r => r.Child("ammo")?.Part.Name ?? "none"));
+        Line($"old save: ammo loaded as {names}; dropped {dropped.Count}; {(oldDef == null ? "incomplete" : $"{oldDef.Damage} dmg, flags {string.Join("/", oldDef.BuildFlags)}")}");
+        if (dropped.Count > 0 || oldDef == null || names != "Armour Piercing, FMJ, Buckshot" || !oldDef.BuildFlags.Contains("penetrating"))
+            Fail($"part coverage: a build saved with the calibre-named ammo should load with the round types (got {names}; dropped: {string.Join("; ", dropped)})");
 
         static string MagOf(PartDef f) => f.Effects.FirstOrDefault(e => e.Field.Name == nameof(WeaponDef.Mag) && e.Op == "set")?.Value is int m ? $"{m} rounds" : "?";
     }

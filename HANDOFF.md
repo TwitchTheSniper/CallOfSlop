@@ -105,7 +105,7 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
   - Old builds get their receiver's `stockAction` on load.
   - Five receivers changed rate slightly to share actions; the user kept this: Bastille 600, Plinker 400, Reaper 400, Railspike 45, Sparkplug 720.
 - **Action placement is mixed (user).** Triggers go under the receiver, mechanical actions on the side.
-- **Universal barrels (user).** Every barrel fits every receiver, and the receiver sizes and scales it, to cut workbench friction. Feeds and ammo still match the receiver.
+- **Universal barrels (user).** Every barrel fits every receiver, and the receiver sizes and scales it, to cut workbench friction. Feeds still match the receiver; ammo is universal since 2026-10-23 (see WEAPON-BUILDER.md, "Universal ammo").
 - **Mystery box gives complete builds only. Fire style across receivers is the Chain fire checkbox. The push cart is a manned gun, not a turret.** These are user decisions from milestone 1–2; see the docs.
 - **Bleeding out drops your builds as pickups for 5 minutes (user).**
 - **Server listing:** invite codes plus server lists that hosts start automatically. **No DHT** (user rejected it).
