@@ -352,10 +352,13 @@ public static partial class SelfTest
             var seconds = mode == GameMode.LastManStanding ? 60.0 : 20.0;
             Game game;
             var now = 0.0;
+            Game.SeedNextGame = 6100 + (int)mode * 17; // seeded: the same match every run (a flaky check is no check)
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
+            Game.SeedNextGame = null; // (ZGame may not have made a Game with it)
+            NavGraph.Pump(double.MaxValue); // the nav graph whole now, not after a wall-clock-budgeted build
             using (game)
             {
                 var startAlive = game.Players.Values.Count(p => p.Alive);

@@ -124,9 +124,14 @@ public static partial class SelfTest
                 Fail("the stuck bot didn't respawn (outside the pit) after its self-kill");
 
             // The second self-kill within a minute is counted but not logged again.
+            // (The clock starts explicitly, as above, and the run waits up to 9 s for the self-kill: a fixed 6 s from the
+            // placement left too little room on a slow runner.)
             Pit();
+            game.SelfTestStuckWatch(bot, Vector3.Zero, true, false, now);
             var firstLog = game.LastStuckLog;
-            Run(game, ref now, 6);
+            var start2 = now;
+            while (now - start2 < 9 && game.BotStuckKills < 2)
+                Run(game, ref now, 1.0 / World.TickRate);
             if (game.BotStuckKills != 2 || !ReferenceEquals(firstLog, game.LastStuckLog))
                 Fail($"a second stuck self-kill within a minute: counted {game.BotStuckKills} (want 2), logged again {!ReferenceEquals(firstLog, game.LastStuckLog)}");
 

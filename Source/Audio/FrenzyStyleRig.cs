@@ -21,7 +21,7 @@ public sealed class FrenzyStyleRig
 
     private readonly Layer[] _layers;
     private readonly bool _hasVerb;
-    private readonly RoomReverb? _verb;
+    private readonly HalfRateReverb? _verb;
     private readonly float[] _vL = new float[MaxChunk], _vR = new float[MaxChunk], _scratch = new float[MaxChunk];
     private readonly float[] _verbIn = new float[MaxChunk], _verbL = new float[MaxChunk], _verbR = new float[MaxChunk];
     private readonly float[] _ringL = new float[Ring], _ringR = new float[Ring], _slapL = new float[Ring], _slapR = new float[Ring];
@@ -42,7 +42,7 @@ public sealed class FrenzyStyleRig
         _layers = style.Layers.Take(MaxLayers).Select(s => new Layer(s)).ToArray();
         _hasVerb = _layers.Any(l => l.Spec.Reverb > 0);
         if (_hasVerb)
-            _verb = new RoomReverb { Feedback = 0.86f, Damp = 0.3f };
+            _verb = new HalfRateReverb(0.86f, 0.3f, MaxChunk);
     }
 
     /// <summary>A new frenzy (or this style taking over): silence every voice and effect, tune to the track.</summary>
@@ -346,13 +346,15 @@ public sealed class FrenzyStyleRig
                     Synth = new SawSynth { Square = true, Saws = 1, HarmonySaws = 1, Attack = 0.001f, DecayTime = 0.03f, Sustain = 0f, Release = 0.01f, Cutoff = 5000, EnvAmount = 1f, FilterTime = 0.02f, Resonance = 0.5f, Drive = 2f, BendSemis = 12f, BendTime = 0.015f };
                     break;
                 case FrenzyVoice.Brass:
-                    Synth = new SawSynth { Saws = 3, HarmonySaws = 2, Detune = 0.006f, Attack = 0.012f, DecayTime = 0.22f, Sustain = 0.45f, Release = 0.1f, Cutoff = 850, EnvAmount = 4.5f, FilterTime = 0.11f, Resonance = 0.1f, Drive = 2f, BendSemis = -1f, BendTime = 0.03f };
+                    // Half rate (as the braam): the filter never opens past ~5 kHz, so nobody hears the difference, and it halves the cost.
+                    Synth = new SawSynth { HalfRate = true, Saws = 3, HarmonySaws = 2, Detune = 0.006f, Attack = 0.012f, DecayTime = 0.22f, Sustain = 0.45f, Release = 0.1f, Cutoff = 850, EnvAmount = 4.5f, FilterTime = 0.11f, Resonance = 0.1f, Drive = 2f, BendSemis = -1f, BendTime = 0.03f };
                     break;
                 case FrenzyVoice.Braam:
-                    Synth = new SawSynth { Saws = 4, HarmonySaws = 3, Detune = 0.011f, Attack = 0.06f, DecayTime = 2.2f, Sustain = 0.65f, Release = 0.9f, Cutoff = 260, EnvAmount = 5.5f, FilterTime = 0.8f, Resonance = 0.2f, Drive = 3.5f, HalfRate = true };
+                    Synth = new SawSynth { Saws = 3, HarmonySaws = 2, Detune = 0.011f, Attack = 0.06f, DecayTime = 2.2f, Sustain = 0.65f, Release = 0.9f, Cutoff = 260, EnvAmount = 5.5f, FilterTime = 0.8f, Resonance = 0.2f, Drive = 3.5f, HalfRate = true };
                     break;
                 case FrenzyVoice.Metal:
-                    Synth = new SawSynth { Saws = 2, HarmonySaws = 2, Detune = 0.004f, Attack = 0.002f, DecayTime = 0.085f, Sustain = 0.2f, Release = 0.035f, Cutoff = 1300, EnvAmount = 2.5f, FilterTime = 0.05f, Resonance = 0.15f, Drive = 6f };
+                    // Half rate: the filter tops out near 4.5 kHz, far under the half-rate Nyquist (11 kHz).
+                    Synth = new SawSynth { HalfRate = true, Saws = 2, HarmonySaws = 2, Detune = 0.004f, Attack = 0.002f, DecayTime = 0.085f, Sustain = 0.2f, Release = 0.035f, Cutoff = 1300, EnvAmount = 2.5f, FilterTime = 0.05f, Resonance = 0.15f, Drive = 6f };
                     break;
                 case FrenzyVoice.Whistle:
                     Whistle = new WhistleVoice();
@@ -431,13 +433,16 @@ public sealed class FrenzyStyleRig
 /// </summary>
 internal sealed class WhistleVoice
 {
-    private float _phase, _hz, _target, _env, _vel, _vib, _held;
+    private float _phase, _hz, _target, _env, _vel, _vib, _held, _vibMul = 1f;
+    private int _ctl;
     private byte _stage; // 0 off, 1 attack, 2 sustain, 3 release
     private Svf _breath;
 
     public void Reset()
     {
         _phase = _hz = _target = _env = _vel = _vib = _held = 0;
+        _vibMul = 1f;
+        _ctl = 0;
         _stage = 0;
         _breath.Reset();
     }
@@ -468,10 +473,12 @@ internal sealed class WhistleVoice
         var attack = 1f / (0.018f * Dsp.Sr);
         var release = Dsp.Decay(0.06f);
         var glide = 1f - Dsp.Decay(0.03f);
-        var vibDt = 5.6f * Dsp.InvSr;
+        var vibDt = 5.6f * Dsp.InvSr * 16f; // the vibrato moves at control rate (every 16 samples): inaudible at 5.6 Hz
         Svf.Coefs(Dsp.SvfG(MathF.Min(_target * 2f, 12000f)), 1.2f, out var a1, out var a2, out var a3);
-        float phase = _phase, hz = _hz, env = _env, vib = _vib, held = _held, target = _target, vel = _vel;
+        float phase = _phase, hz = _hz, env = _env, vib = _vib, held = _held, target = _target, vel = _vel, vibMul = _vibMul;
         var stage = _stage;
+        var ctl = _ctl;
+        var breath = _breath;
         for (var i = 0; i < dst.Length; i++)
         {
             if (stage == 1)
@@ -494,22 +501,112 @@ internal sealed class WhistleVoice
             }
             hz += (target - hz) * glide;
             held += Dsp.InvSr;
-            vib += vibDt;
-            if (vib >= 1f)
-                vib -= 1f;
-            var depth = MathF.Min(1f, MathF.Max(0f, held - 0.15f) * 4f) * 0.016f; // a quarter tone of vibrato after 0.15 s
-            phase += hz * (1f + depth * MathF.Sin(vib * Dsp.TwoPi)) * Dsp.InvSr;
+            if ((ctl++ & 15) == 0)
+            {
+                vib += vibDt;
+                if (vib >= 1f)
+                    vib -= 1f;
+                var depth = MathF.Min(1f, MathF.Max(0f, held - 0.15f) * 4f) * 0.016f; // a quarter tone of vibrato after 0.15 s
+                vibMul = 1f + depth * MathF.Sin(vib * Dsp.TwoPi);
+            }
+            phase += hz * vibMul * Dsp.InvSr;
             if (phase >= 1f)
                 phase -= 1f;
-            _breath.Process(rng.Noise(), 1.2f, a1, a2, a3);
-            var s = MathF.Sin(phase * Dsp.TwoPi) + 0.1f * MathF.Sin(phase * 2f * Dsp.TwoPi) + _breath.Band * 0.25f;
+            breath.Process(rng.Noise(), 1.2f, a1, a2, a3);
+            // sin(p) + 0.1 sin(2p) = sin(p) (1 + 0.2 cos(p)), with cos from sin (one sine per sample instead of two).
+            var sn = MathF.Sin(phase * Dsp.TwoPi);
+            var cs = MathF.Sqrt(MathF.Max(0f, 1f - sn * sn));
+            if (phase is >= 0.25f and < 0.75f)
+                cs = -cs;
+            var s = sn * (1f + 0.2f * cs) + breath.Band * 0.25f;
             dst[i] = s * env * vel;
         }
+        _breath = breath;
+        _vibMul = vibMul;
+        _ctl = ctl;
         _phase = phase;
         _hz = hz;
         _env = env;
         _vib = vib;
         _held = held;
         _stage = stage;
+    }
+}
+
+/// <summary>
+/// The style rig's reverb at half the sample rate (it only carries the instrument layers' sends, with the room's
+/// high end damped anyway): each pair of input samples averaged into one, the reverb run on those, and its output
+/// interpolated back up (1.5 samples late, which nobody hears in a reverb). Half the cost of a full-rate
+/// <see cref="RoomReverb"/>, with the same echo times and the same damping per second. Allocation-free.
+/// </summary>
+internal sealed class HalfRateReverb
+{
+    private readonly RoomReverb _verb;
+    private readonly float[] _in, _l, _r;
+    private bool _odd;
+    private float _pending, _curL, _curR;
+
+    public HalfRateReverb(float feedback, float damp, int maxBlock)
+    {
+        _verb = new RoomReverb(halfRate: true) { Feedback = feedback, Damp = damp * damp }; // a one-pole at half rate: the pole squared
+        _in = new float[maxBlock / 2 + 1];
+        _l = new float[maxBlock / 2 + 1];
+        _r = new float[maxBlock / 2 + 1];
+    }
+
+    public void Reset()
+    {
+        _verb.Reset();
+        _odd = false;
+        _pending = _curL = _curR = 0;
+    }
+
+    /// <summary>Processes a block (at most the constructor's maxBlock samples): input in, the wet left and right out.</summary>
+    public void Render(ReadOnlySpan<float> input, Span<float> left, Span<float> right)
+    {
+        var n = input.Length;
+        var m = 0;
+        var odd = _odd;
+        var pending = _pending;
+        for (var i = 0; i < n; i++)
+        {
+            if (!odd)
+            {
+                pending = input[i];
+                odd = true;
+            }
+            else
+            {
+                _in[m++] = 0.5f * (pending + input[i]);
+                odd = false;
+            }
+        }
+        _verb.Render(_in.AsSpan(0, m), _l.AsSpan(0, m), _r.AsSpan(0, m));
+        odd = _odd;
+        float cl = _curL, cr = _curR;
+        var k = 0;
+        for (var i = 0; i < n; i++)
+        {
+            if (!odd)
+            {
+                left[i] = cl;
+                right[i] = cr;
+                odd = true;
+            }
+            else
+            {
+                float nl = _l[k], nr = _r[k];
+                k++;
+                left[i] = 0.5f * (cl + nl);
+                right[i] = 0.5f * (cr + nr);
+                cl = nl;
+                cr = nr;
+                odd = false;
+            }
+        }
+        _odd = odd;
+        _pending = pending;
+        _curL = cl;
+        _curR = cr;
     }
 }

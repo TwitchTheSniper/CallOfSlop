@@ -12,39 +12,11 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>
-    /// A weird track may cost this much more than the heaviest classic track (the user's 1.5x rule plus room for timing
-    /// noise), measured as medians on the same machine (<see cref="MusicTrackCost"/>), not as a wall-clock cap.
+    /// A weird track may cost this much more than the heaviest classic track: the user's 1.5x rule, as the median ratio
+    /// of interleaved runs on the same machine (<see cref="CompareCpu"/>), not as a wall-clock cap. (It had room for
+    /// timing noise on top while the check used wall-clock medians.)
     /// </summary>
-    private const double WeirdCostRatioMax = 1.6;
-
-    /// <summary>
-    /// A track's CPU cost that a noisy runner can't fake: three timed 1 s renders from its first drop and three from
-    /// its last drop (the busiest parts), the median of each, the larger of the two.
-    /// </summary>
-    private static double MusicTrackCost(MusicRenderer r, MusicTrack t, float[] block)
-    {
-        var worst = 0.0;
-        var runs = new double[3];
-        foreach (var bar in new[] { t.FirstDropBar, LastDropBar(t) })
-        {
-            for (var k = 0; k < runs.Length; k++)
-            {
-                r.Load(t, 1234, bar);
-                var frames = 0;
-                var t0 = Stopwatch.GetTimestamp();
-                while (frames < Audio.SampleRate)
-                {
-                    r.Render(block);
-                    frames += block.Length / 2;
-                }
-                var ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
-                runs[k] = ms / (frames / (double)Audio.SampleRate);
-            }
-            Array.Sort(runs);
-            worst = Math.Max(worst, runs[1]);
-        }
-        return worst;
-    }
+    private const double WeirdCostRatioMax = 1.5;
 
     private static void CheckWeirdHardbass()
     {
@@ -170,32 +142,45 @@ public static partial class SelfTest
 
         CheckWeirdVoices();
 
-        // ---- CPU: at most ~1.5x the heaviest classic track (not the weird or harder ones), medians on the same machine -----
+        // ---- CPU: at most ~1.5x the heaviest classic track (not the weird or harder ones): the busiest stretch (first or
+        // last drop) of each, as the median ratio of interleaved runs on this thread's CPU clock (CompareCpu) -----
+        const double seconds = 1;
         var cr = new MusicRenderer();
-        var block = new float[MusicPlayer.BlockFrames * 2];
-        cr.Load(MusicTracks.All[0], 1);
-        for (var i = 0; i < 40; i++)
-            cr.Render(block); // warm up
-        var reference = 0.0;
-        var refName = "";
-        foreach (var t in MusicTracks.All.Where(t => t.Weird == null && t.Hardbass?.Harder == null))
+        var spots = MusicTracks.All.Where(t => t.Weird == null && t.Hardbass?.Harder == null)
+            .SelectMany(t => new[] { (Track: t, Bar: t.FirstDropBar), (Track: t, Bar: LastDropBar(t)) }).ToArray();
+        TrackWork(cr, spots[0].Track, seconds, 1234, spots[0].Bar)()(); // JIT warm-up
+        var refSpot = spots[0];
+        var refMs = -1.0;
+        var runs = new double[3];
+        foreach (var sp in spots)
         {
-            var c = MusicTrackCost(cr, t, block);
-            if (c > reference)
-                (reference, refName) = (c, t.Name);
+            var w = TrackWork(cr, sp.Track, seconds, 1234, sp.Bar);
+            for (var k = 0; k < runs.Length; k++)
+                runs[k] = ThreadCpu.TimeMs(w());
+            var ms = MedianOf(runs);
+            if (ms > refMs)
+                (refSpot, refMs) = (sp, ms);
         }
-        var stat = new System.Text.StringBuilder($"heaviest classic track {refName} {reference:0.00} ms/s;");
+        var refWork = TrackWork(cr, refSpot.Track, seconds, 1234, refSpot.Bar);
+        var refName = refSpot.Track.Name;
+        var stat = new System.Text.StringBuilder($"heaviest classic track {refName} (bar {refSpot.Bar}, {ThreadCpu.Kind}, median of interleaved pairs);");
+        var worstWeird = 0.0;
         foreach (var t in weird)
         {
-            var cost = MusicTrackCost(cr, t, block);
-            var ratio = reference > 0 ? cost / reference : 0;
+            var first = CompareCpu(refWork, TrackWork(cr, t, seconds, 1234, t.FirstDropBar), 7);
+            var last = CompareCpu(refWork, TrackWork(cr, t, seconds, 1234, LastDropBar(t)), 7);
+            var ratio = Math.Max(first.Ratio, last.Ratio);
+            var cost = Math.Max(first.CandMs, last.CandMs) / seconds;
+            var reference = first.RefMs / seconds;
+            worstWeird = Math.Max(worstWeird, ratio);
             var drop = Measure(RenderSeconds(new MusicRenderer(), t, 1234, t.FirstDropBar, 3)).Rms;
             stat.Append($" {t.Name} {t.Bpm}bpm {t.Seconds:0}s {cost:0.00}ms/s {ratio:0.00}x drop{drop:0.000};");
             if (ratio > WeirdCostRatioMax)
-                Fail($"{t.Name}: costs {cost:0.00} ms per s, {ratio:0.00}x the heaviest classic track {refName} (allowed {WeirdCostRatioMax}x)");
+                Fail($"{t.Name}: costs {ratio:0.00}x the heaviest classic track {refName} (medians {cost:0.00} vs {reference:0.00} ms per s; allowed {WeirdCostRatioMax}x)");
             if (cost > MusicBudgetMsPerSecond)
                 Fail($"{t.Name}: costs {cost:0.00} ms per s (budget {MusicBudgetMsPerSecond} for every track)");
         }
+        CpuRatioNotes.Add($"weird tracks: worst {worstWeird:0.00}x of {refName}");
         Line("WEIRDSTAT " + stat);
     }
 

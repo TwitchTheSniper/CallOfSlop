@@ -178,6 +178,13 @@ public static partial class SelfTest
                         hidden++;
             var us = sw.Elapsed.TotalMilliseconds * 1000 / (lines.Length * 5);
             var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (alloc > 0) // the least of three more identical rounds: a one-off JIT tier-up allocation shows in one at most
+                alloc = Math.Min(alloc, SteadyAllocBytes(() =>
+                {
+                    foreach (var (a, b) in lines)
+                        if (m.Concealed(a, b))
+                            hidden++;
+                }, warmups: 0));
             BfNote($"{m.Name}: {m.FoliageInstances.Length} plants -> {g.Nx} x {g.Nz} cells ({g.CoveredCells} covered, {kb} KB), built in {g.BuildMs:0.0} ms on a worker; "
                    + $"a sight line costs {us:0.00} us ({hidden / 5} of {lines.Length} hidden), {alloc} bytes allocated over {lines.Length * 5} queries");
             if (alloc > 0)

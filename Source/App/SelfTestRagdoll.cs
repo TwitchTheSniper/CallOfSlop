@@ -355,7 +355,7 @@ public static partial class SelfTest
         var medians = new List<double>(4);
         var poseMedians = new List<double>(4);
         var worst = 0.0;
-        long bytes = 0;
+        var bytes = long.MaxValue; // the least of the three counted runs (a one-off JIT tier-up allocation shows in one at most)
         var awake = 0;
         // Four identical runs: the first only warms up (JIT, first gathers); the median of the other three counts.
         for (var run = 0; run < 4; run++)
@@ -376,17 +376,18 @@ public static partial class SelfTest
             var before = GC.GetAllocatedBytesForCurrentThread();
             for (var s = 0; s < 40; s++)
             {
-                var t0 = Stopwatch.GetTimestamp();
+                // This thread's CPU clock, not the wall clock: time the runner spends on other work doesn't count.
+                var t0 = ThreadCpu.NowMs();
                 Ragdolls.StepAll();
-                var t1 = Stopwatch.GetTimestamp();
+                var t1 = ThreadCpu.NowMs();
                 Ragdolls.WriteInstances(buf, 0);
-                var t2 = Stopwatch.GetTimestamp();
-                times.Add((t1 - t0) * 1000.0 / Stopwatch.Frequency);
-                poseTimes.Add((t2 - t1) * 1000.0 / Stopwatch.Frequency);
+                var t2 = ThreadCpu.NowMs();
+                times.Add(t1 - t0);
+                poseTimes.Add(t2 - t1);
             }
             if (run == 0)
                 continue;
-            bytes += GC.GetAllocatedBytesForCurrentThread() - before;
+            bytes = Math.Min(bytes, GC.GetAllocatedBytesForCurrentThread() - before);
             awake = bodies.Count(b => !b.Sim.Asleep);
             times.Sort();
             poseTimes.Sort();
@@ -411,14 +412,14 @@ public static partial class SelfTest
         var asleep = bodies.Count(b => b.Sim.Asleep);
         var settled = bodies.Average(b => b.Sim.AwakeSteps) / 60.0;
         var costLine = $"cost: {awake} of {bodies.Count} bodies awake: one 60 Hz step {median:0.000} ms (median of 3 runs: {string.Join(" / ", medians.Select(m => m.ToString("0.000")))}; {worst:0.000} worst step), "
-              + $"posing their boxes {poseMedian:0.000} ms; {bytes} bytes allocated over 3 x 40 steps; all {asleep} asleep (after {settled:0.0} s on average): step + draw {sleepMs:0.0000} ms; target under 0.3 ms per step";
+              + $"posing their boxes {poseMedian:0.000} ms; {bytes} bytes allocated over 40 steps (least of 3 runs); all {asleep} asleep (after {settled:0.0} s on average): step + draw {sleepMs:0.0000} ms; target under 0.3 ms per step";
         RLine(costLine);
         if (awake < bodies.Count - 2)
             Fail($"ragdolls: only {awake} of {bodies.Count} bodies were awake for the cost test");
         if (median > 0.6)
             Fail($"ragdolls: one step of {bodies.Count} awake bodies takes {median:0.000} ms, median of 3 runs (budget 0.3 ms, 0.6 ms with CI slack)");
         if (bytes > 0)
-            Fail($"ragdolls: stepping and posing allocate ({bytes} bytes over 3 x 40 steps)");
+            Fail($"ragdolls: stepping and posing allocate ({bytes} bytes over 40 steps, the least of 3 runs)");
         if (asleep != bodies.Count || sleepMs > 0.1)
             Fail($"ragdolls: sleeping bodies aren't nearly free ({asleep} asleep, {sleepMs:0.000} ms)");
     }

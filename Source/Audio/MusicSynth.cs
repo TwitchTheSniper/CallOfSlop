@@ -1115,12 +1115,17 @@ internal sealed class RoomReverb
     private readonly float[] _storeL = new float[4], _storeR = new float[4];
     public float Feedback = 0.8f, Damp = 0.35f;
 
-    public RoomReverb()
+    /// <param name="halfRate">
+    /// For a reverb run at half the sample rate (<see cref="HalfRateReverb"/>): every delay line half as long, so the
+    /// echoes keep their times in seconds. (Square <see cref="Damp"/> for the same damping per second.)
+    /// </param>
+    public RoomReverb(bool halfRate = false)
     {
-        _combL = CombLengths.Select(n => new float[n]).ToArray();
-        _combR = CombLengths.Select(n => new float[n + Spread]).ToArray();
-        _apL = AllpassLengths.Select(n => new float[n]).ToArray();
-        _apR = AllpassLengths.Select(n => new float[n + Spread]).ToArray();
+        var d = halfRate ? 2 : 1;
+        _combL = CombLengths.Select(n => new float[n / d]).ToArray();
+        _combR = CombLengths.Select(n => new float[(n + Spread) / d]).ToArray();
+        _apL = AllpassLengths.Select(n => new float[n / d]).ToArray();
+        _apR = AllpassLengths.Select(n => new float[(n + Spread) / d]).ToArray();
     }
 
     public void Reset()

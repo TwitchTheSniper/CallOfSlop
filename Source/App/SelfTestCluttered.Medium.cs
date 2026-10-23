@@ -188,9 +188,11 @@ public static partial class SelfTest
     /// <summary>A full 16-player free-for-all with bots for 60 s: kills, nobody stuck, outside or below the floor, ticks in budget.</summary>
     private static void ClutteredMediumBotMatch(Map map)
     {
+        Game.SeedNextGame = 5200 + map.Id * 31; // seeded: the same match every run (a flaky check is no check)
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: map.MaxPlayers - 1, botSkill: BotDifficulty.Normal, mapId: map.Id);
         game.MapVoteEnabled = false;
+        NavGraph.Pump(double.MaxValue); // the nav graph whole now, not after a wall-clock-budgeted build that varies by machine
         Game.SettleMemory();
         const double dt = 1.0 / World.TickRate;
         var now = 0.0;
