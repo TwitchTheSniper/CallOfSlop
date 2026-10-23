@@ -294,7 +294,7 @@ public sealed partial class Game
         if (BotStuckWatch(p, b, ref steer, visible, now))
             return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
         AllocProfile.Mark("bot: doors, blind");
-        BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
+        BotDoors(p, b, ref steer, now); // open the shut door ahead, shut the one behind or the held room's (Bots/Doors/BotDoors.cs)
         BotBlindPlan(p, b, visible, def, now); // fire blind into foliage at an estimate? (BotFoliage.cs)
         AllocProfile.Mark("bot: aim");
         var aim = BotAim(p, b, target, visible, def, steer, now);
