@@ -19,6 +19,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Modding checks | `--check-map FILE`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
+| Sections for a change | `python3 -I tools/ci/sections_for.py [BASE]` prints the `[tests: ...]` line for the files changed vs BASE (default origin/main); `tools/ci/merge_check.sh` builds and runs them (what the coordinator runs before committing a merge) |
 
 **Local build in the agent container (Linux):** `. /home/claude/dotnet-env.sh` (adds the SDK to PATH and sets `XDG_RUNTIME_DIR`, which the game needs even headless), then `dotnet build -c Release --no-restore` (incremental: ~2 s) and `dotnet bin/Release/net10.0/CallOfSlop.dll --selftest-only "..."` (a couple of sections: ~1 s). The run prints nothing; read `bin/Release/net10.0/selftest.log`. If the SDK is missing, install it with the dot.net install script (`--channel 10.0 --install-dir /home/claude/.dotnet`) and restore once; `dot.net`, `builds.dotnet.microsoft.com` and `api.nuget.org` are allowed through the proxy.
 
