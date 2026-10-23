@@ -26,6 +26,11 @@ public sealed partial class NavGraph
     public const byte FlagSlope = 4;
 
     public string MapName = "";
+
+    /// <summary>TEMP self-test diagnostics: stair link notes for these maps.</summary>
+    public static HashSet<string>? DebugMaps;
+
+    public static List<string>? DebugNotes;
     public uint MapHash;
     public float Spacing;
 
@@ -263,6 +268,16 @@ public sealed partial class NavGraph
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
             // No node right on a stair end (its spot is a squeeze): the nearest node in plain view of it on the same floor,
             // so the stairs still join the floors (else the floor above is only reached over railings, if at all).
+            if (DebugMaps != null && DebugMaps.Contains(map.Name) && DebugNotes != null)
+            {
+                var ya = Ground(c, la.X, la.Z, la.Y + 1f, 3f);
+                var pa = float.IsFinite(ya) ? Place(map, c, new Vector3(la.X, ya, la.Z), 0.5f) : null;
+                var close = -1;
+                for (var q = 0; q < g.Nodes.Length; q++)
+                    if (Vector3.Distance(g.Nodes[q], la) < 1.5f && (close < 0 || Vector3.Distance(g.Nodes[q], la) < Vector3.Distance(g.Nodes[close], la)))
+                        close = q;
+                DebugNotes.Add(FormattableString.Invariant($"{map.Name} link foot ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) ia {ia} ib {ib}; ground {ya:0.00}, place {(pa is { } pp ? $"({pp.X:0.00},{pp.Y:0.00},{pp.Z:0.00})" : "none")}, waypoint listed {map.Waypoints.Contains(la)}, closest node {(close >= 0 ? $"{close} ({g.Nodes[close].X:0.00},{g.Nodes[close].Y:0.00},{g.Nodes[close].Z:0.00}) grid {close < gridCount}" : "none")}"));
+            }
             if (ia < 0)
                 ia = NearLinkEnd(g.Nodes, la);
             if (ib < 0)

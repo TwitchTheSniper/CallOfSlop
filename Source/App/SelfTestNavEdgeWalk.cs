@@ -31,6 +31,8 @@ public static partial class SelfTest
         NavGraph.RejectLog = new();
         var rejects = NavGraph.RejectLog;
         var stairNotes = new List<string>();
+        NavGraph.DebugMaps = ["Finnish Buildings", "Commercial Street"];
+        NavGraph.DebugNotes = stairNotes;
         try
         {
             foreach (var m in Maps.All)
