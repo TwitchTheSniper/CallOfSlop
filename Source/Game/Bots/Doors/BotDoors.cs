@@ -299,6 +299,26 @@ public sealed partial class Game
         return n;
     }
 
+    /// <summary>
+    /// Does the straight line from <paramref name="a"/> to <paramref name="b"/> go through a building doorway (open, shut or
+    /// broken)? Path shortcuts never do: the nav's doorway nodes either side line a bot up square with the opening.
+    /// </summary>
+    internal static bool ThroughDoorway(Vector3 a, Vector3 b)
+    {
+        var doors = World.Map.BuildingDoors;
+        var mid = (a + b) * 0.5f;
+        var r = Vector3.Distance(a, b) * 0.5f + 2f;
+        for (var i = 0; i < doors.Count; i++)
+        {
+            var d = doors[i];
+            if (Vector3.DistanceSquared(d.Center, mid) > r * r)
+                continue;
+            if (WalkCrossesDoor(d, a, b, 0.2f) && (MathF.Abs(DoorSide(d, a)) > 0.3f || MathF.Abs(DoorSide(d, b)) > 0.3f))
+                return true;
+        }
+        return false;
+    }
+
     private static bool RouteCrosses(BuildingDoor d, ReadOnlySpan<Vector3> pts)
     {
         for (var k = 1; k < pts.Length; k++)

@@ -307,6 +307,8 @@ public sealed partial class Game
             var dz = MathF.Max(0, MathF.Max(b.Min.Z - pos.Z, pos.Z - b.Max.Z));
             if (dx * dx + dz * dz >= 0.95f * 0.95f || (wish != Vector3.Zero && (b.Center.X - pos.X) * wish.X + (b.Center.Z - pos.Z) * wish.Z <= 0))
                 continue;
+            if (wish != Vector3.Zero && p.Bot is { } bb && (bb.DoorTogglesIn(i, now, 4) > 0 || (bb.HoldDoor == i && now < bb.HoldShutUntil)))
+                continue; // brushing past a door it just shut (behind it, or for its hold): not open again (BotDoors.cs)
             _doorActor = p.Id;
             var opened = ServerSetDoor(i, true, now);
             _doorActor = byte.MaxValue;

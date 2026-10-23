@@ -238,6 +238,8 @@ public sealed partial class Game
     {
         if (!NavGraph.Clear(pos, next))
             return false;
+        if (World.Map.BuildingDoors.Count > 0 && ThroughDoorway(pos, next))
+            return false; // a ray fits through a doorway at an angle, a body doesn't: walk its nodes, square on (BotDoors.cs)
         if (MathF.Abs(Rise(next - pos)) < 0.4f)
             return true;
         return World.Map.TerrainCollision?.Layer(pos.Y) is { } t && pos.Y - t.HeightAt(pos.X, pos.Z) < 0.3f && next.Y - t.HeightAt(next.X, next.Z) < 0.3f
