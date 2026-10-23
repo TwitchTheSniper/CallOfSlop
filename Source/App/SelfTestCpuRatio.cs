@@ -103,25 +103,35 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The most expensive of <paramref name="tracks"/> by the median of three timed runs each (after a warm-up), and its
-    /// cost in CPU ms per run. Picking the largest of noisy numbers errs towards a heavier reference, never a lighter one.
+    /// The most expensive of <paramref name="tracks"/> and its cost in CPU ms per run: every track timed once per round,
+    /// round-robin over five rounds (so a slow patch of the machine hits them all alike), the median of each. Picking
+    /// the largest of noisy numbers errs towards a heavier reference, never a lighter one.
     /// </summary>
-    private static (MusicTrack Track, double Ms) HeaviestTrack(IReadOnlyList<MusicTrack> tracks, Func<MusicTrack, Func<Action>> work)
+    private static (MusicTrack Track, double Ms) HeaviestTrack(IReadOnlyList<MusicTrack> tracks, Func<MusicTrack, Func<Action>> work) =>
+        HeaviestOf(tracks, work);
+
+    /// <inheritdoc cref="HeaviestTrack"/>
+    private static (T Item, double Ms) HeaviestOf<T>(IReadOnlyList<T> items, Func<T, Func<Action>> work)
     {
-        work(tracks[0])()(); // JIT warm-up
-        var best = tracks[0];
+        const int rounds = 5;
+        var works = items.Select(work).ToArray();
+        foreach (var w in works)
+            w()(); // warm-up (JIT, first gathers)
+        var ms = new double[items.Count][];
+        for (var i = 0; i < items.Count; i++)
+            ms[i] = new double[rounds];
+        for (var r = 0; r < rounds; r++)
+            for (var i = 0; i < items.Count; i++)
+                ms[i][r] = ThreadCpu.TimeMs(works[i]());
+        var best = 0;
         var bestMs = -1.0;
-        var runs = new double[3];
-        foreach (var t in tracks)
+        for (var i = 0; i < items.Count; i++)
         {
-            var w = work(t);
-            for (var k = 0; k < runs.Length; k++)
-                runs[k] = ThreadCpu.TimeMs(w());
-            var ms = MedianOf(runs);
-            if (ms > bestMs)
-                (best, bestMs) = (t, ms);
+            var m = MedianOf(ms[i]);
+            if (m > bestMs)
+                (best, bestMs) = (i, m);
         }
-        return (best, bestMs);
+        return (items[best], bestMs);
     }
 
     /// <summary>

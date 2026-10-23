@@ -148,19 +148,7 @@ public static partial class SelfTest
         var cr = new MusicRenderer();
         var spots = MusicTracks.All.Where(t => t.Weird == null && t.Hardbass?.Harder == null)
             .SelectMany(t => new[] { (Track: t, Bar: t.FirstDropBar), (Track: t, Bar: LastDropBar(t)) }).ToArray();
-        TrackWork(cr, spots[0].Track, seconds, 1234, spots[0].Bar)()(); // JIT warm-up
-        var refSpot = spots[0];
-        var refMs = -1.0;
-        var runs = new double[3];
-        foreach (var sp in spots)
-        {
-            var w = TrackWork(cr, sp.Track, seconds, 1234, sp.Bar);
-            for (var k = 0; k < runs.Length; k++)
-                runs[k] = ThreadCpu.TimeMs(w());
-            var ms = MedianOf(runs);
-            if (ms > refMs)
-                (refSpot, refMs) = (sp, ms);
-        }
+        var (refSpot, _) = HeaviestOf(spots, sp => TrackWork(cr, sp.Track, seconds, 1234, sp.Bar));
         var refWork = TrackWork(cr, refSpot.Track, seconds, 1234, refSpot.Bar);
         var refName = refSpot.Track.Name;
         var stat = new System.Text.StringBuilder($"heaviest classic track {refName} (bar {refSpot.Bar}, {ThreadCpu.Kind}, median of interleaved pairs);");
