@@ -591,9 +591,15 @@ public static partial class SelfTest
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             var measuredTicks = 90 * World.TickRate - 61;
-            var allocLine = $"{m.Name}: {allocBytes / (double)measuredTicks:0} B/tick, {gcs} GCs ({AllocProfile.Top(6, measuredTicks)})";
-            Line($"  allocations: {allocLine}");
-            _matchAllocDiag.Add((allocBytes / (double)measuredTicks, allocLine));
+            // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
+            // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a
+            // nav build); a steady per-tick allocation (once: the snapshot's slow-field compare boxing, ~2.6 KB a tick on
+            // every map) shows up here long before it fails the 8 ms rule by chance.
+            var perTickAlloc = allocBytes / (double)measuredTicks;
+            var allocText = $"{perTickAlloc:0} B/tick, {gcs} GC(s) in the match (by section: {AllocProfile.Top(6, measuredTicks)})";
+            Line($"  allocations: {allocText}");
+            if (perTickAlloc > MaxMatchAllocPerTick)
+                Fail($"{m.Name}: a bot match allocates {allocText}, over {MaxMatchAllocPerTick} B/tick");
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -619,15 +625,12 @@ public static partial class SelfTest
             if (game.Local is { Alive: true } && game.MatchNumber == 1)
                 Fail($"{m.Name}: the host was respawned without clicking Respawn");
         }
-        // TEMP DIAG (windows-ci-fix): every map's allocations as failures so CI shows them.
-        var diag = _matchAllocDiag.OrderByDescending(x => x.Bytes).ToList();
-        Fail($"DIAG alloc {diag.Count} maps, {diag.Count(x => x.Bytes == 0)} at 0: " + string.Join(" | ", diag.Take(6).Select(x => x.Text)));
-        Fail("DIAG alloc2 " + string.Join(" | ", diag.Skip(6).Take(8).Select(x => x.Text)) + " || planet: " + string.Join(" | ", diag.Where(x => x.Text.Contains("Planet")).Select(x => x.Text)));
     }
 
-    private static readonly List<(double Bytes, string Text)> _matchAllocDiag = new();
-
     private static BotStats _matchBotStats = new();
+
+    /// <summary>Most bytes a bot match tick may allocate on average (see CheckMatches; the busiest map today is about 560).</summary>
+    private const double MaxMatchAllocPerTick = 1500;
 
     // ---- 2a. Bots ---------------------------------------------------------------------------
 
