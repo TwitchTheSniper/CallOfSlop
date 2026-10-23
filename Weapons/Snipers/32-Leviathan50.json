@@ -2,6 +2,7 @@
   "format": "call-of-slop-weapon/1",
   "name": "Leviathan .50",
   "order": 32,
+  "defaultOptic": "8x Sniper Scope",
   "class": "Sniper",
   "blurb": "Anti-materiel rifle. One shot anywhere, slow to move.",
   "damage": 140,
@@ -27,7 +28,7 @@
     "kickBack": 0.18, "kickUp": 18, "kickRoll": 7, "kickSide": 0.006, "kickTime": 0.2
   },
   "mobility": 0.82,
-  "adsZoom": 4.5,
+  "adsZoom": 1.5,
   "equipTime": 0.9,
   "adsTime": 0.16,
   "length": 0.82,
@@ -38,7 +39,7 @@
   "bright": 0.4,
   "tail": 1,
   "model": {
-    "base": "bolt_sniper", "receiver": "slab", "receiverLength": 0.34, "receiverHeight": 0.12,
+    "base": "bolt_sniper", "sights": "tall", "receiver": "slab", "receiverLength": 0.34, "receiverHeight": 0.12,
     "receiverWidth": 0.075, "barrelWidth": 0.04, "barrelLength": 0.5, "handguard": "quad", "handguardLength": 0.22,
     "handguardHeight": 0.09, "muzzle": "brake", "bipod": "deployed", "stock": "chassis", "stockLength": 0.24,
     "mag": "box", "magLength": 0.09, "bolt": "charging", "finish": "black", "furniture": "black", "topRail": true,

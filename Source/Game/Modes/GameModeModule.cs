@@ -209,7 +209,7 @@ public abstract class GameModeModule
     public virtual (string First, string Second) ScoreboardColumnsShort => ("K", "D");
 
     /// <summary>A player's two numbers.</summary>
-    public virtual (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.Kills}", $"{p.Deaths}");
+    public virtual (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Num(p.Kills), ScoreboardModel.Num(p.Deaths)); // cached text: no allocation per frame
 
     /// <summary>What ranks players on the scoreboard (ties: kills, then fewer deaths).</summary>
     public virtual int RankScore(Player p) => p.Kills;
