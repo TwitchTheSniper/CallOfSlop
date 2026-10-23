@@ -1,0 +1,332 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Vault Server Stack",
+ "category": "Frostvault",
+ "description": "A tall dark server stack with rows of blinking blue, green and amber lamps. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.8,
+    2.2,
+    1.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 2
+ },
+ "breakable": {
+  "health": 400,
+  "breakBy": [
+   "explosions",
+   "streaks",
+   "bullets"
+  ],
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.8,
+    2.2,
+    1.0
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "color": "#2f353b",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.72,
+    2.0,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.5
+   ],
+   "color": "#1c2024"
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.275,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.25,
+    0.355,
+    0.515
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.9,
+    "period": 0.6,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.505,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.09,
+    0.585,
+    0.515
+   ],
+   "color": "#6fe0a0",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0a0",
+    "glow": 0.9,
+    "period": 0.77,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.735,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.07,
+    0.815,
+    0.515
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 0.9,
+    "period": 0.94,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.965,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.23,
+    1.045,
+    0.515
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.9,
+    "period": 1.1099999999999999,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.195,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.25,
+    1.275,
+    0.515
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.9,
+    "period": 1.28,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.425,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.09,
+    1.505,
+    0.515
+   ],
+   "color": "#6fe0a0",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0a0",
+    "glow": 0.9,
+    "period": 1.4500000000000002,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.655,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.07,
+    1.735,
+    0.515
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 0.9,
+    "period": 1.62,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.66,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.885,
+    0.51
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.05,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.23,
+    1.965,
+    0.515
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.9,
+    "period": 1.79,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

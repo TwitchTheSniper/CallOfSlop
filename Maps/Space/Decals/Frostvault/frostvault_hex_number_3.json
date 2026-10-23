@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Hex Number 3",
+ "category": "Frostvault",
+ "description": "A white hexagon with the number 3 in it.",
+ "author": "Call of Slop",
+ "size": 2.4,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "frostvault_hex_number_3.png",
+ "fadeDistance": 100
+}

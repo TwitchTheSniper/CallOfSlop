@@ -1,0 +1,75 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Lamp Strip",
+ "category": "Frostvault",
+ "description": "A hanging cold-white lamp strip on two short drops: place it with y just under a ceiling (looks only).",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 2
+ },
+ "fadeDistance": 90,
+ "parts": [
+  {
+   "size": [
+    2.0,
+    0.08,
+    0.16
+   ],
+   "offset": [
+    0.0,
+    0.14,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    1.9,
+    0.04,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    0.08,
+    0.0
+   ],
+   "color": "#f4fbff",
+   "anim": {
+    "type": "flicker",
+    "color": "#f4fbff",
+    "glow": 1.4,
+    "rate": 2,
+    "duty": 0.97
+   }
+  },
+  {
+   "size": [
+    0.04,
+    0.3,
+    0.04
+   ],
+   "offset": [
+    -0.8,
+    0.33,
+    0.0
+   ],
+   "color": "#2f353b"
+  },
+  {
+   "size": [
+    0.04,
+    0.3,
+    0.04
+   ],
+   "offset": [
+    0.8,
+    0.33,
+    0.0
+   ],
+   "color": "#2f353b"
+  }
+ ],
+ "author": "Call of Slop"
+}

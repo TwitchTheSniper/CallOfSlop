@@ -1,0 +1,104 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Hazard Board",
+ "category": "Frostvault",
+ "description": "A black-and-orange hazard board on a steel stand. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.7,
+    1.9,
+    0.4
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 60,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 8,
+   "size": [
+    0.05,
+    0.16
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.6,
+    0.06,
+    0.4
+   ],
+   "offset": [
+    0.0,
+    0.03,
+    0.0
+   ],
+   "color": "#2f353b"
+  },
+  {
+   "size": [
+    0.06,
+    1.3,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    0.71,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.7,
+    0.7,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    1.55,
+    0.0
+   ],
+   "color": "#1c1c1c"
+  },
+  {
+   "size": [
+    0.62,
+    0.62,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.55,
+    0.03
+   ],
+   "color": "#f08a20"
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.55,
+    0.045
+   ],
+   "color": "#1c1c1c"
+  }
+ ],
+ "author": "Call of Slop"
+}

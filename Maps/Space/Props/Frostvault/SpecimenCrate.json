@@ -1,0 +1,83 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Specimen Crate",
+ "category": "Frostvault",
+ "description": "A white insulated specimen crate with a blue band and a label plate.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 90,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.2
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.0,
+    0.8,
+    0.8
+   ],
+   "offset": [
+    0.0,
+    0.4,
+    0.0
+   ],
+   "color": "#e9eef2",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.04,
+    0.1,
+    0.84
+   ],
+   "offset": [
+    0.0,
+    0.35,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    1.04,
+    0.06,
+    0.84
+   ],
+   "offset": [
+    0.0,
+    0.77,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.4,
+    0.41
+   ],
+   "color": "#2f353b"
+  }
+ ],
+ "author": "Call of Slop"
+}

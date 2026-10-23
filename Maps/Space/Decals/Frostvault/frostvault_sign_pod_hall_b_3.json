@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Sign Pod Hall B 3",
+ "category": "Frostvault",
+ "description": "Tile 3 of 5 of the cryo vault's 'POD HALL B' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.72,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "frostvault_sign_pod_hall_b_3.png",
+ "fadeDistance": 80
+}

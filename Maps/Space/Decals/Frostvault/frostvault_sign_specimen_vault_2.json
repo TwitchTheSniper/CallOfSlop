@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Sign Specimen Vault 2",
+ "category": "Frostvault",
+ "description": "Tile 2 of 6 of the cryo vault's 'SPECIMEN VAULT' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.733,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "frostvault_sign_specimen_vault_2.png",
+ "fadeDistance": 80
+}

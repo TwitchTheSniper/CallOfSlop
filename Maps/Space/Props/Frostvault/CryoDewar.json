@@ -1,0 +1,270 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Cryo Dewar",
+ "category": "Frostvault",
+ "description": "A liquid-nitrogen dewar: a steel cylinder with a blue band and a red valve wheel.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.8,
+    1.5,
+    0.8
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 160,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.8,
+    1.1,
+    0.331
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#8a949c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.8,
+    1.1,
+    0.331
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#8a949c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.8,
+    1.1,
+    0.331
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#8a949c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.8,
+    1.1,
+    0.331
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#8a949c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    0.25,
+    0.207
+   ],
+   "offset": [
+    0.0,
+    1.225,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.5,
+    0.25,
+    0.207
+   ],
+   "offset": [
+    0.0,
+    1.225,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.5,
+    0.25,
+    0.207
+   ],
+   "offset": [
+    0.0,
+    1.225,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.5,
+    0.25,
+    0.207
+   ],
+   "offset": [
+    0.0,
+    1.225,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.9,
+    0.08,
+    0.373
+   ],
+   "offset": [
+    0.0,
+    0.54,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    0.9,
+    0.08,
+    0.373
+   ],
+   "offset": [
+    0.0,
+    0.54,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    0.9,
+    0.08,
+    0.373
+   ],
+   "offset": [
+    0.0,
+    0.54,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    0.9,
+    0.08,
+    0.373
+   ],
+   "offset": [
+    0.0,
+    0.54,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    0.1,
+    0.3,
+    0.1
+   ],
+   "offset": [
+    0.2,
+    1.45,
+    0.0
+   ],
+   "color": "#2f353b"
+  },
+  {
+   "size": [
+    0.26,
+    0.06,
+    0.26
+   ],
+   "offset": [
+    0.2,
+    1.45,
+    0.0
+   ],
+   "color": "#ff4a3a"
+  }
+ ],
+ "author": "Call of Slop"
+}
