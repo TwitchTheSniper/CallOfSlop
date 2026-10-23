@@ -25,12 +25,16 @@ public sealed partial class NavGraph
     /// <summary>Runs over a slope past the full-speed angle (BotNavWalk.cs): bots follow it node to node, no shortcuts across it.</summary>
     public const byte FlagSlope = 4;
 
+    /// <summary>
+    /// A last resort (BotNavWalk.cs): the mover couldn't walk it, but without it some spot would have no way in or out, so it's
+    /// kept at a high cost (bots take it only when there's no other way).
+    /// </summary>
+    public const byte FlagLastResort = 8;
+
+    /// <summary>Extra route cost of a <see cref="FlagLastResort"/> edge (metres).</summary>
+    public const float LastResortCost = 40f;
+
     public string MapName = "";
-
-    /// <summary>TEMP self-test diagnostics: stair link notes for these maps.</summary>
-    public static HashSet<string>? DebugMaps;
-
-    public static List<string>? DebugNotes;
     public uint MapHash;
     public float Spacing;
 
@@ -168,7 +172,7 @@ public sealed partial class NavGraph
     {
         Cache[(map.Name, map.ContentHash)] = g;
         Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
-            + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped), {g.BuildMs:0} ms of work");
+            + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped, {g.LastResorts} kept as last resorts), {g.BuildMs:0} ms of work");
     }
 
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
@@ -241,6 +245,7 @@ public sealed partial class NavGraph
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
         var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
+        var failed = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(); // directions the mover couldn't walk
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)
@@ -253,7 +258,7 @@ public sealed partial class NavGraph
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
                 var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
-                if (!link || !TryLink(g, c, i, j, edges))
+                if (!link || !TryLink(g, c, i, j, edges, failed))
                     continue;
                 // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -268,9 +273,6 @@ public sealed partial class NavGraph
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
             // No node right on a stair end (its spot is a squeeze): the nearest node in plain view of it on the same floor,
             // so the stairs still join the floors (else the floor above is only reached over railings, if at all).
-            if (DebugMaps != null && DebugMaps.Contains(map.Name) && DebugNotes != null && (ia < 0 || ib < 0))
-                foreach (var end in new[] { la, lb })
-                    DebugNotes.Add(FormattableString.Invariant($"{map.Name} link end ({end.X:0.00},{end.Y:0.00},{end.Z:0.00}) node {(end == la ? ia : ib)}: {DebugBlock(map, end)}"));
             if (ia < 0)
                 ia = NearLinkEnd(g.Nodes, la);
             if (ib < 0)
@@ -281,6 +283,13 @@ public sealed partial class NavGraph
             edges.Add((ia, ib, len, (byte)0, Vector3.Zero));
             edges.Add((ib, ia, len, (byte)0, Vector3.Zero));
         }
+
+        // Directions the mover couldn't walk come back only where they're the only way in or out of somewhere: kept at a high
+        // cost, so a room or a floor never drops out of the graph because its one way in is awkward (BotNavWalk.cs).
+        KeepLastResorts(g, g.Nodes.Length, edges, failed);
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
         var degree = new int[g.Nodes.Length];
@@ -399,19 +408,6 @@ public sealed partial class NavGraph
         return best;
     }
 
-    /// <summary>TEMP diagnostics: the boxes a standing body at <paramref name="p"/> overlaps (nav rules: doors left out).</summary>
-    public static string DebugBlock(Map map, Vector3 p)
-    {
-        var hits = new List<string>();
-        for (var i = 0; i < map.Solid.Count; i++)
-        {
-            var b = map.Solid[i];
-            if (p.Y + 0.01f < b.Max.Y && p.Y + World.PlayerHeight > b.Min.Y && p.X + 0.4f > b.Min.X && p.X - 0.4f < b.Max.X && p.Z + 0.4f > b.Min.Z && p.Z - 0.4f < b.Max.Z)
-                hits.Add(FormattableString.Invariant($"#{i}{(map.IsBuildingDoorBox(i) ? " door" : "")} [{b.Min.X:0.00},{b.Min.Y:0.00},{b.Min.Z:0.00}..{b.Max.X:0.00},{b.Max.Y:0.00},{b.Max.Z:0.00}]"));
-        }
-        return $"blockedNav {World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0))}, boxes {(hits.Count == 0 ? "none" : string.Join(" ", hits.Take(4)))}";
-    }
-
     /// <summary>The node within 1.2 m of a stair end <paramref name="p"/> (and level with it) nearest to it in plain view, or -1.</summary>
     private static int NearLinkEnd(Vector3[] nodes, Vector3 p)
     {
@@ -478,7 +474,7 @@ public sealed partial class NavGraph
     }
 
     /// <summary>Links nodes i and j where a player can walk between them. False if they were rejected without a walk (cheap).</summary>
-    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges)
+    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges, List<(int, int, float, byte, Vector3)> failed)
     {
         var a = g.Nodes[i];
         var b = g.Nodes[j];
@@ -488,6 +484,12 @@ public sealed partial class NavGraph
             return true;
         Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);
         // The mover has the last word where the samples can't tell (BotNavWalk.cs): a direction it can't walk gets no edge.
+        if (SlopedLink(a, b))
+        {
+            fFlags |= FlagSlope;
+            bFlags |= FlagSlope;
+        }
+        var len = Vector3.Distance(a, b);
         if ((fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight))
         {
             g.WalkChecked++;
@@ -495,19 +497,15 @@ public sealed partial class NavGraph
             {
                 fwd = false;
                 g.WalkRejected++;
+                failed.Add((i, j, SlopeCost(a, b, len) + LastResortCost, (byte)(fFlags | FlagLastResort), fLedge));
             }
             if (back && !MoverWalks(b, a, bFlags, bLedge))
             {
                 back = false;
                 g.WalkRejected++;
+                failed.Add((j, i, SlopeCost(b, a, len) + LastResortCost, (byte)(bFlags | FlagLastResort), bLedge));
             }
         }
-        if (SlopedLink(a, b))
-        {
-            fFlags |= FlagSlope;
-            bFlags |= FlagSlope;
-        }
-        var len = Vector3.Distance(a, b);
         if (fwd)
             edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
         if (back)
@@ -820,15 +818,17 @@ public sealed partial class NavGraph
         var n = Nodes.Length;
         // Reverse edges as a CSR.
         var rstart = new int[n + 1];
-        foreach (var to in EdgeTo)
-            rstart[to + 1]++;
+        for (var e = 0; e < EdgeTo.Length; e++)
+            if ((EdgeFlags[e] & FlagLastResort) == 0)
+                rstart[EdgeTo[e] + 1]++;
         for (var i = 0; i < n; i++)
             rstart[i + 1] += rstart[i];
         var rfrom = new int[EdgeTo.Length];
         var fill = (int[])rstart.Clone();
         for (var i = 0; i < n; i++)
             for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
-                rfrom[fill[EdgeTo[e]]++] = i;
+                if ((EdgeFlags[e] & FlagLastResort) == 0)
+                    rfrom[fill[EdgeTo[e]]++] = i;
 
         // Kosaraju over the main component: finishing order on the edges, then groups on the reversed edges.
         var order = new List<int>(MainNodes.Length);
@@ -847,7 +847,7 @@ public sealed partial class NavGraph
                 {
                     stack.Push((i, next + 1));
                     var to = EdgeTo[next];
-                    if (!seen[to])
+                    if (!seen[to] && (EdgeFlags[next] & FlagLastResort) == 0)
                     {
                         seen[to] = true;
                         stack.Push((to, EdgeStart[to]));

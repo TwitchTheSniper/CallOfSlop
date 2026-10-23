@@ -25,14 +25,9 @@ public static partial class SelfTest
         var notes = new List<string>();
         var perMap = new List<string>();
         var byKind = new Dictionary<string, List<(string Map, EdgeWalkFail F)>>();
-        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0;
+        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0, lastResorts = 0;
         var rejectedBy = new List<(string Map, int Count)>();
         var sw = Stopwatch.StartNew();
-        NavGraph.RejectLog = new();
-        var rejects = NavGraph.RejectLog;
-        var stairNotes = new List<string>();
-        NavGraph.DebugMaps = ["Village Buildings", "Commercial Street", "Paris Street"];
-        NavGraph.DebugNotes = stairNotes;
         try
         {
             foreach (var m in Maps.All)
@@ -44,28 +39,9 @@ public static partial class SelfTest
                 if (nav.Nodes.Length == 0)
                     continue;
                 var (walked, fails) = EdgeWalkMap(m, nav);
-                if (m.Name is "Commercial Street" or "Paris Street")
-                {
-                    // TEMP diagnostics: building nav points near the rooms bots can't reach, and what blocks a body there.
-                    var at = m.Name == "Paris Street" ? new Vector3(10.8f, 0.1f, -13.1f) : new Vector3(-39.9f, 0.1f, -18.2f);
-                    if (m.Name == "Commercial Street")
-                        foreach (var (la, lb) in m.NavLinks.Where(l => SlopeFlat(l.B - new Vector3(30f, 3.3f, 13f)) < 5f))
-                        {
-                            var ia = Array.FindIndex(nav.Nodes, q => Vector3.Distance(q, la) < 0.3f);
-                            string Edges(int n) => n < 0 ? "-" : string.Join(" ", Enumerable.Range(nav.EdgeStart[n], nav.EdgeStart[n + 1] - nav.EdgeStart[n]).Select(e => FormattableString.Invariant($"({nav.Nodes[nav.EdgeTo[e]].X:0.0},{nav.Nodes[nav.EdgeTo[e]].Y:0.0},{nav.Nodes[nav.EdgeTo[e]].Z:0.0})f{nav.EdgeFlags[e]}")));
-                            var into = ia < 0 ? "-" : string.Join(" ", Enumerable.Range(0, nav.Nodes.Length).Where(q => Enumerable.Range(nav.EdgeStart[q], nav.EdgeStart[q + 1] - nav.EdgeStart[q]).Any(e => nav.EdgeTo[e] == ia)).Select(q => FormattableString.Invariant($"({nav.Nodes[q].X:0.0},{nav.Nodes[q].Y:0.0},{nav.Nodes[q].Z:0.0})")));
-                            stairNotes.Add(FormattableString.Invariant($"Pub10 stair foot ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) node {ia} out {Edges(ia)} in {into}"));
-                            foreach (var r in rejects.Where(r => r.Map == m.Name && (Vector3.Distance(r.From, la) < 0.5f || Vector3.Distance(r.To, la) < 0.5f)).Take(6))
-                                stairNotes.Add(FormattableString.Invariant($"  dropped ({r.From.X:0.00},{r.From.Y:0.00},{r.From.Z:0.00}) -> ({r.To.X:0.00},{r.To.Y:0.00},{r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00},{r.End.Y:0.00},{r.End.Z:0.00})"));
-                        }
-                    foreach (var w in m.BuildingNavPoints.Where(w => MathF.Abs(w.Y - at.Y) < 0.5f && SlopeFlat(w - at) < 6f).Take(10))
-                    {
-                        var hasNode = nav.Nodes.Any(q => Vector3.Distance(q, w) < 0.3f);
-                        stairNotes.Add(FormattableString.Invariant($"{m.Name} nav point ({w.X:0.00},{w.Y:0.00},{w.Z:0.00}) node {hasNode} listed {m.Waypoints.Contains(w)}: {NavGraph.DebugBlock(m, w)}"));
-                    }
-                }
                 builderChecked += nav.WalkChecked;
                 builderRejected += nav.WalkRejected;
+                lastResorts += nav.LastResorts;
                 if (nav.WalkRejected > 0)
                     rejectedBy.Add((m.Name, nav.WalkRejected));
                 totalEdges += nav.BuiltEdges;
@@ -87,7 +63,6 @@ public static partial class SelfTest
         }
         finally
         {
-            NavGraph.RejectLog = null;
             World.Mover = previousMover;
             World.SetMap(previousMap);
         }
@@ -96,20 +71,10 @@ public static partial class SelfTest
         notes.Add(sum);
         if (totalFailed > 0)
             Fail($"nav edge walks: {totalFailed} edge(s) on {badMaps} map(s) the mover can't walk the way bots follow them ({string.Join(", ", perMap.Take(10))})");
-        notes.Add($"the nav builder walked {builderChecked} links with the mover and dropped {builderRejected} directions; most on "
+        notes.Add($"the nav builder walked {builderChecked} links with the mover and dropped {builderRejected} directions ({lastResorts} kept as last resorts, not walked here); most on "
                   + string.Join(", ", rejectedBy.OrderByDescending(x => x.Count).Take(12).Select(x => $"{x.Map} {x.Count}")));
         notes.Add("by kind: " + string.Join(", ", byKind.Select(kv => $"{kv.Key} {kv.Value.Count}")));
         notes.Add("by map: " + string.Join(", ", perMap));
-        // TEMP diagnostics: dropped walks into rooms bots can no longer reach (building maps).
-        var spots = new (string Map, Vector3 P)[]
-        {
-            ("Commercial Street", new(-39.9f, 0.1f, -18.2f)), ("Commercial Street", new(9.8f, 3.3f, -14.0f)), ("Commercial Street", new(9.8f, 3.3f, -11.6f)),
-            ("Finnish Buildings", new(-46.6f, 3.0f, 21.3f)), ("Finnish Buildings", new(-46.8f, 3.0f, 16.6f)),
-        };
-        foreach (var (map, at) in spots)
-            foreach (var r in rejects.Where(r => r.Map == map && MathF.Abs(r.To.Y - at.Y) < 0.6f && SlopeFlat(r.To - at) < 2.6f).Take(5))
-                notes.Add(FormattableString.Invariant($"dropped {map} near ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0}): ({r.From.X:0.00}, {r.From.Y:0.00}, {r.From.Z:0.00}) -> ({r.To.X:0.00}, {r.To.Y:0.00}, {r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00}, {r.End.Y:0.00}, {r.End.Z:0.00})"));
-        notes.AddRange(stairNotes.Take(30));
         foreach (var (kind, l) in byKind)
         {
             // A few examples of each kind, from different maps (walking first).
@@ -151,6 +116,8 @@ public static partial class SelfTest
             for (var e = nav.EdgeStart[i]; e < nav.EdgeStart[i + 1]; e++)
             {
                 var j = nav.EdgeTo[e];
+                if ((nav.EdgeFlags[e] & NavGraph.FlagLastResort) != 0)
+                    continue; // known to fail, kept only as the one way somewhere (BotNavWalk.cs)
                 if (j >= builtEnd || (nav.EdgeOff.Length != 0 && nav.EdgeOff[e]) || (nav.NodeOff.Length != 0 && (nav.NodeOff[i] || nav.NodeOff[j])))
                     continue;
                 from[e] = i;

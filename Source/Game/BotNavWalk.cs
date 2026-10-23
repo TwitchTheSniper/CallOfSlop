@@ -13,11 +13,121 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class NavGraph
 {
-    /// <summary>Links checked with the mover during the build, and directions dropped because the walk failed.</summary>
-    public int WalkChecked, WalkRejected;
+    /// <summary>Links checked with the mover during the build, directions dropped because the walk failed, and of those the ones kept as last resorts.</summary>
+    public int WalkChecked, WalkRejected, LastResorts;
 
-    /// <summary>Self-test: when set, every direction the mover walk drops is noted here (map, from, to, where the walk ended).</summary>
-    public static List<(string Map, Vector3 From, Vector3 To, byte Flags, Vector3 End, bool Sprint)>? RejectLog;
+    /// <summary>
+    /// Adds back the failed directions (<paramref name="failed"/>) that are the only way in or out of somewhere: while some node
+    /// that has edges isn't in the biggest group of nodes that can all reach each other, failed directions touching nodes
+    /// outside it are added (flagged <see cref="FlagLastResort"/>, costed high), a few rounds at most.
+    /// </summary>
+    private static void KeepLastResorts(NavGraph g, int n, List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> edges,
+        List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> failed)
+    {
+        var used = new bool[failed.Count];
+        for (var round = 0; round < 4; round++)
+        {
+            var inMain = StrongMain(n, edges);
+            var added = 0;
+            for (var k = 0; k < failed.Count; k++)
+            {
+                var f = failed[k];
+                if (used[k] || (inMain[f.From] && inMain[f.To]))
+                    continue;
+                used[k] = true;
+                edges.Add(f);
+                added++;
+            }
+            g.LastResorts += added;
+            if (added == 0)
+                return;
+        }
+    }
+
+    /// <summary>Which nodes are in the biggest strongly connected group of a plain edge list (Kosaraju, iterative).</summary>
+    private static bool[] StrongMain(int n, List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)> edges)
+    {
+        var start = new int[n + 1];
+        var rstart = new int[n + 1];
+        foreach (var e in edges)
+        {
+            start[e.From + 1]++;
+            rstart[e.To + 1]++;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            start[i + 1] += start[i];
+            rstart[i + 1] += rstart[i];
+        }
+        var to = new int[edges.Count];
+        var from = new int[edges.Count];
+        var fa = (int[])start.Clone();
+        var fb = (int[])rstart.Clone();
+        foreach (var e in edges)
+        {
+            to[fa[e.From]++] = e.To;
+            from[fb[e.To]++] = e.From;
+        }
+        var order = new List<int>(n);
+        var seen = new bool[n];
+        var stack = new Stack<(int Node, int Next)>();
+        for (var root = 0; root < n; root++)
+        {
+            if (seen[root])
+                continue;
+            seen[root] = true;
+            stack.Push((root, start[root]));
+            while (stack.Count > 0)
+            {
+                var (i, next) = stack.Pop();
+                if (next < start[i + 1])
+                {
+                    stack.Push((i, next + 1));
+                    if (!seen[to[next]])
+                    {
+                        seen[to[next]] = true;
+                        stack.Push((to[next], start[to[next]]));
+                    }
+                }
+                else
+                    order.Add(i);
+            }
+        }
+        var group = new int[n];
+        Array.Fill(group, -1);
+        var sizes = new List<int>();
+        var flat = new Stack<int>();
+        for (var k = order.Count - 1; k >= 0; k--)
+        {
+            var root = order[k];
+            if (group[root] >= 0)
+                continue;
+            var id = sizes.Count;
+            var size = 0;
+            group[root] = id;
+            flat.Push(root);
+            while (flat.Count > 0)
+            {
+                var i = flat.Pop();
+                size++;
+                for (var e = rstart[i]; e < rstart[i + 1]; e++)
+                    if (group[from[e]] < 0)
+                    {
+                        group[from[e]] = id;
+                        flat.Push(from[e]);
+                    }
+            }
+            sizes.Add(size);
+        }
+        var main = 0;
+        for (var k = 1; k < sizes.Count; k++)
+            if (sizes[k] > sizes[main])
+                main = k;
+        var inMain = new bool[n];
+        for (var i = 0; i < n; i++)
+            inMain[i] = sizes.Count > 0 && group[i] == main;
+        return inMain;
+    }
 
     /// <summary>The result of one <see cref="MoverWalk"/>.</summary>
     public struct WalkResult
@@ -148,13 +258,8 @@ public sealed partial class NavGraph
     /// </summary>
     private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
     {
-        var walk = MoverWalk(a, b, flags, ledge, sprint: false);
-        var run = walk.Reached ? MoverWalk(a, b, flags, ledge, sprint: true) : walk;
-        if (!run.Reached)
-        {
-            RejectLog?.Add((World.Map.Name, a, b, flags, run.End, walk.Reached));
+        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached || !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
             return false;
-        }
         if ((flags & FlagMantle) == 0)
             return true;
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
@@ -170,11 +275,8 @@ public sealed partial class NavGraph
             p.Y += 0.4f - t;
             if (World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0)))
                 continue;
-            if (MoverWalk(p, b, flags, ledge, sprint: false) is { Reached: false } side1)
-            {
-                RejectLog?.Add((World.Map.Name, p, b, flags, side1.End, false));
+            if (!MoverWalk(p, b, flags, ledge, sprint: false).Reached)
                 return false;
-            }
         }
         return true;
     }
