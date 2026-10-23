@@ -31,7 +31,7 @@ public static partial class SelfTest
         NavGraph.RejectLog = new();
         var rejects = NavGraph.RejectLog;
         var stairNotes = new List<string>();
-        NavGraph.DebugMaps = ["Finnish Buildings", "Commercial Street"];
+        NavGraph.DebugMaps = ["Village Buildings", "Commercial Street", "Paris Street"];
         NavGraph.DebugNotes = stairNotes;
         try
         {
@@ -44,23 +44,14 @@ public static partial class SelfTest
                 if (nav.Nodes.Length == 0)
                     continue;
                 var (walked, fails) = EdgeWalkMap(m, nav);
-                if (m.Name is "Finnish Buildings" or "Commercial Street")
+                if (m.Name is "Commercial Street" or "Paris Street")
                 {
-                    // TEMP diagnostics: the stair links near the rooms bots can't reach.
-                    var centre = m.Name == "Finnish Buildings" ? new Vector3(-46, 3, 18) : new Vector3(9.8f, 3.3f, -12f);
-                    foreach (var (la, lb) in m.NavLinks)
+                    // TEMP diagnostics: building nav points near the rooms bots can't reach, and what blocks a body there.
+                    var at = m.Name == "Paris Street" ? new Vector3(10.8f, 0.1f, -13.1f) : new Vector3(-39.9f, 0.1f, -18.2f);
+                    foreach (var w in m.BuildingNavPoints.Where(w => MathF.Abs(w.Y - at.Y) < 0.5f && SlopeFlat(w - at) < 3.5f).Take(8))
                     {
-                        if (SlopeFlat(lb - centre) > 7f && SlopeFlat(la - centre) > 7f)
-                            continue;
-                        int Find(Vector3 p) { for (var q = 0; q < nav.Nodes.Length; q++) if (Vector3.Distance(nav.Nodes[q], p) < 0.6f) return q; return -1; }
-                        int ia = Find(la), ib = Find(lb);
-                        string Edges(int n) => n < 0 ? "-" : string.Join(" ", Enumerable.Range(nav.EdgeStart[n], nav.EdgeStart[n + 1] - nav.EdgeStart[n]).Select(e => FormattableString.Invariant($"({nav.Nodes[nav.EdgeTo[e]].X:0.0},{nav.Nodes[nav.EdgeTo[e]].Y:0.0},{nav.Nodes[nav.EdgeTo[e]].Z:0.0})f{nav.EdgeFlags[e]}")));
-                        var downA = World.Physics.Raycast(la + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 0.6f, QueryFilter.Navigation);
-                        var downB = World.Physics.Raycast(lb + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 0.6f, QueryFilter.Navigation);
-                        stairNotes.Add(FormattableString.Invariant($"  ends: foot floor {0.3f - downA:0.00} blocked {World.Physics.BlockedNav(la + new Vector3(0, 0.01f, 0))}, top floor {0.3f - downB:0.00} blocked {World.Physics.BlockedNav(lb + new Vector3(0, 0.01f, 0))}"));
-                        stairNotes.Add(FormattableString.Invariant($"link {m.Name} ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) node {ia} -> ({lb.X:0.00},{lb.Y:0.00},{lb.Z:0.00}) node {ib}; top's edges: {Edges(ib)}"));
-                        foreach (var r in rejects.Where(r => r.Map == m.Name && Vector3.Distance(r.From, lb) < 0.7f).Take(6))
-                            stairNotes.Add(FormattableString.Invariant($"  dropped from top -> ({r.To.X:0.00},{r.To.Y:0.00},{r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00},{r.End.Y:0.00},{r.End.Z:0.00})"));
+                        var hasNode = nav.Nodes.Any(q => Vector3.Distance(q, w) < 0.3f);
+                        stairNotes.Add(FormattableString.Invariant($"{m.Name} nav point ({w.X:0.00},{w.Y:0.00},{w.Z:0.00}) node {hasNode} listed {m.Waypoints.Contains(w)}: {NavGraph.DebugBlock(m, w)}"));
                     }
                 }
                 builderChecked += nav.WalkChecked;

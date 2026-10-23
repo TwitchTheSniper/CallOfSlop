@@ -268,16 +268,9 @@ public sealed partial class NavGraph
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
             // No node right on a stair end (its spot is a squeeze): the nearest node in plain view of it on the same floor,
             // so the stairs still join the floors (else the floor above is only reached over railings, if at all).
-            if (DebugMaps != null && DebugMaps.Contains(map.Name) && DebugNotes != null)
-            {
-                var ya = Ground(c, la.X, la.Z, la.Y + 1f, 3f);
-                var pa = float.IsFinite(ya) ? Place(map, c, new Vector3(la.X, ya, la.Z), 0.5f) : null;
-                var close = -1;
-                for (var q = 0; q < g.Nodes.Length; q++)
-                    if (Vector3.Distance(g.Nodes[q], la) < 1.5f && (close < 0 || Vector3.Distance(g.Nodes[q], la) < Vector3.Distance(g.Nodes[close], la)))
-                        close = q;
-                DebugNotes.Add(FormattableString.Invariant($"{map.Name} link foot ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) ia {ia} ib {ib}; ground {ya:0.00}, place {(pa is { } pp ? $"({pp.X:0.00},{pp.Y:0.00},{pp.Z:0.00})" : "none")}, waypoint listed {map.Waypoints.Contains(la)}, closest node {(close >= 0 ? $"{close} ({g.Nodes[close].X:0.00},{g.Nodes[close].Y:0.00},{g.Nodes[close].Z:0.00}) grid {close < gridCount}" : "none")}"));
-            }
+            if (DebugMaps != null && DebugMaps.Contains(map.Name) && DebugNotes != null && (ia < 0 || ib < 0))
+                foreach (var end in new[] { la, lb })
+                    DebugNotes.Add(FormattableString.Invariant($"{map.Name} link end ({end.X:0.00},{end.Y:0.00},{end.Z:0.00}) node {(end == la ? ia : ib)}: {DebugBlock(map, end)}"));
             if (ia < 0)
                 ia = NearLinkEnd(g.Nodes, la);
             if (ib < 0)
@@ -404,6 +397,19 @@ public sealed partial class NavGraph
             }
         }
         return best;
+    }
+
+    /// <summary>TEMP diagnostics: the boxes a standing body at <paramref name="p"/> overlaps (nav rules: doors left out).</summary>
+    public static string DebugBlock(Map map, Vector3 p)
+    {
+        var hits = new List<string>();
+        for (var i = 0; i < map.Solid.Count; i++)
+        {
+            var b = map.Solid[i];
+            if (p.Y + 0.01f < b.Max.Y && p.Y + World.PlayerHeight > b.Min.Y && p.X + 0.4f > b.Min.X && p.X - 0.4f < b.Max.X && p.Z + 0.4f > b.Min.Z && p.Z - 0.4f < b.Max.Z)
+                hits.Add(FormattableString.Invariant($"#{i}{(map.IsBuildingDoorBox(i) ? " door" : "")} [{b.Min.X:0.00},{b.Min.Y:0.00},{b.Min.Z:0.00}..{b.Max.X:0.00},{b.Max.Y:0.00},{b.Max.Z:0.00}]"));
+        }
+        return $"blockedNav {World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0))}, boxes {(hits.Count == 0 ? "none" : string.Join(" ", hits.Take(4)))}";
     }
 
     /// <summary>The node within 1.2 m of a stair end <paramref name="p"/> (and level with it) nearest to it in plain view, or -1.</summary>
