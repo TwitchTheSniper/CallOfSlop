@@ -347,13 +347,13 @@ public sealed partial class Ui
     private void DrawWbHeader()
     {
         ImGui.PushFont(default, 22);
-        ImGui.TextColored(Orange, _wbMelee ? "MELEE WORKBENCH"u8 : "WEAPON WORKBENCH"u8);
+        ImGuiSafe.TextColored(Orange, _wbMelee ? "MELEE WORKBENCH" : "WEAPON WORKBENCH");
         ImGui.PopFont();
         ImGui.SameLine();
         var step1 = _wbPicking;
-        ImGui.TextColored(step1 ? Orange : Dim, step1 ? "   [1] PICK A GRIP"u8 : "   1 pick a grip"u8);
+        ImGuiSafe.TextColored(step1 ? Orange : Dim, step1 ? "   [1] PICK A GRIP" : "   1 pick a grip");
         ImGui.SameLine();
-        ImGui.TextColored(!step1 ? Orange : Dim, !step1 ? "  >  [2] ASSEMBLE"u8 : "  >  2 assemble"u8);
+        ImGuiSafe.TextColored(!step1 ? Orange : Dim, !step1 ? "  >  [2] ASSEMBLE" : "  >  2 assemble");
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, BenchRun != null ? "      Zombies run: only the parts you own" : _wbPractice ? "      Sandbox: practice parts (Zombies rules)" : "      Sandbox: every part unlocked");
         ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 230 * _scale);
@@ -393,7 +393,7 @@ public sealed partial class Ui
     {
         var grips = Parts.All.Where(p => _wbMelee ? p.Hilt != null : p.Frame != null);
         ImGui.PushFont(default, 18);
-        ImGui.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT"u8 : "CHANGE THE GRIP"u8) : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON"u8 : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"u8));
+        ImGuiSafe.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT" : "CHANGE THE GRIP") : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON" : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"));
         ImGui.PopFont();
         ImGuiSafe.TextColored(Dim, _wbPickKeep
             ? "Your parts move onto the new grip: receivers into the same-numbered slots, the rest where the new grip has the socket."
@@ -553,7 +553,7 @@ public sealed partial class Ui
 
     private void DrawInventory(float width)
     {
-        ImGui.TextColored(Orange, BenchRun != null ? "YOUR PARTS"u8 : _wbPractice ? "PRACTICE PARTS"u8 : "PARTS"u8);
+        ImGuiSafe.TextColored(Orange, BenchRun != null ? "YOUR PARTS" : _wbPractice ? "PRACTICE PARTS" : "PARTS");
         ImGui.SetNextItemWidth(-1);
         try
         {
@@ -589,7 +589,7 @@ public sealed partial class Ui
         var rowH = 46 * _scale;
         var rowW = ImGui.GetContentRegionAvail().X;
         if (_invParts.Count == 0)
-            ImGui.TextColored(Dim, BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with."u8 : "Nothing matches."u8);
+            ImGuiSafe.TextColored(Dim, BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with." : "Nothing matches.");
         PartCategory? group = null;
         for (var i = 0; i < _invParts.Count; i++)
         {
@@ -916,7 +916,7 @@ public sealed partial class Ui
         }
         var problems = Bm.Asm.Problems;
         if (problems.Count == 0 && m.Total == 0 && Bm.Build.Root != null)
-            ImGui.TextColored(Green, Bm.Build.IsMelee ? "Ready to swing."u8 : "Ready to fire."u8);
+            ImGuiSafe.TextColored(Green, Bm.Build.IsMelee ? "Ready to swing." : "Ready to fire.");
         else if (problems.Count > 0)
         {
             var p = problems[0];
