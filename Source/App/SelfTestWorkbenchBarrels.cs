@@ -185,6 +185,9 @@ public static partial class SelfTest
         Line("grips by slots: " + string.Join("; ", gripCounts.Select(g => $"{g.n}: {string.Join(", ", g.Item2)}")));
         if (gripCounts.Any(g => g.Item2.Count == 0))
             Fail($"barrels: every receiver slot count 1..9 should have a grip (missing {string.Join(", ", gripCounts.Where(g => g.Item2.Count == 0).Select(g => g.n))})");
+        foreach (var (rg, slots) in new[] { ("Twin Rifle Grip", 2), ("Triple Rifle Grip", 3) })
+            if (Parts.Find(rg) is not { Frame: { } rf } rp || rp.ReceiverCapacity != slots || rf.Hands != "two" || rp.Sockets.All(x => x.Name != "stock") || rp.Sockets.All(x => x.Name != "foregrip"))
+                Fail($"barrels: {rg} should be a two-handed {slots}-slot grip with a stock and a foregrip socket");
         var chainModel = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);
         var volleyDef = chainModel.Asm.Def;
         var changed = chainModel.SetChainFire(true);
