@@ -1,11 +1,11 @@
 # HANDOFF: state of Call of Slop (2026-10-23)
 
 **Current state:**
-- `main` is at `723cd91` (three fix branches merged on 2026-10-23: readme-dedupe, socket-marker, floating-parts).
-- Protocol 45.
-- CI on main: the full Linux suite passed on `e6828e2` (run 39932715846, 156 sections, 0 failures). The last Windows run passed on `814ffbf`, the release build; Windows hasn't run since the Appearance, action placement and test-filter merges, so push with `[windows ci]` before the next release.
-- The first public release is **v0.2026.1023.7**, built from `814ffbf`. The appearance screen, action placement and test filter came after it, so they are not in a release yet.
-- No agents or branches are in progress.
+- `main` holds everything from the 2026-10-23 coordinator session: README dedupe, empty action socket marker, floating parts, workbench UI (HUD hidden, Disassemble button, tree click), optic mounts, Legacy map pack, rack grips without frames + Twin/Triple Rifle Grips, universal ammo + feed coverage, SeabMix2 default audio mix, more optics/muzzles (the Loudener)/grips in both systems, updater cleanup, the Test Range flake fix, gravity zones, and ten new Space maps (03-12).
+- **Protocol 46** (feat/attachments widened loadout kits).
+- CI on main: the last fully green Linux run was before these merges; the merges were each checked with their own and the all-maps sections, and the full suite runs on the push of this file. Windows hasn't run since `814ffbf`: run it (`[windows ci]` or a manual run) before the next release. Known Windows-only item: the `Dev/AnimatedProps.json` fingerprint pin in `SelfTestPackAssets.cs` is stale (four map branches added props to that map) and must be re-pinned from the Windows failure message.
+- The first public release is **v0.2026.1023.7**, built from `814ffbf`. Nothing above is in a release yet.
+- No agents or branches are in progress. Build/test fast path on the user's PC: `Agent Copies\_tools\pcrun.sh` (see the project doc `claude/agent-rules.md`); the PC was offline at the end of the session, so the VM may need its .NET and seed repo again.
 
 ## Done (all merged to main)
 

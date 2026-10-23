@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-pack/1",
   "name": "Space",
-  "description": "Maps above the clouds and beyond: a floating sky station of round platforms and bridges, and a small planet you can walk all the way round.",
+  "description": "Twelve maps above the clouds and beyond: a floating sky station, a planet you can walk all the way round, a salvage yard and a binary asteroid that mix gravity fields (walls, low gravity, rocks with their own pull), an orbital shipyard, a lunar mining outpost, a generation-ship arboretum, a fusion reactor hall, an asteroid refinery, a terraforming processor, a cryo-vault and a neon spaceport bazaar.",
   "author": "Call of Slop",
   "order": 6
 }
