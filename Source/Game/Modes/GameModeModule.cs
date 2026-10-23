@@ -243,8 +243,11 @@ public abstract class GameModeModule
             game.EndMatch(leader, $"{game.NameOf(leader.Id)} wins {best}-{second}", now);
         else if (game.TimeLeft <= 0)
         {
-            var tied = game.Players.Values.Count(p => p.Kills == best) > 1;
-            if (leader == null || tied)
+            var tied = 0;
+            foreach (var p in game.Players.Values) // (a plain loop: a lambda over best would allocate a closure every tick)
+                if (p.Kills == best)
+                    tied++;
+            if (leader == null || tied > 1)
                 game.EndMatch(null, $"Time! Draw at {best}-{best}", now);
             else
                 game.EndMatch(leader, $"Time! {game.NameOf(leader.Id)} wins {best}-{second}", now);

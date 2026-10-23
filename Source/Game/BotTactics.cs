@@ -160,12 +160,11 @@ public sealed partial class Game
                 b.GoalUntil = now + 5;
                 break;
             case BotPersonality.Marksman:
-                goal = PickSpot(nav, p, n => nav.Openness[n] * 3f + Math.Clamp(Rise(nav.Nodes[n] - p.Position), 0, 8) * 1.5f
-                                               - MathF.Abs(Flat(nav.Nodes[n] - p.Position) - 30f) * 0.15f);
+                goal = MarksmanSpot(nav, p);
                 b.GoalUntil = now + 40;
                 break;
             case BotPersonality.Anchor:
-                goal = b.Objective ?? PickSpot(nav, p, n => nav.Openness[n] * 2f - Flat(nav.Nodes[n]) * 0.08f);
+                goal = b.Objective ?? AnchorSpot(nav, p);
                 b.GoalUntil = now + 40;
                 break;
             case BotPersonality.Tactician when enemy != null && !wander:
@@ -184,6 +183,14 @@ public sealed partial class Game
         b.Waypoint = goal == Vector3.Zero ? new Vector3(0.01f, 0, 0) : goal;
         return b.Waypoint;
     }
+
+    // The spot pickers' lambdas live in their own methods: a lambda over nav and p inside BotRoamGoal made the compiler
+    // allocate their closure at the top of BotRoamGoal, on every call (every roaming bot, every tick).
+    private Vector3 MarksmanSpot(NavGraph nav, Player p) =>
+        PickSpot(nav, p, n => nav.Openness[n] * 3f + Math.Clamp(Rise(nav.Nodes[n] - p.Position), 0, 8) * 1.5f
+                              - MathF.Abs(Flat(nav.Nodes[n] - p.Position) - 30f) * 0.15f);
+
+    private Vector3 AnchorSpot(NavGraph nav, Player p) => PickSpot(nav, p, n => nav.Openness[n] * 2f - Flat(nav.Nodes[n]) * 0.08f);
 
     private Vector3 Noise(float r) => FlatVec(new(((float)_rng.NextDouble() * 2 - 1) * r, 0, ((float)_rng.NextDouble() * 2 - 1) * r)); // (across the ground: a planet's too)
 

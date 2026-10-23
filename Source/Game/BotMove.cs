@@ -115,7 +115,9 @@ public sealed partial class Game
             }
             default:
             {
+                AllocProfile.Mark("bot: roam goal");
                 var goal = BotRoamGoal(p, b, nav, now);
+                AllocProfile.Mark("bot: steer");
                 s.Wish = BotFollow(p, b, nav, goal, now, ref s);
                 var far = Flat(goal - p.Position);
                 s.Sprint = far > 8f && b.HoldUntil == 0;
@@ -167,7 +169,11 @@ public sealed partial class Game
         if (Vector3.DistanceSquared(goal, b.PathGoal) > 9f)
             b.NeedPath = true;
         if (b.NeedPath && now >= b.NextPathTime && _botPathBudget > 0)
+        {
+            AllocProfile.Mark("bot: path search");
             BotPlan(p, b, nav, goal, now);
+            AllocProfile.Mark("bot: steer");
+        }
 
         // Advance past nodes we've reached.
         while (b.PathIdx < b.PathLen)
@@ -195,8 +201,10 @@ public sealed partial class Game
                 b.NextShortcut = now + 0.25;
                 var next = nav.Nodes[b.Path[b.PathIdx + 1]];
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
+                AllocProfile.Mark("bot: shortcut");
                 if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && CanShortcut(pos, next))
                     BotAdvance(b, nav);
+                AllocProfile.Mark("bot: steer");
             }
             aimAt = nav.Nodes[b.Path[b.PathIdx]];
             var dh = Flat(aimAt - pos);
