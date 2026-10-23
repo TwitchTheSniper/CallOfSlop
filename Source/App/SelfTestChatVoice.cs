@@ -34,7 +34,7 @@ public static partial class SelfTest
         CheckChatVoiceSettings();
         var devices = MicCapture.Devices();
         VLine($"capture: {devices.Length} capture device(s) listed; opening one is skipped here (CI has no microphone, and the self-test never opens a mic)");
-        Line("::error title=Chat and voice (results - TEMPORARY, not a failure)::" + string.Join("%0A", VoiceNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        Line("::notice title=Chat and voice (results)::" + string.Join("%0A", VoiceNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
     // ---- Test signals ------------------------------------------------------------------------------------------
