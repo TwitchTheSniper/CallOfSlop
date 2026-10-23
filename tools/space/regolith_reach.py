@@ -61,32 +61,32 @@ def rot_feature(f):
 
 # ================================================================================================ terrain
 def terrain_half():
+    # Shape first: berms (long low ridges that cut the sightlines between the quadrants) and small craters (a rim and
+    # a bowl); then the level pads and ramps, so nothing is built on a bump.
+    feat(type="ridge", points=[[-20, 16], [-16, 28], [-18, 42]], width=8, height=2.4)
+    feat(type="ridge", points=[[-44, -30], [-36, -22], [-34, -14]], width=7, height=2.2)
+    feat(type="ridge", points=[[-10, -48], [4, -46]], width=7, height=2.0)
+    feat(type="hill", x=-18, z=8, radius=11, height=1.3)
+    feat(type="basin", x=-18, z=8, radius=7.5, depth=2.6)
+    feat(type="hill", x=-8, z=50, radius=8, height=1.1)
+    feat(type="basin", x=-8, z=50, radius=5, depth=2.0)
+    feat(type="hill", x=-46, z=-44, radius=8, height=1.4)
+    feat(type="basin", x=-46, z=-44, radius=5, depth=1.6)
     # The habitat pad (west), the tunnel strip, the survey hab pad.
     feat(type="flatten", x=-52, z=0, radius=21, height=BASE_Y, edge=5)
     feat(type="ramp", points=[[-52, -10, BASE_Y], [-26, -10, BASE_Y]], width=7, edge=3)
-    feat(type="flatten", x=-14, z=-24, w=17, d=15, height=0.9, edge=3)
+    feat(type="flatten", x=-21, z=-24, w=20, d=20, height=0.9, edge=2)
     # Solar farm pad (north-west) and the landing pad (south-west).
-    feat(type="flatten", x=-26, z=-39, w=32, d=18, height=0.5, edge=3)
+    feat(type="flatten", x=-26, z=-43, w=32, d=16, height=0.5, edge=3)
     feat(type="flatten", x=-32, z=30, radius=12, height=0.6, edge=3)
-    # Berms: long low ridges that cut the sightlines between the quadrants.
-    feat(type="ridge", points=[[-42, 16], [-30, 24], [-20, 34]], width=8, height=2.4)
-    feat(type="ridge", points=[[-44, -30], [-36, -22], [-34, -14]], width=7, height=2.2)
-    feat(type="ridge", points=[[-10, -46], [4, -44]], width=7, height=2.0)
-    # Small craters: a rim and a bowl.
-    feat(type="hill", x=-18, z=10, radius=11, height=1.3)
-    feat(type="basin", x=-18, z=10, radius=7.5, depth=2.6)
-    feat(type="hill", x=-10, z=38, radius=9, height=1.1)
-    feat(type="basin", x=-10, z=38, radius=6, depth=2.0)
-    feat(type="hill", x=-46, z=-44, radius=8, height=1.4)
-    feat(type="basin", x=-46, z=-44, radius=5, depth=1.6)
     # The north ore dock pad and the conveyor's ramp up out of the pit.
-    feat(type="flatten", x=0, z=-33, w=24, d=16, height=DOCK_Y, edge=3)
+    feat(type="flatten", x=0, z=-33, w=18, d=16, height=DOCK_Y, edge=3)
     feat(type="ramp", points=[[0, -27, DOCK_Y], [0, -8, PIT_FLOOR]], width=5, edge=3, material="dirt")
     # The west vehicle ramp into the pit.
     feat(type="ramp", points=[[-28, 0], [-9, 0, PIT_FLOOR]], width=7, edge=3, material="dirt")
     # Rover tracks (paint only) from the base to the pit and round to the pads.
     feat(type="ramp", points=[[-44, 4], [-30, 2]], width=3, edge=1, material="dirt", mode="fill")
-    feat(type="ramp", points=[[-40, 10], [-34, 24], [-30, 30]], width=3, edge=1, material="dirt", mode="fill")
+    feat(type="ramp", points=[[-40, 10], [-36, 24], [-34, 30]], width=3, edge=1, material="dirt", mode="fill")
 
 
 def terrain():
@@ -140,9 +140,9 @@ def west_base():
     building("Station Control Hub", -58, 0, -10, 90, 661, variant={"palette": "white hull"})
     building("Station Hangar Bay", -56, 0, 16, 90, 662, variant={"palette": "white hull"})
     names, tw, th = sdec.tiles("hab_west")
-    sign_row(names, tw, -51.9, -10, 3.1, "wall-x", along_z=True)
+    sign_row(names, tw, -51.3, -10, 3.1, "wall-x", along_z=True)
     names, tw, th = sdec.tiles("garage")
-    sign_row(names, tw, -48.9, 16, 6.15, "wall-x", along_z=True)
+    sign_row(names, tw, -48.3, 16, 6.15, "wall-x", along_z=True)
     dome(-44, -26, 5.0)
     dome(-62, 30, 4.2)
     tunnel(-49, -29, -10)
@@ -183,33 +183,33 @@ def sign_row(names, tw, cx, zc, y, onto, along_z=False):
 
 
 def survey_hab():
-    building("Station Crew Quarters", -14, 0, -24, 0, 663, variant={"palette": "white hull"})
+    building("Station Crew Quarters", -20, 0, -24, 0, 631, variant={"palette": "white hull"})
     names, tw, th = sdec.tiles("drill_site")
-    sign_row(names, tw, -14, -18.9, 2.75, "wall-z")
-    decal("Regolith Hab Number 2", -8.5, -17.5, 1.5, onto="wall-z", size=1.3, reach=2.5)
-    for (n, x, z, yw) in [("Hab Airlock Module", -22, -20, 90), ("Oxygen Tank Bank", -6, -31, 0), ("Lunar Rover", -2, -22, 80),
-                          ("Station Server Cabinet", -20, -30, 0), ("Supply Case Stack", -8, -30.5, 0), ("Sample Crate", -4, -18, 0),
-                          ("Deck Light Post", -22, -31, 0), ("Survey Light", -3, -27, 0), ("Station Deck Barrier", -6, -16, 0)]:
+    sign_row(names, tw, -20, -18.4, 2.75, "wall-z")
+    decal("Regolith Hab Number 2", -16.5, -18.4, 1.5, onto="wall-z", size=1.3, reach=2.5)
+    for (n, x, z, yw) in [("Hab Airlock Module", -28, -20, 90), ("Oxygen Tank Bank", -12, -31, 0), ("Lunar Rover", -8, -22, 80),
+                          ("Station Server Cabinet", -26, -30, 0), ("Supply Case Stack", -14, -30.5, 0), ("Sample Crate", -10, -18, 0),
+                          ("Deck Light Post", -28, -31, 0), ("Survey Light", -9, -27, 0), ("Station Deck Barrier", -12, -16, 0)]:
         prop(n, x, z, 0, yw)
-    decal_scatter(["Regolith Scuff", "global:Footprints", "Regolith Survey Mark"], -22, -32, -4, -16, 14, seed=23, gap=1.5)
-    for (x, z) in ((-20, -17), (-8, -17), (-20, -31), (-6, -29)):
+    decal_scatter(["Regolith Scuff", "global:Footprints", "Regolith Survey Mark"], -28, -32, -10, -16, 14, seed=23, gap=1.5)
+    for (x, z) in ((-26, -17), (-14, -17), (-26, -31), (-12, -29)):
         waypoint(x, z)
 
 
 def solar_farm():
-    for row, z in enumerate((-46, -42, -38, -34)):
+    for row, z in enumerate((-49, -45, -41, -37)):
         for k in range(5):
             x = -38 + k * 5.2 + (2.6 if row % 2 else 0)
             prop("Solar Array Rack", x, z, 0, 0)
-    for (n, x, z, yw) in [("Pad Transformer", -41, -32, 0), ("Street Cabinet", -41, -35, 90), ("Station Server Cabinet", -10, -34, 180),
+    for (n, x, z, yw) in [("Pad Transformer", -41, -35, 0), ("Street Cabinet", -41, -38, 90), ("Station Server Cabinet", -10, -37, 180),
                           ("Lunar Boulder", -41, -47, 0), ("Survey Light", -11, -44, 0), ("Survey Light", -41, -40, 0), ("Sample Crate", -24, -31, 20)]:
         prop(n, x, z, 0, yw)
     names, tw, th = sdec.tiles("solar_farm")
-    sign_board(names, tw, -24, -30.5, 1.6, "wall+z")
+    sign_board(names, tw, -24, -33.5, 1.6, "wall+z")
     decal_scatter(["Regolith Scuff", "Regolith Dust Spray", "global:Footprints"], -40, -48, -10, -31, 16, seed=24, gap=1.5)
     for x in (-36, -30, -24, -18, -12):
-        for z in (-44, -40, -36):
-            waypoint(x + 1.3 - (1.3 if z == -40 else 0), z)
+        for z in (-47, -43, -39):
+            waypoint(x + 1.3 - (1.3 if z == -43 else 0), z)
 
 
 def sign_board(names, tw, cx, z, y, onto):
@@ -245,9 +245,9 @@ def landing_pad():
 
 def ore_dock_north():
     """The north ore dock (hill 2): hoppers, a conveyor climbing out of the pit, crates and a sign."""
-    for z in (-10, -14, -18, -22, -26):
+    for z in (-10, -14, -18, -22):
         prop("Ore Conveyor Section", 3.0, z, 0, 90)
-    for (n, x, z, yw) in [("Regolith Hopper", -8, -36, 0), ("Regolith Hopper", 8, -36, 0), ("Ore Bin Hopper", 0, -39, 0), ("Ore Mine Cart", -4, -31, 90),
+    for (n, x, z, yw) in [("Regolith Hopper", -8, -36, 0), ("Regolith Hopper", 8, -36, 0), ("Ore Bin Hopper", 0, -39, 0), ("Ore Mine Cart", -9, -31, 90),
                           ("Blasting Explosives Crate", 9, -29, 0), ("Blasting Warning Sign", 7, -26.5, 180), ("Mine Floodlight Mast", -10, -29, 0),
                           ("Sample Crate", -7, -27, 0), ("Sample Crate", -8, -27.8, 40), ("Station Deck Barrier", 6, -32, 90), ("Lunar Boulder", 12, -34, 0)]:
         prop(n, x, z, 0, yw)
@@ -276,9 +276,9 @@ def pit_half():
 
 def midfield():
     """Berm pockets and craters between the base and the pit."""
-    for (n, x, z, yw) in [("Lunar Boulder", -20, 10, 0), ("Lunar Boulder", -28, 16, 0), ("Lunar Boulder", -36, -36, 0), ("Lunar Rover", -30, 22, 60),
+    for (n, x, z, yw) in [("Lunar Boulder", -26, 8, 0), ("Lunar Boulder", -28, 18, 0), ("Lunar Boulder", -36, -36, 0), ("Lunar Rover", -30, 22, 60),
                           ("Station Cargo Pod", -24, 12, 30), ("Oxygen Tank Bank", -22, 44, 0), ("Sample Crate", -18, 4, 0), ("Survey Light", -26, 10, 0),
-                          ("Survey Light", -16, 42, 0), ("Regolith Hopper", -28, -22, 0), ("Station Pipe Run", -30, 10, 0), ("Lunar Boulder", -8, 44, 0),
+                          ("Survey Light", -12, 46, 0), ("Regolith Hopper", -28, -22, 0), ("Station Pipe Run", -30, 10, 0), ("Lunar Boulder", -4, 44, 0),
                           ("Mine Floodlight Mast", -24, 2, 0), ("Hazard Bollard", -10, 30, 0), ("Hazard Bollard", -4, 36, 0)]:
         prop(n, x, z, 0, yw)
     decal_scatter(["Regolith Survey Mark", "Regolith Scuff", "global:Footprints"], -40, 0, -4, 46, 14, seed=28, gap=2.0)
@@ -318,7 +318,9 @@ def rotated(ops):
 
 
 def boundary_points():
-    half = [(-74, 0), (-73, -14), (-69, -28), (-62, -40), (-50, -50), (-36, -56), (-18, -59), (0, -60)]
+    # The west half of the outline, north to south (a little irregular); the east half is it turned.
+    half = [(0, -60), (-16, -58), (-32, -57), (-48, -51), (-60, -42), (-68, -30), (-73, -16), (-75, 0), (-73, 14), (-70, 27),
+            (-62, 41), (-52, 50), (-38, 55), (-20, 60)]
     full = list(half) + [(-x, -z) for (x, z) in half]  # point-symmetric: the second half is the first turned
     return [[x, z] for (x, z) in full]
 

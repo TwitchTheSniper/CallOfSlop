@@ -36,7 +36,7 @@ public static partial class SelfTest
             [
                 ("pit floor", 0, 0, -3.5f), ("west base pad", -50, -4, 1.2f), ("east base pad", 50, 4, 1.2f), ("west tunnel", -40, -10, 1.2f),
                 ("east tunnel", 40, 10, 1.2f), ("north ore dock", 0, -33, 0.4f), ("south ore dock", 0, 33, 0.4f), ("west landing pad", -26, 30, 0.6f),
-                ("east landing pad", 26, -30, 0.6f), ("west solar farm", -26, -39, 0.5f), ("east solar farm", 26, 39, 0.5f),
+                ("east landing pad", 26, -30, 0.6f), ("west solar farm", -26, -43, 0.5f), ("east solar farm", 26, 43, 0.5f),
             ]),
     ];
 

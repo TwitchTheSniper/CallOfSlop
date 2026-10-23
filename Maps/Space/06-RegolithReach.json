@@ -40,68 +40,116 @@
   "shape": "smooth",
   "points": [
    [
-    -74,
-    0
-   ],
-   [
-    -73,
-    -14
-   ],
-   [
-    -69,
-    -28
-   ],
-   [
-    -62,
-    -40
-   ],
-   [
-    -50,
-    -50
-   ],
-   [
-    -36,
-    -56
-   ],
-   [
-    -18,
-    -59
-   ],
-   [
     0,
     -60
    ],
    [
-    74,
+    -16,
+    -58
+   ],
+   [
+    -32,
+    -57
+   ],
+   [
+    -48,
+    -51
+   ],
+   [
+    -60,
+    -42
+   ],
+   [
+    -68,
+    -30
+   ],
+   [
+    -73,
+    -16
+   ],
+   [
+    -75,
     0
    ],
    [
-    73,
+    -73,
     14
    ],
    [
-    69,
-    28
+    -70,
+    27
    ],
    [
-    62,
-    40
+    -62,
+    41
    ],
    [
-    50,
+    -52,
     50
    ],
    [
-    36,
-    56
+    -38,
+    55
    ],
    [
-    18,
-    59
+    -20,
+    60
    ],
    [
     0,
     60
+   ],
+   [
+    16,
+    58
+   ],
+   [
+    32,
+    57
+   ],
+   [
+    48,
+    51
+   ],
+   [
+    60,
+    42
+   ],
+   [
+    68,
+    30
+   ],
+   [
+    73,
+    16
+   ],
+   [
+    75,
+    0
+   ],
+   [
+    73,
+    -14
+   ],
+   [
+    70,
+    -27
+   ],
+   [
+    62,
+    -41
+   ],
+   [
+    52,
+    -50
+   ],
+   [
+    38,
+    -55
+   ],
+   [
+    20,
+    -60
    ]
   ],
   "edge": {
@@ -147,70 +195,19 @@
     "edge": 4
    },
    {
-    "type": "flatten",
-    "x": -52,
-    "z": 0,
-    "radius": 21,
-    "height": 1.2,
-    "edge": 5
-   },
-   {
-    "type": "ramp",
-    "points": [
-     [
-      -52,
-      -10,
-      1.2
-     ],
-     [
-      -26,
-      -10,
-      1.2
-     ]
-    ],
-    "width": 7,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": -14,
-    "z": -24,
-    "w": 17,
-    "d": 15,
-    "height": 0.9,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": -26,
-    "z": -39,
-    "w": 32,
-    "d": 18,
-    "height": 0.5,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": -32,
-    "z": 30,
-    "radius": 12,
-    "height": 0.6,
-    "edge": 3
-   },
-   {
     "type": "ridge",
     "points": [
      [
-      -42,
+      -20,
       16
      ],
      [
-      -30,
-      24
+      -16,
+      28
      ],
      [
-      -20,
-      34
+      -18,
+      42
      ]
     ],
     "width": 8,
@@ -240,11 +237,11 @@
     "points": [
      [
       -10,
-      -46
+      -48
      ],
      [
       4,
-      -44
+      -46
      ]
     ],
     "width": 7,
@@ -253,29 +250,29 @@
    {
     "type": "hill",
     "x": -18,
-    "z": 10,
+    "z": 8,
     "radius": 11,
     "height": 1.3
    },
    {
     "type": "basin",
     "x": -18,
-    "z": 10,
+    "z": 8,
     "radius": 7.5,
     "depth": 2.6
    },
    {
     "type": "hill",
-    "x": -10,
-    "z": 38,
-    "radius": 9,
+    "x": -8,
+    "z": 50,
+    "radius": 8,
     "height": 1.1
    },
    {
     "type": "basin",
-    "x": -10,
-    "z": 38,
-    "radius": 6,
+    "x": -8,
+    "z": 50,
+    "radius": 5,
     "depth": 2.0
    },
    {
@@ -294,9 +291,60 @@
    },
    {
     "type": "flatten",
+    "x": -52,
+    "z": 0,
+    "radius": 21,
+    "height": 1.2,
+    "edge": 5
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -52,
+      -10,
+      1.2
+     ],
+     [
+      -26,
+      -10,
+      1.2
+     ]
+    ],
+    "width": 7,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
+    "x": -21,
+    "z": -24,
+    "w": 20,
+    "d": 20,
+    "height": 0.9,
+    "edge": 2
+   },
+   {
+    "type": "flatten",
+    "x": -26,
+    "z": -43,
+    "w": 32,
+    "d": 16,
+    "height": 0.5,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
+    "x": -32,
+    "z": 30,
+    "radius": 12,
+    "height": 0.6,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
     "x": 0,
     "z": -33,
-    "w": 24,
+    "w": 18,
     "d": 16,
     "height": 0.4,
     "edge": 3
@@ -361,11 +409,11 @@
       10
      ],
      [
-      -34,
+      -36,
       24
      ],
      [
-      -30,
+      -34,
       30
      ]
     ],
@@ -375,70 +423,19 @@
     "mode": "fill"
    },
    {
-    "type": "flatten",
-    "x": 52,
-    "z": 0,
-    "radius": 21,
-    "height": 1.2,
-    "edge": 5
-   },
-   {
-    "type": "ramp",
-    "points": [
-     [
-      52,
-      10,
-      1.2
-     ],
-     [
-      26,
-      10,
-      1.2
-     ]
-    ],
-    "width": 7,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": 14,
-    "z": 24,
-    "w": 17,
-    "d": 15,
-    "height": 0.9,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": 26,
-    "z": 39,
-    "w": 32,
-    "d": 18,
-    "height": 0.5,
-    "edge": 3
-   },
-   {
-    "type": "flatten",
-    "x": 32,
-    "z": -30,
-    "radius": 12,
-    "height": 0.6,
-    "edge": 3
-   },
-   {
     "type": "ridge",
     "points": [
      [
-      42,
+      20,
       -16
      ],
      [
-      30,
-      -24
+      16,
+      -28
      ],
      [
-      20,
-      -34
+      18,
+      -42
      ]
     ],
     "width": 8,
@@ -468,11 +465,11 @@
     "points": [
      [
       10,
-      46
+      48
      ],
      [
       -4,
-      44
+      46
      ]
     ],
     "width": 7,
@@ -481,29 +478,29 @@
    {
     "type": "hill",
     "x": 18,
-    "z": -10,
+    "z": -8,
     "radius": 11,
     "height": 1.3
    },
    {
     "type": "basin",
     "x": 18,
-    "z": -10,
+    "z": -8,
     "radius": 7.5,
     "depth": 2.6
    },
    {
     "type": "hill",
-    "x": 10,
-    "z": -38,
-    "radius": 9,
+    "x": 8,
+    "z": -50,
+    "radius": 8,
     "height": 1.1
    },
    {
     "type": "basin",
-    "x": 10,
-    "z": -38,
-    "radius": 6,
+    "x": 8,
+    "z": -50,
+    "radius": 5,
     "depth": 2.0
    },
    {
@@ -522,9 +519,60 @@
    },
    {
     "type": "flatten",
+    "x": 52,
+    "z": 0,
+    "radius": 21,
+    "height": 1.2,
+    "edge": 5
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      52,
+      10,
+      1.2
+     ],
+     [
+      26,
+      10,
+      1.2
+     ]
+    ],
+    "width": 7,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
+    "x": 21,
+    "z": 24,
+    "w": 20,
+    "d": 20,
+    "height": 0.9,
+    "edge": 2
+   },
+   {
+    "type": "flatten",
+    "x": 26,
+    "z": 43,
+    "w": 32,
+    "d": 16,
+    "height": 0.5,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
+    "x": 32,
+    "z": -30,
+    "radius": 12,
+    "height": 0.6,
+    "edge": 3
+   },
+   {
+    "type": "flatten",
     "x": 0,
     "z": 33,
-    "w": 24,
+    "w": 18,
     "d": 16,
     "height": 0.4,
     "edge": 3
@@ -589,11 +637,11 @@
       -10
      ],
      [
-      34,
+      36,
       -24
      ],
      [
-      30,
+      34,
       -30
      ]
     ],
@@ -787,7 +835,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 1",
-   "x": -51.9,
+   "x": -51.3,
    "z": -8.56,
    "y": 3.1,
    "onto": "wall-x",
@@ -797,7 +845,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 2",
-   "x": -51.9,
+   "x": -51.3,
    "z": -9.28,
    "y": 3.1,
    "onto": "wall-x",
@@ -807,7 +855,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 3",
-   "x": -51.9,
+   "x": -51.3,
    "z": -10.0,
    "y": 3.1,
    "onto": "wall-x",
@@ -817,7 +865,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 4",
-   "x": -51.9,
+   "x": -51.3,
    "z": -10.72,
    "y": 3.1,
    "onto": "wall-x",
@@ -827,7 +875,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 5",
-   "x": -51.9,
+   "x": -51.3,
    "z": -11.44,
    "y": 3.1,
    "onto": "wall-x",
@@ -837,7 +885,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 1",
-   "x": -48.9,
+   "x": -48.3,
    "z": 17.125,
    "y": 6.15,
    "onto": "wall-x",
@@ -847,7 +895,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 2",
-   "x": -48.9,
+   "x": -48.3,
    "z": 16.375,
    "y": 6.15,
    "onto": "wall-x",
@@ -857,7 +905,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 3",
-   "x": -48.9,
+   "x": -48.3,
    "z": 15.625,
    "y": 6.15,
    "onto": "wall-x",
@@ -867,7 +915,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 4",
-   "x": -48.9,
+   "x": -48.3,
    "z": 14.875,
    "y": 6.15,
    "onto": "wall-x",
@@ -1777,11 +1825,11 @@
    "op": "Building",
    "name": "Station Crew Quarters",
    "at": [
-    -14.0,
+    -20.0,
     -24.0
    ],
    "yaw": 0,
-   "seed": 663,
+   "seed": 631,
    "variant": {
     "palette": "white hull"
    }
@@ -1789,8 +1837,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 1",
-   "x": -15.6,
-   "z": -18.9,
+   "x": -21.6,
+   "z": -18.4,
    "y": 2.75,
    "onto": "wall-z",
    "size": 0.8,
@@ -1799,8 +1847,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 2",
-   "x": -14.8,
-   "z": -18.9,
+   "x": -20.8,
+   "z": -18.4,
    "y": 2.75,
    "onto": "wall-z",
    "size": 0.8,
@@ -1809,8 +1857,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 3",
-   "x": -14.0,
-   "z": -18.9,
+   "x": -20.0,
+   "z": -18.4,
    "y": 2.75,
    "onto": "wall-z",
    "size": 0.8,
@@ -1819,8 +1867,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 4",
-   "x": -13.2,
-   "z": -18.9,
+   "x": -19.2,
+   "z": -18.4,
    "y": 2.75,
    "onto": "wall-z",
    "size": 0.8,
@@ -1829,8 +1877,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 5",
-   "x": -12.4,
-   "z": -18.9,
+   "x": -18.4,
+   "z": -18.4,
    "y": 2.75,
    "onto": "wall-z",
    "size": 0.8,
@@ -1839,8 +1887,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Hab Number 2",
-   "x": -8.5,
-   "z": -17.5,
+   "x": -16.5,
+   "z": -18.4,
    "y": 1.5,
    "onto": "wall-z",
    "size": 1.3,
@@ -1849,57 +1897,57 @@
   {
    "op": "Prop",
    "name": "Hab Airlock Module",
-   "x": -22.0,
+   "x": -28.0,
    "z": -20.0,
    "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Oxygen Tank Bank",
-   "x": -6.0,
+   "x": -12.0,
    "z": -31.0
   },
   {
    "op": "Prop",
    "name": "Lunar Rover",
-   "x": -2.0,
+   "x": -8.0,
    "z": -22.0,
    "yaw": 80.0
   },
   {
    "op": "Prop",
    "name": "Station Server Cabinet",
-   "x": -20.0,
+   "x": -26.0,
    "z": -30.0
   },
   {
    "op": "Prop",
    "name": "Supply Case Stack",
-   "x": -8.0,
+   "x": -14.0,
    "z": -30.5
   },
   {
    "op": "Prop",
    "name": "Sample Crate",
-   "x": -4.0,
+   "x": -10.0,
    "z": -18.0
   },
   {
    "op": "Prop",
    "name": "Deck Light Post",
-   "x": -22.0,
+   "x": -28.0,
    "z": -31.0
   },
   {
    "op": "Prop",
    "name": "Survey Light",
-   "x": -3.0,
+   "x": -9.0,
    "z": -27.0
   },
   {
    "op": "Prop",
    "name": "Station Deck Barrier",
-   "x": -6.0,
+   "x": -12.0,
    "z": -16.0
   },
   {
@@ -1909,9 +1957,9 @@
     "global:Footprints",
     "Regolith Survey Mark"
    ],
-   "x0": -22.0,
+   "x0": -28.0,
    "z0": -32.0,
-   "x1": -4.0,
+   "x1": -10.0,
    "z1": -16.0,
    "count": 14,
    "seed": 23,
@@ -1919,162 +1967,162 @@
   },
   {
    "op": "Waypoint",
-   "x": -20.0,
+   "x": -26.0,
    "z": -17.0
   },
   {
    "op": "Waypoint",
-   "x": -8.0,
+   "x": -14.0,
    "z": -17.0
   },
   {
    "op": "Waypoint",
-   "x": -20.0,
+   "x": -26.0,
    "z": -31.0
   },
   {
    "op": "Waypoint",
-   "x": -6.0,
+   "x": -12.0,
    "z": -29.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -38.0,
-   "z": -46.0
+   "z": -49.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -32.8,
-   "z": -46.0
+   "z": -49.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -27.6,
-   "z": -46.0
+   "z": -49.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -22.4,
-   "z": -46.0
+   "z": -49.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -17.2,
-   "z": -46.0
+   "z": -49.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -35.4,
-   "z": -42.0
+   "z": -45.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -30.2,
-   "z": -42.0
+   "z": -45.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -25.0,
-   "z": -42.0
+   "z": -45.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -19.8,
-   "z": -42.0
+   "z": -45.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -14.6,
-   "z": -42.0
+   "z": -45.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -38.0,
-   "z": -38.0
+   "z": -41.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -32.8,
-   "z": -38.0
+   "z": -41.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -27.6,
-   "z": -38.0
+   "z": -41.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -22.4,
-   "z": -38.0
+   "z": -41.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -17.2,
-   "z": -38.0
+   "z": -41.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -35.4,
-   "z": -34.0
+   "z": -37.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -30.2,
-   "z": -34.0
+   "z": -37.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -25.0,
-   "z": -34.0
+   "z": -37.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -19.8,
-   "z": -34.0
+   "z": -37.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": -14.6,
-   "z": -34.0
+   "z": -37.0
   },
   {
    "op": "Prop",
    "name": "Pad Transformer",
    "x": -41.0,
-   "z": -32.0
+   "z": -35.0
   },
   {
    "op": "Prop",
    "name": "Street Cabinet",
    "x": -41.0,
-   "z": -35.0,
+   "z": -38.0,
    "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Station Server Cabinet",
    "x": -10.0,
-   "z": -34.0,
+   "z": -37.0,
    "yaw": 180.0
   },
   {
@@ -2106,7 +2154,7 @@
    "op": "Mesh",
    "mesh": "box",
    "x": -24.0,
-   "z": -30.5,
+   "z": -33.5,
    "y": 1.15,
    "color": "#34363a",
    "width": 4.4,
@@ -2117,7 +2165,7 @@
    "op": "Mesh",
    "mesh": "cylinder",
    "x": -26.3,
-   "z": -30.5,
+   "z": -33.5,
    "y": 0.0,
    "color": "#6c6f73",
    "width": 0.1,
@@ -2129,7 +2177,7 @@
    "op": "Mesh",
    "mesh": "cylinder",
    "x": -21.7,
-   "z": -30.5,
+   "z": -33.5,
    "y": 0.0,
    "color": "#6c6f73",
    "width": 0.1,
@@ -2141,7 +2189,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 1",
    "x": -22.25,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2151,7 +2199,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 2",
    "x": -22.95,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2161,7 +2209,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 3",
    "x": -23.65,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2171,7 +2219,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 4",
    "x": -24.35,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2181,7 +2229,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 5",
    "x": -25.05,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2191,7 +2239,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 6",
    "x": -25.75,
-   "z": -31.1,
+   "z": -34.1,
    "y": 1.6,
    "onto": "wall+z",
    "size": 0.7,
@@ -2215,77 +2263,77 @@
   {
    "op": "Waypoint",
    "x": -34.7,
-   "z": -44.0
+   "z": -47.0
   },
   {
    "op": "Waypoint",
    "x": -36.0,
-   "z": -40.0
+   "z": -43.0
   },
   {
    "op": "Waypoint",
    "x": -34.7,
-   "z": -36.0
+   "z": -39.0
   },
   {
    "op": "Waypoint",
    "x": -28.7,
-   "z": -44.0
+   "z": -47.0
   },
   {
    "op": "Waypoint",
    "x": -30.0,
-   "z": -40.0
+   "z": -43.0
   },
   {
    "op": "Waypoint",
    "x": -28.7,
-   "z": -36.0
+   "z": -39.0
   },
   {
    "op": "Waypoint",
    "x": -22.7,
-   "z": -44.0
+   "z": -47.0
   },
   {
    "op": "Waypoint",
    "x": -24.0,
-   "z": -40.0
+   "z": -43.0
   },
   {
    "op": "Waypoint",
    "x": -22.7,
-   "z": -36.0
+   "z": -39.0
   },
   {
    "op": "Waypoint",
    "x": -16.7,
-   "z": -44.0
+   "z": -47.0
   },
   {
    "op": "Waypoint",
    "x": -18.0,
-   "z": -40.0
+   "z": -43.0
   },
   {
    "op": "Waypoint",
    "x": -16.7,
-   "z": -36.0
+   "z": -39.0
   },
   {
    "op": "Waypoint",
    "x": -10.7,
-   "z": -44.0
+   "z": -47.0
   },
   {
    "op": "Waypoint",
    "x": -12.0,
-   "z": -40.0
+   "z": -43.0
   },
   {
    "op": "Waypoint",
    "x": -10.7,
-   "z": -36.0
+   "z": -39.0
   },
   {
    "op": "Decal",
@@ -2581,13 +2629,6 @@
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": 3.0,
-   "z": -26.0,
-   "yaw": 90.0
-  },
-  {
-   "op": "Prop",
    "name": "Regolith Hopper",
    "x": -8.0,
    "z": -36.0
@@ -2607,7 +2648,7 @@
   {
    "op": "Prop",
    "name": "Ore Mine Cart",
-   "x": -4.0,
+   "x": -9.0,
    "z": -31.0,
    "yaw": 90.0
   },
@@ -3024,14 +3065,14 @@
   {
    "op": "Prop",
    "name": "Lunar Boulder",
-   "x": -20.0,
-   "z": 10.0
+   "x": -26.0,
+   "z": 8.0
   },
   {
    "op": "Prop",
    "name": "Lunar Boulder",
    "x": -28.0,
-   "z": 16.0
+   "z": 18.0
   },
   {
    "op": "Prop",
@@ -3074,8 +3115,8 @@
   {
    "op": "Prop",
    "name": "Survey Light",
-   "x": -16.0,
-   "z": 42.0
+   "x": -12.0,
+   "z": 46.0
   },
   {
    "op": "Prop",
@@ -3092,7 +3133,7 @@
   {
    "op": "Prop",
    "name": "Lunar Boulder",
-   "x": -8.0,
+   "x": -4.0,
    "z": 44.0
   },
   {
@@ -3187,7 +3228,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 1",
-   "x": 51.9,
+   "x": 51.3,
    "z": 8.56,
    "y": 3.1,
    "onto": "wall+x",
@@ -3197,7 +3238,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 2",
-   "x": 51.9,
+   "x": 51.3,
    "z": 9.28,
    "y": 3.1,
    "onto": "wall+x",
@@ -3207,7 +3248,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 3",
-   "x": 51.9,
+   "x": 51.3,
    "z": 10.0,
    "y": 3.1,
    "onto": "wall+x",
@@ -3217,7 +3258,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 4",
-   "x": 51.9,
+   "x": 51.3,
    "z": 10.72,
    "y": 3.1,
    "onto": "wall+x",
@@ -3227,7 +3268,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Hab West 5",
-   "x": 51.9,
+   "x": 51.3,
    "z": 11.44,
    "y": 3.1,
    "onto": "wall+x",
@@ -3237,7 +3278,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 1",
-   "x": 48.9,
+   "x": 48.3,
    "z": -17.125,
    "y": 6.15,
    "onto": "wall+x",
@@ -3247,7 +3288,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 2",
-   "x": 48.9,
+   "x": 48.3,
    "z": -16.375,
    "y": 6.15,
    "onto": "wall+x",
@@ -3257,7 +3298,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 3",
-   "x": 48.9,
+   "x": 48.3,
    "z": -15.625,
    "y": 6.15,
    "onto": "wall+x",
@@ -3267,7 +3308,7 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Garage 4",
-   "x": 48.9,
+   "x": 48.3,
    "z": -14.875,
    "y": 6.15,
    "onto": "wall+x",
@@ -4227,11 +4268,11 @@
    "op": "Building",
    "name": "Station Crew Quarters",
    "at": [
-    14.0,
+    20.0,
     24.0
    ],
    "yaw": 180,
-   "seed": 663,
+   "seed": 631,
    "variant": {
     "palette": "white hull"
    }
@@ -4239,8 +4280,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 1",
-   "x": 15.6,
-   "z": 18.9,
+   "x": 21.6,
+   "z": 18.4,
    "y": 2.75,
    "onto": "wall+z",
    "size": 0.8,
@@ -4249,8 +4290,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 2",
-   "x": 14.8,
-   "z": 18.9,
+   "x": 20.8,
+   "z": 18.4,
    "y": 2.75,
    "onto": "wall+z",
    "size": 0.8,
@@ -4259,8 +4300,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 3",
-   "x": 14.0,
-   "z": 18.9,
+   "x": 20.0,
+   "z": 18.4,
    "y": 2.75,
    "onto": "wall+z",
    "size": 0.8,
@@ -4269,8 +4310,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 4",
-   "x": 13.2,
-   "z": 18.9,
+   "x": 19.2,
+   "z": 18.4,
    "y": 2.75,
    "onto": "wall+z",
    "size": 0.8,
@@ -4279,8 +4320,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Sign Drill Site 5",
-   "x": 12.4,
-   "z": 18.9,
+   "x": 18.4,
+   "z": 18.4,
    "y": 2.75,
    "onto": "wall+z",
    "size": 0.8,
@@ -4289,8 +4330,8 @@
   {
    "op": "Decal",
    "decal": "Regolith Hab Number 2",
-   "x": 8.5,
-   "z": 17.5,
+   "x": 16.5,
+   "z": 18.4,
    "y": 1.5,
    "onto": "wall+z",
    "size": 1.3,
@@ -4299,63 +4340,63 @@
   {
    "op": "Prop",
    "name": "Hab Airlock Module",
-   "x": 22.0,
+   "x": 28.0,
    "z": 20.0,
    "yaw": 270.0
   },
   {
    "op": "Prop",
    "name": "Oxygen Tank Bank",
-   "x": 6.0,
+   "x": 12.0,
    "z": 31.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Lunar Rover",
-   "x": 2.0,
+   "x": 8.0,
    "z": 22.0,
    "yaw": 260.0
   },
   {
    "op": "Prop",
    "name": "Station Server Cabinet",
-   "x": 20.0,
+   "x": 26.0,
    "z": 30.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Supply Case Stack",
-   "x": 8.0,
+   "x": 14.0,
    "z": 30.5,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Sample Crate",
-   "x": 4.0,
+   "x": 10.0,
    "z": 18.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Deck Light Post",
-   "x": 22.0,
+   "x": 28.0,
    "z": 31.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Survey Light",
-   "x": 3.0,
+   "x": 9.0,
    "z": 27.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Station Deck Barrier",
-   "x": 6.0,
+   "x": 12.0,
    "z": 16.0,
    "yaw": 180.0
   },
@@ -4366,9 +4407,9 @@
     "global:Footprints",
     "Regolith Survey Mark"
    ],
-   "x0": 4.0,
+   "x0": 10.0,
    "z0": 16.0,
-   "x1": 22.0,
+   "x1": 28.0,
    "z1": 32.0,
    "count": 14,
    "seed": 123,
@@ -4376,183 +4417,183 @@
   },
   {
    "op": "Waypoint",
-   "x": 20.0,
+   "x": 26.0,
    "z": 17.0
   },
   {
    "op": "Waypoint",
-   "x": 8.0,
+   "x": 14.0,
    "z": 17.0
   },
   {
    "op": "Waypoint",
-   "x": 20.0,
+   "x": 26.0,
    "z": 31.0
   },
   {
    "op": "Waypoint",
-   "x": 6.0,
+   "x": 12.0,
    "z": 29.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 38.0,
-   "z": 46.0,
+   "z": 49.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 32.8,
-   "z": 46.0,
+   "z": 49.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 27.6,
-   "z": 46.0,
+   "z": 49.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 22.4,
-   "z": 46.0,
+   "z": 49.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 17.2,
-   "z": 46.0,
+   "z": 49.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 35.4,
-   "z": 42.0,
+   "z": 45.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 30.2,
-   "z": 42.0,
+   "z": 45.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 25.0,
-   "z": 42.0,
+   "z": 45.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 19.8,
-   "z": 42.0,
+   "z": 45.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 14.6,
-   "z": 42.0,
+   "z": 45.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 38.0,
-   "z": 38.0,
+   "z": 41.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 32.8,
-   "z": 38.0,
+   "z": 41.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 27.6,
-   "z": 38.0,
+   "z": 41.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 22.4,
-   "z": 38.0,
+   "z": 41.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 17.2,
-   "z": 38.0,
+   "z": 41.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 35.4,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 30.2,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 25.0,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 19.8,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Solar Array Rack",
    "x": 14.6,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Pad Transformer",
    "x": 41.0,
-   "z": 32.0,
+   "z": 35.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Street Cabinet",
    "x": 41.0,
-   "z": 35.0,
+   "z": 38.0,
    "yaw": 270.0
   },
   {
    "op": "Prop",
    "name": "Station Server Cabinet",
    "x": 10.0,
-   "z": 34.0,
+   "z": 37.0,
    "yaw": 0.0
   },
   {
@@ -4587,7 +4628,7 @@
    "op": "Mesh",
    "mesh": "box",
    "x": 24.0,
-   "z": 30.5,
+   "z": 33.5,
    "y": 1.15,
    "color": "#34363a",
    "width": 4.4,
@@ -4599,7 +4640,7 @@
    "op": "Mesh",
    "mesh": "cylinder",
    "x": 26.3,
-   "z": 30.5,
+   "z": 33.5,
    "y": 0.0,
    "color": "#6c6f73",
    "width": 0.1,
@@ -4612,7 +4653,7 @@
    "op": "Mesh",
    "mesh": "cylinder",
    "x": 21.7,
-   "z": 30.5,
+   "z": 33.5,
    "y": 0.0,
    "color": "#6c6f73",
    "width": 0.1,
@@ -4625,7 +4666,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 1",
    "x": 22.25,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4635,7 +4676,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 2",
    "x": 22.95,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4645,7 +4686,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 3",
    "x": 23.65,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4655,7 +4696,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 4",
    "x": 24.35,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4665,7 +4706,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 5",
    "x": 25.05,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4675,7 +4716,7 @@
    "op": "Decal",
    "decal": "Regolith Sign Solar Farm 6",
    "x": 25.75,
-   "z": 31.1,
+   "z": 34.1,
    "y": 1.6,
    "onto": "wall-z",
    "size": 0.7,
@@ -4699,77 +4740,77 @@
   {
    "op": "Waypoint",
    "x": 34.7,
-   "z": 44.0
+   "z": 47.0
   },
   {
    "op": "Waypoint",
    "x": 36.0,
-   "z": 40.0
+   "z": 43.0
   },
   {
    "op": "Waypoint",
    "x": 34.7,
-   "z": 36.0
+   "z": 39.0
   },
   {
    "op": "Waypoint",
    "x": 28.7,
-   "z": 44.0
+   "z": 47.0
   },
   {
    "op": "Waypoint",
    "x": 30.0,
-   "z": 40.0
+   "z": 43.0
   },
   {
    "op": "Waypoint",
    "x": 28.7,
-   "z": 36.0
+   "z": 39.0
   },
   {
    "op": "Waypoint",
    "x": 22.7,
-   "z": 44.0
+   "z": 47.0
   },
   {
    "op": "Waypoint",
    "x": 24.0,
-   "z": 40.0
+   "z": 43.0
   },
   {
    "op": "Waypoint",
    "x": 22.7,
-   "z": 36.0
+   "z": 39.0
   },
   {
    "op": "Waypoint",
    "x": 16.7,
-   "z": 44.0
+   "z": 47.0
   },
   {
    "op": "Waypoint",
    "x": 18.0,
-   "z": 40.0
+   "z": 43.0
   },
   {
    "op": "Waypoint",
    "x": 16.7,
-   "z": 36.0
+   "z": 39.0
   },
   {
    "op": "Waypoint",
    "x": 10.7,
-   "z": 44.0
+   "z": 47.0
   },
   {
    "op": "Waypoint",
    "x": 12.0,
-   "z": 40.0
+   "z": 43.0
   },
   {
    "op": "Waypoint",
    "x": 10.7,
-   "z": 36.0
+   "z": 39.0
   },
   {
    "op": "Decal",
@@ -5083,13 +5124,6 @@
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": -3.0,
-   "z": 26.0,
-   "yaw": 270.0
-  },
-  {
-   "op": "Prop",
    "name": "Regolith Hopper",
    "x": 8.0,
    "z": 36.0,
@@ -5112,7 +5146,7 @@
   {
    "op": "Prop",
    "name": "Ore Mine Cart",
-   "x": 4.0,
+   "x": 9.0,
    "z": 31.0,
    "yaw": 270.0
   },
@@ -5547,15 +5581,15 @@
   {
    "op": "Prop",
    "name": "Lunar Boulder",
-   "x": 20.0,
-   "z": -10.0,
+   "x": 26.0,
+   "z": -8.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
    "name": "Lunar Boulder",
    "x": 28.0,
-   "z": -16.0,
+   "z": -18.0,
    "yaw": 180.0
   },
   {
@@ -5603,8 +5637,8 @@
   {
    "op": "Prop",
    "name": "Survey Light",
-   "x": 16.0,
-   "z": -42.0,
+   "x": 12.0,
+   "z": -46.0,
    "yaw": 180.0
   },
   {
@@ -5624,7 +5658,7 @@
   {
    "op": "Prop",
    "name": "Lunar Boulder",
-   "x": 8.0,
+   "x": 4.0,
    "z": -44.0,
    "yaw": 180.0
   },

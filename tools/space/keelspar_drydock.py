@@ -80,20 +80,20 @@ def hull():
     for s in (-1, 1):
         z0, z1 = s * 5.2, s * 5.6
         for (x0, x1) in ((-PLATED, -13.2), (-10.8, 10.8), (13.2, PLATED)):
-            collider(x0, KY, z0, x1, 26.2, z1)
+            collider(x0, KY, z0, x1, 25.0, z1)  # up to where the hull curves in over them (the flank stairs climb outside)
         for x in (-12, 12):
-            collider(x - 1.2, KY + 2.5, z0, x + 1.2, 26.2, z1)
-    collider(-PLATED, 26.2, -5.6, -11.9, 26.6, 5.6)
-    collider(-11.9, 26.2, -5.6, -6.9, 26.6, 1.3)
-    collider(-6.9, 26.2, -5.6, 6.9, 26.6, 5.6)
-    collider(6.9, 26.2, -1.3, 11.9, 26.6, 5.6)
-    collider(11.9, 26.2, -5.6, PLATED, 26.6, 5.6)
+            collider(x - 1.2, KY + 2.5, z0, x + 1.2, 25.0, z1)
+    collider(-PLATED, 26.2, -4.2, -11.9, 26.6, 4.2)
+    collider(-11.9, 26.2, -4.2, -6.9, 26.6, 1.3)
+    collider(-6.9, 26.2, -4.2, 6.9, 26.6, 4.2)
+    collider(6.9, 26.2, -1.3, 11.9, 26.6, 4.2)
+    collider(11.9, 26.2, -4.2, PLATED, 26.6, 4.2)
     # Lamps along the inside and along the spine.
     for x in range(-21, 22, 6):
         mesh("box", x, 0, 26.0, LAMP, width=0.5, height=0.08, depth=1.2)
     # Spine railings, cut at the gantries (x = -+20), the crown deck and the scaffold stairs' landings.
     for s in (-1, 1):
-        railing(-40, s * 1.5, SY, 40, s * 1.5, SY, gaps=[(20, 1.7), (60, 1.7), (40, 7.2), (40 - s * 9.8, 1.0)])
+        railing(-40, s * 1.5, SY, 40, s * 1.5, SY, gaps=[(20, 1.7), (60, 1.7), (40, 7.2), (40 - s * 14.0, 1.0)])
         railing(-7, s * 4.5, SY, 7, s * 4.5, SY)
         # The x = -7 edge is open where the west hatch stair arrives (z 1.5..4.5) and where the spine joins; x = +7 the same turned.
         railing(s * 7, -4.5, SY, s * 7, 4.5, SY, gaps=[(4.5, 1.6), (4.5 - s * 3.0, 1.6)])
@@ -155,10 +155,10 @@ def north_quay():
     # Dock office (two storeys, roof access) and the parts store.
     building("Station Crew Quarters", -33, QY, -20, 0, 651, variant={"palette": "white hull"})
     names, tw, th = sdec.tiles("dock_office")
-    sign_row(names, tw, -33, -14.9, QY + 2.75, "wall-z")
+    sign_row(names, tw, -33, -14.4, QY + 2.75, "wall-z")
     building("Refinery Pump House", -12, QY, -20, 0, 652, variant={"palette": "bronze hull"})
     names, tw, th = sdec.tiles("parts_store")
-    sign_row(names, tw, -12, -14.9, QY + 3.3, "wall-z")
+    sign_row(names, tw, -12, -14.4, QY + 3.3, "wall-z")
     names, tw, th = sdec.tiles("north_quay")
     sign_row(names, tw, -45, z0 + 0.1, QY + 1.8, "wall+z", on_rail=True)
     # Scaffold deck hung along the plated hull, with a stair at each end.
@@ -215,20 +215,20 @@ def scaffold():
         # Flights on the quay beside its edge, up to a landing joined to the scaffold's end.
         x, z, y = stairs(s * 30.0, -11.2, QY, SC - QY, -s, 0, width=1.6, riser=1 / 3, tread=0.35)
         block(min(s * 24, s * 25.8), SC - 0.3, -12.0, max(s * 24, s * 25.8), SC, -6.2, GRID, "Grid")
-        railing(s * 25.8, -10.4, SC, s * 25.8, -6.2, SC)
+        railing(s * 25.8, -10.0, SC, s * 25.8, -6.2, SC)
         railing(s * 24, -12.0, SC, s * 25.8, -12.0, SC)
         railing(s * 24, -12.0, SC, s * 24, -10.0, SC)
         waypoint(s * 25, -9, SC)
-    railing(-PLATED, -6.2, SC, PLATED, -6.2, SC, gaps=[(PLATED + 9.8, 1.2)])
+    railing(-PLATED, -6.2, SC, PLATED, -6.2, SC, gaps=[(PLATED + 14.0, 1.2)])
     # The stair up the hull's flank to the spine at x = 10 (its landing hangs over the hull curve).
-    stairs(9.8, -6.6, SC, SY - SC, 0, 1, width=1.6, riser=1 / 3, tread=0.35)
-    block(9.0, SY - 0.5, -2.6, 10.6, SY, -1.5, DECK, "Metal")
-    railing(9.0, -2.6, SY, 9.0, -1.5, SY)
-    railing(10.6, -2.6, SY, 10.6, -1.5, SY)
+    stairs(14.0, -6.6, SC, SY - SC, 0, 1, width=1.6, riser=1 / 3, tread=0.35)
+    block(13.2, SY - 0.5, -2.6, 14.8, SY, -1.5, DECK, "Metal")
+    railing(13.2, -2.6, SY, 13.2, -1.5, SY)
+    railing(14.8, -2.6, SY, 14.8, -1.5, SY)
     for s in (-1, 1):
-        mesh("box", 9.8 + s * 0.85, -4.5, SC, STEEL, width=0.12, height=4.2, depth=0.12)
-    for (n, x, z, yw) in [("Welding Rig", -20, -8, 0), ("Welding Rig", 16, -8.2, 0), ("Rivet Crate", -4, -7.2, 0), ("Rivet Crate", 20, -9, 30),
-                          ("Yard Tool Chest", -12, -8.5, 0), ("Station Supply Case", 5, -7.5, 0), ("Hazard Bollard", 9, -9.5, 0), ("Hazard Bollard", 11, -9.5, 0)]:
+        mesh("box", 14.0 + s * 0.85, -4.5, SC, STEEL, width=0.12, height=4.2, depth=0.12)
+    for (n, x, z, yw) in [("Welding Rig", -20, -8, 0), ("Welding Rig", 19, -8.2, 0), ("Rivet Crate", -4, -7.2, 0), ("Rivet Crate", 20, -9, 30),
+                          ("Yard Tool Chest", -12, -8.5, 0), ("Station Supply Case", 5, -7.5, 0), ("Hazard Bollard", 13, -9.5, 0), ("Hazard Bollard", 15, -9.5, 0)]:
         prop(n, x, z, SC, yw)
     decal_scatter(["Keelspar Weld Scorch", "global:Rust Stain"], -22, -9.5, 22, -6.8, 10, seed=9, y=SC, gap=2.0)
     names, tw, th = sdec.tiles("weld_bay")
@@ -279,8 +279,13 @@ def tower(gx, s):
     block(gx - 1.5, SY - 0.5, min(za, s * 31), gx + 5.1, SY, max(za, s * 31), DECK, "Metal")
     railing(gx - 1.5, s * 31, SY, gx + 5.1, s * 31, SY)
     railing(gx + 5.1, s * 31, SY, gx + 5.1, za, SY)
-    railing(gx + 1.5, za, SY, gx + 3.4, za, SY)
+    railing(gx + 1.5, za, SY, gx + 3.2, za, SY)
     railing(gx - 1.5, s * 31, SY, gx - 1.5, za, SY)
+    # A foot pad beyond the quay's edge under the top landing, so there's room to stand at flight A's foot.
+    block(gx + 1.6, QY - 0.8, min(za, s * 31), gx + 5.1, QY, max(za, s * 31), DECK, "Metal")
+    railing(gx + 1.6, s * 31, QY, gx + 5.1, s * 31, QY)
+    railing(gx + 5.1, s * 31, QY, gx + 5.1, za, QY)
+    railing(gx + 1.6, s * 31, QY, gx + 1.6, za, QY)
     waypoint(gx + 3.4, s * 23.8, SC)
     waypoint(gx + 1.0, s * 30, SY)
     # A column under the tower and a sign.
@@ -304,9 +309,9 @@ def bow_dock():
     building("Station Control Hub", -61, QY, -17, 0, 653)
     building("Station Hangar Bay", -60, QY, 17, 0, 654, variant={"palette": "bronze hull"})
     names, tw, th = sdec.tiles("bow_dock")
-    sign_row(names, tw, -61, -10.9, QY + 3.1, "wall-z")
+    sign_row(names, tw, -61, -10.4, QY + 3.1, "wall-z")
     names, tw, th = sdec.tiles("fab_shop")
-    sign_row(names, tw, -60, 9.9, QY + 6.15, "wall-z")
+    sign_row(names, tw, -60, 9.4, QY + 6.15, "wall-z")
     # Ramps: the spine ramp down from the hull's end (28 -> 20) over the keel gangway (18 -> 20).
     gangway(-40, 0, SY, -58, 0, QY, 3.0, color=DECK)
     gangway(-40, 0, KY, -50, 0, QY, 3.2)
