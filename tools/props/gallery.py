@@ -89,7 +89,7 @@ def rotation_matrix(deg):
     rz = [[cr, -sr, 0], [sr, cr, 0], [0, 0, 1]]
 
     def mul(a, b):
-        return [[sum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
+        return [[math.fsum(a[i][k] * b[k][j] for k in range(3)) for j in range(3)] for i in range(3)]
 
     return mul(mul(ry, rx), rz)
 
@@ -101,7 +101,7 @@ def part_bounds(part):
     rot = part.get("rotation")
     if rot and any(abs(v) > 1e-9 for v in rot):
         m = rotation_matrix(rot)
-        ext = [sum(abs(m[i][j]) * half[j] for j in range(3)) for i in range(3)]
+        ext = [math.fsum(abs(m[i][j]) * half[j] for j in range(3)) for i in range(3)]
     else:
         ext = half
     # Quantised to 0.1 mm: libm's sin/cos differ in their last bit between platforms, and a layout that is a sum of
@@ -232,7 +232,8 @@ def layout(gallery, groups, props, shadowed):
             rows.append(row)
     if not rows:
         return None
-    depth = sum(max(p[2] for p in row) for row in rows) + AISLE * (len(rows) - 1)
+    # math.fsum, not sum(): Python 3.12 made sum() of floats compensated, so the two round differently on long rows.
+    depth = math.fsum(max(p[2] for p in row) for row in rows) + AISLE * (len(rows) - 1)
     half_x = math.ceil(width / 2 + SIDE)
     half_z = math.ceil(depth / 2 + SIDE)
     ops = [
@@ -243,7 +244,7 @@ def layout(gallery, groups, props, shadowed):
     aisles = []
     for i, row in enumerate(rows):
         row_d = max(p[2] for p in row)
-        row_w = sum(p[1] for p in row) + GAP * (len(row) - 1)
+        row_w = math.fsum(p[1] for p in row) + GAP * (len(row) - 1)
         x = -row_w / 2
         for n, pw, pd in row:
             lo, hi = props[n]["min"], props[n]["max"]
