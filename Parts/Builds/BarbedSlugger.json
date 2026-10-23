@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Barbed Slugger",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A bat wrapped in barbed wire with nails through it: wider swings, and they bleed.",
+  "build": "Bat Grip{head:Bat Barrel,mod_1:Barbed Wire Wrap,mod_2:Nail Ring}"
+}

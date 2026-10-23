@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Siege Battery",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two autocannons on a mule frame with singularity chambers, fed from an ammo can. Each shell goes through a queue of them.",
+  "build": "Mule Frame{receiver_1:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,amp:Singularity Chamber},receiver_2:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,amp:Singularity Chamber},hopper:Ammo Can Manifold{ammo:.50 BMG},foregrip:Chaingun Handle,stock:Shoulder Harness}"
+}

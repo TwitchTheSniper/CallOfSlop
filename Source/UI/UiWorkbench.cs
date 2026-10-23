@@ -395,6 +395,7 @@ public sealed partial class Ui
             BenchRun = null;
             CancelDrag();
         }
+        DrawBenchRunFooter(); // Zombies: Undo disassemble, the slots at the grip picker (UiWorkbenchRun.cs)
         ImGui.SameLine();
         var age = _wbNow - _wbMessageAt;
         if (_wbMessage.Length > 0 && age < 8)
@@ -1543,6 +1544,8 @@ public sealed partial class Ui
             }
             return;
         }
+        if (ctrl && !io.KeyShift && ImGui.IsKeyPressed(ImGuiKey.Z, false) && (_wbPicking || !Bm.CanUndo) && UndoDisassemble())
+            return; // Zombies: nothing left to undo on the new build: put the disassembled one back (UiWorkbenchRun.cs)
         if (_wbPicking)
             return;
         if (ctrl && ImGui.IsKeyPressed(ImGuiKey.Z, false))
@@ -1555,6 +1558,8 @@ public sealed partial class Ui
             WbRemove(_wbSel);
         else if (ImGui.IsKeyPressed(ImGuiKey.A, false))
             WbAutoComplete();
+        else if (BenchRun != null && ImGui.IsKeyPressed(ImGuiKey.D, false))
+            BenchDisassembleKey(); // Zombies: take the slot's build apart (press twice; UiWorkbenchRun.cs)
         else if (ImGui.IsKeyPressed(ImGuiKey.C, false) && _wbSel is { Part.Category: PartCategory.Receiver } r && Bm.Build.Nodes.Contains(r))
             WbCopy(r);
         else if (ImGui.IsKeyPressed(ImGuiKey.N, false))

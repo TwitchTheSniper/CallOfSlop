@@ -951,13 +951,11 @@ public sealed partial class Game
         return -1;
     }
 
-    /// <summary>The slot a new gun goes to: an empty slot 3-4 if you have them, else the one in your hands.</summary>
+    /// <summary>The slot a new gun goes to: an empty slot (1-2 taken apart at a workbench, or 3-4 if you have them), else the one in your hands.</summary>
     public static int TargetSlot(Player p)
     {
-        if (p.ExtraSlots && p.BuiltExtra[0] == null)
-            return 2;
-        if (p.ExtraSlots && p.BuiltExtra[1] == null)
-            return 3;
+        if (FreeGunSlot(p) is var free and >= 0)
+            return free;
         return SlotOf(p, p.Weapon) is var s and >= 0 ? s : 0;
     }
 
@@ -1125,7 +1123,9 @@ public sealed partial class Game
         if (box.Count == 0)
             return -1;
         var tier = RunTables.Roll(RunTables.Current.BoxTiers, Math.Max(1, round), seed);
-        var notOwned = box.Where(i => p == null || OwnsBuild(p, all[i].Name) < 0).ToList();
+        // "Already carry" covers the melee slot too: the box never offers the melee build in your hand.
+        var notOwned = box.Where(i => p == null || (OwnsBuild(p, all[i].Name) < 0
+            && !(p.MeleeBuild != null && p.MeleeBuild.Name.Equals(all[i].Name, StringComparison.OrdinalIgnoreCase)))).ToList();
         if (notOwned.Count == 0)
             notOwned = box;
         for (var step = 0; step < 6; step++)
@@ -1219,7 +1219,8 @@ public sealed partial class Game
     /// <summary>
     /// Server: a workbench change from <paramref name="p"/> (in <see cref="Msg.ZBench"/>, or the host's own): 0 = put
     /// <paramref name="text"/> in slot <paramref name="slot"/> (the parts it adds must be in their loose parts; parts it
-    /// drops go back there), 1 = break a loose part down for scrap, 2 = craft a part with scrap. Returns why not, or null.
+    /// drops go back there), 1 = break a loose part down for scrap, 2 = craft a part with scrap, 3 = take the build in
+    /// <paramref name="slot"/> apart into your loose parts (<see cref="BenchDisassemble"/>). Returns why not, or null.
     /// </summary>
     public string? ServerBench(Player p, int kind, int slot, string text)
     {
@@ -1283,6 +1284,8 @@ public sealed partial class Game
                 SendZRun(p);
                 return null;
             }
+            case BenchDisassemble:
+                return ServerDisassemble(p, zp, slot); // take the slot's whole build apart (ZombiesDisassemble.cs)
             case 2:
             {
                 if (Parts.Find(text) is not { } part)

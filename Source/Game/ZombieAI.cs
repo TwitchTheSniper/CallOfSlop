@@ -220,6 +220,7 @@ public sealed partial class Game
                 continue;
             z.PrevPos = z.Sim.Position;
             ThinkZombie(zm, z, now);
+            ZombieBashDoors(z, now); // a shut building door in the way: swipe it down (Bots/Doors/BotDoors.cs)
             z.History[ServerTick % z.History.Length] = z.Sim.Position;
             if (z.BurnUntil > 0)
                 BurnTick(z, now); // a burn or bleed ticking (ZombiesAmmoEffects.cs)

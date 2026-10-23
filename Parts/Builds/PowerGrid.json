@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Power Grid",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Eight energy carbines on an octet rack, all running off one power bus. Slows everything it touches.",
+  "build": "Octet Rack Grip{receiver_1:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_2:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_3:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_4:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_5:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_6:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_7:Sparkplug Energy Receiver{barrel:Coil Barrel},receiver_8:Sparkplug Energy Receiver{barrel:Coil Barrel},hopper:Power Bus{ammo:Plasma Charge}}"
+}

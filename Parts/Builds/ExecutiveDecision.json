@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Executive Decision",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two SMG receivers in a briefcase sharing a hopper. Hip fire only; the meeting is over.",
+  "build": "Briefcase{receiver_1:Stampede Receiver{barrel:Stub Barrel},receiver_2:Stampede Receiver{barrel:Stub Barrel},hopper:Manifold Hopper{ammo:9mm Ball}}"
+}

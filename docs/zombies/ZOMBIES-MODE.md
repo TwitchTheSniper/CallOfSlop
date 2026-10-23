@@ -83,7 +83,7 @@ grey: not possible now (needs the power, already owned...).
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
-| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a build of that tier you don't already carry. After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
+| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a build of that tier you don't already carry (in a gun slot or the melee slot; 59 box builds, 10-16 per tier) After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
 | **Perk machine** | A perk from the rules file (one machine per perk). At most 4 perks; all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
@@ -126,10 +126,41 @@ reloads.)
   your loose parts; parts taken off go back to your loose parts. Scrap: **break down** a loose part (its scrap value:
   common 5 ... legendary 100, wonder 150), or **craft** a part for 3x its value, up to the highest tier the drop table
   rolls this round (never wonder parts).
+- **Disassemble**: take a slot's whole build apart into your loose parts (below, "Disassembling a build").
 - **The workbench UI** (WEAPON-BUILDER.md, "The workbench"): pick a grip, then drag your parts onto the gun; the build
   reads as a linear list with live stats. Standard builds load as plans and a receiver assembly can be copied without
   the parts: what's missing shows red, and **CRAFT MISSING & APPLY** crafts every missing part with scrap and applies
   the build in one click (the same server checks). First-tier grips (common, uncommon) hold one receiver.
+
+## Disassembling a build (2026-10-23)
+
+The user asked: "In the zombie game mode, allow for the user to completely disassemble a gun into inventory items from
+the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the empty slot), `Source/UI/UiWorkbenchRun.cs`
+(the button); self-test `Source/App/SelfTestZombiesDisassemble.cs` (in the "Zombies mode" section).
+
+- **What.** At a workbench, **Disassemble [D]** (click twice, or D twice, within 4 s) takes the build in the slot being
+  edited apart: **every part, the grip too**, goes to your loose parts (counts add up: a build with two Box Mags gives
+  two), and the slot is **empty**. It works on any build: guns in slots 1-4 (wall-buy and box builds too, they're builds
+  like any other) and the **melee slot** (hilt, head and mods). One **Undo** puts the same build back from your loose
+  parts while the bench stays open (an ordinary Apply, checked again; it's gone once you close the bench or the slot gets
+  something else). Breaking loose parts down for scrap is still its own action.
+- **Checks (server).** You must be standing at a workbench, alive and not downed (as for every bench action), the slot
+  must be yours (3-4 only after the slot upgrade) and hold a build; a stock gun (no build) can't be taken apart. Parts are
+  only moved, never made or lost: loose plus on builds stays the same (self-test).
+- **The empty slot.** An empty slot 1-2 holds **Empty hands** (no model in first or third person, no magazine; the
+  trigger only clicks and the server refuses its shots); an empty slot 3-4 is free, as before it was filled. Switching
+  (1-4, the swap key, the wheel) skips empty slots, the HUD lists them as "(empty)". If the gun in your hands is taken
+  apart you switch to your first slot with a gun, or, with **no gun left** (allowed), stand empty-handed: the melee key
+  still swings your melee build, or the standard strike if that was taken apart too. New guns go to an **empty slot
+  first** (slots 1-2, then 3-4): wall buys, the mystery box and dropped builds you pick up. An empty slot keeps its
+  reserve count for the next build put there at the bench (like any bench edit); bleeding out brings the start gear back
+  as usual, and empty slots drop nothing.
+- **Network (protocol 41).** The client asks with `ZBench` kind 3 (the slot, no text). The server checks it, moves the
+  parts, and sends `ZRun` (your loose parts) to you and a `ZBuild` with flag 4 ("cleared", no text; the weapon id of the
+  Empty hands copy for slots 1-2) to everyone, so every PC shows the slot empty and the hands move the same way. Joiners
+  get a cleared `ZBuild` for every empty slot 1-2 after the builds. An older build can't join (protocol 40).
+- **The main menu's sandbox** has no Disassemble: its stock is unlimited (or the fixed practice stock), so there's no
+  inventory to put parts back into; "New weapon" already starts from an empty grip.
 
 ## Map format: the "zombies" section
 
@@ -337,10 +368,13 @@ zombie is drawn up to about a metre forward of its hit box while it tears (stepp
 it straight through the window still hit, steep side angles may not (say if that matters; the fix would be moving the
 outside spot closer to the window in the maps).
 
-## Network (protocol 19; protocol 40 for milestone 3; 43 for the animations)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
 
 Protocol 43 (animations, see "Animation"): a tearing or climbing zombie's yaw byte in `ZEnts` is its animation byte
 (the board cycle / the climb's progress); still 12 bytes a zombie.
+
+Protocol 41: `ZBench` kind 3 takes a slot's build apart; `ZBuild` flag 4 = the slot is now empty (no text), also sent to
+joiners for empty slots 1-2 (see "Disassembling a build").
 
 Protocol 40 (milestone 3): `ZWorld` ends with the floating power-ups (id, kind, position, tenths of a second left) and
 Insta-Kill / Double Points' seconds left; `ZEvent` gains `MaxAmmo` (refill your reserves) and `Fx` (a special ammo
@@ -371,6 +405,7 @@ most 2 nav graph searches per tick (the rest steer straight until their turn). T
 ## Controls
 
 F (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench to open it (Esc / Close goes back).
+At the workbench, D twice (or Disassemble clicked twice) takes the slot's build apart.
 Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as before (3-4 after the upgrade).
 
 ## Open questions (for the user)

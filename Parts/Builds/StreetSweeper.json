@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Street Sweeper",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A semi-auto shotgun on a shell drum, braked and buffered. Twenty shells as fast as you can pull.",
+  "build": "Sport Rifle Grip{receiver_1:Street Sweeper Receiver{barrel:Scattermouth Barrel{muzzle:Muzzle Brake},feed:Shell Drum,ammo:00 Buckshot},stock:Recoil Buffer Stock}"
+}
