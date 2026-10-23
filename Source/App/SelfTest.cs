@@ -525,22 +525,31 @@ public static partial class SelfTest
     // ---- 1d. Map packs -------------------------------------------------------------------------
 
     /// <summary>
-    /// Pack folders: the shipped Classic pack, pack.json never loading as a map, folders without pack.json, loose files
+    /// Pack folders: the shipped Legacy pack (Classic, Collision Point and High Ground together), pack.json never loading as a map, folders without pack.json, loose files
     /// forming "Other", random picks and vote options staying inside the pack. Uses a throwaway folder in the temp
     /// directory (deleted afterwards), never the game's own Maps folder.
     /// </summary>
     private static void CheckMapPacks()
     {
         // The real Maps folder
-        var classic = Maps.FindPack("Classic");
+        var classic = Maps.FindPack("Legacy");
         if (Directory.Exists(Maps.Folder))
         {
             if (classic == null)
-                Fail("no Classic pack (Maps/Classic)");
-            else if (classic.Maps.Count != 24)
-                Fail($"Classic has {classic.Maps.Count} maps (24 ship with the game)");
+                Fail("no Legacy pack (Maps/Legacy)");
+            else if (classic.Maps.Count != 36)
+                Fail($"Legacy has {classic.Maps.Count} maps (36: the 24 Classic, 6 Collision Point and 6 High Ground maps)");
             else if (classic.Description.Length == 0 || classic.Order != 1)
-                Fail("Classic/pack.json wasn't read (no description or order)");
+                Fail("Legacy/pack.json wasn't read (no description or order)");
+            else if (classic.Maps[0].Name != "Proto Box" || Maps.All[0] != classic.Maps[0])
+                Fail($"Legacy's first map is {classic.Maps[0].Name}, the list's {Maps.All[0].Name} (expected Proto Box: many tests use the first map)");
+            else if (Maps.Packs.Any(p => p.Folder is "Classic" or "CollisionPoint" or "HighGround"))
+                Fail("an old pack folder (Classic, CollisionPoint, HighGround) is still there: those maps moved to Maps/Legacy");
+            // The old relative order: Classic 1-24, then Collision Point, then High Ground.
+            var legacyOrder = classic?.Maps.Select(m => m.Name).ToArray() ?? [];
+            var wantAfterClassic = new[] { "Blueprint", "Galleria", "Floodgate", "Trefoil", "Citadel", "Confluence", "Gravel Pit", "Hillfort", "Riverbend", "Adobe Mesa", "Ridgeline", "Alpine Pass" };
+            if (legacyOrder.Length == 36 && (legacyOrder[23] != "Military Base" || !legacyOrder[24..].SequenceEqual(wantAfterClassic)))
+                Fail($"Legacy's map order changed: {string.Join(", ", legacyOrder)}");
         }
         if (Maps.All.Any(m => m.Pack == null || !m.Pack.Maps.Contains(m)))
             Fail("a loaded map has no pack");
@@ -575,15 +584,20 @@ public static partial class SelfTest
             Write("Gamma/g1.json", MapJson("Test G1", 20));
             Write("loose.json", MapJson("Test Loose", 20));      // loose file: the Other pack
             Write("b1-leftover.json", MapJson("Test B1", 20));   // identical loose copy (old build output): ignored quietly
+            Write("Classic/pack.json", """{ "format": "call-of-slop-pack/1", "name": "Classic", "order": 1 }"""); // a retired pack folder left over from an old build
+            Write("Classic/01-a1.json", MapJson("Test A1", 20));  // identical to Alpha's: retired folders load last, so it is ignored quietly and Alpha keeps it
+            Write("Classic/02-c2.json", MapJson("Test C2", 20));  // a map of its own: still loads, as pack Classic
 
             var errors = new List<string>();
             var (all, packs) = Maps.LoadFolder(dir, errors);
             Line($"test folder: {all.Length} maps; packs {string.Join(", ", packs.Select(p => $"{p.Name} [{string.Join(", ", p.Maps.Select(m => m.Name))}]"))}; errors: {string.Join(" | ", errors)}");
             var names = packs.Select(p => p.Name).ToArray();
-            if (!names.SequenceEqual(["Alpha Pack", "Beta", "Gamma", MapPack.LooseName]))
-                Fail($"test packs came out as {string.Join(", ", names)} (expected Alpha Pack, Beta, Gamma, {MapPack.LooseName})");
-            if (all.Length != 6)
-                Fail($"test folder loaded {all.Length} maps (expected 6: pack.json files and the leftover copy aren't maps)");
+            if (!names.SequenceEqual(["Classic", "Alpha Pack", "Beta", "Gamma", MapPack.LooseName]))
+                Fail($"test packs came out as {string.Join(", ", names)} (expected Classic, Alpha Pack, Beta, Gamma, {MapPack.LooseName})");
+            if (all.Length != 7)
+                Fail($"test folder loaded {all.Length} maps (expected 7: pack.json files and the leftover copies aren't maps)");
+            if (all.FirstOrDefault(m => m.Name == "Test A1")?.Pack?.Name != "Alpha Pack" || all.FirstOrDefault(m => m.Name == "Test C2")?.Pack?.Name != "Classic")
+                Fail("a leftover copy in a retired pack folder (Classic) pushed out the real map, or the folder's own map didn't load");
             if (errors.Count != 1 || !errors[0].Contains("Gamma", StringComparison.Ordinal))
                 Fail($"expected exactly one error, for Gamma/pack.json; got {errors.Count}");
             var alpha = packs.FirstOrDefault(p => p.Name == "Alpha Pack");
@@ -636,11 +650,11 @@ public static partial class SelfTest
         {
             var s = new Settings { MapRandom = true, MapPack = classic.Name };
             if (Enumerable.Range(0, 200).Any(_ => s.PickMap().Pack != classic))
-                Fail("PickMap left the Classic pack");
+                Fail($"PickMap left the {classic.Name} pack");
             var played = classic.Maps[0];
             var pool = Game.VotePool(played.Name, classic, Maps.All);
             if (pool.Count != classic.Maps.Count - 1 || pool.Any(m => m.Pack != classic))
-                Fail("Classic vote options left the pack");
+                Fail($"{classic.Name} vote options left the pack");
             Line($"PickMap and vote options stay inside {classic.Name} ({pool.Count} vote candidates after {played.Name})");
         }
     }

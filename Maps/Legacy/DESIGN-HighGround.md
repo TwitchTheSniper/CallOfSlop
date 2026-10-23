@@ -1,5 +1,7 @@
 # High Ground: design notes
 
+*The six High Ground maps (Gravel Pit, Hillfort, Riverbend, Adobe Mesa, Ridgeline, Alpine Pass) were a pack of their own; they are now files 31-36 of the Legacy pack, in this folder.*
+
 Six terrain maps (two small, two medium, two large) that show off what the engine can do now: heightfield terrain, foliage, and movers where they fit. Each map is built around one landform and one theme. As in the Collision Point pack, the layouts follow Güttler & Johansson, *Spatial Principles of Level-Design in Multi-Player First-Person Shooters*, and here the **terrain does the work**:
 
 - **Collision points.** These are where the two teams' routes cross. They are planned and built up with cover, height differences and several ways in, so that the fights happen there and not on open ground nobody designed for. This is the mistake the paper made in cs_citymall.

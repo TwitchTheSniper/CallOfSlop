@@ -5,10 +5,10 @@ namespace CallOfSlop;
 /// <summary>The map select screen's smoke-test step (lobby, after the loadouts screen).</summary>
 public static unsafe partial class Program
 {
-    // ---- Smoke step: open the map select screen on the High Ground pack (terrain and foliage: the dearest pictures),
+    // ---- Smoke step: open the map select screen on the Legacy pack (its High Ground terrain and foliage maps: the dearest pictures),
     // wait for its thumbnails (one is made per frame), screenshot it (smoke_mapselect.bmp) and log what they cost.
 
-    private const string MapSelectSmokePack = "High Ground";
+    private const string MapSelectSmokePack = "Legacy";
 
     private static int _mapSelectSmokeStage;
     private static int _mapSelectSmokeRenderedBefore, _mapSelectSmokeFrames;

@@ -3,34 +3,49 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The "High Ground pack" self-test section: the six terrain maps in Maps/HighGround. Two of each size, every one on
+/// The "High Ground pack" self-test section: the six terrain maps that were the High Ground pack, now Maps/Legacy
+/// 31-36 (the Legacy pack gathers Classic, Collision Point and High Ground). Two of each size, every one on
 /// real terrain with a few metres of relief, enough spawns for big lobbies (12 / 16 / 24 by size) on walkable ground,
 /// hand-placed objectives for every mode on fair, standable ground, and a nav graph that reaches all of them.
 /// (The general map, bot-match and objective checks run on these maps too, like on every map.)
 /// </summary>
 public static partial class SelfTest
 {
+    /// <summary>The former High Ground pack's name, used in the log lines.</summary>
     private const string HighGroundPack = "High Ground";
+
+    /// <summary>The pack the shipped maps live in (Classic, Collision Point and High Ground together).</summary>
+    private const string LegacyPack = "Legacy";
+
+    /// <summary>The six terrain maps that were the High Ground pack, in their list order (Maps/Legacy/31-36).</summary>
+    private static readonly string[] HighGroundMapNames = ["Gravel Pit", "Hillfort", "Riverbend", "Adobe Mesa", "Ridgeline", "Alpine Pass"];
+
+    /// <summary>The former High Ground maps that are loaded, in their list order.</summary>
+    private static List<Map> HighGroundMaps() =>
+        Maps.All.Where(m => HighGroundMapNames.Contains(m.Name, StringComparer.OrdinalIgnoreCase)).OrderBy(m => m.Id).ToList();
 
     private static void CheckHighGround()
     {
         if (!Directory.Exists(Maps.Folder))
             return;
-        var pack = Maps.FindPack(HighGroundPack);
+        var pack = Maps.FindPack(LegacyPack);
         if (pack == null)
         {
-            Fail($"no {HighGroundPack} pack (Maps/HighGround)");
+            Fail($"no {LegacyPack} pack (Maps/Legacy)");
             return;
         }
-        if (pack.Maps.Count != 6)
-            Fail($"{HighGroundPack} has {pack.Maps.Count} maps (expected 6)");
+        var maps = HighGroundMaps();
+        if (maps.Count != 6)
+            Fail($"{HighGroundPack} has {maps.Count} maps (expected 6: {string.Join(", ", HighGroundMapNames)})");
+        if (maps.Any(m => m.Pack != pack))
+            Fail($"{HighGroundPack} maps outside the {LegacyPack} pack: {string.Join(", ", maps.Where(m => m.Pack != pack).Select(m => m.Name))}");
         foreach (var size in new[] { MapSize.Small, MapSize.Medium, MapSize.Large })
-            if (pack.Maps.Count(m => m.Size == size) != 2)
-                Fail($"{HighGroundPack} has {pack.Maps.Count(m => m.Size == size)} {size} maps (expected 2)");
-        if (pack.Order != 3 || pack.Description.Length == 0)
-            Fail($"{HighGroundPack}/pack.json wasn't read (order {pack.Order})");
+            if (maps.Count(m => m.Size == size) != 2)
+                Fail($"{HighGroundPack} has {maps.Count(m => m.Size == size)} {size} maps (expected 2)");
+        if (pack.Order != 1 || pack.Description.Length == 0)
+            Fail($"{LegacyPack}/pack.json wasn't read (order {pack.Order})");
 
-        foreach (var m in pack.Maps)
+        foreach (var m in maps)
         {
             if (!m.HasTerrain)
             {

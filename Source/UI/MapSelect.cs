@@ -132,7 +132,7 @@ public static class MapSelect
         s.MapName = p.Maps[entry - 1].Name;
     }
 
-    /// <summary>The current choice in words, e.g. "Random from Classic", "True Random" or "Quarry (Classic)".</summary>
+    /// <summary>The current choice in words, e.g. "Random from Legacy", "True Random" or "Quarry (Legacy)".</summary>
     public static string ChoiceText(Settings s)
     {
         if (!s.MapRandom && CallOfSlop.Maps.Find(s.MapName) is { } m)

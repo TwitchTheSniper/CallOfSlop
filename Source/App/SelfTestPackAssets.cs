@@ -14,18 +14,18 @@ public static partial class SelfTest
     /// for 2.1 m headroom (fix/stair-headroom) carry their new Windows values.</summary>
     private static readonly (string File, uint Hash)[] PrePackAssetFingerprints =
     [
-        ("Classic/01-ProtoBox.json", 0xa83dd7a5u), ("Classic/02-Courtyard.json", 0x9b62bfadu), ("Classic/03-Crossroads.json", 0x04fab23au),
-        ("Classic/04-Warehouse9.json", 0x0d1b5095u), ("Classic/05-LongShot.json", 0x9a88c69cu), ("Classic/06-Ziggurat.json", 0xd8b982f8u),
-        ("Classic/07-Scrapyard.json", 0xdece740cu), ("Classic/08-Rooftops.json", 0x3601e902u), ("Classic/09-Harbor.json", 0x56f96d12u),
-        ("Classic/10-MarketStreet.json", 0xb8c3562au), ("Classic/11-Quarry.json", 0xc0f1d401u), ("Classic/12-Trenches.json", 0xb1bd94b3u),
-        ("Classic/13-TrainYard.json", 0xd94dde9du), ("Classic/14-OfficePark.json", 0xbf692394u), ("Classic/15-Ruins.json", 0xe93ec317u),
-        ("Classic/16-Overpass.json", 0x5b03f45fu), ("Classic/17-Farmland.json", 0xfcc5a090u), ("Classic/18-Downtown.json", 0x2a9960f5u),
-        ("Classic/19-Canyon.json", 0x03353c42u), ("Classic/20-Airfield.json", 0xf47d65a6u), ("Classic/21-Village.json", 0x8004499bu),
-        ("Classic/22-Industrial.json", 0x87c760edu), ("Classic/23-Highlands.json", 0xe932e450u), ("Classic/24-MilitaryBase.json", 0xe6122c44u),
-        ("CollisionPoint/01-Blueprint.json", 0xde9e3279u), ("CollisionPoint/02-Galleria.json", 0x429afd78u), ("CollisionPoint/03-Floodgate.json", 0xcb35e9deu),
-        ("CollisionPoint/04-Trefoil.json", 0x39b08239u), ("CollisionPoint/05-Citadel.json", 0x340e65a1u), ("CollisionPoint/06-Confluence.json", 0x3aad3033u),
-        ("HighGround/01-GravelPit.json", 0x1010fd2au), ("HighGround/02-Hillfort.json", 0xddcb110bu), ("HighGround/03-Riverbend.json", 0xa7be54dau),
-        ("HighGround/04-AdobeMesa.json", 0xb9ca18aau), ("HighGround/05-Ridgeline.json", 0xb945fc4au), ("HighGround/06-AlpinePass.json", 0x61c5781cu),
+        ("Legacy/01-ProtoBox.json", 0xa83dd7a5u), ("Legacy/02-Courtyard.json", 0x9b62bfadu), ("Legacy/03-Crossroads.json", 0x04fab23au),
+        ("Legacy/04-Warehouse9.json", 0x0d1b5095u), ("Legacy/05-LongShot.json", 0x9a88c69cu), ("Legacy/06-Ziggurat.json", 0xd8b982f8u),
+        ("Legacy/07-Scrapyard.json", 0xdece740cu), ("Legacy/08-Rooftops.json", 0x3601e902u), ("Legacy/09-Harbor.json", 0x56f96d12u),
+        ("Legacy/10-MarketStreet.json", 0xb8c3562au), ("Legacy/11-Quarry.json", 0xc0f1d401u), ("Legacy/12-Trenches.json", 0xb1bd94b3u),
+        ("Legacy/13-TrainYard.json", 0xd94dde9du), ("Legacy/14-OfficePark.json", 0xbf692394u), ("Legacy/15-Ruins.json", 0xe93ec317u),
+        ("Legacy/16-Overpass.json", 0x5b03f45fu), ("Legacy/17-Farmland.json", 0xfcc5a090u), ("Legacy/18-Downtown.json", 0x2a9960f5u),
+        ("Legacy/19-Canyon.json", 0x03353c42u), ("Legacy/20-Airfield.json", 0xf47d65a6u), ("Legacy/21-Village.json", 0x8004499bu),
+        ("Legacy/22-Industrial.json", 0x87c760edu), ("Legacy/23-Highlands.json", 0xe932e450u), ("Legacy/24-MilitaryBase.json", 0xe6122c44u),
+        ("Legacy/25-Blueprint.json", 0xde9e3279u), ("Legacy/26-Galleria.json", 0x429afd78u), ("Legacy/27-Floodgate.json", 0xcb35e9deu),
+        ("Legacy/28-Trefoil.json", 0x39b08239u), ("Legacy/29-Citadel.json", 0x340e65a1u), ("Legacy/30-Confluence.json", 0x3aad3033u),
+        ("Legacy/31-GravelPit.json", 0x1010fd2au), ("Legacy/32-Hillfort.json", 0xddcb110bu), ("Legacy/33-Riverbend.json", 0xa7be54dau),
+        ("Legacy/34-AdobeMesa.json", 0xb9ca18aau), ("Legacy/35-Ridgeline.json", 0xb945fc4au), ("Legacy/36-AlpinePass.json", 0x61c5781cu),
         ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x8a64c7d3u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ad80326u), ("Dev/PhysicsTest.json", 0x476984bcu),
         ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0xf6e903c4u),
@@ -125,15 +125,15 @@ public static partial class SelfTest
         {
             try
             {
-                MapFile.Load(PackTestMap("Leak Test", op), "Classic/LeakTest.json");
-                Fail($"a Classic map could use {what} from the Dev pack");
+                MapFile.Load(PackTestMap("Leak Test", op), "Legacy/LeakTest.json");
+                Fail($"a Legacy map could use {what} from the Dev pack");
             }
             catch (MapFileException)
             {
             }
         }
         Line($"Dev pack example: {pack.Count} pack + {global.Count} global Apple Crates, {clutter.Count} pack clutter props, {beacons} pack models, "
-             + $"fingerprint {map.ContentHash:x8} (pack assets {map.PackAssetHash:x8}); Classic maps can't see them");
+             + $"fingerprint {map.ContentHash:x8} (pack assets {map.PackAssetHash:x8}); Legacy maps can't see them");
     }
 
     /// <summary>A loaded map validated like the map list does (spawns and waypoints snapped and fixed), so fingerprints compare.</summary>
@@ -288,7 +288,7 @@ public static partial class SelfTest
         var next = Try("Skies/sample.hdr", "Dev/SkyTest.json");
         var nested = Try("Skies/sample.hdr", "Dev/deeper/Nested.json"); // a map in a subfolder of its pack: the pack folder next
         var forced = Try("global:Skies/sample.hdr", "Dev/SkyTest.json"); // the Maps folder only: there's no Maps/Skies
-        var other = Try("Skies/sample.hdr", "Classic/X.json");
+        var other = Try("Skies/sample.hdr", "Legacy/X.json");
         if (next != "Dev/Skies/sample.hdr" || nested != "Dev/Skies/sample.hdr" || forced != "not found" || other != "not found")
             Fail($"sky images: next to the map {next}, nested map {nested}, global: {forced}, other pack {other}");
         else
@@ -298,7 +298,7 @@ public static partial class SelfTest
     private static void CheckPackAssetCost()
     {
         var dev = Path.Combine(Maps.Folder, "Dev");
-        var classic = Path.Combine(Maps.Folder, "Classic");
+        var classic = Path.Combine(Maps.Folder, "Legacy");
         Props.ForgetPack(dev);
         Props.ForgetPack(classic);
         var sw = Stopwatch.StartNew();
@@ -317,7 +317,7 @@ public static partial class SelfTest
         Line($"cost: Dev pack props {scope.Local.Length} loaded in {cold:0.0} ms (cold), a pack without a Props folder {noFolder:0.00} ms, cached lookup {cachedUs:0.00} us; "
              + $"Pack Assets map loads in {loadMs:0.0} ms; {Props.LoadedPacks.Length} pack(s) with their own props loaded");
         if (!none.IsGlobalScope || scope.IsGlobalScope)
-            Fail("Classic should use the global props, Dev its own scope");
+            Fail("Legacy should use the global props, Dev its own scope");
         if (cold > 250 || noFolder > 20 || cachedUs > 20)
             Fail($"pack asset lookups too slow: cold {cold:0.0} ms (budget 250), no folder {noFolder:0.00} ms (20), cached {cachedUs:0.00} us (20)");
         if (map.ContentHash != Maps.Find("Pack Assets")?.ContentHash)

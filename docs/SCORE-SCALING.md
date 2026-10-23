@@ -55,7 +55,7 @@ ticks a second of game time, Normal bots):
   therefore gives the time-to-limit for every candidate limit. The host waits to deploy and never plays, so the bots
   are the N players.
 - **Sweep** (`ScoreSweep = true`, about 2 minutes of CI): free-for-all and TDM at 4 / 8 / 12 / 16 / 23 players on
-  Canyon (the smallest Classic 24-player map), 8 / 16 / 24 / 31 on Farmland (32) and 4 / 8 / 15 on Quarry (16), four
+  Canyon (the smallest Classic 24-player map, Legacy pack), 8 / 16 / 24 / 31 on Farmland (32) and 4 / 8 / 15 on Quarry (16), four
   matches each; King of the Hill and CTF twice at 4 / 8 / 16 / 23 on Canyon and 8 / 31 on Farmland. Per map and
   player count: the median curve, the median time to the classic limit, and the **same-time limit** (the score whose
   median time equals that map's 8-player time to the classic limit, interpolated). The exponent is a least-squares fit

@@ -346,13 +346,13 @@ public static partial class SelfTest
             }
         }
 
-        // The newest pack flies the pool; older packs (milestones) fly nothing from it and keep their look.
-        var older = Maps.Packs.Where(p => p.Folder is "Classic" or "CollisionPoint" or "HighGround").SelectMany(p => p.Maps).ToList();
+        // The newest pack flies the pool; the Legacy pack (the Classic, Collision Point and High Ground milestones) flies nothing from it and keeps its look.
+        var older = Maps.Packs.Where(p => p.Folder == "Legacy").SelectMany(p => p.Maps).ToList();
         var oldFlags = older.Where(m => m.PropInstances.Any(p => p.Def.FlagId != null)).Select(m => m.Name).ToList();
         if (oldFlags.Count > 0)
-            Fail($"older-pack maps fly pool flags (they keep their look; add \"flagPool\": \"none\"): {string.Join(", ", oldFlags)}");
+            Fail($"Legacy maps fly pool flags (they keep their look; add \"flagPool\": \"none\"): {string.Join(", ", oldFlags)}");
         var cluttered = Maps.Packs.Where(p => p.Folder == "Cluttered").SelectMany(p => p.Maps).Where(m => m.PropInstances.Any(p => p.Def.FlagCloth != null || p.Def.FlagBase != null)).ToList();
-        Line($"packs: {older.Count} older-pack maps fly no pool flags; Cluttered: {string.Join(", ", cluttered.Select(m => $"{m.Name} {m.FlagsFlying} ({string.Join("/", m.PropInstances.Where(p => p.Def.FlagId != null).Select(p => p.Def.FlagId).Distinct())})"))}");
+        Line($"packs: {older.Count} Legacy maps fly no pool flags; Cluttered: {string.Join(", ", cluttered.Select(m => $"{m.Name} {m.FlagsFlying} ({string.Join("/", m.PropInstances.Where(p => p.Def.FlagId != null).Select(p => p.Def.FlagId).Distinct())})"))}");
         foreach (var name in new[] { "Cul-de-sac", "Dockside", "Old Town" })
             if (Maps.Find(name) is { } m && m.FlagsFlying == 0)
                 Fail($"{name}: none of its flags fly a design from the pool");

@@ -45,7 +45,7 @@
 - Loadouts match the lobby's level.
 
 **World**
-- Map packs: Classic, Cluttered, High Ground, World Tour, Space (Stratos Station and the spherical Pocket Planet), Zombies, Dev.
+- Map packs: Legacy (the old Classic, Collision Point and High Ground packs), Cluttered, World Tour, Space (Stratos Station and the spherical Pocket Planet), Zombies, Dev.
 - Destructible buildings with bullet penetration.
 - Props, decals, terrain holes and caves.
 

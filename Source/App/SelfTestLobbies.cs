@@ -95,7 +95,7 @@ public static partial class SelfTest
 
     private static void CheckLobbySlider()
     {
-        var classic = Maps.FindPack("Classic") ?? Maps.Packs[0];
+        var classic = Maps.FindPack("Legacy") ?? Maps.Packs[0];
         var s = new Settings { MapRandom = true, MapPack = classic.Name };
         var packMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All);
         if (packMax != classic.Maps.Max(m => m.MaxPlayers))

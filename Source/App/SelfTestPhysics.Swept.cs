@@ -466,7 +466,7 @@ public static partial class SelfTest
         World.PhysicsMode = PhysicsMode.Swept;
         try
         {
-            foreach (var map in new[] { Maps.Find("Courtyard"), Maps.Find(PhysicsTestMap), Maps.All.FirstOrDefault(m => m.HasTerrain && m.Pack?.Name == "High Ground") })
+            foreach (var map in new[] { Maps.Find("Courtyard"), Maps.Find(PhysicsTestMap), HighGroundMaps().FirstOrDefault(m => m.HasTerrain) }) // a former High Ground terrain map, now in Legacy
             {
                 if (map == null)
                     continue;
