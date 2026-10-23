@@ -17,7 +17,7 @@ Source/Game/Modes/
   Zombies/                     ZombiesModule            id 5  routes into the Zombies subsystems (ZombiesMode.cs, ZombieAI.cs...)
   LastManStanding/             LastManStandingModule    id 6  the TEMPLATE (Dev-only): copy this
   Coop/                        CoopModule               id 7  co-op PvE missions; routes into Source/Game/Pve (enemies, director, objectives)
-  TestRange/                   TestRangeModule          id 8  free-for-all with no win condition (Endless: nothing ends the match)
+  TestRange/                   TestRangeModule          id 8  free-for-all with no win condition (Endless; HostPanelInMatch: Esc > HOST)
 ```
 
 What stays shared, in `Game` (GameModes.cs and friends): the `GameMode` enum, team assignment / autobalance / team
@@ -35,7 +35,7 @@ those.
 3. **Register it**: one line in `GameModeRegistry.Factories`. The position is the menu order.
 4. **Set the capability flags** (all virtual, all default to free-for-all behaviour):
    `TeamBased`, `CoOp`, `UsesLoadout`, `AllowsStreaks`, `FixedPerks`, `UsesThrowables`, `ServerPicksWeapons`,
-   `UsesMapVote`, `HasTimeLimit`, `Endless`, `ScoreRule` + `ScoreUnit`, `Needs` (what the map must have), `DevOnly`,
+   `UsesMapVote`, `HasTimeLimit`, `Endless`, `HostPanelInMatch`, `ScoreRule` + `ScoreUnit`, `Needs` (what the map must have), `DevOnly`,
    `ShowsRespawnMessage`, `ShowsKillNotices`, `MaxPlayers(map)`, `Fits(map)` / `MapWarning`.
 5. **Override the hooks you need** (see the table). Anything you don't override behaves like free-for-all.
 6. **Replicated state**: keep it in fields on the module, write it in `WriteState`, read it in `ReadState`, bump
@@ -144,4 +144,7 @@ while `DevOnly`), bots fight in it, clients see its HUD line, the self-test play
 - Keep text ASCII, and draw non-literal text with `ImGuiSafe`.
 - A mode that must never end (Test Range) sets `Endless`: `Game.EndMatch` then refuses whatever calls it (a win check, the
   clock, a debug key), so there is no results screen, map vote, return to the lobby or map change, and the match bar
-  drops the clock. Give it no `ScoreRule` and `HasTimeLimit => false` too, so the menus don't offer limits.
+  drops the clock. Give it no `ScoreRule` and `HasTimeLimit => false` too, so the menus don't offer limits. Since nothing
+  else gets the host out, set `HostPanelInMatch` as well: the pause menu's HOST page then changes the bots mid-match
+  (`Game.SetBots`) and offers BACK TO LOBBY (`Game.ReturnToLobbyNow`: the lobby room, everyone still connected, through
+  the ordinary match-start packet; HostControls.cs).

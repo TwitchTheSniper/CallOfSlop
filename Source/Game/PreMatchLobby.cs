@@ -307,36 +307,11 @@ public sealed partial class Game
         return true;
     }
 
-    /// <summary>Host, in the lobby: how many bots (capped by the map) and how good. A new difficulty replaces the bots.</summary>
+    /// <summary>Host, in the lobby: how many bots (capped by the map) and how good. A new difficulty replaces the bots (HostControls.cs).</summary>
     public void LobbySetBots(int count, BotDifficulty skill)
     {
-        if (!IsServer || !InLobby)
-            return;
-        count = Math.Clamp(count, 0, MaxPlayers - 1);
-        var replace = skill != _botSkill;
-        _botSkill = skill;
-        WantedBots = count;
-        var now = Brutal.GlfwApi.Glfw.Time;
-        var removed = false;
-        foreach (var bot in Players.Values.Where(p => p.Bot != null).OrderByDescending(p => p.Id).ToList())
-        {
-            if (!replace && BotCount <= count)
-                break;
-            Players.Remove(bot.Id);
-            OnModePlayerLeave(bot);
-            removed = true;
-        }
-        if (removed)
-            BroadcastRoster();
-        while (BotCount < count && FreeId() != null && AddBot(skill, quiet: true))
-        {
-        }
-        foreach (var p in Players.Values)
-            if (p.Alive)
-                PlaceWaiting(p, now);
-        if (IsTeamMode)
-            AssignTeams();
-        MarkLobbyDirty();
+        if (IsServer && InLobby)
+            SetBots(count, skill);
     }
 
     /// <summary>Host, in the lobby: the other settings (score limit, time limit, auto-start, return to lobby, frenzy buffs).</summary>

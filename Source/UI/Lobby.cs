@@ -20,6 +20,7 @@ public enum PauseAction
     Leave,
     Quit,
     Suicide,
+    BackToLobby, // the host: the lobby room now (HostControls.cs)
 }
 
 /// <summary>The lobby (main menu), the in-game pause menu and the shared settings panel.</summary>
@@ -972,6 +973,7 @@ public sealed partial class Ui
         if (!PauseOpen)
         {
             _pauseTeams = false;
+            _pauseHost = false;
             ResetPausePlayers(); // UiChat.cs
             return PauseAction.None;
         }
@@ -983,6 +985,8 @@ public sealed partial class Ui
         {
             if (_pauseTeams)
                 DrawPauseTeams(game, s); // UiTeams.cs
+            else if (_pauseHost)
+                action = DrawPauseHost(game); // bots and BACK TO LOBBY (UiHostPanel.cs)
             else if (_pausePlayers)
                 DrawPausePlayers(game, s); // mute voice / chat (UiChat.cs)
             else if (_pauseSettings)
@@ -1005,6 +1009,8 @@ public sealed partial class Ui
                     action = PauseAction.Loadout;
                 if (game.IsTeamMode && BigButton("TEAMS"))
                     _pauseTeams = true; // Join Blue / Join Red / Auto and the rosters (UiTeams.cs)
+                if (game.IsServer && game.Module.HostPanelInMatch && BigButton("HOST (bots, back to lobby)"))
+                    OpenPauseHost(game); // UiHostPanel.cs
                 if (!game.Net.IsOffline && BigButton("PLAYERS (mute)"))
                     _pausePlayers = true; // mute someone's voice or chat (UiChat.cs)
                 ImGui.BeginDisabled(!game.CanRequestSuicide);
@@ -1037,6 +1043,7 @@ public sealed partial class Ui
             PauseOpen = false;
             _pauseSettings = false;
             _pauseTeams = false;
+            _pauseHost = false;
             ResetPausePlayers();
         }
         return action;
