@@ -18,7 +18,8 @@ public enum BuildingEventKind : byte
 /// opens or shuts the door you're looking at (<see cref="Msg.BuildingUse"/>); bullets, melee and blasts wear doors down
 /// and shatter glass; the server decides and tells everyone (<see cref="Msg.BuildingEvent"/>), and a player who joins
 /// mid-match gets every door's state and health and the broken windows (<see cref="Msg.BuildingState"/>). Every PC then
-/// moves the door's collision box, swings the leaf, and throws out debris. Bots open the doors they walk into.
+/// moves the door's collision box, swings the leaf, and throws out debris. Bots, co-op enemies and zombies deal with doors
+/// in Source/Game/Bots/Doors/BotDoors.cs (open ahead of them, shut behind them, bash them).
 /// Everything is whole and back as built at the start of every match.
 /// </summary>
 public sealed partial class Game
@@ -129,9 +130,12 @@ public sealed partial class Game
                 if (hb.Min.X < leaf.Max.X && hb.Max.X > leaf.Min.X && hb.Min.Y < leaf.Max.Y && hb.Max.Y > leaf.Min.Y && hb.Min.Z < leaf.Max.Z && hb.Max.Z > leaf.Min.Z)
                     return false; // someone's in the way
             }
+            if (NpcInLeaf(leaf))
+                return false; // a co-op enemy or a zombie in the way (BotDoors.cs)
         }
         if (!map.SetBuildingDoor(i, open))
             return false;
+        StampDoor(i, now); // when and by whom (bots don't fight over a door: BotDoors.cs)
         BroadcastBuildingEvent(open ? BuildingEventKind.DoorOpen : BuildingEventKind.DoorClose, i, d.Health, d.Center);
         OnDoorMoved(i, open);
         return true;
@@ -281,8 +285,11 @@ public sealed partial class Game
 
     // ---- Bots ----------------------------------------------------------------------------------------------
 
-    /// <summary>Server: a bot walking into a shut door opens it (bots plan their routes through doors).</summary>
-    private void BotOpenDoors(Player p, double now)
+    /// <summary>
+    /// Server: a bot walking into a shut door opens it (bots plan their routes through doors, and open the doors on them
+    /// before they get there: BotDoors.cs). With a <paramref name="wish"/>, only doors in the way it's heading.
+    /// </summary>
+    private void BotOpenDoors(Player p, double now, Vector3 wish = default)
     {
         var map = World.Map;
         if (map.BuildingDoors.Count == 0 || !p.Alive)
@@ -298,8 +305,18 @@ public sealed partial class Game
                 continue;
             var dx = MathF.Max(0, MathF.Max(b.Min.X - pos.X, pos.X - b.Max.X));
             var dz = MathF.Max(0, MathF.Max(b.Min.Z - pos.Z, pos.Z - b.Max.Z));
-            if (dx * dx + dz * dz < 0.95f * 0.95f)
-                ServerSetDoor(i, true, now);
+            if (dx * dx + dz * dz >= 0.95f * 0.95f || (wish != Vector3.Zero && (b.Center.X - pos.X) * wish.X + (b.Center.Z - pos.Z) * wish.Z <= 0))
+                continue;
+            if (wish != Vector3.Zero && p.Bot is { } bb && (bb.DoorTogglesIn(i, now, 4) > 0 || bb.HoldsShut(i, now)))
+                continue; // brushing past a door it just shut (behind it, or for its hold): not open again (BotDoors.cs)
+            _doorActor = p.Id;
+            var opened = ServerSetDoor(i, true, now);
+            _doorActor = byte.MaxValue;
+            if (opened && p.Bot is { } brain)
+            {
+                brain.LogDoorToggle(i, now);
+                BotDoorOpens++;
+            }
         }
     }
 
@@ -318,6 +335,7 @@ public sealed partial class Game
     {
         WriteBuildingEvent(_w, kind, index, health, from);
         Net.Broadcast(_w.Span, rel);
+        BuildingEventTap?.Invoke(kind, index, health);
     }
 
     /// <summary>
