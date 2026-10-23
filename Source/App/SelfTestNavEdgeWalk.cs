@@ -28,6 +28,8 @@ public static partial class SelfTest
         int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0;
         var rejectedBy = new List<(string Map, int Count)>();
         var sw = Stopwatch.StartNew();
+        NavGraph.RejectLog = new();
+        var rejects = NavGraph.RejectLog;
         try
         {
             foreach (var m in Maps.All)
@@ -62,6 +64,7 @@ public static partial class SelfTest
         }
         finally
         {
+            NavGraph.RejectLog = null;
             World.Mover = previousMover;
             World.SetMap(previousMap);
         }
@@ -74,6 +77,9 @@ public static partial class SelfTest
                   + string.Join(", ", rejectedBy.OrderByDescending(x => x.Count).Take(12).Select(x => $"{x.Map} {x.Count}")));
         notes.Add("by kind: " + string.Join(", ", byKind.Select(kv => $"{kv.Key} {kv.Value.Count}")));
         notes.Add("by map: " + string.Join(", ", perMap));
+        // TEMP diagnostics: climbs of over 2 m the mover walk dropped on building maps (stairs).
+        foreach (var r in rejects.Where(r => r.To.Y - r.From.Y > 2f && r.Map is "Commercial Street" or "Finnish Buildings").Take(14))
+            notes.Add(FormattableString.Invariant($"dropped climb {r.Map}: ({r.From.X:0.0}, {r.From.Y:0.0}, {r.From.Z:0.0}) -> ({r.To.X:0.0}, {r.To.Y:0.0}, {r.To.Z:0.0}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.0}, {r.End.Y:0.0}, {r.End.Z:0.0})"));
         foreach (var (kind, l) in byKind)
         {
             // A few examples of each kind, from different maps (walking first).

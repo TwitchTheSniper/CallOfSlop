@@ -16,6 +16,9 @@ public sealed partial class NavGraph
     /// <summary>Links checked with the mover during the build, and directions dropped because the walk failed.</summary>
     public int WalkChecked, WalkRejected;
 
+    /// <summary>Self-test: when set, every direction the mover walk drops is noted here (map, from, to, where the walk ended).</summary>
+    public static List<(string Map, Vector3 From, Vector3 To, byte Flags, Vector3 End, bool Sprint)>? RejectLog;
+
     /// <summary>The result of one <see cref="MoverWalk"/>.</summary>
     public struct WalkResult
     {
@@ -89,8 +92,14 @@ public sealed partial class NavGraph
         var shin = new Vector3(0, 0.3f, 0);
         var d = b - a;
         var dist = d.Length();
-        if (dist > 0.01f && World.Physics.Raycast(a + shin, d / dist, dist, QueryFilter.Navigation) < dist - 0.05f)
-            return true;
+        if (dist > 0.01f)
+        {
+            var dir = d / dist;
+            var side = Vector3.Normalize(new Vector3(-dir.Z, 0, dir.X) + new Vector3(0, 1e-6f, 0)) * (World.PlayerRadius - 0.05f);
+            foreach (var o in (ReadOnlySpan<float>)[0f, 1f, -1f]) // the middle and both sides of the body
+                if (World.Physics.Raycast(a + shin + side * o, dir, dist, QueryFilter.Navigation) < dist - 0.05f)
+                    return true;
+        }
         return SlopedLink(a, b);
     }
 
@@ -139,8 +148,13 @@ public sealed partial class NavGraph
     /// </summary>
     private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
     {
-        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached || !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+        var walk = MoverWalk(a, b, flags, ledge, sprint: false);
+        var run = walk.Reached ? MoverWalk(a, b, flags, ledge, sprint: true) : walk;
+        if (!run.Reached)
+        {
+            RejectLog?.Add((World.Map.Name, a, b, flags, run.End, walk.Reached));
             return false;
+        }
         if ((flags & FlagMantle) == 0)
             return true;
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
@@ -156,8 +170,11 @@ public sealed partial class NavGraph
             p.Y += 0.4f - t;
             if (World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0)))
                 continue;
-            if (!MoverWalk(p, b, flags, ledge, sprint: false).Reached)
+            if (MoverWalk(p, b, flags, ledge, sprint: false) is { Reached: false } side1)
+            {
+                RejectLog?.Add((World.Map.Name, p, b, flags, side1.End, false));
                 return false;
+            }
         }
         return true;
     }
