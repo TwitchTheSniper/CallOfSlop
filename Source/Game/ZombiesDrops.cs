@@ -123,10 +123,8 @@ public sealed partial class Game
         int slot;
         if (d.Melee)
             slot = 4;
-        else if (p.ExtraSlots && p.BuiltExtra[0] == null)
-            slot = 2;
-        else if (p.ExtraSlots && p.BuiltExtra[1] == null)
-            slot = 3;
+        else if (FreeGunSlot(p) is var free and >= 0)
+            slot = free; // an empty slot: 1-2 taken apart at a workbench, or a free 3-4 (ZombiesDisassemble.cs)
         else
             slot = SlotOf(p, p.Weapon) is var s and >= 0 ? s : 0;
         replaced = zp.Slots[slot];
@@ -143,7 +141,7 @@ public sealed partial class Game
             how = $" (swap for your {replaced.Name})";
         else if (slot == 4)
             how = " (melee)";
-        else if (slot >= 2)
+        else if (slot >= 2 || !HasGunIn(p, slot))
             how = $" (slot {slot + 1})";
         else
             how = $" (in place of your {p.DefFor(p.Weapon).Name})";

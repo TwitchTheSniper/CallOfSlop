@@ -199,13 +199,13 @@ public sealed partial class Ui : IDisposable
             if (reload >= 0)
                 ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
             else
-                ImGuiSafe.TextColored(w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve
+                ImGuiSafe.TextColored(Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), Game.IsEmptyGun(w.Def) ? "-" : w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve (an empty slot: nothing)
             ImGui.PopFont();
             ImGui.Text($"{w.Def.Name}");
             ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
             for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
                 if (i != game.ActiveSlot)
-                    ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
+                    ImGuiSafe.TextColored(Dim, game.SlotHasGun(i) ? $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}" : $"[{i + 1}] (empty)");
             if (game.MannedCart != null) // manning a push cart's gun (GameZombies.cs)
                 ImGuiSafe.TextColored(Orange, $"Leave: {K(GameAction.Interact)}   Push it: hold {K(GameAction.Interact)}");
             else if (game.InteractHint() is { } hint)

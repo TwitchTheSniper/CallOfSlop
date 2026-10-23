@@ -612,7 +612,7 @@ public sealed partial class Game : IDisposable
 
     public void SwitchTo(int slot, double now)
     {
-        if (slot == ActiveSlot || slot < 0 || slot >= WeaponSlots || Local is not { Alive: true } || CartRefusesSwitch(slot))
+        if (slot == ActiveSlot || slot < 0 || slot >= WeaponSlots || Local is not { Alive: true } || CartRefusesSwitch(slot) || EmptySlotRefusesSwitch(slot))
             return;
         Active.ReloadUntil = 0; // switching cancels a reload
         ActiveSlot = slot;
