@@ -355,6 +355,10 @@ def main(argv):
                 current = f.read()
         except FileNotFoundError:
             current = None
+        # Compare the text, not the bytes: a Windows checkout has CRLF line endings (.gitattributes: text=auto), and git
+        # stores LF whichever way the file is written.
+        if current is not None:
+            current = current.replace("\r\n", "\n")
         if current != text:
             differ.append(fn)
             if "--check" not in argv:

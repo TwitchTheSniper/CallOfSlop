@@ -17,13 +17,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 ALL_MAPS = ["Maps", "Map files", "Pack assets", "Map horizons", "Map objectives", "Props", "Animated props",
-            "Nav determinism", "Nav edge walks", "Stairs"]
+            "Nav determinism", "Nav edge walks", "Stairs", "Map contract"]
 PARTS = ["Part library", "Part coverage", "Model connectivity", "Optic mounts", "Workbench UI",
          "Workbench barrels and grips", "Workbench actions", "Action placement", "Weapon builder", "Zombies mode"]
 
 # (regex on the repo-relative path, sections)
 RULES = [
-    (r"^Maps/Space/", ALL_MAPS + ["Space: gravity maps", "Gravity zones", "Planet gravity"]),
+    (r"^Maps/Space/", ALL_MAPS + ["Space: gravity physics", "Gravity zones", "Planet gravity"]),
     (r"^Maps/Cluttered/", ALL_MAPS + ["Cluttered pack"]),
     (r"^Maps/World/", ALL_MAPS + ["World Tour: Silo", "World Tour: Bocage", "World Tour: Main Street", "World: Vuorikoski",
                                   "World: Slopview Mall", "World Tour: Village", "World: London", "Co-op"]),
@@ -31,7 +31,8 @@ RULES = [
     (r"^Maps/Legacy/", ALL_MAPS + ["High Ground pack", "Slopes", "Movers", "Flag pool", "Map select", "Map vote"]),
     (r"^Maps/Dev/", ALL_MAPS + ["Decals", "Pack decals", "Landmines", "Destruction"]),
     (r"^Maps/", ALL_MAPS),
-    (r"^Props/", ["Props", "Animated props", "Pack assets", "Military props"]),
+    (r"^Props/|^tools/props/", ["Props", "Animated props", "Pack assets", "Military props"]),
+    (r"^tools/(space|planet|cluttered|world|zombies|mapkit)/", ALL_MAPS + ["Map contract"]),
     (r"^Decals/|/Decals/", ["Decals", "Decal surfaces", "Pack decals", "Pack assets"]),
     (r"^Buildings/", ["Buildings", "Destruction", "Pack assets"]),
     (r"^Weapons/", ["Weapon files", "Loadouts and perks", "Recoil", "Gun mix", "Mode modules"]),
