@@ -22,11 +22,91 @@ public static partial class SelfTest
         CheckOutdoorProps(); // the outdoor folders and Prop Gallery 2 (SelfTestPropsOutdoor.cs)
         CheckGeneratedGalleries(); // the gallery maps match tools/props/gallery.py (SelfTestPropGallery.cs)
         CheckPropFileErrors();
+        CheckPrefabProps(); // props composed of other props ("use" parts): the union of the pieces, cycles refused
         CheckPropCollision();
         CheckClutter();
         CheckPropMapsAndNav();
         CheckBreakables();
         CheckDebris();
+    }
+
+    /// <summary>
+    /// Prefab props (Props/README.md "Prefabs"): a prop whose parts "use" other props loads flat, with the union of the
+    /// used props' parts (moved, turned, scaled) and of their colliders; the shipped example (Landing Pad Set) is such a
+    /// union of its Station pieces; a prefab that uses itself round a chain is refused; a lone prefab file is refused.
+    /// </summary>
+    private static void CheckPrefabProps()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "callofslop-prefabs-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(dir, "Test"));
+            File.WriteAllText(Path.Combine(dir, "Test", "A.json"), """{ "name": "Piece A", "collision": "solid", "collider": [ { "size": [1, 1, 1] } ], "parts": [ { "size": [1, 1, 1], "color": "red" }, { "size": [0.2, 0.5, 0.2], "offset": [0, 1.25, 0], "yaw": 45 } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "B.json"), """{ "name": "Piece B", "collision": "cosmetic", "parts": [ { "size": [0.5, 0.2, 2], "color": "blue" } ] }""");
+            // The prefab's file sorts before its pieces' (Aaa < A? no: "0Set" sorts first), so the two-pass loader must find them anyway.
+            File.WriteAllText(Path.Combine(dir, "Test", "0Set.json"), """{ "name": "Set AB", "collision": "solid", "parts": [ { "use": "Piece A", "pos": [-2, 0, 0] }, { "use": "Piece A", "pos": [2, 0, 0], "yaw": 90, "scale": 2 }, { "use": "Piece B", "pos": [0, 0.5, 3], "rotation": [0, 90, 0] } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "Nested.json"), """{ "name": "Nested Set", "collision": "cosmetic", "parts": [ { "use": "Set AB", "pos": [0, 0, -5] }, { "use": "Piece B" } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "Loop1.json"), """{ "name": "Loop One", "parts": [ { "use": "Loop Two" } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "Loop2.json"), """{ "name": "Loop Two", "parts": [ { "use": "Loop One" } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "Unknown.json"), """{ "name": "Uses Nothing", "parts": [ { "use": "No Such Prop" } ] }""");
+            File.WriteAllText(Path.Combine(dir, "Test", "Tilted.json"), """{ "name": "Tilted Use", "parts": [ { "use": "Piece A", "rotation": [30, 0, 0] } ] }""");
+            var errors = new List<string>();
+            var defs = Props.LoadAll(dir, errors);
+            var set = defs.FirstOrDefault(d => d.Name == "Set AB");
+            if (set == null)
+                Fail("prefab props: 'Set AB' didn't load: " + string.Join("; ", errors));
+            else
+            {
+                if (set.Parts.Count != 5 || set.Colliders.Length != 2)
+                    Fail($"prefab props: 'Set AB' has {set.Parts.Count} parts and {set.Colliders.Length} colliders (wanted the union: 5 parts, 2 colliders)");
+                var big = set.Parts.FirstOrDefault(p => p.Size.X == 2 && p.Offset.X == 2);
+                var post = set.Parts.FirstOrDefault(p => p.Size.Y == 1 && p.Offset.X == 2);
+                if (big == null || post == null || MathF.Abs(post.Offset.Y - 2.5f) > 1e-4f || MathF.Abs(post.RotationDeg.Y - 135) > 1e-4f)
+                    Fail($"prefab props: the scaled, turned use of 'Piece A' came out wrong ({string.Join("; ", set.Parts.Select(p => $"{p.Size} at {p.Offset} yaw {p.RotationDeg.Y}"))})");
+                var b = set.Parts.FirstOrDefault(p => p.Color == PropFile.Colors["blue"]);
+                if (b == null || MathF.Abs(b.Offset.Y - 0.6f) > 1e-4f || MathF.Abs(b.Offset.Z - 3) > 1e-4f || MathF.Abs(b.RotationDeg.Y - 90) > 1e-4f)
+                    Fail($"prefab props: the turned use of 'Piece B' came out wrong ({b?.Offset} yaw {b?.RotationDeg.Y})");
+                var c = set.Colliders.OrderBy(x => x.Center.X).ToArray();
+                if (MathF.Abs(c[0].Center.X + 2) > 1e-4f || MathF.Abs(c[1].Half.X - 1) > 1e-4f || MathF.Abs(c[1].Center.Y - 1) > 1e-4f)
+                    Fail($"prefab props: the pieces' colliders weren't moved and scaled with them ({string.Join("; ", c)})");
+            }
+            var nested = defs.FirstOrDefault(d => d.Name == "Nested Set");
+            if (nested == null || nested.Parts.Count != 6 || nested.Colliders.Length != 0)
+                Fail($"prefab props: a prefab of a prefab has {nested?.Parts.Count} parts, {nested?.Colliders.Length} colliders (wanted 6 and 0: cosmetic)");
+            if (!errors.Any(e => e.Contains("uses itself") && e.Contains("Loop One -> Loop Two")) && !errors.Any(e => e.Contains("uses itself") && e.Contains("Loop Two -> Loop One")))
+                Fail("prefab props: a two-prop cycle wasn't refused with the chain: " + string.Join("; ", errors));
+            if (!errors.Any(e => e.Contains("unknown prop \"No Such Prop\"")))
+                Fail("prefab props: an unknown used prop wasn't refused: " + string.Join("; ", errors));
+            if (!errors.Any(e => e.Contains("Tilted") && e.Contains("only be used with a yaw")))
+                Fail("prefab props: a pitched use of a prop with turned parts wasn't refused: " + string.Join("; ", errors));
+            if (defs.Any(d => d.Name is "Loop One" or "Loop Two" or "Uses Nothing" or "Tilted Use"))
+                Fail("prefab props: a refused prefab still loaded");
+            try
+            {
+                PropFile.Load("""{ "name": "Lone", "parts": [ { "use": "Piece A" } ] }""", "lone.json");
+                Fail("prefab props: a prefab loaded on its own (no library to find its pieces)");
+            }
+            catch (PropFileException)
+            {
+            }
+            // The shipped example: the union of its Station pieces.
+            if (Props.Find("Landing Pad Set") is not { } pad)
+                Fail("prefab props: Props/Station/LandingPadSet.json didn't load");
+            else
+            {
+                string[] pieces = ["Landing Beacon", "Landing Beacon", "Station Cargo Pod", "Station Supply Case", "Deck Floor Light", "Deck Floor Light"];
+                var parts = pieces.Sum(n => Props.Find(n)!.Parts.Count);
+                var colliders = pieces.Sum(n => Props.Find(n)!.IsSolid ? Props.Find(n)!.Colliders.Length : 0);
+                if (pad.Parts.Count != parts || pad.Colliders.Length != colliders || !pad.IsSolid)
+                    Fail($"prefab props: Landing Pad Set has {pad.Parts.Count} parts and {pad.Colliders.Length} colliders; its pieces have {parts} and {colliders}");
+                Line($"prefab props: Landing Pad Set = {pieces.Length} Station props, {pad.Parts.Count} parts, {pad.Colliders.Length} colliders, {pad.Bounds.Half.X * 2:0.0} x {pad.Bounds.Half.Z * 2:0.0} m; "
+                     + $"test set: {defs.Length} loaded, {errors.Count} refused (cycle, unknown piece, tilted use)");
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(dir, true); } catch (IOException) { }
+        }
     }
 
     private static void CheckPropLibrary()

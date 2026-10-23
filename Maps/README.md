@@ -986,6 +986,13 @@ A map needs **one spawn per player**. If it has fewer, the game adds spawns when
 
 ## Making a map on a branch (the tools)
 
+**The map kit** (`Source/MapKit`, namespace `CallOfSlop.MapKit`; the guide is [docs/mapkit/MAPKIT.md](../docs/mapkit/MAPKIT.md))
+is how new maps are generated: a C# `IMapGenerator` fills a `Kit` with ops, objectives and dressing (symmetry, outlines,
+railings, stairs, ramps, prop clusters, a seeded generator), `CallOfSlop --gen-map "<Name>"` writes the map file, loads
+it back and prints the `MapChecks` report (objectives, horizon fade, nav reach, fair walks, stairs, counts),
+`--gen-maps` says which generators' outputs differ from the committed files and `--gen-plan <map> <png>` draws a
+plan of any map. Twin Shard (`Source/MapKit/Generators/TwinShard.cs`) is the example.
+
 Three scripts in `tools/mapkit/` take the chores out of a new map. Run them from the repository root with `python3 -I`.
 
 **Scaffold:** `python3 -I tools/mapkit/new_map.py <Pack> <NN> "<Name>" [--theme "a few words"]` writes the generator

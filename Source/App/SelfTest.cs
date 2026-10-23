@@ -353,6 +353,7 @@ public static partial class SelfTest
         // gravity-maps
         Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
         Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
+        Section("Map kit", CheckMapKit); // SelfTestMapKit.cs: Source/MapKit: map files round-trip, generators reproduce their maps, MapChecks.Check agrees with the Space sections
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

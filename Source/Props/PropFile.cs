@@ -71,9 +71,16 @@ public static class PropFile
         ["dirt"] = (int)Material.Dirt,
     };
 
+    /// <summary>Does a prop file compose other props (a part with "use")? A cheap look before the real load, for the two-pass library loader.</summary>
+    public static bool UsesPrefabs(string json) => json.Contains("\"use\"", StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Builds a prop from a prop file. Throws <see cref="PropFileException"/> with a readable message if the file is wrong.</summary>
     /// <param name="folderCategory">The category subfolder the file is in (used when the file gives no "category").</param>
-    public static PropDef Load(string json, string source, string folderCategory = "Misc")
+    /// <param name="library">
+    /// Finds a prop by name for parts that "use" another prop (a prefab, see Props/README.md); it throws
+    /// <see cref="PropFileException"/> for a cycle and returns null for an unknown name. Without one, a prefab is refused.
+    /// </param>
+    public static PropDef Load(string json, string source, string folderCategory = "Misc", Func<string, PropDef?>? library = null)
     {
         JsonDocument doc;
         try
@@ -168,8 +175,17 @@ public static class PropFile
             if (pl.GetArrayLength() > MaxParts)
                 throw new PropFileException($"{source}: {pl.GetArrayLength()} parts is more than the limit of {MaxParts}");
             var index = 0;
+            var prefabColliders = new List<Box>();
             foreach (var pe in pl.EnumerateArray())
-                def.Parts.Add(ReadPart(pe, $"{source}, part #{++index}"));
+            {
+                var where = $"{source}, part #{++index}";
+                if (pe.ValueKind == JsonValueKind.Object && pe.EnumerateObject().Any(q => q.Name.Equals("use", StringComparison.OrdinalIgnoreCase)))
+                    ReadUse(pe, def, prefabColliders, where, library);
+                else
+                    def.Parts.Add(ReadPart(pe, where));
+            }
+            if (def.Parts.Count > MaxParts)
+                throw new PropFileException($"{source}: the composed model has {def.Parts.Count} parts, more than the limit of {MaxParts}");
 
             var min = new Vector3(float.MaxValue);
             var max = new Vector3(float.MinValue);
@@ -194,7 +210,7 @@ public static class PropFile
                 def.FlagCloth = FlagPool.ReadCloth(fl, $"{source} (\"flag\")");
                 FlagPool.Validate(def, source); // flag designs replace the cloth (FlagPool.cs)
             }
-            def.Colliders = def.IsSolid ? ReadColliders(collider, def, source) : [];
+            def.Colliders = def.IsSolid ? collider == null && prefabColliders.Count > 0 ? PrefabColliders(prefabColliders, source) : ReadColliders(collider, def, source) : [];
             if (!def.IsSolid && collider != null)
                 throw new PropFileException($"{source}: \"collider\" is only for solid props (this one is cosmetic)");
             def.FadeDistance = def.IsSolid ? 0 : fade ?? PropDef.DefaultFade(def.Bounds);
@@ -208,6 +224,100 @@ public static class PropFile
                 def.Breakable = ReadBreakable(br, $"{source} (\"breakable\")");
             return def;
         }
+    }
+
+    /// <summary>
+    /// A part that places another prop: { "use": "Landing Beacon", "pos": [x, y, z], "rotation": [pitch, yaw, roll], "scale": s }.
+    /// The used prop's parts are copied in, moved, turned and scaled, so the loaded prop is flat (render and physics never see
+    /// the composition); its colliders are collected for the prefab's default collider.
+    /// </summary>
+    private static void ReadUse(JsonElement e, PropDef def, List<Box> prefabColliders, string where, Func<string, PropDef?>? library)
+    {
+        string? use = null;
+        var pos = Vector3.Zero;
+        var rot = Vector3.Zero;
+        var scale = 1f;
+        foreach (var p in e.EnumerateObject())
+        {
+            var w = $"{where} (\"{p.Name}\")";
+            switch (p.Name.ToLowerInvariant())
+            {
+                case "use":
+                    use = Text(p.Value, w).Trim();
+                    break;
+                case "pos":
+                case "offset":
+                    pos = Vec(p.Value, w);
+                    break;
+                case "rotation":
+                    rot = Vec(p.Value, w);
+                    break;
+                case "yaw":
+                    rot.Y = Num(p.Value, w);
+                    break;
+                case "scale":
+                    scale = Range(Num(p.Value, w), 0.1f, 4f, w);
+                    break;
+                default:
+                    throw new PropFileException($"{w}: unknown key. A part that uses another prop takes: use, pos, rotation (or yaw), scale");
+            }
+        }
+        if (string.IsNullOrEmpty(use))
+            throw new PropFileException($"{where}: \"use\" needs a prop name");
+        if (library == null)
+            throw new PropFileException($"{where}: uses \"{use}\", but this prop was loaded on its own; prefabs load through the Props folder");
+        var used = library(use) ?? throw new PropFileException($"{where}: uses unknown prop \"{use}\"");
+        if (MathF.Abs(rot.X) > 360 || MathF.Abs(rot.Y) > 360 || MathF.Abs(rot.Z) > 360)
+            throw new PropFileException($"{where}: rotation angles are degrees, -360 to 360");
+        var tilted = rot.X != 0 || rot.Z != 0;
+        var q = Quaternion.CreateFromYawPitchRoll(rot.Y * MathF.PI / 180f, rot.X * MathF.PI / 180f, rot.Z * MathF.PI / 180f);
+        foreach (var part in used.Parts)
+        {
+            if (tilted && part.RotationDeg != Vector3.Zero)
+                throw new PropFileException($"{where}: \"{use}\" has turned parts, so it can only be used with a yaw (pitch and roll would need a combined rotation)");
+            var copy = new PropPart
+            {
+                Size = part.Size * scale,
+                Offset = pos + Vector3.Transform(part.Offset * scale, q),
+                RotationDeg = tilted ? rot : part.RotationDeg + new Vector3(0, rot.Y, 0),
+                Color = part.Color,
+                Layer = part.Layer,
+                TexScale = part.TexScale,
+                Anim = part.Anim,
+                Corners = part.Corners?.Select(c => pos + Vector3.Transform(c * scale, q)).ToArray(),
+            };
+            def.Parts.Add(copy);
+        }
+        if (used.IsSolid)
+            foreach (var c in used.Colliders)
+            {
+                // The collider turned with the use: the axis-aligned box round its turned corners.
+                var min = new Vector3(float.MaxValue);
+                var max = new Vector3(float.MinValue);
+                for (var i = 0; i < 8; i++)
+                {
+                    var corner = new Vector3((i & 1) == 0 ? -c.Half.X : c.Half.X, (i & 2) == 0 ? -c.Half.Y : c.Half.Y, (i & 4) == 0 ? -c.Half.Z : c.Half.Z);
+                    var w = pos + Vector3.Transform((c.Center + corner) * scale, q);
+                    min = Vector3.Min(min, w);
+                    max = Vector3.Max(max, w);
+                }
+                prefabColliders.Add(new Box((min + max) / 2, (max - min) / 2));
+            }
+    }
+
+    private static Box[] PrefabColliders(List<Box> boxes, string source)
+    {
+        if (boxes.Count > MaxColliders)
+            throw new PropFileException($"{source}: the used props have {boxes.Count} collider boxes between them; at most {MaxColliders}. Give the prefab its own \"collider\" (\"bounds\" or a few boxes)");
+        return boxes.Select(b =>
+        {
+            var min = b.Min;
+            var max = b.Max;
+            min.Y = MathF.Max(min.Y, 0f);
+            if (max.Y - min.Y < 0.02f)
+                max.Y = min.Y + 0.02f;
+            return new Box((min + max) / 2, (max - min) / 2);
+        }).ToArray();
     }
 
     private static PropPart ReadPart(JsonElement e, string where)

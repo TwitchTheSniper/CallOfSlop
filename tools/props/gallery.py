@@ -109,12 +109,57 @@ def part_bounds(part):
     return [round(off[i] - ext[i], 4) for i in range(3)], [round(off[i] + ext[i], 4) for i in range(3)]
 
 
+def flat_parts(raw, name, visiting=()):
+    """A prop's parts with every "use" part (a prefab piece, Props/README.md "Prefabs") replaced by the used prop's parts
+    moved, turned (yaw) and scaled the way the game's loader does it."""
+    d = raw[name]
+    out = []
+    for p in d["parts"]:
+        if "use" not in p:
+            out.append(p)
+            continue
+        used = p["use"].strip()
+        if used.lower() in {v.lower() for v in visiting} or used.lower() == name.lower():
+            sys.exit(f"gallery.py: prop '{name}' uses itself through {' -> '.join(visiting + (name, used))}")
+        key = next((k for k in raw if k.lower() == used.lower()), None)
+        if key is None:
+            sys.exit(f"gallery.py: prop '{name}' uses unknown prop '{used}'")
+        pos = p.get("pos", p.get("offset", [0, 0, 0]))
+        rot = list(p.get("rotation", [0, 0, 0]))
+        if "yaw" in p:
+            rot[1] = p["yaw"]
+        scale = p.get("scale", 1)
+        m = rotation_matrix(rot)
+        for q in flat_parts(raw, key, visiting + (name,)):
+            off = q.get("offset", [0, q.get("size", [1, 1, 1])[1] / 2, 0])
+            off = [v * scale for v in off]
+            turned = [math.fsum(m[i][j] * off[j] for j in range(3)) for i in range(3)]
+            qrot = list(q.get("rotation", [0, 0, 0]))
+            if "yaw" in q:
+                qrot[1] = q["yaw"]
+            if "pitch" in q:
+                qrot[0] = q["pitch"]
+            if "roll" in q:
+                qrot[2] = q["roll"]
+            r = dict(q)
+            r.pop("yaw", None)
+            r.pop("pitch", None)
+            r.pop("roll", None)
+            r["size"] = [v * scale for v in q.get("size", [1, 1, 1])]
+            r["offset"] = [pos[i] + turned[i] for i in range(3)]
+            r["rotation"] = rot if any(abs(v) > 1e-9 for v in (rot[0], rot[2])) else [qrot[0], qrot[1] + rot[1], qrot[2]]
+            out.append(r)
+    return out
+
+
 def load_props():
-    """Every global prop: name -> dict(category, min, max, animated, file)."""
-    props = {}
-    for dirpath, dirnames, files in os.walk(PROPS):
+    """Every global prop: name -> dict(category, min, max, animated, file). Prefabs are flattened like the game does."""
+    raw = {}
+    files = {}
+    folders = {}
+    for dirpath, dirnames, fnames in os.walk(PROPS):
         dirnames.sort()
-        for fn in sorted(files):
+        for fn in sorted(fnames):
             if not fn.endswith(".json"):
                 continue
             rel = os.path.relpath(os.path.join(dirpath, fn), PROPS).replace("\\", "/")
@@ -125,18 +170,23 @@ def load_props():
                 d = json.load(f)
             if "parts" not in d or "name" not in d:
                 continue
-            lo = [1e9] * 3
-            hi = [-1e9] * 3
-            for p in d["parts"]:
-                a, b = part_bounds(p)
-                lo = [min(lo[i], a[i]) for i in range(3)]
-                hi = [max(hi[i], b[i]) for i in range(3)]
-            cat = (d.get("category") or "").strip() or folder
             name = d["name"].strip()
-            if name.lower() in {k.lower() for k in props}:
-                sys.exit(f"gallery.py: two props are called '{name}' ({rel} and {props[name]['file']})")
-            props[name] = dict(category=cat, min=lo, max=hi, file=rel,
-                               animated=any("anim" in p for p in d["parts"]))
+            if name.lower() in {k.lower() for k in raw}:
+                sys.exit(f"gallery.py: two props are called '{name}' ({rel} and {files[name]})")
+            raw[name] = d
+            files[name] = rel
+            folders[name] = folder
+    props = {}
+    for name, d in raw.items():
+        parts = flat_parts(raw, name)
+        lo = [1e9] * 3
+        hi = [-1e9] * 3
+        for p in parts:
+            a, b = part_bounds(p)
+            lo = [min(lo[i], a[i]) for i in range(3)]
+            hi = [max(hi[i], b[i]) for i in range(3)]
+        cat = (d.get("category") or "").strip() or folders[name]
+        props[name] = dict(category=cat, min=lo, max=hi, file=files[name], animated=any("anim" in p for p in parts))
     return props
 
 

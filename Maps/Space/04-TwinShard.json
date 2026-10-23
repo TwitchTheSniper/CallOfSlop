@@ -346,20 +346,20 @@
  ],
  "hills": [
   {
-   "x": 0,
-   "z": -4,
+   "x": 0.0,
+   "z": -4.0,
    "y": 42.2,
    "radius": 3.5
   },
   {
-   "x": 0,
-   "z": 0,
-   "y": 5.800000000000001,
+   "x": 0.0,
+   "z": 0.0,
+   "y": 5.8,
    "radius": 4.0
   },
   {
-   "x": 0,
-   "z": 17,
+   "x": 0.0,
+   "z": 17.0,
    "y": 42.2,
    "radius": 3.5
   }
@@ -368,12 +368,12 @@
   [
    -34.0,
    42.2,
-   0
+   0.0
   ],
   [
    34.0,
    42.2,
-   0
+   0.0
   ]
  ],
  "ops": [
@@ -402,14 +402,14 @@
    "z": 16.5,
    "y": 17.633,
    "color": "#7a6a4a",
-   "yaw": -4.148,
-   "pitch": 111.05,
-   "solid": true,
    "width": 0.911,
    "height": 0.523,
    "depth": 0.736,
+   "yaw": -4.148,
+   "pitch": 111.05,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -418,14 +418,14 @@
    "z": 1.322,
    "y": 21.936,
    "color": "#5a524b",
-   "yaw": 85.573,
-   "pitch": 96.871,
-   "solid": true,
    "width": 2.494,
    "height": 2.142,
    "depth": 2.261,
+   "yaw": 85.573,
+   "pitch": 96.871,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -434,14 +434,14 @@
    "z": -10.28,
    "y": 16.064,
    "color": "#5a524b",
-   "yaw": 130.554,
-   "pitch": 116.652,
-   "solid": true,
    "width": 1.029,
    "height": 0.699,
    "depth": 1.112,
+   "yaw": 130.554,
+   "pitch": 116.652,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -450,14 +450,14 @@
    "z": -1.436,
    "y": 13.858,
    "color": "#7a6a4a",
-   "yaw": 95.902,
-   "pitch": 125.992,
-   "solid": true,
    "width": 2.474,
    "height": 2.216,
    "depth": 1.945,
+   "yaw": 95.902,
+   "pitch": 125.992,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -466,14 +466,14 @@
    "z": -13.257,
    "y": 27.643,
    "color": "#5a524b",
-   "yaw": 141.114,
-   "pitch": 77.925,
-   "solid": true,
    "width": 1.947,
    "height": 1.1,
    "depth": 1.384,
+   "yaw": 141.114,
+   "pitch": 77.925,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -482,14 +482,14 @@
    "z": -0.795,
    "y": 15.886,
    "color": "#5a524b",
-   "yaw": -92.943,
-   "pitch": 117.651,
-   "solid": true,
    "width": 1.723,
    "height": 1.131,
    "depth": 1.358,
+   "yaw": -92.943,
+   "pitch": 117.651,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -498,14 +498,14 @@
    "z": 13.754,
    "y": 27.049,
    "color": "#7a6a4a",
-   "yaw": 36.366,
-   "pitch": 79.88,
-   "solid": true,
    "width": 2.165,
    "height": 1.746,
    "depth": 2.449,
+   "yaw": 36.366,
+   "pitch": 79.88,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -514,14 +514,14 @@
    "z": -2.36,
    "y": 20.609,
    "color": "#5a524b",
-   "yaw": 97.922,
-   "pitch": 101.198,
-   "solid": true,
    "width": 1.802,
    "height": 0.982,
    "depth": 1.538,
+   "yaw": 97.922,
+   "pitch": 101.198,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -530,14 +530,14 @@
    "z": -1.738,
    "y": 25.065,
    "color": "#5a524b",
-   "yaw": 95.69,
-   "pitch": 86.524,
-   "solid": true,
    "width": 1.463,
    "height": 0.879,
    "depth": 1.098,
+   "yaw": 95.69,
+   "pitch": 86.524,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -546,14 +546,14 @@
    "z": -12.682,
    "y": 23.509,
    "color": "#7a6a4a",
-   "yaw": -136.512,
-   "pitch": 91.609,
-   "solid": true,
    "width": 1.71,
    "height": 1.146,
    "depth": 1.54,
+   "yaw": -136.512,
+   "pitch": 91.609,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -562,14 +562,14 @@
    "z": -13.06,
    "y": 15.95,
    "color": "#5a524b",
-   "yaw": 148.14,
-   "pitch": 117.634,
-   "solid": true,
    "width": 2.144,
    "height": 1.119,
    "depth": 1.516,
+   "yaw": 148.14,
+   "pitch": 117.634,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -578,14 +578,14 @@
    "z": 8.939,
    "y": 17.122,
    "color": "#5a524b",
-   "yaw": -56.468,
-   "pitch": 113.026,
-   "solid": true,
    "width": 1.387,
    "height": 1.208,
    "depth": 1.514,
+   "yaw": -56.468,
+   "pitch": 113.026,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -594,14 +594,14 @@
    "z": 12.599,
    "y": 15.936,
    "color": "#7a6a4a",
-   "yaw": -35.471,
-   "pitch": 117.532,
-   "solid": true,
    "width": 1.849,
    "height": 1.151,
    "depth": 2.014,
+   "yaw": -35.471,
+   "pitch": 117.532,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -610,14 +610,14 @@
    "z": -13.273,
    "y": 32.994,
    "color": "#5a524b",
-   "yaw": -150.809,
-   "pitch": 59.393,
-   "solid": true,
    "width": 1.118,
    "height": 0.965,
    "depth": 0.919,
+   "yaw": -150.809,
+   "pitch": 59.393,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -626,14 +626,14 @@
    "z": 3.995,
    "y": 35.524,
    "color": "#5a524b",
-   "yaw": -72.219,
-   "pitch": 48.625,
-   "solid": true,
    "width": 1.887,
    "height": 1.538,
    "depth": 2.118,
+   "yaw": -72.219,
+   "pitch": 48.625,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -642,14 +642,14 @@
    "z": 6.532,
    "y": 11.533,
    "color": "#7a6a4a",
-   "yaw": 57.501,
-   "pitch": 135.718,
-   "solid": true,
    "width": 1.953,
    "height": 1.219,
    "depth": 1.905,
+   "yaw": 57.501,
+   "pitch": 135.718,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -658,14 +658,14 @@
    "z": 14.008,
    "y": 16.274,
    "color": "#5a524b",
-   "yaw": 27.902,
-   "pitch": 115.986,
-   "solid": true,
    "width": 1.221,
    "height": 1.009,
    "depth": 0.952,
+   "yaw": 27.902,
+   "pitch": 115.986,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -674,14 +674,14 @@
    "z": -9.695,
    "y": 20.741,
    "color": "#5a524b",
-   "yaw": 123.916,
-   "pitch": 100.622,
-   "solid": true,
    "width": 1.07,
    "height": 0.77,
    "depth": 0.871,
+   "yaw": 123.916,
+   "pitch": 100.622,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -690,14 +690,14 @@
    "z": -8.942,
    "y": 20.861,
    "color": "#7a6a4a",
-   "yaw": 121.695,
-   "pitch": 100.449,
-   "solid": true,
    "width": 2.314,
    "height": 1.696,
    "depth": 2.257,
+   "yaw": 121.695,
+   "pitch": 100.449,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -706,14 +706,14 @@
    "z": 13.621,
    "y": 33.265,
    "color": "#5a524b",
-   "yaw": 20.476,
-   "pitch": 57.494,
-   "solid": true,
    "width": 2.532,
    "height": 2.044,
    "depth": 2.607,
+   "yaw": 20.476,
+   "pitch": 57.494,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -722,14 +722,14 @@
    "z": 12.63,
    "y": 34.54,
    "color": "#5a524b",
-   "yaw": 23.248,
-   "pitch": 52.521,
-   "solid": true,
    "width": 2.261,
    "height": 1.168,
    "depth": 2.561,
+   "yaw": 23.248,
+   "pitch": 52.521,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -738,14 +738,14 @@
    "z": 13.135,
    "y": 27.647,
    "color": "#7a6a4a",
-   "yaw": 39.406,
-   "pitch": 77.89,
-   "solid": true,
    "width": 2.045,
    "height": 1.476,
    "depth": 2.213,
+   "yaw": 39.406,
+   "pitch": 77.89,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -754,14 +754,14 @@
    "z": -11.773,
    "y": 35.019,
    "color": "#5a524b",
-   "yaw": 150.026,
-   "pitch": 50.965,
-   "solid": true,
    "width": 1.678,
    "height": 0.869,
    "depth": 1.542,
+   "yaw": 150.026,
+   "pitch": 50.965,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -770,14 +770,14 @@
    "z": -14.259,
    "y": 23.984,
    "color": "#5a524b",
-   "yaw": -144.46,
-   "pitch": 90.054,
-   "solid": true,
    "width": 1.59,
    "height": 1.02,
    "depth": 1.79,
+   "yaw": -144.46,
+   "pitch": 90.054,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -786,14 +786,14 @@
    "z": -12.867,
    "y": 34.729,
    "color": "#7a6a4a",
-   "yaw": 155.766,
-   "pitch": 52.751,
-   "solid": true,
    "width": 0.913,
    "height": 0.71,
    "depth": 0.766,
+   "yaw": 155.766,
+   "pitch": 52.751,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -802,14 +802,14 @@
    "z": 12.867,
    "y": 23.221,
    "color": "#5a524b",
-   "yaw": -42.164,
-   "pitch": 92.569,
-   "solid": true,
    "width": 2.079,
    "height": 1.589,
    "depth": 2.418,
+   "yaw": -42.164,
+   "pitch": 92.569,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -818,14 +818,14 @@
    "z": -3.069,
    "y": 18.535,
    "color": "#5a524b",
-   "yaw": 100.68,
-   "pitch": 108.266,
-   "solid": true,
    "width": 1.878,
    "height": 1.307,
    "depth": 1.698,
+   "yaw": 100.68,
+   "pitch": 108.266,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -834,14 +834,14 @@
    "z": 12.059,
    "y": 35.658,
    "color": "#7a6a4a",
-   "yaw": -24.136,
-   "pitch": 48.58,
-   "solid": true,
    "width": 1.259,
    "height": 0.654,
    "depth": 1.246,
+   "yaw": -24.136,
+   "pitch": 48.58,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -850,14 +850,14 @@
    "z": -8.258,
    "y": 14.018,
    "color": "#5a524b",
-   "yaw": -125.682,
-   "pitch": 125.187,
-   "solid": true,
    "width": 2.258,
    "height": 1.351,
    "depth": 2.254,
+   "yaw": -125.682,
+   "pitch": 125.187,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -866,14 +866,14 @@
    "z": -16.327,
    "y": 25.212,
    "color": "#5a524b",
-   "yaw": 161.205,
-   "pitch": 85.98,
-   "solid": true,
    "width": 2.369,
    "height": 1.77,
    "depth": 2.497,
+   "yaw": 161.205,
+   "pitch": 85.98,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -882,14 +882,14 @@
    "z": -3.262,
    "y": 31.651,
    "color": "#7a6a4a",
-   "yaw": -102.066,
-   "pitch": 63.882,
-   "solid": true,
    "width": 2.067,
    "height": 1.104,
    "depth": 1.721,
+   "yaw": -102.066,
+   "pitch": 63.882,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -898,14 +898,14 @@
    "z": 13.04,
    "y": 32.656,
    "color": "#5a524b",
-   "yaw": -31.824,
-   "pitch": 60.577,
-   "solid": true,
    "width": 1.267,
    "height": 1.13,
    "depth": 1.227,
+   "yaw": -31.824,
+   "pitch": 60.577,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -914,14 +914,14 @@
    "z": -17.562,
    "y": 22.452,
    "color": "#5a524b",
-   "yaw": -176.322,
-   "pitch": 95.028,
-   "solid": true,
    "width": 1.114,
    "height": 0.935,
    "depth": 1.069,
+   "yaw": -176.322,
+   "pitch": 95.028,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -930,14 +930,14 @@
    "z": 5.724,
    "y": 12.606,
    "color": "#7a6a4a",
-   "yaw": -64.55,
-   "pitch": 130.544,
-   "solid": true,
    "width": 1.573,
    "height": 1.366,
    "depth": 1.873,
+   "yaw": -64.55,
+   "pitch": 130.544,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -946,14 +946,14 @@
    "z": 13.111,
    "y": 32.42,
    "color": "#5a524b",
-   "yaw": 30.006,
-   "pitch": 60.921,
-   "solid": true,
    "width": 2.255,
    "height": 1.439,
    "depth": 2.429,
+   "yaw": 30.006,
+   "pitch": 60.921,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -962,14 +962,14 @@
    "z": 7.488,
    "y": 30.309,
    "color": "#5a524b",
-   "yaw": 62.75,
-   "pitch": 68.906,
-   "solid": true,
    "width": 1.57,
    "height": 1.224,
    "depth": 1.39,
+   "yaw": 62.75,
+   "pitch": 68.906,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -978,14 +978,14 @@
    "z": -17.147,
    "y": 27.728,
    "color": "#7a6a4a",
-   "yaw": 178.852,
-   "pitch": 77.735,
-   "solid": true,
    "width": 1.497,
    "height": 1.239,
    "depth": 1.782,
+   "yaw": 178.852,
+   "pitch": 77.735,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -994,14 +994,14 @@
    "z": 11.228,
    "y": 35.772,
    "color": "#5a524b",
-   "yaw": 27.094,
-   "pitch": 46.974,
-   "solid": true,
    "width": 2.492,
    "height": 2.0,
    "depth": 2.743,
+   "yaw": 27.094,
+   "pitch": 46.974,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1010,14 +1010,14 @@
    "z": -16.261,
    "y": 24.862,
    "color": "#5a524b",
-   "yaw": -157.223,
-   "pitch": 87.202,
-   "solid": true,
    "width": 1.144,
    "height": 0.6,
    "depth": 1.237,
+   "yaw": -157.223,
+   "pitch": 87.202,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1026,14 +1026,14 @@
    "z": -13.48,
    "y": 35.286,
    "color": "#7a6a4a",
-   "yaw": 173.753,
-   "pitch": 50.23,
-   "solid": true,
    "width": 1.19,
    "height": 1.002,
    "depth": 0.988,
+   "yaw": 173.753,
+   "pitch": 50.23,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1042,14 +1042,14 @@
    "z": -17.0,
    "y": 20.281,
    "color": "#5a524b",
-   "yaw": -177.908,
-   "pitch": 102.33,
-   "solid": true,
    "width": 1.956,
    "height": 1.557,
    "depth": 1.555,
+   "yaw": -177.908,
+   "pitch": 102.33,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1058,14 +1058,14 @@
    "z": 10.628,
    "y": 17.19,
    "color": "#5a524b",
-   "yaw": -49.429,
-   "pitch": 112.623,
-   "solid": true,
    "width": 0.989,
    "height": 0.743,
    "depth": 1.175,
+   "yaw": -49.429,
+   "pitch": 112.623,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1074,14 +1074,14 @@
    "z": 6.531,
    "y": 15.838,
    "color": "#7a6a4a",
-   "yaw": 65.256,
-   "pitch": 117.614,
-   "solid": true,
    "width": 1.3,
    "height": 1.072,
    "depth": 1.222,
+   "yaw": 65.256,
+   "pitch": 117.614,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1090,14 +1090,14 @@
    "z": -0.85,
    "y": 17.27,
    "color": "#5a524b",
-   "yaw": 93.063,
-   "pitch": 112.924,
-   "solid": true,
    "width": 2.409,
    "height": 1.568,
    "depth": 2.195,
+   "yaw": 93.063,
+   "pitch": 112.924,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1106,14 +1106,14 @@
    "z": -0.0,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": -90.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": -90.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1122,14 +1122,14 @@
    "z": 4.71,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": -30.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": -30.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1138,14 +1138,14 @@
    "z": -4.71,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": -150.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": -150.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1154,13 +1154,13 @@
    "z": -4.258,
    "y": 41.077,
    "color": "#6c6f73",
+   "width": 1.2,
+   "height": 6.0,
+   "depth": 1.2,
    "yaw": 180.0,
    "pitch": 14.0,
-   "solid": true,
-   "width": 1.2,
-   "depth": 1.2,
-   "height": 6.0,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1169,13 +1169,13 @@
    "z": 3.88,
    "y": 39.909,
    "color": "#8d7458",
-   "yaw": -60.0,
-   "pitch": 26.0,
-   "solid": true,
    "width": 2.4,
    "height": 1.0,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -60.0,
+   "pitch": 26.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1184,13 +1184,13 @@
    "z": -3.88,
    "y": 39.909,
    "color": "#8d7458",
-   "yaw": -120.0,
-   "pitch": 26.0,
-   "solid": true,
    "width": 2.4,
    "height": 1.0,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -120.0,
+   "pitch": 26.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1199,13 +1199,13 @@
    "z": -0.0,
    "y": 24.0,
    "color": "#3a3c40",
+   "width": 2.2,
+   "height": 12.0,
+   "depth": 2.2,
    "yaw": -90.0,
    "pitch": 90.0,
-   "solid": true,
-   "width": 2.2,
-   "depth": 2.2,
-   "height": 12.0,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1214,13 +1214,13 @@
    "z": -0.0,
    "y": 24.0,
    "color": "#6c6f73",
-   "yaw": -90.0,
-   "pitch": 90.0,
-   "solid": true,
    "width": 5.0,
    "height": 0.9,
    "depth": 5.0,
-   "material": "Metal"
+   "yaw": -90.0,
+   "pitch": 90.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1229,13 +1229,13 @@
    "z": 4.188,
    "y": 27.68,
    "color": "#7a6a4a",
-   "yaw": -76.0,
-   "pitch": 78.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": -76.0,
+   "pitch": 78.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1244,13 +1244,13 @@
    "z": -4.188,
    "y": 20.32,
    "color": "#7a6a4a",
-   "yaw": -104.0,
-   "pitch": 102.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": -104.0,
+   "pitch": 102.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1259,13 +1259,13 @@
    "z": -4.188,
    "y": 27.68,
    "color": "#7a6a4a",
-   "yaw": -104.0,
-   "pitch": 78.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": -104.0,
+   "pitch": 78.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1274,13 +1274,13 @@
    "z": 4.188,
    "y": 20.32,
    "color": "#7a6a4a",
-   "yaw": -76.0,
-   "pitch": 102.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": -76.0,
+   "pitch": 102.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1289,13 +1289,12 @@
    "z": 6.088,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 0.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1304,13 +1303,13 @@
    "z": 3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 60.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 60.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1319,13 +1318,13 @@
    "z": -3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 120.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 120.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1334,13 +1333,13 @@
    "z": -6.088,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 180.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 180.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1349,13 +1348,13 @@
    "z": -3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": -120.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -120.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1364,13 +1363,13 @@
    "z": 3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": -60.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -60.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Prop",
@@ -1525,7 +1524,7 @@
    "z": 0.0,
    "y": 42.2,
    "onto": "floor",
-   "size": 5
+   "size": 5.0
   },
   {
    "op": "DecalScatter",
@@ -1536,13 +1535,13 @@
     "Scorch Mark"
    ],
    "x0": -41.0,
-   "z0": -7,
+   "z0": -7.0,
    "x1": -27.0,
-   "z1": 7,
+   "z1": 7.0,
    "count": 24,
    "seed": 11,
-   "gap": 2.2,
-   "y": 41.4
+   "y": 41.4,
+   "gap": 2.2
   },
   {
    "op": "DecalScatter",
@@ -1553,13 +1552,13 @@
     "Skid Marks"
    ],
    "x0": -49.0,
-   "z0": -15,
+   "z0": -15.0,
    "x1": -19.0,
-   "z1": 15,
+   "z1": 15.0,
    "count": 30,
    "seed": 12,
-   "gap": 3.0,
-   "y": 36.0
+   "y": 36.0,
+   "gap": 3.0
   },
   {
    "op": "Decal",
@@ -1613,14 +1612,14 @@
    "z": 11.736,
    "y": 24.591,
    "color": "#7a6a4a",
-   "yaw": -47.899,
-   "pitch": 88.065,
-   "solid": true,
    "width": 1.616,
    "height": 0.904,
    "depth": 1.646,
+   "yaw": -47.899,
+   "pitch": 88.065,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1629,14 +1628,14 @@
    "z": 2.378,
    "y": 16.443,
    "color": "#5a524b",
-   "yaw": -81.278,
-   "pitch": 115.733,
-   "solid": true,
    "width": 1.979,
    "height": 1.384,
    "depth": 2.115,
+   "yaw": -81.278,
+   "pitch": 115.733,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1645,14 +1644,14 @@
    "z": 11.346,
    "y": 11.157,
    "color": "#5a524b",
-   "yaw": -19.134,
-   "pitch": 136.922,
-   "solid": true,
    "width": 1.388,
    "height": 0.866,
    "depth": 1.61,
+   "yaw": -19.134,
+   "pitch": 136.922,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1661,14 +1660,14 @@
    "z": 11.375,
    "y": 17.764,
    "color": "#7a6a4a",
-   "yaw": 45.231,
-   "pitch": 111.112,
-   "solid": true,
    "width": 2.287,
    "height": 1.331,
    "depth": 1.794,
+   "yaw": 45.231,
+   "pitch": 111.112,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1677,14 +1676,14 @@
    "z": -16.633,
    "y": 24.779,
    "color": "#5a524b",
-   "yaw": 163.899,
-   "pitch": 87.424,
-   "solid": true,
    "width": 2.234,
    "height": 1.362,
    "depth": 1.84,
+   "yaw": 163.899,
+   "pitch": 87.424,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1693,14 +1692,14 @@
    "z": -15.207,
    "y": 22.001,
    "color": "#5a524b",
-   "yaw": -150.521,
-   "pitch": 96.527,
-   "solid": true,
    "width": 1.392,
    "height": 0.893,
    "depth": 1.363,
+   "yaw": -150.521,
+   "pitch": 96.527,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1709,14 +1708,14 @@
    "z": -11.613,
    "y": 21.218,
    "color": "#7a6a4a",
-   "yaw": 132.728,
-   "pitch": 99.234,
-   "solid": true,
    "width": 2.202,
    "height": 1.786,
    "depth": 2.174,
+   "yaw": 132.728,
+   "pitch": 99.234,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1725,14 +1724,14 @@
    "z": -16.74,
    "y": 27.051,
    "color": "#5a524b",
-   "yaw": -165.838,
-   "pitch": 79.979,
-   "solid": true,
    "width": 1.559,
    "height": 1.131,
    "depth": 1.848,
+   "yaw": -165.838,
+   "pitch": 79.979,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1741,14 +1740,14 @@
    "z": -13.646,
    "y": 27.088,
    "color": "#5a524b",
-   "yaw": -142.52,
-   "pitch": 79.819,
-   "solid": true,
    "width": 1.761,
    "height": 1.532,
    "depth": 2.03,
+   "yaw": -142.52,
+   "pitch": 79.819,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1757,14 +1756,14 @@
    "z": -14.992,
    "y": 32.694,
    "color": "#7a6a4a",
-   "yaw": 179.159,
-   "pitch": 59.893,
-   "solid": true,
    "width": 2.228,
    "height": 1.83,
    "depth": 2.204,
+   "yaw": 179.159,
+   "pitch": 59.893,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1773,14 +1772,14 @@
    "z": -12.74,
    "y": 16.396,
    "color": "#5a524b",
-   "yaw": 144.426,
-   "pitch": 115.897,
-   "solid": true,
    "width": 1.962,
    "height": 0.988,
    "depth": 2.272,
+   "yaw": 144.426,
+   "pitch": 115.897,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1789,14 +1788,14 @@
    "z": -17.01,
    "y": 27.551,
    "color": "#5a524b",
-   "yaw": 174.914,
-   "pitch": 78.254,
-   "solid": true,
    "width": 1.857,
    "height": 1.07,
    "depth": 2.147,
+   "yaw": 174.914,
+   "pitch": 78.254,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1805,14 +1804,14 @@
    "z": 11.385,
    "y": 26.821,
    "color": "#7a6a4a",
-   "yaw": 48.277,
-   "pitch": 80.637,
-   "solid": true,
    "width": 2.205,
    "height": 1.688,
    "depth": 1.705,
+   "yaw": 48.277,
+   "pitch": 80.637,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1821,14 +1820,14 @@
    "z": -11.859,
    "y": 28.384,
    "color": "#5a524b",
-   "yaw": 134.624,
-   "pitch": 75.442,
-   "solid": true,
    "width": 1.861,
    "height": 1.626,
    "depth": 1.55,
+   "yaw": 134.624,
+   "pitch": 75.442,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1837,14 +1836,14 @@
    "z": 2.055,
    "y": 23.928,
    "color": "#5a524b",
-   "yaw": -83.186,
-   "pitch": 90.239,
-   "solid": true,
    "width": 2.271,
    "height": 1.241,
    "depth": 2.045,
+   "yaw": -83.186,
+   "pitch": 90.239,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1853,14 +1852,14 @@
    "z": -10.694,
    "y": 26.644,
    "color": "#7a6a4a",
-   "yaw": 128.679,
-   "pitch": 81.218,
-   "solid": true,
    "width": 2.283,
    "height": 1.938,
    "depth": 2.079,
+   "yaw": 128.679,
+   "pitch": 81.218,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1869,14 +1868,14 @@
    "z": 15.116,
    "y": 19.061,
    "color": "#5a524b",
-   "yaw": -25.668,
-   "pitch": 106.409,
-   "solid": true,
    "width": 1.724,
    "height": 1.27,
    "depth": 1.956,
+   "yaw": -25.668,
+   "pitch": 106.409,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1885,14 +1884,14 @@
    "z": -10.419,
    "y": 33.764,
    "color": "#5a524b",
-   "yaw": 136.634,
-   "pitch": 55.733,
-   "solid": true,
    "width": 2.196,
    "height": 1.692,
    "depth": 1.996,
+   "yaw": 136.634,
+   "pitch": 55.733,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1901,14 +1900,14 @@
    "z": 14.04,
    "y": 32.981,
    "color": "#7a6a4a",
-   "yaw": -21.551,
-   "pitch": 59.249,
-   "solid": true,
    "width": 1.452,
    "height": 0.956,
    "depth": 1.144,
+   "yaw": -21.551,
+   "pitch": 59.249,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1917,14 +1916,14 @@
    "z": -11.946,
    "y": 11.258,
    "color": "#5a524b",
-   "yaw": 176.789,
-   "pitch": 136.8,
-   "solid": true,
    "width": 1.737,
    "height": 1.333,
    "depth": 1.838,
+   "yaw": 176.789,
+   "pitch": 136.8,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1933,14 +1932,14 @@
    "z": 10.46,
    "y": 14.541,
    "color": "#5a524b",
-   "yaw": 44.34,
-   "pitch": 122.891,
-   "solid": true,
    "width": 1.941,
    "height": 1.138,
    "depth": 1.742,
+   "yaw": 44.34,
+   "pitch": 122.891,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1949,14 +1948,14 @@
    "z": -4.492,
    "y": 31.221,
    "color": "#7a6a4a",
-   "yaw": -106.568,
-   "pitch": 65.376,
-   "solid": true,
    "width": 2.234,
    "height": 1.141,
    "depth": 1.996,
+   "yaw": -106.568,
+   "pitch": 65.376,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1965,14 +1964,14 @@
    "z": -16.526,
    "y": 26.916,
    "color": "#5a524b",
-   "yaw": -162.593,
-   "pitch": 80.442,
-   "solid": true,
    "width": 1.456,
    "height": 0.873,
    "depth": 1.626,
+   "yaw": -162.593,
+   "pitch": 80.442,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1981,14 +1980,14 @@
    "z": 3.598,
    "y": 28.898,
    "color": "#5a524b",
-   "yaw": -77.713,
-   "pitch": 73.843,
-   "solid": true,
    "width": 1.328,
    "height": 0.947,
    "depth": 1.242,
+   "yaw": -77.713,
+   "pitch": 73.843,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -1997,14 +1996,14 @@
    "z": 14.69,
    "y": 21.166,
    "color": "#7a6a4a",
-   "yaw": 31.009,
-   "pitch": 99.388,
-   "solid": true,
    "width": 2.091,
    "height": 1.182,
    "depth": 1.876,
+   "yaw": 31.009,
+   "pitch": 99.388,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2013,14 +2012,14 @@
    "z": -4.721,
    "y": 15.164,
    "color": "#5a524b",
-   "yaw": -108.528,
-   "pitch": 120.741,
-   "solid": true,
    "width": 2.381,
    "height": 1.647,
    "depth": 2.188,
+   "yaw": -108.528,
+   "pitch": 120.741,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2029,14 +2028,14 @@
    "z": 7.616,
    "y": 26.26,
    "color": "#5a524b",
-   "yaw": -63.519,
-   "pitch": 82.463,
-   "solid": true,
    "width": 2.573,
    "height": 1.851,
    "depth": 2.207,
+   "yaw": -63.519,
+   "pitch": 82.463,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2045,14 +2044,14 @@
    "z": 5.544,
    "y": 33.297,
    "color": "#7a6a4a",
-   "yaw": -68.089,
-   "pitch": 57.962,
-   "solid": true,
    "width": 1.578,
    "height": 0.912,
    "depth": 1.268,
+   "yaw": -68.089,
+   "pitch": 57.962,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2061,14 +2060,14 @@
    "z": 15.676,
    "y": 22.094,
    "color": "#5a524b",
-   "yaw": 25.798,
-   "pitch": 96.248,
-   "solid": true,
    "width": 1.615,
    "height": 1.429,
    "depth": 1.216,
+   "yaw": 25.798,
+   "pitch": 96.248,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2077,14 +2076,14 @@
    "z": -12.04,
    "y": 17.895,
    "color": "#5a524b",
-   "yaw": 136.388,
-   "pitch": 110.16,
-   "solid": true,
    "width": 0.953,
    "height": 0.49,
    "depth": 0.979,
+   "yaw": 136.388,
+   "pitch": 110.16,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2093,14 +2092,14 @@
    "z": 6.418,
    "y": 36.715,
    "color": "#7a6a4a",
-   "yaw": 58.26,
-   "pitch": 43.814,
-   "solid": true,
    "width": 1.262,
    "height": 0.96,
    "depth": 1.238,
+   "yaw": 58.26,
+   "pitch": 43.814,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2109,14 +2108,14 @@
    "z": 14.393,
    "y": 24.764,
    "color": "#5a524b",
-   "yaw": 33.454,
-   "pitch": 87.465,
-   "solid": true,
    "width": 2.439,
    "height": 1.516,
    "depth": 2.798,
+   "yaw": 33.454,
+   "pitch": 87.465,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2125,14 +2124,14 @@
    "z": -14.837,
    "y": 30.375,
    "color": "#5a524b",
-   "yaw": 155.489,
-   "pitch": 68.648,
-   "solid": true,
    "width": 1.638,
    "height": 1.369,
    "depth": 1.168,
+   "yaw": 155.489,
+   "pitch": 68.648,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2141,14 +2140,14 @@
    "z": 11.689,
    "y": 31.058,
    "color": "#7a6a4a",
-   "yaw": 43.235,
-   "pitch": 66.255,
-   "solid": true,
    "width": 1.573,
    "height": 0.84,
    "depth": 1.88,
+   "yaw": 43.235,
+   "pitch": 66.255,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2157,14 +2156,14 @@
    "z": 13.784,
    "y": 17.621,
    "color": "#5a524b",
-   "yaw": 31.012,
-   "pitch": 111.634,
-   "solid": true,
    "width": 2.328,
    "height": 1.536,
    "depth": 1.969,
+   "yaw": 31.012,
+   "pitch": 111.634,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2173,14 +2172,14 @@
    "z": 16.057,
    "y": 28.326,
    "color": "#5a524b",
-   "yaw": 19.254,
-   "pitch": 75.73,
-   "solid": true,
    "width": 1.502,
    "height": 1.012,
    "depth": 1.324,
+   "yaw": 19.254,
+   "pitch": 75.73,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2189,14 +2188,14 @@
    "z": 2.644,
    "y": 25.312,
    "color": "#7a6a4a",
-   "yaw": -81.217,
-   "pitch": 85.667,
-   "solid": true,
    "width": 2.108,
    "height": 1.253,
    "depth": 1.603,
+   "yaw": -81.217,
+   "pitch": 85.667,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2205,14 +2204,14 @@
    "z": 10.882,
    "y": 36.292,
    "color": "#5a524b",
-   "yaw": 29.317,
-   "pitch": 45.437,
-   "solid": true,
    "width": 1.609,
    "height": 1.366,
    "depth": 1.749,
+   "yaw": 29.317,
+   "pitch": 45.437,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2221,14 +2220,14 @@
    "z": -9.067,
    "y": 36.589,
    "color": "#5a524b",
-   "yaw": 136.705,
-   "pitch": 44.7,
-   "solid": true,
    "width": 0.965,
    "height": 0.563,
    "depth": 1.097,
+   "yaw": 136.705,
+   "pitch": 44.7,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2237,14 +2236,14 @@
    "z": -17.586,
    "y": 24.441,
    "color": "#7a6a4a",
-   "yaw": -173.767,
-   "pitch": 88.573,
-   "solid": true,
    "width": 1.013,
    "height": 0.865,
    "depth": 1.027,
+   "yaw": -173.767,
+   "pitch": 88.573,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2253,14 +2252,14 @@
    "z": 11.608,
    "y": 19.989,
    "color": "#5a524b",
-   "yaw": 47.684,
-   "pitch": 103.095,
-   "solid": true,
    "width": 0.988,
    "height": 0.614,
    "depth": 0.696,
+   "yaw": 47.684,
+   "pitch": 103.095,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2269,14 +2268,14 @@
    "z": -7.365,
    "y": 13.756,
    "color": "#5a524b",
-   "yaw": 121.827,
-   "pitch": 126.26,
-   "solid": true,
    "width": 2.268,
    "height": 1.348,
    "depth": 2.078,
+   "yaw": 121.827,
+   "pitch": 126.26,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2285,14 +2284,14 @@
    "z": -11.512,
    "y": 19.355,
    "color": "#7a6a4a",
-   "yaw": -132.801,
-   "pitch": 105.331,
-   "solid": true,
    "width": 1.442,
    "height": 1.121,
    "depth": 1.646,
+   "yaw": -132.801,
+   "pitch": 105.331,
    "detail": 1,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2301,14 +2300,14 @@
    "z": 11.814,
    "y": 17.464,
    "color": "#5a524b",
-   "yaw": -43.017,
-   "pitch": 112.025,
-   "solid": true,
    "width": 1.902,
    "height": 1.293,
    "depth": 1.819,
+   "yaw": -43.017,
+   "pitch": 112.025,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2317,14 +2316,14 @@
    "z": 0.0,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": 90.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": 90.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2333,14 +2332,14 @@
    "z": -4.71,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": 150.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": 150.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2349,14 +2348,14 @@
    "z": 4.71,
    "y": 40.739,
    "color": "#b8b0a0",
-   "yaw": 30.0,
-   "pitch": 18.0,
-   "solid": true,
    "width": 4.0,
    "height": 2.6,
    "depth": 3.0,
    "radius": 0.3,
-   "material": "Metal"
+   "yaw": 30.0,
+   "pitch": 18.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2365,13 +2364,13 @@
    "z": -4.258,
    "y": 41.077,
    "color": "#6c6f73",
+   "width": 1.2,
+   "height": 6.0,
+   "depth": 1.2,
    "yaw": 180.0,
    "pitch": 14.0,
-   "solid": true,
-   "width": 1.2,
-   "depth": 1.2,
-   "height": 6.0,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2380,13 +2379,13 @@
    "z": -3.88,
    "y": 39.909,
    "color": "#8d7458",
-   "yaw": 120.0,
-   "pitch": 26.0,
-   "solid": true,
    "width": 2.4,
    "height": 1.0,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 120.0,
+   "pitch": 26.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2395,13 +2394,13 @@
    "z": 3.88,
    "y": 39.909,
    "color": "#8d7458",
-   "yaw": 60.0,
-   "pitch": 26.0,
-   "solid": true,
    "width": 2.4,
    "height": 1.0,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 60.0,
+   "pitch": 26.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2410,13 +2409,13 @@
    "z": 0.0,
    "y": 24.0,
    "color": "#3a3c40",
+   "width": 2.2,
+   "height": 12.0,
+   "depth": 2.2,
    "yaw": 90.0,
    "pitch": 90.0,
-   "solid": true,
-   "width": 2.2,
-   "depth": 2.2,
-   "height": 12.0,
-   "material": "Metal"
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2425,13 +2424,13 @@
    "z": 0.0,
    "y": 24.0,
    "color": "#6c6f73",
-   "yaw": 90.0,
-   "pitch": 90.0,
-   "solid": true,
    "width": 5.0,
    "height": 0.9,
    "depth": 5.0,
-   "material": "Metal"
+   "yaw": 90.0,
+   "pitch": 90.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2440,13 +2439,13 @@
    "z": -4.188,
    "y": 27.68,
    "color": "#7a6a4a",
-   "yaw": 104.0,
-   "pitch": 78.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": 104.0,
+   "pitch": 78.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2455,13 +2454,13 @@
    "z": 4.188,
    "y": 20.32,
    "color": "#7a6a4a",
-   "yaw": 76.0,
-   "pitch": 102.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": 76.0,
+   "pitch": 102.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2470,13 +2469,13 @@
    "z": 4.188,
    "y": 27.68,
    "color": "#7a6a4a",
-   "yaw": 76.0,
-   "pitch": 78.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": 76.0,
+   "pitch": 78.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2485,13 +2484,13 @@
    "z": -4.188,
    "y": 20.32,
    "color": "#7a6a4a",
-   "yaw": 104.0,
-   "pitch": 102.0,
-   "solid": true,
    "width": 1.6,
    "height": 1.1,
    "depth": 1.4,
-   "material": "Metal"
+   "yaw": 104.0,
+   "pitch": 102.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2500,13 +2499,12 @@
    "z": 6.088,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 0.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2515,13 +2513,13 @@
    "z": 3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 60.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 60.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2530,13 +2528,13 @@
    "z": -3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 120.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 120.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2545,13 +2543,13 @@
    "z": -6.088,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": 180.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": 180.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2560,13 +2558,13 @@
    "z": -3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": -120.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -120.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -2575,13 +2573,13 @@
    "z": 3.044,
    "y": 7.273,
    "color": "#8d7458",
-   "yaw": -60.0,
-   "pitch": 160.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.4,
    "depth": 0.6,
-   "material": "Metal"
+   "yaw": -60.0,
+   "pitch": 160.0,
+   "material": "Metal",
+   "solid": true
   },
   {
    "op": "Prop",
@@ -2737,7 +2735,7 @@
    "z": 0.0,
    "y": 42.2,
    "onto": "floor",
-   "size": 5
+   "size": 5.0
   },
   {
    "op": "DecalScatter",
@@ -2748,13 +2746,13 @@
     "Scorch Mark"
    ],
    "x0": 27.0,
-   "z0": -7,
+   "z0": -7.0,
    "x1": 41.0,
-   "z1": 7,
+   "z1": 7.0,
    "count": 24,
    "seed": 23,
-   "gap": 2.2,
-   "y": 41.4
+   "y": 41.4,
+   "gap": 2.2
   },
   {
    "op": "DecalScatter",
@@ -2765,13 +2763,13 @@
     "Skid Marks"
    ],
    "x0": 19.0,
-   "z0": -15,
+   "z0": -15.0,
    "x1": 49.0,
-   "z1": 15,
+   "z1": 15.0,
    "count": 30,
    "seed": 24,
-   "gap": 3.0,
-   "y": 36.0
+   "y": 36.0,
+   "gap": 3.0
   },
   {
    "op": "Decal",
@@ -3028,8 +3026,8 @@
    "y": 38.8,
    "color": "#3a3c40",
    "width": 0.8,
-   "depth": 0.8,
    "height": 3.0,
+   "depth": 0.8,
    "material": "Metal"
   },
   {
@@ -3040,8 +3038,8 @@
    "y": 38.8,
    "color": "#3a3c40",
    "width": 0.8,
-   "depth": 0.8,
    "height": 3.0,
+   "depth": 0.8,
    "material": "Metal"
   },
   {
@@ -3052,8 +3050,8 @@
    "y": 38.8,
    "color": "#3a3c40",
    "width": 0.8,
-   "depth": 0.8,
    "height": 3.0,
+   "depth": 0.8,
    "material": "Metal"
   },
   {
@@ -3064,8 +3062,8 @@
    "y": 38.8,
    "color": "#3a3c40",
    "width": 0.8,
-   "depth": 0.8,
    "height": 3.0,
+   "depth": 0.8,
    "material": "Metal"
   },
   {
@@ -3076,8 +3074,8 @@
    "y": 38.8,
    "color": "#3a3c40",
    "width": 0.8,
-   "depth": 0.8,
    "height": 3.0,
+   "depth": 0.8,
    "material": "Metal"
   },
   {
@@ -3088,9 +3086,9 @@
    "y": 4.8,
    "color": "#3a3c40",
    "width": 0.5,
-   "depth": 0.5,
    "height": 64.0,
-   "roll": 90,
+   "depth": 0.5,
+   "roll": 90.0,
    "segments": 12,
    "material": "Metal"
   },
@@ -3235,14 +3233,14 @@
    "z": 2.375,
    "y": 26.301,
    "color": "#5a524b",
-   "yaw": 30.0,
-   "pitch": 50.0,
-   "solid": true,
    "width": 1.4,
    "height": 0.84,
    "depth": 1.26,
+   "yaw": 30.0,
+   "pitch": 50.0,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -3251,14 +3249,14 @@
    "z": -2.987,
    "y": 22.745,
    "color": "#5a524b",
-   "yaw": 150.0,
-   "pitch": 110.0,
-   "solid": true,
    "width": 1.1,
    "height": 0.66,
    "depth": 0.99,
+   "yaw": 150.0,
+   "pitch": 110.0,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -3267,14 +3265,14 @@
    "z": -1.186,
    "y": 24.611,
    "color": "#5a524b",
-   "yaw": -110.0,
-   "pitch": 80.0,
-   "solid": true,
    "width": 1.6,
    "height": 0.96,
    "depth": 1.44,
+   "yaw": -110.0,
+   "pitch": 80.0,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Mesh",
@@ -3283,14 +3281,14 @@
    "z": 1.822,
    "y": 21.166,
    "color": "#5a524b",
-   "yaw": -40.0,
-   "pitch": 140.0,
-   "solid": true,
    "width": 1.0,
    "height": 0.6,
    "depth": 0.9,
+   "yaw": -40.0,
+   "pitch": 140.0,
    "detail": 1,
-   "material": "Dirt"
+   "material": "Dirt",
+   "solid": true
   },
   {
    "op": "Prop",
@@ -3358,8 +3356,8 @@
    "z": -2.6,
    "y": 42.2,
    "onto": "floor",
-   "size": 4,
-   "rotation": 0
+   "size": 4.0,
+   "rotation": 0.0
   },
   {
    "op": "Decal",
@@ -3368,8 +3366,8 @@
    "z": 2.6,
    "y": 42.2,
    "onto": "floor",
-   "size": 4,
-   "rotation": 0
+   "size": 4.0,
+   "rotation": 0.0
   },
   {
    "op": "Decal",
@@ -3378,8 +3376,8 @@
    "z": 0.0,
    "y": 42.2,
    "onto": "floor",
-   "size": 4,
-   "rotation": 90
+   "size": 4.0,
+   "rotation": 90.0
   },
   {
    "op": "Decal",
@@ -3388,8 +3386,8 @@
    "z": 0.0,
    "y": 42.2,
    "onto": "floor",
-   "size": 4,
-   "rotation": 90
+   "size": 4.0,
+   "rotation": 90.0
   },
   {
    "op": "Decal",
@@ -3398,7 +3396,7 @@
    "z": 17.0,
    "y": 42.2,
    "onto": "floor",
-   "size": 5
+   "size": 5.0
   },
   {
    "op": "Decal",
@@ -3408,7 +3406,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 2.4,
-   "rotation": 0
+   "rotation": 0.0
   },
   {
    "op": "Decal",
@@ -3418,7 +3416,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 2.4,
-   "rotation": 0
+   "rotation": 0.0
   },
   {
    "op": "Decal",
@@ -3428,7 +3426,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 1.6,
-   "rotation": 90
+   "rotation": 90.0
   },
   {
    "op": "Decal",
@@ -3438,7 +3436,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 1.6,
-   "rotation": 90
+   "rotation": 90.0
   },
   {
    "op": "Decal",
@@ -3448,7 +3446,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 1.6,
-   "rotation": 270
+   "rotation": 270.0
   },
   {
    "op": "Decal",
@@ -3458,7 +3456,7 @@
    "y": 42.2,
    "onto": "floor",
    "size": 1.6,
-   "rotation": 270
+   "rotation": 270.0
   },
   {
    "op": "Decal",
@@ -3468,7 +3466,7 @@
    "y": 5.7,
    "onto": "ceiling",
    "size": 1.6,
-   "rotation": 90
+   "rotation": 90.0
   },
   {
    "op": "Decal",
@@ -3478,7 +3476,7 @@
    "y": 5.7,
    "onto": "ceiling",
    "size": 1.6,
-   "rotation": 270
+   "rotation": 270.0
   },
   {
    "op": "Decal",
@@ -3487,7 +3485,7 @@
    "z": 0.0,
    "y": 5.7,
    "onto": "ceiling",
-   "size": 7
+   "size": 7.0
   },
   {
    "op": "DecalScatter",
@@ -3501,8 +3499,8 @@
    "z1": 1.4,
    "count": 30,
    "seed": 5,
-   "gap": 2.5,
-   "y": 42.2
+   "y": 42.2,
+   "gap": 2.5
   },
   {
    "op": "Waypoint",
