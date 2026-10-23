@@ -134,7 +134,7 @@ public sealed partial class Game
         foreach (var p in players)
         {
             var zp = ZP(p);
-            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0))).U8(zp.Perks)
+            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0))).U8(zp.Perks) // bits 3-4: ready-up (protocol 47)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
                 .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535));
         }
@@ -146,6 +146,7 @@ public sealed partial class Game
             w.U16(d.Id).U16((ushort)Math.Max(0, idx)).U16(Q(d.At.X, 32)).U16(Q(d.At.Y, 64)).U16(Q(d.At.Z, 32));
         }
         WritePowerUps(w, _zNow); // power-ups and their timers (protocol 40, ZombiesPowerUps.cs)
+        w.U8(ZWaitingReady ? (byte)1 : (byte)0); // the break waits for ready-up (protocol 47, ZombiesFlow.cs)
     }
 
     /// <summary>Server: the time of the last Zombies tick (what the power-up times in ZWorld count from).</summary>
@@ -529,6 +530,9 @@ public sealed partial class Game
             var flags = r.U8();
             zp.Downed = (flags & 1) != 0;
             zp.SelfReviveAt = (flags & 4) != 0 ? 1 : -1;
+            if (id != LocalId || Brutal.GlfwApi.Glfw.Time - _zReadyPressedAt > 0.5) // (your own press shows at once; the server's copy catches up)
+                zp.RoundReady = (flags & 8) != 0;
+            zp.ReadyVoter = (flags & 16) != 0;
             if (Players.TryGetValue(id, out var p) && id != LocalId)
                 p.ExtraSlots = (flags & 2) != 0;
             zp.Perks = r.U8();
@@ -550,6 +554,7 @@ public sealed partial class Game
             ZDrops.Add(new ZDrop { Id = id, Part = part < Parts.All.Length ? Parts.All[part].Name : "?", At = at });
         }
         ReadPowerUps(ref r, now); // (ZombiesPowerUps.cs)
+        ZWaitingReady = r.Has(1) && (r.U8() & 1) != 0; // (protocol 47)
     }
 
     // ---- Both sides, every frame ------------------------------------------------------------------------

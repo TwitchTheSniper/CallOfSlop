@@ -10,11 +10,24 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    private const Buttons ZMoveButtons = Buttons.Forward | Buttons.Back | Buttons.Left | Buttons.Right | Buttons.Jump | Buttons.Sprint | Buttons.Crouch;
+    /// <summary>What a downed player can't do: jump (so no mantling), sprint, crouch or stand up.</summary>
+    private const Buttons ZDownedStrip = Buttons.Jump | Buttons.Sprint | Buttons.Crouch;
 
-    /// <summary>Downed in Zombies: lying down, no walking (both the client's prediction and the server use this).</summary>
-    private Buttons ZombieButtons(Player? p, Buttons b) =>
-        p != null && Mode == GameMode.Zombies && IsDowned(p) ? (b & ~ZMoveButtons) | Buttons.Prone : b;
+    /// <summary>
+    /// Downed in Zombies: lying on the floor, crawling (2026-10-23): the move keys still work, at
+    /// <see cref="ZombiesRules.CrawlSpeed"/> of the prone speed; no jump, mantle, sprint, crouch or standing up. Both the
+    /// client's prediction and the server run this, so the crawl is predicted like any movement.
+    /// </summary>
+    private InputCmd ZombieInput(Player? p, InputCmd cmd)
+    {
+        if (p == null || Mode != GameMode.Zombies || !IsDowned(p))
+            return cmd;
+        cmd.Buttons = (cmd.Buttons & ~ZDownedStrip) | Buttons.Prone;
+        var cap = (byte)Math.Clamp((int)MathF.Round(ZRules.CrawlSpeed * 100f), 1, 200);
+        if (cmd.SpeedPct == 0 || cmd.SpeedPct > cap)
+            cmd.SpeedPct = cap;
+        return cmd;
+    }
 
     /// <summary>Can a bot at <paramref name="eye"/> see (and shoot) <paramref name="point"/>? Window openings don't block.</summary>
     private static bool ZClearShot(Vector3 eye, Vector3 point)
@@ -47,7 +60,7 @@ public sealed partial class Game
         var pitch = p.Pitch;
         if (zp.Downed)
         {
-            ApplyCmd(p, new InputCmd { Seq = ++b.Seq, Yaw = yaw, Pitch = pitch, Weapon = p.Weapon, SpeedPct = 100 });
+            ZombieBotCrawl(p, b, yaw, pitch); // crawl away from a zombie that's close, else towards the nearest teammate standing
             return;
         }
 
@@ -170,6 +183,64 @@ public sealed partial class Game
             Weapon = p.Weapon,
             SpeedPct = (byte)Math.Clamp((int)(FrenzyBuffs.Mobility(p, def) * 100), 1, 200), // the LMG frenzy buff
         });
+    }
+
+    /// <summary>
+    /// A downed bot crawls (2026-10-23): away from a chasing zombie within 4 m, else towards the nearest teammate who's
+    /// standing until it's well inside their revive reach, else it lies still. Straight lines only (it's slow, and walls
+    /// and window openings stop it like anyone); it doesn't shoot.
+    /// </summary>
+    private void ZombieBotCrawl(Player p, BotBrain b, float yaw, float pitch)
+    {
+        Vector3? goal = null;
+        Zombie? close = null;
+        var closeD = 4f * 4f;
+        foreach (var z in Horde)
+        {
+            if (z.State is not (ZState.Chase or ZState.Attack))
+                continue;
+            var dx = z.Position.X - p.Position.X;
+            var dz = z.Position.Z - p.Position.Z;
+            if (dx * dx + dz * dz < closeD)
+            {
+                closeD = dx * dx + dz * dz;
+                close = z;
+            }
+        }
+        if (close != null)
+        {
+            var away = p.Position - close.Position;
+            away.Y = 0;
+            if (away.LengthSquared() > 1e-4f)
+                goal = p.Position + Vector3.Normalize(away) * 3f;
+        }
+        else
+        {
+            Player? mate = null;
+            var best = float.MaxValue;
+            foreach (var o in Players.Values)
+            {
+                if (o == p || !IsStanding(o) || (ZHostSitsOut && o.Id == LocalId))
+                    continue;
+                var d = Vector3.DistanceSquared(o.Position, p.Position);
+                if (d < best || (d == best && mate != null && o.Id < mate.Id))
+                {
+                    best = d;
+                    mate = o;
+                }
+            }
+            if (mate != null && Flat(mate.Position - p.Position) > ZRules.ReviveRange * 0.6f)
+                goal = mate.Position;
+        }
+        var buttons = Buttons.None;
+        if (goal is { } g)
+        {
+            var want = MathF.Atan2(g.X - p.Position.X, -(g.Z - p.Position.Z));
+            yaw = World.WrapAngle(yaw + Math.Clamp(World.WrapAngle(want - yaw), -0.12f, 0.12f));
+            if (MathF.Abs(World.WrapAngle(want - yaw)) < 0.6f)
+                buttons |= Buttons.Forward;
+        }
+        ApplyCmd(p, new InputCmd { Seq = ++b.Seq, Buttons = buttons, Yaw = yaw, Pitch = Math.Clamp(pitch, -1.5f, 1.5f), Weapon = p.Weapon, SpeedPct = 100 });
     }
 
     private readonly Dictionary<byte, ushort> _zBotTarget = new();

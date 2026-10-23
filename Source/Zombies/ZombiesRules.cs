@@ -78,6 +78,16 @@ public sealed class ZombiesRules
     /// <summary>Seconds of break between rounds, and before round 1.</summary>
     public float BreakSeconds = 10f, FirstRoundDelay = 4f;
 
+    /// <summary>
+    /// Ready-up between rounds (2026-10-23): the next round waits until every living person presses the Ready key (bots
+    /// count as ready), then starts <see cref="ReadyGoSeconds"/> later. <see cref="ReadyFallbackSeconds"/>: start anyway
+    /// this long after the round ended (0 = wait for ever; the host can still force it). Off, or with no person in the run
+    /// (a bots-only run), the break is the plain <see cref="BreakSeconds"/> timer.
+    /// </summary>
+    public bool ReadyUp = true;
+
+    public float ReadyFallbackSeconds = 180f, ReadyGoSeconds = 3f;
+
     // ---- Zombies ------------------------------------------------------------------------------------------
     /// <summary>A zombie's swipe: damage, reach (from its centre to yours), the windup before it lands, and the time between swipes.</summary>
     public int ZombieDamage = 40;
@@ -103,6 +113,9 @@ public sealed class ZombiesRules
 
     // ---- Downs and revives ------------------------------------------------------------------------------
     public float BleedoutSeconds = 30f, ReviveSeconds = 3f, ReviveRange = 1.8f, SelfReviveSeconds = 5f;
+
+    /// <summary>Downed players crawl at this fraction of the prone speed (2026-10-23; prone is 0.22 x walking: 0.8 gives about 1.06 m/s).</summary>
+    public float CrawlSpeed = 0.8f;
 
     /// <summary>Points a revive pays the reviver, and the share of points lost on bleeding out.</summary>
     public int RevivePoints = 0;
@@ -325,6 +338,9 @@ public sealed class ZombiesRules
                             case "maxAlive": r.MaxAlive = Whole(v, w, 1, Game.MaxZombies); break;
                             case "breakSeconds": r.BreakSeconds = Real(v, w, 1, 120); break;
                             case "firstRoundDelay": r.FirstRoundDelay = Real(v, w, 0, 120); break;
+                            case "readyUp": r.ReadyUp = Flag(v, w); break;
+                            case "readyFallbackSeconds": r.ReadyFallbackSeconds = Real(v, w, 0, 3600); break;
+                            case "readyGoSeconds": r.ReadyGoSeconds = Real(v, w, 0, 30); break;
                             default: return false;
                         }
                         return true;
@@ -375,6 +391,7 @@ public sealed class ZombiesRules
                             case "reviveSeconds": r.ReviveSeconds = Real(v, w, 0.1f, 30); break;
                             case "reviveRange": r.ReviveRange = Real(v, w, 0.5f, 5); break;
                             case "selfReviveSeconds": r.SelfReviveSeconds = Real(v, w, 0.5f, 60); break;
+                            case "crawlSpeed": r.CrawlSpeed = Real(v, w, 0, 1); break;
                             case "revivePoints": r.RevivePoints = Whole(v, w, 0, 100000); break;
                             case "bleedoutPointLoss": r.BleedoutPointLoss = Real(v, w, 0, 1); break;
                             case "losePerksOnDown": r.LosePerksOnDown = Flag(v, w); break;

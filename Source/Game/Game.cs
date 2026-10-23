@@ -298,15 +298,15 @@ public sealed partial class Game : IDisposable
         TransportLook();
         var def = Active.Def;
         var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
-        return new InputCmd
+        return ZombieInput(Local, new InputCmd // downed in Zombies: a slow crawl (ZombieBots.cs)
         {
             Seq = seq,
-            Buttons = ZombieButtons(Local, CartInputButtons(HeldButtons)), // no walking while you man a cart (GameZombies.cs) or lie downed (ZombieBots.cs)
+            Buttons = CartInputButtons(HeldButtons), // no walking while you man a cart (GameZombies.cs)
             Yaw = LookYaw,
             Pitch = LookPitch,
             Weapon = def.Id,
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(speed * 100), 1, 200),
-        };
+        });
     }
 
     private void UpdateRenderStates(float dt)
@@ -1039,7 +1039,7 @@ public sealed partial class Game : IDisposable
         cmd.Tick = ServerMoverTick(cmd.Tick);
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
-        cmd.Buttons = ZombieButtons(p, cmd.Buttons); // downed in Zombies: no walking (ZombieBots.cs)
+        cmd = ZombieInput(p, cmd); // downed in Zombies: a slow crawl, no jump / sprint / stand (ZombieBots.cs)
         p.Yaw = cmd.Yaw;
         p.Pitch = cmd.Pitch;
         if (p.Owns(cmd.Weapon))

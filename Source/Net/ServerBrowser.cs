@@ -92,7 +92,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     3 more per player after the hat in Msg.Roster (a nibble per axis, 0 = Auto; bots always Auto).
     // 46: attachment kits are 5 bits a slot (Source/Weapons/Attachments.cs: up to 31 attachments per slot; the optic slot
     //     was full at 15): kits are U32 instead of U24 in Msg.Loadout, Msg.Roster, the death cam and the rocket messages.
-    public const byte ProtocolVersion = 46;
+    // 47: the Zombies round flow (Source/Game/ZombiesFlow.cs): Msg.ZWorld's player flags gain bit 3 (ready for the next
+    //     round) and bit 4 (counts for ready-up), and ZWorld ends with a byte (bit 0: the break waits for ready-up); Msg.Ready
+    //     during a Zombies match means ready for the next round. Downed players crawl (same input bits, capped speed).
+    public const byte ProtocolVersion = 47;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

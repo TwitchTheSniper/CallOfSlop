@@ -37,6 +37,8 @@ public enum GameAction
     ChatTeam,
     PushToTalk,
     AudioMixer, // the Audio mixer debug window (UiAudioMixer.cs)
+    SpectateNext, // binds version 5: Zombies, watching a teammate after bleeding out (Program.Zombies.cs)
+    SpectatePrev,
     COUNT,
 }
 
@@ -85,15 +87,17 @@ public static class Keybinds
         Key(GlfwKey.Y), // Chat (team)
         Key(GlfwKey.X), // Push to talk
         Key(GlfwKey.F8), // Audio mixer: binds version 4
+        Key(GlfwKey.Right), // Spectate next (Zombies): binds version 5 (Fire also works while spectating)
+        Key(GlfwKey.Left), // Spectate previous (Aim also works)
     ];
 
     /// <summary>
     /// Version of <see cref="Defaults"/>, saved as <c>binds_version</c> in settings.txt. Files from before a change get
     /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
-    /// 4: Audio mixer F8 added (same rule).
+    /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
     /// </summary>
-    public const int DefaultsVersion = 4;
+    public const int DefaultsVersion = 5;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -106,6 +110,8 @@ public static class Keybinds
         (3, GameAction.ChatTeam, Unbound, Key(GlfwKey.Y)),
         (3, GameAction.PushToTalk, Unbound, Key(GlfwKey.X)),
         (4, GameAction.AudioMixer, Unbound, Key(GlfwKey.F8)),
+        (5, GameAction.SpectateNext, Unbound, Key(GlfwKey.Right)),
+        (5, GameAction.SpectatePrev, Unbound, Key(GlfwKey.Left)),
     ];
 
     /// <summary>
@@ -178,7 +184,7 @@ public static class Keybinds
             GameAction.Streak1 => "Kill streak 1 (cheapest)",
             GameAction.Streak2 => "Kill streak 2",
             GameAction.Streak3 => "Kill streak 3 (biggest)",
-            GameAction.Ready => "Ready up (warmup)",
+            GameAction.Ready => "Ready up (warmup; Zombies: the next round)",
             GameAction.Interact => "Interact (doors; Zombies: cart, slot upgrade)",
             GameAction.Weapon3 => "Weapon slot 3 (Zombies)",
             GameAction.Weapon4 => "Weapon slot 4 (Zombies)",
@@ -186,6 +192,8 @@ public static class Keybinds
             GameAction.ChatTeam => "Chat (team)",
             GameAction.PushToTalk => "Push to talk (voice chat)",
             GameAction.AudioMixer => "Audio mixer (debug window)",
+            GameAction.SpectateNext => "Spectate next player (Zombies, out)",
+            GameAction.SpectatePrev => "Spectate previous player (Zombies, out)",
             _ => a.ToString(),
         };
 

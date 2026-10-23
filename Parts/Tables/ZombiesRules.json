@@ -25,7 +25,10 @@
     "spawnDelayMin": 0.25,
     "maxAlive": 24,
     "breakSeconds": 10,
-    "firstRoundDelay": 4
+    "firstRoundDelay": 4,
+    "readyUp": true,
+    "readyFallbackSeconds": 180,
+    "readyGoSeconds": 3
   },
   "zombie": {
     "damage": 40,
@@ -52,6 +55,7 @@
     "reviveSeconds": 3,
     "reviveRange": 1.8,
     "selfReviveSeconds": 5,
+    "crawlSpeed": 0.8,
     "revivePoints": 0,
     "bleedoutPointLoss": 0.1,
     "losePerksOnDown": true,

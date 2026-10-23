@@ -45,7 +45,12 @@ public sealed partial class Game
     public double AutoStartIn => IsWarmup && TimeLeft > 0 ? TimeLeft : 0;
 
     /// <summary>The Ready key / button.</summary>
-    public void ToggleReady() => SetReady(!(Local?.Ready ?? false));
+    public void ToggleReady()
+    {
+        if (ZToggleRoundReady())
+            return; // a Zombies break: ready for the next round (ZombiesFlow.cs)
+        SetReady(!(Local?.Ready ?? false));
+    }
 
     public void SetReady(bool ready)
     {
@@ -72,6 +77,11 @@ public sealed partial class Game
 
     private void ServerSetReady(Player p, bool ready)
     {
+        if (Phase == MatchPhase.Playing && IsZombies)
+        {
+            ServerSetRoundReady(p, ready); // a Zombies break: ready for the next round (ZombiesFlow.cs)
+            return;
+        }
         if (Phase is not (MatchPhase.Warmup or MatchPhase.Lobby) || p.Ready == ready)
             return;
         p.Ready = ready;
