@@ -339,7 +339,7 @@ Up to **32 players** (people and bots), but every map has its own limit: **8-10*
 - **Map vote:** only maps big enough for the people playing are offered. When a smaller map wins, bots it has no room for leave (people never do), and they come back on a bigger map: the bot count you set is remembered.
 - **Spawns:** every map needs a spawn per player. Maps with fewer get extra spawns when they load (same floor, in sight of a hand-placed spawn, clear of walls), so the old maps play as they always did with more people. Spawning never puts you on top of someone.
 - **Team Deathmatch** plays to 5 kills per player in bigger lobbies (40 up to 8 players, 80 at 16, at most 100).
-- **Scoreboard:** above 12 players it switches to two compact columns (Blue and Red in team modes, the ranking split in two otherwise). The kill feed keeps 6 lines, and a burst of joins shares one line ("X and 9 others joined").
+- **Scoreboard:** columns are Player, **Level** (prestige and level, as in the lobby; `BOT` for bots), the mode's two numbers, Weapon and alive/dead. It shows nobody's health (your own is on your HUD). Above 12 players it switches to two compact columns (Blue and Red in team modes, the ranking split in two otherwise). The kill feed keeps 6 lines, and a burst of joins shares one line ("X and 9 others joined").
 - **Bandwidth:** each client receives about 9 KB/s at 8 players, 13 KB/s at 16 and 21 KB/s at 32 (measured by the self-test over loopback, game data without UDP headers). The host sends that to every client.
 
 | Map | Limit | Map | Limit | Map | Limit |
@@ -557,9 +557,9 @@ At max level (48) the lobby's **PRESTIGE** button (under the level bar; greyed o
 - **What you keep:** your hats and your lifetime stats (kills, headshots, matches, wins). Settings > Reset level keeps your prestige too.
 - **Wearing a hat:** pick it in the loadout's cosmetics slot (None or any unlocked hat; locked ones show "Prestige N"). Others see it on your head in third person, in the death cam and kill cam, and lying by your corpse; you never see it in first person.
 - **Cosmetic only:** hats have no collision and don't change your hitbox, and prestige gives nothing else. Bots never prestige and never wear hats.
-- Your prestige shows as **P2** before your level: in the lobby, on the HUD level line and on the scoreboard (`[P2 L13]` after a person's name; bots get no tag).
+- Your prestige shows as **P2** before your level: in the lobby, on the HUD level line and in the scoreboard's **Level** column (`P2 L13`, with the hat the player wears beside it; bots show `BOT`).
 - Saved in `progress.txt` as `prestige=N`; older saves load as prestige 0. Hat models are data: `Cosmetics/hats.json` (format `call-of-slop-cosmetics/1`; boxes in head space, `"round"` parts made of a few turned boxes).
-- **Network:** your client sends its prestige and level after its name in the Hello; the roster carries prestige, level and hat for every player (3 bytes each, nothing in the snapshots). The server only uses the reported prestige for what it shows and to check the hat you pick (`Cosmetics.IsUnlocked`); it never affects gameplay. Levels on the scoreboard are as of joining (the host's own is live).
+- **Network:** your client sends its prestige and level after its name in the Hello; the roster carries prestige, level and hat for every player (3 bytes each, nothing in the snapshots). The server only uses the reported prestige for what it shows and to check the hat you pick (`Cosmetics.IsUnlocked`); it never affects gameplay. A level-up mid-match reaches everyone's scoreboard at your next respawn: the loadout packet carries your prestige and level too, and the server resends the roster only when they changed (nothing in the snapshots; older clients and servers simply skip the two bytes).
 
 ### Grenades and equipment
 
