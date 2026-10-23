@@ -79,7 +79,7 @@ public sealed partial class NavGraph
     private static NavGraph? _last;
     private static IEnumerator<NavGraph?>? _builder;
     private static Map? _builderMap;
-    private static PhysicsWorld? _builderPhysics; // the map as built, for the build in progress (null: the live world, still as built)
+    private static PhysicsWorld? _builderPhysics; // the map as built, for the build in progress (null: the live world, where nothing changes)
     private static bool _builderChanging; // can anything in the build's map break or open (Map.HasChangingBoxes)?
     private static Map? _hashMap;
     private static uint _hash;
@@ -142,9 +142,9 @@ public sealed partial class NavGraph
         if (_builder != null && !ReferenceEquals(_builderMap, map))
             _builder = null; // the map changed under it
         // Every slice probes the map as built (props whole, doors as they start), never the match as it is now: the graph
-        // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps). While the
-        // live map is still as built (the usual case: a build starts with the match) its own collision world is used; once
-        // something breaks or opens mid-build, the rest of the build runs on a copy of the map as built (PhysicsWorld.AsBuilt).
+        // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps). On a map
+        // where things can break or open, the build runs on a copy of the map as built (PhysicsWorld.AsBuilt), made in its
+        // first slice (with the match: a build starts when the map does); elsewhere the map's own collision world never changes.
         if (_builder == null)
         {
             _builderMap = map;
@@ -152,9 +152,9 @@ public sealed partial class NavGraph
             _builderPhysics = null;
             _builder = BuildSteps(map).GetEnumerator();
         }
-        if (_builderPhysics == null && _builderChanging && !map.IsAsBuilt())
+        if (_builderPhysics == null && _builderChanging)
         {
-            _builderPhysics = PhysicsWorld.AsBuilt(map); // the slices so far saw the live map while it was still as built
+            _builderPhysics = PhysicsWorld.AsBuilt(map);
             if (budgetMs < 10)
                 return; // a game tick: that copy is this tick's share of the work
         }
@@ -233,8 +233,8 @@ public sealed partial class NavGraph
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
-        // Every probe below goes through World.Physics (the map's collision world, or the map as built: PumpGraph), read
-        // afresh in every slice, never kept across one: the build may move to the as-built copy between slices.
+        // Every probe below goes through World.Physics, read afresh in every slice: during a build that's the map as built
+        // (PumpGraph and Build point it there), never the live match world kept from an earlier slice.
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
 
