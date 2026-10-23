@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Perk Machine",
+  "category": "Zombies",
+  "description": "A tall drinks cabinet for the Zombies perk machines. The front faces -Z; the game paints the perk's colour and sign on it.",
+  "collision": "solid",
+  "collider": [ { "size": [0.9, 2.0, 0.7] } ],
+  "scatter": { "randomYaw": false, "yawStep": 90 },
+  "parts": [
+    { "size": [0.86, 1.84, 0.66], "offset": [0, 0.98, 0], "color": "#26262c", "material": "metal" },
+    { "size": [0.92, 0.08, 0.72], "offset": [0, 0.04, 0], "color": "darkgrey" },
+    { "size": [0.92, 0.14, 0.72], "offset": [0, 1.93, 0], "color": "chrome" },
+    { "size": [0.03, 1.8, 0.68], "offset": [-0.445, 0.98, 0], "color": "chrome" },
+    { "size": [0.03, 1.8, 0.68], "offset": [0.445, 0.98, 0], "color": "chrome" },
+    { "size": [0.8, 0.03, 0.02], "offset": [0, 1.4, -0.335], "color": "chrome" },
+    { "size": [0.8, 0.03, 0.02], "offset": [0, 0.4, -0.335], "color": "chrome" },
+    { "size": [0.06, 0.12, 0.02], "offset": [0.32, 1.2, -0.34], "color": "chrome" },
+    { "size": [0.5, 0.1, 0.5], "offset": [0, 2.05, 0.05], "color": "#3a3a40" },
+    { "size": [0.12, 0.3, 0.12], "offset": [-0.3, 0.2, 0.36], "color": "black" }
+  ]
+}

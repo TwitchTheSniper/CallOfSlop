@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Power Switch Box",
+  "category": "Zombies",
+  "description": "A grey electrical panel with conduit and a warning stripe: the Zombies power switch. The game draws the lever and the lamp on its -Z face.",
+  "collision": "solid",
+  "collider": [ { "size": [0.7, 1.9, 0.3] } ],
+  "scatter": { "randomYaw": false, "yawStep": 90 },
+  "parts": [
+    { "size": [0.7, 1.0, 0.25], "offset": [0, 1.1, 0], "color": "#4d5258", "material": "metal" },
+    { "size": [0.72, 0.06, 0.26], "offset": [0, 1.48, 0], "color": "yellow" },
+    { "size": [0.6, 0.02, 0.01], "offset": [0, 0.75, -0.128], "color": "darkgrey" },
+    { "size": [0.08, 0.6, 0.08], "offset": [0.22, 0.3, 0.04], "color": "galvanized" },
+    { "size": [0.08, 0.6, 0.08], "offset": [-0.22, 0.3, 0.04], "color": "galvanized" },
+    { "size": [0.6, 0.05, 0.3], "offset": [0, 0.025, 0], "color": "darkgrey" },
+    { "size": [0.3, 0.25, 0.2], "offset": [0, 1.75, 0.02], "color": "#3d4248" },
+    { "size": [0.06, 0.15, 0.06], "offset": [0, 1.9, 0.04], "color": "galvanized" },
+    { "size": [0.2, 0.12, 0.01], "offset": [0.2, 0.88, -0.128], "color": "red" }
+  ]
+}

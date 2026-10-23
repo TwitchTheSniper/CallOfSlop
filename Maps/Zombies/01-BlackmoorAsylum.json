@@ -1,0 +1,2717 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Blackmoor Asylum",
+ "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, the power in the generator house.",
+ "author": "Call of Slop",
+ "order": 1,
+ "maxPlayers": 8,
+ "boundary": {
+  "shape": "polygon",
+  "points": [
+   [
+    -31.5,
+    -36
+   ],
+   [
+    -10,
+    -37.5
+   ],
+   [
+    18,
+    -35.5
+   ],
+   [
+    33.5,
+    -32
+   ],
+   [
+    34.5,
+    -6
+   ],
+   [
+    31,
+    8
+   ],
+   [
+    32,
+    23
+   ],
+   [
+    10,
+    26
+   ],
+   [
+    -12,
+    25.5
+   ],
+   [
+    -30.5,
+    23
+   ],
+   [
+    -34,
+    4
+   ],
+   [
+    -33,
+    -21
+   ]
+  ],
+  "noise": {
+   "amplitude": 0.8,
+   "scale": 9,
+   "seed": 13
+  },
+  "edge": {
+   "style": "wall",
+   "height": 3.4,
+   "thickness": 0.9,
+   "color": "#3e3d3a",
+   "material": "Brick"
+  }
+ },
+ "skybox": {
+  "preset": "night",
+  "zenith": "#070b12",
+  "horizon": "#26302f",
+  "ground": "#151a19",
+  "moon": {
+   "size": 5,
+   "intensity": 0.55,
+   "color": "#cfe0d8"
+  },
+  "stars": 0.8,
+  "clouds": {
+   "coverage": 0.55,
+   "density": 0.55,
+   "speed": 5,
+   "color": "#2b3334"
+  },
+  "haze": {
+   "color": "#3b4a42",
+   "strength": 0.35
+  },
+  "ambient": 1.9
+ },
+ "terrain": {
+  "cell": 1,
+  "margin": 22,
+  "surface": {
+   "grass": "#3f4a32",
+   "dirt": "#4d4334",
+   "rock": "#4f4c47",
+   "sand": "#5a5345",
+   "variation": 0.1
+  },
+  "features": [
+   {
+    "type": "noise",
+    "amplitude": 0.55,
+    "scale": 11,
+    "seed": 21
+   },
+   {
+    "type": "hill",
+    "x": -48,
+    "z": -30,
+    "radius": 18,
+    "height": 7
+   },
+   {
+    "type": "hill",
+    "x": 50,
+    "z": 10,
+    "radius": 20,
+    "height": 8
+   },
+   {
+    "type": "ridge",
+    "points": [
+     [
+      -60,
+      42
+     ],
+     [
+      0,
+      50
+     ],
+     [
+      60,
+      44
+     ]
+    ],
+    "width": 26,
+    "height": 6
+   },
+   {
+    "type": "hill",
+    "x": 6,
+    "z": -60,
+    "radius": 22,
+    "height": 6
+   },
+   {
+    "type": "flatten",
+    "x": 1.5,
+    "z": -6.5,
+    "w": 57,
+    "d": 52,
+    "height": 0,
+    "edge": 5
+   },
+   {
+    "type": "flatten",
+    "x": 0,
+    "z": -2,
+    "w": 47,
+    "d": 12.6,
+    "height": 0,
+    "edge": 0.5,
+    "material": "rock"
+   },
+   {
+    "type": "flatten",
+    "x": -14.6,
+    "z": 10.2,
+    "w": 17.3,
+    "d": 12.3,
+    "height": 0,
+    "edge": 0.5,
+    "material": "rock"
+   },
+   {
+    "type": "flatten",
+    "x": 14.6,
+    "z": 10.2,
+    "w": 17.3,
+    "d": 12.3,
+    "height": 0,
+    "edge": 0.5,
+    "material": "rock"
+   },
+   {
+    "type": "flatten",
+    "x": 21.2,
+    "z": -17.3,
+    "w": 10.3,
+    "d": 18,
+    "height": 0,
+    "edge": 0.5,
+    "material": "rock"
+   },
+   {
+    "type": "flatten",
+    "x": 0,
+    "z": 15,
+    "w": 12,
+    "d": 18,
+    "height": 0,
+    "edge": 0.5,
+    "material": "dirt"
+   },
+   {
+    "type": "hill",
+    "x": 9,
+    "z": -21.5,
+    "radius": 3.2,
+    "height": 0.6,
+    "material": "dirt"
+   },
+   {
+    "type": "hill",
+    "x": -29.5,
+    "z": 2,
+    "radius": 6,
+    "height": 0.9
+   }
+  ]
+ },
+ "foliage": {
+  "seed": 9,
+  "regions": [
+   {
+    "type": "grass",
+    "density": 3,
+    "rect": [
+     -15.6,
+     -27.6,
+     15.6,
+     -8.8
+    ],
+    "color": "#4a5536",
+    "patchiness": 0.5
+   },
+   {
+    "type": "grass",
+    "density": 2.2,
+    "polygon": [
+     [
+      -31.5,
+      -36
+     ],
+     [
+      -10,
+      -37.5
+     ],
+     [
+      18,
+      -35.5
+     ],
+     [
+      33.5,
+      -32
+     ],
+     [
+      34.5,
+      -6
+     ],
+     [
+      31,
+      8
+     ],
+     [
+      32,
+      23
+     ],
+     [
+      10,
+      26
+     ],
+     [
+      -12,
+      25.5
+     ],
+     [
+      -30.5,
+      23
+     ],
+     [
+      -34,
+      4
+     ],
+     [
+      -33,
+      -21
+     ]
+    ],
+    "color": "#435033",
+    "patchiness": 0.55
+   },
+   {
+    "type": "bush",
+    "density": 0.08,
+    "polygon": [
+     [
+      -31.5,
+      -36
+     ],
+     [
+      -10,
+      -37.5
+     ],
+     [
+      18,
+      -35.5
+     ],
+     [
+      33.5,
+      -32
+     ],
+     [
+      34.5,
+      -6
+     ],
+     [
+      31,
+      8
+     ],
+     [
+      32,
+      23
+     ],
+     [
+      10,
+      26
+     ],
+     [
+      -12,
+      25.5
+     ],
+     [
+      -30.5,
+      23
+     ],
+     [
+      -34,
+      4
+     ],
+     [
+      -33,
+      -21
+     ]
+    ],
+    "color": "#34402c",
+    "scale": [
+     0.8,
+     1.3
+    ]
+   }
+  ],
+  "items": [
+   {
+    "type": "pine",
+    "x": -31,
+    "z": -30,
+    "height": 9
+   },
+   {
+    "type": "pine",
+    "x": 30,
+    "z": -28.5,
+    "height": 8
+   },
+   {
+    "type": "tree",
+    "x": 29.5,
+    "z": 20,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": -28,
+    "z": 21.5,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": 13.5,
+    "z": -10.6,
+    "height": 5.5
+   }
+  ],
+  "exclude": [
+   {
+    "shape": "rect",
+    "center": [
+     -1.5,
+     15
+    ],
+    "halfX": 5.5,
+    "halfZ": 10
+   }
+  ]
+ },
+ "ops": [
+  {
+   "op": "WallX",
+   "x0": -23.3,
+   "x1": 26.3,
+   "z": -8.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#5e574d",
+   "holes": [
+    {
+     "center": -12,
+     "width": 3.0,
+     "bottom": 0,
+     "top": 2.6
+    },
+    {
+     "center": 11.5,
+     "width": 3.0,
+     "bottom": 0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -23.3,
+   "x1": 23.3,
+   "z": 4,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#5e574d",
+   "holes": [
+    {
+     "center": -15,
+     "width": 2.6,
+     "bottom": 0,
+     "top": 2.6
+    },
+    {
+     "center": -3.5,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 3.5,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 15,
+     "width": 3.0,
+     "bottom": 0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -8.3,
+   "z1": 4.3,
+   "x": -23.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6f675b",
+   "holes": [
+    {
+     "center": -5,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 1,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -8.3,
+   "z1": 4.3,
+   "x": 23,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6f675b",
+   "holes": [
+    {
+     "center": -5,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 1,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -8,
+   "z1": 4,
+   "x": -7.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6f675b",
+   "holes": [
+    {
+     "center": -2,
+     "width": 2.6,
+     "bottom": 0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -8,
+   "z1": 4,
+   "x": 7,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6f675b",
+   "holes": [
+    {
+     "center": -2,
+     "width": 2.6,
+     "bottom": 0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -16.3,
+   "x1": 16.3,
+   "z": -28.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.0,
+   "color": "#585852",
+   "holes": [
+    {
+     "center": -8,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 8,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -28.3,
+   "z1": -8.3,
+   "x": -16.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.0,
+   "color": "#585852",
+   "holes": [
+    {
+     "center": -18,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -28.3,
+   "z1": -8.3,
+   "x": 16,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#55594f",
+   "holes": [
+    {
+     "center": -18,
+     "width": 3.0,
+     "bottom": 0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": 16,
+   "x1": 26.3,
+   "z": -26.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#55594f",
+   "holes": [
+    {
+     "center": 21,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -26.3,
+   "z1": -8.3,
+   "x": 26,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#55594f",
+   "holes": [
+    {
+     "center": -17,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 4,
+   "z1": 16.3,
+   "x": -23.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6a5e52"
+  },
+  {
+   "op": "WallZ",
+   "z0": 4.3,
+   "z1": 16.3,
+   "x": -6.3,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6a5e52",
+   "holes": [
+    {
+     "center": 10,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -23.3,
+   "x1": -6,
+   "z": 16,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#6a5e52",
+   "holes": [
+    {
+     "center": -14,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 4.3,
+   "z1": 16.3,
+   "x": 6,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#5b6266",
+   "holes": [
+    {
+     "center": 10,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 4,
+   "z1": 16.3,
+   "x": 23,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#5b6266",
+   "holes": [
+    {
+     "center": 10,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": 6,
+   "x1": 23.3,
+   "z": 16,
+   "t": 0.3,
+   "y0": 0,
+   "y1": 3.6,
+   "color": "#5b6266",
+   "holes": [
+    {
+     "center": 14,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -23.3,
+   "y0": 3.6,
+   "z0": -8.3,
+   "x1": 23.3,
+   "y1": 3.9,
+   "z1": 4.3,
+   "color": "#3a3733"
+  },
+  {
+   "op": "Block",
+   "x0": 23.3,
+   "y0": 3.6,
+   "z0": -8.3,
+   "x1": 26.3,
+   "y1": 3.9,
+   "z1": -8.0,
+   "color": "#3a3733"
+  },
+  {
+   "op": "Block",
+   "x0": 16,
+   "y0": 3.6,
+   "z0": -26.3,
+   "x1": 26.3,
+   "y1": 3.9,
+   "z1": -8.3,
+   "color": "#3a3733"
+  },
+  {
+   "op": "Block",
+   "x0": -23.3,
+   "y0": 3.6,
+   "z0": 4.3,
+   "x1": -6,
+   "y1": 3.9,
+   "z1": 16.3,
+   "color": "#3a3733"
+  },
+  {
+   "op": "Block",
+   "x0": 6,
+   "y0": 3.6,
+   "z0": 4.3,
+   "x1": 23.3,
+   "y1": 3.9,
+   "z1": 16.3,
+   "color": "#3a3733"
+  },
+  {
+   "op": "Block",
+   "x0": -1.6,
+   "y0": 0,
+   "z0": -19.6,
+   "x1": 1.6,
+   "y1": 0.55,
+   "z1": -16.4,
+   "color": "#6c6a62"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0,
+   "z": -18,
+   "color": "#6c6a62",
+   "width": 3.6,
+   "height": 0.6,
+   "depth": 3.6,
+   "segments": 20,
+   "material": "Concrete"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0,
+   "z": -18,
+   "y": 0.55,
+   "color": "#3b4a44",
+   "width": 3.0,
+   "height": 0.04,
+   "depth": 3.0,
+   "segments": 20
+  },
+  {
+   "op": "Block",
+   "x0": -0.25,
+   "y0": 0.55,
+   "z0": -18.25,
+   "x1": 0.25,
+   "y1": 1.7,
+   "z1": -17.75,
+   "color": "#6c6a62"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "sphere",
+   "x": 0,
+   "z": -18,
+   "y": 1.6,
+   "color": "#6c6a62",
+   "width": 0.9,
+   "height": 0.5,
+   "depth": 0.9,
+   "material": "Concrete"
+  },
+  {
+   "op": "Block",
+   "x0": -21.9,
+   "y0": 0,
+   "z0": 8.8,
+   "x1": -20.7,
+   "y1": 1.0,
+   "z1": 11.2,
+   "color": "#4a3a2c"
+  },
+  {
+   "op": "Prop",
+   "name": "Reception Desk",
+   "x": -4.6,
+   "z": 0.6,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Office Chair",
+   "x": -5.9,
+   "z": 0.6,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Filing Cabinet",
+   "x": 4.6,
+   "z": -7.55,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Filing Cabinet",
+   "x": 5.4,
+   "z": -7.55,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Wooden Chair",
+   "x": 5.2,
+   "z": 2.9
+  },
+  {
+   "op": "Prop",
+   "name": "Wooden Chair",
+   "x": -1.6,
+   "z": 2.9
+  },
+  {
+   "op": "Prop",
+   "name": "Coat Stand",
+   "x": -6.5,
+   "z": 3.4
+  },
+  {
+   "op": "Prop",
+   "name": "Radiator",
+   "x": 2,
+   "z": -7.8,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.5,
+   "z": -7.97,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.5,
+   "z": -7.97,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -6.97,
+   "z": -3.5,
+   "yaw": 90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 6.97,
+   "z": -5.5,
+   "yaw": -90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 0,
+   "z": -2,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Newspaper",
+   "x": 1.2,
+   "z": -1.5,
+   "yaw": 30
+  },
+  {
+   "op": "Prop",
+   "name": "Cardboard Box",
+   "x": -2.2,
+   "z": -6.6,
+   "yaw": 15
+  },
+  {
+   "op": "Prop",
+   "name": "Single Bed",
+   "x": 15.2,
+   "z": -6.9,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Bedside Table",
+   "x": 16.25,
+   "z": -7.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Single Bed",
+   "x": 17.6,
+   "z": -6.9,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Bedside Table",
+   "x": 18.650000000000002,
+   "z": -7.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Single Bed",
+   "x": 20.0,
+   "z": -6.9,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Bedside Table",
+   "x": 21.05,
+   "z": -7.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Single Bed",
+   "x": 18.3,
+   "z": 2.9
+  },
+  {
+   "op": "Prop",
+   "name": "Single Bed",
+   "x": 20.7,
+   "z": 2.9
+  },
+  {
+   "op": "Prop",
+   "name": "Metal Shelving",
+   "x": 8.3,
+   "z": -6.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelie Bin Grey",
+   "x": 8.0,
+   "z": 3.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 15.5,
+   "z": -7.97,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 20.5,
+   "z": 3.97,
+   "yaw": 180,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 22.97,
+   "z": -0.8,
+   "yaw": -90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 15,
+   "z": -2,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Office Desk",
+   "x": -19,
+   "z": -3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Office Chair",
+   "x": -19,
+   "z": -2.3,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Office Desk",
+   "x": -15.5,
+   "z": -3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Office Chair",
+   "x": -15.5,
+   "z": -2.3,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Archive Boxes",
+   "x": -22.3,
+   "z": -7.3
+  },
+  {
+   "op": "Prop",
+   "name": "Metal Shelving",
+   "x": -16.5,
+   "z": -7.55,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Filing Cabinet",
+   "x": -9.2,
+   "z": -7.55,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Whiteboard",
+   "x": -11,
+   "z": -0.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Paper Shredder",
+   "x": -22.5,
+   "z": 3.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -16.5,
+   "z": 3.97,
+   "yaw": 180,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -22.97,
+   "z": -1.5,
+   "yaw": 90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": -15,
+   "z": 0,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -13.5,
+   "z": -25.5,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -11.8,
+   "z": -25.8,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -8.2,
+   "z": -25.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -13.8,
+   "z": -21.2,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -7.6,
+   "z": -21.5,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -12.6,
+   "z": -19.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -8.8,
+   "z": -19.4,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Chest Tomb",
+   "x": -14,
+   "z": -15
+  },
+  {
+   "op": "Prop",
+   "name": "Memorial Cross",
+   "x": -3.5,
+   "z": -25.6
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Well",
+   "x": 11.5,
+   "z": -24.5
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": 4.5,
+   "z": -18,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -4.5,
+   "z": -18,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Tipped Farm Cart",
+   "x": 12.5,
+   "z": -19.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": 3.2,
+   "z": -10.2
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": -3.2,
+   "z": -10.2
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": 14.6,
+   "z": -27
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": -14.6,
+   "z": -9.8
+  },
+  {
+   "op": "Prop",
+   "name": "Leaning Farm Tools",
+   "x": 15.4,
+   "z": -11.6,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": 21,
+   "z": -16.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Running Generator",
+   "x": 24.6,
+   "z": -24.4
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Cylinders",
+   "x": 16.9,
+   "z": -11.2
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": 25.3,
+   "z": -9.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": 24.4,
+   "z": -9.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pallet Stack",
+   "x": 17.2,
+   "z": -23.6
+  },
+  {
+   "op": "Prop",
+   "name": "Junction Box",
+   "x": 23.6,
+   "z": -25.85
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 18.0,
+   "z": -8.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 25.97,
+   "z": -21.5,
+   "yaw": -90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 16.33,
+   "z": -13.0,
+   "yaw": 90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 21,
+   "z": -12.5,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -16.8,
+   "z": 6.4,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -13.0,
+   "z": 6.4,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -16.8,
+   "z": 9.8,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -13.0,
+   "z": 9.8,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -16.8,
+   "z": 13.2,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Bench",
+   "x": -13.0,
+   "z": 13.2,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Calvary Cross",
+   "x": -22.5,
+   "z": 13.2,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": -21.5,
+   "z": 15.1
+  },
+  {
+   "op": "Prop",
+   "name": "Bookshelf",
+   "x": -9.2,
+   "z": 15.6
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -6.33,
+   "z": 6.5,
+   "yaw": -90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -12.0,
+   "z": 15.97,
+   "yaw": 180,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": -10.5,
+   "z": 5.6
+  },
+  {
+   "op": "Prop",
+   "name": "Reactor Control Desk",
+   "x": 12.5,
+   "z": 7.6,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Tape Mainframe",
+   "x": 22.5,
+   "z": 14.6,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Server Rack",
+   "x": 22.5,
+   "z": 12.6,
+   "yaw": -90
+  },
+  {
+   "op": "Prop",
+   "name": "Propellant Tank",
+   "x": 18.8,
+   "z": 13.6
+  },
+  {
+   "op": "Prop",
+   "name": "Hazmat Suit Rack",
+   "x": 6.8,
+   "z": 7.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Status Board",
+   "x": 11.5,
+   "z": 15.7,
+   "yaw": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 19.5,
+   "z": 5.0
+  },
+  {
+   "op": "Prop",
+   "name": "Radiation Sign",
+   "x": 16,
+   "z": 4.33,
+   "y": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 6.33,
+   "z": 11.8,
+   "yaw": 90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 22.97,
+   "z": 8.5,
+   "yaw": -90,
+   "y": 2.55
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 15,
+   "z": 10,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 11,
+   "z": 12,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Ambulance",
+   "x": 0,
+   "z": 19.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": -4.2,
+   "z": 15.5
+  },
+  {
+   "op": "Prop",
+   "name": "Trash Bag",
+   "x": 4.5,
+   "z": 16.4
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -30.5,
+   "z": -14.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -30.0,
+   "z": -9.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -30.8,
+   "z": -2.0,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -30.4,
+   "z": 15.0,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -28.5,
+   "z": 19.5,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Burnt Out Car",
+   "x": 31.0,
+   "z": -2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Pipe",
+   "x": 30.5,
+   "z": 15.0,
+   "yaw": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Tyre Stack",
+   "x": 22.0,
+   "z": 22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rusty Drum",
+   "x": -22.0,
+   "z": -33.5
+  },
+  {
+   "op": "Prop",
+   "name": "Rusty Drum",
+   "x": 12.5,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wooden Crate",
+   "x": 31.5,
+   "z": -27.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": -29.0,
+   "z": 6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": 29.5,
+   "z": -12.5
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": 0,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flickering Street Lamp",
+   "x": 10,
+   "z": 22.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Floor Cracks",
+    "Water Stain",
+    "Dirt Patch",
+    "Floor Cracks",
+    "Rubble Dust"
+   ],
+   "x0": -22.5,
+   "z0": -7.5,
+   "x1": 22.5,
+   "z1": 3.5,
+   "count": 60,
+   "seed": 11,
+   "gap": 1.2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Gib Smear",
+    "Gib Spatter"
+   ],
+   "x0": -22,
+   "z0": -7.5,
+   "x1": 22,
+   "z1": 3.5,
+   "count": 10,
+   "seed": 3,
+   "gap": 3
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Mould",
+    "Water Damage",
+    "Wall Cracks",
+    "Grime Streaks",
+    "Handprints",
+    "Peeling Paint"
+   ],
+   "x0": -22.8,
+   "z0": -7.8,
+   "x1": 22.8,
+   "z1": 15.8,
+   "count": 80,
+   "seed": 5,
+   "onto": "wall"
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Cracked Tiles",
+    "Water Stain",
+    "Floor Cracks",
+    "Gib Smear"
+   ],
+   "x0": -22.5,
+   "z0": 4.8,
+   "x1": -6.8,
+   "z1": 15.5,
+   "count": 18,
+   "seed": 7,
+   "gap": 1.4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Cracked Tiles",
+    "Oil Stain",
+    "Paint Spill",
+    "Gib Spatter"
+   ],
+   "x0": 6.8,
+   "z0": 4.8,
+   "x1": 22.5,
+   "z1": 15.5,
+   "count": 18,
+   "seed": 8,
+   "gap": 1.4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Oil Drips",
+    "Floor Cracks"
+   ],
+   "x0": 16.8,
+   "z0": -25.5,
+   "x1": 25.5,
+   "z1": -8.8,
+   "count": 14,
+   "seed": 9,
+   "gap": 1.4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Leaf Litter",
+    "Mud Patch",
+    "Moss Patch",
+    "Leaf Pile"
+   ],
+   "x0": -15.5,
+   "z0": -27.5,
+   "x1": 15.5,
+   "z1": -8.8,
+   "count": 26,
+   "seed": 4,
+   "gap": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 15,
+   "z": 5.2,
+   "size": 2.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Stencil Arrow",
+   "x": 13,
+   "z": -8.32,
+   "y": 1.6,
+   "onto": "wall+z",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Graffiti Scribble",
+   "x": 0,
+   "z": -7.98,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Handprints",
+   "x": -6.98,
+   "z": 1.5,
+   "y": 1.4,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Spawn",
+   "x": -2.5,
+   "z": -3.5
+  },
+  {
+   "op": "Spawn",
+   "x": 2.5,
+   "z": -3.5
+  },
+  {
+   "op": "Spawn",
+   "x": -2.5,
+   "z": 0.5
+  },
+  {
+   "op": "Spawn",
+   "x": 2.5,
+   "z": 0.5
+  },
+  {
+   "op": "Spawn",
+   "x": 14,
+   "z": -2
+  },
+  {
+   "op": "Spawn",
+   "x": -14,
+   "z": 0
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": -14
+  },
+  {
+   "op": "Spawn",
+   "x": 21,
+   "z": -13
+  },
+  {
+   "op": "Spawn",
+   "x": -12,
+   "z": 9
+  },
+  {
+   "op": "Spawn",
+   "x": 12,
+   "z": 11
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 3
+  }
+ ],
+ "zombies": {
+  "start": "Receiving Hall",
+  "machineProps": true,
+  "areas": [
+   {
+    "name": "Receiving Hall",
+    "rect": [
+     -7,
+     -8,
+     7,
+     4
+    ]
+   },
+   {
+    "name": "East Ward",
+    "rect": [
+     7.3,
+     -8,
+     23,
+     4
+    ]
+   },
+   {
+    "name": "West Offices",
+    "rect": [
+     -23,
+     -8,
+     -7.3,
+     4
+    ]
+   },
+   {
+    "name": "Courtyard",
+    "rect": [
+     -16,
+     -28,
+     16,
+     -8.3
+    ]
+   },
+   {
+    "name": "Generator House",
+    "rect": [
+     16.3,
+     -26,
+     26,
+     -8.3
+    ]
+   },
+   {
+    "name": "Chapel",
+    "rect": [
+     -23,
+     4.3,
+     -6.3,
+     16
+    ]
+   },
+   {
+    "name": "Research Lab",
+    "rect": [
+     6.3,
+     4.3,
+     23,
+     16
+    ]
+   }
+  ],
+  "doors": [
+   {
+    "name": "the Ward Door",
+    "kind": "door",
+    "cost": 750,
+    "box": [
+     7,
+     0,
+     -3.3,
+     7.3,
+     2.6,
+     -0.7
+    ],
+    "areas": [
+     "Receiving Hall",
+     "East Ward"
+    ]
+   },
+   {
+    "name": "the Records Debris",
+    "kind": "debris",
+    "cost": 750,
+    "box": [
+     -7.3,
+     0,
+     -3.3,
+     -7,
+     2.6,
+     -0.7
+    ],
+    "areas": [
+     "Receiving Hall",
+     "West Offices"
+    ]
+   },
+   {
+    "name": "the Courtyard Gate",
+    "kind": "door",
+    "cost": 1000,
+    "box": [
+     10,
+     0,
+     -8.3,
+     13,
+     2.6,
+     -8
+    ],
+    "areas": [
+     "East Ward",
+     "Courtyard"
+    ]
+   },
+   {
+    "name": "the Garden Debris",
+    "kind": "debris",
+    "cost": 1250,
+    "box": [
+     -13.5,
+     0,
+     -8.3,
+     -10.5,
+     2.6,
+     -8
+    ],
+    "areas": [
+     "West Offices",
+     "Courtyard"
+    ]
+   },
+   {
+    "name": "the Generator Door",
+    "kind": "door",
+    "cost": 1250,
+    "box": [
+     16,
+     0,
+     -19.5,
+     16.3,
+     2.6,
+     -16.5
+    ],
+    "areas": [
+     "Courtyard",
+     "Generator House"
+    ]
+   },
+   {
+    "name": "the Chapel Door",
+    "kind": "door",
+    "cost": 1500,
+    "box": [
+     -16.3,
+     0,
+     4,
+     -13.7,
+     2.6,
+     4.3
+    ],
+    "areas": [
+     "West Offices",
+     "Chapel"
+    ]
+   },
+   {
+    "name": "the Lab Shutter",
+    "kind": "door",
+    "cost": 750,
+    "power": true,
+    "box": [
+     13.5,
+     0,
+     4,
+     16.5,
+     2.6,
+     4.3
+    ],
+    "areas": [
+     "East Ward",
+     "Research Lab"
+    ]
+   }
+  ],
+  "windows": [
+   {
+    "area": "Receiving Hall",
+    "box": [
+     -4.3,
+     0.9,
+     4,
+     -2.7,
+     2.1,
+     4.3
+    ],
+    "outside": [
+     -3.5,
+     5.4
+    ],
+    "inside": [
+     -3.5,
+     3.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Receiving Hall",
+    "box": [
+     -0.8,
+     0.9,
+     4,
+     0.8,
+     2.1,
+     4.3
+    ],
+    "outside": [
+     0,
+     5.4
+    ],
+    "inside": [
+     0,
+     3.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Receiving Hall",
+    "box": [
+     2.7,
+     0.9,
+     4,
+     4.3,
+     2.1,
+     4.3
+    ],
+    "outside": [
+     3.5,
+     5.4
+    ],
+    "inside": [
+     3.5,
+     3.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "East Ward",
+    "box": [
+     23,
+     0.9,
+     -5.8,
+     23.3,
+     2.1,
+     -4.2
+    ],
+    "outside": [
+     24.400000000000002,
+     -5
+    ],
+    "inside": [
+     22.1,
+     -5
+    ],
+    "boards": 6
+   },
+   {
+    "area": "East Ward",
+    "box": [
+     23,
+     0.9,
+     0.2,
+     23.3,
+     2.1,
+     1.8
+    ],
+    "outside": [
+     24.400000000000002,
+     1
+    ],
+    "inside": [
+     22.1,
+     1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "West Offices",
+    "box": [
+     -23.3,
+     0.9,
+     -5.8,
+     -23.0,
+     2.1,
+     -4.2
+    ],
+    "outside": [
+     -24.400000000000002,
+     -5
+    ],
+    "inside": [
+     -22.1,
+     -5
+    ],
+    "boards": 6
+   },
+   {
+    "area": "West Offices",
+    "box": [
+     -23.3,
+     0.9,
+     0.2,
+     -23.0,
+     2.1,
+     1.8
+    ],
+    "outside": [
+     -24.400000000000002,
+     1
+    ],
+    "inside": [
+     -22.1,
+     1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Courtyard",
+    "box": [
+     -8.8,
+     0.9,
+     -28.3,
+     -7.2,
+     2.1,
+     -28.0
+    ],
+    "outside": [
+     -8,
+     -29.400000000000002
+    ],
+    "inside": [
+     -8,
+     -27.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Courtyard",
+    "box": [
+     7.2,
+     0.9,
+     -28.3,
+     8.8,
+     2.1,
+     -28.0
+    ],
+    "outside": [
+     8,
+     -29.400000000000002
+    ],
+    "inside": [
+     8,
+     -27.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Courtyard",
+    "box": [
+     -16.3,
+     0.9,
+     -18.8,
+     -16.0,
+     2.1,
+     -17.2
+    ],
+    "outside": [
+     -17.400000000000002,
+     -18
+    ],
+    "inside": [
+     -15.1,
+     -18
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Generator House",
+    "box": [
+     20.2,
+     0.9,
+     -26.3,
+     21.8,
+     2.1,
+     -26.0
+    ],
+    "outside": [
+     21,
+     -27.400000000000002
+    ],
+    "inside": [
+     21,
+     -25.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Generator House",
+    "box": [
+     26,
+     0.9,
+     -17.8,
+     26.3,
+     2.1,
+     -16.2
+    ],
+    "outside": [
+     27.400000000000002,
+     -17
+    ],
+    "inside": [
+     25.1,
+     -17
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Chapel",
+    "box": [
+     -6.3,
+     0.9,
+     9.2,
+     -6.0,
+     2.1,
+     10.8
+    ],
+    "outside": [
+     -4.9,
+     10
+    ],
+    "inside": [
+     -7.2,
+     10
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Chapel",
+    "box": [
+     -14.8,
+     0.9,
+     16,
+     -13.2,
+     2.1,
+     16.3
+    ],
+    "outside": [
+     -14,
+     17.400000000000002
+    ],
+    "inside": [
+     -14,
+     15.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Research Lab",
+    "box": [
+     6,
+     0.9,
+     9.2,
+     6.3,
+     2.1,
+     10.8
+    ],
+    "outside": [
+     4.9,
+     10
+    ],
+    "inside": [
+     7.2,
+     10
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Research Lab",
+    "box": [
+     23,
+     0.9,
+     9.2,
+     23.3,
+     2.1,
+     10.8
+    ],
+    "outside": [
+     24.400000000000002,
+     10
+    ],
+    "inside": [
+     22.1,
+     10
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Research Lab",
+    "box": [
+     13.2,
+     0.9,
+     16,
+     14.8,
+     2.1,
+     16.3
+    ],
+    "outside": [
+     14,
+     17.400000000000002
+    ],
+    "inside": [
+     14,
+     15.1
+    ],
+    "boards": 6
+   }
+  ],
+  "spawners": [
+   {
+    "window": 0,
+    "at": [
+     -3.5,
+     8.5
+    ]
+   },
+   {
+    "window": 1,
+    "at": [
+     0,
+     8.5
+    ]
+   },
+   {
+    "window": 2,
+    "at": [
+     3.5,
+     8.5
+    ]
+   },
+   {
+    "window": 3,
+    "at": [
+     27.5,
+     -5
+    ]
+   },
+   {
+    "window": 4,
+    "at": [
+     27.5,
+     1
+    ]
+   },
+   {
+    "window": 5,
+    "at": [
+     -27.5,
+     -5
+    ]
+   },
+   {
+    "window": 6,
+    "at": [
+     -27.5,
+     1
+    ]
+   },
+   {
+    "window": 7,
+    "at": [
+     -8,
+     -32.5
+    ]
+   },
+   {
+    "window": 8,
+    "at": [
+     8,
+     -32.5
+    ]
+   },
+   {
+    "window": 9,
+    "at": [
+     -20.5,
+     -18
+    ]
+   },
+   {
+    "window": 10,
+    "at": [
+     21,
+     -30.5
+    ]
+   },
+   {
+    "window": 11,
+    "at": [
+     30.5,
+     -17
+    ]
+   },
+   {
+    "window": 12,
+    "at": [
+     -1.8,
+     10
+    ]
+   },
+   {
+    "window": 13,
+    "at": [
+     -14,
+     20.5
+    ]
+   },
+   {
+    "window": 14,
+    "at": [
+     1.8,
+     10
+    ]
+   },
+   {
+    "window": 15,
+    "at": [
+     27.5,
+     10
+    ]
+   },
+   {
+    "window": 16,
+    "at": [
+     14,
+     20.5
+    ]
+   },
+   {
+    "area": "Courtyard",
+    "at": [
+     -10,
+     -23.5
+    ]
+   },
+   {
+    "area": "Courtyard",
+    "at": [
+     9,
+     -13
+    ]
+   },
+   {
+    "area": "Research Lab",
+    "at": [
+     16,
+     10
+    ]
+   },
+   {
+    "area": "Chapel",
+    "at": [
+     -10,
+     8.2
+    ]
+   }
+  ],
+  "wallBuys": [
+   {
+    "build": "Wall Rifle",
+    "at": [
+     -4,
+     -7.97
+    ],
+    "yaw": 180,
+    "cost": 500,
+    "ammoCost": 250
+   },
+   {
+    "build": "Wall SMG",
+    "at": [
+     10,
+     3.97
+    ],
+    "yaw": 0,
+    "cost": 1000
+   },
+   {
+    "build": "Wall Pistol",
+    "at": [
+     -19,
+     -7.97
+    ],
+    "yaw": 180,
+    "cost": 300,
+    "ammoCost": 150
+   },
+   {
+    "build": "Wall Pump",
+    "at": [
+     0,
+     -8.33
+    ],
+    "yaw": 0,
+    "cost": 900
+   },
+   {
+    "build": "Burst Marksman",
+    "at": [
+     25.97,
+     -12
+    ],
+    "yaw": -90,
+    "cost": 1200
+   },
+   {
+    "build": "Wall SMG",
+    "at": [
+     -22.97,
+     6.5
+    ],
+    "yaw": 90,
+    "cost": 1000
+   },
+   {
+    "build": "Wall Pump",
+    "at": [
+     6.33,
+     13
+    ],
+    "yaw": 90,
+    "cost": 900
+   }
+  ],
+  "box": {
+   "cost": 950,
+   "start": 0,
+   "spots": [
+    {
+     "at": [
+      0,
+      -7.6
+     ],
+     "yaw": 180
+    },
+    {
+     "at": [
+      -10,
+      3.6
+     ],
+     "yaw": 0
+    },
+    {
+     "at": [
+      -6,
+      -22
+     ],
+     "yaw": 90
+    },
+    {
+     "at": [
+      -19.5,
+      15.6
+     ],
+     "yaw": 0
+    },
+    {
+     "at": [
+      9.5,
+      15.6
+     ],
+     "yaw": 0
+    }
+   ]
+  },
+  "workbenches": [
+   {
+    "at": [
+     -20,
+     3.55
+    ],
+    "yaw": 0
+   },
+   {
+    "at": [
+     20.5,
+     -8.75
+    ],
+    "yaw": 0
+   }
+  ],
+  "perks": [
+   {
+    "perk": "revive",
+    "at": [
+     -6.6,
+     -6
+    ],
+    "yaw": 90
+   },
+   {
+    "perk": "secondwind",
+    "at": [
+     6.6,
+     1.6
+    ],
+    "yaw": -90
+   },
+   {
+    "perk": "jugg",
+    "at": [
+     22.6,
+     -2
+    ],
+    "yaw": -90,
+    "power": true
+   },
+   {
+    "perk": "speed",
+    "at": [
+     -22.6,
+     -2
+    ],
+    "yaw": 90,
+    "power": true
+   },
+   {
+    "perk": "doubletap",
+    "at": [
+     -6.7,
+     13.5
+    ],
+    "yaw": -90,
+    "power": true
+   }
+  ],
+  "slotUpgrade": {
+   "at": [
+    22.65,
+    6.5
+   ],
+   "yaw": -90,
+   "cost": 4000
+  },
+  "power": {
+   "at": [
+    18,
+    -25.8
+   ],
+   "yaw": 180
+  },
+  "salvage": [
+   {
+    "at": [
+     12.2,
+     1.2
+    ]
+   },
+   {
+    "at": [
+     6,
+     -25.5
+    ]
+   },
+   {
+    "at": [
+     23.5,
+     -22
+    ]
+   },
+   {
+    "at": [
+     13.2,
+     12.6
+    ]
+   }
+  ]
+ }
+}

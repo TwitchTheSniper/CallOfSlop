@@ -15,9 +15,9 @@ public static partial class SelfTest
     private static Map? ZTestMap => Maps.Find("Zombies Test");
 
     /// <summary>A Zombies game on Zombies Test (offline), live and playing, with the given rules tweaks.</summary>
-    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true, BotDifficulty skill = BotDifficulty.Normal)
+    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true, BotDifficulty skill = BotDifficulty.Normal, Map? onMap = null)
     {
-        var map = ZTestMap!;
+        var map = onMap ?? ZTestMap!;
         World.SetMap(map);
         var g = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: bots, botSkill: skill, mapId: map.Id)
         {
@@ -632,9 +632,12 @@ public static partial class SelfTest
         var texts = new List<string> { GameModes.Name(GameMode.Zombies), GameModes.Rules(GameMode.Zombies), Ui.RoundTally(3), Ui.RoundTally(12) };
         texts.AddRange(ZombiesRules.Current.Perks.SelectMany(p => new[] { p.Name, p.Blurb }));
         texts.AddRange(zm.Doors.Select(d => d.Name));
+        texts.AddRange(Enumerable.Range(0, (int)ZPowerKind.COUNT).Select(k => Game.PowerName((ZPowerKind)k)));
         foreach (var s in texts)
             if (s.Any(ch => ch < 32 || ch > 126))
                 Fail($"Zombies text isn't plain ASCII: {s}");
+
+        CheckZombiesMilestone3(ref now); // SelfTestZombiesMap.cs: Blackmoor Asylum, machine props, power-ups, special ammo
     }
 
     /// <summary>
