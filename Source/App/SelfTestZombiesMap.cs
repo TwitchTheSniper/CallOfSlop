@@ -391,7 +391,8 @@ public static partial class SelfTest
             g.WriteZWorld(w2);
             var world = w2.Span.ToArray();
             var serverLeft = g.InstaKillLeft(now);
-            var serverUps = g.ZPowerUps.Select(p => (p.Id, p.Kind, Left: p.Until - now)).ToList();
+            var tnow = now;
+            var serverUps = g.ZPowerUps.Select(p => (p.Id, p.Kind, Left: p.Until - tnow)).ToList();
             using var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
             c.SelfTestReadZombies(ents, world);
             var same = c.ZPowerUps.Count == serverUps.Count && serverUps.All(s => c.ZPowerUps.Any(x => x.Id == s.Id && x.Kind == s.Kind && Math.Abs((x.Until - 0) - s.Left) < 0.11))

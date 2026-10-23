@@ -316,7 +316,7 @@ public sealed partial class Game
                     {
                         var at = new Vector3(r.F32(), r.F32(), r.F32());
                         if (float.IsFinite(at.X + at.Y + at.Z))
-                            LocalFx((ZFxKind)Math.Min(arg, (ushort)ZFxKind.COUNT - 1), at, sound, now);
+                            LocalFx((ZFxKind)Math.Min((int)arg, (int)ZFxKind.COUNT - 1), at, sound, now);
                         break;
                     }
                 }

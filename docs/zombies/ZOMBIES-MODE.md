@@ -1,7 +1,8 @@
-# Zombies: the game mode (milestone 2)
+# Zombies: the game mode (milestone 3)
 
-Status: **in development, playable** on the dev map `Maps/Dev/ZombiesTest.json` (lobby: pick the map "Zombies Test",
-then the game mode "Zombies"; Zombies only shows up for maps that have a `"zombies"` section). Styled after Call of
+Status: **playable on its first real map**, **Blackmoor Asylum** (lobby: the **Zombies** pack, then the game mode
+"Zombies"), plus the dev map `Maps/Dev/ZombiesTest.json` ("Zombies Test", Dev pack). Zombies only shows up for maps that
+have a `"zombies"` section. Milestone 3 added the map, solid machine props, power-ups and special ammo effects. Styled after Call of
 Duty: World at War's Nazi Zombies: solo or co-op up to 4, rounds that never end, points for every hit and kill,
 boarded windows, doors that open new areas, wall guns, a mystery box, perk machines and the power switch. It's a
 **roguelite run**: you start low (the "start" builds) and climb, inside one run, to broken silly guns through the
@@ -10,12 +11,14 @@ mystery box, wall buys, part drops and the workbench (the weapon builder: `WEAPO
 Everything marked **proposed** is a working default for the user to change; the numbers live in data files.
 
 Code: `Source/Game/ZombiesMode.cs` (run state, rounds, points, players, downs, the interact key, buyables, box, parts,
-workbench), `ZombiesDrops.cs` (dropped builds), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror), `ZombieBots.cs` (co-op
+workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups), `ZombiesAmmoEffects.cs` (special ammo), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
-`Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-test `Source/App/SelfTestZombies.cs`.
+`Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-tests `Source/App/SelfTestZombies.cs` and
+`SelfTestZombiesMap.cs` (milestone 3).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
-`Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Dev/ZombiesTest.json`.
+`Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by
+`tools/zombies/make_blackmoor.py`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
 
 ## How a run plays
 
@@ -143,9 +146,20 @@ reloads.)
   "perks": [ {"perk": "jugg", "at": [x, z], "yaw": 90, "power": true} ],
   "slotUpgrade": {"at": [x, z], "yaw": -90, "cost": 4000},
   "power": {"at": [x, z], "yaw": -90},
-  "salvage": [ {"at": [x, z], "cost": 25} ]
+  "salvage": [ {"at": [x, z], "cost": 25} ],
+  "machineProps": true
 }
 ```
+
+- **Machine props** (`"machineProps": true`, milestone 3; open question 9): every machine stands as a **solid prop** from
+  `Props/Zombies` (players, zombies, bullets and the bots' nav graph treat it like any solid prop): **Perk Machine** (the
+  game paints the perk's colour and lit sign on its front), **Mystery Box Crate** (one at every box spot; the box itself
+  is drawn a little bigger over the crate at the spot it's in), **Zombies Workbench**, **Power Switch Box** (the lever
+  and lamp are drawn on it) and **Weapon Locker** (the slot upgrade; its screen is drawn on it). The section places them
+  itself (they're not ops), facing the machine's `yaw`, so put each machine where its prop fits: a perk machine is
+  0.9 x 0.7 m, a box crate 1.3 x 0.66, a workbench 1.6 x 0.8, the locker 1.0 x 0.6 and the power box 0.7 x 0.3 (place
+  it 0.2 m off a wall). They count towards the map's prop fingerprint. Without the key (Zombies Test) machines are drawn
+  without collision, as before.
 
 - **Areas** are rectangles; the **area graph** is made by the doors: an area is unlocked when it's the start area or
   one of its doors is open. Zombies route between areas through open doors (a breadth-first search over the doors),
@@ -167,7 +181,30 @@ The dev map **Zombies Test** (48 x 48 m): a start room (two windows, a wall SMG,
 Quick Revive), the **Hall** behind a door (window, wall pump, Juggernog, a box spot, salvage), the **West Wing**
 behind debris (window, a ground spawner, the wall rifle for ammo, Speed Cola, a box spot) and the **Power Room**
 behind a door (window, the power switch, Double Tap, the slot upgrade, a workbench, salvage, the Burst Marksman), plus
-a shutter between the Hall and the Power Room that needs the power. Purpose-built maps come later.
+a shutter between the Hall and the Power Room that needs the power.
+
+## Blackmoor Asylum (milestone 3, the Zombies pack)
+
+`Maps/Zombies/01-BlackmoorAsylum.json`, written by `tools/zombies/make_blackmoor.py` (the script also checks its own
+layout: props keep clear of doors, windows, spawners, machines, wall buys and each other). An abandoned village asylum
+and its research wing at night, about 68 x 62 m inside a walled, wobbly polygon outline, with terrain (rough ground
+round the ring, hills beyond the wall, a mound in the courtyard), grass and a few trees, a night sky with moonlight and
+the ambient raised so it stays readable, flickering caged lamps, tube lights and lanterns, grime, damp and blood decals.
+
+| Area | Way in (price) | What's there |
+| --- | --- | --- |
+| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Quick Revive and Second Wind (no power), the Wall Rifle, box spot 1, a reception desk |
+| **East Ward** | the Ward Door (750) | 2 windows, Juggernog (power), the Wall SMG, salvage, hospital beds |
+| **West Offices** | the Records Debris (750) | 2 windows, Speed Cola (power), the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
+| **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, a fountain |
+| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, generators |
+| **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Double Tap (power), the Wall SMG, box spot 4, pews and an altar |
+| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, the Wall Pump, box spot 5, salvage, consoles |
+
+Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 5 perk
+machines (3 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
+the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
+runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
 
 ## Dropped builds (user decision, 2026-10-21)
 
@@ -197,7 +234,67 @@ your player has died. And if you can't get to them in time, will despawn after 5
   them as the new holder's, like any build in their slots).
 - `downs.dropBuildsOnBleedout: false` brings back the old rule (builds lost).
 
-## Network (protocol 19)
+## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
+
+- **Drops.** Every zombie a player kills may drop one: `dropChance` 3 percent, at most `maxPerRound` (4) a round (the
+  count resets when a round starts). The kind is rolled from `weights` (Max Ammo 1.2, Insta-Kill 1, Double Points 1,
+  Nuke 0.8, Carpenter 0.8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
+  it at that window's inside spot. Kills by a burn, a splash or a chain drop like any kill; the Nuke's kills drop nothing.
+- **Looks.** It floats 0.9 m up, turning and bobbing, a glowing token for its kind (an ammo can, a skull, two gold coins,
+  a bomb, a hammer) over a green halo with a faint beam; its name floats over it within 12 m. It lasts `lifetime` (30 s)
+  and blinks for the last `blinkSeconds` (10 s), faster in the last 3.
+- **Taking one:** the first player standing who walks within `pickupRange` (1.3 m) takes it **for the whole team**; a
+  feed line ("Tester grabbed Insta-Kill: every hit kills for 30 seconds!") and a banner ("INSTA-KILL!") go to everyone.
+
+| Power-up | What it does |
+| --- | --- |
+| **Max Ammo** | Every player's guns get a full reserve (magazines stay as they are) |
+| **Insta-Kill** | For `duration` (30 s) every hit on a zombie kills it |
+| **Double Points** | For 30 s every point earned (hits, kills, boards) counts twice |
+| **Nuke** | Every zombie alive dies at once (no kill points or drops); every player gets `nukePoints` (400) |
+| **Carpenter** | Every window's boards go back up; every player gets `carpenterPoints` (200) |
+
+The HUD shows Insta-Kill and Double Points with their seconds left, bottom centre (blinking in the last 5 s).
+
+## Special ammo effects (milestone 3; proposed numbers in "ammoEffects")
+
+The flags parts carry come alive against zombies (open question 5). A build's flags are a **set**: two incendiary
+receivers are still one "incendiary". Each effect goes off **at most once per trigger pull or swing**: effects on the
+zombie hit once per zombie hit (a shotgun's pellets on one zombie are one hit), area effects once per shot, from the
+zombie that took the most damage. A burn and a bleed share one slot (the stronger ticks; a new one restarts the clock,
+never adds). The effects' own damage never sets off more effects, pays points like any hit (burn and bleed ticks pay
+only the kill), and works with Insta-Kill and Double Points.
+
+| Flag (parts) | Effect on zombies |
+| --- | --- |
+| `incendiary` (Dragon's Breath) | Burn: 60 percent of the hit (at least 40) over 3 s, ticking 4 times a second; the zombie glows with flames |
+| `explosive` (Explosive Tip, 40mm Frag) | Splash: the zombies within 2.2 m of the one hit take half the hit, less further out; walls shield |
+| `shock` (Shock Coil) | Chain: arcs to the 3 nearest other zombies within 3.5 m (not through walls) for 40 percent, stunning them 0.4 s |
+| `penetrating` (.50 BMG) | Pierce: goes on along the ray through the next 2 zombies within 8 m behind (until a wall), at 60 percent |
+| `plasma` (Plasma Charge) | Slow: half speed for 2 s, crackling blue |
+| `bouncy` (Rubber Duck Rounds) | Bounce: on to the nearest other zombie within 4 m, at half |
+| `squeaky` (Rubber Duck Rounds, Whoopee Cushion) | A squeak and a 0.3 s stun |
+| `toasty` (Toaster Feed) | A half-strength burn, and the toaster **pops the zombie up** off the floor |
+| `nails` (Nail Ring), `chainsaw` | Bleed: 30 percent of the hit over 3 s (the chainsaw also stuns 0.3 s) |
+| `bonk` (Frying Pan) | A 1 s stun with a cartoon bonk |
+| `fish` (Frozen Fish) | A wet slap that **knocks the zombie back** (4.5 m/s) |
+| `rocket` (Rocket Booster) | Knocks the zombie flying (6 m/s) |
+| `party` (Helium Balloons) | A zombie it kills **floats away** on its balloons |
+| `refreshing` (Cup Holder) | Every kill gives the shooter 5 health back |
+| `bayonet` (Bayonet) | Hits within 2.2 m do 1.5x damage |
+| `suppressed`, `cart` | No effect on zombies (they already do their own thing) |
+
+The self-test fails if a part ever carries a flag that's in neither list. Effects players see: a short flash where an
+effect goes off (an orange burst for a splash, blue sparks for a chain, pink for party balloons...) and its sound;
+burning and zapped zombies glow.
+
+## Network (protocol 19; protocol 40 for milestone 3)
+
+Protocol 40 (milestone 3): `ZWorld` ends with the floating power-ups (id, kind, position, tenths of a second left) and
+Insta-Kill / Double Points' seconds left; `ZEvent` gains `MaxAmmo` (refill your reserves) and `Fx` (a special ammo
+effect: kind, sound and a position after the text; unreliable); bits 6-7 of a zombie's state byte in `ZEnts` say
+burning / zapped. (38 and 39 are other features on main.)
+
 
 New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (every zombie with each snapshot:
 id, quantised position, yaw, state, speed, health; 12 bytes each, about 300 bytes for 24), `ZWorld` (10 Hz: round,
@@ -231,12 +328,16 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). Still open: its price
    (fixed 1500, or rising each buy), whether it should count toward the perk limit (today it does), and whether solo
    Quick Revive should be cheaper again.
-4. **Power-ups** (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter) are not in yet: wanted, and which?
-5. **Special part flags** (incendiary, explosive, shock, fish...) still have no effects: they'd come alive against
-   zombies first. Which ones matter most?
-6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything. Should they buy
-   doors / guns / perks with their own points?
-7. **Downed**: shoot with whatever is in your hands (today), or a forced pistol (World at War's last stand)?
-8. **Melee builds from the box** go to the melee slot: or should the box give guns only?
-9. **Machines have no collision** on the dev map (you walk through the box and perk machines): add props for them on
-   the real maps?
+4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). Still open: the numbers
+   (3 percent a kill, 4 a round, 30 s), and whether drops should follow World at War's points-based schedule instead.
+5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). Still open: the
+   numbers, and whether effects should also hurt players in other modes.
+6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything (still the default).
+   Should they buy doors / guns / perks with their own points?
+7. **Downed**: shoot with whatever is in your hands (still the default), or a forced pistol (World at War's last stand)?
+8. **Melee builds from the box** go to the melee slot (still the default): or should the box give guns only?
+9. ~~Machines have no collision~~: **done in milestone 3** on real maps (`"machineProps": true`, solid props from
+   `Props/Zombies`); Zombies Test keeps them collision-free.
+10. **Second Wind's price** (still a fixed 1500, counting toward the 4 perks; see question 3).
+11. **Blackmoor Asylum**: the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500, the power shutter 750) are
+    proposed; more Zombies maps next?
