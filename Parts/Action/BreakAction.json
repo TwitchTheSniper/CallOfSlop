@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Break Action",
+  "category": "action",
+  "rarity": "common",
+  "flavor": "Hinge it open, drop one in, snap it shut. One shot, then reload, but it's a good shot.",
+  "weight": 0.1,
+  "action": {"kind": "single", "rpm": 120, "chamber": 1},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.012, 0.012, 0.012], "pos": [0.012, 0.006, -0.016], "color": "steel"},
+    {"size": [0.008, 0.01, 0.008], "pos": [0.011, -0.006, 0.016], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "damage", "mul": 1.3},
+    {"stat": "reload", "mul": 0.45}
+  ]
+}

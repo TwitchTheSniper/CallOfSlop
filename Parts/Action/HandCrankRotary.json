@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Hand-Crank Rotary",
+  "category": "action",
+  "rarity": "rare",
+  "flavor": "Turn the handle and the barrels take turns. Victorian technology, modern problems.",
+  "weight": 0.4,
+  "action": {"kind": "rotary", "rpm": 900, "rpmPerBarrel": 150, "spoolTime": 0.3, "spoolStart": 0.5},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.026, 0.03, 0.04], "pos": [0.018, 0, 0], "color": "steel"},
+    {"size": [0.004, 0.02, 0.03], "pos": [0.032, 0, 0], "color": "accent", "tag": "glow"}
+  ],
+  "stats": []
+}

@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A grenade launcher fanned through a peacock splitter, fed by a toaster, with balloons tied on. Kills float away.",
-  "build": "Pistol Grip{receiver_1:Bucket Launcher Receiver{barrel:Peacock Splitter{barrel_1:Launcher Tube,barrel_2:Launcher Tube,barrel_3:Launcher Tube,barrel_4:Launcher Tube,barrel_5:Launcher Tube},feed:Toaster Feed,ammo:40mm Frag,utility:Helium Balloons}}"
+  "build": "Pistol Grip{receiver_1:Bucket Launcher Receiver{barrel:Peacock Splitter{barrel_1:Launcher Tube,barrel_2:Launcher Tube,barrel_3:Launcher Tube,barrel_4:Launcher Tube,barrel_5:Launcher Tube},feed:Toaster Feed,ammo:40mm Frag,action:Lob Trigger,utility:Helium Balloons}}"
 }

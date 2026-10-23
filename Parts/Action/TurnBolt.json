@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Turn Bolt",
+  "category": "action",
+  "rarity": "common",
+  "flavor": "Up, back, forward, down. Slow and deliberate, and it always works.",
+  "weight": 0.15,
+  "action": {"kind": "bolt", "rpm": 45},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"shape": "rod", "size": [0.008, 0.008, 0.03], "pos": [0.02, 0.004, 0.016], "rot": [0, 90, 0], "color": "steel"},
+    {"size": [0.014, 0.014, 0.014], "pos": [0.038, 0.004, 0.016], "color": "black"}
+  ],
+  "stats": []
+}

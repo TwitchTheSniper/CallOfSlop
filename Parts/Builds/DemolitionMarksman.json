@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A match DMR on explosive tips with a tungsten core and a 4x scope. Headshots that take the neighbours too.",
-  "build": "Sport Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Fluted Match Barrel,feed:Box Mag,ammo:Explosive Tip,amp:Tungsten Core Injector},stock:Recoil Buffer Stock,optic:4x Scope}"
+  "build": "Sport Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Fluted Match Barrel,feed:Box Mag,ammo:Explosive Tip,action:Marksman Trigger,amp:Tungsten Core Injector},stock:Recoil Buffer Stock,optic:4x Scope}"
 }

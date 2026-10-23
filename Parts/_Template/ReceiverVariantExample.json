@@ -1,10 +1,11 @@
-// A receiver variant: the base's sockets, model and stats, a faster action, one socket fewer and a screw for show.
+// A receiver variant: the base's sockets, model and stats, another stock action (the fire type is a part: a receiver
+// only names the action it comes with, for old builds), one socket fewer and a screw for show.
 {
   "extends": "Base Auto Receiver",
   "name": "Template Sprinter Receiver",
   "rarity": "uncommon",
   "flavor": "The workhorse after a strong coffee.",
-  "receiver": {"rpm": 760, "soundOf": "Vanguard AR"},
+  "receiver": {"soundOf": "Vanguard AR", "stockAction": "Carbine Sear"},
   "-sockets": ["upgrade_side"],
   "+model": [
     {"use": "Screw Head", "pos": [0.031, 0.05, -0.1], "rot": [0, 0, -90]}

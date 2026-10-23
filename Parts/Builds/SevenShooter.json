@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A revolver frame behind a barrel of barrels. Seven .50 rounds a pull; don't ask how it reloads.",
-  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Barrel of Barrels,feed:Heavy Box,ammo:.50 BMG}}"
+  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Barrel of Barrels,feed:Heavy Box,ammo:.50 BMG,action:Revolver Hammer}}"
 }

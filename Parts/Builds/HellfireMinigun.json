@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A minigun on long barrels and explosive tips with an overclock core. Spins up, then the floor explodes.",
-  "build": "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{barrel_1:Long Barrel,barrel_2:Long Barrel,barrel_3:Long Barrel,barrel_4:Long Barrel,barrel_5:Long Barrel,barrel_6:Long Barrel,feed:Backpack Hopper,ammo:Explosive Tip,upgrade_rear:Overclock Core},foregrip:Chaingun Handle,stock:Gyro Stock}"
+  "build": "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{barrel_1:Long Barrel,barrel_2:Long Barrel,barrel_3:Long Barrel,barrel_4:Long Barrel,barrel_5:Long Barrel,barrel_6:Long Barrel,feed:Backpack Hopper,ammo:Explosive Tip,action:Electric Rotary Drive,upgrade_rear:Overclock Core},foregrip:Chaingun Handle,stock:Gyro Stock}"
 }

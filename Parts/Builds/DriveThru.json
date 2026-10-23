@@ -7,5 +7,5 @@
   ],
   "flavor": "Eight SMGs round a steering wheel on a bottomless bucket, with a cup holder. Every kill is a sip of health.",
   "chainFire": true,
-  "build": "Steering Wheel{receiver_1:Stampede Receiver{barrel:Stub Barrel,utility:Cup Holder},receiver_2:Stampede Receiver{barrel:Stub Barrel},receiver_3:Stampede Receiver{barrel:Stub Barrel},receiver_4:Stampede Receiver{barrel:Stub Barrel},receiver_5:Stampede Receiver{barrel:Stub Barrel},receiver_6:Stampede Receiver{barrel:Stub Barrel},receiver_7:Stampede Receiver{barrel:Stub Barrel},receiver_8:Stampede Receiver{barrel:Stub Barrel},hopper:Bottomless Bucket{ammo:9mm Ball}}"
+  "build": "Steering Wheel{receiver_1:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear,utility:Cup Holder},receiver_2:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_3:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_4:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_5:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_6:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_7:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_8:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},hopper:Bottomless Bucket{ammo:9mm Ball}}"
 }

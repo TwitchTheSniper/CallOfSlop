@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Two shotgun chain guns on a chainsaw grip, belching Dragon's Breath through blunderbuss bells.",
-  "build": "Chainsaw Grip{receiver_1:Sawmill Receiver{barrel:Blunderbuss Bell,feed:Shell Drum,ammo:Dragon's Breath},receiver_2:Sawmill Receiver{barrel:Blunderbuss Bell,feed:Shell Drum,ammo:Dragon's Breath}}"
+  "build": "Chainsaw Grip{receiver_1:Sawmill Receiver{barrel:Blunderbuss Bell,feed:Shell Drum,ammo:Dragon's Breath,action:Bicycle Chain Drive},receiver_2:Sawmill Receiver{barrel:Blunderbuss Bell,feed:Shell Drum,ammo:Dragon's Breath,action:Bicycle Chain Drive}}"
 }

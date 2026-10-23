@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Six coil rifles on a hex rack in one volley. Everything it hits slows to a crawl.",
-  "build": "Hex Rack Grip{receiver_1:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge},receiver_2:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge},receiver_3:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge},receiver_4:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge},receiver_5:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge},receiver_6:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge}}"
+  "build": "Hex Rack Grip{receiver_1:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt},receiver_2:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt},receiver_3:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt},receiver_4:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt},receiver_5:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt},receiver_6:Railspike Coil Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Plasma Charge,action:Turn Bolt}}"
 }

@@ -7,5 +7,5 @@
     "start"
   ],
   "flavor": "A pistol grip, a plinker and a stick mag. Your sidearm until something better drops.",
-  "build": "Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+  "build": "Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger}}"
 }

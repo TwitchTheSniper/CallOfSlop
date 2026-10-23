@@ -59,8 +59,9 @@ public sealed class WeaponBuild
         var r = receiver.Part.Receiver!;
         if (!h.FitsBore(r.Bore))
             return $"the {h.Name} feeds {string.Join("/", h.Bores)} rounds, the {receiver.Part.Name} fires {r.Bore}";
-        if (h.RequiresAction.Length > 0 && !h.RequiresAction.Contains(r.Action))
-            return $"the {h.Name} needs {string.Join("/", h.RequiresAction.Select(a => a.ToString().ToLowerInvariant()))} action, the {receiver.Part.Name} is {r.Action.ToString().ToLowerInvariant()}";
+        // A receiver with no action yet counts as fed (the missing action is what the build reports).
+        if (h.RequiresAction.Length > 0 && ActionOf(receiver) is { } act && !h.RequiresAction.Contains(act.Kind))
+            return $"the {h.Name} needs {string.Join("/", h.RequiresAction.Select(a => ActionInfo.Name(a)))} action, the {receiver.Part.Name}'s action is {act.FireType}";
         if (hopper.Child("ammo") is { } ammo && !ammo.Part.FitsBore(r.Bore))
             return $"the {h.Name} is loaded with {ammo.Part.Name}, the {receiver.Part.Name} fires {r.Bore}";
         return null;
@@ -112,6 +113,21 @@ public sealed class WeaponBuild
 
     public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone(), StyleChoice = StyleChoice };
 
+    /// <summary>Stock actions <see cref="Parse"/> added to an old build (one written before actions were parts): it should be saved again.</summary>
+    public int ActionsAdded;
+
+    /// <summary>The action part in <paramref name="receiver"/>'s action socket (its fire type and rate), or null if it has none.</summary>
+    public static ActionInfo? ActionOf(BuildNode receiver) => ActionNodeOf(receiver)?.Part.Action;
+
+    /// <summary>The action node in <paramref name="receiver"/>'s action socket, or null.</summary>
+    public static BuildNode? ActionNodeOf(BuildNode receiver)
+    {
+        foreach (var (s, c) in receiver.Children())
+            if (s.Type == "action" && c.Part.Action != null)
+                return c;
+        return null;
+    }
+
     // ---- Text form (saves) ---------------------------------------------------------------
 
     /// <summary>The build as one line: <c>Name|style|Grip{socket:Part{...},socket:Part}</c>.</summary>
@@ -145,7 +161,12 @@ public sealed class WeaponBuild
     /// receiver beyond a grip's capacity, say) are dropped and listed in <paramref name="dropped"/>, so an old save still
     /// loads. Throws <see cref="FormatException"/> on garbage.
     /// </summary>
-    public static WeaponBuild Parse(string text, Func<string, PartDef?> find, List<string>? dropped = null)
+    /// <remarks>
+    /// <paramref name="migrate"/>: a text written before actions were parts (no action part anywhere in it) gets each
+    /// receiver's stock action (<see cref="ActionMigration"/>; <see cref="ActionsAdded"/> counts them). Off for texts
+    /// that are always current: the workbench's undo steps and builds a client sends the server.
+    /// </remarks>
+    public static WeaponBuild Parse(string text, Func<string, PartDef?> find, List<string>? dropped = null, bool migrate = true)
     {
         var fields = text.Split('|', 3);
         if (fields.Length != 3)
@@ -164,6 +185,8 @@ public sealed class WeaponBuild
             b.Root = root;
         else if (root != null)
             dropped?.Add($"{root.Part.Name} (a build starts from a grip or a hilt)");
+        if (migrate)
+            b.ActionsAdded = ActionMigration.FillIfOld(b, find);
         return b;
     }
 
@@ -307,7 +330,7 @@ public static class BuildRules
 
     private static string Article(string word) => word.Length > 0 && "aeiou".Contains(char.ToLowerInvariant(word[0])) ? "an" : "a";
 
-    private static string ActionName(ActionKind a) => a.ToString().ToLowerInvariant();
+    private static string ActionName(ActionKind a) => ActionInfo.Name(a);
 
     private static string ListOr(IEnumerable<string> items)
     {
@@ -341,13 +364,17 @@ public static class BuildRules
             return $"{part.Name} mounts on {Article(part.Mount)} {part.Mount} socket, not {Article(socket.Type)} {socket.Type} socket.";
         if (socket.Accepts.Length > 0 && !socket.Accepts.Contains(part.Category))
             return $"{parent.Part.Name}'s {socket.Name} socket takes {ListOr(socket.Accepts.Select(Plural))} only, not {Plural(part.Category)}.";
-        if (parent.ReceiverNode() is { Part: var rp } && rp.Receiver is { } r)
+        if (parent.ReceiverNode() is { Part: var rp } rn && rp.Receiver is { } r)
         {
             // The receiver this socket hangs under (walking up the tree), not the build's first one.
             if (BoreBound(part.Category) && !part.FitsBore(r.Bore))
                 return $"{part.Name} is made for {ListOr(part.Bores)} rounds; the {rp.Name} fires {r.Bore} rounds.";
-            if (part.RequiresAction.Length > 0 && !part.RequiresAction.Contains(r.Action))
-                return $"{part.Name} needs {ListOr(part.RequiresAction.Select(ActionName))} action; the {rp.Name} is {ActionName(r.Action)}.";
+            // Fire types: a feed that needs one is checked against the receiver's action part (none yet: no conflict),
+            // and an action part against a feed already on the receiver that needs one.
+            if (part.RequiresAction.Length > 0 && OtherAction(rn, socket) is { Part: var ap } && !part.RequiresAction.Contains(ap.Action!.Kind))
+                return $"{part.Name} needs {ListOr(part.RequiresAction.Select(ActionName))} action; the {rp.Name}'s {ap.Name} is {ap.Action!.FireType}.";
+            if (part.Action is { } pa && FeedNeeding(rn, socket) is { } feed && !feed.Part.RequiresAction.Contains(pa.Kind))
+                return $"{part.Name} can't work the {feed.Part.Name}: it needs {ListOr(feed.Part.RequiresAction.Select(ActionName))} action, the {part.Name} is {pa.FireType}.";
         }
         else if (BoreBound(part.Category))
         {
@@ -382,12 +409,14 @@ public static class BuildRules
             return $"needs {Article(mount)} {mount} socket";
         if (socket.Accepts.Length > 0 && !socket.Accepts.Contains(part.Category))
             return $"needs {Article(mount)} {mount} socket that takes {Plural(part.Category)}";
-        if (parent.ReceiverNode() is { Part: var rp } && rp.Receiver is { } r)
+        if (parent.ReceiverNode() is { Part: var rp } rn && rp.Receiver is { } r)
         {
             if (BoreBound(part.Category) && !part.FitsBore(r.Bore))
                 return $"needs {Article(part.Bores[0])} {ListOr(part.Bores)} bore {mount} socket";
-            if (part.RequiresAction.Length > 0 && !part.RequiresAction.Contains(r.Action))
-                return $"needs {Article(ActionName(part.RequiresAction[0]))} {ListOr(part.RequiresAction.Select(ActionName))} action receiver";
+            if (part.RequiresAction.Length > 0 && OtherAction(rn, socket) is { Part: var ap } && !part.RequiresAction.Contains(ap.Action!.Kind))
+                return $"needs {Article(ActionName(part.RequiresAction[0]))} {ListOr(part.RequiresAction.Select(ActionName))} action";
+            if (part.Action is { } pa && FeedNeeding(rn, socket) is { } feed && !feed.Part.RequiresAction.Contains(pa.Kind))
+                return $"the {feed.Part.Name} needs {ListOr(feed.Part.RequiresAction.Select(ActionName))} action";
         }
         else if (BoreBound(part.Category))
         {
@@ -415,6 +444,22 @@ public static class BuildRules
             return s.Required;
         return !(fed.Contains(n) && (s.Type == "feed" || (s.Type == "ammo" && b.Hopper?.Child("ammo") != null)));
     }
+
+    /// <summary>
+    /// The feed on <paramref name="receiver"/> that needs particular fire types (a belt, a hopper), or null. What's in
+    /// <paramref name="replacing"/> doesn't count (it is being swapped out).
+    /// </summary>
+    private static BuildNode? FeedNeeding(BuildNode receiver, PartSocket replacing)
+    {
+        foreach (var (s, c) in receiver.Children())
+            if (s != replacing && c.Part.RequiresAction.Length > 0)
+                return c;
+        return null;
+    }
+
+    /// <summary>The action node on <paramref name="receiver"/>, unless it sits in <paramref name="replacing"/> (being swapped out).</summary>
+    private static BuildNode? OtherAction(BuildNode receiver, PartSocket replacing) =>
+        WeaponBuild.ActionNodeOf(receiver) is { } a && a.ParentSocket != replacing ? a : null;
 
     private static BuildNode? HopperAbove(BuildNode n)
     {
@@ -465,7 +510,7 @@ public static class BuildRules
         foreach (var r in b.Receivers)
         {
             var barrels = WeaponBuild.BarrelsOf(r);
-            if (r.Part.Receiver!.Action == ActionKind.Rotary)
+            if (WeaponBuild.ActionOf(r)?.Kind == ActionKind.Rotary)
                 barrels = Math.Min(barrels, 1);
             per.Add(barrels * BuildStats.PelletsOf(r));
         }

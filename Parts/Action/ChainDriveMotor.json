@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Chain Drive Motor",
+  "category": "action",
+  "rarity": "epic",
+  "flavor": "A motor pulls the bolt along a chain: steady, relentless, needs a moment to wind up.",
+  "weight": 0.35,
+  "action": {"kind": "chain", "rpm": 450, "spoolTime": 0.4, "spoolStart": 0.5},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.02, 0.03, 0.03], "pos": [0.015, 0, 0], "color": "gunmetal"},
+    {"size": [0.006, 0.006, 0.05], "pos": [0.027, 0.012, 0], "color": "steel"}
+  ],
+  "stats": []
+}

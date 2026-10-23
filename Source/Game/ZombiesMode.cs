@@ -1239,7 +1239,7 @@ public sealed partial class Game
                 var dropped = new List<string>();
                 try
                 {
-                    nb = WeaponBuild.Parse(text, Parts.Find, dropped);
+                    nb = WeaponBuild.Parse(text, Parts.Find, dropped, migrate: false); // clients send current builds: no stock actions added here
                 }
                 catch (FormatException ex)
                 {

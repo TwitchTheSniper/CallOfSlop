@@ -34,6 +34,13 @@ public enum PartCategory : byte
 
     /// <summary>Melee only: modifiers on a hilt (nails, a wrap, a counterweight).</summary>
     MeleeMod,
+
+    /// <summary>
+    /// The fire-control group on a receiver's "action" socket: it decides the fire type (single shot, semi, burst, auto,
+    /// pump, lever, bolt, rotary, chain, muzzle-loaded) and the fire rate. The receiver only picks the calibre. Last in
+    /// the list so the older categories keep their order (network ids are positions in the sorted part list).
+    /// </summary>
+    Action,
 }
 
 /// <summary>How rare (and how strong) a part is. Later rounds drop rarer parts; scrap values follow the tier.</summary>
@@ -49,7 +56,7 @@ public enum Rarity : byte
     Wonder,
 }
 
-/// <summary>A receiver's action: how pulling the trigger turns into shots.</summary>
+/// <summary>An action part's fire type: how pulling the trigger turns into shots (see <see cref="ActionInfo"/>).</summary>
 public enum ActionKind : byte
 {
     Semi,
@@ -67,6 +74,57 @@ public enum ActionKind : byte
 
     /// <summary>Chain gun: externally driven automatic with a short spool-up.</summary>
     Chain,
+
+    /// <summary>One shot per click, a lever stroke between shots (quicker than a pump).</summary>
+    Lever,
+
+    /// <summary>Single shot (a break action): one round in the chamber, then reload.</summary>
+    Single,
+
+    /// <summary>Muzzle-loaded: one round, rammed down the barrel; a very slow reload for every shot and a big hit.</summary>
+    MuzzleLoad,
+}
+
+/// <summary>
+/// Action-only data (the "action" block of an action part): the fire type and the fire rate the receiver it sits on
+/// fires at. Receivers are calibre only (docs/zombies/WEAPON-BUILDER.md, "Actions: the fire type is a part").
+/// </summary>
+public sealed class ActionInfo
+{
+    public ActionKind Kind = ActionKind.Semi;
+
+    public int Rpm = 600;
+    public int BurstCount = 3;
+    public float BurstDelay = 0.25f;
+
+    /// <summary>Seconds of held trigger to reach full fire rate (rotary/chain), starting from <see cref="SpoolStart"/> of it.</summary>
+    public float SpoolTime;
+
+    public float SpoolStart = 1f;
+
+    /// <summary>Rotary actions: fire rate per barrel of the receiver (rpm = this x barrels). 0 = use <see cref="Rpm"/>.</summary>
+    public int RpmPerBarrel;
+
+    /// <summary>Rounds the action holds before a reload whatever the feed holds (single shot, muzzle-loaded: 1). 0 = the feed's magazine.</summary>
+    public int Chamber;
+
+    /// <summary>The fire type in words ("semi-auto", "3-round burst", "rotary"...).</summary>
+    public string FireType => Name(Kind, BurstCount);
+
+    /// <summary>A fire type in words.</summary>
+    public static string Name(ActionKind k, int burst = 3) => k switch
+    {
+        ActionKind.Semi => "semi-auto",
+        ActionKind.Auto => "full auto",
+        ActionKind.Burst => $"{burst}-round burst",
+        ActionKind.Pump => "pump",
+        ActionKind.Bolt => "bolt",
+        ActionKind.Rotary => "rotary",
+        ActionKind.Chain => "chain",
+        ActionKind.Lever => "lever",
+        ActionKind.Single => "single shot",
+        _ => "muzzle-loaded",
+    };
 }
 
 /// <summary>A socket a part offers: where another part plugs in, in the part's own space (metres, -Z forward, +Y up).</summary>
@@ -120,11 +178,12 @@ public sealed class PartBox
     public string Tag = "";
 }
 
-/// <summary>Receiver-only data: the action and the base numbers every other part modifies.</summary>
+/// <summary>
+/// Receiver-only data: the calibre and the base numbers every other part modifies. The fire type and fire rate come
+/// from the action part in the receiver's "action" socket (<see cref="ActionInfo"/>), not from the receiver.
+/// </summary>
 public sealed class ReceiverInfo
 {
-    public ActionKind Action = ActionKind.Auto;
-
     /// <summary>The weapon class the build behaves as (recoil character, reload animation, arm poses).</summary>
     public WeaponClass Class = WeaponClass.AssaultRifle;
 
@@ -134,24 +193,17 @@ public sealed class ReceiverInfo
     /// <summary>A shipped weapon whose synthesised gunshot, reload and equip sounds the build borrows.</summary>
     public string SoundOf = "BR-1 Prototype";
 
-    public int Rpm = 600;
-    public int BurstCount = 3;
-    public float BurstDelay = 0.25f;
-
-    /// <summary>Seconds of held trigger to reach full fire rate (rotary/chain), starting from <see cref="SpoolStart"/> of it.</summary>
-    public float SpoolTime;
-
-    public float SpoolStart = 1f;
-
     /// <summary>Barrel limits for this receiver (counted after splitters).</summary>
     public int MinBarrels = 1, MaxBarrels = 12;
-
-    /// <summary>Rotary receivers: fire rate per fitted barrel (rpm = this x barrels). 0 = use <see cref="Rpm"/>.</summary>
-    public int RpmPerBarrel;
 
     /// <summary>This receiver's own barrel size [width, height, length] in place of its bore class's (null = the class's; Parts/_Registry.json).</summary>
     public System.Numerics.Vector3? BarrelScale;
 
+    /// <summary>
+    /// The action part this receiver fired like before actions were parts ("stockAction" in the file): an old build with
+    /// no actions gets it in this receiver's action socket when it loads (<see cref="ActionMigration"/>). Null = none.
+    /// </summary>
+    public string? StockAction;
 }
 
 /// <summary>How a grip with several receivers fires them (proposed, open for the user; see the design doc).</summary>
@@ -294,7 +346,7 @@ public sealed class PartDef
     /// </summary>
     public string SizedFor = "rifle";
 
-    /// <summary>Feeds and splitters can require particular actions of their receiver (a belt needs something automatic to pull it).</summary>
+    /// <summary>Feeds can require particular fire types of their receiver's action part (a belt needs something automatic to pull it).</summary>
     public ActionKind[] RequiresAction = [];
 
     public float Weight = 0.3f;
@@ -328,6 +380,10 @@ public sealed class PartDef
     public string FeedStyle = "";
 
     public ReceiverInfo? Receiver;
+
+    /// <summary>Action parts only: the fire type and rate (see <see cref="ActionInfo"/>).</summary>
+    public ActionInfo? Action;
+
     public SplitInfo? Split;
 
     /// <summary>Root grips only (a grip with no mount): receiver capacity, fire style, handling.</summary>

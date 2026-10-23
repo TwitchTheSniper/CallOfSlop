@@ -107,6 +107,9 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>Self-test: one frame of the local weapon's state (a reload finishing, aiming) as the frame loop runs it.</summary>
+    internal void SelfTestWeaponFrame(double now, float dt) => UpdateWeaponState(now, dt);
+
     // ---- Spool-up (miniguns, chain guns) ---------------------------------------------------
 
     private float _spool;

@@ -22,14 +22,15 @@ public static partial class SelfTest
         const string shot = "Minigun|volley|Pistol Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Over-Under Splitter{barrel_1:Long Barrel,barrel_2:Long Barrel},feed:Heavy Box,ammo:.50 BMG},"
                             + "receiver_2:Stampede Receiver{feed:Stick Mag},receiver_3:Stampede Receiver{feed:Stick Mag}}";
         var shotDropped = new List<string>();
-        var sm = new BenchModel(WeaponBuild.Parse(shot, Parts.Find, shotDropped), BenchStock.Unlimited);
+        var shotBuild = WeaponBuild.Parse(shot, Parts.Find, shotDropped); // saved before actions were parts: each receiver gets its stock action
+        var sm = new BenchModel(shotBuild, BenchStock.Unlimited);
         int r2 = sm.SpotOf("receiver_2", "barrel"), r3 = sm.SpotOf("receiver_3", "barrel");
         var why2 = r2 >= 0 ? BuildRules.SocketWhy(sm.Spots[r2].Parent, sm.Spots[r2].Socket, std) : "no spot";
         var why3 = r3 >= 0 ? BuildRules.SocketWhy(sm.Spots[r3].Parent, sm.Spots[r3].Socket, std) : "no spot";
         var nValid = sm.ValidSpots(std, new bool[sm.Spots.Count]);
         var nowhere = sm.WhyNowhere(std);
         Line($"screenshot build: {sm.Build.PartCount} parts, {sm.Build.Weight:0.0} kg (carry {sm.Build.CarryWeight:0.#}); Standard Barrel on receiver 2: {why2 ?? "fits"}, receiver 3: {why3 ?? "fits"}; {nValid} valid sockets");
-        if (shotDropped.Count > 0 || sm.Build.PartCount != 11 || why2 != null || why3 != null || nValid < 2)
+        if (shotDropped.Count > 0 || sm.Build.PartCount != 14 || shotBuild.ActionsAdded != 3 || why2 != null || why3 != null || nValid < 2)
             Fail($"barrels: the screenshot build's Stampede receivers should take a Standard Barrel ({string.Join("; ", shotDropped)}; {why2}; {why3})");
         var placed2 = sm.Place(r2, std, out _);
         var placed3 = sm.Place(sm.SpotOf("receiver_3", "barrel"), std, out _);

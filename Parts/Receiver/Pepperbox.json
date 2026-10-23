@@ -4,8 +4,8 @@
   "category": "receiver",
   "rarity": "wonder",
   "flavor": "A ring of pistol barrels that turns one notch per shot. Grandad's idea of a minigun.",
-  "weight": 0.9,
-  "receiver": {"action": "rotary", "class": "Pistol", "bore": "pistol", "soundOf": "Viper .45", "rpm": 900, "rpmPerBarrel": 150, "spoolTime": 0.3, "spoolStart": 0.5, "minBarrels": 2, "maxBarrels": 6},
+  "weight": 0.5,
+  "receiver": {"class": "Pistol", "bore": "pistol", "soundOf": "Viper .45", "minBarrels": 2, "maxBarrels": 6, "stockAction": "Hand-Crank Rotary"},
   "sockets": [
     {"name": "barrel_1", "type": "barrel", "pos": [0, 0.062, -0.1], "accepts": ["barrel"], "required": true},
     {"name": "barrel_2", "type": "barrel", "pos": [-0.017, 0.052, -0.1], "accepts": ["barrel"], "required": true},
@@ -15,6 +15,7 @@
     {"name": "barrel_6", "type": "barrel", "pos": [0.017, 0.052, -0.1], "accepts": ["barrel"]},
     {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.036], "required": true},
     {"name": "ammo", "type": "ammo", "pos": [0, 0.035, 0], "required": true},
+    {"name": "action", "type": "action", "pos": [0.03, 0.0245, 0.035], "required": true},
     {"name": "utility", "type": "utility", "pos": [0.032, 0.035, -0.048]},
     {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.1]},
     {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0497, 0.02]},

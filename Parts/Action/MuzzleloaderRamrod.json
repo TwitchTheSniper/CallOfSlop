@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Muzzleloader Ramrod",
+  "category": "action",
+  "rarity": "uncommon",
+  "flavor": "Powder, ball, wadding, ram it home. Takes an age. Then it hits like a cannon.",
+  "weight": 0.15,
+  "action": {"kind": "muzzleLoad", "rpm": 60, "chamber": 1},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"shape": "rod", "size": [0.006, 0.006, 0.14], "pos": [0.012, -0.008, -0.05], "color": "wood"},
+    {"size": [0.008, 0.008, 0.008], "pos": [0.012, -0.008, -0.12], "color": "brass"}
+  ],
+  "stats": [
+    {"stat": "damage", "mul": 2.5},
+    {"stat": "reload", "mul": 1.6},
+    {"stat": "reload", "add": 1.5},
+    {"stat": "recoilDeg", "mul": 1.4}
+  ]
+}

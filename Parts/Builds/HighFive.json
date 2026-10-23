@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Five pistol receivers on a penta rack. One pull, five holes, and a satisfying slap.",
-  "build": "Penta Rack Grip{receiver_1:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_3:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_4:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_5:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+  "build": "Penta Rack Grip{receiver_1:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_2:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_3:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_4:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_5:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger}}"
 }
