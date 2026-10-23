@@ -345,6 +345,11 @@ public static unsafe partial class Program
             SmokeScoreboard(now); // Program.Scoreboard.cs: the scoreboard with its Level column
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeMixerStep < 3)
+        {
+            SmokeAudioMixer(now); // Program.AudioMixer.cs: the Audio mixer window over a match, with a test shot on its meters
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
             SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
