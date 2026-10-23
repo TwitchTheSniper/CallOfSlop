@@ -32,8 +32,6 @@ on:
   push:
     tags:
       - "v*"
-    branches: # TEMP (auto-update agent): dry runs from the feature branch; removed before merge
-      - feature/auto-update
 
 permissions:
   contents: write # create the release and upload its files
@@ -105,8 +103,7 @@ jobs:
           } else {
             Write-Output "::error title=Self-test::selftest.log was not written"
           }
-          if ($code -ne 0 -and "${{ github.event_name }}" -eq "push" -and "${{ github.ref_type }}" -eq "branch") { Write-Output "::warning title=Self-test::TEMP branch dry run continues past $code failure(s)" }
-          elseif ($code -ne 0) { Write-Output "::error title=Self-test::exit code $code, no release"; exit 1 }
+          if ($code -ne 0) { Write-Output "::error title=Self-test::exit code $code, no release"; exit 1 }
 
       - name: Package (publish)
         shell: pwsh
