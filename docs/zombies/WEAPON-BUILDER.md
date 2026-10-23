@@ -309,7 +309,16 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   the part does. A **Show incompatible parts** checkbox (saved in `settings.txt` as `wb_show_incompatible`, off by
   default) decides what's listed: off, only parts that fit somewhere on the build and have a spare copy (a "(N hidden)"
   hint); on, every part you own, the rest dimmed with a short reason in the tooltip ("needs a shell bore feed socket",
-  or "none spare" when every copy is already on the build) and bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`). Middle: the gun large
+  or "none spare" when every copy is already on the build) and bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`).
+  With the toggle off, **whole categories hide** (no chip, no group header) when nothing you own in them could go on
+  the build right now: the same per-part check as the list (a free *or occupied* socket whose rules take it, since a
+  swap counts, plus a spare copy). An empty grip shows no Feed, Ammo, Barrel or Splitter until a receiver is fitted
+  (barrels, splitters and muzzles fit every receiver but still hang off one; feeds and ammo must match its bore), and a
+  grip without a stock socket (Pistol Grip) shows no Stock. They come back the moment the build changes. A chosen chip
+  whose category hides falls back to All, and clicking an empty socket row whose category is hidden says so instead of
+  opening an empty list. With the toggle on every category you own a part of is shown; categories you own none of
+  (a run's stock) stay hidden either way. Visibility is worked out once per build/stock/toggle change, each part's fit
+  checked once (self-test section "Workbench hidden categories"). Middle: the gun large
   (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
   build needs, red on missing parts, orange on the selection. Right: the build as a **linear list** (Grip > Receiver(s) >
   Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's
