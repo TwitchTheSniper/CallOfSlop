@@ -65,7 +65,7 @@ public sealed partial class Ui
                             ImGuiSafe.TextColored(Dim, $"{rankBase + i + 1}");
                             ImGui.TableNextColumn();
                             var carrier = mode.ScoreboardTag(game, p); // " [FLAG]"
-                            ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier);
+                            ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                             var (cell1, cell2) = mode.ScoreboardCells(game, p);
                             ImGui.TableNextColumn();
                             ImGui.Text(cell1);
