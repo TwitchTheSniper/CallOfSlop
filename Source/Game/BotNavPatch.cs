@@ -186,7 +186,7 @@ public sealed partial class NavGraph
             {
                 if (EdgeOff[e] || NodeOff[EdgeTo[e]] || !Crosses(grown, Nodes[i], Nodes[EdgeTo[e]]))
                     continue;
-                Walk(c, Nodes[i], Nodes[EdgeTo[e]], out var fwd, out _, out _, out _, out _, out _);
+                Walk(c, Nodes[i], Nodes[EdgeTo[e]], out var fwd, out _, out _, out _, out _, out _, out _);
                 if (!fwd)
                 {
                     EdgeOff[e] = true;

@@ -23,7 +23,10 @@ public static partial class SelfTest
         var previousMover = World.Mover;
         World.Mover = ClassicMover.Instance;
         var notes = new List<string>();
-        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0;
+        var perMap = new List<string>();
+        var byKind = new Dictionary<string, List<(string Map, EdgeWalkFail F)>>();
+        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0;
+        var rejectedBy = new List<(string Map, int Count)>();
         var sw = Stopwatch.StartNew();
         try
         {
@@ -36,21 +39,24 @@ public static partial class SelfTest
                 if (nav.Nodes.Length == 0)
                     continue;
                 var (walked, fails) = EdgeWalkMap(m, nav);
+                builderChecked += nav.WalkChecked;
+                builderRejected += nav.WalkRejected;
+                if (nav.WalkRejected > 0)
+                    rejectedBy.Add((m.Name, nav.WalkRejected));
                 totalEdges += nav.BuiltEdges;
                 totalWalked += walked;
                 totalFailed += fails.Count;
                 if (fails.Count == 0)
                     continue;
                 badMaps++;
-                var head = $"{m.Name}: {fails.Count} of {walked} walked edges failed";
-                Line(head);
-                notes.Add(head);
-                foreach (var f in fails.Take(6))
+                perMap.Add($"{m.Name} {fails.Count}/{walked}");
+                foreach (var f in fails)
                 {
-                    var text = FormattableString.Invariant(
-                        $"  {(f.Sprint ? "sprint" : "walk")} ({f.A.X:0.0}, {f.A.Y:0.0}, {f.A.Z:0.0}) -> ({f.B.X:0.0}, {f.B.Y:0.0}, {f.B.Z:0.0}) flags {f.Flags}: ended at ({f.End.X:0.0}, {f.End.Y:0.0}, {f.End.Z:0.0}), {f.Why}");
-                    Line(text);
-                    notes.Add(text);
+                    var kind = EdgeWalkKind(m, f);
+                    if (!byKind.TryGetValue(kind, out var l))
+                        byKind[kind] = l = new();
+                    l.Add((m.Name, f));
+                    Line(FormattableString.Invariant($"  {m.Name} [{kind}] {(f.Sprint ? "sprint" : "walk")} ({f.A.X:0.0}, {f.A.Y:0.0}, {f.A.Z:0.0}) -> ({f.B.X:0.0}, {f.B.Y:0.0}, {f.B.Z:0.0}) flags {f.Flags}: ended at ({f.End.X:0.0}, {f.End.Y:0.0}, {f.End.Z:0.0}), {f.Why}"));
                 }
             }
         }
@@ -61,8 +67,34 @@ public static partial class SelfTest
         }
         var sum = $"{totalWalked} of {totalEdges} nav edges walked on {Maps.All.Length} maps, {totalFailed} failed on {badMaps} map(s), {sw.Elapsed.TotalSeconds:0.0} s";
         Line(sum);
-        notes.Insert(0, sum);
-        Line("::notice title=Nav edge walks::" + string.Join("%0A", notes.Take(80).Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        notes.Add(sum);
+        notes.Add($"the nav builder walked {builderChecked} links with the mover and dropped {builderRejected} directions; most on "
+                  + string.Join(", ", rejectedBy.OrderByDescending(x => x.Count).Take(12).Select(x => $"{x.Map} {x.Count}")));
+        notes.Add("by kind: " + string.Join(", ", byKind.Select(kv => $"{kv.Key} {kv.Value.Count}")));
+        notes.Add("by map: " + string.Join(", ", perMap));
+        foreach (var (kind, l) in byKind)
+        {
+            // A few examples of each kind, from different maps (walking first).
+            var shown = l.Where(x => !x.F.Sprint).GroupBy(x => x.Map).Select(g => g.First()).Take(8).ToList();
+            if (shown.Count == 0)
+                shown = l.GroupBy(x => x.Map).Select(g => g.First()).Take(8).ToList();
+            foreach (var (map, f) in shown)
+                notes.Add(FormattableString.Invariant($"[{kind}] {map}: {(f.Sprint ? "sprint" : "walk")} ({f.A.X:0.0}, {f.A.Y:0.0}, {f.A.Z:0.0}) -> ({f.B.X:0.0}, {f.B.Y:0.0}, {f.B.Z:0.0}) f{f.Flags} end ({f.End.X:0.0}, {f.End.Y:0.0}, {f.End.Z:0.0}) {f.Why}"));
+        }
+        Line("::notice title=Nav edge walks::" + string.Join("%0A", notes.Take(90).Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+    }
+
+    private static string EdgeWalkKind(Map m, EdgeWalkFail f)
+    {
+        if ((f.Flags & NavGraph.FlagMantle) != 0)
+            return "mantle";
+        if (f.Flags == NavGraph.FlagDrop)
+            return "drop";
+        if (m.TerrainCollision is { } t && EdgeWalkSloped(t, f.A, f.B))
+            return "slope";
+        if (MathF.Abs(f.A.Y - f.B.Y) > 0.3f)
+            return "climb";
+        return "level";
     }
 
     /// <summary>Walks a map's edges (see the class summary). Returns how many were walked and the ones that failed.</summary>
@@ -145,41 +177,14 @@ public static partial class SelfTest
     /// </summary>
     private static bool EdgeWalkOne(NavGraph nav, int e, Vector3 a, Vector3 b, bool sprint, out Vector3 end, out string why)
     {
-        var len = Vector3.Distance(a, b);
         var mantleEdge = (nav.EdgeFlags[e] & NavGraph.FlagMantle) != 0;
         var ledge = nav.EdgeLedge[e];
-        var limit = (int)((len / (World.WalkSpeed * SlopeRules.SlowAtLimit * 0.8f) + 1f + (mantleEdge ? 1f : 0f)) * World.TickRate);
-        var s = new MoveState { Position = a, Grounded = true };
-        var airborne = 0;
-        var mantled = false;
-        var minDist = float.MaxValue;
-        for (var t = 0; t < limit; t++)
-        {
-            var pos = s.Position;
-            var dy = b.Y - pos.Y;
-            var dist = SlopeFlat(b - pos);
-            minDist = MathF.Min(minDist, dist);
-            if (dist < 0.8f && dy < 1.0f && dy > -2.5f)
-            {
-                end = pos;
-                why = "";
-                return true;
-            }
-            var aim = b;
-            var keys = Buttons.Forward | (sprint ? Buttons.Sprint : Buttons.None);
-            if (mantleEdge && SlopeFlat(ledge - pos) < 1.4f && ledge.Y > pos.Y + World.StepHeight)
-            {
-                keys |= Buttons.Jump;
-                aim = ledge;
-            }
-            var yaw = MathF.Atan2(aim.X - pos.X, -(aim.Z - pos.Z));
-            World.Simulate(ref s, new InputCmd { Buttons = keys, Yaw = yaw, SpeedPct = 100, Tick = 1 });
-            if (s.MantleTicks > 0)
-                mantled = true;
-            if (!s.Grounded && s.MantleTicks == 0)
-                airborne++;
-        }
-        end = s.Position;
+        var r = NavGraph.MoverWalk(a, b, nav.EdgeFlags[e], ledge, sprint);
+        end = r.End;
+        why = "";
+        if (r.Reached)
+            return true;
+        var (airborne, mantled, minDist) = (r.Airborne, r.Mantled, r.Closest);
         var reason = new List<string>();
         if (World.Map.TerrainCollision?.Layer(end.Y) is { } ground && end.Y - ground.HeightAt(end.X, end.Z) < 0.1f)
         {
@@ -193,6 +198,20 @@ public static partial class SelfTest
             reason.Add($"airborne {airborne} ticks");
         if (World.Blocked(end + new Vector3(0, 0.02f, 0)))
             reason.Add("inside geometry");
+        var dir = new Vector3(b.X - end.X, 0, b.Z - end.Z);
+        if (dir.LengthSquared() > 1e-4f)
+        {
+            dir = Vector3.Normalize(dir);
+            var hits = new List<string>();
+            foreach (var h in new[] { 0.3f, 0.9f, 1.5f })
+            {
+                var d = World.RaycastWorld(end + new Vector3(0, h, 0), dir, 3f);
+                if (d < 3f)
+                    hits.Add(FormattableString.Invariant($"{h:0.0}m:{d:0.00}"));
+            }
+            if (hits.Count > 0)
+                reason.Add("wall ahead " + string.Join(" ", hits));
+        }
         reason.Add(FormattableString.Invariant($"closest {minDist:0.0} m of {SlopeFlat(b - a):0.0}"));
         why = string.Join(", ", reason);
         return false;

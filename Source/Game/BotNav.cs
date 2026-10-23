@@ -160,7 +160,7 @@ public sealed partial class NavGraph
     {
         Cache[(map.Name, map.ContentHash)] = g;
         Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
-            + $"{g.MainNodes.Length} in the main area, {g.BuildMs:0} ms of work");
+            + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped), {g.BuildMs:0} ms of work");
     }
 
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
@@ -437,7 +437,22 @@ public sealed partial class NavGraph
             return false;
         if (TooSteep(a, b) || LeavesBoundary(a, b))
             return true;
-        Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
+        Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);
+        // The mover has the last word where the samples can't tell (BotNavWalk.cs): a direction it can't walk gets no edge.
+        if ((fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight))
+        {
+            g.WalkChecked++;
+            if (fwd && !MoverWalks(a, b, fFlags, fLedge))
+            {
+                fwd = false;
+                g.WalkRejected++;
+            }
+            if (back && !MoverWalks(b, a, bFlags, bLedge))
+            {
+                back = false;
+                g.WalkRejected++;
+            }
+        }
         var len = Vector3.Distance(a, b);
         if (fwd)
             edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
@@ -515,8 +530,9 @@ public sealed partial class NavGraph
     /// allowing steps, mantles and drops, and checks there's room for the body above the step height.
     /// </summary>
     private static void Walk(PhysicsWorld c, Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
-        out Vector3 fLedge, out Vector3 bLedge)
+        out Vector3 fLedge, out Vector3 bLedge, out bool tight)
     {
+        tight = false;
         forward = backward = false;
         fFlags = bFlags = 0;
         fLedge = bLedge = Vector3.Zero;
@@ -551,6 +567,7 @@ public sealed partial class NavGraph
             var nearLedge = MathF.Abs(h[k] - h[k - 1]) > World.StepHeight || (k < n && MathF.Abs(h[k + 1] - h[k]) > World.StepHeight);
             if (!nearLedge)
                 return;
+            tight = true; // squeezed past a ledge: the mover gets the last word (BotNavWalk.cs)
         }
 
         forward = true;
