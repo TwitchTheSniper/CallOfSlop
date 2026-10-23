@@ -104,7 +104,9 @@ def part_bounds(part):
         ext = [sum(abs(m[i][j]) * half[j] for j in range(3)) for i in range(3)]
     else:
         ext = half
-    return [off[i] - ext[i] for i in range(3)], [off[i] + ext[i] for i in range(3)]
+    # Quantised to 0.1 mm: libm's sin/cos differ in their last bit between platforms, and a layout that is a sum of
+    # hundreds of footprints must round the same way everywhere (the self-test compares the files byte for byte).
+    return [round(off[i] - ext[i], 4) for i in range(3)], [round(off[i] + ext[i], 4) for i in range(3)]
 
 
 def load_props():
