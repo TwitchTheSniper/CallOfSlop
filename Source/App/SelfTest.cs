@@ -49,7 +49,6 @@ public static partial class SelfTest
         {
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
-            Section("Nav edge walks (results first, temporary)", CheckNavEdgeWalks); // TEMP: to read the notice
             Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
@@ -94,6 +93,7 @@ public static partial class SelfTest
             Section("Matches", CheckMatches);
             Section("Stuck notes (temporary)", () => Line("::warning title=Stuck kills in the matches::" + (StuckNotes.Count == 0 ? "none" : string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\n", " "))))));
             Section("Bots", CheckBots);
+            Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
             Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
