@@ -79,7 +79,8 @@ public sealed partial class NavGraph
     private static NavGraph? _last;
     private static IEnumerator<NavGraph?>? _builder;
     private static Map? _builderMap;
-    private static PhysicsWorld? _builderPhysics; // the map as built, for the build in progress (null: nothing in it ever changes)
+    private static PhysicsWorld? _builderPhysics; // the map as built, for the build in progress (null: the live world, still as built)
+    private static bool _builderChanging; // can anything in the build's map break or open (Map.HasChangingBoxes)?
     private static Map? _hashMap;
     private static uint _hash;
 
@@ -140,15 +141,20 @@ public sealed partial class NavGraph
             return;
         if (_builder != null && !ReferenceEquals(_builderMap, map))
             _builder = null; // the map changed under it
+        // Every slice probes the map as built (props whole, doors as they start), never the match as it is now: the graph
+        // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps). While the
+        // live map is still as built (the usual case: a build starts with the match) its own collision world is used; once
+        // something breaks or opens mid-build, the build starts again on a copy of the map as built (PhysicsWorld.AsBuilt).
+        if (_builder != null && _builderPhysics == null && _builderChanging && !map.IsAsBuilt())
+            _builder = null;
         if (_builder == null)
         {
             _builderMap = map;
+            _builderChanging = map.HasChangingBoxes;
+            _builderPhysics = _builderChanging && !map.IsAsBuilt() ? PhysicsWorld.AsBuilt(map) : null;
             _builder = BuildSteps(map).GetEnumerator();
-            _builderPhysics = map.HasChangingBoxes ? PhysicsWorld.AsBuilt(map) : null;
         }
         var start = Stopwatch.GetTimestamp();
-        // Every slice probes the map as built (props whole, doors as they start), never the match as it is now: the graph
-        // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps).
         var previous = World.UseNavBuildPhysics(_builderPhysics);
         try
         {
@@ -189,7 +195,7 @@ public sealed partial class NavGraph
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
     public static NavGraph Build(Map map)
     {
-        var previous = World.UseNavBuildPhysics(map.HasChangingBoxes ? PhysicsWorld.AsBuilt(map) : null); // the map as built (see PumpGraph)
+        var previous = World.UseNavBuildPhysics(map.HasChangingBoxes && !map.IsAsBuilt() ? PhysicsWorld.AsBuilt(map) : null); // the map as built (see PumpGraph)
         try
         {
             foreach (var g in BuildSteps(map))

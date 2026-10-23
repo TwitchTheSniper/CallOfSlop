@@ -107,6 +107,24 @@ public sealed partial class Map
     /// </summary>
     public bool HasChangingBoxes => _propOriginal.Count > 0 || BuildingDoors.Count > 0 || BuildingWindows.Count > 0 || Destruction != null;
 
+    /// <summary>Is the map as at the start of a match (no prop, window or chunk broken, every building door as it starts)?</summary>
+    public bool IsAsBuilt()
+    {
+        if (_brokenProps.Count > 0)
+            return false;
+        foreach (var d in BuildingDoors)
+            if (d.Broken || d.Open != d.Plan.StartOpen)
+                return false;
+        foreach (var w in BuildingWindows)
+            if (w.Broken)
+                return false;
+        if (Destruction is { } dest)
+            foreach (var s in dest.Structures)
+                if (s.BrokenCount > 0)
+                    return false;
+        return true;
+    }
+
     /// <summary>
     /// Every box as at the start of a match: broken props and blasted chunks whole, building doors as they start (open or
     /// shut), window glass in place. Zombies doors stay as they are now. The nav graph is built from these
