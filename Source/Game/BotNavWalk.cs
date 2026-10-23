@@ -154,6 +154,7 @@ public sealed partial class NavGraph
         var r = new WalkResult { Closest = float.MaxValue };
         var mover = ClassicMover.Instance;
         var lastGain = 0;
+        var gainAt = float.MaxValue;
         for (var t = 0; t < limit; t++)
         {
             var pos = s.Position;
@@ -161,8 +162,11 @@ public sealed partial class NavGraph
             var dx = b.X - pos.X;
             var dz = b.Z - pos.Z;
             var dist = MathF.Sqrt(dx * dx + dz * dz);
-            if (dist < r.Closest - 0.2f || (MathF.Abs(dy) > 0.5f && s.MantleTicks > 0))
-                lastGain = t; // getting closer (or climbing): still going
+            if (dist < gainAt - 0.2f || (MathF.Abs(dy) > 0.5f && s.MantleTicks > 0))
+            {
+                gainAt = dist; // 0.2 m closer (or climbing): still going
+                lastGain = t;
+            }
             else if (t - lastGain > World.TickRate * 3 / 4)
                 break; // no closer for 0.75 s: stuck or sliding back (fail early, the build walks thousands of these)
             r.Closest = MathF.Min(r.Closest, dist);
