@@ -23,8 +23,8 @@ public static partial class SelfTest
         ["Push Cart"] = "receivers piled in the basket in rows 11 cm apart; only the bottom row stands on the floor",
     };
 
-    /// <summary>Two boxes touch when they overlap or are at most this far apart (1 cm).</summary>
-    private const float ConnectTolerance = 0.01f;
+    /// <summary>Two boxes touch when they overlap or are at most this far apart (1 cm, and 0.1 mm for rounding).</summary>
+    private const float ConnectTolerance = 0.0101f;
 
     /// <summary>
     /// Model connectivity (the user, 2026-10-23: "remove the weird frame pieces that float above the grips"): no box of

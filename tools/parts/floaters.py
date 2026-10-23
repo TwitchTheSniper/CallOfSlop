@@ -3,7 +3,7 @@
 Usage:
     python3 tools/parts/floaters.py [PARTS_DIR] [--tol METRES] [--receiver NAME] [--verbose]
 
-Two boxes touch when they overlap or the gap between them is at most --tol (default 0.01 = 1 cm), tested as oriented
+Two boxes touch when they overlap or the gap between them is at most --tol (default 0.0101: 1 cm and 0.1 mm for rounding), tested as oriented
 boxes (separating axes; rods as boxes). A model's boxes are grouped into connected pieces and every box outside the main
 piece is reported (a part on its own: the piece with the most volume; a build: the piece holding the grip's first box).
 
@@ -246,7 +246,7 @@ def report(title, fl):
 
 
 def main(argv):
-    folder, tol, recv = os.path.join(viz.ROOT, "Parts"), 0.01, "Workhorse Receiver"
+    folder, tol, recv = os.path.join(viz.ROOT, "Parts"), 0.0101, "Workhorse Receiver"
     i = 0
     while i < len(argv):
         a = argv[i]
