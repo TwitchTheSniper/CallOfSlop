@@ -84,6 +84,9 @@ jobs:
           "version=$v" >> $env:GITHUB_OUTPUT
           "tag=v$v" >> $env:GITHUB_OUTPUT
           Write-Output "::notice title=Version::v$v (dry run: $env:DRY_RUN)"
+          # "gh release view" exits 1 when the release doesn't exist yet (the normal case); Actions' pwsh wrapper would
+          # otherwise turn that leftover $LASTEXITCODE into this step's result.
+          exit 0
 
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo -p:Version=${{ steps.ver.outputs.version }} -p:InformationalVersion=${{ steps.ver.outputs.version }}
