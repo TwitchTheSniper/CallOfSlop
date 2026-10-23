@@ -376,6 +376,11 @@ public sealed partial class Map
             {
                 if (!BadSpot(points[i]))
                     continue;
+                // A building's own nav points (doorways, stair ends) are placed by its generator with their own clearance and
+                // are where the nav graph's stair links start and end: a shut door or a prop next to one must not move it
+                // away (that left stairs with no link, so bots reached floors above only over railings, or not at all).
+                if (ReferenceEquals(points, Waypoints) && BuildingNavPoints.Contains(points[i]))
+                    continue;
                 var original = points[i];
                 var fixedPoint = NearestFree(original);
                 Console.WriteLine($"Map '{Name}': {what} at ({original.X:0.#}, {original.Z:0.#}) was inside geometry, moved to "
