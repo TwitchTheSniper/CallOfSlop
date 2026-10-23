@@ -320,8 +320,7 @@ public sealed partial class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         g.BuildComponents();
-        if (map.Terrain?.Voids != null)
-            g.DropTraps(map.Terrain);
+        g.DropTraps();
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
         t0 = Stopwatch.GetTimestamp();
@@ -754,44 +753,17 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
-    /// Terrain with holes (TerrainVoids.cs): a pit you can drop into but not climb out of joins the main area through its
-    /// one-way drop edges. Bots must never pick a goal in one, so the main area keeps only nodes that can both be reached
-    /// from and get back to a node on open ground (the main area's middle). Maps without holes are left exactly as they were.
+    /// One-way spots: a pit (terrain hole) or a yard you can drop or slide into but not climb out of joins the main area through
+    /// its one-way edges (drops, and directions the mover couldn't walk, BotNavWalk.cs). Bots must never pick a goal in one or
+    /// plan into one, so the main area keeps only the biggest group of nodes that can all reach each other (strongly
+    /// connected); nodes that can be reached from it but have no way back are trapped (<see cref="IsTrapped"/>).
     /// </summary>
-    private void DropTraps(TerrainData terrain)
+    private void DropTraps()
     {
         if (MainNodes.Length == 0)
             return;
-        var seed = -1;
-        var best = float.MaxValue;
-        foreach (var i in MainNodes)
-        {
-            var p = Nodes[i];
-            if (terrain.KindAt(p.X, p.Z) != TerrainVoids.Solid)
-                continue;
-            var d = p.X * p.X + p.Z * p.Z;
-            if (d < best)
-                (best, seed) = (d, i);
-        }
-        if (seed < 0)
-            return;
         var n = Nodes.Length;
-        var forward = new bool[n];
-        var backward = new bool[n];
-        var stack = new Stack<int>();
-        forward[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
-        {
-            var i = stack.Pop();
-            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
-                if (!forward[EdgeTo[e]])
-                {
-                    forward[EdgeTo[e]] = true;
-                    stack.Push(EdgeTo[e]);
-                }
-        }
-        // Reverse edges as a CSR too.
+        // Reverse edges as a CSR.
         var rstart = new int[n + 1];
         foreach (var to in EdgeTo)
             rstart[to + 1]++;
@@ -802,24 +774,92 @@ public sealed partial class NavGraph
         for (var i = 0; i < n; i++)
             for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
                 rfrom[fill[EdgeTo[e]]++] = i;
-        backward[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
+
+        // Kosaraju over the main component: finishing order on the edges, then groups on the reversed edges.
+        var order = new List<int>(MainNodes.Length);
+        var seen = new bool[n];
+        var stack = new Stack<(int Node, int Next)>();
+        foreach (var root in MainNodes)
         {
-            var i = stack.Pop();
-            for (var e = rstart[i]; e < rstart[i + 1]; e++)
-                if (!backward[rfrom[e]])
+            if (seen[root])
+                continue;
+            seen[root] = true;
+            stack.Push((root, EdgeStart[root]));
+            while (stack.Count > 0)
+            {
+                var (i, next) = stack.Pop();
+                if (next < EdgeStart[i + 1])
                 {
-                    backward[rfrom[e]] = true;
-                    stack.Push(rfrom[e]);
+                    stack.Push((i, next + 1));
+                    var to = EdgeTo[next];
+                    if (!seen[to])
+                    {
+                        seen[to] = true;
+                        stack.Push((to, EdgeStart[to]));
+                    }
+                }
+                else
+                    order.Add(i);
+            }
+        }
+        var group = new int[n];
+        Array.Fill(group, -1);
+        var sizes = new List<int>();
+        var flat = new Stack<int>();
+        for (var k = order.Count - 1; k >= 0; k--)
+        {
+            var root = order[k];
+            if (group[root] >= 0)
+                continue;
+            var id = sizes.Count;
+            var size = 0;
+            group[root] = id;
+            flat.Push(root);
+            while (flat.Count > 0)
+            {
+                var i = flat.Pop();
+                size++;
+                for (var e = rstart[i]; e < rstart[i + 1]; e++)
+                {
+                    var from = rfrom[e];
+                    if (group[from] < 0 && Component[from] == MainComponent)
+                    {
+                        group[from] = id;
+                        flat.Push(from);
+                    }
+                }
+            }
+            sizes.Add(size);
+        }
+        var main = 0;
+        for (var k = 1; k < sizes.Count; k++)
+            if (sizes[k] > sizes[main])
+                main = k;
+
+        // Trapped: reachable from the main group, not in it (so no way back).
+        var reach = new bool[n];
+        foreach (var i in MainNodes)
+            if (group[i] == main)
+            {
+                reach[i] = true;
+                flat.Push(i);
+            }
+        while (flat.Count > 0)
+        {
+            var i = flat.Pop();
+            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
+                if (!reach[EdgeTo[e]])
+                {
+                    reach[EdgeTo[e]] = true;
+                    flat.Push(EdgeTo[e]);
                 }
         }
         var before = MainNodes.Length;
-        MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
+        MainNodes = MainNodes.Where(i => group[i] == main).ToArray();
         TrapNodes = before - MainNodes.Length;
         _trapped = new bool[n];
         for (var i = 0; i < n; i++)
-            _trapped[i] = forward[i] && !backward[i] && Component[i] == MainComponent;
+            _trapped[i] = reach[i] && group[i] != main && Component[i] == MainComponent;
     }
 
     private bool[] _trapped = [];

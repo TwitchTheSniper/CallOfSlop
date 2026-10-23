@@ -271,6 +271,8 @@ public sealed partial class Game
         var end = nav.Nearest(goal, needSight: false);
         if (start < 0 || end < 0)
             return;
+        if (nav.IsTrapped(end) && !nav.IsTrapped(start))
+            end = NearestOpen(nav, goal); // a goal in a one-way spot (a pit): go as near as the main area gets, never in
         b.SearchGraph = nav;
         b.SearchNow = now;
         b.Hazard = MineHazard(nav); // nodes next to a landmine cost extra (GameMines.cs)
@@ -289,6 +291,20 @@ public sealed partial class Game
             if (Flat(n1 - p.Position) < Flat(n1 - n0) && CanShortcut(p.Position, n1))
                 BotAdvance(b, nav);
         }
+    }
+
+    /// <summary>The main-area node nearest <paramref name="p"/> (a rare linear scan: only for goals in one-way spots).</summary>
+    private static int NearestOpen(NavGraph nav, Vector3 p)
+    {
+        var best = -1;
+        var bestD = float.MaxValue;
+        foreach (var i in nav.MainNodes)
+        {
+            var d = Vector3.DistanceSquared(nav.Nodes[i], p);
+            if (d < bestD && (nav.NodeOff.Length == 0 || !nav.NodeOff[i]))
+                (bestD, best) = (d, i);
+        }
+        return best;
     }
 
     /// <summary>Simple separation: step away from bots closer than 1.2 m so doorways don't jam.</summary>

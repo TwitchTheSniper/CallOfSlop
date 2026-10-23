@@ -84,6 +84,13 @@ public sealed partial class NavGraph
             return false; // through a shut door: bots open it, the plain mover can't (see CrossesDoor)
         if (flags != 0 || tight || MathF.Abs(a.Y - b.Y) > 0.3f)
             return true;
+        // Something low in the way the samples stepped past (a thin kerb or rail under the body check's height, a step under
+        // a shelf): a ray at shin height along the link.
+        var shin = new Vector3(0, 0.3f, 0);
+        var d = b - a;
+        var dist = d.Length();
+        if (dist > 0.01f && World.Physics.Raycast(a + shin, d / dist, dist, QueryFilter.Navigation) < dist - 0.05f)
+            return true;
         if (World.Map.TerrainCollision is not { } ground)
             return false;
         var t = ground.Layer(MathF.Min(a.Y, b.Y));
