@@ -298,6 +298,9 @@ def market_lane():
     K.decal("Vesper Scrawl Pink", -36.0, CAN[3] + 0.3, 1.6, onto="wall-z", size=2.0)
     K.decal("global:Graffiti Burst", -30.0, CAN[3] + 0.3, 1.5, onto="wall-z", size=1.5)
     K.decal_scatter(["global:Puddle", "global:Oil Stain", "global:Paper Litter", "global:Broken Glass"], -50, 20, -12, 30, 8, 13, gap=2.5)
+    K.decal_scatter(["Vesper Scrawl Cyan", "Vesper Scrawl Pink", "global:Graffiti Tag", "global:Torn Poster", "global:Grime Streaks", "Vesper Poster Violet"], -50, 20, -12, 30, 12, 14, onto="wall", gap=1.5)
+    K.decal_scatter(["Vesper Market Tiles"], -50, 20, -8, 30, 14, 15, gap=4.0, minSize=4, maxSize=4)
+    K.decal_scatter(["Vesper Poster Orange", "Vesper Poster Violet", "global:Torn Poster", "global:Poster Circles"], -46, 6, -8, 18, 10, 16, onto="wall", gap=1.2)
     for (x, z) in [(-44.0, 21.0), (-33.0, 27.0), (-26.0, 27.5), (-16.0, 25.5), (-10.0, 23.5), (-50.5, 22.5)]:
         K.waypoint(x, z, 0)
 
@@ -323,6 +326,9 @@ def plaza():
     K.prop("Mall Directory Board", -9.0, 6.5, 270)
     K.prop("Pigeons", -3.0, -11.5, 0)
     K.decal_scatter(["global:Paper Litter", "global:Cigarette Butts", "global:Puddle", "global:Floor Cracks"], -12, -22, 12, 8, 10, 21, gap=3.0)
+    K.decal("Vesper Poster Violet", -4.3, 2.0, 1.4, onto="wall+x", size=1.0)
+    K.decal("Vesper Poster Orange", -4.3, 4.2, 1.4, onto="wall+x", size=1.0)
+    K.decal("global:Vent Grille", 0, 5.8, 2.4, onto="wall-z", size=0.8, sym=False)
     for (x, z) in [(-6.0, -6.0), (6.0, -6.0), (0.0, -3.0), (-6.5, 3.0), (6.5, 3.0), (0.0, 8.0)]:
         K.waypoint(x, z, 0, sym=False)
 
@@ -346,6 +352,7 @@ def concourse():
     K.prop("Porter Bot", -16.0, -14.0, 60)
     K.prop("Mall Planter Box", -30.0, -6.0, 0)
     K.decal_scatter(["global:Lane Dash"], -44, -22, 44, -22, 10, 31, gap=5, minSize=3, maxSize=3)
+    K.decal_scatter(["Vesper Market Tiles"], -46, -28, 46, -2, 60, 33, gap=4.0, minSize=4, maxSize=4)
     K.decal_scatter(["global:Paper Litter", "global:Puddle", "global:Oil Stain", "global:Skid Marks"], -44, -28, 44, -4, 14, 32, gap=3.0)
 
 
@@ -434,12 +441,16 @@ def base():
     """Blue's west lobe (the twin is Red's): the flag, eight spawns, cover and the dock-side dressing."""
     K.prop("Docked Shuttle", -60.0, -16.0, 90)                                                       # a parked shuttle, nose north
     K.prop("Cargo Crate Stack", -60.0, -3.0, 0)
-    K.prop("Cargo Crate Large", -66.0, -2.0, 90)
+    K.prop("Cargo Crate Large", -63.5, -4.5, 90)
     K.prop("Cargo Crate Small", -53.5, 7.0, 30)
     K.prop("Hover Cargo Sled", -63.0, -9.0, 100)
     K.prop("Plaza Lamp", -52.0, 12.0, 0)
-    K.prop("Pad Light Pylon", -66.0, -12.0, 0)
+    K.prop("Pad Light Pylon", -69.0, -7.5, 0)
     K.prop("Holo Sign Post", -54.0, -1.0, 90)
+    K.decal("Vesper Scrawl Pink", GATE_X - 0.3, -5.0, 1.5, onto="wall+x", size=1.8)
+    K.decal("Vesper Poster Orange", GATE_X - 0.3, -14.0, 1.6, onto="wall+x", size=1.0)
+    K.decal("Vesper Poster Violet", GATE_X - 0.3, -15.2, 1.6, onto="wall+x", size=1.0)
+    K.decal_scatter(["Vesper Market Tiles"], -70, -24, -49, 20, 24, 63, gap=4.0, minSize=4, maxSize=4)
     K.prop("Departures Board", -54.0, -16.0, 90)
     K.prop("Porter Bot", -58.0, -6.0, 90)
     K.prop("Fuel Coupling", -68.0, -4.0, 0)
@@ -508,7 +519,7 @@ def main():
     hills = [{"x": 0, "z": -6, "y": 0, "radius": 5},
              {"x": 0, "z": -36, "y": 0, "radius": 5},
              {"x": 0, "z": 18, "y": 0, "radius": 4.5}]
-    flags = [[-66, 0, 0], [66, 0, 0]]
+    flags = [[-67, 0, 0], [67, 0, 0]]
     ops = [{"op": "Ground", "color": GROUND}] + K.ops
     m = {
         "format": "call-of-slop-map/1",

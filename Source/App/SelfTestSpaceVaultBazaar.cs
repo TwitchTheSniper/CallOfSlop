@@ -336,7 +336,7 @@ public static partial class SelfTest
     private static readonly (string Name, float X, float Z, float Y)[] VesperLevels =
     [
         ("plaza", 0, -8, 0f), ("centre pad", 0, -34, 0f), ("customs", 0, 16, 0f), ("west base", -56, 0, 0f), ("east base", 56, 0, 0f),
-        ("pad 1", -38, -24, 0f), ("pad 3", 38, -24, 0f), ("cargo yard W", -53, -20, 0f), ("market lane", -30, 16, 0f), ("back alley", -33, 28, 0f),
+        ("pad 1", -38, -24, 0f), ("pad 3", 38, -24, 0f), ("cargo yard W", -53, -20, 0f), ("market lane", -30, 16, 0f), ("back alley", -29, 28, 0f),
         ("repair roof W", -52, 15, 3.7f), ("bridge W", -43, 19, 3.7f), ("cantina roof", -33, 22, 3.7f), ("kiosk roof", -17, 21, 3.7f),
         ("customs roof", 0, 18, 3.7f), ("arcade roof", 33, 22, 3.7f), ("repair roof E", 52, 15, 3.7f), ("under the customs roof", -4, 18, 0f),
     ];

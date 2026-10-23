@@ -203,12 +203,12 @@
  ],
  "flags": [
   [
-   -66,
+   -67,
    0,
    0
   ],
   [
-   66,
+   67,
    0,
    0
   ]
@@ -3567,6 +3567,61 @@
    "gap": 2.5
   },
   {
+   "op": "DecalScatter",
+   "decals": [
+    "Vesper Scrawl Cyan",
+    "Vesper Scrawl Pink",
+    "global:Graffiti Tag",
+    "global:Torn Poster",
+    "global:Grime Streaks",
+    "Vesper Poster Violet"
+   ],
+   "x0": -50.0,
+   "z0": 20.0,
+   "x1": -12.0,
+   "z1": 30.0,
+   "count": 12,
+   "seed": 14,
+   "onto": "wall",
+   "y": 0.0,
+   "gap": 1.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Vesper Market Tiles"
+   ],
+   "x0": -50.0,
+   "z0": 20.0,
+   "x1": -8.0,
+   "z1": 30.0,
+   "count": 14,
+   "seed": 15,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Vesper Poster Orange",
+    "Vesper Poster Violet",
+    "global:Torn Poster",
+    "global:Poster Circles"
+   ],
+   "x0": -46.0,
+   "z0": 6.0,
+   "x1": -8.0,
+   "z1": 18.0,
+   "count": 10,
+   "seed": 16,
+   "onto": "wall",
+   "y": 0.0,
+   "gap": 1.2
+  },
+  {
    "op": "Waypoint",
    "x": -44.0,
    "z": 21.0
@@ -3941,6 +3996,51 @@
    "gap": 3.0
   },
   {
+   "op": "Decal",
+   "decal": "Vesper Poster Violet",
+   "x": -4.3,
+   "z": 2.0,
+   "y": 1.4,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Violet",
+   "x": 4.3,
+   "z": 2.0,
+   "y": 1.4,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Orange",
+   "x": -4.3,
+   "z": 4.2,
+   "y": 1.4,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Orange",
+   "x": 4.3,
+   "z": 4.2,
+   "y": 1.4,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Vent Grille",
+   "x": 0.0,
+   "z": 5.8,
+   "y": 2.4,
+   "onto": "wall-z",
+   "size": 0.8
+  },
+  {
    "op": "Waypoint",
    "x": -6.0,
    "z": -6.0
@@ -4174,6 +4274,23 @@
    "gap": 5,
    "minSize": 3,
    "maxSize": 3
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Vesper Market Tiles"
+   ],
+   "x0": -46.0,
+   "z0": -28.0,
+   "x1": 46.0,
+   "z1": -2.0,
+   "count": 60,
+   "seed": 33,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
   },
   {
    "op": "DecalScatter",
@@ -5375,15 +5492,15 @@
   {
    "op": "Prop",
    "name": "Cargo Crate Large",
-   "x": -66.0,
-   "z": -2.0,
+   "x": -63.5,
+   "z": -4.5,
    "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Cargo Crate Large",
-   "x": 66.0,
-   "z": -2.0,
+   "x": 63.5,
+   "z": -4.5,
    "yaw": 270.0
   },
   {
@@ -5429,14 +5546,14 @@
   {
    "op": "Prop",
    "name": "Pad Light Pylon",
-   "x": -66.0,
-   "z": -12.0
+   "x": -69.0,
+   "z": -7.5
   },
   {
    "op": "Prop",
    "name": "Pad Light Pylon",
-   "x": 66.0,
-   "z": -12.0
+   "x": 69.0,
+   "z": -7.5
   },
   {
    "op": "Prop",
@@ -5451,6 +5568,77 @@
    "x": 54.0,
    "z": -1.0,
    "yaw": 270.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Scrawl Pink",
+   "x": -48.3,
+   "z": -5.0,
+   "y": 1.5,
+   "onto": "wall+x",
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Scrawl Pink",
+   "x": 48.3,
+   "z": -5.0,
+   "y": 1.5,
+   "onto": "wall-x",
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Orange",
+   "x": -48.3,
+   "z": -14.0,
+   "y": 1.6,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Orange",
+   "x": 48.3,
+   "z": -14.0,
+   "y": 1.6,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Violet",
+   "x": -48.3,
+   "z": -15.2,
+   "y": 1.6,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Vesper Poster Violet",
+   "x": 48.3,
+   "z": -15.2,
+   "y": 1.6,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Vesper Market Tiles"
+   ],
+   "x0": -70.0,
+   "z0": -24.0,
+   "x1": -49.0,
+   "z1": 20.0,
+   "count": 24,
+   "seed": 63,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
   },
   {
    "op": "Prop",
