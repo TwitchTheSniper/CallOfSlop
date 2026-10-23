@@ -620,6 +620,7 @@ public sealed partial class Game : IDisposable
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
             .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
+        WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -1462,6 +1463,8 @@ public sealed partial class Game : IDisposable
                     if (_clients.Remove(sender.G, out var gone))
                     {
                         Log($"{NameOf(gone.Id)} left");
+                        ServerSystemChat($"{NameOf(gone.Id)} left", now); // chat system line (LobbyChat.cs)
+                        OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
                         BroadcastRoster();
@@ -1647,6 +1650,8 @@ public sealed partial class Game : IDisposable
                 p.Name = name;
                 ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
                 LogJoin(name);
+                ServerSystemChat($"{name} joined", now); // chat system line (LobbyChat.cs)
+                SendVoiceInfo(sender); // the host's "Allow voice chat" (GameVoice.cs)
                 BroadcastRoster();
                 break;
             }
@@ -1694,6 +1699,12 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ChatSay:
             case (byte)Msg.ChatLine:
                 OnChatPacket(id, ref r, sender, now); // lobby chat (LobbyChat.cs)
+                break;
+            case (byte)Msg.VoiceUp:
+            case (byte)Msg.VoiceDown:
+            case (byte)Msg.VoiceCtl:
+            case (byte)Msg.VoiceInfo:
+                OnVoicePacket(id, ref r, sender, now); // voice chat (GameVoice.cs)
                 break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);

@@ -45,6 +45,7 @@ public sealed partial class Ui
         }
 
         var dl = ImGui.GetBackgroundDrawList();
+        var talkNow = Brutal.GlfwApi.Glfw.Time;
         for (var k = placed - 1; k >= 0; k--)
         {
             ref readonly var t = ref tags.Tags[_tagOf[k]];
@@ -54,6 +55,8 @@ public sealed partial class Ui
             var a = _tagAlpha[k];
             var px = _tagPx[k];
             Hud.ShadowText(dl, new float2(org.X + rect.X0, org.Y + rect.Y0), px, game.NameOf(t.Id), tags.ColourOf(game, p, t.Friendly), a);
+            if (game.Voice.Talking(t.Id, talkNow))
+                DrawSpeakerIcon(dl, new float2(org.X + rect.X1 + px * 0.25f, org.Y + rect.Y0 + px * 0.5f), px, Hud.Colour(new System.Numerics.Vector3(0.4f, 1f, 0.5f), a)); // voice chat (UiChat.cs)
             if (healthBars && t.Friendly)
             {
                 // Optional teammate health bar (Settings > Video), under the name.

@@ -265,6 +265,9 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, s.Destruction
                         ? "On: on maps with destructible buildings (World Tour), explosives blast holes and floors can come down."
                         : "Off: buildings stay whole (the map is the same, nothing breaks).");
+                    ImGui.Checkbox("Allow voice chat"u8, ref s.AllowVoice); // GameVoice.cs
+                    ImGui.SameLine();
+                    ImGui.Checkbox("Dead players' chat reaches only the dead"u8, ref s.DeadChatPrivate); // LobbyChat.cs
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
@@ -898,6 +901,7 @@ public sealed partial class Ui
             if (ImGui.Button("Test##steps"u8))
                 audio.Footstep(new StepEvent(0, StepKind.Run, FootSurface.Concrete, default, 1f), self: true);
             ImGui.TextColored(Dim, "Generated hardbass, hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
+            DrawVoiceSettings(s, audio); // voice chat (UiChat.cs)
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -939,6 +943,7 @@ public sealed partial class Ui
         if (!PauseOpen)
         {
             _pauseTeams = false;
+            ResetPausePlayers(); // UiChat.cs
             return PauseAction.None;
         }
         var action = PauseAction.None;
@@ -949,6 +954,8 @@ public sealed partial class Ui
         {
             if (_pauseTeams)
                 DrawPauseTeams(game, s); // UiTeams.cs
+            else if (_pausePlayers)
+                DrawPausePlayers(game, s); // mute voice / chat (UiChat.cs)
             else if (_pauseSettings)
             {
                 Title("Settings");
@@ -969,6 +976,8 @@ public sealed partial class Ui
                     action = PauseAction.Loadout;
                 if (game.IsTeamMode && BigButton("TEAMS"))
                     _pauseTeams = true; // Join Blue / Join Red / Auto and the rosters (UiTeams.cs)
+                if (!game.Net.IsOffline && BigButton("PLAYERS (mute)"))
+                    _pausePlayers = true; // mute someone's voice or chat (UiChat.cs)
                 ImGui.BeginDisabled(!game.CanRequestSuicide);
                 if (BigButton("KILL YOURSELF (respawn)"))
                     action = PauseAction.Suicide;
@@ -997,6 +1006,7 @@ public sealed partial class Ui
             PauseOpen = false;
             _pauseSettings = false;
             _pauseTeams = false;
+            ResetPausePlayers();
         }
         return action;
     }

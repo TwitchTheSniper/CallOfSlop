@@ -71,7 +71,7 @@ When you **host or join** a game you land in the **lobby room** first, a menu in
 - **Teams** (team modes): Join Blue / Join Red / Auto with the usual rules (*Picking teams*), but **no switch cooldown** in the lobby. The host has **SHUFFLE** (everyone on Auto, random even split) and **BALANCE** (picks kept, the rest split evenly).
 - **Next match:** the map with its size, player limit and description, the mode and its goal, the pack (which the vote draws from) and the settings. The **host** changes them live and everyone sees it at once: mode, pack and map (maps too small for the people here, or not for this mode, are greyed out: the same rule as the map vote), **Random map**, score limit, **time limit**, auto-start, **Return to lobby between matches**, frenzy buffs, bots and their difficulty, team rules and team balance. The host's choices are saved to `settings.txt` when the match starts.
 - **LOADOUT** opens the loadout screen (you spawn with the selected loadout; it can still change during the countdown). Your hat is shown beside it.
-- **Chat:** type and press Enter. Lines are printable ASCII, at most 120 characters (pasting an image or anything odd is safe), at most 4 lines at once then one every 1.5 s each (checked by the server too); the last 50 lines are kept.
+- **Chat:** type and press Enter (the same chat continues in the match, see Text chat and voice chat). Lines are printable ASCII, at most 120 characters (pasting an image or anything odd is safe), at most 4 lines at once then one every 1.5 s each (checked by the server too); the last 50 lines are kept.
 - **READY UP** (or F3). The host's **START** works once every other person is ready (it readies the host too); **FORCE START** works any time. With *Auto-start* on, the countdown starts by itself once everyone is ready, or that many seconds after the first person readies. A **5-second countdown** follows; if someone un-readies it's cancelled (not a forced one; the host can **CANCEL** any). People leaving never stall it.
 - At zero the match starts: everyone spawns, and the normal 5-second match countdown runs with the loadout screen open (the lobby replaces the first warmup). The map was already loaded and drawn in the lobby, so the start is quick.
 - **People who join during a match** skip the lobby and join the match, as before.
@@ -341,7 +341,7 @@ Up to **32 players** (people and bots), but every map has its own limit: **8-10*
 - **Map vote:** only maps big enough for the people playing are offered. When a smaller map wins, bots it has no room for leave (people never do), and they come back on a bigger map: the bot count you set is remembered.
 - **Spawns:** every map needs a spawn per player. Maps with fewer get extra spawns when they load (same floor, in sight of a hand-placed spawn, clear of walls), so the old maps play as they always did with more people. Spawning never puts you on top of someone.
 - **Team Deathmatch** plays to 5 kills per player in bigger lobbies (40 up to 8 players, 80 at 16, at most 100).
-- **Scoreboard:** above 12 players it switches to two compact columns (Blue and Red in team modes, the ranking split in two otherwise). The kill feed keeps 6 lines, and a burst of joins shares one line ("X and 9 others joined").
+- **Scoreboard:** columns are Player, **Level** (prestige and level, as in the lobby; `BOT` for bots), the mode's two numbers, Weapon and alive/dead. It shows nobody's health (your own is on your HUD). Above 12 players it switches to two compact columns (Blue and Red in team modes, the ranking split in two otherwise). The kill feed keeps 6 lines, and a burst of joins shares one line ("X and 9 others joined").
 - **Bandwidth:** each client receives about 9 KB/s at 8 players, 13 KB/s at 16 and 21 KB/s at 32 (measured by the self-test over loopback, game data without UDP headers). The host sends that to every client.
 
 | Map | Limit | Map | Limit | Map | Limit |
@@ -484,9 +484,11 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | 4 / 5 / 6 | Use a kill streak (cheapest first); for aimed ones, then fire to call it in |
 | B | Loadout menu |
 | Tab (hold) | Scoreboard |
+| Enter / Y | Chat to everyone / to your team (see Text chat and voice chat) |
+| X (hold) | Push to talk (once you've turned your microphone on in Settings > Audio) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls).
 
 ### Display
 
@@ -557,9 +559,9 @@ At max level (48) the lobby's **PRESTIGE** button (under the level bar; greyed o
 - **What you keep:** your hats and your lifetime stats (kills, headshots, matches, wins). Settings > Reset level keeps your prestige too.
 - **Wearing a hat:** pick it in the loadout's cosmetics slot (None or any unlocked hat; locked ones show "Prestige N"). Others see it on your head in third person, in the death cam and kill cam, and lying by your corpse; you never see it in first person.
 - **Cosmetic only:** hats have no collision and don't change your hitbox, and prestige gives nothing else. Bots never prestige and never wear hats.
-- Your prestige shows as **P2** before your level: in the lobby, on the HUD level line and on the scoreboard (`[P2 L13]` after a person's name; bots get no tag).
+- Your prestige shows as **P2** before your level: in the lobby, on the HUD level line and in the scoreboard's **Level** column (`P2 L13`, with the hat the player wears beside it; bots show `BOT`).
 - Saved in `progress.txt` as `prestige=N`; older saves load as prestige 0. Hat models are data: `Cosmetics/hats.json` (format `call-of-slop-cosmetics/1`; boxes in head space, `"round"` parts made of a few turned boxes).
-- **Network:** your client sends its prestige and level after its name in the Hello; the roster carries prestige, level and hat for every player (3 bytes each, nothing in the snapshots). The server only uses the reported prestige for what it shows and to check the hat you pick (`Cosmetics.IsUnlocked`); it never affects gameplay. Levels on the scoreboard are as of joining (the host's own is live).
+- **Network:** your client sends its prestige and level after its name in the Hello; the roster carries prestige, level and hat for every player (3 bytes each, nothing in the snapshots). The server only uses the reported prestige for what it shows and to check the hat you pick (`Cosmetics.IsUnlocked`); it never affects gameplay. A level-up mid-match reaches everyone's scoreboard at your next respawn: the loadout packet carries your prestige and level too, and the server resends the roster only when they changed (nothing in the snapshots; older clients and servers simply skip the two bytes).
 
 ### Grenades and equipment
 
@@ -644,6 +646,26 @@ Every weapon has its own **gunshot, reload and equip sound**, synthesised when t
 - **Distance.** Bullets passing within 3 m of you **whizz**, or **crack** for rifles, DMRs, snipers and LMGs. Shots hitting the world make an **impact** by surface (concrete chips, a metal ping, a wood thunk, a dirt puff), sometimes with a **ricochet** off metal, concrete and rock. Breaking props have three variations each.
 - **OpenAL EFX** (part of the OpenAL binding) is used when the device passes a start-up canary: positional sounds lose their air with distance (a high shelf), and gunshots also lose their boom (a band-pass filter's low shelf: about -5 dB below 250 Hz at 30 m, -13 dB at 60 m), and every sound gets a light reverb send that suits the map: open terrain, urban streets, or a stony room for maps that are mostly roofed over. Without EFX everything plays dry, as before. The log's `[audio]` lines give the number of sounds, synthesis time, EFX and HRTF status, and once a minute in a match the sounds played, footsteps dropped by the voice cap and CPU per sound.
 - **Settings > Audio**: **Effects volume** (everything but music), **Own gun volume** (your own gunshots and their frenzy layers, on top of the effects volume; 1.00 is the tuned mix above) and **Footstep volume** (on top of the effects volume), all default 1.00, saved as `effects_volume`, `own_gun_volume` and `footstep_volume` in `settings.txt`; older settings files load with the defaults. Each slider has a Test button.
+
+### Text chat and voice chat
+
+**Text chat** works in matches, warmup and the results screen, and it is the same chat as the lobby room's (same history, same limits).
+- **Enter** opens a chat line to everyone, **Y** to your team (both rebindable: *Chat (all)*, *Chat (team)*). While you type, the game controls (moving, shooting, looking) are suspended; Enter sends, Esc cancels. The chat box sits bottom-left above your health: new lines show for 8 seconds and fade; while typing you see the whole history (the last 50 lines).
+- Lines are coloured by team (or the player's colour in free-for-all); team chat is tagged **[TEAM]** and only your team gets it (in co-op Zombies that's everyone; in free-for-all team chat isn't sent and you get a hint). A dead player's lines in a live match are tagged **[DEAD]**; the host's **"Dead players' chat reaches only the dead"** (Host a game) keeps them from the living. Joins and leaves appear as system lines. Bots don't chat.
+- Limits (checked on the server, never trusting the client): printable ASCII, at most 120 characters, 4 lines at once then one every 1.5 s, team chat included.
+
+**Voice chat** (Settings > Audio, *Voice chat*):
+- **Your microphone is off until you tick "Use my microphone"**: nothing is recorded or sent before that, and the mic device is only open while it is ticked (or while you test it). Hearing others is on from the start; *Mute all voice* turns every voice off.
+- **Push to talk** (hold **X**, rebindable) or **Voice activation** with an adjustable level (the meter shows your level and the threshold). Pick the **Microphone** (or the system default), and **Test mic** plays your voice back through the codec (use headphones). **Voice volume** sets other players' voices.
+- **Voice: Proximity / Team radio / Off.** *Proximity*: everyone within **40 m** hears you from your head's position, fading with distance (full volume within 3 m, silent at 40 m) and muffled through walls (a ray between you; the EFX low-pass and a quieter level). *Team radio*: only your teammates hear you, at any distance, flat (not positioned), through a telephone-band "radio" filter. *Off*: you neither send nor hear voice.
+- **The dead** (in a live match) hear and talk to the other dead, flat, plus team radio; the living don't hear the dead's proximity voice and the dead don't hear the living's (no calling out positions from the grave). In the lobby room and on the results screen everyone hears everyone, flat.
+- **Indicators**: a speaker icon next to a talking player's name tag, "<))" after their name on the scoreboard ("(muted)" when you muted them), and a mic icon with TALKING / TEAM RADIO at the bottom of your screen while you transmit.
+- **Mute someone**: Esc > **PLAYERS (mute)** lists everyone with *Mute voice* and *Mute chat* (this session).
+- **Host**: *Allow voice chat* (Host a game, on by default) turns relaying off for the whole server.
+
+How it works: the microphone is read through OpenAL capture (the BRUTAL binding's `Alc.CaptureOpenDevice` / `CaptureDevice`, no extra packages) at 16 kHz mono. No Opus is available, so voice uses **IMA-ADPCM** (4 bits a sample, 64 kbps) in **20 ms frames** of 164 bytes, each starting with the coder state so a lost frame never breaks the next; a DC filter and a soft noise gate run first. Frames go to the server as plain unreliable packets with their own sequence numbers (RakNet's unreliable-sequenced channel would make different talkers' frames, and the game's snapshots, drop each other), about **8.2 KB/s per talker**. The server rate-limits each talker (55 frames/s) and each listener (about 6 talkers at once), routes every frame by the rules above, and relays it only to the players who should hear it, never back to the talker. Each listener has a **jitter buffer** per talker (60 ms, growing to 100 ms on a jittery connection) that puts frames back in order and conceals a lost one by repeating the last frame more quietly; 8 streaming OpenAL sources play the talkers at once. The voice path allocates nothing per frame and costs a few microseconds a frame (the self-test's *Chat and voice* section measures it). Protocol 36.
+
+**Trying voice with friends**: everyone ticks *Use my microphone* in Settings > Audio (Test mic first: you should hear yourself), one person hosts, the others join; hold X and talk. Stand within 40 m to hear each other in Proximity, or pick Team radio in a team mode to talk across the map; walk behind a wall to hear the muffling. The log's `[voice]` lines say which microphone opened and, once a minute, frames sent, played and concealed (and on the host, relayed).
 
 ### Music
 
