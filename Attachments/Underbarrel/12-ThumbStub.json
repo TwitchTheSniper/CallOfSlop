@@ -5,12 +5,12 @@
   "order": 12,
   "unlockOrder": 67,
   "blurb": "A stub with a shelf for your thumb over the top of the handguard. The spray stops snaking; it climbs a little more instead.",
-  "pros": ["-20% sideways sway", "-15% recoil jitter"],
+  "pros": ["-15% sideways sway", "-15% recoil jitter"],
   "cons": ["+5% vertical recoil", "+3% hip spread"],
   "fits": { "classes": ["SMG", "AssaultRifle", "DMR"] },
   "model": "thumbStub",
   "effects": [
-    { "stat": "recoilSway", "mul": 0.8 },
+    { "stat": "recoilSway", "mul": 0.85 },
     { "stat": "recoilJitter", "mul": 0.85 },
     { "stat": "recoilVertical", "mul": 1.05 },
     { "stat": "hipSpreadDeg", "mul": 1.03 }
