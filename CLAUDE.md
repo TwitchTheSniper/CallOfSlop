@@ -20,6 +20,8 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
 
+**Local build in the agent container (Linux):** `. /home/claude/dotnet-env.sh` (adds the SDK to PATH and sets `XDG_RUNTIME_DIR`, which the game needs even headless), then `dotnet build -c Release --no-restore` (incremental: ~2 s) and `dotnet bin/Release/net10.0/CallOfSlop.dll --selftest-only "..."` (a couple of sections: ~1 s). The run prints nothing; read `bin/Release/net10.0/selftest.log`. If the SDK is missing, install it with the dot.net install script (`--channel 10.0 --install-dir /home/claude/.dotnet`) and restore once; `dot.net`, `builds.dotnet.microsoft.com` and `api.nuget.org` are allowed through the proxy.
+
 **CI** (`.github/workflows/build.yml`):
 - Every push builds and runs the self-test on Linux.
 - Windows runs only when the commit message contains `[windows ci]`, or on a manual run.
@@ -94,7 +96,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 
 ## Rules the user set (keep them)
 
-- **Never contact Ahwoo's (the BRUTAL author's) servers, sites, GitHub or the NuGet API** from scripts or tools. Don't change the csproj `PackageReference` lines, because that changes the CI cache key.
+- **Be gentle to Ahwoo (the BRUTAL author).** Never contact Ahwoo's servers, sites or GitHub from scripts or tools. The NuGet API may be used by `dotnet restore` alone, once per machine to fill the package cache (user, 2026-10-23); after that build with `--no-restore`, and never poll, script or re-download the packages. Don't change the csproj `PackageReference` lines, because that changes the CI cache key.
 - **No long bot matches or multi-minute simulations** without the user's OK. Don't run Insane vs Hard bot matches.
 - **No DHT** for server listing. Use invite codes plus server lists, which a host starts automatically.
 - **Frenzy buffs stay strong.**
