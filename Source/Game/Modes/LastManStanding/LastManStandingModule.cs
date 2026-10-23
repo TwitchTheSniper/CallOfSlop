@@ -94,13 +94,20 @@ public sealed class LastManStandingModule : GameModeModule
 
     public override (string First, string Second) ScoreboardColumnsShort => ("K", "St");
 
-    public override (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.Kills}", p.Alive ? "standing" : "out");
+    public override (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Num(p.Kills), p.Alive ? "standing" : "out");
 
     public override string? SelfTestVerify(Game game)
     {
+        // A respawn is someone alive again after a death, or more players alive and dead than there are. (Not "alive +
+        // deaths == players": a player still on the loadout screen when the match started sits it out without a death.)
+        if (game.Phase != MatchPhase.Playing)
+            return null;
         var alive = game.Players.Values.Count(p => p.Alive);
         var deaths = game.Players.Values.Sum(p => (int)p.Deaths);
-        if (deaths > 0 && game.Phase == MatchPhase.Playing && alive + deaths != game.Players.Count)
+        var back = game.Players.Values.FirstOrDefault(p => p.Alive && p.Deaths > 0);
+        if (back != null)
+            return $"someone respawned: {back.Name} is alive after {back.Deaths} death(s)";
+        if (alive + deaths > game.Players.Count)
             return $"someone respawned: {alive} alive + {deaths} deaths for {game.Players.Count} players";
         return null;
     }

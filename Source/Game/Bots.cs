@@ -12,6 +12,7 @@ public enum BotMode : byte
     Investigate, // checking a last-seen spot or gunfire it heard
     Objective, // the game mode's objective
     Squad, // Insane: following its squad's order (Source/Game/Bots/Squads)
+    Overwatch, // a long gun: going to or holding a vantage point (Source/Game/Bots/Vantage)
 }
 
 /// <summary>Per-bot AI state. Bots live only on the server and play through the same input commands as people.</summary>
@@ -211,13 +212,25 @@ public sealed partial class Game
 
     private void PickBotLoadout(Player bot) => PickBotLoadout(bot, bot.Bot?.Profile ?? BotPersonalities.Get(BotPersonality.Chaotic));
 
-    /// <summary>Bots run a couple of random attachments too (no optics: they don't need them).</summary>
-    private uint RandomKit(WeaponDef w)
+    /// <summary>
+    /// Bots run a couple of random attachments too. No optics (they don't need them), except the scope a sniper starts
+    /// with: bot snipers always aim through it (it takes no random roll, so the shared random sequence is untouched).
+    /// Only attachments their weapon XP at the gear level has unlocked (BotGear.cs; the draws are the same at every
+    /// level, a locked one is just left off).
+    /// </summary>
+    private uint RandomKit(WeaponDef w, int level) => BotKit(w, _rng, level);
+
+    /// <summary>A bot's random kit for a gun from <paramref name="rng"/> (see <see cref="RandomKit"/>; the self-test rolls it too).</summary>
+    internal static uint BotKit(WeaponDef w, Random rng, int level = int.MaxValue)
     {
-        uint kit = 0;
-        foreach (var a in Attachments.For(w))
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25)
+        var kit = BotGear.DefaultKit(w);
+        var list = BotGear.AttachmentsFor(w); // a cached array: nothing to allocate every life
+        for (var i = 0; i < list.Length; i++)
+        {
+            var a = list[i];
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))
                 kit = Attachments.With(kit, a.Slot, a.Index);
+        }
         return kit;
     }
 
@@ -231,22 +244,15 @@ public sealed partial class Game
             _ => 14f,
         };
 
-    private bool HasLineOfSight(Vector3 from, Vector3 to)
-    {
-        var d = to - from;
-        var dist = d.Length();
-        if (dist < 0.01f)
-            return true;
-        if (World.Query.Raycast(from, d / dist, dist, QueryFilter.All) < dist - 0.05f)
-            return false;
-        return !SmokeBlocks(from, to, Brutal.GlfwApi.Glfw.Time) // bots can't see through smoke either
-               && !World.Map.Concealed(from, to); // ... or through a cornfield (concealment props, MapConcealment.cs)
-    }
+    /// <summary>Can a bot see from here to there? Not through walls, smoke, foliage or a cornfield (BotFoliage.cs: SightLine).</summary>
+    private bool HasLineOfSight(Vector3 from, Vector3 to) => SightLine(from, to) == BotSightLine.Clear;
 
     /// <summary>One simulation tick of bot thinking: perceive, decide, steer, aim, shoot, move.</summary>
     private void BotTick(Player p, double now)
     {
         var b = p.Bot!;
+        AllocProfile.Mark("bot: mode, streaks");
+        _botUp = GravityFrames.UpAt(p.Position); // the bot's ground plane for the flat-ground maths (BotTactics.cs; world up on ordinary maps)
         if (BotHeld(p, b, now))
             return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
         if (Module.BotTick(this, p, b, now))
@@ -258,6 +264,7 @@ public sealed partial class Game
         }
 
         BotUseStreaks(p, now); // kill streaks (BotStreaks.cs)
+        BotSidearm(p, b, now); // a bolt action with an enemy up close: the sidearm (BotVantage.cs)
         var def = p.WeaponDef;
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
         {
@@ -265,6 +272,7 @@ public sealed partial class Game
             b.ReloadUntil = 0;
             b.CoverReload = false;
         }
+        AllocProfile.Mark("bot: shared");
         BotTickShared(now);
         var nav = NavGraph.Current;
         if (b.PathGraph != nav)
@@ -274,18 +282,35 @@ public sealed partial class Game
             b.Waypoint = Vector3.Zero;
         }
 
+        AllocProfile.Mark("bot: perceive");
         var target = BotPerceive(p, b, now, out var visible);
+        AllocProfile.Mark("bot: squad");
         SquadPerceive(p, b, target, visible, now); // Insane squads: report to the blackboard (Source/Game/Bots/Squads)
+        AllocProfile.Mark("bot: decide");
         BotDecide(p, b, target, visible, def, now);
+        AllocProfile.Mark("bot: steer");
         var steer = BotSteer(p, b, target, visible, def, now);
+        AllocProfile.Mark("bot: stuck watch");
+        if (BotStuckWatch(p, b, ref steer, visible, now))
+            return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
+        AllocProfile.Mark("bot: doors, blind");
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
+        BotBlindPlan(p, b, visible, def, now); // fire blind into foliage at an estimate? (BotFoliage.cs)
+        AllocProfile.Mark("bot: aim");
         var aim = BotAim(p, b, target, visible, def, steer, now);
+        AllocProfile.Mark("bot: shoot");
         if (!BotLauncherTick(p, b, target, visible, ref aim, now)) // a launcher at an enemy kill streak or a group (BotLaunchers.cs)
+        {
             BotShoot(p, b, target, visible, def, aim, now);
+            BotBlindFire(p, b, def, aim, now);
+        }
         SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
+        AllocProfile.Mark("bot: grenade, tactical");
         BotGrenade(p, b, target, visible, aim.Distance, now);
         BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)
+        AllocProfile.Mark("bot: buttons");
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
+        AllocProfile.Mark("bot: movement");
 
         var cmd = new InputCmd
         {
@@ -318,6 +343,7 @@ public sealed partial class Game
         SquadNoteKill(killer, victim, now); // Insane squads: callouts and trades (SquadPlanner.cs)
         if (killer.Bot is not { } b || killer == victim)
             return;
+        VantageNoteKill(b); // a couple of kills from a vantage point and it's time to move (BotVantage.cs)
         // Marksmen move on after a kill instead of sitting on a spot everyone now knows about.
         if (b.Personality == BotPersonality.Marksman)
         {
@@ -351,6 +377,7 @@ public sealed partial class Game
             WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        RefreshBotGear(); // someone joined, left or levelled up: the bots' gear follows the lobby's level (BotGear.cs)
     }
 
     private void ReadRoster(ref PacketReader r)

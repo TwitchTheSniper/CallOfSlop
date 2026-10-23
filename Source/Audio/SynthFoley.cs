@@ -12,7 +12,7 @@ public static partial class Synth
     /// <summary>How many variations of an effect are made (picked at random on playback so repeats don't sound copied).</summary>
     public static int VariantCount(Sfx sfx) => sfx switch
     {
-        Sfx.BreakWood or Sfx.BreakGlass or Sfx.BreakMetal or Sfx.BreakSoft => 3,
+        Sfx.BreakWood or Sfx.BreakGlass or Sfx.BreakMetal or Sfx.BreakSoft or Sfx.GibSquelch => 3,
         Sfx.Headshot or Sfx.HitBody or Sfx.Headshot3D or Sfx.FleshHit3D or Sfx.HitMetal => 3,
         Sfx.Whizz or Sfx.Crack or Sfx.Ricochet or Sfx.Scuffle or Sfx.LandThud or Sfx.JumpPush => 3,
         Sfx.ImpactConcrete or Sfx.ImpactMetal or Sfx.ImpactWood or Sfx.ImpactDirt => 3,

@@ -281,6 +281,17 @@ public sealed class UpnpMapping : IDisposable
     // ---------------------------------------------------------------------
 
     /// <summary>The LAN address Windows would use to reach the internet (no packet is actually sent).</summary>
+    private static (string? Ip, long At) _localCache = (null, -1_000_000);
+
+    /// <summary><see cref="GetLocalIPv4"/> as a string, looked up at most every 10 s (cheap enough to call every frame).</summary>
+    public static string? GetLocalIPv4Cached()
+    {
+        var now = Environment.TickCount64;
+        if (now - _localCache.At > 10_000)
+            _localCache = (GetLocalIPv4()?.ToString(), now);
+        return _localCache.Ip;
+    }
+
     public static IPAddress? GetLocalIPv4()
     {
         try

@@ -87,6 +87,10 @@ public sealed class PhysicsWorld : IWorldQuery
     public PhysicsWorld(Map map)
         : this(map.Solid, map.TerrainCollision, map.HalfX, map.HalfZ, map)
     {
+        // Planet maps (MapPlanet.cs): their gravity field and solid meshes. Ordinary maps have neither.
+        Gravity = GravityFrames.FieldOf(map);
+        foreach (var mesh in map.SolidColliders)
+            AddMesh(mesh, closed: true);
     }
 
     /// <summary>A world from a list of boxes (self-tests: shuffled copies, hand-built scenes). No movers, no props.</summary>
@@ -214,12 +218,22 @@ public sealed class PhysicsWorld : IWorldQuery
     }
 
     /// <summary>Adds a static triangle mesh (from the mesh pipeline). Returns its index (<see cref="ShapeKind.Mesh"/> ids).</summary>
-    public int AddMesh(IMeshCollider mesh)
+    public int AddMesh(IMeshCollider mesh) => AddMesh(mesh, false);
+
+    /// <summary>
+    /// Adds a static triangle mesh; <paramref name="closed"/>: it's a closed solid wound outwards (a map's solid meshes, a
+    /// planet), so movement and ragdolls collide with the front faces only and anything that gets behind one is pushed out
+    /// of the front, never further in.
+    /// </summary>
+    public int AddMesh(IMeshCollider mesh, bool closed)
     {
         _meshes.Add(mesh);
+        _meshClosed.Add(closed);
         _dirty = true;
         return _meshes.Count - 1;
     }
+
+    private readonly List<bool> _meshClosed = new();
 
     public bool IsProp(int box) => _isProp[box];
 
@@ -850,17 +864,20 @@ public sealed class PhysicsWorld : IWorldQuery
             }
     }
 
+    private readonly List<int> _meshScratch = new(512);
+
     private void AddMeshTriangles(int meshIndex, Vector3 min, Vector3 max, List<ContactShape> into)
     {
         var mesh = _meshes[meshIndex];
-        var tris = new List<int>();
+        var tris = _meshScratch; // reused: movement gathers every tick (no allocations)
+        tris.Clear();
         var v = new GatherVisitor { Items = tris };
         mesh.Tree.Overlap(min, max, ref v);
         tris.Sort();
         foreach (var t in tris)
         {
             mesh.Triangle(t, out var a, out var b, out var c);
-            into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Mesh, meshIndex, t)));
+            into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Mesh, meshIndex, t), _meshClosed[meshIndex]));
         }
     }
 

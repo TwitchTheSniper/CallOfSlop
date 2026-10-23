@@ -25,6 +25,9 @@ public sealed partial class Ui : IDisposable
     public bool MenuOpen = true; // open on launch so you pick a loadout first
     public bool ShowScoreboard;
 
+    /// <summary>Smoke test: holds the scoreboard open for its screenshot (Program.Scoreboard.cs).</summary>
+    public bool SmokeScoreboard;
+
     private AttachmentDef? _hoverAttachment;
     private string _lastNotice = "";
     private double _noticeTime;
@@ -150,7 +153,7 @@ public sealed partial class Ui : IDisposable
             else if (showNetStats)
                 ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
-            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
+            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             ImGui.PopTextWrapPos();
         }
         ImGui.End();
@@ -172,6 +175,7 @@ public sealed partial class Ui : IDisposable
         DrawModeHud(game, now, pos, size, settings); // warmup panel, hill / flag / gun indicators (UiModes.cs)
         if (game.Phase == MatchPhase.Playing)
             DrawZombiesHud(game, now, pos, size, settings); // round, points, prompts, downs (UiZombies.cs)
+        DrawCoopBanner(game, now, pos, size); // co-op: OBJECTIVE 2/4, SQUAD WIPED (UiCoop.cs)
         if (game.Phase == MatchPhase.Ended)
         {
             DrawResults(game, pos, size);
@@ -220,7 +224,7 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##hp"u8, Overlay))
         {
             ImGui.PushFont(default, 24);
-            ImGuiSafe.TextColored(local.Health > 35 ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
+            ImGuiSafe.TextColored(local.Health > World.HealthAt(35) ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
             ImGui.PopFont();
             ImGuiSafe.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
@@ -323,7 +327,7 @@ public sealed partial class Ui : IDisposable
         if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
             CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
 
-        if (ShowScoreboard)
+        if (ShowScoreboard || SmokeScoreboard)
             DrawScoreboard(game, size, pos);
     }
 
@@ -419,7 +423,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -479,33 +483,34 @@ public sealed partial class Ui : IDisposable
         if (DrawModeScoreboard(game, size, pos))
             return; // team modes and Gun Game (UiModes.cs)
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0));
-        ImGui.SetNextWindowSize(new float2(MathF.Min(620 * _scale, size.X - 16 * _scale), 0));
+        ImGui.SetNextWindowSize(new float2(MathF.Min(ScoreboardWidth * _scale, size.X - 16 * _scale), 0));
         if (ImGui.Begin("Scoreboard"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.AlwaysAutoResize))
         {
             ImGui.TextColored(Orange, "SCOREBOARD"u8);
-            if (ImGui.BeginTable("##scores"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+            var heads = ScoreboardModel.Headers(game.Module, false); // Player, Level, Kills, Deaths, Weapon, Status (no HP)
+            if (ImGui.BeginTable("##scores"u8, heads.Length, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
             {
-                ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Kills"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-                ImGui.TableSetupColumn("Deaths"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
-                ImGui.TableSetupColumn("Weapon"u8, ImGuiTableColumnFlags.WidthStretch);
-                ImGui.TableSetupColumn("Status"u8, ImGuiTableColumnFlags.WidthFixed, 80 * _scale);
-                ImGui.TableHeadersRow();
-                foreach (var p in game.Players.Values.OrderByDescending(q => q.Kills).ThenBy(q => q.Deaths))
+                SetupScoreColumns(heads, false);
+                ScoreboardModel.Rank(game, _scoreRanked);
+                foreach (var p in _scoreRanked)
                 {
                     var c = game.SideColor(p); // Zombies: everyone in the friendly colour
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
+                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
+                    ImGuiSafe.TextColored(col, $"{game.NameOf(p.Id)}{(p.Id == game.LocalId ? " (you)" : "")}");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{p.Kills}");
+                    DrawLevelCell(game, p);
+                    var (cell1, cell2) = game.Module.ScoreboardCells(game, p);
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{p.Deaths}");
+                    ImGui.Text(cell1);
+                    ImGui.TableNextColumn();
+                    ImGui.Text(cell2);
                     ImGui.TableNextColumn();
                     ImGui.Text(p.WeaponDef.Name);
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(p.Alive ? Green : Red, p.Alive ? $"{p.Health} HP" : "dead");
+                    ImGuiSafe.TextColored(p.Alive ? Green : Red, ScoreboardModel.Status(p, false));
                 }
                 ImGui.EndTable();
             }
@@ -546,8 +551,15 @@ public sealed partial class Ui : IDisposable
                 continue;
             ImGui.SeparatorText(Attachments.SlotName(slot));
             var current = Attachments.Slot(kit, slot);
-            if (ImGui.Selectable($"{(slot == AttachSlot.Optic ? "Iron sights" : "None")}##none{si}", current == 0))
+            // On a gun that starts scoped (snipers) the empty optic slot is its iron sights, an unlock of their own.
+            var ironsNeed = slot == AttachSlot.Optic ? Attachments.IronSightsXp(w) : 0;
+            var noneName = slot == AttachSlot.Optic ? Attachments.NoOpticName(w) : "None";
+            if (wxp < ironsNeed)
+                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+            if (ImGui.Selectable(wxp >= ironsNeed ? $"{noneName}##none{si}" : $"[LOCKED] {noneName}  -  {ironsNeed:N0} weapon XP##none{si}", current == 0) && wxp >= ironsNeed)
                 SetKitOf(audio, w, Attachments.With(kit, slot, 0));
+            if (wxp < ironsNeed)
+                ImGui.PopStyleColor();
             foreach (var a in inSlot)
             {
                 var need = Attachments.UnlockXp(w, a);

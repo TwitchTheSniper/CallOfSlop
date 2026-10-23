@@ -549,7 +549,9 @@ public sealed partial class Game
             }
         }
         var t0 = Brutal.GlfwApi.Glfw.Time;
-        ZPopups.RemoveAll(x => t0 - x.Time > 1.6);
+        for (var i = ZPopups.Count - 1; i >= 0; i--) // (a plain loop: RemoveAll with a lambda would allocate a closure every frame)
+            if (t0 - ZPopups[i].Time > 1.6)
+                ZPopups.RemoveAt(i);
         while (ZPopups.Count > 8)
             ZPopups.RemoveAt(0);
         for (var i = _zPendingBuilds.Count - 1; i >= 0; i--)

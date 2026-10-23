@@ -55,7 +55,7 @@ public sealed partial class Ui
         _portInput = s.Port;
         _serverNameInput = new ImInputString(33);
         ImGuiSafe.SetInput(_serverNameInput, s.ServerName);
-        _masterInput = new ImInputString(128);
+        _masterInput = new ImInputString(256);
         ImGuiSafe.SetInput(_masterInput, s.MasterServer);
     }
 
@@ -94,6 +94,7 @@ public sealed partial class Ui
         if (ImGui.Begin("##credits"u8, Overlay))
             ImGui.TextColored(Dim, "Built with the BRUTAL framework - Copyright (c) 2024 Ahwoo Limited - www.ahwoo.com/brutal"u8);
         ImGui.End();
+        BuildCorner(); // this build's version, bottom-right (UiUpdates.cs)
     }
 
     private string? _nowPlayingName, _nowPlayingText;
@@ -147,6 +148,7 @@ public sealed partial class Ui
             {
                 case Page.Main:
                     Title($"{Weapons.All.Length} weapons. {Maps.All.Length} maps. No mercy.");
+                    UpdateBanner(s); // "Update available" (UiUpdates.cs)
                     if (message.Length > 0)
                     {
                         ImGuiSafe.TextColored(Red, message);
@@ -199,6 +201,7 @@ public sealed partial class Ui
                             BotDifficulty.Insane => "Hard+ aim. In team modes they work as squads: one pins you down while another flanks you.",
                             _ => "Fast reactions, tight aim, they strafe and go for heads.",
                         });
+                        BotGearPicker(s); // UiBotGear.cs
                     }
                     ImGui.Spacing();
                     if (BigButton("START"))
@@ -212,7 +215,7 @@ public sealed partial class Ui
 
                 case Page.Multiplayer:
                     Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
-                    ImGui.TextColored(Dim, "The host picks the game mode. Each match starts once everyone has readied up in the warmup."u8);
+                    ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
@@ -225,7 +228,7 @@ public sealed partial class Ui
                             _mpTab = 1;
                             ImGui.EndTabItem();
                         }
-                        if (ImGui.BeginTabItem("Join by address"u8))
+                        if (ImGui.BeginTabItem("Join by code or address"u8))
                         {
                             _mpTab = 2;
                             ImGui.EndTabItem();
@@ -260,6 +263,13 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
                         ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
                         : "Off: kill frenzies are music and effects only.");
+                    ImGui.Checkbox("Destruction"u8, ref s.Destruction); // destructible buildings (GameDestruction.cs)
+                    ImGuiSafe.TextColored(Dim, s.Destruction
+                        ? "On: on maps with destructible buildings (World Tour), explosives blast holes and floors can come down."
+                        : "Off: buildings stay whole (the map is the same, nothing breaks).");
+                    ImGui.Checkbox("Allow voice chat"u8, ref s.AllowVoice); // GameVoice.cs
+                    ImGui.SameLine();
+                    ImGui.Checkbox("Dead players' chat reaches only the dead"u8, ref s.DeadChatPrivate); // LobbyChat.cs
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
@@ -270,7 +280,10 @@ public sealed partial class Ui
                     ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Math.Max(0, hostMax - 2));
                     ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.HostBots + 1, hostMax) + ". People who join take a bot's place.");
                     if (s.HostBots > 0)
+                    {
                         DifficultyPicker(ref s.Difficulty);
+                        BotGearPicker(s); // UiBotGear.cs
+                    }
                     else
                         TestModeHint();
                     ImGui.SetNextItemWidth(360 * _scale);
@@ -283,13 +296,8 @@ public sealed partial class Ui
                     {
                         ImGuiSafe.FieldFailed("server name", ex);
                     }
-                    ImGui.Checkbox("Advertise server (list it publicly in the server browser)"u8, ref s.Advertise);
-                    if (s.Advertise && s.Master == null)
-                        ImGui.TextColored(Orange, "No master server set (Settings > Player), so only people on your network will see it."u8);
-                    else
-                        ImGuiSafe.TextColored(Dim, s.Advertise
-                            ? "Listed publicly through your master server; people on your network always see it too."
-                            : "Not listed publicly. People on your network still see it in their browser.");
+                    HostSharingOptions(s); // server lists and invite codes (UiInvite.cs)
+                    ImGui.Checkbox("Return to lobby between matches"u8, ref s.LobbyReturn); // the lobby room (PreMatchLobby.cs)
                     if (BigButton("HOST GAME"))
                     {
                         s.Port = (ushort)_portInput;
@@ -343,9 +351,9 @@ public sealed partial class Ui
             _browser.Refresh(s);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, _browser.Searching ? "Searching your network..." : $"{list.Count} game(s) found");
-        ImGuiSafe.TextColored(Dim, s.Master is { } m
-            ? $"Public list: {(_browser.MasterStatus.Length > 0 ? _browser.MasterStatus : $"master server {m.Host}:{m.Port}")}"
-            : "Showing games on your network. To see public internet games, set a master server in Settings > Player.");
+        ImGuiSafe.TextColored(Dim, _browser.MasterStatus.Length > 0
+            ? $"Server lists: {_browser.MasterStatus}"
+            : "Showing games on your network. Join a friend by invite code once and their server list is added for you (or add one in Settings > Multiplayer).");
 
         if (ImGui.BeginTable("##servers"u8, 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV | ImGuiTableFlags.ScrollY, new float2(820 * _scale, 300 * _scale)))
         {
@@ -362,13 +370,20 @@ public sealed partial class Ui
                 var humans = i.Players - i.Bots;
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text(i.Name.Length > 0 ? i.Name : "(unnamed)");
+                ImGuiSafe.TextColored(e.VersionOk ? new float4(1, 1, 1, 1) : Dim, i.Name.Length > 0 ? i.Name : "(unnamed)");
                 ImGui.SameLine();
-                ImGuiSafe.TextColored(Dim, e.FromMaster ? "  public" : "  LAN");
+                ImGuiSafe.TextColored(Dim, SourceLabel(e));
+                var compat = BuildCompatText.Compare(i.Version, i.Build, ServerInfo.ProtocolVersion, BuildInfo.ReleaseVersion); // ServerBrowser.cs
+                if (!e.VersionOk)
+                    ImGuiSafe.TextColored(Red, $"{BuildCompatText.Describe(compat, i.Build)} (protocol {i.Version}, yours {ServerInfo.ProtocolVersion})");
+                else if (compat == BuildCompat.OtherBuild)
+                    ImGuiSafe.TextColored(Dim, BuildCompatText.Describe(compat, i.Build));
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(Dim, GameModes.Short(i.Mode));
+                ImGui.SameLine();
+                ImGuiSafe.TextColored(i.Phase == MatchPhase.Lobby ? Green : Dim, PhaseLabel(i.Phase)); // "In lobby": join before it starts (UiLobbyRoom.cs)
                 if (i.Rotation.Length > 0)
                     ImGuiSafe.TextColored(Orange, i.Rotation); // e.g. "True Random": the next maps come from every pack
                 ImGui.TableNextColumn();
@@ -376,10 +391,13 @@ public sealed partial class Ui
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
                 ImGui.TableNextColumn();
-                if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
+                if (!e.VersionOk)
+                    ImGui.TextColored(Dim, "-"u8);
+                else if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
                 {
                     s.JoinAddress = e.Address;
                     s.Port = i.Port;
+                    s.LearnMaster(ListLearner.FromInfo(e.Address, i)); // the host's server list, for next time
                     s.Save();
                     action = LobbyAction.Join;
                 }
@@ -394,29 +412,49 @@ public sealed partial class Ui
 
     private void DrawDirectJoin(Settings s, ref LobbyAction action)
     {
-        ImGui.SetNextItemWidth(360 * _scale);
+        ImGui.SetNextItemWidth(420 * _scale);
         try
         {
-            ImGui.InputTextWithHint("Address"u8, "host IP, e.g. 192.168.1.20 or 203.0.113.45"u8, _addressInput!);
+            ImGui.InputTextWithHint("Invite code or address"u8, "ABCD-EFGH-JKMN-PQRS, or an IP such as 203.0.113.45"u8, _addressInput!);
         }
         catch (Exception ex)
         {
             ImGuiSafe.FieldFailed("address", ex);
         }
-        ImGui.SetNextItemWidth(200 * _scale);
-        if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
-            _portInput = Math.Clamp(_portInput, 1024, 65535);
-        ImGui.TextColored(Dim, "Ask the host for the address shown at the top-left of their screen."u8);
+        var text = _addressInput!.ToString();
+        var isInvite = InviteCode.LooksLikeInvite(text);
+        if (!isInvite)
+        {
+            ImGui.SetNextItemWidth(200 * _scale);
+            if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
+                _portInput = Math.Clamp(_portInput, 1024, 65535);
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+        ImGuiSafe.TextColored(Dim, "Paste the invite code (or link) the host copied from their lobby, or type the address shown at the top-left of their screen (\"ip:port\" works too).");
+        ImGui.PopTextWrapPos();
+        if (_joinError.Length > 0)
+            ImGuiSafe.TextColored(Red, _joinError);
         if (BigButton("JOIN GAME"))
         {
-            var addr = Settings.CleanAddress(_addressInput!.ToString());
-            s.JoinAddress = addr.Length > 0 ? addr : "127.0.0.1";
-            s.Port = (ushort)_portInput;
-            s.Save();
-            action = LobbyAction.Join;
+            if (InviteCode.TryParseJoin(text.Length > 0 ? text : "127.0.0.1", (ushort)_portInput, out var host, out var port, out var invite, out var error))
+            {
+                _joinError = "";
+                s.JoinAddress = host;
+                s.Port = port;
+                if (invite is { } inv)
+                    s.LearnMaster(ListLearner.FromInvite(inv)); // the host's server list: the group shares one without typing it
+                else
+                    _portInput = port;
+                s.Save();
+                action = LobbyAction.Join;
+            }
+            else
+                _joinError = error;
         }
         ImGui.Spacing();
     }
+
+    private string _joinError = "";
 
     /// <summary>
     /// The current map choice and "Change map...", which opens the map select screen (UiMapSelect.cs). The lobby
@@ -554,18 +592,6 @@ public sealed partial class Ui
             }
             ImGui.TextColored(Dim, "Name changes apply to your next match."u8);
             ImGui.SetNextItemWidth(w);
-            try
-            {
-                if (ImGui.InputTextWithHint("Master server"u8, "optional, e.g. 203.0.113.45 or myhost.example.com:27050"u8, _masterInput!))
-                    s.MasterServer = Settings.CleanAddress(_masterInput!.ToString());
-            }
-            catch (Exception ex)
-            {
-                ImGuiSafe.FieldFailed("master server", ex);
-            }
-            ImGui.TextColored(Dim, "Public server list. Anyone can run one with: CallOfSlop.exe --master  (UDP 27050). Leave empty for LAN only."u8);
-            ImGui.Spacing();
-            ImGui.SetNextItemWidth(w);
             ImGui.SliderFloat("Mouse sensitivity"u8, ref s.Sensitivity, 0.1f, 4f, "%.2fx"u8);
             ImGui.Checkbox("Invert mouse Y"u8, ref s.InvertY);
             ImGui.SetNextItemWidth(w);
@@ -596,6 +622,26 @@ public sealed partial class Ui
                 if (ImGui.Button("Cancel"u8))
                     _confirmReset = false;
             }
+            // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
+            ImGui.Spacing();
+            ImGui.SeparatorText("Saves"u8);
+            ImGuiSafe.TextColored(Dim, $"Save folder: {SavePaths.Folder}");
+            if (ImGui.Button("Open save folder"u8))
+                SavePaths.OpenFolder();
+            ImGui.SameLine();
+            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            if (SavePaths.Warning is { } saveWarning)
+                ImGuiSafe.TextColored(Red, saveWarning);
+            UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)
+            ImGui.EndChild();
+            ImGui.EndTabItem();
+        }
+
+        // ---- Multiplayer: server lists, invite links (UiInvite.cs) ------------------------
+        if (ImGui.BeginTabItem("Multiplayer"u8))
+        {
+            ImGui.BeginChild("##mpsettings"u8, panel);
+            MultiplayerSettings(s, w);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -778,6 +824,36 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Blood overlay"u8);
+            var blood = (int)s.BloodOverlay;
+            for (var i = 0; i <= (int)BloodMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodMode)i}##blood", ref blood, i))
+                    s.BloodOverlay = (BloodMode)blood;
+            }
+            ImGui.Text("Blood colour"u8);
+            var bloodColour = (int)s.BloodColour;
+            for (var i = 0; i <= (int)BloodColour.Dark; i++)
+            {
+                ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodColour)i}##bloodcol", ref bloodColour, i))
+                    s.BloodColour = (BloodColour)bloodColour;
+            }
+            ImGui.TextColored(Dim, "Blood splatters at the screen edges as your health drops (more the lower it gets, from the side you were hit), and blood marks on hurt players and zombies. They fade as health comes back. Subtle: fewer and fainter; Off: none. Dark: a darker colour instead of red."u8);
+            ImGui.Text("Gore"u8);
+            var gore = (int)s.Gore;
+            for (var i = 0; i <= (int)GoreMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreMode)i}##gore", ref gore, i))
+                    s.Gore = (GoreMode)gore;
+            }
+            ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
+
+            ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             ImGui.EndChild();
@@ -847,6 +923,7 @@ public sealed partial class Ui
             if (ImGui.Button("Test##steps"u8))
                 audio.Footstep(new StepEvent(0, StepKind.Run, FootSurface.Concrete, default, 1f), self: true);
             ImGui.TextColored(Dim, "Generated hardbass, hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
+            DrawVoiceSettings(s, audio); // voice chat (UiChat.cs)
             ImGui.Spacing();
             if (ImGui.Button("Open audio mixer"u8))
                 AudioMixerOpen = true; // UiAudioMixer.cs
@@ -893,6 +970,7 @@ public sealed partial class Ui
         if (!PauseOpen)
         {
             _pauseTeams = false;
+            ResetPausePlayers(); // UiChat.cs
             return PauseAction.None;
         }
         var action = PauseAction.None;
@@ -903,6 +981,8 @@ public sealed partial class Ui
         {
             if (_pauseTeams)
                 DrawPauseTeams(game, s); // UiTeams.cs
+            else if (_pausePlayers)
+                DrawPausePlayers(game, s); // mute voice / chat (UiChat.cs)
             else if (_pauseSettings)
             {
                 Title("Settings");
@@ -923,6 +1003,8 @@ public sealed partial class Ui
                     action = PauseAction.Loadout;
                 if (game.IsTeamMode && BigButton("TEAMS"))
                     _pauseTeams = true; // Join Blue / Join Red / Auto and the rosters (UiTeams.cs)
+                if (!game.Net.IsOffline && BigButton("PLAYERS (mute)"))
+                    _pausePlayers = true; // mute someone's voice or chat (UiChat.cs)
                 ImGui.BeginDisabled(!game.CanRequestSuicide);
                 if (BigButton("KILL YOURSELF (respawn)"))
                     action = PauseAction.Suicide;
@@ -931,6 +1013,8 @@ public sealed partial class Ui
                     _pauseSettings = true;
                 if (game.IsServer && BigButton("RELOAD MAP FILES"))
                     _mapReloadMsg = (game.ReloadMapFiles(), (Environment.TickCount64 / 1000.0) + 10);
+                if (game.IsServer && (game.Mode == GameMode.Zombies || game.BuilderRange) && BigButton("RELOAD PART FILES"))
+                    _mapReloadMsg = (game.ReloadPartFiles(), (Environment.TickCount64 / 1000.0) + 10); // weapon builder parts (GamePartsReload.cs)
                 if (_mapReloadMsg is { } rm && (Environment.TickCount64 / 1000.0) < rm.Until)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, Dim);
@@ -951,6 +1035,7 @@ public sealed partial class Ui
             PauseOpen = false;
             _pauseSettings = false;
             _pauseTeams = false;
+            ResetPausePlayers();
         }
         return action;
     }

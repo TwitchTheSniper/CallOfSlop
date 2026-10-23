@@ -38,7 +38,45 @@ public sealed unsafe class Renderer
         uniform float uMode;
         uniform float uLayer;
         uniform sampler2DArray uTex;
+        // Body blood (Source/Render/BodyBloodRender.cs): up to 8 marks on the body being drawn, each a sphere (centre,
+        // radius) and (opacity, seed); uBloodN = 0 everywhere else. uBloodRot turns world offsets into the body's facing
+        // so the ragged edges stay put on the body as it turns.
+        uniform vec4 uBlood[16];
+        uniform float uBloodN;
+        uniform vec3 uBloodCol;
+        uniform vec2 uBloodRot;
         out vec4 FragColor;
+
+        float BloodHash(vec3 p)
+        {
+            p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+            p += dot(p, p.yxz + 33.33);
+            return fract((p.x + p.y) * p.z);
+        }
+
+        vec3 Bleed(vec3 col)
+        {
+            float cover = 0.0, wet = 0.0;
+            int n = int(uBloodN + 0.5);
+            for (int i = 0; i < n; i++)
+            {
+                vec4 s = uBlood[i * 2];
+                vec4 a = uBlood[i * 2 + 1];
+                vec3 d = vWorld - s.xyz;
+                float r = length(d) / s.w;
+                if (r > 1.7)
+                    continue;
+                vec3 q = vec3(d.x * uBloodRot.x + d.z * uBloodRot.y, d.y, d.z * uBloodRot.x - d.x * uBloodRot.y); // into the body's facing
+                vec3 cell = floor(q * 34.0) + a.y * 97.0;                // 3 cm blocks, the game's blocky look
+                float h = BloodHash(cell);
+                float blob = 1.0 - step(0.62 + 0.5 * h, r);              // ragged splat
+                float drop = step(0.9, BloodHash(cell + 17.0)) * (1.0 - step(1.65, r)); // flecks around it
+                float m = max(blob, drop) * a.x;
+                cover = max(cover, m);
+                wet = max(wet, (1.0 - clamp(r, 0.0, 1.0)) * a.x);
+            }
+            return mix(col, uBloodCol * (1.0 - 0.35 * wet), cover);     // darker where it pooled
+        }
 
         void main()
         {
@@ -48,6 +86,8 @@ public sealed unsafe class Renderer
                 FragColor = uColor;
                 return;
             }
+            if (uBloodN > 0.5)
+                col = Bleed(col);
 
             vec3 n = normalize(vNormal);
             if (uMode > 0.5)
@@ -70,6 +110,8 @@ public sealed unsafe class Renderer
     private GlVertexArray _vao;
     private GlBuffer _vbo;
     private int _locMvp, _locModel, _locColor, _locMode, _locLayer, _locTex, _locCam, _locFog, _locFogRange;
+    private int _locBlood = -1, _locBloodN = -1, _locBloodCol = -1, _locBloodRot = -1;
+    private bool _bloodOn;
     private uint _texture;
 
     private Matrix4x4 _viewProj = Matrix4x4.Identity;
@@ -109,6 +151,10 @@ public sealed unsafe class Renderer
         _locCam = Uniform("uCam\0"u8);
         _locFog = Uniform("uFog\0"u8);
         _locFogRange = Uniform("uFogRange\0"u8);
+        _locBlood = Uniform("uBlood\0"u8);
+        _locBloodN = Uniform("uBloodN\0"u8);
+        _locBloodCol = Uniform("uBloodCol\0"u8);
+        _locBloodRot = Uniform("uBloodRot\0"u8); // uBloodN starts at 0 (uniforms default to zero)
         CreateTextures();
 
         // --- Unit cube (36 verts, position + normal) ----------------------------
@@ -244,9 +290,112 @@ public sealed unsafe class Renderer
             Native.glDisable(GlCapability.Blend);
     }
 
+    /// <summary>
+    /// Body blood for the next draws (one body): <paramref name="marks"/> marks, two vec4s each in <paramref name="data"/>
+    /// (centre + radius, opacity + seed), painted in <paramref name="color"/> on whatever lit box surface they touch; the
+    /// offsets are turned by <paramref name="yaw"/> so the pattern rides with the body. No extra draw calls: the body's own
+    /// boxes paint it in the fragment shader. <see cref="ClearBlood"/> after the body. Does nothing headless or recording.
+    /// </summary>
+    public void SetBlood(ReadOnlySpan<Vector4> data, int marks, Vector3 color, float yaw)
+    {
+        if (Recorder != null || _locBloodN < 0 || marks <= 0)
+            return;
+        marks = Math.Min(marks, Math.Min(8, data.Length / 2));
+        float c = MathF.Cos(yaw), sn = MathF.Sin(yaw);
+        fixed (Vector4* p = data)
+        {
+            if (Native.glProgramUniform4fv != null && Native.glProgramUniform1f != null && Native.glProgramUniform3f != null && Native.glProgramUniform2f != null)
+            {
+                // Straight into this renderer's program, whichever program is bound (GL 4.1).
+                Native.glProgramUniform4fv(_program, _locBlood, marks * 2, (float*)p);
+                Native.glProgramUniform1f(_program, _locBloodN, marks);
+                Native.glProgramUniform3f(_program, _locBloodCol, color.X, color.Y, color.Z);
+                Native.glProgramUniform2f(_program, _locBloodRot, c, sn);
+            }
+            else
+            {
+                _program.Use();
+                Native.glUniform4fv(_locBlood, marks * 2, (float*)p);
+                Native.glUniform1f(_locBloodN, marks);
+                Native.glUniform3f(_locBloodCol, color.X, color.Y, color.Z);
+                Native.glUniform2f(_locBloodRot, c, sn);
+            }
+        }
+        _bloodOn = true;
+    }
+
+    /// <summary>No body blood on the next draws (cheap when none was set).</summary>
+    public void ClearBlood()
+    {
+        if (!_bloodOn)
+            return;
+        _bloodOn = false;
+        if (Native.glProgramUniform1f != null)
+            Native.glProgramUniform1f(_program, _locBloodN, 0f);
+        else
+        {
+            _program.Use();
+            Native.glUniform1f(_locBloodN, 0f);
+        }
+    }
+
     /// <summary>Draws the unit cube transformed by <paramref name="model"/>.</summary>
+    /// <summary>
+    /// A planet map: an extra transform applied after every <see cref="Draw"/>'s model matrix while set (see
+    /// <see cref="StandAt"/>), so code that draws something upright with world axes stands it on the curve instead.
+    /// </summary>
+    private Matrix4x4 _tilt = Matrix4x4.Identity;
+
+    private bool _tilted;
+
+    /// <summary>Restores the previous tilt when disposed (<see cref="StandAt"/>).</summary>
+    public readonly struct TiltScope : IDisposable
+    {
+        private readonly Renderer? _g;
+        private readonly bool _wasTilted;
+        private readonly Matrix4x4 _was;
+
+        public TiltScope(Renderer g, bool tilted, Matrix4x4 tilt)
+        {
+            _g = g;
+            _wasTilted = tilted;
+            _was = tilt;
+        }
+
+        public void Dispose()
+        {
+            if (_g != null)
+            {
+                _g._tilted = _wasTilted;
+                _g._tilt = _was;
+            }
+        }
+    }
+
+    /// <summary>
+    /// On a planet map, until the returned scope is disposed: things drawn upright round <paramref name="p"/> stand on the
+    /// ground there (<see cref="GravityFrames.StandAt"/>). Nothing at all on other maps.
+    /// </summary>
+    public TiltScope StandAt(Vector3 p)
+    {
+        if (!GravityFrames.Curved)
+            return default;
+        var scope = new TiltScope(this, _tilted, _tilt);
+        _tilt = GravityFrames.StandAt(p);
+        _tilted = true;
+        return scope;
+    }
+
     public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid)
     {
+        if (_tilted)
+        {
+            var tilted = model * _tilt;
+            _tilted = false;
+            Draw(tilted, color, alpha, mode, material);
+            _tilted = true;
+            return;
+        }
         if (Recorder != null)
         {
             Recorder.Draw(model, color, alpha, mode, material);

@@ -59,7 +59,7 @@ Unknown keys, numbers out of range and missing parts are errors with a message s
 
 ### Concealment
 
-A cosmetic prop with `"concealment": true` (the **Corn Patch A** and **Corn Patch B** in `Farm`) is still walked and shot straight through, but it hides people from bots the way it hides them from players: a bot's sight line that runs through at least 1.2 m of concealing props in total is blocked, unless the two are within 2.5 m of each other. So someone a step inside a cornfield is hidden from the road, a bot right next to you still sees you, and bots also use the corn as cover to hide in. Only the bots' line of sight checks it (server side): it never changes movement, bullets, the nav graph or the map's fingerprint. The props' bounds go in a coarse grid when a bot first looks, so a query costs a few microseconds (`Map.Concealed`, Source/Props/MapConcealment.cs).
+A cosmetic prop with `"concealment": true` (the **Corn Patch A** and **Corn Patch B** in `Farm`) is still walked and shot straight through, but it hides people from bots the way it hides them from players: a bot's sight line that runs through at least 1.2 m of concealing props in total is blocked, unless the two are within 2.5 m of each other. So someone a step inside a cornfield is hidden from the road, a bot right next to you still sees you, and bots also use the corn as cover to hide in. Only the bots' line of sight checks it (server side): it never changes movement, bullets, the nav graph or the map's fingerprint. The props' bounds go in a coarse grid when a bot first looks, so a query costs a few microseconds (`Map.Concealed`, Source/Props/MapConcealment.cs). The map's foliage (grass, bushes, shrubs, tree canopies) hides people from bots the same way and adds up with the corn (see the main README, "Bots and foliage"; Source/Maps/FoliageCover.cs).
 
 ### Parts
 
@@ -102,9 +102,10 @@ The bottom of every part gets a little baked-in shadow near the ground, so props
 |---|---|---|
 | `health` | 50 | Damage it takes to break. A rifle bullet does about 25-35, a melee swing 55, a frag grenade up to 120 at the centre. |
 | `breakBy` | `"all"` | `"all"` or a list of `"bullets"`, `"melee"`, `"explosions"` (grenades, explosive props), `"streaks"` (kill-streak strikes). Other damage does nothing to it. |
-| `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"` or `"soft"` (cardboard, plastic, paper). |
+| `sound` | `"wood"` | `"wood"`, `"glass"`, `"metal"`, `"soft"` (cardboard, plastic, paper) or `"meat"` (animals; set for you by `gibs`). |
 | `debris` | | What it breaks into: `count` pieces (0-40, default 8) of `size` (a number or `[min, max]` metres) thrown at `speed` m/s, in `colors` (default: the colours of its parts, weighted by size). |
-| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. `trigger` makes it a pressure-plate mine (see [Landmines](#landmines)). |
+| `gibs` | none | It's an animal: instead of `debris` it bursts into `count` (1-40, default 8) meaty gibs, with `style` `"fur"` (default), `"bird"` (feathers) or `"wool"` (see [Animals](#animals)). Its break sound is a wet squelch; it can't also `explode`. |
+| `explode` | none | It goes off when it breaks, like a frag grenade owned by whoever broke it: `radius` (1-15 m) and `damage` at the centre (1-300; written against 100 health: players take it x1.2 since health went up to 120, so the kill radius is unchanged, while zombies, props and machines take it as written). It breaks other breakables in the blast too. With `fuse` (seconds, 0-5) the hit that breaks it lights it instead: it stays put, spits sparks for that long and then goes off; one lit by another blast burns 0.12-0.32 s at most, so a cluster ripples. `knockback` (m/s at the centre, 0-20, default 9) is how hard the blast pushes players, bodies and debris away. `trigger` makes it a pressure-plate mine (see [Landmines](#landmines)). |
 
 How breaking works in a match:
 
@@ -118,6 +119,27 @@ How breaking works in a match:
 Heavy things (dumpsters, concrete barriers, vending machines, lamps) are left unbreakable in the starter library, so cover you rely on stays put.
 
 A map can bring any breakable prop back during a match: `{ "op": "Prop", "name": "Landmine", "x": 18, "z": 10, "respawn": 8 }` puts it back 8 seconds after it broke (1 to 3600 s; the default 0 means not until the next match). It waits while anyone is standing on or right next to its spot, so it never comes back under someone's feet. `respawn` is for the `Prop` op only (not `Clutter`), and an unbreakable prop with one is an error.
+
+### Animals
+
+Real animals are breakable props with a `gibs` block. When one breaks it bursts into meaty gibs (Source/Props/Gibs.cs) instead of debris: red and pink meat chunks, a few bone-white bits, and feathers (`"bird"`, they flutter down slowly), white wool tufts (`"wool"`) or fur in the animal's own colours (`"fur"`; feathers and fur take the `debris` block's `colors` if it has any, else the parts' colours). Gibs fly away from the hit (twice as hard from a blast), bounce, slide to a stop, leave a small blood splat where meat lands (a `Gore` impact decal, Decals/Gore), lie there for about 15 s and dither out. At most 320 gib pieces exist at once (oldest first), cleared every map and match. A blast within 60% of its radius breaks an animal at once, whatever its health. Animals give no kill, XP or kill feed line, and `respawn` brings them back like any breakable prop.
+
+```json
+"breakable": { "health": 20, "breakBy": "all", "gibs": { "count": 10, "style": "bird" } }
+```
+
+| Animal | `health` | `gibs` |
+|---|---|---|
+| Bird on a Perch | 8 | 5 bird (red plumage) |
+| Chicken, Mallard Duck, Hen Duck, Duck on a Pond | 15 | 8 bird |
+| Pigeons (a flock of three, one prop) | 20 | 10 bird |
+| Duck Family (one prop) | 25 | 12 bird |
+| Cat | 45 | 12 fur |
+| Dog | 60 | 14 fur |
+| Sheep | 110 | 18 wool |
+| Dairy Cow, Grazing Cow | 250 | 24 fur |
+
+Pick `health` by size (a bird goes in one shot, a cow takes most of a magazine) and `count` from about 5 for a small bird to 24 for a cow. Toys and objects never get `gibs`: Rubber Duck, Giant Rubber Duck, Duck Decoy, Duck Pond, Teddy Bear, Bird Bath, Bird Cage Stand. Animated animals (Bird on a Perch, Duck on a Pond) stop moving and vanish when they burst. The player's **Gore** setting (Settings > Video) makes it Full, Reduced (half the gibs, no blood) or Off (a small puff of feathers or dust instead).
 
 ### Landmines
 
@@ -350,6 +372,7 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 | `Forest` | Boreal forest floor and cover (tools/world/finland_props.py): granite boulders and a granite outcrop, a fallen spruce log, a spruce log pile and a birch firewood stack (solid); autumn bracken, birch leaf litter, mossy stones, fly agaric toadstools, a dead pine branch, lingonberry heath and an anthill (cosmetic). |
 | `Mining` | Mine kit: an ore mine cart, mine rail, a tunnel timber frame and cage lamp, a mine timber stack, blasting explosives (they go off), an ore bin hopper, a belt conveyor incline, a jaw crusher, a dump truck, a tracked excavator, a floodlight mast, a diesel tank, a blasting warning sign, a broad-gauge railway track section, a rail buffer stop and an ore hopper wagon. |
 | `Nordic` | Nordic village bits: a roadside mailbox rack, a kicksled, a moose warning sign, a wooden rowing boat, a lifebuoy post, a jetty ladder, a birch log bench and a sauna bucket. |
+| `Station` | The sky-station set (`tools/space/station_props.py`, original designs): a tall gas refinery tank, twin gas tanks on a skid, a squat pressure tank, a cargo pod, a supply case (breakable) and a case stack, a hover cargo sled, a console and a server cabinet with blinking lamps, a deck light post, a flush deck floor light (looks only), a landing beacon, an 11 m antenna mast, a sweeping sensor dish, pipe runs and risers, a vent stack with a turning fan, a fuel coupling, a deck barrier, a volatile gas canister rack (it explodes) and a parked cloud skimmer. Shown on the Dev pack's **Station Buildings** map. |
 | `Retail` | Shop fittings for any shop or mall (written by `tools/world/mall_props.py`): wall shelving, an island gondola, a bookcase, book table and spinner, clothes racks and rails, folded-clothes tables, four mannequins, a changing room, a checkout counter, shoe walls, benches and box stacks, sports jersey walls, ball cages, a treadmill and dumbbells, a TV wall, laptop and phone displays, speakers, toy shelving, a plush bin, a ride-on car, jewellery cases, aquariums, pet food shelves, animal cages, a bird cage, cosmetics walls, make-up and perfume counters, candy walls and tables, a claw machine, air hockey, a prize counter, food-court tables, stall counters and grill lines, a tray return, cinema seats, screen, box office and popcorn, a queue rope, and mall furniture (benches, palm and shrub planters, a directory board, a kiosk cart, bins, a big fountain, escalator balustrades, ceiling and pendant lights, sale banners and signs, store hoarding, a cart return bay, a display plinth, security gates, a carrier bag). Unbranded: brands belong to a pack (the World Tour mall's are in `Maps/World/Props/Mall`). |
 
 Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.

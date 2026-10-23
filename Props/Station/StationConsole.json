@@ -1,0 +1,161 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Station Console",
+ "category": "Station",
+ "description": "A control desk with a slanted keyboard deck, a flickering cyan screen and blinking keys. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.6,
+    1.0,
+    0.7
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 260,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.6,
+    0.85,
+    0.7
+   ],
+   "offset": [
+    0.0,
+    0.425,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.6,
+    0.08,
+    0.62
+   ],
+   "offset": [
+    0.0,
+    0.95,
+    -0.02
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.5,
+    0.55,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    1.35,
+    -0.3
+   ],
+   "rotation": [
+    -10.0,
+    0.0,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.36,
+    0.44,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.36,
+    -0.25
+   ],
+   "rotation": [
+    -10.0,
+    0.0,
+    0.0
+   ],
+   "color": "#3fc4d8",
+   "anim": {
+    "type": "flicker",
+    "color": "#3fc4d8",
+    "glow": 1.0,
+    "rate": 3,
+    "duty": 0.94
+   }
+  },
+  {
+   "size": [
+    0.5,
+    0.02,
+    0.2
+   ],
+   "offset": [
+    -0.4,
+    1.0,
+    0.04
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 0.8,
+    "period": 1.1,
+    "duty": 0.6
+   }
+  },
+  {
+   "size": [
+    0.4,
+    0.02,
+    0.2
+   ],
+   "offset": [
+    0.45,
+    1.0,
+    0.04
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "pulse",
+    "color": "#6fe0e8",
+    "glow": 0.8,
+    "period": 2.2
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

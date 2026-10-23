@@ -38,6 +38,8 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
+        VantageMap.Ensure(World.Map, NavGraph.Current); // the map's vantage points, on a worker thread (once per nav graph)
+        World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
 
@@ -51,12 +53,11 @@ public sealed partial class Game
         {
             case BotMode.Engage when target != null:
             {
-                var to = target.Position - p.Position;
-                to.Y = 0;
+                var to = FlatVec(target.Position - p.Position);
                 var dist = to.Length();
                 var dir = dist > 0.01f ? to / dist : Vector3.Zero;
                 var pref = MathF.Max(3f, PreferredRange(def) * prof.RangeMult);
-                var hurt = p.Health <= prof.RetreatHealth && prof.Aggression < 0.9f;
+                var hurt = p.Health <= World.HealthAt(prof.RetreatHealth) && prof.Aggression < 0.9f;
                 var holdBack = (prof.Holds ? dist < pref * 2f : prof.Kind == BotPersonality.Marksman && dist < 60f) || b.Order.HoldBack;
                 if (dist > pref + 3 && !hurt && !holdBack)
                     s.Wish += BotFollow(p, b, nav, target.Position, now, ref s); // close in along the path (around cover)
@@ -68,7 +69,7 @@ public sealed partial class Game
                     b.StrafeDir = prof.Kind == BotPersonality.Flanker && _rng.NextDouble() < 0.75 ? b.StrafeDir : _rng.NextDouble() < 0.5 ? -1 : 1;
                     b.StrafeUntil = now + prof.StrafeMin + _rng.NextDouble() * (prof.StrafeMax - prof.StrafeMin);
                 }
-                s.Wish += new Vector3(-dir.Z, 0, dir.X) * b.StrafeDir * prof.StrafeStrength * (b.Skill == BotDifficulty.Easy ? 0.5f : 1f);
+                s.Wish += Across(dir) * b.StrafeDir * prof.StrafeStrength * (b.Skill == BotDifficulty.Easy ? 0.5f : 1f);
                 break;
             }
             case BotMode.Cover:
@@ -76,7 +77,7 @@ public sealed partial class Game
                 s.Wish = BotFollow(p, b, nav, b.CoverSpot, now, ref s);
                 s.Stationary = s.Wish == Vector3.Zero;
                 s.HasLook = true;
-                s.Look = b.LastSeenAt + new Vector3(0, 1.2f, 0);
+                s.Look = GravityFrames.Above(b.LastSeenAt, 1.2f);
                 break;
             }
             case BotMode.Investigate:
@@ -93,25 +94,30 @@ public sealed partial class Game
                 if (d < 30f && !s.Mantle)
                 {
                     s.HasLook = true; // pre-aim the spot at chest height
-                    s.Look = b.InvestigateAt + new Vector3(0, 1.2f, 0);
+                    s.Look = GravityFrames.Above(b.InvestigateAt, 1.2f);
                 }
                 break;
             }
             case BotMode.Squad:
                 SquadSteer(p, b, nav, now, ref s);
                 break;
+            case BotMode.Overwatch:
+                VantageSteer(p, b, nav, visible, now, ref s); // BotVantage.cs
+                break;
             case BotMode.Objective when b.Objective is { } goal:
             {
                 var spot = goal;
                 if (Flat(goal - p.Position) < 3f && prof.Holds)
-                    spot = goal + new Vector3(MathF.Sin((float)now * 0.7f + b.Seed), 0, MathF.Cos((float)now * 0.5f + b.Seed)) * 2.5f; // pace the area
+                    spot = goal + GravityFrames.ToWorld(goal, new Vector3(MathF.Sin((float)now * 0.7f + b.Seed), 0, MathF.Cos((float)now * 0.5f + b.Seed))) * 2.5f; // pace the area
                 s.Wish = BotFollow(p, b, nav, spot, now, ref s);
                 s.Sprint = Flat(goal - p.Position) > 8f;
                 break;
             }
             default:
             {
+                AllocProfile.Mark("bot: roam goal");
                 var goal = BotRoamGoal(p, b, nav, now);
+                AllocProfile.Mark("bot: steer");
                 s.Wish = BotFollow(p, b, nav, goal, now, ref s);
                 var far = Flat(goal - p.Position);
                 s.Sprint = far > 8f && b.HoldUntil == 0;
@@ -120,6 +126,8 @@ public sealed partial class Game
             }
         }
 
+        b.IsHoldingPosition = BotHoldingPosition(b, s, now); // stuck detection leaves these alone (BotVantage.cs)
+
         // Check corners: glance aside now and then while moving around with nobody in sight.
         if (!visible && !s.HasLook && !s.Mantle)
         {
@@ -127,18 +135,24 @@ public sealed partial class Game
             {
                 b.NextGlance = now + 1.5 + _rng.NextDouble() * 2.5;
                 b.GlanceUntil = now + 0.45 + _rng.NextDouble() * 0.3;
-                var baseYaw = s.Wish.LengthSquared() > 0.01f ? MathF.Atan2(s.Wish.X, -s.Wish.Z) : p.Yaw;
+                var baseYaw = s.Wish.LengthSquared() > 0.01f ? GravityFrames.YawOf(p.Position, s.Wish) : p.Yaw;
                 b.GlanceYaw = baseYaw + (_rng.NextDouble() < 0.5 ? -1 : 1) * (0.6f + (float)_rng.NextDouble() * 0.7f);
                 if (now - b.HurtTime < 2 || now - b.HeardTime < 2)
-                    b.GlanceYaw = MathF.Atan2(b.HeardAt.X - p.Position.X, -(b.HeardAt.Z - p.Position.Z)); // look where it came from
+                    b.GlanceYaw = GravityFrames.Curved ? GravityFrames.YawOf(p.Position, b.HeardAt - p.Position) : MathF.Atan2(b.HeardAt.X - p.Position.X, -(b.HeardAt.Z - p.Position.Z)); // look where it came from
             }
             if (now < b.GlanceUntil)
             {
                 s.HasLook = true;
-                s.Look = p.Eye + World.FlatForward(b.GlanceYaw) * 10f;
+                s.Look = p.Eye + GravityFrames.FlatForward(p.Position, b.GlanceYaw) * 10f;
             }
         }
 
+        if (b.SelfTestHold)
+        {
+            s.Wish = Vector3.Zero; // self-test: stay on the spot (BotFoliage.cs)
+            s.Sprint = false;
+            s.Stationary = true;
+        }
         BotSeparate(p, ref s.Wish);
         BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);
@@ -155,13 +169,17 @@ public sealed partial class Game
         if (Vector3.DistanceSquared(goal, b.PathGoal) > 9f)
             b.NeedPath = true;
         if (b.NeedPath && now >= b.NextPathTime && _botPathBudget > 0)
+        {
+            AllocProfile.Mark("bot: path search");
             BotPlan(p, b, nav, goal, now);
+            AllocProfile.Mark("bot: steer");
+        }
 
         // Advance past nodes we've reached.
         while (b.PathIdx < b.PathLen)
         {
             var node = nav.Nodes[b.Path[b.PathIdx]];
-            var dy = node.Y - pos.Y;
+            var dy = Rise(node - pos);
             if (Flat(node - pos) < 0.8f && dy < 1.0f && dy > -2.5f)
                 BotAdvance(b, nav);
             else
@@ -183,8 +201,10 @@ public sealed partial class Game
                 b.NextShortcut = now + 0.25;
                 var next = nav.Nodes[b.Path[b.PathIdx + 1]];
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
+                AllocProfile.Mark("bot: shortcut");
                 if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && CanShortcut(pos, next))
                     BotAdvance(b, nav);
+                AllocProfile.Mark("bot: steer");
             }
             aimAt = nav.Nodes[b.Path[b.PathIdx]];
             var dh = Flat(aimAt - pos);
@@ -204,8 +224,7 @@ public sealed partial class Game
         b.FollowAim = aimAt;
         b.FollowNode = b.PathIdx < b.PathLen ? b.Path[b.PathIdx] : -1;
         b.FollowTime = now;
-        var d = aimAt - pos;
-        d.Y = 0;
+        var d = FlatVec(aimAt - pos);
         var len = d.Length();
         return len > 0.01f ? d / len : Vector3.Zero;
     }
@@ -219,7 +238,7 @@ public sealed partial class Game
     {
         if (!NavGraph.Clear(pos, next))
             return false;
-        if (MathF.Abs(next.Y - pos.Y) < 0.4f)
+        if (MathF.Abs(Rise(next - pos)) < 0.4f)
             return true;
         return World.Map.TerrainCollision?.Layer(pos.Y) is { } t && pos.Y - t.HeightAt(pos.X, pos.Z) < 0.3f && next.Y - t.HeightAt(next.X, next.Z) < 0.3f
             && World.CanWalkStraight(pos, next);
@@ -232,6 +251,9 @@ public sealed partial class Game
         for (var e = nav.EdgeStart[from]; e < nav.EdgeStart[from + 1]; e++)
             if (nav.EdgeTo[e] == to)
                 return e;
+        for (var e = nav.ExtraHead.Length != 0 ? nav.ExtraHead[from] : -1; e >= 0; e = nav.ExtraNext[e - nav.BuiltEdges])
+            if (nav.EdgeTo[e] == to)
+                return e; // a way destruction opened (BotNavPatch.cs)
         return -1;
     }
 
@@ -282,8 +304,7 @@ public sealed partial class Game
         {
             if (o == p || !o.Alive || o.Bot == null)
                 continue;
-            var d = p.Position - o.Position;
-            d.Y = 0;
+            var d = FlatVec(p.Position - o.Position);
             var dist = d.Length();
             if (dist is < 1.2f and > 0.001f)
                 wish += d / dist * (1.2f - dist) * 1.5f;

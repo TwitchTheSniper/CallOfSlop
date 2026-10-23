@@ -15,10 +15,11 @@ public struct SnapPlayer
     public Vector3 MantleTo;
     public byte Shield; // Last Stand shield charges left (0-3)
     public bool Regen; // health regenerating
+    public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks; protocol 33)
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
-public struct SnapSlow
+public struct SnapSlow : IEquatable<SnapSlow>
 {
     public byte Id;
     public ushort Kills, Deaths;
@@ -27,6 +28,19 @@ public struct SnapSlow
     public PerkSet Perks;
     public byte FrenzyLevel; // kill frenzy 0-6 (protocol 26)
     public byte FrenzyClass; // WeaponClass of the most recent kill (low 7 bits); bit 7: the host's frenzy buffs are on (protocol 26)
+
+    // The server compares every player's slow fields with the last ones sent, each snapshot. Without this, Equals is
+    // ValueType.Equals(object): it boxes both sides and reads the fields through reflection (about 300 bytes of garbage
+    // per player per snapshot, most of a server tick's allocations).
+    public readonly bool Equals(SnapSlow o) =>
+        Id == o.Id && Kills == o.Kills && Deaths == o.Deaths && Primary == o.Primary && Secondary == o.Secondary
+        && PrimaryKit == o.PrimaryKit && SecondaryKit == o.SecondaryKit && Perks == o.Perks && FrenzyLevel == o.FrenzyLevel
+        && FrenzyClass == o.FrenzyClass;
+
+    public override readonly bool Equals(object? obj) => obj is SnapSlow o && Equals(o);
+
+    public override readonly int GetHashCode() =>
+        HashCode.Combine(HashCode.Combine(Id, Kills, Deaths, Primary, Secondary), PrimaryKit, SecondaryKit, Perks, FrenzyLevel, FrenzyClass);
 }
 
 /// <summary>The recipient's own movement at full precision (prediction reconciles against it exactly), plus its slow fields.</summary>
@@ -54,7 +68,7 @@ public struct SnapHeader
 ///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target) and slow fields;
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
 ///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
-///   shield charges, regenerating), weapon, boost;
+///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   slow entries (18 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -64,7 +78,7 @@ public struct SnapHeader
 public static class Snapshot
 {
     public const int HeaderBytes = 1 + 4 + 4 + 1 + 4 + 1 + 1 + 4;
-    public const int FastBytes = 24;
+    public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
     public const int SlowBytes = 18; // 16 + frenzy level and class (protocol 26)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
@@ -109,7 +123,7 @@ public static class Snapshot
             .U8(p.Health)
             .U8((byte)((p.Alive ? 1 : 0) | (p.Grounded ? 2 : 0) | ((int)p.Stance << 2) | (mantling ? 16 : 0) | (Math.Min((int)p.Shield, 3) << 5)
                        | (p.Regen ? 128 : 0)))
-            .U8(p.Weapon).U8(p.Boost);
+            .U8(p.Weapon).U8(p.Boost).U32(p.Blood);
         if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
     }
@@ -130,6 +144,7 @@ public static class Snapshot
         p.Regen = (flags & 128) != 0;
         p.Weapon = r.U8();
         p.Boost = r.U8();
+        p.Blood = r.U32();
         if ((flags & 16) != 0 && r.Has(MantleBytes))
         {
             p.MantleTicks = r.U8();

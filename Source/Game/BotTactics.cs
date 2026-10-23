@@ -19,8 +19,10 @@ public sealed partial class Game
             // With a nav graph, A* finds the way to the objective itself; while it's still building, use the waypoint routing.
             b.Objective = NavGraph.Current.Nodes.Length > 0 ? ObjectiveSpot(p) : ObjectiveGoal(p, now);
         }
+        if (VantageDecide(p, b, target, visible, now))
+            return; // a long gun: to a vantage point, or holding one (Source/Game/Bots/Vantage)
 
-        var low = p.Health <= prof.RetreatHealth;
+        var low = p.Health <= World.HealthAt(prof.RetreatHealth);
         if (visible)
         {
             var wantCover = (low && prof.Aggression < 0.9f) || (b.CoverReload && b.ReloadUntil > 0);
@@ -80,7 +82,29 @@ public sealed partial class Game
         b.Mode = BotMode.Roam;
     }
 
-    private static float Flat(Vector3 v) => MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+    private static float Flat(Vector3 v)
+    {
+        if (!GravityFrames.Curved)
+            return MathF.Sqrt(v.X * v.X + v.Z * v.Z);
+        // A planet: across the bot's ground plane, or the straight distance for points well round the curve (below the horizon).
+        var rise = Vector3.Dot(v, _botUp);
+        return rise < -3f ? v.Length() : MathF.Sqrt(MathF.Max(0, v.LengthSquared() - rise * rise));
+    }
+
+    /// <summary>
+    /// "Up" for the bot being thought about (set at the start of each bot's tick): on a planet the bots' flat-ground maths
+    /// (<see cref="Flat"/>, <see cref="FlatVec"/>, <see cref="Rise"/>, <see cref="Across"/>) works in its ground plane.
+    /// </summary>
+    private static Vector3 _botUp = Vector3.UnitY;
+
+    /// <summary>The part of a vector across the bot's ground plane (y = 0 on ordinary maps).</summary>
+    private static Vector3 FlatVec(Vector3 v) => GravityFrames.Curved ? v - _botUp * Vector3.Dot(v, _botUp) : new Vector3(v.X, 0, v.Z);
+
+    /// <summary>How far a vector goes up (its y on ordinary maps).</summary>
+    private static float Rise(Vector3 v) => GravityFrames.Curved ? Vector3.Dot(v, _botUp) : v.Y;
+
+    /// <summary>The ground direction a quarter turn to the right of <paramref name="dir"/> (a flat unit vector).</summary>
+    private static Vector3 Across(Vector3 dir) => GravityFrames.Curved ? Vector3.Cross(dir, _botUp) : new Vector3(-dir.Z, 0, dir.X);
 
     /// <summary>
     /// The roaming goal for the bot's personality: rushers hunt the nearest enemy, flankers aim behind one (on a
@@ -129,19 +153,18 @@ public sealed partial class Game
                 break;
             case BotPersonality.Flanker when enemy != null && !wander:
                 // Get behind them, along a route that bends away from the straight line.
-                goal = enemy.Position - World.FlatForward(enemy.Yaw) * 8f + Noise(3);
+                goal = enemy.Position - GravityFrames.FlatForward(enemy.Position, enemy.Yaw) * 8f + Noise(3);
                 b.FlankFrom = p.Position;
                 b.FlankTo = enemy.Position;
                 b.FlankWidth = b.Profile.FlankOffset;
                 b.GoalUntil = now + 5;
                 break;
             case BotPersonality.Marksman:
-                goal = PickSpot(nav, p, n => nav.Openness[n] * 3f + Math.Clamp(nav.Nodes[n].Y - p.Position.Y, 0, 8) * 1.5f
-                                               - MathF.Abs(Flat(nav.Nodes[n] - p.Position) - 30f) * 0.15f);
+                goal = MarksmanSpot(nav, p);
                 b.GoalUntil = now + 40;
                 break;
             case BotPersonality.Anchor:
-                goal = b.Objective ?? PickSpot(nav, p, n => nav.Openness[n] * 2f - Flat(nav.Nodes[n]) * 0.08f);
+                goal = b.Objective ?? AnchorSpot(nav, p);
                 b.GoalUntil = now + 40;
                 break;
             case BotPersonality.Tactician when enemy != null && !wander:
@@ -161,7 +184,15 @@ public sealed partial class Game
         return b.Waypoint;
     }
 
-    private Vector3 Noise(float r) => new(((float)_rng.NextDouble() * 2 - 1) * r, 0, ((float)_rng.NextDouble() * 2 - 1) * r);
+    // The spot pickers' lambdas live in their own methods: a lambda over nav and p inside BotRoamGoal made the compiler
+    // allocate their closure at the top of BotRoamGoal, on every call (every roaming bot, every tick).
+    private Vector3 MarksmanSpot(NavGraph nav, Player p) =>
+        PickSpot(nav, p, n => nav.Openness[n] * 3f + Math.Clamp(Rise(nav.Nodes[n] - p.Position), 0, 8) * 1.5f
+                              - MathF.Abs(Flat(nav.Nodes[n] - p.Position) - 30f) * 0.15f);
+
+    private Vector3 AnchorSpot(NavGraph nav, Player p) => PickSpot(nav, p, n => nav.Openness[n] * 2f - Flat(nav.Nodes[n]) * 0.08f);
+
+    private Vector3 Noise(float r) => FlatVec(new(((float)_rng.NextDouble() * 2 - 1) * r, 0, ((float)_rng.NextDouble() * 2 - 1) * r)); // (across the ground: a planet's too)
 
     private Player? NearestEnemy(Player p)
     {
@@ -252,7 +283,7 @@ public sealed partial class Game
         foreach (var i in _botNear)
         {
             var q = nav.Nodes[i];
-            if (MathF.Abs(q.Y - p.Position.Y) > 2f || Flat(threatEye - q) < myThreatDist - 4f)
+            if (MathF.Abs(Rise(q - p.Position)) > 2f || Flat(threatEye - q) < myThreatDist - 4f)
                 continue;
             var score = Flat(q - p.Position);
             if (score >= bestScore)

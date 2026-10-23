@@ -217,11 +217,19 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        AllocProfile.Mark("poll");
+        if (!Net.IsOffline)
+        {
+            _pollNow = now;
+            Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        }
 
+        AllocProfile.Mark("frame: weapon state");
         UpdateWeaponState(now, (float)frameDt);
+        AllocProfile.Mark("frame: carts, throwables");
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        AllocProfile.Mark("frame: tactical, streaks, advert");
         UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
@@ -240,6 +248,7 @@ public sealed partial class Game : IDisposable
             _accumulator = 0;
         _alpha = (float)(_accumulator / World.TickDt);
 
+        AllocProfile.Mark("frame after ticks");
         if (!IsServer)
         {
             AdvanceInterpolationClock(now, frameDt);
@@ -247,16 +256,46 @@ public sealed partial class Game : IDisposable
         }
 
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
+        AllocProfile.Mark("render states");
         UpdateRenderStates((float)frameDt);
+        AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
+        UpdatePveFrame(now, (float)frameDt); // Co-op: where enemies are drawn (GamePveNet.cs)
+        AllocProfile.Mark("feedback");
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
+        AllocProfile.Mark("sounds");
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
+        AllocProfile.Stop();
+    }
+
+    /// <summary>The packet handler for <see cref="NetPeer.Poll"/>, made once (a lambda per frame would allocate), and its clock.</summary>
+    private NetPeer.PacketHandler? _onPacket;
+
+    private double _pollNow;
+
+    /// <summary>
+    /// Where <see cref="LookYaw"/> and <see cref="LookPitch"/> are measured: on a planet map they're relative to the tangent
+    /// frame at this point (the local player's position, carried along every tick; GravityFrames.cs). Unused elsewhere.
+    /// </summary>
+    public Vector3 LookFrame;
+
+    /// <summary>The world direction of a local look (yaw and pitch at <see cref="LookFrame"/>).</summary>
+    public Vector3 LookDir(float yaw, float pitch) => GravityFrames.Curved ? GravityFrames.Forward(LookFrame, yaw, pitch) : World.Forward(yaw, pitch);
+
+    /// <summary>A planet: carry the local look to the frame at the local player's position (no turn when walking round it).</summary>
+    public void TransportLook()
+    {
+        if (!GravityFrames.Curved || Local is not { } me)
+            return;
+        GravityFrames.Transport(ref LookYaw, ref LookPitch, LookFrame, me.Position);
+        LookFrame = me.Position;
     }
 
     private InputCmd SampleLocalInput(uint seq)
     {
+        TransportLook();
         var def = Active.Def;
         var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
         return new InputCmd
@@ -332,8 +371,13 @@ public sealed partial class Game : IDisposable
             _wasAlive = local.Alive;
         }
 
-        Tracers.RemoveAll(t => now - t.Born > 0.25);
-        Feed.RemoveAll(f => now - f.Time > 8);
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = Tracers.Count - 1; i >= 0; i--)
+            if (now - Tracers[i].Born > 0.25)
+                Tracers.RemoveAt(i);
+        for (var i = Feed.Count - 1; i >= 0; i--)
+            if (now - Feed[i].Time > 8)
+                Feed.RemoveAt(i);
         while (Feed.Count > 6)
             Feed.RemoveAt(0);
     }
@@ -467,7 +511,7 @@ public sealed partial class Game : IDisposable
         Audio.Shot(def, null);
 
         var origin = MannedEye ?? me.RenderEye; // manning a push cart: the view sits behind its gun (GameZombies.cs)
-        var dir = World.Forward(LookYaw, LookPitch);
+        var dir = LookDir(LookYaw, LookPitch);
         var spread = CurrentSpread();
         var seed = _shotSeed++;
 
@@ -496,11 +540,13 @@ public sealed partial class Game : IDisposable
             var o = ray.Origin;
             var d = ray.Dir;
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots);
+            dist = PenetrateAfterHit(def, o, d, dist); // the same walls the server lets it through (GamePenetration.cs)
+            var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
             foreach (var other in Players.Values)
             {
                 if (other.Id == LocalId || !other.Alive)
                     continue;
-                if (World.Hitbox(other.RenderPosition, other.RenderStance, other.RenderYaw).Raycast(o, d, dist) is { } t)
+                if (World.RayHitsBody(other.RenderPosition, other.RenderStance, other.RenderYaw, o, d, dist) is { } t)
                 {
                     dist = t;
                     predictedHit |= AreEnemies(me, other); // a teammate waits for the server's friendly marker (FriendlyHits.cs)
@@ -512,7 +558,12 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
                 predictedHit |= zHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me);
+            if (Enemies.Count > 0)
+            {
+                dist = PveRayDrawn(o, d, dist, out var eHit); // Co-op enemies, as you see them (GamePve.cs)
+                predictedHit |= eHit;
+            }
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through);
         }
         if (predictedHit)
         {
@@ -603,6 +654,11 @@ public sealed partial class Game : IDisposable
         {
             SendLoadout();
             LoadoutNotice = "Loadout sent...";
+            // The server swaps the loadout in place before play (ServerRequestLoadout's "instant"), and the snapshot only
+            // refills the throwables when a gun changed: refill them here too, or a grenade-only change leaves the HUD
+            // (and the key) on the old kind, which the server then refuses, so the throw spawns nothing.
+            if (Local is { Alive: true } && Phase is MatchPhase.Countdown or MatchPhase.Warmup && !Module.ServerPicksWeapons)
+                RefillThrowables();
         }
     }
 
@@ -613,11 +669,12 @@ public sealed partial class Game : IDisposable
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
             .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
+        WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
     /// <summary>Loadouts can only be changed while dead (or in the pre-match countdown).</summary>
-    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup;
+    public bool CanChangeLoadout => Local is not { Alive: true } || Phase is MatchPhase.Countdown or MatchPhase.Warmup or MatchPhase.Lobby;
 
     /// <summary>The Respawn button: spawn with the chosen loadout as soon as the respawn timer allows.</summary>
     public void RequestRespawn()
@@ -681,15 +738,16 @@ public sealed partial class Game : IDisposable
 
     public static Vector3 MuzzleWorld(Player p)
     {
-        var fwd = World.Forward(p.RenderYaw, p.RenderPitch);
+        var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
         var right = World.FlatRight(p.RenderYaw);
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null, Vector3? through = null)
     {
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
         ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def)); // a bullet-impact decal where it ends on a surface (Source/Decals)
+        PenetrationMarks(through, to, def, shooter?.Id ?? (byte)255, now); // went through walls on the way: marks on both sides (GamePenetration.cs)
         var color = def.Sound switch
         {
             SoundStyle.Zap => new Vector3(0.4f, 0.95f, 1f),
@@ -709,6 +767,7 @@ public sealed partial class Game : IDisposable
         _lastHealth = p.Health;
         LookYaw = p.Yaw;
         LookPitch = p.Pitch;
+        LookFrame = p.Position;
         _correction = Vector3.Zero;
         SyncLocalSlots(p, refill: true);
         RefillThrowables();
@@ -759,6 +818,7 @@ public sealed partial class Game : IDisposable
     {
         _pendingInputs.RemoveAll(c => c.Seq <= ackSeq);
         DropAckedKnocks(ackSeq); // blast pushes the server's state already includes (Knockback.cs)
+        server = WithStagger(server, ackSeq, alive, respawned); // and the stagger they left in it (snapshots don't carry it)
         (_lastServerMove, _lastAckSeq, _haveServerMove) = (server, ackSeq, alive);
 
         var predicted = me.Position;
@@ -893,22 +953,39 @@ public sealed partial class Game : IDisposable
     {
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
+        AllocProfile.Mark("match and mode");
         ServerTickMatch(now);
+        AllocProfile.Mark("projectiles");
         ServerTickProjectiles(now);
+        AllocProfile.Mark("rockets");
         ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
+        AllocProfile.Mark("tactical");
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
+        AllocProfile.Mark("streaks");
         ServerTickStreaks(now);
+        AllocProfile.Mark("props, mines, destruction");
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
+        ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
+        AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
+        ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         foreach (var p in Players.Values)
         {
             p.PrevPosition = p.Position;
+            if (Phase == MatchPhase.Lobby)
+            {
+                // The lobby room: nobody is in the map, bots don't think; clients' inputs are only acknowledged.
+                if (p.Bot == null && p.Id != LocalId)
+                    ConsumeClientInput(p);
+                continue;
+            }
 
             if (p.Id == LocalId)
             {
+                AllocProfile.Mark("local player");
                 var cmd = FreezeFilter(SampleLocalInput(0));
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
@@ -923,9 +1000,11 @@ public sealed partial class Game : IDisposable
             }
             else
             {
+                AllocProfile.Mark("client input");
                 ConsumeClientInput(p);
             }
 
+            AllocProfile.Mark("respawn, history");
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
             if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
@@ -937,6 +1016,7 @@ public sealed partial class Game : IDisposable
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
         }
 
+        AllocProfile.Mark("carts, snapshots");
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
@@ -1041,7 +1121,7 @@ public sealed partial class Game : IDisposable
 
         best = TacticalSpawnPoint(p, best, now); // a Tactical Insertion waiting for them (GameTactical.cs)
         p.Teleport(best);
-        p.Yaw = MathF.Atan2(-best.X, best.Z);
+        p.Yaw = GravityFrames.Point is { } planet ? SpawnYawOnPlanet(best, planet) : MathF.Atan2(-best.X, best.Z);
         p.Pitch = 0;
         p.RenderYaw = p.Yaw;
         p.RenderPitch = 0;
@@ -1073,6 +1153,13 @@ public sealed partial class Game : IDisposable
         }
         for (var i = 0; i < Player.HistorySize; i++)
             p.History[i] = new HistoryEntry { Position = best, Yaw = p.Yaw };
+    }
+
+    /// <summary>A planet: spawn facing round the planet, away from the nearer pole (over the horizon towards the action).</summary>
+    private static float SpawnYawOnPlanet(Vector3 at, PointGravity planet)
+    {
+        var away = at.Y >= planet.Center.Y ? -Vector3.UnitY : Vector3.UnitY;
+        return GravityFrames.YawOf(at, away);
     }
 
     /// <summary>A player asked for a new loadout: apply now if out of combat, otherwise on next spawn.</summary>
@@ -1181,7 +1268,9 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
+        var healthBefore = victim.Health;
         victim.Health -= amount;
+        BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
             return false;
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
@@ -1209,7 +1298,8 @@ public sealed partial class Game : IDisposable
             ScavengeOnKill(attacker); // Scavenger (PerksMore.cs)
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
-            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye) { Gibbed = ShouldGib(kind, killId, amount, healthBefore) }; // blown apart (GameGibs.cs)
+        LastKill = kill;
         kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
@@ -1250,7 +1340,11 @@ public sealed partial class Game : IDisposable
         spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def) * FrenzyAllowedConeMult(shooter, def), SprintSpread.ServerMax(def));
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
-        var targets = new List<(Player P, Box Hitbox, HistoryEntry At)>();
+        // Reused per shot (every trigger pull of every bot: new lists here were most of a bot's garbage).
+        var nested = _resolveBusy; // (never in practice: a shot resolving inside another gets its own lists)
+        _resolveBusy = true;
+        var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _resolveTargets;
+        targets.Clear();
         foreach (var p in Players.Values)
         {
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
@@ -1260,26 +1354,33 @@ public sealed partial class Game : IDisposable
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
-        var damage = new Dictionary<Player, float>();
-        var headshotOn = new HashSet<Player>();
+        var damage = nested ? new List<(Player Victim, float Damage)>() : _resolveDamage;
+        damage.Clear();
+        var headshotOn = nested ? new HashSet<Player>() : _resolveHeads;
+        headshotOn.Clear();
+        _bloodShotPart.Clear();
         byte flags = 0;
-        var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
-        var ends = new List<Vector3>(rays.Count);
-        var laterals = new List<Vector2>(rays.Count);
+        var ends = nested ? new List<Vector3>() : _resolveEnds;
+        ends.Clear();
+        var laterals = nested ? new List<Vector2>() : _resolveLaterals;
+        laterals.Clear();
         var zHead = false;
+        _shotPenetrated = false;
 
         foreach (var ray in rays)
         {
             var o = ray.Origin;
             var d = ray.Dir;
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
+            dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
-                if (t.Hitbox.Raycast(o, d, dist) is { } td && td < dist)
+                if ((GravityFrames.Curved ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist) : t.Hitbox.Raycast(o, d, dist)) is { } td && td < dist)
                 {
                     dist = td;
                     hit = t;
@@ -1297,35 +1398,46 @@ public sealed partial class Game : IDisposable
             {
                 hit = null;
                 turret = null;
-                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f), zHead);
+                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f) * PenFactor(dist), zHead);
             }
-            if (hit == null && turret == null && zombie == null)
-                ShotProps(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // breakable props (GameProps.cs)
-            ShotBuildings(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), now); // building doors and window glass (GameBuildings.cs)
+            if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead) is { } enemy) // Co-op enemies (GamePve.cs)
+            {
+                hit = null;
+                turret = null;
+                zombie = null;
+                PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
+            }
+            var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
+            if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
+                flags |= ShotWallbang;
+            PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
+            ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
             if (device != null)
-                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist), now);
+                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist) * pen, now);
             if (turret != null)
                 flags |= ShotHitMachine;
-            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist)), now))
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist) * pen), now))
                 flags |= 4;
             else if (turret != null)
                 flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
-                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f)
+                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
-                damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
+                AddShotDamage(damage, h.P, dmg);
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
         }
 
-        foreach (var (victim, dmg) in damage)
+        for (var di = 0; di < damage.Count; di++)
         {
+            var (victim, dmg) = damage[di];
             if (IsFriendlyHit(shooter, victim))
             {
                 flags |= ShotHitFriendly; // a teammate: no damage, a friendly marker for the shooter (FriendlyHits.cs)
@@ -1335,25 +1447,55 @@ public sealed partial class Game : IDisposable
             var head = headshotOn.Contains(victim);
             if (head)
                 flags |= 2;
+            _bloodPending = _bloodShotPart.GetValueOrDefault(victim);
             if (DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet))
                 flags |= 4;
+            _bloodPending = BloodPart.None;
         }
 
         if (Horde.Count > 0)
             flags |= ZombieShotApply(shooter, now); // one damage event per zombie per trigger pull
+        if (_pveShotCount > 0)
+            flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 
+        if (_shotPenetrated)
+            flags |= ShotPenetrated; // the origin follows the ends: every client marks both sides of the walls
         // Host-side feedback
         if (shooter.Id == LocalId)
             OnOwnShotConfirmed(flags, now);
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter);
+            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null);
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
             _w.Vec(end);
+        if (_shotPenetrated)
+            _w.Vec(origin); // after the ends: older clients stop reading before it
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        _resolveBusy = nested;
+    }
+
+    // ServerResolveShot's scratch lists (the game thread only; a shot never fires another shot while it resolves).
+    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _resolveTargets = new(Map.HardMaxPlayers);
+    private readonly List<(Player Victim, float Damage)> _resolveDamage = new(Map.HardMaxPlayers);
+    private readonly HashSet<Player> _resolveHeads = new();
+    private readonly List<ShotRay> _resolveRays = new(16);
+    private readonly List<Vector3> _resolveEnds = new(16);
+    private readonly List<Vector2> _resolveLaterals = new(16);
+    private bool _resolveBusy;
+
+    /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
+    private static void AddShotDamage(List<(Player Victim, float Damage)> damage, Player victim, float dmg)
+    {
+        for (var i = 0; i < damage.Count; i++)
+            if (damage[i].Victim == victim)
+            {
+                damage[i] = (victim, damage[i].Damage + dmg);
+                return;
+            }
+        damage.Add((victim, dmg));
     }
 
     private void OnOwnShotConfirmed(byte flags, double now)
@@ -1368,6 +1510,7 @@ public sealed partial class Game : IDisposable
         HitMarkerFriendly = false;
         HitMarkerUntil = now + 0.15;
         HitMarkerHead = (flags & 2) != 0;
+        HitMarkerWallbang = (flags & ShotWallbang) != 0; // through a wall (GamePenetration.cs)
         PlayHitConfirm(flags); // GameSounds.cs
     }
 
@@ -1408,15 +1551,18 @@ public sealed partial class Game : IDisposable
                 _clients[sender.G] = (sender, newId);
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
-                    .U8((byte)World.PhysicsMode); // protocol 13: which movement to predict with
+                    .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
+                    .U32(PartSet.Hash).U16((ushort)Parts.All.Length); // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
+                SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
                     SendVoteState(sender); // joined during the results screen: show the ballot
                 }
+                SendLobbyState(sender); // the lobby room's settings and map (PreMatchLobby.cs)
                 Log($"Player {newId} connected ({Net.ConnectionCount} connected)");
                 BroadcastRoster();
                 break;
@@ -1428,6 +1574,8 @@ public sealed partial class Game : IDisposable
                     if (_clients.Remove(sender.G, out var gone))
                     {
                         Log($"{NameOf(gone.Id)} left");
+                        ServerSystemChat($"{NameOf(gone.Id)} left", now); // chat system line (LobbyChat.cs)
+                        OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
                         BroadcastRoster();
@@ -1585,6 +1733,14 @@ public sealed partial class Game : IDisposable
                     break;
                 }
                 World.PhysicsMode = r.Has(1) && r.U8() == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic; // predict with the host's movement
+                // Parts are data files too (Zombies sends them by position): a different Parts folder can't join. Older hosts don't send it.
+                if (r.Has(6) && PartSet.Mismatch(r.U32(), r.U16()) is { } partProblem)
+                {
+                    Status = partProblem;
+                    Log(Status, true);
+                    Disconnected = true;
+                    break;
+                }
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.
@@ -1613,6 +1769,8 @@ public sealed partial class Game : IDisposable
                 p.Name = name;
                 ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
                 LogJoin(name);
+                ServerSystemChat($"{name} joined", now); // chat system line (LobbyChat.cs)
+                SendVoiceInfo(sender); // the host's "Allow voice chat" (GameVoice.cs)
                 BroadcastRoster();
                 break;
             }
@@ -1628,6 +1786,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.BuildingEvent:
             case (byte)Msg.BuildingState:
                 OnBuildingPacket(id, ref r, sender, now); // building doors and windows (GameBuildings.cs)
+                break;
+            case (byte)Msg.StructBreak:
+            case (byte)Msg.StructState:
+                OnStructurePacket(id, ref r); // destructible buildings (GameDestruction.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
@@ -1650,6 +1812,19 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.TeamReply:
                 OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
                 break;
+            case (byte)Msg.LobbyState when !IsServer:
+                ReadLobbyState(ref r); // the pre-match lobby room (PreMatchLobby.cs)
+                break;
+            case (byte)Msg.ChatSay:
+            case (byte)Msg.ChatLine:
+                OnChatPacket(id, ref r, sender, now); // lobby chat (LobbyChat.cs)
+                break;
+            case (byte)Msg.VoiceUp:
+            case (byte)Msg.VoiceDown:
+            case (byte)Msg.VoiceCtl:
+            case (byte)Msg.VoiceInfo:
+                OnVoicePacket(id, ref r, sender, now); // voice chat (GameVoice.cs)
+                break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
                 ReadState(ref r, now);
                 break;
@@ -1668,8 +1843,9 @@ public sealed partial class Game : IDisposable
                 if (!Players.TryGetValue(shooter, out var sp))
                     break;
                 Audio.Shot(def, sp.RenderEye);
-                for (var i = 0; i < n && r.Has(12); i++)
-                    AddTracer(MuzzleWorld(sp), r.Vec(), def, now, flags, sp);
+                var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
+                foreach (var end in shotEnds)
+                    AddTracer(MuzzleWorld(sp), end, def, now, flags, sp, through);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):
@@ -1704,6 +1880,11 @@ public sealed partial class Game : IDisposable
     private void LogKill(byte killer, byte victim, bool headshot, byte killId)
     {
         string Name(byte id) => id == LocalId ? "You" : NameOf(id);
+        if (killId == PveKillId && killer == victim)
+        {
+            Log($"{Name(victim)} {(victim == LocalId ? "were" : "was")} killed by the enemy", victim == LocalId); // co-op (GamePveAi.cs): no player gets the kill
+            return;
+        }
         Log($"{Name(killer)}  [{Throwables.KillName(killId)}{(headshot ? " - HEADSHOT" : "")}]  {Name(victim)}", killer == LocalId || victim == LocalId);
 
         // Progression: the local player earns XP for every kill, in single player and multiplayer.

@@ -98,12 +98,16 @@ public static partial class SelfTest
     [
         // Re-recorded when bot shots stopped rewinding later-updated players to a stale history slot (SelfTestLagComp.cs),
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x235E9CEDEDBD32C1),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x0C77657D830146BC),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x1C59C6CF2EA93A39),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0xF3BF3F086AB600DA),
-        (GameMode.GunGame, 7, 0, 4105, 20, 0x84AF9E09C825A7C0),
-        (GameMode.Zombies, 2, 0, 4106, 20, 0x740A835A97B6A819),
+        // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
+        // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
+        // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs),
+        // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB269F244E4FE3775),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x53346F4122D4CC97),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x0EDF29DF2B72A36A),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x2B74CFD49C25E46A),
+        (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
+        (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
 
     private static readonly List<string> ModeNotes = new();
@@ -144,6 +148,7 @@ public static partial class SelfTest
             (GameMode.FreeForAll, 0, typeof(FreeForAllModule)), (GameMode.TeamDeathmatch, 1, typeof(TeamDeathmatchModule)),
             (GameMode.KingOfTheHill, 2, typeof(KingOfTheHillModule)), (GameMode.CaptureTheFlag, 3, typeof(CaptureTheFlagModule)),
             (GameMode.GunGame, 4, typeof(GunGameModule)), (GameMode.Zombies, 5, typeof(ZombiesModule)), (GameMode.LastManStanding, 6, typeof(LastManStandingModule)),
+            (GameMode.Coop, 7, typeof(CoopModule)),
         };
         foreach (var (id, wire, type) in expected)
         {
@@ -154,7 +159,7 @@ public static partial class SelfTest
         }
         if (all.Select(m => m.Id).Distinct().Count() != all.Count)
             Fail("two modules share a mode id");
-        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies }))
+        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop }))
             Fail($"GameModes.Every changed: {string.Join(",", GameModes.Every)}");
         if (GameModeRegistry.Get((GameMode)200).Id != GameMode.FreeForAll || GameModeRegistry.IsKnown((GameMode)200))
             Fail("an unknown mode byte didn't fall back to free-for-all");
@@ -194,6 +199,7 @@ public static partial class SelfTest
             (GameMode.GunGame, false, false, false, GunGame.Perks, false, true, true, 0, "kills"),
             (GameMode.Zombies, false, false, false, null, true, false, false, 0, "kills"),
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
+            (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {
@@ -350,10 +356,19 @@ public static partial class SelfTest
             var seconds = mode == GameMode.LastManStanding ? 60.0 : 20.0;
             Game game;
             var now = 0.0;
+            Game.SeedNextGame = 6100 + (int)mode * 17; // seeded: the same match every run (a flaky check is no check)
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
+            else if (mode == GameMode.Coop && Maps.Find("Silo") is { } silo)
+            {
+                ClutteredLargeNav(silo); // co-op plays on a map with a mission (Silo Breach): 3 co-op bots against the director's squads
+                game = ModeGame(3, mode, silo.Id);
+            }
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
+            Game.SeedNextGame = null; // (ZGame may not have made a Game with it)
+            // (No NavGraph.Pump here: the recorded digests below were made after these matches built the graph in budgeted
+            // slices, and pumping it whole changes what they replay.)
             using (game)
             {
                 var startAlive = game.Players.Values.Count(p => p.Alive);

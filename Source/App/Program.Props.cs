@@ -28,6 +28,10 @@ public static unsafe partial class Program
         ("buildings_overview", "Building Yard", new Vector3(-62f, 42f, 58f), new Vector3(2f, 0f, -4f), false),
         ("buildings_room", "Building Yard", new Vector3(44.0f, 1.7f, -7.6f), new Vector3(41.0f, 0.8f, -10.5f), false),
         ("buildings_interact", "Building Yard", new Vector3(31f, 1.7f, -0.5f), new Vector3(31f, 1.4f, -7.5f), true),
+        // Destructible buildings (Program.Buildings.cs): a hole blown in the Destruction Test's corner shop, then its four-storey
+        // apartment block coming down once its ground-floor walls are gone (slabs in the air): smoke_props_destruction_*.bmp.
+        ("destruction_blast", "Destruction Test", new Vector3(-4f, 1.8f, -4.5f), new Vector3(-4f, 1.4f, -12f), true),
+        ("destruction_collapse", "Destruction Test", new Vector3(24f, 7f, 6f), new Vector3(46f, 5f, -16f), true),
         // The residential set's showcase (Maps/Dev/BuildingsResidential.json): the whole street, then the Modern Villa's great room.
         ("buildings_residential", "Residential Street", new Vector3(-72f, 40f, 52f), new Vector3(0f, 0f, 0f), false),
         ("buildings_residential_villa", "Residential Street", new Vector3(19f, 1.8f, -15f), new Vector3(13f, 0.9f, -18f), false),
@@ -87,9 +91,16 @@ public static unsafe partial class Program
         // World Tour, 08 London: the viaduct, the high street and the canal from above the west end, then the high street at eye height.
         ("world_london", "London", new Vector3(-74f, 30f, 46f), new Vector3(2f, 2f, -8f), false),
         ("world_london_street", "London", new Vector3(-44f, 1.8f, 13.6f), new Vector3(6f, 1.6f, 14.2f), false),
+        // Space, 01 Stratos Station: the whole station over the cloud sea from above the north-west, then the hub from the covered walkway at eye height,
+        // and the North Dock's control hub from its bridge.
+        ("space_station", "Stratos Station", new Vector3(-110f, 62f, -150f), new Vector3(0f, 22f, -10f), false),
+        ("space_station_walkway", "Stratos Station", new Vector3(0f, 29.6f, -34f), new Vector3(0f, 27.4f, 0f), false),
+        ("space_station_dock", "Stratos Station", new Vector3(6f, 31.7f, -68f), new Vector3(0f, 32f, -100f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),
+        // Gibs (Source/Props/Gibs.cs): the Dairy Cow on the Countryside Buildings map blown apart next to a blue soldier, mid-burst and settled with blood splats.
+        ("gibs_cow", "Countryside Buildings", new Vector3(4.6f, 2.1f, 36.5f), new Vector3(3.6f, 0.5f, 30.2f), false),
         ("flags", "Flag Lineup", new Vector3(-1.5f, 3.4f, 4.5f), new Vector3(-1.2f, 3.9f, -6f), false), // the flag pool: US, UK, France, Finland at the front (smoke_props_flags.bmp)
         // The Dev pack's Military Props map (Props/Military): every row from above the planes, then the tanks at eye height.
         ("military_overview", "Military Props", new Vector3(0f, 52f, 100f), new Vector3(0f, 0f, -4f), false),
@@ -139,6 +150,10 @@ public static unsafe partial class Program
                 SmokeBreakProps(map, view.Eye, view.Target);
             if (view.Name == "decals_impacts")
                 SmokeDecalImpacts(map, view.Eye, view.Target); // Program.Decals.cs
+            if (view.Name == "gibs_cow")
+                SmokeGibCow(map);
+            if (view.Name.StartsWith("destruction_", StringComparison.Ordinal))
+                SmokeDestruction(map, view.Name); // Program.Buildings.cs
         }
     }
 
@@ -160,12 +175,47 @@ public static unsafe partial class Program
         SmokeBuildings(map, eye, target); // and open the doors and break the windows in view (Program.Buildings.cs)
     }
 
+    /// <summary>Smoke: blows up the Dairy Cow (gibs, squelch, splats) and a soldier beside it, straight on the map (no session).</summary>
+    private static void SmokeGibCow(Map map)
+    {
+        Gibs.Clear();
+        var cow = -1;
+        foreach (var i in map.BreakableProps)
+            if (map.PropInstances[i].Def.Name == "Dairy Cow")
+                cow = i;
+        if (cow < 0 || !map.BreakProp(cow))
+        {
+            Console.WriteLine($"[smoke] gibs: no Dairy Cow to blow up on {map.Name}");
+            return;
+        }
+        var inst = map.PropInstances[cow];
+        var blast = inst.Position + new Vector3(0.8f, 0.3f, 1.1f);
+        var n = Gibs.SpawnProp(inst, blast, PropDamage.Explosion, Gibs.SeedFor(cow, blast));
+        var color = GameModes.TeamColors[0];
+        var v = BodyModel.VariantFor("Smoke", 1);
+        var bc = BodyColors.For(color, v);
+        var lc = LegColors.For(color);
+        var ac = ArmColors.For(color * 0.75f);
+        var body = Gibs.SpawnBody(new GibBody
+        {
+            Feet = blast + new Vector3(1.0f, -0.3f, 0.3f), Yaw = 0.5f, Stance = Stance.Stand, Owner = 1, Seed = 777, BlastAt = blast, Strength = 11f,
+            Vest = bc.Shirt, Sleeve = ac.Sleeve, Skin = bc.Skin, Hair = bc.Hair, Trousers = lc.Trousers, Boot = lc.Boot, Glove = ac.Glove,
+        });
+        AudioSystem.Effect3D(Sfx.GibSquelch, inst.Bounds.Center, 1f);
+        Console.WriteLine($"[smoke] gibs: the {inst.Def.Name} burst into {n} gibs and a soldier into {body}; {Gibs.Stats}");
+    }
+
     private static void PropsSmokeTick(double now)
     {
         if (_propsSmokeAdvance)
         {
             if (PropsSmokeViews[_propsSmoke].Break)
                 World.Map.RestoreProps();
+            if (PropsSmokeViews[_propsSmoke].Name == "gibs_cow")
+            {
+                World.Map.RestoreProps();
+                Gibs.Clear();
+            }
             _propsSmoke++;
             if (_propsSmoke >= PropsSmokeViews.Length)
             {
@@ -184,6 +234,20 @@ public static unsafe partial class Program
         {
             SmokeShot("props_" + view.Name); // debris in the air
             _propsSmokeShot = true;
+        }
+        if (view.Name == "gibs_cow" && !_propsSmokeShot)
+        {
+            if (!_propsSmokeShotA && t > 0.3)
+            {
+                SmokeShot("props_gibs_cow_burst"); // mid-air
+                _propsSmokeShotA = true;
+            }
+            else if (_propsSmokeShotA && t > 1.8)
+            {
+                SmokeShot("props_gibs_cow"); // settled, with blood splats
+                Console.WriteLine($"[smoke] gibs: {Gibs.Stats}");
+                _propsSmokeShot = true;
+            }
         }
         if (view.Name == "animated" && !_propsSmokeShot && t > 0.6)
         {
@@ -227,8 +291,8 @@ public static unsafe partial class Program
                 ? $"; animated {PropGfx.UploadedAnimated} ({(PropGfx.AnimationOn ? "on" : "off")}, {PropGfx.AnimatedTypes} types): {w.AvgAnimInstances:0} moving + {w.AvgFrozenInstances:0} still in "
                   + $"{w.AvgAnimDraws:0.0} draw calls, anim GPU {(w.AvgAnimGpuMs >= 0 ? $"{w.AvgAnimGpuMs:0.000} ms" : "n/a")}"
                 : ""));
-        if (view.Name.StartsWith("buildings_", StringComparison.Ordinal))
-            LogBuildingSmoke(view.Name); // the Dev pack's Building Yard (Program.Buildings.cs)
+        if (view.Name.StartsWith("buildings_", StringComparison.Ordinal) || view.Name.StartsWith("destruction_", StringComparison.Ordinal))
+            LogBuildingSmoke(view.Name); // the Dev pack's Building Yard and Destruction Test (Program.Buildings.cs)
         if (view.Name.StartsWith("decals", StringComparison.Ordinal))
             LogDecalSmoke(view.Name); // Program.Decals.cs
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))

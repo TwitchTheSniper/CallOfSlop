@@ -46,6 +46,7 @@ public sealed partial class Game
             b.StuckCount = 0;
             b.LastHealth = p.Health;
             b.LastSeenTime = b.HeardTime = b.HurtTime = -100;
+            b.BlindBurst = 0; // no blind fire carried over from the last life (BotFoliage.cs)
             b.ObjectiveMinded = _rng.NextDouble() < b.Profile.ObjectiveWeight;
             b.ClearPath();
         }
@@ -74,7 +75,7 @@ public sealed partial class Game
         if ((now >= b.NextScan || (hurt && target == null)) && TakeBotScan()) // rationed per tick (BotMove.cs)
         {
             b.NextScan = now + 0.2 + _rng.NextDouble() * 0.1;
-            var fwd = World.FlatForward(p.Yaw);
+            var fwd = GravityFrames.FlatForward(p.Position, p.Yaw);
             var alert = now - b.HurtTime < 0.6; // just got hit: looks all around
             Player? best = null;
             var bestScore = float.MaxValue;
@@ -93,10 +94,17 @@ public sealed partial class Game
                     b.HeardAt = o.Position;
                     b.HeardTime = now;
                 }
-                var flat = Vector3.Normalize(new Vector3(to.X, 0, to.Z) + new Vector3(1e-4f, 0, 0));
+                var flat = Vector3.Normalize(FlatVec(to) + new Vector3(1e-4f, 0, 0));
                 var inView = alert || Vector3.Dot(flat, fwd) > -0.2f || dist < Perks.BotSenseRange(o.Perks); // ~200 deg vision, plus "hearing" up close (Dead Silence: closer)
-                if (!inView || !HasLineOfSight(p.Eye, o.Chest))
+                if (!inView)
                     continue;
+                var sight = BotSees(p.Eye, o); // chest, or the head when only foliage hides the chest (BotFoliage.cs)
+                if (sight != BotSightLine.Clear)
+                {
+                    if (sight == BotSightLine.Covered)
+                        BotNoticeHidden(b, o, dist, now); // hidden in cover, but running gives it away (roughly)
+                    continue;
+                }
                 var score = dist + (o.Id == b.Target ? -5f : 0f); // stick with the current target a little
                 if (score < bestScore)
                 {
@@ -115,10 +123,11 @@ public sealed partial class Game
             target = best;
         }
 
-        visible = target != null && HasLineOfSight(p.Eye, target.Chest);
+        visible = target != null && BotSees(p.Eye, target) == BotSightLine.Clear;
         if (visible)
         {
             b.LastSeenAt = target!.Position;
+            b.LastSeenVel = target.Sim.Velocity;
             b.LastSeenTime = now;
         }
         return target;
@@ -134,10 +143,15 @@ public sealed partial class Game
         {
             var stance = target!.Sim.Stance;
             var h = World.HeightOf(stance);
-            var point = target.Position + new Vector3(0, h * (stance == Stance.Prone ? 0.5f : BotAimHeight), 0) + target.Sim.Velocity * 0.08f;
+            var point = GravityFrames.Above(target.Position, h * (stance == Stance.Prone ? 0.5f : BotAimHeight)) + target.Sim.Velocity * 0.08f;
             if (b.Skill >= BotDifficulty.Hard && stance != Stance.Prone && _rng.NextDouble() < BotHeadChance)
-                point.Y = target.Position.Y + h * BotHeadHeight; // now and then they go for the head
-            var d = point - p.Eye;
+            {
+                if (GravityFrames.Curved)
+                    point = GravityFrames.Above(target.Position, h * BotHeadHeight) + target.Sim.Velocity * 0.08f;
+                else
+                    point.Y = target.Position.Y + h * BotHeadHeight; // now and then they go for the head
+            }
+            var d = GravityFrames.ToLocal(p.Position, point - p.Eye); // (a planet: in the bot's own frame; the world elsewhere)
             aim.Distance = d.Length();
             d /= aim.Distance;
             b.AimErrYaw *= MathF.Exp(-b.Settle * dt);
@@ -146,9 +160,20 @@ public sealed partial class Game
             wantYaw = MathF.Atan2(d.X, -d.Z) + b.AimErrYaw + ((float)_rng.NextDouble() - 0.5f) * wobble;
             wantPitch = MathF.Asin(Math.Clamp(d.Y, -1f, 1f)) + b.AimErrPitch;
         }
+        else if (b.BlindOn)
+        {
+            // Firing blind into cover: face the burst's spot (BotFoliage.cs).
+            var d = GravityFrames.ToLocal(p.Position, b.BlindAim - p.Eye);
+            var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+            if (flat > 0.3f)
+            {
+                wantYaw = MathF.Atan2(d.X, -d.Z);
+                wantPitch = Math.Clamp(MathF.Atan2(d.Y, flat), -0.6f, 0.6f);
+            }
+        }
         else if (steer.HasLook)
         {
-            var d = steer.Look - p.Eye;
+            var d = GravityFrames.ToLocal(p.Position, steer.Look - p.Eye);
             var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
             if (flat > 0.3f)
             {
@@ -158,7 +183,8 @@ public sealed partial class Game
         }
         else if (steer.Wish.LengthSquared() > 0.01f)
         {
-            wantYaw = MathF.Atan2(steer.Wish.X, -steer.Wish.Z);
+            var wish = GravityFrames.ToLocal(p.Position, steer.Wish);
+            wantYaw = MathF.Atan2(wish.X, -wish.Z);
         }
 
         var maxTurn = b.TurnSpeed * dt * BotStunTurn(p, now); // a stun slows turning (GameTactical.cs)
@@ -178,7 +204,7 @@ public sealed partial class Game
             BotReload(p, def, now);
             b.CoverReload = visible && _rng.NextDouble() < b.Profile.CoverUse;
         }
-        else if (!visible && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0)
+        else if (!visible && !b.BlindOn && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0) // not mid blind fire (BotFoliage.cs)
         {
             BotReload(p, def, now);
         }
@@ -195,7 +221,7 @@ public sealed partial class Game
 
         var spread = BotShotSpread(p, def, aim.Ads, b.Skill) // Steady Aim, sprint penalty (SprintSpread.cs)
                      * FrenzyBuffs.ConeMult(p, def, aim.Ads ? 1f : 0f); // the Shotgun and Sniper frenzy buffs
-        ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
+        ServerResolveShot(p, def, p.Eye, GravityFrames.Forward(p.Position, aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);
         BotStats.Shots[(int)b.Personality]++;
@@ -245,10 +271,11 @@ public sealed partial class Game
     {
         // Pick the launch angle that makes it go off at the target (flat-ground flight with bounces and roll,
         // Throwables.AimPitch), so the aim follows each throwable's own speed and fuse.
+        at = GravityFrames.PointToLocal(p.Position, at); // a planet: aimed in the bot's upright frame (no change elsewhere)
         var to = at - p.Position;
-        Throwables.AimPitch(Throwables.Get(p.Grenade), p.Eye, at, out var launch);
+        Throwables.AimPitch(Throwables.Get(p.Grenade), GravityFrames.PointToLocal(p.Position, p.Eye), at, out var launch);
         var throwYaw = MathF.Atan2(to.X, -to.Z) + ((float)_rng.NextDouble() - 0.5f) * b.AimError;
-        var dir = World.Forward(throwYaw, launch);
+        var dir = GravityFrames.Forward(p.Position, throwYaw, launch);
         ServerThrow(p, p.Grenade, Throwables.LaunchPoint(p.Eye, dir), dir, now);
     }
 
@@ -298,7 +325,7 @@ public sealed partial class Game
         if (visible && b.ReloadUntil > 0 && now >= b.NextCoverCrouchCheck && Players.GetValueOrDefault(b.Target) is { } t)
         {
             b.NextCoverCrouchCheck = now + 0.3;
-            b.CrouchCover = !HasLineOfSight(p.Position + new Vector3(0, World.EyeOf(Stance.Crouch), 0), t.Eye);
+            b.CrouchCover = !HasLineOfSight(GravityFrames.Above(p.Position, World.EyeOf(Stance.Crouch)), t.Eye);
         }
         else if (!visible || b.ReloadUntil == 0)
         {
@@ -310,13 +337,14 @@ public sealed partial class Game
             buttons |= Buttons.Crouch; // waiting on a perch
         if ((buttons & Buttons.Crouch) != 0)
             buttons &= ~Buttons.Sprint;
+        VantageButtons(p, b, visible, steer, ref buttons, now); // at a vantage point: duck and peek, steady shots (BotVantage.cs)
 
         // World-space wish -> buttons relative to where the bot is facing.
         if (wish.LengthSquared() > 0.01f)
         {
             wish = Vector3.Normalize(wish);
-            var f = Vector3.Dot(wish, World.FlatForward(aim.Yaw));
-            var r = Vector3.Dot(wish, World.FlatRight(aim.Yaw));
+            var f = Vector3.Dot(wish, GravityFrames.FlatForward(p.Position, aim.Yaw));
+            var r = Vector3.Dot(wish, GravityFrames.FlatRight(p.Position, aim.Yaw));
             if (f > 0.35f) buttons |= Buttons.Forward;
             if (f < -0.35f) buttons |= Buttons.Back;
             if (r > 0.35f) buttons |= Buttons.Right;

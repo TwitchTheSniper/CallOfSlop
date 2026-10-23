@@ -64,6 +64,17 @@ public enum Msg : byte
     RocketSync, // server -> all: guided, decoyed and stuck projectiles' positions with snapshots while any exist (unreliable)
     RocketBoom, // server -> all: a launcher projectile went off / was a dud / left the map, or its target popped flares (reliable)
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
+    LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
+    ChatSay, // client -> server: a chat line (+ flags: team, protocol 36) (reliable; the server cleans and rate-limits it, LobbyChat.cs)
+    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system, and X's team; protocol 36) (reliable; LobbyChat.cs)
+    StructBreak, // server -> all: destructible chunks a hit broke (structure, hit kind, from, chunk ids); every PC runs the same collapse (reliable; GameDestruction.cs)
+    StructState, // server -> joining client: a structure's broken chunks, a bit each (reliable)
+    VoiceUp, // client -> server: one 20 ms voice frame (sequence, flags: team radio, IMA-ADPCM frame) (unreliable; GameVoice.cs)
+    VoiceDown, // server -> each listener it reaches: talker X's voice frame (talker, sequence, route, frame) (unreliable; never back to the talker)
+    VoiceCtl, // client -> server: my voice preferences (bit 0: I listen to voice) (reliable)
+    VoiceInfo, // server -> one client: the host's voice settings (bit 0: voice chat allowed) (reliable)
+    PEnts, // server -> each client: Co-op: the enemies near that client (interest-managed, 13 bytes each, 20 Hz) (unreliable sequenced; GamePveNet.cs)
+    PEvent, // server -> one client or all: Co-op: a banner, kill / objective / mission XP, enemies cleared (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

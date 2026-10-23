@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 
@@ -18,10 +17,10 @@ public sealed class AudioMix
     /// <summary>The JSON format version (written as "version").</summary>
     public const int FormatVersion = 1;
 
-    /// <summary>The file next to the game that is loaded at start-up.</summary>
+    /// <summary>The file in the save folder that is loaded at start-up.</summary>
     public const string FileName = "audio_mix.json";
 
-    /// <summary>The folder (next to the game) for "Save as..." presets.</summary>
+    /// <summary>The folder (in the save folder) for "Save as..." presets.</summary>
     public const string PresetFolder = "AudioMixes";
 
     private const int Levels = (int)MixBus.COUNT, Params = (int)MixParam.COUNT;
@@ -207,20 +206,8 @@ public sealed class AudioMix
 
     // ---- JSON -----------------------------------------------------------------------------
 
-    /// <summary>The game build, for the JSON: the assembly's informational version (with the git commit when the SDK embeds it).</summary>
-    public static string GameVersion()
-    {
-        try
-        {
-            var v = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
-                    ?? typeof(AudioMix).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
-            return string.IsNullOrEmpty(v) ? "unknown" : v;
-        }
-        catch (Exception)
-        {
-            return "unknown";
-        }
-    }
+    /// <summary>The game build, for the JSON (<see cref="BuildInfo.Label"/>: release version or "dev build", with the commit).</summary>
+    public static string GameVersion() => BuildInfo.Label;
 
     /// <summary>
     /// The mix as indented JSON: the format and version, the game build, the time (UTC, ISO 8601), the preset name,
@@ -386,11 +373,11 @@ public sealed class AudioMix
 
     // ---- Files ----------------------------------------------------------------------------
 
-    /// <summary>audio_mix.json next to the game.</summary>
-    public static string DefaultPath => Path.Combine(AppContext.BaseDirectory, FileName);
+    /// <summary>audio_mix.json in the save folder (<see cref="SavePaths"/>, so it carries over to new builds).</summary>
+    public static string DefaultPath => SavePaths.PathOf(FileName);
 
-    /// <summary>The AudioMixes folder next to the game.</summary>
-    public static string PresetDir => Path.Combine(AppContext.BaseDirectory, PresetFolder);
+    /// <summary>The AudioMixes folder in the save folder.</summary>
+    public static string PresetDir => Path.Combine(SavePaths.Folder, PresetFolder);
 
     /// <summary>A preset name as a safe file name (letters, digits, space, - and _; at most 40 characters).</summary>
     public static string CleanPresetName(string name)
@@ -410,8 +397,7 @@ public sealed class AudioMix
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
-            File.WriteAllText(path, ToJson(name, GameVersion(), DateTime.UtcNow));
-            return null;
+            return SavePaths.WriteAtomic(path, ToJson(name, GameVersion(), DateTime.UtcNow)) ? null : "could not write " + path;
         }
         catch (Exception ex)
         {

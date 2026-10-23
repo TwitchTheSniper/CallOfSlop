@@ -134,9 +134,9 @@ public static class TacticalGear
     public const int InsertionHealth = 40;
 
     // ---- Stim Shot ------------------------------------------------------------------------------------
-    public const int StimHeal = 40;
+    public const int StimHeal = 48; // 40% of World.MaxHealth (was 40 of 100)
     public const double StimTime = 4;
-    public const float StimRegen = 15f; // HP per second during StimTime, no waiting
+    public const float StimRegen = 18f; // HP per second during StimTime, no waiting (was 15 at 100 HP): 48 + 72 = a full heal
 
     /// <summary>The tactical items as they go into <see cref="Throwables.All"/> (in enum order, from Flash).</summary>
     public static readonly ThrowableDef[] Defs =
@@ -342,16 +342,25 @@ public static class TacticalGear
     /// </summary>
     public static ThrowableKind BotPick(BotPersonality kind, double roll)
     {
-        ThrowableKind[] pool = kind switch
-        {
-            BotPersonality.Rusher => [ThrowableKind.Flash, ThrowableKind.Stun, ThrowableKind.Stim, ThrowableKind.None],
-            BotPersonality.Marksman => [ThrowableKind.MotionSensor, ThrowableKind.Cover, ThrowableKind.Trophy, ThrowableKind.None],
-            BotPersonality.Tactician => [ThrowableKind.Flash, ThrowableKind.Trophy, ThrowableKind.MotionSensor, ThrowableKind.Insertion, ThrowableKind.Decoy],
-            BotPersonality.Chaotic => [ThrowableKind.Decoy, ThrowableKind.Stun, ThrowableKind.Flash, ThrowableKind.Stim],
-            _ => [ThrowableKind.Flash, ThrowableKind.Stim, ThrowableKind.Cover, ThrowableKind.Insertion, ThrowableKind.None, ThrowableKind.None],
-        };
+        var pool = BotPool(kind);
         return pool[Math.Clamp((int)(roll * pool.Length), 0, pool.Length - 1)];
     }
+
+    /// <summary>The tactical items a personality picks from (<see cref="BotPick"/>; shared arrays, don't change them).</summary>
+    public static ThrowableKind[] BotPool(BotPersonality kind) => kind switch
+    {
+        BotPersonality.Rusher => RusherPool,
+        BotPersonality.Marksman => MarksmanPool,
+        BotPersonality.Tactician => TacticianPool,
+        BotPersonality.Chaotic => ChaoticPool,
+        _ => OtherPool,
+    };
+
+    private static readonly ThrowableKind[] RusherPool = [ThrowableKind.Flash, ThrowableKind.Stun, ThrowableKind.Stim, ThrowableKind.None];
+    private static readonly ThrowableKind[] MarksmanPool = [ThrowableKind.MotionSensor, ThrowableKind.Cover, ThrowableKind.Trophy, ThrowableKind.None];
+    private static readonly ThrowableKind[] TacticianPool = [ThrowableKind.Flash, ThrowableKind.Trophy, ThrowableKind.MotionSensor, ThrowableKind.Insertion, ThrowableKind.Decoy];
+    private static readonly ThrowableKind[] ChaoticPool = [ThrowableKind.Decoy, ThrowableKind.Stun, ThrowableKind.Flash, ThrowableKind.Stim];
+    private static readonly ThrowableKind[] OtherPool = [ThrowableKind.Flash, ThrowableKind.Stim, ThrowableKind.Cover, ThrowableKind.Insertion, ThrowableKind.None, ThrowableKind.None];
 
     /// <summary>A cheap deterministic hash in 0..1 (bot rolls that mustn't disturb the server's shared random sequence).</summary>
     public static double Roll(uint a, uint b, uint salt)

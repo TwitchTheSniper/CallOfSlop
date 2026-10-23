@@ -37,7 +37,49 @@ public sealed partial class Ui
         }
         else
             ImGui.TextColored(Dim, "The game splits the teams and keeps them even."u8);
+        TeamBalancePicker(ref s.TeamBalance, ref s.HumansTeam, "host");
     }
+
+    /// <summary>
+    /// "Team balance: Auto / Off / Humans vs Bots" (TeamBalance.cs), on the Host / Single player screens and in the
+    /// lobby room. Returns true when it changed.
+    /// </summary>
+    private bool TeamBalancePicker(ref TeamBalance balance, ref byte humansTeam, string id)
+    {
+        var changed = false;
+        ImGui.SetNextItemWidth(200 * _scale);
+        if (ImGui.BeginCombo($"Team balance##{id}", Game.TeamBalanceName(balance)))
+        {
+            foreach (var b in TeamBalanceChoices)
+                if (ImGui.Selectable(Game.TeamBalanceName(b), b == balance))
+                {
+                    changed |= b != balance;
+                    balance = b;
+                }
+            ImGui.EndCombo();
+        }
+        if (balance == TeamBalance.HumansVsBots)
+        {
+            ImGui.SameLine();
+            var t = (int)humansTeam;
+            ImGui.RadioButton($"People on Blue##{id}", ref t, 0);
+            ImGui.SameLine();
+            ImGui.RadioButton($"People on Red##{id}", ref t, 1);
+            changed |= t != humansTeam;
+            humansTeam = (byte)t;
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 620 * _scale);
+        ImGuiSafe.TextColored(Dim, balance switch
+        {
+            TeamBalance.Off => "Off: nobody is moved to even the teams and picks have no size limit, so friends can stack one side. Bots stay where they were put.",
+            TeamBalance.HumansVsBots => "Every person on one side, every bot on the other. The bot slider sets how many bots you face.",
+            _ => "Auto: bots (and players on Auto) move to keep the sides even.",
+        });
+        ImGui.PopTextWrapPos();
+        return changed;
+    }
+
+    private static readonly TeamBalance[] TeamBalanceChoices = [TeamBalance.Auto, TeamBalance.Off, TeamBalance.HumansVsBots];
 
     // ---- In a match ----------------------------------------------------------------------------
 
@@ -99,6 +141,14 @@ public sealed partial class Ui
                 game.SetTeamRules((TeamSelection)sel, diff);
                 s.TeamSelect = game.TeamSelection; // remembered for the next game you host (saved with SAVE in settings)
                 s.TeamMaxDiff = game.MaxTeamDiff;
+            }
+            var balance = game.TeamBalance;
+            var humansTeam = game.HumansTeam;
+            if (TeamBalancePicker(ref balance, ref humansTeam, "pause"))
+            {
+                game.SetTeamBalance(balance, humansTeam);
+                s.TeamBalance = game.TeamBalance;
+                s.HumansTeam = game.HumansTeam;
             }
         }
         ImGui.Spacing();

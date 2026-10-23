@@ -149,6 +149,12 @@ public sealed partial class WeaponDef
     /// <summary>Who made it (optional, for third-party weapons).</summary>
     public string Author { get; set; } = "";
 
+    /// <summary>
+    /// The optic its default kit starts with (the file's "defaultOptic", an optic attachment's name). Null: snipers pick a
+    /// magnified scope by themselves (<see cref="Attachments.DefaultOptic"/>), everything else starts with iron sights.
+    /// </summary>
+    public string? DefaultOptic { get; set; }
+
     /// <summary>The file it was loaded from, relative to the Weapons folder (null for the built-in fallback weapons).</summary>
     public string? SourceFile { get; set; }
 
@@ -184,6 +190,9 @@ public sealed partial class WeaponDef
 
     /// <summary>Special-effect flags from a built weapon's parts (incendiary, explosive...): carried, gameplay later.</summary>
     public string[] BuildFlags { get; set; } = [];
+
+    /// <summary>A built weapon's build, as text (<see cref="WeaponBuild.ToText"/>), so a part hot reload can rebuild it in place; null for standard weapons.</summary>
+    public string? BuildText { get; set; }
 
     /// <summary>Barrels in all (1 for standard weapons).</summary>
     public int BarrelCount => MuzzlePoints?.Length ?? 1;
@@ -230,6 +239,10 @@ public sealed partial class WeaponDef
     public float Caliber = 0.5f; // 0 = small and snappy, 1 = huge and deep
     public float Bright = 0.5f; // high-frequency content of the blast
     public float Tail = 0.5f; // length of the echo
+
+    // ---- Bullet penetration (Materials/penetration.json, Source/Game/Materials) ----
+    public float Penetration = -1f; // power through walls; -1 = from the class and calibre (MaterialPenetration.PowerOf)
+    public float PenetrationMult = 1f; // attachments scale the power (AP Rounds up, hollow points down)
 
     // ---- Derived -------------------------------------------------------------
     public Slot Slot => Class is WeaponClass.Pistol or WeaponClass.Launcher ? Slot.Secondary : Slot.Primary; // launchers: secondary only

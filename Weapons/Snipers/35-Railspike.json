@@ -2,6 +2,7 @@
   "format": "call-of-slop-weapon/1",
   "name": "Railspike",
   "order": 35,
+  "defaultOptic": "8x Sniper Scope",
   "class": "Sniper",
   "blurb": "Experimental coil rifle. No drop, no falloff, no mercy.",
   "damage": 120,
@@ -27,7 +28,7 @@
     "kickBack": 0.16, "kickUp": 4, "kickRoll": 0.5, "kickSide": 0.006, "kickTime": 0.16
   },
   "mobility": 0.88,
-  "adsZoom": 4,
+  "adsZoom": 1.5,
   "equipTime": 0.8,
   "adsTime": 0.16,
   "length": 0.78,
@@ -35,9 +36,10 @@
   "accent": [0.2, 0.9, 0.95],
   "sound": "Zap",
   "caliber": 0.9,
+  "penetration": 140,
   "bright": 0.8,
   "tail": 0.8,
   "model": {
-    "base": "coil_rifle"
+    "base": "coil_rifle", "sights": "aperture"
   }
 }

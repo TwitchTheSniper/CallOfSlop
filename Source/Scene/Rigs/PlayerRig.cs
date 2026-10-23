@@ -141,9 +141,10 @@ public sealed class PlayerRig
     /// </summary>
     public void Pose(Player p, double time, bool legsOnly = false)
     {
+        BodyBloodRender.Reset(); // marks are placed below for a living body (Source/Render/BodyBloodRender.cs)
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
-        var body = rot * at;
+        var body = GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at; // a planet: standing on its curve
         Root.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
         var color = p.Color;
         if (color != _color)
@@ -184,6 +185,7 @@ public sealed class PlayerRig
         }
         if (legsOnly)
             return;
+        BodyBloodRender.PlacePlayer(p, legs, body, stance); // blood marks by health (bound around this rig's draws)
 
         _gear.SetLocalMatrix(legs.Upper);
         var upper = legs.Upper * body;

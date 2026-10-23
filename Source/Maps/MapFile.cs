@@ -161,6 +161,22 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (PlanetHash is var planet and not 0) // point gravity and solid meshes (MapPlanet.cs); ordinary maps keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (planet >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
+            if (DestructionHash is var destruction and not 0) // destructible maps only (MapDestruction.Map.cs): host and clients must cut and break the same
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (destruction >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             return h;
         }
     }
@@ -181,7 +197,7 @@ public static partial class MapFile
             $"{m.Name}({string.Join(", ", m.GetParameters().Select(p => $"{TypeName(p.ParameterType)} {p.Name}{(p.HasDefaultValue ? $" = {Fmt(p.DefaultValue)}" : p.IsDefined(typeof(ParamArrayAttribute)) ? " = []" : "")}"))})");
 
     private static string TypeName(Type t) => t == typeof(float) ? "number" : t == typeof(int) ? "integer" : t == typeof(bool) ? "true/false"
-        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : t == typeof(float[]) ? "list of numbers" : t == typeof(MapJson?) ? "object" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
+        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : t == typeof(float[]) ? "list of numbers" : t == typeof(MapJson?) ? "object" : t == typeof(bool?) ? "true/false (or leave out)" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
 
     // ---- Writing --------------------------------------------------------------------------
 
@@ -197,6 +213,12 @@ public static partial class MapFile
         sb.Append($"  \"order\": {m.Order},\n");
         if (m.PrototypeGrid)
             sb.Append("  \"prototypeGrid\": true,\n");
+        if (!m.Penetration)
+            sb.Append("  \"penetration\": false,\n");
+        if (m.FallKillY is { } fallKill)
+            sb.Append($"  \"fallKill\": {Num(fallKill)},\n");
+        if (m.DestructibleSetting is { } destructible)
+            sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
             sb.Append("  \"flagPool\": ").Append(flagPool).Append(",\n");
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
@@ -209,6 +231,8 @@ public static partial class MapFile
             sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
+        if (m.PointGravity is { } pointGravity)
+            sb.Append("  \"gravity\": ").Append(GravityToJson(pointGravity)).Append(",\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         MapObjectiveJson.Write(sb, m);
@@ -311,11 +335,22 @@ public static partial class MapFile
                     ? mpi : throw new MapFileException($"{source}: \"maxPlayers\" is a whole number from 2 to {Map.HardMaxPlayers}");
             if (Prop(root, "prototypeGrid") is { ValueKind: JsonValueKind.True })
                 map.PrototypeGrid = true;
+            if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
+                map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
+            if (Prop(root, "fallKill") is { ValueKind: not JsonValueKind.Null } fallKillEl) // a void map: falling below this height kills (GameFallKill.cs)
+                map.FallKillY = fallKillEl.ValueKind == JsonValueKind.Number && fallKillEl.GetSingle() is >= -4f and <= 55f
+                    ? fallKillEl.GetSingle() : throw new MapFileException($"{source}: \"fallKill\" is a height from -4 to 55 (metres)");
+            if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
+                map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");
+            map.Destructible = map.DestructibleSetting ?? MapPack.DestructibleDefault(map.PackDir);
             if (Prop(root, "flagPool") is { ValueKind: not JsonValueKind.Null } flagPool)
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
-            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)
+            // Sky images are found next to the map file; a map read from text (a round trip) looks in its pack folder.
+            var skySource = (Path.GetDirectoryName(source) ?? "").Length > 0 || map.PackDir == null ? source : Path.GetFileName(map.PackDir) + "/" + source;
+            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, skySource) is { } parsedSky)
             {
                 map.Skybox = parsedSky;
                 map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)
@@ -334,6 +369,8 @@ public static partial class MapFile
                     throw new MapFileException($"{source}: boundary: {ex.Message}");
                 }
             }
+            if (Prop(root, "gravity") is { ValueKind: not JsonValueKind.Null } gravity)
+                map.PointGravity = ReadGravity(gravity, source); // a planet: gravity towards a point (MapFile.Gravity.cs)
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             try
@@ -406,6 +443,7 @@ public static partial class MapFile
                 map.Zombies = ZombiesMap.Read(zombies, map, source); // the Zombies mode: areas, doors, windows, buyables (MapZombies.cs)
             MapObjectiveJson.Read(root, map, source);
             map.CheckInsideBoundary(source);
+            map.FinishDestruction(); // the destructible chunks' support graph (MapDestruction.Map.cs; no-op without)
             map.FinishProps(); // last: Clutter keeps clear of the spawns, waypoints, objectives and movers above
             return map;
         }
@@ -432,6 +470,8 @@ public static partial class MapFile
             return e.ValueKind == JsonValueKind.Number && e.TryGetInt32(out var i) ? i : throw new MapFileException($"{where}: expected a whole number, got {e}");
         if (t == typeof(bool))
             return e.ValueKind is JsonValueKind.True or JsonValueKind.False ? e.GetBoolean() : throw new MapFileException($"{where}: expected true or false, got {e}");
+        if (t == typeof(bool?))
+            return e.ValueKind is JsonValueKind.True or JsonValueKind.False ? (object?)e.GetBoolean() : e.ValueKind == JsonValueKind.Null ? (object?)null : throw new MapFileException($"{where}: expected true or false, got {e}");
         if (t == typeof(string))
             return e.ValueKind == JsonValueKind.String ? e.GetString() : throw new MapFileException($"{where}: expected text, got {e}");
         if (t == typeof(string[]))

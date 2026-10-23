@@ -72,7 +72,7 @@ public sealed partial class Game
         }
         var me = Local!;
         var def = Active.Def;
-        var cand = LockCandidate(me.RenderEye, World.Forward(LookYaw, LookPitch), def);
+        var cand = LockCandidate(me.RenderEye, LookDir(LookYaw, LookPitch), def);
         if (cand != null && cand.Id == LockTarget)
         {
             LockProgress = MathF.Min(1f, LockProgress + dt / MathF.Max(0.05f, def.LauncherLockTime));

@@ -212,7 +212,10 @@ public static class RocketFlight
                 if (wl > 0.3f)
                     r.Vel = Turn(r.Vel / speed, want / wl, d.LauncherTurnRate * Deg * h) * speed;
             }
-            r.Vel.Y -= World.Gravity * d.LauncherGravity * h;
+            if (GravityFrames.Curved)
+                r.Vel += GravityFrames.GravityAt(r.Pos) * (d.LauncherGravity * h); // a planet: towards its centre
+            else
+                r.Vel.Y -= World.Gravity * d.LauncherGravity * h;
             if (d.LauncherDrag > 0)
                 r.Vel *= MathF.Exp(-d.LauncherDrag * h);
 
@@ -262,6 +265,16 @@ public static class RocketFlight
     /// <summary>The blast damage at <paramref name="dist"/> metres from the centre of a blast of radius <paramref name="radius"/>.</summary>
     public static float BlastDamage(WeaponDef d, float dist, float radius) =>
         dist >= radius ? 0f : d.Damage * MathF.Pow(1f - dist / radius, d.LauncherFalloff);
+
+    /// <summary>The blast damage a player takes <paramref name="dist"/> metres from the centre in the open (the player radius and "playerMult"; before prone, Flak Jacket and walls).</summary>
+    public static float PlayerBlastDamage(WeaponDef d, float dist) => BlastDamage(d, dist, d.PlayerBlastRadius) * d.LauncherPlayerMult;
+
+    /// <summary>How far from the centre (m) the blast alone takes <paramref name="health"/> off a player in the open (0 if not even the centre does).</summary>
+    public static float PlayerLethalRadius(WeaponDef d, float health)
+    {
+        var centre = d.Damage * d.LauncherPlayerMult;
+        return centre < health ? 0f : d.PlayerBlastRadius * (1f - MathF.Pow(health / centre, 1f / d.LauncherFalloff));
+    }
 
     /// <summary>
     /// Where cluster bomblet <paramref name="i"/> of a blast lands: scattered round the centre (deterministic from the

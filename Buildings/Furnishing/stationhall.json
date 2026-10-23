@@ -1,0 +1,28 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationhall",
+ "description": "A station stair hall or corridor: a cabinet, a bulkhead lamp, a case.",
+ "items": [
+  {
+   "props": [
+    "Station Server Cabinet",
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    0,
+    1
+   ]
+  },
+  {
+   "props": [
+    "Station Supply Case"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    1
+   ]
+  }
+ ]
+}

@@ -301,6 +301,20 @@ public sealed class Progress
         return CheckLevelUp(before, now);
     }
 
+    /// <summary>
+    /// Co-op XP (docs/pve/DESIGN.md "Progression"): <paramref name="xp"/> account XP with a popup, and 40% of it as weapon
+    /// XP for <paramref name="weaponId"/> (an enemy kill; 255: none). Returns the new level if it changed.
+    /// </summary>
+    public int? AwardCoop(int xp, string label, double now, byte weaponId = 255)
+    {
+        var before = Level;
+        if (weaponId < Weapons.All.Length)
+            AddWeaponXp(weaponId, Math.Max(1, xp * 2 / 5), now);
+        Add(xp, label, now);
+        Save();
+        return CheckLevelUp(before, now);
+    }
+
     private void AddWeaponXp(byte weaponId, int amount, double now)
     {
         if (weaponId >= Weapons.All.Length)
@@ -309,6 +323,8 @@ public sealed class Progress
         var before = WeaponXp(w.Name);
         var after = _weaponXp[w.Name] = before + amount;
         var unlocked = Attachments.For(w).Where(a => Attachments.UnlockXp(w, a) is var need && need > before && need <= after).Select(a => a.Name).ToArray();
+        if (Attachments.StartsScoped(w) && Attachments.IronSightsXp(w) is var irons && irons > before && irons <= after)
+            unlocked = [.. unlocked, Attachments.IronSightsName]; // a sniper's iron sights (the empty optic slot)
         if (unlocked.Length > 0)
         {
             AttachmentBanner = $"{w.Name}: unlocked {string.Join(", ", unlocked)}";
@@ -352,14 +368,21 @@ public sealed class Progress
 
     // ---- Save file -------------------------------------------------------------------
 
-    private static string FilePath => Path.Combine(AppContext.BaseDirectory, "progress.txt");
+    /// <summary>progress.txt in the save folder (<see cref="SavePaths"/>).</summary>
+    public static string FilePath => SavePaths.PathOf("progress.txt");
 
-    public static Progress Load()
+    /// <summary>The <c>version=</c> line written to progress.txt (files without one are version 0 and load the same).</summary>
+    public const int SaveVersion = 1;
+
+    public static Progress Load() => Load(FilePath);
+
+    /// <summary>Loads progress from <paramref name="path"/> (a damaged file loads its .bak; see <see cref="SavePaths.ReadLines"/>).</summary>
+    public static Progress Load(string path)
     {
         try
         {
-            if (File.Exists(FilePath))
-                return Parse(File.ReadAllLines(FilePath));
+            if (SavePaths.ReadLines(path, SaveVersion) is { } lines)
+                return Parse(lines);
         }
         catch
         {
@@ -409,13 +432,16 @@ public sealed class Progress
     public IEnumerable<string> ToLines() =>
         [$"xp={Xp}", $"prestige={Prestige}", $"kills={Kills}", $"headshots={Headshots}", $"matches={Matches}", $"wins={Wins}", .. _weaponXp.Select(kv => $"wx.{kv.Key}={kv.Value}")];
 
-    public void Save()
+    public void Save() => Save(FilePath);
+
+    /// <summary>Saves to <paramref name="path"/> atomically (keeping progress.txt.bak), unless <see cref="ReadOnly"/>.</summary>
+    public void Save(string path)
     {
         if (ReadOnly)
             return;
         try
         {
-            File.WriteAllLines(FilePath, ToLines());
+            SavePaths.WriteLines(path, ToLines(), SaveVersion);
         }
         catch
         {

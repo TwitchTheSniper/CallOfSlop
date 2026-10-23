@@ -13,6 +13,8 @@ public static class PlayerRender
     public static void DrawImmediate(Renderer g, Player p, double time)
     {
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
+        if (GravityFrames.Curved)
+            rot *= GravityFrames.Basis(p.RenderPosition); // a planet: standing on its curve
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
         var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)
@@ -34,6 +36,8 @@ public static class PlayerRender
         // body behind, head and gun out front.
         var stance = BodyModel.StanceIndex(p.RenderStance);
         var s = BodyModel.Stances[stance];
+        BodyBloodRender.PlacePlayer(p, legs, body, stance); // blood marks by health (Source/Render/BodyBloodRender.cs)
+        BodyBloodRender.Bind(g);
         BodyModel.DrawImmediate(g, p, stance, up, hat != null);
         if (hat != null)
             HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * Matrix4x4.CreateTranslation(s.HeadAt) * up);
@@ -50,6 +54,7 @@ public static class PlayerRender
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
             Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac), 1f, mode: 2);
+        BodyBloodRender.Unbind(g);
     }
 
     /// <summary>The legs posed by <see cref="LegAnimator.Animate"/>: pelvis, then per leg thigh, knee pad, shin, boot, sole (the rig's order).</summary>

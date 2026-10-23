@@ -16,7 +16,9 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
-/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
+///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
+/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -47,7 +49,7 @@ public static unsafe partial class Program
     private static bool _mouseCaptured;
     private static bool _skipNextMouseDelta = true;
     private static double2 _lastCursor;
-    private static bool _wasDeadUi, _wasVoting;
+    private static bool _wasDeadUi, _wasResults;
     private static readonly bool[] _voteKeyDown = new bool[3];
     private static double _deathMenuAt;
     private static readonly DeathCam _deathCam = new(); // the camera after you die (DeathCam.cs)
@@ -64,7 +66,7 @@ public static unsafe partial class Program
 
     public static int Main(string[] args)
     {
-        SetUpLogFile();
+        SetUpLogFile(args);
         // No full blocking garbage collections mid-match (one took 34 ms in the self-test): gen 2 is collected in the
         // background instead, unless memory runs low. Server ticks and frames only see the short gen 0/1 pauses.
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
@@ -82,17 +84,40 @@ public static unsafe partial class Program
             return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
         if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
+        if (args.SkipWhile(a => !a.Equals("--check-part", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partFile)
+            return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
+        if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))
+            return PartTools.CheckAll(args.SkipWhile(a => !a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")));
+        if (args.SkipWhile(a => !a.Equals("--export-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partDir)
+            return PartTools.Export(partDir, args.Any(a => a.Equals("--resolved", StringComparison.OrdinalIgnoreCase))); // part files normalised (or resolved)
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
+        if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
+            return UpdateVerifyCli.Run(manifestFile, zipFile); // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
 
+        // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
+        // The smoke test works on a throwaway copy and never touches the real save folder.
+        if (args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+            SavePaths.UseSmokeSandbox(args);
+        else
+            SavePaths.Init(args);
         _settings = Settings.Load();
+        Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
         LoadoutStore.Load();
+        Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
+        if (!args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Update check (Source/Updates): in the background, never blocking startup; release builds only, at most every 6 h.
+            Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
+            if (_settings.UpdateCheck && BuildInfo.IsRelease)
+                Updater.Shared.Check(manual: false);
+        }
         _lagMs = FlagValue(args, "--lag");
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        var plain = args.Where(a => !a.StartsWith("--")).ToArray();
+        var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--")).ToArray();
 
         // Remove the router mapping even if the process is closed abruptly.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => _upnp?.Dispose();
@@ -108,12 +133,16 @@ public static unsafe partial class Program
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
             // Command-line shortcuts skip the lobby.
-            if (plain.Length > 0 && plain[0].Equals("host", StringComparison.OrdinalIgnoreCase))
+            if (UrlProtocol.FindLink(plain) is { } inviteLink)
+                JoinFromInvite(inviteLink); // a clicked callofslop://join/... link (Program.Listing.cs)
+            else if (plain.Length > 0 && plain[0].Equals("host", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1 && ushort.TryParse(plain[1], out var hp))
                     _settings.Port = hp;
                 StartSession(LobbyAction.Host);
             }
+            else if (plain.Length > 1 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase) && InviteCode.LooksLikeInvite(plain[1]))
+                JoinFromInvite(plain[1]); // "join ABCD-EFGH-JKMN-PQRS"
             else if (plain.Length > 0 && plain[0].Equals("join", StringComparison.OrdinalIgnoreCase))
             {
                 if (plain.Length > 1)
@@ -133,6 +162,7 @@ public static unsafe partial class Program
         finally
         {
             EndSession("");
+            _manualList?.Dispose(); // "Run a server list for friends" (Program.Listing.cs)
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
@@ -210,6 +240,17 @@ public static unsafe partial class Program
         {
             ZombiesSmokeTick(now); // Program.Zombies.cs
             if (!ZombiesSmokeActive)
+            {
+                StartCoopSmoke(now); // a co-op defend wave on Silo (Program.Pve.cs), then the usual chain carries on
+                if (!CoopSmokeActive)
+                    StartMoversSmoke(now);
+            }
+            return;
+        }
+        if (CoopSmokeActive)
+        {
+            CoopSmokeTick(now); // Program.Pve.cs
+            if (!CoopSmokeActive)
                 StartMoversSmoke(now); // the usual chain carries on
             return;
         }
@@ -298,6 +339,11 @@ public static unsafe partial class Program
             SmokeNameTags(now); // Program.NameTags.cs
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeScoreStep < 3)
+        {
+            SmokeScoreboard(now); // Program.Scoreboard.cs: the scoreboard with its Level column
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
             SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
@@ -321,6 +367,11 @@ public static unsafe partial class Program
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeRagdollStep < 9)
         {
             SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
+            return;
+        }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeBloodStep < 9)
+        {
+            SmokeBlood(now); // Program.Blood.cs: the blood overlay at 30% health, a bot's body blood at 20%
             return;
         }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
@@ -355,6 +406,8 @@ public static unsafe partial class Program
                     SmokeShot("loadout_overview");
                 if (_smokeMap == 0 && SmokeTeamsTick(game, now))
                     break; // the TEAMS window shot (Program.Teams.cs)
+                if (_smokeMap == 0 && SmokeLobbyRoomTick(game, now))
+                    break; // the lobby room shot (Program.LobbyRoom.cs)
                 _smokeStage++;
                 break;
             case 1 when t > 1.0:
@@ -788,12 +841,13 @@ public static unsafe partial class Program
         _smokeWorstDt = 0;
     }
 
-    /// <summary>The game runs without a console window, so console output goes to callofslop.log.</summary>
-    private static void SetUpLogFile()
+    /// <summary>The game runs without a console window, so console output goes to callofslop.log (serverlist.log for --master, which can run beside the game).</summary>
+    private static void SetUpLogFile(string[] args)
     {
         try
         {
-            var writer = new StreamWriter(Path.Combine(AppContext.BaseDirectory, "callofslop.log"), append: false) { AutoFlush = true };
+            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log" : "callofslop.log";
+            var writer = new StreamWriter(Path.Combine(AppContext.BaseDirectory, name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
             Console.SetError(writer);
         }
@@ -868,7 +922,7 @@ public static unsafe partial class Program
     // Sessions (lobby <-> match)
     // =====================================================================
 
-    private static void StartSession(LobbyAction kind)
+    private static void StartSession(LobbyAction kind, Invite? invite = null)
     {
         EndSession("");
         _lobbyMessage = "";
@@ -888,28 +942,11 @@ public static unsafe partial class Program
                 case LobbyAction.Host:
                     net = NetPeer.Host(_settings.Port, Game.MaxPlayers - 1);
                     bots = _settings.HostBots;
-                    var lan = UpnpMapping.GetLocalIPv4()?.ToString() ?? "this PC's IP";
-                    var suffix = _settings.Port == DefaultPort ? "" : $" port {_settings.Port}";
-                    _joinAddress = lan + suffix + " (LAN)";
-                    if (_settings.UseUpnp && !_forceNoUpnp)
-                    {
-                        // Router discovery takes a few seconds; don't freeze the game while it happens.
-                        var port = _settings.Port;
-                        _joinAddress += " - opening router port...";
-                        _upnpTask = Task.Run(() =>
-                        {
-                            var m = UpnpMapping.TryCreate(port, Console.WriteLine);
-                            _upnp = m;
-                            _joinAddress = m is { ExternalIp: { } ext, BehindSecondNat: false }
-                                ? $"{ext}{suffix} (internet) or {lan}{suffix} (LAN)"
-                                : m is { BehindSecondNat: true }
-                                    ? $"{lan}{suffix} (LAN only - your connection is behind a second NAT)"
-                                    : $"{lan}{suffix} (LAN only - UPnP unavailable, forward UDP {port} for internet play)";
-                        });
-                    }
+                    BeginHostAddressing(); // the address line, UPnP, STUN and the invite code (Program.Listing.cs)
                     break;
                 default:
                     net = NetPeer.Join(_settings.JoinAddress, _settings.Port);
+                    LearnListFromHost(_settings.JoinAddress, _settings.Port, invite); // the host's server list, for next time (Program.Listing.cs)
                     break;
             }
 
@@ -927,7 +964,11 @@ public static unsafe partial class Program
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
+            ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
+            _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
+            _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
+            ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -935,14 +976,12 @@ public static unsafe partial class Program
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
                 _session.GamePort = _settings.Port;
-                _session.AdvertiseTo = _settings.Advertise ? _settings.Master : null;
-                if (_settings.Advertise && _settings.Master is { } m)
-                    Console.WriteLine($"[host] advertising '{_session.ServerName}' to master server {m.Host}:{m.Port}");
+                StartHostListing(_session); // register on a server list, or run one (Program.Listing.cs)
             }
             if (_rangeLaunch != null)
                 ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
             Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
-            if (!_session.SkipsLoadout)
+            if (!_session.SkipsLoadout && !_session.LobbyEnabled)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
@@ -966,6 +1005,7 @@ public static unsafe partial class Program
             _session.Dispose();
             _session = null;
         }
+        StopHostListing(); // Program.Listing.cs
         if (_upnpTask is { IsCompleted: false })
             _upnpTask.Wait(TimeSpan.FromSeconds(4));
         _upnpTask = null;
@@ -1013,12 +1053,18 @@ public static unsafe partial class Program
                 }
                 else
                 {
-                    UpdateLocalPlayer(now);
+                    if (TrackLobbyRoom(now)) // the lobby room: no player to steer (Program.LobbyRoom.cs)
+                        UpdateLobbyRoom(now);
+                    else
+                        UpdateLocalPlayer(now);
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     if (!paused)
                         game.Update(now, FrameDt);
                 }
             }
+            UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
+            UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;
@@ -1030,7 +1076,11 @@ public static unsafe partial class Program
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
-            if (_session != null)
+            if (Ui.WorkbenchOpen)
+                PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
+            if (_session != null && InLobbyRoom)
+                RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
+            else if (_session != null)
                 Render(now);
             else if (_smokeGallery is 1 or 2)
                 DrawGunGallery(_smokeGallery);
@@ -1056,7 +1106,11 @@ public static unsafe partial class Program
             Ui.BeginFrame();
             if (_settings.ShowFps)
                 FpsCounter.Draw(now);
-            if (_session is { } g)
+            if (_session is { } lobbyGame && InLobbyRoom)
+            {
+                DrawLobbyRoomUi(lobbyGame, now); // Program.LobbyRoom.cs
+            }
+            else if (_session is { } g)
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
@@ -1070,6 +1124,7 @@ public static unsafe partial class Program
                     _swallowClick = true; // the Deploy click mustn't also fire the gun
                 }
                 Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
+                DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs)
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -1107,8 +1162,10 @@ public static unsafe partial class Program
                 }
                 else
                 {
+                    if (SavePaths.TakeWarningOnce() is { } saveWarning)
+                        _lobbyMessage = saveWarning; // a save from a newer build that this one won't overwrite (shown once)
                     var action = Ui.DrawLobby(_settings, _lobbyMessage, AudioSystem);
-                    if (action == LobbyAction.Quit)
+                    if (action == LobbyAction.Quit || Updater.Shared?.QuitRequested == true) // the installed update has started (UiUpdates.cs)
                         _quit = true;
                     else if (action != LobbyAction.None)
                         StartSession(action);
@@ -1213,12 +1270,18 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null; // (a Zombies workbench too)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom; // (a Zombies workbench too; the lobby room)
+
+    /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
+    private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
+
+    /// <summary>This frame's inputs to the one mouse capture rule (CursorPolicy.cs).</summary>
+    private static CursorState CursorNow() => new(_session != null, MenusOpen, ResultsScreen, _window != null && _window.GetAttribute(GlfwWindowAttribute.Focused) != 0);
 
     private static void SetMouseCaptured(bool captured)
     {
-        if (captured && (MenusOpen || _session == null))
-            captured = false;
+        if (captured && !CursorPolicy.MayCapture(CursorNow()))
+            captured = false; // a menu or the results screen is up: keep the cursor free
         _mouseCaptured = captured;
         _window.SetInputMode(GlfwInputMode.Cursor, (int)(captured ? GlfwCursorMode.Disabled : GlfwCursorMode.Normal));
         if (captured && Glfw.RawMotionSupported())
@@ -1241,9 +1304,15 @@ public static unsafe partial class Program
         }
 
         // Main menu > Loadouts: Esc is the screen's Back (one page back, then out to the menu).
-        if (_session == null && key == GlfwKey.Escape && Ui.LobbyLoadouts)
+        if ((_session == null || InLobbyRoom) && key == GlfwKey.Escape && Ui.LobbyLoadouts)
         {
             Ui.LoadoutBack();
+            return;
+        }
+
+        if (key == GlfwKey.Escape && Ui.ChatOpen)
+        {
+            Ui.CloseChat(); // Esc leaves the chat line, not the match
             return;
         }
 
@@ -1255,6 +1324,8 @@ public static unsafe partial class Program
             EndSession("Cancelled");
             return;
         }
+        if (InLobbyRoom)
+            return; // the lobby room has its own LEAVE button
         if (Ui.MenuOpen)
         {
             // Same as the loadout screen's Back: one page back, and from the overview it closes.
@@ -1290,7 +1361,7 @@ public static unsafe partial class Program
             return;
         }
 
-        if (_session != null && !_mouseCaptured && !MenusOpen && !Ui.WantsMouse)
+        if (CursorPolicy.ClickCaptures(CursorNow(), _mouseCaptured, Ui.WantsMouse))
         {
             SetMouseCaptured(true);
             _swallowClick = true; // the click that recaptures the mouse shouldn't fire
@@ -1317,7 +1388,7 @@ public static unsafe partial class Program
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
-        var blocked = Ui.WantsTextInput || Ui.Rebinding != null;
+        var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
     }
@@ -1325,6 +1396,7 @@ public static unsafe partial class Program
     private static void UpdateLocalPlayer(double now)
     {
         PollActions();
+        ChatKeys(); // Chat (all) / Chat (team) open the HUD chat line (Program.Voice.cs)
 
         var cursor = _window.CursorPos;
         var delta = new double2(cursor.X - _lastCursor.X, cursor.Y - _lastCursor.Y);
@@ -1348,14 +1420,21 @@ public static unsafe partial class Program
                 SetMouseCaptured(true);
         }
 
-        // Results screen: free the mouse so players can click a map in the vote; 1/2/3 also vote.
-        var votingNow = _game.VoteOpen;
-        if (votingNow && !_wasVoting)
+        // Results screen: free the mouse so players can click a map in the vote; 1/2/3 also vote. The cursor stays
+        // free until the next match starts (CursorPolicy refuses every capture meanwhile), then comes back by itself.
+        var resultsNow = ResultsScreen;
+        if (resultsNow && !_wasResults)
         {
             Ui.MenuOpen = false;
             SetMouseCaptured(false);
         }
-        _wasVoting = votingNow;
+        else if (CursorPolicy.RecaptureAfterResults(_wasResults, CursorNow(), _mouseCaptured))
+        {
+            SetMouseCaptured(true);
+            _swallowClick = true;
+        }
+        _wasResults = resultsNow;
+        var votingNow = _game.VoteOpen;
         if (votingNow && !Ui.PauseOpen)
         {
             GlfwKey[] voteKeys = [GlfwKey.Number1, GlfwKey.Number2, GlfwKey.Number3];
@@ -1376,7 +1455,7 @@ public static unsafe partial class Program
             _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
             if (_game.SkipsLoadout && _game.Local is not { Deaths: > 0 })
                 _deathMenuAt = now; // Gun Game, just joined: no death to show, straight in
-            if (_game.Local is { } me)
+            if (_game.Local is { } me && !GravityFrames.Curved) // (a planet: the plain view from above, below)
                 _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, (o, d, max) => World.Query.Raycast(o, d, max, QueryFilter.All));
         }
         if (!deadNow)
@@ -1450,8 +1529,8 @@ public static unsafe partial class Program
         if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
             _game.ToggleReady();
 
-        // Mouse look is applied every frame (never waits for a tick or the network).
-        if (_mouseCaptured)
+        // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat.
+        if (_mouseCaptured && !Ui.ChatOpen)
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
@@ -1668,8 +1747,8 @@ public static unsafe partial class Program
         Vector3 eye, fwd;
         if (local != null)
         {
-            eye = local.Alive ? _game.MannedEye ?? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0); // (manning a cart: behind its gun)
-            fwd = local.Alive ? World.Forward(_game.LookYaw, _game.LookPitch) : World.Forward(_game.LookYaw, -1.2f);
+            eye = local.Alive ? _game.MannedEye ?? local.RenderEye : GravityFrames.Above(local.RenderPosition, 4f); // (manning a cart: behind its gun)
+            fwd = _game.LookDir(_game.LookYaw, local.Alive ? _game.LookPitch : -1.2f);
             if (!local.Alive && _deathCam.Active)
             {
                 _deathCam.Track(_game, now, (float)FrameDt); // eases round to face your killer (DeathCam.cs)
@@ -1695,22 +1774,24 @@ public static unsafe partial class Program
             // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
             _headBob.Update(new HeadBobInput
             {
-                Dt = (float)FrameDt, Velocity = local.RenderVelocity, Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
+                Dt = (float)FrameDt, Velocity = GravityFrames.ToLocal(local.RenderPosition, local.RenderVelocity), Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
                 Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
             });
-            eye = _headBob.Apply(eye, _game.LookYaw);
+            eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
+            eye -= GravityFrames.UpAt(eye) * _game.KnockDrop; // stumbling from a blast push (Knockback.cs)
         }
         else
             _headBob.Reset();
 
         var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
-        var camUp = Vector3.UnitY;
+        var camUp = GravityFrames.UpAt(eye); // straight up, or on a planet away from its centre (the horizon rolls with the ground)
         if (local is { Alive: true })
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.
             var rk = _game.RecoilCamera;
-            fwd = World.Forward(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
-            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + _headBob.Roll)));
+            var kk = _game.KnockCamera; // a blast push's view kick (Knockback.cs)
+            fwd = _game.LookDir(_game.LookYaw + rk.Yaw + kk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch + kk.Pitch, -1.56f, 1.56f));
+            camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
         var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);
@@ -1759,6 +1840,7 @@ public static unsafe partial class Program
         TacticalRender.Draw(Gfx, _game, now); // tactical devices (TacticalRender.cs)
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
+        DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
 
         // ---- Tracers --------------------------------------------------------
@@ -1875,6 +1957,21 @@ public static unsafe partial class Program
         Gfx.ClearDepthBuffer();
         Gfx.SetDepthTest(true);
         var def = pv.Def;
+        if (pv.Camera is { } benchCam)
+        {
+            // The workbench: its own orbit camera, and a part sliding into its socket (Source/UI/UiWorkbench.cs).
+            benchCam.Matrices(vw / MathF.Max(vh, 1), out var bpose, out var bview, out var bproj);
+            Gfx.SetCamera(bview, bproj);
+            if (pv.AnimRest != null && pv.AnimPart != null)
+            {
+                DrawGun(pv.AnimRest, bpose, false);
+                DrawGun(pv.AnimPart, Matrix4x4.CreateTranslation(pv.AnimOffset) * bpose, false);
+            }
+            else
+                DrawGun(def, bpose, false);
+            Gfx.SetViewport(0, 0, fb.X, fb.Y);
+            return;
+        }
         var front = -def.Length * 1.25f - 0.2f; // roughly the muzzle (with a suppressor)
         var backEnd = 0.3f; // end of the stock
         var span = backEnd - front;
@@ -2029,6 +2126,7 @@ public static unsafe partial class Program
         var black = Vector3.Zero;
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
+        DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
 
         if (local is { Alive: true })
         {
@@ -2058,6 +2156,8 @@ public static unsafe partial class Program
                     var sx = (i & 1) == 0 ? -1 : 1;
                     var sy = (i & 2) == 0 ? -1 : 1;
                     Gfx.Rect(cx + sx * 14 * k - 3 * k, cy + sy * 14 * k - 3 * k, 6 * k, 6 * k, c);
+                    if (_game.HitMarkerWallbang) // through a wall: a second, inner set of ticks (GamePenetration.cs)
+                        Gfx.Rect(cx + sx * 7 * k - 1.5f * k, cy + sy * 7 * k - 1.5f * k, 3 * k, 3 * k, c);
                 }
             }
 

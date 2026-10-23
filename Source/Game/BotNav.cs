@@ -16,7 +16,7 @@ namespace CallOfSlop;
 ///
 /// Plain arrays (CSR adjacency) and no allocations after the build, so searches are cheap for many bots.
 /// </summary>
-public sealed class NavGraph
+public sealed partial class NavGraph
 {
     public const float SampleStep = 0.6f; // must stay under 2 x PlayerRadius so no wall slips between samples
     public const float MaxDrop = 6f; // bots won't plan jumps down from higher than this
@@ -112,6 +112,14 @@ public sealed class NavGraph
     /// </summary>
     public static void Pump(double budgetMs)
     {
+        PumpGraph(budgetMs);
+        // A "build it now" pump (self-tests) also finishes the vantage points, so seeded matches play the same every run.
+        if (budgetMs >= double.MaxValue && Current is { } g && g != Empty)
+            VantageMap.Ensure(World.Map, g, wait: true);
+    }
+
+    private static void PumpGraph(double budgetMs)
+    {
         var map = World.Map;
         if (_last != null && ReferenceEquals(_lastMap, map))
             return;
@@ -175,9 +183,15 @@ public sealed class NavGraph
     {
         if (!ReferenceEquals(World.Map, map))
             throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        if (map.PointGravity is { } planet)
+        {
+            foreach (var step in BuildCurvedSteps(map, planet)) // a planet: nodes all over the sphere (NavSphere.cs)
+                yield return step;
+            yield break;
+        }
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
-        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
+        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
         var c = World.Physics; // the map's collision world: every probe below goes through its BVH (map is World.Map)
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
@@ -304,6 +318,8 @@ public sealed class NavGraph
         yield return null;
         t0 = Stopwatch.GetTimestamp();
 
+        if (map.Destruction != null)
+            g.AddSpareNodes(); // destructible maps: parked nodes for holes blasted later (BotNavPatch.cs)
         g.BuildCells(map);
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
@@ -317,10 +333,10 @@ public sealed class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         // ---- How open the view is from each node ----
-        g.Openness = new byte[count];
-        for (var i = 0; i < count; i++)
+        g.Openness = new byte[g.Nodes.Length]; // (with the spare nodes on a destructible map)
+        for (var i = 0; i < g.Nodes.Length; i++)
         {
-            g.Openness[i] = OpennessAt(c, g.Nodes[i]);
+            g.Openness[i] = g.SpareCount > 0 && i >= g.SpareStart ? (byte)0 : OpennessAt(c, g.Nodes[i]); // parked spares: nothing to see
             if (i % 4 == 3)
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -329,6 +345,7 @@ public sealed class NavGraph
             }
         }
         g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        g.FinishRuntime(map);
         yield return g;
     }
 
@@ -399,10 +416,29 @@ public sealed class NavGraph
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
-            if (!col.BlockedNav(c + new Vector3(0, 0.01f, 0))) // (building doors don't count: bots open them)
+            if (map.FallKillY != null && !Supported(col, c))
+                continue; // a void map: not on a railing top or a ledge's lip (GameFallKill.cs)
+            // Void maps build their sloped bridges from colliders that step up a few cm at a time: the body check starts
+            // above those steps, so the bridges get nodes (other maps keep the classic check).
+            var lift = map.FallKillY != null ? 0.3f : 0.01f;
+            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift)) // (building doors don't count: bots open them)
                 return c;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Void maps (<see cref="Map.FallKillY"/>): is there floor within 0.6 m of the feet' height under all four sides of a
+    /// player's footprint at <paramref name="c"/>? A railing top or the very edge of a deck has void beside it.
+    /// </summary>
+    private static bool Supported(PhysicsWorld col, Vector3 c)
+    {
+        ReadOnlySpan<float> dx = [0.35f, -0.35f, 0f, 0f];
+        ReadOnlySpan<float> dz = [0f, 0f, 0.35f, -0.35f];
+        for (var k = 0; k < 4; k++)
+            if (float.IsNaN(Ground(col, c.X + dx[k], c.Z + dz[k], c.Y + 0.6f, 1.2f)))
+                return false;
+        return true;
     }
 
     /// <summary>
@@ -633,6 +669,8 @@ public sealed class NavGraph
     /// </summary>
     public int Nearest(Vector3 p, bool needSight = true)
     {
+        if (GravityFrames.Curved)
+            return NearestCurved(p, needSight); // a planet: by straight distance (NavSphere.cs)
         for (var ring = 1; ring <= 3; ring++)
         {
             var r = Spacing * ring;
@@ -649,6 +687,8 @@ public sealed class NavGraph
                 for (var k = _cellStart[cell]; k < _cellStart[cell + 1]; k++)
                 {
                     var i = _cellNodes[k];
+                    if (NodeOff.Length != 0 && NodeOff[i])
+                        continue; // a parked spare, or its floor fell (BotNavPatch.cs)
                     var q = Nodes[i];
                     var dy = q.Y - p.Y;
                     if (dy > World.MantleReach || dy < -MaxDrop)
@@ -689,6 +729,8 @@ public sealed class NavGraph
             var len = d.Length();
             return len < 0.01f || World.Query.Raycast(from, d / len, len, QueryFilter.Navigation) >= len - 0.05f;
         }
+        if (GravityFrames.Curved)
+            return Ray(GravityFrames.Above(a, 0.6f), GravityFrames.Above(b, 0.6f)) && Ray(GravityFrames.Above(a, 1.3f), GravityFrames.Above(b, 1.3f));
         var knee = new Vector3(0, 0.6f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         return Ray(a + knee, b + knee) && Ray(a + chest, b + chest);
@@ -787,6 +829,31 @@ public sealed class NavGraph
         var before = MainNodes.Length;
         MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
         TrapNodes = before - MainNodes.Length;
+        _trapped = new bool[n];
+        for (var i = 0; i < n; i++)
+            _trapped[i] = forward[i] && !backward[i] && Component[i] == MainComponent;
+    }
+
+    private bool[] _trapped = [];
+    private float _minNodeY = float.NaN;
+
+    /// <summary>Can node <paramref name="i"/> be reached from open ground but not left again (the floor of a pit)? Terrain holes only.</summary>
+    public bool IsTrapped(int i) => (uint)i < (uint)_trapped.Length && _trapped[i];
+
+    /// <summary>The lowest node's height (a bot well below it fell out of the map; see the stuck watch, BotStuck.cs).</summary>
+    public float MinNodeY
+    {
+        get
+        {
+            if (float.IsNaN(_minNodeY))
+            {
+                var min = float.MaxValue;
+                foreach (var q in Nodes)
+                    min = MathF.Min(min, q.Y);
+                _minNodeY = Nodes.Length > 0 ? min : 0f;
+            }
+            return _minNodeY;
+        }
     }
 
     /// <summary>Nodes left out of <see cref="MainNodes"/> because a bot couldn't get back out from them (holes).</summary>
@@ -874,9 +941,28 @@ public sealed class NavSearch
             if (++LastExpanded > maxExpand)
                 break;
             var gc = _g[cur];
+            var nodeOff = g.NodeOff;
+            var edgeOff = g.EdgeOff;
             for (var e = g.EdgeStart[cur]; e < g.EdgeStart[cur + 1]; e++)
             {
                 var to = g.EdgeTo[e];
+                if ((edgeOff.Length != 0 && edgeOff[e]) || (nodeOff.Length != 0 && nodeOff[to]))
+                    continue; // destruction took it away (BotNavPatch.cs)
+                var extra = cost?.Invoke(cur, to, e) ?? 0f;
+                if (float.IsPositiveInfinity(extra))
+                    continue;
+                var ng = gc + g.EdgeCost[e] + extra;
+                if (_stamp[to] == _gen && (ng >= _g[to] || _closed[to]))
+                    continue;
+                Visit(to, ng, cur);
+                Push(to, ng + H(g, to, goal));
+            }
+            // Ways destruction opened (BotNavPatch.cs): extra edges at the end of the edge arrays.
+            for (var e = g.ExtraHead.Length != 0 ? g.ExtraHead[cur] : -1; e >= 0; e = g.ExtraNext[e - g.BuiltEdges])
+            {
+                var to = g.EdgeTo[e];
+                if ((edgeOff.Length != 0 && edgeOff[e]) || (nodeOff.Length != 0 && nodeOff[to]))
+                    continue;
                 var extra = cost?.Invoke(cur, to, e) ?? 0f;
                 if (float.IsPositiveInfinity(extra))
                     continue;

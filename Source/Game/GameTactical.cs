@@ -210,7 +210,7 @@ public sealed partial class Game
             var eye = v.Eye;
             if (Vector3.DistanceSquared(eye, burst) >= TacticalGear.FlashRadius * TacticalGear.FlashRadius)
                 continue;
-            var s = TacticalGear.FlashStrength(eye, World.Forward(v.Yaw, v.Pitch), burst, ClearLine(eye, burst), v.Perks.Has(PerkId.FlakJacket), v.Id == ownerId);
+            var s = TacticalGear.FlashStrength(eye, GravityFrames.Forward(v.Position, v.Yaw, v.Pitch), burst, ClearLine(eye, burst), v.Perks.Has(PerkId.FlakJacket), v.Id == ownerId);
             if (s > 0)
                 Afflict(v, ThrowableKind.Flash, s, burst, now);
         }
@@ -583,7 +583,7 @@ public sealed partial class Game
                     BotUseTactical(p, b, p.Position, now);
                 break;
             case ThrowableKind.Stim:
-                if (p.Health < 45 && (!visible || roll < 0.02))
+                if (p.Health < World.HealthAt(45) && (!visible || roll < 0.02))
                     BotUseTactical(p, b, p.Position, now);
                 break;
         }
@@ -622,15 +622,16 @@ public sealed partial class Game
     {
         var kind = p.Equipment;
         var def = Throwables.Get(kind);
+        at = GravityFrames.PointToLocal(p.Position, at); // a planet: aimed in the bot's upright frame (no change elsewhere)
         var to = at - p.Position;
         var yaw = to.X * to.X + to.Z * to.Z > 0.01f ? MathF.Atan2(to.X, -to.Z) : p.Yaw;
         var pitch = 0f;
         if (TacticalGear.UseOf(kind) == TacticalUse.Thrown)
         {
-            Throwables.AimPitch(def, p.Eye, at, out pitch);
+            Throwables.AimPitch(def, GravityFrames.PointToLocal(p.Position, p.Eye), at, out pitch);
             yaw += (float)(TacticalGear.Roll(p.Id, ServerTick, 0x51) - 0.5) * b.AimError;
         }
-        var dir = World.Forward(yaw, pitch);
+        var dir = GravityFrames.Forward(p.Position, yaw, pitch);
         var before = p.EquipmentLeft;
         ServerThrow(p, kind, Throwables.LaunchPoint(p.Eye, dir), dir, now);
         if (p.EquipmentLeft < before)

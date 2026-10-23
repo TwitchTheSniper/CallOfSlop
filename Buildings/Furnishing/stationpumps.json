@@ -1,0 +1,56 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationpumps",
+ "description": "A refinery pump room: pumps, pipe risers, a ventilation unit and a control console.",
+ "items": [
+  {
+   "props": [
+    "Coolant Pump"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Pipe Riser"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Ventilation Fan Unit",
+    "Station Server Cabinet"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Console"
+   ],
+   "place": "wall",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Station Supply Case",
+    "Toolbox"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  }
+ ]
+}

@@ -44,6 +44,7 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
+        SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -64,6 +65,8 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
+            Section("Stairs", CheckStairs); // SelfTestStairs.cs: every flight on every map and building walkable standing (2.1 m headroom, risers, width, landings)
+            Section("Destruction", CheckDestruction); // SelfTestDestruction.cs: materials, chunks, damage per material, holes, collapse, falling pieces, replication, reset, budgets, nav
             Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map
@@ -74,6 +77,7 @@ public static partial class SelfTest
             Section("Optics", CheckOptics);
             Section("Attachment variety", CheckAttachmentVariety); // SelfTestAttachmentVariety.cs: slots per gun, downsides, class matrix, unlocks, models, saves
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
+            Section("Sniper scopes", CheckSniperScopes); // SelfTestSniperScopes.cs: snipers start scoped, iron sights unlock later
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("More perks", CheckMorePerks); // SelfTestMorePerks.cs: the 12 later perks, unlocks, old loadouts, Gun Game, bots, effects
@@ -88,6 +92,8 @@ public static partial class SelfTest
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
+            Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
@@ -103,13 +109,20 @@ public static partial class SelfTest
             Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
             Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
             Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
+            Section("Space: Stratos Station", CheckSpaceStation); // SelfTestSpaceStation.cs: Space 01 (void map: fall kill, nav never over the void, every platform reached, fair walks, cost; no bot matches)
+            Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
             Section("Server browser", CheckServerBrowser);
+            Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
+            Section("STUN", CheckStun); // SelfTestListing.cs: canned answers, fuzz, a loopback fake server
+            Section("Server lists", CheckServerListBasics); // SelfTestListing.cs: info/list extensions, addresses, settings, browser merge
+            Section("Automatic server list", CheckAutoServerList); // SelfTestListing.cs: host starts a list, second host joins it, learning, hand-over (loopback)
             Section("HUD layout", CheckHudLayout);
             Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Hidden loadout slots", CheckHiddenSlots); // SelfTestHiddenSlots.cs: only unlocked slots listed, locked pick fallback, locked slots kept
             Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
+            Section("Scoreboard level", CheckScoreboardLevel); // SelfTestScoreboard.cs: no HP column, Level for people and bots, prestige label, replication, no allocation
             Section("Recoil", CheckRecoil);
             Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
             Section("Death cam", CheckDeathCam);
@@ -124,6 +137,8 @@ public static partial class SelfTest
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
+            Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
+            Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
@@ -146,7 +161,11 @@ public static partial class SelfTest
             Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
+            Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
+            Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
+            Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
+            Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
@@ -157,12 +176,24 @@ public static partial class SelfTest
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
+            Section("Bots and foliage", CheckBotFoliage); // SelfTestBotFoliage.cs: no seeing through foliage (by stance), blind fire at estimates, timeouts, walls, corn, costs
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
+            Section("Cursor capture", CheckCursorPolicy); // SelfTestCursor.cs: when the mouse is captured or free (phase x menus x click), the map vote keeps the cursor
+            Section("Throw input", CheckThrowInput); // SelfTestThrowInput.cs: grenade and equipment keys end to end (every item, each match phase, offline and loopback, bots)
             Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
+            Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
+            Section("Blast push", CheckBlastPush); // SelfTestBlastPush.cs: every blast throws survivors (frag, impact, each launcher, landmine, barrel, mortar), stagger, Flak/prone, floor, teammates, bots, feedback, no allocations
+            Section("Blood overlay", CheckBloodOverlay); // SelfTestBlood.cs: screen splatters by health: steps, hit direction, regen / Stim fade, death, Subtle / Off, masks, no allocations, settings
+            Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
+            Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
+            Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
+            Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+            Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
+            Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -490,17 +521,32 @@ public static partial class SelfTest
             var killsDone = 0;
             var lastKillSum = 0;
             var lastMatch = game.MatchNumber;
+            var tick = 0;
+            // Made once (a lambda per tick would allocate in the measured window, and could set off a GC there).
+            Func<string> context = () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}";
+            AllocProfile.Reset();
+            long allocBytes = 0;
+            var gcs = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
+                    tick = i;
+                    AllocProfile.On = i > 60; // where the game allocates (after the first second's warm-up)
+                    var gc0 = GC.CollectionCount(0);
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
                     cpu.Start();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                    var tick = i;
-                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}"); // said only if the check fails
+                    cpu.Stop(ms, count: i > 60, context); // said only if the check fails
+                    AllocProfile.On = false;
+                    if (i > 60)
+                    {
+                        allocBytes += GC.GetAllocatedBytesForCurrentThread() - a0;
+                        gcs += GC.CollectionCount(0) - gc0;
+                    }
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -513,7 +559,9 @@ public static partial class SelfTest
                         killsDone += lastKillSum; // scores reset at a new match
                         lastMatch = game.MatchNumber;
                     }
-                    lastKillSum = game.Players.Values.Sum(p => (int)p.Kills);
+                    lastKillSum = 0;
+                    foreach (var p in game.Players.Values)
+                        lastKillSum += p.Kills;
                     if (i % 60 == 0)
                     {
                         foreach (var p in game.Players.Values.Where(p => p.Bot != null && p.Alive))
@@ -537,11 +585,22 @@ public static partial class SelfTest
             botStats.Add(game.BotStats);
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
-            var fallen = game.Players.Values.Count(p => p.Alive && (p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
+            var fallen = game.Players.Values.Count(p => p.Alive && (m.PointGravity is { } planet ? Vector3.Distance(p.Position, planet.Center) < m.PlanetRadius - 0.5f // a planet: inside the ball
+                : p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            var measuredTicks = 90 * World.TickRate - 61;
+            // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
+            // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a
+            // nav build); a steady per-tick allocation (once: the snapshot's slow-field compare boxing, ~2.6 KB a tick on
+            // every map) shows up here long before it fails the 8 ms rule by chance.
+            var perTickAlloc = allocBytes / (double)measuredTicks;
+            var allocText = $"{perTickAlloc:0} B/tick, {gcs} GC(s) in the match (by section: {AllocProfile.Top(6, measuredTicks)})";
+            Line($"  allocations: {allocText}");
+            if (perTickAlloc > MaxMatchAllocPerTick)
+                Fail($"{m.Name}: a bot match allocates {allocText}, over {MaxMatchAllocPerTick} B/tick");
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -550,6 +609,10 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
+            if (game.BotStuckKills > 0)
+                StuckNotes.Add($"{m.Name}: {game.BotStuckKills} stuck self-kill(s) in the 90 s match; last: {game.LastStuckLog}");
+            if (game.BotStuckKills > 5)
+                Fail($"{m.Name}: {game.BotStuckKills} stuck bot self-kills in 90 s (the stuck watch misfires, or a bad map problem; last: {game.LastStuckLog})");
             // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
             // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
@@ -566,6 +629,9 @@ public static partial class SelfTest
     }
 
     private static BotStats _matchBotStats = new();
+
+    /// <summary>Most bytes a bot match tick may allocate on average (see CheckMatches; the busiest map today is about 560).</summary>
+    private const double MaxMatchAllocPerTick = 1500;
 
     // ---- 2a. Bots ---------------------------------------------------------------------------
 
@@ -671,9 +737,12 @@ public static partial class SelfTest
                 }
             }
             Line($"{name,-14} walk {Vector3.Distance(from, to),5:0} m straight, {route,5:0} m route: "
-                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)"));
+                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
+                + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
                 Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+            if (game.BotStuckKills > 0)
+                Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }
 
         // Hard bots: the headshot share with the most accurate aim.
@@ -1009,7 +1078,7 @@ public static partial class SelfTest
         if (Perks.AttackMult(flank, 10, -Vector3.UnitZ, 0, 100, false) < 1.5f || Perks.AttackMult(flank, 10, Vector3.UnitZ, 0, 100, false) != 1f)
             Fail("Flanker back/front check is wrong");
         var opener = new PerkSet(PerkId.None, PerkId.None, PerkId.Opener);
-        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 100, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 99, false) != 1f)
+        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth - 1, false) != 1f)
             Fail("Opener full-health check is wrong");
 
         // ---- Survival perks on the server ----
@@ -1145,7 +1214,7 @@ public static partial class SelfTest
                     Fail($"{w.Name} + {a.Name}: bad stats (mag {d.Mag}, range {d.RangeM}, ads {d.AdsTime})");
                 if (Attachments.Sanitize(w, kit) != kit)
                     Fail($"{w.Name} + {a.Name}: Sanitize dropped a fitting attachment");
-                if (Attachments.UnlockXp(w, a) is var x && (x < 50 || x > Attachments.MaxXp(w)))
+                if (Attachments.UnlockXp(w, a) is var x && (x < (a == Attachments.DefaultOptic(w) ? 0 : 50) || x > Attachments.MaxXp(w))) // a sniper's starting scope: 0
                     Fail($"{w.Name} + {a.Name}: unlock at {x} weapon XP (max {Attachments.MaxXp(w)})");
             }
             // A full kit: first fitting attachment in every slot
@@ -1411,8 +1480,8 @@ public static partial class SelfTest
             {
                 var copy = WeaponFile.Load(WeaponFile.ToJson(w), w.Name + " (round trip)");
                 var diffs = WeaponDiffs(w, copy, includeId: false);
-                if (copy.Order != w.Order || copy.UnlockLevel != w.UnlockLevel || copy.Author != w.Author)
-                    diffs.Add("order/unlockLevel/author");
+                if (copy.Order != w.Order || copy.UnlockLevel != w.UnlockLevel || copy.Author != w.Author || copy.DefaultOptic != w.DefaultOptic)
+                    diffs.Add("order/unlockLevel/author/defaultOptic");
                 foreach (var d in diffs)
                     Fail($"{w.Name}: weapon file round trip changed {d}");
                 roundTrips++;

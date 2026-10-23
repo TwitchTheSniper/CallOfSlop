@@ -1,0 +1,201 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Station Crew Quarters",
+ "theme": "Sky-station crew quarters: bunk rooms with lockers, a common room and a lounge, stairs onto the roof",
+ "category": "special",
+ "description": "Two storeys, 12 x 10 m: bunk rooms west, a common room and a lounge east, stairs onto a railed roof.",
+ "author": "Call of Slop",
+ "seed": 613,
+ "wallThickness": 0.3,
+ "storeyHeight": 3.2,
+ "exterior": {
+  "color": "$wall",
+  "material": "metal"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "metal"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "grid"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "metal"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "cream hull": {
+   "wall": "#cdbfa8",
+   "interior": "#a4aaae",
+   "floor": "#4c5054",
+   "ceiling": "#868b90",
+   "trim": "#8d7458",
+   "door": "#6c6f73",
+   "roof": "#b3a48c"
+  },
+  "white hull": {
+   "wall": "#d8d8d2",
+   "interior": "#9ea6ac",
+   "floor": "#45494e",
+   "ceiling": "#80868c",
+   "trim": "#5a6a78",
+   "door": "#5a6066",
+   "roof": "#bfc0bc"
+  },
+  "bronze hull": {
+   "wall": "#a88e70",
+   "interior": "#a39a8e",
+   "floor": "#4a4640",
+   "ceiling": "#857d72",
+   "trim": "#5c4a38",
+   "door": "#6a5a48",
+   "roof": "#8d7458"
+  }
+ },
+ "floors": [
+  {
+   "autoWindows": {
+    "spacing": 2.6,
+    "width": 1.5,
+    "sill": 1.0,
+    "head": 2.4
+   },
+   "rooms": [
+    {
+     "id": "bunk room",
+     "type": "stationbunks",
+     "rect": [
+      -6,
+      -5,
+      0,
+      5
+     ]
+    },
+    {
+     "id": "common room",
+     "type": "stationcommon",
+     "rect": [
+      0,
+      -5,
+      6,
+      5
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      1.5
+     ],
+     "width": 1.1,
+     "material": "metal"
+    },
+    {
+     "type": "arch",
+     "at": [
+      3,
+      5
+     ],
+     "width": 1.6,
+     "front": true
+    },
+    {
+     "type": "door",
+     "at": [
+      2.0,
+      -5
+     ],
+     "width": 1.1,
+     "material": "metal"
+    }
+   ]
+  },
+  {
+   "autoWindows": {
+    "spacing": 2.6,
+    "width": 1.5,
+    "sill": 1.0,
+    "head": 2.4
+   },
+   "rooms": [
+    {
+     "id": "upper bunks",
+     "type": "stationbunks",
+     "rect": [
+      -6,
+      -5,
+      0,
+      5
+     ]
+    },
+    {
+     "id": "lounge",
+     "type": "stationlounge",
+     "rect": [
+      0,
+      -5,
+      6,
+      5
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      0,
+      -2.0
+     ],
+     "width": 1.1,
+     "material": "metal"
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    4.6,
+    -3.9,
+    5.7,
+    -0.9
+   ],
+   "dir": "+z"
+  },
+  {
+   "floor": 1,
+   "rect": [
+    4.6,
+    0.7,
+    5.7,
+    3.7
+   ],
+   "dir": "+z"
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 1.0,
+  "color": {
+   "color": "$roof",
+   "material": "metal"
+  }
+ },
+ "anchors": [
+  {
+   "type": "spawn",
+   "name": "common",
+   "floor": 0,
+   "at": [
+    2,
+    2
+   ]
+  }
+ ]
+}

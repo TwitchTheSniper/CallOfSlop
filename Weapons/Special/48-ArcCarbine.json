@@ -35,6 +35,7 @@
   "accent": [0.2, 0.9, 0.95],
   "sound": "Zap",
   "caliber": 0.35,
+  "penetration": 0,
   "bright": 0.8,
   "tail": 0.4,
   "model": {

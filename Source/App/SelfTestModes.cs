@@ -48,7 +48,8 @@ public static partial class SelfTest
                 Fail($"{m.Name}: no hill, or a hill inside geometry");
             if (o.Flags.Any(f => m.IsBlocked(f)))
                 Fail($"{m.Name}: a flag is inside geometry");
-            var flagGap = new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
+            var flagGap = m.PointGravity != null ? Vector3.Distance(o.Flags[0], o.Flags[1]) // a planet: straight through it (MapPlanet.cs)
+                : new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
             var span = MathF.Min(m.HalfX, m.HalfZ) * 2;
             if (flagGap < span * 0.35f)
             {
@@ -206,8 +207,9 @@ public static partial class SelfTest
         var fragKill = Throwables.LethalRange(Throwables.Get(ThrowableKind.Frag), World.MaxHealth);
         var impactKill = Throwables.LethalRange(Throwables.Get(ThrowableKind.Impact), World.MaxHealth);
         Line($"grenades: frag kills within {fragKill:0.0} m of the chest (hurts to {Throwables.Get(ThrowableKind.Frag).Radius:0} m), impact within {impactKill:0.0} m");
-        if (fragKill < 4f || impactKill < 2.3f)
-            Fail($"grenade kill range too small: frag {fragKill:0.0} m (want 4+), impact {impactKill:0.0} m (want 2.3+)");
+        // The user asked for a 4.5 m frag kill range; it has to survive max health going up (100 -> 120).
+        if (fragKill < 4.5f - 0.01f || impactKill < 2.3f)
+            Fail($"grenade kill range too small: frag {fragKill:0.00} m (want 4.5+), impact {impactKill:0.00} m (want 2.3+)");
         if (!killed || game.TeamScore[a.Team] != 1 || game.TeamScore[foe.Team] != 0)
             Fail("an enemy kill didn't score for the team");
         game.SelfTestSpawn(mate);

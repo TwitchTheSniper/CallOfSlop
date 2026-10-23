@@ -189,7 +189,7 @@ public abstract class GameModeModule
 
     /// <summary>The goal of the mode in one line for the match log and the warmup bar ("First to 11 kills...").</summary>
     public virtual string GoalText(Game game) =>
-        $"{Name}: {Rules(game.ScoreLimit)}{(HasTimeLimit ? $" {Game.MatchSeconds / 60:0} minutes max." : "")}";
+        $"{Name}: {Rules(game.ScoreLimit)}{(HasTimeLimit ? $" {game.MatchMinutes} minutes max." : "")}";
 
     /// <summary>
     /// Objective lines under the match bar while playing (coloured text), and a world position to point an arrow at
@@ -209,7 +209,7 @@ public abstract class GameModeModule
     public virtual (string First, string Second) ScoreboardColumnsShort => ("K", "D");
 
     /// <summary>A player's two numbers.</summary>
-    public virtual (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.Kills}", $"{p.Deaths}");
+    public virtual (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Num(p.Kills), ScoreboardModel.Num(p.Deaths)); // cached text: no allocation per frame
 
     /// <summary>What ranks players on the scoreboard (ties: kills, then fewer deaths).</summary>
     public virtual int RankScore(Player p) => p.Kills;
@@ -243,8 +243,11 @@ public abstract class GameModeModule
             game.EndMatch(leader, $"{game.NameOf(leader.Id)} wins {best}-{second}", now);
         else if (game.TimeLeft <= 0)
         {
-            var tied = game.Players.Values.Count(p => p.Kills == best) > 1;
-            if (leader == null || tied)
+            var tied = 0;
+            foreach (var p in game.Players.Values) // (a plain loop: a lambda over best would allocate a closure every tick)
+                if (p.Kills == best)
+                    tied++;
+            if (leader == null || tied > 1)
                 game.EndMatch(null, $"Time! Draw at {best}-{best}", now);
             else
                 game.EndMatch(leader, $"Time! {game.NameOf(leader.Id)} wins {best}-{second}", now);

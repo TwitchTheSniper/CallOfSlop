@@ -4,7 +4,7 @@
   "order": 49,
   "class": "Special",
   "blurb": "One shot, one kill out to about 75 m (headshots: anywhere). Then a long, long reload.",
-  "damage": 170,
+  "damage": 204,
   "headMult": 2,
   "pellets": 1,
   "rangeM": 30,

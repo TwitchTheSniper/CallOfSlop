@@ -9,18 +9,40 @@ Running it
 - Windows 10/11, 64-bit, with a graphics card that supports OpenGL 4.1.
 - If Windows SmartScreen warns about an unknown app, click "More info" > "Run anyway".
 
+Updates
+- The game tells you when there's an update (a banner on the main menu); click Install.
+  It downloads the new build, checks it, unzips it into a new folder next to this one and starts it.
+  Your saves carry over. This folder is left alone; delete it yourself once the new build works.
+- Settings > Player > Updates: "Check for updates" now, or turn the check at startup off.
+- Your version is in the bottom-right corner of the menu.
+
 Playing together
-- Everyone must use the SAME build (the same zip). Different builds can't join each other.
-- One person hosts from the Multiplayer screen; others join from the server browser or by address.
-  The host may need to allow the game through the Windows firewall when asked.
+- Everyone should use the SAME build. The server browser says "Your build is older - update to join"
+  when a game needs a newer build than yours.
+- One person hosts from the Multiplayer screen. Their lobby shows an INVITE CODE (like ABCD-EFGH-JKMN-PQRS)
+  with "Copy invite link" / "Copy code" buttons: send it to your friends.
+- Friends: Multiplayer > "Join by code or address", paste the code, Join.
+- After you've played together once, everyone's games show up in the server browser by themselves (the host's
+  game runs a small server list and joining adds it to your settings). Nothing to install or pay for.
+- The host may need to allow the game through the Windows firewall when asked, and needs UPnP on their router
+  (or UDP port 27015 forwarded) for friends outside their home to connect.
+- Want an always-on list for your group? Run RunServerList.bat on a PC that stays on; friends add that PC's
+  public address in Settings > Multiplayer > Server lists. (Optional: hosts run one anyway.)
 - Single player against bots works offline.
 
 Your saves
-- Settings, progression and loadouts are saved as settings.txt, progress.txt and loadout.txt
-  in this folder. Keep them if you update to a newer build by copying them into the new folder.
+- Your progress carries over to new builds automatically: settings, progression, loadouts and
+  workbench builds are saved in %APPDATA%\CallOfSlop (paste that into Explorer's address bar, or use
+  Settings > Player > Open save folder). Just unzip the new build anywhere and play.
+- Coming from an older build that kept them in its own folder: the first time you start this build it
+  copies them over for you (from this folder, or from your previous build if it's unzipped next to this
+  one). Your old files are left untouched. If your level didn't come over, copy progress.txt,
+  loadout.txt and settings.txt from the old build's folder into %APPDATA%\CallOfSlop yourself.
+- Want the saves to stay in this folder instead (e.g. on a USB stick)? Put an empty file called
+  portable.txt next to CallOfSlop.exe.
 
 Reporting bugs
-- Say what you were doing, which map and mode, and attach callofslop.log from this folder
+- Say what you were doing, which map and mode, and attach callofslop.log from this game folder
   (it's written fresh each time the game starts, so grab it before restarting).
 - Screenshots help a lot.
 

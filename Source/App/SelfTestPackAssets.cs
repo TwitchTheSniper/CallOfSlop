@@ -10,26 +10,27 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    /// <summary>Every shipped map's fingerprint on origin/main before pack-local assets (commit 431f4e0).</summary>
+    /// <summary>Every shipped map's fingerprint on origin/main before pack-local assets (commit 431f4e0); maps whose stairs were rebuilt
+    /// for 2.1 m headroom (fix/stair-headroom) carry their new Windows values.</summary>
     private static readonly (string File, uint Hash)[] PrePackAssetFingerprints =
     [
         ("Classic/01-ProtoBox.json", 0xa83dd7a5u), ("Classic/02-Courtyard.json", 0x9b62bfadu), ("Classic/03-Crossroads.json", 0x04fab23au),
-        ("Classic/04-Warehouse9.json", 0x433369d1u), ("Classic/05-LongShot.json", 0x9a88c69cu), ("Classic/06-Ziggurat.json", 0xd8b982f8u),
+        ("Classic/04-Warehouse9.json", 0x0d1b5095u), ("Classic/05-LongShot.json", 0x9a88c69cu), ("Classic/06-Ziggurat.json", 0xd8b982f8u),
         ("Classic/07-Scrapyard.json", 0xdece740cu), ("Classic/08-Rooftops.json", 0x3601e902u), ("Classic/09-Harbor.json", 0x56f96d12u),
         ("Classic/10-MarketStreet.json", 0xb8c3562au), ("Classic/11-Quarry.json", 0xc0f1d401u), ("Classic/12-Trenches.json", 0xb1bd94b3u),
-        ("Classic/13-TrainYard.json", 0xea4ba752u), ("Classic/14-OfficePark.json", 0xbf692394u), ("Classic/15-Ruins.json", 0xe93ec317u),
+        ("Classic/13-TrainYard.json", 0xd94dde9du), ("Classic/14-OfficePark.json", 0xbf692394u), ("Classic/15-Ruins.json", 0xe93ec317u),
         ("Classic/16-Overpass.json", 0x5b03f45fu), ("Classic/17-Farmland.json", 0xfcc5a090u), ("Classic/18-Downtown.json", 0x2a9960f5u),
         ("Classic/19-Canyon.json", 0x03353c42u), ("Classic/20-Airfield.json", 0xf47d65a6u), ("Classic/21-Village.json", 0x8004499bu),
         ("Classic/22-Industrial.json", 0x87c760edu), ("Classic/23-Highlands.json", 0xe932e450u), ("Classic/24-MilitaryBase.json", 0xe6122c44u),
         ("CollisionPoint/01-Blueprint.json", 0xde9e3279u), ("CollisionPoint/02-Galleria.json", 0x429afd78u), ("CollisionPoint/03-Floodgate.json", 0xcb35e9deu),
         ("CollisionPoint/04-Trefoil.json", 0x39b08239u), ("CollisionPoint/05-Citadel.json", 0x340e65a1u), ("CollisionPoint/06-Confluence.json", 0x3aad3033u),
         ("HighGround/01-GravelPit.json", 0x1010fd2au), ("HighGround/02-Hillfort.json", 0xddcb110bu), ("HighGround/03-Riverbend.json", 0xa7be54dau),
-        ("HighGround/04-AdobeMesa.json", 0x579dc03fu), ("HighGround/05-Ridgeline.json", 0xb945fc4au), ("HighGround/06-AlpinePass.json", 0x3275f63au),
-        ("Cluttered/01-Carousel.json", 0x0a72b4eeu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0xc1b7e6aeu),
+        ("HighGround/04-AdobeMesa.json", 0xb9ca18aau), ("HighGround/05-Ridgeline.json", 0xb945fc4au), ("HighGround/06-AlpinePass.json", 0x61c5781cu),
+        ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x8a64c7d3u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ad80326u), ("Dev/PhysicsTest.json", 0x476984bcu),
-        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0xe4ccc239u),
-        ("Dev/PropGallery3.json", 0xc24b7fd9u), ("Dev/AnimatedProps.json", 0x966dadfdu), ("Dev/MeshTest.json", 0xb7a01a63u),
-        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x378eaae8u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
+        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0xf6e903c4u),
+        ("Dev/PropGallery3.json", 0x9cf4b336u), ("Dev/AnimatedProps.json", 0xea9b40a0u), ("Dev/MeshTest.json", 0xb7a01a63u),
+        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x5fbf936fu), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 
     private static void CheckPackAssets()

@@ -116,6 +116,30 @@ public static class PropDebris
     }
 
     /// <summary>
+    /// A chunk of a destroyed building coming down whole (Source/Game/GameDestruction.cs): one piece the size of
+    /// <paramref name="b"/>, in its colour, that drops from where the chunk was with a slight drift and tumble, lands, and
+    /// lies there a little longer than other debris before it fades. Same pool and rules as <see cref="Spawn"/>.
+    /// </summary>
+    public static void SpawnSlab(Box b, Vector3 color, int seed)
+    {
+        var rng = new Foliage.Rng((uint)seed * 2654435761u ^ 0x51abu);
+        var slot = _count < Capacity ? _count++ : Oldest();
+        ref var p = ref Pool[slot];
+        p.Pos = b.Center;
+        p.Size = b.Half * 2 * 0.97f;
+        p.Color = color * (0.8f + rng.Next() * 0.15f);
+        p.Vel = new Vector3((rng.Next() - 0.5f) * 1.2f, -0.5f - rng.Next(), (rng.Next() - 0.5f) * 1.2f);
+        p.SpinAxis = Vector3.Normalize(new Vector3(rng.Next() - 0.5f, 0.1f, rng.Next() - 0.5f) + new Vector3(0.01f));
+        p.Spin = 0.4f + rng.Next() * 1.4f;
+        p.Rot = Quaternion.Identity;
+        p.Age = 0;
+        p.Life = MinLife + 2.5f + rng.Next() * 1.5f;
+        p.Floor = FloorUnder(p.Pos - new Vector3(0, b.Half.Y, 0));
+        p.Resting = false;
+        Spawned++;
+    }
+
+    /// <summary>
     /// A spurt of sparks from <paramref name="at"/> (a lit explosive prop): small bright pieces flung up and out that
     /// fall and die within about a second. Shares the pool with the debris.
     /// </summary>
@@ -159,8 +183,37 @@ public static class PropDebris
     }
 
     /// <summary>The ground, terrain or box top under a point (a short ray down), or far below if there's nothing.</summary>
+    /// <summary>A planet: falls towards the centre, bounces, slides to a stop and lies flat on the curved ground (cosmetic).</summary>
+    private static void StepCurved(ref Piece p, int i, float dt)
+    {
+        if ((i + _frame) % 12 == 0)
+            p.Floor = FloorUnder(p.Pos);
+        var low = MathF.Min(p.Size.X, MathF.Min(p.Size.Y, p.Size.Z)) * 0.5f;
+        p.Rot = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(p.SpinAxis, p.Spin * dt) * p.Rot);
+        if (!CurvedFall.Step(ref p.Pos, ref p.Vel, p.Floor, low, 1f, dt, out var up, out var into))
+            return;
+        var tangent = p.Vel + up * into;
+        if (into > 2f)
+        {
+            p.Vel = tangent * 0.6f + up * (into * 0.25f); // a bounce
+            p.Spin *= 0.5f;
+            return;
+        }
+        p.Vel = tangent * MathF.Exp(-6f * dt);
+        p.Spin *= MathF.Exp(-6f * dt);
+        if (p.Vel.LengthSquared() < 0.04f)
+        {
+            p.Vel = Vector3.Zero;
+            p.Spin = 0;
+            p.Resting = true;
+            p.Rot = CurvedFall.LieFlat(p.Rot, up);
+        }
+    }
+
     private static float FloorUnder(Vector3 p)
     {
+        if (GravityFrames.Curved)
+            return CurvedFall.FloorUnder(p); // a planet: a height above its centre (GravityFrames.cs)
         var d = World.Query.Raycast(p + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 12f, QueryFilter.All);
         return d >= 12f ? p.Y - 50f : p.Y + 0.3f - d;
     }
@@ -171,6 +224,7 @@ public static class PropDebris
     /// </summary>
     public static void Push(Vector3 center, float radius, float strength)
     {
+        Gibs.Push(center, radius, strength); // the gibs lying about fly too (Gibs.cs)
         if (_count == 0 || !(strength > 0) || !(radius > 0))
             return;
         for (var i = 0; i < _count; i++)
@@ -207,6 +261,11 @@ public static class PropDebris
             }
             if (p.Resting)
                 continue;
+            if (GravityFrames.Curved)
+            {
+                StepCurved(ref p, i, dt);
+                continue;
+            }
             if ((i + _frame) % 12 == 0)
                 p.Floor = FloorUnder(p.Pos); // flew over a kerb or off a ledge
             p.Vel.Y -= World.Gravity * dt;

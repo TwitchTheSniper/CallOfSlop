@@ -109,7 +109,7 @@ def cottage(name, folder, theme, desc, palettes, roof, porch_roof, extras_more, 
                 ],
             },
         ],
-        "stairs": [{"floor": 0, "rect": [0.15, -1.75, 1.05, 0.5], "dir": "-z", "color": {"color": "#5a3e26", "material": "wood"}}],
+        "stairs": [{"floor": 0, "rect": [-0.05, -1.75, 1.05, 0.5], "dir": "-z", "color": {"color": "#5a3e26", "material": "wood"}}],
         "roof": roof,
         "extras": [
             # stone chimney stacks on both gable ends, a stone step at the front door, a porch hood

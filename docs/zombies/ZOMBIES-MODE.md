@@ -122,6 +122,10 @@ reloads.)
   your loose parts; parts taken off go back to your loose parts. Scrap: **break down** a loose part (its scrap value:
   common 5 ... legendary 100, wonder 150), or **craft** a part for 3x its value, up to the highest tier the drop table
   rolls this round (never wonder parts).
+- **The workbench UI** (WEAPON-BUILDER.md, "The workbench"): pick a grip, then drag your parts onto the gun; the build
+  reads as a linear list with live stats. Standard builds load as plans and a receiver assembly can be copied without
+  the parts: what's missing shows red, and **CRAFT MISSING & APPLY** crafts every missing part with scrap and applies
+  the build in one click (the same server checks). First-tier grips (common, uncommon) hold one receiver.
 
 ## Map format: the "zombies" section
 

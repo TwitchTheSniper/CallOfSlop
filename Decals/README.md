@@ -205,8 +205,9 @@ A decal with an `"impact"` section is a bullet-hole mark for the surfaces it lis
 | `Terrain` | Any terrain or earth surface whose own material has no impact decals. |
 | `Default` | Anything else (and any material whose chain has none). |
 | `Explosive` | Not a surface: the scorch a grenade, launcher round, mortar or strafing run (or an exploding prop) leaves on the nearest floor, wall or ceiling within about 1.5 m. |
+| `Gore` | Not a surface: the small blood splat a chunk of meat leaves where it lands when an animal or a body bursts into gibs (Full gore only; Source/Props/Gibs.cs, decals in `Decals/Gore`). |
 
-A material with no impact decal of its own borrows its parent's: `Asphalt`, `Plaster`, `Rock`, `Tiles` and `Grid` use `Concrete`; `Grass`, `Sand` and `Snow` use `Terrain`, which uses `Dirt`; everything ends at `Default`. `Explosive` never falls back (no scorch decal: blasts leave nothing).
+A material with no impact decal of its own borrows its parent's: `Asphalt`, `Plaster`, `Rock`, `Tiles` and `Grid` use `Concrete`; `Grass`, `Sand` and `Snow` use `Terrain`, which uses `Dirt`; everything ends at `Default`. `Explosive` and `Gore` never fall back (no scorch or splat decal: blasts and gibs leave nothing).
 
 When several impacts list the same material, each hit picks one, weighted by `weight` (default 1), from the hit position, so **every player sees the same mark in the same place** (the server sends every client the same hit points; impacts add no network traffic). Give the plain look of a material the biggest weight so it dominates, and its rarer variants (a glancing gouge, a big chunk) smaller ones. Impact decals must use `"blend": "alpha"` and be at most 1 m across; real bullet holes are 0.1 to 0.25 m. Size and turn variation apply per hit. A mark that would hang over the edge of a box slides inwards, shrinks on a narrow face, and isn't placed on a sliver (a thin rail).
 
@@ -231,6 +232,7 @@ The impact set (`Decals/Impacts`, 46 files):
 | `Snow` | Bullet Hole Snow (2, 0.17), Bullet Puff Snow (1, 0.22), Bullet Slush Snow (0.8, 0.16) |
 | `Default` | Bullet Hole (1.5, 0.14), Bullet Hole Small (1, 0.1), Bullet Hole Scuffed (0.8, 0.16) |
 | `Explosive` | Blast Scorch (2, 0.95), Blast Scorch Pitted (1, 0.8), Blast Scorch Rays (1, 1) |
+| `Gore` | Gib Splat (2, 0.5), Gib Smear (1, 0.6), Gib Spatter (1, 0.55) |
 
 The Dev pack's **Decal Impacts** map has one target per surface (concrete, plaster, brick, metal and wood walls; asphalt, tile, sand, dirt and grass boxes; grass, dirt, rock and snow terrain) for trying them out; the self-test shoots every target and checks it gets its own set, the same marks twice, and no allocation.
 

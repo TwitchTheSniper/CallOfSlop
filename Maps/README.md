@@ -56,8 +56,12 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `sky` | no | Flat sky and fog colour (the classic look). Ignored when there's a `skybox`. |
 | `skybox` | no | A drawn sky: gradient, sun, moon, stars and clouds, or an image. Its sun and colours also light the map and colour the fog. See [Sky](#sky). |
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
+| `penetration` | no | `false` stops bullets going through thin walls on this map (on by default; see the main README, "Bullet penetration"). |
+| `destructible` | no | `true`: the map's buildings (named Building ops) can be blown apart; `false`: they can't. Without it, the pack's `pack.json` decides (the World Tour has `"destructible": true`; every other pack is off). See [Buildings/README.md](../Buildings/README.md#destruction). |
+| `fallKill` | no | A world height: anyone whose feet drop below it dies (they fell off into the void). For maps that float in the air, like the Space pack's sky station: see [Void maps](#void-maps-falling-off). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
+| `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
@@ -106,6 +110,7 @@ Parameters marked `= value` are optional. Parameter names are case-insensitive, 
 | `Ground` | color | The floor slab under the whole map. |
 | `Perimeter` | height, color, t = 1 | Boundary walls around the edge. |
 | `Block` | x0, y0, z0, x1, y1, z1, color | A box from one corner to the opposite corner. Everything else is built from these. |
+| `Collider` | x0, y0, z0, x1, y1, z1 | A hidden box: it collides like a `Block` (players, bullets, grenades, bots) but is never drawn. Put a cosmetic `Mesh` over it to make round or curved things solid (see [Void maps](#void-maps-falling-off)). |
 | `Prop` | x, z, w, h, d, color, y = 0 | A box w × h × d standing at (x, z), on the ground or on height `y`. With a `name` instead of a size it places a prop from the Props folder: see [Props](#props). |
 | `WallX` | x0, x1, z, t, y0, y1, color, holes = [] | A wall running along X from x0 to x1, filling z to z+t, with openings. |
 | `WallZ` | z0, z1, x, t, y0, y1, color, holes = [] | The same wall running along Z. |
@@ -142,7 +147,7 @@ Wall openings are written as `"holes": [ { "center": 4, "width": 1.5, "bottom": 
 |---|---|---|
 | `Spawn` | x, z, y = 0 | A spawn point. Use 8 or more. Spawns inside geometry are moved to the nearest free spot. |
 | `RingSpawns` | count, frac, phase = 0 | Spawns spread around an ellipse at `frac` of the map size. |
-| `Waypoint` | x, z | A point bots roam between. |
+| `Waypoint` | x, z, y = 0 | A point bots roam between, `y` above the ground (a bridge, a raised deck). |
 | `AutoWaypoints` | spacing | Waypoints on a grid over all open ground. This is the easy option. |
 
 A map must have at least one spawn.
@@ -306,6 +311,7 @@ Bots pick waypoints they can walk to in a straight line: no box at knee or chest
 - **Cliffs run on past their end points** until their taper fades them out, so stop the line a taper's length short of anything that has to stay walkable.
 - **Lifts up a cliff:** an `elevator` at the foot of the face, with a thin `Block` landing at the top that reaches over the face to the edge (the face is `face` metres wide). Give bots a ramp to the same place.
 - **Cluttered pockets:** the bots' nav graph samples the ground every few metres. A small space full of cover can end up with too few nodes to join up, so add a couple of `Waypoint` ops there. Each waypoint becomes a nav node.
+- **Finding spots where bots get stuck:** a bot that can't get anywhere for 15 s (or is in a pit with no way out for 4 s) kills itself and the game logs `[bots] stuck: <bot> on <map> (<mode>) at (x, y, z): <cause>` to `callofslop.log`, and every match end logs `[bots] match over on <map>: N stuck self-kill(s)`. Play a bot match on your map and look for these lines: the position and cause (ledge climb, slope, no route, pit, off the nav graph) point at the spot to fix. The self-test's every-map match lists them too ("Bot stuck watch (results)").
 
 ### For tools
 
@@ -343,7 +349,7 @@ A map can have grass, bushes, shrubs and trees, described in an optional top-lev
 | `avoidSolid` | `false` lets plants grow into boxes. Default `true`: they keep out of walls, crates and trunks. |
 | `avoidPaths` | `false` lets plants grow on paths. Default `true`. |
 
-Placement is deterministic: the same file gives exactly the same plants and trunks on every PC, so multiplayer collision matches. The foliage counts towards the map's fingerprint, so changing it is a new version of the map online. Scattered trees also keep 1.5 m away from spawn points. Plants are placed after the ops, so they see everything the ops built.
+Placement is deterministic: the same file gives exactly the same plants and trunks on every PC, so multiplayer collision matches. **Plants hide people from bots** (only bots: bullets and movement pass through): lying in tall grass, crouching behind a chest-high bush, or behind a tree's crown, someone is out of a bot's sight beyond 2.5 m, while a head above the grass is seen. Bushes count about 1 m of leaves per metre, grass a fraction depending on its density, so dense grass (6+ per m²) hides someone lying in it from a standing bot 15 m away and a lawn (2 per m²) mostly doesn't. Bots fire blind into cover where they think you are (see the main README, "Bots and foliage"). The foliage counts towards the map's fingerprint, so changing it is a new version of the map online. Scattered trees also keep 1.5 m away from spawn points. Plants are placed after the ops, so they see everything the ops built.
 
 **Cost.** Foliage is drawn in big instanced batches, so tens of thousands of plants are cheap, but not free. As a guide, a 100 x 100 m map with 4 grass clumps per m² everywhere (about 30,000 plants) plus a few hundred bushes and a grove of 40 trees is fine on any recent GPU at High. Grass is by far the most numerous: put dense grass where players look (meadows, along paths) rather than everywhere on a huge map. Trees cost one box each, so keep a map's trees in the hundreds, not thousands. A map may have at most 400,000 plants in total.
 
@@ -541,6 +547,28 @@ Without a `boundary` section a map is the classic rectangle `-halfX..halfX` by `
 
 The outline is generated in single precision from the spec, deterministically (same file, same outline on every PC). Maps with a boundary mix a fingerprint of the outline and barrier into the map's fingerprint; maps without one keep theirs. The `cliff` edge isn't part of the Python terrain port (`terrain.py`): a map with a cliff boundary gets its terrain fingerprint from the game.
 
+## Void maps (falling off)
+
+A map can float in the air: give it a top-level `"fallKill"` height and leave out the `Ground` op. With no ground there is
+nothing under the decks, and anyone whose feet drop below `fallKill` dies: the server kills them like the pause menu's
+"Kill yourself" (a death, no kill for anyone, "Suicide" in the feed, the usual respawn). The Space pack's **Stratos
+Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`) is the example.
+
+- **Decks:** round platforms are cosmetic `Mesh` cylinders over hidden `Collider` strips just inside them (collision only,
+  never drawn, so they cost no draw calls: map boxes are drawn one by one). Put the mesh's top 2 cm above the colliders.
+  Bridges are box meshes turned with `yaw` and tilted with `roll`, over colliders that step up a few centimetres at a time.
+- **Railings:** a collider band from 0.45 to 1.1 m above the deck holds people in while bullets, grenades and prone
+  shots go under it; draw the railing with meshes. Leave a gap only where a bridge joins.
+- **Bots:** the nav graph only links where there's floor under every step (a gap with nothing within a few metres below
+  is never crossed), and on a map with `fallKill` a node needs floor under all four sides of a player's footprint, so
+  none sits on a railing top or a deck's very edge. The grid can miss a narrow bridge: put `Waypoint` ops (with `y`)
+  every few metres along each bridge.
+- **The outline:** use a `boundary` with `"edge": "none"` round the whole station; the air between the platforms is
+  inside it (you can fall there), the barrier stops anyone leaving the map at any height.
+- **Looks:** a sky can't draw anything below the horizon except its ground colour, so a cloud sea belongs in an image
+  sky (`tools/space/make_stratos_sky.py` paints one) and, for depth, a few big flattened cosmetic spheres below the decks.
+- `fallKill` is from -4 to 55 m. Maps without it are unchanged: nobody falls out.
+
 ## Props
 
 Props are the small things that make a map look lived in: trash cans, dumpsters, crates, pallets, bricks, newspapers, bottles, benches, lamps. Each one is a file in the `Props` folder next to `Maps` (see [Props/README.md](../Props/README.md) for making your own). The **Prop Gallery** map in the Dev pack shows the starter props in rows by category (**Prop Gallery 2** the outdoor set: vehicles, rooftop, utility, signage, urban; **Prop Gallery 3** the indoor and everyday set; **Animated Props** the moving ones; **Military Props** the military set in `Props/Military`); **Prop Yard** is a small dressed street to play on.
@@ -600,6 +628,9 @@ Flag props (**Flag on a Pole**, and on request **Pennant Pole** and **Hanging Ba
 | `seed` | Reshuffles the furniture (default: the building's own). |
 | `spawns` | `true`: the building's spawn anchors become spawn points. |
 | `variant` | `palette` (one of the building's), `floors` (buildings with a repeating floor), `mirror`, `roof` (`flat`, `gable`, `hip`, `shed`, `none`), `furnish` (`false`: empty), `doors` (`closed`, `open`, `random`). |
+| `destructible` | `true` / `false`: this building can (can't) be blown apart, whatever the map's `destructible` says. |
+
+`{ "op": "DestructibleBox", "x0": ..., "y0": ..., "z0": ..., "x1": ..., "y1": ..., "z1": ..., "color": ..., "material": "Brick" }` is a block that breaks like a building's wall (cut into chunks, drawn with the buildings): `material` is a key of `Materials/destruction.json` (`Brick`, `Concrete`, `Wood`, `Plaster`, `Metal`, `Tiles`...) and picks its texture. It stands on whatever is under its lowest chunks. It works on any map (it doesn't need `destructible`).
 
 Everything a building makes counts towards the map's fingerprint: its boxes, its props, its waypoints and its files (building.json, its own props and the furnishing rules it used), so players need the same Buildings folder as the host. Maps without named Building ops keep the fingerprint they always had. Keep buildings apart (and off the map's edge): the op doesn't check for overlaps; `python3 tools/buildings/buildings.py anchors NAME X Z YAW` prints where a placement's doors and footprint land. The Dev pack's **Building Yard** shows every starter building with variants.
 
@@ -645,6 +676,63 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 - **Turned meshes:** a shape is turned about its own base point, so tipping one over (`"pitch": 90`) puts half of it under the ground: raise it with `y` (by its radius for a lying capsule or pipe, by `radius + inner` for a standing ring).
 - **Mistakes** give a readable message: an unknown shape suggests the closest name (`"cilinder"`: did you mean "cylinder"?), a missing model file lists the models that exist, and a broken model file says what's wrong with it.
 - **Cost:** every copy of the same shape (same name and parameters) shares one mesh and is drawn instanced, culled outside the view and simplified with distance. Thousands of meshes cost a handful of draw calls; the game log shows a `[mesh]` line every 5 seconds on maps with meshes (parts drawn, draw calls, LODs, CPU and GPU time).
+
+## Planets (point gravity)
+
+A map can be a small world you walk all the way round: give it a `"gravity"` field that pulls towards a point, put a
+`Planet` op there, and place everything else by **latitude and longitude** with the Surface ops. The **Pocket Planet**
+map in the Space pack (`Maps/Space/02-Planet.json`, written by `tools/planet/make_pocket_planet.py`) is the example.
+
+```json
+  "halfX": 90, "halfZ": 90,
+  "gravity": { "type": "point", "center": [0, 0, 0], "strength": 18, "axis": [0, 0, -1] },
+  "ops": [
+    { "op": "Planet", "radius": 56, "color": [0.55, 0.47, 0.4], "material": "Dirt" },
+    { "op": "SurfaceBlock", "lat": 0, "lon": 45, "w": 5, "h": 0.5, "d": 5, "color": "#4d4d57", "material": "Tiles" },
+    { "op": "SurfaceMesh", "mesh": "cylinder", "lat": 50, "lon": 90, "color": "#9ea3ad", "width": 0.4, "depth": 0.4, "height": 11 },
+    { "op": "Crater", "lat": 35, "lon": 0, "radius": 7, "color": "#6b615c" },
+    { "op": "SurfaceScatter", "mesh": "icosphere", "count": 110, "color": "#6b615c", "latMin": -72, "latMax": 72 },
+    { "op": "SurfaceSpawn", "lat": 72, "lon": 0 },
+    { "op": "PlanetWaypoints", "spacing": 12 }
+  ]
+```
+
+**`gravity`** fields: `type` (`"point"` or `"uniform"`), `center` (default `[0, 0, 0]`), `strength` (m/s², 1 to 60, default
+18, the game's usual) and `axis` (default `[0, 0, -1]`). Players' yaw is measured from "north" in each spot's ground plane,
+and that north is the `axis` laid flat on the ground; it has no direction on the two points of the planet the axis passes
+through, so **put something solid on both** (Pocket Planet has a monolith on each, at latitude 0, longitude 0 and 180).
+Players never notice the frame: the game carries your view along as you walk, so going all the way round never turns it.
+`halfX` and `halfZ` must reach past the planet: the distance `max(halfX, halfZ)` from the centre is the top of the sky.
+
+**Latitude and longitude** (degrees): latitude 90 is the +Y pole, -90 the -Y pole; longitude 0 is the +Z side of the
+planet and 90 the +X side. Headings are degrees from geographic north (towards latitude 90; at the poles, -Z), turning
+like a prop's yaw. Every surface shape stands upright on the ground where it is.
+
+| Op | Parameters | What it makes |
+| --- | --- | --- |
+| `Planet` | radius, color, x = 0, y = 0, z = 0, detail = 5, material = "Dirt" | The planet: a solid geodesic ball (detail 5 is about 20,000 triangles). One per map; place it first. |
+| `SurfaceMesh` | mesh, lat, lon, color, y = 0, width, height, depth, radius, inner, segments, detail, heading = 0, pitch = 0, roll = 0, scale = 1, material = "", solid = true | Any `Mesh` shape standing on the surface, raised by `y` (negative sinks it). **Solid** unless `"solid": false`. |
+| `SurfaceBlock` | lat, lon, w, h, d, color, y = 0, heading = 0, sink = 0.3, material = "" | A solid box `w` x `h` x `d` on the surface, sunk `sink` m so its flat bottom never floats over the curve. Walls, cover, steps (0.5 m steps climb), platforms. |
+| `Crater` | lat, lon, radius, color, rim = 1.4, count = 0, seed = 1, material = "Dirt" | A ring of leaning rock slabs round a spot. |
+| `SurfaceScatter` | mesh, count, color, minSize = 0.8, maxSize = 2.5, seed = 1, latMin = -90, latMax = 90, clear = 4, material = "", solid = true | Random rocks (any shape) over a band of latitudes, kept `clear` m from spawns. |
+| `SurfaceSpawn` | lat, lon | A spawn point (and a waypoint) on the ground. Place one per player: planet maps don't generate extra spawns. |
+| `SurfaceWaypoint` | lat, lon | A waypoint. |
+| `PlanetWaypoints` | spacing = 8 | Waypoints all over the planet, about `spacing` m apart. |
+
+- **Objectives** (`teamSpawns`, `hills`, `flags`) are world points `[x, y, z]`, as usual; give all three (the automatic ones
+  are worked out for flat maps). `tools/planet/make_pocket_planet.py` shows how to turn a latitude and longitude into a
+  point. A hill zone is a disc across the ground at its point and up to 3 m above it.
+- **What works on a planet:** walking, sprinting, jumping, crouching and going prone (always with the capsule movement,
+  whatever the server's physics setting), shooting and hit boxes, melee, grenades and launcher rounds, blast pushes,
+  ragdolls, gibs and debris, bots (their graph covers the sphere; the horizon hides people from them as from you), every
+  game mode. **Not yet:** mantling, the death camera, Insane bots' squads (they play as Hard), and kill streaks that fly
+  over the map (strikes, drones, turrets, supply drops; Recon/Counter Sweep, Overdrive, Ballistic Vests, EMP and the
+  Juggernaut suit work). Terrain, movers, buildings, props and boundaries are for flat maps.
+- **Sky:** in space there's no horizon: on a planet map the procedural sky draws stars, the sun and the moon all the way
+  round, and there's no distance fog. A `night` preset with the same dark colour for `zenith`, `horizon` and `ground`, a
+  big `moon` (`"size": 26` makes a gas giant) and `ambient` raised to about 2 works well; the sun lights one side of the
+  planet, so pick its direction so both bases get some light.
+- **Fingerprint:** the gravity field and the solid meshes are part of it.
 
 ## Decals
 
@@ -771,6 +859,7 @@ Maps/
 | `author` | Shown as "(by ...)". |
 | `order` | Sort position in the pack list (Classic is 1). Ties sort by name. Default 1000. The "Other" pack always comes last. |
 | `trueRandom` | `false` keeps the pack out of **True Random** (random from every pack), like the Dev test maps. Its maps can still be picked directly. Default `true`. Packs with `false` are listed last. |
+| `destructible` | `true`: the pack's maps have destructible buildings unless a map says `"destructible": false` (the World Tour). Default `false`. See [Buildings/README.md](../Buildings/README.md#destruction). |
 
 Map names must still be unique across **all** packs, because that's how servers and clients find a map. Packs only change how the lobby groups maps, and which [pack-local assets](#where-assets-go) a map can use.
 
@@ -834,6 +923,7 @@ A map needs **one spawn per player**. If it has fewer, the game adds spawns when
 - `CallOfSlop.exe --export-maps SomeFolder` rewrites every loaded map in the standard tidy layout, in its pack folder, which is handy after hand-editing.
 - Keep cover near spawns, and leave sightlines under ~60 m on Small maps.
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.
+- **Stairs must give 2.1 m headroom** and be walkable standing: nothing (a roof slab, a beam, a lintel, a railing's top rail, terrain) within 2.1 m over any step a player can stand on, steps of at most 0.55 m, at least 1.0 m clear between the sides, 1.2 m clear at the top and the foot (or room to turn off sideways), and nothing parked across the foot. The self-test's "Stairs" section finds every flight on every map (any run of three or more step-shaped boxes, whatever op or prop built it) and walks it standing with both movers; it names the flight and the clearance in cm when one fails. On terrain, keep the ground below the treads: a plateau or bank edge that rises over the upper steps makes them a wall.
 
 ## Zombies maps
 

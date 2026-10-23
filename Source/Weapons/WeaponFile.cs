@@ -56,6 +56,8 @@ public static class WeaponFile
         [nameof(WeaponDef.Caliber)] = (0, 1),
         [nameof(WeaponDef.Bright)] = (0, 1),
         [nameof(WeaponDef.Tail)] = (0, 1),
+        [nameof(WeaponDef.Penetration)] = (-1, 500),
+        [nameof(WeaponDef.PenetrationMult)] = (0, 5),
     };
 
     /// <summary>The JSON key for a field: its name with a lower-case first letter ("RangeM" -> "rangeM").</summary>
@@ -75,6 +77,8 @@ public static class WeaponFile
         Add("order", w.Order.ToString(CultureInfo.InvariantCulture));
         if (w.UnlockLevel is { } ul)
             Add("unlockLevel", ul.ToString(CultureInfo.InvariantCulture));
+        if (w.DefaultOptic is { } dop)
+            Add("defaultOptic", Str(dop)); // only weapons that name one, so every other weapon's text (and fingerprint) is unchanged
         foreach (var f in Fields)
         {
             if (f.Name != nameof(WeaponDef.Name))
@@ -155,9 +159,12 @@ public static class WeaponFile
                 case "author":
                     w.Author = Text(p.Value, where);
                     break;
+                case "defaultoptic":
+                    w.DefaultOptic = Text(p.Value, where) is { Length: > 0 } dop ? dop : throw new WeaponFileException($"{where}: must name an optic attachment");
+                    break;
                 default:
                     var f = Fields.FirstOrDefault(x => x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
-                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, recoil, launcher, model, voice, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
+                            ?? throw new WeaponFileException($"{source}: unknown field \"{p.Name}\". Known: format, name, author, order, unlockLevel, defaultOptic, recoil, launcher, model, voice, {string.Join(", ", Fields.Where(x => x.Name != nameof(WeaponDef.Name)).Select(Key))}");
                     f.SetValue(w, FromJson(p.Value, f.FieldType, where));
                     break;
             }
@@ -722,6 +729,11 @@ public static class WeaponSet
             Console.WriteLine(w.UnlockLevel is { } ul
                 ? $"note: unlocks at level {Math.Clamp(ul, 1, Progress.MaxLevel)}{(ul > Progress.MaxLevel ? $" (max level is {Progress.MaxLevel})" : "")}"
                 : Progress.HasBuiltInUnlock(w.Name) ? "note: unlocks at its built-in level" : $"note: no \"unlockLevel\", so it unlocks at the max level ({Progress.MaxLevel})");
+            var startOptic = Attachments.ResolveDefaultOptic(w);
+            if (w.DefaultOptic != null && !string.Equals(startOptic?.Name, w.DefaultOptic, StringComparison.OrdinalIgnoreCase))
+                Console.WriteLine($"note: \"defaultOptic\" names '{w.DefaultOptic}', which isn't an optic that fits it");
+            if (startOptic != null)
+                Console.WriteLine($"note: starts with the {startOptic.Name}; its iron sights unlock half-way through its attachment XP");
             if (Weapons.Find(w.Name) is { SourceFile: { } other } && !SameFile(Path.Combine(Weapons.Folder, other), file))
                 Console.WriteLine($"note: '{w.Name}' is already in the Weapons folder ({other}); names must be unique, so only one of them would load");
             return 0;

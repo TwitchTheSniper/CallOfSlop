@@ -1,0 +1,9 @@
+{
+  "extends": "Base One-Receiver Grip",
+  "name": "Service Pistol Grip",
+  "rarity": "common",
+  "flavor": "A plain pistol handle with room for exactly one receiver. Every run starts somewhere.",
+  "+sockets": [
+    {"name": "utility", "type": "utility", "pos": [0.045, 0.0, -0.06]}
+  ]
+}

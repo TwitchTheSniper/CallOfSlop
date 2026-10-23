@@ -3,8 +3,14 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>Where the gunsmith wants the 3D gun drawn this frame (ImGui pixel coordinates). Program renders it behind the UI.</summary>
-public readonly record struct GunsmithPreview(WeaponDef Def, float2 WinMin, float2 WinMax, float2 ViewMin, float2 ViewMax);
+/// <summary>
+/// Where the gunsmith wants the 3D gun drawn this frame (ImGui pixel coordinates). Program renders it behind the UI.
+/// The workbench passes its own orbit <paramref name="Camera"/> (null: the slow automatic sway), and while a part slides
+/// into its socket the build without it (<paramref name="AnimRest"/>) and the part alone (<paramref name="AnimPart"/>,
+/// drawn moved by <paramref name="AnimOffset"/> in gun space).
+/// </summary>
+public readonly record struct GunsmithPreview(WeaponDef Def, float2 WinMin, float2 WinMax, float2 ViewMin, float2 ViewMax,
+    BenchCamera? Camera = null, WeaponDef? AnimRest = null, WeaponDef? AnimPart = null, System.Numerics.Vector3 AnimOffset = default);
 
 /// <summary>
 /// The attachment "showcase": the selected gun rendered large in the middle, one card per attachment
@@ -99,7 +105,7 @@ public sealed partial class Ui
                     ImGui.SameLine();
                     ImGuiSafe.TextColored(Dim, $"  {unlocked}/{inSlot.Length}");
                 }
-                ImGui.Text(inSlot.Length == 0 ? "-" : equipped?.Name ?? (slot == AttachSlot.Optic ? "Iron sights" : "Empty"));
+                ImGui.Text(inSlot.Length == 0 ? "-" : equipped?.Name ?? (slot == AttachSlot.Optic ? Attachments.NoOpticName(w) : "Empty"));
                 // Orange dot in the corner when something is fitted
                 if (equipped != null)
                 {
@@ -144,8 +150,8 @@ public sealed partial class Ui
                 ImDrawListExtensions.AddCircle(dots, in c2, 8 * _scale, new ImColor8(240, 150, 40, i < fitted ? (byte)200 : (byte)90), 16, 1.5f);
             }
             ImGui.Spacing();
-            // Compare against the stock gun normally, or against your current build while hovering a pick.
-            var reference = _hoverAttachment != null ? current : w;
+            // Compare against the gun as it comes (a sniper with its scope) normally, or against your current build while hovering a pick.
+            var reference = _hoverAttachment != null ? current : Attachments.Apply(w, Attachments.DefaultKit(w));
             StatRow("Accuracy", StatBars.Accuracy(reference), StatBars.Accuracy(preview), StatBars.Change(reference.HipSpreadDeg, preview.HipSpreadDeg));
             StatRow("Range", StatBars.Range(reference), StatBars.Range(preview), StatBars.Change(reference.RangeM, preview.RangeM));
             StatRow("Fire rate", StatBars.FireRate(reference), StatBars.FireRate(preview), StatBars.Change(reference.Rpm, preview.Rpm));
@@ -191,12 +197,28 @@ public sealed partial class Ui
             ImGui.Separator();
             var current = Attachments.Slot(kit, slot);
             // A click picks and closes the list; a double-click's second click is swallowed (see SecondClick).
-            if (ImGui.Selectable(slot == AttachSlot.Optic ? "Iron sights##none"u8 : "Empty##none"u8, current == 0))
+            // On a gun that starts scoped (snipers) the empty optic slot is its iron sights, an unlock of their own.
+            var ironsNeed = slot == AttachSlot.Optic ? Attachments.IronSightsXp(w) : 0;
+            var noneOpen = wxp >= ironsNeed;
+            var noneName = slot == AttachSlot.Optic ? Attachments.NoOpticName(w) : "Empty";
+            if (!noneOpen)
+                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+            if (ImGui.Selectable(noneOpen ? $"{noneName}##none" : $"{noneName}   [LOCKED - {ironsNeed:N0} weapon XP]##none", current == 0,
+                    noneOpen ? ImGuiSelectableFlags.None : ImGuiSelectableFlags.NoAutoClosePopups))
             {
-                SetKitOf(audio, w, Attachments.With(kit, slot, 0));
-                Acted();
-                ImGui.CloseCurrentPopup();
+                if (!noneOpen)
+                {
+                    LockedFeedback(audio);
+                }
+                else
+                {
+                    SetKitOf(audio, w, Attachments.With(kit, slot, 0));
+                    Acted();
+                    ImGui.CloseCurrentPopup();
+                }
             }
+            if (!noneOpen)
+                ImGui.PopStyleColor();
             foreach (var a in Attachments.For(w).Where(a => a.Slot == slot).OrderBy(a => Attachments.UnlockXp(w, a)))
             {
                 var need = Attachments.UnlockXp(w, a);

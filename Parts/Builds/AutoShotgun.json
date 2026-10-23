@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A full-auto shotgun receiver with a shell drum. Rooms empty quickly.",
-  "build": "Rifle Grip{receiver_1:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},stock:Recoil Buffer Stock}"
+  "build": "Sport Rifle Grip{receiver_1:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:00 Buckshot},stock:Recoil Buffer Stock}"
 }

@@ -16,6 +16,7 @@ public static class GameModeRegistry
         () => new CaptureTheFlagModule(),
         () => new GunGameModule(),
         () => new ZombiesModule(),
+        () => new CoopModule(), // co-op PvE missions (docs/pve/DESIGN.md)
         () => new LastManStandingModule(), // the template mode (Dev-only): Source/Game/Modes/README.md
     ];
 
