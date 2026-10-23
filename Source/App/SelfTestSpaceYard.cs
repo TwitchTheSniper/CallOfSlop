@@ -246,8 +246,6 @@ public static partial class SelfTest
         {
             float blue = Average(o.TeamSpawns[0], forBlue), red = Average(o.TeamSpawns[1], forRed);
             walks.Add($"{label} {blue:0}/{red:0} m");
-            if (Environment.GetEnvironmentVariable("SPACE_DEBUG") != null)
-                Line($"  DEBUG {label}: blue " + string.Join(" ", o.TeamSpawns[0].Select(s => $"({s.X:0},{s.Z:0})={Walk(s, forBlue):0}")) + " | red " + string.Join(" ", o.TeamSpawns[1].Select(s => $"({s.X:0},{s.Z:0})={Walk(s, forRed):0}")));
             if (float.IsNaN(blue) || float.IsNaN(red))
                 Fail($"{m.Name}: no route from a team's spawns to {label}");
             else if (MathF.Abs(blue - red) > 0.1f * MathF.Max(blue, red))
