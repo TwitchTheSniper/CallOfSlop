@@ -38,7 +38,7 @@ public static partial class SelfTest
     }
 
     /// <summary>What every gravity map must have; returns the nav graph (built in full) or null.</summary>
-    private static NavGraph? GravityMapCommon(Map m, string name, int minProps, int minDecals, int minSpawns)
+    private static NavGraph? GravityMapCommon(Map m, string name, int minProps, int minDecals, int minSpawns, bool mirrorX = false)
     {
         var o = m.Objectives;
         var ok = true;
@@ -57,8 +57,8 @@ public static partial class SelfTest
             Fail($"{name}: team spawns, three or more hills and the flags should all be hand-placed");
             ok = false;
         }
-        if (o.Hills.Any(h => MathF.Abs(h.Center.Z) > 0.05f))
-            Fail($"{name}: the hills should be on the mirror line z = 0");
+        if (o.Hills.Any(h => MathF.Abs(mirrorX ? h.Center.X : h.Center.Z) > 0.05f))
+            Fail($"{name}: the hills should be on the mirror line {(mirrorX ? "x" : "z")} = 0");
         if (m.Spawns.Count < minSpawns || m.MaxPlayers < 12)
         {
             Fail($"{name}: {m.Spawns.Count} spawns, {m.MaxPlayers} players: too few");
@@ -68,12 +68,15 @@ public static partial class SelfTest
         if (outside.Count > 0)
             Fail($"{name}: {outside.Count} objectives or spawns outside the outline, e.g. {outside[0]}");
         foreach (var sp in m.Spawns)
-            if (!m.PlainUpAtPoint(sp))
-                Fail($"{name}: spawn at {sp} is in a gravity zone with its own up");
+            if (!m.PlainUpAtPoint(sp) && m.GravityZones!.FieldAt(sp) is not PointGravity)
+                Fail($"{name}: spawn at {sp} is in a gravity zone with a sideways up"); // (on a rock is fine: its up is the rock's)
         var bake = DecalBaker.Bake(m);
         if (m.PropInstances.Count < minProps || bake.Placed < minDecals)
             Fail($"{name}: too plain: {m.PropInstances.Count} props, {bake.Placed} decals placed");
         World.SetMap(m);
+        var badSpawns = m.Spawns.Where(sp => Settle(sp, 40) is var st && (!st.Grounded || Vector3.Distance(st.Position, sp) > 0.5f || !World.BodyFits(st.Position, GravityFrames.UpAt(st.Position)))).ToList();
+        if (badSpawns.Count > 0)
+            Fail($"{name}: {badSpawns.Count} spawns don't stand on clear ground, e.g. {badSpawns[0]}");
         var sw = Stopwatch.StartNew();
         var g = NavGraph.Build(m);
         var buildMs = sw.Elapsed.TotalMilliseconds;
@@ -273,9 +276,40 @@ public static partial class SelfTest
             Fail($"Maps/Space/04-TwinShard.json ('{name}') didn't load");
             return;
         }
-        if (GravityMapCommon(m, name, minProps: 60, minDecals: 60, minSpawns: 16) is not { } g)
+        if (GravityMapCommon(m, name, minProps: 18, minDecals: 60, minSpawns: 16, mirrorX: true) is not { } g) // (props stand upright: only near the poles)
             return;
+        var zones = m.GravityZones!;
+        int Main(Func<Vector3, bool> where) => g.MainNodes.Count(i => where(g.Nodes[i]));
+        var west = Main(n => Vector3.Distance(n, new Vector3(-34, 24, 0)) < 18.6f);
+        var westUnder = Main(n => Vector3.Distance(n, new Vector3(-34, 24, 0)) < 18.6f && n.Y < 24 - 9);
+        var east = Main(n => Vector3.Distance(n, new Vector3(34, 24, 0)) < 18.6f);
+        var line = Main(n => n.Y > 41f && n.Y < 43f && MathF.Abs(n.X) < 31f);
+        var keel = Main(n => n.Y > 5.5f && n.Y < 6.1f && MathF.Abs(n.X) < 31f && zones.UpAt(n) == -Vector3.UnitY);
+        SpaceGravityLine($"{name} nav by area (main): west shard {west} ({westUnder} on its lower half), east shard {east}, the Line {line}, the Keel Line (upside down) {keel}");
+        if (west < 60 || east < 60 || westUnder < 15 || line < 8 || keel < 8)
+            Fail($"{name}: the bots' graph misses an area (west {west}/{westUnder}, east {east}, line {line}, keel {keel})");
         GravityMapWalks(m, g, name);
+        var stands = StandsWithUp(new Vector3(4, 42.5f, 4), Vector3.UnitY, name, "the Knot")
+                     & StandsWithUp(new Vector3(0, 5.5f, 0), -Vector3.UnitY, name, "under the Keel Line")
+                     & StandsWithUp(new Vector3(-34, 24 - 18.3f, 0), -Vector3.UnitY, name, "the west shard's bottom pole")
+                     & StandsWithUp(new Vector3(34 + 18.3f, 24, 0), Vector3.UnitX, name, "the east shard's outer flank")
+                     & StandsWithUp(new Vector3(0, 24 + 4.3f, 0), Vector3.UnitY, name, "the Pebble's top");
+        // Off the Line's middle you fall onto the Pebble; off the Pebble's underside onto the Keel Line's top.
+        var f = new MoveState { Position = new Vector3(0.5f, 42.3f, 0.5f), Grounded = false }; // in the Knot's eye
+        for (var i = 0; i < 240 && !(f.Grounded && i > 5); i++)
+            World.Simulate(ref f, new InputCmd { SpeedPct = 100 });
+        var onPebble = f.Grounded && Vector3.Distance(f.Position, new Vector3(0, 24, 0)) < 4.4f;
+        var k = Settle(new Vector3(0.5f, 24 - 4.3f, 0.5f), 60);
+        for (var i = 0; i < 60; i++)
+            World.Simulate(ref k, new InputCmd { Buttons = i < 2 ? Buttons.Jump : 0, SpeedPct = 100 });
+        var leftPebble = Vector3.Distance(k.Position, new Vector3(0, 24, 0)) > 4.8f;
+        for (var i = 0; i < 300 && !k.Grounded; i++)
+            World.Simulate(ref k, new InputCmd { SpeedPct = 100 });
+        var onKeelTop = k.Grounded && k.Position.Y > 6.1f && k.Position.Y < 6.4f && MathF.Abs(k.Position.X) < 6f;
+        SpaceGravityLine($"{name}: stands in every gravity {stands}; a drop from the Line lands on the Pebble {onPebble} at ({f.Position.X:0.0}, {f.Position.Y:0.0}, {f.Position.Z:0.0}); "
+                         + $"a jump off the Pebble's underside leaves its pull {leftPebble} and lands on the Keel Line's top {onKeelTop} at ({k.Position.X:0.0}, {k.Position.Y:0.0}, {k.Position.Z:0.0})");
+        if (!onPebble || !leftPebble || !onKeelTop)
+            Fail($"{name}: the Pebble drop loop is wrong (on pebble {onPebble}, left {leftPebble}, on keel top {onKeelTop}, {f.Position}, {k.Position})");
         GravityMapBotMatch(m, name, GameMode.KingOfTheHill);
     }
 }

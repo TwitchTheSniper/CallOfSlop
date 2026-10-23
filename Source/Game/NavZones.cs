@@ -35,9 +35,11 @@ public sealed partial class NavGraph
                     var corner = new Vector3((i & 1) != 0 ? zone.Max.X : zone.Min.X, (i & 2) != 0 ? zone.Max.Y : zone.Min.Y, (i & 4) != 0 ? zone.Max.Z : zone.Min.Z);
                     reach = MathF.Max(reach, Vector3.Distance(corner, pg.Center));
                 }
-                foreach (var dir in Map.FibonacciSphere(reach, sp))
+                // Directions spread for the zone's own radius (a sphere zone hugs its rock; a box's corners reach further
+                // than any surface), so a rock gets nodes about sp apart, not several times as many.
+                foreach (var dir in Map.FibonacciSphere(zone.Shape == GravityZoneShape.Sphere ? zone.Radius : reach, sp))
                 {
-                    ProbeZone(map, c, zoned, zi, nodes, zoneStart, pg.Center + dir * reach, dir, reach);
+                    ProbeZone(map, c, zoned, zi, nodes, zoneStart, pg.Center + dir * reach, dir, reach, sp * 0.4f);
                     if (++k % 16 == 0)
                         yield return false;
                 }
