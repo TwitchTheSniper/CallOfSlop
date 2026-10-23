@@ -10,8 +10,11 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    /// <summary>A harder track may cost this much more than the heaviest older track (the user's 1.5x rule plus 10% timing slack).</summary>
-    private const double HarderCpuRatioMax = 1.65;
+    /// <summary>
+    /// A harder track's drop may cost this much more than the most expensive older drop: the user's 1.5x rule. (It had
+    /// 10% timing slack on top while the check used wall-clock medians; CompareCpu's interleaved CPU-clock ratios don't need it.)
+    /// </summary>
+    private const double HarderCpuRatioMax = 1.5;
 
     private static void CheckHardbassHarder(MusicTrackStats[] stats, MusicRenderer r, List<string> notes)
     {
@@ -56,39 +59,29 @@ public static partial class SelfTest
         if (harderKick < classicKick * 1.05)
             Fail($"the harder kicks ({harderKick:0.000}) aren't heavier than the classic hardbass kicks ({classicKick:0.000})");
 
-        // CPU: each harder track's drop against the most expensive drop of the older tracks, all timed the same way on
-        // this machine (median of 5 runs of 2 s each), so a slow or busy runner shifts both sides alike.
+        // CPU: each harder track's drop against the most expensive drop of the older tracks, as the median ratio of
+        // interleaved runs on this thread's CPU clock (CompareCpu), so a slow or busy runner shifts both sides alike.
         var older = all.Where(t => t.Hardbass?.Harder == null && t.Weird == null).ToArray(); // the weird tracks are new too
-        double DropMedian(MusicTrack t)
-        {
-            var runs = new double[5];
-            for (var i = 0; i < runs.Length; i++)
-                runs[i] = TimeMsPerSecond(r, t, 2);
-            Array.Sort(runs);
-            return runs[2];
-        }
-        var refCost = 0.0;
-        var refName = "";
-        foreach (var t in older)
-        {
-            var c = DropMedian(t);
-            if (c > refCost)
-                (refCost, refName) = (c, t.Name);
-        }
+        const double seconds = 1.5;
+        var cr = new MusicRenderer();
+        var (refTrack, _) = HeaviestTrack(older, t => TrackWork(cr, t, seconds, 1234));
+        var refWork = TrackWork(cr, refTrack, seconds, 1234);
         var heaviestWhole = older.Max(t => stats[Array.IndexOf(all, t)].MsPerSecond);
-        double worstRatio = 0;
+        double worstRatio = 0, refCost = 0;
         var costLine = new System.Text.StringBuilder();
         foreach (var t in harder)
         {
-            var c = DropMedian(t);
-            var ratio = c / Math.Max(1e-6, refCost);
-            worstRatio = Math.Max(worstRatio, ratio);
+            var cmp = CompareCpu(refWork, TrackWork(cr, t, seconds, 1234));
+            var c = cmp.CandMs / seconds;
+            refCost = cmp.RefMs / seconds;
+            worstRatio = Math.Max(worstRatio, cmp.Ratio);
             var whole = stats[Array.IndexOf(all, t)].MsPerSecond;
-            costLine.Append($" {t.Name} drop {c:0.0} ms/s = {ratio:0.00}x, whole track {whole:0.0} ms/s = {whole / heaviestWhole:0.00}x;");
-            if (ratio > HarderCpuRatioMax)
-                Fail($"{t.Name}: its drop costs {ratio:0.00}x the most expensive older drop ({refName}; medians {c:0.0} vs {refCost:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
+            costLine.Append($" {t.Name} drop {c:0.0} ms/s = {cmp.Ratio:0.00}x, whole track {whole:0.0} ms/s = {whole / heaviestWhole:0.00}x;");
+            if (cmp.Ratio > HarderCpuRatioMax)
+                Fail($"{t.Name}: its drop costs {cmp.Ratio:0.00}x the most expensive older drop ({refTrack.Name}; medians {c:0.0} vs {refCost:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
         }
-        notes.Add($"harder: CPU against the most expensive older drop ({refName}, {refCost:0.0} ms/s) and the heaviest older whole track ({heaviestWhole:0.0} ms/s):{costLine} worst {worstRatio:0.00}x");
+        notes.Add($"harder: CPU ({ThreadCpu.Kind}, median of interleaved pairs) against the most expensive older drop ({refTrack.Name}, {refCost:0.0} ms/s) and the heaviest older whole track ({heaviestWhole:0.0} ms/s):{costLine} worst {worstRatio:0.00}x");
+        CpuRatioNotes.Add($"harder drops: worst {worstRatio:0.00}x of {refTrack.Name}");
 
         CheckHarderVoices(notes);
     }
@@ -99,10 +92,11 @@ public static partial class SelfTest
         r.Load(t, 1234, t.FirstDropBar);
         var block = new float[MusicPlayer.BlockFrames * 2];
         var blocks = (int)(seconds * Audio.SampleRate / MusicPlayer.BlockFrames);
-        var t0 = Stopwatch.GetTimestamp();
-        for (var i = 0; i < blocks; i++)
-            r.Render(block);
-        var ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+        var ms = ThreadCpu.TimeMs(() =>
+        {
+            for (var i = 0; i < blocks; i++)
+                r.Render(block);
+        });
         return ms / (blocks * MusicPlayer.BlockFrames / (double)Audio.SampleRate);
     }
 

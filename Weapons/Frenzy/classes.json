@@ -207,7 +207,7 @@
           { "voice": "boom", "pattern": "X..X..X...X..X..", "level": 0.5, "from": 1 },
           { "voice": "whistle", "pattern": "........................9-8-7-6-5-4-3-2-1-0-------....", "octave": 36, "level": 0.22, "from": 2, "reverb": 0.3 },
           { "voice": "bassdrum", "pattern": "..x...x...x.xx..", "level": 0.35, "from": 3 },
-          { "voice": "braam", "pattern": "X---------------................", "octave": 12, "level": 0.3, "from": 5, "reverb": 0.5, "chord": [0, 3, 7] }
+          { "voice": "braam", "pattern": "X---------------................", "octave": 12, "level": 0.3, "from": 5, "reverb": 0.5, "chord": [0, 7] }
         ]
       },
       "visual": { "signature": "Shockwave", "color": "#8cff33", "accent": "#d9ff8c", "tracerWidth": 1.4, "sheath": 2.5, "trailLife": 0.5, "muzzleSparks": 6, "impactSparks": 16, "brassSparks": 0, "sparkSpeed": 9, "sparkGravity": 1, "sparkLife": 0.55, "barrelGlow": 0.65, "edgeAlpha": 0.12, "rainbow": false },
