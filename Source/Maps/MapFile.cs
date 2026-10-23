@@ -338,7 +338,9 @@ public static partial class MapFile
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
-            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)
+            // Sky images are found next to the map file; a map read from text (a round trip) looks in its pack folder.
+            var skySource = (Path.GetDirectoryName(source) ?? "").Length > 0 || map.PackDir == null ? source : Path.GetFileName(map.PackDir) + "/" + source;
+            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, skySource) is { } parsedSky)
             {
                 map.Skybox = parsedSky;
                 map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)

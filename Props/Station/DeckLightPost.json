@@ -73,11 +73,11 @@
    ],
    "color": "#fff0c8",
    "anim": {
-    "type": "flicker",
+    "type": "pulse",
     "color": "#fff0c8",
     "glow": 1.5,
-    "rate": 2,
-    "duty": 0.98
+    "period": 5.0,
+    "off": "#a89878"
    }
   }
  ],

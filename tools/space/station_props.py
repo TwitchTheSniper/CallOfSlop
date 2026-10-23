@@ -143,7 +143,7 @@ def consoles():
          collider=[C([0.9, 1.9, 0.5])], breakable=brk(300, "metal", count=12), scatter=SQ)
     p = [At([0.22, 0.25, 0.22], 0, color=DARK), At([0.1, 3.6, 0.1], 0.25, color=STEEL),
          At([0.7, 0.08, 0.16], 3.8, 0.28, color=STEEL),
-         lit(At([0.46, 0.06, 0.2], 3.72, 0.4, color="#fff0c8"), glow("flicker", "#fff0c8", rate=2, duty=0.98, glow_=1.5))]
+         lit(At([0.46, 0.06, 0.2], 3.72, 0.4, color="#fff0c8"), glow("pulse", "#fff0c8", 5.0, glow_=1.5, off="#a89878"))]
     prop("Deck Light Post", "A slim deck lamp post with an arm-mounted warm light.", p, collider=[C([0.22, 3.9, 0.22])], scatter=ANY)
     p = [At([0.36, 0.06, 0.36], 0, color=DARK), lit(At([0.26, 0.04, 0.26], 0.06, color=AMBER), glow("blink", AMBER, 2.0, duty=0.3, glow_=1.6))]
     prop("Deck Floor Light", "A flush amber marker light for landing pad rims and walkway edges (looks only).", p,

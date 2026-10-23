@@ -7,9 +7,9 @@ public static partial class SelfTest
     /// <summary>The sky station's platforms (name, centre, deck height): every one must be on the bots' nav graph.</summary>
     private static readonly (string Name, float X, float Z, float Y)[] StationPlatforms =
     [
-        ("North Dock", 0, -96, 30f), ("South Dock", 0, 96, 30f), ("Refinery N", 0, -56, 28f), ("Refinery S", 0, 56, 28f),
+        ("North Dock", 0, -86, 30f), ("South Dock", 0, 86, 30f), ("Refinery N", 0, -56, 28f), ("Refinery S", 0, 56, 28f),
         ("Quarters N", -40, -70, 29f), ("Quarters S", -40, 70, 29f), ("Tank Farm N", -52, -40, 27.5f), ("Tank Farm S", -52, 40, 27.5f),
-        ("Hangar N", 42, -72, 29.5f), ("Hangar S", 42, 72, 29.5f), ("Comms N", 50, -46, 27.5f), ("Comms S", 50, 46, 27.5f),
+        ("Hangar N", 42, -72, 29.5f), ("Hangar S", 42, 72, 29.5f), ("Comms N", 50.6f, -48.5f, 27.5f), ("Comms S", 50.6f, 48.5f, 27.5f),
         ("Hub ring", 0, -15.5f, 26f), ("Hub core", 3, 0, 26f), ("West Pad", -47.5f, 0, 25f), ("East Pad", 47.5f, 0, 25f),
     ];
 
@@ -88,7 +88,8 @@ public static partial class SelfTest
             }
             for (var t = 0; t < 2; t++)
                 if (float.IsNaN(Walk(o.TeamSpawns[t][0], at)))
-                    unreached.Add($"{p.Name} from {(t == 0 ? "Blue" : "Red")}");
+                    unreached.Add($"{p.Name} from {(t == 0 ? "Blue" : "Red")} (node ({g.Nodes[k].X:0.0}, {g.Nodes[k].Y:0.00}, {g.Nodes[k].Z:0.0}), "
+                                  + $"component {g.Component[k]} of main {g.MainComponent}, {g.EdgeStart[k + 1] - g.EdgeStart[k]} links)");
         }
         if (unreached.Count > 0)
             Fail("Stratos Station: bots can't reach " + string.Join(", ", unreached));

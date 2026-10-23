@@ -130,10 +130,10 @@ def pump_house():
                 "One storey, 8 x 10 m: a pump room and a valve room with stairs onto the roof.",
                 614, 3.6, {
                     "floors": [{"autoWindows": {"spacing": 2.6, "width": 1.2, "sill": 1.5, "head": 2.6}, "rooms": [
-                        room("pump room", "stationpumps", [-4, -5, 4, 2]),
+                        room("pump room", "stationpumps", [-4, -5, 4, 2], autoWindows={"spacing": 4.0, "width": 1.0, "sill": 2.2, "head": 3.0}),
                         room("valve room", "stationhall", [-4, 2, 4, 5], windows=False)],
                         "openings": [door(2.6, 5, 1.2, front=True), door(2.6, 2, 1.2), door(-4, -1.5, 1.2)]}],
-                    "stairs": [{"floor": 0, "rect": [-2.6, 2.8, 0.9, 3.9], "dir": "+x"}],
+                    "stairs": [{"floor": 0, "rect": [-1.3, 2.9, 2.2, 4.0], "dir": "-x"}],
                     "roof": ROOF})
 
 

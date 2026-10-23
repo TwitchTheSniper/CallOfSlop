@@ -219,17 +219,21 @@ def bridge_ends(a, b):
 
 # ================================================================================================ decks
 def deck_strips(p):
-    """Hidden collider strips under a disc (or ring) deck: strips along X, inscribed in the drawn polygon."""
-    seg = 64 if p.R > 12 else 48
-    Rc = p.R * math.cos(math.pi / seg) - 0.06
-    # Strips: 1.5 m wide through the middle, 0.4 m near the top and bottom of the circle (where a wide strip would cut
-    # off a lot of the round edge).
-    def split(a, b, w):
-        n = max(1, int(math.ceil((b - a) / w - 1e-6)))
-        return [a + (b - a) * k / n for k in range(n)]
-    e = 0.62 * Rc
-    edges = split(-Rc, -e, 0.4) + split(-e, e, 1.5) + split(e, Rc, 0.4) + [Rc]
-    bands = list(zip(edges[:-1], edges[1:]))
+    """Hidden collider strips under a disc (or ring) deck."""
+    # Strips along X whose ends reach the rim band at their far edge (radius R + 0.12, hidden in the band), narrow enough
+    # that their near edge still reaches the railing (R - 0.22): w (2|z| + w) <= 0.6 R. A ring's eye gets the same rule
+    # against its inner radius.
+    ref = min(p.R, p.inner) if p.kind == "ring" else p.R
+    edges = [0.0]
+    while edges[-1] < p.R + 0.1:
+        z = edges[-1]
+        w = 1.5
+        while w > 0.12 and w * (2 * z + w) > 0.6 * ref:
+            w *= 0.85
+        edges.append(min(z + w, p.R + 0.12))
+    pos = edges
+    bands = [(-b1, -b0) for (b0, b1) in zip(pos[:-1], pos[1:])][::-1] + list(zip(pos[:-1], pos[1:]))
+    Rc = p.R + 0.12
     y0, y1 = p.y - 1.0, p.y
     for (z0, z1) in bands:
         far = max(abs(z0), abs(z1))
@@ -239,10 +243,9 @@ def deck_strips(p):
         if half < 0.3:
             continue
         if p.kind == "ring":
-            ri = p.inner / math.cos(math.pi / seg) + 0.06
-            near = 0.0 if z0 < 0 < z1 else min(abs(z0), abs(z1))
-            if near < ri:
-                hole = math.sqrt(ri * ri - near * near)
+            ri = p.inner - 0.06
+            if far < ri:
+                hole = math.sqrt(ri * ri - far * far)
                 collider(p.x - half, y0, p.z + z0, p.x - hole, y1, p.z + z1)
                 collider(p.x + hole, y0, p.z + z0, p.x + half, y1, p.z + z1)
                 continue
@@ -703,13 +706,7 @@ def dress_e2(s):
 def dress_centre():
     hub, core = PLATS["hub"], PLATS["core"]
     y = hub.y
-    # Core: a beacon dais in the middle of the hill (cosmetic antenna), cover round the edge.
-    mesh("cylinder", 0, 0, y + 0.02, RIM, width=2.4, height=0.3, depth=2.4, segments=24)
-    collider(-1.0, y, -1.0, 1.0, y + 0.3, 1.0)
-    mesh("cylinder", 0, 0, y + 0.3, STEEL, width=0.3, height=7.0, depth=0.3, segments=10)
-    mesh("torus", 0, 0, y + 5.5, "#ffb24a", radius=1.4, inner=0.08, segments=32, detail=6)
-    mesh("torus", 0, 0, y + 6.6, "#ffb24a", radius=0.9, inner=0.07, segments=32, detail=6)
-    mesh("sphere", 0, 0, y + 7.2, "#ff5a40", width=0.6, height=0.6, depth=0.6, segments=10, detail=5)
+    # Core: open deck for the hill (a glowing ring painted on it), cover round the edge.
     for (x, z, n, yw) in [(3.6, 3.6, "Station Cargo Pod", 45), (-3.6, -3.6, "Station Cargo Pod", 45),
                           (-3.8, 3.4, "Station Supply Case", 0), (3.8, -3.4, "Station Supply Case", 0)]:
         prop(n, x, z, y, yw)
