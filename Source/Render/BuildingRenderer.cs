@@ -98,6 +98,9 @@ public sealed unsafe class BuildingRenderer
     private float[] _dyn = [];
     private int _doorCount, _glassCount, _dynVersion = -1;
     private double _lastNow;
+    private int _destructionVersion = -1;
+    private int[] _runVersions = [];
+    private long _destructionUploads;
 
     /// <summary>Shell boxes uploaded for the current map.</summary>
     public int Boxes { get; private set; }
@@ -120,7 +123,7 @@ public sealed unsafe class BuildingRenderer
         _lastNow = now;
         if (_broken)
             return;
-        if (map.PlacedBuildings.Count == 0)
+        if (map.PlacedBuildings.Count == 0 && map.Destruction == null)
         {
             _map = null;
             LastDraws = LastInstances = 0;
@@ -131,6 +134,8 @@ public sealed unsafe class BuildingRenderer
             return;
         if (!ReferenceEquals(map, _map))
             Rebuild(map);
+        else if (map.Destruction is { } destruction && destruction.Version != _destructionVersion)
+            RefreshDestroyed(map, destruction);
         var swinging = Swing(map, dt);
         if (swinging || map.BuildingStateVersion != _dynVersion)
             WriteDynamic(map);
@@ -210,7 +215,8 @@ public sealed unsafe class BuildingRenderer
             _statStart = now;
         if (now - _statStart >= 5)
         {
-            Console.WriteLine($"[buildings] {map.Name}: {map.PlacedBuildings.Count} buildings, {Boxes} shell boxes, {map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows; "
+            Console.WriteLine($"[buildings] {map.Name}: {map.PlacedBuildings.Count} buildings, {Boxes} shell boxes, {map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows"
+                              + (map.Destruction is { } dd ? $", {dd.Count} destructible chunks ({dd.Structures.Sum(st => st.BrokenCount)} broken, {_destructionUploads} run uploads)" : "") + "; "
                               + $"avg {_statInstances / (double)_statFrames:0} boxes drawn in {_statDraws / (double)_statFrames:0.0} draw calls, CPU {_cpuMs / _statFrames:0.000} ms/frame, "
                               + $"GL error 0x{(uint)Native.glGetError():X}");
             _statStart = now;
@@ -230,30 +236,45 @@ public sealed unsafe class BuildingRenderer
 
     // ---- Instance data ------------------------------------------------------------------------
 
-    /// <summary>The shell instances of a map, one run per building (no GL: the self-test checks it).</summary>
+    /// <summary>
+    /// The shell instances of a map, one run per building, then one per destructible block (no GL: the self-test checks it).
+    /// A broken destructible chunk is written with no size (nothing drawn, its slot kept, see <see cref="WriteRun"/>).
+    /// </summary>
     public static (float[] Data, (int Start, int Count, Vector3 Min, Vector3 Max)[] Runs) BuildStatic(Map map)
     {
-        var total = map.PlacedBuildings.Sum(b => b.ShellCount);
+        var blocks = map.Destruction?.Structures.Where(st => st.Building < 0).ToArray() ?? Array.Empty<DestructibleStructure>();
+        var total = map.PlacedBuildings.Sum(b => b.ShellCount) + blocks.Sum(st => st.SolidCount);
         var data = new float[Math.Max(1, total) * FloatsPerInstance];
-        var runs = new (int, int, Vector3, Vector3)[map.PlacedBuildings.Count];
+        var runs = new (int, int, Vector3, Vector3)[map.PlacedBuildings.Count + blocks.Length];
         var n = 0;
-        for (var bi = 0; bi < map.PlacedBuildings.Count; bi++)
+        for (var bi = 0; bi < runs.Length; bi++)
         {
-            var b = map.PlacedBuildings[bi];
+            var (first, count) = bi < map.PlacedBuildings.Count
+                ? (map.PlacedBuildings[bi].ShellStart, map.PlacedBuildings[bi].ShellCount)
+                : (blocks[bi - map.PlacedBuildings.Count].SolidStart, blocks[bi - map.PlacedBuildings.Count].SolidCount);
             var start = n;
-            var min = new Vector3(float.MaxValue);
-            var max = new Vector3(float.MinValue);
-            for (var k = b.ShellStart; k < b.ShellStart + b.ShellCount; k++)
-            {
-                if (!map.BuildingLooks.TryGetValue(k, out var look))
-                    continue;
-                Write(data, n++, look.Box, 0, Vector2.Zero, look.Color, 1f, look.Layer);
-                min = Vector3.Min(min, look.Box.Min);
-                max = Vector3.Max(max, look.Box.Max);
-            }
+            n = WriteRun(map, data, n, first, count, out var min, out var max);
             runs[bi] = (start, n - start, min, max);
         }
         return (data, runs);
+    }
+
+    /// <summary>Writes the instances of Solid[first .. first + count) from slot <paramref name="n"/>; returns the next free slot.</summary>
+    private static int WriteRun(Map map, float[] data, int n, int first, int count, out Vector3 min, out Vector3 max)
+    {
+        min = new Vector3(float.MaxValue);
+        max = new Vector3(float.MinValue);
+        var d = map.Destruction;
+        for (var k = first; k < first + count; k++)
+        {
+            if (!map.BuildingLooks.TryGetValue(k, out var look))
+                continue;
+            var gone = d != null && d.IsChunk(k, out var c) && d.Broken[c];
+            Write(data, n++, gone ? look.Box with { Half = Vector3.Zero } : look.Box, 0, Vector2.Zero, look.Color, 1f, look.Layer);
+            min = Vector3.Min(min, look.Box.Min);
+            max = Vector3.Max(max, look.Box.Max);
+        }
+        return n;
     }
 
     private static void Write(float[] d, int i, Box b, float yaw, Vector2 pivot, Vector3 color, float alpha, int layer)
@@ -326,10 +347,42 @@ public sealed unsafe class BuildingRenderer
         _dynVersion = map.BuildingStateVersion;
     }
 
+    /// <summary>Re-uploads the runs of the structures whose chunks broke or came back since the last frame (only those).</summary>
+    private void RefreshDestroyed(Map map, MapDestruction d)
+    {
+        _destructionVersion = d.Version;
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _staticVbo);
+        var blocks = 0;
+        foreach (var st in d.Structures)
+        {
+            var run = st.Building >= 0 ? st.Building : map.PlacedBuildings.Count + blocks++;
+            if (run >= _runs.Length || run >= _runVersions.Length || _runVersions[run] == st.Version)
+                continue;
+            _runVersions[run] = st.Version;
+            var (start, count, _, _) = _runs[run];
+            WriteRun(map, _static, start, st.SolidStart, st.SolidCount, out _, out _);
+            fixed (float* p = _static)
+                Native.glBufferSubData(GL_ARRAY_BUFFER, (nint)start * FloatsPerInstance * sizeof(float), (nint)count * FloatsPerInstance * sizeof(float), p + start * FloatsPerInstance);
+            _destructionUploads++;
+        }
+    }
+
     private void Rebuild(Map map)
     {
         _map = map;
         (_static, _runs) = BuildStatic(map);
+        _runVersions = new int[_runs.Length];
+        if (map.Destruction is { } dv)
+        {
+            _destructionVersion = dv.Version;
+            var blocks = 0;
+            foreach (var st in dv.Structures)
+            {
+                var run = st.Building >= 0 ? st.Building : map.PlacedBuildings.Count + blocks++;
+                if (run < _runVersions.Length)
+                    _runVersions[run] = st.Version;
+            }
+        }
         Boxes = _runs.Sum(r => r.Count);
         Native.glBindBuffer(GL_ARRAY_BUFFER, _staticVbo);
         fixed (float* p = _static)

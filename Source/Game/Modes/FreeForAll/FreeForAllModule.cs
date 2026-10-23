@@ -12,7 +12,7 @@ public sealed class FreeForAllModule : GameModeModule
     public override string Rules(int limit = 0) => $"First to {(limit > 0 ? limit : Game.WinKills)} kills, win by {Game.WinMargin}.";
     public override ScoreLimits.Rule? ScoreRule => Rule;
 
-    public override string GoalText(Game game) => $"First to {game.ScoreLimit} kills, win by {Game.WinMargin}, {Game.MatchSeconds / 60:0} minutes max";
+    public override string GoalText(Game game) => $"First to {game.ScoreLimit} kills, win by {Game.WinMargin}, {game.MatchMinutes} minutes max";
 
     // ServerTickPlaying: the base class's free-for-all win check. No objectives, no teams, no HUD panel.
 }

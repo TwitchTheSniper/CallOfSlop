@@ -160,6 +160,7 @@ public sealed partial class Game
             else if (rel is < -0.4f and > -2.75f)
                 buttons |= Buttons.Left;
         }
+        ZombieBotStuck(p, b, goal is { } want && Flat(want - p.Position) > 0.4f, ref buttons, now); // stuck too long: hop, strafe, then join a teammate (BotStuck.cs)
         ApplyCmd(p, new InputCmd
         {
             Seq = ++b.Seq,

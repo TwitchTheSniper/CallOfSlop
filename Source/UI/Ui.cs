@@ -220,7 +220,7 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##hp"u8, Overlay))
         {
             ImGui.PushFont(default, 24);
-            ImGuiSafe.TextColored(local.Health > 35 ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
+            ImGuiSafe.TextColored(local.Health > World.HealthAt(35) ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
             ImGui.PopFont();
             ImGuiSafe.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);

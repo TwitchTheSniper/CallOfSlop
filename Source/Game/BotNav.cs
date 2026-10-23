@@ -16,7 +16,7 @@ namespace CallOfSlop;
 ///
 /// Plain arrays (CSR adjacency) and no allocations after the build, so searches are cheap for many bots.
 /// </summary>
-public sealed class NavGraph
+public sealed partial class NavGraph
 {
     public const float SampleStep = 0.6f; // must stay under 2 x PlayerRadius so no wall slips between samples
     public const float MaxDrop = 6f; // bots won't plan jumps down from higher than this
@@ -177,7 +177,7 @@ public sealed class NavGraph
             throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
-        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash };
+        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
         var c = World.Physics; // the map's collision world: every probe below goes through its BVH (map is World.Map)
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
         g.Spacing = s;
@@ -304,6 +304,8 @@ public sealed class NavGraph
         yield return null;
         t0 = Stopwatch.GetTimestamp();
 
+        if (map.Destruction != null)
+            g.AddSpareNodes(); // destructible maps: parked nodes for holes blasted later (BotNavPatch.cs)
         g.BuildCells(map);
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
@@ -317,10 +319,10 @@ public sealed class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         // ---- How open the view is from each node ----
-        g.Openness = new byte[count];
-        for (var i = 0; i < count; i++)
+        g.Openness = new byte[g.Nodes.Length]; // (with the spare nodes on a destructible map)
+        for (var i = 0; i < g.Nodes.Length; i++)
         {
-            g.Openness[i] = OpennessAt(c, g.Nodes[i]);
+            g.Openness[i] = g.SpareCount > 0 && i >= g.SpareStart ? (byte)0 : OpennessAt(c, g.Nodes[i]); // parked spares: nothing to see
             if (i % 4 == 3)
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -329,6 +331,7 @@ public sealed class NavGraph
             }
         }
         g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        g.FinishRuntime(map);
         yield return g;
     }
 
@@ -649,6 +652,8 @@ public sealed class NavGraph
                 for (var k = _cellStart[cell]; k < _cellStart[cell + 1]; k++)
                 {
                     var i = _cellNodes[k];
+                    if (NodeOff.Length != 0 && NodeOff[i])
+                        continue; // a parked spare, or its floor fell (BotNavPatch.cs)
                     var q = Nodes[i];
                     var dy = q.Y - p.Y;
                     if (dy > World.MantleReach || dy < -MaxDrop)
@@ -787,6 +792,31 @@ public sealed class NavGraph
         var before = MainNodes.Length;
         MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
         TrapNodes = before - MainNodes.Length;
+        _trapped = new bool[n];
+        for (var i = 0; i < n; i++)
+            _trapped[i] = forward[i] && !backward[i] && Component[i] == MainComponent;
+    }
+
+    private bool[] _trapped = [];
+    private float _minNodeY = float.NaN;
+
+    /// <summary>Can node <paramref name="i"/> be reached from open ground but not left again (the floor of a pit)? Terrain holes only.</summary>
+    public bool IsTrapped(int i) => (uint)i < (uint)_trapped.Length && _trapped[i];
+
+    /// <summary>The lowest node's height (a bot well below it fell out of the map; see the stuck watch, BotStuck.cs).</summary>
+    public float MinNodeY
+    {
+        get
+        {
+            if (float.IsNaN(_minNodeY))
+            {
+                var min = float.MaxValue;
+                foreach (var q in Nodes)
+                    min = MathF.Min(min, q.Y);
+                _minNodeY = Nodes.Length > 0 ? min : 0f;
+            }
+            return _minNodeY;
+        }
     }
 
     /// <summary>Nodes left out of <see cref="MainNodes"/> because a bot couldn't get back out from them (holes).</summary>
@@ -874,9 +904,28 @@ public sealed class NavSearch
             if (++LastExpanded > maxExpand)
                 break;
             var gc = _g[cur];
+            var nodeOff = g.NodeOff;
+            var edgeOff = g.EdgeOff;
             for (var e = g.EdgeStart[cur]; e < g.EdgeStart[cur + 1]; e++)
             {
                 var to = g.EdgeTo[e];
+                if ((edgeOff.Length != 0 && edgeOff[e]) || (nodeOff.Length != 0 && nodeOff[to]))
+                    continue; // destruction took it away (BotNavPatch.cs)
+                var extra = cost?.Invoke(cur, to, e) ?? 0f;
+                if (float.IsPositiveInfinity(extra))
+                    continue;
+                var ng = gc + g.EdgeCost[e] + extra;
+                if (_stamp[to] == _gen && (ng >= _g[to] || _closed[to]))
+                    continue;
+                Visit(to, ng, cur);
+                Push(to, ng + H(g, to, goal));
+            }
+            // Ways destruction opened (BotNavPatch.cs): extra edges at the end of the edge arrays.
+            for (var e = g.ExtraHead.Length != 0 ? g.ExtraHead[cur] : -1; e >= 0; e = g.ExtraNext[e - g.BuiltEdges])
+            {
+                var to = g.EdgeTo[e];
+                if ((edgeOff.Length != 0 && edgeOff[e]) || (nodeOff.Length != 0 && nodeOff[to]))
+                    continue;
                 var extra = cost?.Invoke(cur, to, e) ?? 0f;
                 if (float.IsPositiveInfinity(extra))
                     continue;

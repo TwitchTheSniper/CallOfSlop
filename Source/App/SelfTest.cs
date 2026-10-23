@@ -45,6 +45,7 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
+        SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -75,6 +76,7 @@ public static partial class SelfTest
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
             Section("Stairs", CheckStairs); // SelfTestStairs.cs: every flight on every map and building walkable standing (2.1 m headroom, risers, width, landings)
+            Section("Destruction", CheckDestruction); // SelfTestDestruction.cs: materials, chunks, damage per material, holes, collapse, falling pieces, replication, reset, budgets, nav
             Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map
@@ -99,6 +101,7 @@ public static partial class SelfTest
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
             Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
             Section("Map vote", CheckMapVote);
@@ -135,6 +138,8 @@ public static partial class SelfTest
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
             Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
+            Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
+            Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
             Section("Arms", CheckArms);
             Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
             Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
@@ -168,12 +173,19 @@ public static partial class SelfTest
             Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
             Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
             Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
+            Section("Bots and foliage", CheckBotFoliage); // SelfTestBotFoliage.cs: no seeing through foliage (by stance), blind fire at estimates, timeouts, walls, corn, costs
             Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
+            Section("Throw input", CheckThrowInput); // SelfTestThrowInput.cs: grenade and equipment keys end to end (every item, each match phase, offline and loopback, bots)
             Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
+            Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
+            Section("Blood overlay", CheckBloodOverlay); // SelfTestBlood.cs: screen splatters by health: steps, hit direction, regen / Stim fade, death, Subtle / Off, masks, no allocations, settings
+            Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
+            Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+            Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
         }
@@ -552,7 +564,7 @@ public static partial class SelfTest
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -561,6 +573,10 @@ public static partial class SelfTest
                 Fail($"{m.Name}: {fallen} player(s) below the floor");
             if (stuck > 1)
                 Fail($"{m.Name}: {stuck} bots barely moved (stuck on geometry?)");
+            if (game.BotStuckKills > 0)
+                StuckNotes.Add($"{m.Name}: {game.BotStuckKills} stuck self-kill(s) in the 90 s match; last: {game.LastStuckLog}");
+            if (game.BotStuckKills > 5)
+                Fail($"{m.Name}: {game.BotStuckKills} stuck bot self-kills in 90 s (the stuck watch misfires, or a bad map problem; last: {game.LastStuckLog})");
             // The work a tick does (its thread's CPU time) is the real measure: no tick may use over half the 16 ms
             // budget. Wall-clock time also counts moments the machine gave the CPU to other programs: GitHub's 2-core
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
@@ -682,9 +698,12 @@ public static partial class SelfTest
                 }
             }
             Line($"{name,-14} walk {Vector3.Distance(from, to),5:0} m straight, {route,5:0} m route: "
-                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)"));
+                + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
+                + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
                 Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+            if (game.BotStuckKills > 0)
+                Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }
 
         // Hard bots: the headshot share with the most accurate aim.
@@ -1020,7 +1039,7 @@ public static partial class SelfTest
         if (Perks.AttackMult(flank, 10, -Vector3.UnitZ, 0, 100, false) < 1.5f || Perks.AttackMult(flank, 10, Vector3.UnitZ, 0, 100, false) != 1f)
             Fail("Flanker back/front check is wrong");
         var opener = new PerkSet(PerkId.None, PerkId.None, PerkId.Opener);
-        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 100, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 99, false) != 1f)
+        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth - 1, false) != 1f)
             Fail("Opener full-health check is wrong");
 
         // ---- Survival perks on the server ----

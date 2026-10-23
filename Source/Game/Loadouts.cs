@@ -33,7 +33,10 @@ public sealed class Loadout
 /// </summary>
 public static class LoadoutStore
 {
-    private static string PathName => Path.Combine(AppContext.BaseDirectory, "loadout.txt");
+    private static string PathName => SavePaths.PathOf("loadout.txt");
+
+    /// <summary>The <c>version=</c> line written to loadout.txt (files without one load the same).</summary>
+    public const int SaveVersion = 1;
 
     public static readonly Loadout[] Slots = Enumerable.Range(0, Progress.MaxLoadoutSlots).Select(DefaultLoadout).ToArray();
 
@@ -181,8 +184,9 @@ public static class LoadoutStore
         string[]? lines = null;
         try
         {
-            if (File.Exists(PathName))
-                lines = File.ReadAllLines(PathName);
+            lines = SavePaths.ReadLines(PathName, SaveVersion);
+            if (lines == null && File.Exists(PathName))
+                lines = []; // damaged file and no usable backup: defaults (but not a brand-new player)
         }
         catch
         {
@@ -313,7 +317,7 @@ public static class LoadoutStore
             return;
         try
         {
-            File.WriteAllLines(PathName, SaveLines());
+            SavePaths.WriteLines(PathName, SaveLines(), SaveVersion);
         }
         catch
         {

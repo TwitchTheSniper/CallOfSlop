@@ -212,7 +212,7 @@ public sealed partial class Ui
 
                 case Page.Multiplayer:
                     Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
-                    ImGui.TextColored(Dim, "The host picks the game mode. Each match starts once everyone has readied up in the warmup."u8);
+                    ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
@@ -260,6 +260,10 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
                         ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
                         : "Off: kill frenzies are music and effects only.");
+                    ImGui.Checkbox("Destruction"u8, ref s.Destruction); // destructible buildings (GameDestruction.cs)
+                    ImGuiSafe.TextColored(Dim, s.Destruction
+                        ? "On: on maps with destructible buildings (World Tour), explosives blast holes and floors can come down."
+                        : "Off: buildings stay whole (the map is the same, nothing breaks).");
                     ImGui.SetNextItemWidth(200 * _scale);
                     if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
                         _portInput = Math.Clamp(_portInput, 1024, 65535);
@@ -290,6 +294,7 @@ public sealed partial class Ui
                         ImGuiSafe.TextColored(Dim, s.Advertise
                             ? "Listed publicly through your master server; people on your network always see it too."
                             : "Not listed publicly. People on your network still see it in their browser.");
+                    ImGui.Checkbox("Return to lobby between matches"u8, ref s.LobbyReturn); // the lobby room (PreMatchLobby.cs)
                     if (BigButton("HOST GAME"))
                     {
                         s.Port = (ushort)_portInput;
@@ -369,6 +374,8 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(Dim, GameModes.Short(i.Mode));
+                ImGui.SameLine();
+                ImGuiSafe.TextColored(i.Phase == MatchPhase.Lobby ? Green : Dim, PhaseLabel(i.Phase)); // "In lobby": join before it starts (UiLobbyRoom.cs)
                 if (i.Rotation.Length > 0)
                     ImGuiSafe.TextColored(Orange, i.Rotation); // e.g. "True Random": the next maps come from every pack
                 ImGui.TableNextColumn();
@@ -596,6 +603,16 @@ public sealed partial class Ui
                 if (ImGui.Button("Cancel"u8))
                     _confirmReset = false;
             }
+            // Where the saves live (SavePaths.cs): they carry over to new builds automatically.
+            ImGui.Spacing();
+            ImGui.SeparatorText("Saves"u8);
+            ImGuiSafe.TextColored(Dim, $"Save folder: {SavePaths.Folder}");
+            if (ImGui.Button("Open save folder"u8))
+                SavePaths.OpenFolder();
+            ImGui.SameLine();
+            ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
+            if (SavePaths.Warning is { } saveWarning)
+                ImGuiSafe.TextColored(Red, saveWarning);
             ImGui.EndChild();
             ImGui.EndTabItem();
         }
@@ -776,6 +793,36 @@ public sealed partial class Ui
                     s.FrenzyVisuals = (FrenzyVisualMode)frenzyFx;
             }
             ImGui.TextColored(Dim, "On a kill spree, each weapon class gets its own look: coloured tracers, sparks, a glowing gun, a tint at the screen edges. Subtle keeps the colours with fewer effects; Off shows none."u8);
+
+            ImGui.Spacing();
+            ImGui.Text("Blood overlay"u8);
+            var blood = (int)s.BloodOverlay;
+            for (var i = 0; i <= (int)BloodMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodMode)i}##blood", ref blood, i))
+                    s.BloodOverlay = (BloodMode)blood;
+            }
+            ImGui.Text("Blood colour"u8);
+            var bloodColour = (int)s.BloodColour;
+            for (var i = 0; i <= (int)BloodColour.Dark; i++)
+            {
+                ImGui.SameLine();
+                if (ImGui.RadioButton($"{(BloodColour)i}##bloodcol", ref bloodColour, i))
+                    s.BloodColour = (BloodColour)bloodColour;
+            }
+            ImGui.TextColored(Dim, "Blood splatters at the screen edges as your health drops (more the lower it gets, from the side you were hit), and blood marks on hurt players and zombies. They fade as health comes back. Subtle: fewer and fainter; Off: none. Dark: a darker colour instead of red."u8);
+            ImGui.Text("Gore"u8);
+            var gore = (int)s.Gore;
+            for (var i = 0; i <= (int)GoreMode.Off; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton($"{(GoreMode)i}##gore", ref gore, i))
+                    s.Gore = (GoreMode)gore;
+            }
+            ImGui.TextColored(Dim, "Animals you shoot and anyone killed right next to a blast burst into meaty gibs. Reduced throws fewer and leaves no blood; Off: animals just poof, blast kills fall as ragdolls."u8);
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);

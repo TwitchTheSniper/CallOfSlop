@@ -16,6 +16,7 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR.
 /// </summary>
 public static unsafe partial class Program
@@ -85,6 +86,12 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
 
+        // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
+        // The smoke test works on a throwaway copy and never touches the real save folder.
+        if (args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+            SavePaths.UseSmokeSandbox(args);
+        else
+            SavePaths.Init(args);
         _settings = Settings.Load();
         _progress = Progress.Load();
         LoadoutStore.Load();
@@ -92,7 +99,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        var plain = args.Where(a => !a.StartsWith("--")).ToArray();
+        var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--")).ToArray();
 
         // Remove the router mapping even if the process is closed abruptly.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => _upnp?.Dispose();
@@ -323,6 +330,11 @@ public static unsafe partial class Program
             SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeBloodStep < 9)
+        {
+            SmokeBlood(now); // Program.Blood.cs: the blood overlay at 30% health, a bot's body blood at 20%
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -355,6 +367,8 @@ public static unsafe partial class Program
                     SmokeShot("loadout_overview");
                 if (_smokeMap == 0 && SmokeTeamsTick(game, now))
                     break; // the TEAMS window shot (Program.Teams.cs)
+                if (_smokeMap == 0 && SmokeLobbyRoomTick(game, now))
+                    break; // the lobby room shot (Program.LobbyRoom.cs)
                 _smokeStage++;
                 break;
             case 1 when t > 1.0:
@@ -927,7 +941,9 @@ public static unsafe partial class Program
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
+            ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
+            _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -942,7 +958,7 @@ public static unsafe partial class Program
             if (_rangeLaunch != null)
                 ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
             Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
-            if (!_session.SkipsLoadout)
+            if (!_session.SkipsLoadout && !_session.LobbyEnabled)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
@@ -1013,7 +1029,10 @@ public static unsafe partial class Program
                 }
                 else
                 {
-                    UpdateLocalPlayer(now);
+                    if (TrackLobbyRoom(now)) // the lobby room: no player to steer (Program.LobbyRoom.cs)
+                        UpdateLobbyRoom(now);
+                    else
+                        UpdateLocalPlayer(now);
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     if (!paused)
                         game.Update(now, FrameDt);
@@ -1030,7 +1049,9 @@ public static unsafe partial class Program
 
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
-            if (_session != null)
+            if (_session != null && InLobbyRoom)
+                RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
+            else if (_session != null)
                 Render(now);
             else if (_smokeGallery is 1 or 2)
                 DrawGunGallery(_smokeGallery);
@@ -1056,7 +1077,11 @@ public static unsafe partial class Program
             Ui.BeginFrame();
             if (_settings.ShowFps)
                 FpsCounter.Draw(now);
-            if (_session is { } g)
+            if (_session is { } lobbyGame && InLobbyRoom)
+            {
+                DrawLobbyRoomUi(lobbyGame, now); // Program.LobbyRoom.cs
+            }
+            else if (_session is { } g)
             {
                 DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
                 TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
@@ -1107,6 +1132,8 @@ public static unsafe partial class Program
                 }
                 else
                 {
+                    if (SavePaths.TakeWarningOnce() is { } saveWarning)
+                        _lobbyMessage = saveWarning; // a save from a newer build that this one won't overwrite (shown once)
                     var action = Ui.DrawLobby(_settings, _lobbyMessage, AudioSystem);
                     if (action == LobbyAction.Quit)
                         _quit = true;
@@ -1213,7 +1240,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null; // (a Zombies workbench too)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom; // (a Zombies workbench too; the lobby room)
 
     private static void SetMouseCaptured(bool captured)
     {
@@ -1241,7 +1268,7 @@ public static unsafe partial class Program
         }
 
         // Main menu > Loadouts: Esc is the screen's Back (one page back, then out to the menu).
-        if (_session == null && key == GlfwKey.Escape && Ui.LobbyLoadouts)
+        if ((_session == null || InLobbyRoom) && key == GlfwKey.Escape && Ui.LobbyLoadouts)
         {
             Ui.LoadoutBack();
             return;
@@ -1255,6 +1282,8 @@ public static unsafe partial class Program
             EndSession("Cancelled");
             return;
         }
+        if (InLobbyRoom)
+            return; // the lobby room has its own LEAVE button
         if (Ui.MenuOpen)
         {
             // Same as the loadout screen's Back: one page back, and from the overview it closes.
@@ -2029,6 +2058,7 @@ public static unsafe partial class Program
         var black = Vector3.Zero;
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
+        DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
 
         if (local is { Alive: true })
         {
@@ -2058,6 +2088,8 @@ public static unsafe partial class Program
                     var sx = (i & 1) == 0 ? -1 : 1;
                     var sy = (i & 2) == 0 ? -1 : 1;
                     Gfx.Rect(cx + sx * 14 * k - 3 * k, cy + sy * 14 * k - 3 * k, 6 * k, 6 * k, c);
+                    if (_game.HitMarkerWallbang) // through a wall: a second, inner set of ticks (GamePenetration.cs)
+                        Gfx.Rect(cx + sx * 7 * k - 1.5f * k, cy + sy * 7 * k - 1.5f * k, 3 * k, 3 * k, c);
                 }
             }
 

@@ -39,6 +39,46 @@ public sealed partial class MapPack
     /// </summary>
     public bool InTrueRandom = true;
 
+    /// <summary>
+    /// pack.json "destructible": true makes destructible buildings the default for the pack's maps (the World Tour); a map's
+    /// own "destructible" overrides it (Buildings/README.md, "Destruction").
+    /// </summary>
+    public bool Destructible;
+
+    private static readonly Dictionary<string, bool> DestructibleByDir = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The "destructible" default of the pack in folder <paramref name="packDir"/> (its pack.json; false without one).</summary>
+    public static bool DestructibleDefault(string? packDir)
+    {
+        if (string.IsNullOrEmpty(packDir))
+            return false;
+        lock (DestructibleByDir)
+        {
+            if (DestructibleByDir.TryGetValue(packDir, out var known))
+                return known;
+            var on = false;
+            var file = Path.Combine(packDir, FileName);
+            try
+            {
+                if (File.Exists(file))
+                    on = Load(File.ReadAllText(file), Path.GetFileName(packDir), FileName).Destructible;
+            }
+            catch (Exception ex) when (ex is MapFileException or IOException or UnauthorizedAccessException)
+            {
+                on = false; // a broken pack.json is reported when the pack itself loads
+            }
+            DestructibleByDir[packDir] = on;
+            return on;
+        }
+    }
+
+    /// <summary>Forgets the cached pack defaults (the maps are being read again).</summary>
+    public static void ForgetDestructibleDefaults()
+    {
+        lock (DestructibleByDir)
+            DestructibleByDir.Clear();
+    }
+
     /// <summary>The pack's folder, relative to the Maps folder (null for the loose-files pack).</summary>
     public string? Folder;
 
@@ -101,6 +141,8 @@ public sealed partial class MapPack
                 pack.Order = order;
             if (Get("trueRandom") is { ValueKind: JsonValueKind.False })
                 pack.InTrueRandom = false;
+            if (Get("destructible") is { ValueKind: JsonValueKind.True })
+                pack.Destructible = true;
             return pack;
         }
     }

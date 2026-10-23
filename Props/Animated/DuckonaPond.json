@@ -4,6 +4,7 @@
   "category": "Animated",
   "description": "A mallard duck bobbing on a small patch of pond water.",
   "collision": "cosmetic",
+  "breakable": { "health": 15, "breakBy": "all", "debris": { "colors": ["#6a5030", "darkgreen", "white", "#6a5030"] }, "gibs": { "count": 8, "style": "bird" } },
   "fadeDistance": 45,
   "parts": [
     {"size": [0.9, 0.01, 0.7], "offset": [0.0, 0.005, 0.0], "color": "#2a5070"},

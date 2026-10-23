@@ -124,12 +124,22 @@ public sealed partial class Game
                     var inRange = Flat(o.Look - p.Position) < 45f;
                     var over = o.Look + new Vector3(0, 0.5f, 0);
                     b.SuppressAim = o.Look;
-                    b.SuppressLos = inRange && HasLineOfSight(p.Eye, o.Look);
-                    if (inRange && !b.SuppressLos && HasLineOfSight(p.Eye, over))
+                    // Foliage or corn in the way doesn't stop the bullets: that's blind fire, wide (SuppressBlind, BotFoliage.cs).
+                    var line = inRange ? SightLine(p.Eye, o.Look) : BotSightLine.Blocked;
+                    b.SuppressLos = line != BotSightLine.Blocked;
+                    b.SuppressBlind = line == BotSightLine.Covered;
+                    if (inRange && line != BotSightLine.Clear)
                     {
-                        b.SuppressLos = true;
-                        b.SuppressAim = over;
+                        var overLine = SightLine(p.Eye, over);
+                        if (overLine == BotSightLine.Clear || (overLine == BotSightLine.Covered && !b.SuppressLos))
+                        {
+                            b.SuppressLos = true;
+                            b.SuppressBlind = overLine == BotSightLine.Covered;
+                            b.SuppressAim = over;
+                        }
                     }
+                    if (inRange && !b.SuppressLos && BotSuppressThroughWall(p, o))
+                        b.SuppressLos = true; // a fresh last known spot behind a wall their gun goes through (GamePenetration.cs)
                 }
                 if (b.SuppressLos)
                     s.Stationary = true;
@@ -181,7 +191,8 @@ public sealed partial class Game
         if (MathF.Abs(World.WrapAngle(wantYaw - aim.Yaw)) > 0.08f || MathF.Abs(wantPitch - aim.Pitch) > 0.08f)
             return;
         var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : 1f) + 0.025f;
-        ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
+        var shotDir = b.SuppressBlind ? BlindSuppressDir(p, b, def, aim, dist, now, out spread) : World.Forward(aim.Yaw, aim.Pitch); // into cover: not aimed
+        ServerResolveShot(p, def, p.Eye, shotDir, spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * 2.5 + (def.Mode == FireMode.Semi ? 0.15 : 0) + _rng.NextDouble() * 0.1;
         SquadStats.SuppressShots++;

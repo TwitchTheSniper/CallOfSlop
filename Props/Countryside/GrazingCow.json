@@ -4,6 +4,7 @@
   "category": "Countryside",
   "description": "A Normande dairy cow with its head down in the grass.",
   "collision": "solid",
+  "breakable": { "health": 250, "breakBy": "all", "gibs": { "count": 24, "style": "fur" } },
   "collider": [{"size": [1.7, 1.4, 0.7], "offset": [0.05, 0.7, 0]}],
   "scatter": {"randomYaw": true, "scale": [0.95, 1.05]},
   "parts": [
