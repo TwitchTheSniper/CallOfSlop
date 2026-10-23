@@ -34,6 +34,7 @@
     "swing": 1.1,
     "boardTearSeconds": 1.4,
     "climbSeconds": 1.1,
+    "riseSeconds": 1.4,
     "headMult": 1.0
   },
   "points": {

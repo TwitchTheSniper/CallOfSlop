@@ -88,7 +88,11 @@ public sealed partial class Game
     /// <summary>Bytes per zombie in <see cref="Msg.ZEnts"/>.</summary>
     public const int ZEntBytes = 12;
 
-    /// <summary>Every zombie: id, position (quantised: 3 cm across, 1.6 cm up), yaw, state and speed, health and window.</summary>
+    /// <summary>
+    /// Every zombie: id, position (quantised: 3 cm across, 1.6 cm up), yaw, state and speed, health and window. Tearing or
+    /// climbing (when it faces its window anyway) the yaw byte carries the animation byte instead: the board cycle or the
+    /// climb's progress (protocol 43, ZombieAnimNet.cs).
+    /// </summary>
     public void WriteZEnts(PacketWriter w)
     {
         var n = Math.Min(Horde.Count, 90);
@@ -98,7 +102,7 @@ public sealed partial class Game
             var z = Horde[i];
             var p = z.Position;
             w.U16(z.Id).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
-                .U8((byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
+                .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
                 .U8((byte)((byte)z.State | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0))) // bits 6-7: burning, zapped (protocol 40)
                 .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255))
                 .U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
@@ -404,7 +408,8 @@ public sealed partial class Game
         {
             var id = r.U16();
             var pos = new Vector3(DQ(r.U16(), 32), DQ(r.U16(), 64), DQ(r.U16(), 32));
-            var yaw = r.U8() / 256f * MathF.Tau;
+            var yawByte = r.U8();
+            var yaw = yawByte / 256f * MathF.Tau;
             var sb = r.U8();
             var health = r.U8();
             var window = r.U8();
@@ -429,6 +434,14 @@ public sealed partial class Game
             z.FxZapped = (sb & 128) != 0;
             z.HealthByte = health;
             z.Window = window == 255 ? -1 : window;
+            if (ZAnimByteState(state, z.Window))
+            {
+                // The yaw byte is the animation byte (protocol 43): it faces its window.
+                z.AnimByte = yawByte;
+                z.AnimByteTick = tick;
+                yaw = World.Map.Zombies is { } zwin && z.Window < zwin.Windows.Count ? zwin.Windows[z.Window].Yaw : z.Yaw;
+            }
+            ZombieAnimTrack(z, tick, health); // state, swipe, landing and hurt clocks on the server's ticks (ZombieAnimNet.cs)
             z.Sim.Position = pos;
             z.Yaw = yaw;
             z.Snaps.Add((tick, pos, yaw));
@@ -558,8 +571,7 @@ public sealed partial class Game
                         break;
                     }
             }
-            if (z.State is ZState.ToWindow or ZState.Chase)
-                z.Gait += dt * (z.Speed == ZSpeed.Walk ? 4.5f : z.Speed == ZSpeed.Run ? 8f : 11f);
+            ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
         if (Local is { } me)
         {

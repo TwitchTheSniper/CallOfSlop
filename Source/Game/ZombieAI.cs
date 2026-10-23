@@ -37,7 +37,7 @@ public enum ZSpeed : byte
 }
 
 /// <summary>One zombie. Server-simulated (movement through the shared player physics); clients get them in <see cref="Msg.ZEnts"/>.</summary>
-public sealed class Zombie
+public sealed partial class Zombie
 {
     public ushort Id;
     public MoveState Sim;
@@ -226,6 +226,8 @@ public sealed partial class Game
             z.FxBurning = z.BurnUntil > now;
             z.FxZapped = z.ZapUntil > now;
         }
+        foreach (var z in Horde)
+            ZombieAnimTick(z, now); // the animation byte and clocks (ZombieAnimNet.cs; drawing only)
         if (alive > 0)
         {
             ZAiMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -252,7 +254,7 @@ public sealed partial class Game
         {
             case ZState.Rising:
                 MoveZombie(z, z.Yaw, false, false);
-                if (now - z.StateAt >= 0.9)
+                if (now - z.StateAt >= ZRules.RiseSeconds) // climbing out of the ground (the rules file's riseSeconds)
                     SetZState(z, ZState.Chase, now);
                 return;
             case ZState.ToWindow:
