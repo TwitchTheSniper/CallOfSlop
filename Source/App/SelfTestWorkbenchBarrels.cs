@@ -143,8 +143,8 @@ public static partial class SelfTest
         if (MathF.Abs(pLong / pStd - (1 + 0.4f * k("pistol"))) > 0.01f || MathF.Abs(rLong / rStd - 1.4f) > 0.01f || MathF.Abs(hStub / hStd - (1 - 0.3f * k("heavy"))) > 0.01f || pLong >= rLong || hStub <= rStd)
             Fail("barrels: a Long Barrel should make a longer-range pistol (still a pistol), a Stub Barrel a shorter autocannon-class gun (still long), scaled by the bore class's strength");
         int Pellets(string text) => WeaponBuilder.Assemble(BuildOf(text)).Def?.Pellets ?? -1;
-        var rifleBell = Pellets("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Blunderbuss Bell Barrel,feed:Box Mag,ammo:5.56 FMJ}}");
-        var shotBell = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Blunderbuss Bell Barrel,feed:Shell Tube,ammo:00 Buckshot}}");
+        var rifleBell = Pellets("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Blunderbuss Bell,feed:Box Mag,ammo:5.56 FMJ}}");
+        var shotBell = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Blunderbuss Bell,feed:Shell Tube,ammo:00 Buckshot}}");
         var shotStd = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Standard Barrel,feed:Shell Tube,ammo:00 Buckshot}}");
         Line($"pellets: Blunderbuss Bell on a rifle {rifleBell}, on a pump shotgun {shotBell} (Standard Barrel {shotStd})");
         if (rifleBell != 1 || shotBell <= shotStd)

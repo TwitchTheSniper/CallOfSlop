@@ -193,7 +193,7 @@ public static partial class SelfTest
         heavy.Root!.Child("receiver_1")!.Attach("utility", Parts.Find("Anti-Grav Coil")!);
         var why = BuildRules.WhyNot(heavy, "", "receiver_3", Parts.Find("Hellwheel Rotary Receiver")!);
         Line($"weight relief: Pistol Grip carries {F(heavy.CarryWeight)} kg with an Anti-Grav Coil; third Hellwheel: {why ?? "fits"}");
-        if (heavy.CarryWeight != 4 + 12 || why != null)
+        if (heavy.CarryWeight != Parts.Find("Pistol Grip")!.Frame!.Carry + 12 || why != null)
             Fail("weight relief: an Anti-Grav Coil should add 12 kg of carry and let the third Hellwheel on");
     }
 
