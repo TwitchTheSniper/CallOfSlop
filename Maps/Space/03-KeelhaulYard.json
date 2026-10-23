@@ -16,7 +16,9 @@
   "walkFairness": 0.12,
   "void": false,
   "botMatchSeconds": 12,
-  "botMatchMode": "tdm"
+  "botMatchMode": "tdm",
+  "spawnsStand": true,
+  "maxStuckBots": 2
  },
  "skybox": {
   "preset": "night",

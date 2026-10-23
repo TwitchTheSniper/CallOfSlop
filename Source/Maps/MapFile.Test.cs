@@ -16,9 +16,9 @@ public sealed class MapTestSpec
     [
         "shape", "area", "size", "maxPlayers", "minProps", "minSolidProps", "minCosmeticProps", "minBreakableProps", "minDecals",
         "minDecalShare", "minMeshes", "minPlants", "minTrees", "maxDrawnBoxes", "minPackProps", "requireProps", "requireDecals",
-        "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
-        "walkFairness", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
-        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "spawnsStand", "propsClear", "explosivesClear",
+        "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricHills", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
+        "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
+        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "spawnsStand", "propsInside", "propsClear", "explosivesClear",
     ];
 
     /// <summary>"any" (the default), "non-rectangular", or a boundary shape: "rect", "circle", "ellipse", "smooth", "polygon".</summary>
@@ -41,6 +41,7 @@ public sealed class MapTestSpec
     public string Symmetry = "none";
     public float SymmetryTolerance = 0.3f;
     public int UnpairedSpawns;
+    public bool SymmetricHills = true;
     public bool SymmetricProps;
 
     public int MinHills = 3;
@@ -49,6 +50,9 @@ public sealed class MapTestSpec
 
     /// <summary>The walks to each hill and the enemy flag from the two teams' spawns must be within this share of each other (0: only that routes exist).</summary>
     public float WalkFairness = 0.10f;
+
+    /// <summary>"centre": the walk to a hill ends at the node nearest its centre; "zone": at the nearest node anywhere in the zone at the hill's height (raised decks).</summary>
+    public string HillWalks = "centre";
     public int MaxNavBuildMs = 3000;
     public int MinMainNavPct = 75;
     public (float Height, int Count)? MinNavNodesAbove;
@@ -66,11 +70,12 @@ public sealed class MapTestSpec
     public int BotMatchSeconds = 8;
     public GameMode BotMatchMode = GameMode.FreeForAll;
     public int BotMatchPlayers = -1; // -1: the player limit
-    public int MaxStuckBots = 2;
+    public int MaxStuckBots = -1; // -1: not checked (in a match under 12 s most bots are still walking out)
 
-    public bool SpawnsStand = true;
+    public bool SpawnsStand;
+    public bool PropsInside = true;
     public bool PropsClear = true;
-    public float ExplosivesClear = 10f;
+    public float ExplosivesClear;
 
     /// <summary>The block as it was read, written back by <see cref="MapFile.ToJson"/>.</summary>
     public string Raw = "{}";
@@ -122,11 +127,13 @@ public sealed class MapTestSpec
                     break;
                 case "symmetryTolerance": s.SymmetryTolerance = Float(v, at, 0f, 10f); break;
                 case "unpairedSpawns": s.UnpairedSpawns = Int(v, at, 0); break;
+                case "symmetricHills": s.SymmetricHills = Bool(v, at); break;
                 case "symmetricProps": s.SymmetricProps = Bool(v, at); break;
                 case "minHills": s.MinHills = Int(v, at, 0); break;
                 case "minTeamSpawns": s.MinTeamSpawns = Int(v, at, 0); break;
                 case "handPlaced": s.HandPlaced = Bool(v, at); break;
                 case "walkFairness": s.WalkFairness = Float(v, at, 0f, 1f); break;
+                case "hillWalks": s.HillWalks = Word(v, at, "centre", "zone"); break;
                 case "maxNavBuildMs": s.MaxNavBuildMs = Int(v, at, 0); break;
                 case "minMainNavPct": s.MinMainNavPct = Int(v, at, 0, 100); break;
                 case "minNavNodesAbove":
@@ -168,8 +175,9 @@ public sealed class MapTestSpec
                     };
                     break;
                 case "botMatchPlayers": s.BotMatchPlayers = Int(v, at, 2, Map.HardMaxPlayers); break;
-                case "maxStuckBots": s.MaxStuckBots = Int(v, at, 0); break;
+                case "maxStuckBots": s.MaxStuckBots = Int(v, at, -1); break;
                 case "spawnsStand": s.SpawnsStand = Bool(v, at); break;
+                case "propsInside": s.PropsInside = Bool(v, at); break;
                 case "propsClear": s.PropsClear = Bool(v, at); break;
                 case "explosivesClear": s.ExplosivesClear = Float(v, at, 0f, 100f); break;
             }

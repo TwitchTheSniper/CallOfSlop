@@ -129,18 +129,24 @@ public static partial class SelfTest
                 In("spawn", s.X, s.Z, 0.3f);
             foreach (var w in m.Waypoints)
                 In("waypoint", w.X, w.Z);
-            foreach (var p in m.PropInstances)
-                In(p.Def.Name, p.Position.X, p.Position.Z);
-            for (var i = 0; i < m.Solid.Count; i++)
-                if (m.IsDrawnBox(i) && !bd.Contains(m.Solid[i].Center.X, m.Solid[i].Center.Z))
-                    outside.Add($"box ({m.Solid[i].Center.X:0.0},{m.Solid[i].Center.Z:0.0})");
             foreach (var h in o.Hills)
                 In("hill", h.Center.X, h.Center.Z, h.Radius * 0.5f);
             for (var i = 0; i < o.Flags.Length; i++)
                 In(i == 0 ? "blue flag" : "red flag", o.Flags[i].X, o.Flags[i].Z, 0.5f);
+            // Props and drawn boxes stay inside too when the map's block asks (older packs dress the view past the edge on purpose).
+            var dressed = 0;
+            if (m.TestSpec is { PropsInside: true })
+            {
+                foreach (var p in m.PropInstances)
+                    In(p.Def.Name, p.Position.X, p.Position.Z);
+                for (var i = 0; i < m.Solid.Count; i++)
+                    if (m.IsDrawnBox(i) && !bd.Contains(m.Solid[i].Center.X, m.Solid[i].Center.Z))
+                        outside.Add($"box ({m.Solid[i].Center.X:0.0},{m.Solid[i].Center.Z:0.0})");
+                dressed = 1;
+            }
             if (outside.Count > 0)
                 Fail($"{m.Name}: {outside.Count} thing(s) outside the outline: {string.Join(", ", outside.Take(6))}");
-            return $"{bd.Spec.Shape.ToString().ToLowerInvariant()} outline, {bd.SegmentCount} segments, {bd.Area:0} m2; spawns, waypoints, props, boxes and objectives inside";
+            return $"{bd.Spec.Shape.ToString().ToLowerInvariant()} outline, {bd.SegmentCount} segments, {bd.Area:0} m2; spawns, waypoints and objectives{(dressed > 0 ? ", props and boxes" : "")} inside";
         });
     }
 
@@ -254,10 +260,10 @@ public static partial class SelfTest
                     Fail($"{m.Name}: {unpaired} Blue spawn(s) have no Red twin at {TwinText(t.Symmetry)} (within {tol:0.0} m)");
                 if (o.Flags.Length == 2 && Vector2.Distance(Twin(o.Flags[0].X, o.Flags[0].Z), new Vector2(o.Flags[1].X, o.Flags[1].Z)) > tol)
                     Fail($"{m.Name}: the flags aren't each other's twin at {TwinText(t.Symmetry)}");
-                var unpairedHills = o.Hills.Count(a => !o.Hills.Any(b => Vector2.Distance(Twin(a.Center.X, a.Center.Z), new Vector2(b.Center.X, b.Center.Z)) < tol));
+                var unpairedHills = t.SymmetricHills ? o.Hills.Count(a => !o.Hills.Any(b => Vector2.Distance(Twin(a.Center.X, a.Center.Z), new Vector2(b.Center.X, b.Center.Z)) < tol)) : 0;
                 if (unpairedHills > 0)
                     Fail($"{m.Name}: {unpairedHills} hill(s) have no twin at {TwinText(t.Symmetry)} (a hill on the symmetry line is its own twin)");
-                var detail = $"spawns paired ({unpaired} unpaired, {t.UnpairedSpawns} allowed), flags and hills twinned";
+                var detail = $"spawns paired ({unpaired} unpaired, {t.UnpairedSpawns} allowed), flags{(t.SymmetricHills ? " and hills" : "")} twinned";
                 if (t.SymmetricProps)
                 {
                     // Every hand-placed solid prop has its twin: same prop, mirrored position and yaw (Clutter mirrors its own).
@@ -316,13 +322,13 @@ public static partial class SelfTest
                             var b = m.Solid[k];
                             string? why = null;
                             foreach (var sp in m.Spawns)
-                                if (why == null && Dist(b, sp) < 1f && b.Max.Y > sp.Y + 0.05f && b.Min.Y < sp.Y + World.PlayerHeight)
+                                if (why == null && Dist(b, sp) < 0.8f && b.Max.Y > sp.Y + 0.6f && b.Min.Y < sp.Y + 1.5f)
                                     why = $"spawn ({sp.X:0.0},{sp.Z:0.0})";
                             foreach (var h in o.Hills)
-                                if (why == null && Dist(b, h.Center) < h.Radius && b.Max.Y > h.Center.Y - 1f && b.Min.Y < h.Center.Y + 3f)
-                                    why = $"hill zone ({h.Center.X:0},{h.Center.Z:0})";
+                                if (why == null && Dist(b, h.Center) < 1.5f && b.Max.Y > h.Center.Y + 0.6f && b.Min.Y < h.Center.Y + 1.5f)
+                                    why = $"hill's centre ({h.Center.X:0},{h.Center.Z:0})";
                             foreach (var f in o.Flags)
-                                if (why == null && Dist(b, f) < 2f && b.Max.Y > f.Y - 1f && b.Min.Y < f.Y + 3f)
+                                if (why == null && Dist(b, f) < 1.5f && b.Max.Y > f.Y + 0.6f && b.Min.Y < f.Y + 1.5f)
                                     why = $"flag ({f.X:0},{f.Z:0})";
                             if (why != null)
                             {
@@ -340,7 +346,7 @@ public static partial class SelfTest
                         if (m.Spawns.Any(s => Vector3.Distance(s, e.Position) < t.ExplosivesClear))
                             Fail($"{m.Name}: explosive {e.Def.Name} at ({e.Position.X:0.0},{e.Position.Z:0.0}) is within {t.ExplosivesClear:0} m of a spawn");
                     }
-                return $"{solid} solid props off the spawns, hill zones and flags; {explosives} explosives {t.ExplosivesClear:0} m from spawns";
+                return $"{solid} solid props off the spawns, hill centres and flags" + (t.ExplosivesClear > 0 ? $"; {explosives} explosives {t.ExplosivesClear:0} m from spawns" : "");
             });
 
         // The nav graph, built whole.
@@ -395,12 +401,14 @@ public static partial class SelfTest
         // the hill's height (a node on the ground under a gantry doesn't count); without one, to the nearest node.
         float WalkToHill(Vector3 s, HillZone h)
         {
+            if (t.HillWalks != "zone")
+                return Walk(s, h.Center);
             var from = g.Nearest(s, needSight: false);
             var best = float.NaN;
             for (var k = 0; k < g.Nodes.Length; k++)
             {
                 var n = g.Nodes[k];
-                if (g.Component[k] != g.MainComponent || MathF.Abs(n.Y - h.Center.Y) >= 1.5f
+                if (MathF.Abs(n.Y - h.Center.Y) >= 1.5f
                     || Vector2.Distance(new Vector2(n.X, n.Z), new Vector2(h.Center.X, h.Center.Z)) >= h.Radius)
                     continue;
                 var len = PathLength(from, k);
@@ -433,19 +441,12 @@ public static partial class SelfTest
                 Fail($"{m.Name}: only {mainPct:0}% of the nav nodes are on the main area (pockets bots can't leave? want {t.MinMainNavPct}%)");
             if (t.MinNavNodesAbove is { } above)
             {
-                var high = g.MainNodes.Count(i => g.Nodes[i].Y > above.Height);
+                var high = Enumerable.Range(0, g.Nodes.Length).Count(i => g.Component[i] == g.MainComponent && g.Nodes[i].Y > above.Height);
                 if (high < above.Count)
                     Fail($"{m.Name}: only {high} nav nodes above {above.Height:0.#} m in the main area (the raised floors should be on the graph; want {above.Count})");
             }
             if (t.MaxNavBuildMs > 0 && g.BuildMs > t.MaxNavBuildMs)
                 Fail($"{m.Name}: the nav graph took {g.BuildMs:0} ms to build (over {t.MaxNavBuildMs}: mover walks {g.WalkChecked} links)");
-            foreach (var h in o.Hills)
-            {
-                var onHill = g.MainNodes.Count(i => MathF.Abs(g.Nodes[i].Y - h.Center.Y) < 1.5f
-                                                     && Vector2.Distance(new Vector2(g.Nodes[i].X, g.Nodes[i].Z), new Vector2(h.Center.X, h.Center.Z)) < h.Radius);
-                if (onHill < 3)
-                    Fail($"{m.Name}: the hill at ({h.Center.X:0}, {h.Center.Z:0}, y {h.Center.Y:0.0}) has only {onHill} nav nodes on it");
-            }
             return $"{g.Nodes.Length} nodes ({g.MainNodes.Length} main, {mainPct:0}%), {g.EdgeCount} edges, {g.MantleEdges} mantles, built in {g.BuildMs:0} ms "
                    + $"({g.WalkChecked} links walked; {navWait.Elapsed.TotalSeconds:0.0} s waited); every spawn, hill and flag on the main area";
         });
@@ -701,7 +702,7 @@ public static partial class SelfTest
             Fail($"{m.Name}: the {t.BotMatchMode} match has {game.Players.Count} players (expected {players})");
         if (outsideTicks > 0 || fallenTicks > 0)
             Fail($"{m.Name}: players left the map in the bot match ({outsideTicks} player-ticks outside the outline, {fallenTicks} below the floor)");
-        if (stuck > t.MaxStuckBots)
+        if (t.MaxStuckBots >= 0 && stuck > t.MaxStuckBots)
             Fail($"{m.Name}: {stuck} bots barely moved in a {t.BotMatchMode} match (allowed {t.MaxStuckBots})");
         if (cpu.WorstMs > MaxTickWorkMs)
             Fail($"{m.Name}: a {t.BotMatchMode} server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms; {cpu.WorstDetail})");

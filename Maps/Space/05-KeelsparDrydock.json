@@ -134,7 +134,8 @@
    ]
   ],
   "botMatchSeconds": 20,
-  "botMatchPlayers": 12
+  "botMatchPlayers": 12,
+  "explosivesClear": 10
  },
  "skybox": {
   "preset": "night",

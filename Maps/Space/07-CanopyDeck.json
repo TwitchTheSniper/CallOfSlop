@@ -22,7 +22,9 @@
   ],
   "botMatchSeconds": 15,
   "botMatchMode": "tdm",
-  "botMatchPlayers": 12
+  "botMatchPlayers": 12,
+  "symmetricHills": false,
+  "maxStuckBots": 2
  },
  "skybox": {
   "preset": "night",

@@ -16,7 +16,9 @@
   "walkFairness": 0.12,
   "void": false,
   "botMatchSeconds": 12,
-  "botMatchMode": "koth"
+  "botMatchMode": "koth",
+  "spawnsStand": true,
+  "maxStuckBots": 2
  },
  "skybox": {
   "preset": "night",

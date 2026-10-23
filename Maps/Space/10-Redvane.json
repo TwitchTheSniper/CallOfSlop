@@ -16,7 +16,9 @@
   "minTeamSpawns": 8,
   "walkFairness": 0.12,
   "botMatchSeconds": 8,
-  "botMatchPlayers": 8
+  "botMatchPlayers": 8,
+  "hillWalks": "zone",
+  "propsInside": false
  },
  "flagPool": "none",
  "skybox": {
