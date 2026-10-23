@@ -2,8 +2,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Test Range: free-for-all with no win condition. No score limit, no time limit, no match end, no results screen, no
-/// map vote: you keep shooting bots (who respawn forever) on the same map until the host changes it from the menu or
-/// leaves. Kills and deaths still count on the scoreboard, and kill XP and unlocks apply as in any match (there is no
+/// map vote: you keep shooting bots (who respawn forever) on the same map until the host goes BACK TO LOBBY from the
+/// pause menu's HOST panel (which also changes the bot count and difficulty mid-session) or leaves. Kills and deaths still count on the scoreboard, and kill XP and unlocks apply as in any match (there is no
 /// end-of-match XP, since the match never ends). Plays on every normal map; bots fight and gear up as in free-for-all.
 /// </summary>
 public sealed class TestRangeModule : GameModeModule
@@ -16,6 +16,7 @@ public sealed class TestRangeModule : GameModeModule
     public override bool UsesMapVote => false; // (the match never ends, so a vote never opens anyway)
     public override bool HasTimeLimit => false;
     public override bool Endless => true; // Match.EndMatch refuses to end it, whatever asks
+    public override bool HostPanelInMatch => true; // Esc > HOST: bots and BACK TO LOBBY, the only way out short of leaving
 
     // ScoreRule stays null: no score limit (ScoreLimits.For gives 0).
 

@@ -83,6 +83,13 @@ public abstract class GameModeModule
     /// </summary>
     public virtual bool Endless => false;
 
+    /// <summary>
+    /// The pause menu offers the host a HOST panel during the match: bots (count and difficulty, applied at once) and
+    /// BACK TO LOBBY (the lobby room, everyone still connected; HostControls.cs). On for Test Range, where nothing
+    /// else ever gets the host out of the match short of leaving.
+    /// </summary>
+    public virtual bool HostPanelInMatch => false;
+
     /// <summary>How the score limit scales with the player count (ScoreLimits.cs), or null for a mode without a score limit.</summary>
     public virtual ScoreLimits.Rule? ScoreRule => null;
 

@@ -998,6 +998,8 @@ public static unsafe partial class Program
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
+            if (kind != LobbyAction.Join)
+                Console.WriteLine($"[session] {kind}: {GameModes.Name(_session.Mode)} on {map.Name} with {bots} bots{(_session.Mode != _settings.Mode ? $" ({GameModes.Name(_settings.Mode)} doesn't play on this map)" : "")}");
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
             if (kind == LobbyAction.Host)
@@ -1182,6 +1184,9 @@ public static unsafe partial class Program
                         break;
                     case PauseAction.Leave:
                         EndSession("");
+                        break;
+                    case PauseAction.BackToLobby:
+                        g.ReturnToLobbyNow(); // the lobby room, everyone still connected (TrackLobbyRoom frees the mouse)
                         break;
                     case PauseAction.Quit:
                         _quit = true;

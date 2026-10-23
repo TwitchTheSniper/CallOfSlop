@@ -79,10 +79,9 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
   - the pump forend clips the bottom barrel on the Hellwheel and Pepperbox.
 - **Empty hands in third person:** another player with an empty slot may hold an invisible gun.
 - **Menu and lobby music:** can click once when the slider crosses 0 dB (the limiter switches on).
-- **Test Range:**
-  - bot count and difficulty can't change mid-session;
-  - in a hosted game the map only changes by leaving and hosting again (idea: a host-only "back to lobby" pause option);
-  - kill XP can be farmed (still an open question).
+- **Test Range:** kill XP can be farmed (still an open question). The host's Esc > HOST page (bots, BACK TO LOBBY) was
+  added 2026-10-23 (HostControls.cs); nothing on the server can end the match or change the map (the "Test Range"
+  section scripts 17 kills each for the player and a bot, a 20-minute clock jump and a direct end request).
 - **Never checked on a real screen:**
   - Blackmoor's look and FPS;
   - zombie animations;
@@ -95,6 +94,7 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
 - "Maps" tick work on Main Street: one 9.6 ms server tick (limit 8 ms; no JIT, no GC) on Windows CI, run 40012259653 on 763445c (2026-10-23); passed on rerun. If it recurs, suspect the attachments branch's bot hearing (loudness) or the gravity-zone field lookup.
+- "Matches" on Keelhaul Yard: "4 player(s) below the floor" once in the agent container (2026-10-23, fix/test-range-qol, unseeded bot match on the gravity-zone map); passed on rerun.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
 
 Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).
