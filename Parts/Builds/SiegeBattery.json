@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Two autocannons on a mule frame with singularity chambers, fed from an ammo can. Each shell goes through a queue of them.",
-  "build": "Mule Frame{receiver_1:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,action:Autocannon Drive,amp:Singularity Chamber},receiver_2:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,action:Autocannon Drive,amp:Singularity Chamber},hopper:Ammo Can Manifold{ammo:.50 BMG},foregrip:Chaingun Handle,stock:Shoulder Harness}"
+  "build": "Mule Frame{receiver_1:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,action:Autocannon Drive,amp:Singularity Chamber},receiver_2:Hammerfall Autocannon Receiver{barrel:Big Iron Barrel,action:Autocannon Drive,amp:Singularity Chamber},hopper:Ammo Can Manifold{ammo:Armour Piercing},foregrip:Chaingun Handle,stock:Shoulder Harness}"
 }

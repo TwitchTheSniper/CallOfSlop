@@ -7,5 +7,5 @@
   ],
   "flavor": "Four grenade launchers on a quad rack, taking turns. Four booms, then a long, careful reload.",
   "chainFire": true,
-  "build": "Quad Rack Grip{receiver_1:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag,action:Lob Trigger},receiver_2:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag,action:Lob Trigger},receiver_3:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag,action:Lob Trigger},receiver_4:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag,action:Lob Trigger},stock:Fixed Stock}"
+  "build": "Quad Rack Grip{receiver_1:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:Frag,action:Lob Trigger},receiver_2:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:Frag,action:Lob Trigger},receiver_3:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:Frag,action:Lob Trigger},receiver_4:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:Frag,action:Lob Trigger},stock:Fixed Stock}"
 }

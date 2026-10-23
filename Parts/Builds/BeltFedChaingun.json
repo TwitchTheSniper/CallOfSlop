@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Heavy rounds off a belt, with a short spin-up.",
-  "build": "Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG,action:Chain Drive Motor},foregrip:Chaingun Handle,stock:Fixed Stock}"
+  "build": "Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor},foregrip:Chaingun Handle,stock:Fixed Stock}"
 }

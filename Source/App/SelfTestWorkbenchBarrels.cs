@@ -19,7 +19,7 @@ public static partial class SelfTest
         var std = P("Standard Barrel");
 
         // ---- The screenshot build -------------------------------------------------------------------------------
-        const string shot = "Minigun|volley|Pistol Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Over-Under Splitter{barrel_1:Long Barrel,barrel_2:Long Barrel},feed:Heavy Box,ammo:.50 BMG},"
+        const string shot = "Minigun|volley|Pistol Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Over-Under Splitter{barrel_1:Long Barrel,barrel_2:Long Barrel},feed:Heavy Box,ammo:Armour Piercing},"
                             + "receiver_2:Stampede Receiver{feed:Stick Mag},receiver_3:Stampede Receiver{feed:Stick Mag}}";
         var shotDropped = new List<string>();
         var shotBuild = WeaponBuild.Parse(shot, Parts.Find, shotDropped); // saved before actions were parts: each receiver gets its stock action
@@ -37,19 +37,22 @@ public static partial class SelfTest
         Line($"  placed on receiver 2: {placed2 ?? "ok"}, receiver 3: {placed3 ?? "ok"}; still needs: {string.Join("; ", sm.Asm.Problems.Select(p => p.Message))}");
         if (placed2 != null || placed3 != null || sm.Build.At("receiver_2/barrel")?.Part != std || sm.Build.At("receiver_3/barrel")?.Part != std)
             Fail("barrels: placing a Standard Barrel on the screenshot build's receivers 2 and 3 failed");
-        // Each socket against its own receiver: the Stampedes take 9mm and refuse .50 (naming the Stampede), the Thumper the reverse.
-        int a1 = sm.SpotOf("receiver_1", "ammo"), a2 = sm.SpotOf("receiver_2", "ammo");
-        var nineOn2 = BuildRules.SocketWhy(sm.Spots[a2].Parent, sm.Spots[a2].Socket, P("9mm Ball"));
-        var fiftyOn2 = BuildRules.SocketWhy(sm.Spots[a2].Parent, sm.Spots[a2].Socket, P(".50 BMG"));
-        var nineOn1 = BuildRules.SocketWhy(sm.Spots[a1].Parent, sm.Spots[a1].Socket, P("9mm Ball"));
+        // Each socket against its own receiver: the Stampedes take a Stick Mag and refuse a Heavy Box (naming the Stampede), the
+        // Thumper the reverse; ammo is universal, so Armour Piercing goes into the Stampede and FMJ into the Thumper.
+        int a1 = sm.SpotOf("receiver_1", "ammo"), a2 = sm.SpotOf("receiver_2", "ammo"), f2 = sm.SpotOf("receiver_2", "feed"), f1 = sm.SpotOf("receiver_1", "feed");
+        var stickOn2 = BuildRules.SocketWhy(sm.Spots[f2].Parent, sm.Spots[f2].Socket, P("Stick Mag"));
+        var heavyOn2 = BuildRules.SocketWhy(sm.Spots[f2].Parent, sm.Spots[f2].Socket, P("Heavy Box"));
+        var stickOn1 = BuildRules.SocketWhy(sm.Spots[f1].Parent, sm.Spots[f1].Socket, P("Stick Mag"));
+        var apOn2 = BuildRules.SocketWhy(sm.Spots[a2].Parent, sm.Spots[a2].Socket, P("Armour Piercing"));
+        var fmjOn1 = BuildRules.SocketWhy(sm.Spots[a1].Parent, sm.Spots[a1].Socket, P("FMJ"));
         var needs = sm.Asm.Problems.Where(p => p.Incomplete).Select(p => p.Message).ToList();
-        Line($"  per receiver: 9mm on receiver 2 {nineOn2 ?? "fits"}; .50 on receiver 2: {fiftyOn2}; 9mm on receiver 1: {nineOn1}; needs: {string.Join("; ", needs)}");
-        if (nineOn2 != null || fiftyOn2 == null || !fiftyOn2.Contains("Stampede") || nineOn1 == null || !nineOn1.Contains("Thumper")
+        Line($"  per receiver: Stick Mag on receiver 2 {stickOn2 ?? "fits"}; Heavy Box on receiver 2: {heavyOn2}; Stick Mag on receiver 1: {stickOn1}; Armour Piercing on receiver 2 {apOn2 ?? "fits"}, FMJ on receiver 1 {fmjOn1 ?? "fits"}; needs: {string.Join("; ", needs)}");
+        if (stickOn2 != null || heavyOn2 == null || !heavyOn2.Contains("Stampede") || stickOn1 == null || !stickOn1.Contains("Thumper") || apOn2 != null || fmjOn1 != null
             || needs.Count(n => n.Contains("Stampede Receiver needs ammo")) != 2 || needs.Any(n => n.Contains("barrel")))
-            Fail("barrels: every socket should be judged against the receiver it hangs under (and the needs list name it)");
+            Fail("barrels: every socket should be judged against the receiver it hangs under (and the needs list name it), and ammo should fit any receiver");
         // A refusal says the real reason: the weight, not another receiver's bore.
-        const string heavyText = "Heavy|volley|Pistol Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Over-Under Splitter{barrel_1:Long Barrel,barrel_2:Long Barrel},feed:Heavy Box,ammo:.50 BMG},"
-                                 + "receiver_2:Thumper Chain Gun Receiver{feed:Heavy Box,ammo:.50 BMG}}";
+        const string heavyText = "Heavy|volley|Pistol Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Over-Under Splitter{barrel_1:Long Barrel,barrel_2:Long Barrel},feed:Heavy Box,ammo:Armour Piercing},"
+                                 + "receiver_2:Thumper Chain Gun Receiver{feed:Heavy Box,ammo:Armour Piercing}}";
         var hm = new BenchModel(WeaponBuild.Parse(heavyText, Parts.Find), BenchStock.Unlimited);
         var bigWhy = hm.WhyNowhere(P("Big Iron Barrel"));
         var bigShort = hm.WhyNowhereShort(P("Big Iron Barrel"));
@@ -134,19 +137,19 @@ public static partial class SelfTest
             WeaponBuilder.Assemble(BuildOf($"{grip}{{receiver_1:{receiver}{{barrel:{barrel},feed:{feed},ammo:{ammo}}}}}")).Def?.RangeM ?? -1;
         var reg = Parts.Registry;
         float k(string bore) => reg.ClassOf(bore).Strength;
-        var pStd = RangeOf("Service Pistol Grip", "Plinker Receiver", "Standard Barrel", "Stick Mag", "9mm Ball");
-        var pLong = RangeOf("Service Pistol Grip", "Plinker Receiver", "Long Barrel", "Stick Mag", "9mm Ball");
-        var rStd = RangeOf("Service Rifle Grip", "Workhorse Receiver", "Standard Barrel", "Box Mag", "5.56 FMJ");
-        var rLong = RangeOf("Service Rifle Grip", "Workhorse Receiver", "Long Barrel", "Box Mag", "5.56 FMJ");
-        var hStd = RangeOf("Rifle Grip", "Thumper Chain Gun Receiver", "Standard Barrel", "Heavy Box", ".50 BMG");
-        var hStub = RangeOf("Rifle Grip", "Thumper Chain Gun Receiver", "Stub Barrel", "Heavy Box", ".50 BMG");
+        var pStd = RangeOf("Service Pistol Grip", "Plinker Receiver", "Standard Barrel", "Stick Mag", "FMJ");
+        var pLong = RangeOf("Service Pistol Grip", "Plinker Receiver", "Long Barrel", "Stick Mag", "FMJ");
+        var rStd = RangeOf("Service Rifle Grip", "Workhorse Receiver", "Standard Barrel", "Box Mag", "FMJ");
+        var rLong = RangeOf("Service Rifle Grip", "Workhorse Receiver", "Long Barrel", "Box Mag", "FMJ");
+        var hStd = RangeOf("Rifle Grip", "Thumper Chain Gun Receiver", "Standard Barrel", "Heavy Box", "Armour Piercing");
+        var hStub = RangeOf("Rifle Grip", "Thumper Chain Gun Receiver", "Stub Barrel", "Heavy Box", "Armour Piercing");
         Line($"range: pistol {pStd:0.#} -> Long Barrel {pLong:0.#} m (x{pLong / pStd:0.###}, strength {k("pistol")}), rifle {rStd:0.#} -> {rLong:0.#} (x{rLong / rStd:0.###}), heavy {hStd:0.#} -> Stub {hStub:0.#} (x{hStub / hStd:0.###}, strength {k("heavy")})");
         if (MathF.Abs(pLong / pStd - (1 + 0.4f * k("pistol"))) > 0.01f || MathF.Abs(rLong / rStd - 1.4f) > 0.01f || MathF.Abs(hStub / hStd - (1 - 0.3f * k("heavy"))) > 0.01f || pLong >= rLong || hStub <= rStd)
             Fail("barrels: a Long Barrel should make a longer-range pistol (still a pistol), a Stub Barrel a shorter autocannon-class gun (still long), scaled by the bore class's strength");
         int Pellets(string text) => WeaponBuilder.Assemble(BuildOf(text)).Def?.Pellets ?? -1;
-        var rifleBell = Pellets("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Blunderbuss Bell,feed:Box Mag,ammo:5.56 FMJ}}");
-        var shotBell = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Blunderbuss Bell,feed:Shell Tube,ammo:00 Buckshot}}");
-        var shotStd = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Standard Barrel,feed:Shell Tube,ammo:00 Buckshot}}");
+        var rifleBell = Pellets("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Blunderbuss Bell,feed:Box Mag,ammo:FMJ}}");
+        var shotBell = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Blunderbuss Bell,feed:Shell Tube,ammo:Buckshot}}");
+        var shotStd = Pellets("Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Standard Barrel,feed:Shell Tube,ammo:Buckshot}}");
         Line($"pellets: Blunderbuss Bell on a rifle {rifleBell}, on a pump shotgun {shotBell} (Standard Barrel {shotStd})");
         if (rifleBell != 1 || shotBell <= shotStd)
             Fail("barrels: a barrel's pellet change should count on shotguns only (a rifle keeps one bullet)");
@@ -185,7 +188,7 @@ public static partial class SelfTest
         Line("grips by slots: " + string.Join("; ", gripCounts.Select(g => $"{g.n}: {string.Join(", ", g.Item2)}")));
         if (gripCounts.Any(g => g.Item2.Count == 0))
             Fail($"barrels: every receiver slot count 1..9 should have a grip (missing {string.Join(", ", gripCounts.Where(g => g.Item2.Count == 0).Select(g => g.n))})");
-        var chainModel = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);
+        var chainModel = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         var volleyDef = chainModel.Asm.Def;
         var changed = chainModel.SetChainFire(true);
         var chainText = chainModel.Build.ToText();

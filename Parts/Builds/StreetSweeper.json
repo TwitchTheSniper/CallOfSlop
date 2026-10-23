@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A semi-auto shotgun on a shell drum, braked and buffered. Twenty shells as fast as you can pull.",
-  "build": "Sport Rifle Grip{receiver_1:Street Sweeper Receiver{barrel:Scattermouth Barrel{muzzle:Muzzle Brake},feed:Shell Drum,ammo:00 Buckshot,action:Riot Trigger},stock:Recoil Buffer Stock}"
+  "build": "Sport Rifle Grip{receiver_1:Street Sweeper Receiver{barrel:Scattermouth Barrel{muzzle:Muzzle Brake},feed:Shell Drum,ammo:Buckshot,action:Riot Trigger},stock:Recoil Buffer Stock}"
 }

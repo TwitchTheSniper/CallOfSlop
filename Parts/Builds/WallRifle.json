@@ -7,5 +7,5 @@
     "start"
   ],
   "flavor": "The plain rifle off the wall: one receiver, one barrel, a box mag. Where every run starts.",
-  "build": "Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ,action:Full-Auto Sear}}"
+  "build": "Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ,action:Full-Auto Sear}}"
 }

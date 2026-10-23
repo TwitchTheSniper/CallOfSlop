@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Match Grade",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "Hand-loaded and weighed. Tighter, longer, and it rewards a steady aim.",
+  "weight": 0.0,
+  "stats": [
+    {"stat": "rangeM", "mul": 1.2},
+    {"stat": "hipSpreadDeg", "mul": 0.8},
+    {"stat": "adsSpreadMult", "mul": 0.8},
+    {"stat": "headMult", "mul": 1.15}
+  ]
+}

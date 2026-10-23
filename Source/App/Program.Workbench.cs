@@ -271,7 +271,7 @@ public static unsafe partial class Program
                 break;
             case 37 when t > 6.2:
             {
-                var src = WeaponBuild.Parse("Copy Demo|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Extended Mag,ammo:9mm Ball}}", Parts.Find);
+                var src = WeaponBuild.Parse("Copy Demo|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Extended Mag,ammo:FMJ}}", Parts.Find);
                 var stock = BenchStock.Of(src.Nodes.GroupBy(n => n.Part).Select(gp => (gp.Key, gp.Key.Category is PartCategory.Receiver or PartCategory.Ammo or PartCategory.Action ? 2 : 1)));
                 var missing = Ui.SmokeWorkbenchCopy(src, stock);
                 Console.WriteLine($"[smoke] workbench UI: grip picker and assembly shown, {PartThumbs.Rendered} part picture(s) cached{(PartThumbs.Broken ? " (pictures OFF)" : "")}; copy without parts: {missing}");

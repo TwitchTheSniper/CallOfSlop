@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Subsonic",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "Slow, quiet, soft. Less punch and reach, less kick, and the gun goes quiet.",
+  "weight": 0.0,
+  "flags": ["suppressed"],
+  "stats": [
+    {"stat": "damage", "mul": 0.9},
+    {"stat": "rangeM", "mul": 0.8},
+    {"stat": "recoilDeg", "mul": 0.85}
+  ]
+}

@@ -1,15 +1,10 @@
 {
   "format": "call-of-slop-part/1",
-  "name": "00 Buckshot",
+  "name": "Buckshot",
   "category": "ammo",
   "rarity": "common",
-  "flavor": "Eight big pellets per shell.",
-  "bores": ["shell"],
+  "flavor": "Eight pellets sharing the round. A shotgun fires that anyway; in anything else each round becomes a spread of eight.",
   "weight": 0.0,
-  "stats": [
-    {"stat": "damage", "set": 14},
-    {"stat": "pellets", "set": 8},
-    {"stat": "rangeM", "set": 9},
-    {"stat": "minDamageMult", "set": 0.2}
-  ]
+  "round": {"pellets": 8},
+  "stats": []
 }

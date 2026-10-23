@@ -180,7 +180,7 @@ public static partial class SelfTest
         Line($"feel kept: {compared} standard builds compared with their receivers' old numbers");
 
         // ---- Each fire type through the real trigger loop ---------------------------------------------------------------
-        string Rifle(string action) => $"Service Rifle Grip{{receiver_1:Workhorse Receiver{{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ,action:{action}}}}}";
+        string Rifle(string action) => $"Service Rifle Grip{{receiver_1:Workhorse Receiver{{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ,action:{action}}}}}";
         World.SetMap(Maps.Find("Workbench Range") ?? Maps.All[0]);
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: Maps.Find("Workbench Range")?.Id ?? 0);
         game.BuilderRange = true;
@@ -262,7 +262,7 @@ public static partial class SelfTest
             Line($"  rotary (Minigun, {minigun.Rpm} rpm, spool {minigun.SpoolTime} s from {minigun.SpoolStart:0.00}): {In(spin, 0, 0.5)} shots in the first 0.5 s, {In(spin, 2, 2.5)} in the last");
             if (!(In(spin, 0, 0.5) < In(spin, 2, 2.5) * 0.7f) || MathF.Abs(In(spin, 2, 2.5) - minigun.Rpm / 120f) > 3)
                 Fail($"actions: a rotary action should spin up to its full rate ({minigun.Rpm} rpm, spool {minigun.SpoolTime} from {minigun.SpoolStart}: {In(spin, 0, 0.5)} shots in the first 0.5 s, {In(spin, 2, 2.5)} in the last, {spin.Count} in all)");
-            var chain = Def("Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG,action:Chain Drive Motor}}");
+            var chain = Def("Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor}}");
             var wind = Fire(chain, 1.5, false);
             var firstGap = wind.Count > 2 ? wind[1] - wind[0] : 0;
             var lastGap = wind.Count > 2 ? wind[^1] - wind[^2] : 0;
@@ -277,8 +277,8 @@ public static partial class SelfTest
 
         // ---- A cluster receiver with a plain action: all barrels at once, conserving the shot ----------------------------
         var six = string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel"));
-        var rotaryAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:5.56 FMJ,action:Electric Rotary Drive}},foregrip:Chaingun Handle}}"));
-        var volleyAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:5.56 FMJ,action:Full-Auto Sear}},foregrip:Chaingun Handle}}"));
+        var rotaryAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:FMJ,action:Electric Rotary Drive}},foregrip:Chaingun Handle}}"));
+        var volleyAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:FMJ,action:Full-Auto Sear}},foregrip:Chaingun Handle}}"));
         var (rotary, volley) = (rotaryAsm.Def, volleyAsm.Def);
         if (rotary == null || volley == null)
             Fail($"actions: a Hellwheel with a rotary or a full-auto action should both be legal ({string.Join("; ", rotaryAsm.Problems.Concat(volleyAsm.Problems).Select(p => p.Message))})");
@@ -293,7 +293,7 @@ public static partial class SelfTest
         }
 
         // ---- The stats panel and the workbench ---------------------------------------------------------------------------
-        var bm = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ}}"), BenchStock.Unlimited);
+        var bm = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         var shown = bm.FireType;
         var removeWhy = bm.Remove(bm.Build.At("receiver_1/action")!);
         var bare = (bm.FireType, bm.Asm.Ok, bm.Rows.Any(r => r.Kind == BenchRowKind.Needed && r.Socket?.Type == "action"));

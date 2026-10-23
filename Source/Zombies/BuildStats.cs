@@ -18,7 +18,7 @@ public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float Spl
 /// Turns a build (a tree of parts) into a <see cref="WeaponDef"/> the existing firing code uses. Deterministic: the same
 /// tree always gives the same numbers. The pipeline (docs/zombies/WEAPON-BUILDER.md, "Stat pipeline"):
 /// <list type="number">
-/// <item>Each receiver on its own: base numbers, its action and fire rate, then its parts in stages (receiver, ammo,
+/// <item>Each receiver on its own: its bore's calibre, its action and fire rate, then its parts in stages (receiver, ammo,
 /// feed, splitters), then each barrel path (barrel + muzzle device) on its own copy. Splitter rule: every output gets
 /// the incoming shot's damage x the splitter's outputMult (nested splitters multiply; 1/N conserves the shot).</item>
 /// <item>The receivers combine by the grip's fire style. Volley: the slowest fire rate, the smallest feed, recoil adds
@@ -47,14 +47,23 @@ public static class BuildStats
 
     private static readonly PartCategory[] GripStages = [PartCategory.Grip, PartCategory.Stock, PartCategory.Optic, PartCategory.Utility];
 
-    /// <summary>Pellets per barrel one receiver fires (its ammo, feed and barrel effects on pellets).</summary>
+    /// <summary>Pellets per barrel one receiver fires (its calibre, then its ammo, feed and barrel effects on pellets).</summary>
     public static int PelletsOf(BuildNode receiver)
     {
         var w = new WeaponDef { Name = "", Class = WeaponClass.AssaultRifle, Damage = 1, RangeM = 1, Rpm = 1, Mag = 1, Reload = 1, HipSpreadDeg = 1 };
-        var barrelPellets = receiver.Part.Receiver is { } r && Parts.Registry.ClassOf(r.Bore).Pellets; // only shotguns let a barrel change the pellets
+        var cls = receiver.Part.Receiver is { } r ? Parts.Registry.ClassOf(r.Bore) : BoreClass.Default;
+        w.Pellets = cls.Calibre.Pellets;
+        var barrelPellets = cls.Pellets; // only shotguns let a barrel (or an ammo stat) change the pellets; the round block works anywhere
         foreach (var n in receiver.Walk().Where(n => n.Part.Category is PartCategory.Receiver or PartCategory.Ammo or PartCategory.Feed || (barrelPellets && n.Part.Category == PartCategory.Barrel)))
+        {
+            if (n.Part.Category == PartCategory.Ammo)
+            {
+                ApplyAmmo(n.Part, w, cls);
+                continue;
+            }
             foreach (var e in n.Part.Effects.Where(e => e.Field.Name == nameof(WeaponDef.Pellets)))
                 e.ApplyTo(w);
+        }
         return Math.Clamp(w.Pellets, 1, 30);
     }
 
@@ -113,8 +122,14 @@ public static class BuildStats
         var w = WeaponDef.Blank();
         w.Name = name;
         w.Class = r.Class;
-        w.Damage = 20;
-        w.RangeM = 25;
+        // The receiver sets the calibre: its bore's round (damage, range, pellets, fall-off, headshots), before its own
+        // stats and the ammo part's relative modifiers.
+        var cal = Parts.Registry.ClassOf(r.Bore).Calibre;
+        w.Damage = cal.Damage;
+        w.RangeM = cal.RangeM;
+        w.Pellets = cal.Pellets;
+        w.MinDamageMult = cal.MinDamageMult;
+        w.HeadMult = cal.HeadMult;
         w.Rpm = a.Rpm;
         w.Mag = 30;
         w.Reload = 2.2f;
@@ -194,14 +209,17 @@ public static class BuildStats
             if (receiver.Child("ammo") == null && hopper.Child("ammo") is { } sharedAmmo)
                 nodes.Add(sharedAmmo);
         }
+        var cls = Parts.Registry.ClassOf(r.Bore);
         foreach (var cat in ReceiverStages)
             foreach (var n in nodes.Where(n => n.Part.Category == cat))
-                Apply(n.Part, w);
+                if (cat == PartCategory.Ammo)
+                    ApplyAmmo(n.Part, w, cls);
+                else
+                    Apply(n.Part, w);
         // Receiver upgrades change the fire rate as a ratio, so rotary receivers (rate per barrel) scale the same way.
         var rateMult = w.Rpm / (float)Math.Max(1, act.Rpm);
         var res = new ReceiverResult { Node = receiver, Def = w };
         var copies = new List<WeaponDef>();
-        var cls = Parts.Registry.ClassOf(r.Bore);
         foreach (var leaf in Leaves(receiver))
         {
             var c = w.Clone();
@@ -359,6 +377,29 @@ public static class BuildStats
     {
         foreach (var e in p.Effects)
             e.ApplyTo(w);
+    }
+
+    /// <summary>
+    /// An ammo part on top of its receiver's calibre (docs/zombies/WEAPON-BUILDER.md, "Universal ammo"): ammo fits every
+    /// receiver and only changes the calibre's numbers relatively. Its "round" block first splits the round into N
+    /// projectiles sharing the damage (buckshot on a rifle: eight pellets of an eighth; a slug in a shotgun: the eight
+    /// pellets as one), then its stats apply (mul / add); a stat on the pellet count only counts where the bore lets
+    /// barrels change pellets (shotguns), like a barrel's.
+    /// </summary>
+    public static void ApplyAmmo(PartDef ammo, WeaponDef w, BoreClass cls)
+    {
+        if (ammo.Round is { Pellets: > 0 } rd && rd.Pellets != w.Pellets)
+        {
+            var was = Math.Max(1, w.Pellets);
+            w.Damage = Math.Max(1, (int)MathF.Round(w.Damage * was / (float)rd.Pellets));
+            w.Pellets = rd.Pellets;
+        }
+        foreach (var e in ammo.Effects)
+        {
+            if (e.Field.Name == nameof(WeaponDef.Pellets) && !cls.Pellets)
+                continue;
+            e.ApplyTo(w);
+        }
     }
 
     /// <summary>

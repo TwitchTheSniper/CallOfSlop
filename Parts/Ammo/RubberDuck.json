@@ -1,15 +1,14 @@
 {
   "format": "call-of-slop-part/1",
-  "name": "Rubber Duck Rounds",
+  "name": "Rubber Duck",
   "category": "ammo",
   "rarity": "wonder",
-  "flavor": "They squeak on impact. Surprisingly lethal.",
-  "bores": ["launcher"],
+  "flavor": "They squeak on impact and bounce off everything. Less punch, more reach, and a headshot is three times as rude.",
   "weight": 0.0,
   "flags": ["bouncy", "squeaky"],
   "stats": [
-    {"stat": "damage", "set": 90},
-    {"stat": "rangeM", "set": 50},
-    {"stat": "headMult", "set": 3.0}
+    {"stat": "damage", "mul": 0.75},
+    {"stat": "rangeM", "mul": 1.25},
+    {"stat": "headMult", "mul": 3, "max": 6}
   ]
 }

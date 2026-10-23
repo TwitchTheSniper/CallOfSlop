@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Six barrels taking turns off a backpack hopper, once it spins up.",
-  "build": "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel,barrel_5:Standard Barrel,barrel_6:Standard Barrel,feed:Backpack Hopper,ammo:5.56 FMJ,action:Electric Rotary Drive},foregrip:Chaingun Handle}"
+  "build": "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel,barrel_5:Standard Barrel,barrel_6:Standard Barrel,feed:Backpack Hopper,ammo:FMJ,action:Electric Rotary Drive},foregrip:Chaingun Handle}"
 }

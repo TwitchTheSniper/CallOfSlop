@@ -11,7 +11,7 @@ public static partial class SelfTest
     private static void CheckWorkbenchIncompat()
     {
         PartDef P(string name) => Parts.Find(name) ?? throw new InvalidOperationException($"workbench test needs the part '{name}'");
-        const string tree = "Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:5.56 FMJ},stock:Fixed Stock,optic:Red Dot}";
+        const string tree = "Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:FMJ},stock:Fixed Stock,optic:Red Dot}";
 
         // ---- Every part, the toggle off and on ----------------------------------------------------------------
         var full = new BenchModel(BuildOf(tree), BenchStock.Unlimited);
@@ -96,7 +96,7 @@ public static partial class SelfTest
         // ---- Short reasons agree with the full socket rules ------------------------------------------------------
         var disagree = 0;
         var samples = new SortedSet<string>(StringComparer.Ordinal);
-        foreach (var model in new[] { full, new BenchModel(BuildOf("Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot}}"), BenchStock.Unlimited) })
+        foreach (var model in new[] { full, new BenchModel(BuildOf("Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:Buckshot}}"), BenchStock.Unlimited) })
             foreach (var p in Parts.All)
                 foreach (var s in model.Spots)
                 {

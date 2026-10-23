@@ -323,7 +323,11 @@ public static partial class SelfTest
             || !incomplete.Any(p => p.Incomplete && p.Message.Contains("needs an action")))
             Fail("rules: receivers with nothing on them should list a missing barrel, feed, ammo and action");
         ExpectWhyNot(b, "receiver_1", "feed", "Box Mag", "made for rifle rounds");
-        ExpectWhyNot(b, "receiver_1", "ammo", "00 Buckshot", "shell rounds");
+        // Ammo is universal (2026-10-23): Buckshot goes into a pistol receiver (it becomes a spread of pistol pellets).
+        if (Parts.Find("Buckshot") is not { } buck)
+            Fail("rules test needs part 'Buckshot'");
+        else if (BuildRules.WhyNot(b, "receiver_1", "ammo", buck) is { } whyBuck)
+            Fail($"rules: Buckshot should fit the Plinker (ammo fits every receiver), got: {whyBuck}");
         ExpectWhyNot(b, "receiver_1", "barrel", "Vertical Foregrip", "mounts on a foregrip socket");
         ExpectWhyNot(b, "receiver_1", "barrel", "Rifle Grip", "start a new build");
         ExpectWhyNot(b, "", "receiver_1", "Red Dot", "mounts on an optic socket");

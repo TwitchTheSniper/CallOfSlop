@@ -3,14 +3,12 @@
   "name": "Dragon's Breath",
   "category": "ammo",
   "rarity": "epic",
-  "flavor": "Ten burning pellets per shell (fire damage comes later).",
-  "bores": ["shell"],
+  "flavor": "Burning rounds. Less lead (the fire does the rest), a little more reach; a shotgun shell packs two more pellets of it.",
   "weight": 0.0,
   "flags": ["incendiary"],
   "stats": [
-    {"stat": "damage", "set": 12},
-    {"stat": "pellets", "set": 10},
-    {"stat": "rangeM", "set": 10},
-    {"stat": "minDamageMult", "set": 0.2}
+    {"stat": "damage", "mul": 0.85},
+    {"stat": "pellets", "add": 2},
+    {"stat": "rangeM", "mul": 1.1}
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Shock",
+  "category": "ammo",
+  "rarity": "epic",
+  "flavor": "Rounds that carry a charge: the hit arcs to the zombies next to it.",
+  "weight": 0.0,
+  "flags": ["shock"],
+  "stats": [
+    {"stat": "damage", "mul": 0.9}
+  ]
+}

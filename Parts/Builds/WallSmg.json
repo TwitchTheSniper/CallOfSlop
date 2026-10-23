@@ -6,5 +6,5 @@
     "wall"
   ],
   "flavor": "A full-auto pistol receiver with a stub barrel. Sprays and prays.",
-  "build": "Service Pistol Grip{receiver_1:Stampede Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Blowback SMG Sear}}"
+  "build": "Service Pistol Grip{receiver_1:Stampede Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:FMJ,action:Blowback SMG Sear}}"
 }

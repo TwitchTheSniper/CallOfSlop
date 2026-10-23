@@ -199,13 +199,23 @@ public sealed class WeaponBuild
     };
 
     /// <summary>
-    /// Parts that were merged into others, old name to new. The chain-fire twin grips became the "Chain fire" checkbox:
-    /// a build on one loads on the merged grip, and its saved style field ("rotate") keeps it chain firing.
+    /// Parts that were merged into or renamed to others, old name to new. The chain-fire twin grips became the "Chain
+    /// fire" checkbox: a build on one loads on the merged grip, and its saved style field ("rotate") keeps it chain
+    /// firing. The calibre-named ammo became universal round types.
     /// </summary>
     public static readonly IReadOnlyDictionary<string, string> Renamed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
     {
         ["Competition Pistol Grip"] = "Pistol Grip",
         ["Tactical Rifle Grip"] = "Rifle Grip",
+        // Universal ammo (2026-10-23): the calibre-named rounds became round types that fit every receiver (the receiver
+        // sets the calibre). An old build names the calibre its receiver fires anyway, so it loads with the same numbers.
+        ["5.56 FMJ"] = "FMJ",
+        ["9mm Ball"] = "FMJ",
+        [".50 BMG"] = "Armour Piercing",
+        ["00 Buckshot"] = "Buckshot",
+        ["40mm Frag"] = "Frag",
+        ["Plasma Charge"] = "Plasma",
+        ["Rubber Duck Rounds"] = "Rubber Duck",
     };
 
     /// <summary>How deep <see cref="Parse"/> nests before calling the text garbage (far past <see cref="BuildRules.MaxParts"/>), so a hostile build can't overflow the stack.</summary>
@@ -280,8 +290,8 @@ public readonly record struct BuildProblem(bool Incomplete, string Message);
 
 /// <summary>
 /// The assembly rules (see docs/zombies/WEAPON-BUILDER.md, "Graph rules"): a build starts from a root grip whose
-/// receiver sockets are its receiver capacity; sockets take parts of their type and listed categories; bore-bound
-/// parts must match the calibre class of the receiver they hang off; some feeds need particular actions; splitters
+/// receiver sockets are its receiver capacity; sockets take parts of their type and listed categories; feeds must
+/// match the calibre class of the receiver they hang off (ammo fits any); some feeds need particular actions; splitters
 /// stack at most two deep; and there are limits on parts, barrels, projectiles per trigger pull and weight. Every
 /// refusal comes with a plain-English reason.
 /// </summary>
@@ -300,11 +310,12 @@ public static class BuildRules
     public const int MaxProjectiles = 240;
 
     /// <summary>
-    /// Categories that must match their receiver's bore: only what holds the rounds (feeds and ammo, the receiver's
-    /// calibre). Barrels, splitters and muzzle devices fit every receiver; the receiver adapts the barrel instead
-    /// (<see cref="BarrelScale"/>, <see cref="BarrelClass"/>).
+    /// Categories that must match their receiver's bore: only the feed (a magazine is sized for its rounds). Barrels,
+    /// splitters and muzzle devices fit every receiver (the receiver adapts the barrel: <see cref="BarrelScale"/>,
+    /// <see cref="BarrelClass"/>), and so does ammo: the receiver sets the calibre, the ammo part only picks the round
+    /// type and its effect on top (docs/zombies/WEAPON-BUILDER.md, "Universal ammo").
     /// </summary>
-    public static bool BoreBound(PartCategory c) => c is PartCategory.Feed or PartCategory.Ammo;
+    public static bool BoreBound(PartCategory c) => c is PartCategory.Feed;
 
     /// <summary>The bore class that adapts <paramref name="node"/> (a barrel): its nearest receiver's (walking up the tree), or null when it hangs under none.</summary>
     public static BoreClass? BarrelClass(BuildNode node) =>

@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A semi-auto battle rifle on a long braked barrel with a holo sight. Two taps per zombie, from across the room.",
-  "build": "Sport Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Muzzle Brake},feed:Extended Mag,ammo:5.56 FMJ,action:Semi-Auto Trigger},stock:Fixed Stock,optic:Holographic}"
+  "build": "Sport Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Muzzle Brake},feed:Extended Mag,ammo:FMJ,action:Semi-Auto Trigger},stock:Fixed Stock,optic:Holographic}"
 }

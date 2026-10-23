@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Hollow Point",
+  "category": "ammo",
+  "rarity": "common",
+  "flavor": "Opens up on impact. Hits harder up close, loses it faster over distance.",
+  "weight": 0.0,
+  "stats": [
+    {"stat": "damage", "mul": 1.15},
+    {"stat": "headMult", "mul": 1.1},
+    {"stat": "rangeM", "mul": 0.85},
+    {"stat": "minDamageMult", "mul": 0.75}
+  ]
+}

@@ -7,5 +7,5 @@
   ],
   "flavor": "Two pistol receivers on one handle, chain firing: left, right, left, right.",
   "chainFire": true,
-  "build": "Double-Tap Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger}}"
+  "build": "Double-Tap Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ,action:Semi-Auto Trigger},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ,action:Semi-Auto Trigger}}"
 }

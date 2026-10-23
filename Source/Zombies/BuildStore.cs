@@ -197,7 +197,7 @@ public static class BuilderExamples
         Try(() =>
         {
             var b = new WeaponBuild("Plain Rifle", Need("Rifle Grip", find));
-            Rx(b.Root!, "receiver_1", "Workhorse Receiver", "Standard Barrel", "Box Mag", "5.56 FMJ", "Flash Hider");
+            Rx(b.Root!, "receiver_1", "Workhorse Receiver", "Standard Barrel", "Box Mag", "FMJ", "Flash Hider");
             b.Root!.Attach("stock", Need("Fixed Stock", find));
             b.Root.Attach("optic", Need("Red Dot", find));
             return new Example(b, 200, 320, "The baseline: one receiver, one barrel.");
@@ -210,14 +210,14 @@ public static class BuilderExamples
             y.Attach("barrel_1", Need("Scattermouth Barrel", find));
             y.Attach("barrel_2", Need("Scattermouth Barrel", find));
             r.Attach("feed", Need("Shell Tube", find));
-            r.Attach("ammo", Need("00 Buckshot", find));
+            r.Attach("ammo", Need("Buckshot", find));
             b.Root.Attach("stock", Need("Wire Stock", find));
             return new Example(b, 100, 160, "A conserving splitter: two barrels, each with half the shot.");
         });
         Try(() =>
         {
             var b = new WeaponBuild("Belt-Fed Chaingun", Need("Rifle Grip", find));
-            Rx(b.Root!, "receiver_1", "Thumper Chain Gun Receiver", "Big Iron Barrel", "Belt Box", ".50 BMG");
+            Rx(b.Root!, "receiver_1", "Thumper Chain Gun Receiver", "Big Iron Barrel", "Belt Box", "Armour Piercing");
             b.Root!.Attach("foregrip", Need("Chaingun Handle", find));
             b.Root.Attach("stock", Need("Fixed Stock", find));
             return new Example(b, 500, 760, "Heavy rounds off a belt, with a short spin-up.");
@@ -229,7 +229,7 @@ public static class BuilderExamples
             for (var i = 1; i <= 6; i++)
                 r.Attach($"barrel_{i}", Need("Standard Barrel", find));
             r.Attach("feed", Need("Backpack Hopper", find));
-            r.Attach("ammo", Need("5.56 FMJ", find));
+            r.Attach("ammo", Need("FMJ", find));
             b.Root.Attach("foregrip", Need("Chaingun Handle", find));
             return new Example(b, 900, 1200, "Six barrels taking turns at 2400 rpm once it has spun up.");
         });
@@ -245,27 +245,27 @@ public static class BuilderExamples
                     t.Attach($"barrel_{j}", Need("Stub Barrel", find));
             }
             r.Attach("feed", Need("Drum Mag", find));
-            r.Attach("ammo", Need("5.56 FMJ", find));
+            r.Attach("ammo", Need("FMJ", find));
             return new Example(b, 80, 220, "Ridiculous: a 4-way splitter feeding four 3-way splitters, twelve barrels (the same total damage, everywhere).");
         });
         Try(() =>
         {
             var b = new WeaponBuild("Toaster Duck", Need("Pistol Grip", find));
-            Rx(b.Root!, "receiver_1", "Bucket Launcher Receiver", "Launcher Tube", "Toaster Feed", "Rubber Duck Rounds");
+            Rx(b.Root!, "receiver_1", "Bucket Launcher Receiver", "Launcher Tube", "Toaster Feed", "Rubber Duck");
             return new Example(b, 100, 160, "Ridiculous: rubber ducks, two at a time, out of a toaster.");
         });
         Try(() =>
         {
             var b = new WeaponBuild("Triple Pistol", Need("Pistol Grip", find));
             for (var i = 1; i <= 3; i++)
-                Rx(b.Root!, $"receiver_{i}", "Plinker Receiver", "Standard Barrel", "Stick Mag", "9mm Ball");
+                Rx(b.Root!, $"receiver_{i}", "Plinker Receiver", "Standard Barrel", "Stick Mag", "FMJ");
             return new Example(b, 340, 480, "Three pistol receivers on one pistol grip, fired as a volley.");
         });
         Try(() =>
         {
             var b = new WeaponBuild("Nine Lives", Need("Rifle Grip", find));
             for (var i = 1; i <= 9; i++)
-                Rx(b.Root!, $"receiver_{i}", "Workhorse Receiver", "Stub Barrel", "Stick Mag", "5.56 FMJ");
+                Rx(b.Root!, $"receiver_{i}", "Workhorse Receiver", "Stub Barrel", "Stick Mag", "FMJ");
             b.Root!.Attach("stock", Need("Fixed Stock", find));
             return new Example(b, 1800, 2700, "Nine rifle receivers on a full rifle grip: heavy, slow, devastating.");
         });
@@ -273,14 +273,14 @@ public static class BuilderExamples
         {
             var b = new WeaponBuild("Lumberjack", Need("Chainsaw Grip", find));
             for (var i = 1; i <= 6; i++)
-                Rx(b.Root!, $"receiver_{i}", "Gravedigger Auto Receiver", "Scattermouth Barrel", "Shell Drum", "00 Buckshot");
+                Rx(b.Root!, $"receiver_{i}", "Gravedigger Auto Receiver", "Scattermouth Barrel", "Shell Drum", "Buckshot");
             return new Example(b, 2000, 3200, "Six auto shotguns on a chainsaw grip.");
         });
         Try(() =>
         {
             var b = new WeaponBuild("Shopping Spree", Need("Push Cart", find));
             for (var i = 1; i <= 16; i++)
-                Rx(b.Root!, $"receiver_{i}", "Stampede Receiver", "Stub Barrel", "Stick Mag", "9mm Ball");
+                Rx(b.Root!, $"receiver_{i}", "Stampede Receiver", "Stub Barrel", "Stick Mag", "FMJ");
             return new Example(b, 3000, 5500, "Sixteen SMG receivers on a push cart. Hip fire only.");
         });
         return list;

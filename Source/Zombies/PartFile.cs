@@ -33,7 +33,7 @@ public static class PartFile
     private static readonly string[] Keys =
     [
         "format", "name", "category", "rarity", "flavor", "author", "mount", "placement", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
-        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
+        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "split", "round", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
     /// <summary>The mount a category gets when the file doesn't say (the registry's "mount" for it).</summary>
@@ -161,6 +161,8 @@ public static class PartFile
             part.Frame = ReadFrame(fr, $"{where}: \"frame\"");
         if (Get("split") is { } sp)
             part.Split = ReadSplit(sp, $"{where}: \"split\"");
+        if (Get("round") is { } ro)
+            part.Round = ReadRound(ro, $"{where}: \"round\"");
         if (Get("carry") is { } cb)
             part.CarryBonus = Range(WeaponFile.Number(cb, $"{where}: \"carry\""), 0, 40, $"{where}: \"carry\" (kg of weight relief)");
         if (Get("shared") is { } sh)
@@ -273,6 +275,12 @@ public static class PartFile
         }
         else if (p.Split != null)
             throw new WeaponFileException($"{where}: only splitters have a \"split\" block");
+        if (p.Category == PartCategory.Ammo && p.Bores.Length > 0)
+            throw new WeaponFileException($"{where}: ammo fits every receiver (the receiver sets the calibre, the ammo the round type): drop \"bores\" and make its \"stats\" relative (mul / add)");
+        if (p.Category == PartCategory.Ammo && p.Effects.Any(e => e.Op == "set" && e.Field.Name is nameof(WeaponDef.Damage) or nameof(WeaponDef.RangeM) or nameof(WeaponDef.Pellets)))
+            throw new WeaponFileException($"{where}: ammo changes the receiver's calibre relatively (\"mul\" or \"add\" on damage, rangeM; \"round\": {{\"pellets\": N}} to split the round), never \"set\"");
+        if (p.Round != null && p.Category != PartCategory.Ammo)
+            throw new WeaponFileException($"{where}: only ammo has a \"round\" block");
         if (p.Category == PartCategory.Barrel && p.Muzzles.Length == 0)
             throw new WeaponFileException($"{where}: a barrel needs \"muzzles\": where its shots come out, e.g. [[0, 0, -0.3]]");
         if (p.Category == PartCategory.Barrel && p.Muzzles.Length > 8)
@@ -458,6 +466,15 @@ public static class PartFile
                 s.SpreadMult = Range(WeaponFile.Number(v, $"{where}.spreadMult"), 0.2f, 2, $"{where}.spreadMult");
         }
         return s;
+    }
+
+    private static RoundInfo ReadRound(JsonElement e, string where)
+    {
+        var r = new RoundInfo();
+        foreach (var (k, v) in Props(e, where, "pellets"))
+            if (k == "pellets")
+                r.Pellets = (int)Range(WeaponFile.Int(v, $"{where}.pellets"), 1, 30, $"{where}.pellets (projectiles the round is split into, sharing its damage)");
+        return r;
     }
 
     private static SharedFeedInfo ReadShared(JsonElement e, string where)
