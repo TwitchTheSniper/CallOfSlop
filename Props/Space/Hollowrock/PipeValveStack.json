@@ -1,0 +1,492 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Pipe Valve Stack",
+ "category": "Space",
+ "description": "Three valves on a manifold with gauges and a status light: chest-high cover.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.4,
+    1.75,
+    0.8
+   ],
+   "offset": [
+    0.0,
+    0.875,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 320,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.05,
+    0.2
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.4,
+    0.25,
+    0.8
+   ],
+   "offset": [
+    0.0,
+    0.125,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.4,
+    0.4,
+    0.166
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.4,
+    0.4,
+    0.166
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    45.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.4,
+    0.4,
+    0.166
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.4,
+    0.4,
+    0.166
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    135.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    -0.45,
+    1.15,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    -0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    -0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    -0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    -0.45,
+    1.68,
+    0.0
+   ],
+   "color": "#e0b030"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    -0.45,
+    1.68,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e0b030"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.05
+   ],
+   "offset": [
+    -0.45,
+    1.26,
+    0.2
+   ],
+   "color": "#dcdcd0"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.68,
+    0.0
+   ],
+   "color": "#ff4a3a"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.68,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#ff4a3a"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.05
+   ],
+   "offset": [
+    0.0,
+    1.26,
+    0.2
+   ],
+   "color": "#dcdcd0"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.45,
+    1.15,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    45.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    0.9,
+    0.108
+   ],
+   "offset": [
+    0.45,
+    1.15,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    135.0,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.45,
+    1.68,
+    0.0
+   ],
+   "color": "#e0b030"
+  },
+  {
+   "size": [
+    0.42,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.45,
+    1.68,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#e0b030"
+  },
+  {
+   "size": [
+    0.22,
+    0.22,
+    0.05
+   ],
+   "offset": [
+    0.45,
+    1.26,
+    0.2
+   ],
+   "color": "#dcdcd0"
+  },
+  {
+   "size": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    2.0,
+    0.0
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "pulse",
+    "color": "#6fe0e8",
+    "glow": 1.2,
+    "period": 2.0
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Redvane Sign Bunker 1 1",
+ "category": "Redvane",
+ "description": "Tile 1 of 4 of the 'BUNKER 1' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.9,
+  0.8
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "redvane_sign_bunker_1_1.png",
+ "fadeDistance": 80
+}

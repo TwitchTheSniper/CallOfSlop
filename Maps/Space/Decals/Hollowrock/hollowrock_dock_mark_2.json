@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Dock Mark 2",
+ "category": "Hollowrock",
+ "description": "Dock 2's landing mark: a big ring, four ticks and the number.",
+ "author": "Call of Slop",
+ "size": 16,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "hollowrock_dock_mark_2.png",
+ "fadeDistance": 150
+}

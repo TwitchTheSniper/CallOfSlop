@@ -1,0 +1,14 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Redvane Dust Ring",
+ "category": "Redvane",
+ "description": "A ring of blown ochre dust where the air swirls (darkens the ground).",
+ "author": "Call of Slop",
+ "size": 4,
+ "rotation": "random",
+ "blend": "multiply",
+ "surfaces": "floor",
+ "image": "redvane_dust_ring.png",
+ "fadeDistance": 70,
+ "sizeVariation": 0.35
+}

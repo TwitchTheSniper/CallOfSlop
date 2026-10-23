@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Sign East Drift 3",
+ "category": "Hollowrock",
+ "description": "Tile 3 of 5 of the 'EAST DRIFT' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.76,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "hollowrock_sign_east_drift_3.png",
+ "fadeDistance": 80
+}

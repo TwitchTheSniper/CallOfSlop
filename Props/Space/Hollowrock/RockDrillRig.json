@@ -1,0 +1,177 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Rock Drill Rig",
+ "category": "Space",
+ "description": "A tracked rock drill: a cab, a leaning mast and a drill rod hammering at the ground.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.8,
+    1.5,
+    2.5
+   ],
+   "offset": [
+    0.0,
+    0.75,
+    0.0
+   ]
+  },
+  {
+   "size": [
+    1.0,
+    1.0,
+    1.5
+   ],
+   "offset": [
+    -0.5,
+    2.0,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    2.8,
+    0.5,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.25,
+    -0.95
+   ],
+   "color": "#34363a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.8,
+    0.5,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.25,
+    0.95
+   ],
+   "color": "#34363a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.4,
+    1.0,
+    1.9
+   ],
+   "offset": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "color": "#b0804a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.0,
+    0.9,
+    1.5
+   ],
+   "offset": [
+    -0.5,
+    1.95,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.9,
+    0.5,
+    1.3
+   ],
+   "offset": [
+    -0.5,
+    1.85,
+    0.0
+   ],
+   "color": "#2e4450"
+  },
+  {
+   "size": [
+    0.4,
+    3.4,
+    0.4
+   ],
+   "offset": [
+    1.1,
+    2.5,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    -15.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.16,
+    2.2,
+    0.16
+   ],
+   "offset": [
+    1.65,
+    1.9,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    -15.0
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "bob",
+    "axis": [
+     0.26,
+     0.97,
+     0
+    ],
+    "distance": 0.2,
+    "period": 0.5
+   }
+  },
+  {
+   "size": [
+    0.14,
+    0.14,
+    0.14
+   ],
+   "offset": [
+    -0.5,
+    1.67,
+    1.0
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 1.5,
+    "period": 1.0,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,253 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Atmos Sensor Pole",
+ "category": "Space",
+ "description": "An atmosphere sensor pole: an anemometer spinning on top, an instrument box and a solar panel.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.6,
+    4.4,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    2.2,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.6,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.1,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    4.2,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    2.3,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.4,
+    0.3,
+    0.25
+   ],
+   "offset": [
+    0.0,
+    2.15,
+    0.1
+   ],
+   "color": "#c9bda6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.6,
+    0.04,
+    0.4
+   ],
+   "offset": [
+    0.2,
+    3.02,
+    0.0
+   ],
+   "rotation": [
+    20.0,
+    0.0,
+    0.0
+   ],
+   "color": "#2e4450"
+  },
+  {
+   "size": [
+    0.6,
+    0.04,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    4.5,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.6,
+    0.04,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    4.5,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    0.3,
+    4.5,
+    -0.0
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    4.5,
+    -0.3
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    -0.3,
+    4.5,
+    -0.0
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.12,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    -0.0,
+    4.5,
+    0.3
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "pivot": [
+     0,
+     4.5,
+     0
+    ],
+    "rpm": 60
+   }
+  },
+  {
+   "size": [
+    0.08,
+    0.08,
+    0.08
+   ],
+   "offset": [
+    0.0,
+    4.34,
+    0.0
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 1.4,
+    "period": 3.0,
+    "duty": 0.2
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

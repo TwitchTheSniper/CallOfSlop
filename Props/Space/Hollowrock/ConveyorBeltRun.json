@@ -1,0 +1,756 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Conveyor Belt Run",
+ "category": "Space",
+ "description": "A 4 m conveyor belt on legs, rollers turning, ore riding it: waist-high cover. Long along X.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    4.0,
+    1.2,
+    1.3
+   ],
+   "offset": [
+    0.0,
+    0.6,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "size": [
+    4.0,
+    0.08,
+    1.1
+   ],
+   "offset": [
+    0.0,
+    0.99,
+    0.0
+   ],
+   "color": "#2b2b2e"
+  },
+  {
+   "size": [
+    4.0,
+    0.08,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    1.04,
+    -0.6
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    4.0,
+    0.08,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    1.04,
+    0.6
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    4.0,
+    0.15,
+    1.3
+   ],
+   "offset": [
+    0.0,
+    0.855,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    0.78,
+    0.12
+   ],
+   "offset": [
+    -1.6,
+    0.39,
+    -0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.78,
+    0.12
+   ],
+   "offset": [
+    -1.6,
+    0.39,
+    0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.78,
+    0.12
+   ],
+   "offset": [
+    1.6,
+    0.39,
+    -0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.78,
+    0.12
+   ],
+   "offset": [
+    1.6,
+    0.39,
+    0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -1.6,
+    1.1,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    135.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -0.8,
+    1.1,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    -0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    135.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     -0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.0,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.0,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.0,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    135.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.0,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.8,
+    1.1,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    0.8,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    135.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     0.8,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    1.6,
+    1.1,
+    0.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    45.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    90.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.16,
+    0.26,
+    1.2
+   ],
+   "offset": [
+    1.6,
+    1.1,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    0.0,
+    135.0
+   ],
+   "color": "#85888c",
+   "material": "metal",
+   "anim": {
+    "type": "spin",
+    "axis": "z",
+    "pivot": [
+     1.6,
+     1.1,
+     0
+    ],
+    "rpm": 36
+   }
+  },
+  {
+   "size": [
+    0.3,
+    0.24,
+    0.3
+   ],
+   "offset": [
+    -1.3,
+    1.16,
+    0.1
+   ],
+   "color": "#5a544e"
+  },
+  {
+   "size": [
+    0.26,
+    0.208,
+    0.26
+   ],
+   "offset": [
+    -0.5,
+    1.16,
+    -0.2
+   ],
+   "rotation": [
+    0.0,
+    30.0,
+    0.0
+   ],
+   "color": "#4a4642"
+  },
+  {
+   "size": [
+    0.34,
+    0.272,
+    0.34
+   ],
+   "offset": [
+    0.3,
+    1.16,
+    0.15
+   ],
+   "rotation": [
+    0.0,
+    60.0,
+    0.0
+   ],
+   "color": "#5a544e"
+  },
+  {
+   "size": [
+    0.28,
+    0.224,
+    0.28
+   ],
+   "offset": [
+    1.2,
+    1.16,
+    -0.1
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#4a4642"
+  }
+ ],
+ "author": "Call of Slop"
+}

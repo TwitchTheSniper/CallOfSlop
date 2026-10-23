@@ -1,0 +1,6092 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Hollowrock Refinery",
+ "description": "An asteroid ore refinery: tunnels and open pits, conveyor bridges over fall-kill chasms, a glowing smelter. Mind the drop.",
+ "author": "Call of Slop",
+ "order": 609,
+ "destructible": false,
+ "fallKill": -4.0,
+ "maxPlayers": 16,
+ "flagPool": "none",
+ "skybox": {
+  "preset": "night",
+  "zenith": "#04050a",
+  "horizon": "#15121a",
+  "ground": "#0b0a09",
+  "stars": 1.8,
+  "clouds": false,
+  "sun": {
+   "elevation": 14,
+   "azimuth": 295,
+   "color": "#ffd8b0",
+   "intensity": 1.0,
+   "size": 0.7,
+   "glow": 0.2
+  },
+  "moon": {
+   "direction": [
+    0.3,
+    0.35,
+    -0.9
+   ],
+   "size": 18,
+   "color": "#c9a080",
+   "intensity": 0.25
+  },
+  "ambient": 1.5,
+  "fog": {
+   "max": 0.5
+  }
+ },
+ "boundary": {
+  "shape": "smooth",
+  "points": [
+   [
+    -66,
+    -6
+   ],
+   [
+    -62,
+    -28
+   ],
+   [
+    -50,
+    -46
+   ],
+   [
+    -30,
+    -56
+   ],
+   [
+    -6,
+    -54
+   ],
+   [
+    14,
+    -48
+   ],
+   [
+    34,
+    -41
+   ],
+   [
+    54,
+    -31
+   ],
+   [
+    66,
+    6
+   ],
+   [
+    62,
+    28
+   ],
+   [
+    50,
+    46
+   ],
+   [
+    30,
+    56
+   ],
+   [
+    6,
+    54
+   ],
+   [
+    -14,
+    48
+   ],
+   [
+    -34,
+    41
+   ],
+   [
+    -54,
+    31
+   ]
+  ],
+  "noise": {
+   "amplitude": 2.5,
+   "scale": 14,
+   "seed": 9
+  },
+  "edge": {
+   "style": "cliff",
+   "height": 14,
+   "width": 7
+  },
+  "barrierHeight": 30
+ },
+ "terrain": {
+  "cell": 1,
+  "margin": 24,
+  "surface": {
+   "grass": "#55504a",
+   "dirt": "#6b5f52",
+   "rock": "#5a544e",
+   "sand": "#8a7a66",
+   "dirtSlope": 20,
+   "rockSlope": 36,
+   "variation": 0.1
+  },
+  "features": [
+   {
+    "type": "noise",
+    "amplitude": 0.8,
+    "scale": 16,
+    "octaves": 3,
+    "seed": 19
+   },
+   {
+    "type": "hill",
+    "x": 0,
+    "z": 0,
+    "radius": 70,
+    "height": 1.2
+   },
+   {
+    "type": "plateau",
+    "x": -44.0,
+    "z": -25.0,
+    "radius": 14.0,
+    "height": 5.0,
+    "edge": 3.5,
+    "material": "rock"
+   },
+   {
+    "type": "plateau",
+    "x": 44.0,
+    "z": 25.0,
+    "radius": 14.0,
+    "height": 5.0,
+    "edge": 3.5,
+    "material": "rock"
+   },
+   {
+    "type": "flatten",
+    "x": -34.0,
+    "z": 9.0,
+    "w": 22,
+    "d": 16,
+    "height": 2.5,
+    "edge": 4,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 34.0,
+    "z": -9.0,
+    "w": 22,
+    "d": 16,
+    "height": 2.5,
+    "edge": 4,
+    "material": "dirt"
+   },
+   {
+    "type": "plateau",
+    "x": -10.0,
+    "z": -40.0,
+    "w": 26,
+    "d": 12,
+    "height": 6.0,
+    "edge": 3,
+    "material": "rock"
+   },
+   {
+    "type": "plateau",
+    "x": 10.0,
+    "z": 40.0,
+    "w": 26,
+    "d": 12,
+    "height": 6.0,
+    "edge": 3,
+    "material": "rock"
+   },
+   {
+    "type": "ridge",
+    "points": [
+     [
+      -52,
+      -4
+     ],
+     [
+      -47,
+      0
+     ],
+     [
+      -38,
+      8
+     ],
+     [
+      -28,
+      14
+     ],
+     [
+      -20,
+      22
+     ],
+     [
+      -14,
+      30
+     ]
+    ],
+    "width": 14,
+    "height": 1.6
+   },
+   {
+    "type": "ridge",
+    "points": [
+     [
+      52,
+      4
+     ],
+     [
+      47,
+      0
+     ],
+     [
+      38,
+      -8
+     ],
+     [
+      28,
+      -14
+     ],
+     [
+      20,
+      -22
+     ],
+     [
+      14,
+      -30
+     ]
+    ],
+    "width": 14,
+    "height": 1.6
+   },
+   {
+    "type": "hill",
+    "x": -27,
+    "z": 16,
+    "radius": 9,
+    "height": 2.2,
+    "falloff": "dome"
+   },
+   {
+    "type": "hill",
+    "x": 27,
+    "z": -16,
+    "radius": 9,
+    "height": 2.2,
+    "falloff": "dome"
+   },
+   {
+    "type": "flatten",
+    "x": 0,
+    "z": 0,
+    "radius": 14,
+    "height": 0.6,
+    "edge": 4,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": -8.5,
+    "z": 16.5,
+    "radius": 5.5,
+    "height": 0.6,
+    "edge": 3,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 8.5,
+    "z": -16.5,
+    "radius": 5.5,
+    "height": 0.6,
+    "edge": 3,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": -33.0,
+    "z": -16.0,
+    "w": 6,
+    "d": 7,
+    "height": 0.4,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 33.0,
+    "z": 16.0,
+    "w": 6,
+    "d": 7,
+    "height": 0.4,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": -15.0,
+    "z": -16.0,
+    "w": 6,
+    "d": 7,
+    "height": 0.4,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 15.0,
+    "z": 16.0,
+    "w": 6,
+    "d": 7,
+    "height": 0.4,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -36,
+      -24,
+      5.0
+     ],
+     [
+      -32.5,
+      -16.5,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      36,
+      24,
+      5.0
+     ],
+     [
+      32.5,
+      16.5,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -40,
+      -15,
+      5.0
+     ],
+     [
+      -37,
+      -6,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      40,
+      15,
+      5.0
+     ],
+     [
+      37,
+      6,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -37,
+      -5,
+      0.4
+     ],
+     [
+      -35,
+      2,
+      2.5
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      37,
+      5,
+      0.4
+     ],
+     [
+      35,
+      -2,
+      2.5
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -36,
+      -32,
+      5.0
+     ],
+     [
+      -32,
+      -39,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      36,
+      32,
+      5.0
+     ],
+     [
+      32,
+      39,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -31,
+      -38,
+      0.4
+     ],
+     [
+      -21,
+      -40,
+      6.0
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      31,
+      38,
+      0.4
+     ],
+     [
+      21,
+      40,
+      6.0
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      4,
+      -36,
+      6.0
+     ],
+     [
+      12,
+      -28,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -4,
+      36,
+      6.0
+     ],
+     [
+      -12,
+      28,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -23,
+      8,
+      2.5
+     ],
+     [
+      -17,
+      6,
+      0.6
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      23,
+      -8,
+      2.5
+     ],
+     [
+      17,
+      -6,
+      0.6
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -25,
+      -4,
+      2.5
+     ],
+     [
+      -21,
+      -7,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      25,
+      4,
+      2.5
+     ],
+     [
+      21,
+      7,
+      0.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2.5,
+    "material": "dirt"
+   },
+   {
+    "type": "cave",
+    "points": [
+     [
+      -56,
+      -8
+     ],
+     [
+      -47,
+      0,
+      -3.5
+     ],
+     [
+      -38,
+      8,
+      -3.5
+     ],
+     [
+      -28,
+      14,
+      -3.5
+     ],
+     [
+      -20,
+      22,
+      -3.5
+     ],
+     [
+      -14,
+      30,
+      -3.0
+     ],
+     [
+      -8,
+      36
+     ]
+    ],
+    "width": 5.5,
+    "height": 3.2
+   },
+   {
+    "type": "cave",
+    "points": [
+     [
+      56,
+      8
+     ],
+     [
+      47,
+      0,
+      -3.5
+     ],
+     [
+      38,
+      -8,
+      -3.5
+     ],
+     [
+      28,
+      -14,
+      -3.5
+     ],
+     [
+      20,
+      -22,
+      -3.5
+     ],
+     [
+      14,
+      -30,
+      -3.0
+     ],
+     [
+      8,
+      -36
+     ]
+    ],
+    "width": 5.5,
+    "height": 3.2
+   },
+   {
+    "type": "cave",
+    "points": [
+     [
+      -27,
+      14,
+      -3.5
+     ]
+    ],
+    "width": 12,
+    "height": 5
+   },
+   {
+    "type": "cave",
+    "points": [
+     [
+      27,
+      -14,
+      -3.5
+     ]
+    ],
+    "width": 12,
+    "height": 5
+   },
+   {
+    "type": "hole",
+    "shape": "circle",
+    "x": -25,
+    "z": 17,
+    "radius": 1.5
+   },
+   {
+    "type": "hole",
+    "shape": "circle",
+    "x": 25,
+    "z": -17,
+    "radius": 1.5
+   },
+   {
+    "type": "hole",
+    "shape": "polygon",
+    "points": [
+     [
+      -27.6,
+      -25.5
+     ],
+     [
+      -25.0,
+      -25.8
+     ],
+     [
+      -21.4,
+      -24.4
+     ],
+     [
+      -19.8,
+      -21.0
+     ],
+     [
+      -20.6,
+      -17.0
+     ],
+     [
+      -19.4,
+      -13.0
+     ],
+     [
+      -20.2,
+      -8.8
+     ],
+     [
+      -22.8,
+      -6.4
+     ],
+     [
+      -26.2,
+      -6.6
+     ],
+     [
+      -28.4,
+      -10.0
+     ],
+     [
+      -27.0,
+      -14.0
+     ],
+     [
+      -28.6,
+      -18.0
+     ],
+     [
+      -28.0,
+      -22.0
+     ]
+    ],
+    "floor": -16.0
+   },
+   {
+    "type": "hole",
+    "shape": "polygon",
+    "points": [
+     [
+      27.6,
+      25.5
+     ],
+     [
+      25.0,
+      25.8
+     ],
+     [
+      21.4,
+      24.4
+     ],
+     [
+      19.8,
+      21.0
+     ],
+     [
+      20.6,
+      17.0
+     ],
+     [
+      19.4,
+      13.0
+     ],
+     [
+      20.2,
+      8.8
+     ],
+     [
+      22.8,
+      6.4
+     ],
+     [
+      26.2,
+      6.6
+     ],
+     [
+      28.4,
+      10.0
+     ],
+     [
+      27.0,
+      14.0
+     ],
+     [
+      28.6,
+      18.0
+     ],
+     [
+      28.0,
+      22.0
+     ]
+    ],
+    "floor": -16.0
+   },
+   {
+    "type": "hole",
+    "shape": "circle",
+    "x": 0,
+    "z": 0,
+    "radius": 5.5,
+    "depth": 1.4
+   },
+   {
+    "type": "hole",
+    "shape": "ellipse",
+    "x": -8,
+    "z": -19,
+    "radius": 2.6,
+    "radiusZ": 1.8,
+    "angle": 25,
+    "depth": 1.2
+   },
+   {
+    "type": "hole",
+    "shape": "ellipse",
+    "x": 8,
+    "z": 19,
+    "radius": 2.6,
+    "radiusZ": 1.8,
+    "angle": 25,
+    "depth": 1.2
+   }
+  ]
+ },
+ "teamSpawns": [
+  [
+   [
+    -38.0,
+    -34.0
+   ],
+   [
+    -33.0,
+    -28.0
+   ],
+   [
+    -33.5,
+    -20.5
+   ],
+   [
+    -39.0,
+    -14.5
+   ],
+   [
+    -47.0,
+    -14.0
+   ],
+   [
+    -55.0,
+    -19.0
+   ],
+   [
+    -57.0,
+    -26.0
+   ],
+   [
+    -45.0,
+    -37.0
+   ],
+   [
+    -27.0,
+    -33.0
+   ],
+   [
+    -44.0,
+    2.0
+   ],
+   [
+    -43.0,
+    14.0
+   ],
+   [
+    -29.0,
+    14.5
+   ]
+  ],
+  [
+   [
+    38.0,
+    34.0
+   ],
+   [
+    33.0,
+    28.0
+   ],
+   [
+    33.5,
+    20.5
+   ],
+   [
+    39.0,
+    14.5
+   ],
+   [
+    47.0,
+    14.0
+   ],
+   [
+    55.0,
+    19.0
+   ],
+   [
+    57.0,
+    26.0
+   ],
+   [
+    45.0,
+    37.0
+   ],
+   [
+    27.0,
+    33.0
+   ],
+   [
+    44.0,
+    -2.0
+   ],
+   [
+    43.0,
+    -14.0
+   ],
+   [
+    29.0,
+    -14.5
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0,
+   "z": 0,
+   "radius": 5
+  },
+  {
+   "x": 8.5,
+   "z": -16.5,
+   "radius": 4.5
+  },
+  {
+   "x": -8.5,
+   "z": 16.5,
+   "radius": 4.5
+  }
+ ],
+ "flags": [
+  [
+   -39.5,
+   -31
+  ],
+  [
+   39.5,
+   31
+  ]
+ ],
+ "ops": [
+  {
+   "op": "Building",
+   "cx": -48,
+   "cz": -29,
+   "w": 10,
+   "d": 10,
+   "stories": 1,
+   "wall": "#a89b84",
+   "floor": "#8c8780",
+   "doors": "E",
+   "roofAccess": true
+  },
+  {
+   "op": "Building",
+   "cx": 48,
+   "cz": 29,
+   "w": 10,
+   "d": 10,
+   "stories": 1,
+   "wall": "#a89b84",
+   "floor": "#8c8780",
+   "doors": "W",
+   "roofAccess": true
+  },
+  {
+   "op": "Prop",
+   "name": "Sensor Dish",
+   "x": -50.0,
+   "z": -31.0,
+   "y": 3.3,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sensor Dish",
+   "x": 50.0,
+   "z": 31.0,
+   "y": 3.3,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Antenna Mast",
+   "x": -46.0,
+   "z": -32.0,
+   "y": 3.3
+  },
+  {
+   "op": "Prop",
+   "name": "Antenna Mast",
+   "x": 46.0,
+   "z": 32.0,
+   "y": 3.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -46.0,
+   "z": -27.0,
+   "y": 3.3,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 46.0,
+   "z": 27.0,
+   "y": 3.3,
+   "yaw": 270.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Dock Mark 1",
+   "x": -38.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Dock Mark 2",
+   "x": 38.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Parked Cloud Skimmer",
+   "x": -38.0,
+   "z": -20.0,
+   "yaw": 160.0
+  },
+  {
+   "op": "Prop",
+   "name": "Parked Cloud Skimmer",
+   "x": 38.0,
+   "z": 20.0,
+   "yaw": 340.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": -33.5,
+   "z": -14.5
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": 33.5,
+   "z": 14.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": -42.5,
+   "z": -13.5
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": 42.5,
+   "z": 13.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": -32.0,
+   "z": -26.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": 32.0,
+   "z": 26.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": -44.0,
+   "z": -36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Docking Clamp",
+   "x": 44.0,
+   "z": 36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -35.0,
+   "z": -32.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 35.0,
+   "z": 32.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -31.0,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 31.0,
+   "z": 22.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -50.0,
+   "z": -16.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 50.0,
+   "z": 16.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -56.0,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 56.0,
+   "z": 22.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -53.0,
+   "z": -19.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 53.0,
+   "z": 19.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -55.0,
+   "z": -27.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 55.0,
+   "z": 27.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -40.0,
+   "z": -36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 40.0,
+   "z": 36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -52.0,
+   "z": -14.0,
+   "yaw": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 52.0,
+   "z": 14.0,
+   "yaw": 190.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -49.0,
+   "z": -14.5
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 49.0,
+   "z": 14.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -41.0,
+   "z": -32.5,
+   "yaw": 95.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 41.0,
+   "z": 32.5,
+   "yaw": 275.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -52.0,
+   "z": -36.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 52.0,
+   "z": 36.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Coupling",
+   "x": -40.0,
+   "z": -27.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Coupling",
+   "x": 40.0,
+   "z": 27.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": -56.0,
+   "z": -32.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": 56.0,
+   "z": 32.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -36.5,
+   "z": -29.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 36.5,
+   "z": 29.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -36.5,
+   "z": -31.8,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 36.5,
+   "z": 31.8,
+   "yaw": 270.0
+  },
+  {
+   "op": "Block",
+   "x0": -42.4,
+   "y0": 2.0,
+   "z0": -25.95,
+   "x1": -42.26,
+   "y1": 3.2,
+   "z1": -22.05,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -42.4,
+   "y0": 0.0,
+   "z0": -24.08,
+   "x1": -42.26,
+   "y1": 2.0,
+   "z1": -23.92,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 1 1",
+   "x": -41.66,
+   "z": -22.65,
+   "y": 2.6,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 1 2",
+   "x": -41.66,
+   "z": -23.55,
+   "y": 2.6,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 1 3",
+   "x": -41.66,
+   "z": -24.45,
+   "y": 2.6,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 1 4",
+   "x": -41.66,
+   "z": -25.35,
+   "y": 2.6,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": 42.26,
+   "y0": 2.0,
+   "z0": 22.05,
+   "x1": 42.4,
+   "y1": 3.2,
+   "z1": 25.95,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 42.26,
+   "y0": 0.0,
+   "z0": 23.92,
+   "x1": 42.4,
+   "y1": 2.0,
+   "z1": 24.08,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 2 1",
+   "x": 41.66,
+   "z": 22.65,
+   "y": 2.6,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 2 2",
+   "x": 41.66,
+   "z": 23.55,
+   "y": 2.6,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 2 3",
+   "x": 41.66,
+   "z": 24.45,
+   "y": 2.6,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Dock 2 4",
+   "x": 41.66,
+   "z": 25.35,
+   "y": 2.6,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Tessera Logo",
+   "x": -42.9,
+   "z": -31.5,
+   "y": 2.0,
+   "onto": "wall+x",
+   "size": 1.8,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Tessera Logo",
+   "x": 42.9,
+   "z": 31.5,
+   "y": 2.0,
+   "onto": "wall-x",
+   "size": 1.8,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -36.0,
+   "z": -24.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 36.0,
+   "z": 24.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -40.0,
+   "z": -15.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 40.0,
+   "z": 15.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0,
+   "size": 3
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Floor Cracks",
+    "Oil Drips",
+    "Footprints"
+   ],
+   "x0": -56.0,
+   "z0": -36.0,
+   "x1": -32.0,
+   "z1": -14.0,
+   "count": 16,
+   "seed": 31,
+   "gap": 2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Floor Cracks",
+    "Oil Drips",
+    "Footprints"
+   ],
+   "x0": 32.0,
+   "z0": 14.0,
+   "x1": 56.0,
+   "z1": 36.0,
+   "count": 16,
+   "seed": 32,
+   "gap": 2
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Station Supply Case",
+    "Steel Ammo Can",
+    "Toolbox",
+    "Cable Spool",
+    "Gas Cylinders"
+   ],
+   "x0": -56.0,
+   "z0": -37.0,
+   "x1": -31.0,
+   "z1": -13.0,
+   "count": 12,
+   "seed": 41,
+   "mirror": true
+  },
+  {
+   "op": "Spawn",
+   "x": -38.0,
+   "z": -34.0
+  },
+  {
+   "op": "Spawn",
+   "x": 38.0,
+   "z": 34.0
+  },
+  {
+   "op": "Spawn",
+   "x": -33.0,
+   "z": -28.0
+  },
+  {
+   "op": "Spawn",
+   "x": 33.0,
+   "z": 28.0
+  },
+  {
+   "op": "Spawn",
+   "x": -33.5,
+   "z": -20.5
+  },
+  {
+   "op": "Spawn",
+   "x": 33.5,
+   "z": 20.5
+  },
+  {
+   "op": "Spawn",
+   "x": -39.0,
+   "z": -14.5
+  },
+  {
+   "op": "Spawn",
+   "x": 39.0,
+   "z": 14.5
+  },
+  {
+   "op": "Spawn",
+   "x": -47.0,
+   "z": -14.0
+  },
+  {
+   "op": "Spawn",
+   "x": 47.0,
+   "z": 14.0
+  },
+  {
+   "op": "Spawn",
+   "x": -55.0,
+   "z": -19.0
+  },
+  {
+   "op": "Spawn",
+   "x": 55.0,
+   "z": 19.0
+  },
+  {
+   "op": "Spawn",
+   "x": -57.0,
+   "z": -26.0
+  },
+  {
+   "op": "Spawn",
+   "x": 57.0,
+   "z": 26.0
+  },
+  {
+   "op": "Spawn",
+   "x": -45.0,
+   "z": -37.0
+  },
+  {
+   "op": "Spawn",
+   "x": 45.0,
+   "z": 37.0
+  },
+  {
+   "op": "Spawn",
+   "x": -27.0,
+   "z": -33.0
+  },
+  {
+   "op": "Spawn",
+   "x": 27.0,
+   "z": 33.0
+  },
+  {
+   "op": "Spawn",
+   "x": -44.0,
+   "z": 2.0
+  },
+  {
+   "op": "Spawn",
+   "x": 44.0,
+   "z": -2.0
+  },
+  {
+   "op": "Spawn",
+   "x": -43.0,
+   "z": 14.0
+  },
+  {
+   "op": "Spawn",
+   "x": 43.0,
+   "z": -14.0
+  },
+  {
+   "op": "Spawn",
+   "x": -29.0,
+   "z": 14.5
+  },
+  {
+   "op": "Spawn",
+   "x": 29.0,
+   "z": -14.5
+  },
+  {
+   "op": "Block",
+   "x0": -32.0,
+   "y0": 0.45,
+   "z0": -17.6,
+   "x1": -16.0,
+   "y1": 0.75,
+   "z1": -14.4,
+   "color": "#8c8780",
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": 16.0,
+   "y0": 0.45,
+   "z0": 14.4,
+   "x1": 32.0,
+   "y1": 0.75,
+   "z1": 17.6,
+   "color": "#8c8780",
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": -32.0,
+   "y0": 0.75,
+   "z0": -16.5,
+   "x1": -16.0,
+   "y1": 0.77,
+   "z1": -15.5,
+   "color": "#85888c",
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": 16.0,
+   "y0": 0.75,
+   "z0": 15.5,
+   "x1": 32.0,
+   "y1": 0.77,
+   "z1": 16.5,
+   "color": "#85888c",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -24.0,
+   "z": -17.5,
+   "y": -0.25,
+   "color": "#6c6f73",
+   "anchor": "world",
+   "width": 16.4,
+   "height": 0.7,
+   "depth": 0.3,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 24.0,
+   "z": 17.5,
+   "y": -0.25,
+   "color": "#6c6f73",
+   "anchor": "world",
+   "width": 16.4,
+   "height": 0.7,
+   "depth": 0.3,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -24.0,
+   "z": -14.5,
+   "y": -0.25,
+   "color": "#6c6f73",
+   "anchor": "world",
+   "width": 16.4,
+   "height": 0.7,
+   "depth": 0.3,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 24.0,
+   "z": 14.5,
+   "y": -0.25,
+   "color": "#6c6f73",
+   "anchor": "world",
+   "width": 16.4,
+   "height": 0.7,
+   "depth": 0.3,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -28.0,
+   "z": -16.0,
+   "y": -2.75,
+   "color": "#34363a",
+   "anchor": "world",
+   "width": 0.5,
+   "height": 5.0,
+   "depth": 3.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 28.0,
+   "z": 16.0,
+   "y": -2.75,
+   "color": "#34363a",
+   "anchor": "world",
+   "width": 0.5,
+   "height": 5.0,
+   "depth": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -20.0,
+   "z": -16.0,
+   "y": -2.75,
+   "color": "#34363a",
+   "anchor": "world",
+   "width": 0.5,
+   "height": 5.0,
+   "depth": 3.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 20.0,
+   "z": 16.0,
+   "y": -2.75,
+   "color": "#34363a",
+   "anchor": "world",
+   "width": 0.5,
+   "height": 5.0,
+   "depth": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -31.7,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 31.7,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -29.5,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 29.5,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -27.3,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 27.3,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -25.1,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 25.1,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -22.9,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 22.9,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -20.7,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 20.7,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -18.5,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 18.5,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -16.3,
+   "z": -14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 16.3,
+   "z": 14.5,
+   "y": 0.75,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -24.0,
+   "z": -14.5,
+   "y": 1.77,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 16.0,
+   "height": 0.08,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 24.0,
+   "z": 14.5,
+   "y": 1.77,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 16.0,
+   "height": 0.08,
+   "depth": 0.08,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -24.0,
+   "z": -14.5,
+   "y": 1.3,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 16.0,
+   "height": 0.05,
+   "depth": 0.05
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 24.0,
+   "z": 14.5,
+   "y": 1.3,
+   "color": "#85888c",
+   "anchor": "world",
+   "width": 16.0,
+   "height": 0.05,
+   "depth": 0.05,
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -32.0,
+   "y0": 1.2,
+   "z0": -14.6,
+   "x1": -16.0,
+   "y1": 1.85,
+   "z1": -14.4,
+   "anchor": "world"
+  },
+  {
+   "op": "Collider",
+   "x0": 16.0,
+   "y0": 1.2,
+   "z0": 14.4,
+   "x1": 32.0,
+   "y1": 1.85,
+   "z1": 14.6,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -30.0,
+   "z": -18.4,
+   "y": 0.75,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 30.0,
+   "z": 18.4,
+   "y": 0.75,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -26.0,
+   "z": -18.4,
+   "y": 0.75,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 26.0,
+   "z": 18.4,
+   "y": 0.75,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -22.0,
+   "z": -18.4,
+   "y": 0.75,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 22.0,
+   "z": 18.4,
+   "y": 0.75,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -18.0,
+   "z": -18.4,
+   "y": 0.75,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 18.0,
+   "z": 18.4,
+   "y": 0.75,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -32.0,
+   "y0": 0.45,
+   "z0": -19.1,
+   "x1": -16.0,
+   "y1": 0.75,
+   "z1": -17.6,
+   "color": "#34363a",
+   "anchor": "world"
+  },
+  {
+   "op": "Block",
+   "x0": 16.0,
+   "y0": 0.45,
+   "z0": 17.6,
+   "x1": 32.0,
+   "y1": 0.75,
+   "z1": 19.1,
+   "color": "#34363a",
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -14.0,
+   "z": -18.4
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 14.0,
+   "z": 18.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -10.0,
+   "z": -18.4
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 10.0,
+   "z": 18.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Bin Hopper",
+   "x": -6.0,
+   "z": -18.4,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Bin Hopper",
+   "x": 6.0,
+   "z": 18.4,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -34.0,
+   "z": -18.4
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 34.0,
+   "z": 18.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": -29.0,
+   "z": -16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": 29.0,
+   "z": 16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 270.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": -24.0,
+   "z": -16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": 24.0,
+   "z": 16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 270.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": -19.0,
+   "z": -16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Lane Arrow",
+   "x": 19.0,
+   "z": 16.0,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "rotation": 270.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Rust Stain",
+    "Scorch Mark"
+   ],
+   "x0": -32.0,
+   "z0": -17.5,
+   "x1": -16.0,
+   "z1": -14.5,
+   "count": 6,
+   "seed": 51,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "gap": 1.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Rust Stain",
+    "Scorch Mark"
+   ],
+   "x0": 16.0,
+   "z0": 14.5,
+   "x1": 32.0,
+   "z1": 17.5,
+   "count": 6,
+   "seed": 52,
+   "y": 0.75,
+   "onto": "floor",
+   "anchor": "world",
+   "gap": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": -30.14,
+   "y0": 1.3,
+   "z0": -24.75,
+   "x1": -30.0,
+   "y1": 2.3,
+   "z1": -20.25,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 30.0,
+   "y0": 1.3,
+   "z0": 20.25,
+   "x1": 30.14,
+   "y1": 2.3,
+   "z1": 24.75,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -30.14,
+   "y0": 0.0,
+   "z0": -22.58,
+   "x1": -30.0,
+   "y1": 1.3,
+   "z1": -22.42,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 30.0,
+   "y0": 0.0,
+   "z0": 22.42,
+   "x1": 30.14,
+   "y1": 1.3,
+   "z1": 22.58,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 1",
+   "x": -30.74,
+   "z": -24.3,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 1",
+   "x": 30.74,
+   "z": 24.3,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 2",
+   "x": -30.74,
+   "z": -23.7,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 2",
+   "x": 30.74,
+   "z": 23.7,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 3",
+   "x": -30.74,
+   "z": -23.1,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 3",
+   "x": 30.74,
+   "z": 23.1,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 4",
+   "x": -30.74,
+   "z": -22.5,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 4",
+   "x": 30.74,
+   "z": 22.5,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 5",
+   "x": -30.74,
+   "z": -21.9,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 5",
+   "x": 30.74,
+   "z": 21.9,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 6",
+   "x": -30.74,
+   "z": -21.3,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 6",
+   "x": 30.74,
+   "z": 21.3,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 7",
+   "x": -30.74,
+   "z": -20.7,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 7",
+   "x": 30.74,
+   "z": 20.7,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": -17.8,
+   "y0": 1.3,
+   "z0": -10.75,
+   "x1": -17.66,
+   "y1": 2.3,
+   "z1": -6.25,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 17.66,
+   "y0": 1.3,
+   "z0": 6.25,
+   "x1": 17.8,
+   "y1": 2.3,
+   "z1": 10.75,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -17.8,
+   "y0": 0.0,
+   "z0": -8.58,
+   "x1": -17.66,
+   "y1": 1.3,
+   "z1": -8.42,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 17.66,
+   "y0": 0.0,
+   "z0": 8.42,
+   "x1": 17.8,
+   "y1": 1.3,
+   "z1": 8.58,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 1",
+   "x": -17.06,
+   "z": -6.7,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 1",
+   "x": 17.06,
+   "z": 6.7,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 2",
+   "x": -17.06,
+   "z": -7.3,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 2",
+   "x": 17.06,
+   "z": 7.3,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 3",
+   "x": -17.06,
+   "z": -7.9,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 3",
+   "x": 17.06,
+   "z": 7.9,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 4",
+   "x": -17.06,
+   "z": -8.5,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 4",
+   "x": 17.06,
+   "z": 8.5,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 5",
+   "x": -17.06,
+   "z": -9.1,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 5",
+   "x": 17.06,
+   "z": 9.1,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 6",
+   "x": -17.06,
+   "z": -9.7,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 6",
+   "x": 17.06,
+   "z": 9.7,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 7",
+   "x": -17.06,
+   "z": -10.3,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Mind The Chasm 7",
+   "x": 17.06,
+   "z": 10.3,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -30.2,
+   "z": -20.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 30.2,
+   "z": 20.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -30.2,
+   "z": -11.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 30.2,
+   "z": 11.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -17.8,
+   "z": -21.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 17.8,
+   "z": 21.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -17.8,
+   "z": -10.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 17.8,
+   "z": 10.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -31.0,
+   "z": -7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 31.0,
+   "z": 7.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -17.0,
+   "z": -27.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 17.0,
+   "z": 27.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -34.0,
+   "z": -16.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 34.0,
+   "z": 16.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -31.0,
+   "z": -16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": 31.0,
+   "z": 16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": -27.0,
+   "z": -16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": 27.0,
+   "z": 16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": -24.0,
+   "z": -16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": 24.0,
+   "z": 16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.0,
+   "z": -16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.0,
+   "z": 16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.0,
+   "z": -16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.0,
+   "z": 16.0,
+   "y": 0.77,
+   "anchor": "world"
+  },
+  {
+   "op": "Waypoint",
+   "x": -14.0,
+   "z": -16.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 14.0,
+   "z": 16.0,
+   "y": 0.0
+  },
+  {
+   "op": "Block",
+   "x0": -36.45,
+   "y0": 2.2,
+   "z0": 1.66,
+   "x1": -31.55,
+   "y1": 3.3,
+   "z1": 1.8,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 31.55,
+   "y0": 2.2,
+   "z0": -1.8,
+   "x1": 36.45,
+   "y1": 3.3,
+   "z1": -1.66,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -34.08,
+   "y0": 0.0,
+   "z0": 1.66,
+   "x1": -33.92,
+   "y1": 2.2,
+   "z1": 1.8,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 33.92,
+   "y0": 0.0,
+   "z0": -1.8,
+   "x1": 34.08,
+   "y1": 2.2,
+   "z1": -1.66,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 1",
+   "x": -35.917,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 1",
+   "x": 35.917,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 2",
+   "x": -35.15,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 2",
+   "x": 35.15,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 3",
+   "x": -34.383,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 3",
+   "x": 34.383,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 4",
+   "x": -33.617,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 4",
+   "x": 33.617,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 5",
+   "x": -32.85,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 5",
+   "x": 32.85,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 6",
+   "x": -32.083,
+   "z": 1.06,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.767,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Crusher Yard 6",
+   "x": 32.083,
+   "z": -1.06,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.767,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Crusher",
+   "x": -40.0,
+   "z": 11.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Crusher",
+   "x": 40.0,
+   "z": -11.0,
+   "yaw": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Crusher",
+   "x": -31.0,
+   "z": 11.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Crusher",
+   "x": 31.0,
+   "z": -11.0,
+   "yaw": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -39.5,
+   "z": 14.2
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 39.5,
+   "z": -14.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -35.5,
+   "z": 14.2
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 35.5,
+   "z": -14.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -31.5,
+   "z": 14.2
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 31.5,
+   "z": -14.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -27.5,
+   "z": 14.2
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 27.5,
+   "z": -14.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Bin Hopper",
+   "x": -24.0,
+   "z": 14.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Bin Hopper",
+   "x": 24.0,
+   "z": -14.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Dump Truck",
+   "x": -38.0,
+   "z": 5.5,
+   "yaw": 100.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Dump Truck",
+   "x": 38.0,
+   "z": -5.5,
+   "yaw": 280.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rock Drill Rig",
+   "x": -27.0,
+   "z": 5.0,
+   "yaw": 220.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rock Drill Rig",
+   "x": 27.0,
+   "z": -5.0,
+   "yaw": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -43.0,
+   "z": 15.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 43.0,
+   "z": -15.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -33.0,
+   "z": 7.5,
+   "yaw": 70.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 33.0,
+   "z": -7.5,
+   "yaw": 250.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -44.0,
+   "z": 5.0,
+   "yaw": 130.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 44.0,
+   "z": -5.0,
+   "yaw": 310.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -26.0,
+   "z": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 26.0,
+   "z": -10.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -43.5,
+   "z": 2.5
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 43.5,
+   "z": -2.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Storage Tank",
+   "x": -26.0,
+   "z": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Storage Tank",
+   "x": 26.0,
+   "z": -2.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -36.0,
+   "z": 16.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 36.0,
+   "z": -16.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blasting Warning Sign",
+   "x": -24.0,
+   "z": 7.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blasting Warning Sign",
+   "x": 24.0,
+   "z": -7.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": -29.5,
+   "z": 7.5
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": 29.5,
+   "z": -7.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Rusty Drum",
+    "Mine Timber Stack",
+    "Pallet",
+    "Small Crate",
+    "Cable Spool",
+    "Tyre"
+   ],
+   "x0": -45.0,
+   "z0": 1.0,
+   "x1": -23.0,
+   "z1": 17.0,
+   "count": 14,
+   "seed": 61,
+   "mirror": true
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Oil Stain",
+    "Hollowrock Ore Grit",
+    "Hollowrock Ore Grit",
+    "Rust Stain",
+    "Footprints",
+    "Gravel Scatter"
+   ],
+   "x0": -45.0,
+   "z0": 1.0,
+   "x1": -23.0,
+   "z1": 17.0,
+   "count": 22,
+   "seed": 71,
+   "gap": 1.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Oil Stain",
+    "Hollowrock Ore Grit",
+    "Hollowrock Ore Grit",
+    "Rust Stain",
+    "Footprints",
+    "Gravel Scatter"
+   ],
+   "x0": 23.0,
+   "z0": -17.0,
+   "x1": 45.0,
+   "z1": -1.0,
+   "count": 22,
+   "seed": 72,
+   "gap": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Slag Spill",
+   "x": -28.5,
+   "z": 6.0,
+   "y": 0.0,
+   "onto": "floor"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Slag Spill",
+   "x": 28.5,
+   "z": -6.0,
+   "y": 0.0,
+   "onto": "floor"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -25.0,
+   "z": 15.1
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 25.0,
+   "z": -15.1,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -25.0,
+   "z": 18.9
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 25.0,
+   "z": -18.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Hazard Ring",
+   "x": -25.0,
+   "z": 17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Hazard Ring",
+   "x": 25.0,
+   "z": -17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.6
+  },
+  {
+   "op": "Block",
+   "x0": -22.54,
+   "y0": 2.0,
+   "z0": -41.85,
+   "x1": -22.4,
+   "y1": 3.1,
+   "z1": -38.15,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 22.4,
+   "y0": 2.0,
+   "z0": 38.15,
+   "x1": 22.54,
+   "y1": 3.1,
+   "z1": 41.85,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -22.54,
+   "y0": 0.0,
+   "z0": -40.08,
+   "x1": -22.4,
+   "y1": 2.0,
+   "z1": -39.92,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 22.4,
+   "y0": 0.0,
+   "z0": 39.92,
+   "x1": 22.54,
+   "y1": 2.0,
+   "z1": 40.08,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 1",
+   "x": -23.14,
+   "z": -41.36,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 1",
+   "x": 23.14,
+   "z": 41.36,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 2",
+   "x": -23.14,
+   "z": -40.68,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 2",
+   "x": 23.14,
+   "z": 40.68,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 3",
+   "x": -23.14,
+   "z": -40.0,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 3",
+   "x": 23.14,
+   "z": 40.0,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 4",
+   "x": -23.14,
+   "z": -39.32,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 4",
+   "x": 23.14,
+   "z": 39.32,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 5",
+   "x": -23.14,
+   "z": -38.64,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Terrace 5",
+   "x": 23.14,
+   "z": 38.64,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -19.0,
+   "z": -34.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 19.0,
+   "z": 34.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -15.0,
+   "z": -34.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 15.0,
+   "z": 34.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -9.0,
+   "z": -34.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 9.0,
+   "z": 34.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -5.0,
+   "z": -34.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 5.0,
+   "z": 34.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -1.0,
+   "z": -34.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 1.0,
+   "z": 34.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": -11.0,
+   "z": -36.5
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": 11.0,
+   "z": 36.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": -3.0,
+   "z": -36.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": 3.0,
+   "z": 36.5,
+   "yaw": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -20.0,
+   "z": -44.5
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 20.0,
+   "z": 44.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sensor Dish",
+   "x": -1.0,
+   "z": -44.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sensor Dish",
+   "x": 1.0,
+   "z": 44.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -7.0,
+   "z": -44.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 7.0,
+   "z": 44.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -15.0,
+   "z": -42.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 15.0,
+   "z": 42.0,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": -1.5,
+   "z": -39.5
+  },
+  {
+   "op": "Prop",
+   "name": "Stacked Ammo Crates",
+   "x": 1.5,
+   "z": 39.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -22.0,
+   "z": -35.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 22.0,
+   "z": 35.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Steel Ammo Can",
+    "Station Supply Case",
+    "Sandbag Pile",
+    "Spent Shell Casings",
+    "Oil Drum"
+   ],
+   "x0": -22.0,
+   "z0": -45.0,
+   "x1": 2.0,
+   "z1": -35.0,
+   "count": 8,
+   "seed": 81,
+   "mirror": true
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Footprints",
+    "Rust Stain",
+    "Hollowrock Ore Grit",
+    "Floor Cracks"
+   ],
+   "x0": -22.0,
+   "z0": -45.0,
+   "x1": 2.0,
+   "z1": -35.0,
+   "count": 10,
+   "seed": 91,
+   "gap": 2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Footprints",
+    "Rust Stain",
+    "Hollowrock Ore Grit",
+    "Floor Cracks"
+   ],
+   "x0": -2.0,
+   "z0": 35.0,
+   "x1": 22.0,
+   "z1": 45.0,
+   "count": 10,
+   "seed": 92,
+   "gap": 2
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.0,
+   "z": -40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.0,
+   "z": 40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -14.0,
+   "z": -40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 14.0,
+   "z": 40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -6.0,
+   "z": -40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 6.0,
+   "z": 40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 1.0,
+   "z": -40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -1.0,
+   "z": 40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -31.0,
+   "z": -38.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 31.0,
+   "z": 38.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -26.0,
+   "z": -39.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 26.0,
+   "z": 39.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.0,
+   "z": -40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.0,
+   "z": 40.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -32.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 32.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 12.0,
+   "z": -28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.0,
+   "z": 28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -36.0,
+   "z": -32.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 36.0,
+   "z": 32.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -34.0,
+   "z": -35.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 34.0,
+   "z": 35.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -32.0,
+   "z": -39.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 32.0,
+   "z": 39.0,
+   "y": 0.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Glow Floor",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 10
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Hazard Ring",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 14
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 0.0,
+   "color": "#6c6f73",
+   "width": 5.0,
+   "depth": 5.0,
+   "height": 15,
+   "segments": 20,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 0.0,
+   "color": "#6c6f73",
+   "width": 5.0,
+   "depth": 5.0,
+   "height": 15,
+   "segments": 20,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 15.0,
+   "color": "#34363a",
+   "width": 3.6,
+   "depth": 3.6,
+   "height": 3,
+   "segments": 20
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 15.0,
+   "color": "#34363a",
+   "width": 3.6,
+   "depth": 3.6,
+   "height": 3,
+   "segments": 20,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 2.2,
+   "color": "#ff6a1e",
+   "radius": 2.55,
+   "inner": 0.18
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 2.2,
+   "color": "#ff6a1e",
+   "radius": 2.55,
+   "inner": 0.18,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 6.0,
+   "color": "#7a5238",
+   "radius": 2.6,
+   "inner": 0.14
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 6.0,
+   "color": "#7a5238",
+   "radius": 2.6,
+   "inner": 0.14,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 11.0,
+   "color": "#7a5238",
+   "radius": 2.6,
+   "inner": 0.14
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 11.0,
+   "color": "#7a5238",
+   "radius": 2.6,
+   "inner": 0.14,
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": 5.6,
+   "y0": 0.0,
+   "z0": -9.4,
+   "x1": 9.4,
+   "y1": 18.0,
+   "z1": -5.6
+  },
+  {
+   "op": "Collider",
+   "x0": -9.4,
+   "y0": 0.0,
+   "z0": 5.6,
+   "x1": -5.6,
+   "y1": 18.0,
+   "z1": 9.4
+  },
+  {
+   "op": "Collider",
+   "x0": 5.1,
+   "y0": 0.0,
+   "z0": -8.5,
+   "x1": 9.9,
+   "y1": 18.0,
+   "z1": -6.5
+  },
+  {
+   "op": "Collider",
+   "x0": -9.9,
+   "y0": 0.0,
+   "z0": 6.5,
+   "x1": -5.1,
+   "y1": 18.0,
+   "z1": 8.5
+  },
+  {
+   "op": "Collider",
+   "x0": 6.5,
+   "y0": 0.0,
+   "z0": -9.9,
+   "x1": 8.5,
+   "y1": 18.0,
+   "z1": -5.1
+  },
+  {
+   "op": "Collider",
+   "x0": -8.5,
+   "y0": 0.0,
+   "z0": 5.1,
+   "x1": -6.5,
+   "y1": 18.0,
+   "z1": 9.9
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 4.85,
+   "z": -7.5,
+   "y": 0.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": -4.85,
+   "z": 7.5,
+   "y": 0.6,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 7.5,
+   "z": -10.1,
+   "y": 2.6
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -7.5,
+   "z": 10.1,
+   "y": 2.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 10.4,
+   "z": -7.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -10.4,
+   "z": 7.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": 9.6,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": 10.4,
+   "y1": 9.0,
+   "z1": 0.4,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": -9.6,
+   "y1": 9.0,
+   "z1": 0.4,
+   "color": "#34363a"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 8.6,
+   "color": "#6c6f73",
+   "width": 20.8,
+   "height": 0.5,
+   "depth": 0.5,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 2.0,
+   "z": 0.0,
+   "y": 6.2,
+   "color": "#34363a",
+   "width": 0.08,
+   "height": 2.4,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 2.0,
+   "z": 0.0,
+   "y": 5.0,
+   "color": "#6c6f73",
+   "width": 1.6,
+   "depth": 1.6,
+   "height": 1.2,
+   "segments": 12
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": 4.0,
+   "z": 6.5
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": -4.0,
+   "z": -6.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": 6.5,
+   "z": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": -6.5,
+   "z": -3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": -3.0,
+   "z": 7.5
+  },
+  {
+   "op": "Prop",
+   "name": "Slag Pot",
+   "x": 3.0,
+   "z": -7.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": -8.0,
+   "z": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": 8.0,
+   "z": 3.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -9.5,
+   "z": 3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 9.5,
+   "z": -3.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -6.0,
+   "z": 8.5
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 6.0,
+   "z": -8.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -11.0,
+   "z": -1.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 11.0,
+   "z": 1.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reactor Control Desk",
+   "x": 11.0,
+   "z": 4.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reactor Control Desk",
+   "x": -11.0,
+   "z": -4.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Volatile Gas Canister Rack",
+   "x": 9.0,
+   "z": 9.0
+  },
+  {
+   "op": "Prop",
+   "name": "Volatile Gas Canister Rack",
+   "x": -9.0,
+   "z": -9.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -1.0,
+   "z": -11.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 1.0,
+   "z": 11.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": -11.5,
+   "z": -8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Conveyor Belt Run",
+   "x": 11.5,
+   "z": 8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -10.05,
+   "y0": 2.2,
+   "z0": -12.74,
+   "x1": -6.35,
+   "y1": 3.3,
+   "z1": -12.6,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 6.35,
+   "y0": 2.2,
+   "z0": 12.6,
+   "x1": 10.05,
+   "y1": 3.3,
+   "z1": 12.74,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -8.28,
+   "y0": 0.0,
+   "z0": -12.74,
+   "x1": -8.12,
+   "y1": 2.2,
+   "z1": -12.6,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 8.12,
+   "y0": 0.0,
+   "z0": 12.6,
+   "x1": 8.28,
+   "y1": 2.2,
+   "z1": 12.74,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 1",
+   "x": -9.56,
+   "z": -13.34,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 1",
+   "x": 9.56,
+   "z": 13.34,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 2",
+   "x": -8.88,
+   "z": -13.34,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 2",
+   "x": 8.88,
+   "z": 13.34,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 3",
+   "x": -8.2,
+   "z": -13.34,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 3",
+   "x": 8.2,
+   "z": 13.34,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 4",
+   "x": -7.52,
+   "z": -13.34,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 4",
+   "x": 7.52,
+   "z": 13.34,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 5",
+   "x": -6.84,
+   "z": -13.34,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign Smelter 5",
+   "x": 6.84,
+   "z": 13.34,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Slag Spill",
+    "Scorch Mark",
+    "Hollowrock Ore Grit",
+    "Oil Stain",
+    "Rust Stain",
+    "Soot Plume"
+   ],
+   "x0": -13.0,
+   "z0": -13.0,
+   "x1": 13.0,
+   "z1": 13.0,
+   "count": 18,
+   "seed": 101,
+   "gap": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Scorch Mark",
+   "x": 7.5,
+   "z": -7.5,
+   "y": 2.2,
+   "onto": "wall-x",
+   "size": 2.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Scorch Mark",
+   "x": -7.5,
+   "z": 7.5,
+   "y": 2.2,
+   "onto": "wall+x",
+   "size": 2.5
+  },
+  {
+   "op": "Block",
+   "x0": -53.55,
+   "y0": 2.2,
+   "z0": -11.5,
+   "x1": -49.45,
+   "y1": 3.3,
+   "z1": -11.36,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": -51.58,
+   "y0": 0.0,
+   "z0": -11.5,
+   "x1": -51.42,
+   "y1": 2.2,
+   "z1": -11.36,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign West Drift 1",
+   "x": -53.02,
+   "z": -10.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign West Drift 2",
+   "x": -52.26,
+   "z": -10.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign West Drift 3",
+   "x": -51.5,
+   "z": -10.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign West Drift 4",
+   "x": -50.74,
+   "z": -10.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign West Drift 5",
+   "x": -49.98,
+   "z": -10.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": 49.45,
+   "y0": 2.2,
+   "z0": 11.36,
+   "x1": 53.55,
+   "y1": 3.3,
+   "z1": 11.5,
+   "color": "#34363a"
+  },
+  {
+   "op": "Block",
+   "x0": 51.42,
+   "y0": 0.0,
+   "z0": 11.36,
+   "x1": 51.58,
+   "y1": 2.2,
+   "z1": 11.5,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign East Drift 1",
+   "x": 49.98,
+   "z": 10.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign East Drift 2",
+   "x": 50.74,
+   "z": 10.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign East Drift 3",
+   "x": 51.5,
+   "z": 10.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign East Drift 4",
+   "x": 52.26,
+   "z": 10.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Sign East Drift 5",
+   "x": 53.02,
+   "z": 10.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -53.5,
+   "z": -5.5,
+   "yaw": 48.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 53.5,
+   "z": 5.5,
+   "yaw": 228.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -9.5,
+   "z": 33.5,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 9.5,
+   "z": -33.5,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -45.0,
+   "z": 1.8,
+   "y": -3.5,
+   "yaw": 48.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 45.0,
+   "z": -1.8,
+   "y": -3.5,
+   "yaw": 228.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -40.0,
+   "z": 6.2,
+   "y": -3.5,
+   "yaw": 40.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 40.0,
+   "z": -6.2,
+   "y": -3.5,
+   "yaw": 220.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -33.0,
+   "z": 11.0,
+   "y": -3.5,
+   "yaw": 30.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 33.0,
+   "z": -11.0,
+   "y": -3.5,
+   "yaw": 210.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -23.0,
+   "z": 19.0,
+   "y": -3.5,
+   "yaw": 45.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 23.0,
+   "z": -19.0,
+   "y": -3.5,
+   "yaw": 225.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": -17.0,
+   "z": 26.0,
+   "y": -3.5,
+   "yaw": 55.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Tunnel Timber Frame",
+   "x": 17.0,
+   "z": -26.0,
+   "y": -3.5,
+   "yaw": 235.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -47.0,
+   "z": 0.0,
+   "y": -0.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 47.0,
+   "z": 0.0,
+   "y": -0.9,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -38.0,
+   "z": 8.0,
+   "y": -0.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 38.0,
+   "z": -8.0,
+   "y": -0.9,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -20.0,
+   "z": 22.0,
+   "y": -0.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 20.0,
+   "z": -22.0,
+   "y": -0.9,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -14.0,
+   "z": 30.0,
+   "y": -0.9,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 14.0,
+   "z": -30.0,
+   "y": -0.9,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -49.0,
+   "z": -3.0,
+   "y": -3.5,
+   "yaw": 48.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 49.0,
+   "z": 3.0,
+   "y": -3.5,
+   "yaw": 228.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -43.0,
+   "z": 3.5,
+   "y": -3.5,
+   "yaw": 48.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 43.0,
+   "z": -3.5,
+   "y": -3.5,
+   "yaw": 228.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -36.0,
+   "z": 9.5,
+   "y": -3.5,
+   "yaw": 36.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 36.0,
+   "z": -9.5,
+   "y": -3.5,
+   "yaw": 216.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -30.0,
+   "z": 13.0,
+   "y": -3.5,
+   "yaw": 36.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 30.0,
+   "z": -13.0,
+   "y": -3.5,
+   "yaw": 216.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -22.0,
+   "z": 20.0,
+   "y": -3.5,
+   "yaw": 50.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 22.0,
+   "z": -20.0,
+   "y": -3.5,
+   "yaw": 230.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -17.0,
+   "z": 26.0,
+   "y": -3.5,
+   "yaw": 55.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 17.0,
+   "z": -26.0,
+   "y": -3.5,
+   "yaw": 235.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": -12.0,
+   "z": 33.0,
+   "y": -3.5,
+   "yaw": 45.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Rail Section",
+   "x": 12.0,
+   "z": -33.0,
+   "y": -3.5,
+   "yaw": 225.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Mine Cart",
+   "x": -30.0,
+   "z": 12.5,
+   "y": -3.5,
+   "yaw": 36.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Mine Cart",
+   "x": 30.0,
+   "z": -12.5,
+   "y": -3.5,
+   "yaw": 216.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Mine Cart",
+   "x": -24.0,
+   "z": 11.5,
+   "y": -3.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Mine Cart",
+   "x": 24.0,
+   "z": -11.5,
+   "y": -3.5,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -28.0,
+   "z": 18.5,
+   "y": -3.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 28.0,
+   "z": -18.5,
+   "y": -3.5,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Timber Stack",
+   "x": -31.0,
+   "z": 16.5,
+   "y": -3.5,
+   "yaw": 20.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Timber Stack",
+   "x": 31.0,
+   "z": -16.5,
+   "y": -3.5,
+   "yaw": 200.0,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -27.0,
+   "z": 14.0,
+   "y": 0.7,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 27.0,
+   "z": -14.0,
+   "y": 0.7,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blasting Explosives Crate",
+   "x": -24.0,
+   "z": 16.5,
+   "y": -3.5,
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Blasting Explosives Crate",
+   "x": 24.0,
+   "z": -16.5,
+   "y": -3.5,
+   "anchor": "world",
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": -47.0,
+   "z": 0.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": 47.0,
+   "z": 0.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": -38.0,
+   "z": 8.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": 38.0,
+   "z": -8.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": -27.0,
+   "z": 14.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": 27.0,
+   "z": -14.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": -20.0,
+   "z": 22.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": 20.0,
+   "z": -22.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": -14.0,
+   "z": 30.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Decal",
+   "decal": "Hollowrock Ore Grit",
+   "x": 14.0,
+   "z": -30.0,
+   "y": -3.5,
+   "onto": "floor",
+   "anchor": "world"
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -16.0,
+   "z": 17.5,
+   "yaw": 80.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 16.0,
+   "z": -17.5,
+   "yaw": 260.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -1.5,
+   "z": 18.5
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 1.5,
+   "z": -18.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -7.5,
+   "z": 23.5,
+   "yaw": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 7.5,
+   "z": -23.5,
+   "yaw": 220.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -10.5,
+   "z": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 10.5,
+   "z": -10.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -4.5,
+   "z": 11.5,
+   "yaw": 150.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 4.5,
+   "z": -11.5,
+   "yaw": 330.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -15.0,
+   "z": 11.5
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 15.0,
+   "z": -11.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rock Drill Rig",
+   "x": -13.0,
+   "z": -22.5,
+   "yaw": 300.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rock Drill Rig",
+   "x": 13.0,
+   "z": 22.5,
+   "yaw": 120.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -4.5,
+   "z": -22.0,
+   "yaw": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 4.5,
+   "z": 22.0,
+   "yaw": 190.0
+  },
+  {
+   "op": "Rocks",
+   "x": -16.0,
+   "z": -31.0,
+   "size": 2.4,
+   "color": "#48433e",
+   "seed": 3
+  },
+  {
+   "op": "Rocks",
+   "x": 16.0,
+   "z": 31.0,
+   "size": 2.4,
+   "color": "#48433e",
+   "seed": 10
+  },
+  {
+   "op": "Rocks",
+   "x": -14.0,
+   "z": 12.0,
+   "size": 2.0,
+   "color": "#48433e",
+   "seed": 5
+  },
+  {
+   "op": "Rocks",
+   "x": 14.0,
+   "z": -12.0,
+   "size": 2.0,
+   "color": "#48433e",
+   "seed": 12
+  },
+  {
+   "op": "Rocks",
+   "x": 14.0,
+   "z": -30.0,
+   "size": 1.8,
+   "color": "#48433e",
+   "seed": 9
+  },
+  {
+   "op": "Rocks",
+   "x": -14.0,
+   "z": 30.0,
+   "size": 1.8,
+   "color": "#48433e",
+   "seed": 16
+  },
+  {
+   "op": "Rocks",
+   "x": -40.0,
+   "z": -42.0,
+   "size": 2.8,
+   "color": "#48433e",
+   "seed": 11
+  },
+  {
+   "op": "Rocks",
+   "x": 40.0,
+   "z": 42.0,
+   "size": 2.8,
+   "color": "#48433e",
+   "seed": 18
+  },
+  {
+   "op": "Rocks",
+   "x": -58.0,
+   "z": -2.0,
+   "size": 2.6,
+   "color": "#48433e",
+   "seed": 13
+  },
+  {
+   "op": "Rocks",
+   "x": 58.0,
+   "z": 2.0,
+   "size": 2.6,
+   "color": "#48433e",
+   "seed": 20
+  },
+  {
+   "op": "Rocks",
+   "x": -20.0,
+   "z": 26.0,
+   "size": 2.2,
+   "color": "#48433e",
+   "seed": 15
+  },
+  {
+   "op": "Rocks",
+   "x": 20.0,
+   "z": -26.0,
+   "size": 2.2,
+   "color": "#48433e",
+   "seed": 22
+  },
+  {
+   "op": "Rocks",
+   "x": -6.0,
+   "z": 36.0,
+   "size": 3.0,
+   "color": "#48433e",
+   "seed": 17
+  },
+  {
+   "op": "Rocks",
+   "x": 6.0,
+   "z": -36.0,
+   "size": 3.0,
+   "color": "#48433e",
+   "seed": 24
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -14.0,
+   "z": -8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 14.0,
+   "z": 8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -17.0,
+   "z": -3.0,
+   "yaw": 60.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 17.0,
+   "z": 3.0,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -19.0,
+   "z": -28.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 19.0,
+   "z": 28.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -16.0,
+   "z": -26.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 16.0,
+   "z": 26.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": -10.0,
+   "z": -27.0,
+   "yaw": 70.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": 10.0,
+   "z": 27.0,
+   "yaw": 250.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -28.0,
+   "z": -29.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 28.0,
+   "z": 29.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 2.0,
+   "z": -24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -2.0,
+   "z": 24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -19.5,
+   "z": -31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 19.5,
+   "z": 31.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -3.0,
+   "z": 38.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 3.0,
+   "z": -38.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -12.0,
+   "z": 40.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 12.0,
+   "z": -40.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 2.0,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -2.0,
+   "z": -30.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 8.0,
+   "z": 24.0,
+   "yaw": 170.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -8.0,
+   "z": -24.0,
+   "yaw": 350.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -4.0,
+   "z": 26.0,
+   "yaw": 50.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 4.0,
+   "z": -26.0,
+   "yaw": 230.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": -39.0,
+   "z": -1.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ore Heap",
+   "x": 39.0,
+   "z": 1.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -30.0,
+   "z": -8.0,
+   "yaw": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 30.0,
+   "z": 8.0,
+   "yaw": 220.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -47.0,
+   "z": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 47.0,
+   "z": -7.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -41.0,
+   "z": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 41.0,
+   "z": -12.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -44.0,
+   "z": 17.0,
+   "yaw": 100.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 44.0,
+   "z": -17.0,
+   "yaw": 280.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Tyre Tracks",
+    "Footprints",
+    "Gravel Scatter",
+    "Floor Cracks",
+    "Rubble Dust"
+   ],
+   "x0": -22.0,
+   "z0": -34.0,
+   "x1": 14.0,
+   "z1": -4.0,
+   "count": 28,
+   "seed": 111,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Tyre Tracks",
+    "Footprints",
+    "Gravel Scatter",
+    "Floor Cracks",
+    "Rubble Dust"
+   ],
+   "x0": -14.0,
+   "z0": 4.0,
+   "x1": 22.0,
+   "z1": 34.0,
+   "count": 28,
+   "seed": 112,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Footprints",
+    "Gravel Scatter",
+    "Rubble Dust"
+   ],
+   "x0": -48.0,
+   "z0": -10.0,
+   "x1": -20.0,
+   "z1": 30.0,
+   "count": 22,
+   "seed": 121,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Hollowrock Ore Grit",
+    "Footprints",
+    "Gravel Scatter",
+    "Rubble Dust"
+   ],
+   "x0": 20.0,
+   "z0": -30.0,
+   "x1": 48.0,
+   "z1": 10.0,
+   "count": 22,
+   "seed": 122,
+   "gap": 2.5
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Rubble Pile",
+    "Rubble",
+    "Loose Bricks",
+    "Cinder Blocks",
+    "Oil Drum",
+    "Station Supply Case"
+   ],
+   "x0": -22.0,
+   "z0": -34.0,
+   "x1": 14.0,
+   "z1": -4.0,
+   "count": 14,
+   "seed": 131,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Rubble",
+    "Rubble Pile",
+    "Oil Drum",
+    "Pipe Stack",
+    "Cable Spool"
+   ],
+   "x0": -48.0,
+   "z0": -12.0,
+   "x1": -20.0,
+   "z1": 30.0,
+   "count": 10,
+   "seed": 141,
+   "mirror": true
+  },
+  {
+   "op": "Waypoint",
+   "x": -36.0,
+   "z": -24.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 36.0,
+   "z": 24.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -34.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 34.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -32.5,
+   "z": -16.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 32.5,
+   "z": 16.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -40.0,
+   "z": -15.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 40.0,
+   "z": 15.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -38.5,
+   "z": -10.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 38.5,
+   "z": 10.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -37.0,
+   "z": -6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 37.0,
+   "z": 6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -36.0,
+   "z": -1.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 36.0,
+   "z": 1.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -35.0,
+   "z": 2.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 35.0,
+   "z": -2.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.0,
+   "z": 8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.0,
+   "z": -8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -20.0,
+   "z": 7.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 20.0,
+   "z": -7.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.0,
+   "z": 6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.0,
+   "z": -6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -25.0,
+   "z": -4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 25.0,
+   "z": 4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.0,
+   "z": -5.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.0,
+   "z": 5.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.0,
+   "z": -7.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.0,
+   "z": 7.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -56.0,
+   "z": -8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 56.0,
+   "z": 8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -52.0,
+   "z": -4.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 52.0,
+   "z": 4.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.0,
+   "z": 33.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.0,
+   "z": -33.0,
+   "y": 0.0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ]
+}

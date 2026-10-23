@@ -328,6 +328,7 @@ public static partial class SelfTest
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+        Section("Space: refinery and processor", CheckSpaceIndustrial); // SelfTestSpaceIndustrial.cs: Space 09 Hollowrock Refinery and 10 Redvane Processor (shaped outlines, symmetric spawns, dressing, fair walks, a short bot match, the fall kill)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
     }
