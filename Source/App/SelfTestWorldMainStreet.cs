@@ -131,35 +131,7 @@ public static partial class SelfTest
             var diff = (blue - red) / MathF.Max(blue, red);
             walks.Add($"{name} {blue:0}/{red:0} m ({diff * 100:+0.0;-0.0;0.0}%)");
             if (!float.IsFinite(blue + red) || MathF.Abs(diff) > 0.1f)
-            {
                 Fail($"{m.Name}: {name} is a {blue:0} m walk for Blue and {red:0} m for Red (more than 10% apart)");
-                // TEMP diagnostics: the routes from each team's first spawn.
-                var goal = name.StartsWith("hill ") ? o.Hills[int.Parse(name[5..]) - 1].Center : o.Flags[0];
-                for (var team = 0; team < 2; team++)
-                {
-                    var n = search.Find(g, g.Nearest(o.TeamSpawns[team][0], needSight: false), g.Nearest(goal, needSight: false), path, maxExpand: 40000);
-                    var parts = new List<string>();
-                    for (var k = 0; k < n; k++)
-                    {
-                        var q = g.Nodes[path[k]];
-                        var f = 0;
-                        if (k + 1 < n)
-                            for (var e = g.EdgeStart[path[k]]; e < g.EdgeStart[path[k] + 1]; e++)
-                                if (g.EdgeTo[e] == path[k + 1])
-                                    f = g.EdgeFlags[e];
-                        parts.Add(FormattableString.Invariant($"({q.X:0.0},{q.Y:0.0},{q.Z:0.0})f{f}"));
-                    }
-                    Fail($"  route {team}: {string.Join(" ", parts)}");
-                }
-                Fail("  rejected: " + string.Join(" ", NavGraph.DebugRejects));
-                foreach (var wx in new[] { 7.6f, 14.6f, 21.5f, 24.0f })
-                {
-                    var wp = new Vector3(wx, m.GroundHeight(wx, -21.25f), -21.25f);
-                    var k = g.Nearest(wp, needSight: false);
-                    var es = k < 0 ? "-" : string.Join(" ", Enumerable.Range(g.EdgeStart[k], g.EdgeStart[k + 1] - g.EdgeStart[k]).Select(e => FormattableString.Invariant($"({g.Nodes[g.EdgeTo[e]].X:0.0},{g.Nodes[g.EdgeTo[e]].Y:0.0},{g.Nodes[g.EdgeTo[e]].Z:0.0})f{g.EdgeFlags[e]}")));
-                    Fail(FormattableString.Invariant($"  squeeze ({wx:0.0}, -21.25): waypoint listed {m.Waypoints.Any(w => MathF.Abs(w.X - wx) < 0.3f && MathF.Abs(w.Z + 21.25f) < 0.3f)}, nearest node {(k < 0 ? "none" : $"({g.Nodes[k].X:0.0},{g.Nodes[k].Y:0.0},{g.Nodes[k].Z:0.0}) main {g.MainNodes.Contains(k)}")} edges {es}"));
-                }
-            }
         }
         for (var i = 0; i < o.Hills.Count; i++)
             Fair($"hill {i + 1}", Walk(0, o.Hills[i].Center), Walk(1, o.Hills[i].Center));

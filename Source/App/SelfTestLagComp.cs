@@ -23,7 +23,7 @@ public static partial class SelfTest
             Line(note);
             Line("::warning title=Bot lag compensation (results)::" + note);
             if (later.Shots < 5 || earlier.Shots < 5)
-                Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots) [TEMP: {DuelInfo}]");
+                Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots)");
             else
             {
                 var a = (double)later.Hits / later.Shots;
@@ -124,7 +124,7 @@ public static partial class SelfTest
         game.SelfTestPlace(bot, home, 0);
         game.SelfTestPlace(target, centre, MathF.PI);
 
-        int shots = 0, hits = 0, dHold = 0, dReload = 0, dNoTarget = 0, dMode = 0, dMulti = 0, dSide = 0, dNone = 0;
+        int shots = 0, hits = 0;
         const int warm = World.TickRate, run = 3 * World.TickRate;
         for (var i = 0; i < warm + run; i++)
         {
@@ -151,13 +151,6 @@ public static partial class SelfTest
             game.Update(now, World.TickDt);
             if (i < warm)
                 continue;
-            if (bot.Bot.HoldFire) dHold++;
-            if (bot.Bot.ReloadUntil > 0) dReload++;
-            if (bot.Bot.Target != target.Id) dNoTarget++;
-            if (bot.Bot.Target == byte.MaxValue) dNone++;
-            if (bot.Bot.Mode != BotMode.Engage) dMode++;
-            if (bot.Bot.Ammo < ammo - 1) dMulti++;
-            if (bot.Weapon != bot.Primary) dSide++;
             if (bot.Bot.Ammo == ammo - 1)
             {
                 shots++;
@@ -165,9 +158,6 @@ public static partial class SelfTest
                     hits++;
             }
         }
-        DuelInfo += $" | ticks: hold fire {dHold}, reloading {dReload}, other target {dNoTarget} (none {dNone}), not engaging {dMode}, multi-shot {dMulti}, off primary {dSide}; mode {bot.Bot!.Mode}, weapon {bot.Weapon}, deaths {bot.Deaths}, stuck kills {game.BotStuckKills}, ammo {bot.Bot.Ammo}, alive {bot.Alive}, log {game.LastStuckLog}";
         return (shots, hits);
     }
-
-    private static string DuelInfo = "";
 }

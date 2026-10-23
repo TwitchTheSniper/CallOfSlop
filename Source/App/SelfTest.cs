@@ -91,7 +91,6 @@ public static partial class SelfTest
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
-            Section("Stuck notes (temporary)", () => Line("::warning title=Stuck kills in the matches::" + (StuckNotes.Count == 0 ? "none" : string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\n", " "))))));
             Section("Bots", CheckBots);
             Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
@@ -679,7 +678,7 @@ public static partial class SelfTest
             if (unreachable.Count > pairs / 4)
                 Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
             if (g.BuildMs > 3000)
-                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build [TEMP: mover walks {g.WalkChecked} links in {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms, link checks {g.PrepTicks * 1000.0 / Stopwatch.Frequency:0} ms]");
+                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build (mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms)");
         }
         Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
 

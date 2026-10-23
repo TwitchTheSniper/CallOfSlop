@@ -724,7 +724,7 @@ t.clutter(["Litter", "Newspaper", "Soda Cans", "Plastic Bag", "Bottle"], -33, 5.
 ALLEY_JUNK = ["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"]
 t.clutter(ALLEY_JUNK, -33, N_ALLEY[0], 6.0, N_ALLEY[1], 45, 33)
 t.clutter(ALLEY_JUNK, 23.2, N_ALLEY[0], 33, N_ALLEY[1], 14, 38)
-# (the squeeze behind the bank stays clear: it's Red's way to Elm Street, as the Diner is Blue's)
+t.clutter(ALLEY_JUNK, 6.0, N_ALLEY[0], 23.2, -20.8, 6, 39)      # the squeeze behind the bank
 t.clutter(["Litter", "Trash Bag", "Plastic Bag", "Soda Cans", "Bottles", "Flattened Cardboard", "Plank", "Cardboard Box Small", "Tyre"], -33, S_ALLEY[0], 20.0, S_ALLEY[1], 55, 34)
 t.clutter(["Hay Bale", "Pallet", "Tyre", "Plank Pile", "Bucket", "Oil Drum", "Litter", "Plank"], -46, -10, -34, 10, 24, 35)
 t.clutter(["Pallet", "Plank", "Tyre", "Litter", "Rusty Drum", "Cinder Blocks"], 39, -11, 52, 11, 18, 36)
@@ -733,8 +733,7 @@ t.ops.append({"op": "AutoWaypoints", "spacing": 4})
 
 # hand waypoints in the tight spots (passages, behind the train, the square, the yard)
 for (x, z) in ((-22.3, -14.0), (-19.5, 14.0), (0, -19.7), (0, 19.8), (scx, scz + 0.6), (scx, sz0 + 0.8), (RAIL_X - 3.5, -6.8), (RAIL_X + 3.0, 6.8),
-               (RAIL_X + 3.0, -6.8), (RAIL_X - 3.5, 6.8), (-39.5, 0.0), (44.0, 0.0), (-24.0, -27.0), (24.0, -27.0), (-20.0, 27.0), (20.0, 27.0),
-               (7.6, -21.25), (11.0, -21.25), (14.6, -21.25), (18.0, -21.25), (21.5, -21.25)):   # (the squeeze behind the bank)
+               (RAIL_X + 3.0, -6.8), (RAIL_X - 3.5, 6.8), (-39.5, 0.0), (44.0, 0.0), (-24.0, -27.0), (24.0, -27.0), (-20.0, 27.0), (20.0, 27.0)):
     t.ops.append({"op": "Waypoint", "x": R(x), "z": R(z)})
 
 # ================================================================ write the map
