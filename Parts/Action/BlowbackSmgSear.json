@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Blowback SMG Sear",
+  "category": "action",
+  "rarity": "common",
+  "flavor": "Simple blowback: the bolt slams back and forth on its own, nine hundred times a minute.",
+  "weight": 0.15,
+  "action": {"kind": "auto", "rpm": 900},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"},
+    {"size": [0.022, 0.01, 0.012], "pos": [0.016, -0.004, -0.012], "color": "steel"}
+  ],
+  "stats": []
+}

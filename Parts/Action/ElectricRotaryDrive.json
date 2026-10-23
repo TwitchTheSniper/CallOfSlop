@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Electric Rotary Drive",
+  "category": "action",
+  "rarity": "epic",
+  "flavor": "An electric motor that spins the barrels round. Give it a second to get going.",
+  "weight": 0.4,
+  "action": {"kind": "rotary", "rpm": 1800, "rpmPerBarrel": 400, "spoolTime": 1.2, "spoolStart": 0.25},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.026, 0.03, 0.04], "pos": [0.018, 0, 0], "color": "steel"},
+    {"size": [0.004, 0.02, 0.03], "pos": [0.032, 0, 0], "color": "accent", "tag": "glow"}
+  ],
+  "stats": []
+}

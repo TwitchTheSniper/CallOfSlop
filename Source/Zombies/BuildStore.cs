@@ -62,6 +62,13 @@ public static class BuildStore
             return;
         }
         Load(lines, Parts.Find, out _);
+        // Builds saved before actions were parts got their receivers' stock actions as they loaded: save them back.
+        var migrated = Slots.Sum(b => b?.ActionsAdded ?? 0);
+        if (migrated > 0)
+        {
+            Console.WriteLine($"[workbench] added {migrated} stock action(s) to builds saved before actions were parts; saving");
+            Save();
+        }
     }
 
     /// <summary>Fills the slots from saved lines; parts that no longer exist are dropped (listed in <paramref name="dropped"/>).</summary>
@@ -165,7 +172,9 @@ public static class BuilderExamples
         {
             try
             {
-                list.Add(make());
+                var ex = make();
+                ActionMigration.Fill(ex.Build, find); // each receiver's stock action (the fire type is a part)
+                list.Add(ex);
             }
             catch (InvalidOperationException ex)
             {

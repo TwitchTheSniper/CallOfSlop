@@ -24,7 +24,8 @@
     {"name": "amp", "about": "A receiver's damage multiplier socket (one per receiver)."},
     {"name": "hopper", "about": "A grip's shared feed socket (hoppers and manifolds)."},
     {"name": "head", "about": "Melee: where a hilt's blade or head goes."},
-    {"name": "mod", "about": "Melee: a hilt's modifier sockets (nails, wraps, weights)."}
+    {"name": "mod", "about": "Melee: a hilt's modifier sockets (nails, wraps, weights)."},
+    {"name": "action", "about": "A receiver's fire-control group: the action part decides the fire type and rate."}
   ],
   "bores": [
     {"name": "pistol", "about": "9 mm and friends.", "barrelScale": [0.8, 0.8, 0.7], "barrelStrength": 0.85},
@@ -49,6 +50,7 @@
     {"name": "multiplier", "mount": "amp", "display": "Damage Multiplier"},
     {"name": "hilt", "mount": "", "display": "Hilt"},
     {"name": "head", "mount": "head", "display": "Head"},
-    {"name": "meleemod", "mount": "mod", "display": "Melee Mod"}
+    {"name": "meleemod", "mount": "mod", "display": "Melee Mod"},
+    {"name": "action", "mount": "action", "display": "Action"}
   ]
 }

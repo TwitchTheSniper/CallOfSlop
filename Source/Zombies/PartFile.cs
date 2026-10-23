@@ -33,7 +33,7 @@ public static class PartFile
     private static readonly string[] Keys =
     [
         "format", "name", "category", "rarity", "flavor", "author", "mount", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
-        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
+        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
     /// <summary>The mount a category gets when the file doesn't say (the registry's "mount" for it).</summary>
@@ -55,6 +55,7 @@ public static class PartFile
         PartCategory.Hilt => "",
         PartCategory.Head => "head",
         PartCategory.MeleeMod => "mod",
+        PartCategory.Action => "action",
         _ => "utility",
     };
 
@@ -146,6 +147,8 @@ public static class PartFile
             part.FeedStyle = WeaponFile.Text(fe, $"{where}: \"feed\"").ToLowerInvariant();
         if (Get("receiver") is { } rc)
             part.Receiver = ReadReceiver(rc, $"{where}: \"receiver\"");
+        if (Get("action") is { } ac)
+            part.Action = ReadAction(ac, $"{where}: \"action\"");
         if (Get("frame") is { } fr)
             part.Frame = ReadFrame(fr, $"{where}: \"frame\"");
         if (Get("split") is { } sp)
@@ -189,7 +192,7 @@ public static class PartFile
         if (p.Category == PartCategory.Receiver)
         {
             if (p.Receiver == null)
-                throw new WeaponFileException($"{where}: a receiver needs a \"receiver\" block (action, class, bore, rpm...)");
+                throw new WeaponFileException($"{where}: a receiver needs a \"receiver\" block (class, bore, soundOf...)");
             if (p.Mount != "receiver")
                 throw new WeaponFileException($"{where}: a receiver mounts on a grip's \"receiver\" socket");
             if (!p.Sockets.Any(s => s.Type == "barrel"))
@@ -199,6 +202,15 @@ public static class PartFile
         }
         else if (p.Receiver != null)
             throw new WeaponFileException($"{where}: only receivers have a \"receiver\" block");
+        if (p.Category == PartCategory.Action)
+        {
+            if (p.Action == null)
+                throw new WeaponFileException($"{where}: an action needs an \"action\" block (kind, rpm...)");
+            if (p.Mount != "action")
+                throw new WeaponFileException($"{where}: an action mounts on a receiver's \"action\" socket");
+        }
+        else if (p.Action != null)
+            throw new WeaponFileException($"{where}: only actions have an \"action\" block (the fire type is a part of its own: category \"action\")");
         if (p.Category == PartCategory.Hilt)
         {
             if (p.Mount != "" || p.Hilt == null)
@@ -328,17 +340,21 @@ public static class PartFile
         }
     }
 
+    /// <summary>Keys a receiver block had before the fire type became a part of its own (refused with a pointer to actions).</summary>
+    private static readonly string[] OldReceiverKeys = ["action", "rpm", "burstCount", "burstDelay", "spoolTime", "spoolStart", "rpmPerBarrel"];
+
     private static ReceiverInfo ReadReceiver(JsonElement e, string where)
     {
         var r = new ReceiverInfo();
-        var hasAction = false;
-        foreach (var (k, v) in Props(e, where, "action", "class", "bore", "soundOf", "rpm", "burstCount", "burstDelay", "spoolTime", "spoolStart", "minBarrels", "maxBarrels",
-                     "rpmPerBarrel", "barrelScale"))
+        if (e.ValueKind == JsonValueKind.Object)
+            foreach (var old in e.EnumerateObject())
+                if (OldReceiverKeys.Contains(old.Name, StringComparer.OrdinalIgnoreCase))
+                    throw new WeaponFileException($"{where}: \"{old.Name}\" moved to action parts: a receiver is the calibre (class, bore, soundOf, barrels) and the action part in its \"action\" socket is the fire type and rate. Name the action it comes with in \"stockAction\"");
+        foreach (var (k, v) in Props(e, where, "class", "bore", "soundOf", "minBarrels", "maxBarrels", "barrelScale", "stockAction"))
         {
             var at = $"{where}.{k}";
             switch (k)
             {
-                case "action": r.Action = WeaponFile.EnumValue<ActionKind>(v, at); hasAction = true; break;
                 case "class": r.Class = WeaponFile.EnumValue<WeaponClass>(v, at); break;
                 case "bore":
                     r.Bore = WeaponFile.Text(v, at).ToLowerInvariant();
@@ -346,20 +362,39 @@ public static class PartFile
                         throw new WeaponFileException($"{at}: \"{r.Bore}\" isn't one of {string.Join(", ", BoreNames)}");
                     break;
                 case "soundOf": r.SoundOf = WeaponFile.Text(v, at); break;
-                case "rpm": r.Rpm = (int)Range(WeaponFile.Int(v, at), 10, 3000, at); break;
-                case "burstCount": r.BurstCount = (int)Range(WeaponFile.Int(v, at), 2, 10, at); break;
-                case "burstDelay": r.BurstDelay = Range(WeaponFile.Number(v, at), 0, 2, at); break;
-                case "spoolTime": r.SpoolTime = Range(WeaponFile.Number(v, at), 0, 5, at); break;
-                case "spoolStart": r.SpoolStart = Range(WeaponFile.Number(v, at), 0.05f, 1, at); break;
                 case "minBarrels": r.MinBarrels = (int)Range(WeaponFile.Int(v, at), 1, 8, at); break;
                 case "maxBarrels": r.MaxBarrels = (int)Range(WeaponFile.Int(v, at), 1, 16, at); break;
-                case "rpmPerBarrel": r.RpmPerBarrel = (int)Range(WeaponFile.Int(v, at), 0, 1000, at); break;
                 case "barrelScale": r.BarrelScale = BoreClass.ReadScale(v, at); break;
+                case "stockAction": r.StockAction = WeaponFile.Text(v, at).Trim(); break;
             }
         }
-        if (!hasAction)
-            throw new WeaponFileException($"{where}: missing \"action\" ({string.Join(", ", Enum.GetNames<ActionKind>()).ToLowerInvariant()})");
         return r;
+    }
+
+    private static ActionInfo ReadAction(JsonElement e, string where)
+    {
+        var a = new ActionInfo();
+        var hasKind = false;
+        foreach (var (k, v) in Props(e, where, "kind", "rpm", "burstCount", "burstDelay", "spoolTime", "spoolStart", "rpmPerBarrel", "chamber"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "kind": a.Kind = WeaponFile.EnumValue<ActionKind>(v, at); hasKind = true; break;
+                case "rpm": a.Rpm = (int)Range(WeaponFile.Int(v, at), 10, 3000, at); break;
+                case "burstCount": a.BurstCount = (int)Range(WeaponFile.Int(v, at), 2, 10, at); break;
+                case "burstDelay": a.BurstDelay = Range(WeaponFile.Number(v, at), 0, 2, at); break;
+                case "spoolTime": a.SpoolTime = Range(WeaponFile.Number(v, at), 0, 5, at); break;
+                case "spoolStart": a.SpoolStart = Range(WeaponFile.Number(v, at), 0.05f, 1, at); break;
+                case "rpmPerBarrel": a.RpmPerBarrel = (int)Range(WeaponFile.Int(v, at), 0, 1000, at); break;
+                case "chamber": a.Chamber = (int)Range(WeaponFile.Int(v, at), 0, 10, at); break;
+            }
+        }
+        if (!hasKind)
+            throw new WeaponFileException($"{where}: missing \"kind\" ({string.Join(", ", Enum.GetNames<ActionKind>()).ToLowerInvariant()})");
+        if (a.RpmPerBarrel > 0 && a.Kind != ActionKind.Rotary)
+            throw new WeaponFileException($"{where}: \"rpmPerBarrel\" is for rotary actions (the barrels take turns)");
+        return a;
     }
 
     private static FrameInfo ReadFrame(JsonElement e, string where)

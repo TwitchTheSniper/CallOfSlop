@@ -319,8 +319,9 @@ public static partial class SelfTest
                 b.Root!.Attach($"receiver_{i}", plinker);
         ExpectWhyNot(b, "", "receiver_4", "Plinker Receiver", "holds 3 receivers");
         var incomplete = BuildRules.Check(b);
-        if (!incomplete.Any(p => p.Incomplete && p.Message.Contains("needs a barrel")) || !incomplete.Any(p => p.Message.Contains("needs a feed")) || !incomplete.Any(p => p.Message.Contains("needs ammo")))
-            Fail("rules: receivers with nothing on them should list a missing barrel, feed and ammo");
+        if (!incomplete.Any(p => p.Incomplete && p.Message.Contains("needs a barrel")) || !incomplete.Any(p => p.Message.Contains("needs a feed")) || !incomplete.Any(p => p.Message.Contains("needs ammo"))
+            || !incomplete.Any(p => p.Incomplete && p.Message.Contains("needs an action")))
+            Fail("rules: receivers with nothing on them should list a missing barrel, feed, ammo and action");
         ExpectWhyNot(b, "receiver_1", "feed", "Box Mag", "made for rifle rounds");
         ExpectWhyNot(b, "receiver_1", "ammo", "00 Buckshot", "shell rounds");
         ExpectWhyNot(b, "receiver_1", "barrel", "Vertical Foregrip", "mounts on a foregrip socket");
@@ -329,7 +330,17 @@ public static partial class SelfTest
 
         var rifle = new WeaponBuild("Rules 2", Parts.Find("Rifle Grip")!);
         var burst = rifle.Root!.Attach("receiver_1", Parts.Find("Triad Burst Receiver")!);
-        ExpectWhyNot(rifle, "receiver_1", "feed", "Belt Box", "needs auto, chain or rotary action");
+        if (BuildRules.WhyNot(rifle, "receiver_1", "feed", Parts.Find("Belt Box")!) is { } noActionYet)
+            Fail($"rules: a belt on a receiver with no action yet should go on (the action decides): {noActionYet}");
+        burst.Attach("action", Parts.Find("Three-Round Burst Group")!);
+        ExpectWhyNot(rifle, "receiver_1", "feed", "Belt Box", "needs full auto, chain or rotary action");
+        // ...and the other way round: an action that can't pull the belt already on the receiver.
+        var belted = new WeaponBuild("Rules 3", Parts.Find("Rifle Grip")!);
+        belted.Root!.Attach("receiver_1", Parts.Find("Workhorse Receiver")!).Attach("feed", Parts.Find("Belt Box")!);
+        ExpectWhyNot(belted, "receiver_1", "action", "Turn Bolt", "can't work the Belt Box");
+        if (BuildRules.WhyNot(belted, "receiver_1", "action", Parts.Find("Full-Auto Sear")!) is { } autoWhy)
+            Fail($"rules: a full-auto sear should pull a belt: {autoWhy}");
+        ExpectWhyNot(belted, "receiver_1", "feed", "Full-Auto Sear", "mounts on an action socket");
         var tray = burst.Attach("barrel", Parts.Find("Party Tray Splitter")!);
         tray.Attach("barrel_1", Parts.Find("Trident Splitter")!);
         ExpectWhyNot(rifle, "receiver_1/barrel/barrel_1", "barrel_1", "Y-Splitter", "stack 2 deep");
@@ -342,8 +353,8 @@ public static partial class SelfTest
 
         // Weight: a pistol grip carries 5 kg (10 at most).
         var heavy = new WeaponBuild("Too Heavy", pistol);
-        heavy.Root!.Attach("receiver_1", Parts.Find("Hellwheel Rotary Receiver")!);
-        heavy.Root.Attach("receiver_2", Parts.Find("Hellwheel Rotary Receiver")!);
+        heavy.Root!.Attach("receiver_1", Parts.Find("Hellwheel Rotary Receiver")!).Attach("action", Parts.Find("Electric Rotary Drive")!);
+        heavy.Root.Attach("receiver_2", Parts.Find("Hellwheel Rotary Receiver")!).Attach("action", Parts.Find("Electric Rotary Drive")!);
         ExpectWhyNot(heavy, "", "receiver_3", "Hellwheel Rotary Receiver", "too heavy");
 
         // The fire style is the build's Chain fire choice, saved in the style field ("grip" or anything else: the grip's default).

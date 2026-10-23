@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "A revolver frame on heavy rounds with a long barrel: the pistol action sizes the barrel down, the .50 doesn't care.",
-  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Long Barrel,feed:Heavy Box,ammo:.50 BMG}}"
+  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Long Barrel,feed:Heavy Box,ammo:.50 BMG,action:Revolver Hammer}}"
 }

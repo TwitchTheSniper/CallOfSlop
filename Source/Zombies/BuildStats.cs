@@ -34,7 +34,10 @@ public static class BuildStats
     private static readonly FieldInfo[] Numeric = AttachmentFile.EffectFields.Where(f => f.FieldType == typeof(float) || f.FieldType == typeof(int)).ToArray();
 
     private static readonly PartCategory[] ReceiverStages =
-        [PartCategory.Receiver, PartCategory.Ammo, PartCategory.Feed, PartCategory.Multiplier, PartCategory.Upgrade, PartCategory.Splitter];
+        [PartCategory.Receiver, PartCategory.Ammo, PartCategory.Feed, PartCategory.Action, PartCategory.Multiplier, PartCategory.Upgrade, PartCategory.Splitter];
+
+    /// <summary>The action a receiver with no action part would have (only ever used for incomplete builds' previews).</summary>
+    private static readonly ActionInfo NoAction = new() { Kind = ActionKind.Semi, Rpm = 60 };
 
     private static readonly string[] Averaged =
     [
@@ -60,6 +63,15 @@ public static class BuildStats
     {
         var list = new List<BarrelLeaf>();
         Collect(receiver, 1f, 0f, 1f, list);
+        // A receiver with several barrel sockets (the rotary clusters) fires them in turn with a rotary action; with any
+        // other action they all fire at once, and like a splitter each gets 1/N of the shot (the total stays the same).
+        if (receiver.Part.Receiver != null && WeaponBuild.ActionOf(receiver) is { Kind: not ActionKind.Rotary })
+        {
+            var filled = receiver.Children().Count(c => c.Socket.Type == "barrel");
+            if (filled > 1)
+                for (var i = 0; i < list.Count; i++)
+                    list[i] = list[i] with { SplitMult = list[i].SplitMult / filled };
+        }
         return list;
     }
 
@@ -96,26 +108,21 @@ public static class BuildStats
         return list;
     }
 
-    private static WeaponDef BaseDef(string name, ReceiverInfo r)
+    private static WeaponDef BaseDef(string name, ReceiverInfo r, ActionInfo a)
     {
         var w = WeaponDef.Blank();
         w.Name = name;
         w.Class = r.Class;
         w.Damage = 20;
         w.RangeM = 25;
-        w.Rpm = r.Rpm;
+        w.Rpm = a.Rpm;
         w.Mag = 30;
         w.Reload = 2.2f;
         w.HipSpreadDeg = 2f;
         w.AdsZoom = 1.25f;
-        w.Mode = r.Action switch
-        {
-            ActionKind.Burst => FireMode.Burst,
-            ActionKind.Auto or ActionKind.Rotary or ActionKind.Chain => FireMode.Auto,
-            _ => FireMode.Semi,
-        };
-        w.BurstCount = r.BurstCount;
-        w.BurstDelay = r.BurstDelay;
+        w.Mode = ModeOf(a.Kind);
+        w.BurstCount = a.BurstCount;
+        w.BurstDelay = a.BurstDelay;
         Recoil.ApplyClassDefaults(w);
         w.RecoilDeg = r.Class switch
         {
@@ -131,6 +138,29 @@ public static class BuildStats
         return w;
     }
 
+    /// <summary>The trigger behaviour of a fire type: burst, auto (auto, rotary, chain), or one shot per pull (the rest).</summary>
+    public static FireMode ModeOf(ActionKind k) => k switch
+    {
+        ActionKind.Burst => FireMode.Burst,
+        ActionKind.Auto or ActionKind.Rotary or ActionKind.Chain => FireMode.Auto,
+        _ => FireMode.Semi,
+    };
+
+    /// <summary>
+    /// The build's fire type in words, from its receivers' action parts: "3-round burst (Ratchet Burst Group)", or each
+    /// distinct one for several receivers ("full auto x2, pump"). "no action" for a receiver missing one.
+    /// </summary>
+    public static string FireTypeText(WeaponBuild b)
+    {
+        var rs = b.Receivers;
+        if (rs.Count == 0)
+            return "no receiver";
+        if (rs.Count == 1)
+            return WeaponBuild.ActionNodeOf(rs[0]) is { } an ? $"{an.Part.Action!.FireType} ({an.Part.Name})" : "no action";
+        return string.Join(", ", rs.Select(r => WeaponBuild.ActionOf(r)?.FireType ?? "no action").GroupBy(x => x)
+            .Select(g => g.Count() > 1 ? $"{g.Key} x{g.Count()}" : g.Key));
+    }
+
     /// <summary>One receiver's numbers on its own, and its barrels (damage per barrel as a float, pellets, hip spread, splay).</summary>
     public sealed class ReceiverResult
     {
@@ -139,6 +169,9 @@ public static class BuildStats
 
         /// <summary>Fed by the build's shared feed (its magazine is the pool, shared with the other receivers it feeds).</summary>
         public bool SharedFed;
+
+        /// <summary>Its action part's numbers (fire type, rate, spool-up, chamber).</summary>
+        public ActionInfo Action = NoAction;
         public readonly List<(BarrelLeaf Leaf, float Damage, int Pellets, float HipSpread)> Barrels = new();
     }
 
@@ -152,7 +185,8 @@ public static class BuildStats
     public static ReceiverResult ReceiverStats(string name, BuildNode receiver, BuildNode? hopper)
     {
         var r = receiver.Part.Receiver!;
-        var w = BaseDef(name, r);
+        var act = WeaponBuild.ActionOf(receiver) ?? NoAction;
+        var w = BaseDef(name, r, act);
         var nodes = receiver.Walk().ToList();
         if (hopper != null)
         {
@@ -164,7 +198,7 @@ public static class BuildStats
             foreach (var n in nodes.Where(n => n.Part.Category == cat))
                 Apply(n.Part, w);
         // Receiver upgrades change the fire rate as a ratio, so rotary receivers (rate per barrel) scale the same way.
-        var rateMult = w.Rpm / (float)Math.Max(1, r.Rpm);
+        var rateMult = w.Rpm / (float)Math.Max(1, act.Rpm);
         var res = new ReceiverResult { Node = receiver, Def = w };
         var copies = new List<WeaponDef>();
         var cls = Parts.Registry.ClassOf(r.Bore);
@@ -190,9 +224,13 @@ public static class BuildStats
             }
             w.Damage = Math.Max(1, (int)MathF.Round(res.Barrels.Average(x => x.Damage)));
         }
-        if (r.RpmPerBarrel > 0)
-            w.Rpm = Math.Min(3000, (int)MathF.Round(r.RpmPerBarrel * Math.Max(1, copies.Count) * rateMult));
+        if (act.RpmPerBarrel > 0)
+            w.Rpm = Math.Min(3000, (int)MathF.Round(act.RpmPerBarrel * Math.Max(1, copies.Count) * rateMult));
+        // A single-shot or muzzle-loaded action holds its chamber's worth whatever the feed holds.
+        if (act.Chamber > 0)
+            w.Mag = Math.Min(w.Mag, act.Chamber);
         res.SharedFed = hopper != null;
+        res.Action = act;
         return res;
     }
 
@@ -230,8 +268,9 @@ public static class BuildStats
         // Magazines: per-receiver feeds as before (volley: the smallest, they run dry together; rotate: they add up). A
         // shared feed is one pool: in a volley each pull takes a round per receiver it feeds, so it lasts pool / k pulls;
         // rotating, each shot takes one round, and the pool counts once.
-        var own = per.Where(p => !p.SharedFed).Select(p => p.Def.Mag).ToList();
-        var pooled = per.Where(p => p.SharedFed).ToList();
+        // A chambered action (single shot, muzzle-loaded) holds its own round(s): it doesn't draw on the pool.
+        var own = per.Where(p => !p.SharedFed || p.Action.Chamber > 0).Select(p => p.Def.Mag).ToList();
+        var pooled = per.Where(p => p.SharedFed && p.Action.Chamber == 0).ToList();
         var pool = pooled.Count > 0 ? pooled[0].Def.Mag : 0;
         if (rotate)
             w.Mag = Math.Min(1000, own.Sum() + pool);
@@ -248,13 +287,13 @@ public static class BuildStats
             var fi = typeof(WeaponDef).GetField(f)!;
             fi.SetValue(w, defs.Average(d => (float)fi.GetValue(d)!));
         }
-        var barrels = per.SelectMany((p, g) => p.Barrels.Select(x => (Group: g, x.Leaf, x.Damage, x.Pellets, x.HipSpread, Rotary: p.Node.Part.Receiver!.Action == ActionKind.Rotary))).ToList();
+        var barrels = per.SelectMany((p, g) => p.Barrels.Select(x => (Group: g, x.Leaf, x.Damage, x.Pellets, x.HipSpread, Rotary: p.Action.Kind == ActionKind.Rotary))).ToList();
         var meanHip = barrels.Count > 0 ? barrels.Average(x => x.HipSpread) : w.HipSpreadDeg;
         w.HipSpreadDeg = meanHip;
         var maxDamage = barrels.Count > 0 ? barrels.Max(x => x.Damage) : w.Damage;
         w.Damage = Math.Max(1, (int)MathF.Round(maxDamage));
         w.Pellets = barrels.Count > 0 ? barrels[0].Pellets : w.Pellets;
-        var spooling = per.Where(p => p.Node.Part.Receiver!.SpoolTime > 0).Select(p => p.Node.Part.Receiver!).ToList();
+        var spooling = per.Where(p => p.Action.SpoolTime > 0).Select(p => p.Action).ToList();
         w.SpoolTime = spooling.Count > 0 ? spooling.Max(r => r.SpoolTime) : 0f;
         w.SpoolStart = spooling.Count > 0 ? spooling.Min(r => r.SpoolStart) : 1f;
 

@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Three pistol receivers on one grip, fired as a volley.",
-  "build": "Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_3:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+  "build": "Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger},receiver_3:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball,action:Semi-Auto Trigger}}"
 }

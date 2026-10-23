@@ -434,7 +434,7 @@ public sealed class BenchModel
         to.Add(Build.ToText());
         try
         {
-            Build = WeaponBuild.Parse(text, _find);
+            Build = WeaponBuild.Parse(text, _find, migrate: false);
         }
         catch (FormatException)
         {
@@ -444,6 +444,9 @@ public sealed class BenchModel
         Changed();
         return true;
     }
+
+    /// <summary>The build's fire type in words, from its action parts (<see cref="BuildStats.FireTypeText"/>; worked out when the build changes).</summary>
+    public string FireType { get; private set; } = "";
 
     /// <summary>Recomputes everything derived from the build (call after changing it from outside, e.g. the name).</summary>
     public void Changed(bool bump = true)
@@ -457,6 +460,7 @@ public sealed class BenchModel
                 tints[n] = MissingTint;
         }
         Asm = WeaponBuilder.Assemble(Build, tints);
+        FireType = Build.IsMelee ? "" : BuildStats.FireTypeText(Build);
         BuildRows();
         BuildSpots();
         if (bump)
@@ -468,6 +472,7 @@ public sealed class BenchModel
     {
         "receiver" => 0,
         "head" => 0,
+        "action" => 0, // a receiver's action (its fire type) first, then its feed and ammo
         "feed" => 1,
         "hopper" => 1,
         "ammo" => 2,
@@ -849,7 +854,7 @@ public sealed class BenchModel
     private string Revert(string text, string why)
     {
         _undo.RemoveAt(_undo.Count - 1);
-        Build = WeaponBuild.Parse(text, _find);
+        Build = WeaponBuild.Parse(text, _find, migrate: false);
         Changed();
         return why;
     }
@@ -932,7 +937,7 @@ public sealed class BenchModel
             var ok = false;
             foreach (var c in pool)
                 if (c.Mount == s.Type && (s.Accepts.Length == 0 || s.Accepts.Contains(c.Category))
-                    && (part.Receiver is not { } r || ((!BuildRules.BoreBound(c.Category) || c.FitsBore(r.Bore)) && (c.RequiresAction.Length == 0 || c.RequiresAction.Contains(r.Action)))))
+                    && (part.Receiver is not { } r || !BuildRules.BoreBound(c.Category) || c.FitsBore(r.Bore))) // fire types: any action can go with any receiver
                 {
                     ok = true;
                     break;

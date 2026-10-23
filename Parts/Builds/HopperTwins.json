@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Three rifle receivers on a Mule Frame, all drinking from one Manifold Hopper.",
-  "build": "Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},hopper:Manifold Hopper{ammo:5.56 FMJ}}"
+  "build": "Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel,action:Full-Auto Sear},receiver_2:Workhorse Receiver{barrel:Standard Barrel,action:Full-Auto Sear},receiver_3:Workhorse Receiver{barrel:Standard Barrel,action:Full-Auto Sear},hopper:Manifold Hopper{ammo:5.56 FMJ}}"
 }

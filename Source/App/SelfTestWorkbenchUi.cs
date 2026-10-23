@@ -34,20 +34,22 @@ public static partial class SelfTest
         var oldSave = "Old Triple|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_3:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}";
         var droppedOld = new List<string>();
         var old = WeaponBuild.Parse(oldSave, Parts.Find, droppedOld);
-        Line($"old save on the Pistol Grip: {old.Receivers.Count} receivers, dropped {droppedOld.Count}, complete {BuildRules.IsComplete(old)}");
-        if (droppedOld.Count > 0 || old.Receivers.Count != 2 || !BuildRules.IsComplete(old) || old.ToText() != oldSave)
-            Fail("workbench: a saved build on a multi-receiver grip should load unchanged and stay valid");
+        Line($"old save on the Pistol Grip: {old.Receivers.Count} receivers, dropped {droppedOld.Count}, complete {BuildRules.IsComplete(old)}, stock actions added {old.ActionsAdded}");
+        // Written before actions were parts: each Plinker gets its stock action, and nothing else changes.
+        var migratedSave = oldSave.Replace("ammo:9mm Ball}", "ammo:9mm Ball,action:Semi-Auto Trigger}");
+        if (droppedOld.Count > 0 || old.Receivers.Count != 2 || !BuildRules.IsComplete(old) || old.ActionsAdded != 2 || old.ToText() != migratedSave)
+            Fail($"workbench: a saved build on a multi-receiver grip should load whole (with its stock actions) and stay valid: {old.ToText()}");
 
         // ---- The linear list ---------------------------------------------------------------------------------
         var rifle = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:5.56 FMJ},stock:Fixed Stock,optic:Red Dot}"), BenchStock.Unlimited);
         var order = string.Join(" > ", rifle.Rows.Select(r => r.Socket?.Type ?? "grip"));
         Line($"linear list: {order}");
-        if (order != "grip > receiver > feed > ammo > barrel > muzzle > stock > optic" || !rifle.CanFinalize)
-            Fail($"workbench: the linear list should read grip > receiver > feed > ammo > barrel > muzzle > stock > optic (got {order})");
+        if (order != "grip > receiver > action > feed > ammo > barrel > muzzle > stock > optic" || !rifle.CanFinalize)
+            Fail($"workbench: the linear list should read grip > receiver > action > feed > ammo > barrel > muzzle > stock > optic (got {order})");
         var split = new BenchModel(BuildOf("Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot}}"), BenchStock.Unlimited);
         var depths = string.Join(",", split.Rows.Select(r => r.Depth));
         Line($"splitter indent: {string.Join(", ", split.Rows.Select(r => $"{r.Depth}:{r.Node?.Part.Name}"))}");
-        if (depths != "0,1,2,2,2,3,3")
+        if (depths != "0,1,2,2,2,2,3,3")
             Fail($"workbench: a splitter's barrels should be indented under it (depths {depths})");
 
         // ---- Snapping: compatibility, nearest valid socket under a ray ----------------------------------------
@@ -178,7 +180,7 @@ public static partial class SelfTest
         Line($"copy (all parts): {fullWhy ?? "ok"} to {fullTarget?.Name}; same assembly {same}; missing {full.Missing.Total}; can finalise {full.CanFinalize}");
         if (fullWhy != null || fullTarget?.Name != "receiver_2" || !same || full.Missing.Total != 0 || !full.CanFinalize)
             Fail("workbench: copying a receiver assembly with every part should duplicate it whole onto the next free receiver slot");
-        var stock = BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 1), (P("Compensator"), 1), (P("Extended Mag"), 1), (P("9mm Ball"), 2)]);
+        var stock = BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 1), (P("Compensator"), 1), (P("Extended Mag"), 1), (P("9mm Ball"), 2), (P("Semi-Auto Trigger"), 2)]);
         var cp = new BenchModel(BuildOf(copySrc), stock);
         var cpWhy = cp.CopyReceiver(cp.Build.At("receiver_1")!, out _);
         var text = cp.Missing.Text();
@@ -197,7 +199,7 @@ public static partial class SelfTest
         Line($"craft the missing parts: {craft} scrap (round cap uncommon), cap common: {craftCommon}");
         if (craft != 3 * (P("Long Barrel").Scrap + P("Compensator").Scrap + P("Extended Mag").Scrap) || craftCommon != -1)
             Fail("workbench: crafting the missing parts should cost 3x their scrap, and be refused above the round's tier");
-        cp.SetStock(BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 2), (P("Compensator"), 2), (P("Extended Mag"), 2), (P("9mm Ball"), 2)]));
+        cp.SetStock(BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 2), (P("Compensator"), 2), (P("Extended Mag"), 2), (P("9mm Ball"), 2), (P("Semi-Auto Trigger"), 2)]));
         if (cp.Missing.Total != 0 || !cp.CanFinalize)
             Fail("workbench: once the missing parts are owned the copied build should finalise");
         var one = new BenchModel(BuildOf("Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);

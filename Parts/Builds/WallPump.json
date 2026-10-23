@@ -6,5 +6,5 @@
     "wall"
   ],
   "flavor": "A pump shotgun on a rifle grip. Close range only, very convincing there.",
-  "build": "Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Tube,ammo:00 Buckshot}}"
+  "build": "Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Tube,ammo:00 Buckshot,action:Pump Slide}}"
 }

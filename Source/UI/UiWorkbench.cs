@@ -628,7 +628,8 @@ public sealed partial class Ui
             DlText(dl, new float2(p0.X + 70 * _scale, p0.Y + 4 * _scale), fits ? WbC8(rc) : WbC8(rc * 0.55f + new Vector3(0.2f)), p.Name);
             DlText(dl, new float2(p0.X + 70 * _scale, p0.Y + 23 * _scale), fits ? Dim8 : new ImColor8(105, 106, 114, 255),
                 p.Bores.Length > 0 && BuildRules.BoreBound(p.Category) ? $"{PartDef.RarityName(p.Rarity)} - {p.Bores[0]}{(p.Bores.Length > 1 ? "+" : "")}"
-                : p.Receiver is { } pr ? $"{PartDef.RarityName(p.Rarity)} - {pr.Bore}" : PartDef.RarityName(p.Rarity));
+                : p.Receiver is { } pr ? $"{PartDef.RarityName(p.Rarity)} - {pr.Bore} calibre"
+                : p.Action is { } pa ? $"{PartDef.RarityName(p.Rarity)} - {pa.FireType}" : PartDef.RarityName(p.Rarity));
             if (!Bm.Stock.IsUnlimited)
             {
                 var txt = free >= 0 && free < WbCountText.Length ? WbCountText[free] : $"x{free}";
@@ -1187,6 +1188,7 @@ public sealed partial class Ui
         {
             ImGui.SameLine();
             ImGuiSafe.TextColored(Dim, $"  {d.ClassName} - {d.ModeName} - {b.Receivers.Count} receiver(s), {d.BarrelCount} barrel(s)");
+            ImGuiSafe.TextColored(Dim, $"Fire type: {Bm.FireType}");
             WbBar("Damage", d.ShotDamage, t?.ShotDamage, MathF.Sqrt(d.ShotDamage / 400f), t != null ? MathF.Sqrt(t.ShotDamage / 400f) : null, "0", true);
             WbBar("Fire rate", d.Rpm, t?.Rpm, StatBars.FireRate(d), t != null ? StatBars.FireRate(t) : null, "0 rpm", true);
             WbBar("Recoil", Recoil.EffectiveKickDeg(d), t != null ? Recoil.EffectiveKickDeg(t) : null, 1 - StatBars.Control(d), t != null ? 1 - StatBars.Control(t) : null, "0.00", false);
@@ -1204,7 +1206,11 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", d.BuildFlags));
         }
         else
+        {
             ImGui.TextColored(Dim, "Finish the build to see its numbers (the list shows what it needs)."u8);
+            if (b.Receivers.Count > 0)
+                ImGuiSafe.TextColored(Dim, $"Fire type: {Bm.FireType} (the action part on each receiver sets it)");
+        }
         var cap = b.CarryWeight * 2;
         WbBar("Weight", b.Weight, trial?.Build.Weight, cap > 0 ? b.Weight / cap : 0, trial != null && cap > 0 ? trial.Build.Weight / (trial.Build.CarryWeight * 2) : null, "0.0 kg", false);
         if (b.Frame != null)
@@ -1592,7 +1598,13 @@ public sealed partial class Ui
             bits.Add(string.Join(", ", mb));
         }
         if (p.Receiver is { } r)
-            bits.Add($"{r.Action.ToString().ToLowerInvariant()} action, {r.Bore} rounds, {(r.RpmPerBarrel > 0 ? $"{r.RpmPerBarrel} rpm per barrel" : $"{r.Rpm} rpm")}, takes any barrel (sized for {r.Bore})");
+            bits.Add($"calibre: {r.Bore} rounds ({r.Class}), takes any barrel (sized for {r.Bore}); the action part in its action socket sets the fire type and rate"
+                     + (ActionMigration.StockActionOf(p, Parts.Find) is { } sa ? $" (comes with the {sa.Name})" : ""));
+        if (p.Action is { } act)
+            bits.Add($"fire type: {act.FireType}, " + (act.RpmPerBarrel > 0 ? $"{act.RpmPerBarrel} rpm per barrel" : $"{act.Rpm} rpm")
+                     + (act.Kind == ActionKind.Burst ? $", {act.BurstDelay:0.00} s between bursts" : "")
+                     + (act.SpoolTime > 0 ? $", spins up over {act.SpoolTime:0.0} s" : "")
+                     + (act.Chamber > 0 ? $", {act.Chamber} round{(act.Chamber == 1 ? "" : "s")} then reload" : "") + "; fits every receiver");
         if (p.Split is { } s)
             bits.Add($"{p.Sockets.Count(x => x.Type == "barrel")} outputs at {SplitInfo.OutputMult(p) * 100:0}% damage each (the same total){(s.SpreadMult != 1 ? $", spread x{s.SpreadMult:0.##}" : "")}");
         if (p.Bores.Length > 0 && BuildRules.BoreBound(p.Category))

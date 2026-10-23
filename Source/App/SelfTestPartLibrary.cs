@@ -111,12 +111,12 @@ public static partial class SelfTest
         try
         {
             var v = PartFile.Load("""
-                { "extends": "Base Auto Receiver", "name": "Merge Test", "receiver": {"rpm": 900},
+                { "extends": "Base Auto Receiver", "name": "Merge Test", "receiver": {"soundOf": "Raptor"},
                   "-sockets": ["utility"], "+sockets": [{"name": "amp", "type": "amp", "pos": [0, 0.1, 0]}],
                   "-stats": "reload", "+stats": [{"stat": "reload", "set": 3}], "+model": [{"use": "Screw Head", "pos": [0, 0.07, 0.05]}] }
                 """, "merge.json", Parts.Library);
             var baseRx = PartFile.Load(File.ReadAllText(Path.Combine(Parts.Folder, PartLibrary.BaseFolder, "BaseAutoReceiver.json")).Replace("\"Base Auto Receiver\"", "\"B\""), "b.json", Parts.Library);
-            if (v.Receiver!.Rpm != 900 || v.Receiver.Action != ActionKind.Auto || v.Receiver.SoundOf != baseRx.Receiver!.SoundOf)
+            if (v.Receiver!.SoundOf != "Raptor" || v.Receiver.Bore != baseRx.Receiver!.Bore || v.Receiver.StockAction != baseRx.Receiver.StockAction || v.Receiver.StockAction == null)
                 Fail("extends: the receiver block didn't merge key by key");
             if (v.Sockets.Any(s => s.Name == "utility") || v.Sockets.Length != baseRx.Sockets.Length - 1 || v.Sockets.First(s => s.Name == "amp").Pos.Y != 0.1f)
                 Fail("extends: -sockets / +sockets (replace by name) went wrong");
@@ -169,7 +169,7 @@ public static partial class SelfTest
         ExpectLibError(() => PartFile.Load("""{ "extends": "Standard Barrel", "name": "X", "+weight": [1] }""", "x.json", lib), "isn't a list you can add to", "+ on a non-list key");
         ExpectLibError(() => PartFile.Load($$"""{ "name": "X", {{head}}, "sockets": [{"name": "s", "type": "bayonet", "pos": [0, 0, 0]}] }""", "x.json", lib), "_Registry.json", "an unknown socket type");
         ExpectLibError(() => PartRegistry.Load("""{ "socketTypes": ["barrel"], "bores": ["rifle"], "categories": [] }""", "_Registry.json"), "must keep \"receiver\"", "a registry without a core socket type");
-        ExpectLibError(() => PartRegistry.Load("""{ "socketTypes": ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "hopper", "head"], "bores": ["rifle"], "categories": [] }""", "_Registry.json"),
+        ExpectLibError(() => PartRegistry.Load("""{ "socketTypes": ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "hopper", "head", "action"], "bores": ["rifle"], "categories": [] }""", "_Registry.json"),
             "is missing", "a registry without every category");
         ExpectLibError(() => PartLibrary.Empty.AddFragment("""{ "name": "F" }""", "_Fragments/F.json"), "model", "a fragment without a model");
 

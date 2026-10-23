@@ -11,7 +11,7 @@ public static partial class SelfTest
     private static void CheckWorkbenchHideCats()
     {
         PartDef P(string name) => Parts.Find(name) ?? throw new InvalidOperationException($"workbench test needs the part '{name}'");
-        PartCategory[] onReceiver = [PartCategory.Feed, PartCategory.Ammo, PartCategory.Barrel, PartCategory.Splitter];
+        PartCategory[] onReceiver = [PartCategory.Feed, PartCategory.Ammo, PartCategory.Barrel, PartCategory.Splitter, PartCategory.Action];
         string Names(BenchInventory inv) => string.Join(" ", inv.Cats.Select(c => PartDef.CategoryName(c)));
         // Shows() must agree with what the list holds with no chip and no search.
         int Disagree(BenchInventory inv) => Enum.GetValues<PartCategory>().Count(c => inv.Shows(c) != inv.Cats.Contains(c));
@@ -41,7 +41,7 @@ public static partial class SelfTest
         var rebuilt = inv.Refresh(rifle, Parts.All, (int)PartCategory.Feed, "", false, false);
         var feedList = inv.Filter == (int)PartCategory.Feed && inv.Items.Count > 0 && inv.Items.All(p => p.Category == PartCategory.Feed);
         inv.Refresh(rifle, Parts.All, -1, "", false, false);
-        var back = new[] { PartCategory.Feed, PartCategory.Ammo, PartCategory.Barrel }.All(c => inv.Shows(c) && inv.Cats.Contains(c));
+        var back = new[] { PartCategory.Feed, PartCategory.Ammo, PartCategory.Barrel, PartCategory.Action }.All(c => inv.Shows(c) && inv.Cats.Contains(c));
         Line($"after fitting the Workhorse Receiver ('{why ?? "ok"}'): rebuilt {rebuilt}, chip Feed keeps {inv.Filter} -> chips {Names(inv)}; {Disagree(inv)} disagreements");
         if (why != null || placed == null || !rebuilt || !feedList || !back || Disagree(inv) > 0)
             Fail("workbench hide categories: fitting a receiver should bring Feed, Ammo and Barrel back right away (the Feed chip listing feeds)");

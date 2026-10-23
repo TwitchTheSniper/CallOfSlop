@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Marksman Trigger",
+  "category": "action",
+  "rarity": "uncommon",
+  "flavor": "A clean two-stage trigger: take up the slack, then the shot breaks.",
+  "weight": 0.1,
+  "action": {"kind": "semi", "rpm": 300},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"}
+  ],
+  "stats": []
+}

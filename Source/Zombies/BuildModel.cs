@@ -39,6 +39,7 @@ public static class BuildModel
         "foregrip" => "support",
         "stock" => "stock",
         "muzzle" => "muzzle_mount",
+        "action" => "action_group", // not "action": that is the scene graph rig's hand point for working the action
         _ => s.Name,
     };
 

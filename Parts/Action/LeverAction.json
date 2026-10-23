@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Lever Action",
+  "category": "action",
+  "rarity": "uncommon",
+  "flavor": "Flick the lever, fire, flick the lever. Faster than a pump and twice as cool.",
+  "weight": 0.2,
+  "action": {"kind": "lever", "rpm": 110},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.008, 0.03, 0.01], "pos": [0.012, -0.014, 0.012], "color": "brass"},
+    {"size": [0.008, 0.008, 0.03], "pos": [0.012, -0.027, 0.0], "color": "brass"}
+  ],
+  "stats": [
+    {"stat": "adsTime", "add": -0.02}
+  ]
+}

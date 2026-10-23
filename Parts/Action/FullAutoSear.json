@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Full-Auto Sear",
+  "category": "action",
+  "rarity": "common",
+  "flavor": "Hold the trigger and it keeps going. The honest rifle sear.",
+  "weight": 0.15,
+  "action": {"kind": "auto", "rpm": 600},
+  "model": [
+    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
+    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"},
+    {"size": [0.022, 0.01, 0.012], "pos": [0.016, -0.004, -0.012], "color": "steel"}
+  ],
+  "stats": []
+}
