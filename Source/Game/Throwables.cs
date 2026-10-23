@@ -215,7 +215,7 @@ public static class Throwables
             }
             else
                 pos += move;
-            if (InsideSolid(pos))
+            if (World.Query.PointInside(pos, ProjectileRadius * 0.5f, filter))
                 pos = p.Pos; // never into something (a corner the ray slipped past)
             p.Pos = World.ClampToArena(pos);
         }

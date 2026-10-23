@@ -122,7 +122,7 @@ public static partial class SelfTest
             prev = s.Position;
             var before = s.Position;
             World.Simulate(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = yaw, Pitch = pitch, SpeedPct = 100 });
-            angle += MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(before), Vector3.Normalize(s.Position)), -1f, 1f));
+            angle += MathF.Atan2(Vector3.Cross(before, s.Position).Length(), Vector3.Dot(before, s.Position)); // (atan2: exact for tiny steps, unlike acos)
             maxOff = MathF.Max(maxOff, MathF.Abs(s.Position.Z));
             minR = MathF.Min(minR, s.Position.Length());
             maxR = MathF.Max(maxR, s.Position.Length());
@@ -136,7 +136,7 @@ public static partial class SelfTest
         PLine($"great circle: {circ:0} m in {ticks * World.TickDt:0.0} s ({circ / (ticks * World.TickDt):0.00} m/s), back {back:0.00} m from the start, "
               + $"off the plane {maxOff:0.000} m, look turned {turn:0.00} deg, feet {minR - TestR:+0.00;-0.00}..{maxR - TestR:+0.00;-0.00} m from the sphere");
         if (ticks >= 4000 || back > 1.0f || maxOff > 0.05f || turn > 1.5f || minR < TestR - 0.1f || maxR > TestR + 0.2f || !s.Grounded)
-            Fail($"planet gravity: the walk round the planet drifted (back {back:0.00} m, off {maxOff:0.000} m, turned {turn:0.0} deg)");
+            Fail($"planet gravity: the walk round the planet drifted (back {back:0.00} m, off {maxOff:0.000} m, turned {turn:0.0} deg, {ticks} ticks, feet {minR - TestR:0.00}..{maxR - TestR:0.00}, grounded {s.Grounded})");
 
         // ---- A jump lands back where it left (standing still) ----
         var j = Settle(Map.SurfaceDir(35, 50) * (TestR + 0.3f));
@@ -153,7 +153,7 @@ public static partial class SelfTest
         var landedOff = Vector3.Distance(j.Position, takeoff);
         PLine($"jump: {air * World.TickDt:0.00} s in the air (flat ground: {2 * World.JumpSpeed / World.Gravity:0.00} s), {top:0.00} m up, landed {landedOff * 100:0.0} cm from the take-off");
         if (air >= 200 || landedOff > 0.05f || MathF.Abs(air * World.TickDt - 2 * World.JumpSpeed / World.Gravity) > 0.08f)
-            Fail("planet gravity: a jump didn't come back down where it left");
+            Fail($"planet gravity: a jump didn't come back down where it left ({air} ticks, {top:0.00} m up, landed {landedOff:0.000} m away)");
 
         // ---- A grenade arcs over and comes to rest on the ground ----
         var eye = GravityFrames.Above(takeoff, World.EyeHeight);
@@ -175,7 +175,7 @@ public static partial class SelfTest
         PLine($"grenade: up to {highest:0.0} m, first bounce after {firstTouch * World.TickDt:0.00} s, at rest {thrown:0.0} m away, {restR * 100:0.0} cm over the ground "
               + $"(lowest {lowest * 100:0.0} cm), speed {frag.Vel.Length():0.00} m/s");
         if (firstTouch < 0 || thrown < 6f || restR < 0.0f || restR > 0.3f || lowest < 0.0f || frag.Vel.Length() > 0.5f)
-            Fail("planet gravity: a grenade didn't arc down onto the planet and stop on it");
+            Fail($"planet gravity: a grenade didn't arc down onto the planet and stop on it (first touch tick {firstTouch}, up {highest:0.0} m, rest {thrown:0.0} m away at {restR:0.00} m, lowest {lowest:0.00} m, speed {frag.Vel.Length():0.00})");
 
         // ---- Replays are exact (prediction): the same commands from the same state give the same bits ----
         var rng = new Random(1234);
@@ -237,7 +237,7 @@ public static partial class SelfTest
         var drift = Vector3.Distance(body.Sim.Pelvis, feet);
         PLine($"ragdoll: {(body.Sim.Broken ? "BROKEN" : "ok")}, asleep {body.Sim.Asleep} after {steps * Ragdoll.Step:0.0} s, pelvis {pelvisR:0.00} m over the ground {drift:0.0} m from the feet, deepest {under * 100:0.0} cm into it");
         if (body.Sim.Broken || !body.Sim.Asleep || pelvisR > 0.6f || pelvisR < 0f || under < -0.08f || drift > 3f)
-            Fail("planet gravity: a ragdoll didn't settle on the planet's surface");
+            Fail($"planet gravity: a ragdoll didn't settle on the planet's surface (broken {body.Sim.Broken}, live {body.Live}, asleep {body.Sim.Asleep} after {steps} steps, pelvis {pelvisR:0.00} m up, {drift:0.0} m away, deepest {under:0.000})");
         Ragdolls.Clear();
 
         // ---- Movement cost: 16 players running round, per tick, and no allocations ----
@@ -278,7 +278,7 @@ public static partial class SelfTest
         PLine($"Pocket Planet: radius {map.PlanetRadius} m, gravity {g?.Strength ?? 0} m/s2 to {g?.Center}, {map.SolidMeshes.Count} solid meshes, {map.MeshPlacements.Count} meshes, "
               + $"{map.Spawns.Count} spawns, max {map.MaxPlayers} players, hills {o.Hills.Count} on the equator {hillsOk}, flags at the poles {flagsOk}, team spawns by pole {teamsOk}, fingerprint {map.ContentHash:x8}");
         if (g == null || map.PlanetRadius < 40 || map.MaxPlayers < 12 || !hillsOk || !flagsOk || !teamsOk)
-            Fail("planet gravity: Pocket Planet's gravity, spawns or objectives are wrong");
+            Fail($"planet gravity: Pocket Planet's gravity, spawns or objectives are wrong (hills {hillsOk}, flags {flagsOk}, teams {teamsOk}, players {map.MaxPlayers})");
 
         World.SetMap(map);
         // Every spawn stands on the ground with room for a body.
@@ -309,7 +309,7 @@ public static partial class SelfTest
         PLine($"Pocket Planet nav: {nav.Nodes.Length} nodes, {nav.EdgeCount} edges, {nav.MainNodes.Length} in the main area, built in {buildMs:0} ms; "
               + $"pole to pole {len} nodes, {pathM:0} m (half the circumference: {MathF.PI * map.PlanetRadius:0} m), both hemispheres {hemis}");
         if (nav.Nodes.Length < 500 || nav.MainNodes.Length < nav.Nodes.Length * 0.8f || len < 2 || !hemis || pathM > MathF.PI * map.PlanetRadius * 1.5f)
-            Fail("planet gravity: the bots' graph doesn't cover Pocket Planet pole to pole");
+            Fail($"planet gravity: the bots' graph doesn't cover Pocket Planet pole to pole ({nav.Nodes.Length} nodes, {nav.MainNodes.Length} main, path {len} nodes {pathM:0} m, hemispheres {hemis})");
 
         // ---- A bot walks from the north pole to the south pole (a short scenario: nobody else alive) ----
         var now = 0.0;
@@ -347,7 +347,7 @@ public static partial class SelfTest
         PLine($"bot pole to pole: {(reachedAt >= 0 ? $"reached the south pole in {reachedAt:0.0} s" : $"closest {minDist:0.0} m in 40 s")}, alive {bot.Alive}, "
               + $"lowest {lowestR:0.00} m from the ground, stuck kills {game.BotStuckKills}");
         if (reachedAt < 0 || lowestR < -0.15f)
-            Fail("planet gravity: a bot couldn't walk from the north pole to the south pole");
+            Fail($"planet gravity: a bot couldn't walk from the north pole to the south pole (closest {minDist:0.0} m, alive {bot.Alive}, lowest {lowestR:0.00} m, stuck kills {game.BotStuckKills}, ended at {bot.Position})");
 
         // ---- 16 players' worth of bot thinking on the planet: cost per tick ----
         for (var i = 0; i < 14; i++)

@@ -365,7 +365,12 @@ public sealed partial class Map
     public void Validate()
     {
         if (PointGravity != null)
-            return; // a planet: its Surface* ops put spawns and waypoints on the ground; the flat-floor fixes below don't apply
+        {
+            // A planet: its Surface* ops put spawns and waypoints on the ground; the flat-floor fixes and generated spawns
+            // below don't apply (place one spawn per player with SurfaceSpawn).
+            AuthoredSpawns = Spawns.Count;
+            return;
+        }
         SnapToGround(Spawns);
         SnapToGround(Waypoints);
         Fix(Spawns, "spawn");

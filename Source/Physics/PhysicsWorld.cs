@@ -854,10 +854,13 @@ public sealed class PhysicsWorld : IWorldQuery
             }
     }
 
+    private readonly List<int> _meshScratch = new();
+
     private void AddMeshTriangles(int meshIndex, Vector3 min, Vector3 max, List<ContactShape> into)
     {
         var mesh = _meshes[meshIndex];
-        var tris = new List<int>();
+        var tris = _meshScratch; // reused: movement gathers every tick (no allocations)
+        tris.Clear();
         var v = new GatherVisitor { Items = tris };
         mesh.Tree.Overlap(min, max, ref v);
         tris.Sort();
