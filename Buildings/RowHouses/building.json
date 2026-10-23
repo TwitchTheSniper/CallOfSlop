@@ -48,8 +48,8 @@
     {
       "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2},
       "rooms": [
-        {"id": "no1_front", "type": "living", "rect": [-7.5, 1, -2.5, 4.5], "wall": "$paper1"},
-        {"id": "no1_hall", "type": "hall", "rect": [-7.5, -1.5, -2.5, 1], "windows": false},
+        {"id": "no1_front", "type": "living", "rect": [-7.5, 1.15, -2.5, 4.5], "wall": "$paper1"},
+        {"id": "no1_hall", "type": "hall", "rect": [-7.5, -1.5, -2.5, 1.15], "windows": false},
         {
           "id": "no1_kitchen",
           "type": "kitchen",
@@ -57,8 +57,8 @@
           "floor": {"color": "#a89a88", "material": "tiles"},
           "wall": "#e8e0c8"
         },
-        {"id": "no3_front", "type": "living", "rect": [-2.5, 1, 2.5, 4.5], "wall": "$paper2"},
-        {"id": "no3_hall", "type": "hall", "rect": [-2.5, -1.5, 2.5, 1], "windows": false},
+        {"id": "no3_front", "type": "living", "rect": [-2.5, 1.15, 2.5, 4.5], "wall": "$paper2"},
+        {"id": "no3_hall", "type": "hall", "rect": [-2.5, -1.5, 2.5, 1.15], "windows": false},
         {
           "id": "no3_kitchen",
           "type": "kitchen",
@@ -66,8 +66,8 @@
           "floor": {"color": "#a89a88", "material": "tiles"},
           "wall": "#e8e0c8"
         },
-        {"id": "no5_front", "type": "living", "rect": [2.5, 1, 7.5, 4.5], "wall": "$paper3"},
-        {"id": "no5_hall", "type": "hall", "rect": [2.5, -1.5, 7.5, 1], "windows": false},
+        {"id": "no5_front", "type": "living", "rect": [2.5, 1.15, 7.5, 4.5], "wall": "$paper3"},
+        {"id": "no5_hall", "type": "hall", "rect": [2.5, -1.5, 7.5, 1.15], "windows": false},
         {
           "id": "no5_kitchen",
           "type": "kitchen",
@@ -93,15 +93,15 @@
       ],
       "openings": [
         {"type": "door", "at": [-3.4000000000000004, 4.5], "width": 0.9, "front": false, "color": "$door1"},
-        {"type": "door", "at": [-6.7, 1], "width": 0.9},
+        {"type": "door", "at": [-6.7, 1.15], "width": 0.9},
         {"type": "door", "at": [-3.5, -1.5], "width": 0.9},
         {"type": "door", "at": [-3.5, -4.5], "width": 0.9, "color": "$door1"},
         {"type": "door", "at": [1.5999999999999996, 4.5], "width": 0.9, "front": true, "color": "$door2"},
-        {"type": "door", "at": [-1.7, 1], "width": 0.9},
+        {"type": "door", "at": [-1.7, 1.15], "width": 0.9},
         {"type": "door", "at": [1.5, -1.5], "width": 0.9},
         {"type": "door", "at": [1.5, -4.5], "width": 0.9, "color": "$door2"},
         {"type": "door", "at": [6.6, 4.5], "width": 0.9, "front": false, "color": "$door3"},
-        {"type": "door", "at": [3.3, 1], "width": 0.9},
+        {"type": "door", "at": [3.3, 1.15], "width": 0.9},
         {"type": "door", "at": [6.5, -1.5], "width": 0.9},
         {"type": "door", "at": [6.5, -4.5], "width": 0.9, "color": "$door3"},
         {"type": "door", "at": [-7.5, -5.7], "width": 0.9, "color": "#3a3a3a"},
@@ -112,8 +112,8 @@
       "height": 2.7,
       "autoWindows": {"spacing": 2.6, "width": 1.1, "sill": 0.9, "head": 2.2},
       "rooms": [
-        {"id": "no1_landing", "type": "corridor", "rect": [-7.5, -1.5, -2.5, 1], "windows": false},
-        {"id": "no1_front", "type": "bedroom", "rect": [-7.5, 1, -2.5, 4.5], "wall": "$paper1"},
+        {"id": "no1_landing", "type": "corridor", "rect": [-7.5, -1.5, -2.5, 1.15], "windows": false},
+        {"id": "no1_front", "type": "bedroom", "rect": [-7.5, 1.15, -2.5, 4.5], "wall": "$paper1"},
         {"id": "no1_back", "type": "kidsroom", "rect": [-7.5, -4.5, -4.5, -1.5]},
         {
           "id": "no1_bath",
@@ -123,8 +123,8 @@
           "wall": "#d8e8e0",
           "autoWindows": {"spacing": 1.6, "width": 0.6, "sill": 1.4, "head": 2.0}
         },
-        {"id": "no3_landing", "type": "corridor", "rect": [-2.5, -1.5, 2.5, 1], "windows": false},
-        {"id": "no3_front", "type": "bedroom", "rect": [-2.5, 1, 2.5, 4.5], "wall": "$paper2"},
+        {"id": "no3_landing", "type": "corridor", "rect": [-2.5, -1.5, 2.5, 1.15], "windows": false},
+        {"id": "no3_front", "type": "bedroom", "rect": [-2.5, 1.15, 2.5, 4.5], "wall": "$paper2"},
         {"id": "no3_back", "type": "kidsroom", "rect": [-2.5, -4.5, 0.5, -1.5]},
         {
           "id": "no3_bath",
@@ -134,8 +134,8 @@
           "wall": "#d8e8e0",
           "autoWindows": {"spacing": 1.6, "width": 0.6, "sill": 1.4, "head": 2.0}
         },
-        {"id": "no5_landing", "type": "corridor", "rect": [2.5, -1.5, 7.5, 1], "windows": false},
-        {"id": "no5_front", "type": "bedroom", "rect": [2.5, 1, 7.5, 4.5], "wall": "$paper3"},
+        {"id": "no5_landing", "type": "corridor", "rect": [2.5, -1.5, 7.5, 1.15], "windows": false},
+        {"id": "no5_front", "type": "bedroom", "rect": [2.5, 1.15, 7.5, 4.5], "wall": "$paper3"},
         {"id": "no5_back", "type": "kidsroom", "rect": [2.5, -4.5, 5.5, -1.5]},
         {
           "id": "no5_bath",
@@ -147,22 +147,22 @@
         }
       ],
       "openings": [
-        {"type": "door", "at": [-3.1500000000000004, 1], "width": 0.9},
+        {"type": "door", "at": [-3.1500000000000004, 1.15], "width": 0.9},
         {"type": "door", "at": [-6.6, -1.5], "width": 0.9},
         {"type": "door", "at": [-3.1500000000000004, -1.5], "width": 0.9},
-        {"type": "door", "at": [1.8499999999999996, 1], "width": 0.9},
+        {"type": "door", "at": [1.8499999999999996, 1.15], "width": 0.9},
         {"type": "door", "at": [-1.6, -1.5], "width": 0.9},
         {"type": "door", "at": [1.8499999999999996, -1.5], "width": 0.9},
-        {"type": "door", "at": [6.85, 1], "width": 0.9},
+        {"type": "door", "at": [6.85, 1.15], "width": 0.9},
         {"type": "door", "at": [3.4, -1.5], "width": 0.9},
         {"type": "door", "at": [6.85, -1.5], "width": 0.9}
       ]
     }
   ],
   "stairs": [
-    {"floor": 0, "rect": [-6.05, -0.05, -3.65, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
-    {"floor": 0, "rect": [-1.05, -0.05, 1.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
-    {"floor": 0, "rect": [3.95, -0.05, 6.35, 0.85], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}}
+    {"floor": 0, "rect": [-6.05, -0.05, -3.65, 1.0], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [-1.05, -0.05, 1.35, 1.0], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}},
+    {"floor": 0, "rect": [3.95, -0.05, 6.35, 1.0], "dir": "+x", "color": {"color": "#5a3a24", "material": "wood"}}
   ],
   "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.3, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [

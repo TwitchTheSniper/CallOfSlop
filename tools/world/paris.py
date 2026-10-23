@@ -309,10 +309,13 @@ for z in (11.6, -9.0):
     prop("Lantern Street Lamp", -4.6, z, foot=(0.4, 0.4))
 
 # ============================================================================ belvedere stairs (level C -> D at the north jut)
+# The flight's top step ends where the belvedere's plateau starts (z -40), so the terrain's edge (it falls to level C
+# over 0.8 m in front of that) stays under every step: further in, the plateau's ground covered the upper steps.
+BELV_Z = -36.76   # the foot of the flight (it climbs 9 x 0.36 m towards -z to z -40)
 for k in range(9):
     top = LC + 0.333 * (k + 1)
-    block(-3.0, LC - 0.4, -38.6 - 0.36 * (k + 1), 0.0, top, -38.6 - 0.36 * k, STONE_D)
-block(-3.35, LC - 0.4, -41.9, -3.0, LD + 0.9, -38.6, STONE)
+    block(-3.0, LC - 0.4, BELV_Z - 0.36 * (k + 1), 0.0, top, BELV_Z - 0.36 * k, STONE_D)
+block(-3.35, LC - 0.4, BELV_Z - 3.3, -3.0, LD + 0.9, BELV_Z, STONE)
 block(-7.0, LC - 0.4, -40.2, -3.35, LD + 1.0, -39.6, STONE)        # belvedere parapet wall over the courtyard
 # belvedere railing along its front over the stairs side gaps and benches
 prop("Metro Railing", -5.2, -40.6, y=0.0, foot=(3.1, 0.2))
@@ -464,7 +467,7 @@ for x in (-47.0, -35.5, -24.0, -13.0):
     prop("Lantern Street Lamp", x, -13.0, foot=(0.4, 0.4))
 for x in (-40.5, -29.0):
     prop("Lantern Street Lamp", x, -20.4, foot=(0.4, 0.4))
-CARS = [("Hatchback", -45.0, -18.6, 0), ("Sedan", -30.5, -18.6, 180), ("Taxi", -26.0, 15.0, 0), ("Hatchback", -46.0, 14.2, 180)]
+CARS = [("Hatchback", -45.0, -18.6, 0), ("Sedan", -30.5, -18.6, 180), ("Taxi", -30.5, 15.0, 0), ("Hatchback", -46.0, 14.2, 180)]
 for name, x, z, yaw in CARS:
     prop(name, x, z, yaw=yaw, foot=(4.3, 1.9))
     decal("Oil Drips", x, z, y=LC if z < 0 else LA, rotation=90)

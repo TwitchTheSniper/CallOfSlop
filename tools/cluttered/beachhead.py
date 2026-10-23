@@ -503,7 +503,7 @@ for wx in (-48.0, -38.0):
 
 # the supply yard at the front: containers (hard cover facing the bluff), pallets and crates
 for (x, z, ax, ci, y, op) in [(-21.0, -2.0, True, 0, 0.0, False), (-13.0, -2.5, True, 1, 0.0, True), (-21.0, -2.0, True, 2, 2.6, False),
-                              (-5.5, -1.0, False, 3, 0.0, False), (-27.0, -4.0, False, 1, 0.0, False)]:
+                              (-5.5, -1.0, False, 3, 0.0, False), (-26.0, -4.0, False, 1, 0.0, False)]:  # (clear of the west tower's stairs)
     t.ops.append({"op": "Container", "x": x, "z": z, "alongX": ax, "color": tk.col(CONTAINERS[ci]), **({"y": y} if y else {}), **({"open": True} if op else {})})
     hx, hz = (3.0, 1.25) if ax else (1.25, 3.0)
     if y < 1:

@@ -19,6 +19,7 @@ LINING_T = 0.02
 STEP_RISE_MAX = 0.36
 MIN_DOOR_WIDTH = 0.9  # doors and arches (BuildingGen.MinDoorWidth)
 STAIR_END_CLEAR = 0.9  # step to wall at both ends of a flight (BuildingGen.StairEndClear)
+STAIR_HEADROOM = 2.1  # clear height over every step a standing body can be on (BuildingGen.StairHeadroom)
 DOOR_CLEAR_DEPTH = 1.25
 CELL = 0.1
 
@@ -1026,6 +1027,7 @@ class Generator:
         n = len(self.floors)
         t = self.t
         self.stair_plans = []
+        self.stair_holes = []
         for s, f in self.stairs:
             r = s["rect"]
             w = f"{self.where(f)}: stairs at {list(r)}"
@@ -1057,11 +1059,34 @@ class Generator:
                 top_room = self.clear_ahead(f + 1, high, (dx, dz))
                 if top_room < STAIR_END_CLEAR - 1e-6:
                     raise BuildingError(f"{w}: only {top_room:.2f} m between the last step and the wall on the floor above; leave at least {STAIR_END_CLEAR} m")
-            self.holes_in[f + 1].append(r)
+            hole = self.stair_hole(r, dx, dz, rise, steps, length)
+            self.holes_in[f + 1].append(hole)
+            self.stair_holes.append(hole)
             width = (r[3] - r[1]) if dx != 0 else (r[2] - r[0])
             self.reserved[f].append(grow(r, bottom, width))
-            self.reserved[f + 1].append(grow(r_inset(r, -0.1), top, width))
+            self.reserved[f + 1].append(grow(r_inset(hole, -0.1), top, width))
             self.stair_plans.append((s, f, r, bottom, top))
+
+    def stair_hole(self, r, dx, dz, rise, steps, length):
+        """The stairwell in the slab above a flight (BuildingGenerator.StairHole): the flight's rect, lengthened at its foot
+        until a standing body (0.8 m footprint) on any step under the slab's edge keeps STAIR_HEADROOM below the ceiling."""
+        run = length / steps
+        step = rise / steps
+        ceiling = rise - SLAB - LINING_T  # the ceiling lining's underside, above the flight's foot
+        under = max(0, math.floor((ceiling - STAIR_HEADROOM) / step + 1e-4))  # steps a body may stand on under the edge
+        extra = max(0.0, 2 * 0.4 + 0.05 - under * run)
+        if extra <= 0:
+            return r
+        x0, z0, x1, z1 = r
+        if dx > 0:
+            x0 -= extra
+        elif dx < 0:
+            x1 += extra
+        elif dz > 0:
+            z0 -= extra
+        else:
+            z1 += extra
+        return (x0, z0, x1, z1)
 
     def corner_waypoints(self, f, r):
         """BuildingGenerator.CornerWaypoints: a waypoint 0.55 m off each corner of r where a body fits."""
@@ -1103,7 +1128,7 @@ class Generator:
 
     def emit_stairs(self):
         n = len(self.floors)
-        for s, f, r, bottom, top in self.stair_plans:
+        for (s, f, r, bottom, top), h in zip(self.stair_plans, self.stair_holes):
             lf = self.level[f]
             rise = self.level[f + 1] - lf
             steps = math.ceil(rise / STEP_RISE_MAX - 1e-9)
@@ -1133,16 +1158,17 @@ class Generator:
             self.plan.waypoints += [pb, pt]
             self.corner_waypoints(f, r)  # round the flight and its hole's railing
             if f + 1 < n:
-                self.corner_waypoints(f + 1, r)
+                self.corner_waypoints(f + 1, h)
             self.plan.stairs.append((pb, pt))
             if not s["railing"]:
                 continue
             upper = f + 1 if f + 1 < n else f
             yr = self.level[f + 1]
+            # (round the hole, which may run further back than the flight's first step)
             if dx != 0:
-                sides = [(True, r[1], r[0], r[2], -1), (True, r[3], r[0], r[2], 1), (False, r[0] if dx > 0 else r[2], r[1], r[3], -1 if dx > 0 else 1)]
+                sides = [(True, h[1], h[0], h[2], -1), (True, h[3], h[0], h[2], 1), (False, h[0] if dx > 0 else h[2], h[1], h[3], -1 if dx > 0 else 1)]
             else:
-                sides = [(False, r[0], r[1], r[3], -1), (False, r[2], r[1], r[3], 1), (True, r[1] if dz > 0 else r[3], r[0], r[2], -1 if dz > 0 else 1)]
+                sides = [(False, h[0], h[1], h[3], -1), (False, h[2], h[1], h[3], 1), (True, h[1] if dz > 0 else h[3], h[0], h[2], -1 if dz > 0 else 1)]
             for ax, c, a0, b0, o in sides:
                 if self.near_wall(upper, ax, c, a0, b0):
                     continue
