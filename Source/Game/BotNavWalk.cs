@@ -251,7 +251,8 @@ public sealed partial class NavGraph
     /// body fit on the ledge where the line crosses it (or 0.1 m to either side)? A line that clips a window's frame (a
     /// diagonal between two grid nodes either side of a narrow window) fails: the mover can sometimes slide along the frame
     /// into the opening from the exact node, but a bot arriving a little off the line pins against the wall beside the
-    /// window, out of reach of the ledge, and never climbs (the Rooftops far walk's old flake).
+    /// window, out of reach of the ledge, and never climbs (the Rooftops far walk's old flake). Such a direction is kept only
+    /// as a last resort (TryLink), like one the mover can't walk.
     /// </summary>
     private static bool LedgeRoom(PhysicsWorld c, Vector3 a, Vector3 b, Vector3 ledge)
     {
