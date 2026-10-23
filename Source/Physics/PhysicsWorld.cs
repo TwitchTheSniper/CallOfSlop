@@ -202,12 +202,17 @@ public sealed class PhysicsWorld : IWorldQuery
         if (_dirty)
             return; // rebuilt on next use anyway
         var n = StaticCount;
-        var mins = new Vector3[n];
-        var maxs = new Vector3[n];
+        if (_refitMin.Length < n)
+        {
+            _refitMin = new Vector3[n];
+            _refitMax = new Vector3[n];
+        }
         for (var i = 0; i < n; i++)
-            ItemBounds(i, out mins[i], out maxs[i]);
-        _tree.Refit(mins, maxs);
+            ItemBounds(i, out _refitMin[i], out _refitMax[i]);
+        _tree.Refit(_refitMin.AsSpan(0, n), _refitMax.AsSpan(0, n));
     }
+
+    private Vector3[] _refitMin = [], _refitMax = []; // Refit's scratch (a door shutting refits the tree: no garbage each time)
 
     /// <summary>Adds a static oriented box (ramps, turned props). Returns its index (<see cref="ShapeKind.Obb"/> ids).</summary>
     public int AddObb(in Obb box)

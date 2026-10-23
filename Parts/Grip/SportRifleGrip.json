@@ -7,7 +7,7 @@
   "frame": {"carry": 10, "support": [0, -0.01, -0.21]},
   "+sockets": [
     {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.21]},
-    {"name": "utility", "type": "utility", "pos": [0.045, 0.0, -0.08]}
+    {"name": "utility", "type": "utility", "pos": [0.036, 0.0, -0.08]}
   ],
   "+model": [
     {"size": [0.072, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"}
