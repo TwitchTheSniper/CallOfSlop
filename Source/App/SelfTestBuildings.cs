@@ -569,6 +569,9 @@ public static partial class SelfTest
     /// <summary>Bots: the nav graph reaches every room of every building on the Building Yard from outside, and up every staircase.</summary>
     private static void CheckBuildingNav(Map yard)
     {
+        // The map as built: earlier sections' bot matches on it (Matches, Bots) may have left doors shut, props broken or
+        // chunks blown out, and the audit then depended on how those unseeded fights went.
+        yard.RestoreProps();
         World.SetMap(yard);
         for (var wait = 0; wait < 4000 && NavGraph.Current == NavGraph.Empty; wait++)
             NavGraph.Pump(50);

@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace CallOfSlop;
 
 /// <summary>
@@ -363,67 +361,41 @@ public static partial class SelfTest
             Fail($"the allocation run only switched classes {h.ClassSwitches} times");
     }
 
-    /// <summary>CPU per class at levels 4 and 6 against the heaviest hardbass track (median of three runs each).</summary>
+    /// <summary>
+    /// CPU per class at levels 4 and 6 against the heaviest hardbass track: the median ratio of interleaved runs on this
+    /// thread's CPU clock (<see cref="CompareCpu"/>), so the check holds on a noisy 2-core CI runner as on a quiet PC.
+    /// </summary>
     private static void CheckFrenzyClassCpu()
     {
-        const int sr = Audio.SampleRate;
-        const double seconds = 2;
-        var block = new float[MusicPlayer.BlockFrames * 2];
-        var blocks = (int)(seconds * sr / MusicPlayer.BlockFrames);
-        double Median(Func<double> run)
-        {
-            var a = new[] { run(), run(), run() };
-            Array.Sort(a);
-            return a[1];
-        }
-
+        const double seconds = 1.5;
         var r = new MusicRenderer();
-        double TrackCost(MusicTrack t)
-        {
-            r.Load(t, 9, t.FirstDropBar);
-            var t0 = Stopwatch.GetTimestamp();
-            for (var b = 0; b < blocks; b++)
-                r.Render(block);
-            return (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / seconds;
-        }
         var hb = MusicTracks.All.Where(t => t.Style == MusicStyle.Hardbass).ToArray();
-        TrackCost(hb[0]);
-        var heaviest = hb.OrderByDescending(TrackCost).First();
-        var heaviestCost = Median(() => TrackCost(heaviest));
-
-        double ClassCost(WeaponClass c, int level)
-        {
-            var f = new FrenzyLayer(13) { Class = c };
-            f.Target = level;
-            for (var b = 0; b < 200; b++)
-            {
-                Array.Clear(block);
-                f.MixInto(block, true);
-            }
-            var t0 = Stopwatch.GetTimestamp();
-            for (var b = 0; b < blocks; b++)
-            {
-                Array.Clear(block);
-                f.MixInto(block, true);
-            }
-            return (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / seconds;
-        }
-        ClassCost(WeaponClass.Sniper, 6); // warm-up
+        var (heaviest, _) = HeaviestTrack(hb, t => TrackWork(r, t, seconds));
+        var track = TrackWork(r, heaviest, seconds);
         var parts = new List<string>();
         var worst = 0.0;
+        var worstMs = 0.0;
+        var heaviestCost = 0.0;
+        var worstAt = "";
         foreach (var c in AllClasses)
         {
-            var c6 = Median(() => ClassCost(c, 6));
-            var c4 = Median(() => ClassCost(c, 4));
-            var top = Math.Max(c4, c6);
-            worst = Math.Max(worst, top);
-            parts.Add($"{c} {c4:0.00}/{c6:0.00}");
-            if (top > heaviestCost * FrenzyCpuRatio)
-                Fail($"{c}: the frenzy costs {top:0.00} ms per s, more than {FrenzyCpuRatio}x the heaviest track ({heaviestCost:0.00})");
-            if (top > MusicBudgetMsPerSecond)
-                Fail($"{c}: the frenzy costs {top:0.0} ms per s (budget {MusicBudgetMsPerSecond})");
+            var c4 = CompareCpu(track, FrenzyWork(c, 4, seconds), 7);
+            var c6 = CompareCpu(track, FrenzyWork(c, 6, seconds), 7);
+            var top = Math.Max(c4.Ratio, c6.Ratio);
+            var topMs = Math.Max(c4.CandMs, c6.CandMs) / seconds;
+            heaviestCost = Math.Max(heaviestCost, c4.RefMs / seconds);
+            if (top > worst)
+                (worst, worstAt) = (top, c.ToString());
+            worstMs = Math.Max(worstMs, topMs);
+            parts.Add($"{c} {c4.CandMs / seconds:0.00}/{c6.CandMs / seconds:0.00} = {c4.Ratio:0.00}x/{c6.Ratio:0.00}x");
+            if (top > FrenzyCpuRatio)
+                Fail($"{c}: the frenzy costs {top:0.00}x the heaviest track ({heaviest.Name}; medians {topMs:0.00} vs {c4.RefMs / seconds:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
+            if (topMs > MusicBudgetMsPerSecond)
+                Fail($"{c}: the frenzy costs {topMs:0.0} ms per s (budget {MusicBudgetMsPerSecond})");
         }
-        ClassLine($"CPU per class, ms per s of audio at level 4/6: {string.Join(", ", parts)}; heaviest hardbass track ({heaviest.Name}) {heaviestCost:0.00}; "
-                  + $"worst ratio {worst / Math.Max(1e-6, heaviestCost):0.00} (allowed {FrenzyCpuRatio}x) = {worst / 10:0.00}% of a core");
+        ClassLine($"CPU per class ({ThreadCpu.Kind}, median of interleaved pairs), ms per s of audio at level 4/6 and the ratio to the heaviest hardbass track "
+                  + $"({heaviest.Name}, {heaviestCost:0.00}): {string.Join(", ", parts)}; worst {worst:0.00}x ({worstAt}; allowed {FrenzyCpuRatio}x) = {worstMs / 10:0.00}% of a core");
+        CpuRatioNotes.Add($"frenzy classes: worst {worst:0.00}x ({worstAt}) of {heaviest.Name}");
+        ClassLine($"music CPU ratios ({ThreadCpu.Kind}; the user's rule: at most {FrenzyCpuRatio}x): {string.Join("; ", CpuRatioNotes)}");
     }
 }

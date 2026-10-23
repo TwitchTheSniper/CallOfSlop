@@ -568,79 +568,36 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// CPU: the frenzy at level 4 (and level 1) against the heaviest hardbass track's drop rendered plainly, each the
-    /// median of three runs on this machine, so a slow or busy CI runner can't make it flaky.
+    /// CPU: the frenzy at levels 4 and 6 (and level 1) against the heaviest hardbass track's drop rendered plainly,
+    /// as ratios of interleaved runs on this thread's CPU clock (<see cref="CompareCpu"/>), so a slow or busy CI
+    /// runner shifts both sides alike.
     /// </summary>
     private static void CheckFrenzyCpu()
     {
-        const int sr = Audio.SampleRate;
-        const double seconds = 3;
-        var block = new float[MusicPlayer.BlockFrames * 2];
-        var blocks = (int)(seconds * sr / MusicPlayer.BlockFrames);
-
-        double Median(Func<double> run)
-        {
-            var a = new[] { run(), run(), run() };
-            Array.Sort(a);
-            return a[1];
-        }
-
+        const double seconds = 1.5;
         var r = new MusicRenderer();
-        double TrackCost(MusicTrack t)
-        {
-            r.Load(t, 9, t.FirstDropBar);
-            var t0 = Stopwatch.GetTimestamp();
-            for (var b = 0; b < blocks; b++)
-                r.Render(block);
-            return (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / seconds;
-        }
         var hb = MusicTracks.All.Where(t => t.Style == MusicStyle.Hardbass).ToArray();
-        TrackCost(hb[0]); // JIT warm-up
-        MusicTrack heaviest = hb[0];
-        var heaviestCost = 0.0;
-        foreach (var t in hb)
-        {
-            var c = TrackCost(t);
-            if (c > heaviestCost)
-            {
-                heaviestCost = c;
-                heaviest = t;
-            }
-        }
-        heaviestCost = Median(() => TrackCost(heaviest));
-
-        double FrenzyCost(int level)
-        {
-            var f = new FrenzyLayer(13);
-            f.Target = level;
-            for (var b = 0; b < 200; b++)
-            {
-                Array.Clear(block);
-                f.MixInto(block, true); // reach the level (and the last drop)
-            }
-            var t0 = Stopwatch.GetTimestamp();
-            for (var b = 0; b < blocks; b++)
-            {
-                Array.Clear(block);
-                f.MixInto(block, true);
-            }
-            return (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency / seconds;
-        }
-        FrenzyCost(4); // warm-up
-        var l4 = Median(() => FrenzyCost(4));
-        var l6 = Median(() => FrenzyCost(6));
-        var l1 = Median(() => FrenzyCost(1));
-        var top = Math.Max(l4, l6);
-        FrenzyLine($"frenzy CPU: level 4 {l4:0.00} ms per s of audio, level 6 {l6:0.00}, level 1 {l1:0.00}; heaviest hardbass track ({heaviest.Name}) {heaviestCost:0.00}; "
-             + $"ratio {top / Math.Max(1e-6, heaviestCost):0.00} (allowed {FrenzyCpuRatio}x)");
-        if (top > heaviestCost * FrenzyCpuRatio)
-            Fail($"the frenzy layer costs {top:0.00} ms per s, more than {FrenzyCpuRatio}x the heaviest track ({heaviestCost:0.00})");
-        if (top > MusicBudgetMsPerSecond)
-            Fail($"the frenzy layer costs {top:0.0} ms per s (budget {MusicBudgetMsPerSecond})");
-        if (l6 > l4 * 1.25 + 0.1)
-            Fail($"level 6 ({l6:0.00} ms per s) costs clearly more than level 4 ({l4:0.00}); levels 5 and 6 should only change gains");
-        if (l1 > l4)
-            Fail($"level 1 ({l1:0.00} ms per s) costs more than level 4 ({l4:0.00}); the muted leads should be skipped");
+        var (heaviest, _) = HeaviestTrack(hb, t => TrackWork(r, t, seconds));
+        var track = TrackWork(r, heaviest, seconds);
+        var c4 = CompareCpu(track, FrenzyWork(WeaponClass.AssaultRifle, 4, seconds));
+        var c6 = CompareCpu(track, FrenzyWork(WeaponClass.AssaultRifle, 6, seconds));
+        var c1 = CompareCpu(track, FrenzyWork(WeaponClass.AssaultRifle, 1, seconds));
+        var l6vs4 = CompareCpu(FrenzyWork(WeaponClass.AssaultRifle, 4, seconds), FrenzyWork(WeaponClass.AssaultRifle, 6, seconds));
+        var l1vs4 = CompareCpu(FrenzyWork(WeaponClass.AssaultRifle, 4, seconds), FrenzyWork(WeaponClass.AssaultRifle, 1, seconds));
+        double l4 = c4.CandMs / seconds, l6 = c6.CandMs / seconds, l1 = c1.CandMs / seconds, heaviestCost = c4.RefMs / seconds;
+        var ratio = Math.Max(c4.Ratio, c6.Ratio);
+        FrenzyLine($"frenzy CPU ({ThreadCpu.Kind}, median of interleaved pairs): level 4 {l4:0.00} ms per s of audio ({c4.Ratio:0.00}x), level 6 {l6:0.00} ({c6.Ratio:0.00}x), "
+             + $"level 1 {l1:0.00} ({c1.Ratio:0.00}x) of the heaviest hardbass track ({heaviest.Name}, {heaviestCost:0.00}); allowed {FrenzyCpuRatio}x; "
+             + $"level 6 / level 4 {l6vs4.Ratio:0.00}, level 1 / level 4 {l1vs4.Ratio:0.00}");
+        CpuRatioNotes.Add($"frenzy (classic) level 4/6: {c4.Ratio:0.00}x/{c6.Ratio:0.00}x of {heaviest.Name} (spread {Math.Max(c4.Spread, c6.Spread):0.00})");
+        if (ratio > FrenzyCpuRatio)
+            Fail($"the frenzy layer costs {ratio:0.00}x the heaviest track ({heaviest.Name}; medians {Math.Max(l4, l6):0.00} vs {heaviestCost:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
+        if (Math.Max(l4, l6) > MusicBudgetMsPerSecond)
+            Fail($"the frenzy layer costs {Math.Max(l4, l6):0.0} ms per s (budget {MusicBudgetMsPerSecond})");
+        if (l6vs4.Ratio > 1.25)
+            Fail($"level 6 costs {l6vs4.Ratio:0.00}x level 4 ({l6:0.00} vs {l4:0.00} ms per s); levels 5 and 6 should only change gains and tempo");
+        if (l1vs4.Ratio > 1)
+            Fail($"level 1 costs {l1vs4.Ratio:0.00}x level 4 ({l1:0.00} vs {l4:0.00} ms per s); the muted leads should be skipped");
     }
 
     /// <summary>Kill frenzy music and Frenzy volume: defaults for old files, parsed, saved. Temporary files only.</summary>

@@ -369,6 +369,13 @@ public static partial class SelfTest
             }
         sw.Stop();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        if (allocated > 0) // the least of three more identical rounds: a one-off JIT tier-up allocation shows in one at most
+            allocated = Math.Min(allocated, SteadyAllocBytes(() =>
+            {
+                for (var f = 0; f < frameCount; f++)
+                    foreach (var p in bodies)
+                        BodyBloodRender.PlacePlayer(p, pose, body, f % 3);
+            }, warmups: 0));
         BodyBloodRender.Reset();
         var usPerFrame = sw.Elapsed.TotalMilliseconds * 1000 / frameCount;
         Line($"32 bodies: {placed / (double)frameCount:0} marks placed per frame in {usPerFrame:0.0} us (budget 100 us), {allocated} bytes allocated over {frameCount} frames; 0 extra draw calls (marks paint in the bodies' own draws)");
