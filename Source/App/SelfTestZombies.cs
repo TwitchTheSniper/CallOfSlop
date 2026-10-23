@@ -550,6 +550,7 @@ public static partial class SelfTest
             if (g.ServerBench(me, 1, 0, "Hot Load Kit") == null)
                 Fail("the workbench worked away from a workbench");
         }
+        CheckZombieDisassemble(zm, ref now); // taking whole builds apart, solo and co-op (SelfTestZombiesDisassemble.cs)
 
         // ---- Replication: zombies, the run, a build ----
         using (var g = ZGame(1, ref now, tweak: r => { r.FirstRoundDelay = 0.3f; r.SpawnDelay = 0.1f; r.SpawnDelayMin = 0.05f; }))

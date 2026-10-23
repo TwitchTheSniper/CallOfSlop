@@ -101,11 +101,22 @@ public sealed partial class Game
         return s;
     }
 
-    /// <summary>How many weapon slots the local player has: 2, or 3-4 once the slot upgrade is bought and the builds are there.</summary>
-    public int WeaponSlots => Local is { ExtraSlots: true } me && me.BuiltExtra[0] != null ? me.BuiltExtra[1] != null ? 4 : 3 : 2;
+    /// <summary>How many weapon slots the local player has: 2, or 3-4 once the slot upgrade is bought and the builds are there
+    /// (slot 3 may be empty while slot 4 holds a gun, taken apart at a workbench: switching skips empty slots).</summary>
+    public int WeaponSlots => Local is { ExtraSlots: true } me ? me.BuiltExtra[1] != null ? 4 : me.BuiltExtra[0] != null ? 3 : 2 : 2;
 
-    /// <summary>The slot after the active one (the swap key and the mouse wheel cycle through every slot you have).</summary>
-    public int NextSlot => (ActiveSlot + 1) % WeaponSlots;
+    /// <summary>The slot after the active one (the swap key and the mouse wheel cycle through every slot you have), skipping empty ones.</summary>
+    public int NextSlot
+    {
+        get
+        {
+            var n = WeaponSlots;
+            for (var k = 1; k < n; k++)
+                if (SlotHasGun((ActiveSlot + k) % n))
+                    return (ActiveSlot + k) % n;
+            return ActiveSlot; // no other gun: stay
+        }
+    }
 
     // ---- Built weapons and the melee slot ------------------------------------------------
 
@@ -413,6 +424,8 @@ public sealed partial class Game
     /// </summary>
     private bool CartBlocksShot(Player shooter, WeaponDef def, ref Vector3 dir)
     {
+        if (IsEmptyGun(def))
+            return true; // an empty slot (taken apart at a workbench) has nothing to fire (ZombiesDisassemble.cs)
         if (!IsCart(def))
             return false;
         if (!Carts.TryGetValue(shooter.Id, out var c) || c.Mode != CartMode.Manned || dir.LengthSquared() < 0.5f)

@@ -68,6 +68,9 @@ public sealed partial class Game
                             WriteBuild(_w, p.Id, s, w, 0, b.ToText());
                             Net.SendTo(guid, _w.Span, PacketReliability.ReliableOrdered);
                         }
+            foreach (var p in Players.Values)
+                if (ZPlayers.TryGetValue(p.Id, out var zp))
+                    SendEmptySlotsTo(guid, p, zp); // slots taken apart at a workbench (protocol 41, ZombiesDisassemble.cs)
             if (Players.TryGetValue(id, out var me))
                 SendZRun(me);
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
@@ -178,11 +181,33 @@ public sealed partial class Game
     {
         if (p.Id == LocalId || p.Bot != null || Net.IsOffline || GuidOf(p) is not { } g)
             return;
-        var zp = ZP(p);
-        _w.Begin(Msg.ZRun).U32((uint)zp.Scrap).U8((byte)Math.Min(zp.Parts.Count, 200));
-        foreach (var (name, n) in zp.Parts.Take(200))
-            _w.Str(name).U8((byte)Math.Min(n, 255));
+        WriteZRun(_w, ZP(p));
         Net.SendTo(g, _w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    private static void WriteZRun(PacketWriter w, ZPlayer zp)
+    {
+        w.Begin(Msg.ZRun).U32((uint)zp.Scrap).U8((byte)Math.Min(zp.Parts.Count, 200));
+        foreach (var (name, n) in zp.Parts.Take(200))
+            w.Str(name).U8((byte)Math.Min(n, 255));
+    }
+
+    /// <summary>Client: your loose parts and scrap (<see cref="Msg.ZRun"/>, after the message id).</summary>
+    private void ReadZRun(ref PacketReader r)
+    {
+        if (!r.Has(5))
+            return;
+        var zp = ZP(LocalId);
+        zp.Scrap = (int)r.U32();
+        int n = r.U8();
+        zp.Parts.Clear();
+        for (var i = 0; i < n && r.Has(2); i++)
+        {
+            var name = r.Str();
+            var count = r.Has(1) ? r.U8() : 0;
+            if (count > 0)
+                zp.Parts[name] = count;
+        }
     }
 
     /// <summary>The connection of a remote person, or null (the host, bots, unknown).</summary>
@@ -323,20 +348,8 @@ public sealed partial class Game
                 break;
             }
             case (byte)Msg.ZRun when !IsServer && r.Has(5):
-            {
-                var zp = ZP(LocalId);
-                zp.Scrap = (int)r.U32();
-                int n = r.U8();
-                zp.Parts.Clear();
-                for (var i = 0; i < n && r.Has(2); i++)
-                {
-                    var name = r.Str();
-                    var count = r.Has(1) ? r.U8() : 0;
-                    if (count > 0)
-                        zp.Parts[name] = count;
-                }
+                ReadZRun(ref r);
                 break;
-            }
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
                 break;
@@ -359,6 +372,11 @@ public sealed partial class Game
     {
         if (!Players.TryGetValue(who, out var p))
             return false;
+        if ((flags & ZBuildCleared) != 0)
+        {
+            ApplyCleared(p, slot, weapon); // the slot was taken apart at a workbench (protocol 41, ZombiesDisassemble.cs)
+            return true;
+        }
         WeaponBuild b;
         try
         {
