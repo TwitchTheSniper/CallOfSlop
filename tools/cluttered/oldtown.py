@@ -547,9 +547,9 @@ BACK_DOORS = [((-73.0, -24.3), (1, 0), (0, -1), -1), ((-58.0, -24.3), (1, 0), (0
               ((-6.0, -40.3), (1, 0), (0, -1), -1), ((6.0, 40.3), (1, 0), (0, 1), 1)]
 for k, (door, wd, od, side) in enumerate(BACK_DOORS):
     tk.bins_by_door(t, door, wd, od, rng, side=side, dumpster=k < 11, seed=100 + k)
-# behind the solid buildings: more dumpsters (each building has a back door)
-for k, (door, wd, od, side) in enumerate([((-50.0, -24.0), (1, 0), (0, -1), 1), ((-23.0, -24.0), (1, 0), (0, -1), -1), ((50.0, 24.0), (1, 0), (0, 1), -1),
-                                          ((23.0, 24.0), (1, 0), (0, 1), 1), ((-71.0, 14.0), (1, 0), (0, 1), 1)]):
+# behind the solid buildings: more dumpsters (each building has a back door; the bins go to the side away from a fire escape)
+for k, (door, wd, od, side) in enumerate([((-50.0, -24.0), (1, 0), (0, -1), 1), ((-23.0, -24.0), (1, 0), (0, -1), 1), ((50.0, 24.0), (1, 0), (0, 1), -1),
+                                          ((23.0, 24.0), (1, 0), (0, 1), -1), ((-71.0, 14.0), (1, 0), (0, 1), 1)]):
     t.mesh("box", door[0], door[1] + od[1] * 0.04, (0.20, 0.18, 0.16), y=0.0, width=1.2, height=2.2, depth=0.06)
     tk.bins_by_door(t, door, wd, od, rng, side=side, seed=200 + k)
 
@@ -570,14 +570,14 @@ def lane_dressing(a, b, out, names, n, seed):
 
 JUNK = ["Wooden Crate", "Small Crate", "Pallet Stack", "Pallet", "Cardboard Stack", "Cardboard Box Large", "Oil Drum", "Rusty Drum",
         "Plank Pile", "Brick Pile", "Gas Meter", "Junction Box", "Air Duct Riser", "Tyre Stack", "Sawhorse Barricade", "Cable Spool"]
+# fire escapes up the back of the two-storey buildings (before the lanes get their junk: none under them or at their foot)
+t.prop("Fire Escape Stairs", -26.5, -24.9, 0, check=False, tag="lane"); t.prop("Fire Escape Landing", -23.5, -24.9, 0, check=False, tag="lane")
+t.prop("Fire Escape Stairs", 26.5, 24.9, 180, check=False, tag="lane"); t.prop("Fire Escape Landing", 23.5, 24.9, 180, check=False, tag="lane")
+for (x0, z0, x1, z1) in ((-29.6, -26.4, -21.0, -24.0), (21.0, 24.0, 29.6, 26.4)):
+    t.mark(t.occ, (x0, z0, x1, z1)); t.mark(t.walk, (x0, z0, x1, z1))
 lane_dressing((-84, -24.0), (-16, -24.0), (0, -1), JUNK, 16, 1); lane_dressing((16, 24.0), (84, 24.0), (0, 1), JUNK, 16, 2)
 lane_dressing((-80, 14.0), (-44, 14.0), (0, 1), JUNK, 6, 3); lane_dressing((-30, 14.0), (-12, 14.0), (0, 1), JUNK, 4, 4)
 lane_dressing((44, -14.0), (82, -14.0), (0, -1), JUNK, 4, 5); lane_dressing((12, -14.0), (30, -14.0), (0, -1), JUNK, 4, 6)
-# fire escapes up the back of the two-storey buildings
-t.prop("Fire Escape Stairs", -26.5, -24.9, 0, check=False, tag="lane"); t.prop("Fire Escape Landing", -22.9, -25.0, 0, check=False, tag="lane")
-t.prop("Fire Escape Stairs", 26.5, 24.9, 180, check=False, tag="lane"); t.prop("Fire Escape Landing", 22.9, 25.0, 180, check=False, tag="lane")
-for (x0, z0, x1, z1) in ((-29.0, -26.4, -21.0, -24.0), (21.0, 24.0, 29.0, 26.4)):
-    t.mark(t.occ, (x0, z0, x1, z1)); t.mark(t.walk, (x0, z0, x1, z1))
 
 # ================================================================ roofs and walls
 ROOFS = [(-76, -24, -62, -12, STOREY + 0.3), (-62, -24, -54, -12, STOREY + 0.3), (-54, -24, -46, -12, 5.6), (-42, -24, -30, -12, STOREY + 0.3), (-30, -24, -16, -12, 7.6),
