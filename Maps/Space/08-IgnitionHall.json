@@ -6,6 +6,22 @@
  "order": 608,
  "destructible": false,
  "maxPlayers": 16,
+ "test": {
+  "shape": "polygon",
+  "minProps": 180,
+  "minSolidProps": 90,
+  "minDecals": 150,
+  "maxDrawnBoxes": 420,
+  "symmetry": "turn",
+  "walkFairness": 0.1,
+  "minNavNodesAbove": [
+   2.0,
+   10
+  ],
+  "botMatchSeconds": 15,
+  "botMatchMode": "tdm",
+  "botMatchPlayers": 12
+ },
  "skybox": {
   "preset": "night",
   "zenith": "#0a0b12",

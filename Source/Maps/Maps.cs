@@ -690,41 +690,130 @@ public static partial class Maps
     }
 
     /// <summary>
-    /// "CallOfSlop.exe --check-map FILE": loads one map file and reports problems, for map makers.
-    /// Exit code 0 = the map loads; 1 = it doesn't (the reason is printed).
+    /// "CallOfSlop.exe --check-map FILE": loads one map file, reports problems and runs the "Map contract" checks on it
+    /// (SelfTestMapContract.cs: what main's full self-test would find, in seconds), for map makers. Prints to the
+    /// terminal and to callofslop.log. Exit code 0 = the map loads and every check passes; otherwise the number of
+    /// problems (the reasons are printed).
     /// </summary>
     public static int Check(string file)
     {
+        using var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+        var output = new TeeWriter(stdout, Console.Out);
+        Brutal.GlfwApi.Glfw.Init(); // only for the clock (the bot match's game), as the self-test does; no window
+        try
+        {
+            return CheckOne(file, output);
+        }
+        finally
+        {
+            Brutal.GlfwApi.Glfw.Terminate();
+        }
+    }
+
+    /// <summary>"CallOfSlop.exe --check-maps DIR": --check-map for every map file in a folder (a pack), with a tally at the end.</summary>
+    public static int CheckAll(string dir)
+    {
+        using var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
+        var output = new TeeWriter(stdout, Console.Out);
+        if (!Directory.Exists(dir))
+        {
+            output.WriteLine($"ERROR: no folder {dir}");
+            return 1;
+        }
+        var files = Directory.GetFiles(dir, "*.json", SearchOption.AllDirectories)
+            .Where(f => !Path.GetFileName(f).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase) && !InPackAssetFolder(dir, f))
+            .OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray();
+        Brutal.GlfwApi.Glfw.Init();
+        var problems = 0;
+        var failedFiles = new List<string>();
+        try
+        {
+            foreach (var f in files)
+            {
+                output.WriteLine($"== {Path.GetRelativePath(dir, f)}");
+                var n = CheckOne(f, output);
+                problems += n;
+                if (n > 0)
+                    failedFiles.Add(Path.GetFileName(f));
+                output.WriteLine();
+            }
+        }
+        finally
+        {
+            Brutal.GlfwApi.Glfw.Terminate();
+        }
+        output.WriteLine($"{files.Length} map files checked, {problems} problem(s){(failedFiles.Count > 0 ? " in " + string.Join(", ", failedFiles) : "")}");
+        return problems;
+    }
+
+    private static int CheckOne(string file, TextWriter output)
+    {
+        Map m;
         try
         {
             // A file inside the Maps folder keeps its pack (its pack's own props and models); anything else stands alone.
             var full = Path.GetFullPath(file);
             var rel = Path.GetRelativePath(Folder, full);
             var inMaps = !rel.StartsWith("..", StringComparison.Ordinal) && !Path.IsPathRooted(rel);
-            var m = MapFile.Load(File.ReadAllText(file), inMaps ? rel : Path.GetFileName(file), inMaps ? null : "");
+            m = MapFile.Load(File.ReadAllText(file), inMaps ? rel : Path.GetFileName(file), inMaps ? null : "");
             var spawnsBefore = m.Spawns.ToList();
             m.Validate();
             var moved = spawnsBefore.Where((p, i) => p != m.Spawns[i]).Count();
-            Console.WriteLine($"OK: '{m.Name}' ({m.Size}, {m.HalfX * 2:0} x {m.HalfZ * 2:0} m): {m.Solid.Count} boxes, {m.Spawns.Count} spawns, {m.Waypoints.Count} waypoints, fingerprint {m.ContentHash:x8}");
+            output.WriteLine($"OK: '{m.Name}' ({m.Size}, {m.HalfX * 2:0} x {m.HalfZ * 2:0} m): {m.Solid.Count} boxes, {m.Spawns.Count} spawns, {m.Waypoints.Count} waypoints, fingerprint {m.ContentHash:x8}");
             if (m.Boundary is { } bd)
-                Console.WriteLine($"boundary: {bd.Spec.Shape.ToString().ToLowerInvariant()}, {bd.SegmentCount} segments, {bd.Area:0} square metres inside, "
-                                  + $"{bd.Perimeter:0} m round, edge {bd.Spec.Edge.Style.ToString().ToLowerInvariant()}");
+                output.WriteLine($"boundary: {bd.Spec.Shape.ToString().ToLowerInvariant()}, {bd.SegmentCount} segments, {bd.Area:0} square metres inside, "
+                                 + $"{bd.Perimeter:0} m round, edge {bd.Spec.Edge.Style.ToString().ToLowerInvariant()}");
             if (m.Terrain is { } t)
-                Console.WriteLine($"terrain: {t.CountX} x {t.CountZ} samples every {t.Cell:0.##} m, heights {t.MinHeight:0.0} to {t.MaxHeight:0.0} m, {m.TerrainSpec!.Features.Count} features, "
-                                  + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");
+                output.WriteLine($"terrain: {t.CountX} x {t.CountZ} samples every {t.Cell:0.##} m, heights {t.MinHeight:0.0} to {t.MaxHeight:0.0} m, {m.TerrainSpec!.Features.Count} features, "
+                                 + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");
             if (moved > 0)
-                Console.WriteLine($"note: {moved} spawn(s) were inside geometry and get moved to the nearest free spot");
+                output.WriteLine($"note: {moved} spawn(s) were inside geometry and get moved to the nearest free spot");
             if (m.GeneratedSpawns > 0 || m.MaxPlayers < m.WantedMaxPlayers)
-                Console.WriteLine($"note: {m.AuthoredSpawns} spawns for up to {m.WantedMaxPlayers} players: {m.GeneratedSpawns} generated, limit {m.MaxPlayers} (add Spawn ops to place them yourself)");
+                output.WriteLine($"note: {m.AuthoredSpawns} spawns for up to {m.WantedMaxPlayers} players: {m.GeneratedSpawns} generated, limit {m.MaxPlayers} (add Spawn ops to place them yourself)");
             if (m.Waypoints.Count == 0)
-                Console.WriteLine("note: no waypoints; bots will wander. Add \"Waypoint\" ops or { \"op\": \"AutoWaypoints\", \"spacing\": 8 }");
-            return 0;
+                output.WriteLine("note: no waypoints; bots will wander. Add \"Waypoint\" ops or { \"op\": \"AutoWaypoints\", \"spacing\": 8 }");
         }
         catch (Exception ex) when (ex is MapFileException or IOException)
         {
-            Console.WriteLine("ERROR: " + ex.Message);
+            output.WriteLine("ERROR: " + ex.Message);
             return 1;
         }
+        // The contract checks need the map in the loaded list (the bot match starts a game by map id): take the slot of
+        // the loaded map with the same name, or a new one.
+        Adopt(m);
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        output.WriteLine($"contract checks{(m.TestSpec == null ? " (universal only)" : "")}:");
+        var failures = SelfTest.CheckMapContractTool(m, output);
+        output.WriteLine(failures == 0 ? $"PASS: every check passed ({sw.Elapsed.TotalSeconds:0.0} s)" : $"FAILED: {failures} check(s) failed ({sw.Elapsed.TotalSeconds:0.0} s)");
+        return failures;
+    }
+
+    /// <summary>Puts a map loaded by a tool into the list (replacing a loaded map of the same name), so a game can be started on it.</summary>
+    private static void Adopt(Map m)
+    {
+        var all = All;
+        var slot = Array.FindIndex(all, x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase));
+        if (slot >= 0)
+        {
+            m.Id = (byte)slot;
+            m.Pack = all[slot].Pack;
+            all[slot] = m;
+        }
+        else if (all.Length < 255)
+        {
+            m.Id = (byte)all.Length;
+            _all = [.. all, m];
+        }
+    }
+
+    /// <summary>Writes to two writers (the terminal and callofslop.log).</summary>
+    private sealed class TeeWriter(TextWriter a, TextWriter b) : TextWriter
+    {
+        public override System.Text.Encoding Encoding => a.Encoding;
+        public override void Write(char value) { a.Write(value); b.Write(value); }
+        public override void Write(string? value) { a.Write(value); b.Write(value); }
+        public override void WriteLine(string? value) { a.WriteLine(value); b.WriteLine(value); }
+        public override void WriteLine() { a.WriteLine(); b.WriteLine(); }
     }
 
     /// <summary>"CallOfSlop.exe --map-ops": prints every op a map file can use, with its parameters.</summary>

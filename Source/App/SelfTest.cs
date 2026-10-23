@@ -37,8 +37,16 @@ public static partial class SelfTest
     private static StreamWriter _log = null!;
     private static int _failures;
 
+    /// <summary>Where Line and Fail go when no self-test is running (the "--check-map" tool borrows the map checks; SelfTestMapContract.cs).</summary>
+    private static Action<string>? _lineSink, _failSink;
+
     private static void Line(string s)
     {
+        if (_log == null)
+        {
+            _lineSink?.Invoke(s);
+            return;
+        }
         _log.WriteLine(s);
         _log.Flush();
     }
@@ -46,6 +54,11 @@ public static partial class SelfTest
     private static void Fail(string s)
     {
         _failures++;
+        if (_log == null)
+        {
+            _failSink?.Invoke(s);
+            return;
+        }
         Line("  FAIL: " + s);
     }
 
@@ -236,6 +249,7 @@ public static partial class SelfTest
         Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
         Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
         Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
+        Section("Map contract", CheckMapContract); // SelfTestMapContract.cs: every map against its file's "test" block (shape, dressing, objectives, symmetry, nav reach and fair walks, void links, probes, fall kill, a short bot match, horizon)
         Section("Space: Stratos Station", CheckSpaceStation); // SelfTestSpaceStation.cs: Space 01 (void map: fall kill, nav never over the void, every platform reached, fair walks, cost; no bot matches)
         Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
         Section("Server browser", CheckServerBrowser);
