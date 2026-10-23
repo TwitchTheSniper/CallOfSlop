@@ -95,7 +95,8 @@ public static partial class SelfTest
             AppearanceStore.Load(); // first run of this build: no appearance.txt, the hat comes from loadout.txt
             var migrated = AppearanceStore.Hat;
             var written = File.Exists(appearancePath) ? File.ReadAllLines(appearancePath) : [];
-            LoadoutStore.Load(); // rewrites loadout.txt without the hat line
+            LoadoutStore.Load(); // the old line is ignored...
+            LoadoutStore.Save(); // ...and gone the next time the loadouts are saved
             var loadoutLines = File.ReadAllLines(loadoutPath);
             var slot = LoadoutStore.Slots[0].Name;
             AppearanceStore.Look = new PlayerLook(Skin: 5, Headwear: 3);
@@ -268,7 +269,7 @@ public static partial class SelfTest
             server.SelfTestPacket(LookGuid, w.Span, 0);
 
             // The guest's loadout packet carries its look after the hat and the profile.
-            var guestLook = new PlayerLook(Skin: 3, Hair: 6, Headwear: 5, Beard: 2, Gear: 2, Outfit: 6);
+            var guestLook = new PlayerLook(Skin: 3, Hair: 6, Headwear: 5, Beard: 1, Gear: 2, Outfit: 6); // every axis different
             server.SelfTestPacket(LookGuid, LookLoadoutPacket(guestLook), 0);
             var got = guest.Look;
             server.SelfTestPacket(LookGuid, LookLoadoutPacket(null), 0); // a packet without the look: the look stays

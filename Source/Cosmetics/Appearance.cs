@@ -103,7 +103,8 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
         var a = r.U8();
         var b = r.U8();
         var c = r.U8();
-        return new PlayerLook((byte)(a & 15), (byte)(a >> 4), (byte)(b & 15), (byte)(b >> 4), (byte)(c & 15), (byte)(c >> 4)).Sanitized();
+        return new PlayerLook(Skin: (byte)(a & 15), Hair: (byte)(a >> 4), Headwear: (byte)(b & 15), Gear: (byte)(b >> 4), Beard: (byte)(c & 15),
+            Outfit: (byte)(c >> 4)).Sanitized();
     }
 
     /// <summary>A random concrete option on every axis (the screen's Random button).</summary>
