@@ -223,8 +223,8 @@ public static class ZombieAnim
     {
         var d = world - a.Pos;
         float c = MathF.Cos(a.Yaw), s = MathF.Sin(a.Yaw);
-        // The inverse of CreateRotationY(-yaw): rotate by +yaw.
-        return new Vector3(d.X * c - d.Z * s, d.Y, d.X * s + d.Z * c);
+        // The inverse of CreateRotationY(-yaw): CreateRotationY(+yaw) (row vectors: x' = x c + z s, z' = -x s + z c).
+        return new Vector3(d.X * c + d.Z * s, d.Y, -d.X * s + d.Z * c);
     }
 
     /// <summary>The upper body's frame (hips at the origin) in the zombie's own frame.</summary>
@@ -498,7 +498,7 @@ public static class ZombieAnim
     private static Vector3 ToLocalDir(in ZombieAnimInput a, Vector3 d)
     {
         float c = MathF.Cos(a.Yaw), s = MathF.Sin(a.Yaw);
-        return new Vector3(d.X * c - d.Z * s, d.Y, d.X * s + d.Z * c);
+        return new Vector3(d.X * c + d.Z * s, d.Y, -d.X * s + d.Z * c);
     }
 
     /// <summary>Climbing in: hands on the sill, the body tips forward over it with the legs tucked, lands inside.</summary>

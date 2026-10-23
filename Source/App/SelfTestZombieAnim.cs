@@ -256,13 +256,14 @@ public static partial class SelfTest
             var ents = w.Span.ToArray();
             var w2 = new PacketWriter();
             g.WriteZWorld(w2);
+            var hostNow = now; // (making the client game runs the clock on)
             using var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
             World.SetMap(zt);
             c.SelfTestReadZombies(ents, w2.Span.ToArray());
             // Then the tearing zombie gets shot: the client should flinch it on the same tick.
             g.ServerTick += 2;
             tear.Health -= tear.MaxHealth / 3;
-            g.SelfTestZombieAnimTick(now + 2 * World.TickDt);
+            g.SelfTestZombieAnimTick(hostNow + 2 * World.TickDt);
             g.WriteZEnts(w);
             var ents2 = w.Span.ToArray();
             g.WriteZWorld(w2);
