@@ -741,7 +741,7 @@ public static partial class SelfTest
                 + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
                 + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
-                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s [TEMP: from {from} to {to}, at {bot.Position}, mode {bot.Bot.Mode}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, goal trapped {bot.Bot.GoalTrapped}, target {bot.Bot.Target}, alive {bot.Alive}, deaths {bot.Deaths}, trapped here {g.IsTrapped(g.Nearest(bot.Position, needSight: false))}]");
+                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
             if (game.BotStuckKills > 0)
                 Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }
