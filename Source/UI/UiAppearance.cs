@@ -105,7 +105,7 @@ public sealed partial class Ui
 
             // ---- The model: drag to turn it; it turns slowly by itself when left alone ----
             ImGui.SetCursorScreenPos(viewMin);
-            ImGui.InvisibleButton("##lookview", new float2(MathF.Max(1, viewMax.X - viewMin.X), MathF.Max(1, viewMax.Y - viewMin.Y)));
+            ImGui.InvisibleButton("##lookview"u8, new float2(MathF.Max(1, viewMax.X - viewMin.X), MathF.Max(1, viewMax.Y - viewMin.Y)));
             if (ImGui.IsItemActive())
             {
                 _lookYaw += ImGui.GetIO().MouseDelta.X * 0.01f;
@@ -115,7 +115,7 @@ public sealed partial class Ui
                 _lookYaw += dt * 0.35f;
             _lookYaw %= MathF.Tau;
             var dl = ImGui.GetWindowDrawList();
-            DlText(dl, viewMin + new float2(10 * _scale, 8 * _scale), Dim8, "drag to turn");
+            DlText(dl, viewMin + new float2(10 * _scale, 8 * _scale), Dim8, "drag to turn"u8);
             var worn = AppearanceStore.EffectiveHat(Progress);
             LookPreview = new AppearancePreview(winPos, winPos + winSize, viewMin, viewMax, _lookYaw, name, AppearanceStore.Look, worn, prestige);
 
@@ -130,8 +130,7 @@ public sealed partial class Ui
                     DrawLookAxis(audio, axis, autoLook);
                 ImGui.Spacing();
                 ImGui.PushStyleColor(ImGuiCol.Text, Dim);
-                ImGuiSafe.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. "
-                                      + "Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour, hat) shows in every mode.");
+                ImGui.TextWrapped("Team modes: your shirt, sleeves, trousers and a bandana wear the team colour so sides stay readable. Without teams (free-for-all, co-op, Zombies) they wear your outfit colour. Everything else (skin, hair, headwear, beard, helmet colour, hat) shows in every mode."u8);
                 ImGui.PopStyleColor();
             }
             ImGui.EndChild();
@@ -144,9 +143,10 @@ public sealed partial class Ui
                 CloseAppearance();
             ImGui.SameLine();
             ImGui.SetCursorScreenPos(ImGui.GetCursorScreenPos() + new float2(10 * _scale, 10 * _scale));
-            ImGuiSafe.TextColored(Dim, AppearanceStore.Look.IsAuto
-                ? "Saved automatically. All Auto: the look the game picks from your name. Everyone in your matches sees it."
-                : "Saved automatically. Everyone in your matches sees this look.");
+            if (AppearanceStore.Look.IsAuto)
+                ImGui.TextColored(Dim, "Saved automatically. All Auto: the look the game picks from your name. Everyone in your matches sees it."u8);
+            else
+                ImGui.TextColored(Dim, "Saved automatically. Everyone in your matches sees this look."u8);
         }
         ImGui.End();
     }

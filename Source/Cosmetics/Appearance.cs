@@ -196,8 +196,11 @@ public readonly record struct PlayerLook(byte Skin = 0, byte Hair = 0, byte Head
     };
 
     /// <summary>A short readable form for logs ("skin=tan hair=auto ...").</summary>
-    public override string ToString() =>
-        string.Join(" ", Enum.GetValues<LookAxis>().Select(a => $"{AxisKey(a)}={OptionKey(a, Get(a))}"));
+    public override string ToString()
+    {
+        var self = this; // (a lambda in a struct can't use this)
+        return string.Join(" ", Enum.GetValues<LookAxis>().Select(a => $"{AxisKey(a)}={OptionKey(a, self.Get(a))}"));
+    }
 }
 
 /// <summary>
