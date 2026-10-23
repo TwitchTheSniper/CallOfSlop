@@ -1,0 +1,139 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Cargo Crate Large",
+ "category": "Vesper",
+ "description": "A big banded cargo crate with an orange label and a green seal lamp. Cover; breaks under heavy fire.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.0,
+    1.6,
+    1.6
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 320,
+  "breakBy": [
+   "explosions",
+   "streaks"
+  ],
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    2.0,
+    1.6,
+    1.6
+   ],
+   "offset": [
+    0.0,
+    0.8,
+    0.0
+   ],
+   "color": "#8e877c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.06,
+    0.12,
+    1.66
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    2.06,
+    0.12,
+    1.66
+   ],
+   "offset": [
+    0.0,
+    1.46,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.1,
+    1.62,
+    1.66
+   ],
+   "offset": [
+    -0.95,
+    0.81,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.1,
+    1.62,
+    1.66
+   ],
+   "offset": [
+    0.95,
+    0.81,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.5,
+    0.4,
+    0.02
+   ],
+   "offset": [
+    0.4,
+    0.9,
+    0.81
+   ],
+   "color": "#ffa040"
+  },
+  {
+   "size": [
+    0.12,
+    0.08,
+    0.02
+   ],
+   "offset": [
+    -0.6,
+    1.29,
+    0.81
+   ],
+   "color": "#b4ff50",
+   "anim": {
+    "type": "blink",
+    "color": "#b4ff50",
+    "glow": 0.9,
+    "period": 2.6,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

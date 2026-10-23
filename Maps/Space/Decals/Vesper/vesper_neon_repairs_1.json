@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Vesper Neon Repairs 1",
+ "category": "Vesper",
+ "description": "Tile 1 of 5 of the neon sign 'TORQUE & SPROCKET' (an invented shop name).",
+ "author": "Call of Slop",
+ "size": [
+  0.88,
+  0.9
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "vesper_neon_repairs_1.png",
+ "fadeDistance": 90
+}

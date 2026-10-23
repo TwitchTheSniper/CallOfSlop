@@ -1,0 +1,183 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Pad Light Pylon",
+ "category": "Vesper",
+ "description": "A 6 m landing-pad pylon with amber bands and blinking top lamps. Cover.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.8,
+    6.6,
+    0.8
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.8,
+    0.25,
+    0.8
+   ],
+   "offset": [
+    0.0,
+    0.125,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.3,
+    6.0,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    3.25,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.2,
+    0.2,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    6.3,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.5,
+    6.55,
+    0.0
+   ],
+   "color": "#ff4a3a",
+   "anim": {
+    "type": "blink",
+    "color": "#ff4a3a",
+    "glow": 1.8,
+    "period": 1.0,
+    "duty": 0.4
+   }
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    6.9,
+    0.0
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 1.8,
+    "period": 1.4,
+    "duty": 0.4
+   }
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    -0.5,
+    7.25,
+    0.0
+   ],
+   "color": "#4fe3ff",
+   "anim": {
+    "type": "blink",
+    "color": "#4fe3ff",
+    "glow": 1.8,
+    "period": 1.8,
+    "duty": 0.4
+   }
+  },
+  {
+   "size": [
+    0.34,
+    0.25,
+    0.34
+   ],
+   "offset": [
+    0.0,
+    2.125,
+    0.0
+   ],
+   "color": "#ffa040",
+   "anim": {
+    "type": "pulse",
+    "color": "#ffa040",
+    "glow": 1.0,
+    "period": 3.0
+   }
+  },
+  {
+   "size": [
+    0.34,
+    0.25,
+    0.34
+   ],
+   "offset": [
+    0.0,
+    3.625,
+    0.0
+   ],
+   "color": "#ffa040",
+   "anim": {
+    "type": "pulse",
+    "color": "#ffa040",
+    "glow": 1.0,
+    "period": 3.0
+   }
+  },
+  {
+   "size": [
+    0.34,
+    0.25,
+    0.34
+   ],
+   "offset": [
+    0.0,
+    5.125,
+    0.0
+   ],
+   "color": "#ffa040",
+   "anim": {
+    "type": "pulse",
+    "color": "#ffa040",
+    "glow": 1.0,
+    "period": 3.0
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}
