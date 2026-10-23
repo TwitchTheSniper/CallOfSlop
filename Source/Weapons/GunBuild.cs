@@ -184,6 +184,7 @@ public sealed class GunBuilder
         "Extended Mag", "Fast Mag", "Drum Mag", "Hollow Point Mag", "Light Stock", "Heavy Stock", "No Stock",
         // muzzle
         "flashHider", "slideComp", "longSuppressor", "fullChoke", "tankBrake", "focuser", "nozzle", "bell", "weight", "bayonet",
+        "loudener", "shroudedCan", "duckbill", "recoilHook", "threadProtector", "ventCollar",
         // barrel
         "extendedBarrel", "snubBarrel", "slugBarrel", "quickChange", "matchBarrel", "straightPull", "overclock", "precisionBore", "sawnOff",
         // underbarrel
@@ -776,6 +777,67 @@ public sealed class GunBuilder
                 Rod(BW * 2.3f, 0.05f, 0, _bore, z - 0.025f, Dark * 1.2f);
                 Rod(BW * 2.4f, 0.006f, 0, _bore, z - 0.006f, Metal);
                 return z - 0.05f;
+            case "loudener":
+            {
+                // A comically huge horn: a collar, then six flaring brass rings out to five barrel widths, with a glowing throat
+                var brass = Named("brass");
+                Rod(BW * 1.5f, 0.03f, 0, _bore, z - 0.015f, Metal * 0.85f); // collar
+                for (var i = 0; i < 6; i++)
+                {
+                    var w = BW * (1.8f + 0.75f * i);
+                    Rod(w, 0.038f, 0, _bore, z - 0.03f - 0.019f - 0.038f * i, brass * (1.05f - 0.05f * i));
+                }
+                Rod(BW * 6.4f, 0.012f, 0, _bore, z - 0.03f - 0.228f - 0.006f, brass * 0.7f); // the lip
+                GlowRod(BW * 1.1f, 0.2f, 0, _bore, z - 0.14f, new Vector3(1f, 0.55f, 0.15f)); // the throat glows
+                return z - 0.27f;
+            }
+            case "shroudedCan":
+            {
+                // A suppressor inside a slotted shroud: the can, a wider sleeve around it and dark slots along the sleeve
+                const float ln = 0.17f;
+                var r = MathF.Max(BW * 1.2f, 0.022f);
+                Rod(r * 1.7f, ln, 0, _bore, z - ln / 2, Metal * 0.7f); // the can
+                Rod(r * 2.3f, ln * 0.8f, 0, _bore, z - ln / 2, Dark * 1.3f); // the shroud
+                for (var i = 0; i < 4; i++)
+                {
+                    var a = i * PI / 4 + PI / 8;
+                    Box(0.004f, r * 2.5f, ln * 0.55f, MathF.Cos(a) * r * 0.2f, _bore + MathF.Sin(a) * r * 0.2f, z - ln / 2, Dark * 0.5f, rz: a);
+                }
+                Rod(r * 2.4f, 0.008f, 0, _bore, z - ln * 0.1f, Metal * 0.6f); // end caps
+                Rod(r * 2.4f, 0.008f, 0, _bore, z - ln * 0.9f, Metal * 0.6f);
+                return z - ln;
+            }
+            case "duckbill":
+                // A flat flare that squashes the pattern sideways: three wedges, each wider and flatter than the last
+                Rod(BW * 1.4f, 0.02f, 0, _bore, z - 0.01f, Metal * 0.8f);
+                for (var i = 0; i < 3; i++)
+                    Box(BW * (2.2f + 1.1f * i), BW * (1.1f - 0.15f * i), 0.02f, 0, _bore, z - 0.03f - 0.02f * i, Metal * (0.9f - 0.07f * i));
+                return z - 0.09f;
+            case "recoilHook":
+            {
+                // A collar with a hooked claw curving down in front of the muzzle: it pulls the climb back down
+                Rod(BW * 1.5f, 0.035f, 0, _bore, z - 0.0175f, Metal * 0.8f);
+                Box(BW * 0.5f, BW * 0.5f, 0.05f, 0, _bore - BW * 0.65f, z - 0.04f, Metal * 0.6f); // the arm
+                Box(BW * 0.5f, BW * 1.3f, BW * 0.5f, 0, _bore - BW * 1.25f, z - 0.062f, Metal * 0.6f, rx: 0.5f); // the claw
+                return z - 0.035f;
+            }
+            case "threadProtector":
+                // The plainest thing there is: a knurled cap over the muzzle thread
+                Rod(BW * 1.25f, 0.016f, 0, _bore, z - 0.008f, Metal * 0.9f);
+                Rod(BW * 1.32f, 0.004f, 0, _bore, z - 0.012f, Dark);
+                return z - 0.016f;
+            case "ventCollar":
+            {
+                // A sleeve with four angled vents around it (a louder, steadier report)
+                Rod(BW * 1.6f, 0.06f, 0, _bore, z - 0.03f, Metal * 0.85f);
+                for (var i = 0; i < 4; i++)
+                {
+                    var a = i * PI / 2 + PI / 4;
+                    Box(BW * 0.35f, BW * 0.35f, 0.03f, MathF.Cos(a) * BW * 0.8f, _bore + MathF.Sin(a) * BW * 0.8f, z - 0.03f, Dark * 0.6f, rx: 0.4f, rz: a);
+                }
+                Rod(BW * 1.7f, 0.006f, 0, _bore, z - 0.057f, A);
+                return z - 0.06f;
+            }
             case "bayonet":
             {
                 // socket bayonet: a ring around the muzzle, a short offset arm, and the blade under and past the muzzle

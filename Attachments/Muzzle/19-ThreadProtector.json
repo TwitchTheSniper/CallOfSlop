@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Thread Protector",
+  "slot": "Muzzle",
+  "order": 19,
+  "unlockOrder": 13,
+  "blurb": "A knurled cap over the muzzle thread. Nothing sticks out, nothing snags, nothing much happens.",
+  "pros": ["-5% draw time", "Nothing sticks out"],
+  "cons": ["+3% hip spread"],
+  "fits": { "sounds": ["Gun", "Boom"] },
+  "model": "threadProtector",
+  "effects": [
+    { "stat": "equipTime", "mul": 0.95 },
+    { "stat": "hipSpreadDeg", "mul": 1.03 }
+  ]
+}

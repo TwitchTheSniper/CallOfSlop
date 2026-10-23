@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Thread Protector",
+  "category": "muzzle",
+  "rarity": "common",
+  "flavor": "A knurled cap over the muzzle thread. Nothing sticks out, nothing snags, nothing much happens.",
+  "weight": 0.05,
+  "muzzles": [
+    [ 0, 0, -0.016
+    ]
+  ],
+  "model": [
+    {"shape": "rod", "size": [   0.03,   0.03,   0.016 ], "pos": [   0,   0,   -0.008 ], "color": "steel" },
+    {"shape": "rod", "size": [   0.032,   0.032,   0.004 ], "pos": [   0,   0,   -0.012 ], "color": "black" }
+  ],
+  "stats": [
+    {"stat": "equipTime", "mul": 0.95 },
+    {"stat": "hipSpreadDeg", "mul": 1.03 }
+  ]
+}

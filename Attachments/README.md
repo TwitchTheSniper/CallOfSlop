@@ -1,6 +1,6 @@
 # Making attachments for Call of Slop
 
-Every attachment is a single `.json` file in this folder. The 82 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
+Every attachment is a single `.json` file in this folder. The 88 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
 
 An attachment says which slot it goes in, which weapons it fits, and a list of stat changes ("effects") it makes to the weapon's numbers. The weapon numbers are the fields described in [Weapons/README.md](../Weapons/README.md).
 
@@ -79,7 +79,8 @@ Add `"min"` and/or `"max"` to `add`, `mul` or `grow` to clamp the result, e.g. `
 Any weapon number can be changed, plus these extras that only attachments use:
 
 - `optic`: the sight drawn when aiming: `Iron`, `RedDot`, `MiniDot`, `Holo`, `Prism2`, `Acog`, `Hybrid3`, `Scope4`, `Lpvo6`, `Scope8`, `Scope12`, `Scout` (a slim long-eye-relief tube mounted forward), `NightTube` (a fat night-vision tube with a glowing objective), `Periscope` (a tall riser with a mirror head: a 1x window 7 cm above the rail) or `Bead` (a shotgun bead and ghost ring on a rail, no glass). It picks the model, the reticle and the lens (see [Optics](#optics)). Pair it with an `adsZoom`.
-- `suppressor`: `true` draws a suppressor, makes the gunshot much quieter and dims the muzzle flash and tracers. Pair it with `"sound": "Suppressed"`.
+- `suppressor`: `true` draws a suppressor, makes the gunshot much quieter and dims the muzzle flash and tracers. Pair it with `"sound": "Suppressed"` and a `loudness` below 1.
+- `loudness`: how far the report carries, as a multiple of the stock gun (1; clamped to 0.25-4 on a kitted gun). Bots hear a shot `loudness` times as far (their 20-50 m hearing, 60 m just after being hit), another player's shot plays louder up close and its falloff reaches `loudness` times as far, and the muzzle flash grows with the square root of it. The suppressors use 0.5, the Vent Collar 1.15 and the Loudener 2.5. It isn't a weapon-file key: only attachments and parts set it.
 
 Recoil fields from a weapon's `recoil` block are changed by their names with a `recoil` prefix: `recoilVertical`, `recoilHorizontal`, `recoilBias`, `recoilJitter`, `recoilFirstShot`, `recoilRecovery`, `recoilRecoveryDelay`, `recoilShake`, `recoilPunch`, `recoilKickUp` and so on (every field in [Weapons/README.md](../Weapons/README.md#recoil)). `recoilDeg` scales all of the gun's recoil at once. The shipped attachments use them like this:
 
@@ -87,7 +88,10 @@ Recoil fields from a weapon's `recoil` block are changed by their names with a `
 | --- | --- |
 | Compensator | -30% vertical kick, -20% view punch, +15% camera shake |
 | Muzzle Brake | -30% sideways kick, -40% camera shake, +25% FOV kick |
-| Suppressor | -25% camera shake |
+| Suppressor | -25% camera shake (and half the loudness) |
+| Loudener | +25% overall recoil, +60% camera shake, +50% FOV kick (2.5x the loudness) |
+| Recoil Hook | -25% vertical kick, recovers 25% faster |
+| Vent Collar | -30% jitter, -15% sway, +10% camera shake |
 | Vertical Grip | -30% vertical kick, steadier viewmodel |
 | Angled Grip | -40% first-shot kick, +10% vertical kick |
 | Heavy Stock / Heavy Barrel | -20% / -15% overall recoil; the Heavy Stock also recovers 40% faster |
@@ -103,7 +107,7 @@ Any attachment file can borrow any of these with `"model"`. They're built from b
 
 | Slot | Models |
 | --- | --- |
-| Muzzle | `Suppressor`, `Compensator`, `Muzzle Brake`, `Choke`, `flashHider` (slotted prongs), `slideComp` (chunky pistol comp), `longSuppressor` (long rifle can), `fullChoke`, `tankBrake` (big boxy brake), `focuser` (glowing lens ring), `nozzle` (flared splitter), `bell` (brass blunderbuss bell), `weight` (heavy collar), `bayonet` (socket bayonet, blade under the muzzle) |
+| Muzzle | `Suppressor`, `Compensator`, `Muzzle Brake`, `Choke`, `flashHider` (slotted prongs), `slideComp` (chunky pistol comp), `longSuppressor` (long rifle can), `fullChoke`, `tankBrake` (big boxy brake), `focuser` (glowing lens ring), `nozzle` (flared splitter), `bell` (brass blunderbuss bell), `weight` (heavy collar), `bayonet` (socket bayonet, blade under the muzzle), `loudener` (a 27 cm brass horn with a glowing throat), `shroudedCan` (a can inside a slotted shroud), `duckbill` (flat flare), `recoilHook` (collar with a claw under the muzzle), `threadProtector` (a knurled cap), `ventCollar` (sleeve with four angled vents) |
 | Barrel | `Long Barrel`, `Short Barrel`, `Heavy Barrel`, `extendedBarrel` (+4 cm, threaded collar), `snubBarrel`, `slugBarrel` (thicker, with a rib), `quickChange` (handle on the left of the barrel), `matchBarrel` (+5 cm, fluted), `straightPull` (T-handle bolt), `overclock` (glowing coils), `precisionBore` (thicker, accent band; same length, so a musket can still be loaded from the muzzle), `sawnOff` (barrel and forend cut back) |
 | Underbarrel | `Vertical Grip`, `Angled Grip`, `Laser`, `handstop`, `bipod` (folded legs), `light` (with a lit lens), `foldingGrip`, `gyro` (flywheel), `weightedGrip` |
 | Magazine | `Extended Mag`, `Fast Mag`, `Drum Mag`, `Hollow Point Mag` (a short magazine), `shotgunDrum` (a drum instead of a shotgun's tube, swapped whole on a reload), `apRounds` (blue band), `incendiary` (glowing orange band), `overcharged` (glowing accent band), `stripper` (brass clips on the receiver), `fastLoader` (paper cartridges on the receiver) |
@@ -180,13 +184,13 @@ A new optic file can reuse any of the looks above with its own stats and sight. 
 
 **Snipers start with a scope.** A weapon's default kit holds its `defaultOptic` (see [Weapons/README.md](../Weapons/README.md); snipers without one get their first 4x-or-more scope in unlock order): it needs 0 weapon XP, bots always run it, and Gun Game hands it out with the gun. On such a gun the empty optic slot is its **iron sights**, which unlock at half its max weapon XP (rounded to 50; 3,300-3,450 for the shipped snipers) and are locked in the Optic list until then. Iron sights aren't an attachment file (they were designed when the optic slot was full at 15); `loadout.txt` saves them as `Iron Sights` in the kit, and a sniper kit saved with neither (older files) gets the starting scope back.
 
-Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in `unlockOrder`, are spread along a curve. The total depends on how many fit (`1000 + 180 x count`, rounded to 50: 15 attachments take about 3.7 matches, 33 about 6.9), so adding an attachment to a class makes those guns take a little longer to max out. The 27 attachments that shipped before the class-specific ones never need more weapon XP than they did then (their old place on the old curve is a cap), so nothing a player has unlocked locks again.
+Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in `unlockOrder`, are spread along a curve. The total depends on how many fit (`1100 + 140 x count`, rounded to 50: 17 attachments take about 3.5 matches, 45 about 7.4), so adding an attachment to a class makes those guns take a little longer to max out. The 27 attachments that shipped before the class-specific ones never need more weapon XP than they did then (their old place on the old curve is a cap), so nothing a player has unlocked locks again.
 
 **Every attachment is a trade.** Each one makes at least one stat worse on every gun it fits (on an optic, changing the zoom counts), so nothing is strictly better than an empty slot. The self-test section "Attachment variety" checks that, and that every gun has at least 3 slots with at least 2 choices in each.
 
 ## Which classes take what
 
-Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Bead Rail, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Bayonet, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
+Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Bead Rail, Duckbill Spreader, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Bayonet, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
 
 | Slot | Attachment | Unlock | Pistol | SMG | AssaultRifle | DMR | Sniper | Shotgun | LMG | Special |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -224,6 +228,12 @@ Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Ext
 | Muzzle | Blunderbuss Bell | 233 | - | - | - | - | - | - | - | 1/4 |
 | Muzzle | Muzzle Weight | 43 | - | - | - | - | - | - | - | all |
 | Muzzle | Bayonet | 237 | - | - | - | - | - | - | - | 1/4 |
+| Muzzle | Loudener | 173 | 8/9 | 6/7 | 7/8 | all | 3/5 | all | all | 1/4 |
+| Muzzle | Shrouded Can | 157 | - | - | 7/8 | all | - | - | all | - |
+| Muzzle | Duckbill Spreader | 127 | - | - | - | - | - | 5/6 | - | - |
+| Muzzle | Recoil Hook | 83 | - | all | all | - | - | all | all | - |
+| Muzzle | Thread Protector | 13 | 8/9 | 6/7 | 7/8 | all | 3/5 | all | all | 1/4 |
+| Muzzle | Vent Collar | 47 | - | 6/7 | 7/8 | all | 3/5 | all | all | 1/4 |
 | Barrel | Long Barrel | 140 | - | all | all | all | all | all | all | - |
 | Barrel | Short Barrel | 95 | - | all | all | all | all | all | all | - |
 | Barrel | Heavy Barrel | 190 | - | all | all | all | all | - | all | - |

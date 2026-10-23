@@ -282,6 +282,7 @@ public static partial class SelfTest
         Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
         Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
         Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
+        Section("Loudener", CheckLoudener); // SelfTestLoudener.cs: the loudness stat: bots hear a loud gun further and a suppressed one less far, the shot carries, the flash grows
         Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
         Section("Audio mixer", CheckAudioMixer); // SelfTestAudioMixer.cs: defaults table, the baked SeabMix2 levels, identity with no audio_mix.json, old saves moving untouched levels to the new defaults, JSON round trip / unknown keys / clamping, slider isolation, mute, F8 migration, no allocations closed or metering
         Section("Text", CheckText); // SelfTestText.cs: player-visible text

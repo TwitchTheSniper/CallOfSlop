@@ -97,8 +97,22 @@ public static class BotGear
                     levels[x.Id] = Progress.UnlockLevel(x);
             _weaponLevels = levels;
             _weaponSource = all;
-            _attachXp = new int[all.Length][];
-            _attachLists = new AttachmentDef[all.Length][];
+            // Every weapon's attachment list and unlock XP now, not on the life that first draws the gun: filling
+            // Attachments' own caches (a dictionary per weapon x attachment) allocates, and lives must not.
+            var attachXp = new int[all.Length][];
+            var attachLists = new AttachmentDef[all.Length][];
+            foreach (var x in all)
+                if (x.Id < all.Length && ReferenceEquals(all[x.Id], x))
+                {
+                    var list = Attachments.For(x).ToArray();
+                    var xps = new int[list.Length];
+                    for (var i = 0; i < xps.Length; i++)
+                        xps[i] = Attachments.UnlockXp(x, list[i]);
+                    attachLists[x.Id] = list;
+                    attachXp[x.Id] = xps;
+                }
+            _attachXp = attachXp;
+            _attachLists = attachLists;
             var kits = new uint[all.Length];
             foreach (var x in all)
                 if (x.Id < kits.Length)

@@ -230,9 +230,10 @@ public static class Attachments
 
     /// <summary>
     /// Weapon XP to unlock everything on this gun. A typical match earns ~1,000 weapon XP for the gun you use, so the
-    /// fewest attachments (15, a derringer) take ~3.7 matches and the most (33, a sniper) ~6.9 matches.
+    /// fewest attachments (17, a derringer) take ~3.5 matches and the most (about 45, an assault rifle) ~7.4 matches.
+    /// (1000 + 180 per attachment until the 2026-10-23 attachments pass; the older attachments' XP is capped anyway.)
     /// </summary>
-    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (1000 + 180 * For(w).Count) / 50 * 50; // multiple of 50
+    public static int MaxXp(WeaponDef w) => For(w).Count == 0 ? 0 : (1100 + 140 * For(w).Count) / 50 * 50; // multiple of 50
 
     /// <summary>
     /// Weapon XP for the k-th attachment (in unlock order) on a gentle curve: the first few come fast,

@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Duckbill Spreader",
+  "slot": "Muzzle",
+  "order": 17,
+  "unlockOrder": 127,
+  "blurb": "A flat flare that squashes the pattern wide. More pellets, each one weaker, and they go everywhere.",
+  "pros": ["+30% pellets", "Wide pattern: easy to clip a mover"],
+  "cons": ["-20% damage per pellet", "+35% hip spread", "+30% aimed spread", "-15% range"],
+  "fits": { "classes": ["Shotgun"], "notWeapons": ["Slug Pump"] },
+  "model": "duckbill",
+  "effects": [
+    { "stat": "pellets", "grow": 1.3 },
+    { "stat": "damage", "mul": 0.8 },
+    { "stat": "hipSpreadDeg", "mul": 1.35 },
+    { "stat": "adsSpreadMult", "mul": 1.3 },
+    { "stat": "rangeM", "mul": 0.85 }
+  ]
+}

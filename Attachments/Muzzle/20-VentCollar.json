@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Vent Collar",
+  "slot": "Muzzle",
+  "order": 20,
+  "unlockOrder": 47,
+  "blurb": "A sleeve with four angled vents: it takes the wobble out of the spray and puts it into the noise.",
+  "pros": ["-30% recoil jitter", "-15% sideways sway"],
+  "cons": ["15% louder", "+10% camera shake", "-3% range"],
+  "fits": { "sounds": ["Gun", "Boom"], "notClasses": ["Pistol"] },
+  "model": "ventCollar",
+  "effects": [
+    { "stat": "recoilJitter", "mul": 0.7 },
+    { "stat": "recoilSway", "mul": 0.85 },
+    { "stat": "loudness", "mul": 1.15 },
+    { "stat": "recoilShake", "mul": 1.1 },
+    { "stat": "rangeM", "mul": 0.97 }
+  ]
+}

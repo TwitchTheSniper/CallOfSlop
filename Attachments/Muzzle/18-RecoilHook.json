@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Recoil Hook",
+  "slot": "Muzzle",
+  "order": 18,
+  "unlockOrder": 83,
+  "blurb": "A hooked claw under the muzzle that drags the climb back down. It also drags the hip shot about.",
+  "pros": ["-25% vertical recoil", "Recovers 25% faster"],
+  "cons": ["+10% hip spread", "-5% range"],
+  "fits": { "classes": ["SMG", "AssaultRifle", "LMG", "Shotgun"] },
+  "model": "recoilHook",
+  "effects": [
+    { "stat": "recoilVertical", "mul": 0.75 },
+    { "stat": "recoilRecovery", "mul": 1.25 },
+    { "stat": "hipSpreadDeg", "mul": 1.1 },
+    { "stat": "rangeM", "mul": 0.95 }
+  ]
+}

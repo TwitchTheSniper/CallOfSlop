@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Loudener",
+  "category": "muzzle",
+  "rarity": "legendary",
+  "flavor": "The opposite of a suppressor. A brass horn the size of a bucket: hits a little harder, kicks a lot harder, and every zombie on the map hears it.",
+  "weight": 1.4,
+  "muzzles": [
+    [ 0, 0, -0.27
+    ]
+  ],
+  "model": [
+    {"shape": "rod", "size": [   0.036,   0.036,   0.03 ], "pos": [   0,   0,   -0.015 ], "color": "steel" },
+    {"shape": "rod", "size": [   0.045,   0.045,   0.038 ], "pos": [   0,   0,   -0.049 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.065,   0.065,   0.038 ], "pos": [   0,   0,   -0.087 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.085,   0.085,   0.038 ], "pos": [   0,   0,   -0.125 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.105,   0.105,   0.038 ], "pos": [   0,   0,   -0.163 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.125,   0.125,   0.038 ], "pos": [   0,   0,   -0.201 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.145,   0.145,   0.038 ], "pos": [   0,   0,   -0.239 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.17,   0.17,   0.012 ], "pos": [   0,   0,   -0.264 ], "color": "brass" },
+    {"shape": "rod", "size": [   0.026,   0.026,   0.2 ], "pos": [   0,   0,   -0.14 ], "color": "orange", "tag": "glow" }
+  ],
+  "stats": [
+    {"stat": "loudness", "mul": 2.5 },
+    {"stat": "damage", "mul": 1.06 },
+    {"stat": "rangeM", "mul": 1.1 },
+    {"stat": "recoilDeg", "mul": 1.25 },
+    {"stat": "recoilShake", "mul": 1.6 },
+    {"stat": "recoilPunchFov", "mul": 1.5 },
+    {"stat": "hipSpreadDeg", "mul": 1.15 },
+    {"stat": "mobility", "add": -0.04 }
+  ]
+}

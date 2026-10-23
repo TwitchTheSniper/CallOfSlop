@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Shrouded Can",
+  "slot": "Muzzle",
+  "order": 16,
+  "unlockOrder": 157,
+  "blurb": "A suppressor inside a slotted shroud: as quiet as the plain can and it keeps nearly all its reach, but it's heavy out front.",
+  "pros": ["Much quieter, muffled gunshot", "Bots hear it at half the distance", "Faint flash and thin, dim tracers", "Only -5% range"],
+  "cons": ["Slower to aim", "-2% speed", "+10% camera shake"],
+  "fits": { "classes": ["AssaultRifle", "DMR", "LMG"], "sounds": ["Gun"] },
+  "model": "shroudedCan",
+  "effects": [
+    { "stat": "suppressor", "set": true },
+    { "stat": "sound", "set": "Suppressed" },
+    { "stat": "loudness", "mul": 0.5 },
+    { "stat": "rangeM", "mul": 0.95 },
+    { "stat": "adsTime", "add": 0.03 },
+    { "stat": "mobility", "add": -0.02 },
+    { "stat": "recoilShake", "mul": 1.1 }
+  ]
+}
