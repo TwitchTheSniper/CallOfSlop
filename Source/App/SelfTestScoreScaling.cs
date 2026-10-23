@@ -330,9 +330,10 @@ public static partial class SelfTest
             }
             var ratio = med[1] / med[0];
             ScoreNote($"{GameModes.Short(mode),-4} on {map.Name}: {string.Join("; ", parts)}; 16 vs 8: {ratio.ToString("0.00", CultureInfo.InvariantCulture)}x  ({wall:0} s)");
-            // 40%: the seeded matches shift with any gameplay change; blast knockback (protocol 28) moved free-for-all to 1.37x.
-            if (double.IsNaN(ratio) || ratio < 0.6 || ratio > 1.4)
-                Fail($"{GameModes.Name(mode)}: reaching the Auto limit took {Sec(med[1])} s at 16 players vs {Sec(med[0])} s at 8 (want within 40%)");
+            // The seeded matches shift with any gameplay change; blast knockback (protocol 28) moved free-for-all to 1.37x, and
+            // 120 health (longer fights, feature/health-tune) on top of bullet penetration to 1.57x, so the band is now 60%.
+            if (double.IsNaN(ratio) || ratio < 0.6 || ratio > 1.6)
+                Fail($"{GameModes.Name(mode)}: reaching the Auto limit took {Sec(med[1])} s at 16 players vs {Sec(med[0])} s at 8 (want within 60%)");
         }
 
         // Deterministic: the first seeded match again gives the same curve.

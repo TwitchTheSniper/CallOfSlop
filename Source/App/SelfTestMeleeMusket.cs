@@ -117,5 +117,25 @@ public static partial class SelfTest
             Fail("Musket: a close body shot should still kill a crouched Entrenched player");
         if (musket.Reload < 2.5f || musket.Mag != 1)
             Fail("Musket: its one-shot power is balanced by a single round and a slow reload");
+
+        // The guns whose blurbs promise a one-shot kill still deliver it at max health (120 since the health bump).
+        var oneShots = new[] { "Breacher Pump", "Leviathan .50", "Railspike", "Old Faithful Musket" };
+        var shown = new List<string>();
+        foreach (var name in oneShots)
+        {
+            var w = Weapons.All.FirstOrDefault(x => x.Name == name);
+            if (w == null)
+            {
+                Fail($"one-shot guns: {name} not found");
+                continue;
+            }
+            shown.Add($"{name} {w.ShotDamage:0}");
+            if (w.ShotsToKill(false) != 1)
+                Fail($"one-shot guns: {name} does {w.ShotDamage:0} with every projectile landing, less than {World.MaxHealth} health");
+        }
+        Line($"one-shot guns at {World.MaxHealth} health (full damage, every pellet): {string.Join(", ", shown)}; melee {Game.MeleeDamage:0}, backstab {Game.MeleeBackstabDamage:0}");
+        float melee = Game.MeleeDamage, backstab = Game.MeleeBackstabDamage; // (locals: a constant condition would warn as unreachable)
+        if (melee < World.MaxHealth || backstab < World.MaxHealth)
+            Fail("melee: no longer a one-hit kill at max health");
     }
 }

@@ -700,7 +700,7 @@ public sealed partial class Game
             {
                 if (!victim.Alive || !StreakIsEnemy(owner, victim))
                     continue;
-                var amount = BlastDamage(center, victim.Chest, radius, maxDamage);
+                var amount = BlastDamage(center, victim.Chest, radius, maxDamage) * World.BlastPlayerScale; // same kill radius at 120 health
                 if (victim.Sim.Stance == Stance.Prone)
                     amount *= 0.7f;
                 if ((int)MathF.Round(amount) <= 0)
