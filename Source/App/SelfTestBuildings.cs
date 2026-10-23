@@ -631,14 +631,6 @@ public static partial class SelfTest
                         detail.Add($"{key} {r.Floor}:{r.Id} node {goal} at ({g.Nodes[goal].X:0.0}, {g.Nodes[goal].Y:0.00}, {g.Nodes[goal].Z:0.0}) has no path: "
                                    + $"component {g.Component[goal]} (start's {(start >= 0 ? g.Component[start] : -1)}, main {g.MainComponent}); "
                                    + NoPathTrace(g, search, path, start, goal));
-                    if (detail.Count < 10) // TEMP (stair-headroom): walks through the doors near the room
-                        foreach (var dd in b.Plan.Doors.Where(dd => dd.Floor == r.Floor && Vector3.Distance(dd.SwingSide, r.Waypoint) < 4f))
-                        {
-                            string Hits(Vector3 q) => $"blockedNav {World.Physics.BlockedNav(q + new Vector3(0, 0.01f, 0))} ray {World.Physics.Raycast(q + new Vector3(0, 1f, 0), -Vector3.UnitY, 3f, QueryFilter.Navigation):0.000} " + string.Join(" ", Enumerable.Range(0, yard.Solid.Count).Where(i => yard.Solid[i].Min.Y < q.Y + World.PlayerHeight && yard.Solid[i].Max.Y > q.Y + 0.005f
-                                && q.X + 0.4f > yard.Solid[i].Min.X && q.X - 0.4f < yard.Solid[i].Max.X && q.Z + 0.4f > yard.Solid[i].Min.Z && q.Z - 0.4f < yard.Solid[i].Max.Z)
-                                .Select(i => $"{(yard.IsPropCollider(i) ? "prop" : yard.IsBuildingDoorBox(i) ? "door" : "box")}[{yard.Solid[i].Min.X:0.00},{yard.Solid[i].Min.Y:0.00},{yard.Solid[i].Min.Z:0.00}..{yard.Solid[i].Max.X:0.00},{yard.Solid[i].Max.Y:0.00},{yard.Solid[i].Max.Z:0.00}]"));
-                            detail.Add($"{key} {r.Floor}:{r.Id} door at ({dd.Closed.Center.X:0.0}, {dd.Closed.Center.Z:0.0}): swing ({dd.SwingSide.X:0.00},{dd.SwingSide.Z:0.00}) node {Node(dd.SwingSide)} hits {Hits(dd.SwingSide)}; other ({dd.OtherSide.X:0.00},{dd.OtherSide.Z:0.00}) node {Node(dd.OtherSide)} hits {Hits(dd.OtherSide)}");
-                        }
                 }
             }
             foreach (var (bottom, top) in b.Plan.Stairs)

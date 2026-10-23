@@ -44,36 +44,6 @@ public static partial class SelfTest
         public string Where = "";
     }
 
-    // TEMP (dev runs): geometry dumps of chosen flights, written as annotations.
-    private static readonly List<string> StairDevDump = new();
-    private static readonly (string Map, float X, float Z)[] StairDevTargets =
-    [
-        ("London", 41.9f, 7.9f),
-    ];
-
-    private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
-    {
-        var c = StairPoint(f, (f.U0 + f.U1) / 2, (f.C0 + f.C1) / 2, 0);
-        if (!StairDevTargets.Any(t => t.Map == m.Name && MathF.Abs(t.X - c.X) < 2.5f && MathF.Abs(t.Z - c.Z) < 2.5f))
-            return;
-        var p0 = StairPoint(f, f.U0 - 1.5f, f.C0 - 1.2f, 0);
-        var p1 = StairPoint(f, f.U1 + 1.5f, f.C1 + 1.2f, 0);
-        var sb = new System.Text.StringBuilder($"DUMP {m.Name} {f.Where} U {f.U0:0.00}..{f.U1:0.00} C {f.C0:0.00}..{f.C1:0.00} Y {f.Y0:0.00}..{f.Y1:0.00} treads {f.Treads.Count}:");
-        foreach (var j in phys.CollectBoxes(MathF.Min(p0.X, p1.X), MathF.Min(p0.Z, p1.Z), MathF.Max(p0.X, p1.X), MathF.Max(p0.Z, p1.Z)))
-        {
-            if (j >= m.Solid.Count)
-                continue;
-            var o = m.Solid[j];
-            if (o.Max.Y < f.Y0 - 0.3f || o.Min.Y > f.Y1 + 2.3f || o.Max.Y < -100)
-                continue;
-            if (AcrossHi(o, f.Axis) < f.C0 - 0.45f || AcrossLo(o, f.Axis) > f.C1 + 0.45f)
-                continue;
-            var k = (f.Treads.Contains(j) ? "T" : m.IsPropCollider(j) ? "P" : m.IsBuildingDoorBox(j) ? "D" : m.IsBuildingGlass(j) ? "G" : m.IsBuildingBox(j) ? "B" : "M") + (m.Destruction is { } dd && dd.IsChunk(j, out _) ? "c" : "");
-            sb.Append($" {k}[{o.Min.X:0.00},{o.Min.Y:0.00},{o.Min.Z:0.00}/{o.Max.X:0.00},{o.Max.Y:0.00},{o.Max.Z:0.00}]");
-        }
-        StairDevDump.Add(sb.ToString());
-    }
-
     private static void CheckStairs()
     {
         var sw = Stopwatch.StartNew();
@@ -130,42 +100,11 @@ public static partial class SelfTest
         Line(summary);
         foreach (var p in problems)
             Line("  " + p);
-        foreach (var p in problems.Take(DevStairsOnly ? 0 : 30)) // TEMP: dev runs report through annotations only
+        foreach (var p in problems.Take(30))
             Fail(p);
-        if (problems.Count > 30 && !DevStairsOnly)
+        if (problems.Count > 30)
             Fail($"stairs: {problems.Count - 30} more problem(s) (see the log)");
         Line("::notice title=Stairs (results)::" + summary.Replace("%", "%25"));
-        { // TEMP: dumps, up to 4 annotations
-            var chunk = "";
-            var chunks = 0;
-            foreach (var d in StairDevDump.OrderBy(d => d.StartsWith("CAVE") ? 0 : 1))
-            {
-                Line("  " + d);
-                if (chunk.Length + d.Length > 3900 && chunk.Length > 0)
-                {
-                    if (chunks++ < 3)
-                        Line("::error title=Stairs dump::" + chunk);
-                    chunk = "";
-                }
-                chunk += (chunk.Length > 0 ? "%0A" : "") + (d.Length > 3900 ? d[..3900] : d);
-            }
-            if (chunk.Length > 0 && chunks < 3)
-                Line("::error title=Stairs dump::" + chunk);
-        }
-        foreach (var g in problems.GroupBy(p => p.Split(':')[0].Split(" / ")[0].Split(' ')[0]).OrderBy(g => Array.IndexOf(["Classic", "High", "Cluttered", "World", "Collision", "Dev", "building"], g.Key)).Take(4)) // TEMP: dev report, one annotation per pack
-        {
-            var text = "";
-            var shapes = new HashSet<string>();
-            foreach (var p in g)
-            {
-                if (!shapes.Add(System.Text.RegularExpressions.Regex.Replace(p, "[-0-9.]+", "#")))
-                    continue;
-                if (text.Length + p.Length > 3900)
-                    break;
-                text += (text.Length > 0 ? "%0A" : "") + p.Replace("%", "%25");
-            }
-            Line($"::error title=Stairs {g.Key} ({g.Count()})::" + text);
-        }
     }
 
     /// <summary>Finds and checks every flight on one map (and, on maps with caves, the tunnel paths' headroom).</summary>
@@ -208,7 +147,6 @@ public static partial class SelfTest
                 }
             }
             Line($"  {label}: cave tunnels' least headroom {low * 100:0} cm at ({at.X:0.0}, {at.Y:0.0}, {at.Z:0.0})");
-            StairDevDump.Add($"CAVE {label} least {low:0.00} at ({at.X:0.0},{at.Y:0.0},{at.Z:0.0})"); // TEMP
         }
         var t = perPack.GetValueOrDefault(pack);
         perPack[pack] = (t.Flights + found.Count, t.Bad + bad);
@@ -455,7 +393,8 @@ public static partial class SelfTest
                 var o = m.Solid[j];
                 if (StairIgnored(m, j, o))
                     continue;
-                if (x > o.Min.X && x < o.Max.X && z > o.Min.Z && z < o.Max.Z && o.Min.Y < b.Max.Y + 1.0f && o.Max.Y > b.Max.Y + 0.02f)
+                // inclusive: a sample exactly on the seam between two chunks of one wall layer is covered by both
+                if (x >= o.Min.X && x <= o.Max.X && z >= o.Min.Z && z <= o.Max.Z && o.Min.Y < b.Max.Y + 1.0f && o.Max.Y > b.Max.Y + 0.02f)
                 {
                     free = false;
                     break;
@@ -612,7 +551,6 @@ public static partial class SelfTest
     private static void CheckStairFlight(Map m, PhysicsWorld phys, StairFlight f, string label, List<string> problems, HashSet<ulong> seen, ref int walked, ref float worst)
     {
         var name = $"{label}: {f.Where}";
-        StairDump(m, phys, f); // TEMP
         var issues = new List<string>();
         // Width: the widest clear span over the treads (every tread's side obstacles at its middle, standing on it)...
         var spans = new List<(float, float)>();
