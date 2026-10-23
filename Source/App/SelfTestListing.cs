@@ -306,7 +306,7 @@ public static partial class SelfTest
             Settings.ShippedMastersPath = Path.Combine(dir, "masters.txt");
             File.WriteAllLines(Settings.ShippedMastersPath, ["# community lists", "list.example.org  # the group's", "", "198.51.100.77:27060"]);
             var all = new Settings { MasterServer = "list.example.org" }.AllMasters;
-            if (Settings.ShippedMasters.Count != 2 || all.Count(m => m.Host == "list.example.org") != 1 || !all.Contains(("198.51.100.77", 27060)))
+            if (Settings.ShippedMasters.Count != 2 || all.Count(m => m.Host == "list.example.org") != 1 || !all.Contains(("198.51.100.77", (ushort)27060)))
                 Fail($"masters.txt: {string.Join(", ", Settings.ShippedMasters)}; all {string.Join(", ", all)}");
             Line($"server lists: parse, learn (cap {Settings.MaxMasters}), masters.txt ({Settings.ShippedMasters.Count}), settings round trip OK");
         }
