@@ -20,7 +20,7 @@ public sealed partial class Game
             b.Objective = NavGraph.Current.Nodes.Length > 0 ? ObjectiveSpot(p) : ObjectiveGoal(p, now);
         }
 
-        var low = p.Health <= prof.RetreatHealth;
+        var low = p.Health <= World.HealthAt(prof.RetreatHealth);
         if (visible)
         {
             var wantCover = (low && prof.Aggression < 0.9f) || (b.CoverReload && b.ReloadUntil > 0);

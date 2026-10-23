@@ -37,7 +37,7 @@ public sealed class BotProfile
     /// <summary>0 = cautious, 1 = reckless: pushes towards enemies, chases last-seen spots, ignores low health.</summary>
     public float Aggression = 0.5f;
 
-    /// <summary>Below this health the bot breaks contact and looks for cover.</summary>
+    /// <summary>Below this much health, in percent of <see cref="World.MaxHealth"/>, the bot breaks contact and looks for cover.</summary>
     public int RetreatHealth = 35;
 
     /// <summary>Chance (0..1) of ducking behind cover to reload instead of reloading in the open.</summary>

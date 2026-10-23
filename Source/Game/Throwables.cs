@@ -31,7 +31,13 @@ public sealed class ThrowableDef
     /// <summary>Launch speed along the aim direction (m/s); <see cref="Throwables.ThrowUp"/> and half the thrower's velocity are added on top.</summary>
     public float ThrowSpeed = Throwables.ThrowSpeed;
     public float Radius; // blast / cloud / reveal radius
+    /// <summary>Blast damage to players at the centre (scaled with <see cref="World.MaxHealth"/> so the kill radius stays the same).</summary>
     public float MaxDamage;
+    /// <summary>
+    /// Blast damage at the centre against everything else: turrets, drones, props, doors and windows, zombies and devices.
+    /// Kept at the values from before player health went up to 120, so grenades break things exactly as before.
+    /// </summary>
+    public float ObjectDamage;
     /// <summary>Damage falls off as (1 - distance / Radius) to this power: 1 is a straight line, higher drops off faster.</summary>
     public float Falloff = 1.4f;
     /// <summary>Blast knockback: speed (m/s) added at the centre, falling off to nothing at <see cref="Radius"/> (0 = no push; Knockback.cs).</summary>
@@ -62,10 +68,10 @@ public static class Throwables
     public static readonly ThrowableDef[] All =
     [
         new() { Kind = ThrowableKind.None, Name = "None", Blurb = "Nothing in this slot." },
-        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.5 s fuse, bounces off walls, throws about 34 m. Kills within about 4 m, hurts out to 9 m.",
-            Fuse = 2.5f, Radius = 9f, MaxDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f), Knockback = 11f },
+        new() { Kind = ThrowableKind.Frag, Name = "Frag Grenade", Blurb = "2.5 s fuse, bounces off walls, throws about 34 m. Kills within about 4.5 m, hurts out to 9 m.",
+            Fuse = 2.5f, Radius = 9f, MaxDamage = 240, ObjectDamage = 200, Falloff = 1f, PerLife = 2, Color = new(0.2f, 0.35f, 0.15f), Knockback = 11f },
         new() { Kind = ThrowableKind.Impact, Name = "Impact Grenade", Blurb = "Explodes the moment it touches anything. Smaller blast: kills within about 2.5 m, hurts out to 6 m.",
-            Fuse = 6f, Radius = 6f, MaxDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f), Knockback = 9f },
+            Fuse = 6f, Radius = 6f, MaxDamage = 204, ObjectDamage = 170, Falloff = 1f, PerLife = 2, Color = new(0.75f, 0.2f, 0.15f), Knockback = 9f },
         new() { Kind = ThrowableKind.Smoke, Name = "Smoke Grenade", Blurb = "Pops where it lands: a thick 5 m cloud for 14 s. Blocks vision, and bots can't see through it.",
             Fuse = 1.2f, Radius = 5f, PerLife = 2, Color = new(0.6f, 0.6f, 0.62f) },
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
@@ -515,12 +521,12 @@ public sealed partial class Game
                     flags |= 4;
             }
             BlastKnockback(owner, center, radius, def.Knockback); // pushes the living (Knockback.cs); the dead ragdoll from the kill
-            StreakBlastEntities(owner, center, radius, def.MaxDamage, now); // enemy turrets and drones too
-            BlastProps(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
-            BlastBuildings(owner, center, radius, def.MaxDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
-            BlastStructures(owner, center, radius, def.MaxDamage, StructureHit.Grenade, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now); // destructible buildings (GameDestruction.cs)
-            BlastZombies(owner, center, radius, def.MaxDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
-            BlastTactical(owner, center, radius, def.MaxDamage, now); // enemy tactical devices (GameTactical.cs)
+            StreakBlastEntities(owner, center, radius, def.ObjectDamage, now); // enemy turrets and drones too
+            BlastProps(owner, center, radius, def.ObjectDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
+            BlastBuildings(owner, center, radius, def.ObjectDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
+            BlastStructures(owner, center, radius, def.ObjectDamage, StructureHit.Grenade, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now); // destructible buildings (GameDestruction.cs)
+            BlastZombies(owner, center, radius, def.ObjectDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
+            BlastTactical(owner, center, radius, def.ObjectDamage, now); // enemy tactical devices (GameTactical.cs)
         }
         else if (TacticalGear.UseOf(proj.Kind) == TacticalUse.Thrown)
         {

@@ -134,9 +134,9 @@ public static class TacticalGear
     public const int InsertionHealth = 40;
 
     // ---- Stim Shot ------------------------------------------------------------------------------------
-    public const int StimHeal = 40;
+    public const int StimHeal = 48; // 40% of World.MaxHealth (was 40 of 100)
     public const double StimTime = 4;
-    public const float StimRegen = 15f; // HP per second during StimTime, no waiting
+    public const float StimRegen = 18f; // HP per second during StimTime, no waiting (was 15 at 100 HP): 48 + 72 = a full heal
 
     /// <summary>The tactical items as they go into <see cref="Throwables.All"/> (in enum order, from Flash).</summary>
     public static readonly ThrowableDef[] Defs =
