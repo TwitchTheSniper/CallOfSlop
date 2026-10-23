@@ -22,6 +22,9 @@ public sealed partial class BotBrain
     /// <summary>Self-test: the chance of shutting a door behind it, instead of the personality's (null: the personality's).</summary>
     public float? SelfTestDoorCloseChance;
 
+    /// <summary>Ticks this bot waited at a doorway for someone else (whole session).</summary>
+    public int DoorWaitTicks;
+
     /// <summary>Doors this bot opened or shut (whole session).</summary>
     public int DoorToggles;
 
@@ -168,6 +171,11 @@ public sealed partial class Game
     {
         var leaf = d.Plan.Closed;
         if (a.Y < leaf.Min.Y - 1.2f || a.Y > leaf.Max.Y - 0.3f)
+            return false;
+        // Through it, not alongside: the ends on either side of the door's plane (or one end right in it).
+        var sa = DoorSide(d, a);
+        var sb = DoorSide(d, b);
+        if (sa * sb > 0 && MathF.Min(MathF.Abs(sa), MathF.Abs(sb)) > 0.05f)
             return false;
         float t0 = 0, t1 = 1;
         return Slab(a.X, b.X - a.X, leaf.Min.X - pad, leaf.Max.X + pad, ref t0, ref t1) && Slab(a.Z, b.Z - a.Z, leaf.Min.Z - pad, leaf.Max.Z + pad, ref t0, ref t1);
@@ -358,8 +366,6 @@ public sealed partial class Game
                 }
                 if (DoorInReach(d, eye))
                     BotUseDoor(p, b, i, true, now);
-                else if (fd < 1.9f && DoorSide(d, pos) > 0.1f)
-                    steer.Wish *= 0.5f; // not in view yet, close and on the swing side: ease in
             }
             else
                 BotDoorway(p, i, d, ref steer, now);
@@ -400,11 +406,13 @@ public sealed partial class Game
                 if (oInDoorway && comingAtMe)
                 {
                     steer.Wish *= 0.15f; // let them out first
+                    p.Bot!.DoorWaitTicks++;
                     break;
                 }
                 if (!oInDoorway && MathF.Sign(oSide) == -MathF.Sign(mySide) && comingAtMe && o.Id < p.Id && ofd < myFd + 0.6f)
                 {
                     steer.Wish *= 0.3f; // head on: the lower id goes first
+                    p.Bot!.DoorWaitTicks++;
                     break;
                 }
             }
@@ -453,7 +461,7 @@ public sealed partial class Game
             return;
         var i = b.PassDoor;
         var d = World.Map.BuildingDoors[i];
-        if (now - b.PassAt > 3 || !d.Open || d.Broken || RouteCrosses(d, route) || b.DoorTogglesIn(i, now, 10) >= 2)
+        if (now - b.PassAt > 3 || !d.Open || d.Broken || b.DoorTogglesIn(i, now, 10) >= 2)
         {
             b.PassDoor = -1;
             return;
@@ -461,6 +469,11 @@ public sealed partial class Game
         var mySide = DoorSide(d, p.Position);
         if (MathF.Abs(mySide) < 0.6f)
             return; // still in the doorway
+        if (RouteCrosses(d, route))
+        {
+            b.PassDoor = -1; // its way goes back through
+            return;
+        }
         if (Vector3.Distance(p.Eye, d.Center) > DoorReach)
         {
             b.PassDoor = -1; // walked on out of reach: leave it

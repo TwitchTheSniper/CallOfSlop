@@ -191,7 +191,8 @@ public static partial class SelfTest
                 return crossedAt >= 0 && lab.Now - start > crossedAt + 0.5;
             });
             DoorNote($"through a shut door: opened at {openedAt:0.00} s from {openedFrom:0.00} m before the doorway, through at {(crossedAt < 0 ? "NEVER" : $"{crossedAt:0.00} s")}, "
-                     + $"stood still {stopped:0.00} s near it (first at {stallAt:0.00} m from the doorway, {stallMode}, stuck count {bot.Bot!.StuckCount}); bot opens {lab.Game.BotDoorOpens}");
+                     + $"stood still {stopped:0.00} s near it (first at {stallAt:0.00} m from the doorway, {stallMode}, stuck count {bot.Bot!.StuckCount}, door waits {bot.Bot.DoorWaitTicks} ticks, mantling {bot.Sim.MantleTicks}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, "
+                     + $"at {FlatDistance(bot.Position, lab.D.Center):0.00} m from the door); bot opens {lab.Game.BotDoorOpens}");
             if (openedAt < 0 || crossedAt < 0)
                 Fail("a bot routed through a shut door didn't open it and get through within 6 s");
             else if (openedFrom < 1.0f)
