@@ -251,7 +251,7 @@ public sealed partial class Game
                 continue;
             _falls[_fallCount++] = new FallingPiece
             {
-                Box = b, FloorY = floor, Damage = dmg, At = now + MathF.Sqrt(2f * h / World.Gravity), Attacker = by?.Id ?? byte.MaxValue, KillId = killId,
+                Box = b, FloorY = floor, Damage = dmg, At = now + MathF.Sqrt(2f * h / (World.Gravity * World.GravityScale)), Attacker = by?.Id ?? byte.MaxValue, KillId = killId,
             };
         }
     }

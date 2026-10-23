@@ -463,13 +463,49 @@ def zones():
 
 
 def boundary_points():
-    half = [(-52, 0), (-52, -28), (-36, -34), (-20, -40), (-20, -50), (0, -52), (20, -50), (20, -34), (34, -42), (42, -36), (42, 0)]
+    half = [(-52, 0), (-52, -28), (-36, -34), (-20, -40), (-20, -50), (0, -52), (20, -50), (22, -40), (34, -43), (42, -36), (42, 0)]
     pts = list(half)
     pts += [(x, -z) for (x, z) in reversed(half[1:-1])]
     return [[x, z] for (x, z) in pts]
 
 
+def rail(x0, z0, x1, z1):
+    """A railing along an open deck edge (y = 0): a solid band 0.45-1.1 m up (people stay on, bullets and grenades go
+    under it, as on Stratos Station) on short posts every 4 m."""
+    block(x0, 0.45, z0, x1, 1.1, z1, BRASS)
+    along_x = abs(x1 - x0) > abs(z1 - z0)
+    n = max(1, int(abs((x1 - x0) if along_x else (z1 - z0)) // 4))
+    for k in range(n + 1):
+        f = k / n
+        x = x0 + (x1 - x0) * f
+        z = z0 + (z1 - z0) * f
+        cx = min(max(x, min(x0, x1) + 0.08), max(x0, x1) - 0.08)
+        cz = min(max(z, min(z0, z1) + 0.08), max(z0, z1) - 0.08)
+        block(cx - 0.08, 0, cz - 0.08, cx + 0.08, 0.45, cz + 0.08, DARK)
+
+
+def railings():
+    """Every open deck edge over the void except the hold's lip and the hatch (both by design): the docks' sides and back
+    corners, the yard's corners by the hull and the hull's foot beyond the yard."""
+    for s in (-1, 1):
+        def Z(z):
+            return s * z
+        # The hull's foot: the deck runs on under the hull's ends (to z 37) so walking down off the wall lands on it.
+        block(20, -0.6, Z(30), 30, 0, Z(37), DECK)
+        rail(16, Z(29.8), 20, Z(30))  # the yard's corner between the dock and the hull's foot
+        rail(20, Z(30), 20.2, Z(37))
+        rail(20, Z(36.8), 30, Z(37))
+        # The docks: both sides and the open corners beside the office's back wall.
+        rail(-16, Z(30), -15.8, Z(46))
+        rail(15.8, Z(30), 16, Z(46))
+        rail(-16, Z(45.8), -10, Z(46))
+        rail(10, Z(45.8), 16, Z(46))
+        # The yard's west corners beyond the hold's end walls.
+        rail(-16, Z(25), -15.8, Z(30))
+
+
 def build():
+    railings()
     yard()
     hull()
     hold()
@@ -502,6 +538,8 @@ def main():
                   {"x": -31, "z": 0, "y": HOLD_Y, "radius": 3.5},
                   {"x": WALL_X - 0.05, "z": 0, "y": 16, "radius": 4.5}],
         "flags": [[0, 0, -42], [0, 0, 42]],
+        "test": {"shape": "non-rectangular", "minProps": 80, "minDecals": 120, "minDecalShare": 0, "symmetry": "mirrorZ", "walkFairness": 0.12,
+                 "void": False, "botMatchSeconds": 12, "botMatchMode": "tdm", "spawnsStand": True, "maxStuckBots": 2},  # the Map contract self-test
         "ops": OPS,
     }
     with open(OUT_JSON, "w") as f:

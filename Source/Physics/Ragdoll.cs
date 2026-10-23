@@ -287,7 +287,7 @@ public sealed class Ragdoll
         var maxMove2 = 0f;
         for (var i = 0; i < RagdollRig.Count; i++)
             maxMove2 = MathF.Max(maxMove2, (Pos[i] - Prev[i]).LengthSquared());
-        var maxMove = MathF.Sqrt(maxMove2) + World.Gravity * Step * Step;
+        var maxMove = MathF.Sqrt(maxMove2) + World.Gravity * Step * Step * MathF.Max(1f, World.GravityScale);
         var sub = Math.Clamp((int)MathF.Ceiling(maxMove / MaxStepMove), 1, MaxSubSteps);
         if (sub > 1)
             for (var i = 0; i < RagdollRig.Count; i++)
@@ -295,7 +295,7 @@ public sealed class Ragdoll
         var h = Step / sub;
         var terrain = world.Terrain;
         Touching = 0;
-        var g = new Vector3(0, -World.Gravity * h * h, 0);
+        var g = new Vector3(0, -World.Gravity * h * h * World.GravityScale, 0);
         for (var s = 0; s < sub; s++)
         {
             for (var i = 0; i < RagdollRig.Count; i++)

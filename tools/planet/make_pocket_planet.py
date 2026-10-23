@@ -145,7 +145,9 @@ planet = {
     "halfX": 90,
     "halfZ": 90,
     "maxPlayers": 16,
-    "gravity": {"type": "point", "center": list(C), "strength": 18, "axis": [0, 0, -1]},
+    # 11 m/s2 (61% of the usual 18): a small world pulls less. A jump lasts 1.1 s and rises 1.6 m (0.67 s, 1.0 m at 18); a sprint
+    # jump covers about 15 m. Staying on the 56 m sphere needs v^2 / r = 3.3 m/s2 at sprint speed, well under 11.
+    "gravity": {"type": "point", "center": list(C), "strength": 11, "axis": [0, 0, -1]},
     "skybox": {
         "preset": "night",
         "zenith": "#05060c", "horizon": "#05060c", "ground": "#05060c",

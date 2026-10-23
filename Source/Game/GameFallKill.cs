@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace CallOfSlop;
 
 /// <summary>
@@ -11,20 +13,51 @@ public sealed partial class Game
     /// <summary>Players the void has killed since this game started (self-test).</summary>
     public int FallKills { get; private set; }
 
-    /// <summary>Server, every tick: kills anyone below the map's fall-kill height.</summary>
+    /// <summary>Players put back on a spawn because they fell off while nobody can be hurt (self-test).</summary>
+    public int FallRescues { get; private set; }
+
+    /// <summary>
+    /// Server, every tick: kills anyone below the map's fall-kill height. Outside play (warm-up, the countdown, the results
+    /// screen: nobody can be hurt) they're put back on their nearest spawn instead, so nobody is left alive under the map
+    /// (they used to hang at the arena's floor clamp, 5 m under the world, until the next match).
+    /// </summary>
     private void ServerTickFallKill(double now)
     {
-        if (World.Map.FallKillY is not { } killY || Phase != MatchPhase.Playing)
+        if (World.Map.FallKillY is not { } killY || Phase == MatchPhase.Lobby)
             return;
         foreach (var p in Players.Values)
         {
             if (!p.Alive || p.Position.Y >= killY)
                 continue;
+            if (Phase != MatchPhase.Playing)
+            {
+                FallRescue(p);
+                continue;
+            }
             p.ImmuneUntil = 0;
             p.LastStandUsed = true;
             if (DamagePlayer(p, p, 100000, false, SuicideKillId, now))
                 FallKills++;
         }
+    }
+
+    private void FallRescue(Player p)
+    {
+        var spawns = SpawnPointsFor(p);
+        if (spawns.Count == 0)
+            return;
+        var best = spawns[0];
+        var bestD = float.MaxValue;
+        foreach (var sp in spawns)
+        {
+            var d = Vector3.DistanceSquared(sp, p.Position);
+            if (d < bestD)
+                (best, bestD) = (sp, d);
+        }
+        p.Teleport(best);
+        for (var i = 0; i < Player.HistorySize; i++)
+            p.History[i] = new HistoryEntry { Position = best, Yaw = p.Yaw };
+        FallRescues++;
     }
 
     /// <summary>Self-test: runs the fall-kill check once.</summary>

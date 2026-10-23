@@ -754,7 +754,7 @@ public static class Ragdolls
         if (GravityFrames.Curved)
             b.HatVel += GravityFrames.GravityAt(b.HatPos) * Ragdoll.Step; // a planet: towards its centre
         else
-            b.HatVel.Y -= World.Gravity * Ragdoll.Step;
+            b.HatVel.Y -= World.Gravity * Ragdoll.Step * World.GravityScale;
         var move = b.HatVel * Ragdoll.Step;
         var len = move.Length();
         if (len > 1e-5f && world.Raycast(b.HatPos, move / len, len + 0.06f, QueryFilter.All, out var hit))

@@ -399,6 +399,17 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("On: after the results and the map vote everyone comes back here. Off: the next match's warmup starts straight away."u8);
         ImGui.Checkbox("Frenzy buffs##room"u8, ref buffs);
+        ImGui.SetNextItemWidth(160 * _scale);
+        if (ImGui.BeginCombo("Gravity##room"u8, $"{game.GravityPercent}%"))
+        {
+            foreach (var g in Game.GravityPercentChoices)
+                if (ImGui.Selectable($"{g}%{(g == 100 ? " (the map's own)" : "")}", g == game.GravityPercent))
+                {
+                    game.GravityPercent = g; // told to everyone in the lobby state (GameGravity.cs)
+                    s.Gravity = g;
+                }
+            ImGui.EndCombo();
+        }
         if (limitMode != game.ScoreLimitMode || minutes != game.MatchMinutes || auto != game.AutoStartSeconds || back != game.ReturnToLobby || buffs != game.FrenzyBuffsEnabled)
         {
             game.LobbySetOptions(limitMode, minutes, auto, back, buffs);

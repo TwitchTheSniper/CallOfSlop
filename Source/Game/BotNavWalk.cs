@@ -155,8 +155,22 @@ public sealed partial class NavGraph
     /// </summary>
     public static WalkResult MoverWalk(Vector3 a, Vector3 b, byte flags, Vector3 ledge, bool sprint)
     {
-        if (GravityFrames.Curved)
-            return MoverWalkField(a, b, flags, ledge, sprint); // a gravity-zone (or planet) map: the game's own mover, in the local frame
+        // Always at the map's own gravity, whatever the host's gravity setting (World.GravityScale): one graph per map, the
+        // same on every PC and for every setting (the links are walks, mantles and drops, which don't need air time).
+        var scale = World.GravityScale;
+        World.GravityScale = 1f;
+        try
+        {
+            return GravityFrames.Curved ? MoverWalkField(a, b, flags, ledge, sprint) : MoverWalkPlain(a, b, flags, ledge, sprint);
+        }
+        finally
+        {
+            World.GravityScale = scale;
+        }
+    }
+
+    private static WalkResult MoverWalkPlain(Vector3 a, Vector3 b, byte flags, Vector3 ledge, bool sprint)
+    {
         var len = Vector3.Distance(a, b);
         var mantleEdge = (flags & FlagMantle) != 0;
         var limit = (int)((len / (World.WalkSpeed * SlopeRules.SlowAtLimit * 0.8f) + 1f + (mantleEdge ? 1f : 0f)) * World.TickRate);

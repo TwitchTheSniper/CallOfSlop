@@ -48,6 +48,30 @@ public sealed partial class Map
         }
     }
 
+    private int _minGravityPercent = -1;
+
+    /// <summary>
+    /// The lowest gravity setting (percent) this map plays at (<see cref="World.ApplyGravitySetting"/>): 25 on most maps; on a
+    /// planet, enough pull that a sprinting player stays on the ground with room to spare (2 x sprint speed^2 / radius, so a
+    /// sprint jump still comes down within a few seconds), rounded up to 5%. Pocket Planet (r 56 m, 11 m/s2): 60%. Pure map
+    /// data: every PC agrees.
+    /// </summary>
+    public int MinGravityPercent
+    {
+        get
+        {
+            if (_minGravityPercent >= 0)
+                return _minGravityPercent;
+            var min = Game.MinGravityPercent;
+            if (PointGravity is { } pg && PlanetRadius > 0)
+            {
+                var need = 2f * World.SprintSpeed * World.SprintSpeed / PlanetRadius;
+                min = Math.Clamp((int)MathF.Ceiling(100f * need / pg.Strength / 5f) * 5, Game.MinGravityPercent, 100);
+            }
+            return _minGravityPercent = min;
+        }
+    }
+
     /// <summary>Is up exactly world +Y at a point of this map (outside every gravity zone with an up of its own)?</summary>
     public bool PlainUpAtPoint(Vector3 p) => Gravity == null || Gravity.UpAt(p) == Vector3.UnitY;
 

@@ -103,7 +103,7 @@ public sealed class SweptMover : IMover
         }
 
         // Up and gravity at the feet (one uniform field today).
-        var g = phys.Gravity.GravityAt(s.Position);
+        var g = phys.Gravity.GravityAt(s.Position) * World.GravityScale; // (the host's gravity setting: up is unchanged)
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
         _up = up;

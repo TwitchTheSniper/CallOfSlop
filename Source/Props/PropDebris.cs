@@ -268,7 +268,7 @@ public static class PropDebris
             }
             if ((i + _frame) % 12 == 0)
                 p.Floor = FloorUnder(p.Pos); // flew over a kerb or off a ledge
-            p.Vel.Y -= World.Gravity * dt;
+            p.Vel.Y -= World.Gravity * dt * World.GravityScale;
             p.Pos += p.Vel * dt;
             if (World.Map.Boundary is { } boundary)
                 boundary.KeepInside(ref p.Pos, ref p.Vel, 0.05f, 0.3f); // pieces stay inside a shaped map

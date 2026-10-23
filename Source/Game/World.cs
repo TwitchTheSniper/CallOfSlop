@@ -101,6 +101,7 @@ public static partial class World
         map.RestoreProps(); // a map always starts with its breakable props whole
         map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
+        ApplyGravitySetting(); // the host's gravity setting, within this map's floor (GameGravity.cs)
         GravityFrames.Use(map.Gravity); // which way is up (Source/Physics/GravityFrames.cs): straight up except on planet and gravity-zone maps
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
@@ -193,6 +194,28 @@ public static partial class World
     public const float SprintSpeed = 13.5f; // 2.25x walking (was 9 m/s before protocol 10)
     public const float JumpSpeed = 6f;
     public const float Gravity = 18f;
+
+    /// <summary>
+    /// The host's gravity setting as a multiplier (<see cref="Game.GravityPercent"/>: 0.25 to 2, default 1): every field of
+    /// the map (straight down, a planet, every zone) and everything that falls (players, grenades, launcher rounds, ragdolls,
+    /// gibs, debris) is scaled by it. It multiplies the end of every gravity expression, so at 1 every number is exactly what
+    /// it was. Bots' nav graphs are built at 1 (NavGraph.MoverWalk), the same for every setting.
+    /// </summary>
+    public static float GravityScale = 1f;
+
+    /// <summary>The host's gravity setting in percent (<see cref="Game.GravityPercent"/>); <see cref="GravityScale"/> follows it and the map.</summary>
+    public static int GravitySetting = 100;
+
+    /// <summary>
+    /// Sets <see cref="GravityScale"/> from the host's setting and the current map: never under the map's own floor
+    /// (<see cref="Map.MinGravityPercent"/>: on a small planet too little pull would let a sprint jump fly off it). Every PC
+    /// works it out the same way from the setting and the map file.
+    /// </summary>
+    public static void ApplyGravitySetting()
+    {
+        var percent = Math.Max(GravitySetting, Map.MinGravityPercent);
+        GravityScale = percent == 100 ? 1f : percent / 100f;
+    }
     /// <summary>
     /// Full health for players and bots (was 100; raised to 120 so fights last a little longer). It rides in the
     /// snapshot as one byte, so keep it at 255 or less. Zombies have their own health (ZombiesRules).

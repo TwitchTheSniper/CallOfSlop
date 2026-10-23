@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// </summary>
 public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
     GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic, string Rotation = "",
-    uint InstanceId = 0, string ListHost = "", ushort ListPort = 0, string Build = "")
+    uint InstanceId = 0, string ListHost = "", ushort ListPort = 0, string Build = "", byte Gravity = 100)
 {
     // (Build, the host's release version such as "0.2026.1022.5" (BuildInfo.cs; "" for dev builds and older hosts), rides
     // after the rotation as the tagged extension 'B', a length and ASCII (after 'I' and 'L', see Encode).
@@ -95,7 +95,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 47: the Zombies round flow (Source/Game/ZombiesFlow.cs): Msg.ZWorld's player flags gain bit 3 (ready for the next
     //     round) and bit 4 (counts for ready-up), and ZWorld ends with a byte (bit 0: the break waits for ready-up); Msg.Ready
     //     during a Zombies match means ready for the next round. Downed players crawl (same input bits, capped speed).
-    public const byte ProtocolVersion = 47;
+    // 48: the host's gravity setting (Source/Game/GameGravity.cs, 25-200%): a byte at the end of the Welcome and after the
+    //     auto-start in Msg.LobbyState, so clients predict falls, jumps and grenades the host's way.
+    public const byte ProtocolVersion = 48;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -110,7 +112,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         b.Add((byte)Physics);
         var rotation = Encoding.ASCII.GetBytes(Rotation.Length > 24 ? Rotation[..24] : Rotation);
         var build = Encoding.ASCII.GetBytes(Build.Length > 23 ? Build[..23] : Build);
-        var extensions = InstanceId != 0 || ListPort != 0 || build.Length > 0;
+        var extensions = InstanceId != 0 || ListPort != 0 || build.Length > 0 || Gravity != 100;
         if (rotation.Length > 0 || extensions)
         {
             b.Add((byte)rotation.Length);
@@ -135,6 +137,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
             b.Add((byte)build.Length);
             b.AddRange(build);
         }
+        // 'G' (last: older builds stop at an unknown tag): the host's gravity setting in percent (GameGravity.cs), when not 100.
+        if (Gravity != 100)
+            b.AddRange([(byte)'G', Gravity]);
         return b.ToArray();
     }
 
@@ -156,6 +161,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         uint instance = 0;
         var listHost = "";
         ushort listPort = 0;
+        byte gravity = 100;
         if (rest.Length >= 1 && rest.Length >= 3 + rest[0])
         {
             var tail = rest[(2 + rest[0])..]; // after the map name and the physics byte
@@ -181,6 +187,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
                         build = BuildInfo.ParseRelease(Encoding.ASCII.GetString(ext.Slice(2, ext[1])))?.ToString() ?? "";
                         ext = ext[(2 + ext[1])..];
                     }
+                    else if (ext[0] == (byte)'G' && ext.Length >= 2)
+                    {
+                        gravity = ext[1] is >= Game.MinGravityPercent and <= Game.MaxGravityPercent ? ext[1] : (byte)100;
+                        ext = ext[2..];
+                    }
                     else
                         break; // an unknown (newer) or cut-off extension: stop here
                 }
@@ -188,7 +199,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         }
         // Anyone can answer a ping: names are capped printable ASCII before the browser shows them.
         return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0],
-            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort, build);
+            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort, build, gravity);
     }
 }
 

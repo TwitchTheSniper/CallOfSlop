@@ -260,7 +260,7 @@ public sealed class ClassicMover : IMover
         const float r = World.PlayerRadius;
 
         // ---- Vertical ----
-        velocity.Y -= World.Gravity * dt;
+        velocity.Y -= World.Gravity * dt * World.GravityScale;
         var prevY = feet.Y;
         var newY = feet.Y + velocity.Y * dt;
         grounded = false;
@@ -440,7 +440,7 @@ public sealed class ClassicMover : IMover
         else if (!grounded)
         {
             // Too steep to stand on: gravity pulls you down the slope (no faster than the slide cap).
-            var push = World.Gravity * n.Y * dt;
+            var push = World.Gravity * n.Y * dt * World.GravityScale;
             velocity.X += n.X * push;
             velocity.Z += n.Z * push;
             SlopeRules.CapSlide(n, ref velocity);

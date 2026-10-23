@@ -116,7 +116,7 @@ public static class GravityFrames
     }
 
     /// <summary>Gravity acceleration at a position (m/s², pointing down).</summary>
-    public static Vector3 GravityAt(Vector3 p) => _field is { } f ? f.GravityAt(p) : new Vector3(0, -World.Gravity, 0);
+    public static Vector3 GravityAt(Vector3 p) => (_field is { } f ? f.GravityAt(p) : new Vector3(0, -World.Gravity, 0)) * World.GravityScale; // (the host's gravity setting)
 
     /// <summary>
     /// How high a point is: its distance from the centre on a planet map, its y elsewhere. (Clamps and "is it above this"

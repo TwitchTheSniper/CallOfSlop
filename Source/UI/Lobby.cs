@@ -262,6 +262,7 @@ public sealed partial class Ui
                     TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
                     MapPicker(s);
                     AutoStartPicker(s);
+                    GravityPicker(s); // the host's gravity setting (GameGravity.cs)
                     ImGui.Checkbox("Frenzy buffs"u8, ref s.FrenzyBuffs); // FrenzyBuffs.cs
                     ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
                         ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
@@ -389,6 +390,8 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(i.Phase == MatchPhase.Lobby ? Green : Dim, PhaseLabel(i.Phase)); // "In lobby": join before it starts (UiLobbyRoom.cs)
                 if (i.Rotation.Length > 0)
                     ImGuiSafe.TextColored(Orange, i.Rotation); // e.g. "True Random": the next maps come from every pack
+                if (i.Gravity != 100)
+                    ImGuiSafe.TextColored(Orange, Game.GravityLabel(i.Gravity)); // the host's gravity setting (GameGravity.cs)
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
                 ImGui.TableNextColumn();

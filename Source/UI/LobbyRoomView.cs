@@ -170,6 +170,8 @@ public sealed class LobbyRoomView
         var limitText = ScoreLimits.HasLimit(game.Mode) ? $"score limit {game.ScoreLimit} ({(game.ScoreLimitMode == ScoreLimitMode.Fixed ? "fixed" : "auto")})" : "no score limit";
         var auto = game.AutoStartSeconds > 0 ? $"auto-start {game.AutoStartSeconds} s" : "host starts";
         SettingsLine = $"{limitText}, {game.MatchMinutes} min, {auto}, {(game.ReturnToLobby ? "back to the lobby after each match" : "next match straight after the vote")}";
+        if (game.EffectiveGravityPercent != 100)
+            SettingsLine += ", " + Game.GravityLabel(game.EffectiveGravityPercent) + (game.EffectiveGravityPercent != game.GravityPercent ? $" (the lowest this map plays at; set {game.GravityPercent}%)" : "");
         if (game.IsTeamMode && game.TeamBalance != TeamBalance.Auto)
             SettingsLine += game.HumansVsBots ? $", Humans vs Bots (people on {GameModes.TeamNames[game.HumansTeam]})" : ", team balancing off";
         BotsLine = game.WantedBots > 0 ? $"{game.BotCount} bot{(game.BotCount == 1 ? "" : "s")} ({game.BotSkill}) fill the empty places" : "No bots";

@@ -354,6 +354,7 @@ public static partial class SelfTest
         // gravity-maps
         Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
         Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
+        Section("Gravity strength", CheckGravityStrength); // SelfTestGravityStrength.cs: the host's gravity setting: every field type scales, jumps and falls as 1/g, Pocket Planet 11 m/s2 and its 60% floor, nav unchanged, clients and the browser get it, seeded bot matches at 25% and 200%
         Section("Map kit", CheckMapKit); // SelfTestMapKit.cs: Source/MapKit: map files round-trip, generators reproduce their maps, MapChecks.Check agrees with the Space sections
     }
 
@@ -771,6 +772,7 @@ public static partial class SelfTest
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
             var fallen = game.Players.Values.Count(p => p.Alive && (m.PointGravity is { } planet ? Vector3.Distance(p.Position, planet.Center) < m.PlanetRadius - 0.5f // a planet: inside the ball
+                : m.FallKillY is { } kill && !m.HasTerrain ? p.Position.Y < kill - 0.5f // a void map: its floors aren't at y = 0 (Keelhaul Yard's hold is at -3), the void is below the fall-kill height (as the Map contract checks)
                 : p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();

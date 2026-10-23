@@ -27,6 +27,8 @@ public static partial class SelfTest
         {
             KeelhaulYardChecks();
             TwinShardChecks();
+            GravityMapsUnderTheFloor();
+            FallRescueCheck();
         }
         finally
         {
@@ -34,6 +36,80 @@ public static partial class SelfTest
             if (SpaceGravityNotes.Count > 0)
                 Line("::notice title=Space: gravity physics (results)::" + string.Join("%0A", SpaceGravityNotes.Select(n => n.Replace("%", "%25"))));
         }
+    }
+
+    /// <summary>
+    /// Nobody alive under the map (the "Matches" failure, 2026-10-23): several seeded 8-player matches (45 s each, as the
+    /// Matches section plays) on each gravity map, sampling every player twice a second; an alive player below the fall-kill
+    /// height means a fall that wasn't caught. (Before the fix: bots walked off unrailed dock edges, crawled under the
+    /// Twin Shard tethers, and players who fell outside play hung alive 5 m under the map until the next match.)
+    /// </summary>
+    private static void GravityMapsUnderTheFloor()
+    {
+        const int seeds = 4;
+        foreach (var name in new[] { "Keelhaul Yard", "Twin Shard" })
+        {
+            if (Maps.Find(name) is not { FallKillY: { } kill } m)
+                continue;
+            int under = 0, falls = 0, rescues = 0, stuckKills = 0;
+            var example = "";
+            for (var seed = 1; seed <= seeds; seed++)
+            {
+                Game.SeedNextGame = seed * 7919;
+                using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+                    bots: Game.ClassicPlayers - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
+                game.MapVoteEnabled = false;
+                var now = 0.0;
+                const double dt = 1.0 / World.TickRate;
+                for (var i = 0; i < 45 * World.TickRate; i++)
+                {
+                    now += dt;
+                    game.Update(now, dt);
+                    if (i % 30 != 0)
+                        continue;
+                    foreach (var p in game.Players.Values)
+                        if (p.Alive && p.Position.Y < kill - 0.5f)
+                        {
+                            if (under++ == 0)
+                                example = $" (seed {seed}, {i / 60} s, {game.Phase}: player {p.Id} at {p.Position})";
+                        }
+                }
+                falls += game.FallKills;
+                rescues += game.FallRescues;
+                stuckKills += game.BotStuckKills;
+            }
+            SpaceGravityLine($"{name}: {seeds} seeded 45 s matches: {under} samples of a player alive under the map{example}, {falls} fall kills, {rescues} put back on a spawn outside play, {stuckKills} stuck kills");
+            if (under > 0)
+                Fail($"{name}: players alive under the map in seeded matches{example}");
+            if (falls > seeds * 2)
+                Fail($"{name}: {falls} fall kills in {seeds} seeded 45 s matches (bots walking off edges?)");
+        }
+    }
+
+    /// <summary>Outside play (warm-up: nobody can be hurt) a player who falls off is put back on their nearest spawn, alive.</summary>
+    private static void FallRescueCheck()
+    {
+        if (Maps.Find("Keelhaul Yard") is not { FallKillY: { } kill } m)
+            return;
+        using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: m.Id)
+        {
+            MapVoteEnabled = false,
+            WarmupEnabled = true,
+        };
+        var now = 0.0;
+        Run(game, ref now, 1);
+        game.ChooseLoadout(Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, ThrowableKind.None, ThrowableKind.None, 0, 0, now);
+        Run(game, ref now, 1);
+        var me = game.Local!;
+        var phase = game.Phase;
+        me.Teleport(new Vector3(-30, kill - 3, 0)); // fell through the hold's hatch
+        game.SelfTestTickFallKill(now);
+        var onSpawn = m.Spawns.Any(sp => Vector3.Distance(sp, me.Position) < 0.01f);
+        SpaceGravityLine($"fall in {phase}: alive {me.Alive}, put back on a spawn {onSpawn} at {me.Position}, rescues {game.FallRescues}, fall kills {game.FallKills}");
+        if (phase == MatchPhase.Playing)
+            Line("  note: the rescue game started in Playing (no warm-up); not checked");
+        else if (!me.Alive || !onSpawn || game.FallKills != 0)
+            Fail($"a player who fell off in {phase} wasn't put back on a spawn (alive {me.Alive}, at {me.Position}, fall kills {game.FallKills})");
     }
 
     /// <summary>The map is a gravity-zone void map with a "test" block; returns its nav graph (built whole) or null.</summary>

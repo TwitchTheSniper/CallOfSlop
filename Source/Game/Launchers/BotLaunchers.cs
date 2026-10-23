@@ -203,7 +203,7 @@ public sealed partial class Game
         var flat = MathF.Sqrt(to.X * to.X + to.Z * to.Z);
         var yaw = MathF.Atan2(to.X, -to.Z);
         var pitch = MathF.Atan2(to.Y, MathF.Max(flat, 1e-3f));
-        var g = World.Gravity * def.LauncherGravity;
+        var g = World.Gravity * def.LauncherGravity * World.GravityScale;
         if (g > 0.5f && flat > 0.5f)
         {
             // The low arc that lands on the point: tan = (v^2 - sqrt(v^4 - g (g x^2 + 2 y v^2))) / (g x).
