@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Revolver Cylinder",
+  "category": "feed",
+  "rarity": "uncommon",
+  "flavor": "Six grenades in a spinning cylinder. Reload all six at once, slowly.",
+  "bores": ["launcher"],
+  "weight": 1.1,
+  "hand": [0, -0.05, 0],
+  "feed": "drum",
+  "model": [
+    {"shape": "rod", "size": [0.1, 0.1, 0.08], "pos": [0, -0.05, 0], "rot": [0, 0, 0], "color": "gunmetal"},
+    {"size": [0.03, 0.02, 0.05], "pos": [0, -0.005, 0], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 6},
+    {"stat": "reload", "set": 4.2}
+  ]
+}

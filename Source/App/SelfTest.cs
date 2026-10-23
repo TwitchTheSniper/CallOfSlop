@@ -299,6 +299,7 @@ public static partial class SelfTest
         Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
         Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
         Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
+        Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
         Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints

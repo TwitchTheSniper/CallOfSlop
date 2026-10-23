@@ -3,11 +3,11 @@
   "name": "Slug",
   "category": "ammo",
   "rarity": "uncommon",
-  "flavor": "One solid lump instead of a spread: a shotgun's pellets as one slug. Reaches twice as far, flies straight.",
+  "flavor": "One solid lump instead of a spread: a shotgun's pellets as one slug. Reaches 15 m further and flies straight.",
   "weight": 0.0,
   "round": {"pellets": 1},
   "stats": [
-    {"stat": "rangeM", "mul": 2},
+    {"stat": "rangeM", "add": 15},
     {"stat": "minDamageMult", "mul": 2, "max": 1},
     {"stat": "hipSpreadDeg", "mul": 0.5}
   ]
