@@ -30,6 +30,14 @@ public static partial class SelfTest
                 ("spine east", 30, 0, 28f), ("west gantry north end", -20, -26, 28f), ("west gantry south end", -20, 26, 28f),
                 ("east gantry", 20, 10, 28f), ("west hatch landing", -12.7f, 3, 23f), ("east hatch landing", 12.7f, -3, 23f),
             ]),
+        new("Regolith Reach", "06-RegolithReach.json", Void: false, Terrain: true, MinArea: 9000, MaxArea: 16000, Props: 260, SolidProps: 140,
+            Decals: 120, Meshes: 80, MaxDrawn: 80,
+            Probes:
+            [
+                ("pit floor", 0, 0, -3.5f), ("west base pad", -50, -4, 1.2f), ("east base pad", 50, 4, 1.2f), ("west tunnel", -40, -10, 1.2f),
+                ("east tunnel", 40, 10, 1.2f), ("north ore dock", 0, -33, 0.4f), ("south ore dock", 0, 33, 0.4f), ("west landing pad", -26, 30, 0.6f),
+                ("east landing pad", 26, -30, 0.6f), ("west solar farm", -26, -39, 0.5f), ("east solar farm", 26, 39, 0.5f),
+            ]),
     ];
 
     private static void CheckSpaceYardAndOutpost()
