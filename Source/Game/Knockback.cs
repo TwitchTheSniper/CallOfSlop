@@ -75,6 +75,8 @@ public static class Knockback
         var dist = to.Length();
         if (!(dist < radius))
             return Vector3.Zero;
+        if (GravityFrames.Curved)
+            return ImpulseCurved(to, dist, radius, strength, target, prone, flak);
         var mag = strength * (EdgeShare + (1f - EdgeShare) * MathF.Sqrt(1f - dist / radius));
         // Away from the blast across the ground (a blast straight below or above: no sideways push), and always up.
         var flat = new Vector3(to.X, 0, to.Z);
@@ -82,6 +84,23 @@ public static class Knockback
         var up = dist > 0.05f ? to.Y / dist : 1f;
         var push = flatLen > 0.05f ? flat / flatLen * (mag * flatLen / MathF.Max(dist, 0.05f)) : Vector3.Zero;
         push.Y = LiftBase + mag * MathF.Max(Lift, up);
+        var scale = (prone ? ProneMult : 1f) * (flak ? Perks.FlakKnockMult : 1f);
+        push *= scale;
+        var len = push.Length();
+        return len > MaxImpulse ? push * (MaxImpulse / len) : push;
+    }
+
+    /// <summary><see cref="Impulse"/> on a planet: "across the ground" and "up" are the local ones at the target.</summary>
+    private static Vector3 ImpulseCurved(Vector3 to, float dist, float radius, float strength, Vector3 target, bool prone, bool flak)
+    {
+        var upDir = GravityFrames.UpAt(target);
+        var mag = strength * (EdgeShare + (1f - EdgeShare) * MathF.Sqrt(1f - dist / radius));
+        var rise = Vector3.Dot(to, upDir);
+        var flat = to - upDir * rise;
+        var flatLen = flat.Length();
+        var up = dist > 0.05f ? rise / dist : 1f;
+        var push = flatLen > 0.05f ? flat / flatLen * (mag * flatLen / MathF.Max(dist, 0.05f)) : Vector3.Zero;
+        push += upDir * (LiftBase + mag * MathF.Max(Lift, up));
         var scale = (prone ? ProneMult : 1f) * (flak ? Perks.FlakKnockMult : 1f);
         push *= scale;
         var len = push.Length();
@@ -112,6 +131,11 @@ public static class Knockback
     {
         if (s.MantleTicks > 0 || !float.IsFinite(impulse.X + impulse.Y + impulse.Z))
             return;
+        if (GravityFrames.Curved)
+        {
+            ApplyCurved(ref s, impulse);
+            return;
+        }
         var v = s.Velocity + impulse;
         var flat = MathF.Sqrt(v.X * v.X + v.Z * v.Z);
         if (flat > MaxHorizontal)
@@ -123,6 +147,23 @@ public static class Knockback
         s.Velocity = v;
         if (impulse.Y > 0.5f)
             s.Grounded = false; // off the ground: the movers would drop a grounded player's upward speed
+        if (Staggers(impulse))
+            s.KnockTicks = StaggerTicks;
+    }
+
+    /// <summary><see cref="Apply"/> on a planet: the same caps, across and along the local up.</summary>
+    private static void ApplyCurved(ref MoveState s, Vector3 impulse)
+    {
+        var up = GravityFrames.UpAt(s.Position);
+        var v = s.Velocity + impulse;
+        var vUp = Vector3.Dot(v, up);
+        var across = v - up * vUp;
+        var flat = across.Length();
+        if (flat > MaxHorizontal)
+            across *= MaxHorizontal / flat;
+        s.Velocity = across + up * MathF.Min(vUp, MaxUp);
+        if (Vector3.Dot(impulse, up) > 0.5f)
+            s.Grounded = false;
         if (Staggers(impulse))
             s.KnockTicks = StaggerTicks;
     }

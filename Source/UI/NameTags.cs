@@ -262,7 +262,7 @@ public sealed class NameTags
             if (n >= _cands.Length)
                 break;
             var friendly = !game.AreEnemies(local, p) || (p.Id < 64 && (SmokeFriends & (1UL << p.Id)) != 0);
-            var hb = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
+            var hb = World.BodyBounds(p.RenderPosition, p.RenderStance, p.RenderYaw); // (the hit box; on a planet the box round it)
             var revealed = !friendly && mode == NameTagMode.All && Vector3.DistanceSquared(eye, hb.Center) <= range2 && game.IsRevealed(p, now);
             _cands[n++] = new TagCandidate
             {
@@ -325,7 +325,8 @@ public sealed class NameTags
         for (var i = 0; i < cands.Length; i++)
         {
             ref readonly var c = ref cands[i];
-            var head = new Vector3(c.Hitbox.Center.X, c.Hitbox.Center.Y + c.Hitbox.Half.Y, c.Hitbox.Center.Z);
+            var head = GravityFrames.Curved ? GravityFrames.Above(c.Hitbox.Center, World.PlayerHeight * 0.5f)
+                : new Vector3(c.Hitbox.Center.X, c.Hitbox.Center.Y + c.Hitbox.Half.Y, c.Hitbox.Center.Z);
             var dist = Vector3.Distance(eye, head);
             float alpha;
             if (c.Friendly)
@@ -344,7 +345,7 @@ public sealed class NameTags
                 break;
             Tags[Count++] = new NameTag
             {
-                Id = c.Id, Anchor = head + new Vector3(0, r.HeadClearance, 0), Distance = dist, Alpha = alpha, Friendly = c.Friendly, Health01 = c.Health01,
+                Id = c.Id, Anchor = GravityFrames.Above(head, r.HeadClearance), Distance = dist, Alpha = alpha, Friendly = c.Friendly, Health01 = c.Health01,
             };
         }
 

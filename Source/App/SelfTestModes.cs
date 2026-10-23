@@ -48,7 +48,8 @@ public static partial class SelfTest
                 Fail($"{m.Name}: no hill, or a hill inside geometry");
             if (o.Flags.Any(f => m.IsBlocked(f)))
                 Fail($"{m.Name}: a flag is inside geometry");
-            var flagGap = new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
+            var flagGap = m.PointGravity != null ? Vector3.Distance(o.Flags[0], o.Flags[1]) // a planet: straight through it (MapPlanet.cs)
+                : new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
             var span = MathF.Min(m.HalfX, m.HalfZ) * 2;
             if (flagGap < span * 0.35f)
             {

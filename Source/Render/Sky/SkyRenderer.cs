@@ -58,6 +58,7 @@ public static unsafe class SkyRenderer
         uniform vec3 uMoonPos;
         uniform vec4 uMoon;       // colour, cos(radius) (0: no moon)
         uniform float uStars;
+        uniform float uSpace;     // 1 on a planet map: no horizon, stars and the sun and moon all round
         uniform float uTime;
         uniform vec4 uCloud;      // coverage threshold, density, uv per unit of xz/y, cirrus amount
         uniform vec3 uCloudCol;
@@ -80,7 +81,7 @@ public static unsafe class SkyRenderer
         {
             vec3 d = normalize(vRay.xyz / vRay.w);
             vec3 col;
-            float above = smoothstep(-0.015, 0.015, d.y);
+            float above = max(smoothstep(-0.015, 0.015, d.y), uSpace);
             if (uMode > 0.5)
             {
                 vec3 r = vec3(d.x * uRot.x - d.z * uRot.y, d.y, d.x * uRot.y + d.z * uRot.x);
@@ -93,7 +94,7 @@ public static unsafe class SkyRenderer
                 col = SkyGradient(d);
 
                 // Stars: a sparse hash on a grid of directions, twinkling a little; behind everything else.
-                if (uQuality > 0.5 && uStars > 0.0 && d.y > 0.0)
+                if (uQuality > 0.5 && uStars > 0.0 && (d.y > 0.0 || uSpace > 0.5))
                 {
                     vec3 sp = d * 260.0;
                     float h = Hash13(floor(sp));
@@ -102,7 +103,7 @@ public static unsafe class SkyRenderer
                         float r = length(fract(sp) - 0.5);
                         float tw = 0.7 + 0.3 * sin(uTime * (1.3 + h * 4.0) + h * 300.0);
                         float b = 0.25 + 0.75 * fract(h * 917.0);
-                        col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * uStars * smoothstep(0.0, 0.3, d.y));
+                        col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * uStars * max(smoothstep(0.0, 0.3, d.y), uSpace));
                     }
                 }
 
@@ -166,7 +167,7 @@ public static unsafe class SkyRenderer
 
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
-        ["uInvVP", "uMode", "uQuality", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uTime",
+        ["uInvVP", "uMode", "uQuality", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
          "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uNoise", "uCube", "uPano"];
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
@@ -186,7 +187,7 @@ public static unsafe class SkyRenderer
     private static uint _noise;
     private static bool _ready, _failed, _checkedFirstDraw;
     private static int _locInvVP, _locMode, _locQuality, _locHdr, _locExposure, _locRot, _locSunPos, _locSunDisc, _locSunGlow, _locMoonPos, _locMoon,
-        _locStars, _locTime, _locCloud, _locCloudCol, _locCloudShade, _locWind, _locWind2;
+        _locStars, _locSpace, _locTime, _locCloud, _locCloudCol, _locCloudShade, _locWind, _locWind2;
 
     // Image textures, a few kept (thumbnails of other image maps mustn't re-upload the current one every frame).
     private static readonly List<(SkyImage Image, uint Texture)> ImageTextures = new();
@@ -249,6 +250,7 @@ public static unsafe class SkyRenderer
         Native.glUniform3f(_locMoonPos, moon.X, moon.Y, moon.Z);
         Native.glUniform4f(_locMoon, s.MoonColor.X, s.MoonColor.Y, s.MoonColor.Z, s.Moon ? MathF.Cos(s.MoonSize * 0.5f * MathF.PI / 180f) : 0f);
         Native.glUniform1f(_locStars, s.Stars);
+        Native.glUniform1f(_locSpace, World.Map.PointGravity != null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs)
         Native.glUniform1f(_locTime, (float)(time % 3600.0));
 
         // Clouds: one noise tile is 4 "cells" of CloudScale metres; uv per unit of (x/y, z/y) on the layer.
@@ -465,6 +467,7 @@ public static unsafe class SkyRenderer
             _locMoonPos = Uniform("uMoonPos\0"u8);
             _locMoon = Uniform("uMoon\0"u8);
             _locStars = Uniform("uStars\0"u8);
+            _locSpace = Uniform("uSpace\0"u8);
             _locTime = Uniform("uTime\0"u8);
             _locCloud = Uniform("uCloud\0"u8);
             _locCloudCol = Uniform("uCloudCol\0"u8);

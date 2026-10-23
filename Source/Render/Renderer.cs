@@ -340,8 +340,62 @@ public sealed unsafe class Renderer
     }
 
     /// <summary>Draws the unit cube transformed by <paramref name="model"/>.</summary>
+    /// <summary>
+    /// A planet map: an extra transform applied after every <see cref="Draw"/>'s model matrix while set (see
+    /// <see cref="StandAt"/>), so code that draws something upright with world axes stands it on the curve instead.
+    /// </summary>
+    private Matrix4x4 _tilt = Matrix4x4.Identity;
+
+    private bool _tilted;
+
+    /// <summary>Restores the previous tilt when disposed (<see cref="StandAt"/>).</summary>
+    public readonly struct TiltScope : IDisposable
+    {
+        private readonly Renderer? _g;
+        private readonly bool _wasTilted;
+        private readonly Matrix4x4 _was;
+
+        public TiltScope(Renderer g, bool tilted, Matrix4x4 tilt)
+        {
+            _g = g;
+            _wasTilted = tilted;
+            _was = tilt;
+        }
+
+        public void Dispose()
+        {
+            if (_g != null)
+            {
+                _g._tilted = _wasTilted;
+                _g._tilt = _was;
+            }
+        }
+    }
+
+    /// <summary>
+    /// On a planet map, until the returned scope is disposed: things drawn upright round <paramref name="p"/> stand on the
+    /// ground there (<see cref="GravityFrames.StandAt"/>). Nothing at all on other maps.
+    /// </summary>
+    public TiltScope StandAt(Vector3 p)
+    {
+        if (!GravityFrames.Curved)
+            return default;
+        var scope = new TiltScope(this, _tilted, _tilt);
+        _tilt = GravityFrames.StandAt(p);
+        _tilted = true;
+        return scope;
+    }
+
     public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid)
     {
+        if (_tilted)
+        {
+            var tilted = model * _tilt;
+            _tilted = false;
+            Draw(tilted, color, alpha, mode, material);
+            _tilted = true;
+            return;
+        }
         if (Recorder != null)
         {
             Recorder.Draw(model, color, alpha, mode, material);

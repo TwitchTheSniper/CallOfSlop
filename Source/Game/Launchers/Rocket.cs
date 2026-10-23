@@ -212,7 +212,10 @@ public static class RocketFlight
                 if (wl > 0.3f)
                     r.Vel = Turn(r.Vel / speed, want / wl, d.LauncherTurnRate * Deg * h) * speed;
             }
-            r.Vel.Y -= World.Gravity * d.LauncherGravity * h;
+            if (GravityFrames.Curved)
+                r.Vel += GravityFrames.GravityAt(r.Pos) * (d.LauncherGravity * h); // a planet: towards its centre
+            else
+                r.Vel.Y -= World.Gravity * d.LauncherGravity * h;
             if (d.LauncherDrag > 0)
                 r.Vel *= MathF.Exp(-d.LauncherDrag * h);
 

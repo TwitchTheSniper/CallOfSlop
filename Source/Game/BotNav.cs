@@ -183,6 +183,12 @@ public sealed partial class NavGraph
     {
         if (!ReferenceEquals(World.Map, map))
             throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        if (map.PointGravity is { } planet)
+        {
+            foreach (var step in BuildCurvedSteps(map, planet)) // a planet: nodes all over the sphere (NavSphere.cs)
+                yield return step;
+            yield break;
+        }
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
@@ -644,6 +650,8 @@ public sealed partial class NavGraph
     /// </summary>
     public int Nearest(Vector3 p, bool needSight = true)
     {
+        if (GravityFrames.Curved)
+            return NearestCurved(p, needSight); // a planet: by straight distance (NavSphere.cs)
         for (var ring = 1; ring <= 3; ring++)
         {
             var r = Spacing * ring;
@@ -702,6 +710,8 @@ public sealed partial class NavGraph
             var len = d.Length();
             return len < 0.01f || World.Query.Raycast(from, d / len, len, QueryFilter.Navigation) >= len - 0.05f;
         }
+        if (GravityFrames.Curved)
+            return Ray(GravityFrames.Above(a, 0.6f), GravityFrames.Above(b, 0.6f)) && Ray(GravityFrames.Above(a, 1.3f), GravityFrames.Above(b, 1.3f));
         var knee = new Vector3(0, 0.6f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         return Ray(a + knee, b + knee) && Ray(a + chest, b + chest);

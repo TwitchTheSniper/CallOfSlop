@@ -40,7 +40,7 @@ public sealed partial class Game
         if (map.BuildingDoors.Count == 0)
             return -1;
         var eye = me.Eye;
-        var dir = World.Forward(LookYaw, LookPitch);
+        var dir = LookDir(LookYaw, LookPitch);
         return DoorAlong(map, eye, dir);
     }
 

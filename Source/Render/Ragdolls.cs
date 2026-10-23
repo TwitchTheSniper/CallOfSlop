@@ -560,7 +560,9 @@ public static class Ragdolls
         body.HatOff = body.HatResting = false;
         _spawned++;
         var pose = d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
-        var toWorld = Matrix4x4.CreateRotationY(-d.Yaw) * Matrix4x4.CreateTranslation(d.Feet);
+        var toWorld = GravityFrames.Curved // a planet: the body falls from standing on its curve
+            ? Matrix4x4.CreateRotationY(-d.Yaw) * GravityFrames.Basis(d.Feet) * Matrix4x4.CreateTranslation(d.Feet)
+            : Matrix4x4.CreateRotationY(-d.Yaw) * Matrix4x4.CreateTranslation(d.Feet);
         var vel = d.Velocity;
         if (!float.IsFinite(vel.X + vel.Y + vel.Z))
             vel = Vector3.Zero;
@@ -697,7 +699,7 @@ public static class Ragdolls
             if (f <= 0)
                 continue;
             var dir = dist > 0.05f ? to / dist : Vector3.UnitY;
-            sim.Push(i, Vector3.Normalize(dir + new Vector3(0, 0.5f, 0)) * (strength * (0.3f + 0.7f * f)));
+            sim.Push(i, Vector3.Normalize(dir + (GravityFrames.Curved ? GravityFrames.UpAt(sim.Pos[i]) * 0.5f : new Vector3(0, 0.5f, 0))) * (strength * (0.3f + 0.7f * f)));
         }
         body.CacheCount = -1;
         if (body.Hat != null && !body.HatOff)
@@ -749,12 +751,26 @@ public static class Ragdolls
             }
             return;
         }
-        b.HatVel.Y -= World.Gravity * Ragdoll.Step;
+        if (GravityFrames.Curved)
+            b.HatVel += GravityFrames.GravityAt(b.HatPos) * Ragdoll.Step; // a planet: towards its centre
+        else
+            b.HatVel.Y -= World.Gravity * Ragdoll.Step;
         var move = b.HatVel * Ragdoll.Step;
         var len = move.Length();
         if (len > 1e-5f && world.Raycast(b.HatPos, move / len, len + 0.06f, QueryFilter.All, out var hit))
         {
-            if (hit.Normal.Y > 0.5f)
+            if (GravityFrames.Curved && Vector3.Dot(hit.Normal, GravityFrames.UpAt(hit.Point)) > 0.5f)
+            {
+                // A planet: rest on the curved ground, upright to it.
+                var upH = GravityFrames.UpAt(hit.Point);
+                b.HatResting = true;
+                b.HatRestPos = hit.Point + upH * MathF.Max(-b.Hat.Min.X, b.Hat.Max.X);
+                b.HatRestRot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationZ(-MathF.PI / 2) * GravityFrames.Basis(hit.Point)));
+                b.HatPos = hit.Point + upH * 0.05f;
+                b.HatLand = 0;
+                return;
+            }
+            if (!GravityFrames.Curved && hit.Normal.Y > 0.5f)
             {
                 var rest = MathF.Max(-b.Hat.Min.X, b.Hat.Max.X);
                 var e = Vector3.Transform(Vector3.UnitZ, b.HatRot);
