@@ -691,7 +691,7 @@ def dress_e1(s):
     names, tw, th = sdec.tiles("hangar")
     sign_on_wall(names, tw, 42.0, mz(-75.4, s), y + 6.15, "wall-z" if s == "n" else "wall+z", s)
     spawn(48, -71.5, y, s)
-    spawn(54.5, -80, y, s)
+    spawn(40, -69.5, y, s)
 
 
 def dress_e2(s):

@@ -170,7 +170,9 @@ public static partial class SelfTest
             if (float.IsNaN(blue) || float.IsNaN(red))
                 Fail($"Stratos Station: no route from a team's spawns to {label}: "
                      + string.Join(", ", o.TeamSpawns.SelectMany((l, t) => l.Where(sp => float.IsNaN(Walk(sp, t == 0 ? forBlue : forRed)))
-                         .Select(sp => $"({sp.X:0.0},{sp.Y:0.0},{sp.Z:0.0})"))));
+                         .Select(sp => g.Nearest(sp, needSight: false) is var k && k >= 0
+                             ? $"({sp.X:0.0},{sp.Y:0.0},{sp.Z:0.0}) node ({g.Nodes[k].X:0.0},{g.Nodes[k].Y:0.00},{g.Nodes[k].Z:0.0}) c{g.Component[k]}/{g.MainComponent} {g.EdgeStart[k + 1] - g.EdgeStart[k]} links"
+                             : $"({sp.X:0.0},{sp.Y:0.0},{sp.Z:0.0}) no node"))));
             else if (MathF.Abs(blue - red) > 0.1f * MathF.Max(blue, red))
                 Fail($"Stratos Station: {label} is {blue:0} m from Blue and {red:0} m from Red (more than 10% apart)");
         }
