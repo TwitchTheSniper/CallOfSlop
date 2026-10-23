@@ -602,6 +602,20 @@ public sealed class BenchModel
     }
 
     /// <summary>
+    /// <see cref="WhyNowhere"/> as a short phrase for the inventory tooltip ("needs a 9mm bore barrel socket",
+    /// "no muzzle socket on this build"). Allocates: cache it (see <see cref="BenchInventory"/>).
+    /// </summary>
+    public string WhyNowhereShort(PartDef part)
+    {
+        if (part.IsRoot)
+            return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
+        foreach (var s in Spots)
+            if (s.Socket.Type == part.Mount && BuildRules.SocketWhyShort(s.Parent, s.Socket, part) is { } why)
+                return why;
+        return $"no {part.Mount} socket on this build";
+    }
+
+    /// <summary>
     /// The valid spot nearest the gun-space ray (<paramref name="origin"/>, unit <paramref name="dir"/>) within
     /// <paramref name="tanTolerance"/> (radius per metre of distance, i.e. an angle); the closer one wins a tie. -1 if none.
     /// No allocation (per frame while dragging).
@@ -919,5 +933,113 @@ public sealed class BenchModel
             sb.Append(p.Incomplete ? "Needs: " : "Problem: ").Append(p.Message);
         }
         return sb.Length == 0 ? "Ready." : sb.ToString();
+    }
+}
+
+/// <summary>
+/// The workbench's part inventory as a filtered list (left panel): owned parts of the editing kind, narrowed by the
+/// category chip and the search, and, unless "Show incompatible parts" is on, only the parts that fit somewhere on the
+/// build. Incompatible parts that are shown carry a short reason. Rebuilt only when its inputs change: calling
+/// <see cref="Refresh"/> every frame with the same inputs allocates nothing.
+/// </summary>
+public sealed class BenchInventory
+{
+    /// <summary>The listed parts, grouped by category in part-file order.</summary>
+    public readonly List<PartDef> Items = new();
+
+    /// <summary>Per item: compatible with the build and a free one left (drawn bright, draggable).</summary>
+    public readonly List<bool> Fits = new();
+
+    /// <summary>Per item: the socket rules allow it somewhere on the build (false = incompatible).</summary>
+    public readonly List<bool> Compatible = new();
+
+    /// <summary>Per item: how many are free (int.MaxValue when unlimited).</summary>
+    public readonly List<int> Free = new();
+
+    /// <summary>Per item: the short reason it's incompatible (null when compatible).</summary>
+    public readonly List<string?> Why = new();
+
+    /// <summary>The category chips: categories with listed parts (search and the toggle applied, not the chip itself), with counts.</summary>
+    public readonly List<PartCategory> Cats = new();
+
+    public readonly List<int> CatCounts = new();
+
+    /// <summary>Chip labels ("Barrel 3"), built with the list so drawing them allocates nothing.</summary>
+    public readonly List<string> CatLabels = new();
+
+    /// <summary>The "All" chip's label with the count of every listed part across categories.</summary>
+    public string AllLabel { get; private set; } = "All";
+
+    /// <summary>Incompatible parts left out by the toggle (search applied): "N hidden" hint.</summary>
+    public int Hidden { get; private set; }
+
+    private BenchModel? _model;
+    private (int Version, int Stock, int Filter, string Search, bool Melee, bool ShowAll) _key = (-1, 0, 0, "", false, false);
+
+    /// <summary>Forgets the cached inputs (part files reloaded in place).</summary>
+    public void Invalidate() => _model = null;
+
+    /// <summary>
+    /// Rebuilds the list from <paramref name="all"/> if the build, stock, filter (-1 = all), search, kind or toggle
+    /// changed. Returns true when it rebuilt.
+    /// </summary>
+    public bool Refresh(BenchModel bm, IEnumerable<PartDef> all, int filter, string search, bool melee, bool showIncompatible)
+    {
+        var key = (bm.Version, bm.Stock.Fingerprint, filter, search, melee, showIncompatible);
+        if (ReferenceEquals(bm, _model) && key == _key)
+            return false;
+        _model = bm;
+        _key = key;
+        Items.Clear();
+        Fits.Clear();
+        Compatible.Clear();
+        Free.Clear();
+        Why.Clear();
+        Cats.Clear();
+        CatCounts.Clear();
+        CatLabels.Clear();
+        Hidden = 0;
+        var total = 0;
+        foreach (var p in bm.Stock.Parts(all))
+        {
+            if (p.IsRoot || p.IsMeleePart != melee)
+                continue;
+            if (search.Length > 0 && !p.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
+                && !PartDef.CategoryName(p.Category).Contains(search, StringComparison.OrdinalIgnoreCase))
+                continue;
+            var compatible = bm.FitsAnywhere(p);
+            if (!compatible && !showIncompatible)
+            {
+                Hidden++;
+                continue;
+            }
+            var ci = Cats.IndexOf(p.Category);
+            if (ci < 0)
+            {
+                Cats.Add(p.Category);
+                CatCounts.Add(1);
+            }
+            else
+                CatCounts[ci]++;
+            total++;
+            if (filter >= 0 && (int)p.Category != filter)
+                continue;
+            var free = bm.Stock.Free(p, bm.Build);
+            Items.Add(p);
+            Compatible.Add(compatible);
+            Free.Add(free);
+            Fits.Add(compatible && free > 0);
+            Why.Add(compatible ? null : bm.WhyNowhereShort(p));
+        }
+        // The chosen chip stays visible even when nothing in it is listed now (so it can be switched off).
+        if (filter >= 0 && !Cats.Contains((PartCategory)filter))
+        {
+            Cats.Add((PartCategory)filter);
+            CatCounts.Add(0);
+        }
+        for (var i = 0; i < Cats.Count; i++)
+            CatLabels.Add($"{PartDef.CategoryName(Cats[i])} {CatCounts[i]}");
+        AllLabel = $"All {total}";
+        return true;
     }
 }

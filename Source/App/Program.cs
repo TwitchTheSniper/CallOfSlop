@@ -102,6 +102,7 @@ public static unsafe partial class Program
         else
             SavePaths.Init(args);
         _settings = Settings.Load();
+        Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
         LoadoutStore.Load();
         Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
