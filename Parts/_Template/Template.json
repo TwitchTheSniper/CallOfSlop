@@ -1,0 +1,42 @@
+// ============================================================================================================
+// THE PART TEMPLATE. Copy this file into a category folder (Parts/Barrel/MyBarrel.json), rename it and edit.
+// Files in Parts/_Template are never parts in the game; the self-test and --check-parts load them to keep them working.
+//
+// Fast loop:  CallOfSlop.exe --watch-parts   then open the Workbench: every save of a part file reloads the parts
+//             and redraws the preview (and the guns in your hands in the Workbench Range).
+// Check one:  CallOfSlop.exe --check-part Parts/Barrel/MyBarrel.json   (errors, sockets, where it fits)
+// Check all:  CallOfSlop.exe --check-parts            Picture:  python3 tools/parts/viz.py Parts parts.png
+// Full guide: docs/zombies/WEAPON-BUILDER.md, "Making parts". Comments (//) and trailing commas are fine.
+//
+// Space: metres, -Z is forward (towards the muzzle), +Y up, +X right. The origin is where the part plugs into the
+// socket it mounts on.
+// ============================================================================================================
+{
+  "format": "call-of-slop-part/1",
+  "name": "Template Finned Barrel",           // unique, 1-40 characters; saves and builds refer to parts by name
+  "category": "barrel",                       // receiver, barrel, splitter, feed, ammo, stock, grip, optic, muzzle,
+                                              // utility, upgrade, multiplier, hilt, head, meleemod
+  "rarity": "uncommon",                       // common, uncommon, rare, epic, legendary, wonder
+  "flavor": "A barrel with fins. The fins are mostly for show.",
+  // "mount": "barrel",                       // the socket type it plugs into (default: the category's, Parts/_Registry.json)
+  "bores": ["pistol", "rifle"],               // calibres it works with (empty = any); bores are listed in the registry
+  "weight": 0.45,                             // kg
+  "hand": [0, -0.03, -0.1],                   // where the off hand holds it when there's no foregrip
+  "muzzles": [[0, 0, -0.24]],                 // barrels: where shots come out (several = a bundle)
+  "sockets": [                                // where other parts plug into this one
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.24]}
+    // {"name": "...", "type": "...", "pos": [x, y, z], "rot": [x, y, z], "accepts": ["barrel"], "required": true}
+  ],
+  "model": [                                  // boxes: "shape" box (default), rod (octagonal, along Z) or plate
+    {"shape": "rod", "size": [0.022, 0.022, 0.24], "pos": [0, 0, -0.12], "color": "black"},
+    // A fragment from Parts/_Fragments, moved, turned, scaled and recoloured:
+    {"use": "Cooling Fins", "pos": [0, 0, -0.05], "scale": [1, 1, 1.5], "color": "accent"},
+    {"use": "Muzzle Ring", "pos": [0, 0, -0.22]}
+    // colours: accent (the build's tier colour), black, gunmetal, steel, chrome, brass, copper, polymer, tan, olive,
+    // wood, darkwood, lightwood, white, rust, orange, yellow, [r, g, b] or "#rrggbb"; "alpha": 0.5; "tag": "glow"/"irons"
+  ],
+  "stats": [                                  // what it does to the weapon (any attachment stat: Attachments/README.md)
+    {"stat": "rangeM", "mul": 1.1},
+    {"stat": "adsTime", "add": 0.01}
+  ]
+}
