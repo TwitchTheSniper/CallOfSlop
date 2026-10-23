@@ -270,7 +270,7 @@ public static partial class SelfTest
         }
 
         // ---- The key: F8 by default, added to old settings without taking a used key ------------------------------
-        var d = Keybinds.Defaults;
+        var kd = Keybinds.Defaults;
         var ktmp = Path.Combine(Path.GetTempPath(), "callofslop-mixkey-" + Guid.NewGuid().ToString("N") + ".txt");
         try
         {
