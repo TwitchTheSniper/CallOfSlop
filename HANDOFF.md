@@ -3,7 +3,7 @@
 **Current state:**
 - `main` is at the commit that adds this file, on top of `225cf2e`.
 - Protocol 45.
-- The last full CI run on main passed, Linux and Windows.
+- CI on main: the full Linux suite passed on `e6828e2` (run 39932715846, 156 sections, 0 failures). The last Windows run passed on `814ffbf`, the release build; Windows hasn't run since the Appearance, action placement and test-filter merges, so push with `[windows ci]` before the next release.
 - The first public release is **v0.2026.1023.7**, built from `814ffbf`. The appearance screen, action placement and test filter came after it, so they are not in a release yet.
 - No agents or branches are in progress.
 
