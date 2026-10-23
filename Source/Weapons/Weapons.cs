@@ -149,6 +149,12 @@ public sealed partial class WeaponDef
     /// <summary>Who made it (optional, for third-party weapons).</summary>
     public string Author { get; set; } = "";
 
+    /// <summary>
+    /// The optic its default kit starts with (the file's "defaultOptic", an optic attachment's name). Null: snipers pick a
+    /// magnified scope by themselves (<see cref="Attachments.DefaultOptic"/>), everything else starts with iron sights.
+    /// </summary>
+    public string? DefaultOptic { get; set; }
+
     /// <summary>The file it was loaded from, relative to the Weapons folder (null for the built-in fallback weapons).</summary>
     public string? SourceFile { get; set; }
 

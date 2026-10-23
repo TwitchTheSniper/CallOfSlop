@@ -76,6 +76,7 @@ public static partial class SelfTest
             Section("Optics", CheckOptics);
             Section("Attachment variety", CheckAttachmentVariety); // SelfTestAttachmentVariety.cs: slots per gun, downsides, class matrix, unlocks, models, saves
             Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
+            Section("Sniper scopes", CheckSniperScopes); // SelfTestSniperScopes.cs: snipers start scoped, iron sights unlock later
             Section("Packets", CheckPackets);
             Section("Loadouts and perks", CheckLoadoutsAndPerks);
             Section("More perks", CheckMorePerks); // SelfTestMorePerks.cs: the 12 later perks, unlocks, old loadouts, Gun Game, bots, effects
@@ -1166,7 +1167,7 @@ public static partial class SelfTest
                     Fail($"{w.Name} + {a.Name}: bad stats (mag {d.Mag}, range {d.RangeM}, ads {d.AdsTime})");
                 if (Attachments.Sanitize(w, kit) != kit)
                     Fail($"{w.Name} + {a.Name}: Sanitize dropped a fitting attachment");
-                if (Attachments.UnlockXp(w, a) is var x && (x < 50 || x > Attachments.MaxXp(w)))
+                if (Attachments.UnlockXp(w, a) is var x && (x < (a == Attachments.DefaultOptic(w) ? 0 : 50) || x > Attachments.MaxXp(w))) // a sniper's starting scope: 0
                     Fail($"{w.Name} + {a.Name}: unlock at {x} weapon XP (max {Attachments.MaxXp(w)})");
             }
             // A full kit: first fitting attachment in every slot
@@ -1432,8 +1433,8 @@ public static partial class SelfTest
             {
                 var copy = WeaponFile.Load(WeaponFile.ToJson(w), w.Name + " (round trip)");
                 var diffs = WeaponDiffs(w, copy, includeId: false);
-                if (copy.Order != w.Order || copy.UnlockLevel != w.UnlockLevel || copy.Author != w.Author)
-                    diffs.Add("order/unlockLevel/author");
+                if (copy.Order != w.Order || copy.UnlockLevel != w.UnlockLevel || copy.Author != w.Author || copy.DefaultOptic != w.DefaultOptic)
+                    diffs.Add("order/unlockLevel/author/defaultOptic");
                 foreach (var d in diffs)
                     Fail($"{w.Name}: weapon file round trip changed {d}");
                 roundTrips++;

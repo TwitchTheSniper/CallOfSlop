@@ -89,7 +89,7 @@ public sealed class GunGameModule : GameModeModule
     {
         var w = GunGame.At(p.GunLevel);
         p.Primary = p.Secondary = w.Id;
-        p.PrimaryKit = p.SecondaryKit = 0;
+        p.PrimaryKit = p.SecondaryKit = Attachments.DefaultKit(w); // a sniper rung comes with its scope
         p.Weapon = w.Id;
     }
 

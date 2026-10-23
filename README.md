@@ -116,6 +116,7 @@ Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarre
 
 - **Optics:** Pinhole Reflex (1.4x), Red Dot (1.5x), Holographic (1.6x), Brick 2x Prism, 2.5x ACOG, Tandem 3x Hybrid, 4x Scope, Variant 6x LPVO, 8x Sniper Scope and Longshot 12x (snipers only). Each has its own model, reticle and zoom, and the bigger the optic, the slower you aim.
 - **Seeing through optics:** every optic is a physical sight on top of the gun. When you hold right click the gun comes up and the sight moves to your eye, housing and all, and you look through its lens: inside it you see only the world and a crisp reticle (no rail, receiver or tube insides), with a faint glass tint. The higher the magnification, the more of the screen the lens fills: reflex sights (Pinhole, Red Dot, Holographic) stay a small window on the gun, the 2x-3x prisms fill a good part of the screen, the 4x and 6x most of it, and the 8x and 12x all of it but a thin eyepiece rim in the corners. It's one continuous motion from the hip to full aim, with no switch to a flat overlay. Guns with a built-in scope work the same way. Each optic's look (reticle, how much of the screen its lens fills, rim, tint) is in its file's `sight` block ([Attachments/README.md](Attachments/README.md#sight-block)). Fitting an optic removes iron sights and LMG carry handles that would be in its way.
+- **Snipers start scoped; iron sights are an unlock.** Every sniper rifle comes with a magnified scope fitted and unlocked from the start (Needle Bolt-Action, Leviathan .50 and Railspike the 8x Sniper Scope; Kite Semi-Sniper and Ghost SD the 4x Scope), so aiming zooms right away. Its **iron sights** (the empty optic slot: 1.5x, quicker to aim and lighter than any scope) unlock half-way through that gun's attachment XP (3,300-3,450 weapon XP, depending on how many attachments the gun takes), shown locked in the Optic list until then. Bots' snipers always use the scope. Older saves: a sniper kit with no optic (which used to look through a built-in scope) now gets the gun's starting scope; `loadout.txt` saves a chosen iron sight as `Iron Sights` in the kit. Other classes still start with iron sights.
 - **Muzzle:** Suppressor (much quieter shots, faint tracers, -15% range), Compensator (cuts the climb), Muzzle Brake (cuts sideways recoil and shake), Choke (shotguns).
 - **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip (cuts the climb), Angled Grip (faster aim, softer first shot), Laser.
 - **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy (less recoil, faster recovery), No Stock.
@@ -469,7 +470,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | WASD | Move |
 | Mouse | Look |
 | Left mouse | Fire (semi, burst or full auto depending on the gun) |
-| Right mouse (hold) | Aim down sights (zoom, tighter spread, slower movement; snipers get a scope) |
+| Right mouse (hold) | Aim down sights (zoom, tighter spread, slower movement; snipers look through their scope) |
 | R | Reload |
 | 1 / 2, Q, mouse wheel | Switch between primary and secondary |
 | Space | Jump (if you're crouched or prone, it stands you up first) |

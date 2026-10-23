@@ -309,6 +309,8 @@ public sealed class Progress
         var before = WeaponXp(w.Name);
         var after = _weaponXp[w.Name] = before + amount;
         var unlocked = Attachments.For(w).Where(a => Attachments.UnlockXp(w, a) is var need && need > before && need <= after).Select(a => a.Name).ToArray();
+        if (Attachments.StartsScoped(w) && Attachments.IronSightsXp(w) is var irons && irons > before && irons <= after)
+            unlocked = [.. unlocked, Attachments.IronSightsName]; // a sniper's iron sights (the empty optic slot)
         if (unlocked.Length > 0)
         {
             AttachmentBanner = $"{w.Name}: unlocked {string.Join(", ", unlocked)}";

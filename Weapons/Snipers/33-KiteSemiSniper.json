@@ -2,6 +2,7 @@
   "format": "call-of-slop-weapon/1",
   "name": "Kite Semi-Sniper",
   "order": 33,
+  "defaultOptic": "4x Scope",
   "class": "Sniper",
   "blurb": "Semi-auto sniper. Two body shots, quick follow-ups.",
   "damage": 70,
@@ -27,7 +28,7 @@
     "kickBack": 0.12, "kickUp": 8, "kickRoll": 5, "kickSide": 0.006, "kickTime": 0.16
   },
   "mobility": 0.9,
-  "adsZoom": 3.5,
+  "adsZoom": 1.5,
   "equipTime": 0.65,
   "adsTime": 0.16,
   "length": 0.68,
@@ -38,7 +39,7 @@
   "bright": 0.5,
   "tail": 0.9,
   "model": {
-    "base": "bolt_sniper", "receiver": "box", "receiverLength": 0.22, "receiverHeight": 0.09, "handguard": "wood",
+    "base": "bolt_sniper", "sights": "aperture", "receiver": "box", "receiverLength": 0.22, "receiverHeight": 0.09, "handguard": "wood",
     "handguardLength": 0.2, "handguardHeight": 0.06, "stock": "thumbhole", "stockLength": 0.26, "mag": "curved",
     "magLength": 0.1, "bolt": "side", "muzzle": "flash", "bipod": "none", "finish": "gunmetal",
     "furniture": "wood", "accentStyle": "mag", "magColor": "gunmetal"

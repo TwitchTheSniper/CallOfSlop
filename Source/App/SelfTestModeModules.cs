@@ -100,11 +100,12 @@ public static partial class SelfTest
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
         // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
-        // FFA, TDM, KotH and CTF re-recorded when launcher blasts got harder and wider against players (fix/launcher-buff: bots carry launchers).
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB89C7675810F9015),
-        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x607E5D0DD4962EFF),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xB8F46D77BE74E52D),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x09DADA4C9F989FF4),
+        // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs),
+        // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0x83768B6496791193),
+        (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x450DCAD01A0F5822),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x0EDF29DF2B72A36A),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x2B74CFD49C25E46A),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
         (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
