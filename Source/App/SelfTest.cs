@@ -6,7 +6,9 @@ namespace CallOfSlop;
 
 // Focused runs: "--selftest-only "Save folder, Frenzy"" runs only the named sections (comma-separated, any case; a whole
 // section name picks that one, otherwise every section starting with the text). Unknown names fail and list the valid
-// ones; "--selftest-list" prints them. selftest.log and its DONE line say FILTERED and which sections ran. On a feature
+// ones; "--selftest-list" prints them. A section that uses an earlier one's results names it (Section(name, body,
+// "Earlier")) and a filtered run brings it along; every other section passes run alone (checked one by one when the
+// filter was added). selftest.log and its DONE line say FILTERED and which sections ran. On a feature
 // branch's CI push, a "[tests: A, B]" tag in the commit message becomes --selftest-only "A, B"; main, the release
 // workflow and a manual run without the "tests" input always run the full suite. Every section logs its time
 // ("-- Name: 1.23 s") and the run ends with a SLOWEST line (the ten slowest sections).
