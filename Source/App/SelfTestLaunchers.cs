@@ -237,7 +237,7 @@ public static partial class SelfTest
         var lethalRows = new List<string>();
         foreach (var w in launchers)
         {
-            var oldLethal = w.Damage < World.MaxHealth ? 0f : w.LauncherRadius * (1f - MathF.Pow(World.MaxHealth / w.Damage, 1f / w.LauncherFalloff));
+            var oldLethal = w.Damage < World.MaxHealth ? 0f : w.LauncherRadius * (1f - MathF.Pow((float)World.MaxHealth / w.Damage, 1f / w.LauncherFalloff));
             var lethal = RocketFlight.PlayerLethalRadius(w, World.MaxHealth);
             var selfAtArm = RocketFlight.PlayerBlastDamage(w, w.LauncherArmDistance) * w.LauncherSelfDamage;
             lethalRows.Add($"{w.Name} {w.Damage * w.LauncherPlayerMult:0}/{w.PlayerBlastRadius} m kills within {lethal:0.00} m (was {oldLethal:0.00}), own blast at {w.LauncherArmDistance} m {selfAtArm:0}");
