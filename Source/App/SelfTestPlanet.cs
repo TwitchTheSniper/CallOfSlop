@@ -244,9 +244,9 @@ public static partial class SelfTest
         var crowd = new MoveState[16];
         for (var i = 0; i < crowd.Length; i++)
             crowd[i] = Settle(Map.SurfaceDir(-60 + i * 8, i * 23) * (TestR + 0.3f), 5);
-        for (var w = 0; w < 30; w++)
+        for (var w = 0; w < 120; w++) // warm-up: the same moves (scratch lists reach their size)
             for (var i = 0; i < crowd.Length; i++)
-                World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint, Yaw = i, SpeedPct = 100 });
+                World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (w % 50 == i ? Buttons.Jump : 0), Yaw = i - w * 0.01f, SpeedPct = 100 });
         var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         var sw = Stopwatch.StartNew();
         const int costTicks = 240;

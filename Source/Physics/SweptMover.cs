@@ -185,6 +185,8 @@ public sealed class SweptMover : IMover
                 if (SlopeRules.Walkable(n))
                     disp.Y = -(n.X * disp.X + n.Z * disp.Z) / n.Y;
             }
+            else if (GravityFrames.Curved)
+                disp = AlongGround(s.Position, s.Stance, disp);
             s.Position = Walk(s.Position, disp, s.Stance, ref s.Velocity);
             s.Grounded = Snap(ref s.Position, s.Stance, SnapDown, s.Velocity, true);
         }
@@ -214,6 +216,21 @@ public sealed class SweptMover : IMover
         s.Position = Clamp(phys, s.Position);
         if (movers)
             MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
+    }
+
+    /// <summary>
+    /// A planet: the walk turned into the plane of the ground under the feet (same length). "Across up" is the sphere's
+    /// tangent plane, but the ground is flat triangles tilted a little from it; walking into the tilt would scrape the
+    /// capsule along the faces and catch on the ridges between them, so the move follows the face it stands on instead.
+    /// </summary>
+    private Vector3 AlongGround(Vector3 feet, Stance stance, Vector3 disp)
+    {
+        var len = disp.Length();
+        if (len < 1e-6f || !Cast(feet, stance, -_up, Skin * 4 + 0.02f, out _, out var n) || Vector3.Dot(n, _up) < World.MinWalkNormalY)
+            return disp;
+        var along = disp - n * Vector3.Dot(disp, n);
+        var l = along.Length();
+        return l > 1e-6f ? along * (len / l) : disp;
     }
 
     /// <summary>The vector without its component along up (zero stays zero).</summary>

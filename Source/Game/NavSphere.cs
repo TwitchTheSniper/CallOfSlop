@@ -20,7 +20,7 @@ public sealed partial class NavGraph
         var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
         var c = World.Physics;
         var radius = map.PlanetRadius > 0 ? map.PlanetRadius : MathF.Max(map.HalfX, map.HalfZ) * 0.7f;
-        var s = Math.Clamp(radius * 0.075f, 3f, 6f);
+        var s = Math.Clamp(radius * 0.085f, 3f, 6f); // 4.8 m on a 56 m planet: about 1,700 nodes
         g.Spacing = s;
         var reach = map.MaxHeightAbovePlanet(radius);
 
@@ -65,7 +65,7 @@ public sealed partial class NavGraph
                 var len = Vector3.Distance(a, b);
                 if (len > linkR || len < 0.05f)
                     continue;
-                if (World.CanWalkCurved(a, b))
+                if (Clear(a, b) && World.CanWalkCurved(a, b)) // (the cheap straight look first: a wall between them, no walk)
                 {
                     edges.Add((i, j, len));
                     edges.Add((j, i, len));
