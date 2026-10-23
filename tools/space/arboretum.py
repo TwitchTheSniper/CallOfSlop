@@ -308,7 +308,7 @@ def main():
                      "edge": {"style": "wall", "height": 10, "thickness": 1.2, "color": HULL2, "material": "Metal"}, "groundMargin": 5},
         "terrain": terrain(),
         "teamSpawns": [B.spawns["blue"], B.spawns["red"]],
-        "hills": [{"x": 0, "z": 0, "radius": 6}, {"x": 0, "z": -37, "radius": 5}, {"x": 0, "z": 37, "radius": 5}],
+        "hills": [{"x": 0, "z": 3.5, "radius": 6}, {"x": 0, "z": -37, "radius": 5}, {"x": 0, "z": 37, "radius": 5}],
         "flags": [[-55, 0], [55, 0]],
         "foliage": foliage(),
         "ops": B.ops,
