@@ -206,6 +206,37 @@ public static partial class SelfTest
                 Fail("the alive cap or the spawn queue doesn't work");
         }
 
+        // ---- The box never offers what you already carry (a gun slot or the melee slot), and every tier has variety ----
+        using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            var me = g.Local!;
+            var all = StandardBuilds.All;
+            var gun = StandardBuilds.From("box").FirstOrDefault(b => b.Tier == Rarity.Uncommon && !b.IsMelee);
+            var melee = StandardBuilds.From("box").FirstOrDefault(b => b.Tier == Rarity.Uncommon && b.IsMelee);
+            var gave = gun != null && melee != null && g.GiveBuild(me, 0, gun.Build(), full: true) && g.GiveBuild(me, 4, melee.Build(), full: true);
+            var repeats = 0;
+            var seen = new HashSet<int>[6];
+            for (var i = 0; i < 6; i++)
+                seen[i] = new HashSet<int>();
+            foreach (var round in new[] { 1, 8, 15, 25 })
+                for (var s = 0u; s < 3000; s++)
+                {
+                    var b = g.RollBoxBuild(me, round, s * 2654435761u + 7);
+                    if (b < 0)
+                        continue;
+                    if (all[b].Name == gun?.Name || all[b].Name == melee?.Name)
+                        repeats++;
+                    seen[(int)all[b].Tier].Add(b);
+                }
+            ZLine($"box repeats: carrying '{gun?.Name}' and '{melee?.Name}' (given {gave}): offered again {repeats} time(s) in 12000 rolls; distinct offers by tier "
+                  + string.Join(" ", Enumerable.Range(0, 6).Select(i => $"{(Rarity)i} {seen[i].Count}")));
+            if (!gave || repeats > 0)
+                Fail("the mystery box should never offer a build you already carry, in a gun slot or the melee slot");
+            for (var t = (int)Rarity.Uncommon; t <= (int)Rarity.Wonder; t++)
+                if (seen[t].Count < 6)
+                    Fail($"the mystery box offered only {seen[t].Count} different {(Rarity)t} builds (expected 6 or more for variety)");
+        }
+
         // ---- Doors cost points and unlock; wall buys and ammo; the box and the teddy bear; perks and power ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
         {

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Twin Thumpers",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two belt-fed chain guns on a mule frame. Spin them up and lean into it.",
+  "build": "Mule Frame{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG},receiver_2:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG},foregrip:Chaingun Handle,stock:Shoulder Harness}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Courier Carbine",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A light auto carbine on a long barrel with a red dot and a vertical grip. The wall rifle's smarter cousin.",
+  "build": "Sport Rifle Grip{receiver_1:Courier Carbine Receiver{barrel:Long Barrel{muzzle:Flash Hider},feed:Extended Mag,ammo:5.56 FMJ},stock:Wire Stock,foregrip:Vertical Foregrip,optic:Red Dot}"
+}

@@ -60,6 +60,7 @@ public sealed partial class Game
             e.NextThink = now + (nearSq < 50f * 50f ? 0.1 : nearSq < 100f * 100f ? 0.33 : 1.0) + PveRand() * 0.03;
         }
         AllocProfile.Mark("coop: move");
+        EnemyDoors(e, now); // open a shut door on the way, shut one from cover (Bots/Doors/BotDoors.cs)
         MoveEnemy(e, now);
         AllocProfile.Mark("coop: fire");
         FireEnemy(e, now);

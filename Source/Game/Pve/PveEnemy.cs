@@ -69,6 +69,7 @@ public sealed class PveEnemy
     public double StuckAt, StuckSince = -1, UnstickUntil;
     public float UnstickYaw;
     public double LastSeenByPlayer;
+    public double DoorShutAt = -100; // when it last shut a door from cover (Bots/Doors/BotDoors.cs)
 
     /// <summary>The goal is close and in plain view: walk straight at it (re-checked every few ticks).</summary>
     public bool DirectOk;
@@ -121,6 +122,7 @@ public sealed class PveEnemy
         UnstickUntil = 0;
         UnstickYaw = 0;
         LastSeenByPlayer = 0;
+        DoorShutAt = -100;
         PrevPos = RenderPos = Vector3.Zero;
         RenderYaw = RenderPitch = 0;
         HealthByte = 255;

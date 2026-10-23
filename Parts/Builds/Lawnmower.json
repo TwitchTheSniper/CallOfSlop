@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Lawnmower",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "A chainsaw bar on a long haft, wrapped in barbed wire and studded with nails. Push it through a crowd.",
+  "build": "Long Haft{head:Chainsaw Blade,mod_1:Barbed Wire Wrap,mod_2:Nail Ring}"
+}

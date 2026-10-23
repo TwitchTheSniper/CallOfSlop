@@ -464,7 +464,7 @@ public static partial class SelfTest
         // A bot walking into a shut door opens it.
         var botOpen = typeof(Game).GetMethod("BotOpenDoors", BindingFlags.NonPublic | BindingFlags.Instance);
         me.Position = outside + across * 0.45f;
-        botOpen?.Invoke(game, [me, 0.0]);
+        botOpen?.Invoke(game, [me, 0.0, Vector3.Zero]);
         Line($"a bot pressed against it opens it {d.Open}");
         if (botOpen == null || !d.Open)
             Fail("a bot walking into a shut door didn't open it");

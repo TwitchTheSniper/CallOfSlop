@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Ratchet PDW",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A three-round-burst pistol action with a wire stock and an angled grip: a pocket carbine for tight corridors.",
+  "build": "Service Rifle Grip{receiver_1:Ratchet Burst SMG Receiver{barrel:Standard Barrel{muzzle:Compensator},feed:Extended Mag,ammo:9mm Ball},stock:Wire Stock,foregrip:Angled Foregrip}"
+}
