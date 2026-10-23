@@ -38,7 +38,7 @@ the far corner stair down). The gallery loop overlooks the whole vault but is it
 About 310 map boxes from the ops (about 350 drawn), 0 meshes, about 340 hand-placed props plus mirrored clutter (the
 pack-local Frostvault set, 15 props, plus Station, Facility and Office props), about 380 decals (the pack-local
 Frostvault set: hex floor joints, frost blooms, biohazard and cryo plates, quarantine stripes, the vault ring, hall
-numbers, area signs, the Borealis logo; plus global stains and signs). Destruction off. Nav graph about 1,100 nodes.
+numbers, area signs, the Borealis logo; plus global stains and signs). Destruction off. Nav graph about 1,140 nodes (built in about 0.2 s on a desktop).
 
 ## Assets
 
