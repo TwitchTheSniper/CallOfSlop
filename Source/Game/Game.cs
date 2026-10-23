@@ -224,10 +224,12 @@ public sealed partial class Game : IDisposable
             Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
         }
 
-        AllocProfile.Mark("frame effects");
+        AllocProfile.Mark("frame: weapon state");
         UpdateWeaponState(now, (float)frameDt);
+        AllocProfile.Mark("frame: carts, throwables");
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        AllocProfile.Mark("frame: tactical, streaks, advert");
         UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
@@ -369,8 +371,13 @@ public sealed partial class Game : IDisposable
             _wasAlive = local.Alive;
         }
 
-        Tracers.RemoveAll(t => now - t.Born > 0.25);
-        Feed.RemoveAll(f => now - f.Time > 8);
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = Tracers.Count - 1; i >= 0; i--)
+            if (now - Tracers[i].Born > 0.25)
+                Tracers.RemoveAt(i);
+        for (var i = Feed.Count - 1; i >= 0; i--)
+            if (now - Feed[i].Time > 8)
+                Feed.RemoveAt(i);
         while (Feed.Count > 6)
             Feed.RemoveAt(0);
     }
@@ -1333,7 +1340,11 @@ public sealed partial class Game : IDisposable
         spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def) * FrenzyAllowedConeMult(shooter, def), SprintSpread.ServerMax(def));
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
-        var targets = new List<(Player P, Box Hitbox, HistoryEntry At)>();
+        // Reused per shot (every trigger pull of every bot: new lists here were most of a bot's garbage).
+        var nested = _shotBusy; // (never in practice: a shot resolving inside another gets its own lists)
+        _shotBusy = true;
+        var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _shotTargets;
+        targets.Clear();
         foreach (var p in Players.Values)
         {
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
@@ -1343,15 +1354,19 @@ public sealed partial class Game : IDisposable
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
-        var damage = new Dictionary<Player, float>();
-        var headshotOn = new HashSet<Player>();
+        var damage = nested ? new List<(Player Victim, float Damage)>() : _shotDamage;
+        damage.Clear();
+        var headshotOn = nested ? new HashSet<Player>() : _shotHeads;
+        headshotOn.Clear();
         _bloodShotPart.Clear();
         byte flags = 0;
-        var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _shotRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
-        var ends = new List<Vector3>(rays.Count);
-        var laterals = new List<Vector2>(rays.Count);
+        var ends = nested ? new List<Vector3>() : _shotEnds;
+        ends.Clear();
+        var laterals = nested ? new List<Vector2>() : _shotLaterals;
+        laterals.Clear();
         var zHead = false;
         _shotPenetrated = false;
 
@@ -1413,15 +1428,16 @@ public sealed partial class Game : IDisposable
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
-                damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
+                AddShotDamage(damage, h.P, dmg);
                 _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
         }
 
-        foreach (var (victim, dmg) in damage)
+        for (var di = 0; di < damage.Count; di++)
         {
+            var (victim, dmg) = damage[di];
             if (IsFriendlyHit(shooter, victim))
             {
                 flags |= ShotHitFriendly; // a teammate: no damage, a friendly marker for the shooter (FriendlyHits.cs)
@@ -1458,6 +1474,28 @@ public sealed partial class Game : IDisposable
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        _shotBusy = nested;
+    }
+
+    // ServerResolveShot's scratch lists (the game thread only; a shot never fires another shot while it resolves).
+    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _shotTargets = new(Map.HardMaxPlayers);
+    private readonly List<(Player Victim, float Damage)> _shotDamage = new(Map.HardMaxPlayers);
+    private readonly HashSet<Player> _shotHeads = new();
+    private readonly List<ShotRay> _shotRays = new(16);
+    private readonly List<Vector3> _shotEnds = new(16);
+    private readonly List<Vector2> _shotLaterals = new(16);
+    private bool _shotBusy;
+
+    /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
+    private static void AddShotDamage(List<(Player Victim, float Damage)> damage, Player victim, float dmg)
+    {
+        for (var i = 0; i < damage.Count; i++)
+            if (damage[i].Victim == victim)
+            {
+                damage[i] = (victim, damage[i].Damage + dmg);
+                return;
+            }
+        damage.Add((victim, dmg));
     }
 
     private void OnOwnShotConfirmed(byte flags, double now)

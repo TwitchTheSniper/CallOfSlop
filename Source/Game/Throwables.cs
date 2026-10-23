@@ -659,8 +659,13 @@ public sealed partial class Game
     /// <summary>Expire old smoke, sensors and blast flashes; recon beeps.</summary>
     private void UpdateThrowableEffects(double now, float dt)
     {
-        Smokes.RemoveAll(s => now > s.Until);
-        Blasts.RemoveAll(b => now - b.Born > 0.6);
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = Smokes.Count - 1; i >= 0; i--)
+            if (now > Smokes[i].Until)
+                Smokes.RemoveAt(i);
+        for (var i = Blasts.Count - 1; i >= 0; i--)
+            if (now - Blasts[i].Born > 0.6)
+                Blasts.RemoveAt(i);
         for (var i = Sensors.Count - 1; i >= 0; i--)
         {
             var s = Sensors[i];
