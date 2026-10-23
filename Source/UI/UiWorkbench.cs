@@ -561,7 +561,7 @@ public sealed partial class Ui
         {
             ImGuiSafe.FieldFailed("part search", ex);
         }
-        // OFF (default): only parts that fit somewhere on this build. ON: every owned part, incompatible ones dimmed.
+        // OFF (default): only parts that fit somewhere on this build with a spare copy. ON: every owned part, the rest dimmed.
         var showAll = BenchSettings?.WorkbenchShowIncompatible ?? false;
         if (ImGui.Checkbox("Show incompatible parts"u8, ref showAll) && BenchSettings != null)
         {
@@ -569,8 +569,8 @@ public sealed partial class Ui
             BenchSettings.Save();
         }
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build are dimmed (hover one for why)."
-                : "Showing only parts that fit somewhere on this build. Tick to see all your parts.");
+            ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build, or have none spare, are dimmed (hover one for why)."
+                : "Showing only parts that fit somewhere on this build and have a spare copy. Tick to see all your parts.");
         RefreshInventory();
         if (!showAll && _inv.Hidden > 0)
         {
@@ -602,7 +602,7 @@ public sealed partial class Ui
         var rowH = 46 * _scale;
         var rowW = ImGui.GetContentRegionAvail().X;
         if (_inv.Items.Count == 0)
-            ImGuiSafe.TextColored(Dim, _inv.Hidden > 0 ? "None of these fit this build. Tick \"Show incompatible parts\" to see them anyway."
+            ImGuiSafe.TextColored(Dim, _inv.Hidden > 0 ? "None of these fit this build or have a spare copy. Tick \"Show incompatible parts\" to see them anyway."
                 : BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with." : "Nothing matches.");
         PartCategory? group = null;
         for (var i = 0; i < _inv.Items.Count; i++)
@@ -642,7 +642,7 @@ public sealed partial class Ui
                 var tip = $"{p.Name} - {PartDef.RarityName(p.Rarity)} {PartDef.CategoryName(p.Category)}\n{p.Flavor}\n{PartSummary(p)}";
                 if (!Bm.Stock.IsUnlimited)
                     tip += $"\nYou have {Bm.Stock.Owned(p)} ({Math.Max(0, free)} free).";
-                tip += _inv.Why[i] is { } incompat ? $"\nIncompatible: {incompat}." : free <= 0 ? "\nNone left to fit." : "\nDrag it onto the gun, or double-click to fit it.";
+                tip += _inv.Why[i] is { } cant ? (_inv.Compatible[i] ? $"\nCan't fit it: {cant} (all yours are on the build)." : $"\nIncompatible: {cant}.") : "\nDrag it onto the gun, or double-click to fit it.";
                 ImGuiSafe.SetTooltip(tip);
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                 {
