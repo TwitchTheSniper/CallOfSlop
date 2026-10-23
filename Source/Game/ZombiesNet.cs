@@ -24,7 +24,7 @@ public enum ZEventKind : byte
 }
 
 /// <summary>
-/// Zombies networking (protocol 18; the messages are at the end of <see cref="Msg"/>): the zombies (<see cref="Msg.ZEnts"/>,
+/// Zombies networking (protocol 18; power-ups and special ammo effects since 40; the messages are at the end of <see cref="Msg"/>): the zombies (<see cref="Msg.ZEnts"/>,
 /// with every snapshot), the run state (<see cref="Msg.ZWorld"/>, 10 times a second: round, doors, boards, the box,
 /// every player's points, downs and perks, parts on the floor), events (<see cref="Msg.ZEvent"/>), a player's parts and
 /// scrap (<see cref="Msg.ZRun"/>), built weapons (<see cref="Msg.ZBuild"/>: the build's text, so every PC assembles the
