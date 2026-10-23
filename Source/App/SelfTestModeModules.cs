@@ -360,7 +360,8 @@ public static partial class SelfTest
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
             Game.SeedNextGame = null; // (ZGame may not have made a Game with it)
-            NavGraph.Pump(double.MaxValue); // the nav graph whole now, not after a wall-clock-budgeted build
+            // (No NavGraph.Pump here: the recorded digests below were made after these matches built the graph in budgeted
+            // slices, and pumping it whole changes what they replay.)
             using (game)
             {
                 var startAlive = game.Players.Values.Count(p => p.Alive);

@@ -230,6 +230,7 @@ public sealed class FrenzyStyleRig
         var driveNorm = drive > 0 ? 1f / Dsp.Tanh(drive * 0.9f) * 0.9f : 1f;
         var crush = fx.CrushBits > 0;
         var q = crush ? MathF.Pow(2f, fx.CrushBits - 1) : 1f;
+        var invQ = 1f / q; // a power of two: multiplying by it is exact, and cheaper than dividing
         var hold = Math.Max(1, fx.CrushHold);
         var stutter = fx.Stutter.Length > 0;
         var slapLen = fx.SlapMs > 0 ? Math.Clamp((int)(fx.SlapMs * 0.001f * Dsp.Sr), 1, Ring - 1) : 0;
@@ -247,8 +248,8 @@ public sealed class FrenzyStyleRig
             {
                 if (_crushCount <= 0)
                 {
-                    _crushL = crush ? MathF.Round(l * q) / q : l;
-                    _crushR = crush ? MathF.Round(r * q) / q : r;
+                    _crushL = crush ? MathF.Round(l * q) * invQ : l;
+                    _crushR = crush ? MathF.Round(r * q) * invQ : r;
                     _crushCount = hold;
                 }
                 _crushCount--;
