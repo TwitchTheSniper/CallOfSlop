@@ -1,0 +1,46 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationhangar",
+ "description": "A station hangar bay: cargo pods and case stacks along the walls, a hover sled, fuel couplings.",
+ "items": [
+  {
+   "props": [
+    "Hover Cargo Sled"
+   ],
+   "place": "centre",
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Station Cargo Pod",
+    "Supply Case Stack"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Fuel Coupling"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Supply Case",
+    "Toolbox"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}

@@ -1,0 +1,109 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Station Cargo Pod",
+ "category": "Station",
+ "description": "A sealed metal cargo pod with bronze end frames and a status light: solid cover.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.4,
+    1.3,
+    1.4
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    2.4,
+    1.3,
+    1.4
+   ],
+   "offset": [
+    0.0,
+    0.65,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.12,
+    1.36,
+    1.46
+   ],
+   "offset": [
+    -1.15,
+    0.68,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.12,
+    1.36,
+    1.46
+   ],
+   "offset": [
+    1.15,
+    0.68,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    2.46,
+    0.1,
+    1.46
+   ],
+   "offset": [
+    0.0,
+    1.3,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    2.0,
+    0.14,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    0.77,
+    0.71
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.08,
+    0.03
+   ],
+   "offset": [
+    0.8,
+    1.04,
+    0.715
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "pulse",
+    "color": "#6fe0e8",
+    "glow": 0.9,
+    "period": 3.0
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

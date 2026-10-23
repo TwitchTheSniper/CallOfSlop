@@ -1,0 +1,184 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Station Server Cabinet",
+ "category": "Station",
+ "description": "A tall equipment cabinet with rows of blinking status lamps. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.9,
+    1.9,
+    0.5
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 300,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    0.9,
+    1.9,
+    0.5
+   ],
+   "offset": [
+    0.0,
+    0.95,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.8,
+    0.9,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.25,
+    0.26
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.25,
+    0.925,
+    0.27
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 0.9,
+    "period": 0.7,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.055,
+    0.27
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 0.9,
+    "period": 0.9299999999999999,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.25,
+    1.185,
+    0.27
+   ],
+   "color": "#ff4a3a",
+   "anim": {
+    "type": "blink",
+    "color": "#ff4a3a",
+    "glow": 0.9,
+    "period": 1.16,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    -0.25,
+    1.315,
+    0.27
+   ],
+   "color": "#ffb24a",
+   "anim": {
+    "type": "blink",
+    "color": "#ffb24a",
+    "glow": 0.9,
+    "period": 1.3900000000000001,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.445,
+    0.27
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 0.9,
+    "period": 1.62,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.02
+   ],
+   "offset": [
+    0.25,
+    1.575,
+    0.27
+   ],
+   "color": "#ff4a3a",
+   "anim": {
+    "type": "blink",
+    "color": "#ff4a3a",
+    "glow": 0.9,
+    "period": 1.85,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

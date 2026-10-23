@@ -1,0 +1,85 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Deck Light Post",
+ "category": "Station",
+ "description": "A slim deck lamp post with an arm-mounted warm light.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.22,
+    3.9,
+    0.22
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.22,
+    0.25,
+    0.22
+   ],
+   "offset": [
+    0.0,
+    0.125,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.1,
+    3.6,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    2.05,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.7,
+    0.08,
+    0.16
+   ],
+   "offset": [
+    0.28,
+    3.84,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.46,
+    0.06,
+    0.2
+   ],
+   "offset": [
+    0.4,
+    3.75,
+    0.0
+   ],
+   "color": "#fff0c8",
+   "anim": {
+    "type": "flicker",
+    "color": "#fff0c8",
+    "glow": 1.5,
+    "rate": 2,
+    "duty": 0.98
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,38 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationstore",
+ "description": "A station parts store: shelving, supply cases and case stacks.",
+ "items": [
+  {
+   "props": [
+    "Metal Shelving"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Supply Case Stack",
+    "Station Cargo Pod"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Supply Case"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}

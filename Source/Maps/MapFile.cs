@@ -207,6 +207,8 @@ public static partial class MapFile
             sb.Append("  \"prototypeGrid\": true,\n");
         if (!m.Penetration)
             sb.Append("  \"penetration\": false,\n");
+        if (m.FallKillY is { } fallKill)
+            sb.Append($"  \"fallKill\": {Num(fallKill)},\n");
         if (m.DestructibleSetting is { } destructible)
             sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
@@ -325,6 +327,9 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
                 map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
+            if (Prop(root, "fallKill") is { ValueKind: not JsonValueKind.Null } fallKillEl) // a void map: falling below this height kills (GameFallKill.cs)
+                map.FallKillY = fallKillEl.ValueKind == JsonValueKind.Number && fallKillEl.GetSingle() is >= -4f and <= 55f
+                    ? fallKillEl.GetSingle() : throw new MapFileException($"{source}: \"fallKill\" is a height from -4 to 55 (metres)");
             if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
                 map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");

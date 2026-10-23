@@ -402,10 +402,26 @@ public sealed partial class NavGraph
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
+            if (map.FallKillY != null && !Supported(col, c))
+                continue; // a void map: not on a railing top or a ledge's lip (GameFallKill.cs)
             if (!col.BlockedNav(c + new Vector3(0, 0.01f, 0))) // (building doors don't count: bots open them)
                 return c;
         }
         return null;
+    }
+
+    /// <summary>
+    /// Void maps (<see cref="Map.FallKillY"/>): is there floor within 0.6 m of the feet' height under all four sides of a
+    /// player's footprint at <paramref name="c"/>? A railing top or the very edge of a deck has void beside it.
+    /// </summary>
+    private static bool Supported(PhysicsWorld col, Vector3 c)
+    {
+        ReadOnlySpan<float> dx = [0.35f, -0.35f, 0f, 0f];
+        ReadOnlySpan<float> dz = [0f, 0f, 0.35f, -0.35f];
+        for (var k = 0; k < 4; k++)
+            if (float.IsNaN(Ground(col, c.X + dx[k], c.Z + dz[k], c.Y + 0.6f, 1.2f)))
+                return false;
+        return true;
     }
 
     /// <summary>

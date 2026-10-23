@@ -308,11 +308,12 @@ public sealed partial class Map
             Waypoints.Add(new Vector3(x, g, z));
     }
 
+    /// <summary>A point bots roam between, on the ground at (x, z) or <paramref name="y"/> above it (a bridge, a deck).</summary>
     [MapOp]
-    public void Waypoint(float x, float z) 
+    public void Waypoint(float x, float z, float y = 0) 
     {
-        using var __ = Op([x, z]);
-        Waypoints.Add(new Vector3(x, PointGround(x, z), z));
+        using var __ = Op([x, z, y]);
+        Waypoints.Add(new Vector3(x, PointGround(x, z) + y, z));
     }
 
     /// <summary>Would a standing player at <paramref name="feet"/> overlap a box, be under the terrain, or be outside the map?</summary>
