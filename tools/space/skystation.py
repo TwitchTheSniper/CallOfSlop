@@ -420,7 +420,7 @@ def bridge(a, b, kind, w, ya=None, yb=None, ends=None):
 
 
 def collider_bridge(x0, z0, y0, x1, z1, y1, w):
-    """Hidden deck colliders from (x0, z0) at height y0 to (x1, z1) at y1, `w` wide: pieces that step up at most 8 cm."""
+    """Hidden deck colliders from (x0, z0) at height y0 to (x1, z1) at y1, `w` wide: pieces that step up at most 4 cm (under the stairs audit's 5 cm step)."""
     L = math.hypot(x1 - x0, z1 - z0)
     if L < 0.05:
         return
@@ -428,7 +428,7 @@ def collider_bridge(x0, z0, y0, x1, z1, y1, w):
     axis = abs(ux) < 0.01 or abs(uz) < 0.01
     rise = abs(y1 - y0)
     if axis:
-        n = max(1, int(math.ceil(rise / 0.08)))
+        n = max(1, int(math.ceil(rise / 0.04)))
         for k in range(n):
             f0, f1 = k / n, (k + 1) / n
             ax, az = x0 + (x1 - x0) * f0, z0 + (z1 - z0) * f0
@@ -441,7 +441,7 @@ def collider_bridge(x0, z0, y0, x1, z1, y1, w):
     # Diagonal: thin slices across the dominant axis, each covering the part of the strip inside it (inscribed), its
     # top the lowest height of the drawn deck over the slice (so feet sink a few cm at most on these gentle slopes).
     alongx = abs(ux) >= abs(uz)
-    t = 0.45
+    t = 0.3  # (each slice rises under 5 cm: a ramp, not a staircase)
     half = w / 2 - 0.04
     if alongx:
         lo_, hi_ = min(x0, x1), max(x0, x1)
@@ -488,7 +488,7 @@ def covered_wall(x0, z0, ya, x1, z1, yb, s, ux, uz):
         f = k / n
         mesh("box", x0 + (x1 - x0) * f, z0 + (z1 - z0) * f, ya + (yb - ya) * f + 1.1, RIM, width=0.22, height=1.1, depth=0.22)
     # Colliders: the lower wall and the upper wall, stepped with the floor.
-    m = max(1, int(math.ceil(abs(yb - ya) / 0.15)))
+    m = max(1, int(math.ceil(abs(yb - ya) / 0.04)))
     for k in range(m):
         f0, f1 = k / m, (k + 1) / m
         axx, azz = x0 + (x1 - x0) * f0, z0 + (z1 - z0) * f0
@@ -504,7 +504,7 @@ def covered_roof(ax, az, ya, bx, bz, yb, w, ux, uz):
     ym = (ya + yb) / 2
     slab(cx, cz, ym + 3.15, L + 0.6, w + 0.6, 0.25, ux, uz, yb - ya, RIM, material="Metal")
     slab(cx, cz, ym + 3.35, L + 0.4, w * 0.6, 0.2, ux, uz, yb - ya, HULL, material="Metal")
-    m = max(1, int(math.ceil(abs(yb - ya) / 0.15)))
+    m = max(1, int(math.ceil(abs(yb - ya) / 0.04)))
     for k in range(m):
         f0, f1 = k / m, (k + 1) / m
         axx, azz = ax + (bx - ax) * f0, az + (bz - az) * f0
