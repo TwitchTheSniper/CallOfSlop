@@ -46,7 +46,7 @@ with the catwalk choke and long low-gravity jumps round it; the masts and piers 
 ## Gravity zones (the file's `gravity` field)
 
 In order (the first zone containing a position wins): the hull above the Bowl, the hull's two sides (from 0.5 m up),
-the Bowl's three steps (30, 60, 90 degrees), the two piers (plain, listed before the Rock so they stay level), the
+the Bowl's three steps (30, 60, 90 degrees), the two piers (plain, only the deck's footprint, listed before the Rock so they stay level), the
 Rock's sphere (point field, radius 8), the hold (uniform, 7 m/s2). The default is plain gravity.
 
 ## How it's built (cost)

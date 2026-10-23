@@ -777,6 +777,8 @@ about three times as far and as high as at 18 m/s², so a low-gravity gap can be
 **Rules of thumb.**
 - **Zones cover bodies, not just feet.** A player's field is read at their feet, but a grenade is thrown from their eyes:
   make a wall zone reach at least 2 m out from the wall, and don't let another zone (listed earlier) poke into it.
+- **Bots and the mover agree.** The nav build and the "Nav edge walks" self-test walk zone links with the movement the
+  game uses there (the capsule mover in the local field), so a link only stays if a player really walks it.
 - **Transitions bots can walk.** The bots' graph gets nodes in every zone whose up isn't straight down (probed along the
   zone's own up, over its bounds: a grid for a uniform zone, a sphere round the centre for a point zone) and links any two
   nodes a player could walk between along the local ground, which must be continuous: a surface within a step (0.55 m),
@@ -785,7 +787,8 @@ about three times as far and as high as at 18 m/s², so a low-gravity gap can be
   directions are 30, 60 and 90 degrees round, each zone's edge where the pipe's slope is halfway between its neighbours'
   (the lab does this: nine slabs 10 degrees apart, zone edges at 15, 45 and 75 degrees). A rock is reached by a pier
   ending just short of its top, with the pier in a plain-gravity box zone listed **before** the rock's sphere, so the pier
-  stays level right up to the step off. A plain wall between two frames is not walkable: players can jump or fall across
+  stays level right up to the step off. Make that box only the deck's footprint, from just under its top: wider, and
+  people beside the deck stand in plain gravity on the rock's curve and slide off it. A plain wall between two frames is not walkable: players can jump or fall across
   it, bots won't try.
 - **Spawns, hills and flags** go in plain-gravity areas: spawns are checked and generated the flat way, and the automatic
   objectives are worked out for flat ground. Give `teamSpawns`, `hills` and `flags` yourself.
