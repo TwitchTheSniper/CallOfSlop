@@ -1,0 +1,383 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Console Bank",
+ "category": "Space",
+ "description": "Three control consoles in a row with flickering orange and blue screens and rows of switches.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 300,
+  "breakBy": [
+   "explosions",
+   "streaks",
+   "bullets"
+  ],
+  "sound": "metal",
+  "debris": {
+   "count": 14,
+   "size": [
+    0.08,
+    0.3
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    3.0,
+    0.9,
+    0.9
+   ],
+   "offset": [
+    0.0,
+    0.45,
+    0.0
+   ],
+   "color": "#7d8189",
+   "material": "metal"
+  },
+  {
+   "size": [
+    3.0,
+    0.4,
+    0.5
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    -0.2
+   ],
+   "color": "#7d8189",
+   "material": "metal"
+  },
+  {
+   "size": [
+    3.1,
+    0.06,
+    0.96
+   ],
+   "offset": [
+    0.0,
+    0.93,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.8,
+    0.3,
+    0.03
+   ],
+   "offset": [
+    -0.95,
+    1.11,
+    0.06
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "flicker",
+    "color": "#4ac8ff",
+    "glow": 1.1,
+    "rate": 8,
+    "duty": 0.88,
+    "phase": 0.0
+   }
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -1.25,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -1.13,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -1.01,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.89,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.77,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.65,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.8,
+    0.3,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    1.11,
+    0.06
+   ],
+   "color": "#ff8a2a",
+   "anim": {
+    "type": "flicker",
+    "color": "#ff8a2a",
+    "glow": 1.1,
+    "rate": 8,
+    "duty": 0.88,
+    "phase": 0.3
+   }
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.3,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.18,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    -0.06,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.06,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.18,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.3,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.8,
+    0.3,
+    0.03
+   ],
+   "offset": [
+    0.95,
+    1.11,
+    0.06
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "flicker",
+    "color": "#4ac8ff",
+    "glow": 1.1,
+    "rate": 8,
+    "duty": 0.88,
+    "phase": 0.6
+   }
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.65,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.77,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    0.89,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    1.01,
+    0.945,
+    0.3
+   ],
+   "color": "red"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    1.13,
+    0.945,
+    0.3
+   ],
+   "color": "green"
+  },
+  {
+   "size": [
+    0.08,
+    0.03,
+    0.08
+   ],
+   "offset": [
+    1.25,
+    0.945,
+    0.3
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    2.8,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    0.63,
+    0.47
+   ],
+   "color": "#6c6f73"
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Canopy Sign Hydroponics 3",
+ "category": "CanopyDeck",
+ "description": "Tile 3 of 5 of the 'HYDROPONICS' sign (an invented place name or a plain warning).",
+ "author": "Call of Slop",
+ "size": [
+  0.8,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "canopy_sign_hydroponics_3.png",
+ "fadeDistance": 80
+}

@@ -1,0 +1,48 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Emergency Strip Lamp",
+ "category": "Space",
+ "description": "A red emergency strip lamp for a bulkhead (its back at -Z; lift it with y).",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "fadeDistance": 70,
+ "parts": [
+  {
+   "size": [
+    1.2,
+    0.25,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    0.125,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.0,
+    0.12,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    0.12,
+    0.06
+   ],
+   "color": "#ff4a3a",
+   "anim": {
+    "type": "blink",
+    "color": "#ff4a3a",
+    "glow": 1.8,
+    "period": 1.4,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

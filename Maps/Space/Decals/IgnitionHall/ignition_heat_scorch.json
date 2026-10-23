@@ -1,0 +1,17 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Ignition Heat Scorch",
+ "category": "IgnitionHall",
+ "description": "A ring of heat scorching round a hot machine (darkens the surface).",
+ "author": "Call of Slop",
+ "size": 4,
+ "rotation": "random",
+ "blend": "multiply",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "ignition_heat_scorch.png",
+ "fadeDistance": 80,
+ "sizeVariation": 0.25
+}

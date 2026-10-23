@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Ignition Sign Keep Clear 2",
+ "category": "IgnitionHall",
+ "description": "Tile 2 of 6 of the 'KEEP CLEAR' sign (an invented place name or a plain warning).",
+ "author": "Call of Slop",
+ "size": [
+  0.6,
+  0.6
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "ignition_sign_keep_clear_2.png",
+ "fadeDistance": 80
+}

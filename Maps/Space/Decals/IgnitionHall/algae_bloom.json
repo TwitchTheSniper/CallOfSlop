@@ -1,0 +1,17 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Algae Bloom",
+ "category": "IgnitionHall",
+ "description": "A green algae stain spreading over wet decking or a canal wall (darkens the surface).",
+ "author": "Call of Slop",
+ "size": 2.2,
+ "rotation": "random",
+ "blend": "multiply",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "algae_bloom.png",
+ "fadeDistance": 70,
+ "sizeVariation": 0.3
+}
