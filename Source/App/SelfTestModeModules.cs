@@ -354,10 +354,14 @@ public static partial class SelfTest
             var seconds = mode == GameMode.LastManStanding ? 60.0 : 20.0;
             Game game;
             var now = 0.0;
+            Game.SeedNextGame = 6100 + (int)mode * 17; // seeded: the same match every run (a flaky check is no check)
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
+            Game.SeedNextGame = null; // (ZGame may not have made a Game with it)
+            // (No NavGraph.Pump here: the recorded digests below were made after these matches built the graph in budgeted
+            // slices, and pumping it whole changes what they replay.)
             using (game)
             {
                 var startAlive = game.Players.Values.Count(p => p.Alive);

@@ -264,9 +264,11 @@ public static partial class SelfTest
     /// </summary>
     private static int ClutteredLargeBotMatch(Map m, int players, double seconds, bool needKills)
     {
+        Game.SeedNextGame = 5100 + m.Id * 31 + players; // seeded: the same match every run (a flaky check is no check)
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: players - 1, botSkill: BotDifficulty.Normal, mapId: m.Id);
         game.MapVoteEnabled = false;
+        NavGraph.Pump(double.MaxValue); // the nav graph whole now, not after a wall-clock-budgeted build that varies by machine
         Game.SettleMemory();
         const double dt = 1.0 / World.TickRate;
         var now = 0.0;
