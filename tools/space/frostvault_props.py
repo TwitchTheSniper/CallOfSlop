@@ -91,7 +91,7 @@ def pods():
     # Cryo dewar: a squat steel cylinder with a neck and valve.
     p = [Cyl(0.8, 1.1, 0, color=STEEL, mat="metal"), Cyl(0.5, 0.25, 1.1, color=PALE), Cyl(0.9, 0.08, 0.5, color=ICE2),
          At([0.1, 0.3, 0.1], 1.3, 0.2, color=DARK), At([0.26, 0.06, 0.26], 1.42, 0.2, color=RED)]
-    prop("Cryo Dewar", "A liquid-nitrogen dewar: a steel cylinder with a blue band and a red valve wheel.", p,
+    prop("Vault Dewar", "A liquid-nitrogen dewar: a steel cylinder with a blue band and a red valve wheel.", p,
          collider=[C([0.8, 1.5, 0.8])], breakable=brk(160, "metal", count=10), scatter=ANY)
 
 
@@ -136,7 +136,7 @@ def lab():
         p.append(At([0.3, 0.1, 0.3], 1.9, x, color=STEEL))
     p.append(At([1.0, 0.12, 0.12], 2.0, 0, 0, color=ICE2))
     p.append(At([0.2, 0.18, 0.2], 1.1, 0.55, 0.3, color=RED))
-    prop("Coolant Manifold", "A coolant manifold: three pale risers on a steel cabinet, joined by a blue header pipe.", p,
+    prop("Vault Coolant Manifold", "A coolant manifold: three pale risers on a steel cabinet, joined by a blue header pipe.", p,
          collider=[C([1.2, 2.1, 0.5])], scatter=SQ)
 
 

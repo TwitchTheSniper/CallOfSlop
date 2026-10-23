@@ -123,7 +123,7 @@ def vault():
     K.prop("Specimen Tank", 4.6, -4.6, 0)
     for (x, z) in [(-2.6, -5.4), (2.6, -5.4), (-5.4, -2.6), (-5.4, 2.6)]:
         K.prop("Hex Floor Light", x, z, 0)
-    K.prop("Cryo Dewar", 3.4, 3.2, 0)
+    K.prop("Vault Dewar", 3.4, 3.2, 0)
     K.prop("Specimen Crate", -3.2, 3.6, 30)
     # Podium dressing.
     for (x, z, yw) in [(-13.2, -13.2, 135), (13.2, -13.2, 225)]:
@@ -149,7 +149,7 @@ def vault():
     for (x, z, yw) in [(-8.5, -mid, 0), (9.5, -mid - 0.9, 0), (-mid - 0.8, -8.0, 90), (-mid + 0.8, 7.0, 90)]:
         K.prop("Quarantine Barrier", x, z, yw)
     for (x, z) in [(-17.8, -17.8), (17.8, -17.8), (-2.5, -17.0), (-17.2, 2.5)]:
-        K.prop("Cryo Dewar", x, z, 0)
+        K.prop("Vault Dewar", x, z, 0)
     K.prop("Hazard Board", -15.9, -11.0, 270)
     K.prop("Hazard Board", 11.0, -15.9, 180)
     K.prop("Frost Vent", -10.0, -o + 0.04, 0, 2.3)
@@ -285,9 +285,9 @@ def pod_hall():
         K.prop("Cryo Pod", x, cz + 4.3, 0)
     for x in (-33.5, -27.0, -20.5):
         K.prop("Cryo Pod Upright", x, z0 + T + 0.7, 180)
-    K.prop("Coolant Manifold", x0 + T + 0.5, z1 - T - 1.2, 90)
-    K.prop("Cryo Dewar", -25.5, z1 - T - 0.8, 0)
-    K.prop("Cryo Dewar", -26.5, z1 - T - 1.6, 0)
+    K.prop("Vault Coolant Manifold", x0 + T + 0.5, z1 - T - 1.2, 90)
+    K.prop("Vault Dewar", -25.5, z1 - T - 0.8, 0)
+    K.prop("Vault Dewar", -26.5, z1 - T - 1.6, 0)
     K.prop("Station Console", -22.0, z1 - T - 0.7, 0)
     K.prop("Deck Light Post", -30.5, cz, 90)
     K.prop("Deck Light Post", -23.5, cz, 270)
@@ -325,7 +325,7 @@ def server_room():
     K.prop("Wall Cable Tray", 26.0, z0 + T + 0.3, 0, 2.5)
     K.prop("Tube Light", 22.0, cz, 0, H_WALL - 0.5)
     K.prop("Tube Light", 30.0, cz, 0, H_WALL - 0.5)
-    K.prop("Cryo Dewar", x1 - T - 0.8, z1 - T - 0.8, 0)
+    K.prop("Vault Dewar", x1 - T - 0.8, z1 - T - 0.8, 0)
     K.prop("Specimen Crate", x0 + T + 0.8, z1 - T - 1.0, 40)
     K.decal("global:Electrical Panel", 20.0, z0 + T + 0.3, 1.6, onto="wall-z", size=1.0)
     K.decal("global:Hazard Stripes", 26.5, z1 - 1.5, 0, size=2.0, rotation=0)
@@ -370,8 +370,8 @@ def yards():
     K.prop("Supply Case Stack", -7.0, -32.0, 0)
     K.prop("Quarantine Barrier", 4.0, -23.5, 0)
     K.prop("Hazard Board", -3.0, -33.0, 0)
-    K.prop("Coolant Manifold", 15.0, -24.5, 0)
-    K.prop("Cryo Dewar", 14.0, -27.0, 0)
+    K.prop("Vault Coolant Manifold", 15.0, -24.5, 0)
+    K.prop("Vault Dewar", 14.0, -27.0, 0)
     K.prop("Deck Light Post", -16.5, -22.5, 45)
     K.prop("Deck Light Post", 16.5, -34.0, 225)
     K.decal("Frostvault Quarantine Stripe", 0, -22.2, 0, size=4.0, rotation=0)
@@ -395,8 +395,8 @@ def yards():
     K.decal_scatter(["Frostvault Frost Bloom", "Frostvault Frost Bloom Small", "global:Rust Stain"], -30, -54, 30, -48, 10, 71, gap=3.0)
     # West service alley (between Pod Hall A and the outer wall) and the south-west alley past the server room.
     K.prop("Station Pipe Run", -40.5, -29.0, 90)
-    K.prop("Cryo Dewar", -39.0, -36.0, 0)
-    K.prop("Coolant Manifold", -42.5, -20.0, 90)
+    K.prop("Vault Dewar", -39.0, -36.0, 0)
+    K.prop("Vault Coolant Manifold", -42.5, -20.0, 90)
     K.prop("Specimen Crate", -39.5, -24.0, 20)
     K.prop("Station Pipe Riser", -37.8, -43.0, 0)
     # Forecourt west of the loop (x -38..-21): the approach from the intake.
@@ -413,7 +413,7 @@ def yards():
     K.decal_scatter(["Frostvault Hex Floor"], -38, -20, -20.5, 20, 22, 81, gap=4.0, minSize=4, maxSize=4)
     K.decal_scatter(["Frostvault Frost Bloom Small", "Frostvault Frost Bloom", "global:Oil Stain"], -38, -20, -21, 20, 8, 82, gap=3.0)
     # Mirrored litter: breakable crates, bins and dewars in the yards (solid, so Clutter keeps them off the lanes).
-    K.clutter(["Specimen Crate", "Specimen Crate", "Biohazard Bin", "Cryo Dewar", "Station Supply Case"], -44, -54, 44, -20, 22, 3)
+    K.clutter(["Specimen Crate", "Specimen Crate", "Biohazard Bin", "Vault Dewar", "Station Supply Case"], -44, -54, 44, -20, 22, 3)
     K.clutter(["Specimen Crate", "Biohazard Bin", "Station Supply Case"], -44, -20, -20.5, 20, 8, 4)
     K.clutter(["global:Paint Cans", "global:Toolbox", "global:Bucket", "global:Mop and Bucket"], -44, -54, 44, 54, 30, 5)
     # Waypoints in the alleys the grid may miss.
@@ -441,7 +441,7 @@ def intake():
     K.prop("Cryo Pod", -43.5, 25.0, 120)
     K.prop("Cryo Pod Upright", -41.0, -14.0, 90)
     K.prop("Cryo Pod Upright", -41.0, 14.0, 90)
-    K.prop("Coolant Manifold", -56.0, 9.0, 90)
+    K.prop("Vault Coolant Manifold", -56.0, 9.0, 90)
     K.prop("Deck Light Post", -47.0, -17.0, 0)
     K.prop("Deck Light Post", -47.0, 17.0, 0)
     K.prop("Deck Light Post", -42.0, 0.0, 90)

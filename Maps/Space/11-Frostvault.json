@@ -880,13 +880,13 @@
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 3.4,
    "z": 3.2
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -3.4,
    "z": -3.2,
    "yaw": 180.0
@@ -1401,52 +1401,52 @@
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -17.8,
    "z": -17.8
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 17.8,
    "z": 17.8,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 17.8,
    "z": -17.8
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -17.8,
    "z": 17.8,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -2.5,
    "z": -17.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 2.5,
    "z": 17.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -17.2,
    "z": 2.5
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 17.2,
    "z": -2.5,
    "yaw": 180.0
@@ -4117,40 +4117,40 @@
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": -35.1,
    "z": -25.6,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": 35.1,
    "z": 25.6,
    "yaw": 270.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -25.5,
    "z": -25.2
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 25.5,
    "z": 25.2,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -26.5,
    "z": -26.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 26.5,
    "z": 26.0,
    "yaw": 180.0
@@ -4791,13 +4791,13 @@
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 32.8,
    "z": -27.2
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -32.8,
    "z": 27.2,
    "yaw": 180.0
@@ -5294,26 +5294,26 @@
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": 15.0,
    "z": -24.5
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": -15.0,
    "z": 24.5,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 14.0,
    "z": -27.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -14.0,
    "z": 27.0,
    "yaw": 180.0
@@ -5617,27 +5617,27 @@
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": -39.0,
    "z": -36.0
   },
   {
    "op": "Prop",
-   "name": "Cryo Dewar",
+   "name": "Vault Dewar",
    "x": 39.0,
    "z": 36.0,
    "yaw": 180.0
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": -42.5,
    "z": -20.0,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": 42.5,
    "z": 20.0,
    "yaw": 270.0
@@ -5858,7 +5858,7 @@
     "Specimen Crate",
     "Specimen Crate",
     "Biohazard Bin",
-    "Cryo Dewar",
+    "Vault Dewar",
     "Station Supply Case"
    ],
    "x0": -44.0,
@@ -6379,14 +6379,14 @@
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": -56.0,
    "z": 9.0,
    "yaw": 90.0
   },
   {
    "op": "Prop",
-   "name": "Coolant Manifold",
+   "name": "Vault Coolant Manifold",
    "x": 56.0,
    "z": -9.0,
    "yaw": 270.0

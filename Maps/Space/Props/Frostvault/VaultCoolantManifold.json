@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-prop/1",
- "name": "Coolant Manifold",
+ "name": "Vault Coolant Manifold",
  "category": "Frostvault",
  "description": "A coolant manifold: three pale risers on a steel cabinet, joined by a blue header pipe.",
  "collision": "solid",

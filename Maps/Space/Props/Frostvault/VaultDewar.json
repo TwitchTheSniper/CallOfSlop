@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-prop/1",
- "name": "Cryo Dewar",
+ "name": "Vault Dewar",
  "category": "Frostvault",
  "description": "A liquid-nitrogen dewar: a steel cylinder with a blue band and a red valve wheel.",
  "collision": "solid",

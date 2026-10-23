@@ -43,8 +43,8 @@ numbers, area signs, the Borealis logo; plus global stains and signs). Destructi
 ## Assets
 
 - Pack-local props: `Maps/Space/Props/Frostvault/` (category "Frostvault", written by `tools/space/frostvault_props.py`):
-  Cryo Pod, Cryo Pod Upright, Specimen Tank (breakable glass), Cryo Dewar, Lab Bench, Cold Storage Locker, Vault Server
-  Stack, Specimen Crate, Biohazard Bin, Quarantine Barrier, Coolant Manifold, Hex Floor Light, Lamp Strip, Frost Vent,
+  Cryo Pod, Cryo Pod Upright, Specimen Tank (breakable glass), Vault Dewar, Lab Bench, Cold Storage Locker, Vault Server
+  Stack, Specimen Crate, Biohazard Bin, Quarantine Barrier, Vault Coolant Manifold, Hex Floor Light, Lamp Strip, Frost Vent,
   Hazard Board. They're pack-local so the Dev galleries needn't show them; the map's fingerprint covers their files.
 - Pack-local decals: `Maps/Space/Decals/Frostvault/` (`tools/space/frostvault_decals.py`).
 
