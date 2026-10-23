@@ -223,8 +223,8 @@ public sealed partial class NavGraph
     {
         if (CrossesDoor(World.Map, a, b))
             return false; // through a shut door: bots open it, the plain mover can't (see CrossesDoor)
-        if (flags != 0 || tight)
-            return true;
+        if (flags != 0 || tight || World.Map.FallKillY != null)
+            return true; // (a void map: every link, a slip off an edge there is a death)
         // A height change off the terrain (steps, ramps of boxes); on the terrain the slope says it (below).
         if (MathF.Abs(a.Y - b.Y) > 0.3f && !(OnTerrain(a) && OnTerrain(b)))
             return true;
