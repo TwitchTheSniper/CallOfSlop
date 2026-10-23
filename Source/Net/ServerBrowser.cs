@@ -65,7 +65,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     fingerprints include their chunks (MapDestruction.Map.cs).
     // 36: in-match text chat and voice chat (LobbyChat.cs, GameVoice.cs): ChatSay gains a flags byte (team), ChatLine gains
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
-    public const byte ProtocolVersion = 36;
+    // 37: the Co-op mode (Source/Game/Pve, docs/pve/DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
+    //     soldiers and co-op events), the Co-op module's mode-state tail (the objective panel), kill id 253 (killed by an enemy).
+    public const byte ProtocolVersion = 37;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -164,6 +164,7 @@ public static partial class SelfTest
             Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
             Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
+            Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect

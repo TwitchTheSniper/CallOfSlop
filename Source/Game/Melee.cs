@@ -128,7 +128,8 @@ public sealed partial class Game
             if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
                 flags |= 4;
         }
-        else if ((flags = ZombieMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0) // Zombies (ZombieAI.cs)
+        else if ((flags = ZombieMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeObjectDamage, 1, 0, viewTick, now)) == 0 // Zombies (ZombieAI.cs)
+                 && (flags = PveMelee(attacker, origin, dir, reach, MeleeConeCos, MeleeDamage, viewTick, now)) == 0) // co-op enemies (GamePve.cs)
             _ = MeleeProps(attacker, origin, dir, now) || MeleeBuildings(attacker, origin, dir, now) || MeleeStructures(attacker, origin, dir, now); // nobody in reach: a breakable prop takes the blow (GameProps.cs), else a door or window (GameBuildings.cs)
 
         if (attacker.Id == LocalId)

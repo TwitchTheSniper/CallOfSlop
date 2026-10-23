@@ -99,7 +99,7 @@ public static class Throwables
     public static IEnumerable<ThrowableDef> Grenades => All.Where(d => d.Kind is ThrowableKind.Frag or ThrowableKind.Impact or ThrowableKind.Smoke);
 
     public static string KillName(byte killId) =>
-        killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId == Game.LandmineKillId ? "Landmine" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
+        killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId == Game.LandmineKillId ? "Landmine" : killId == Game.PveKillId ? "Enemy fire" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
         : KillStreaks.IsStreakKill(killId) ? KillStreaks.Get(KillStreaks.FromKillId(killId)).Name : Weapons.Get(killId).Name;
 
     /// <summary>Point-vs-box test for a small projectile: static colliders, then movers at their current pose (the terrain is handled by <see cref="TerrainContact"/>).</summary>
@@ -537,7 +537,9 @@ public sealed partial class Game
         byte flags = 0;
         Players.TryGetValue(proj.Owner, out var owner);
 
-        if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
+        if (proj.Owner == PveGrenadeOwner && owner == null && proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact)
+            flags |= PveGrenadeBlast(proj, now); // a co-op enemy's grenade: hurts players only (GamePveAi.cs)
+        else if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
         {
             var center = proj.Pos + new Vector3(0, 0.15f, 0);
             var radius = def.Radius * Perks.BlastRadiusMult(owner.Perks); // Demolitions: wider, the falloff curve stretched with it
@@ -577,6 +579,7 @@ public sealed partial class Game
             BlastBuildings(owner, center, radius, def.ObjectDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
             BlastStructures(owner, center, radius, def.ObjectDamage, StructureHit.Grenade, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now); // destructible buildings (GameDestruction.cs)
             BlastZombies(owner, center, radius, def.ObjectDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
+            BlastPve(owner, center, radius, def.ObjectDamage * 3f, now, (byte)(Throwables.KillIdBase + (byte)proj.Kind)); // co-op enemies too (GamePve.cs)
             BlastTactical(owner, center, radius, def.ObjectDamage, now); // enemy tactical devices (GameTactical.cs)
         }
         else if (TacticalGear.UseOf(proj.Kind) == TacticalUse.Thrown)
