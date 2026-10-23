@@ -1,5 +1,5 @@
 // An automatic rifle receiver with the usual sockets (barrel, feed, ammo, utility, two upgrades, amp), like the
-// Workhorse. Variants change the "receiver" block (it merges key by key: {"receiver": {"rpm": 750}} keeps the rest).
+// Workhorse. Variants change the "receiver" block (it merges key by key: {"receiver": {"soundOf": "Raptor"}} keeps the rest).
 {
   "format": "call-of-slop-part/1",
   "name": "Base Auto Receiver",

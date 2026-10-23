@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Four burst rifles on a quad rack, all at once: twelve rounds a pull, three pulls a breath.",
-  "build": "Quad Rack Grip{receiver_1:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_2:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_3:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_4:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},stock:Fixed Stock}"
+  "build": "Quad Rack Grip{receiver_1:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ,action:Three-Round Burst Group},receiver_2:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ,action:Three-Round Burst Group},receiver_3:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ,action:Three-Round Burst Group},receiver_4:Triad Burst Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ,action:Three-Round Burst Group},stock:Fixed Stock}"
 }

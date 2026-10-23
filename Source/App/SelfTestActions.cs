@@ -262,9 +262,11 @@ public static partial class SelfTest
                 Fail("actions: a rotary action should spin up to its full rate");
             var chain = Def("Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG,action:Chain Drive Motor}}");
             var wind = Fire(chain, 1.5, false);
-            Line($"  chain (Thumper, {chain.Rpm} rpm, spool {chain.SpoolTime} s): {In(wind, 0, 0.4)} shots in the first 0.4 s, {In(wind, 1.1, 1.5)} in the last 0.4");
-            if (In(wind, 0, 0.4) >= In(wind, 1.1, 1.5))
-                Fail("actions: a chain action should wind up");
+            var firstGap = wind.Count > 2 ? wind[1] - wind[0] : 0;
+            var lastGap = wind.Count > 2 ? wind[^1] - wind[^2] : 0;
+            Line($"  chain (Thumper, {chain.Rpm} rpm, spool {chain.SpoolTime} s): {wind.Count} shots in 1.5 s, first gap {firstGap:0.000} s, last {lastGap:0.000} s (full rate {chain.FireInterval:0.000} s)");
+            if (wind.Count < 4 || firstGap < lastGap * 1.5 || MathF.Abs((float)lastGap - chain.FireInterval) > 0.01f)
+                Fail("actions: a chain action should wind up to its full rate");
         }
         catch (InvalidOperationException ex)
         {

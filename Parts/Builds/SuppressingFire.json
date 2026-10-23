@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Six LMG actions on a mule frame, all fed from a bottomless bucket. Hold the trigger, hold the line.",
-  "build": "Mule Frame{receiver_1:Bastille LMG Receiver{barrel:Stub Barrel},receiver_2:Bastille LMG Receiver{barrel:Stub Barrel},receiver_3:Bastille LMG Receiver{barrel:Stub Barrel},receiver_4:Bastille LMG Receiver{barrel:Stub Barrel},receiver_5:Bastille LMG Receiver{barrel:Stub Barrel},receiver_6:Bastille LMG Receiver{barrel:Stub Barrel},hopper:Bottomless Bucket{ammo:5.56 FMJ},stock:Shoulder Harness}"
+  "build": "Mule Frame{receiver_1:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},receiver_2:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},receiver_3:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},receiver_4:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},receiver_5:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},receiver_6:Bastille LMG Receiver{barrel:Stub Barrel,action:Full-Auto Sear},hopper:Bottomless Bucket{ammo:5.56 FMJ},stock:Shoulder Harness}"
 }

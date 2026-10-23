@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "Four pump shotguns on a hex rack drinking Dragon's Breath from one shell hopper. Everything in front of you is on fire.",
-  "build": "Hex Rack Grip{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel},receiver_2:Farmhand Pump Receiver{barrel:Scattermouth Barrel},receiver_3:Farmhand Pump Receiver{barrel:Scattermouth Barrel},receiver_4:Farmhand Pump Receiver{barrel:Scattermouth Barrel},hopper:Shell Hopper{ammo:Dragon's Breath},stock:Fixed Stock}"
+  "build": "Hex Rack Grip{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Pump Slide},receiver_2:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Pump Slide},receiver_3:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Pump Slide},receiver_4:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Pump Slide},hopper:Shell Hopper{ammo:Dragon's Breath},stock:Fixed Stock}"
 }

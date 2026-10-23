@@ -54,6 +54,7 @@ effects attachments use).
 ```
 Grip (root: the part you hold; it fixes the fire style)
  |- receiver_1 .. receiver_N    <- the grip decides N (first-tier grips 1, pistol grip 3, rifle grip 9, Gantry Rig and push cart 16)
+ |    |- action                 <- ACTION: the fire type and rate (required)
  |    |- barrel                 <- a barrel, or a SPLITTER whose outputs take barrels (or another splitter)
  |    |    \- muzzle            <- muzzle device
  |    |- feed                   <- box / drum / belt / tube / cell (or none: fed by the shared feed)
@@ -79,7 +80,8 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Category | What it does | Count |
 | --- | --- | --- |
 | Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 17 |
-| Receiver | The action: semi, auto, burst, pump, bolt, rotary (minigun, spools up, barrels take turns), chain (spool-up). Sets the bore (calibre class) and base fire rate | 11 |
+| Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
+| Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
 | Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
 | Feed | Magazine size and reload (box, stick, extended, drum, belt, hopper, tube, shell drum, cell, breech, toaster) and 5 shared feeds | 17 |
@@ -135,6 +137,82 @@ friction in matches."
 - **Saves.** Builds only gain options: every old build loads unchanged (old part files' barrel `"bores"` only say what
   the barrel is drawn for). Servers validate with the same rules (protocol 38).
 
+### Actions: the fire type is a part (2026-10-23)
+
+The user: "change the modular weapons so that fire type is selected by parts, not by the receiver. Receivers should just
+be caliber selection, basically. So single, semi, burst, muzzle load is determined from your parts, not the receiver."
+
+- **Receivers are calibre.** A receiver file's `receiver` block holds the class, bore, sound, barrel limits and barrel
+  size, and its stats are the calibre's (base damage through its ammo, spread, reload, handling). The old `action`,
+  `rpm`, `burstCount`, `burstDelay`, `spoolTime`, `spoolStart` and `rpmPerBarrel` keys are refused there, with a pointer
+  to actions. Shotgun receivers keep their pellets (that's calibre). The rotary clusters (Hellwheel, Pepperbox) are
+  receivers with six barrel sockets; the autocannon is a heavy receiver with fat barrels; the energy receivers fire
+  `energy` rounds. What they fire *like* is the action.
+- **Actions (new category, `Parts/Action`).** Every receiver has one required `action` socket (on its right side, towards
+  the back: the trigger group and its handle, bolt or crank show there). The action part's `action` block is the fire
+  type (`kind`: single, semi, burst, pump, lever, bolt, auto, rotary, chain, muzzleLoad), the rate (`rpm`, or
+  `rpmPerBarrel` for rotary), `burstCount` and `burstDelay`, `spoolTime` and `spoolStart` (rotary, chain), and
+  `chamber` (rounds it holds whatever the feed holds: single shot and muzzle-loaded hold 1, so every shot is a reload).
+  Its `stats` change the handling like any part's (applied after the feed, before damage multipliers and upgrades).
+  Every action fits every receiver. A receiver without one is a missing part (a yellow "+ Action: needs action" row,
+  "Plinker Receiver needs an action."), and the build can't fire.
+- **Rules.** Feeds that need a fire type (belts, hoppers) are checked against the receiver's action: "Belt Box needs full
+  auto, chain or rotary action; the Workhorse Receiver's Turn Bolt is bolt." and the other way round, "Turn Bolt can't
+  work the Belt Box: ...". A receiver with no action yet takes any feed (the action decides). A cluster receiver with a
+  rotary action takes turns (one barrel per shot, rate per barrel); with any other action every barrel fires at once
+  and, like a splitter, each gets 1/N of the shot. Chain fire across receivers (the grip's checkbox) is unchanged.
+- **Stats** (BuildStats.cs): the receiver's base numbers start from its action's rate and trigger (`ModeOf`: burst; auto
+  for auto, rotary and chain; one shot per pull for the rest), then the stages run: receiver, ammo, feed, **action**,
+  damage multiplier, upgrades, splitters. Spool-up and the rotary flag come from the action. The server checks builds
+  with the same rules and takes the text as sent (no stock actions added; protocol 42).
+- **Migration.** Each receiver file names the action it fired like before (`"stockAction"`), and gave that action its
+  weight (the receiver is lighter by the action's weight, so an old build weighs the same). A build text with **no
+  action part anywhere** was written before actions: loading it (workbench.txt, standard build files, hot reload)
+  puts each receiver's stock action in, and workbench.txt is saved back. Texts that are always current (undo steps,
+  what a client sends the server) are read as written. Every standard build in `Parts/Builds` names its actions.
+- **Workbench.** The Action chip and group (hidden like the other receiver categories until a receiver is on the
+  build), the action row first under each receiver, the receiver's list line and tooltip show its calibre ("rifle
+  calibre"; "comes with the Full-Auto Sear"), an action's show its fire type and rate, and the stats panel a "Fire type:"
+  line ("full auto (Full-Auto Sear)", or "semi-auto x2, pump" for several receivers).
+
+| Action | Tier | Fire type | Rate | Effects | Stock action of |
+| --- | --- | --- | --- | --- | --- |
+| Break Action | common | single shot (1 round) | 120 | damage x1.3, reload x0.45 | |
+| Semi-Auto Trigger | common | semi | 400 | | Plinker, Reaper |
+| Revolver Hammer | common | semi | 150 | | Kingpin |
+| Lob Trigger | common | semi | 60 | | Bucket Launcher |
+| Full-Auto Sear | common | auto | 600 | | Workhorse, Bastille |
+| Carbine Sear | common | auto | 720 | | Courier, Sparkplug |
+| Blowback SMG Sear | common | auto | 900 | | Stampede |
+| Buzzsaw Sear | common | auto | 1100 | | Buzzbox |
+| Pump Slide | common | pump | 70 | | Farmhand Pump |
+| Turn Bolt | common | bolt | 45 | | Longreach, Railspike |
+| Riot Trigger | uncommon | semi | 200 | | Street Sweeper |
+| Marksman Trigger | uncommon | semi | 300 | | Longbow |
+| Heavy Auto Sear | uncommon | auto | 260 | | Gravedigger |
+| Three-Round Burst Group | uncommon | 3-round burst | 800, 0.25 s | | Triad |
+| Ratchet Burst Group | uncommon | 3-round burst | 1000, 0.18 s | | Ratchet Burst SMG |
+| Lever Action | uncommon | lever | 110 | aim -0.02 s | |
+| Muzzleloader Ramrod | uncommon | muzzle-loaded (1 round) | 60 | damage x2.5, reload x1.6 + 1.5 s, recoil x1.4 | |
+| Autocannon Drive | rare | auto | 200 | | Hammerfall |
+| Hand-Crank Rotary | rare | rotary | 150 per barrel, 0.3 s spool from 50% | | Pepperbox |
+| Hair Trigger | rare | semi | 650 | hip spread x1.15 | |
+| Straight-Pull Bolt | rare | bolt | 60 | | |
+| Binary Trigger | rare | 2-round burst | 900, 0.12 s | recoil x1.05 | |
+| Electric Rotary Drive | epic | rotary | 400 per barrel, 1.2 s spool from 25% | | Hellwheel |
+| Chain Drive Motor | epic | chain | 450, 0.4 s spool from 50% | | Thumper |
+| Hyperburst Group | epic | 5-round burst | 1400, 0.35 s | recoil x1.1 | |
+| Overdrive Sear | legendary | auto | 1400 | recoil x1.2, hip spread x1.15 | |
+| Bicycle Chain Drive | wonder | chain | 360, 0.6 s spool from 40% | | Sawmill |
+| Panic Button | wonder | auto | 2400 | recoil x1.3, hip spread x1.6 | |
+
+**Balance.** Old builds keep their fire mode, magazine, reload and weight exactly; their rate is the receiver's old
+one except where one action now serves two receivers: Bastille 650 -> 600 rpm, Plinker 420 -> 400, Reaper 380 -> 400,
+Railspike 50 -> 45, Sparkplug 700 -> 720 (each within 10% of its old DPS). Actions drop in runs like any part (the
+tier tables); common actions from round 1, and no receiver's stock action is rarer than the receiver. The self-test
+section "Workbench actions" (`SelfTestActions.cs`) checks all of this, rebuilding every standard build with its
+receivers' old numbers to compare, and fires every fire type through the real trigger loop.
+
 ### Graph rules (BuildRules.cs)
 
 Every refusal comes with a plain sentence saying why. These are the actual messages:
@@ -146,7 +224,7 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | A build starts from a grip (or a hilt) | "Rifle Grip is a grip you build on: start a new build with it instead." |
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
 | Feeds and ammo must match the receiver's bore (barrels, splitters and muzzles fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
-| Actions: belts and hoppers need something that pulls them | "Belt Box needs auto, chain or rotary action; the Triad Burst Receiver is burst." |
+| Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Triad Burst Receiver's Three-Round Burst Group is 3-round burst." |
 | Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
@@ -155,7 +233,7 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | Shared feed capacity and bores | "Workhorse Receiver needs a feed (the Manifold Hopper can't feed it: it feeds 3 receivers at most)." |
 | Melee and gun parts don't mix | "Wooden Handle is a hilt you build a melee weapon on: start a melee build with it instead." |
 | A melee weapon weighs 14 kg at most | "Too heavy: 15.2 kg; a melee weapon can't be more than 14 kg." |
-| Required sockets (barrel, feed, ammo; a hilt's head) | "Plinker Receiver needs a feed." (shown as "Needs:", not an error) |
+| Required sockets (action, barrel, feed, ammo; a hilt's head) | "Plinker Receiver needs a feed." (shown as "Needs:", not an error) |
 
 A build that is incomplete still gets a model for the live preview. Only complete, legal builds get a `WeaponDef`.
 
@@ -165,8 +243,8 @@ The output is an ordinary `WeaponDef`, the same type every weapon file makes, so
 sound, HUD and bots all work unchanged. The pipeline is **deterministic**: the same tree always gives the same numbers
 and the same muzzle positions, and the self-test checks this by assembling every example twice.
 
-1. **Each receiver on its own.** Start from the receiver's base numbers (class defaults, action, fire rate), then
-   apply its parts in stages: receiver, ammo, feed, damage multiplier, receiver upgrades, splitters. A receiver fed by
+1. **Each receiver on its own.** Start from the receiver's base numbers (class defaults, and its action part's fire
+   type and rate), then apply its parts in stages: receiver, ammo, feed, action, damage multiplier, receiver upgrades, splitters. A receiver fed by
    the shared feed takes the shared feed as its feed (and its ammo, if it has none). Then each barrel path (barrel plus
    muzzle device) is applied to its own copy, so a long barrel and a stub barrel on one splitter really differ.
    Upgrades change the fire rate as a ratio, so a minigun's rate per barrel scales the same way.
@@ -434,8 +512,8 @@ top wrap bar. The push cart is no longer a held gun: see "The push cart".
 }
 ```
 
-Other blocks: `receiver` (action, class, bore, soundOf, rpm, burstCount, burstDelay, spoolTime, spoolStart,
-minBarrels, maxBarrels, rpmPerBarrel), `frame` for root grips (fireStyle, hands, carry, mobility, ads, ironHeight,
+Other blocks: `receiver` (class, bore, soundOf, minBarrels, maxBarrels, barrelScale, stockAction), `action` for
+action parts (kind, rpm, burstCount, burstDelay, spoolTime, spoolStart, rpmPerBarrel, chamber), `frame` for root grips (fireStyle, hands, carry, mobility, ads, ironHeight,
 support, reloadPerReceiver; an older `fireStyles` list reads as its first style), `split` (splay, spreadMult; the old
 `outputMult` is refused: splitters always conserve), `shared` for shared feeds (feeds; with `"mount": "hopper"`),
 `carry` (weight relief, kg), `hilt` for melee roots (damage, swing, reach, cleave, stun, hands), `melee` for heads and
@@ -471,7 +549,7 @@ reported). The 64-box limit counts the expanded boxes.
 **extends.** `"extends": "Base Barrel"` (a base or any other part) starts from that file:
 
 - the part's own keys replace the base's, objects (`receiver`, `frame`, `split`, `hilt`, `melee`...) merge key by key
-  (`"receiver": {"rpm": 760}` keeps the action, class and bore), and `null` removes a key;
+  (`"receiver": {"stockAction": "Carbine Sear"}` keeps the class, bore and sound), and `null` removes a key;
 - `"+model"`, `"+sockets"`, `"+stats"`, `"+muzzles"`, `"+flags"`, `"+bores"` append to the base's lists (`+sockets`
   replaces a base socket with the same name);
 - `"-sockets"`, `"-stats"`, `"-flags"`, `"-bores"` remove entries by name (a socket's name, a stat's `stat`).
@@ -484,7 +562,7 @@ A variant is a few lines (`Parts/_Template/ReceiverVariantExample.json`):
   "name": "Template Sprinter Receiver",
   "rarity": "uncommon",
   "flavor": "The workhorse after a strong coffee.",
-  "receiver": {"rpm": 760},
+  "receiver": {"soundOf": "Vanguard AR", "stockAction": "Carbine Sear"},
   "-sockets": ["upgrade_side"],
   "+model": [{"use": "Screw Head", "pos": [0.031, 0.05, -0.1], "rot": [0, 0, -90]}]
 }
