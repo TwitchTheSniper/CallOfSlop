@@ -80,6 +80,7 @@ public struct MoveState
     public Vector3 MantleTo; // where the climb ends (feet)
     public PerkId MovePerk; // the movement perk being carried (set by the server on spawn)
     public byte BoostTicks; // > 0 while Head Start / Afterburner speed is active
+    public byte KnockTicks; // > 0 while staggered by a blast push: weak steering (Knockback.cs; not in snapshots, the client works it out)
 }
 
 /// <summary>Shared rules: tick rate, player physics, movement and ray casts against the current map.</summary>

@@ -215,16 +215,22 @@ public sealed partial class Game
     /// <summary>
     /// Bots run a couple of random attachments too. No optics (they don't need them), except the scope a sniper starts
     /// with: bot snipers always aim through it (it takes no random roll, so the shared random sequence is untouched).
+    /// Only attachments their weapon XP at the gear level has unlocked (BotGear.cs; the draws are the same at every
+    /// level, a locked one is just left off).
     /// </summary>
-    private uint RandomKit(WeaponDef w) => BotKit(w, _rng);
+    private uint RandomKit(WeaponDef w, int level) => BotKit(w, _rng, level);
 
     /// <summary>A bot's random kit for a gun from <paramref name="rng"/> (see <see cref="RandomKit"/>; the self-test rolls it too).</summary>
-    internal static uint BotKit(WeaponDef w, Random rng)
+    internal static uint BotKit(WeaponDef w, Random rng, int level = int.MaxValue)
     {
-        var kit = Attachments.DefaultKit(w);
-        foreach (var a in Attachments.For(w))
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && rng.NextDouble() < 0.25)
+        var kit = BotGear.DefaultKit(w);
+        var list = BotGear.AttachmentsFor(w); // a cached array: nothing to allocate every life
+        for (var i = 0; i < list.Length; i++)
+        {
+            var a = list[i];
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))
                 kit = Attachments.With(kit, a.Slot, a.Index);
+        }
         return kit;
     }
 
@@ -357,6 +363,7 @@ public sealed partial class Game
             WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        RefreshBotGear(); // someone joined, left or levelled up: the bots' gear follows the lobby's level (BotGear.cs)
     }
 
     private void ReadRoster(ref PacketReader r)

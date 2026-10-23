@@ -536,11 +536,12 @@ public static partial class SelfTest
             World.Simulate(ref start, new InputCmd { Seq = 0 }); // settle onto the ground
         InputCmd Cmd(uint s) => new() { Seq = s, Buttons = s % 3 == 0 ? Buttons.Forward : Buttons.None, Yaw = 0.3f, SpeedPct = 100 };
         var knock = new Vector3(4, 4, 1);
-        // The server: inputs 1-4, the push, inputs 5-12.
+        // The server: inputs 1-4, the push, inputs 5-40 (past the stagger, which snapshots don't carry: the client works it out).
         var server = start;
         var at2 = start;
         var at6 = start;
-        for (uint s = 1; s <= 12; s++)
+        var at20 = start;
+        for (uint s = 1; s <= 40; s++)
         {
             World.Simulate(ref server, Cmd(s));
             if (s == 4)
@@ -549,14 +550,17 @@ public static partial class SelfTest
                 at2 = server;
             if (s == 6)
                 at6 = server;
+            if (s == 20)
+                at20 = server;
         }
+        at6.KnockTicks = at20.KnockTicks = 0; // (as a snapshot carries them)
         var client = new Game(NetPeer.OfflineClient(), new Audio(), "Guest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         using (client)
         {
             client.LocalId = 3;
             client.Players[3] = new Player { Id = 3, Name = "Guest", Alive = true, Sim = start };
             var cme = client.Players[3];
-            for (uint s = 1; s <= 12; s++)
+            for (uint s = 1; s <= 40; s++)
                 client.SelfTestPredictInput(Cmd(s)); // predicted without the push
             var before = Vector3.Distance(cme.Position, server.Position);
             client.SelfTestReconcile(2, at2); // a snapshot from before the push
@@ -566,11 +570,14 @@ public static partial class SelfTest
             var pending = client.PendingKnocks;
             client.SelfTestReconcile(6, at6); // a snapshot that includes it: dropped, not applied twice
             var after = Vector3.Distance(cme.Position, server.Position);
-            client.SelfTestKnock(5, knock); // late duplicate: already in the acknowledged state
+            client.SelfTestKnock(4, knock); // late duplicate: already in the acknowledged state
             var dup = Vector3.Distance(cme.Position, server.Position);
+            client.SelfTestReconcile(20, at20); // a later snapshot, mid-stagger: the replay runs past its end
+            var late = Vector3.Distance(cme.Position, server.Position);
             RLine($"client prediction: {before:0.00} m off without the push, {stillOff:0.00} m after an older snapshot, {predicted * 1000:0.000} mm once the knock is replayed "
-                  + $"({pending} pending), {after * 1000:0.000} mm after the snapshot with it ({client.PendingKnocks} pending), {dup * 1000:0.000} mm after a stale knock");
-            if (!(before > 0.1f) || predicted > 0.001f || pending != 1 || after > 0.001f || client.PendingKnocks != 0 || dup > 0.001f)
+                  + $"({pending} pending), {after * 1000:0.000} mm after the snapshot with it ({client.PendingKnocks} pending), {dup * 1000:0.000} mm after a stale knock, "
+                  + $"{late * 1000:0.000} mm after a mid-stagger snapshot");
+            if (!(before > 0.1f) || predicted > 0.001f || pending != 1 || after > 0.001f || client.PendingKnocks != 0 || dup > 0.001f || late > 0.001f)
                 Fail("knockback: the client doesn't predict the push exactly (or applies it twice)");
             // Garbage knocks are dropped.
             client.SelfTestKnock(99, new Vector3(float.NaN, 0, 0));
