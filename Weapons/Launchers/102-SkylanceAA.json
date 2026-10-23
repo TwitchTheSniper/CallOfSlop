@@ -32,7 +32,7 @@
   "tail": 0.75,
   "launcher": {
     "projectile": "Rocket", "guidance": "LockOn", "speed": 40, "maxSpeed": 85, "thrust": 90, "gravity": 0.05,
-    "drag": 0, "radius": 3.5, "falloff": 1.4, "direct": 140, "vehicleMult": 1.3, "selfDamage": 0.6,
+    "drag": 0, "radius": 3.5, "falloff": 1.4, "direct": 140, "vehicleMult": 1.3, "playerMult": 1.3, "playerRadius": 4.6, "selfDamage": 0.6,
     "armDistance": 12, "proximity": 3.5, "fuse": 6, "bounces": 0, "reserve": 3, "lockTime": 1.1,
     "lockRange": 180, "lockCone": 9, "turnRate": 160, "cluster": 0, "wallPierce": 0
   },

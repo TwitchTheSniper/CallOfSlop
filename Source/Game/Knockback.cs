@@ -140,7 +140,7 @@ public static class Knockback
             return (def.Knockback, KillStreaks.BlastRadiusOf(id));
         }
         if (killId < Weapons.All.Length && Weapons.Get(killId) is { IsLauncher: true } launcher)
-            return (LauncherStrength(launcher), launcher.LauncherRadius); // launcher blasts (Source/Game/Launchers)
+            return (LauncherStrength(launcher), launcher.PlayerBlastRadius); // launcher blasts (the player radius) (Source/Game/Launchers)
         return (0f, 0f);
     }
 

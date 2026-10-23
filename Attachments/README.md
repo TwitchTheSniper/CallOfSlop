@@ -143,7 +143,7 @@ How they look when aiming:
 - **One field of view.** The whole screen zooms to the optic's `adsZoom` (no picture-in-picture view with a less zoomed world around the lens): a second view of the world would cost a second full world pass every frame, about as much as the world itself. At 4x and up the lens fills most of the screen anyway.
 - High-power lenses are steadied: they sit a couple of centimetres from the eye, so only part of the gun's sway, bob and kick moves them (the reticle still climbs with recoil).
 - Fitting any optic removes the parts it would clash with: pistol iron sights and LMG carry handles. The rail stays.
-- Guns with a built-in scope (long-range rifles without an optic attachment) work the same way: their lens size follows their `adsZoom` (about 0.8 of half the screen height at 2x, 1.3 at 4x).
+- Guns with a built-in scope (DMRs with an `adsZoom` of 1.8 or more and no optic attachment) work the same way: their lens size follows their `adsZoom` (about 0.8 of half the screen height at 2x, 1.3 at 4x).
 
 ### Sight block
 
@@ -170,6 +170,8 @@ The defaults per look: Red Dot, Pinhole and Holographic keep their windows; Bric
 A new optic file can reuse any of the looks above with its own stats and sight. A brand-new look (model) needs code: a value in `OpticKind`, its sight height in `GunModel.SightHeight`, its model in `GunModel.DrawOptic`, its lens (eyepiece or window) in `GunModel.Lens`, and its default sight in `Sights.Default`.
 
 ## Unlocking and balance
+
+**Snipers start with a scope.** A weapon's default kit holds its `defaultOptic` (see [Weapons/README.md](../Weapons/README.md); snipers without one get their first 4x-or-more scope in unlock order): it needs 0 weapon XP, bots always run it, and Gun Game hands it out with the gun. On such a gun the empty optic slot is its **iron sights**, which unlock at half its max weapon XP (rounded to 50; 3,300-3,450 for the shipped snipers) and are locked in the Optic list until then. The optic slot is full (15), so iron sights aren't an attachment file; `loadout.txt` saves them as `Iron Sights` in the kit, and a sniper kit saved with neither (older files) gets the starting scope back.
 
 Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in `unlockOrder`, are spread along a curve. The total depends on how many fit (`1000 + 180 x count`, rounded to 50: 15 attachments take about 3.7 matches, 33 about 6.9), so adding an attachment to a class makes those guns take a little longer to max out. The 27 attachments that shipped before the class-specific ones never need more weapon XP than they did then (their old place on the old curve is a cap), so nothing a player has unlocked locks again.
 

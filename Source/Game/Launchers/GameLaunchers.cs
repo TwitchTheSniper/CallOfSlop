@@ -515,7 +515,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Server: a launcher blast at <paramref name="pos"/>. The player or machine hit straight on takes the direct-hit
-    /// damage; everyone in the radius takes blast damage that falls off with distance (walls shield them except for a
+    /// damage; everyone in the player radius takes blast damage (times "playerMult") that falls off with distance (walls shield them except for a
     /// thermobaric round's "wallPierce" share, enemy Deployable Cover takes it), the owner takes their "selfDamage" share,
     /// prone takes 70%, Flak Jacket applies (DamagePlayer). Enemy machines take blast damage times the launcher's
     /// vehicle multiplier. Props, building doors and windows, zombies and enemy devices too. Returns the owner's hit flags.
@@ -524,7 +524,10 @@ public sealed partial class Game
         float radiusMult, float damageMult, double now)
     {
         var center = pos + normal * 0.15f;
-        var radius = d.LauncherRadius * radiusMult * Perks.BlastRadiusMult(owner.Perks); // Demolitions
+        var perk = Perks.BlastRadiusMult(owner.Perks); // Demolitions
+        var radius = d.LauncherRadius * radiusMult * perk; // props, buildings, structures, machines
+        var playerRadius = d.PlayerBlastRadius * radiusMult * perk; // players (wider), the push
+        var playerMult = damageMult * d.LauncherPlayerMult; // players take the launcher's "playerMult" on top
         var killId = d.Id;
         byte flags = 0;
 
@@ -537,7 +540,7 @@ public sealed partial class Game
             else
             {
                 flags |= 1 | ShotHitPlayer;
-                if (DamagePlayer(owner, direct, (int)MathF.Round(d.LauncherDirect * damageMult), false, killId, now, DamageKind.Explosive, center))
+                if (DamagePlayer(owner, direct, (int)MathF.Round(d.LauncherDirect * playerMult), false, killId, now, DamageKind.Explosive, center))
                     flags |= 4;
             }
         }
@@ -558,7 +561,7 @@ public sealed partial class Game
         {
             if (!victim.Alive)
                 continue;
-            var dmg = LauncherBlastAt(d, center, victim.Chest, radius) * damageMult;
+            var dmg = LauncherBlastAt(d, center, victim.Chest, playerRadius) * playerMult;
             if (dmg <= 0 || CoverBlocks(center, victim.Chest))
                 continue;
             if (victim == owner)
@@ -605,8 +608,8 @@ public sealed partial class Game
         if (Horde.Count > 0)
             BlastZombies(owner, center, radius, maxDamage * 3f, now); // Zombies (ZombieAI.cs)
         BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
-        BlastKnockback(owner, center, radius, Knockback.LauncherStrength(d) * damageMult); // pushes the living (Knockback.cs)
-        OnLauncherBlast(center, radius, maxDamage, owner.Id);
+        BlastKnockback(owner, center, playerRadius, Knockback.LauncherStrength(d) * damageMult); // pushes the living (Knockback.cs)
+        OnLauncherBlast(center, playerRadius, maxDamage, owner.Id);
         if (owner.Id == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);
         return flags;

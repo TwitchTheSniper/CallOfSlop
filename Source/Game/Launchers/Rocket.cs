@@ -266,6 +266,16 @@ public static class RocketFlight
     public static float BlastDamage(WeaponDef d, float dist, float radius) =>
         dist >= radius ? 0f : d.Damage * MathF.Pow(1f - dist / radius, d.LauncherFalloff);
 
+    /// <summary>The blast damage a player takes <paramref name="dist"/> metres from the centre in the open (the player radius and "playerMult"; before prone, Flak Jacket and walls).</summary>
+    public static float PlayerBlastDamage(WeaponDef d, float dist) => BlastDamage(d, dist, d.PlayerBlastRadius) * d.LauncherPlayerMult;
+
+    /// <summary>How far from the centre (m) the blast alone takes <paramref name="health"/> off a player in the open (0 if not even the centre does).</summary>
+    public static float PlayerLethalRadius(WeaponDef d, float health)
+    {
+        var centre = d.Damage * d.LauncherPlayerMult;
+        return centre < health ? 0f : d.PlayerBlastRadius * (1f - MathF.Pow(health / centre, 1f / d.LauncherFalloff));
+    }
+
     /// <summary>
     /// Where cluster bomblet <paramref name="i"/> of a blast lands: scattered round the centre (deterministic from the
     /// seed, the same on the server and every client), dropped to the first surface below.

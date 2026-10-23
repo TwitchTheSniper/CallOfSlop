@@ -472,8 +472,8 @@ public sealed partial class Game
         var maxD = 0f;
         foreach (var m in s.Members)
         {
-            if (m == lead || !m.Alive)
-                continue;
+            if (m == lead || !m.Alive || m.Bot!.Order.Overwatch)
+                continue; // (the overwatch is meant to be away from the others)
             others++;
             var d = Flat(m.Position - lead.Position);
             maxD = MathF.Max(maxD, d);
@@ -529,6 +529,7 @@ public sealed partial class Game
                 m.Bot!.Order = new SquadOrder { Kind = SquadOrderKind.Follow, Goal = slot, Sprint = Flat(slot - m.Position) > 6f };
             }
         }
+        SquadOverwatch(s, nav, now); // the long gun takes a vantage point over the goal (BotVantage.cs)
         ApplyTrade(s, nav, now);
     }
 

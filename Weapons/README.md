@@ -58,6 +58,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `order` | Position in the weapon list. Lower comes first, ties sort by name. See "Ids and order" below. | `1000` | any whole number |
 | `unlockLevel` | Account level that unlocks it. See "Unlocking" below. | max level | 1 or more |
 | `class` | `Pistol`, `SMG`, `AssaultRifle`, `DMR`, `Sniper`, `Shotgun`, `LMG`, `Special` or `Launcher`. Pistols and launchers go in the **secondary** slot, everything else in the **primary** (a launcher fires projectiles: see [Launchers](#launchers)). The class also picks the gun's model shape, the reload sound and which attachments fit. | required | |
+| `defaultOptic` | The optic attachment (by name) the weapon starts with: it's in the default kit, needs no weapon XP and bots always run it, and the gun's iron sights (no optic) become an unlock half-way through its attachment XP. Leave it out: a `Sniper` starts with its first full scope (4x or more) in unlock order, every other class with iron sights. The shipped snipers name the 8x Sniper Scope (Needle, Leviathan, Railspike) or the 4x Scope (Kite, Ghost SD). | none | an optic that fits it |
 | `blurb` | One line shown in the loadout menu. Plain ASCII only: the game's font has no curly quotes, long dashes, accented letters or symbols like × and °, which show up as `?`. Write `'`, `-`, `x` and `deg` instead. `%` is fine. | `""` | |
 
 ### Damage
@@ -85,7 +86,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `recoilDeg` | Overall recoil: view kick per shot, in degrees. The `recoil` block's kicks are fractions of it, and attachments that change it scale everything. | `0.7` | 0.1-5.5 | 0-20 |
 | `recoil` | How the gun kicks: its spray pattern, recovery and camera shake. See "Recoil" below. Any field you leave out (or the whole block) gets the default of the weapon's `class`. | class defaults | | |
 | `mobility` | Movement speed multiplier while holding it. The server also uses it to cap your speed. Attachments can push it, but kitted guns are clamped to 0.6-1.25. | `1` | 0.75-1.12 | 0.3-1.5 |
-| `adsZoom` | Zoom when aiming down sights (the field of view is divided by this). Snipers use 3.5-4.5 for their built-in scope. | `1.35` | 1.1-4.5 | 1-10 |
+| `adsZoom` | Zoom when aiming down sights (the field of view is divided by this) with no optic fitted. 1.8 or more on a long gun means a built-in scope (the DMRs); below that it's iron sights. The snipers use 1.5 for their iron sights, since they start with a scope attachment (`defaultOptic`) that sets its own zoom. | `1.35` | 1.1-2.2 | 1-10 |
 | `equipTime` | Seconds to draw the weapon. | `0.45` | 0.25-1.1 | 0.05-5 |
 | `adsTime` | Seconds to fully aim down sights (kitted guns are clamped to 0.08-0.5). | `0.16` | 0.16 | 0.05-2 |
 
@@ -237,13 +238,13 @@ Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30
 
 A weapon of class `Launcher` fires a real projectile instead of a hitscan bullet (Source/Game/Launchers): a rocket, a grenade or a sticky charge that flies, drops and goes off with a blast. Launchers are secondaries, carry a few spare rounds instead of endless reloads, only take attachments made for launchers (an attachment's `fits` must name `"Launcher"` in `classes`, or the weapon in `weapons`), and sit out Gun Game. The shipped ones are in `Weapons/Launchers/`.
 
-For a launcher some of the usual fields mean something a little different: `damage` is the blast's damage at its centre (it falls off to nothing at `radius`), `rangeM` is the range bots and the stat bars use, `hipSpreadDeg` / `adsSpreadMult` are the launch cone, `headMult` and `pellets` aren't used. Everything else lives in a `launcher` block (every key optional; the defaults are a dumb-fire rocket):
+For a launcher some of the usual fields mean something a little different: `damage` is the blast's damage at its centre against props, buildings, structures and kill streak machines (it falls off to nothing at `radius`; players take it times `playerMult`, over `playerRadius`), `rangeM` is the range bots and the stat bars use, `hipSpreadDeg` / `adsSpreadMult` are the launch cone, `headMult` and `pellets` aren't used. Everything else lives in a `launcher` block (every key optional; the defaults are a dumb-fire rocket):
 
 ```
 "launcher": {
   "projectile": "Rocket", "guidance": "None", "speed": 22, "maxSpeed": 46, "thrust": 40, "gravity": 0.15,
-  "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "selfDamage": 0.6,
-  "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
+  "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "playerMult": 1.35, "playerRadius": 8.5,
+  "selfDamage": 0.6, "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
   "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
 }
 ```
@@ -261,7 +262,9 @@ For a launcher some of the usual fields mean something a little different: `dama
 | `falloff` | Damage is `damage x (1 - distance / radius) ^ falloff`. | `1.2` | 0.3-4 |
 | `direct` | Extra damage to a player hit straight on. | `50` | 0-1000 |
 | `vehicleMult` | Multiplier on everything it does to kill streak machines (before their own explosive multiplier: the sentry takes 1.5x). | `1` | 0-10 |
-| `selfDamage` | Share of the blast its owner takes. | `0.6` | 0-1 |
+| `playerMult` | Multiplier on what the blast and an armed direct hit do to players (the owner's own share too). Objects and machines keep `damage`. A dud's `direct` bonk isn't multiplied. | `1` | 0-5 |
+| `playerRadius` | Blast radius against players, and for the push, the flash and ragdolls (0 = `radius`). | `0` | 0-25 |
+| `selfDamage` | Share of the blast (against players) its owner takes. | `0.6` | 0-1 |
 | `armDistance` | Metres of flight before it arms; an unarmed hit is a dud (only `direct` damage, no blast). | `6` | 0-60 |
 | `proximity` | Goes off this close to an enemy's flying streak (0 = no proximity fuse). | `0` | 0-12 |
 | `fuse` | Seconds before it goes off on its own (rockets self-destruct, stickies wait at most this long). | `8` | 0.1-40 |
@@ -274,16 +277,16 @@ For a launcher some of the usual fields mean something a little different: `dama
 
 Attachments change these by their field names with a `launcher` prefix, e.g. `{ "stat": "launcherLockTime", "mul": 0.7 }` or `{ "stat": "launcherReserve", "add": 1 }`. Kitted launchers keep at least 70% of their lock time, launch speeds within 70-140% and at most double the reserve.
 
-| Shipped launcher | Type | Damage / radius / direct | Rounds | Unlock |
-| --- | --- | --- | --- | --- |
-| Mule RPG | dumb-fire rocket | 150 / 6.5 m / +60 | 1 + 2 | 6 |
-| Clover Break-Action | single-shot grenade launcher | 130 / 5 m / +40 | 1 + 5 | 9 |
-| Carousel Drum Launcher | 6-round revolving grenade launcher | 100 / 4.2 m / +30 | 6 + 6 | 14 |
-| Skylance AA | lock-on anti-air rocket | 110 / 3.5 m / +140 | 1 + 3 | 18 |
-| Gluepot Sticky Launcher | sticky charges | 125 / 4.5 m / - | 3 + 3 | 22 |
-| Wireline TOW | wire-guided rocket | 140 / 5 m / +80 | 1 + 2 | 27 |
-| Hailcrack Cluster | cluster rocket (6 bomblets) | 90 / 4 m / +40 | 1 + 2 | 33 |
-| Furnace Thermobaric | thermobaric rocket | 120 / 8 m / +40 | 1 + 1 | 39 |
+| Shipped launcher | Type | Damage / radius / direct (objects, machines) | Players: x playerMult / playerRadius | Rounds | Unlock |
+| --- | --- | --- | --- | --- | --- |
+| Mule RPG | dumb-fire rocket | 150 / 6.5 m / +60 | x1.35 / 8.5 m | 1 + 2 | 6 |
+| Clover Break-Action | single-shot grenade launcher | 130 / 5 m / +40 | x1.35 / 6.6 m | 1 + 5 | 9 |
+| Carousel Drum Launcher | 6-round revolving grenade launcher | 100 / 4.2 m / +30 | x1.3 / 5.5 m | 6 + 6 | 14 |
+| Skylance AA | lock-on anti-air rocket | 110 / 3.5 m / +140 | x1.3 / 4.6 m | 1 + 3 | 18 |
+| Gluepot Sticky Launcher | sticky charges | 125 / 4.5 m / - | x1.35 / 6 m | 3 + 3 | 22 |
+| Wireline TOW | wire-guided rocket | 140 / 5 m / +80 | x1.35 / 6.6 m | 1 + 2 | 27 |
+| Hailcrack Cluster | cluster rocket (6 bomblets) | 90 / 4 m / +40 | x1.4 / 5.3 m | 1 + 2 | 33 |
+| Furnace Thermobaric | thermobaric rocket | 120 / 8 m / +40 | x1.3 / 10.5 m | 1 + 1 | 39 |
 
 ## Ids and order
 

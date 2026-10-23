@@ -38,6 +38,7 @@ public sealed partial class Game
         _botPathBudget = BotSearchesPerTick;
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
+        VantageMap.Ensure(World.Map, NavGraph.Current); // the map's vantage points, on a worker thread (once per nav graph)
         World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
@@ -100,6 +101,9 @@ public sealed partial class Game
             case BotMode.Squad:
                 SquadSteer(p, b, nav, now, ref s);
                 break;
+            case BotMode.Overwatch:
+                VantageSteer(p, b, nav, visible, now, ref s); // BotVantage.cs
+                break;
             case BotMode.Objective when b.Objective is { } goal:
             {
                 var spot = goal;
@@ -119,6 +123,8 @@ public sealed partial class Game
                 break;
             }
         }
+
+        b.IsHoldingPosition = BotHoldingPosition(b, s, now); // stuck detection leaves these alone (BotVantage.cs)
 
         // Check corners: glance aside now and then while moving around with nobody in sight.
         if (!visible && !s.HasLook && !s.Mantle)
