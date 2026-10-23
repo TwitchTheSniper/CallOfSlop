@@ -944,6 +944,7 @@ public static unsafe partial class Program
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
+            ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -1038,6 +1039,7 @@ public static unsafe partial class Program
                         game.Update(now, FrameDt);
                 }
             }
+            UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;
@@ -1095,6 +1097,7 @@ public static unsafe partial class Program
                     _swallowClick = true; // the Deploy click mustn't also fire the gun
                 }
                 Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
+                DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs)
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -1274,6 +1277,12 @@ public static unsafe partial class Program
             return;
         }
 
+        if (key == GlfwKey.Escape && Ui.ChatOpen)
+        {
+            Ui.CloseChat(); // Esc leaves the chat line, not the match
+            return;
+        }
+
         if (_session == null || key != GlfwKey.Escape)
             return; // everything else is polled through the keybinds in UpdateLocalPlayer
 
@@ -1346,7 +1355,7 @@ public static unsafe partial class Program
     private static void PollActions()
     {
         Array.Copy(_down, _prev, _down.Length);
-        var blocked = Ui.WantsTextInput || Ui.Rebinding != null;
+        var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
     }
@@ -1354,6 +1363,7 @@ public static unsafe partial class Program
     private static void UpdateLocalPlayer(double now)
     {
         PollActions();
+        ChatKeys(); // Chat (all) / Chat (team) open the HUD chat line (Program.Voice.cs)
 
         var cursor = _window.CursorPos;
         var delta = new double2(cursor.X - _lastCursor.X, cursor.Y - _lastCursor.Y);
@@ -1479,8 +1489,8 @@ public static unsafe partial class Program
         if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
             _game.ToggleReady();
 
-        // Mouse look is applied every frame (never waits for a tick or the network).
-        if (_mouseCaptured)
+        // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat.
+        if (_mouseCaptured && !Ui.ChatOpen)
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
