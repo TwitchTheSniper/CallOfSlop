@@ -91,6 +91,11 @@ public static unsafe partial class Program
         // World Tour, 08 London: the viaduct, the high street and the canal from above the west end, then the high street at eye height.
         ("world_london", "London", new Vector3(-74f, 30f, 46f), new Vector3(2f, 2f, -8f), false),
         ("world_london_street", "London", new Vector3(-44f, 1.8f, 13.6f), new Vector3(6f, 1.6f, 14.2f), false),
+        // Space, 01 Stratos Station: the whole station over the cloud sea from above the north-west, then the hub from the covered walkway at eye height,
+        // and the North Dock's control hub from its bridge.
+        ("space_station", "Stratos Station", new Vector3(-110f, 62f, -150f), new Vector3(0f, 22f, -10f), false),
+        ("space_station_walkway", "Stratos Station", new Vector3(0f, 29.6f, -34f), new Vector3(0f, 27.4f, 0f), false),
+        ("space_station_dock", "Stratos Station", new Vector3(6f, 31.7f, -68f), new Vector3(0f, 32f, -100f), false),
         // Animated props: two shots 0.25 s apart (smoke_props_animated_a/b.bmp show the motion), then the gallery from above.
         ("animated", "Animated Props", new Vector3(-6f, 3.2f, 17f), new Vector3(2f, 1.2f, -2f), false),
         ("animated_overview", "Animated Props", new Vector3(0f, 22f, 36f), new Vector3(0f, 0f, -3f), false),

@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Stratos Walkway Arrow",
+ "category": "SkyStation",
+ "description": "Three amber chevrons pointing north along a walkway (turn with rotation).",
+ "author": "Call of Slop",
+ "size": 1.6,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "stratos_walkway_arrow.png",
+ "fadeDistance": 70
+}
