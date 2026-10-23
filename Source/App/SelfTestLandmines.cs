@@ -468,7 +468,6 @@ public static partial class SelfTest
         }
         const int ticks = 3000;
         var sw = new Stopwatch();
-        var before = GC.GetAllocatedBytesForCurrentThread();
         sw.Start();
         var steer = Vector3.Zero;
         for (var k = 0; k < ticks; k++)
@@ -477,8 +476,17 @@ public static partial class SelfTest
             game.SelfTestTickMines(now);
             steer = game.SelfTestAvoidMines(bot, Vector3.UnitX);
         }
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
         sw.Stop();
+        // Allocations: the least of three more rounds of the same ticks (a one-off JIT tier-up can't fail it).
+        var alloc = SteadyAllocBytes(() =>
+        {
+            for (var k = 0; k < ticks; k++)
+            {
+                now += 1.0 / World.TickRate;
+                game.SelfTestTickMines(now);
+                steer = game.SelfTestAvoidMines(bot, Vector3.UnitX);
+            }
+        }, warmups: 0);
         var us = sw.Elapsed.TotalMilliseconds * 1000 / ticks;
         var lit = map.TriggerProps.Count(game.IsPropLit);
         MLine($"cost: {map.TriggerProps.Length} mines, {game.Players.Count} players: {us:0.0} us per tick (plates + one bot's steering), {alloc} bytes allocated over {ticks} ticks; "

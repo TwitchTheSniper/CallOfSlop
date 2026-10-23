@@ -237,8 +237,16 @@ public static partial class SelfTest
             sum += t.Run(lab, phys, 89.5f, Eye(-20 + (i % 5) * 10), fwd, World.Range, 3);
             sum += t.FactorAt(14);
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         sw.Stop();
+        // Allocations: the least of three more rounds of the same traces (a one-off JIT tier-up can't fail it).
+        var bytes = Math.Min(GC.GetAllocatedBytesForCurrentThread() - before, SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 1000; i++)
+            {
+                sum += t.Run(lab, phys, 89.5f, Eye(-20 + (i % 5) * 10), fwd, World.Range, 3);
+                sum += t.FactorAt(14);
+            }
+        }, warmups: 0));
         PenNote($"1000 penetration traces: {sw.Elapsed.TotalMilliseconds / 1000 * 1000:0.0} us each, {bytes} bytes allocated (checksum {sum:0})");
         if (bytes > 0)
             Fail($"penetration traces allocate ({bytes} bytes for 1000)");
