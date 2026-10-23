@@ -572,6 +572,7 @@ public sealed partial class Ui
             ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build, or have none spare, are dimmed (hover one for why)."
                 : "Showing only parts that fit somewhere on this build and have a spare copy. Tick to see all your parts.");
         RefreshInventory();
+        _wbFilter = _inv.Filter; // a chosen category that just became hidden falls back to All
         if (!showAll && _inv.Hidden > 0)
         {
             ImGui.SameLine();
@@ -1083,8 +1084,14 @@ public sealed partial class Ui
                 }
                 else if (r.Socket != null)
                 {
-                    _wbFilter = (int)CategoryFor(r.Socket);
-                    WbSay($"Showing {PartDef.CategoryName(CategoryFor(r.Socket)).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
+                    var cat = CategoryFor(r.Socket);
+                    if (_inv.Shows(cat))
+                    {
+                        _wbFilter = (int)cat;
+                        WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
+                    }
+                    else // the category is hidden (nothing spare fits): picking it would only fall back to All
+                        WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(r.Socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
                 }
             }
             if (rclicked && r.Node != null)
