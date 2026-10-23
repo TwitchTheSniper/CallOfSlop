@@ -277,8 +277,8 @@ public static partial class SelfTest
 
         // ---- A cluster receiver with a plain action: all barrels at once, conserving the shot ----------------------------
         var six = string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel"));
-        var rotaryAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Electric Rotary Drive}},foregrip:Chaingun Handle}}"));
-        var volleyAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Full-Auto Sear}},foregrip:Chaingun Handle}}"));
+        var rotaryAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:5.56 FMJ,action:Electric Rotary Drive}},foregrip:Chaingun Handle}}"));
+        var volleyAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Belt Box,ammo:5.56 FMJ,action:Full-Auto Sear}},foregrip:Chaingun Handle}}"));
         var (rotary, volley) = (rotaryAsm.Def, volleyAsm.Def);
         if (rotary == null || volley == null)
             Fail($"actions: a Hellwheel with a rotary or a full-auto action should both be legal ({string.Join("; ", rotaryAsm.Problems.Concat(volleyAsm.Problems).Select(p => p.Message))})");
