@@ -21,17 +21,18 @@ public static partial class SelfTest
     /// </summary>
     private static readonly (string File, uint Hash)[] ShapeBaseline =
     [
-        ("01-ProtoBox", 0xa83dd7a5u), ("02-Courtyard", 0x9b62bfadu), ("03-Crossroads", 0x04fab23au), ("04-Warehouse9", 0x433369d1u),
+        ("01-ProtoBox", 0xa83dd7a5u), ("02-Courtyard", 0x9b62bfadu), ("03-Crossroads", 0x04fab23au),
         ("05-LongShot", 0x9a88c69cu), ("06-Ziggurat", 0xd8b982f8u), ("07-Scrapyard", 0xdece740cu), ("08-Rooftops", 0x3601e902u),
         ("09-Harbor", 0x56f96d12u), ("10-MarketStreet", 0xb8c3562au), ("11-Quarry", 0xc0f1d401u), ("12-Trenches", 0xb1bd94b3u),
-        ("13-TrainYard", 0xea4ba752u), ("14-OfficePark", 0xbf692394u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x5b03f45fu),
+        ("14-OfficePark", 0xbf692394u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x5b03f45fu),
         ("17-Farmland", 0xfcc5a090u), ("18-Downtown", 0x2a9960f5u), ("19-Canyon", 0x03353c42u), ("20-Airfield", 0xf47d65a6u),
         ("21-Village", 0x8004499bu), ("22-Industrial", 0x87c760edu), ("23-Highlands", 0xe932e450u), ("24-MilitaryBase", 0xe6122c44u),
         ("01-Blueprint", 0xde9e3279u), ("02-Galleria", 0x429afd78u), ("03-Floodgate", 0xcb35e9deu), ("04-Trefoil", 0x39b08239u),
         ("05-Citadel", 0x340e65a1u), ("06-Confluence", 0x3aad3033u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
         ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0x59b1babcu), ("TerrainTest", 0x6ad80326u),
-        ("01-GravelPit", 0x1010fd2au), ("02-Hillfort", 0xddcb110bu), ("03-Riverbend", 0xa7be54dau), ("04-AdobeMesa", 0x579dc03fu),
-        ("05-Ridgeline", 0xb945fc4au), ("06-AlpinePass", 0x3275f63au), // High Ground: new fingerprints since the foliage no-go rules
+        ("01-GravelPit", 0x1010fd2au), ("02-Hillfort", 0xddcb110bu), ("03-Riverbend", 0xa7be54dau),
+        ("05-Ridgeline", 0xb945fc4au), // High Ground: new fingerprints since the foliage no-go rules
+        // (Warehouse 9, Train Yard, Adobe Mesa and Alpine Pass dropped: their stairs were rebuilt for 2.1 m headroom)
     ];
 
     private static readonly List<string> ShapeNotes = new();

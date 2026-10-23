@@ -285,7 +285,7 @@ food_truck(-14.6, 22.4, True, PAINT_TEAL, -1)
 food_truck(-21.6, 15.4, False, PAINT_PINK, 1)
 umbrella_table(-9.2, 17.6, PAINT_RED, 4, 1)
 umbrella_table(-12.8, 14.0, PAINT_BLUE, 3, 2)
-umbrella_table(-6.8, 22.6, PAINT_YELLOW, 4, 3)
+umbrella_table(-8.0, 21.4, PAINT_YELLOW, 4, 3)  # (clear of the foot of the stage stairs; the map file was edited to match)
 prop("Vending Machine", -18.4, 25.2, yaw=180)
 prop("Vending Machine", -17.3, 25.2, yaw=180)
 prop("Explosive Barrel", -11.2, 25.0)          # the trucks' generator fuel: one per side, far from spawns

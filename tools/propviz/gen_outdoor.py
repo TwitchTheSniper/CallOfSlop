@@ -906,7 +906,7 @@ FE = "#2a2c2e"  # fire escape black iron
 
 
 def fire_escape_stairs():
-    H, run, w = 3.0, 3.6, 0.9
+    H, run, w = 3.0, 3.6, 1.0  # 1 m clear between the stringers (the Stairs self-test's least width)
     n = 10
     p = [tube([-run / 2, 0.0, w / 2], [run / 2, H, w / 2], 0.06, FE), tube([-run / 2, 0.0, -w / 2], [run / 2, H, -w / 2], 0.06, FE),
          tube([-run / 2, 0.95, w / 2 + 0.03], [run / 2, H + 0.95, w / 2 + 0.03], 0.04, FE),
@@ -938,16 +938,17 @@ def fire_escape_landing():
         p.append(tube([x, H - 0.9, -D / 2 + 0.05], [x, H - 0.08, D / 2 - 0.1], 0.05, FE))
         p.append(At([0.07, H - 0.05, 0.07], 0, x, -D / 2 + 0.05, color=FE))
     p += [At([L, 0.04, 0.04], H + 0.95, 0, D / 2 - 0.02, color=FE), At([L, 0.03, 0.03], H + 0.45, 0, D / 2 - 0.02, color=FE),
-          At([0.04, 0.04, D], H + 0.95, -L / 2 + 0.02, color=FE), At([0.03, 0.03, D], H + 0.45, -L / 2 + 0.02, color=FE)]
+          At([0.04, 0.04, D], H + 0.95, L / 2 - 0.02, color=FE), At([0.03, 0.03, D], H + 0.45, L / 2 - 0.02, color=FE)]
     for k in range(7):
         p.append(At([0.03, 0.95, 0.03], H, -L / 2 + 0.02 + k * (L - 0.04) / 6, D / 2 - 0.02, color=FE))
     for k in range(1, 4):
-        p.append(At([0.03, 0.95, 0.03], H, -L / 2 + 0.02, -D / 2 + k * D / 4, color=FE))
-    prop("Fire Escape Landing", "Utility", "A fire escape landing 3 m up on iron posts, railed on the front and the -X side.", p,
+        p.append(At([0.03, 0.95, 0.03], H, L / 2 - 0.02, -D / 2 + k * D / 4, color=FE))
+    # Railed on the front and the +X end: the stairs (Fire Escape Stairs, climbing +X) arrive at the open -X end.
+    prop("Fire Escape Landing", "Utility", "A fire escape landing 3 m up on iron posts, railed on the front and the +X side (its stairs arrive at the -X end).", p,
          collider=[C([L, 0.1, D], [0, H - 0.05, 0]), C([0.08, H, 0.08], [-L / 2 + 0.05, H / 2, D / 2 - 0.05]),
                    C([0.08, H, 0.08], [L / 2 - 0.05, H / 2, D / 2 - 0.05]), C([0.08, H, 0.08], [-L / 2 + 0.05, H / 2, -D / 2 + 0.05]),
                    C([0.08, H, 0.08], [L / 2 - 0.05, H / 2, -D / 2 + 0.05]), C([L, 1.0, 0.06], [0, H + 0.5, D / 2 - 0.02]),
-                   C([0.06, 1.0, D], [-L / 2 + 0.02, H + 0.5, 0])], scatter=SQ0)
+                   C([0.06, 1.0, D], [L / 2 - 0.02, H + 0.5, 0])], scatter=SQ0)
 
 
 def fire_escape_ladder():

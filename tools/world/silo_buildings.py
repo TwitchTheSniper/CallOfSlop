@@ -288,7 +288,7 @@ BUILDINGS["SiloAccessBunker"] = base(
                           hole(2.7, 4.3, 1.4, 1.1, 1.5), hole(-4.3, 2.6, 1.2, 1.1, 1.5), hole(4.3, 2.6, 1.2, 1.1, 1.5)]},
         ],
         "stairs": [{"floor": 0, "rect": [-2.6, 1.3, 0.6, 2.5], "dir": "+x"},
-                   {"floor": 1, "rect": [2.3, -3.3, 3.4, -0.4], "dir": "-z"}],
+                   {"floor": 1, "rect": [2.3, -2.9, 3.4, 0.0], "dir": "-z"}],  # 1.2 m of roof between the top step and the parapet
         "roof": {"type": "flat", "parapet": 1.0, "color": {"color": "$roof", "material": "concrete"}},
         "extras": [{"type": "prop", "name": "Sandbag Wall", "at": [-2.2, 0, -3.6], "onRoof": True},
                    {"type": "prop", "name": "Sandbag Wall", "at": [-3.6, 0, 1.5], "yaw": 90, "onRoof": True},

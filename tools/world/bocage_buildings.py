@@ -187,7 +187,7 @@ def farmhouse():
                 "openings": u_ops,
             },
         ],
-        "stairs": [{"floor": 0, "rect": [0.75, -1.95, 1.65, 1.05], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
+        "stairs": [{"floor": 0, "rect": [0.65, -1.95, 1.75, 1.05], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 50, "overhang": 0.35, "color": {"color": "$roof", "material": "tiles"}},
         "extras": [
             {"type": "block", "min": [-7.95, 0, -0.6], "max": [-7.25, 11.8, 0.6], "color": {"color": "$wall", "material": "brick"}},
@@ -432,7 +432,7 @@ def cottage():
                 "openings": u_ops,
             },
         ],
-        "stairs": [{"floor": 0, "rect": [-4.6, -1.75, -3.7, 0.65], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
+        "stairs": [{"floor": 0, "rect": [-4.8, -1.75, -3.7, 0.65], "dir": "-z", "color": {"color": "#5a4430", "material": "wood"}}],
         "roof": {"type": "gable", "ridge": "x", "pitch": 55, "overhang": 0.55, "color": {"color": "$roof", "material": "dirt"}},
         "extras": [
             {"type": "block", "min": [-5.85, 0, -0.5], "max": [-5.17, 11.8, 0.4], "color": {"color": "$plinth", "material": "brick"}},
