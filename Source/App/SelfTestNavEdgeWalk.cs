@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// bots' nav edges one at a time, the way a bot follows them (face the next node, Forward, Jump + Forward at a mantle edge's
 /// ledge), for a few seconds each. An edge the walker can't finish is a spot where bots get stuck (a slope it slides back
 /// down, a ledge it can't climb, a wall in the way). No bots, no matches: deterministic, a couple of seconds for all maps.
-/// Every edge with a height change, a flag (mantle, drop) or a slope on the way is walked (sprinted too on slopes);
+/// Every edge with a height change, a flag (mantle, drop) or a slope on the way is walked (sprinted too where it could slide);
 /// level edges on a stride, so each map stays within a budget. Last-resort edges (known to fail, kept as the one way
 /// somewhere) are counted, not walked.
 /// </summary>
@@ -141,8 +141,8 @@ public static partial class SelfTest
         foreach (var e in interesting)
         {
             list.Add((e, false));
-            if ((nav.EdgeFlags[e] & NavGraph.FlagSlope) != 0)
-                list.Add((e, true)); // sprinting too on slopes (as the nav build checks)
+            if (NavGraph.SteepestNormalY(nav.Nodes[from[e]], nav.Nodes[nav.EdgeTo[e]]) < SlopeRules.MinWalkNormalY)
+                list.Add((e, true)); // sprinting too where it could slide (as the nav build checks)
         }
         if (list.Count > EdgeWalkBudget)
         {
@@ -173,7 +173,7 @@ public static partial class SelfTest
     private static bool EdgeWalkOnTerrain(ITerrainCollision? t, Vector3 p) => t != null && MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.1f;
 
     /// <summary>Is any stretch of the terrain under a -> b steeper than the full-speed limit (25 degrees)?</summary>
-    private static bool EdgeWalkSloped(ITerrainCollision t, Vector3 a, Vector3 b)
+    private static bool EdgeWalkSloped(ITerrainCollision t, Vector3 a, Vector3 b, float normalY = SlopeRules.FullSpeedNormalY)
     {
         var flat = new Vector2(b.X - a.X, b.Z - a.Z);
         var len = flat.Length();
@@ -181,7 +181,7 @@ public static partial class SelfTest
         for (var k = 0; k <= n; k++)
         {
             var p = Vector3.Lerp(a, b, k / (float)n);
-            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < SlopeRules.FullSpeedNormalY)
+            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < normalY)
                 return true;
         }
         return false;

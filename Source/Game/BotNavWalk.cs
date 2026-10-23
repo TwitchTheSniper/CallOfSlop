@@ -289,15 +289,15 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
-    /// Walking gets there, and sprinting too on slopes (bots do either). A ledge is also tried from half a body
+    /// Walking gets there, and sprinting too where the ground is steep enough to slide on (bots do either). A ledge is also tried from half a body
     /// width to either side of the start (bots seldom arrive dead on the node), so one that only works from one exact spot isn't an edge.
     /// </summary>
-    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
+    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge, float steepest)
     {
         if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached)
             return false;
-        // Sprinting changes things on slopes (more speed into a slide); ledges, drops, steps and squeezes walk the same.
-        if ((flags & FlagSlope) != 0 && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+        // Sprinting changes things only where the ground is steep enough to slide on (more speed into it); elsewhere it walks the same.
+        if (steepest < SlopeRules.MinWalkNormalY && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
             return false;
         // Side starts only for a real ledge (one climb of most of a mantle's reach), not for stairs sampled as small mantles.
         if ((flags & FlagMantle) == 0 || ledge.Y - a.Y < 0.9f || b.Y - ledge.Y > 0.3f)
@@ -325,7 +325,7 @@ public sealed partial class NavGraph
     /// The steepest terrain near the line a -> b, as the lowest support normal Y (1: flat, or no terrain under it). Edges past
     /// the full-speed angle get <see cref="FlagSlope"/>; past <see cref="WalkCheckNormalY"/> the mover walks them.
     /// </summary>
-    private static float SteepestNormalY(Vector3 a, Vector3 b)
+    public static float SteepestNormalY(Vector3 a, Vector3 b)
     {
         if (World.Map.TerrainCollision is not { } ground)
             return 1f;

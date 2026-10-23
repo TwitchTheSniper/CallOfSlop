@@ -541,13 +541,13 @@ public sealed partial class NavGraph
         if (needs)
         {
             g.WalkChecked++;
-            if (fwd && !MoverWalks(a, b, fFlags, fLedge))
+            if (fwd && !MoverWalks(a, b, fFlags, fLedge, steepest))
             {
                 fwd = false;
                 g.WalkRejected++;
                 failed.Add((i, j, SlopeCost(a, b, len) + LastResortCost, (byte)(fFlags | FlagLastResort), fLedge));
             }
-            if (back && !MoverWalks(b, a, bFlags, bLedge))
+            if (back && !MoverWalks(b, a, bFlags, bLedge, steepest))
             {
                 back = false;
                 g.WalkRejected++;
