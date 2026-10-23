@@ -16,6 +16,9 @@ public sealed partial class NavGraph
     /// <summary>Links checked with the mover during the build, directions dropped because the walk failed, and of those the ones kept as last resorts.</summary>
     public int WalkChecked, WalkRejected, LastResorts;
 
+    /// <summary>Build work spent on the mover walks and on deciding which links need one (Stopwatch ticks).</summary>
+    public long WalkTicks, PrepTicks;
+
     /// <summary>
     /// Adds back the failed directions (<paramref name="failed"/>) that are the only way in or out of somewhere: while some node
     /// that has edges isn't in the biggest group of nodes that can all reach each other, failed directions touching nodes
@@ -202,7 +205,7 @@ public sealed partial class NavGraph
     /// </summary>
     private static readonly QueryFilter ShinFilter = new(QueryLayers.StaticShapes & ~QueryLayers.Doors); // boxes, props, meshes (not the terrain's own bumps)
 
-    private static bool NeedsMoverWalk(Vector3 a, Vector3 b, byte flags, bool tight)
+    private static bool NeedsMoverWalk(Vector3 a, Vector3 b, byte flags, bool tight, float steepest)
     {
         if (CrossesDoor(World.Map, a, b))
             return false; // through a shut door: bots open it, the plain mover can't (see CrossesDoor)
@@ -222,7 +225,7 @@ public sealed partial class NavGraph
                     if (World.Physics.Raycast(a + shin + new Vector3(0, h, 0) + side * o, dir, dist, ShinFilter) < dist - 0.05f)
                         return true;
         }
-        return SlopedLink(a, b, WalkCheckNormalY);
+        return steepest < WalkCheckNormalY;
     }
 
     /// <summary>cos(40 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
@@ -300,20 +303,24 @@ public sealed partial class NavGraph
         return true;
     }
 
-    /// <summary>Does a -> b run over terrain steeper than the full-speed angle (near the line)? Such edges get <see cref="FlagSlope"/>.</summary>
-    private static bool SlopedLink(Vector3 a, Vector3 b, float normalY = SlopeRules.FullSpeedNormalY)
+    /// <summary>
+    /// The steepest terrain near the line a -> b, as the lowest support normal Y (1: flat, or no terrain under it). Edges past
+    /// the full-speed angle get <see cref="FlagSlope"/>; past <see cref="WalkCheckNormalY"/> the mover walks them.
+    /// </summary>
+    private static float SteepestNormalY(Vector3 a, Vector3 b)
     {
         if (World.Map.TerrainCollision is not { } ground)
-            return false;
+            return 1f;
         var t = ground.Layer(MathF.Min(a.Y, b.Y));
         var len = Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
         var n = Math.Max(1, (int)MathF.Ceiling(len / 0.5f));
+        var min = 1f;
         for (var k = 0; k <= n; k++)
         {
             var p = Vector3.Lerp(a, b, k / (float)n);
-            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < normalY)
-                return true;
+            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f)
+                min = MathF.Min(min, SlopeRules.SupportNormal(t, p.X, p.Z).Y);
         }
-        return false;
+        return min;
     }
 }

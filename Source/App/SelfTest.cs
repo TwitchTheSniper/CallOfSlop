@@ -637,7 +637,7 @@ public static partial class SelfTest
             if (unreachable.Count > pairs / 4)
                 Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
             if (g.BuildMs > 3000)
-                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build");
+                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build [TEMP: mover walks {g.WalkChecked} links in {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms, link checks {g.PrepTicks * 1000.0 / Stopwatch.Frequency:0} ms]");
         }
         Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
 

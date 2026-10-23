@@ -23,7 +23,7 @@ public static partial class SelfTest
             Line(note);
             Line("::warning title=Bot lag compensation (results)::" + note);
             if (later.Shots < 5 || earlier.Shots < 5)
-                Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots)");
+                Fail($"the bot hardly shot (after {later.Shots}, before {earlier.Shots} shots) [TEMP: {DuelInfo}]");
             else
             {
                 var a = (double)later.Hits / later.Shots;
@@ -149,6 +149,9 @@ public static partial class SelfTest
                     hits++;
             }
         }
+        DuelInfo += $" | mode {bot.Bot!.Mode}, weapon {bot.Weapon}, deaths {bot.Deaths}, stuck kills {game.BotStuckKills}, ammo {bot.Bot.Ammo}, alive {bot.Alive}, log {game.LastStuckLog}";
         return (shots, hits);
     }
+
+    private static string DuelInfo = "";
 }

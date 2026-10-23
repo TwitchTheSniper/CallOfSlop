@@ -484,13 +484,18 @@ public sealed partial class NavGraph
             return true;
         Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);
         // The mover has the last word where the samples can't tell (BotNavWalk.cs): a direction it can't walk gets no edge.
-        if (SlopedLink(a, b))
+        var prep = Stopwatch.GetTimestamp();
+        var steepest = SteepestNormalY(a, b);
+        if (steepest < SlopeRules.FullSpeedNormalY)
         {
             fFlags |= FlagSlope;
             bFlags |= FlagSlope;
         }
         var len = Vector3.Distance(a, b);
-        if ((fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight))
+        var needs = (fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight, steepest);
+        var walkStart = Stopwatch.GetTimestamp();
+        g.PrepTicks += walkStart - prep;
+        if (needs)
         {
             g.WalkChecked++;
             if (fwd && !MoverWalks(a, b, fFlags, fLedge))
@@ -505,6 +510,7 @@ public sealed partial class NavGraph
                 g.WalkRejected++;
                 failed.Add((j, i, SlopeCost(b, a, len) + LastResortCost, (byte)(bFlags | FlagLastResort), bLedge));
             }
+            g.WalkTicks += Stopwatch.GetTimestamp() - walkStart;
         }
         if (fwd)
             edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
