@@ -10,6 +10,8 @@ public readonly record struct CursorState(bool InSession, bool MenuOpen, bool Re
 /// <summary>
 /// The one rule for when the mouse is captured (hidden, turning the camera) and when it is a free, visible cursor.
 /// Pure logic, so the self-test can check every combination headless.
+/// The HUD chat line is not a menu: it leaves the capture state alone (typing suspends mouse look and the controls instead),
+/// so chatting on the results screen keeps the free cursor and chatting in play keeps the captured one.
 /// <list type="bullet">
 /// <item>The mouse may only be captured in a match with no menu open and not on the results/map vote screen.</item>
 /// <item>A click in the match recaptures a freed mouse, unless it lands on a UI window or capturing isn't allowed.</item>
