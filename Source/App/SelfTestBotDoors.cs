@@ -49,9 +49,10 @@ public static partial class SelfTest
         public int MaxToggles; // the most any bot moved this door within 10 s
         public int Events;
 
-        public DoorLab(Map yard, GameMode mode)
+        public DoorLab(Map yard, GameMode mode, int seed)
         {
             Yard = yard;
+            Game.SeedNextGame = seed; // the same scenario every run
             yard.RestoreBuildings();
             ClutteredLargeNav(yard);
             Game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
@@ -108,7 +109,7 @@ public static partial class SelfTest
         /// A nav node about <paramref name="along"/> m from the door's plane (+ inside) and <paramref name="sideways"/> m off its
         /// axis, with a clear line to the doorway on its side (or that spot itself if there's none).
         /// </summary>
-        public Vector3 Spot(float along, float sideways = 0)
+        public Vector3 Spot(float along, float sideways = 0, bool view = false)
         {
             var perp = new Vector3(-Across.Z, 0, Across.X);
             var want = new Vector3(D.Center.X, D.Plan.Closed.Min.Y, D.Center.Z) + Across * along + perp * sideways;
@@ -122,6 +123,9 @@ public static partial class SelfTest
                 var dist = FlatDistance(q, want);
                 if (dist >= bestD || MathF.Abs(q.Y - want.Y) > 0.6f || MathF.Abs(Vector3.Dot(q - D.Center, Across) - along) > 0.9f || !NavGraph.Clear(q, door))
                     continue;
+                if (view && World.Query.Raycast(q + new Vector3(0, 1.2f, 0), Vector3.Normalize(D.Center - q - new Vector3(0, 1.2f, 0)), Vector3.Distance(D.Center, q + new Vector3(0, 1.2f, 0)),
+                        QueryFilter.All.Without(QueryLayers.Doors | QueryLayers.Clip)) < Vector3.Distance(D.Center, q + new Vector3(0, 1.2f, 0)) - 0.25f)
+                    continue; // the door in plain view from there
                 best = q;
                 bestD = dist;
             }
@@ -177,7 +181,7 @@ public static partial class SelfTest
         var clientOk = true;
 
         // ---- 1. Through a shut door: opened ahead of time, no stopping at it ----
-        using (var lab = new DoorLab(yard, GameMode.FreeForAll))
+        using (var lab = new DoorLab(yard, GameMode.FreeForAll, 4601))
         {
             var bot = lab.AddBot(BotPersonality.Rusher, Game.NoTeam, lab.Spot(-5.5f), lab.Spot(2.2f), 0f);
             var start = lab.Now;
@@ -222,7 +226,7 @@ public static partial class SelfTest
         }
 
         // ---- 2. Two teammates through one door: both get through, the first leaves it open for the second ----
-        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
+        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch, 4602))
         {
             var a = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-4f, 0.4f), lab.Spot(2.2f, 0.5f), 1f);
             var b = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-7f, -0.4f), lab.Spot(2.2f, -0.5f), 1f);
@@ -252,7 +256,7 @@ public static partial class SelfTest
         }
 
         // ---- 3. Head on: one each way through the doorway ----
-        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
+        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch, 4603))
         {
             lab.Game.ServerSetDoor(lab.Door, true, lab.Now);
             var a = lab.AddBot(BotPersonality.Tactician, 0, lab.Spot(-4.4f), lab.Spot(2.2f), 0f);
@@ -275,7 +279,7 @@ public static partial class SelfTest
         }
 
         // ---- 4. Alone: shuts the door behind it ----
-        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
+        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch, 4604))
         {
             var bot = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-4.9f), lab.Spot(2.3f), 1f);
             var start = lab.Now;
@@ -305,10 +309,10 @@ public static partial class SelfTest
             Fail("anchors and tacticians should mostly shut doors behind them, rushers rarely");
 
         // ---- 5. Holding the room: shuts its door (walking over to it first) ----
-        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
+        using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch, 4605))
         {
             lab.Game.ServerSetDoor(lab.Door, true, lab.Now - 10);
-            var anchor = lab.Spot(3.5f);
+            var anchor = lab.Spot(3.2f, 0, view: true);
             var bot = lab.AddBot(BotPersonality.Anchor, 0, anchor, anchor, null);
             var b = bot.Bot!;
             b.ForcedGoal = null;

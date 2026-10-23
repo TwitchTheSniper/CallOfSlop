@@ -376,9 +376,9 @@ public sealed partial class Game
                 nearest = i;
                 nearestDist = fd;
             }
-            if (d.Broken || !RouteCrosses(d, pts))
+            if (!RouteCrosses(d, pts))
                 continue;
-            if (!d.Open)
+            if (!d.Open) // (a broken door is open)
             {
                 // A holding bot's shuffle doesn't take it back out through the door it shut for the hold.
                 if (b.HoldDoor == i && now < b.HoldShutUntil && b.Mode == BotMode.Roam && b.HoldUntil > now)
@@ -413,6 +413,19 @@ public sealed partial class Game
         var mySide = Vector3.Dot(pos - d.Center, n);
         var myFd = FlatDist(pos, d.Center);
         var inDoorway = myFd < 0.8f && MathF.Abs(mySide) < 0.6f;
+        // Line up square with the opening: a doorway is barely wider than a body, and one coming in at an angle or off
+        // to one side catches the jamb. Steer onto the door's axis while closing in; right at the wall, square up first.
+        var perp = new Vector3(-n.Z, 0, n.X);
+        var lat = Vector3.Dot(pos - d.Center, perp);
+        var through = n * -MathF.Sign(mySide);
+        if (MathF.Abs(mySide) is < 2.2f and > 0.05f && steer.Wish.LengthSquared() > 0.04f && Vector3.Dot(steer.Wish, through) > 0)
+        {
+            var slack = MathF.Max(0.03f, d.Plan.Width * 0.5f - World.PlayerRadius - 0.02f);
+            var forward = MathF.Abs(lat) > slack && MathF.Abs(mySide) < 0.75f ? 0.25f : 1f;
+            var len = steer.Wish.Length();
+            var w = through * forward - perp * Math.Clamp(lat * 3f, -1f, 1f);
+            steer.Wish = Vector3.Normalize(w) * len;
+        }
         if (!inDoorway && myFd < 2.2f)
         {
             var heading = -MathF.Sign(mySide); // the way I cross: towards the other side
@@ -429,13 +442,13 @@ public sealed partial class Game
                 var comingAtMe = MathF.Sign(oVel) == -heading && MathF.Abs(oVel) > 0.5f;
                 if (oInDoorway && comingAtMe)
                 {
-                    steer.Wish *= 0.15f; // let them out first
+                    steer.Wish = Vector3.Zero; // let them out first
                     p.Bot!.DoorWaitTicks++;
                     break;
                 }
                 if (!oInDoorway && MathF.Sign(oSide) == -MathF.Sign(mySide) && comingAtMe && o.Id < p.Id && ofd < myFd + 0.6f)
                 {
-                    steer.Wish *= 0.3f; // head on: the lower id goes first
+                    steer.Wish = Vector3.Zero; // head on: the lower id goes first
                     p.Bot!.DoorWaitTicks++;
                     break;
                 }
